@@ -46,7 +46,10 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetFiatPricesQuery: vi.fn(),
     ALGO_ASSET_ID: 0,
     ALGO_ASSET: { id: 0, decimals: 6 },
-    toWholeUnits: vi.fn(() => 0.001),
+    toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>
+        Decimal(typeof value === 'bigint' ? value.toString() : value).div(
+            Decimal(10).pow(asset.decimals),
+        ),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -123,15 +126,15 @@ describe('useInputView', () => {
         })
         ;(useAccountInformationQuery as Mock).mockReturnValue({
             data: {
-                amount: 100,
-                minBalance: 0.1,
+                amount: 100_000_000n,
+                minBalance: 100_000n,
             },
         })
     })
 
     it('calculates max amount for Algo correctly', () => {
         const { result } = renderHook(() => useInputView(mockOnNext))
-        expect(result.current.maxAmount.toNumber()).toBe(99.9)
+        expect(result.current.maxAmount.toNumber()).toBe(99.899)
     })
 
     it('calculates max amount for ASA correctly', () => {
@@ -180,7 +183,7 @@ describe('useInputView', () => {
 
     it('validates input on next (error if > max)', () => {
         ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: { amount: 10, minBalance: 0 },
+            data: { amount: 10_000_000n, minBalance: 0n },
         })
 
         const { result } = renderHook(() => useInputView(mockOnNext))
@@ -191,7 +194,10 @@ describe('useInputView', () => {
             result.current.handleNext()
         })
         expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+            expect.objectContaining({
+                type: 'error',
+                body: 'send_funds.input.error_exceeds_max',
+            }),
             expect.anything(),
         )
         expect(mockOnNext).not.toHaveBeenCalled()
@@ -199,7 +205,7 @@ describe('useInputView', () => {
 
     it('proceeds on next if valid', () => {
         ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: { amount: 100, minBalance: 0 },
+            data: { amount: 100_000_000n, minBalance: 0n },
         })
 
         const { result } = renderHook(() => useInputView(mockOnNext))
@@ -219,8 +225,59 @@ describe('useInputView', () => {
         act(() => {
             result.current.setMax()
         })
-        expect(result.current.cryptoValue).toBe('99.9')
+        expect(result.current.cryptoValue).toBe('99.899')
         expect(mockSetAmount).toHaveBeenCalled()
-        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('99.9')
+        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('99.899')
+    })
+
+    it('treats leading decimal point as 0.', () => {
+        const { result } = renderHook(() => useInputView(mockOnNext))
+        act(() => {
+            result.current.handleKey('.')
+        })
+        expect(result.current.cryptoValue).toBe('0.')
+        act(() => {
+            result.current.handleKey('5')
+        })
+        expect(result.current.cryptoValue).toBe('0.5')
+    })
+
+    it('ignores second decimal point in keypad input', () => {
+        const { result } = renderHook(() => useInputView(mockOnNext))
+        act(() => {
+            result.current.handleKey('1')
+        })
+        act(() => {
+            result.current.handleKey('.')
+        })
+        act(() => {
+            result.current.handleKey('.')
+        })
+        act(() => {
+            result.current.handleKey('5')
+        })
+        expect(result.current.cryptoValue).toBe('1.5')
+    })
+
+    it('shows exceeds balance error when value exceeds max', () => {
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
+            data: { amount: 0n, minBalance: 0n },
+        })
+
+        const { result } = renderHook(() => useInputView(mockOnNext))
+        act(() => {
+            result.current.setCryptoValue('0.1')
+        })
+        act(() => {
+            result.current.handleNext()
+        })
+        expect(mockShowToast).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'error',
+                body: 'send_funds.input.error_exceeds_max',
+            }),
+            expect.anything(),
+        )
+        expect(mockOnNext).not.toHaveBeenCalled()
     })
 })

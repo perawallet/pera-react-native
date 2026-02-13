@@ -156,7 +156,7 @@ vi.mock('../../AccountAssetList', () => ({
 }))
 
 vi.mock(
-    '@modules/transactions/components/SendFunds/SendFundsBottomSheet/SendFundsBottomSheet',
+    '@modules/transactions/components/send-funds/SendFundsBottomSheet/SendFundsBottomSheet',
     () => ({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         SendFundsBottomSheet: ({ isVisible }: any) =>

@@ -26,15 +26,15 @@ import { useLanguage } from '@hooks/useLanguage'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { noteSchema } from '@perawallet/wallet-core-blockchain'
 
-export type AddNotePanelProps = {
+export type SendFundsAddNotePanelProps = {
     onClose: () => void
 } & PWBottomSheetProps
 
-export const AddNotePanel = ({
+export const SendFundsAddNotePanel = ({
     isVisible,
     onClose,
     ...rest
-}: AddNotePanelProps) => {
+}: SendFundsAddNotePanelProps) => {
     const styles = useStyles()
     const { note, setNote } = useSendFunds()
     const [isEdit, setIsEdit] = useState(!!note)

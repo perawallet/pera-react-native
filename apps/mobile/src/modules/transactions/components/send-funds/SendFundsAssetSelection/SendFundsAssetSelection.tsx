@@ -12,7 +12,6 @@
 
 import {
     PWFlatList,
-    PWHeader,
     PWSkeleton,
     PWTouchableOpacity,
     PWView,
@@ -26,11 +25,9 @@ import { useCallback, useMemo } from 'react'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import { useStyles } from './styles'
 import { useSendFunds } from '@modules/transactions/hooks'
-import { useLanguage } from '@hooks/useLanguage'
 
-export type SendFundsAssetSelectionViewProps = {
+export type SendFundsAssetSelectionProps = {
     onSelected: () => void
-    onBack: () => void
 }
 
 const LoadingView = () => {
@@ -44,14 +41,12 @@ const LoadingView = () => {
     )
 }
 
-export const SendFundsAssetSelectionView = ({
+export const SendFundsAssetSelection = ({
     onSelected,
-    onBack,
-}: SendFundsAssetSelectionViewProps) => {
+}: SendFundsAssetSelectionProps) => {
     const styles = useStyles()
     const selectedAccount = useSelectedAccount()
     const { setSelectedAsset } = useSendFunds()
-    const { t } = useLanguage()
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
     )
@@ -91,13 +86,6 @@ export const SendFundsAssetSelectionView = ({
             data={balanceData ?? []}
             renderItem={renderItem}
             keyExtractor={item => item.assetId}
-            ListHeaderComponent={
-                <PWHeader
-                    leftIcon='cross'
-                    onLeftPress={onBack}
-                    title={t('send_funds.asset_selection.title')}
-                />
-            }
             ListEmptyComponent={<LoadingView />}
         />
     )

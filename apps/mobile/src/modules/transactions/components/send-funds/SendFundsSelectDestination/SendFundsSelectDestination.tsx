@@ -18,6 +18,7 @@ import { useStyles } from './styles'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
 import { EmptyView } from '@components/EmptyView'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type SendFundsSelectDestinationProps = {
@@ -30,6 +31,7 @@ export const SendFundsSelectDestination = ({
     onBack,
 }: SendFundsSelectDestinationProps) => {
     const { selectedAsset, setDestination } = useSendFunds()
+    const selectedAccount = useSelectedAccount()
     const styles = useStyles()
     const { data: assets } = useAssetsQuery()
     const asset = useMemo(() => {
@@ -66,7 +68,10 @@ export const SendFundsSelectDestination = ({
                     <PWText>{asset.name}</PWText>
                 </PWView>
             </PWHeader>
-            <AddressSearchView onSelected={handleSelected} />
+            <AddressSearchView
+                onSelected={handleSelected}
+                excludeAddress={selectedAccount?.address}
+            />
         </PWView>
     )
 }

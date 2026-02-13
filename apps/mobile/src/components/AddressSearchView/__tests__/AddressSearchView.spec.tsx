@@ -108,6 +108,31 @@ describe('AddressSearchView', () => {
         expect(mockOnSelected).toHaveBeenCalledWith(mockContact.address)
     })
 
+    it('excludes account matching excludeAddress', () => {
+        const senderAccount = {
+            address: 'SENDER_ADDRESS_123',
+            name: 'Sender',
+        }
+        const otherAccount = {
+            address: 'OTHER_ADDRESS_456',
+            name: 'Other Account',
+        }
+        vi.mocked(useAllAccounts).mockReturnValue([
+            senderAccount,
+            otherAccount,
+        ] as unknown as ReturnType<typeof useAllAccounts>)
+
+        render(
+            <AddressSearchView
+                onSelected={mockOnSelected}
+                excludeAddress='SENDER_ADDRESS_123'
+            />,
+        )
+
+        expect(screen.queryByText('Sender')).toBeNull()
+        expect(screen.getByText('Other Account')).toBeTruthy()
+    })
+
     it('shows valid address option when input is a valid address', () => {
         vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
         const validAddress = 'VALID_ALGO_ADDRESS_123'

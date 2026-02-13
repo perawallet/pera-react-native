@@ -112,12 +112,12 @@ export const useAccountBalancesQuery = (
             })
 
             //Now add algo into the mix
-            const algoAmount = Decimal(r.data?.balance?.algos ?? '0').div(
+            const algoAmount = Decimal(r.data?.balance?.microAlgos ?? '0').div(
                 Decimal(10).pow(ALGO_ASSET.decimals),
             )
             const usdAlgoValue = algoAmount.times(usdAlgoPrice)
             const fiatAlgoValue = usdToPreferred(usdAlgoValue)
-            algoValue = algoValue.plus(usdAlgoValue)
+            algoValue = algoValue.plus(algoAmount)
             fiatValue = fiatValue.plus(fiatAlgoValue)
 
             assetBalances.push({

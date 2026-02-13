@@ -10,5 +10,15 @@
  limitations under the License
  */
 
-export { SendFundsAssetSelectionView } from './SendFundsAssetSelectionView'
-export type { SendFundsAssetSelectionViewProps } from './SendFundsAssetSelectionView'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    screenContent: {
+        backgroundColor: theme.colors.background,
+    },
+    tabItem: {
+        width: '100%',
+        paddingHorizontal: theme.spacing.lg,
+        flex: 1,
+    },
+}))

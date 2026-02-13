@@ -1,0 +1,425 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { render, fireEvent } from '@test-utils/render'
+import Decimal from 'decimal.js'
+import { SendFundsTransactionConfirmation } from '../SendFundsTransactionConfirmation'
+import { useTransactionConfirmation } from '@modules/transactions/hooks/send-funds/useTransactionConfirmation'
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string) => key,
+    }),
+}))
+
+vi.mock('@components/core', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWView: ({ children, style, ...rest }: any) => (
+        <div
+            style={style}
+            {...rest}
+        >
+            {children}
+        </div>
+    ),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWText: ({ children, onPress, ...rest }: any) => (
+        <span
+            onClick={onPress}
+            {...rest}
+        >
+            {children}
+        </span>
+    ),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWButton: ({ title, onPress }: any) => (
+        <button onClick={onPress}>{title}</button>
+    ),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWTouchableOpacity: ({ children, onPress }: any) => (
+        <button onClick={onPress}>{children}</button>
+    ),
+    PWDivider: () => <hr data-testid='divider' />,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWIcon: ({ name }: any) => <div data-testid={`icon-${name}`} />,
+}))
+
+vi.mock('@components/KeyValueRow', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    KeyValueRow: ({ title, children }: any) => (
+        <div data-testid={`key-value-row-${title}`}>{children}</div>
+    ),
+}))
+
+vi.mock('@components/CurrencyDisplay', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    CurrencyDisplay: ({ currency, value, isLoading }: any) => (
+        <span data-testid={`currency-display-${currency}`}>
+            {isLoading ? 'loading' : (value?.toString() ?? 'null')}
+        </span>
+    ),
+}))
+
+vi.mock('@modules/accounts/components/AccountDisplay', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    AccountDisplay: ({ account }: any) => (
+        <div data-testid='account-display'>{account.address}</div>
+    ),
+}))
+
+vi.mock('@components/AddressDisplay', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    AddressDisplay: ({ address }: any) => (
+        <div data-testid='address-display'>{address}</div>
+    ),
+}))
+
+vi.mock('@components/LoadingView', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    LoadingView: ({ variant }: any) => (
+        <div data-testid='loading-view'>{variant}</div>
+    ),
+}))
+
+vi.mock('../../SendFundsAddNotePanel', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    SendFundsAddNotePanel: ({ isVisible, onClose }: any) =>
+        isVisible ? (
+            <div data-testid='add-note-panel'>
+                <button
+                    data-testid='close-note-panel'
+                    onClick={onClose}
+                >
+                    Close
+                </button>
+            </div>
+        ) : null,
+}))
+
+vi.mock('@perawallet/wallet-core-assets', () => ({
+    ALGO_ASSET: {
+        assetId: '0',
+        name: 'Algo',
+        unitName: 'ALGO',
+        decimals: 6,
+    },
+    toWholeUnits: vi.fn(() => new Decimal('0.001')),
+}))
+
+vi.mock('../styles', () => ({
+    useStyles: () => ({
+        container: {},
+        secondaryAmount: {},
+        buttonContainer: {},
+        linkContainer: {},
+        link: {},
+        divider: {},
+    }),
+}))
+
+vi.mock(
+    '@modules/transactions/hooks/send-funds/useTransactionConfirmation',
+    () => ({
+        useTransactionConfirmation: vi.fn(),
+    }),
+)
+
+const mockHandleConfirm = vi.fn()
+const mockOpenNote = vi.fn()
+const mockCloseNote = vi.fn()
+
+const defaultHookReturn = {
+    asset: { unitName: 'ALGO', decimals: 6 },
+    amount: new Decimal('10.5'),
+    destination: 'DEST_ADDRESS_ABC123',
+    selectedAccount: { address: 'ACCOUNT_ADDRESS_ABC123' },
+    fiatPrice: new Decimal('1.25'),
+    preferredFiatCurrency: 'USD',
+    params: { minFee: 1000 },
+    paramsPending: false,
+    currentBalance: {
+        amount: new Decimal('100'),
+        fiatValue: new Decimal('125'),
+    },
+    currentBalancePending: false,
+    note: undefined as string | undefined,
+    noteOpen: false,
+    openNote: mockOpenNote,
+    closeNote: mockCloseNote,
+    handleConfirm: mockHandleConfirm,
+    isReady: true,
+}
+
+describe('SendFundsTransactionConfirmation', () => {
+    const mockOnNext = vi.fn()
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(useTransactionConfirmation as any).mockReturnValue({
+            ...defaultHookReturn,
+        })
+    })
+
+    it('shows LoadingView when isReady is false', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(useTransactionConfirmation as any).mockReturnValue({
+            ...defaultHookReturn,
+            isReady: false,
+        })
+
+        const { getByTestId, queryByText } = render(
+            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+        )
+
+        expect(getByTestId('loading-view')).toBeTruthy()
+        expect(queryByText('send_funds.confirmation.confirm_button')).toBeNull()
+    })
+
+    it('renders amount key-value row', () => {
+        const { getByTestId } = render(
+            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+        )
+
+        expect(
+            getByTestId('key-value-row-send_funds.confirmation.amount'),
+        ).toBeTruthy()
+    })
+
+    it('renders account display when selectedAccount is present', () => {
+        const { getByTestId } = render(
+            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+        )
+
+        expect(
+            getByTestId('key-value-row-send_funds.confirmation.account'),
+        ).toBeTruthy()
+        expect(getByTestId('account-display')).toBeTruthy()
+    })
+
+    it('does not render account display when selectedAccount is null', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(useTransactionConfirmation as any).mockReturnValue({
+            ...defaultHookReturn,
+            selectedAccount: null,
+        })
+
+        const { queryByTestId } = render(
+            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+        )
+
+        expect(
+            queryByTestId('key-value-row-send_funds.confirmation.account'),
+        ).toBeNull()
+    })
+
+    it('renders destination display when destination is present', () => {
+        const { getByTestId } = render(
+            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+        )
+
+        expect(
+            getByTestId('key-value-row-send_funds.confirmation.to'),
+        ).toBeTruthy()
+        expect(getByTestId('address-display')).toBeTruthy()
+    })
+
+    it('does not render destination display when destination is undefined', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(useTransactionConfirmation as any).mockReturnValue({
+            ...defaultHookReturn,
+            destination: undefined,
+        })
+
+        const { queryByTestId } = render(
+            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+        )
+
+        expect(
+            queryByTestId('key-value-row-send_funds.confirmation.to'),
+        ).toBeNull()
+    })
+
+    it('renders fee key-value row', () => {
+        const { getByTestId } = render(
+            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+        )
+
+        expect(
+            getByTestId('key-value-row-send_funds.confirmation.fee'),
+        ).toBeTruthy()
+    })
+
+    it('renders current balance key-value row when balance exists', () => {
+        const { getByTestId } = render(
+            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+        )
+
+        expect(
+            getByTestId(
+                'key-value-row-send_funds.confirmation.current_balance',
+            ),
+        ).toBeTruthy()
+    })
+
+    it('does not render current balance row when currentBalance is undefined', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(useTransactionConfirmation as any).mockReturnValue({
+            ...defaultHookReturn,
+            currentBalance: undefined,
+        })
+
+        const { queryByTestId } = render(
+            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+        )
+
+        expect(
+            queryByTestId(
+                'key-value-row-send_funds.confirmation.current_balance',
+            ),
+        ).toBeNull()
+    })
+
+    it('renders note key-value row', () => {
+        const { getByTestId } = render(
+            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+        )
+
+        expect(
+            getByTestId('key-value-row-send_funds.confirmation.note'),
+        ).toBeTruthy()
+    })
+
+    it('calls handleConfirm when confirm button is pressed', () => {
+        const { getByText } = render(
+            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+        )
+
+        fireEvent.click(getByText('send_funds.confirmation.confirm_button'))
+
+        expect(mockHandleConfirm).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows note text and edit button when note exists', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(useTransactionConfirmation as any).mockReturnValue({
+            ...defaultHookReturn,
+            note: 'Payment for services',
+        })
+
+        const { getByText, getByTestId } = render(
+            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+        )
+
+        expect(getByText('Payment for services')).toBeTruthy()
+        expect(getByText('send_funds.confirmation.edit')).toBeTruthy()
+        expect(getByTestId('icon-edit-pen')).toBeTruthy()
+    })
+
+    it('calls openNote when edit button is pressed with existing note', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(useTransactionConfirmation as any).mockReturnValue({
+            ...defaultHookReturn,
+            note: 'Payment for services',
+        })
+
+        const { getByText } = render(
+            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+        )
+
+        fireEvent.click(getByText('send_funds.confirmation.edit'))
+
+        expect(mockOpenNote).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows add note button when no note exists', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(useTransactionConfirmation as any).mockReturnValue({
+            ...defaultHookReturn,
+            note: undefined,
+        })
+
+        const { getByText, queryByText } = render(
+            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+        )
+
+        expect(getByText('send_funds.add_note.button')).toBeTruthy()
+        expect(queryByText('send_funds.confirmation.edit')).toBeNull()
+    })
+
+    it('calls openNote when add note button is pressed', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(useTransactionConfirmation as any).mockReturnValue({
+            ...defaultHookReturn,
+            note: undefined,
+        })
+
+        const { getByText } = render(
+            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+        )
+
+        fireEvent.click(getByText('send_funds.add_note.button'))
+
+        expect(mockOpenNote).toHaveBeenCalledTimes(1)
+    })
+
+    it('renders SendFundsAddNotePanel when noteOpen is true', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(useTransactionConfirmation as any).mockReturnValue({
+            ...defaultHookReturn,
+            noteOpen: true,
+        })
+
+        const { getByTestId } = render(
+            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+        )
+
+        expect(getByTestId('add-note-panel')).toBeTruthy()
+    })
+
+    it('does not render SendFundsAddNotePanel when noteOpen is false', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(useTransactionConfirmation as any).mockReturnValue({
+            ...defaultHookReturn,
+            noteOpen: false,
+        })
+
+        const { queryByTestId } = render(
+            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+        )
+
+        expect(queryByTestId('add-note-panel')).toBeNull()
+    })
+
+    it('calls closeNote when note panel close is triggered', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(useTransactionConfirmation as any).mockReturnValue({
+            ...defaultHookReturn,
+            noteOpen: true,
+        })
+
+        const { getByTestId } = render(
+            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+        )
+
+        fireEvent.click(getByTestId('close-note-panel'))
+
+        expect(mockCloseNote).toHaveBeenCalledTimes(1)
+    })
+
+    it('passes onNext to useTransactionConfirmation', () => {
+        render(<SendFundsTransactionConfirmation onNext={mockOnNext} />)
+
+        expect(useTransactionConfirmation).toHaveBeenCalledWith(mockOnNext)
+    })
+})

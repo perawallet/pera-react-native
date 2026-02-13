@@ -464,7 +464,8 @@
             "max": "MAX",
             "next": "Next",
             "error_title": "Invalid Amount",
-            "error_body": "Please enter an amount greater than {{min}}."
+            "error_body": "Please enter an amount greater than {{min}}.",
+            "error_exceeds_max": "The amount exceeds your available balance."
         },
         "destination": {
             "error_title": "Something went wrong",

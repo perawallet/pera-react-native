@@ -32,6 +32,13 @@ export const NavigationHeader = (props: NavigationHeaderProps) => {
     const { t } = useLanguage()
 
     const title = useMemo(() => {
+        if (typeof props.options?.headerTitle === 'function') {
+            return props.options.headerTitle({
+                children: props.options?.title ?? props.route?.name ?? '',
+                tintColor: undefined,
+            })
+        }
+
         const headerTitle =
             typeof props.options?.headerTitle === 'string'
                 ? props.options?.headerTitle
@@ -44,25 +51,41 @@ export const NavigationHeader = (props: NavigationHeaderProps) => {
         return title
     }, [props.options?.headerTitle, props.options?.title, props.route?.name, t])
 
+    const left = useMemo(() => {
+        if (props.options?.headerLeft) {
+            return props.options.headerLeft({
+                canGoBack: !!props.navigation?.canGoBack(),
+            })
+        }
+
+        if (props.navigation?.canGoBack()) {
+            return (
+                <PWIcon
+                    style={styles.backButton}
+                    name='chevron-left'
+                    onPress={props.navigation?.goBack}
+                />
+            )
+        }
+
+        return null
+    }, [props.options?.headerLeft, props.navigation, styles.backButton])
+
     return (
         <PWToolbar
             style={styles.container}
-            left={
-                !!props.navigation?.canGoBack() && (
-                    <PWIcon
-                        style={styles.backButton}
-                        name='chevron-left'
-                        onPress={props.navigation?.goBack}
-                    />
-                )
-            }
+            left={left}
             center={
-                <PWText
-                    variant='h4'
-                    style={styles.title}
-                >
-                    {title}
-                </PWText>
+                typeof title === 'string' ? (
+                    <PWText
+                        variant='h4'
+                        style={styles.title}
+                    >
+                        {title}
+                    </PWText>
+                ) : (
+                    title
+                )
             }
             right={props.options?.headerRight?.({})}
         />

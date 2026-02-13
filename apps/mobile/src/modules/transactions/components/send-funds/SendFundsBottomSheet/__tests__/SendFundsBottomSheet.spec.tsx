@@ -44,23 +44,6 @@ vi.mock('@components/core', () => ({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         <div {...rest}>{data?.map((item: any) => renderItem({ item }))}</div>
     ),
-    PWTabView: {
-        createNavigator: () => ({
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            Navigator: ({ children }: any) => (
-                <div data-testid='tab-navigator'>{children}</div>
-            ),
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            Screen: ({ children }: any) => (
-                <div>
-                    {typeof children === 'function'
-                        ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                          children({ navigation: {} } as any)
-                        : children}
-                </div>
-            ),
-        }),
-    },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWHeader: ({ children, title }: any) => (
         <div>
@@ -69,6 +52,17 @@ vi.mock('@components/core', () => ({
         </div>
     ),
     PWSkeleton: () => <div data-testid='skeleton' />,
+}))
+
+vi.mock('@react-navigation/native', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    NavigationContainer: ({ children }: any) => <div>{children}</div>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    NavigationIndependentTree: ({ children }: any) => <div>{children}</div>,
+}))
+
+vi.mock('../../SendFundsRoutes', () => ({
+    SendFundsRoutes: () => <div data-testid='send-funds-routes' />,
 }))
 
 vi.mock(
@@ -100,24 +94,6 @@ vi.mock('react-native', async () => {
         useWindowDimensions: () => ({ width: 375, height: 812 }),
     }
 })
-
-vi.mock('../../AssetSelection/SendFundsAssetSelectionView', () => ({
-    SendFundsAssetSelectionView: () => <div data-testid='asset-selection' />,
-}))
-vi.mock('../../InputView/SendFundsInputView', () => ({
-    SendFundsInputView: () => <div data-testid='input-amount' />,
-}))
-vi.mock('../../SelectDestination/SendFundsSelectDestination', () => ({
-    SendFundsSelectDestination: () => <div data-testid='select-destination' />,
-}))
-vi.mock(
-    '../../TransactionConfirmation/SendFundsTransactionConfirmation',
-    () => ({
-        SendFundsTransactionConfirmation: () => (
-            <div data-testid='confirm-transaction' />
-        ),
-    }),
-)
 
 describe('SendFundsBottomSheet', () => {
     const mockOnClose = vi.fn()

@@ -10,192 +10,62 @@
  limitations under the License
  */
 
-import { useMemo, useState } from 'react'
 import {
     PWButton,
-    PWHeader,
+    PWDivider,
     PWIcon,
     PWText,
     PWTouchableOpacity,
     PWView,
-    bottomSheetNotifier,
 } from '@components/core'
-import { useSendFunds } from '@modules/transactions/hooks'
-import {
-    DEFAULT_PRECISION,
-    formatCurrency,
-} from '@perawallet/wallet-core-shared'
+import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 
 import { KeyValueRow } from '@components/KeyValueRow'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
-import { Divider, useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
-import { useToast } from '@hooks/useToast'
-import { AddNotePanel } from '../AddNotePanel'
-import {
-    useAccountAssetBalanceQuery,
-    useSelectedAccount,
-    useTransactionSigner,
-} from '@perawallet/wallet-core-accounts'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
-import {
-    ALGO_ASSET,
-    ALGO_ASSET_ID,
-    toDecimalUnits,
-    toWholeUnits,
-    useAssetFiatPricesQuery,
-    useAssetsQuery,
-} from '@perawallet/wallet-core-assets'
+import { SendFundsAddNotePanel } from '../SendFundsAddNotePanel'
+import { ALGO_ASSET, toWholeUnits } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    useAlgorandClient,
-    useSuggestedParametersQuery,
-} from '@perawallet/wallet-core-blockchain'
 import { LoadingView } from '@components/LoadingView'
+import { useTransactionConfirmation } from '@modules/transactions/hooks/send-funds/useTransactionConfirmation'
 
 export type SendFundsTransactionConfirmationProps = {
     onNext: () => void
-    onBack: () => void
 }
 
 export const SendFundsTransactionConfirmation = ({
     onNext,
-    onBack,
 }: SendFundsTransactionConfirmationProps) => {
-    const { theme } = useTheme()
     const styles = useStyles()
-    const { selectedAsset, amount, destination, note } = useSendFunds()
-    const { signTransactions } = useTransactionSigner()
-    const algokit = useAlgorandClient(signTransactions)
-
-    const { data: assets } = useAssetsQuery()
-    const asset = useMemo(() => {
-        if (!selectedAsset?.assetId) return null
-        return assets.get(selectedAsset?.assetId)
-    }, [selectedAsset, assets])
-
-    const selectedAccount = useSelectedAccount()
-    const { showToast } = useToast()
-    const [noteOpen, setNoteOpen] = useState(false)
-    const { preferredFiatCurrency } = useCurrency()
     const { t } = useLanguage()
-    const { data: fiatPrices } = useAssetFiatPricesQuery()
-    const fiatPrice = useMemo<Decimal | null>(() => {
-        const price = selectedAsset
-            ? fiatPrices.get(selectedAsset?.assetId)?.fiatPrice
-            : null
-        if (price) {
-            return amount?.mul(price) ?? null
-        }
-        return null
-    }, [selectedAsset, fiatPrices, amount])
+    const {
+        asset,
+        amount,
+        destination,
+        selectedAccount,
+        fiatPrice,
+        preferredFiatCurrency,
+        params,
+        paramsPending,
+        currentBalance,
+        currentBalancePending,
+        note,
+        noteOpen,
+        openNote,
+        closeNote,
+        handleConfirm,
+        isReady,
+    } = useTransactionConfirmation(onNext)
 
-    const { data: params, isPending: paramsPending } =
-        useSuggestedParametersQuery()
-
-    const openNote = () => {
-        setNoteOpen(true)
-    }
-
-    const closeNote = () => {
-        setNoteOpen(false)
-    }
-
-    const { data: currentBalance, isPending: currentBalancePending } =
-        useAccountAssetBalanceQuery(
-            selectedAccount ?? undefined,
-            selectedAsset?.assetId,
-        )
-
-    const onSuccess = () => {
-        showToast({
-            title: 'Transfer Successful',
-            body: `You successfully sent ${formatCurrency(
-                amount!,
-                asset?.decimals ?? DEFAULT_PRECISION,
-                asset?.unitName ?? '',
-                'en-US',
-                false,
-                undefined,
-                2,
-            )} ${asset?.unitName ?? ''}.`,
-            type: 'success',
-        })
-        onNext()
-    }
-
-    const handleConfirm = async () => {
-        if (
-            !selectedAccount ||
-            !selectedAsset ||
-            !destination ||
-            !amount ||
-            !asset
-        ) {
-            showToast(
-                {
-                    title: 'Invalid transaction',
-                    body: 'Something appears to have gone wrong with this transaction.',
-                    type: 'error',
-                },
-                {
-                    notifier: bottomSheetNotifier.current ?? undefined,
-                },
-            )
-            return
-        }
-
-        try {
-            if (selectedAsset.assetId === ALGO_ASSET_ID) {
-                await algokit.send.payment({
-                    sender: selectedAccount!.address,
-                    receiver: destination!,
-                    amount: amount.toNumber().microAlgo(),
-                    note,
-                })
-
-                onSuccess()
-            } else {
-                await algokit.send.assetTransfer({
-                    sender: selectedAccount!.address,
-                    receiver: destination!,
-                    amount: BigInt(
-                        toDecimalUnits(amount.toNumber(), asset).toString(),
-                    ),
-                    assetId: BigInt(selectedAsset.assetId),
-                    note,
-                })
-
-                onSuccess()
-            }
-        } catch (error) {
-            showToast(
-                {
-                    title: 'Error sending transaction',
-                    body: `${error}`,
-                    type: 'error',
-                },
-                {
-                    notifier: bottomSheetNotifier.current ?? undefined,
-                },
-            )
-        }
-    }
-
-    if (!selectedAccount || !selectedAsset || !amount || !asset) {
+    if (!isReady) {
         return <LoadingView variant='circle' />
     }
 
     return (
         <PWView style={styles.container}>
-            <PWHeader
-                leftIcon='chevron-left'
-                title={t('send_funds.confirmation.title')}
-                onLeftPress={onBack}
-            />
             <KeyValueRow title={t('send_funds.confirmation.amount')}>
                 <CurrencyDisplay
                     variant='h3'
@@ -211,19 +81,15 @@ export const SendFundsTransactionConfirmation = ({
                     precision={asset?.decimals ?? DEFAULT_PRECISION}
                     minPrecision={DEFAULT_PRECISION}
                     showSymbol
-                    value={fiatPrice ? amount.mul(fiatPrice) : null}
+                    value={fiatPrice ? amount!.mul(fiatPrice) : null}
                 />
             </KeyValueRow>
-            <Divider style={styles.divider} />
+            <PWDivider />
             {!!selectedAccount && (
                 <KeyValueRow title={t('send_funds.confirmation.account')}>
                     <AccountDisplay
                         account={selectedAccount}
                         showChevron={false}
-                        iconProps={{
-                            width: theme.spacing.xl,
-                            height: theme.spacing.xl,
-                        }}
                     />
                 </KeyValueRow>
             )}
@@ -249,7 +115,7 @@ export const SendFundsTransactionConfirmation = ({
                     isLoading={paramsPending}
                 />
             </KeyValueRow>
-            <Divider style={styles.divider} />
+            <PWDivider />
             {currentBalance && (
                 <KeyValueRow
                     title={t('send_funds.confirmation.current_balance')}
@@ -268,10 +134,11 @@ export const SendFundsTransactionConfirmation = ({
                         minPrecision={DEFAULT_PRECISION}
                         showSymbol
                         value={currentBalance.fiatValue}
+                        style={styles.secondaryAmount}
                     />
                 </KeyValueRow>
             )}
-            <Divider style={styles.divider} />
+            <PWDivider />
             <KeyValueRow title={t('send_funds.confirmation.note')}>
                 {!!note && <PWText>{note}</PWText>}
                 {!!note && (
@@ -308,7 +175,7 @@ export const SendFundsTransactionConfirmation = ({
                 />
             </PWView>
 
-            <AddNotePanel
+            <SendFundsAddNotePanel
                 isVisible={noteOpen}
                 onClose={closeNote}
             />

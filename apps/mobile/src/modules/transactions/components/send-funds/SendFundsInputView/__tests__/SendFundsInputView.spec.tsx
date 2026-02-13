@@ -1,0 +1,312 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { render, screen, fireEvent } from '@test-utils/render'
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import { SendFundsInputView } from '../SendFundsInputView'
+import { useInputView } from '@modules/transactions/hooks/send-funds/useInputView'
+import Decimal from 'decimal.js'
+
+vi.mock('@components/core', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWButton: vi.fn(({ title, onPress, isDisabled }: any) => (
+        <button
+            onClick={onPress}
+            data-disabled={isDisabled ? true : undefined}
+        >
+            {title}
+        </button>
+    )),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWView: vi.fn(({ children }: any) => <div>{children}</div>),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWText: vi.fn(({ children }: any) => <span>{children}</span>),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWHeader: vi.fn(({ children }: any) => <div>{children}</div>),
+}))
+
+vi.mock('@components/CurrencyDisplay', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    CurrencyDisplay: vi.fn(({ value, currency }: any) => (
+        <span>
+            {value?.toString()} {currency}
+        </span>
+    )),
+}))
+
+vi.mock('@components/NumberPad', () => ({
+    NumberPad: vi.fn(() => <div data-testid='number-pad' />),
+}))
+
+vi.mock('@components/LoadingView', () => ({
+    LoadingView: vi.fn(() => <div data-testid='loading-view' />),
+}))
+
+vi.mock('@modules/assets/components/AssetItem/AccountAssetItemView', () => ({
+    AccountAssetItemView: vi.fn(() => <div data-testid='account-asset-item' />),
+}))
+
+vi.mock('@modules/accounts/components/AccountDisplay', () => ({
+    AccountDisplay: vi.fn(() => <div data-testid='account-display' />),
+}))
+
+vi.mock('../../SendFundsAddNotePanel', () => ({
+    SendFundsAddNotePanel: vi.fn(() => (
+        <div data-testid='send-funds-add-note-panel' />
+    )),
+}))
+
+vi.mock('../../SendFundsInfoPanel/SendFundsInfoPanel', () => ({
+    SendFundsInfoPanel: vi.fn(() => (
+        <div data-testid='send-funds-info-panel' />
+    )),
+}))
+
+vi.mock('@modules/transactions/hooks/send-funds/useInputView', () => ({
+    useInputView: vi.fn(),
+}))
+
+vi.mock('@modules/transactions/hooks', () => ({
+    useSendFunds: vi.fn(() => ({
+        canSelectAsset: false,
+        note: null,
+    })),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useSelectedAccount: vi.fn(() => null),
+}))
+
+vi.mock('@perawallet/wallet-core-currencies', () => ({
+    useCurrency: vi.fn(() => ({
+        preferredFiatCurrency: 'USD',
+    })),
+}))
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string) => key,
+    }),
+}))
+
+vi.mock('@hooks/useModalState', () => ({
+    useModalState: () => ({
+        isOpen: false,
+        open: vi.fn(),
+        close: vi.fn(),
+    }),
+}))
+
+const mockHandleNext = vi.fn()
+const mockSetMax = vi.fn()
+const mockHandleKey = vi.fn()
+
+const defaultInputViewReturn = {
+    asset: { name: 'Algorand', unitName: 'ALGO', decimals: 6 },
+    selectedAsset: { assetId: 0 },
+    params: { minFee: 1000 },
+    accountInformation: { amount: 1000000n, minBalance: 100000n },
+    cryptoValue: null,
+    fiatValue: null,
+    setMax: mockSetMax,
+    handleKey: mockHandleKey,
+    handleNext: mockHandleNext,
+}
+
+describe('SendFundsInputView', () => {
+    const onNext = vi.fn()
+    const onBack = vi.fn()
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+        ;(useInputView as Mock).mockReturnValue(defaultInputViewReturn)
+    })
+
+    it('shows LoadingView when asset is missing', () => {
+        ;(useInputView as Mock).mockReturnValue({
+            ...defaultInputViewReturn,
+            asset: null,
+        })
+
+        render(
+            <SendFundsInputView
+                onNext={onNext}
+                onBack={onBack}
+            />,
+        )
+
+        expect(screen.getByTestId('loading-view')).toBeTruthy()
+    })
+
+    it('shows LoadingView when selectedAsset is missing', () => {
+        ;(useInputView as Mock).mockReturnValue({
+            ...defaultInputViewReturn,
+            selectedAsset: null,
+        })
+
+        render(
+            <SendFundsInputView
+                onNext={onNext}
+                onBack={onBack}
+            />,
+        )
+
+        expect(screen.getByTestId('loading-view')).toBeTruthy()
+    })
+
+    it('shows LoadingView when params is missing', () => {
+        ;(useInputView as Mock).mockReturnValue({
+            ...defaultInputViewReturn,
+            params: null,
+        })
+
+        render(
+            <SendFundsInputView
+                onNext={onNext}
+                onBack={onBack}
+            />,
+        )
+
+        expect(screen.getByTestId('loading-view')).toBeTruthy()
+    })
+
+    it('shows LoadingView when accountInformation is missing', () => {
+        ;(useInputView as Mock).mockReturnValue({
+            ...defaultInputViewReturn,
+            accountInformation: null,
+        })
+
+        render(
+            <SendFundsInputView
+                onNext={onNext}
+                onBack={onBack}
+            />,
+        )
+
+        expect(screen.getByTestId('loading-view')).toBeTruthy()
+    })
+
+    it('renders amount display when data is ready', () => {
+        ;(useInputView as Mock).mockReturnValue({
+            ...defaultInputViewReturn,
+            cryptoValue: '10',
+        })
+
+        render(
+            <SendFundsInputView
+                onNext={onNext}
+                onBack={onBack}
+            />,
+        )
+
+        expect(screen.getByText('10 ALGO')).toBeTruthy()
+    })
+
+    it('shows "--" when fiatValue is null', () => {
+        ;(useInputView as Mock).mockReturnValue({
+            ...defaultInputViewReturn,
+            cryptoValue: '10',
+            fiatValue: null,
+        })
+
+        render(
+            <SendFundsInputView
+                onNext={onNext}
+                onBack={onBack}
+            />,
+        )
+
+        expect(screen.getByText('--')).toBeTruthy()
+    })
+
+    it('renders fiat CurrencyDisplay when fiatValue is present', () => {
+        ;(useInputView as Mock).mockReturnValue({
+            ...defaultInputViewReturn,
+            cryptoValue: '10',
+            fiatValue: Decimal('25.50'),
+        })
+
+        render(
+            <SendFundsInputView
+                onNext={onNext}
+                onBack={onBack}
+            />,
+        )
+
+        expect(screen.getByText('25.5 USD')).toBeTruthy()
+    })
+
+    it('disables next button when cryptoValue is falsy', () => {
+        ;(useInputView as Mock).mockReturnValue({
+            ...defaultInputViewReturn,
+            cryptoValue: null,
+        })
+
+        render(
+            <SendFundsInputView
+                onNext={onNext}
+                onBack={onBack}
+            />,
+        )
+
+        const nextButton = screen.getByText('send_funds.input.next')
+        expect(nextButton.closest('[data-disabled]')).toBeTruthy()
+    })
+
+    it('enables next button when cryptoValue is present', () => {
+        ;(useInputView as Mock).mockReturnValue({
+            ...defaultInputViewReturn,
+            cryptoValue: '10',
+        })
+
+        render(
+            <SendFundsInputView
+                onNext={onNext}
+                onBack={onBack}
+            />,
+        )
+
+        const nextButton = screen.getByText('send_funds.input.next')
+        expect(nextButton.closest('[data-disabled]')).toBeNull()
+    })
+
+    it('calls handleNext when next button is pressed', () => {
+        ;(useInputView as Mock).mockReturnValue({
+            ...defaultInputViewReturn,
+            cryptoValue: '10',
+        })
+
+        render(
+            <SendFundsInputView
+                onNext={onNext}
+                onBack={onBack}
+            />,
+        )
+
+        fireEvent.click(screen.getByText('send_funds.input.next'))
+
+        expect(mockHandleNext).toHaveBeenCalledTimes(1)
+    })
+
+    it('calls setMax when max button is pressed', () => {
+        render(
+            <SendFundsInputView
+                onNext={onNext}
+                onBack={onBack}
+            />,
+        )
+
+        fireEvent.click(screen.getByText('send_funds.input.max'))
+
+        expect(mockSetMax).toHaveBeenCalledTimes(1)
+    })
+})

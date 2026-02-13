@@ -18,9 +18,9 @@ import { useStyles } from './styles'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import { NumberPad } from '@components/NumberPad'
 import { useSendFunds } from '@modules/transactions/hooks'
-import { AddNotePanel } from '../AddNotePanel'
+import { SendFundsAddNotePanel } from '../SendFundsAddNotePanel'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { SendFundsInfoPanel } from '../InfoPanel/SendFundsInfoPanel'
+import { SendFundsInfoPanel } from '../SendFundsInfoPanel/SendFundsInfoPanel'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { LoadingView } from '@components/LoadingView'
@@ -141,7 +141,7 @@ export const SendFundsInputView = ({
                 isDisabled={!cryptoValue}
             />
 
-            <AddNotePanel
+            <SendFundsAddNotePanel
                 isVisible={noteState.isOpen}
                 onClose={noteState.close}
             />

@@ -18,14 +18,9 @@ import {
     PWText,
     PWView,
 } from '@components/core'
-import { usePreferences } from '@perawallet/wallet-core-settings'
-import { useEffect, useState } from 'react'
-import { UserPreferences } from '@constants/user-preferences'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import { useWebView } from '@hooks/usePeraWebviewInterface'
-import { v7 as uuid } from 'uuid'
-import { config } from '@perawallet/wallet-core-config'
+import { useSendFundsInfoPanel } from './useSendFundsInfoPanel'
 
 export type SendFundsInfoPanelProps = {
     onClose: () => void
@@ -37,33 +32,9 @@ export const SendFundsInfoPanel = ({
     ...rest
 }: SendFundsInfoPanelProps) => {
     const styles = useStyles()
-    const { getPreference, setPreference } = usePreferences()
-    const [forceOpen, setForceOpen] = useState(false)
-    const hasAgreed = getPreference(UserPreferences.spendAgreed)
     const { t } = useLanguage()
-    const { pushWebView } = useWebView()
-
-    useEffect(() => {
-        if (!hasAgreed) {
-            setTimeout(() => {
-                setForceOpen(true)
-            }, 300)
-        } else {
-            setForceOpen(false)
-        }
-    }, [hasAgreed])
-
-    const handleOpenInfoLink = () => {
-        pushWebView({
-            id: uuid(),
-            url: config.sendFundsFaqUrl,
-        })
-    }
-
-    const handleClose = () => {
-        setPreference(UserPreferences.spendAgreed, true)
-        onClose()
-    }
+    const { forceOpen, handleOpenInfoLink, handleClose } =
+        useSendFundsInfoPanel(onClose)
 
     return (
         <PWBottomSheet

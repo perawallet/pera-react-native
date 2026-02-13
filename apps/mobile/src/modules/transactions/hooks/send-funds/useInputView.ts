@@ -77,12 +77,16 @@ export const useInputView = (onNext: () => void) => {
 
     const maxAmount = useMemo(() => {
         if (selectedAsset?.assetId === ALGO_ASSET_ID) {
-            const minFee = toWholeUnits(params?.minFee ?? 0, ALGO_ASSET)
-            const amount = Decimal(accountInformation?.amount ?? 0)
-            const maxAmount = amount.sub(
-                accountInformation?.minBalance ?? +minFee,
+            const balance = toWholeUnits(
+                accountInformation?.amount ?? 0n,
+                ALGO_ASSET,
             )
-            return Decimal.max(maxAmount, Decimal(0))
+            const minBalance = toWholeUnits(
+                accountInformation?.minBalance ?? 0n,
+                ALGO_ASSET,
+            )
+            const fee = toWholeUnits(params?.minFee ?? 0, ALGO_ASSET)
+            return Decimal.max(balance.sub(minBalance).sub(fee), Decimal(0))
         } else {
             return Decimal.max(tokenBalance ?? Decimal(0), Decimal(0))
         }
@@ -118,11 +122,10 @@ export const useInputView = (onNext: () => void) => {
         }
 
         if (Decimal(value).gt(maxAmount)) {
-            //TODO: show popup with explanation
             showToast(
                 {
                     title: t('send_funds.input.error_title'),
-                    body: t('send_funds.input.error_body', { min: 0 }),
+                    body: t('send_funds.input.error_exceeds_max'),
                     type: 'error',
                 },
                 {
@@ -140,6 +143,13 @@ export const useInputView = (onNext: () => void) => {
     const handleKey = useCallback(
         (key?: string) => {
             if (key) {
+                if (key === '.' && (value ?? '').includes('.')) {
+                    return
+                }
+                if (key === '.' && !value) {
+                    setValue('0.')
+                    return
+                }
                 setValue((value ?? '') + key)
             } else {
                 if (value?.length) {
