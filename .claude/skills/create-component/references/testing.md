@@ -1,22 +1,4 @@
----
-trigger: always_on
----
-
-# Testing Patterns
-
-All tests use Vitest and React Native Testing Library.
-
-## File Naming
-
-- Use `.spec.tsx` extension
-- Colocate with component in `__tests__` directory
-
-## Testing Principles
-
-1. **Behavior Only**: Do not test static styles or text rendering unless conditional.
-2. **AAA Pattern**: Arrange, Act, Assert.
-3. **Atomic**: Keep tests focused on a single behavior.
-4. **Naming**: `it('does something when event happens')`
+# Component Testing Reference
 
 ## Component Test Template
 
@@ -51,7 +33,6 @@ describe('PWButton', () => {
         )
 
         // Act
-        // Use click instead of press when using react-testing-library (web)
         fireEvent.click(screen.getByRole('button'))
 
         // Assert
@@ -78,3 +59,10 @@ describe('useAllAccounts', () => {
     })
 })
 ```
+
+## Testing Principles
+
+1. **Behavior Only**: Do not test static styles or text rendering unless conditional
+2. **AAA Pattern**: Arrange, Act, Assert
+3. **Atomic**: Keep tests focused on a single behavior
+4. **Naming**: `it('does something when event happens')`
