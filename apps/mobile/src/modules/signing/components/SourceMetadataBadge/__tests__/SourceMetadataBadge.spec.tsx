@@ -33,6 +33,10 @@ vi.mock('@components/core', () => ({
     ),
 }))
 
+vi.mock('@perawallet/wallet-core-shared', () => ({
+    stripUrlScheme: (url?: string) => url,
+}))
+
 vi.mock('../styles', () => ({
     useStyles: () => ({
         container: {},
