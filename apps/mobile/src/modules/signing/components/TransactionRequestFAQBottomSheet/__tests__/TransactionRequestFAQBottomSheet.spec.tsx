@@ -21,7 +21,7 @@ const mockGetPreference = vi.fn()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: vi.fn(() => ({
-        pendingSignRequests: [],
+        currentRequest: null,
     })),
 }))
 
@@ -66,6 +66,7 @@ vi.mock('../styles', () => ({
         icon: {},
         message: {},
         warning: {},
+        button: {},
     }),
 }))
 
@@ -81,7 +82,7 @@ describe('TransactionRequestFAQBottomSheet', () => {
 
     test('does not render when no pending sign requests', () => {
         vi.mocked(useSigningRequest).mockReturnValue({
-            pendingSignRequests: [],
+            currentRequest: null,
         } as unknown as ReturnType<typeof useSigningRequest>)
 
         vi.mocked(usePreferences).mockReturnValue({
@@ -96,7 +97,7 @@ describe('TransactionRequestFAQBottomSheet', () => {
 
     test('does not render when preference is already set', () => {
         vi.mocked(useSigningRequest).mockReturnValue({
-            pendingSignRequests: [{ id: 'req-1' }],
+            currentRequest: { id: 'req-1', type: 'transactions' },
         } as unknown as ReturnType<typeof useSigningRequest>)
 
         mockGetPreference.mockReturnValue(true)
@@ -115,7 +116,7 @@ describe('TransactionRequestFAQBottomSheet', () => {
 
     test('renders when pending sign requests exist and preference is not set', () => {
         vi.mocked(useSigningRequest).mockReturnValue({
-            pendingSignRequests: [{ id: 'req-1' }],
+            currentRequest: { id: 'req-1', type: 'transactions' },
         } as unknown as ReturnType<typeof useSigningRequest>)
 
         mockGetPreference.mockReturnValue(undefined)
@@ -143,7 +144,7 @@ describe('TransactionRequestFAQBottomSheet', () => {
 
     test('calls setPreference on Close button press', () => {
         vi.mocked(useSigningRequest).mockReturnValue({
-            pendingSignRequests: [{ id: 'req-1' }],
+            currentRequest: { id: 'req-1', type: 'transactions' },
         } as unknown as ReturnType<typeof useSigningRequest>)
 
         mockGetPreference.mockReturnValue(undefined)
