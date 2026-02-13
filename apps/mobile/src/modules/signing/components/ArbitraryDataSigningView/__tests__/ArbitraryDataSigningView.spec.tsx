@@ -12,9 +12,10 @@
 
 import React from 'react'
 import { render } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ArbitraryDataSigningView } from '../ArbitraryDataSigningView'
 import { ArbitraryDataSignRequest } from '@perawallet/wallet-core-signing'
+import { useArbitraryDataSigningScreen } from '@modules/signing/screens/ArbitraryDataSigningScreen/useArbitraryDataSigningScreen'
 
 vi.mock('@components/core', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -56,7 +57,13 @@ vi.mock('@components/core', () => ({
 
 vi.mock('@perawallet/wallet-core-signing', async () => ({
     useSigningRequest: vi.fn(() => ({
+        currentRequest: null,
+        pendingSignRequests: [],
+        lastCompletedRequest: null,
+        clearLastCompletedRequest: vi.fn(),
         removeSignRequest: vi.fn(),
+        signAndSendRequest: vi.fn(),
+        rejectRequest: vi.fn(),
     })),
 }))
 
@@ -66,12 +73,15 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
 }))
 
 vi.mock(
-    '@modules/transactions/hooks/signing/useArbitraryDataSigningView',
+    '@modules/signing/screens/ArbitraryDataSigningScreen/useArbitraryDataSigningScreen',
     () => ({
-        useArbitraryDataSigningView: vi.fn(() => ({
-            approveRequest: vi.fn(),
-            rejectRequest: vi.fn(),
+        useArbitraryDataSigningScreen: vi.fn(() => ({
+            request: null,
+            isSingleSignRequest: true,
             isPending: false,
+            handleApprove: vi.fn(),
+            handleReject: vi.fn(),
+            handleDetailsPress: vi.fn(),
         })),
     }),
 )
@@ -89,6 +99,10 @@ vi.mock('../ArbitraryDataSigningDetailsView', () => ({
 }))
 
 describe('ArbitraryDataSigningView', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
     const mockSingleRequest = {
         type: 'arbitrary-data',
         transport: 'callback',
@@ -113,7 +127,19 @@ describe('ArbitraryDataSigningView', () => {
         reject: vi.fn(),
     } as unknown as ArbitraryDataSignRequest
 
+    const setupMock = (request: ArbitraryDataSignRequest) => {
+        vi.mocked(useArbitraryDataSigningScreen).mockReturnValue({
+            request,
+            isSingleSignRequest: request.data.length === 1,
+            isPending: false,
+            handleApprove: vi.fn(),
+            handleReject: vi.fn(),
+            handleDetailsPress: vi.fn(),
+        })
+    }
+
     it('renders title for arbitrary data signing', () => {
+        setupMock(mockSingleRequest)
         const { container } = render(
             <ArbitraryDataSigningView request={mockSingleRequest} />,
         )
@@ -122,6 +148,7 @@ describe('ArbitraryDataSigningView', () => {
     })
 
     it('renders cancel and confirm buttons', () => {
+        setupMock(mockSingleRequest)
         const { container } = render(
             <ArbitraryDataSigningView request={mockSingleRequest} />,
         )
@@ -131,6 +158,7 @@ describe('ArbitraryDataSigningView', () => {
     })
 
     it('shows Confirm All for multiple sign requests', () => {
+        setupMock(mockMultipleRequest)
         const { container } = render(
             <ArbitraryDataSigningView request={mockMultipleRequest} />,
         )
@@ -140,6 +168,7 @@ describe('ArbitraryDataSigningView', () => {
     })
 
     it('displays the message to be signed', () => {
+        setupMock(mockSingleRequest)
         const { container } = render(
             <ArbitraryDataSigningView request={mockSingleRequest} />,
         )
@@ -154,6 +183,7 @@ describe('ArbitraryDataSigningView', () => {
                 url: 'https://test.com',
             },
         } as unknown as ArbitraryDataSignRequest
+        setupMock(requestWithMetadata)
 
         const { container } = render(
             <ArbitraryDataSigningView request={requestWithMetadata} />,

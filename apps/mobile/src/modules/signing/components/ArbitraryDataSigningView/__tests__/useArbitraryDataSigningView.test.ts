@@ -16,7 +16,7 @@ import { useArbitraryDataSigningView } from '../useArbitraryDataSigningView'
 import {
     ArbitraryDataSignRequest,
     useSigningRequest,
-} from '../../../../../../../../packages/signing/dist'
+} from '@perawallet/wallet-core-signing'
 import { useToast } from '@hooks/useToast'
 import { AlgorandChainId } from '@perawallet/wallet-core-walletconnect'
 
@@ -72,11 +72,6 @@ describe('useArbitraryDataSigningView', () => {
             })
 
             expect(mockSignAndSend).toHaveBeenCalledWith(baseRequest)
-            expect(mockShowToast).toHaveBeenCalledWith({
-                title: 'signing.arbitrary_data_view.success_title',
-                body: 'signing.arbitrary_data_view.success_body',
-                type: 'success',
-            })
             expect(result.current.isPending).toBe(false)
         })
 

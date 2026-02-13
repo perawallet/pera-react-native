@@ -43,6 +43,7 @@ vi.mock('@react-navigation/native', () => ({
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: vi.fn(() => ({
         pendingSignRequests: [],
+        currentRequest: null,
         signAndSendRequest: mockSignAndSendRequest,
         rejectRequest: mockRejectRequest,
     })),
@@ -91,6 +92,21 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     }),
     isValidAlgorandAddress: vi.fn(() => true),
     initBlockchainStore: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-projects', () => ({
+    useProjectByUrlQuery: vi.fn(() => ({
+        data: null,
+        isLoading: false,
+        isError: false,
+        error: null,
+    })),
+    useApplicationQuery: vi.fn(() => ({
+        data: null,
+        isLoading: false,
+        isError: false,
+        error: null,
+    })),
 }))
 
 vi.mock('@modules/signing/components/FeeDisplay/useFeeWarning', () => ({
@@ -159,6 +175,7 @@ describe('TransactionSigningView', () => {
     ) => {
         vi.mocked(useSigningRequest).mockReturnValue({
             pendingSignRequests: [request],
+            currentRequest: request,
             signAndSendRequest: mockSignAndSendRequest,
             rejectRequest: mockRejectRequest,
         } as unknown as ReturnType<typeof useSigningRequest>)

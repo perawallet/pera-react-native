@@ -127,4 +127,4 @@ type LoadingState = 'idle' | 'loading' | 'success' | 'error'
 
 ## Learn More
 
-For detailed patterns and code examples, see `.agent/rules/component-patterns.md`.
+For detailed patterns and code examples, see `CLAUDE.md`.

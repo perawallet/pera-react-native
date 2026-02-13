@@ -13,7 +13,7 @@
 import {
     type ArbitraryDataSignRequest,
     useSigningRequest,
-} from '../../../../../../../packages/signing/dist'
+} from '@perawallet/wallet-core-signing'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCallback, useState } from 'react'
@@ -32,11 +32,6 @@ export const useArbitraryDataSigningView = (
         setIsPending(true)
         try {
             await signAndSendRequest(request)
-            showToast({
-                title: t('signing.arbitrary_data_view.success_title'),
-                body: t('signing.arbitrary_data_view.success_body'),
-                type: 'success',
-            })
         } catch (error) {
             await request.error?.(`${error}`)
         } finally {

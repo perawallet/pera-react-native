@@ -25,6 +25,7 @@ export const TransactionListScreen = () => {
     const {
         listItems,
         transactionCount,
+        sourceMetadata,
         handleTransactionPress,
         handleGroupPress,
         keyExtractor,
@@ -63,7 +64,10 @@ export const TransactionListScreen = () => {
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
                 ListHeaderComponent={
-                    <TransactionListHeader itemCount={transactionCount} />
+                    <TransactionListHeader
+                        itemCount={transactionCount}
+                        sourceMetadata={sourceMetadata}
+                    />
                 }
                 ItemSeparatorComponent={ItemSeparator}
                 contentContainerStyle={styles.contentContainer}

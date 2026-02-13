@@ -12,16 +12,20 @@
 
 import { PWDivider, PWText, PWView } from '@components/core'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
+import { SourceMetadataBadge } from '@modules/signing/components/SourceMetadataBadge'
+import type { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
 type TransactionListHeaderProps = {
     itemCount: number
+    sourceMetadata?: SignRequestSource
 }
 
 export const TransactionListHeader = ({
     itemCount,
+    sourceMetadata,
 }: TransactionListHeaderProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
@@ -30,6 +34,10 @@ export const TransactionListHeader = ({
     return (
         <>
             <PWView style={styles.listHeader}>
+                {!!sourceMetadata && (
+                    <SourceMetadataBadge metadata={sourceMetadata} />
+                )}
+
                 <TransactionIcon
                     type='group'
                     size='lg'

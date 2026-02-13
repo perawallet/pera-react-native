@@ -108,4 +108,3 @@ packages/accounts/src/
 
 - [Architecture](ARCHITECTURE.md) - The big picture
 - [Naming Conventions](NAMING_CONVENTIONS.md) - How to name files and code
-- For detailed patterns and examples, see `.agent/rules/component-patterns.md`

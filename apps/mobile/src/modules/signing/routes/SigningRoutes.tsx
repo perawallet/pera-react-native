@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { TransactionSignRequest } from '@perawallet/wallet-core-signing'
+import type {
+    SignRequest,
+    TransactionSignRequest,
+} from '@perawallet/wallet-core-signing'
 import { createStackNavigator } from '@react-navigation/stack'
 import { useMemo } from 'react'
 import { SigningStackParamList } from './types'
@@ -19,13 +22,15 @@ import {
     TransactionDetailsScreen,
     TransactionListScreen,
     GroupDetailScreen,
+    ArbitraryDataSigningScreen,
+    ArbitraryDataSigningDetailsScreen,
 } from '@modules/signing/screens'
 import { SettingsSecurityScreen } from '@modules/settings/screens/SettingsSecurityScreen'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { useStyles } from './styles'
 
 type SigningRoutesProps = {
-    request: TransactionSignRequest
+    request: SignRequest
 }
 
 const Stack = createStackNavigator<SigningStackParamList>()
@@ -34,10 +39,13 @@ type InitialRouteConfig = {
     name: keyof SigningStackParamList
 }
 
-const getInitialRouteConfig = (
-    request: TransactionSignRequest,
-): InitialRouteConfig => {
-    const isSingleTransaction = request.txs.length === 1
+const getInitialRouteConfig = (request: SignRequest): InitialRouteConfig => {
+    if (request.type === 'arbitrary-data') {
+        return { name: 'ArbitraryDataSigning' }
+    }
+
+    const txRequest = request as TransactionSignRequest
+    const isSingleTransaction = txRequest.txs.length === 1
 
     if (isSingleTransaction) {
         return { name: 'SingleTransaction' }
@@ -91,6 +99,16 @@ export const SigningRoutes = ({ request }: SigningRoutesProps) => {
                 name='SecuritySettings'
                 component={SettingsSecurityScreen}
                 options={{ title: 'settings.security.antispam_section' }}
+            />
+            <Stack.Screen
+                name='ArbitraryDataSigning'
+                component={ArbitraryDataSigningScreen}
+                options={{ title: 'signing.arbitrary_data_view.title' }}
+            />
+            <Stack.Screen
+                name='ArbitraryDataSigningDetails'
+                component={ArbitraryDataSigningDetailsScreen}
+                options={{ title: 'signing.arbitrary_data_view.details_title' }}
             />
         </Stack.Navigator>
     )

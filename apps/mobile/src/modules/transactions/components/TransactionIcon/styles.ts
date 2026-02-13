@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import { makeStyles, Theme } from '@rneui/themed'
 import type { TransactionIconProps } from './TransactionIcon'
 
 type StyleProps = Pick<TransactionIconProps, 'size'>
@@ -19,13 +19,15 @@ type StyleProps = Pick<TransactionIconProps, 'size'>
  * Size map for TransactionIcon container dimensions.
  * Uses consistent map pattern per project conventions.
  */
-const sizeMap: Record<NonNullable<TransactionIconProps['size']>, number> = {
-    sm: 32,
-    md: 40, // About 40x40px as requested
-    lg: 56,
-}
 
-export const useStyles = makeStyles((theme, props: StyleProps) => {
+export const useStyles = makeStyles((theme: Theme, props: StyleProps) => {
+    const sizeMap: Record<NonNullable<TransactionIconProps['size']>, number> = {
+        sm: theme.spacing.xxl,
+        md: theme.spacing['3xl'],
+        lg: theme.spacing['4xl'],
+        xl: theme.spacing['5xl'],
+    }
+
     const size = sizeMap[props.size ?? 'sm']
 
     return {

@@ -1,39 +1,185 @@
-# Pera Wallet - Claude Code Context
+# Pera Wallet
 
 React Native monorepo for Pera Wallet. **Always use `pnpm`** for all commands.
-
-## Required Reading
-
-Before writing any code, read the relevant files in `.agent/`:
-
-### Rules (Always Active)
-
-- `.agent/rules/running-commands.md` - Project commands and standards
-- `.agent/rules/component-patterns.md` - UI components and styling
-- `.agent/rules/hook-patterns.md` - Custom hooks
-- `.agent/rules/store-patterns.md` - Zustand state management
-- `.agent/rules/typescript-patterns.md` - TypeScript conventions
-- `.agent/rules/testing-patterns.md` - Writing tests
-- `.agent/rules/anti-patterns.md` - What NOT to do
-- `.agent/rules/work-completion.md` - Definition of done
-
-### Workflows
-
-- `.agent/workflows/create-component.md` - Creating new components
-- `.agent/workflows/create-hook.md` - Creating new hooks
-- `.agent/workflows/create-module.md` - Creating feature modules
-- `.agent/workflows/create-package.md` - Creating packages
-- `.agent/workflows/verify-work.md` - Pre-completion verification
-
-### Architecture Docs
-
-- `docs/ARCHITECTURE.md` - System architecture
-- `docs/FOLDER_STRUCTURE.md` - Where files go
-- `docs/NAMING_CONVENTIONS.md` - Naming rules
-
-## Quick Reference
 
 ```sh
 pnpm pre-push --no-fail-on-error    # Run before completing any task
 pnpm test                           # Run tests
 ```
+
+## Architecture
+
+- **UI layer** (`apps/mobile`): Components, screens, navigation, styling, gestures
+- **Logic layer** (`packages/*`): Data fetching, Zustand stores, business rules, API clients, crypto
+- **State**: Zustand for client state, TanStack Query for server state
+- Key packages: `accounts`, `assets`, `blockchain`, `settings`, `shared`, `platform-integration`
+
+## Styling (CRITICAL)
+
+**ALWAYS** use `makeStyles` from `@rneui/themed`. **NEVER** use `StyleSheet.create`.
+
+- Use theme tokens only (`theme.colors.*`, `theme.spacing.*`, `theme.borders.*`) — no hardcoded colors or values
+- No inline styles — all styles go in `styles.ts` next to the component
+- Export `useStyles` hook from `styles.ts`
+
+```typescript
+// styles.ts
+import { makeStyles } from '@rneui/themed'
+
+type StyleProps = { variant: 'primary' | 'secondary' }
+
+export const useStyles = makeStyles((theme, { variant }: StyleProps) => ({
+    container: {
+        backgroundColor:
+            variant === 'primary'
+                ? theme.colors.buttonPrimaryBg
+                : theme.colors.layerGrayLighter,
+        padding: theme.spacing.md,
+    },
+}))
+```
+
+## Components (CRITICAL)
+
+### PW-Prefix Wrapper Requirement
+
+All external components (from `@rneui/themed`, `react-native`, third-party) **MUST** be wrapped in `PW`-prefixed components before use. These live in `apps/mobile/src/components/core/PW[Name]/`.
+
+**ALWAYS** import core components from the barrel: `import { PWButton, PWText } from '@components/core'`
+
+Exceptions: `ActivityIndicator`, basic layout primitives used only inside PW components.
+
+### Component Locations
+
+| Type            | Location                                           | Prefix          |
+| --------------- | -------------------------------------------------- | --------------- |
+| Design system   | `apps/mobile/src/components/core/PW[Name]/`        | `PW`            |
+| Shared          | `apps/mobile/src/components/[Name]/`               | None            |
+| Module-specific | `apps/mobile/src/modules/[mod]/components/[Name]/` | None            |
+| Screen          | `apps/mobile/src/modules/[mod]/screens/[Name]/`    | `Screen` suffix |
+
+### Folder Structure (Required)
+
+```
+ComponentName/              # PascalCase
+├── ComponentName.tsx       # Named export only (no default exports)
+├── styles.ts               # makeStyles
+├── index.ts                # Barrel: export { ComponentName } and type
+├── __tests__/
+│   └── ComponentName.spec.tsx
+└── SubComponent.tsx        # NOT re-exported, used only by parent
+```
+
+Folder naming: component folders = `PascalCase`, grouping/utility folders = `kebab-case`.
+
+If creating a core component, update `apps/mobile/src/components/core/index.ts` barrel.
+
+## Hooks (CRITICAL)
+
+### Naming & Suffixes
+
+| Type            | Suffix         | Tech           | Example                    |
+| --------------- | -------------- | -------------- | -------------------------- |
+| Data fetch      | `Query`        | TanStack Query | `useAccountBalancesQuery`  |
+| Data mutate     | `Mutation`     | TanStack Query | `useCreateAccountMutation` |
+| Local state     | `Store`        | Zustand        | `useAccountsStore`         |
+| Component logic | Component name | React          | `useAccountCard`           |
+
+### Locations
+
+| Scope                 | Location                                                   |
+| --------------------- | ---------------------------------------------------------- |
+| Domain-level (shared) | `modules/[mod]/hooks/`                                     |
+| Screen-specific       | Colocated: `modules/[mod]/screens/[Screen]/use[Screen].ts` |
+| Component-specific    | Colocated: `[Component]/use[Component].ts`                 |
+
+### Rules
+
+- **Explicit return types** — define `type Use[Name]Result = {...}`, never expose dependency types (`UseQueryResult`, `UseMutationResult`, `StoreApi`)
+- **Complex logic MUST be extracted** from component body into a colocated `use[ComponentName]` hook
+- React Query is **REQUIRED** for all async requests; Zustand is **REQUIRED** for all local state
+- Cross-domain hooks: keep in origin domain, export via barrel, import via `@modules/[domain]`
+
+```typescript
+// Explicit return type pattern
+type UseAccountsQueryResult = {
+    accounts: Account[]
+    isLoading: boolean
+    isError: boolean
+    error: Error | null
+    refetch: () => void
+}
+
+export const useAccountsQuery = (): UseAccountsQueryResult => {
+    const query = useQuery({
+        queryKey: accountQueryKeys.all,
+        queryFn: fetchAccounts,
+    })
+    return {
+        accounts: query.data ?? [],
+        isLoading: query.isLoading,
+        isError: query.isError,
+        error: query.error,
+        refetch: query.refetch,
+    }
+}
+```
+
+## Zustand Stores
+
+- Location: `packages/[domain]/src/store/store.ts`
+- Use `createStore` with `persist` middleware and `createLazyStore` wrapper
+- **Granular selectors** — never destructure from `useStore()` directly
+- Every store must include `resetState()` method (implements `BaseStoreState`)
+- Separate `State` and `Actions` types, combine as `Store = State & Actions`
+
+## TypeScript
+
+- `type` for props, unions, simple shapes; `interface` for data models that may be extended
+- Boolean props: prefix with `is`, `has`, `can`, `should` (`isLoading`, `hasError`)
+- Event handler props: `on` prefix (`onPress`); internal handlers: `handle` prefix (`handlePress`)
+- **Never** use `any` — use `unknown` with type guards or define proper types
+- Named exports only — no default exports
+
+## Import Order
+
+```typescript
+// 1. React
+import React, { useState, useCallback } from 'react'
+// 2. Third-party
+import { useQuery } from '@tanstack/react-query'
+// 3. @perawallet packages
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+// 4. Path aliases (@components, @modules, @hooks, etc.)
+import { PWButton } from '@components/core'
+// 5. Relative imports
+import { useStyles } from './styles'
+```
+
+## Testing
+
+- **Vitest + React Native Testing Library**
+- Files: `.spec.tsx` extension in `__tests__/` directory (colocated)
+- Test **behavior only** — not styles or static text
+- **AAA pattern**: Arrange, Act, Assert
+- Import from `@test-utils/render` for `render`, `fireEvent`, `screen`
+- Hook tests: use `renderHook` from `@testing-library/react`
+
+## Work Completion
+
+Before reporting any task complete:
+
+1. `pnpm pre-push --no-fail-on-error` must pass
+2. `pnpm test` must pass
+3. Tests written for any new code
+4. For major changes: `pnpm build` must pass
+
+## Skills
+
+Use these slash commands for guided workflows:
+
+- `/create-component` — Create a new component with correct structure
+- `/create-hook` — Create a new hook with correct naming and types
+- `/create-module` — Create a new feature module with screens and navigation
+- `/create-package` — Create a new business logic package
+- `/verify-work` — Run pre-completion verification checks

@@ -173,7 +173,8 @@
             "failed_title": "Failed to load page",
             "reload": "Reload",
             "failed_body": "An error occurred loading this page. Please check your internet connection and try again."
-        }
+        },
+        "done": "Done"
     },
     "contacts": {
         "edit_contact": {
@@ -558,13 +559,11 @@
     "signing": {
         "view_details": "View Transaction Details",
         "arbitrary_data_view": {
-            "title": "Request",
+            "title": "Data Signing Request",
             "body": "Data Signing Request",
             "details_title": "Arbitrary Signing Details",
             "show_details": "Show Details",
-            "on_behalf_of": "Signing On Behalf Of",
-            "success_title": "Request Approved",
-            "success_body": "The data has been signed."
+            "on_behalf_of": "Signing On Behalf Of"
         },
         "arbitrary_data_details": {
             "title": "{{name}} is asking you to sign some data.",
@@ -581,9 +580,7 @@
             "invalid_title": "Invalid Transaction",
             "invalid_body": "There does not appear to be a valid transaction",
             "transaction_failed_title": "Signing Failed",
-            "transaction_failed_body": "The transaction failed to send. Please try again.",
-            "success_title": "Transaction signed",
-            "success_body": "The transaction has been signed and sent."
+            "transaction_failed_body": "The transaction failed to send. Please try again."
         },
         "transactions": {
             "title": "Review Transactions",
@@ -598,6 +595,17 @@
         "unknown_request_type": {
             "title": "Unknown Request Type",
             "body": "The request type is unknown."
+        },
+        "signing_completed": {
+            "transaction_title": "Transaction Processing",
+            "transaction_body": "Your transaction has been sent successfully and is being processed.",
+            "data_title": "Data Signeing Successful",
+            "data_body": "Your data has been signed successfully and sent to the requesting application."
+        },
+        "transaction_request_faq": {
+            "title": "Transaction Request FAQ",
+            "body": "External applications, also called dApps, can initiate transaction requests independently from Pera Wallet. Please ensure you review these transactions carefully before approving and signing them.",
+            "warning": "All transactions are irreversible. As these requests are outside Pera Wallet's control, never approve transactions from a dApp you don't know."
         }
     },
     "transactions": {

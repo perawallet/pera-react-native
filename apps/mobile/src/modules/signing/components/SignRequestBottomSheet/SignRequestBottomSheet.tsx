@@ -18,21 +18,21 @@ import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 
 export function SignRequestBottomSheet() {
-    const { pendingSignRequests } = useSigningRequest()
+    const { pendingSignRequests, lastCompletedRequest } = useSigningRequest()
     const nextRequest = pendingSignRequests.at(0)
     const { height } = useWindowDimensions()
     const [isVisible, setIsVisible] = React.useState(false)
 
     useEffect(() => {
         setIsVisible(false)
-        if (nextRequest) {
+        if (nextRequest && !lastCompletedRequest) {
             // we defer here to force the bottom sheet to close and reopen, as a visual cue
             // to the user that it's a new request.
             deferToNextCycle(() => {
                 setIsVisible(true)
             })
         }
-    }, [pendingSignRequests])
+    }, [pendingSignRequests, lastCompletedRequest])
 
     return (
         <PWBottomSheet
