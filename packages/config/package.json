@@ -13,7 +13,7 @@
   },
   "scripts": {
     "generate:config": "bash ../../tools/generate-config.sh",
-    "build": "vite build",
+    "build": "pnpm generate:config && vite build",
     "dev": "pnpm generate:config && vite build --watch",
     "preview": "vite preview",
     "test": "vitest run",

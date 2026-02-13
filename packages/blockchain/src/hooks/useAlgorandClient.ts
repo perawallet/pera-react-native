@@ -12,7 +12,6 @@
 
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { useMemo } from 'react'
-import { Networks } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import {
@@ -23,19 +22,16 @@ import {
 import { encodeSignedTransactions } from '@algorandfoundation/algokit-utils/transact'
 
 export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
-    const { network } = useNetwork()
+    const { networkConfig, network } = useNetwork()
 
     return useMemo(() => {
-        const isMainnet = network === Networks.mainnet
         const algodConfig = {
-            server: isMainnet ? config.mainnetAlgodUrl : config.testnetAlgodUrl,
+            server: networkConfig.algodUrl,
             token: config.algodApiKey,
         }
         const indexerConfig = {
-            server: isMainnet
-                ? config.mainnetIndexerUrl
-                : config.testnetIndexerUrl,
-            token: config.algodApiKey,
+            server: networkConfig.indexerUrl,
+            token: config.indexerApiKey,
         }
         const client = AlgorandClient.fromConfig({ algodConfig, indexerConfig })
         if (signer) {

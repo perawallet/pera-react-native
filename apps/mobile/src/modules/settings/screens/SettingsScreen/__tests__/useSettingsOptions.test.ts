@@ -25,6 +25,10 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         termsOfServiceUrl: 'https://terms.example.com',
         privacyPolicyUrl: 'https://privacy.example.com',
     },
+    Networks: {
+        testnet: 'testnet',
+        mainnet: 'mainnet',
+    },
 }))
 
 describe('useSettingsOptions', () => {
