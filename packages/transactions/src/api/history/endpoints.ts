@@ -69,11 +69,11 @@ const buildQueryParams = (
     }
 
     if (params.afterTime !== undefined) {
-        queryParams.start_date = params.afterTime
+        queryParams.after_time = params.afterTime
     }
 
     if (params.beforeTime !== undefined) {
-        queryParams.end_date = params.beforeTime
+        queryParams.before_time = params.beforeTime
     }
 
     return queryParams

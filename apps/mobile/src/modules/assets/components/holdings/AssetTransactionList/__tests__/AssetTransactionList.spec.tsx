@@ -96,7 +96,10 @@ describe('AssetTransactionList', () => {
 
     it('renders transactions title and buttons', () => {
         render(
-            <AssetTransactionList account={mockAccount} asset={mockAsset} />,
+            <AssetTransactionList
+                account={mockAccount}
+                asset={mockAsset}
+            />,
         )
         expect(screen.getByText('Transactions')).toBeTruthy()
         expect(screen.getByText('Filter')).toBeTruthy()
@@ -124,7 +127,10 @@ describe('AssetTransactionList', () => {
         } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         render(
-            <AssetTransactionList account={mockAccount} asset={mockAsset} />,
+            <AssetTransactionList
+                account={mockAccount}
+                asset={mockAsset}
+            />,
         )
 
         const csvButton = screen.getByText('CSV')
@@ -153,7 +159,10 @@ describe('AssetTransactionList', () => {
         } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         render(
-            <AssetTransactionList account={mockAccount} asset={mockAsset} />,
+            <AssetTransactionList
+                account={mockAccount}
+                asset={mockAsset}
+            />,
         )
 
         // When isLoading is true, PWButton shows ActivityIndicator
@@ -180,7 +189,10 @@ describe('AssetTransactionList', () => {
         } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         render(
-            <AssetTransactionList account={mockAccount} asset={mockAsset} />,
+            <AssetTransactionList
+                account={mockAccount}
+                asset={mockAsset}
+            />,
         )
 
         expect(screen.getByText('No transactions yet')).toBeTruthy()
@@ -191,7 +203,10 @@ describe('AssetTransactionList', () => {
 
     it('calls useAssetTransactionList with correct props', () => {
         render(
-            <AssetTransactionList account={mockAccount} asset={mockAsset} />,
+            <AssetTransactionList
+                account={mockAccount}
+                asset={mockAsset}
+            />,
         )
 
         expect(useAssetTransactionList).toHaveBeenCalledWith({
@@ -239,7 +254,10 @@ describe('AssetTransactionList', () => {
         } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         render(
-            <AssetTransactionList account={mockAccount} asset={mockAsset} />,
+            <AssetTransactionList
+                account={mockAccount}
+                asset={mockAsset}
+            />,
         )
 
         // Empty state should not be shown when there are transactions
@@ -266,7 +284,10 @@ describe('AssetTransactionList', () => {
         } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         render(
-            <AssetTransactionList account={mockAccount} asset={mockAsset} />,
+            <AssetTransactionList
+                account={mockAccount}
+                asset={mockAsset}
+            />,
         )
 
         // Should show loading indicator
@@ -276,7 +297,10 @@ describe('AssetTransactionList', () => {
 
     it('renders custom children in header', () => {
         render(
-            <AssetTransactionList account={mockAccount} asset={mockAsset}>
+            <AssetTransactionList
+                account={mockAccount}
+                asset={mockAsset}
+            >
                 <div>Custom Header Content</div>
             </AssetTransactionList>,
         )
@@ -304,7 +328,10 @@ describe('AssetTransactionList', () => {
         } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         render(
-            <AssetTransactionList account={mockAccount} asset={mockAsset} />,
+            <AssetTransactionList
+                account={mockAccount}
+                asset={mockAsset}
+            />,
         )
 
         // Empty state should not be shown while loading
