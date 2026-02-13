@@ -1,7 +1,10 @@
 {
   "extends": "@react-native/typescript-config",
   "compilerOptions": {
-    "types": ["vitest", "vitest/globals"],
+    "types": [
+      "vitest",
+      "vitest/globals"
+    ],
     "baseUrl": "src",
     "paths": {
       "@components/*": [
@@ -33,11 +36,14 @@
       ],
       "@test-utils/*": [
         "test-utils/*"
+      ],
+      "@utils/*": [
+        "utils/*"
       ]
     },
     "lib": [
-        "esnext",
-        "dom"
+      "esnext",
+      "dom"
     ]
   },
   "include": [

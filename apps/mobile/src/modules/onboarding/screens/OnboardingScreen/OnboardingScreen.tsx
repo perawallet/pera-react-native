@@ -59,6 +59,7 @@ export const OnboardingScreen = () => {
                         {t('onboarding.main_screen.new_to_algo')}
                     </PWText>
                     <PanelButton
+                        testID='onboarding_create_wallet_button'
                         title={t('onboarding.main_screen.create_wallet')}
                         titleWeight='h4'
                         onPress={handleCreateAccount}
@@ -73,6 +74,7 @@ export const OnboardingScreen = () => {
                         {t('onboarding.main_screen.already_have_account')}
                     </PWText>
                     <PanelButton
+                        testID='onboarding_import_account_button'
                         title={t('onboarding.main_screen.import_account')}
                         titleWeight='h4'
                         onPress={handleImportAccount}
