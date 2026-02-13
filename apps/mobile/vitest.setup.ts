@@ -1526,6 +1526,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         error: vi.fn(),
     },
     truncateAlgorandAddress: vi.fn(a => a),
+    stripUrlScheme: vi.fn(url => url),
     DEFAULT_PRECISION: 6,
     ALGO_EXPLORER_URL: 'https://explorer.perawallet.app',
     Networks: { mainnet: 'mainnet', testnet: 'testnet' },
@@ -1565,6 +1566,22 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         isInitialized: vi.fn(() => false),
     },
     useClearAllData: vi.fn(() => vi.fn().mockResolvedValue(undefined)),
+}))
+
+// Mock @perawallet/wallet-core-projects
+vi.mock('@perawallet/wallet-core-projects', () => ({
+    useProjectByUrlQuery: vi.fn(() => ({
+        data: null,
+        isLoading: false,
+        isError: false,
+        error: null,
+    })),
+    useApplicationQuery: vi.fn(() => ({
+        data: null,
+        isLoading: false,
+        isError: false,
+        error: null,
+    })),
 }))
 
 // Mock @perawallet/wallet-core-walletconnect

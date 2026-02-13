@@ -563,9 +563,7 @@
             "body": "Data Signing Request",
             "details_title": "Arbitrary Signing Details",
             "show_details": "Show Details",
-            "on_behalf_of": "Signing On Behalf Of",
-            "success_title": "Request Approved",
-            "success_body": "The data has been signed."
+            "on_behalf_of": "Signing On Behalf Of"
         },
         "arbitrary_data_details": {
             "title": "{{name}} is asking you to sign some data.",
@@ -582,9 +580,7 @@
             "invalid_title": "Invalid Transaction",
             "invalid_body": "There does not appear to be a valid transaction",
             "transaction_failed_title": "Signing Failed",
-            "transaction_failed_body": "The transaction failed to send. Please try again.",
-            "success_title": "Transaction signed",
-            "success_body": "The transaction has been signed and sent."
+            "transaction_failed_body": "The transaction failed to send. Please try again."
         },
         "transactions": {
             "title": "Review Transactions",

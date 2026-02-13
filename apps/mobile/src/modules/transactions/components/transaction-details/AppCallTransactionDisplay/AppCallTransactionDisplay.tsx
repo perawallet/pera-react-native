@@ -26,6 +26,7 @@ import { TransactionFooter } from '../TransactionFooter/TransactionFooter'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { InnerTransactionsPanel } from './InnerTransactionsPanel'
 import { AppCallDetailsPanel } from './AppCallDetailsPanel'
+import { ApplicationDisplay } from '@modules/projects/components/ApplicationDisplay'
 
 export type AppCallTransactionDisplayProps = {
     transaction: PeraDisplayableTransaction
@@ -71,7 +72,10 @@ export const AppCallTransactionDisplay = ({
             <PWView style={styles.detailContainer}>
                 {!isAppCreation(transaction) && (
                     <KeyValueRow title={t('transactions.app_call.app_id')}>
-                        <PWText>#{appId}</PWText>
+                        <ApplicationDisplay
+                            applicationId={appId}
+                            valueOnlyOnFallback
+                        />
                     </KeyValueRow>
                 )}
 

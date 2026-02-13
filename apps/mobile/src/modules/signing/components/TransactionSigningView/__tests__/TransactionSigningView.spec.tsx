@@ -94,6 +94,21 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     initBlockchainStore: vi.fn(),
 }))
 
+vi.mock('@perawallet/wallet-core-projects', () => ({
+    useProjectByUrlQuery: vi.fn(() => ({
+        data: null,
+        isLoading: false,
+        isError: false,
+        error: null,
+    })),
+    useApplicationQuery: vi.fn(() => ({
+        data: null,
+        isLoading: false,
+        isError: false,
+        error: null,
+    })),
+}))
+
 vi.mock('@modules/signing/components/FeeDisplay/useFeeWarning', () => ({
     useFeeWarning: vi.fn(() => ({
         showWarning: false,

@@ -14,6 +14,7 @@ import { describe, test, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { SourceMetadataBadge } from '../SourceMetadataBadge'
 import type { SignRequestSource } from '@perawallet/wallet-core-signing'
+import { useProjectByUrlQuery } from '@perawallet/wallet-core-projects'
 
 vi.mock('@components/core', () => ({
     PWView: ({ children, ...props }: { children: React.ReactNode }) => (
@@ -35,6 +36,19 @@ vi.mock('@components/core', () => ({
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     stripUrlScheme: (url?: string) => url,
+}))
+
+vi.mock('@perawallet/wallet-core-projects', () => ({
+    useProjectByUrlQuery: vi.fn(() => ({
+        data: null,
+        isLoading: false,
+        isError: false,
+        error: null,
+    })),
+}))
+
+vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+    useNetwork: vi.fn(() => ({ network: 'mainnet', setNetwork: vi.fn() })),
 }))
 
 vi.mock('../styles', () => ({
@@ -117,5 +131,80 @@ describe('SourceMetadataBadge', () => {
 
         const img = screen.getByTestId('PWImage')
         expect(img.getAttribute('src')).toBe('https://example.com/icon.png')
+    })
+
+    test('shows verified icon when project is verified', () => {
+        vi.mocked(useProjectByUrlQuery).mockReturnValue({
+            data: {
+                name: 'Tinyman',
+                verificationTier: 'verified',
+            },
+        } as ReturnType<typeof useProjectByUrlQuery>)
+
+        const metadata: SignRequestSource = {
+            name: 'Tinyman',
+            url: 'https://tinyman.org',
+        }
+
+        render(<SourceMetadataBadge metadata={metadata} />)
+
+        expect(screen.getByTestId('PWIcon-assets/verified')).toBeDefined()
+    })
+
+    test('shows suspicious icon when project is suspicious', () => {
+        vi.mocked(useProjectByUrlQuery).mockReturnValue({
+            data: {
+                name: 'Suspicious App',
+                verificationTier: 'suspicious',
+            },
+        } as ReturnType<typeof useProjectByUrlQuery>)
+
+        const metadata: SignRequestSource = {
+            name: 'Suspicious App',
+            url: 'https://suspicious.com',
+        }
+
+        render(<SourceMetadataBadge metadata={metadata} />)
+
+        expect(screen.getByTestId('PWIcon-assets/suspicious')).toBeDefined()
+    })
+
+    test('falls back to project name when metadata name is missing', () => {
+        vi.mocked(useProjectByUrlQuery).mockReturnValue({
+            data: {
+                name: 'Project Name',
+                verificationTier: 'unverified',
+            },
+        } as ReturnType<typeof useProjectByUrlQuery>)
+
+        const metadata: SignRequestSource = {
+            url: 'https://example.com',
+        }
+
+        render(<SourceMetadataBadge metadata={metadata} />)
+
+        expect(screen.getByText('Project Name')).toBeDefined()
+    })
+
+    test('falls back to project logo when metadata icons are missing', () => {
+        vi.mocked(useProjectByUrlQuery).mockReturnValue({
+            data: {
+                name: 'Tinyman',
+                logoPng: 'https://tinyman.org/project-logo.png',
+                verificationTier: 'verified',
+            },
+        } as ReturnType<typeof useProjectByUrlQuery>)
+
+        const metadata: SignRequestSource = {
+            name: 'Tinyman',
+            url: 'https://tinyman.org',
+        }
+
+        render(<SourceMetadataBadge metadata={metadata} />)
+
+        const img = screen.getByTestId('PWImage')
+        expect(img.getAttribute('src')).toBe(
+            'https://tinyman.org/project-logo.png',
+        )
     })
 })

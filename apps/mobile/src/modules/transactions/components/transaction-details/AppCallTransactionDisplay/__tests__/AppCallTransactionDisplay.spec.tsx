@@ -48,7 +48,7 @@ describe('AppCallTransactionDisplay', () => {
             <AppCallTransactionDisplay transaction={mockTransaction} />,
         )
 
-        expect(container.textContent).toContain('#123')
+        expect(container.textContent).toContain('123')
     })
 
     it('renders onCompletion correctly', () => {

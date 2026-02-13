@@ -13,33 +13,14 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        alignItems: 'center',
-        gap: theme.spacing.xl,
-        marginVertical: theme.spacing.xl,
-    },
-    icon: {
-        width: theme.spacing['4xl'],
-        height: theme.spacing['4xl'],
-        borderRadius: theme.spacing['4xl'],
-    },
-    iconContainer: {
-        width: theme.spacing['4xl'],
-        height: theme.spacing['4xl'],
-        borderRadius: theme.spacing['4xl'],
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: theme.colors.layerGrayLighter,
-    },
-    titleContainer: {
-        alignItems: 'center',
-    },
-    nameRow: {
+    container: {},
+    row: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.xs,
+        gap: theme.spacing.sm,
     },
-    title: {
-        textAlign: 'center',
+    caption: {
+        color: theme.colors.textGray,
+        lineHeight: theme.spacing.md,
     },
 }))
