@@ -605,6 +605,11 @@
             "transaction_body": "Your transaction has been sent successfully and is being processed.",
             "data_title": "Data Signeing Successful",
             "data_body": "Your data has been signed successfully and sent to the requesting application."
+        },
+        "transaction_request_faq": {
+            "title": "Transaction Request FAQ",
+            "body": "External applications, also called dApps, can initiate transaction requests independently from Pera Wallet. Please ensure you review these transactions carefully before approving and signing them.",
+            "warning": "All transactions are irreversible. As these requests are outside Pera Wallet's control, never approve transactions from a dApp you don't know."
         }
     },
     "transactions": {
