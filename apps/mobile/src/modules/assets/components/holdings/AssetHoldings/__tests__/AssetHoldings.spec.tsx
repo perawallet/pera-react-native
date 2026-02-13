@@ -65,6 +65,16 @@ vi.mock('../../AssetActionButtons/AssetActionButtons', () => ({
         </div>
     ),
 }))
+vi.mock('../../AssetNotificationButton/AssetNotificationButton', () => ({
+    AssetNotificationButton: () => (
+        <div data-testid='notification-button'>Notification</div>
+    ),
+}))
+vi.mock('../../AssetFavoriteButton/AssetFavoriteButton', () => ({
+    AssetFavoriteButton: () => (
+        <div data-testid='favorite-button'>Favorite</div>
+    ),
+}))
 
 describe('AssetHoldings', () => {
     it('renders asset title with name', () => {

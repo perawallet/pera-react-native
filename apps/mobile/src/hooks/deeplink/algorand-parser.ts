@@ -22,8 +22,8 @@ import {
     DiscoverBrowserDeeplink,
 } from './types'
 import { parseAlgorandURI } from './arc90-parser'
-import { config } from '@perawallet/wallet-core-config'
-import { Networks } from '@perawallet/wallet-core-shared'
+// config and Networks removed because unused
+import { getNetworkConfig } from '@perawallet/wallet-core-config'
 
 /**
  * Parse Algorand URIs (algorand://) according to ARC-90
@@ -124,10 +124,8 @@ export const parseAlgorandUri = (url: string): AnyParsedDeeplink | null => {
     if (parsed.type === 'assetquery') {
         const { assetId, network } = parsed
         // Redirect to Pera Explorer
-        const baseUrl =
-            network === Networks.testnet
-                ? config.testnetExplorerUrl
-                : config.mainnetExplorerUrl
+        const targetNetwork = network === 'testnet' ? 'testnet' : 'mainnet'
+        const baseUrl = getNetworkConfig(targetNetwork).explorerUrl
 
         return {
             type: DeeplinkType.DISCOVER_BROWSER,
@@ -139,10 +137,8 @@ export const parseAlgorandUri = (url: string): AnyParsedDeeplink | null => {
     if (parsed.type === 'appquery') {
         const { appId, network } = parsed
         // Redirect to Pera Explorer
-        const baseUrl =
-            network === Networks.testnet
-                ? config.testnetExplorerUrl
-                : config.mainnetExplorerUrl
+        const targetNetwork = network === 'testnet' ? 'testnet' : 'mainnet'
+        const baseUrl = getNetworkConfig(targetNetwork).explorerUrl
 
         return {
             type: DeeplinkType.DISCOVER_BROWSER,

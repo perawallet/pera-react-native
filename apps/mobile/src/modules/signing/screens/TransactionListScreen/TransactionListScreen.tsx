@@ -24,7 +24,6 @@ export const TransactionListScreen = () => {
     const styles = useStyles()
     const {
         listItems,
-        totalFee,
         transactionCount,
         handleTransactionPress,
         handleGroupPress,
@@ -70,7 +69,7 @@ export const TransactionListScreen = () => {
                 contentContainerStyle={styles.contentContainer}
                 showsVerticalScrollIndicator={false}
             />
-            <TransactionListFooter totalFee={totalFee} />
+            <TransactionListFooter />
         </PWView>
     )
 }

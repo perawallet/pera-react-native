@@ -10,11 +10,9 @@
  limitations under the License
  */
 
-export const Networks = {
-    testnet: 'testnet',
-    mainnet: 'mainnet',
-} as const
+import { Network, Networks } from '@perawallet/wallet-core-config'
 
-export type Network = (typeof Networks)[keyof typeof Networks]
+export { Networks }
+export type { Network }
 
 export type HistoryPeriod = 'one-year' | 'one-month' | 'one-week' | 'one-day'

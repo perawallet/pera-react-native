@@ -20,17 +20,23 @@ import { AssetActionButtons } from '../AssetActionButtons/AssetActionButtons'
 import { AssetTransactionList } from '../AssetTransactionList/AssetTransactionList'
 
 import { useStyles } from './styles'
-import { AssetTitle } from '@modules/assets/components/AssetTitle'
+import {
+    AssetFavoriteButton,
+    AssetNotificationButton,
+    AssetTitle,
+} from '@modules/assets/components'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
-import { RoundButton } from '@components/RoundButton'
 import {
     AccountBalanceHistoryItem,
     useAccountAssetBalanceQuery,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { PeraAsset } from '@perawallet/wallet-core-assets'
+import {
+    PeraAsset,
+    useSingleAssetDetailsQuery,
+} from '@perawallet/wallet-core-assets'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 
@@ -41,6 +47,7 @@ export type AssetHoldingsProps = {
 
 export const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
     const styles = useStyles()
+    const { data: assetDetails } = useSingleAssetDetailsQuery(asset.assetId)
     const { preferredFiatCurrency } = useCurrency()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AccountBalanceHistoryItem>()
@@ -80,15 +87,18 @@ export const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
                     <PWView style={styles.assetRow}>
                         <AssetTitle asset={asset} />
                         <PWView style={styles.headerIcons}>
-                            <RoundButton
-                                icon='bell'
-                                size='sm'
-                                variant='secondary'
+                            <AssetNotificationButton
+                                assetId={asset.assetId}
+                                isNotificationsEnabled={
+                                    assetDetails?.peraMetadata
+                                        ?.isPriceAlertEnabled
+                                }
                             />
-                            <RoundButton
-                                icon='star'
-                                size='sm'
-                                variant='secondary'
+                            <AssetFavoriteButton
+                                assetId={asset.assetId}
+                                isFavorite={
+                                    assetDetails?.peraMetadata?.isFavorited
+                                }
                             />
                         </PWView>
                     </PWView>

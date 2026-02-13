@@ -59,6 +59,8 @@ export type PeraAsset = {
 export const DEFAULT_ASSET_METADATA: PeraAssetMetadata = {
     isDeleted: false,
     verificationTier: PeraAssetVerificationTier.unverified,
+    isFavorited: false,
+    isPriceAlertEnabled: false,
 }
 
 export const DEFAULT_ASSET_VALUES: PeraAsset = {
@@ -91,6 +93,8 @@ export type PeraAssetMetadata = {
     readonly availableOnDiscoverMobile?: string
     isFrozen?: boolean
     canClawback?: boolean
+    isFavorited?: boolean
+    isPriceAlertEnabled?: boolean
 }
 
 export const ALGO_ASSET_ID = '0'
@@ -168,6 +172,8 @@ export type AssetResponse = {
     type?: PeraAssetType
     category: number | null
     readonly labels?: PeraAssetLabel[]
+    is_favorited?: boolean
+    is_price_alert_enabled?: boolean
 }
 
 export type AssetsResponse = {

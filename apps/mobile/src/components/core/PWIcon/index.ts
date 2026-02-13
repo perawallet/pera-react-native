@@ -11,4 +11,6 @@
  */
 
 export { PWIcon } from './PWIcon'
-export type { IconName, PWIconProps, PWIconSize, PWIconVariant } from './PWIcon'
+export type { PWIconProps } from './PWIcon'
+export type { PWIconSize, PWIconVariant } from './types'
+export type { IconName } from './constants'

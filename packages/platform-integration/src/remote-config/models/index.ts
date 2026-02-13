@@ -12,6 +12,8 @@
 
 export const RemoteConfigKeys = {
     welcome_message: 'welcome_message',
+    fee_warning_standard_fee: 'fee_warning_standard_fee',
+    fee_warning_usd_threshold: 'fee_warning_usd_threshold',
 } as const
 
 export type RemoteConfigKey =
@@ -22,6 +24,8 @@ export const RemoteConfigDefaults: Record<
     string | boolean | number
 > = {
     welcome_message: 'Hello',
+    fee_warning_standard_fee: 0.001,
+    fee_warning_usd_threshold: 0.01,
 }
 
 export type RemoteConfigStore = {

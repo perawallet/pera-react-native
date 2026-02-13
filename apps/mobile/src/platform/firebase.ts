@@ -13,6 +13,7 @@
 import {
     FirebaseCrashlyticsTypes,
     getCrashlytics,
+    recordError,
     setCrashlyticsCollectionEnabled,
 } from '@react-native-firebase/crashlytics'
 import {
@@ -21,6 +22,7 @@ import {
     getRemoteConfig,
     setConfigSettings,
     setDefaults,
+    getValue,
 } from '@react-native-firebase/remote-config'
 import {
     FirebaseMessagingTypes,
@@ -78,7 +80,7 @@ export class RNFirebaseService
             if (!this.remoteConfig) {
                 return fallback ?? ''
             }
-            return this.remoteConfig.getValue(key).asString()
+            return getValue(this.remoteConfig, key).asString()
         } catch {
             return fallback ?? ''
         }
@@ -88,7 +90,7 @@ export class RNFirebaseService
             if (!this.remoteConfig) {
                 return fallback ?? false
             }
-            return this.remoteConfig.getValue(key).asBoolean()
+            return getValue(this.remoteConfig, key).asBoolean()
         } catch {
             return fallback ?? false
         }
@@ -98,7 +100,7 @@ export class RNFirebaseService
             if (!this.remoteConfig) {
                 return fallback ?? 0
             }
-            return this.remoteConfig.getValue(key).asNumber()
+            return getValue(this.remoteConfig, key).asNumber()
         } catch {
             return fallback ?? 0
         }
@@ -182,10 +184,14 @@ export class RNFirebaseService
     }
 
     recordNonFatalError(error: unknown): void {
+        if (!this.crashlytics) {
+            return
+        }
+
         if (error instanceof Error) {
-            this.crashlytics?.recordError(error)
+            recordError(this.crashlytics, error)
         } else {
-            this.crashlytics?.recordError(new Error(String(error)))
+            recordError(this.crashlytics, new Error(String(error)))
         }
     }
 
