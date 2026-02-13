@@ -97,6 +97,38 @@ describe('CSV Export Utils', () => {
         it('throws error for invalid end date', () => {
             expect(() => buildCsvQueryParams({ endDate: 'invalid' })).toThrow()
         })
+
+        it('includes asset_id when provided', () => {
+            expect(buildCsvQueryParams(undefined, 12345)).toEqual({
+                asset_id: 12345,
+            })
+        })
+
+        it('omits asset_id when undefined', () => {
+            expect(buildCsvQueryParams(undefined, undefined)).toEqual({})
+        })
+
+        it('combines date range and asset_id', () => {
+            expect(
+                buildCsvQueryParams(
+                    {
+                        startDate: '2024-01-01',
+                        endDate: '2024-12-31',
+                    },
+                    12345,
+                ),
+            ).toEqual({
+                start_date: '2024-01-01',
+                end_date: '2024-12-31',
+                asset_id: 12345,
+            })
+        })
+
+        it('includes asset_id with zero value', () => {
+            expect(buildCsvQueryParams(undefined, 0)).toEqual({
+                asset_id: 0,
+            })
+        })
     })
 
     describe('countCsvRows', () => {

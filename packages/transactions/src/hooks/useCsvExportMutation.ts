@@ -41,6 +41,8 @@ export type ExportMutationParams = {
     dateRange?: DateRange
     /** Optional custom filename */
     filename?: string
+    /** Optional asset ID filter */
+    assetId?: number
 }
 
 /**
@@ -108,6 +110,7 @@ export const useCsvExportMutation = (
                 accountAddress: exportParams.accountAddress,
                 dateRange: exportParams.dateRange,
                 filename: exportParams.filename,
+                assetId: exportParams.assetId,
                 network,
             })
         },

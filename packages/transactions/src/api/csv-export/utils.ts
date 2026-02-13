@@ -34,8 +34,9 @@ export const generateFilename = (
  */
 export const buildCsvQueryParams = (
     dateRange?: DateRange,
-): Record<string, string> => {
-    const params: Record<string, string> = {}
+    assetId?: number,
+): Record<string, string | number> => {
+    const params: Record<string, string | number> = {}
 
     if (dateRange?.startDate) {
         if (!isValidISODate(dateRange.startDate)) {
@@ -53,6 +54,10 @@ export const buildCsvQueryParams = (
             )
         }
         params.end_date = dateRange.endDate
+    }
+
+    if (assetId !== undefined) {
+        params.asset_id = assetId
     }
 
     return params

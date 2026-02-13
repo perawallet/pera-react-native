@@ -59,7 +59,8 @@ export type FetchCsvParams = ExportCsvParams & {
 export const fetchTransactionsCsv = async (
     params: FetchCsvParams,
 ): Promise<CsvExportResult> => {
-    const { accountAddress, network, dateRange, filename, signal } = params
+    const { accountAddress, network, dateRange, filename, signal, assetId } =
+        params
 
     // Validate address format (Algorand addresses are 58 characters)
     if (!accountAddress || accountAddress.length !== 58) {
@@ -72,7 +73,7 @@ export const fetchTransactionsCsv = async (
     const endpoint = `/v1/accounts/${encodeURIComponent(accountAddress)}/export-history/`
 
     // Build query string
-    const queryParams = buildCsvQueryParams(dateRange)
+    const queryParams = buildCsvQueryParams(dateRange, assetId)
 
     try {
         const response = await queryClient<string>({
@@ -103,6 +104,7 @@ export const fetchTransactionsCsv = async (
             accountAddress,
             dateRange,
             rowCount,
+            assetId,
         }
     } catch (error) {
         if (error instanceof CsvExportError) {

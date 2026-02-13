@@ -10,12 +10,20 @@
  limitations under the License
  */
 
+import { useState } from 'react'
+import { ActivityIndicator, SectionList } from 'react-native'
 import { useStyles } from './styles'
-import { PWButton, PWFlatList, PWText, PWView } from '@components/core'
-import { PeraAsset } from '@perawallet/wallet-core-assets'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { PWButton, PWText, PWView } from '@components/core'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
+import { useAssetTransactionList } from './useAssetTransactionList'
+import { TransactionListItem } from '@modules/transactions/components/TransactionListItem'
+import { TransactionDateHeader } from '@modules/transactions/components/TransactionDateHeader'
+import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import { TransactionsFilterBottomSheet } from '@modules/accounts/components/TransactionsFilterBottomSheet'
+import type { TransactionSection } from '@modules/accounts/components/AccountHistory/useAccountHistory'
 
 export type AssetTransactionListProps = {
     account: WalletAccount
@@ -23,63 +31,135 @@ export type AssetTransactionListProps = {
     children?: React.ReactNode
 }
 
-//TODO implement fully
 export const AssetTransactionList = ({
+    account,
+    asset,
     children,
 }: AssetTransactionListProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 
-    // TODO: Replace with actual infinite query hook when added.
-    const transactions: [] = []
-    const handleEndReached = () => {
-        // fetchNextPage();
+    const {
+        sections,
+        isLoading,
+        isFetchingNextPage,
+        isEmpty,
+        handleLoadMore,
+        handleExportCsv,
+        isExportingCsv,
+        activeFilter,
+        customRange,
+        handleApplyFilter,
+        handleTransactionPress,
+    } = useAssetTransactionList({ account, asset })
+
+    const [isFilterVisible, setIsFilterVisible] = useState(false)
+
+    const renderItem = ({ item }: { item: TransactionHistoryItem }) => (
+        <TransactionListItem
+            transaction={item}
+            onPress={handleTransactionPress}
+        />
+    )
+
+    const renderSectionHeader = ({
+        section,
+    }: {
+        section: TransactionSection
+    }) => <TransactionDateHeader title={section.title} />
+
+    const keyExtractor = (item: TransactionHistoryItem) => item.id
+
+    const renderFooter = () => {
+        if (isFetchingNextPage) {
+            return (
+                <PWView style={styles.loadingFooter}>
+                    <ActivityIndicator size='small' />
+                </PWView>
+            )
+        }
+        return null
     }
 
-    const renderItem = () => {
-        return <PWText>{t('asset_details.transaction_list.label')}</PWText>
+    const renderEmptyComponent = () => {
+        if (isLoading) {
+            return (
+                <PWView style={styles.loadingContainer}>
+                    <ActivityIndicator size='large' />
+                </PWView>
+            )
+        }
+
+        return (
+            <EmptyView
+                style={styles.emptyView}
+                title={t('asset_details.transaction_list.empty_title')}
+                body={t('asset_details.transaction_list.empty_body')}
+            />
+        )
     }
 
     return (
-        <PWFlatList
-            contentContainerStyle={styles.container}
-            data={transactions}
-            renderItem={renderItem}
-            onEndReached={handleEndReached}
-            onEndReachedThreshold={0.5}
-            ListHeaderComponent={
-                <PWView>
-                    {children}
-                    <PWView style={styles.header}>
-                        <PWText variant='h4'>
-                            {t('asset_details.transaction_list.title')}
-                        </PWText>
-                        <PWView style={styles.actions}>
-                            <PWButton
-                                title={t(
-                                    'asset_details.transaction_list.filter',
-                                )}
-                                variant='link'
-                                icon='sliders'
-                                paddingStyle='dense'
-                            />
-                            <PWButton
-                                title={t('asset_details.transaction_list.csv')}
-                                variant='helper'
-                                icon='text-document'
-                                paddingStyle='dense'
-                            />
+        <>
+            <SectionList
+                sections={sections}
+                renderItem={renderItem}
+                renderSectionHeader={renderSectionHeader}
+                keyExtractor={keyExtractor}
+                contentContainerStyle={styles.container}
+                stickySectionHeadersEnabled={false}
+                onEndReached={handleLoadMore}
+                onEndReachedThreshold={0.5}
+                ListHeaderComponent={
+                    <PWView>
+                        {children}
+                        <PWView style={styles.header}>
+                            <PWText variant='h4'>
+                                {t('asset_details.transaction_list.title')}
+                            </PWText>
+                            <PWView style={styles.actions}>
+                                <PWButton
+                                    title={t(
+                                        'asset_details.transaction_list.filter',
+                                    )}
+                                    variant='link'
+                                    icon='sliders'
+                                    paddingStyle='dense'
+                                    onPress={() => setIsFilterVisible(true)}
+                                />
+                                <PWButton
+                                    title={t(
+                                        'asset_details.transaction_list.csv',
+                                    )}
+                                    variant='helper'
+                                    icon='text-document'
+                                    paddingStyle='dense'
+                                    onPress={handleExportCsv}
+                                    isLoading={isExportingCsv}
+                                />
+                            </PWView>
                         </PWView>
                     </PWView>
+                }
+                ListEmptyComponent={
+                    !isLoading && isEmpty ? renderEmptyComponent() : null
+                }
+                ListFooterComponent={renderFooter}
+            />
+
+            {isLoading && !sections.length && (
+                <PWView style={styles.loadingOverlay}>
+                    <ActivityIndicator size='large' />
                 </PWView>
-            }
-            ListEmptyComponent={
-                <EmptyView
-                    style={styles.emptyView}
-                    title={t('asset_details.transaction_list.empty_title')}
-                    body={t('asset_details.transaction_list.empty_body')}
-                />
-            }
-        />
+            )}
+
+            <TransactionsFilterBottomSheet
+                isVisible={isFilterVisible}
+                onClose={() => setIsFilterVisible(false)}
+                activeFilter={activeFilter}
+                onApplyFilter={handleApplyFilter}
+                initialCustomRange={customRange}
+            />
+        </>
     )
 }
