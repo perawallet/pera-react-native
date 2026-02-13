@@ -10,13 +10,15 @@
  limitations under the License
  */
 
-export * from './addresses'
-export * from './arrays'
-export * from './dates'
-export * from './store'
-export * from './store-registry'
-export * from './strings'
-export * from './logging'
-export * from './objects'
-export * from './async'
-export * from './urls'
+export const stripUrlScheme = (url?: string) => {
+    if (!url) {
+        return url
+    }
+
+    const index = url.indexOf('//')
+
+    if (index >= 0) {
+        return url.substring(index + 2)
+    }
+    return url
+}

@@ -52,6 +52,9 @@ declare module '@rneui/themed' {
 
         backdrop: string
 
+        //Backgrounds
+        altBackground: string
+
         //Links
         linkPrimary: string
 

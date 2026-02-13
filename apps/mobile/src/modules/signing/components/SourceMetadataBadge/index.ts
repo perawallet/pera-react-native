@@ -10,13 +10,4 @@
  limitations under the License
  */
 
-export * from './addresses'
-export * from './arrays'
-export * from './dates'
-export * from './store'
-export * from './store-registry'
-export * from './strings'
-export * from './logging'
-export * from './objects'
-export * from './async'
-export * from './urls'
+export { SourceMetadataBadge } from './SourceMetadataBadge'

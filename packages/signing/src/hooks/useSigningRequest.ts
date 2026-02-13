@@ -33,7 +33,6 @@ import {
     ERROR_I18N_KEYS,
     ErrorCategory,
     ErrorSeverity,
-    logger,
 } from '@perawallet/wallet-core-shared'
 import {
     MAX_DATA_SIGN_REQUESTS,
@@ -81,7 +80,6 @@ export const useSigningRequest = () => {
 
     const addSignRequest = useCallback(
         (request: SignRequest) => {
-            logger.info('Adding sign request', { request })
             if (
                 request.type === 'transactions' &&
                 'txs' in request &&

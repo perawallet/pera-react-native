@@ -21,45 +21,49 @@ import { PaymentSummaryHeader } from './PaymentSummaryHeader'
 import { AssetTransferSummaryHeader } from './AssetTransferSummaryHeader'
 import { AppCallSummaryHeader } from './AppCallSummaryHeader'
 import { GenericSummaryHeader } from './GenericSummaryHeader'
+import { SignRequestSource } from '@perawallet/wallet-core-signing'
+import { SourceMetadataBadge } from '../SourceMetadataBadge'
 
 export type TransactionSummaryHeaderProps = {
     transaction: PeraDisplayableTransaction
+    metadata?: SignRequestSource
 }
 
 export const TransactionSummaryHeader = ({
     transaction,
+    metadata,
 }: TransactionSummaryHeaderProps) => {
     const styles = useStyles()
     const txType = getTransactionType(transaction)
 
     return (
-        <>
-            <PWView style={styles.container}>
-                <TransactionIcon
-                    type={txType}
-                    size='md'
-                />
+        <PWView style={styles.container}>
+            {!!metadata && <SourceMetadataBadge metadata={metadata} />}
 
-                {txType === 'payment' && (
-                    <PaymentSummaryHeader transaction={transaction} />
-                )}
-                {(txType === 'asset-transfer' ||
-                    txType === 'asset-opt-in' ||
-                    txType === 'asset-opt-out' ||
-                    txType === 'asset-clawback') && (
-                    <AssetTransferSummaryHeader transaction={transaction} />
-                )}
-                {txType === 'app-call' && (
-                    <AppCallSummaryHeader transaction={transaction} />
-                )}
-                {(txType === 'key-registration' ||
-                    txType === 'asset-config' ||
-                    txType === 'heartbeat' ||
-                    txType === 'state-proof' ||
-                    txType === 'unknown') && (
-                    <GenericSummaryHeader transaction={transaction} />
-                )}
-            </PWView>
-        </>
+            <TransactionIcon
+                type={txType}
+                size='lg'
+            />
+
+            {txType === 'payment' && (
+                <PaymentSummaryHeader transaction={transaction} />
+            )}
+            {(txType === 'asset-transfer' ||
+                txType === 'asset-opt-in' ||
+                txType === 'asset-opt-out' ||
+                txType === 'asset-clawback') && (
+                <AssetTransferSummaryHeader transaction={transaction} />
+            )}
+            {txType === 'app-call' && (
+                <AppCallSummaryHeader transaction={transaction} />
+            )}
+            {(txType === 'key-registration' ||
+                txType === 'asset-config' ||
+                txType === 'heartbeat' ||
+                txType === 'state-proof' ||
+                txType === 'unknown') && (
+                <GenericSummaryHeader transaction={transaction} />
+            )}
+        </PWView>
     )
 }

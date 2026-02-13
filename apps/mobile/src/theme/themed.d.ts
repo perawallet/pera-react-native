@@ -39,6 +39,7 @@ declare module '@rneui/themed' {
         asaSuspiciousText: string
         asaSuspiciousBg: string
         backdrop: string
+        altBackground: string
         linkPrimary: string
         tabIconActive: string
         tabIconPassive: string

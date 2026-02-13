@@ -43,6 +43,7 @@ vi.mock('@react-navigation/native', () => ({
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: vi.fn(() => ({
         pendingSignRequests: [],
+        currentRequest: null,
         signAndSendRequest: mockSignAndSendRequest,
         rejectRequest: mockRejectRequest,
     })),
@@ -159,6 +160,7 @@ describe('TransactionSigningView', () => {
     ) => {
         vi.mocked(useSigningRequest).mockReturnValue({
             pendingSignRequests: [request],
+            currentRequest: request,
             signAndSendRequest: mockSignAndSendRequest,
             rejectRequest: mockRejectRequest,
         } as unknown as ReturnType<typeof useSigningRequest>)
