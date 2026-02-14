@@ -16,7 +16,7 @@ import { usePromptContainer } from '../usePromptContainer'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import { UserPreferences } from '@constants/user-preferences'
-import { PROMPT_DISPLAY_DELAY } from '@constants/ui'
+import { LONG_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 
 vi.mock('@perawallet/wallet-core-settings', () => ({
     usePreferences: vi.fn(),
@@ -62,7 +62,7 @@ describe('usePromptContainer', () => {
         const { result } = renderHook(() => usePromptContainer())
 
         act(() => {
-            vi.advanceTimersByTime(PROMPT_DISPLAY_DELAY)
+            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
         })
 
         expect(result.current.nextPrompt).toBeUndefined()
@@ -76,7 +76,7 @@ describe('usePromptContainer', () => {
         expect(result.current.nextPrompt).toBeUndefined()
 
         act(() => {
-            vi.advanceTimersByTime(PROMPT_DISPLAY_DELAY)
+            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
         })
 
         expect(result.current.nextPrompt).toBeDefined()
@@ -91,7 +91,7 @@ describe('usePromptContainer', () => {
         const { result } = renderHook(() => usePromptContainer())
 
         act(() => {
-            vi.advanceTimersByTime(PROMPT_DISPLAY_DELAY)
+            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
         })
 
         expect(result.current.nextPrompt).toBeUndefined()
@@ -103,7 +103,7 @@ describe('usePromptContainer', () => {
         const { result } = renderHook(() => usePromptContainer())
 
         act(() => {
-            vi.advanceTimersByTime(PROMPT_DISPLAY_DELAY)
+            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
         })
 
         expect(result.current.nextPrompt).toBeDefined()
@@ -126,7 +126,7 @@ describe('usePromptContainer', () => {
         const { result } = renderHook(() => usePromptContainer())
 
         act(() => {
-            vi.advanceTimersByTime(PROMPT_DISPLAY_DELAY)
+            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
         })
 
         expect(result.current.nextPrompt).toBeDefined()
@@ -164,7 +164,7 @@ describe('usePromptContainer', () => {
 
         // Start with prompt available
         act(() => {
-            vi.advanceTimersByTime(PROMPT_DISPLAY_DELAY / 2)
+            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY / 2)
         })
 
         // Change to no accounts (which should clear the timeout)
@@ -172,7 +172,7 @@ describe('usePromptContainer', () => {
         rerender()
 
         act(() => {
-            vi.advanceTimersByTime(PROMPT_DISPLAY_DELAY)
+            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
         })
 
         expect(result.current.nextPrompt).toBeUndefined()
