@@ -40,3 +40,4 @@ packages/config/src/local-overrides.ts
 .mcp.json
 opencode.json
 .idea/
+.expo/
