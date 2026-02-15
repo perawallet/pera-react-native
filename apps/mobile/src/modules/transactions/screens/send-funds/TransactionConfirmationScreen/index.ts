@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { useSendFundsStore, useSendFunds } from './send-funds/useSendFunds'
+export { TransactionConfirmationScreen } from './TransactionConfirmationScreen'

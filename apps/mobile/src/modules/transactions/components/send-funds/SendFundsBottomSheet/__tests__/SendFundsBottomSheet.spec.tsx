@@ -62,7 +62,7 @@ vi.mock('@react-navigation/native', () => ({
     NavigationIndependentTree: ({ children }: any) => <div>{children}</div>,
 }))
 
-vi.mock('../../SendFundsRoutes', () => ({
+vi.mock('../../../../routes/send-funds', () => ({
     SendFundsRoutes: () => <div data-testid='send-funds-routes' />,
 }))
 

@@ -27,7 +27,7 @@ import { useWindowDimensions } from 'react-native'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { TransactionErrorBoundary } from '@modules/transactions/components/BaseErrorBoundary/TransactionErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
-import { SendFundsRoutes } from '../SendFundsRoutes'
+import { SendFundsRoutes } from '../../../routes/send-funds'
 
 export type SendFundsBottomSheetProps = {
     assetId?: string

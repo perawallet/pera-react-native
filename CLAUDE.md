@@ -3,8 +3,10 @@
 React Native monorepo for Pera Wallet. **Always use `pnpm`** for all commands.
 
 ```sh
+pnpm build                          # Run to confirm no type/compile issues
 pnpm pre-push --no-fail-on-error    # Run before completing any task
 pnpm test                           # Run tests
+pnpm --filter mobile test -t <filterpattern>        # Run only specific mobile tests
 ```
 
 ## Architecture

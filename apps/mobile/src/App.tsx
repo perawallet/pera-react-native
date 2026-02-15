@@ -18,8 +18,8 @@ import { useBootstrapper } from './bootstrap/boostrap'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import { Persister } from '@tanstack/react-query-persist-client'
 import {
-    algorandSafeJsonSerialize,
-    algorandSafeJsonParse,
+    algorandSafeQuerySerialize,
+    algorandSafeQueryParse,
 } from '@perawallet/wallet-core-blockchain'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { RootComponent } from '@components/RootComponent'
@@ -46,8 +46,8 @@ export const App = () => {
                 const kvService = platformServices.keyValueStorage
                 const reactQueryPersistor = createAsyncStoragePersister({
                     storage: kvService,
-                    serialize: algorandSafeJsonSerialize,
-                    deserialize: algorandSafeJsonParse,
+                    serialize: algorandSafeQuerySerialize,
+                    deserialize: algorandSafeQueryParse,
                 })
 
                 setPersister(reactQueryPersistor)

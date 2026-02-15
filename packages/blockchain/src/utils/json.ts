@@ -38,9 +38,9 @@ export const algorandSafeJsonStringify = (value: unknown) => {
 
 /**
  * Round-trip safe JSON serialization that preserves bigint types.
- * Use with {@link algorandSafeJsonParse} to restore bigint values.
+ * Use with {@link algorandSafeQueryParse} to restore bigint values.
  */
-export const algorandSafeJsonSerialize = (value: unknown): string => {
+export const algorandSafeQuerySerialize = (value: unknown): string => {
     return JSON.stringify(value, (_key, value) => {
         if (typeof value === 'bigint') {
             return `${BIGINT_TAG}${value.toString()}`
@@ -50,10 +50,10 @@ export const algorandSafeJsonSerialize = (value: unknown): string => {
 }
 
 /**
- * Parses JSON produced by {@link algorandSafeJsonSerialize},
+ * Parses JSON produced by {@link algorandSafeQuerySerialize},
  * restoring tagged bigint values.
  */
-export const algorandSafeJsonParse = (data: string): unknown => {
+export const algorandSafeQueryParse = <T = unknown>(data: string): T => {
     return JSON.parse(data, (_key, value) => {
         if (typeof value === 'string' && value.startsWith(BIGINT_TAG)) {
             return BigInt(value.slice(BIGINT_TAG.length))

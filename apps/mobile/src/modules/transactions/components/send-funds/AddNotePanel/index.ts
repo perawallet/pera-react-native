@@ -10,4 +10,5 @@
  limitations under the License
  */
 
-export { useSendFundsStore, useSendFunds } from './send-funds/useSendFunds'
+export { AddNotePanel } from './AddNotePanel'
+export type { AddNotePanelProps } from './AddNotePanel'

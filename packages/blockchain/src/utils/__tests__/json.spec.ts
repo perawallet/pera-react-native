@@ -13,8 +13,8 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
     algorandSafeJsonStringify,
-    algorandSafeJsonSerialize,
-    algorandSafeJsonParse,
+    algorandSafeQuerySerialize,
+    algorandSafeQueryParse,
 } from '../json'
 import { encodeAlgorandAddress } from '../addresses'
 
@@ -132,11 +132,11 @@ describe('algorandSafeJsonStringify', () => {
     })
 })
 
-describe('algorandSafeJsonSerialize / algorandSafeJsonParse', () => {
+describe('algorandSafeQuerySerialize / algorandSafeQueryParse', () => {
     it('round-trips bigint values', () => {
         const input = { amount: 1_500_000n, minBalance: 100_000n }
-        const serialized = algorandSafeJsonSerialize(input)
-        const parsed = algorandSafeJsonParse(serialized) as typeof input
+        const serialized = algorandSafeQuerySerialize(input)
+        const parsed = algorandSafeQueryParse(serialized) as typeof input
 
         expect(parsed.amount).toBe(1_500_000n)
         expect(parsed.minBalance).toBe(100_000n)
@@ -145,8 +145,8 @@ describe('algorandSafeJsonSerialize / algorandSafeJsonParse', () => {
     it('round-trips bigint values exceeding MAX_SAFE_INTEGER', () => {
         const big = BigInt(Number.MAX_SAFE_INTEGER) + 100n
         const input = { value: big }
-        const parsed = algorandSafeJsonParse(
-            algorandSafeJsonSerialize(input),
+        const parsed = algorandSafeQueryParse(
+            algorandSafeQuerySerialize(input),
         ) as typeof input
 
         expect(parsed.value).toBe(big)
@@ -160,8 +160,8 @@ describe('algorandSafeJsonSerialize / algorandSafeJsonParse', () => {
             items: [1, 2, 3],
             nested: { key: 'val' },
         }
-        const parsed = algorandSafeJsonParse(
-            algorandSafeJsonSerialize(input),
+        const parsed = algorandSafeQueryParse(
+            algorandSafeQuerySerialize(input),
         ) as typeof input
 
         expect(parsed).toEqual(input)
@@ -173,8 +173,8 @@ describe('algorandSafeJsonSerialize / algorandSafeJsonParse', () => {
             balance: { microAlgos: 5_000_000n },
             assets: [{ assetId: 123n, amount: 1000n }],
         }
-        const parsed = algorandSafeJsonParse(
-            algorandSafeJsonSerialize(input),
+        const parsed = algorandSafeQueryParse(
+            algorandSafeQuerySerialize(input),
         ) as typeof input
 
         expect(parsed.address).toBe('ADDR')
