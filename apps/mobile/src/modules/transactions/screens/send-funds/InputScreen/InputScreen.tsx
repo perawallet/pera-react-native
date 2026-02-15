@@ -10,14 +10,7 @@
  limitations under the License
  */
 
-import {
-    PWBottomSheet,
-    PWButton,
-    PWHeader,
-    PWIcon,
-    PWText,
-    PWView,
-} from '@components/core'
+import { PWButton, PWHeader, PWText, PWView } from '@components/core'
 import Decimal from 'decimal.js'
 
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
@@ -28,6 +21,7 @@ import { useSendFunds } from '@modules/transactions/hooks'
 import { AddNotePanel } from '../../../components/send-funds/AddNotePanel'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { SendFundsInfoPanel } from '../../../components/send-funds/SendFundsInfoPanel/SendFundsInfoPanel'
+import { InsufficientBalancePanel } from '../../../components/send-funds/InsufficientBalancePanel'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { LoadingView } from '@components/LoadingView'
@@ -162,26 +156,10 @@ export const InputScreen = () => {
                 isVisible={infoState.isOpen}
                 onClose={infoState.close}
             />
-            <PWBottomSheet isVisible={isMaxExceeded}>
-                <PWView style={styles.maxExceededContainer}>
-                    <PWIcon
-                        name='info'
-                        variant='error'
-                        size='xxl'
-                    />
-                    <PWText variant='h3'>
-                        {t('send_funds.input.exceeds_max_title')}
-                    </PWText>
-                    <PWText style={styles.maxExceededBody}>
-                        {t('send_funds.input.exceeds_max_body')}
-                    </PWText>
-                    <PWButton
-                        variant='secondary'
-                        title={t('send_funds.info.i_understand')}
-                        onPress={dismissMaxExceeded}
-                    />
-                </PWView>
-            </PWBottomSheet>
+            <InsufficientBalancePanel
+                isVisible={isMaxExceeded}
+                onClose={dismissMaxExceeded}
+            />
         </PWView>
     )
 }

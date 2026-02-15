@@ -79,14 +79,5 @@ export const useStyles = makeStyles(theme => {
             fontSize: theme.spacing.md,
             marginTop: theme.spacing.xs / 2,
         },
-        maxExceededContainer: {
-            padding: theme.spacing.xl,
-            gap: theme.spacing.lg,
-            alignItems: 'center',
-        },
-        maxExceededBody: {
-            textAlign: 'center',
-            marginBottom: theme.spacing.md,
-        },
     }
 })

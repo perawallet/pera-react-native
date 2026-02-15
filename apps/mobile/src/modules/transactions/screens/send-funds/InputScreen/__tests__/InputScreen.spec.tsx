@@ -38,19 +38,11 @@ vi.mock('@components/core', () => ({
         </button>
     )),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWBottomSheet: vi.fn(({ children, isVisible }: any) =>
-        isVisible ? (
-            <div data-testid='max-exceeded-sheet'>{children}</div>
-        ) : null,
-    ),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWView: vi.fn(({ children }: any) => <div>{children}</div>),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWText: vi.fn(({ children }: any) => <span>{children}</span>),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWHeader: vi.fn(({ children }: any) => <div>{children}</div>),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWIcon: vi.fn(({ name }: any) => <div data-testid={`icon-${name}`} />),
 }))
 
 vi.mock('@components/CurrencyDisplay', () => ({
@@ -90,6 +82,12 @@ vi.mock(
         )),
     }),
 )
+
+vi.mock('../../../../components/send-funds/InsufficientBalancePanel', () => ({
+    InsufficientBalancePanel: vi.fn(() => (
+        <div data-testid='insufficient-balance-panel' />
+    )),
+}))
 
 vi.mock('../useInputScreen', () => ({
     useInputScreen: vi.fn(),

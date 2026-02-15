@@ -1,0 +1,65 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import {
+    PWBottomSheet,
+    type PWBottomSheetProps,
+    PWButton,
+    PWIcon,
+    PWText,
+    PWView,
+} from '@components/core'
+import { useStyles } from './styles'
+import { useLanguage } from '@hooks/useLanguage'
+
+export type InsufficientBalancePanelProps = {
+    onClose: () => void
+} & PWBottomSheetProps
+
+export const InsufficientBalancePanel = ({
+    isVisible,
+    onClose,
+    ...rest
+}: InsufficientBalancePanelProps) => {
+    const styles = useStyles()
+    const { t } = useLanguage()
+
+    return (
+        <PWBottomSheet
+            isVisible={isVisible}
+            {...rest}
+            innerContainerStyle={styles.container}
+        >
+            <PWIcon
+                name='info'
+                size='xxl'
+                variant='error'
+            />
+            <PWView style={styles.bodyContainer}>
+                <PWText
+                    variant='h3'
+                    style={styles.title}
+                >
+                    {t('send_funds.input.exceeds_max_title')}
+                </PWText>
+                <PWText style={styles.body}>
+                    {t('send_funds.input.exceeds_max_body')}
+                </PWText>
+                <PWButton
+                    variant='secondary'
+                    onPress={onClose}
+                    title={t('send_funds.info.i_understand')}
+                />
+            </PWView>
+        </PWBottomSheet>
+    )
+}
