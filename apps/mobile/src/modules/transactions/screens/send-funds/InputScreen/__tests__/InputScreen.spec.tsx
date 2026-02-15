@@ -38,11 +38,19 @@ vi.mock('@components/core', () => ({
         </button>
     )),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWBottomSheet: vi.fn(({ children, isVisible }: any) =>
+        isVisible ? (
+            <div data-testid='max-exceeded-sheet'>{children}</div>
+        ) : null,
+    ),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWView: vi.fn(({ children }: any) => <div>{children}</div>),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWText: vi.fn(({ children }: any) => <span>{children}</span>),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWHeader: vi.fn(({ children }: any) => <div>{children}</div>),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWIcon: vi.fn(({ name }: any) => <div data-testid={`icon-${name}`} />),
 }))
 
 vi.mock('@components/CurrencyDisplay', () => ({
@@ -123,6 +131,8 @@ const mockHandleNext = vi.fn()
 const mockSetMax = vi.fn()
 const mockHandleKey = vi.fn()
 
+const mockDismissMaxExceeded = vi.fn()
+
 const defaultInputViewReturn = {
     asset: { name: 'Algorand', unitName: 'ALGO', decimals: 6 },
     selectedAsset: { assetId: 0 },
@@ -133,6 +143,8 @@ const defaultInputViewReturn = {
     setMax: mockSetMax,
     handleKey: mockHandleKey,
     handleNext: mockHandleNext,
+    isMaxExceeded: false,
+    dismissMaxExceeded: mockDismissMaxExceeded,
 }
 
 describe('InputScreen', () => {

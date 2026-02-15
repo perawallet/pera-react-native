@@ -58,6 +58,20 @@ vi.mock('@components/core', () => ({
     PWSkeleton: () => <div data-testid='skeleton' />,
 }))
 
+vi.mock('@components/LoadingView', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    LoadingView: ({ count }: any) => (
+        <div>
+            {Array.from({ length: count ?? 1 }, (_, i) => (
+                <div
+                    key={i}
+                    data-testid='skeleton'
+                />
+            ))}
+        </div>
+    ),
+}))
+
 vi.mock('@modules/assets/components/AssetItem/AccountAssetItemView', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     AccountAssetItemView: ({ accountBalance }: any) => (

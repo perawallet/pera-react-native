@@ -43,7 +43,7 @@ export const SelectDestinationScreen = () => {
     }
 
     const handleBack = () => {
-        navigation.navigate('InputAmount')
+        navigation.goBack()
     }
 
     if (!selectedAsset || !asset) {

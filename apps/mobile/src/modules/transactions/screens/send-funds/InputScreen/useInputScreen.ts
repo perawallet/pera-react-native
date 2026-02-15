@@ -110,6 +110,8 @@ export const useInputScreen = () => {
         setValue(maxAmount.toString())
     }, [maxAmount])
 
+    const [isMaxExceeded, setIsMaxExceeded] = useState(false)
+
     const handleNext = useCallback(() => {
         if (!value || Decimal(value).lte(0)) {
             showToast(
@@ -126,16 +128,7 @@ export const useInputScreen = () => {
         }
 
         if (Decimal(value).gt(maxAmount)) {
-            showToast(
-                {
-                    title: t('send_funds.input.error_title'),
-                    body: t('send_funds.input.error_exceeds_max'),
-                    type: 'error',
-                },
-                {
-                    notifier: bottomSheetNotifier.current ?? undefined,
-                },
-            )
+            setIsMaxExceeded(true)
             return
         }
 
@@ -143,6 +136,10 @@ export const useInputScreen = () => {
         setNote(note ?? undefined)
         navigation.navigate('SelectDestination')
     }, [value, maxAmount, note, navigation, showToast, t])
+
+    const dismissMaxExceeded = useCallback(() => {
+        setIsMaxExceeded(false)
+    }, [])
 
     const handleKey = useCallback(
         (key?: string) => {
@@ -154,7 +151,16 @@ export const useInputScreen = () => {
                     setValue('0.')
                     return
                 }
-                setValue((value ?? '') + key)
+                const newValue = (value ?? '') + key
+                const decimalIndex = newValue.indexOf('.')
+                if (
+                    asset &&
+                    decimalIndex !== -1 &&
+                    newValue.length - decimalIndex - 1 > asset.decimals
+                ) {
+                    return
+                }
+                setValue(newValue)
             } else {
                 if (value?.length) {
                     const newValue = value.substring(0, value.length - 1)
@@ -166,7 +172,7 @@ export const useInputScreen = () => {
                 }
             }
         },
-        [value, setValue],
+        [value, setValue, asset?.decimals],
     )
 
     return {
@@ -184,5 +190,7 @@ export const useInputScreen = () => {
         setCryptoValue: setValue,
         note,
         setNote,
+        isMaxExceeded,
+        dismissMaxExceeded,
     }
 }

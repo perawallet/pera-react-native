@@ -13,7 +13,6 @@
 import {
     PWBottomSheet,
     type PWBottomSheetProps,
-    PWHeader,
     PWIcon,
     PWInput,
     PWText,
@@ -73,19 +72,21 @@ export const AddNotePanel = ({
         >
             <PWView style={styles.container}>
                 <PWToolbar
-                    left={<PWIcon
-                        name='cross'
-                        variant='secondary'
-                        onPress={handleClose}
-                    />}
+                    left={
+                        <PWIcon
+                            name='cross'
+                            variant='secondary'
+                            onPress={handleClose}
+                        />
+                    }
                     center={
                         <PWText variant='h4'>
                             {isEdit
                                 ? t('send_funds.confirmation.edit')
                                 : t('send_funds.add_note.button').replace(
-                                    '+ ',
-                                    '',
-                                )}{' '}
+                                      '+ ',
+                                      '',
+                                  )}{' '}
                             Note
                         </PWText>
                     }

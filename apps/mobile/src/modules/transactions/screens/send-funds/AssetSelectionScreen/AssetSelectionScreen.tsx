@@ -10,12 +10,7 @@
  limitations under the License
  */
 
-import {
-    PWFlatList,
-    PWSkeleton,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWFlatList, PWTouchableOpacity } from '@components/core'
 import {
     AssetWithAccountBalance,
     useAccountBalancesQuery,
@@ -75,7 +70,12 @@ export const AssetSelectionScreen = () => {
             data={balanceData ?? []}
             renderItem={renderItem}
             keyExtractor={item => item.assetId}
-            ListEmptyComponent={<LoadingView variant='skeleton' count={3} />}
+            ListEmptyComponent={
+                <LoadingView
+                    variant='skeleton'
+                    count={3}
+                />
+            }
         />
     )
 }

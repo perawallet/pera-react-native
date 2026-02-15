@@ -11,15 +11,13 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render } from '@test-utils/render'
+import { render, screen } from '@test-utils/render'
 import { SendFundsBottomSheet } from '../SendFundsBottomSheet'
-import { useAccountAssetBalanceQuery } from '@perawallet/wallet-core-accounts'
-import { useSendFunds } from '@modules/transactions/hooks'
+import { useSendFundsBottomSheet } from '../useSendFundsBottomSheet'
 
-const mockSetSelectedAsset = vi.fn()
-const mockSetCanSelectAsset = vi.fn()
-const mockSetOnFinished = vi.fn()
-const mockReset = vi.fn()
+vi.mock('../useSendFundsBottomSheet', () => ({
+    useSendFundsBottomSheet: vi.fn(),
+}))
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -31,28 +29,6 @@ vi.mock('@components/core', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWBottomSheet: ({ children, isVisible }: any) =>
         isVisible ? <div data-testid='bottom-sheet'>{children}</div> : null,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWView: ({ children, style, ...rest }: any) => (
-        <div
-            style={style}
-            {...rest}
-        >
-            {children}
-        </div>
-    ),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWFlatList: ({ data, renderItem, ...rest }: any) => (
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        <div {...rest}>{data?.map((item: any) => renderItem({ item }))}</div>
-    ),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWHeader: ({ children, title }: any) => (
-        <div>
-            {title}
-            {children}
-        </div>
-    ),
-    PWSkeleton: () => <div data-testid='skeleton' />,
 }))
 
 vi.mock('@react-navigation/native', () => ({
@@ -76,18 +52,6 @@ vi.mock(
     }),
 )
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: vi.fn(() => ({ address: 'test-address' })),
-    useAccountAssetBalanceQuery: vi.fn(),
-    useAccountBalancesQuery: vi.fn(() => ({
-        accountBalances: new Map(),
-    })),
-}))
-
-vi.mock('@modules/transactions/hooks', () => ({
-    useSendFunds: vi.fn(),
-}))
-
 vi.mock('react-native', async () => {
     const actual = await vi.importActual('react-native')
     return {
@@ -102,34 +66,53 @@ describe('SendFundsBottomSheet', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(useSendFunds as any).mockReturnValue({
-            canSelectAsset: true,
-            setSelectedAsset: mockSetSelectedAsset,
-            setCanSelectAsset: mockSetCanSelectAsset,
-            setOnFinished: mockSetOnFinished,
-            reset: mockReset,
-            selectedAsset: undefined,
-        })
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(useAccountAssetBalanceQuery as any).mockReturnValue({
-            data: { assetId: '123' },
+        ;(useSendFundsBottomSheet as any).mockReturnValue({
+            selectedAccount: { address: 'test-address' },
         })
     })
 
-    it('does not update store when isVisible is false', () => {
+    it('renders SendFundsRoutes when account is selected', () => {
+        render(
+            <SendFundsBottomSheet
+                isVisible={true}
+                onClose={mockOnClose}
+            />,
+        )
+
+        expect(screen.getByTestId('bottom-sheet')).toBeTruthy()
+        expect(screen.getByTestId('send-funds-routes')).toBeTruthy()
+    })
+
+    it('renders EmptyView when no account is selected', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(useSendFundsBottomSheet as any).mockReturnValue({
+            selectedAccount: null,
+        })
+
+        const { container } = render(
+            <SendFundsBottomSheet
+                isVisible={true}
+                onClose={mockOnClose}
+            />,
+        )
+
+        expect(container.textContent).toContain(
+            'send_funds.bottom_sheet.no_account_title',
+        )
+    })
+
+    it('does not render when isVisible is false', () => {
         render(
             <SendFundsBottomSheet
                 isVisible={false}
                 onClose={mockOnClose}
-                assetId='123'
             />,
         )
 
-        expect(mockSetSelectedAsset).not.toHaveBeenCalled()
-        expect(mockSetCanSelectAsset).not.toHaveBeenCalled()
+        expect(screen.queryByTestId('bottom-sheet')).toBeNull()
     })
 
-    it('updates store when isVisible is true and assetId is provided', () => {
+    it('passes isVisible, assetId and onClose to hook', () => {
         render(
             <SendFundsBottomSheet
                 isVisible={true}
@@ -138,59 +121,10 @@ describe('SendFundsBottomSheet', () => {
             />,
         )
 
-        expect(mockSetCanSelectAsset).toHaveBeenCalledWith(false)
-        expect(mockSetSelectedAsset).toHaveBeenCalledWith({ assetId: '123' })
-    })
-
-    it('does not call setSelectedAsset if asset is already selected', () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(useSendFunds as any).mockReturnValue({
-            canSelectAsset: false,
-            setSelectedAsset: mockSetSelectedAsset,
-            setCanSelectAsset: mockSetCanSelectAsset,
-            setOnFinished: mockSetOnFinished,
-            reset: mockReset,
-            selectedAsset: { assetId: '123' },
-        })
-
-        render(
-            <SendFundsBottomSheet
-                isVisible={true}
-                onClose={mockOnClose}
-                assetId='123'
-            />,
+        expect(useSendFundsBottomSheet).toHaveBeenCalledWith(
+            true,
+            '123',
+            mockOnClose,
         )
-
-        expect(mockSetSelectedAsset).not.toHaveBeenCalled()
-        expect(mockSetCanSelectAsset).not.toHaveBeenCalled()
-    })
-
-    it('updates store if assetId changes even if already not selectable', () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(useSendFunds as any).mockReturnValue({
-            canSelectAsset: false,
-            setSelectedAsset: mockSetSelectedAsset,
-            setCanSelectAsset: mockSetCanSelectAsset,
-            setOnFinished: mockSetOnFinished,
-            reset: mockReset,
-            selectedAsset: { assetId: '123' },
-        })
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(useAccountAssetBalanceQuery as any).mockReturnValue({
-            data: { assetId: '456' },
-        })
-
-        render(
-            <SendFundsBottomSheet
-                isVisible={true}
-                onClose={mockOnClose}
-                assetId='456'
-            />,
-        )
-
-        expect(mockSetSelectedAsset).toHaveBeenCalledWith({ assetId: '456' })
-        // canSelectAsset is already false, so setCanSelectAsset shouldn't be called again
-        expect(mockSetCanSelectAsset).not.toHaveBeenCalled()
     })
 })

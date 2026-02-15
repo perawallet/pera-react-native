@@ -10,10 +10,6 @@
  limitations under the License
  */
 
-import {
-    useAccountAssetBalanceQuery,
-    useSelectedAccount,
-} from '@perawallet/wallet-core-accounts'
 import { PWBottomSheet } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import {
@@ -21,13 +17,12 @@ import {
     NavigationIndependentTree,
 } from '@react-navigation/native'
 
-import { useLayoutEffect } from 'react'
 import { useStyles } from './styles'
 import { useWindowDimensions } from 'react-native'
-import { useSendFunds } from '@modules/transactions/hooks'
 import { TransactionErrorBoundary } from '@modules/transactions/components/BaseErrorBoundary/TransactionErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { SendFundsRoutes } from '../../../routes/send-funds'
+import { useSendFundsBottomSheet } from './useSendFundsBottomSheet'
 
 export type SendFundsBottomSheetProps = {
     assetId?: string
@@ -40,54 +35,14 @@ export const SendFundsBottomSheet = ({
     onClose,
     isVisible,
 }: SendFundsBottomSheetProps) => {
-    const selectedAccount = useSelectedAccount()
     const dimensions = useWindowDimensions()
     const styles = useStyles(dimensions)
     const { t } = useLanguage()
-
-    const {
-        canSelectAsset,
-        setSelectedAsset,
-        setCanSelectAsset,
-        setOnFinished,
-        reset,
-        selectedAsset,
-    } = useSendFunds()
-    const { data: assetBalance } = useAccountAssetBalanceQuery(
-        selectedAccount ?? undefined,
-        assetId,
-    )
-
-    useLayoutEffect(() => {
-        if (isVisible && assetId != null) {
-            if (canSelectAsset) {
-                setCanSelectAsset(false)
-            }
-
-            if (assetBalance && selectedAsset?.assetId !== assetId) {
-                setSelectedAsset(assetBalance)
-            }
-        }
-    }, [
+    const { selectedAccount } = useSendFundsBottomSheet(
         isVisible,
         assetId,
-        assetBalance,
-        setCanSelectAsset,
-        setSelectedAsset,
-        canSelectAsset,
-        selectedAsset?.assetId,
-    ])
-
-    const handleFinished = () => {
-        reset()
-        onClose()
-    }
-
-    useLayoutEffect(() => {
-        if (isVisible) {
-            setOnFinished(handleFinished)
-        }
-    }, [isVisible, handleFinished, setOnFinished])
+        onClose,
+    )
 
     return (
         <PWBottomSheet

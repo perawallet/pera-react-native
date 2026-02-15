@@ -10,7 +10,14 @@
  limitations under the License
  */
 
-import { PWButton, PWHeader, PWText, PWView } from '@components/core'
+import {
+    PWBottomSheet,
+    PWButton,
+    PWHeader,
+    PWIcon,
+    PWText,
+    PWView,
+} from '@components/core'
 import Decimal from 'decimal.js'
 
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
@@ -32,8 +39,6 @@ import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { useCallback } from 'react'
 
-//TODO: handle max precision (currently we don't show them but we're still adding characters)
-//TODO: max amount validation (+ max amount popup)
 export const InputScreen = () => {
     const styles = useStyles()
     const navigation =
@@ -48,6 +53,8 @@ export const InputScreen = () => {
         setMax,
         handleKey,
         handleNext,
+        isMaxExceeded,
+        dismissMaxExceeded,
     } = useInputScreen()
     const { preferredFiatCurrency } = useCurrency()
     const selectedAccount = useSelectedAccount()
@@ -155,6 +162,26 @@ export const InputScreen = () => {
                 isVisible={infoState.isOpen}
                 onClose={infoState.close}
             />
+            <PWBottomSheet isVisible={isMaxExceeded}>
+                <PWView style={styles.maxExceededContainer}>
+                    <PWIcon
+                        name='info'
+                        variant='error'
+                        size='xxl'
+                    />
+                    <PWText variant='h3'>
+                        {t('send_funds.input.exceeds_max_title')}
+                    </PWText>
+                    <PWText style={styles.maxExceededBody}>
+                        {t('send_funds.input.exceeds_max_body')}
+                    </PWText>
+                    <PWButton
+                        variant='secondary'
+                        title={t('send_funds.info.i_understand')}
+                        onPress={dismissMaxExceeded}
+                    />
+                </PWView>
+            </PWBottomSheet>
         </PWView>
     )
 }

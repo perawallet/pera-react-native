@@ -28,6 +28,25 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
+vi.mock('react-i18next', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Trans: ({ i18nKey, components }: any) => (
+        <span>
+            {i18nKey}
+            {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+            {components?.map((c: any, i: number) => (
+                <span
+                    key={i}
+                    onClick={c.props?.onPress}
+                    data-testid={`trans-component-${i}`}
+                >
+                    link
+                </span>
+            ))}
+        </span>
+    ),
+}))
+
 vi.mock('../styles', () => ({
     useStyles: () => ({}),
 }))
@@ -129,7 +148,7 @@ describe('SendFundsInfoPanel', () => {
             />,
         )
 
-        fireEvent.click(screen.getByText('send_funds.info.tap_here'))
+        fireEvent.click(screen.getByTestId('trans-component-0'))
 
         expect(mockHandleOpenInfoLink).toHaveBeenCalledTimes(1)
     })

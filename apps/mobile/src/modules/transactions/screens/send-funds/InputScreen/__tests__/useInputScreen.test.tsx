@@ -200,13 +200,7 @@ describe('useInputScreen', () => {
         act(() => {
             result.current.handleNext()
         })
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: 'error',
-                body: 'send_funds.input.error_exceeds_max',
-            }),
-            expect.anything(),
-        )
+        expect(result.current.isMaxExceeded).toBe(true)
         expect(mockNavigate).not.toHaveBeenCalled()
     })
 
@@ -278,13 +272,26 @@ describe('useInputScreen', () => {
         act(() => {
             result.current.handleNext()
         })
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: 'error',
-                body: 'send_funds.input.error_exceeds_max',
-            }),
-            expect.anything(),
-        )
+        expect(result.current.isMaxExceeded).toBe(true)
         expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('dismisses max exceeded state', () => {
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
+            data: { amount: 0n, minBalance: 0n },
+        })
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setCryptoValue('0.1')
+        })
+        act(() => {
+            result.current.handleNext()
+        })
+        expect(result.current.isMaxExceeded).toBe(true)
+        act(() => {
+            result.current.dismissMaxExceeded()
+        })
+        expect(result.current.isMaxExceeded).toBe(false)
     })
 })

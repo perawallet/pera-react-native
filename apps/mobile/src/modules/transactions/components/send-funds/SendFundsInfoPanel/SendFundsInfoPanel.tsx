@@ -18,6 +18,7 @@ import {
     PWText,
     PWView,
 } from '@components/core'
+import { Trans } from 'react-i18next'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSendFundsInfoPanel } from './useSendFundsInfoPanel'
@@ -76,13 +77,16 @@ export const SendFundsInfoPanel = ({
                     </PWView>
                 </PWView>
                 <PWText style={styles.postamble}>
-                    For more information on transacting{' '}
-                    <PWText
-                        style={styles.link}
-                        onPress={handleOpenInfoLink}
-                    >
-                        {t('send_funds.info.tap_here')}
-                    </PWText>
+                    <Trans
+                        i18nKey='send_funds.info.more_info'
+                        components={[
+                            <PWText
+                                key='link'
+                                style={styles.link}
+                                onPress={handleOpenInfoLink}
+                            />,
+                        ]}
+                    />
                 </PWText>
                 <PWButton
                     variant='secondary'

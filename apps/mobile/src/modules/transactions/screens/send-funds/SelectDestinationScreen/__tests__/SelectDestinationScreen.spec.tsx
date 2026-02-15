@@ -18,6 +18,7 @@ import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 
 const mockNavigate = vi.fn()
+const mockGoBack = vi.fn()
 
 vi.mock('@react-navigation/native', async importOriginal => {
     const actual =
@@ -26,6 +27,7 @@ vi.mock('@react-navigation/native', async importOriginal => {
         ...actual,
         useNavigation: () => ({
             navigate: mockNavigate,
+            goBack: mockGoBack,
         }),
     }
 })
