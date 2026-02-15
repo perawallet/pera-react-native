@@ -44,6 +44,7 @@ export const SendFundsBottomSheet = ({
     const dimensions = useWindowDimensions()
     const styles = useStyles(dimensions)
     const { t } = useLanguage()
+
     const {
         canSelectAsset,
         setSelectedAsset,

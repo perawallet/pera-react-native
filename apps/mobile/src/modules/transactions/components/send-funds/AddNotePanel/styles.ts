@@ -21,12 +21,5 @@ export const useStyles = makeStyles(theme => {
             borderTopEndRadius: theme.spacing.sm,
             overflow: 'hidden',
         },
-        titleContainer: {
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            width: '100%',
-            alignItems: 'center',
-            marginBottom: theme.spacing.sm,
-        },
     }
 })

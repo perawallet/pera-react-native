@@ -13,9 +13,11 @@
 import {
     PWBottomSheet,
     type PWBottomSheetProps,
+    PWHeader,
     PWIcon,
     PWInput,
     PWText,
+    PWToolbar,
     PWView,
 } from '@components/core'
 import { useEffect, useState } from 'react'
@@ -70,25 +72,29 @@ export const AddNotePanel = ({
             {...rest}
         >
             <PWView style={styles.container}>
-                <PWView style={styles.titleContainer}>
-                    <PWIcon
+                <PWToolbar
+                    left={<PWIcon
                         name='cross'
                         variant='secondary'
                         onPress={handleClose}
-                    />
-                    <PWText variant='h4'>
-                        {isEdit
-                            ? t('send_funds.confirmation.edit')
-                            : t('send_funds.add_note.button').replace(
-                                  '+ ',
-                                  '',
-                              )}{' '}
-                        Note
-                    </PWText>
-                    <PWText onPress={handleSubmit(done)}>
-                        {t('send_funds.add_note.done')}
-                    </PWText>
-                </PWView>
+                    />}
+                    center={
+                        <PWText variant='h4'>
+                            {isEdit
+                                ? t('send_funds.confirmation.edit')
+                                : t('send_funds.add_note.button').replace(
+                                    '+ ',
+                                    '',
+                                )}{' '}
+                            Note
+                        </PWText>
+                    }
+                    right={
+                        <PWText onPress={handleSubmit(done)}>
+                            {t('send_funds.add_note.done')}
+                        </PWText>
+                    }
+                />
                 <PWView style={styles.container}>
                     <Controller
                         control={control}

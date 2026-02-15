@@ -28,17 +28,7 @@ import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { useStyles } from './styles'
 import { useSendFunds } from '@modules/transactions/hooks'
-
-const LoadingView = () => {
-    const styles = useStyles()
-    return (
-        <PWView style={styles.loadingContainer}>
-            <PWSkeleton />
-            <PWSkeleton />
-            <PWSkeleton />
-        </PWView>
-    )
-}
+import { LoadingView } from '@components/LoadingView'
 
 export const AssetSelectionScreen = () => {
     const styles = useStyles()
@@ -85,7 +75,7 @@ export const AssetSelectionScreen = () => {
             data={balanceData ?? []}
             renderItem={renderItem}
             keyExtractor={item => item.assetId}
-            ListEmptyComponent={<LoadingView />}
+            ListEmptyComponent={<LoadingView variant='skeleton' count={3} />}
         />
     )
 }

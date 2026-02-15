@@ -18,6 +18,7 @@ export const useStyles = makeStyles(theme => ({
         padding: theme.spacing.xl,
         alignItems: 'center',
         justifyContent: 'center',
+        gap: theme.spacing.sm,
     },
     skeleton: {
         width: '100%',
