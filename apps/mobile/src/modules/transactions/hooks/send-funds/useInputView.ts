@@ -32,9 +32,14 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { logger } from '@perawallet/wallet-core-shared'
 import { bottomSheetNotifier } from '@components/core'
+import { useNavigation } from '@react-navigation/native'
+import type { StackNavigationProp } from '@react-navigation/stack'
+import type { SendFundsStackParamList } from '../../components/send-funds/SendFundsRoutes/types'
 
 //business logic for the SendFundsInputView component - factored out for maintainability
-export const useInputView = (onNext: () => void) => {
+export const useInputView = () => {
+    const navigation =
+        useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const selectedAccount = useSelectedAccount()
     const { selectedAsset, note, setNote, setAmount } = useSendFunds()
     const [value, setValue] = useState<string | null>()
@@ -137,8 +142,8 @@ export const useInputView = (onNext: () => void) => {
 
         setAmount(Decimal(value ?? '0'))
         setNote(note ?? undefined)
-        onNext()
-    }, [value, maxAmount, note, onNext, showToast, t])
+        navigation.navigate('SelectDestination')
+    }, [value, maxAmount, note, navigation, showToast, t])
 
     const handleKey = useCallback(
         (key?: string) => {

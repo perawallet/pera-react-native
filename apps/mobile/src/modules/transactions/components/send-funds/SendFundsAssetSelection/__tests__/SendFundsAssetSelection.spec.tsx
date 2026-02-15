@@ -19,6 +19,19 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useSendFunds } from '@modules/transactions/hooks'
 
+const mockNavigate = vi.fn()
+
+vi.mock('@react-navigation/native', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@react-navigation/native')>()
+    return {
+        ...actual,
+        useNavigation: () => ({
+            navigate: mockNavigate,
+        }),
+    }
+})
+
 vi.mock('@components/core', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWFlatList: ({ data, renderItem, ListEmptyComponent }: any) => (
@@ -71,8 +84,6 @@ const mockAssets = [
 ]
 
 describe('SendFundsAssetSelection', () => {
-    const onSelected = vi.fn()
-
     beforeEach(() => {
         vi.clearAllMocks()
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -97,20 +108,20 @@ describe('SendFundsAssetSelection', () => {
             ]),
         })
 
-        render(<SendFundsAssetSelection onSelected={onSelected} />)
+        render(<SendFundsAssetSelection />)
 
         expect(screen.getByTestId('asset-item-0')).toBeTruthy()
         expect(screen.getByTestId('asset-item-123')).toBeTruthy()
     })
 
     it('shows loading skeletons when balanceData is empty', () => {
-        render(<SendFundsAssetSelection onSelected={onSelected} />)
+        render(<SendFundsAssetSelection />)
 
         const skeletons = screen.getAllByTestId('skeleton')
         expect(skeletons.length).toBe(3)
     })
 
-    it('calls setSelectedAsset and onSelected when an asset is pressed', () => {
+    it('calls setSelectedAsset and navigates to InputAmount when an asset is pressed', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ;(useAccountBalancesQuery as any).mockReturnValue({
             accountBalances: new Map([
@@ -118,21 +129,19 @@ describe('SendFundsAssetSelection', () => {
             ]),
         })
 
-        render(<SendFundsAssetSelection onSelected={onSelected} />)
+        render(<SendFundsAssetSelection />)
 
         fireEvent.click(screen.getByTestId('asset-item-0'))
 
         expect(mockSetSelectedAsset).toHaveBeenCalledWith(mockAssets[0])
-        expect(onSelected).toHaveBeenCalledTimes(1)
+        expect(mockNavigate).toHaveBeenCalledWith('InputAmount')
     })
 
     it('renders without error when selectedAccount is null', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ;(useSelectedAccount as any).mockReturnValue(null)
 
-        const { container } = render(
-            <SendFundsAssetSelection onSelected={onSelected} />,
-        )
+        const { container } = render(<SendFundsAssetSelection />)
 
         expect(container).toBeTruthy()
         const skeletons = screen.getAllByTestId('skeleton')

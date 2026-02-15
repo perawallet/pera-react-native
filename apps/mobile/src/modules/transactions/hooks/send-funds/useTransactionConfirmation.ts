@@ -60,152 +60,152 @@ type UseTransactionConfirmationResult = {
     isReady: boolean
 }
 
-export const useTransactionConfirmation = (
-    onNext: () => void,
-): UseTransactionConfirmationResult => {
-    const { selectedAsset, amount, destination, note } = useSendFunds()
-    const { signTransactions } = useTransactionSigner()
-    const algokit = useAlgorandClient(signTransactions)
+export const useTransactionConfirmation =
+    (): UseTransactionConfirmationResult => {
+        const { selectedAsset, amount, destination, note, onFinished } =
+            useSendFunds()
+        const { signTransactions } = useTransactionSigner()
+        const algokit = useAlgorandClient(signTransactions)
 
-    const { data: assets } = useAssetsQuery()
-    const asset = useMemo(() => {
-        if (!selectedAsset?.assetId) return null
-        return assets.get(selectedAsset?.assetId)
-    }, [selectedAsset, assets])
+        const { data: assets } = useAssetsQuery()
+        const asset = useMemo(() => {
+            if (!selectedAsset?.assetId) return null
+            return assets.get(selectedAsset?.assetId)
+        }, [selectedAsset, assets])
 
-    const selectedAccount = useSelectedAccount()
-    const { showToast } = useToast()
-    const [noteOpen, setNoteOpen] = useState(false)
-    const { preferredFiatCurrency } = useCurrency()
-    const { data: fiatPrices } = useAssetFiatPricesQuery()
-    const fiatPrice = useMemo<Decimal | null>(() => {
-        const price = selectedAsset
-            ? fiatPrices.get(selectedAsset?.assetId)?.fiatPrice
-            : null
-        if (price) {
-            return amount?.mul(price) ?? null
-        }
-        return null
-    }, [selectedAsset, fiatPrices, amount])
-
-    const { data: params, isPending: paramsPending } =
-        useSuggestedParametersQuery()
-
-    const openNote = () => {
-        setNoteOpen(true)
-    }
-
-    const closeNote = () => {
-        setNoteOpen(false)
-    }
-
-    const { data: currentBalance, isPending: currentBalancePending } =
-        useAccountAssetBalanceQuery(
-            selectedAccount ?? undefined,
-            selectedAsset?.assetId,
-        )
-
-    const onSuccess = () => {
-        showToast(
-            {
-                title: 'Transfer Successful',
-                body: `You successfully sent ${formatCurrency(
-                    amount!,
-                    asset?.decimals ?? DEFAULT_PRECISION,
-                    asset?.unitName ?? '',
-                    'en-US',
-                    false,
-                    undefined,
-                    2,
-                )} ${asset?.unitName ?? ''}.`,
-                type: 'success',
-            },
-            {
-                notifier: bottomSheetNotifier.current ?? undefined,
-            },
-        )
-        onNext()
-    }
-
-    const handleConfirm = async () => {
-        if (
-            !selectedAccount ||
-            !selectedAsset ||
-            !destination ||
-            !amount ||
-            !asset
-        ) {
-            showToast(
-                {
-                    title: 'Invalid transaction',
-                    body: 'Something appears to have gone wrong with this transaction.',
-                    type: 'error',
-                },
-                {
-                    notifier: bottomSheetNotifier.current ?? undefined,
-                },
-            )
-            return
-        }
-
-        try {
-            if (selectedAsset.assetId === ALGO_ASSET_ID) {
-                await algokit.send.payment({
-                    sender: selectedAccount!.address,
-                    receiver: destination!,
-                    amount: BigInt(
-                        toDecimalUnits(amount, ALGO_ASSET).toString(),
-                    ).microAlgo(),
-                    note,
-                })
-
-                onSuccess()
-            } else {
-                await algokit.send.assetTransfer({
-                    sender: selectedAccount!.address,
-                    receiver: destination!,
-                    amount: BigInt(
-                        toDecimalUnits(amount.toNumber(), asset).toString(),
-                    ),
-                    assetId: BigInt(selectedAsset.assetId),
-                    note,
-                })
-
-                onSuccess()
+        const selectedAccount = useSelectedAccount()
+        const { showToast } = useToast()
+        const [noteOpen, setNoteOpen] = useState(false)
+        const { preferredFiatCurrency } = useCurrency()
+        const { data: fiatPrices } = useAssetFiatPricesQuery()
+        const fiatPrice = useMemo<Decimal | null>(() => {
+            const price = selectedAsset
+                ? fiatPrices.get(selectedAsset?.assetId)?.fiatPrice
+                : null
+            if (price) {
+                return amount?.mul(price) ?? null
             }
-        } catch (error) {
+            return null
+        }, [selectedAsset, fiatPrices, amount])
+
+        const { data: params, isPending: paramsPending } =
+            useSuggestedParametersQuery()
+
+        const openNote = () => {
+            setNoteOpen(true)
+        }
+
+        const closeNote = () => {
+            setNoteOpen(false)
+        }
+
+        const { data: currentBalance, isPending: currentBalancePending } =
+            useAccountAssetBalanceQuery(
+                selectedAccount ?? undefined,
+                selectedAsset?.assetId,
+            )
+
+        const onSuccess = () => {
             showToast(
                 {
-                    title: 'Error sending transaction',
-                    body: `${error}`,
-                    type: 'error',
+                    title: 'Transfer Successful',
+                    body: `You successfully sent ${formatCurrency(
+                        amount!,
+                        asset?.decimals ?? DEFAULT_PRECISION,
+                        asset?.unitName ?? '',
+                        'en-US',
+                        false,
+                        undefined,
+                        2,
+                    )} ${asset?.unitName ?? ''}.`,
+                    type: 'success',
                 },
                 {
                     notifier: bottomSheetNotifier.current ?? undefined,
                 },
             )
+            onFinished?.()
+        }
+
+        const handleConfirm = async () => {
+            if (
+                !selectedAccount ||
+                !selectedAsset ||
+                !destination ||
+                !amount ||
+                !asset
+            ) {
+                showToast(
+                    {
+                        title: 'Invalid transaction',
+                        body: 'Something appears to have gone wrong with this transaction.',
+                        type: 'error',
+                    },
+                    {
+                        notifier: bottomSheetNotifier.current ?? undefined,
+                    },
+                )
+                return
+            }
+
+            try {
+                if (selectedAsset.assetId === ALGO_ASSET_ID) {
+                    await algokit.send.payment({
+                        sender: selectedAccount!.address,
+                        receiver: destination!,
+                        amount: BigInt(
+                            toDecimalUnits(amount, ALGO_ASSET).toString(),
+                        ).microAlgo(),
+                        note,
+                    })
+
+                    onSuccess()
+                } else {
+                    await algokit.send.assetTransfer({
+                        sender: selectedAccount!.address,
+                        receiver: destination!,
+                        amount: BigInt(
+                            toDecimalUnits(amount.toNumber(), asset).toString(),
+                        ),
+                        assetId: BigInt(selectedAsset.assetId),
+                        note,
+                    })
+
+                    onSuccess()
+                }
+            } catch (error) {
+                showToast(
+                    {
+                        title: 'Error sending transaction',
+                        body: `${error}`,
+                        type: 'error',
+                    },
+                    {
+                        notifier: bottomSheetNotifier.current ?? undefined,
+                    },
+                )
+            }
+        }
+
+        const isReady = !!(selectedAccount && selectedAsset && amount && asset)
+
+        return {
+            asset,
+            amount,
+            destination,
+            selectedAccount,
+            selectedAsset,
+            fiatPrice,
+            preferredFiatCurrency,
+            params,
+            paramsPending,
+            currentBalance,
+            currentBalancePending,
+            note,
+            noteOpen,
+            openNote,
+            closeNote,
+            handleConfirm,
+            isReady,
         }
     }
-
-    const isReady = !!(selectedAccount && selectedAsset && amount && asset)
-
-    return {
-        asset,
-        amount,
-        destination,
-        selectedAccount,
-        selectedAsset,
-        fiatPrice,
-        preferredFiatCurrency,
-        params,
-        paramsPending,
-        currentBalance,
-        currentBalancePending,
-        note,
-        noteOpen,
-        openNote,
-        closeNote,
-        handleConfirm,
-        isReady,
-    }
-}

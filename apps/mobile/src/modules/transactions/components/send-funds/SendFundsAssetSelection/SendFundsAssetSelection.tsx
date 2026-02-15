@@ -23,12 +23,11 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useCallback, useMemo } from 'react'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
+import { useNavigation } from '@react-navigation/native'
+import type { StackNavigationProp } from '@react-navigation/stack'
+import type { SendFundsStackParamList } from '../SendFundsRoutes/types'
 import { useStyles } from './styles'
 import { useSendFunds } from '@modules/transactions/hooks'
-
-export type SendFundsAssetSelectionProps = {
-    onSelected: () => void
-}
 
 const LoadingView = () => {
     const styles = useStyles()
@@ -41,12 +40,12 @@ const LoadingView = () => {
     )
 }
 
-export const SendFundsAssetSelection = ({
-    onSelected,
-}: SendFundsAssetSelectionProps) => {
+export const SendFundsAssetSelection = () => {
     const styles = useStyles()
     const selectedAccount = useSelectedAccount()
     const { setSelectedAsset } = useSendFunds()
+    const navigation =
+        useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
     )
@@ -54,9 +53,9 @@ export const SendFundsAssetSelection = ({
     const handleSelected = useCallback(
         (item: AssetWithAccountBalance) => {
             setSelectedAsset(item)
-            onSelected()
+            navigation.navigate('InputAmount')
         },
-        [onSelected, setSelectedAsset],
+        [navigation, setSelectedAsset],
     )
 
     const balanceData = useMemo(

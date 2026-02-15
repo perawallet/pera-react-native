@@ -18,6 +18,7 @@ import { useSendFunds } from '@modules/transactions/hooks'
 
 const mockSetSelectedAsset = vi.fn()
 const mockSetCanSelectAsset = vi.fn()
+const mockSetOnFinished = vi.fn()
 const mockReset = vi.fn()
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -105,6 +106,7 @@ describe('SendFundsBottomSheet', () => {
             canSelectAsset: true,
             setSelectedAsset: mockSetSelectedAsset,
             setCanSelectAsset: mockSetCanSelectAsset,
+            setOnFinished: mockSetOnFinished,
             reset: mockReset,
             selectedAsset: undefined,
         })
@@ -146,6 +148,7 @@ describe('SendFundsBottomSheet', () => {
             canSelectAsset: false,
             setSelectedAsset: mockSetSelectedAsset,
             setCanSelectAsset: mockSetCanSelectAsset,
+            setOnFinished: mockSetOnFinished,
             reset: mockReset,
             selectedAsset: { assetId: '123' },
         })
@@ -168,6 +171,7 @@ describe('SendFundsBottomSheet', () => {
             canSelectAsset: false,
             setSelectedAsset: mockSetSelectedAsset,
             setCanSelectAsset: mockSetCanSelectAsset,
+            setOnFinished: mockSetOnFinished,
             reset: mockReset,
             selectedAsset: { assetId: '123' },
         })

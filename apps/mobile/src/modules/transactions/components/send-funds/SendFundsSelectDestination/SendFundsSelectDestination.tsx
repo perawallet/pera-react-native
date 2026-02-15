@@ -20,16 +20,11 @@ import { EmptyView } from '@components/EmptyView'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNavigation } from '@react-navigation/native'
+import type { StackNavigationProp } from '@react-navigation/stack'
+import type { SendFundsStackParamList } from '../SendFundsRoutes/types'
 
-export type SendFundsSelectDestinationProps = {
-    onNext: () => void
-    onBack: () => void
-}
-
-export const SendFundsSelectDestination = ({
-    onNext,
-    onBack,
-}: SendFundsSelectDestinationProps) => {
+export const SendFundsSelectDestination = () => {
     const { selectedAsset, setDestination } = useSendFunds()
     const selectedAccount = useSelectedAccount()
     const styles = useStyles()
@@ -39,10 +34,16 @@ export const SendFundsSelectDestination = ({
         return assets.get(selectedAsset?.assetId)
     }, [selectedAsset, assets])
     const { t } = useLanguage()
+    const navigation =
+        useNavigation<StackNavigationProp<SendFundsStackParamList>>()
 
     const handleSelected = (address: string) => {
         setDestination(address)
-        onNext()
+        navigation.navigate('ConfirmTransaction')
+    }
+
+    const handleBack = () => {
+        navigation.navigate('InputAmount')
     }
 
     if (!selectedAsset || !asset) {
@@ -58,7 +59,7 @@ export const SendFundsSelectDestination = ({
         <PWView style={styles.container}>
             <PWHeader
                 leftIcon='chevron-left'
-                onLeftPress={onBack}
+                onLeftPress={handleBack}
             >
                 <PWView style={styles.assetTitleContainer}>
                     <AssetIcon

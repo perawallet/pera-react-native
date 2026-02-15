@@ -15,7 +15,7 @@ import {
     type StackHeaderProps,
 } from '@react-navigation/stack'
 
-import { PWIcon, PWView } from '@components/core'
+import { PWIcon } from '@components/core'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { SendFundsAssetSelection } from '../SendFundsAssetSelection/SendFundsAssetSelection'
@@ -25,14 +25,10 @@ import { SendFundsTransactionConfirmation } from '../SendFundsTransactionConfirm
 import { useStyles } from './styles'
 import type { SendFundsStackParamList } from './types'
 
-type SendFundsRoutesProps = {
-    onFinished: () => void
-}
-
 const Stack = createStackNavigator<SendFundsStackParamList>()
 
-export const SendFundsRoutes = ({ onFinished }: SendFundsRoutesProps) => {
-    const { canSelectAsset } = useSendFunds()
+export const SendFundsRoutes = () => {
+    const { canSelectAsset, onFinished } = useSendFunds()
     const styles = useStyles()
 
     return (
@@ -47,12 +43,13 @@ export const SendFundsRoutes = ({ onFinished }: SendFundsRoutesProps) => {
                         safeArea={false}
                     />
                 ),
-                cardStyle: styles.screenContent,
+                cardStyle: [styles.screenContent, styles.tabItem],
                 detachPreviousScreen: false,
             }}
         >
             <Stack.Screen
                 name='AssetSelection'
+                component={SendFundsAssetSelection}
                 options={{
                     title: 'send_funds.asset_selection.title',
                     headerLeft: () => (
@@ -62,72 +59,31 @@ export const SendFundsRoutes = ({ onFinished }: SendFundsRoutesProps) => {
                         />
                     ),
                 }}
-            >
-                {({ navigation }) => (
-                    <PWView style={styles.tabItem}>
-                        <SendFundsAssetSelection
-                            onSelected={() =>
-                                navigation.navigate('InputAmount')
-                            }
-                        />
-                    </PWView>
-                )}
-            </Stack.Screen>
+            />
 
             <Stack.Screen
                 name='InputAmount'
+                component={SendFundsInputView}
                 options={{
                     headerShown: false,
                 }}
-            >
-                {({ navigation }) => (
-                    <PWView style={styles.tabItem}>
-                        <SendFundsInputView
-                            onNext={() =>
-                                navigation.navigate('SelectDestination')
-                            }
-                            onBack={() => {
-                                if (canSelectAsset) {
-                                    navigation.navigate('AssetSelection')
-                                } else {
-                                    onFinished()
-                                }
-                            }}
-                        />
-                    </PWView>
-                )}
-            </Stack.Screen>
+            />
 
             <Stack.Screen
                 name='SelectDestination'
+                component={SendFundsSelectDestination}
                 options={{
                     headerShown: false,
                 }}
-            >
-                {({ navigation }) => (
-                    <PWView style={styles.tabItem}>
-                        <SendFundsSelectDestination
-                            onNext={() =>
-                                navigation.navigate('ConfirmTransaction')
-                            }
-                            onBack={() => navigation.navigate('InputAmount')}
-                        />
-                    </PWView>
-                )}
-            </Stack.Screen>
+            />
 
             <Stack.Screen
                 name='ConfirmTransaction'
+                component={SendFundsTransactionConfirmation}
                 options={{
                     title: 'send_funds.confirmation.title',
                 }}
-            >
-                {() => (
-                    <PWView style={styles.tabItem}>
-                        <SendFundsTransactionConfirmation onNext={onFinished} />
-                    </PWView>
-                )}
-            </Stack.Screen>
+            />
         </Stack.Navigator>
     )
 }

@@ -27,19 +27,17 @@ import { LoadingView } from '@components/LoadingView'
 import { useInputView } from '@modules/transactions/hooks/send-funds/useInputView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
-
-export type SendFundsInputViewProps = {
-    onNext: () => void
-    onBack: () => void
-}
+import { useNavigation } from '@react-navigation/native'
+import type { StackNavigationProp } from '@react-navigation/stack'
+import type { SendFundsStackParamList } from '../SendFundsRoutes/types'
+import { useCallback } from 'react'
 
 //TODO: handle max precision (currently we don't show them but we're still adding characters)
 //TODO: max amount validation (+ max amount popup)
-export const SendFundsInputView = ({
-    onNext,
-    onBack,
-}: SendFundsInputViewProps) => {
+export const SendFundsInputView = () => {
     const styles = useStyles()
+    const navigation =
+        useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const {
         asset,
         selectedAsset,
@@ -50,13 +48,21 @@ export const SendFundsInputView = ({
         setMax,
         handleKey,
         handleNext,
-    } = useInputView(onNext)
+    } = useInputView()
     const { preferredFiatCurrency } = useCurrency()
     const selectedAccount = useSelectedAccount()
-    const { canSelectAsset, note } = useSendFunds()
+    const { canSelectAsset, note, onFinished } = useSendFunds()
     const { t } = useLanguage()
     const noteState = useModalState()
     const infoState = useModalState()
+
+    const handleBack = useCallback(() => {
+        if (canSelectAsset) {
+            navigation.navigate('AssetSelection')
+        } else {
+            onFinished?.()
+        }
+    }, [canSelectAsset, navigation, onFinished])
 
     if (!asset || !selectedAsset || !params || !accountInformation) {
         return <LoadingView variant='circle' />
@@ -66,7 +72,7 @@ export const SendFundsInputView = ({
         <PWView style={styles.container}>
             <PWHeader
                 leftIcon={!canSelectAsset ? 'chevron-left' : 'cross'}
-                onLeftPress={onBack}
+                onLeftPress={handleBack}
                 rightIcon='info'
                 onRightPress={infoState.open}
             >

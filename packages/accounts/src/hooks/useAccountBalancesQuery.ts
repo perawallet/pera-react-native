@@ -22,6 +22,7 @@ import type {
 import {
     ALGO_ASSET,
     ALGO_ASSET_ID,
+    toWholeUnits,
     useAssetFiatPricesQuery,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
@@ -112,8 +113,9 @@ export const useAccountBalancesQuery = (
             })
 
             //Now add algo into the mix
-            const algoAmount = Decimal(r.data?.balance?.microAlgos ?? '0').div(
-                Decimal(10).pow(ALGO_ASSET.decimals),
+            const algoAmount = toWholeUnits(
+                r.data?.balance?.microAlgos ?? 0n,
+                ALGO_ASSET,
             )
             const usdAlgoValue = algoAmount.times(usdAlgoPrice)
             const fiatAlgoValue = usdToPreferred(usdAlgoValue)

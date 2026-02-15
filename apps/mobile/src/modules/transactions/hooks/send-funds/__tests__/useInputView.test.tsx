@@ -29,6 +29,14 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { useToast } from '@hooks/useToast'
 
+const mockNavigate = vi.fn()
+
+vi.mock('@react-navigation/native', () => ({
+    useNavigation: () => ({
+        navigate: mockNavigate,
+    }),
+}))
+
 vi.mock('@components/core', () => ({
     bottomSheetNotifier: { current: null },
     PWButton: vi.fn(),
@@ -87,7 +95,6 @@ vi.mock('@modules/transactions/hooks', () => ({
 }))
 
 describe('useInputView', () => {
-    const mockOnNext = vi.fn()
     const mockShowToast = vi.fn()
 
     beforeEach(() => {
@@ -133,7 +140,7 @@ describe('useInputView', () => {
     })
 
     it('calculates max amount for Algo correctly', () => {
-        const { result } = renderHook(() => useInputView(mockOnNext))
+        const { result } = renderHook(() => useInputView())
         expect(result.current.maxAmount.toNumber()).toBe(99.899)
     })
 
@@ -141,12 +148,12 @@ describe('useInputView', () => {
         // Update mock state for ASA
         mockSendFundsState.selectedAsset = { assetId: 1 }
 
-        const { result } = renderHook(() => useInputView(mockOnNext))
+        const { result } = renderHook(() => useInputView())
         expect(result.current.maxAmount.toNumber()).toBe(50)
     })
 
     it('handles keypad input correctly', () => {
-        const { result } = renderHook(() => useInputView(mockOnNext))
+        const { result } = renderHook(() => useInputView())
 
         act(() => {
             result.current.handleKey('1')
@@ -170,7 +177,7 @@ describe('useInputView', () => {
     })
 
     it('validates input on next (error if 0/empty)', () => {
-        const { result } = renderHook(() => useInputView(mockOnNext))
+        const { result } = renderHook(() => useInputView())
         act(() => {
             result.current.handleNext()
         })
@@ -178,7 +185,7 @@ describe('useInputView', () => {
             expect.objectContaining({ type: 'error' }),
             expect.anything(),
         )
-        expect(mockOnNext).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
     it('validates input on next (error if > max)', () => {
@@ -186,7 +193,7 @@ describe('useInputView', () => {
             data: { amount: 10_000_000n, minBalance: 0n },
         })
 
-        const { result } = renderHook(() => useInputView(mockOnNext))
+        const { result } = renderHook(() => useInputView())
         act(() => {
             result.current.setCryptoValue('20')
         })
@@ -200,7 +207,7 @@ describe('useInputView', () => {
             }),
             expect.anything(),
         )
-        expect(mockOnNext).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
     it('proceeds on next if valid', () => {
@@ -208,7 +215,7 @@ describe('useInputView', () => {
             data: { amount: 100_000_000n, minBalance: 0n },
         })
 
-        const { result } = renderHook(() => useInputView(mockOnNext))
+        const { result } = renderHook(() => useInputView())
         act(() => {
             result.current.setCryptoValue('5')
         })
@@ -217,11 +224,11 @@ describe('useInputView', () => {
         })
         expect(mockSetAmount).toHaveBeenCalled()
         expect(mockSetAmount.mock.calls[0][0].toString()).toBe('5')
-        expect(mockOnNext).toHaveBeenCalled()
+        expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
     })
 
     it('setMax updates value to max', () => {
-        const { result } = renderHook(() => useInputView(mockOnNext))
+        const { result } = renderHook(() => useInputView())
         act(() => {
             result.current.setMax()
         })
@@ -231,7 +238,7 @@ describe('useInputView', () => {
     })
 
     it('treats leading decimal point as 0.', () => {
-        const { result } = renderHook(() => useInputView(mockOnNext))
+        const { result } = renderHook(() => useInputView())
         act(() => {
             result.current.handleKey('.')
         })
@@ -243,7 +250,7 @@ describe('useInputView', () => {
     })
 
     it('ignores second decimal point in keypad input', () => {
-        const { result } = renderHook(() => useInputView(mockOnNext))
+        const { result } = renderHook(() => useInputView())
         act(() => {
             result.current.handleKey('1')
         })
@@ -264,7 +271,7 @@ describe('useInputView', () => {
             data: { amount: 0n, minBalance: 0n },
         })
 
-        const { result } = renderHook(() => useInputView(mockOnNext))
+        const { result } = renderHook(() => useInputView())
         act(() => {
             result.current.setCryptoValue('0.1')
         })
@@ -278,6 +285,6 @@ describe('useInputView', () => {
             }),
             expect.anything(),
         )
-        expect(mockOnNext).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 })

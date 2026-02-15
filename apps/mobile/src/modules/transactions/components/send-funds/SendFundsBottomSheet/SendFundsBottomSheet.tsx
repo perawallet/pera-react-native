@@ -48,6 +48,7 @@ export const SendFundsBottomSheet = ({
         canSelectAsset,
         setSelectedAsset,
         setCanSelectAsset,
+        setOnFinished,
         reset,
         selectedAsset,
     } = useSendFunds()
@@ -81,6 +82,12 @@ export const SendFundsBottomSheet = ({
         onClose()
     }
 
+    useLayoutEffect(() => {
+        if (isVisible) {
+            setOnFinished(handleFinished)
+        }
+    }, [isVisible, handleFinished, setOnFinished])
+
     return (
         <PWBottomSheet
             isVisible={isVisible}
@@ -90,7 +97,7 @@ export const SendFundsBottomSheet = ({
                 {selectedAccount ? (
                     <NavigationIndependentTree>
                         <NavigationContainer>
-                            <SendFundsRoutes onFinished={handleFinished} />
+                            <SendFundsRoutes />
                         </NavigationContainer>
                     </NavigationIndependentTree>
                 ) : (

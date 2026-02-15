@@ -16,6 +16,17 @@ import { SendFundsInputView } from '../SendFundsInputView'
 import { useInputView } from '@modules/transactions/hooks/send-funds/useInputView'
 import Decimal from 'decimal.js'
 
+vi.mock('@react-navigation/native', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@react-navigation/native')>()
+    return {
+        ...actual,
+        useNavigation: () => ({
+            navigate: vi.fn(),
+        }),
+    }
+})
+
 vi.mock('@components/core', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWButton: vi.fn(({ title, onPress, isDisabled }: any) => (
@@ -79,6 +90,7 @@ vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(() => ({
         canSelectAsset: false,
         note: null,
+        onFinished: vi.fn(),
     })),
 }))
 
@@ -123,9 +135,6 @@ const defaultInputViewReturn = {
 }
 
 describe('SendFundsInputView', () => {
-    const onNext = vi.fn()
-    const onBack = vi.fn()
-
     beforeEach(() => {
         vi.clearAllMocks()
         ;(useInputView as Mock).mockReturnValue(defaultInputViewReturn)
@@ -137,12 +146,7 @@ describe('SendFundsInputView', () => {
             asset: null,
         })
 
-        render(
-            <SendFundsInputView
-                onNext={onNext}
-                onBack={onBack}
-            />,
-        )
+        render(<SendFundsInputView />)
 
         expect(screen.getByTestId('loading-view')).toBeTruthy()
     })
@@ -153,12 +157,7 @@ describe('SendFundsInputView', () => {
             selectedAsset: null,
         })
 
-        render(
-            <SendFundsInputView
-                onNext={onNext}
-                onBack={onBack}
-            />,
-        )
+        render(<SendFundsInputView />)
 
         expect(screen.getByTestId('loading-view')).toBeTruthy()
     })
@@ -169,12 +168,7 @@ describe('SendFundsInputView', () => {
             params: null,
         })
 
-        render(
-            <SendFundsInputView
-                onNext={onNext}
-                onBack={onBack}
-            />,
-        )
+        render(<SendFundsInputView />)
 
         expect(screen.getByTestId('loading-view')).toBeTruthy()
     })
@@ -185,12 +179,7 @@ describe('SendFundsInputView', () => {
             accountInformation: null,
         })
 
-        render(
-            <SendFundsInputView
-                onNext={onNext}
-                onBack={onBack}
-            />,
-        )
+        render(<SendFundsInputView />)
 
         expect(screen.getByTestId('loading-view')).toBeTruthy()
     })
@@ -201,12 +190,7 @@ describe('SendFundsInputView', () => {
             cryptoValue: '10',
         })
 
-        render(
-            <SendFundsInputView
-                onNext={onNext}
-                onBack={onBack}
-            />,
-        )
+        render(<SendFundsInputView />)
 
         expect(screen.getByText('10 ALGO')).toBeTruthy()
     })
@@ -218,12 +202,7 @@ describe('SendFundsInputView', () => {
             fiatValue: null,
         })
 
-        render(
-            <SendFundsInputView
-                onNext={onNext}
-                onBack={onBack}
-            />,
-        )
+        render(<SendFundsInputView />)
 
         expect(screen.getByText('--')).toBeTruthy()
     })
@@ -235,12 +214,7 @@ describe('SendFundsInputView', () => {
             fiatValue: Decimal('25.50'),
         })
 
-        render(
-            <SendFundsInputView
-                onNext={onNext}
-                onBack={onBack}
-            />,
-        )
+        render(<SendFundsInputView />)
 
         expect(screen.getByText('25.5 USD')).toBeTruthy()
     })
@@ -251,12 +225,7 @@ describe('SendFundsInputView', () => {
             cryptoValue: null,
         })
 
-        render(
-            <SendFundsInputView
-                onNext={onNext}
-                onBack={onBack}
-            />,
-        )
+        render(<SendFundsInputView />)
 
         const nextButton = screen.getByText('send_funds.input.next')
         expect(nextButton.closest('[data-disabled]')).toBeTruthy()
@@ -268,12 +237,7 @@ describe('SendFundsInputView', () => {
             cryptoValue: '10',
         })
 
-        render(
-            <SendFundsInputView
-                onNext={onNext}
-                onBack={onBack}
-            />,
-        )
+        render(<SendFundsInputView />)
 
         const nextButton = screen.getByText('send_funds.input.next')
         expect(nextButton.closest('[data-disabled]')).toBeNull()
@@ -285,12 +249,7 @@ describe('SendFundsInputView', () => {
             cryptoValue: '10',
         })
 
-        render(
-            <SendFundsInputView
-                onNext={onNext}
-                onBack={onBack}
-            />,
-        )
+        render(<SendFundsInputView />)
 
         fireEvent.click(screen.getByText('send_funds.input.next'))
 
@@ -298,12 +257,7 @@ describe('SendFundsInputView', () => {
     })
 
     it('calls setMax when max button is pressed', () => {
-        render(
-            <SendFundsInputView
-                onNext={onNext}
-                onBack={onBack}
-            />,
-        )
+        render(<SendFundsInputView />)
 
         fireEvent.click(screen.getByText('send_funds.input.max'))
 

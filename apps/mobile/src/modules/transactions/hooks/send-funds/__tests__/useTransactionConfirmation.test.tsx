@@ -135,11 +135,13 @@ describe('useTransactionConfirmation', () => {
         amount: undefined,
         note: undefined,
         destination: undefined,
+        onFinished: mockOnNext,
         setSelectedAsset: vi.fn(),
         setCanSelectAsset: vi.fn(),
         setAmount: vi.fn(),
         setNote: vi.fn(),
         setDestination: vi.fn(),
+        setOnFinished: vi.fn(),
         reset: vi.fn(),
     }
 
@@ -196,9 +198,7 @@ describe('useTransactionConfirmation', () => {
                 data: new Map([['123', mockAsset]]),
             })
 
-            const { result } = renderHook(() =>
-                useTransactionConfirmation(mockOnNext),
-            )
+            const { result } = renderHook(() => useTransactionConfirmation())
 
             expect(result.current.isReady).toBe(false)
         })
@@ -212,9 +212,7 @@ describe('useTransactionConfirmation', () => {
                 destination: 'DEST_ADDRESS',
             })
 
-            const { result } = renderHook(() =>
-                useTransactionConfirmation(mockOnNext),
-            )
+            const { result } = renderHook(() => useTransactionConfirmation())
 
             expect(result.current.isReady).toBe(false)
         })
@@ -231,9 +229,7 @@ describe('useTransactionConfirmation', () => {
                 data: new Map([['123', mockAsset]]),
             })
 
-            const { result } = renderHook(() =>
-                useTransactionConfirmation(mockOnNext),
-            )
+            const { result } = renderHook(() => useTransactionConfirmation())
 
             expect(result.current.isReady).toBe(false)
         })
@@ -250,9 +246,7 @@ describe('useTransactionConfirmation', () => {
                 data: new Map(),
             })
 
-            const { result } = renderHook(() =>
-                useTransactionConfirmation(mockOnNext),
-            )
+            const { result } = renderHook(() => useTransactionConfirmation())
 
             expect(result.current.isReady).toBe(false)
         })
@@ -269,9 +263,7 @@ describe('useTransactionConfirmation', () => {
                 data: new Map([['123', mockAsset]]),
             })
 
-            const { result } = renderHook(() =>
-                useTransactionConfirmation(mockOnNext),
-            )
+            const { result } = renderHook(() => useTransactionConfirmation())
 
             expect(result.current.isReady).toBe(true)
         })
@@ -287,9 +279,7 @@ describe('useTransactionConfirmation', () => {
                 destination: undefined,
             })
 
-            const { result } = renderHook(() =>
-                useTransactionConfirmation(mockOnNext),
-            )
+            const { result } = renderHook(() => useTransactionConfirmation())
 
             await act(async () => {
                 await result.current.handleConfirm()
@@ -321,9 +311,7 @@ describe('useTransactionConfirmation', () => {
 
             mockPayment.mockResolvedValue({ txId: 'PAYMENT_TX_ID' })
 
-            const { result } = renderHook(() =>
-                useTransactionConfirmation(mockOnNext),
-            )
+            const { result } = renderHook(() => useTransactionConfirmation())
 
             await act(async () => {
                 await result.current.handleConfirm()
@@ -362,9 +350,7 @@ describe('useTransactionConfirmation', () => {
 
             mockAssetTransfer.mockResolvedValue({ txId: 'ASSET_TX_ID' })
 
-            const { result } = renderHook(() =>
-                useTransactionConfirmation(mockOnNext),
-            )
+            const { result } = renderHook(() => useTransactionConfirmation())
 
             await act(async () => {
                 await result.current.handleConfirm()
@@ -407,9 +393,7 @@ describe('useTransactionConfirmation', () => {
 
             mockPayment.mockResolvedValue({ txId: 'SUCCESS_TX_ID' })
 
-            const { result } = renderHook(() =>
-                useTransactionConfirmation(mockOnNext),
-            )
+            const { result } = renderHook(() => useTransactionConfirmation())
 
             await act(async () => {
                 await result.current.handleConfirm()
@@ -433,9 +417,7 @@ describe('useTransactionConfirmation', () => {
             const mockError = new Error('Network error')
             mockPayment.mockRejectedValue(mockError)
 
-            const { result } = renderHook(() =>
-                useTransactionConfirmation(mockOnNext),
-            )
+            const { result } = renderHook(() => useTransactionConfirmation())
 
             await act(async () => {
                 await result.current.handleConfirm()
@@ -455,9 +437,7 @@ describe('useTransactionConfirmation', () => {
 
     describe('note state', () => {
         it('should toggle noteOpen state with openNote and closeNote', () => {
-            const { result } = renderHook(() =>
-                useTransactionConfirmation(mockOnNext),
-            )
+            const { result } = renderHook(() => useTransactionConfirmation())
 
             expect(result.current.noteOpen).toBe(false)
 
@@ -489,9 +469,7 @@ describe('useTransactionConfirmation', () => {
                 data: new Map([['123', { fiatPrice: mockPrice }]]),
             })
 
-            const { result } = renderHook(() =>
-                useTransactionConfirmation(mockOnNext),
-            )
+            const { result } = renderHook(() => useTransactionConfirmation())
 
             expect(result.current.fiatPrice).toEqual(mockAmount.mul(mockPrice))
         })
@@ -506,9 +484,7 @@ describe('useTransactionConfirmation', () => {
                 data: new Map(),
             })
 
-            const { result } = renderHook(() =>
-                useTransactionConfirmation(mockOnNext),
-            )
+            const { result } = renderHook(() => useTransactionConfirmation())
 
             expect(result.current.fiatPrice).toBeNull()
         })
@@ -523,9 +499,7 @@ describe('useTransactionConfirmation', () => {
                 data: new Map([[123, { fiatPrice: new Decimal(5) }]]),
             })
 
-            const { result } = renderHook(() =>
-                useTransactionConfirmation(mockOnNext),
-            )
+            const { result } = renderHook(() => useTransactionConfirmation())
 
             expect(result.current.fiatPrice).toBeNull()
         })
@@ -540,9 +514,7 @@ describe('useTransactionConfirmation', () => {
                 data: new Map([[123, { fiatPrice: new Decimal(5) }]]),
             })
 
-            const { result } = renderHook(() =>
-                useTransactionConfirmation(mockOnNext),
-            )
+            const { result } = renderHook(() => useTransactionConfirmation())
 
             expect(result.current.fiatPrice).toBeNull()
         })
@@ -558,9 +530,7 @@ describe('useTransactionConfirmation', () => {
                 data: new Map([['123', mockAsset]]),
             })
 
-            const { result } = renderHook(() =>
-                useTransactionConfirmation(mockOnNext),
-            )
+            const { result } = renderHook(() => useTransactionConfirmation())
 
             expect(result.current.asset).toEqual(mockAsset)
         })
@@ -571,9 +541,7 @@ describe('useTransactionConfirmation', () => {
                 selectedAsset: { assetId: undefined },
             })
 
-            const { result } = renderHook(() =>
-                useTransactionConfirmation(mockOnNext),
-            )
+            const { result } = renderHook(() => useTransactionConfirmation())
 
             expect(result.current.asset).toBeNull()
         })
@@ -587,9 +555,7 @@ describe('useTransactionConfirmation', () => {
                 data: new Map(),
             })
 
-            const { result } = renderHook(() =>
-                useTransactionConfirmation(mockOnNext),
-            )
+            const { result } = renderHook(() => useTransactionConfirmation())
 
             expect(result.current.asset).toBeUndefined()
         })
@@ -629,9 +595,7 @@ describe('useTransactionConfirmation', () => {
                 preferredFiatCurrency: 'EUR',
             })
 
-            const { result } = renderHook(() =>
-                useTransactionConfirmation(mockOnNext),
-            )
+            const { result } = renderHook(() => useTransactionConfirmation())
 
             expect(result.current.selectedAccount).toEqual(mockAccount)
             expect(result.current.selectedAsset).toEqual(mockSelectedAsset)

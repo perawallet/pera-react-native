@@ -57,6 +57,13 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     })),
     ALGO_ASSET_ID: '0',
     ALGO_ASSET: { id: '0', decimals: 6 },
+    toWholeUnits: (
+        value: Decimal | number | bigint,
+        asset: { decimals: number },
+    ) =>
+        new Decimal(typeof value === 'number' ? value : value.toString()).div(
+            Decimal.pow(10, asset.decimals),
+        ),
 }))
 
 const createWrapper = () => {

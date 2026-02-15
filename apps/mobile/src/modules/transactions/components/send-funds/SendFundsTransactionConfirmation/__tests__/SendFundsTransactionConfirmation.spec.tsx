@@ -161,8 +161,6 @@ const defaultHookReturn = {
 }
 
 describe('SendFundsTransactionConfirmation', () => {
-    const mockOnNext = vi.fn()
-
     beforeEach(() => {
         vi.clearAllMocks()
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -179,7 +177,7 @@ describe('SendFundsTransactionConfirmation', () => {
         })
 
         const { getByTestId, queryByText } = render(
-            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+            <SendFundsTransactionConfirmation />,
         )
 
         expect(getByTestId('loading-view')).toBeTruthy()
@@ -187,9 +185,7 @@ describe('SendFundsTransactionConfirmation', () => {
     })
 
     it('renders amount key-value row', () => {
-        const { getByTestId } = render(
-            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
-        )
+        const { getByTestId } = render(<SendFundsTransactionConfirmation />)
 
         expect(
             getByTestId('key-value-row-send_funds.confirmation.amount'),
@@ -197,9 +193,7 @@ describe('SendFundsTransactionConfirmation', () => {
     })
 
     it('renders account display when selectedAccount is present', () => {
-        const { getByTestId } = render(
-            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
-        )
+        const { getByTestId } = render(<SendFundsTransactionConfirmation />)
 
         expect(
             getByTestId('key-value-row-send_funds.confirmation.account'),
@@ -214,9 +208,7 @@ describe('SendFundsTransactionConfirmation', () => {
             selectedAccount: null,
         })
 
-        const { queryByTestId } = render(
-            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
-        )
+        const { queryByTestId } = render(<SendFundsTransactionConfirmation />)
 
         expect(
             queryByTestId('key-value-row-send_funds.confirmation.account'),
@@ -224,9 +216,7 @@ describe('SendFundsTransactionConfirmation', () => {
     })
 
     it('renders destination display when destination is present', () => {
-        const { getByTestId } = render(
-            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
-        )
+        const { getByTestId } = render(<SendFundsTransactionConfirmation />)
 
         expect(
             getByTestId('key-value-row-send_funds.confirmation.to'),
@@ -241,9 +231,7 @@ describe('SendFundsTransactionConfirmation', () => {
             destination: undefined,
         })
 
-        const { queryByTestId } = render(
-            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
-        )
+        const { queryByTestId } = render(<SendFundsTransactionConfirmation />)
 
         expect(
             queryByTestId('key-value-row-send_funds.confirmation.to'),
@@ -251,9 +239,7 @@ describe('SendFundsTransactionConfirmation', () => {
     })
 
     it('renders fee key-value row', () => {
-        const { getByTestId } = render(
-            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
-        )
+        const { getByTestId } = render(<SendFundsTransactionConfirmation />)
 
         expect(
             getByTestId('key-value-row-send_funds.confirmation.fee'),
@@ -261,9 +247,7 @@ describe('SendFundsTransactionConfirmation', () => {
     })
 
     it('renders current balance key-value row when balance exists', () => {
-        const { getByTestId } = render(
-            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
-        )
+        const { getByTestId } = render(<SendFundsTransactionConfirmation />)
 
         expect(
             getByTestId(
@@ -279,9 +263,7 @@ describe('SendFundsTransactionConfirmation', () => {
             currentBalance: undefined,
         })
 
-        const { queryByTestId } = render(
-            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
-        )
+        const { queryByTestId } = render(<SendFundsTransactionConfirmation />)
 
         expect(
             queryByTestId(
@@ -291,9 +273,7 @@ describe('SendFundsTransactionConfirmation', () => {
     })
 
     it('renders note key-value row', () => {
-        const { getByTestId } = render(
-            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
-        )
+        const { getByTestId } = render(<SendFundsTransactionConfirmation />)
 
         expect(
             getByTestId('key-value-row-send_funds.confirmation.note'),
@@ -301,9 +281,7 @@ describe('SendFundsTransactionConfirmation', () => {
     })
 
     it('calls handleConfirm when confirm button is pressed', () => {
-        const { getByText } = render(
-            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
-        )
+        const { getByText } = render(<SendFundsTransactionConfirmation />)
 
         fireEvent.click(getByText('send_funds.confirmation.confirm_button'))
 
@@ -318,7 +296,7 @@ describe('SendFundsTransactionConfirmation', () => {
         })
 
         const { getByText, getByTestId } = render(
-            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+            <SendFundsTransactionConfirmation />,
         )
 
         expect(getByText('Payment for services')).toBeTruthy()
@@ -333,9 +311,7 @@ describe('SendFundsTransactionConfirmation', () => {
             note: 'Payment for services',
         })
 
-        const { getByText } = render(
-            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
-        )
+        const { getByText } = render(<SendFundsTransactionConfirmation />)
 
         fireEvent.click(getByText('send_funds.confirmation.edit'))
 
@@ -350,7 +326,7 @@ describe('SendFundsTransactionConfirmation', () => {
         })
 
         const { getByText, queryByText } = render(
-            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
+            <SendFundsTransactionConfirmation />,
         )
 
         expect(getByText('send_funds.add_note.button')).toBeTruthy()
@@ -364,9 +340,7 @@ describe('SendFundsTransactionConfirmation', () => {
             note: undefined,
         })
 
-        const { getByText } = render(
-            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
-        )
+        const { getByText } = render(<SendFundsTransactionConfirmation />)
 
         fireEvent.click(getByText('send_funds.add_note.button'))
 
@@ -380,9 +354,7 @@ describe('SendFundsTransactionConfirmation', () => {
             noteOpen: true,
         })
 
-        const { getByTestId } = render(
-            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
-        )
+        const { getByTestId } = render(<SendFundsTransactionConfirmation />)
 
         expect(getByTestId('add-note-panel')).toBeTruthy()
     })
@@ -394,9 +366,7 @@ describe('SendFundsTransactionConfirmation', () => {
             noteOpen: false,
         })
 
-        const { queryByTestId } = render(
-            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
-        )
+        const { queryByTestId } = render(<SendFundsTransactionConfirmation />)
 
         expect(queryByTestId('add-note-panel')).toBeNull()
     })
@@ -408,18 +378,16 @@ describe('SendFundsTransactionConfirmation', () => {
             noteOpen: true,
         })
 
-        const { getByTestId } = render(
-            <SendFundsTransactionConfirmation onNext={mockOnNext} />,
-        )
+        const { getByTestId } = render(<SendFundsTransactionConfirmation />)
 
         fireEvent.click(getByTestId('close-note-panel'))
 
         expect(mockCloseNote).toHaveBeenCalledTimes(1)
     })
 
-    it('passes onNext to useTransactionConfirmation', () => {
-        render(<SendFundsTransactionConfirmation onNext={mockOnNext} />)
+    it('calls useTransactionConfirmation with no arguments', () => {
+        render(<SendFundsTransactionConfirmation />)
 
-        expect(useTransactionConfirmation).toHaveBeenCalledWith(mockOnNext)
+        expect(useTransactionConfirmation).toHaveBeenCalledWith()
     })
 })

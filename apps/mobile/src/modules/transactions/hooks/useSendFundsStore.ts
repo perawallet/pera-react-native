@@ -20,6 +20,7 @@ type SendFundsState = {
     amount?: Decimal
     note?: string
     destination?: string
+    onFinished?: () => void
 }
 
 type SendFundsActions = {
@@ -28,6 +29,7 @@ type SendFundsActions = {
     setAmount: (amount?: Decimal) => void
     setNote: (note?: string) => void
     setDestination: (address?: string) => void
+    setOnFinished: (fn: () => void) => void
     reset: () => void
 }
 
@@ -39,6 +41,7 @@ const initialState: SendFundsState = {
     amount: undefined,
     note: undefined,
     destination: undefined,
+    onFinished: undefined,
 }
 
 export const useSendFundsStore = create<SendFundsStore>()(set => ({
@@ -48,6 +51,7 @@ export const useSendFundsStore = create<SendFundsStore>()(set => ({
     setAmount: amount => set({ amount }),
     setNote: note => set({ note }),
     setDestination: address => set({ destination: address }),
+    setOnFinished: fn => set({ onFinished: fn }),
     reset: () => set(initialState),
 }))
 
@@ -59,11 +63,13 @@ type UseSendFundsResult = {
     amount?: Decimal
     note?: string
     destination?: string
+    onFinished?: () => void
     setSelectedAsset: (asset?: AssetWithAccountBalance) => void
     setCanSelectAsset: (canSelect: boolean) => void
     setAmount: (amount?: Decimal) => void
     setNote: (note?: string) => void
     setDestination: (address?: string) => void
+    setOnFinished: (fn: () => void) => void
     reset: () => void
 }
 
@@ -73,6 +79,7 @@ export const useSendFunds = (): UseSendFundsResult => {
     const amount = useSendFundsStore(state => state.amount)
     const note = useSendFundsStore(state => state.note)
     const destination = useSendFundsStore(state => state.destination)
+    const onFinished = useSendFundsStore(state => state.onFinished)
     const setSelectedAsset = useSendFundsStore(state => state.setSelectedAsset)
     const setCanSelectAsset = useSendFundsStore(
         state => state.setCanSelectAsset,
@@ -80,6 +87,7 @@ export const useSendFunds = (): UseSendFundsResult => {
     const setAmount = useSendFundsStore(state => state.setAmount)
     const setNote = useSendFundsStore(state => state.setNote)
     const setDestination = useSendFundsStore(state => state.setDestination)
+    const setOnFinished = useSendFundsStore(state => state.setOnFinished)
     const reset = useSendFundsStore(state => state.reset)
 
     return {
@@ -88,11 +96,13 @@ export const useSendFunds = (): UseSendFundsResult => {
         amount,
         note,
         destination,
+        onFinished,
         setSelectedAsset,
         setCanSelectAsset,
         setAmount,
         setNote,
         setDestination,
+        setOnFinished,
         reset,
     }
 }

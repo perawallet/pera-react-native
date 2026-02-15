@@ -32,13 +32,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { LoadingView } from '@components/LoadingView'
 import { useTransactionConfirmation } from '@modules/transactions/hooks/send-funds/useTransactionConfirmation'
 
-export type SendFundsTransactionConfirmationProps = {
-    onNext: () => void
-}
-
-export const SendFundsTransactionConfirmation = ({
-    onNext,
-}: SendFundsTransactionConfirmationProps) => {
+export const SendFundsTransactionConfirmation = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
@@ -58,7 +52,7 @@ export const SendFundsTransactionConfirmation = ({
         closeNote,
         handleConfirm,
         isReady,
-    } = useTransactionConfirmation(onNext)
+    } = useTransactionConfirmation()
 
     if (!isReady) {
         return <LoadingView variant='circle' />

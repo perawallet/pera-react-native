@@ -17,6 +17,19 @@ import { useSendFunds } from '@modules/transactions/hooks'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 
+const mockNavigate = vi.fn()
+
+vi.mock('@react-navigation/native', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@react-navigation/native')>()
+    return {
+        ...actual,
+        useNavigation: () => ({
+            navigate: mockNavigate,
+        }),
+    }
+})
+
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
         t: (key: string) => key,
@@ -74,8 +87,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 const mockSetDestination = vi.fn()
-const mockOnNext = vi.fn()
-const mockOnBack = vi.fn()
 
 const mockAsset = {
     id: 123,
@@ -112,12 +123,7 @@ describe('SendFundsSelectDestination', () => {
             setDestination: mockSetDestination,
         })
 
-        const { getByTestId } = render(
-            <SendFundsSelectDestination
-                onNext={mockOnNext}
-                onBack={mockOnBack}
-            />,
-        )
+        const { getByTestId } = render(<SendFundsSelectDestination />)
 
         expect(getByTestId('empty-view')).toBeTruthy()
         expect(getByTestId('empty-title').textContent).toBe(
@@ -134,23 +140,13 @@ describe('SendFundsSelectDestination', () => {
             data: new Map(),
         })
 
-        const { getByTestId } = render(
-            <SendFundsSelectDestination
-                onNext={mockOnNext}
-                onBack={mockOnBack}
-            />,
-        )
+        const { getByTestId } = render(<SendFundsSelectDestination />)
 
         expect(getByTestId('empty-view')).toBeTruthy()
     })
 
     it('renders AddressSearchView with correct excludeAddress', () => {
-        const { getByTestId } = render(
-            <SendFundsSelectDestination
-                onNext={mockOnNext}
-                onBack={mockOnBack}
-            />,
-        )
+        const { getByTestId } = render(<SendFundsSelectDestination />)
 
         expect(getByTestId('address-search-view')).toBeTruthy()
         expect(getByTestId('exclude-address').textContent).toBe(
@@ -158,27 +154,17 @@ describe('SendFundsSelectDestination', () => {
         )
     })
 
-    it('calls setDestination and onNext when an address is selected', () => {
-        const { getByTestId } = render(
-            <SendFundsSelectDestination
-                onNext={mockOnNext}
-                onBack={mockOnBack}
-            />,
-        )
+    it('calls setDestination and navigates to ConfirmTransaction when an address is selected', () => {
+        const { getByTestId } = render(<SendFundsSelectDestination />)
 
         fireEvent.click(getByTestId('select-address-btn'))
 
         expect(mockSetDestination).toHaveBeenCalledWith('SELECTED_ADDRESS')
-        expect(mockOnNext).toHaveBeenCalled()
+        expect(mockNavigate).toHaveBeenCalledWith('ConfirmTransaction')
     })
 
     it('shows asset name in header', () => {
-        const { getByText } = render(
-            <SendFundsSelectDestination
-                onNext={mockOnNext}
-                onBack={mockOnBack}
-            />,
-        )
+        const { getByText } = render(<SendFundsSelectDestination />)
 
         expect(getByText('Test Asset')).toBeTruthy()
     })
