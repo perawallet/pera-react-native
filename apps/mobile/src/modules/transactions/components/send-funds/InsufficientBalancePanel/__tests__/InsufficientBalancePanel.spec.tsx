@@ -44,6 +44,7 @@ vi.mock('@components/core', () => ({
 
 describe('InsufficientBalancePanel', () => {
     const mockOnClose = vi.fn()
+    const mockOnContinue = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
@@ -54,15 +55,20 @@ describe('InsufficientBalancePanel', () => {
             <InsufficientBalancePanel
                 isVisible={true}
                 onClose={mockOnClose}
+                onContinue={mockOnContinue}
+                minBalance='0.756'
             />,
         )
 
         expect(screen.getByTestId('bottom-sheet')).toBeTruthy()
         expect(
-            screen.getByText('send_funds.input.exceeds_max_title'),
+            screen.getByText('send_funds.input.min_balance_title'),
         ).toBeTruthy()
         expect(
-            screen.getByText('send_funds.input.exceeds_max_body'),
+            screen.getByText('send_funds.input.min_balance_amount'),
+        ).toBeTruthy()
+        expect(
+            screen.getByText('send_funds.input.min_balance_body'),
         ).toBeTruthy()
     })
 
@@ -71,6 +77,8 @@ describe('InsufficientBalancePanel', () => {
             <InsufficientBalancePanel
                 isVisible={false}
                 onClose={mockOnClose}
+                onContinue={mockOnContinue}
+                minBalance='0.756'
             />,
         )
 
@@ -82,22 +90,43 @@ describe('InsufficientBalancePanel', () => {
             <InsufficientBalancePanel
                 isVisible={true}
                 onClose={mockOnClose}
+                onContinue={mockOnContinue}
+                minBalance='0.756'
             />,
         )
 
         expect(screen.getByTestId('icon-info-error')).toBeTruthy()
     })
 
-    it('calls onClose when button is pressed', () => {
+    it('calls onClose when cancel button is pressed', () => {
         render(
             <InsufficientBalancePanel
                 isVisible={true}
                 onClose={mockOnClose}
+                onContinue={mockOnContinue}
+                minBalance='0.756'
             />,
         )
 
-        fireEvent.click(screen.getByText('send_funds.info.i_understand'))
+        fireEvent.click(screen.getByText('common.cancel.label'))
 
         expect(mockOnClose).toHaveBeenCalledTimes(1)
+    })
+
+    it('calls onContinue when continue button is pressed', () => {
+        render(
+            <InsufficientBalancePanel
+                isVisible={true}
+                onClose={mockOnClose}
+                onContinue={mockOnContinue}
+                minBalance='0.756'
+            />,
+        )
+
+        fireEvent.click(
+            screen.getByText('common.continue.label'),
+        )
+
+        expect(mockOnContinue).toHaveBeenCalledTimes(1)
     })
 })

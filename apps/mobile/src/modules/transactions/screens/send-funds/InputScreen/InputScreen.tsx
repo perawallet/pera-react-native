@@ -47,8 +47,10 @@ export const InputScreen = () => {
         setMax,
         handleKey,
         handleNext,
+        handleContinuePastMbr,
         isMaxExceeded,
         dismissMaxExceeded,
+        minBalanceDisplay,
     } = useInputScreen()
     const { preferredFiatCurrency } = useCurrency()
     const selectedAccount = useSelectedAccount()
@@ -159,6 +161,8 @@ export const InputScreen = () => {
             <InsufficientBalancePanel
                 isVisible={isMaxExceeded}
                 onClose={dismissMaxExceeded}
+                onContinue={handleContinuePastMbr}
+                minBalance={minBalanceDisplay}
             />
         </PWView>
     )

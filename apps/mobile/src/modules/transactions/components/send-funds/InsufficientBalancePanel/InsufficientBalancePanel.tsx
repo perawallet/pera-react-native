@@ -23,11 +23,15 @@ import { useLanguage } from '@hooks/useLanguage'
 
 export type InsufficientBalancePanelProps = {
     onClose: () => void
+    onContinue: () => void
+    minBalance: string
 } & PWBottomSheetProps
 
 export const InsufficientBalancePanel = ({
     isVisible,
     onClose,
+    onContinue,
+    minBalance,
     ...rest
 }: InsufficientBalancePanelProps) => {
     const styles = useStyles()
@@ -49,15 +53,27 @@ export const InsufficientBalancePanel = ({
                     variant='h3'
                     style={styles.title}
                 >
-                    {t('send_funds.input.exceeds_max_title')}
+                    {t('send_funds.input.min_balance_title')}
                 </PWText>
                 <PWText style={styles.body}>
-                    {t('send_funds.input.exceeds_max_body')}
+                    {t('send_funds.input.min_balance_amount', { minBalance })}
                 </PWText>
+                <PWText style={styles.body}>
+                    {t('send_funds.input.min_balance_body')}
+                </PWText>
+            </PWView>
+            <PWView style={styles.buttonContainer}>
+                <PWButton
+                    variant='primary'
+                    onPress={onContinue}
+                    title={t('common.continue.label')}
+                    style={styles.button}
+                />
                 <PWButton
                     variant='secondary'
                     onPress={onClose}
-                    title={t('send_funds.info.i_understand')}
+                    title={t('common.cancel.label')}
+                    style={styles.button}
                 />
             </PWView>
         </PWBottomSheet>

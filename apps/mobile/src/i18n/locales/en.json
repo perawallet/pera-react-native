@@ -135,6 +135,9 @@
         "cancel": {
             "label": "Cancel"
         },
+        "continue": {
+            "label": "Continue"
+        },
         "close": {
             "label": "Close"
         },
@@ -468,7 +471,10 @@
             "error_body": "Please enter an amount greater than {{min}}.",
             "error_exceeds_max": "The amount exceeds your available balance.",
             "exceeds_max_title": "Insufficient Balance",
-            "exceeds_max_body": "The amount you entered exceeds your available balance. Your account must maintain a minimum balance to cover the minimum balance requirement (MBR) and transaction fees."
+            "exceeds_max_body": "The amount exceeds your available balance.",
+            "min_balance_title": "Min Balance",
+            "min_balance_amount": "Based on your account configuration, your minimum balance is {{minBalance}}.",
+            "min_balance_body": "By hitting continue, your transaction amount will be updated to maintain the Algorand Blockchain's minimum required balance. You'll be able to preview this change in the next step."
         },
         "destination": {
             "error_title": "Something went wrong",

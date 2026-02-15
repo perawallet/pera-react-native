@@ -22,8 +22,8 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.lg,
     },
     bodyContainer: {
-        gap: theme.spacing.lg,
-        padding: theme.spacing.xl,
+        gap: theme.spacing.md,
+        paddingHorizontal: theme.spacing.xl,
         width: '100%',
     },
     title: {
@@ -31,5 +31,13 @@ export const useStyles = makeStyles(theme => ({
     },
     body: {
         textAlign: 'center',
+    },
+    buttonContainer: {
+        gap: theme.spacing.md,
+        width: '100%',
+    },
+    button: {
+        width: 'auto',
+        alignSelf: 'stretch',
     },
 }))

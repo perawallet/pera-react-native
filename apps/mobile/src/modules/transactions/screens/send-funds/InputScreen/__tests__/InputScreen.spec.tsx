@@ -128,8 +128,8 @@ vi.mock('@hooks/useModalState', () => ({
 const mockHandleNext = vi.fn()
 const mockSetMax = vi.fn()
 const mockHandleKey = vi.fn()
-
 const mockDismissMaxExceeded = vi.fn()
+const mockHandleContinuePastMbr = vi.fn()
 
 const defaultInputViewReturn = {
     asset: { name: 'Algorand', unitName: 'ALGO', decimals: 6 },
@@ -141,8 +141,10 @@ const defaultInputViewReturn = {
     setMax: mockSetMax,
     handleKey: mockHandleKey,
     handleNext: mockHandleNext,
+    handleContinuePastMbr: mockHandleContinuePastMbr,
     isMaxExceeded: false,
     dismissMaxExceeded: mockDismissMaxExceeded,
+    minBalanceDisplay: '0.1',
 }
 
 describe('InputScreen', () => {

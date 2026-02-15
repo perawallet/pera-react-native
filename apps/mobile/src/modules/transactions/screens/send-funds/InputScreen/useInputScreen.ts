@@ -96,6 +96,29 @@ export const useInputScreen = () => {
         }
     }, [selectedAsset?.assetId, params, accountInformation, tokenBalance])
 
+    const totalBalance = useMemo(() => {
+        if (selectedAsset?.assetId === ALGO_ASSET_ID) {
+            const balance = toWholeUnits(
+                accountInformation?.amount ?? 0n,
+                ALGO_ASSET,
+            )
+            const fee = toWholeUnits(params?.minFee ?? 0, ALGO_ASSET)
+            return Decimal.max(balance.sub(fee), Decimal(0))
+        } else {
+            return Decimal.max(tokenBalance ?? Decimal(0), Decimal(0))
+        }
+    }, [selectedAsset?.assetId, params, accountInformation, tokenBalance])
+
+    const minBalanceDisplay = useMemo(() => {
+        if (selectedAsset?.assetId === ALGO_ASSET_ID) {
+            return toWholeUnits(
+                accountInformation?.minBalance ?? 0n,
+                ALGO_ASSET,
+            ).toString()
+        }
+        return '0'
+    }, [selectedAsset?.assetId, accountInformation])
+
     const fiatValue = useMemo(() => {
         if (!value || !fiatPrice) {
             return null
@@ -127,6 +150,20 @@ export const useInputScreen = () => {
             return
         }
 
+        if (Decimal(value).gt(totalBalance)) {
+            showToast(
+                {
+                    title: t('send_funds.input.exceeds_max_title'),
+                    body: t('send_funds.input.exceeds_max_body'),
+                    type: 'error',
+                },
+                {
+                    notifier: bottomSheetNotifier.current ?? undefined,
+                },
+            )
+            return
+        }
+
         if (Decimal(value).gt(maxAmount)) {
             setIsMaxExceeded(true)
             return
@@ -135,11 +172,19 @@ export const useInputScreen = () => {
         setAmount(Decimal(value ?? '0'))
         setNote(note ?? undefined)
         navigation.navigate('SelectDestination')
-    }, [value, maxAmount, note, navigation, showToast, t])
+    }, [value, maxAmount, totalBalance, note, navigation, showToast, t])
 
     const dismissMaxExceeded = useCallback(() => {
         setIsMaxExceeded(false)
     }, [])
+
+    const handleContinuePastMbr = useCallback(() => {
+        setIsMaxExceeded(false)
+        setAmount(maxAmount)
+        setValue(maxAmount.toString())
+        setNote(note ?? undefined)
+        navigation.navigate('SelectDestination')
+    }, [maxAmount, note, navigation, setAmount, setNote])
 
     const handleKey = useCallback(
         (key?: string) => {
@@ -182,9 +227,12 @@ export const useInputScreen = () => {
         accountInformation,
         tokenBalance,
         maxAmount,
+        totalBalance,
+        minBalanceDisplay,
         setMax,
         handleNext,
         handleKey,
+        handleContinuePastMbr,
         fiatValue,
         cryptoValue: value,
         setCryptoValue: setValue,
