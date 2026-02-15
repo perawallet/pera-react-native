@@ -19,7 +19,7 @@ const mockSetNote = vi.fn()
 const mockOnClose = vi.fn()
 const mockReset = vi.fn()
 
-let mockRenderCallback: (props: {
+type RenderCallback = (props: {
     field: { onChange: (v: string) => void; onBlur: () => void; value?: string }
 }) => React.ReactElement
 
@@ -49,12 +49,7 @@ vi.mock('react-hook-form', () => ({
         reset: mockReset,
         formState: { errors: {} },
     }),
-    Controller: ({
-        render: renderProp,
-    }: {
-        render: typeof mockRenderCallback
-    }) => {
-        mockRenderCallback = renderProp
+    Controller: ({ render: renderProp }: { render: RenderCallback }) => {
         return renderProp({
             field: {
                 onChange: vi.fn(),
