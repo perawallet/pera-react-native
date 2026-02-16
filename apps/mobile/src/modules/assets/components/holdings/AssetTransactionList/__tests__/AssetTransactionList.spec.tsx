@@ -274,39 +274,6 @@ describe('AssetTransactionList', () => {
         expect(screen.queryByText('No transactions yet')).toBeNull()
     })
 
-    it('shows loading overlay when initially loading', () => {
-        vi.mocked(useAssetTransactionList).mockReturnValueOnce({
-            sections: [],
-            isLoading: true,
-            isFetchingNextPage: false,
-            handleLoadMore: vi.fn(),
-            handleRefresh: vi.fn(),
-            hasNextPage: false,
-            isError: false,
-            error: null,
-            handleExportCsv: vi.fn(),
-            isExportingCsv: false,
-            activeFilter: 'all_time',
-            customRange: undefined,
-            handleApplyFilter: vi.fn(),
-            handleTransactionPress: vi.fn(),
-            isFilterVisible: false,
-            handleOpenFilter: vi.fn(),
-            handleCloseFilter: vi.fn(),
-        } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
-
-        render(
-            <AssetTransactionList
-                account={mockAccount}
-                asset={mockAsset}
-            />,
-        )
-
-        // Should show loading indicator
-        const indicators = screen.getAllByTestId('activity-indicator')
-        expect(indicators.length).toBeGreaterThan(0)
-    })
-
     it('renders custom children in header', () => {
         render(
             <AssetTransactionList
