@@ -154,6 +154,55 @@ describe('fetchTransactionsCsv', () => {
 
         expect(lastQueryClientCall?.signal).toBe(controller.signal)
     })
+
+    it('includes asset_id in query params when provided', async () => {
+        await fetchTransactionsCsv({
+            accountAddress: VALID_ADDRESS,
+            network: Networks.mainnet,
+            assetId: 12345,
+        })
+
+        expect(lastQueryClientCall?.params).toEqual({
+            asset_id: 12345,
+        })
+    })
+
+    it('omits asset_id when not provided', async () => {
+        await fetchTransactionsCsv({
+            accountAddress: VALID_ADDRESS,
+            network: Networks.mainnet,
+        })
+
+        expect(lastQueryClientCall?.params).toEqual({})
+    })
+
+    it('includes assetId in result metadata', async () => {
+        const result = await fetchTransactionsCsv({
+            accountAddress: VALID_ADDRESS,
+            network: Networks.mainnet,
+            assetId: 12345,
+        })
+
+        expect(result.assetId).toBe(12345)
+    })
+
+    it('combines date range and asset_id in params', async () => {
+        await fetchTransactionsCsv({
+            accountAddress: VALID_ADDRESS,
+            network: Networks.mainnet,
+            dateRange: {
+                startDate: '2024-01-01',
+                endDate: '2024-12-31',
+            },
+            assetId: 12345,
+        })
+
+        expect(lastQueryClientCall?.params).toEqual({
+            start_date: '2024-01-01',
+            end_date: '2024-12-31',
+            asset_id: 12345,
+        })
+    })
 })
 
 describe('CsvExportError', () => {

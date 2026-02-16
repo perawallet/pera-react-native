@@ -148,9 +148,9 @@ describe('useTransactionHistoryQuery', () => {
         expect(endpoints.fetchTransactionHistory).not.toHaveBeenCalled()
     })
 
-    test('passes filter parameters correctly', async () => {
+    test('passes filter parameters correctly with assetId as string', async () => {
         const filters = {
-            assetId: 31566704,
+            assetId: '31566704',
             afterTime: '2024-01-01T00:00:00Z',
             beforeTime: '2024-12-31T23:59:59Z',
             limit: 50,
@@ -174,7 +174,7 @@ describe('useTransactionHistoryQuery', () => {
             expect.objectContaining({
                 accountAddress: mockAddress,
                 network: 'mainnet',
-                assetId: filters.assetId,
+                assetId: '31566704',
                 afterTime: filters.afterTime,
                 beforeTime: filters.beforeTime,
                 limit: filters.limit,

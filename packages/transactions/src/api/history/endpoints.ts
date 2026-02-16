@@ -28,7 +28,7 @@ export type FetchTransactionHistoryParams = {
     /** The network to fetch transactions from */
     network: Network
     /** Optional: Filter transactions to only show those involving a specific asset */
-    assetId?: number
+    assetId?: string
     /** Optional: Only return transactions confirmed after this time (ISO 8601) */
     afterTime?: string
     /** Optional: Only return transactions confirmed before this time (ISO 8601) */
@@ -65,15 +65,15 @@ const buildQueryParams = (
     }
 
     if (params.assetId !== undefined) {
-        queryParams.asset_id = params.assetId
+        queryParams.asset_id = parseInt(params.assetId, 10)
     }
 
     if (params.afterTime !== undefined) {
-        queryParams.start_date = params.afterTime
+        queryParams.after_time = params.afterTime
     }
 
     if (params.beforeTime !== undefined) {
-        queryParams.end_date = params.beforeTime
+        queryParams.before_time = params.beforeTime
     }
 
     return queryParams

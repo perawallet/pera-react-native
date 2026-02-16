@@ -180,4 +180,42 @@ describe('useCsvExportMutation', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(false))
         expect(result.current.result).toBeNull()
     })
+
+    it('passes assetId as string to fetchTransactionsCsv', async () => {
+        const mockResult = {
+            csvContent: 'date,amount\n2024-01-01,1000',
+            filename: 'export.csv',
+            accountAddress: VALID_ADDRESS,
+            rowCount: 1,
+            assetId: '12345',
+        }
+        vi.mocked(fetchTransactionsCsv).mockResolvedValueOnce(mockResult)
+
+        const { result } = renderHook(
+            () =>
+                useCsvExportMutation({
+                    network: Networks.mainnet,
+                    onSuccess: mockOnSuccess,
+                }),
+            { wrapper: createWrapper() },
+        )
+
+        act(() => {
+            result.current.exportCsv({
+                accountAddress: VALID_ADDRESS,
+                assetId: '12345',
+            })
+        })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+        expect(fetchTransactionsCsv).toHaveBeenCalledWith({
+            accountAddress: VALID_ADDRESS,
+            dateRange: undefined,
+            filename: undefined,
+            assetId: '12345',
+            network: Networks.mainnet,
+        })
+        expect(result.current.result?.assetId).toBe('12345')
+    })
 })
