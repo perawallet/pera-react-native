@@ -11,13 +11,23 @@
  */
 
 import { fireEvent, render } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AccountSelection } from '../AccountSelection'
 import { useModalState } from '@hooks/useModalState'
+import { AccountMenuBottomSheet } from '@modules/accounts/components/AccountMenuBottomSheet'
+
+const mockSetIsOnboarding = vi.fn()
 
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
     useSelectedAccount: vi.fn(() => null),
     useAllAccounts: vi.fn(() => []),
+}))
+
+vi.mock('@modules/onboarding/hooks', () => ({
+    useIsOnboarding: () => ({
+        isOnboarding: false,
+        setIsOnboarding: mockSetIsOnboarding,
+    }),
 }))
 
 vi.mock('@hooks/useModalState', () => ({
@@ -37,6 +47,10 @@ vi.mock('../../AccountDisplay', () => ({
 }))
 
 describe('AccountSelection', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
     it('renders correctly', () => {
         const { container } = render(<AccountSelection />)
         expect(container).toBeTruthy()
@@ -56,5 +70,26 @@ describe('AccountSelection', () => {
         fireEvent.click(getByTestId('account-display'))
 
         expect(openMock).toHaveBeenCalled()
+    })
+
+    it('closes bottom sheet and starts onboarding when add account is triggered', () => {
+        const closeMock = vi.fn()
+        const useModalStateMock = vi.mocked(useModalState)
+        useModalStateMock.mockReturnValue({
+            isOpen: true,
+            open: vi.fn(),
+            close: closeMock,
+            toggle: vi.fn(),
+        })
+
+        render(<AccountSelection />)
+
+        // Get the onAddAccount prop passed to AccountMenuBottomSheet
+        const bottomSheetMock = vi.mocked(AccountMenuBottomSheet)
+        const onAddAccount = bottomSheetMock.mock.calls[0][0].onAddAccount
+        onAddAccount()
+
+        expect(closeMock).toHaveBeenCalled()
+        expect(mockSetIsOnboarding).toHaveBeenCalledWith(true)
     })
 })

@@ -19,12 +19,14 @@ export type AccountMenuBottomSheetProps = {
     isVisible: boolean
     onClose: () => void
     onSelected: (account: WalletAccount) => void
+    onAddAccount: () => void
 }
 
 export const AccountMenuBottomSheet = ({
     isVisible,
     onClose,
     onSelected,
+    onAddAccount,
 }: AccountMenuBottomSheetProps) => {
     const styles = useStyles()
 
@@ -42,7 +44,10 @@ export const AccountMenuBottomSheet = ({
                     />
                 }
             />
-            <AccountMenu onSelected={onSelected} />
+            <AccountMenu
+                onSelected={onSelected}
+                onAddAccount={onAddAccount}
+            />
         </PWBottomSheet>
     )
 }

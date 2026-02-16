@@ -12,7 +12,14 @@
 
 import React from 'react'
 import { useStyles } from './styles'
-import { PWImage, PWLoadingOverlay, PWText, PWView } from '@components/core'
+import {
+    PWIcon,
+    PWImage,
+    PWLoadingOverlay,
+    PWText,
+    PWToolbar,
+    PWView,
+} from '@components/core'
 import { PanelButton } from '@components/PanelButton'
 import { useOnboardingScreen } from './useOnboardingScreen'
 
@@ -35,11 +42,23 @@ export const OnboardingScreen = () => {
         handleHDWalletPress,
         handleAlgo25Press,
         isCreatingAccount,
+        canDismiss,
+        handleClose,
     } = useOnboardingScreen()
 
     return (
         <>
             <PWView style={styles.rootContainer}>
+                {canDismiss && (
+                    <PWToolbar
+                        right={
+                            <PWIcon
+                                name='cross'
+                                onPress={handleClose}
+                            />
+                        }
+                    />
+                )}
                 <PWView style={styles.headerContainer}>
                     <PWText
                         style={styles.headerTitle}

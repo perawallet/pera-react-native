@@ -14,6 +14,7 @@ import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { OnboardingScreen } from '../OnboardingScreen'
 import { config } from '@perawallet/wallet-core-config'
+import { useOnboardingStore } from '@modules/onboarding/hooks/useOnboardingStore'
 
 // Mock navigation
 const mockNavigate = vi.fn()
@@ -36,6 +37,7 @@ vi.mock('@modules/webview', () => ({
 
 // Mock account creation
 const mockCreateAccount = vi.fn()
+const mockUseHasAccounts = vi.fn(() => false)
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-accounts',
@@ -43,6 +45,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         useCreateAccount: () => mockCreateAccount,
+        useHasAccounts: () => mockUseHasAccounts(),
     }
 })
 
@@ -94,6 +97,8 @@ vi.mock('react-i18next', async () => {
 describe('OnboardingScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockUseHasAccounts.mockReturnValue(false)
+        useOnboardingStore.getState().reset()
     })
 
     it('renders correctly', () => {
@@ -193,6 +198,83 @@ describe('OnboardingScreen', () => {
 
         expect(mockPush).toHaveBeenCalledWith('ImportInfo', {
             accountType: 'hdWallet',
+        })
+    })
+
+    it('does not render close button during first-time onboarding', () => {
+        render(<OnboardingScreen />)
+
+        expect(screen.queryByTestId('icon-cross')).toBeNull()
+    })
+
+    describe('when used for adding accounts', () => {
+        beforeEach(() => {
+            mockUseHasAccounts.mockReturnValue(true)
+        })
+
+        it('renders close button when user already has accounts', () => {
+            render(<OnboardingScreen />)
+
+            expect(screen.getByTestId('icon-cross')).toBeTruthy()
+        })
+
+        it('sets isOnboarding to false when close button is pressed', () => {
+            useOnboardingStore.getState().setIsOnboarding(true)
+
+            render(<OnboardingScreen />)
+
+            const closeButton = screen.getByTestId('icon-cross')
+            fireEvent.click(closeButton)
+
+            expect(useOnboardingStore.getState().isOnboarding).toBe(false)
+        })
+
+        it('navigates to NameAccount when Create Wallet is pressed', async () => {
+            const mockAccount = {
+                id: 'test-id',
+                address: 'TEST_ADDRESS',
+                type: 'hdWallet' as const,
+                canSign: true,
+                hdWalletDetails: {
+                    walletId: 'test-wallet-id',
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                },
+            }
+
+            mockCreateAccount.mockResolvedValue(mockAccount)
+
+            render(<OnboardingScreen />)
+
+            const createButton = screen.getByText(
+                'onboarding.main_screen.create_wallet',
+            )
+            fireEvent.click(createButton)
+
+            await vi.waitFor(() => {
+                expect(mockCreateAccount).toHaveBeenCalledWith({
+                    account: 0,
+                    keyIndex: 0,
+                })
+                expect(mockPush).toHaveBeenCalledWith('NameAccount', {
+                    account: mockAccount,
+                })
+            })
+        })
+
+        it('opens ImportOptionsBottomSheet when Import Account is pressed', () => {
+            render(<OnboardingScreen />)
+
+            const importButton = screen.getByText(
+                'onboarding.main_screen.import_account',
+            )
+            fireEvent.click(importButton)
+
+            expect(
+                screen.getByText('onboarding.import_options.title'),
+            ).toBeTruthy()
         })
     })
 })

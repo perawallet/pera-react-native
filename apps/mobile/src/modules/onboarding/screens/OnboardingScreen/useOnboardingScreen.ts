@@ -16,7 +16,10 @@ import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { useModalState } from '@hooks/useModalState'
 import { useIsOnboarding } from '@modules/onboarding/hooks'
-import { useCreateAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useCreateAccount,
+    useHasAccounts,
+} from '@perawallet/wallet-core-accounts'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
@@ -36,6 +39,7 @@ export const useOnboardingScreen = () => {
     } = useModalState()
     const { setIsOnboarding } = useIsOnboarding()
     const createAccount = useCreateAccount()
+    const hasAccounts = useHasAccounts()
     const { showToast } = useToast()
     const { t } = useLanguage()
 
@@ -98,6 +102,10 @@ export const useOnboardingScreen = () => {
         navigation.push('ImportInfo', { accountType: 'algo25' })
     }, [closeImportOptions, navigation, setIsOnboarding])
 
+    const handleClose = useCallback(() => {
+        setIsOnboarding(false)
+    }, [setIsOnboarding])
+
     return {
         isImportOptionsVisible,
         handleTermsPress,
@@ -108,5 +116,7 @@ export const useOnboardingScreen = () => {
         handleHDWalletPress,
         handleAlgo25Press,
         isCreatingAccount,
+        canDismiss: hasAccounts,
+        handleClose,
     }
 }
