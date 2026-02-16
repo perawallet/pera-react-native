@@ -26,6 +26,7 @@ import { useAccountMenu } from './useAccountMenu'
 
 export type AccountMenuProps = {
     onSelected: (account: WalletAccount) => void
+    onAddAccount: () => void
 }
 
 export const AccountMenu = (props: AccountMenuProps) => {
@@ -33,6 +34,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
     const { t } = useLanguage()
     const { accounts, selectedAccountAddress, handleTap } =
         useAccountMenu(props)
+    const { onAddAccount } = props
 
     return (
         <PWView style={styles.container}>
@@ -54,9 +56,11 @@ export const AccountMenu = (props: AccountMenuProps) => {
                             paddingStyle='dense'
                         />
                         <PWButton
+                            testID='account_menu_add_account_button'
                             variant='helper'
                             icon='plus'
                             paddingStyle='dense'
+                            onPress={onAddAccount}
                         />
                     </PWView>
                 </PWView>

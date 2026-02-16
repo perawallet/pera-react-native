@@ -42,6 +42,7 @@ describe('AccountMenuBottomSheet', () => {
             isVisible: true,
             onClose: vi.fn(),
             onSelected: vi.fn(),
+            onAddAccount: vi.fn(),
         }
 
         render(<AccountMenuBottomSheet {...props} />)
@@ -55,6 +56,7 @@ describe('AccountMenuBottomSheet', () => {
             isVisible: false,
             onClose: vi.fn(),
             onSelected: vi.fn(),
+            onAddAccount: vi.fn(),
         }
 
         render(<AccountMenuBottomSheet {...props} />)

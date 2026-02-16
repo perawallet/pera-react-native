@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen } from '@test-utils/render'
+import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { AccountMenu } from '../AccountMenu'
 
@@ -43,10 +43,31 @@ vi.mock('../../PortfolioView', () => ({
 describe('AccountMenu', () => {
     it('renders account list and portfolio', () => {
         const onSelected = vi.fn()
-        render(<AccountMenu onSelected={onSelected} />)
+        const onAddAccount = vi.fn()
+        render(
+            <AccountMenu
+                onSelected={onSelected}
+                onAddAccount={onAddAccount}
+            />,
+        )
 
-        screen.debug()
         expect(screen.getByText('account_menu.title')).toBeTruthy()
         expect(screen.getByTestId('PortfolioView')).toBeTruthy()
+    })
+
+    it('calls onAddAccount when add account button is pressed', () => {
+        const onSelected = vi.fn()
+        const onAddAccount = vi.fn()
+        render(
+            <AccountMenu
+                onSelected={onSelected}
+                onAddAccount={onAddAccount}
+            />,
+        )
+
+        const addButton = screen.getByTestId('account_menu_add_account_button')
+        fireEvent.click(addButton)
+
+        expect(onAddAccount).toHaveBeenCalledOnce()
     })
 })

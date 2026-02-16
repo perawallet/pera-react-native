@@ -10,10 +10,12 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import {
     useSelectedAccount,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useIsOnboarding } from '@modules/onboarding/hooks'
 import { useStyles } from './styles'
 import { AccountMenuBottomSheet } from '@modules/accounts/components/AccountMenuBottomSheet'
 import { useModalState } from '@hooks/useModalState'
@@ -32,11 +34,17 @@ export const AccountSelection = ({
     const styles = useStyles()
     const account = useSelectedAccount()
     const accountMenuState = useModalState()
+    const { setIsOnboarding } = useIsOnboarding()
 
     const handleSelected = (selectedAccount: WalletAccount) => {
         accountMenuState.close()
         onSelected?.(selectedAccount)
     }
+
+    const handleAddAccount = useCallback(() => {
+        accountMenuState.close()
+        setIsOnboarding(true)
+    }, [accountMenuState, setIsOnboarding])
 
     return (
         <>
@@ -55,6 +63,7 @@ export const AccountSelection = ({
                 isVisible={accountMenuState.isOpen}
                 onClose={accountMenuState.close}
                 onSelected={handleSelected}
+                onAddAccount={handleAddAccount}
             />
         </>
     )
