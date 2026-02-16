@@ -10,9 +10,5 @@
  limitations under the License
  */
 
-<<<<<<<< HEAD:apps/mobile/src/modules/transactions/components/send-funds/InsufficientBalancePanel/index.ts
 export { InsufficientBalancePanel } from './InsufficientBalancePanel'
 export type { InsufficientBalancePanelProps } from './InsufficientBalancePanel'
-========
-export { AssetSelectionScreen } from './AssetSelectionScreen'
->>>>>>>> main:apps/mobile/src/modules/transactions/screens/send-funds/AssetSelectionScreen/index.ts
