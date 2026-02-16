@@ -29,6 +29,7 @@ import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { TransactionDetailsScreen } from '@modules/signing/screens/TransactionDetailsScreen'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
+import { useIsOnboarding } from '@modules/onboarding/hooks'
 
 import { RootStackParamList } from './types'
 import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
@@ -41,6 +42,7 @@ export const MainRoutes = () => {
     const isDarkMode = useIsDarkMode()
     const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
     const hasAccounts = useHasAccounts()
+    const { isOnboarding } = useIsOnboarding()
 
     return (
         <NavigationContainer theme={navTheme}>
@@ -59,7 +61,7 @@ export const MainRoutes = () => {
                             component={OnboardingStackNavigator}
                         />
                     )}
-                    {hasAccounts && (
+                    {hasAccounts && !isOnboarding && (
                         <>
                             <RootStack.Screen
                                 name='TabBar'

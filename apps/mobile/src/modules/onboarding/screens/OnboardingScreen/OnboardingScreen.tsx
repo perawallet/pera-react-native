@@ -12,7 +12,7 @@
 
 import React from 'react'
 import { useStyles } from './styles'
-import { PWImage, PWText, PWView } from '@components/core'
+import { PWImage, PWLoadingOverlay, PWText, PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
 import { useOnboardingScreen } from './useOnboardingScreen'
 
@@ -34,6 +34,7 @@ export const OnboardingScreen = () => {
         handleCloseImportOptions,
         handleHDWalletPress,
         handleAlgo25Press,
+        isCreatingAccount,
     } = useOnboardingScreen()
 
     return (
@@ -65,6 +66,7 @@ export const OnboardingScreen = () => {
                         onPress={handleCreateAccount}
                         leftIcon={'wallet-with-algo'}
                         rightIcon={'chevron-right'}
+                        disabled={isCreatingAccount}
                     />
 
                     <PWText
@@ -109,6 +111,11 @@ export const OnboardingScreen = () => {
                 onClose={handleCloseImportOptions}
                 onHDWalletPress={handleHDWalletPress}
                 onAlgo25Press={handleAlgo25Press}
+            />
+
+            <PWLoadingOverlay
+                isVisible={isCreatingAccount}
+                title={t('onboarding.create_account.processing')}
             />
         </>
     )

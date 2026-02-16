@@ -34,6 +34,29 @@ vi.mock('@modules/webview', () => ({
     }),
 }))
 
+// Mock account creation
+const mockCreateAccount = vi.fn()
+vi.mock('@perawallet/wallet-core-accounts', async () => {
+    const actual = await vi.importActual<object>(
+        '@perawallet/wallet-core-accounts',
+    )
+    return {
+        ...actual,
+        useCreateAccount: () => mockCreateAccount,
+    }
+})
+
+// Mock deferToNextCycle
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const actual = await vi.importActual<object>(
+        '@perawallet/wallet-core-shared',
+    )
+    return {
+        ...actual,
+        deferToNextCycle: (callback: () => Promise<void>) => callback(),
+    }
+})
+
 // Uses global mock from vitest.setup.ts for @components/core
 
 // Mock react-i18next
@@ -115,7 +138,23 @@ describe('OnboardingScreen', () => {
         })
     })
 
-    it('navigates to NameAccount when Create Wallet is pressed', () => {
+    it('navigates to NameAccount when Create Wallet is pressed', async () => {
+        const mockAccount = {
+            id: 'test-id',
+            address: 'TEST_ADDRESS',
+            type: 'hdWallet' as const,
+            canSign: true,
+            hdWalletDetails: {
+                walletId: 'test-wallet-id',
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: 9,
+            },
+        }
+
+        mockCreateAccount.mockResolvedValue(mockAccount)
+
         render(<OnboardingScreen />)
 
         const createButton = screen.getByText(
@@ -123,7 +162,16 @@ describe('OnboardingScreen', () => {
         )
         fireEvent.click(createButton)
 
-        expect(mockPush).toHaveBeenCalledWith('NameAccount')
+        // Wait for async account creation
+        await vi.waitFor(() => {
+            expect(mockCreateAccount).toHaveBeenCalledWith({
+                account: 0,
+                keyIndex: 0,
+            })
+            expect(mockPush).toHaveBeenCalledWith('NameAccount', {
+                account: mockAccount,
+            })
+        })
     })
 
     it('opens ImportOptionsBottomSheet and navigates to ImportInfo when an option is selected', () => {
