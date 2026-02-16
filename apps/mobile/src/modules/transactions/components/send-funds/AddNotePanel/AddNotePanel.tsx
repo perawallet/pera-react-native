@@ -82,12 +82,8 @@ export const AddNotePanel = ({
                     center={
                         <PWText variant='h4'>
                             {isEdit
-                                ? t('send_funds.confirmation.edit')
-                                : t('send_funds.add_note.button').replace(
-                                      '+ ',
-                                      '',
-                                  )}{' '}
-                            Note
+                                ? t('send_funds.add_note.edit')
+                                : t('send_funds.add_note.button')}
                         </PWText>
                     }
                     right={

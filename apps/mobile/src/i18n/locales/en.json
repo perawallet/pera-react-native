@@ -446,7 +446,9 @@
         "add_note": {
             "done": "Done",
             "placeholder": "Enter your note",
-            "button": "+ Add Note"
+            "button": "+ Add Note",
+            "button_plain": "Add Note",
+            "edit": "Edit Note"
         },
         "asset_selection": {
             "title": "Select Asset"
