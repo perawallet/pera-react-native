@@ -88,6 +88,7 @@ export const InputScreen = () => {
                     iconProps={{ width: 16, height: 16 }}
                     textProps={{ style: styles.accountDisplaySubHeading }}
                     showChevron={false}
+                    compact
                 />
             </PWHeader>
             <CurrencyDisplay

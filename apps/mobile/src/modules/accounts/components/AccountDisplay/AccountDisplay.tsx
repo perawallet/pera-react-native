@@ -33,6 +33,7 @@ export type AccountDisplayProps = {
     textProps?: PWTextProps
     showChevron?: boolean
     noBorder?: boolean
+    compact?: boolean
 } & PWViewProps
 
 export const AccountDisplay = ({
@@ -41,6 +42,7 @@ export const AccountDisplay = ({
     showChevron = true,
     textProps,
     noBorder,
+    compact = false,
     ...rest
 }: AccountDisplayProps) => {
     const { theme } = useTheme()
@@ -61,14 +63,14 @@ export const AccountDisplay = ({
                 />
             )}
             <PWView style={styles.textContainer}>
-                <PWText
+                {!compact && <PWText
                     style={textProps?.style ?? styles.text}
                     variant={textProps?.variant ?? 'h4'}
                     numberOfLines={1}
                     ellipsizeMode='tail'
                 >
                     {displayName}
-                </PWText>
+                </PWText>}
                 {!!account && (
                     <PWText
                         style={styles.addressText}

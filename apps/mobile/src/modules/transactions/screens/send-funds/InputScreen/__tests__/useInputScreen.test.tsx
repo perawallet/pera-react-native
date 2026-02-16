@@ -287,14 +287,14 @@ describe('useInputScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
     })
 
-    it('setMax updates value to max', () => {
+    it('setMax sets value to full account balance', () => {
+        // account balance = 100 ALGO (100_000_000 microAlgo)
         const { result } = renderHook(() => useInputScreen())
         act(() => {
             result.current.setMax()
         })
-        expect(result.current.cryptoValue).toBe('99.899')
-        expect(mockSetAmount).toHaveBeenCalled()
-        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('99.899')
+        expect(result.current.cryptoValue).toBe('100')
+        expect(mockSetAmount).not.toHaveBeenCalled()
     })
 
     it('treats leading decimal point as 0.', () => {

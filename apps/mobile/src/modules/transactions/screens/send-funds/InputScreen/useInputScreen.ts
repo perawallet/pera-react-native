@@ -30,7 +30,6 @@ import {
     useSuggestedParametersQuery,
     useAccountInformationQuery,
 } from '@perawallet/wallet-core-blockchain'
-import { logger } from '@perawallet/wallet-core-shared'
 import { bottomSheetNotifier } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
@@ -40,7 +39,7 @@ export const useInputScreen = () => {
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const selectedAccount = useSelectedAccount()
-    const { selectedAsset, note, setNote, setAmount } = useSendFunds()
+    const { selectedAsset, setAmount } = useSendFunds()
     const [value, setValue] = useState<string | null>()
     const { showToast } = useToast()
     const { t } = useLanguage()
@@ -102,8 +101,7 @@ export const useInputScreen = () => {
                 accountInformation?.amount ?? 0n,
                 ALGO_ASSET,
             )
-            const fee = toWholeUnits(params?.minFee ?? 0, ALGO_ASSET)
-            return Decimal.max(balance.sub(fee), Decimal(0))
+            return Decimal.max(balance, Decimal(0))
         } else {
             return Decimal.max(tokenBalance ?? Decimal(0), Decimal(0))
         }
@@ -128,10 +126,8 @@ export const useInputScreen = () => {
     }, [value, fiatPrice])
 
     const setMax = useCallback(() => {
-        logger.debug('Max amount', { maxAmount: maxAmount.toString() })
-        setAmount(maxAmount)
-        setValue(maxAmount.toString())
-    }, [maxAmount])
+        setValue(totalBalance.toString())
+    }, [totalBalance])
 
     const [isMaxExceeded, setIsMaxExceeded] = useState(false)
 
@@ -170,9 +166,8 @@ export const useInputScreen = () => {
         }
 
         setAmount(Decimal(value ?? '0'))
-        setNote(note ?? undefined)
         navigation.navigate('SelectDestination')
-    }, [value, maxAmount, totalBalance, note, navigation, showToast, t])
+    }, [value, maxAmount, totalBalance, navigation, showToast, t])
 
     const dismissMaxExceeded = useCallback(() => {
         setIsMaxExceeded(false)
@@ -182,9 +177,8 @@ export const useInputScreen = () => {
         setIsMaxExceeded(false)
         setAmount(maxAmount)
         setValue(maxAmount.toString())
-        setNote(note ?? undefined)
         navigation.navigate('SelectDestination')
-    }, [maxAmount, note, navigation, setAmount, setNote])
+    }, [maxAmount, navigation, setAmount])
 
     const handleKey = useCallback(
         (key?: string) => {
@@ -225,20 +219,19 @@ export const useInputScreen = () => {
         selectedAsset,
         params,
         accountInformation,
-        tokenBalance,
-        maxAmount,
-        totalBalance,
         minBalanceDisplay,
+        fiatValue,
+        cryptoValue: value,
+        isMaxExceeded,
         setMax,
         handleNext,
         handleKey,
         handleContinuePastMbr,
-        fiatValue,
-        cryptoValue: value,
-        setCryptoValue: setValue,
-        note,
-        setNote,
-        isMaxExceeded,
         dismissMaxExceeded,
+        
+        //exposed for testing only
+        setCryptoValue: setValue,
+        totalBalance,
+        maxAmount,
     }
 }
