@@ -123,9 +123,7 @@ describe('InsufficientBalancePanel', () => {
             />,
         )
 
-        fireEvent.click(
-            screen.getByText('common.continue.label'),
-        )
+        fireEvent.click(screen.getByText('common.continue.label'))
 
         expect(mockOnContinue).toHaveBeenCalledTimes(1)
     })
