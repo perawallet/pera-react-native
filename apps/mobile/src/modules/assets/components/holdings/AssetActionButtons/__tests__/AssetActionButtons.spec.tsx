@@ -32,7 +32,7 @@ vi.mock('@react-navigation/native', async importOriginal => {
 })
 
 vi.mock(
-    '@modules/transactions/components/SendFunds/SendFundsBottomSheet/SendFundsBottomSheet',
+    '@modules/transactions/components/send-funds/SendFundsBottomSheet/SendFundsBottomSheet',
     () => ({
         SendFundsBottomSheet: () => null,
     }),

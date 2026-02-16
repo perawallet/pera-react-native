@@ -11,7 +11,11 @@
  */
 
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
-import { formatDatetime, HistoryPeriod } from '@perawallet/wallet-core-shared'
+import {
+    DEFAULT_PRECISION,
+    formatDatetime,
+    HistoryPeriod,
+} from '@perawallet/wallet-core-shared'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
 import { WealthChart } from '@components/WealthChart'
@@ -26,6 +30,7 @@ import {
 
 import { useLanguage } from '@hooks/useLanguage'
 import { NoFundsButtonPanel } from '../NoFundsButtonPanel'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 
 export type AccountOverviewHeaderProps = {
     account: WalletAccount
@@ -86,7 +91,8 @@ export const AccountOverviewHeader = ({
                                 : portfolioAlgoValue
                         }
                         currency='ALGO'
-                        precision={2}
+                        precision={ALGO_ASSET.decimals}
+                        minPrecision={DEFAULT_PRECISION}
                         style={styles.primaryCurrency}
                         isLoading={isPending}
                     />

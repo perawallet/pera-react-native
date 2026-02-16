@@ -16,7 +16,7 @@ import { PinSecurityPrompt } from '../PinSecurityPrompt/PinSecurityPrompt'
 import { PromptViewProps } from '@modules/prompts/models'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import { UserPreferences } from '@constants/user-preferences'
-import { PROMPT_DISPLAY_DELAY } from '@constants/ui'
+import { LONG_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 
 const PROMPT_SEQUENCE = {
     [UserPreferences._securityPinSetupPrompt]: PinSecurityPrompt,
@@ -67,7 +67,7 @@ export const usePromptContainer = (): UsePromptContainerResult => {
         //it's too jarring if the prompt appears immediately after the user opens the app
         const timeout = setTimeout(() => {
             setNextPrompt(prompt)
-        }, PROMPT_DISPLAY_DELAY)
+        }, LONG_PROMPT_DISPLAY_DELAY)
 
         return () => clearTimeout(timeout)
     }, [prompt])

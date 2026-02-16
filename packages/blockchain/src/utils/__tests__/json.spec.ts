@@ -11,7 +11,11 @@
  */
 
 import { describe, it, expect, vi } from 'vitest'
-import { algorandSafeJsonStringify } from '../json'
+import {
+    algorandSafeJsonStringify,
+    algorandSafeQuerySerialize,
+    algorandSafeQueryParse,
+} from '../json'
 import { encodeAlgorandAddress } from '../addresses'
 
 vi.mock('../addresses', () => ({
@@ -125,5 +129,57 @@ describe('algorandSafeJsonStringify', () => {
 
         expect(parsed.value).toBe(0)
         expect(typeof parsed.value).toBe('number')
+    })
+})
+
+describe('algorandSafeQuerySerialize / algorandSafeQueryParse', () => {
+    it('round-trips bigint values', () => {
+        const input = { amount: 1_500_000n, minBalance: 100_000n }
+        const serialized = algorandSafeQuerySerialize(input)
+        const parsed = algorandSafeQueryParse(serialized) as typeof input
+
+        expect(parsed.amount).toBe(1_500_000n)
+        expect(parsed.minBalance).toBe(100_000n)
+    })
+
+    it('round-trips bigint values exceeding MAX_SAFE_INTEGER', () => {
+        const big = BigInt(Number.MAX_SAFE_INTEGER) + 100n
+        const input = { value: big }
+        const parsed = algorandSafeQueryParse(
+            algorandSafeQuerySerialize(input),
+        ) as typeof input
+
+        expect(parsed.value).toBe(big)
+    })
+
+    it('preserves non-bigint types', () => {
+        const input = {
+            name: 'Pera',
+            count: 42,
+            active: true,
+            items: [1, 2, 3],
+            nested: { key: 'val' },
+        }
+        const parsed = algorandSafeQueryParse(
+            algorandSafeQuerySerialize(input),
+        ) as typeof input
+
+        expect(parsed).toEqual(input)
+    })
+
+    it('round-trips nested objects with mixed types', () => {
+        const input = {
+            address: 'ADDR',
+            balance: { microAlgos: 5_000_000n },
+            assets: [{ assetId: 123n, amount: 1000n }],
+        }
+        const parsed = algorandSafeQueryParse(
+            algorandSafeQuerySerialize(input),
+        ) as typeof input
+
+        expect(parsed.address).toBe('ADDR')
+        expect(parsed.balance.microAlgos).toBe(5_000_000n)
+        expect(parsed.assets[0].assetId).toBe(123n)
+        expect(parsed.assets[0].amount).toBe(1000n)
     })
 })

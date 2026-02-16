@@ -11,7 +11,7 @@
  */
 
 export const UserPreferences = {
-    spendAgreed: 'send-fund-agreed',
+    transactionInfoAgreed: 'transaction-info-agreed',
     chartVisible: 'chart-visible',
     developerMenuEnabled: 'developer-menu-enabled',
     advancedSecurityEnabled: 'advanced-security-enabled',

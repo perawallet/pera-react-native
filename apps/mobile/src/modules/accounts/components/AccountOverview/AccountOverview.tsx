@@ -11,7 +11,7 @@
  */
 
 import { AccountOverviewHeader } from './AccountOverviewHeader'
-import { SendFundsBottomSheet } from '@modules/transactions/components/SendFunds/SendFundsBottomSheet/SendFundsBottomSheet'
+import { SendFundsBottomSheet } from '@modules/transactions/components/send-funds/SendFundsBottomSheet/SendFundsBottomSheet'
 import { ReceiveFundsBottomSheet } from '@modules/transactions/components/ReceiveFunds/ReceiveFundsBottomSheet/ReceiveFundsBottomSheet'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
@@ -24,8 +24,6 @@ export type AccountOverviewProps = {
     chartVisible: boolean
 }
 
-//TODO implement min balance display and info icon
-//TODO layout and spacing needs a bit of clean up
 export const AccountOverview = ({
     account,
     chartVisible,

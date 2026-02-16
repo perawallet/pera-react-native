@@ -57,6 +57,13 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     })),
     ALGO_ASSET_ID: '0',
     ALGO_ASSET: { id: '0', decimals: 6 },
+    toWholeUnits: (
+        value: Decimal | number | bigint,
+        asset: { decimals: number },
+    ) =>
+        new Decimal(typeof value === 'number' ? value : value.toString()).div(
+            Decimal.pow(10, asset.decimals),
+        ),
 }))
 
 const createWrapper = () => {
@@ -107,7 +114,7 @@ describe('useAccountBalances', () => {
         // Mock algokit response format
         mockGetInformation.mockResolvedValue({
             address: 'ADDR1',
-            balance: { algos: 1000000, microAlgos: 1000000 }, // 1 Algo
+            balance: { algos: 1, microAlgos: 1000000 }, // 1 Algo
             assets: [
                 {
                     assetId: 123,
@@ -127,11 +134,11 @@ describe('useAccountBalances', () => {
 
         const accountData = result.current.accountBalances.get('ADDR1')
         expect(accountData).toBeDefined()
-        // With empty asset prices mock, algoValue and fiatValue will be 0
-        expect(accountData?.algoValue).toEqual(Decimal(0))
+        // With empty asset prices mock, fiatValue is 0 but algoValue includes the ALGO balance
+        expect(accountData?.algoValue).toEqual(Decimal(1))
         expect(accountData?.fiatValue).toEqual(Decimal(0))
 
-        expect(result.current.portfolioAlgoValue).toEqual(Decimal(0))
+        expect(result.current.portfolioAlgoValue).toEqual(Decimal(1))
         expect(result.current.portfolioFiatValue).toEqual(Decimal(0))
     })
 
@@ -200,7 +207,7 @@ describe('useAccountBalances', () => {
         // Note: the hook reads balance.algos and divides by 10^6
         mockGetInformation.mockResolvedValue({
             address: 'ADDR1',
-            balance: { algos: 5000000, microAlgos: 5000000 }, // 5 ALGO in microAlgos
+            balance: { algos: 5, microAlgos: 5000000 }, // 5 ALGO
             assets: [
                 {
                     assetId: 456,
@@ -242,6 +249,9 @@ describe('useAccountBalances', () => {
         )
         expect(algoBalance).toBeDefined()
         expect(algoBalance?.amount).toEqual(Decimal(5)) // 5000000 / 10^6
+
+        // Portfolio totals: 50 (asset456) + 0.5 (asset789) + 5 (ALGO) = 55.5 ALGO
+        expect(result.current.portfolioAlgoValue).toEqual(Decimal(55.5))
     })
 
     it('handles assets with zero price correctly', async () => {

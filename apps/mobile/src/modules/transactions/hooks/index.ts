@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { useSendFundsStore, useSendFunds } from './useSendFundsStore'
+export { useSendFundsStore, useSendFunds } from './send-funds/useSendFunds'

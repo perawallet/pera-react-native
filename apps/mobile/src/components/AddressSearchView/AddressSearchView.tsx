@@ -32,9 +32,13 @@ import { useLanguage } from '@hooks/useLanguage'
 
 export type AddressSearchViewProps = {
     onSelected: (address: string) => void
+    excludeAddress?: string
 }
 
-export const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
+export const AddressSearchView = ({
+    onSelected,
+    excludeAddress,
+}: AddressSearchViewProps) => {
     const styles = useStyles()
     const [value, setValue] = useState('')
     const { findContacts } = useContacts()
@@ -43,8 +47,11 @@ export const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
 
     const addressIsValid = useMemo(() => isValidAlgorandAddress(value), [value])
     const matchingAccounts = useMemo(
-        () => accounts.filter(a => a.address.includes(value)),
-        [value, accounts],
+        () =>
+            accounts.filter(
+                a => a.address !== excludeAddress && a.address.includes(value),
+            ),
+        [value, accounts, excludeAddress],
     )
     const matchingContacts = useMemo(
         () => (value.length ? findContacts({ keyword: value }) : []),
