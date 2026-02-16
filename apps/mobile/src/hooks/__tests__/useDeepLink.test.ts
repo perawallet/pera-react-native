@@ -88,7 +88,7 @@ describe('useDeepLink', () => {
         const { result } = renderHook(() => useDeepLink())
 
         expect(
-            result.current.isValidDeepLink('perawallet://app', 'deeplink'),
+            result.current.isValidDeepLink('perawallet://app'),
         ).toBe(true)
         expect(parseDeeplink).toHaveBeenCalledWith('perawallet://app')
     })
