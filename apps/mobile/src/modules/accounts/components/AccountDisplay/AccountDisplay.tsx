@@ -63,14 +63,16 @@ export const AccountDisplay = ({
                 />
             )}
             <PWView style={styles.textContainer}>
-                {!compact && <PWText
-                    style={textProps?.style ?? styles.text}
-                    variant={textProps?.variant ?? 'h4'}
-                    numberOfLines={1}
-                    ellipsizeMode='tail'
-                >
-                    {displayName}
-                </PWText>}
+                {!compact && (
+                    <PWText
+                        style={textProps?.style ?? styles.text}
+                        variant={textProps?.variant ?? 'h4'}
+                        numberOfLines={1}
+                        ellipsizeMode='tail'
+                    >
+                        {displayName}
+                    </PWText>
+                )}
                 {!!account && (
                     <PWText
                         style={styles.addressText}

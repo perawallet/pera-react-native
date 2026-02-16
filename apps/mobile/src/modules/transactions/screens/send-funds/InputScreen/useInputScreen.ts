@@ -228,7 +228,7 @@ export const useInputScreen = () => {
         handleKey,
         handleContinuePastMbr,
         dismissMaxExceeded,
-        
+
         //exposed for testing only
         setCryptoValue: setValue,
         totalBalance,

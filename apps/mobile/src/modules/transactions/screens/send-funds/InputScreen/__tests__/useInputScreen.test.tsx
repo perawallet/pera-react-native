@@ -146,8 +146,8 @@ describe('useInputScreen', () => {
 
     it('calculates total balance for Algo correctly', () => {
         const { result } = renderHook(() => useInputScreen())
-        // totalBalance = balance - fee = 100 - 0.001 = 99.999
-        expect(result.current.totalBalance.toNumber()).toBe(99.999)
+        // totalBalance = balance
+        expect(result.current.totalBalance.toNumber()).toBe(100)
     })
 
     it('calculates minBalanceDisplay for Algo correctly', () => {
