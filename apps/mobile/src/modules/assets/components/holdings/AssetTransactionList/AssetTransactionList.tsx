@@ -40,7 +40,6 @@ export const AssetTransactionList = ({
 
     const {
         sections,
-        isLoading,
         isFetchingNextPage,
         handleLoadMore,
         handleExportCsv,
@@ -68,14 +67,6 @@ export const AssetTransactionList = ({
     }) => <TransactionDateHeader title={section.title} />
 
     const keyExtractor = (item: TransactionHistoryItem) => item.id
-
-    const renderFooter = () => {
-        return !isFetchingNextPage ? null : (
-            <PWView style={styles.loadingFooter}>
-                <ActivityIndicator size='small' />
-            </PWView>
-        )
-    }
 
     return (
         <>
@@ -126,14 +117,14 @@ export const AssetTransactionList = ({
                         body={t('asset_details.transaction_list.empty_body')}
                     />
                 }
-                ListFooterComponent={renderFooter}
+                ListFooterComponent={
+                    !isFetchingNextPage ? null : (
+                        <PWView style={styles.loadingFooter}>
+                            <ActivityIndicator size='small' />
+                        </PWView>
+                    )
+                }
             />
-
-            {isLoading && !sections.length && (
-                <PWView style={styles.loadingOverlay}>
-                    <ActivityIndicator size='large' />
-                </PWView>
-            )}
 
             <TransactionsFilterBottomSheet
                 isVisible={isFilterVisible}
