@@ -12,12 +12,12 @@
 
 import { Contact } from '@perawallet/wallet-core-contacts'
 import { useTheme } from '@rneui/themed'
-import { PWIcon, PWImage, PWView } from '@components/core'
+import { PWIcon, PWIconSize, PWImage, PWView } from '@components/core'
 import { SvgProps } from 'react-native-svg'
 import { useStyles } from './styles'
 
 export type ContactAvatarProps = {
-    size: 'small' | 'large'
+    size: PWIconSize
     contact?: Contact
 } & SvgProps
 
@@ -27,10 +27,26 @@ export const ContactAvatar = ({
     ...rest
 }: ContactAvatarProps) => {
     const { theme } = useTheme()
-    const dimensions =
-        size === 'small' ? theme.spacing.xl : theme.spacing['4xl']
-    const imageSize = size === 'small' ? theme.spacing.lg : theme.spacing['3xl']
-    const iconSize = size === 'small' ? 'sm' : 'lg'
+
+    const containerSizeMap: Record<PWIconSize, number> = {
+        xs: theme.spacing.lg,
+        sm: theme.spacing.xl,
+        md: theme.spacing.xxl,
+        lg: theme.spacing['3xl'],
+        xl: theme.spacing['4xl'],
+        xxl: theme.spacing['5xl'],
+    }
+
+    const sizeMap: Record<PWIconSize, number> = {
+        xs: theme.spacing.md,
+        sm: theme.spacing.lg,
+        md: theme.spacing.xl,
+        lg: theme.spacing.xxl,
+        xl: theme.spacing['3xl'],
+        xxl: theme.spacing['4xl'],
+    }
+    const dimensions = containerSizeMap[size]
+    const imageSize = sizeMap[size]
     const styles = useStyles({ containerSize: dimensions, imageSize })
 
     return (
@@ -39,15 +55,15 @@ export const ContactAvatar = ({
                 <PWImage
                     source={{ uri: contact.image }}
                     style={styles.image}
-                    width={dimensions}
-                    height={dimensions}
+                    width={imageSize}
+                    height={imageSize}
                 />
             )}
             {!contact?.image && (
                 <PWIcon
                     {...rest}
                     name='person'
-                    size={iconSize}
+                    size={size}
                     variant='secondary'
                 />
             )}

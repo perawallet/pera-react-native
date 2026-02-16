@@ -15,21 +15,47 @@ import { PWIcon, PWInput, PWInputProps, PWView } from '@components/core'
 import { QRScannerView } from '@components/QRScannerView'
 import { useState } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
+import { parseDeeplink } from '@hooks/deeplink/parser'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 
 export type AddressEntryFieldProps = {
     allowQRCode?: boolean
+    onScanned?: (address: string) => void
 } & PWInputProps
+
+export const extractAddressFromScannedUrl = (url: string): string | null => {
+    if (isValidAlgorandAddress(url)) return url
+
+    const parsed = parseDeeplink(url)
+    if (!parsed) return null
+
+    if ('receiverAddress' in parsed && parsed.receiverAddress) {
+        return parsed.receiverAddress
+    }
+    if ('address' in parsed && parsed.address) {
+        return parsed.address
+    }
+
+    return null
+}
 
 export const AddressEntryField = ({
     allowQRCode,
+    onScanned,
     ...rest
 }: AddressEntryFieldProps) => {
     const [scannerVisible, setScannerVisible] = useState(false)
     const { t } = useLanguage()
 
-    const addressScanned = () => {
-        //TODO parse URL and extract address
+    const addressScanned = (url: string) => {
+        const address = extractAddressFromScannedUrl(url)
+
         setScannerVisible(false)
+
+        if (address) {
+            rest.onChangeText?.(address)
+            onScanned?.(address)
+        }
     }
 
     const showScanner = () => {

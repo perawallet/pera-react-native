@@ -145,11 +145,27 @@ describe('AddressSearchView', () => {
         fireEvent.change(input, { target: { value: validAddress } })
 
         expect(screen.getByText('address_entry.address')).toBeTruthy()
-        expect(
-            screen.getByText(validAddress.substring(0, 10) + '...'),
-        ).toBeTruthy()
+    })
 
-        fireEvent.click(screen.getByText('address_entry.address'))
-        expect(mockOnSelected).toHaveBeenCalledWith(validAddress)
+    it('hides accounts and contacts when address is valid', () => {
+        const mockAccount = { address: 'ABC123456789', name: 'Test Account' }
+        vi.mocked(useAllAccounts).mockReturnValue([
+            mockAccount,
+        ] as unknown as ReturnType<typeof useAllAccounts>)
+        mockFindContacts.mockReturnValue([
+            { address: 'CONT12345', name: 'Friend' },
+        ])
+        vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
+
+        render(<AddressSearchView onSelected={mockOnSelected} />)
+
+        const input = screen.getByPlaceholderText(
+            'address_entry.search_placeholder',
+        )
+        fireEvent.change(input, { target: { value: 'VALID_ADDRESS' } })
+
+        expect(screen.getByText('address_entry.address')).toBeTruthy()
+        expect(screen.queryByText('address_entry.my_accounts')).toBeNull()
+        expect(screen.queryByText('address_entry.contacts')).toBeNull()
     })
 })

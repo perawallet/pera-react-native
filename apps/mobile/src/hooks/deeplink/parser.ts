@@ -10,13 +10,18 @@
  limitations under the License
  */
 
-import { AnyParsedDeeplink } from './types'
+import {
+    AddressActionsDeeplink,
+    AnyParsedDeeplink,
+    DeeplinkType,
+} from './types'
 import { parsePerawalletAppUri } from './new-parser'
 import { parsePerawalletUri } from './old-parser'
 import { normalizeUrl } from './utils'
 import { parseAlgorandUri } from './algorand-parser'
 import { parseWalletConnectUri } from './walletconnect-parser'
 import { parseCoinbaseFormat } from './coinbase-parser'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 
 /**
  * Parse Universal Links: https://perawallet.app/...
@@ -48,6 +53,14 @@ export const parseDeeplink = (url: string): AnyParsedDeeplink | null => {
     if (!url || typeof url !== 'string') return null
 
     const normalizedUrl = normalizeUrl(url)
+
+    if (isValidAlgorandAddress(normalizedUrl)) {
+        return {
+            type: DeeplinkType.ADDRESS_ACTIONS,
+            sourceUrl: url,
+            address: url,
+        } as AddressActionsDeeplink
+    }
 
     if (
         normalizedUrl.startsWith('wc:') ||

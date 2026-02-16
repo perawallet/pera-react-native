@@ -11,18 +11,88 @@
  */
 
 import { render, screen } from '@test-utils/render'
-import { describe, it, expect } from 'vitest'
-import { AddressEntryField } from '../AddressEntryField'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import {
+    AddressEntryField,
+    extractAddressFromScannedUrl,
+} from '../AddressEntryField'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { parseDeeplink } from '@hooks/deeplink/parser'
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    isValidAlgorandAddress: vi.fn(),
+}))
+
+vi.mock('@hooks/deeplink/parser', () => ({
+    parseDeeplink: vi.fn(),
+}))
 
 describe('AddressEntryField', () => {
     it('renders correctly', () => {
         render(<AddressEntryField />)
-        // RNE Input renders an input element
         expect(screen.getByRole('textbox')).toBeTruthy()
     })
 
     it('shows QR scanner icon when allowed', () => {
         render(<AddressEntryField allowQRCode />)
         expect(screen.getByRole('textbox')).toBeTruthy()
+    })
+})
+
+describe('extractAddressFromScannedUrl', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        vi.mocked(isValidAlgorandAddress).mockReturnValue(false)
+        vi.mocked(parseDeeplink).mockReturnValue(null)
+    })
+
+    it('returns raw address when it is a valid Algorand address', () => {
+        const rawAddress =
+            'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+        vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
+
+        expect(extractAddressFromScannedUrl(rawAddress)).toBe(rawAddress)
+        expect(parseDeeplink).not.toHaveBeenCalled()
+    })
+
+    it('extracts address from algorand:// deeplink with address field', () => {
+        const address = 'EXTRACTED_ADDRESS_123'
+        vi.mocked(parseDeeplink).mockReturnValue({
+            type: 'ADDRESS_ACTIONS',
+            address,
+            sourceUrl: `algorand://${address}`,
+        } as ReturnType<typeof parseDeeplink>)
+
+        expect(extractAddressFromScannedUrl(`algorand://${address}`)).toBe(
+            address,
+        )
+    })
+
+    it('extracts receiverAddress from transfer deeplink', () => {
+        const receiverAddress = 'RECEIVER_ADDRESS_456'
+        vi.mocked(parseDeeplink).mockReturnValue({
+            type: 'ALGO_TRANSFER',
+            receiverAddress,
+            sourceUrl: 'algorand://...',
+        } as ReturnType<typeof parseDeeplink>)
+
+        expect(extractAddressFromScannedUrl('algorand://...')).toBe(
+            receiverAddress,
+        )
+    })
+
+    it('returns null for unsupported URL', () => {
+        expect(
+            extractAddressFromScannedUrl('https://random-site.com'),
+        ).toBeNull()
+    })
+
+    it('returns null when deeplink has no address fields', () => {
+        vi.mocked(parseDeeplink).mockReturnValue({
+            type: 'HOME',
+            sourceUrl: 'perawallet://home',
+        } as ReturnType<typeof parseDeeplink>)
+
+        expect(extractAddressFromScannedUrl('perawallet://home')).toBeNull()
     })
 })

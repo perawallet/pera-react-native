@@ -27,6 +27,7 @@ import { useEffect, useRef } from 'react'
 import { Linking } from 'react-native'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 import { ALGORAND_SCHEME } from './deeplink/arc90-parser'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 
 type LinkSource = 'qr' | 'deeplink'
 
@@ -38,18 +39,16 @@ export const useDeepLink = () => {
     const { pushWebView } = useWebView()
     const { connect } = useWalletConnect()
 
-    const isValidDeepLink = (url: string, source: LinkSource): boolean => {
-        logger.debug('Validating deeplink', { url, source })
+    const isValidDeepLink = (url: string): boolean => {
+        if (isValidAlgorandAddress(url)) {
+            return true
+        }
         const parsed = parseDeeplink(url)
         return parsed !== null
     }
 
     const infoPost = (title: string, body: string) => {
-        showToast({
-            title,
-            body,
-            type: 'info',
-        })
+        showToast({ title, body, type: 'info' })
     }
 
     const navigateToScreen = (

@@ -39,7 +39,7 @@ export const ViewContactScreen = () => {
             <PWView style={styles.avatar}>
                 <ContactAvatar
                     contact={selectedContact}
-                    size='large'
+                    size='lg'
                 />
             </PWView>
             <PWView>

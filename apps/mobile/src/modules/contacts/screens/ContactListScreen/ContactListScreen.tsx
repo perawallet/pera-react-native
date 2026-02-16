@@ -58,7 +58,7 @@ const ContactItem = ({ contact }: { contact: Contact }) => {
         >
             <ContactAvatar
                 contact={contact}
-                size='small'
+                size='md'
             />
             <PWText style={styles.contactName}>{contact.name}</PWText>
         </PWTouchableOpacity>
