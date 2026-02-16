@@ -19,48 +19,48 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
         container: {
             height,
             padding: theme.spacing.xl,
-            paddingTop: theme.spacing['3xl'],
+            paddingTop: theme.spacing.xxl,
             borderTopStartRadius: theme.spacing.sm,
             borderTopEndRadius: theme.spacing.sm,
-            overflow: 'hidden',
             alignItems: 'center',
-            gap: theme.spacing.lg,
         },
         bodyContainer: {
-            gap: theme.spacing.lg,
-            padding: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.xl,
         },
         title: {
+            marginTop: theme.spacing.lg,
             textAlign: 'center',
         },
         preamble: {
             textAlign: 'center',
-            paddingHorizontal: theme.spacing.lg,
+            color: theme.colors.textGray,
+            marginVertical: theme.spacing.xl,
         },
         postamble: {
-            paddingHorizontal: theme.spacing.lg,
+            lineHeight: theme.spacing.lg,
+            marginTop: theme.spacing.lg,
         },
         tipsContainer: {
             gap: theme.spacing.xl,
-            marginHorizontal: theme.spacing.xl,
+            flexShrink: 1,
         },
         tip: {
             flexDirection: 'row',
-            gap: theme.spacing.xl,
+            gap: theme.spacing.lg,
             alignItems: 'center',
         },
         tipNumberContainer: {
-            borderRadius: theme.spacing['3xl'],
-            borderColor: theme.colors.layerGrayLight,
-            boxShadow: '1px 1px 1px 0px #00000015',
+            borderRadius: theme.spacing.xxl,
+            borderColor: theme.colors.layerGrayLightest,
             borderWidth: theme.borders.sm,
             alignItems: 'center',
             justifyContent: 'center',
-            width: theme.spacing['3xl'],
-            height: theme.spacing['3xl'],
+            width: theme.spacing.xxl,
+            height: theme.spacing.xxl,
         },
         tipNumber: {
             fontSize: theme.spacing.lg,
+            color: theme.colors.textGray,
         },
         tipText: {
             flexWrap: 'wrap',
@@ -69,9 +69,8 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
         redText: {
             color: theme.colors.error,
         },
-        linkContainer: {},
         link: {
-            color: theme.colors.linkPrimary,
+            marginLeft: theme.spacing.xs,
         },
     }
 })

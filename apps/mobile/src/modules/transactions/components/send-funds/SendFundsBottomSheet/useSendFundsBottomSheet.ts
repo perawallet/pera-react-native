@@ -60,13 +60,10 @@ export const useSendFundsBottomSheet = (
         selectedAsset?.assetId,
     ])
 
-    const onCloseRef = useRef(onClose)
-    onCloseRef.current = onClose
-
     const handleFinished = useCallback(() => {
         reset()
-        onCloseRef.current()
-    }, [reset])
+        onClose()
+    }, [reset, onClose])
 
     useLayoutEffect(() => {
         if (isVisible) {

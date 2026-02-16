@@ -14,6 +14,7 @@ import {
     PWBottomSheet,
     type PWBottomSheetProps,
     PWButton,
+    PWDivider,
     PWIcon,
     PWText,
     PWView,
@@ -22,6 +23,8 @@ import { Trans } from 'react-i18next'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSendFundsInfoPanel } from './useSendFundsInfoPanel'
+import { useWindowDimensions } from 'react-native'
+import { useTheme } from '@rneui/themed'
 
 export type SendFundsInfoPanelProps = {
     onClose: () => void
@@ -32,7 +35,9 @@ export const SendFundsInfoPanel = ({
     onClose,
     ...rest
 }: SendFundsInfoPanelProps) => {
-    const styles = useStyles()
+    const dimensions = useWindowDimensions()
+    const { theme } = useTheme()
+    const styles = useStyles(dimensions)
     const { t } = useLanguage()
     const { forceOpen, handleOpenInfoLink, handleClose } =
         useSendFundsInfoPanel(onClose)
@@ -56,7 +61,7 @@ export const SendFundsInfoPanel = ({
                     {t('send_funds.info.title')}
                 </PWText>
                 <PWText style={styles.preamble}>
-                    {t('send_funds.info.tip_1')}
+                    {t('send_funds.info.preamble')}
                 </PWText>
                 <PWView style={styles.tipsContainer}>
                     <PWView style={styles.tip}>
@@ -64,7 +69,7 @@ export const SendFundsInfoPanel = ({
                             <PWText style={styles.tipNumber}>1</PWText>
                         </PWView>
                         <PWText style={styles.tipText}>
-                            {t('send_funds.info.tip_2')}
+                            {t('send_funds.info.tip_1')}
                         </PWText>
                     </PWView>
                     <PWView style={styles.tip}>
@@ -72,16 +77,26 @@ export const SendFundsInfoPanel = ({
                             <PWText style={styles.tipNumber}>2</PWText>
                         </PWView>
                         <PWText style={styles.tipText}>
-                            {t('send_funds.info.tip_3')}
+                            <Trans
+                                i18nKey='send_funds.info.tip_2'
+                                components={[
+                                    <PWText
+                                        key='warning'
+                                        style={styles.redText}
+                                    />,
+                                ]}
+                            />
                         </PWText>
                     </PWView>
                 </PWView>
+                <PWDivider color={theme.colors.layerGray} />
                 <PWText style={styles.postamble}>
                     <Trans
                         i18nKey='send_funds.info.more_info'
                         components={[
                             <PWText
                                 key='link'
+                                variant='link'
                                 style={styles.link}
                                 onPress={handleOpenInfoLink}
                             />,
