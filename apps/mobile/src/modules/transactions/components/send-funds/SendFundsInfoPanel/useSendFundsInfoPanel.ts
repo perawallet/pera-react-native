@@ -16,7 +16,7 @@ import { UserPreferences } from '@constants/user-preferences'
 import { useWebView } from '@hooks/usePeraWebviewInterface'
 import { v7 as uuid } from 'uuid'
 import { config } from '@perawallet/wallet-core-config'
-import { SHROT_PROMPT_DISPLAY_DELAY } from '@constants/ui'
+import { SHORT_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 
 type UseSendFundsInfoPanelResult = {
     forceOpen: boolean
@@ -36,7 +36,7 @@ export const useSendFundsInfoPanel = (
         if (!hasAgreed) {
             setTimeout(() => {
                 setForceOpen(true)
-            }, SHROT_PROMPT_DISPLAY_DELAY)
+            }, SHORT_PROMPT_DISPLAY_DELAY)
         } else {
             setForceOpen(false)
         }

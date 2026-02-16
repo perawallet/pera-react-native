@@ -16,6 +16,10 @@ import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { useModalState } from '@hooks/useModalState'
 import { useIsOnboarding } from '@modules/onboarding/hooks'
+import { useCreateAccount } from '@perawallet/wallet-core-accounts'
+import { deferToNextCycle } from '@perawallet/wallet-core-shared'
+import { useToast } from '@hooks/useToast'
+import { useLanguage } from '@hooks/useLanguage'
 
 export const useOnboardingScreen = () => {
     const navigation = useAppNavigation()
@@ -25,7 +29,15 @@ export const useOnboardingScreen = () => {
         open: openImportOptions,
         close: closeImportOptions,
     } = useModalState()
+    const {
+        isOpen: isCreatingAccount,
+        open: openCreatingAccount,
+        close: closeCreatingAccount,
+    } = useModalState()
     const { setIsOnboarding } = useIsOnboarding()
+    const createAccount = useCreateAccount()
+    const { showToast } = useToast()
+    const { t } = useLanguage()
 
     const handleTermsPress = useCallback(() => {
         pushWebView({
@@ -42,8 +54,37 @@ export const useOnboardingScreen = () => {
     }, [pushWebView])
 
     const handleCreateAccount = useCallback(() => {
-        navigation.push('NameAccount')
-    }, [navigation])
+        setIsOnboarding(true)
+        openCreatingAccount()
+        deferToNextCycle(async () => {
+            try {
+                const newAccount = await createAccount({
+                    account: 0,
+                    keyIndex: 0,
+                })
+                navigation.push('NameAccount', { account: newAccount })
+            } catch (error) {
+                showToast({
+                    title: t('onboarding.create_account.error_title'),
+                    body: t('onboarding.create_account.error_message', {
+                        error: `${error}`,
+                    }),
+                    type: 'error',
+                })
+                setIsOnboarding(false)
+            } finally {
+                closeCreatingAccount()
+            }
+        })
+    }, [
+        setIsOnboarding,
+        openCreatingAccount,
+        closeCreatingAccount,
+        createAccount,
+        navigation,
+        showToast,
+        t,
+    ])
 
     const handleHDWalletPress = useCallback(() => {
         closeImportOptions()
@@ -66,5 +107,6 @@ export const useOnboardingScreen = () => {
         handleCloseImportOptions: closeImportOptions,
         handleHDWalletPress,
         handleAlgo25Press,
+        isCreatingAccount,
     }
 }
