@@ -16,8 +16,39 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStakingProjectsQuery } from '../useStakingProjectsQuery'
 
+const VALID_PROJECTS_CONFIG = JSON.stringify([
+    {
+        id: 'folks',
+        title: 'Folks Finance',
+        description:
+            'Stake your Algo on Folks to collect rewards and receive xALGO',
+        logoUrl: 'https://example.com/folks.png',
+        link: 'https://app.folks.finance/liquid-staking?ref=pera',
+        type: 'liquid',
+    },
+    {
+        id: 'pact',
+        title: 'Pact',
+        description:
+            'On Pact, eligible Algo-paired liquidity pools (LPs) will automatically participate in consensus',
+        logoUrl: 'https://example.com/pact.png',
+        link: 'https://app.pact.fi/stake',
+        type: 'pools',
+    },
+    {
+        id: 'valar',
+        title: 'Valar',
+        description:
+            'Stake your Algo to a network of node runners without it leaving your wallet',
+        logoUrl: 'https://example.com/valar.png',
+        link: 'https://stake.valar.solutions/',
+        type: 'delegated',
+    },
+])
+
 const mocks = vi.hoisted(() => ({
     fetchStakingProjectsInfo: vi.fn(),
+    getStringValue: vi.fn(),
     useNetwork: vi.fn(),
 }))
 
@@ -36,9 +67,23 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
-    useNetwork: mocks.useNetwork,
-}))
+vi.mock(
+    '@perawallet/wallet-core-platform-integration',
+    async importOriginal => {
+        const actual =
+            await importOriginal<
+                typeof import('@perawallet/wallet-core-platform-integration')
+            >()
+
+        return {
+            ...actual,
+            useNetwork: mocks.useNetwork,
+            useRemoteConfigService: () => ({
+                getStringValue: mocks.getStringValue,
+            }),
+        }
+    },
+)
 
 describe('useStakingProjectsQuery', () => {
     let queryClient: QueryClient
@@ -53,6 +98,7 @@ describe('useStakingProjectsQuery', () => {
             },
         })
         mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
+        mocks.getStringValue.mockReturnValue(VALID_PROJECTS_CONFIG)
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -89,10 +135,10 @@ describe('useStakingProjectsQuery', () => {
         expect(result.current.projects[2].id).toBe('valar')
         expect(result.current.projects[0].tvlInAlgo).toBe(0.002)
         expect(result.current.projects[0].tvlInUsd).toBe(2500)
-        expect(result.current.projects.length).toBe(8)
+        expect(result.current.projects.length).toBe(3)
     })
 
-    it('returns error state when request fails', async () => {
+    it('returns error state when tvl request fails', async () => {
         mocks.fetchStakingProjectsInfo.mockRejectedValue(new Error('Failed'))
 
         const { result } = renderHook(() => useStakingProjectsQuery(), {
@@ -102,6 +148,47 @@ describe('useStakingProjectsQuery', () => {
         await waitFor(() => expect(result.current.isError).toBe(true))
 
         expect(result.current.error?.message).toBe('Failed')
+    })
+
+    it('returns error state when remote config json is invalid', async () => {
+        mocks.getStringValue.mockReturnValue('not-json')
+        mocks.fetchStakingProjectsInfo.mockResolvedValue({})
+
+        const { result } = renderHook(() => useStakingProjectsQuery(), {
+            wrapper,
+        })
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+
+        expect(result.current.error?.message).toBe(
+            'Invalid staking projects remote config JSON',
+        )
+    })
+
+    it('returns error state when remote config schema is invalid', async () => {
+        mocks.getStringValue.mockReturnValue(
+            JSON.stringify([
+                {
+                    id: 'unknown',
+                    title: 'Invalid',
+                    description: 'Invalid',
+                    logoUrl: 'https://example.com/logo.png',
+                    link: 'https://example.com',
+                    type: 'liquid',
+                },
+            ]),
+        )
+        mocks.fetchStakingProjectsInfo.mockResolvedValue({})
+
+        const { result } = renderHook(() => useStakingProjectsQuery(), {
+            wrapper,
+        })
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+
+        expect(result.current.error?.message).toBe(
+            'Invalid staking project id at index 0',
+        )
     })
 
     it('uses the active network when fetching', async () => {

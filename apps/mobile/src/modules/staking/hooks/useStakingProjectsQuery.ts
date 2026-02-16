@@ -13,11 +13,19 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
-import { useNetwork } from '@perawallet/wallet-core-platform-integration'
-import { STAKING_PROJECTS } from '../constants'
-import type { StakingProject, StakingProjectsApiResponse } from '../models'
+import {
+    RemoteConfigKeys,
+    useNetwork,
+    useRemoteConfigService,
+} from '@perawallet/wallet-core-platform-integration'
+import type {
+    StakingProject,
+    StakingProjectInfo,
+    StakingProjectsApiResponse,
+} from '../models'
 import { fetchStakingProjectsInfo } from './endpoints'
 import { getStakingProjectsQueryKey } from './queryKeys'
+import { parseStakingProjectsConfig } from '../utils'
 
 type UseStakingProjectsQueryResult = {
     projects: StakingProject[]
@@ -32,28 +40,62 @@ const parseTvlValue = (value?: string) => {
     return Number.isFinite(parsedValue) ? parsedValue : 0
 }
 
-const mapProjects = (projectTVLs: StakingProjectsApiResponse | undefined) => {
-    return STAKING_PROJECTS.map(project => {
-        const projectTvl = projectTVLs?.[project.id]
-        const tvlInMicroAlgos = parseTvlValue(projectTvl?.tvl_in_algo)
+const mapProjects = (
+    projects: StakingProjectInfo[],
+    projectTVLs: StakingProjectsApiResponse | undefined,
+) => {
+    return projects
+        .map(project => {
+            const projectTvl = projectTVLs?.[project.id]
+            const tvlInMicroAlgos = parseTvlValue(projectTvl?.tvl_in_algo)
 
-        return {
-            ...project,
-            tvlInAlgo: microAlgosToAlgos(tvlInMicroAlgos).toNumber(),
-            tvlInUsd: parseTvlValue(projectTvl?.tvl_in_usd),
-        }
-    }).sort((a, b) => b.tvlInAlgo - a.tvlInAlgo)
+            return {
+                ...project,
+                tvlInAlgo: microAlgosToAlgos(tvlInMicroAlgos).toNumber(),
+                tvlInUsd: parseTvlValue(projectTvl?.tvl_in_usd),
+            }
+        })
+        .sort((a, b) => b.tvlInAlgo - a.tvlInAlgo)
 }
 
 export const useStakingProjectsQuery = (): UseStakingProjectsQueryResult => {
     const { network } = useNetwork()
+    const remoteConfigService = useRemoteConfigService()
     const query = useQuery({
         queryKey: getStakingProjectsQueryKey(network),
         queryFn: () => fetchStakingProjectsInfo(network),
     })
 
-    const projects = useMemo(() => mapProjects(query.data), [query.data])
-    const error = query.error instanceof Error ? query.error : null
+    const remoteProjectsConfig = remoteConfigService.getStringValue(
+        RemoteConfigKeys.staking_projects,
+    )
+
+    const parsedProjects = useMemo(() => {
+        try {
+            return {
+                projects: parseStakingProjectsConfig(remoteProjectsConfig),
+                error: null,
+            }
+        } catch (error) {
+            return {
+                projects: [] as StakingProjectInfo[],
+                error:
+                    error instanceof Error
+                        ? error
+                        : new Error('Failed to parse staking projects config'),
+            }
+        }
+    }, [remoteProjectsConfig])
+
+    const projects = useMemo(() => {
+        if (parsedProjects.error) {
+            return []
+        }
+        return mapProjects(parsedProjects.projects, query.data)
+    }, [parsedProjects.error, parsedProjects.projects, query.data])
+
+    const queryError = query.error instanceof Error ? query.error : null
+    const error = parsedProjects.error ?? queryError
 
     const refetch = () => {
         void query.refetch()
@@ -61,8 +103,8 @@ export const useStakingProjectsQuery = (): UseStakingProjectsQueryResult => {
 
     return {
         projects,
-        isLoading: query.isPending,
-        isError: query.isError,
+        isLoading: query.isPending && !parsedProjects.error,
+        isError: !!parsedProjects.error || query.isError,
         error,
         refetch,
     }
