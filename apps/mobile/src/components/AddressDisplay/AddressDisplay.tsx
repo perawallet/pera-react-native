@@ -102,7 +102,7 @@ export const AddressDisplay = ({
             {!!contact && !account && (
                 <PWView style={styles.contactContainer}>
                     <ContactAvatar
-                        size='small'
+                        size='md'
                         contact={contact}
                     />
                     <PWText {...textProps}>{contact.name}</PWText>

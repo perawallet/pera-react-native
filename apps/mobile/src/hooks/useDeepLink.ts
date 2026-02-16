@@ -27,6 +27,7 @@ import { useEffect, useRef } from 'react'
 import { Linking } from 'react-native'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 import { ALGORAND_SCHEME } from './deeplink/arc90-parser'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 
 type LinkSource = 'qr' | 'deeplink'
 
@@ -38,18 +39,16 @@ export const useDeepLink = () => {
     const { pushWebView } = useWebView()
     const { connect } = useWalletConnect()
 
-    const isValidDeepLink = (url: string, source: LinkSource): boolean => {
-        logger.debug('Validating deeplink', { url, source })
+    const isValidDeepLink = (url: string): boolean => {
+        if (isValidAlgorandAddress(url)) {
+            return true
+        }
         const parsed = parseDeeplink(url)
         return parsed !== null
     }
 
     const infoPost = (title: string, body: string) => {
-        showToast({
-            title,
-            body,
-            type: 'info',
-        })
+        showToast({ title, body, type: 'info' })
     }
 
     const navigateToScreen = (
@@ -311,7 +310,7 @@ export const useDeeplinkListener = () => {
                         initialUrl,
                     })
 
-                    if (isValidDeepLink(initialUrl, 'deeplink')) {
+                    if (isValidDeepLink(initialUrl)) {
                         // Small delay to ensure navigation is ready
                         setTimeout(() => {
                             handleDeepLink(initialUrl, false, 'deeplink')
@@ -328,7 +327,7 @@ export const useDeeplinkListener = () => {
         const subscription = Linking.addEventListener('url', event => {
             logger.debug('Deeplink: URL event (warm start)', { url: event.url })
 
-            if (isValidDeepLink(event.url, 'deeplink')) {
+            if (isValidDeepLink(event.url)) {
                 handleDeepLink(event.url, false, 'deeplink')
             }
         })

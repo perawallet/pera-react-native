@@ -94,7 +94,7 @@ export const EditContactScreen = () => {
             <ScrollView style={styles.container}>
                 <PWView style={styles.avatar}>
                     <ContactAvatar
-                        size='large'
+                        size='lg'
                         contact={selectedContact ?? { name: '', address: '' }}
                     />
                 </PWView>

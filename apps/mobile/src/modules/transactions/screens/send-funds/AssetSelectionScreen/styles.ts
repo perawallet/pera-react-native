@@ -16,7 +16,7 @@ export const useStyles = makeStyles(theme => {
     return {
         container: {
             flex: 1,
-            alignItems: 'flex-start',
+            gap: theme.spacing.md,
         },
         loadingContainer: {
             gap: theme.spacing.md,

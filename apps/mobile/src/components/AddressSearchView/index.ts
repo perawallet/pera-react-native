@@ -12,3 +12,4 @@
 
 export { AddressSearchView } from './AddressSearchView'
 export type { AddressSearchViewProps } from './AddressSearchView'
+export type { AddressSearchItem } from './useAddressSearchView'

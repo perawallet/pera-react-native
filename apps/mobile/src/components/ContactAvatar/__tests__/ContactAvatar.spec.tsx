@@ -18,7 +18,7 @@ import { ContactAvatar } from '../ContactAvatar'
 
 describe('ContactAvatar', () => {
     it('renders icon if contact has no image', () => {
-        render(<ContactAvatar size='small' />)
+        render(<ContactAvatar size='sm' />)
         expect(screen.getByTestId('icon-person')).toBeTruthy()
     })
 
@@ -30,7 +30,7 @@ describe('ContactAvatar', () => {
         } as Contact
         render(
             <ContactAvatar
-                size='small'
+                size='md'
                 contact={contact}
             />,
         )

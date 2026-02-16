@@ -58,7 +58,7 @@ export const QRScannerView = (props: QRScannerViewProps) => {
                 const url = codes.at(0)?.value
                 setScanningEnabled(false)
                 if (url) {
-                    if (isValidDeepLink(url, 'qr')) {
+                    if (isValidDeepLink(url)) {
                         handleDeepLink(
                             url,
                             true,

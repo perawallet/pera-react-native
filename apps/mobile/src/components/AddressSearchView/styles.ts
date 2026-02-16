@@ -21,16 +21,17 @@ export const useStyles = makeStyles(theme => {
             borderRadius: theme.spacing.sm,
             paddingHorizontal: theme.spacing.sm,
         },
-        section: {
+        sectionHeader: {
             marginTop: theme.spacing.lg,
-            gap: theme.spacing.md,
+        },
+        contentContainer: {
+            gap: theme.spacing.sm,
         },
         title: {},
         accountDisplay: {
             flexDirection: 'row',
             alignItems: 'center',
             gap: theme.spacing.md,
-            paddingVertical: theme.spacing.sm,
         },
     }
 })

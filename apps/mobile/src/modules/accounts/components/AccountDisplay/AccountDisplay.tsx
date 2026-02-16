@@ -26,6 +26,7 @@ import {
 import { useStyles } from './styles'
 
 import { AccountIcon, AccountIconProps } from '../AccountIcon'
+import { useMemo } from 'react'
 
 export type AccountDisplayProps = {
     account?: WalletAccount
@@ -47,7 +48,20 @@ export const AccountDisplay = ({
 }: AccountDisplayProps) => {
     const { theme } = useTheme()
     const styles = useStyles({ noBorder })
-    const displayName = account ? getAccountDisplayName(account) : 'No Account'
+    const displayName = useMemo(
+        () => (account ? getAccountDisplayName(account) : 'No Account'),
+        [account],
+    )
+    const address = useMemo(
+        () =>
+            account ? truncateAlgorandAddress(account?.address, 12) : undefined,
+        [account?.address],
+    )
+
+    const renderSecondary = useMemo(
+        () => displayName === address,
+        [displayName, address],
+    )
 
     return (
         <PWView
@@ -73,14 +87,14 @@ export const AccountDisplay = ({
                         {displayName}
                     </PWText>
                 )}
-                {!!account && (
+                {renderSecondary && (
                     <PWText
                         style={styles.addressText}
                         variant='caption'
                         numberOfLines={1}
                         ellipsizeMode='middle'
                     >
-                        {truncateAlgorandAddress(account.address, 12)}
+                        {address}
                     </PWText>
                 )}
             </PWView>

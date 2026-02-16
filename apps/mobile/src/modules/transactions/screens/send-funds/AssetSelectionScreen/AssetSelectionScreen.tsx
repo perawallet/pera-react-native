@@ -67,6 +67,7 @@ export const AssetSelectionScreen = () => {
 
     return (
         <PWFlatList
+            contentContainerStyle={styles.container}
             data={balanceData ?? []}
             renderItem={renderItem}
             keyExtractor={item => item.assetId}
