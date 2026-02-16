@@ -25,6 +25,7 @@ import { KeyboardAvoidingView, Platform } from 'react-native'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNameAccountScreen } from './useNameAccountScreen'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { getAccountDisplayName } from '@perawallet/wallet-core-accounts'
 
 export const NameAccountScreen = () => {
     const styles = useStyles()
@@ -37,6 +38,7 @@ export const NameAccountScreen = () => {
         handleNameChange,
         handleFinish,
         numWallets,
+        account,
     } = useNameAccountScreen()
 
     return (
@@ -76,9 +78,11 @@ export const NameAccountScreen = () => {
                         variant='h4'
                         style={styles.nameText}
                     >
-                        {t('onboarding.name_account.wallet_label', {
-                            count: numWallets + 1,
-                        })}
+                        {account
+                            ? getAccountDisplayName(account)
+                            : t('onboarding.name_account.wallet_label', {
+                                  count: numWallets + 1,
+                              })}
                     </PWText>
                 </PWView>
                 <PWInput

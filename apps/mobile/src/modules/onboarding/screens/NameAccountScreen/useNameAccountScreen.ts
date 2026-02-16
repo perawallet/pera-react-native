@@ -121,5 +121,6 @@ export const useNameAccountScreen = () => {
         handleNameChange,
         handleFinish,
         numWallets,
+        account,
     }
 }
