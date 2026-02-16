@@ -63,7 +63,7 @@ export const useAssetTransferSummaryHeader = (
 
     const { data: asset, isPending } = useSingleAssetDetailsQuery(assetId)
     const { data: assetPrices, isPending: assetPricesPending } =
-        useAssetFiatPricesQuery(!!assetId)
+        useAssetFiatPricesQuery(Boolean(assetId))
 
     const secondaryAssetName = useMemo(() => {
         if (showAlgoAsPrimaryCurrency) {

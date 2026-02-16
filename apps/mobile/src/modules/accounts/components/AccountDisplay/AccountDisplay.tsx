@@ -52,7 +52,7 @@ export const AccountDisplay = ({
             {...rest}
             style={[styles.container, rest.style]}
         >
-            {!!account && (
+            {Boolean(account) && (
                 <AccountIcon
                     account={account}
                     size='lg'
@@ -69,7 +69,7 @@ export const AccountDisplay = ({
                 >
                     {displayName}
                 </PWText>
-                {!!account && (
+                {Boolean(account) && (
                     <PWText
                         style={styles.addressText}
                         variant='caption'

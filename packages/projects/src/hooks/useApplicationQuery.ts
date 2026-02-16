@@ -37,6 +37,6 @@ export const useApplicationQuery = (
                 network,
                 signal,
             }),
-        enabled: isEnabled && !!applicationId.length,
+        enabled: isEnabled && Boolean(applicationId.length),
     })
 }

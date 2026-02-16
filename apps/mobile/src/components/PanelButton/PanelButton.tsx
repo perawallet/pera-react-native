@@ -58,7 +58,7 @@ export const PanelButton = (props: PanelButtonProps) => {
             >
                 <PWView style={themeStyle.textContainerStyle}>
                     <PWView style={themeStyle.titleStyle}>
-                        {!!leftIcon && (
+                        {Boolean(leftIcon) && (
                             <PWIcon
                                 name={leftIcon}
                                 variant={
@@ -74,7 +74,7 @@ export const PanelButton = (props: PanelButtonProps) => {
                             {title}
                         </PWText>
                     </PWView>
-                    {!!description && (
+                    {Boolean(description) && (
                         <PWText style={themeStyle.descriptionStyle}>
                             {description}
                         </PWText>

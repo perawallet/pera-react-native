@@ -56,7 +56,7 @@ export const PortfolioView = (props: PortfolioViewProps) => {
         useChartInteraction<AccountBalanceHistoryItem>()
     const { getPreference, setPreference } = usePreferences()
 
-    const chartVisible = !!getPreference(UserPreferences.chartVisible)
+    const chartVisible = Boolean(getPreference(UserPreferences.chartVisible))
     const toggleChartVisible = () => {
         setPreference(UserPreferences.chartVisible, !chartVisible)
     }

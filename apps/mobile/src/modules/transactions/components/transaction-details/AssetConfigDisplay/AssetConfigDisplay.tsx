@@ -104,7 +104,7 @@ export const AssetConfigDisplay = ({
                             </KeyValueRow>
                         )}
 
-                        {!!supply && (
+                        {Boolean(supply) && (
                             <KeyValueRow
                                 title={t('transactions.asset_config.total')}
                             >
@@ -213,7 +213,7 @@ export const AssetConfigDisplay = ({
 
             <TransactionFooter transaction={transaction} />
 
-            {!!metadataHash && (
+            {Boolean(metadataHash) && (
                 <ViewTextDetailsPanel
                     isVisible={isMetadataHashDetailsModalVisible}
                     onClose={closeMetadataHashDetailsModal}

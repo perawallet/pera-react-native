@@ -27,7 +27,7 @@ export const useNotificationStatus = () => {
     return useQuery({
         queryKey: getNotificationStatusQueryKey(network, deviceID ?? ''),
         queryFn: () => fetchNotificationStatus(network, deviceID ?? ''),
-        enabled: !!deviceID,
+        enabled: Boolean(deviceID),
         refetchInterval: config.notificationRefreshTime,
         select: useCallback((data: NotificationStatusResponse) => {
             return {

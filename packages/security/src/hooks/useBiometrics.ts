@@ -36,7 +36,7 @@ export const useBiometrics = (): UseBiometricsResult => {
         const biometricPinData = await secureStorage.getItem(
             BIOMETRIC_STORAGE_KEY,
         )
-        return !!biometricPinData
+        return Boolean(biometricPinData)
     }, [secureStorage, forceRefresh.current])
 
     const checkBiometricsAvailable = useCallback(async (): Promise<boolean> => {

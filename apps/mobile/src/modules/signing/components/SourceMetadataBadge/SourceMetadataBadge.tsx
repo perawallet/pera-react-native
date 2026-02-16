@@ -41,7 +41,7 @@ export const SourceMetadataBadge = ({ metadata }: SourceMetadataBadgeProps) => {
                     />
                 </PWView>
             )}
-            {!!displayName && (
+            {Boolean(displayName) && (
                 <PWText
                     variant='caption'
                     style={styles.name}
@@ -49,13 +49,13 @@ export const SourceMetadataBadge = ({ metadata }: SourceMetadataBadgeProps) => {
                     {displayName}
                 </PWText>
             )}
-            {!!project?.verificationTier && (
+            {Boolean(project?.verificationTier) && (
                 <ProjectVerificationIcon
                     tier={project.verificationTier}
                     size='sm'
                 />
             )}
-            {!!displayName && !!metadata.url && (
+            {Boolean(displayName) && Boolean(metadata.url) && (
                 <PWText
                     variant='caption'
                     style={styles.separator}
@@ -63,7 +63,7 @@ export const SourceMetadataBadge = ({ metadata }: SourceMetadataBadgeProps) => {
                     &middot;
                 </PWText>
             )}
-            {!!url && (
+            {Boolean(url) && (
                 <PWText
                     variant='caption'
                     style={styles.url}

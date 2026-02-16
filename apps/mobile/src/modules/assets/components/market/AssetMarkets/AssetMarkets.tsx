@@ -76,7 +76,7 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
     const { getPreference, setPreference } = usePreferences()
     const { t } = useLanguage()
 
-    const chartVisible = !!getPreference(UserPreferences.chartVisible)
+    const chartVisible = Boolean(getPreference(UserPreferences.chartVisible))
     const toggleChartVisible = () => {
         setPreference(UserPreferences.chartVisible, !chartVisible)
     }
@@ -166,7 +166,7 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                                 showAbsolute
                                 selectedDataPoint={selectedPoint}
                             />
-                            {!!selectedPoint && (
+                            {Boolean(selectedPoint) && (
                                 <PWText>
                                     {formatDatetime(selectedPoint.datetime)}
                                 </PWText>

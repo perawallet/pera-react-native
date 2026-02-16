@@ -91,7 +91,7 @@ export const AddressDisplay = ({
             {...rest}
             style={[styles.addressValueContainer, rest.style]}
         >
-            {!!account && (
+            {Boolean(account) && (
                 <AccountDisplay
                     account={account}
                     textProps={textProps}
@@ -99,7 +99,7 @@ export const AddressDisplay = ({
                 />
             )}
 
-            {!!contact && !account && (
+            {Boolean(contact) && !account && (
                 <PWView style={styles.contactContainer}>
                     <ContactAvatar
                         size='small'

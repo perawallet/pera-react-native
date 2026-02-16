@@ -38,7 +38,7 @@ export const TransactionSummaryHeader = ({
 
     return (
         <PWView style={styles.container}>
-            {!!metadata && <SourceMetadataBadge metadata={metadata} />}
+            {Boolean(metadata) && <SourceMetadataBadge metadata={metadata} />}
 
             <TransactionIcon
                 type={txType}

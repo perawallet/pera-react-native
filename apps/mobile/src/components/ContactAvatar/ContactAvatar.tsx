@@ -35,7 +35,7 @@ export const ContactAvatar = ({
 
     return (
         <PWView style={styles.container}>
-            {!!contact?.image && (
+            {Boolean(contact?.image) && (
                 <PWImage
                     source={{ uri: contact.image }}
                     style={styles.image}

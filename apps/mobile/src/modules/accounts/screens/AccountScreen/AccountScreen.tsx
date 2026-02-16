@@ -53,7 +53,7 @@ export const AccountScreen = () => {
     const { getPreference, setPreference } = usePreferences()
     const { privacyMode, setPrivacyMode } = useSettings()
 
-    const chartVisible = !!getPreference(UserPreferences.chartVisible)
+    const chartVisible = Boolean(getPreference(UserPreferences.chartVisible))
 
     const dropdownItems: PWDropdownItem[] = useMemo(
         () => [

@@ -132,7 +132,7 @@ export const useTransactionHistoryQuery = (
         initialPageParam: null as string | null,
         getNextPageParam: (lastPage: TransactionHistoryResult): string | null =>
             lastPage.pagination.nextUrl,
-        enabled: isEnabled && !!accountAddress,
+        enabled: isEnabled && Boolean(accountAddress),
     })
 
     // Flatten all pages into a single array of transactions

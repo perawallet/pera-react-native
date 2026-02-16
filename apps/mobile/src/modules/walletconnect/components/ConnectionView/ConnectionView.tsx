@@ -169,7 +169,7 @@ export const ConnectionView = ({ request }: ConnectionViewProps) => {
                             name: request.peerMeta.name,
                         })}
                     </PWText>
-                    {!!request.peerMeta.url && (
+                    {Boolean(request.peerMeta.url) && (
                         <PWButton
                             variant='link'
                             onPress={handlePressUrl}

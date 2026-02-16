@@ -35,7 +35,7 @@ export const ArbitraryDataSigningScreen = () => {
     return (
         <PWView style={styles.container}>
             <PWView style={styles.contentContainer}>
-                {!!request.sourceMetadata && (
+                {Boolean(request.sourceMetadata) && (
                     <SourceMetadataView metadata={request.sourceMetadata} />
                 )}
                 <PWView style={styles.bodyContainer}>

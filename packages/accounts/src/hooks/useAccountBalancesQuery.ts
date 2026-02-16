@@ -55,7 +55,7 @@ export const useAccountBalancesQuery = (
             const address = acc.address
             return {
                 queryKey: getAccountBalancesQueryKey(address, network),
-                enabled: !!address && enabled,
+                enabled: Boolean(address) && enabled,
                 queryFn: () => algokit.account.getInformation(address),
             }
         })
@@ -180,7 +180,7 @@ export const useAccountAssetBalanceQuery = (
     const { accountBalances, isPending, isFetched, isRefetching, isError } =
         useAccountBalancesQuery(
             account ? [account] : [],
-            !!account && assetId != null,
+            Boolean(account) && assetId != null,
         )
 
     const assetBalance = useMemo<AssetWithAccountBalance | null>(() => {

@@ -39,7 +39,7 @@ export function SignRequestBottomSheet() {
             innerContainerStyle={{ height: height - 100 }}
             isVisible={isVisible}
         >
-            {!!nextRequest && <SignRequestView request={nextRequest} />}
+            {Boolean(nextRequest) && <SignRequestView request={nextRequest} />}
         </PWBottomSheet>
     )
 }

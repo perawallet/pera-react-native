@@ -121,7 +121,7 @@ export const SettingsWalletConnectDetailsScreen = ({
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
-            {!!preferredIcon && (
+            {Boolean(preferredIcon) && (
                 <Image
                     source={{ uri: preferredIcon }}
                     style={styles.icon}
@@ -166,7 +166,7 @@ export const SettingsWalletConnectDetailsScreen = ({
                     </Text>
                 </KeyValueRow>
             </PWView>
-            {!!connectedAccounts?.length && (
+            {Boolean(connectedAccounts?.length) && (
                 <PWView style={styles.accountContainer}>
                     <Text>
                         {t('walletconnect.settings.connected_accounts')}

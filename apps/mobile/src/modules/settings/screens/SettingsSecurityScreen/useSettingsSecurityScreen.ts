@@ -119,14 +119,14 @@ export const useSettingsSecurityScreen =
             setPinViewMode(null)
         }, [])
 
-        const isAdvancedSecurityEnabled = !!getPreference(
-            UserPreferences.advancedSecurityEnabled,
+        const isAdvancedSecurityEnabled = Boolean(
+            getPreference(UserPreferences.advancedSecurityEnabled),
         )
-        const isRekeySupportEnabled = !!getPreference(
-            UserPreferences.rekeySupportEnabled,
+        const isRekeySupportEnabled = Boolean(
+            getPreference(UserPreferences.rekeySupportEnabled),
         )
-        const isAssetFreezeSupportEnabled = !!getPreference(
-            UserPreferences.assetFreezeSupportEnabled,
+        const isAssetFreezeSupportEnabled = Boolean(
+            getPreference(UserPreferences.assetFreezeSupportEnabled),
         )
 
         const handleAdvancedSecurityToggle = useCallback(

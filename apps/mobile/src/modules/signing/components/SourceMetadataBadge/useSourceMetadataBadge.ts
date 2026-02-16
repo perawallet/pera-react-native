@@ -19,7 +19,7 @@ import { SignRequestSource } from '@perawallet/wallet-core-signing'
 export const useSourceMetadataBadge = (metadata: SignRequestSource) => {
     const { data: project } = useProjectByUrlQuery({
         url: metadata.url,
-        isEnabled: !!metadata.url,
+        isEnabled: Boolean(metadata.url),
     })
 
     const preferredIcon =

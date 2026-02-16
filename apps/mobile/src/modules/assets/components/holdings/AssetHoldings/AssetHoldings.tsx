@@ -53,7 +53,7 @@ export const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
         useChartInteraction<AccountBalanceHistoryItem>()
 
     const { getPreference, setPreference } = usePreferences()
-    const chartVisible = !!getPreference(UserPreferences.chartVisible)
+    const chartVisible = Boolean(getPreference(UserPreferences.chartVisible))
     const toggleChartVisible = () => {
         setPreference(UserPreferences.chartVisible, !chartVisible)
     }
@@ -126,7 +126,7 @@ export const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
                             precision={2}
                             minPrecision={2}
                         />
-                        {!!selectedPoint && (
+                        {Boolean(selectedPoint) && (
                             <PWText>
                                 {formatDatetime(selectedPoint.datetime)}
                             </PWText>

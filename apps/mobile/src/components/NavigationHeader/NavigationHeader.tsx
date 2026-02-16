@@ -48,7 +48,7 @@ export const NavigationHeader = (props: NavigationHeaderProps) => {
         <PWToolbar
             style={styles.container}
             left={
-                !!props.navigation?.canGoBack() && (
+                Boolean(props.navigation?.canGoBack()) && (
                     <PWIcon
                         style={styles.backButton}
                         name='chevron-left'

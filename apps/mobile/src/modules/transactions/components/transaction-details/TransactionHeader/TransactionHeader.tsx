@@ -52,7 +52,7 @@ export const TransactionHeader = ({
                         <PWText style={styles.blockTitle}>
                             {t(`transactions.type.${transaction.txType}`)}
                         </PWText>
-                        {!!transaction.id && (
+                        {Boolean(transaction.id) && (
                             <AddressDisplay
                                 address={transaction.id}
                                 addressFormat='long'
@@ -72,7 +72,7 @@ export const TransactionHeader = ({
                 </PWView>
             </PWView>
 
-            {!!blockTime && !!transaction.confirmedRound && (
+            {Boolean(blockTime) && Boolean(transaction.confirmedRound) && (
                 <PWView style={styles.blockContainer}>
                     <PWView style={styles.blockColumn}>
                         <PWText style={styles.blockTitle}>

@@ -37,7 +37,7 @@ export const PWHeader = ({
     return (
         <PWView style={styles.container}>
             <PWView style={styles.iconContainer}>
-                {!!leftIcon && (
+                {Boolean(leftIcon) && (
                     <PWIcon
                         name={leftIcon}
                         onPress={onLeftPress}
@@ -46,7 +46,7 @@ export const PWHeader = ({
             </PWView>
             <PWView style={styles.childContainer}>
                 {children}
-                {!!title && (
+                {Boolean(title) && (
                     <PWText
                         variant='h4'
                         style={styles.title}
@@ -56,7 +56,7 @@ export const PWHeader = ({
                 )}
             </PWView>
             <PWView style={styles.iconContainer}>
-                {!!rightIcon && (
+                {Boolean(rightIcon) && (
                     <PWIcon
                         name={rightIcon}
                         onPress={onRightPress}

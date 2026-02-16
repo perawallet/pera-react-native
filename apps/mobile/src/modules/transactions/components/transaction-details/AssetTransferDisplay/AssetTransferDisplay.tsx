@@ -167,7 +167,7 @@ export const AssetTransferDisplay = ({
 
             <TransactionFooter transaction={transaction} />
 
-            {!!metadataHash && (
+            {Boolean(metadataHash) && (
                 <ViewTextDetailsPanel
                     isVisible={isMetadataHashDetailsModalOpen}
                     onClose={closeMetadataHashDetailsModal}

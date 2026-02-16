@@ -21,7 +21,7 @@ import { v4 as uuid } from 'uuid'
 export const useSourceMetadataView = (metadata: SignRequestSource) => {
     const { data: project } = useProjectByUrlQuery({
         url: metadata.url,
-        isEnabled: !!metadata.url,
+        isEnabled: Boolean(metadata.url),
     })
 
     const preferredIcon =

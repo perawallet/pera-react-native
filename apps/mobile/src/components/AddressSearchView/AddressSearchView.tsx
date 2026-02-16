@@ -85,7 +85,7 @@ export const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
                             <PWText>{truncateAlgorandAddress(value)}</PWText>
                         </PWTouchableOpacity>
                     )}
-                    {!!matchingContacts.length && (
+                    {Boolean(matchingContacts.length) && (
                         <PWView style={styles.section}>
                             <PWText
                                 variant='h4'
@@ -107,7 +107,7 @@ export const AddressSearchView = ({ onSelected }: AddressSearchViewProps) => {
                             ))}
                         </PWView>
                     )}
-                    {!!matchingAccounts.length && (
+                    {Boolean(matchingAccounts.length) && (
                         <PWView style={styles.section}>
                             <PWText
                                 variant='h4'

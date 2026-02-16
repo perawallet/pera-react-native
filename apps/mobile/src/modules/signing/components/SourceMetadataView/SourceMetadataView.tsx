@@ -50,14 +50,14 @@ export const SourceMetadataView = ({ metadata }: SourceMetadataViewProps) => {
                     >
                         {displayName}
                     </PWText>
-                    {!!project?.verificationTier && (
+                    {Boolean(project?.verificationTier) && (
                         <ProjectVerificationIcon
                             tier={project.verificationTier}
                             size='sm'
                         />
                     )}
                 </PWView>
-                {!!metadata.url && (
+                {Boolean(metadata.url) && (
                     <PWButton
                         variant='link'
                         onPress={handlePressUrl}

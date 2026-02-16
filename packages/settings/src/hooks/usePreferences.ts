@@ -27,7 +27,7 @@ export const usePreferences = () => {
 
     const hasPreference = useCallback(
         (key: string) => {
-            return !!getPreference(key)
+            return Boolean(getPreference(key))
         },
         [getPreference],
     )

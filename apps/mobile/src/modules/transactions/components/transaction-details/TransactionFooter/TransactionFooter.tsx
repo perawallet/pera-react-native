@@ -30,7 +30,7 @@ export const TransactionFooter = ({
     return (
         <PWView style={styles.container}>
             <RawTransactionButton transaction={transaction} />
-            {!!assetUrl && (
+            {Boolean(assetUrl) && (
                 <PWButton
                     variant='secondary'
                     title={t('transactions.common.view_asset_url')}
@@ -39,7 +39,7 @@ export const TransactionFooter = ({
                     paddingStyle='dense'
                 />
             )}
-            {!!transaction.id && (
+            {Boolean(transaction.id) && (
                 <PWButton
                     variant='secondary'
                     title={t('transactions.common.view_in_explorer')}

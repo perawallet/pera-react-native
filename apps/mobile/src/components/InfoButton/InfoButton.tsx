@@ -57,7 +57,7 @@ export const InfoButton = ({
                 isVisible={bottomSheetState.isOpen}
                 innerContainerStyle={styles.container}
             >
-                {!!title && (
+                {Boolean(title) && (
                     <PWText
                         variant='h3'
                         style={styles.title}

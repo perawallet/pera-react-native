@@ -70,7 +70,7 @@ export const usePinCode = (): UsePinCodeResult => {
 
     const checkPinEnabled = useCallback(async (): Promise<boolean> => {
         const pinData = await secureStorage.getItem(PIN_STORAGE_KEY)
-        return !!pinData
+        return Boolean(pinData)
     }, [secureStorage, forceRefresh.current])
 
     const setIsPinEnabled = useCallback(

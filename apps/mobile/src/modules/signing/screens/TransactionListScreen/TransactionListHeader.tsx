@@ -34,7 +34,7 @@ export const TransactionListHeader = ({
     return (
         <>
             <PWView style={styles.listHeader}>
-                {!!sourceMetadata && (
+                {Boolean(sourceMetadata) && (
                     <SourceMetadataBadge metadata={sourceMetadata} />
                 )}
 

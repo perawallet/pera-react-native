@@ -31,7 +31,7 @@ export const EmptyView = (props: EmptyViewProps) => {
             {...rest}
             style={[styles.container, style]}
         >
-            {!!icon && (
+            {Boolean(icon) && (
                 <PWView style={styles.iconContainer}>
                     <PWIcon
                         name={icon}
@@ -40,7 +40,7 @@ export const EmptyView = (props: EmptyViewProps) => {
                     />
                 </PWView>
             )}
-            {!!title && (
+            {Boolean(title) && (
                 <PWText
                     variant='h3'
                     style={styles.text}

@@ -57,9 +57,11 @@ export function WalletConnectProvider({
             {children}
             <PWBottomSheet
                 innerContainerStyle={{ height: height - 100 }}
-                isVisible={!!nextRequest}
+                isVisible={Boolean(nextRequest)}
             >
-                {!!nextRequest && <ConnectionView request={nextRequest} />}
+                {Boolean(nextRequest) && (
+                    <ConnectionView request={nextRequest} />
+                )}
             </PWBottomSheet>
         </WalletConnectErrorBoundary>
     )

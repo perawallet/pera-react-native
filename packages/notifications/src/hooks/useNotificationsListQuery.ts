@@ -57,7 +57,7 @@ export const useNotificationsListQuery = () => {
         getPreviousPageParam: firstPage => {
             return firstPage.previous
         },
-        enabled: !!deviceID,
+        enabled: Boolean(deviceID),
         select: useCallback((data: InfiniteData<NotificationsListResponse>) => {
             return data.pages.flatMap((p: NotificationsListResponse) =>
                 p.results.map((r: NotificationResponse) =>

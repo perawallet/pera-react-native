@@ -51,7 +51,7 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
 
     return (
         <View style={styles.container}>
-            {!!assetDetails.peraMetadata?.description && (
+            {Boolean(assetDetails.peraMetadata?.description) && (
                 <KeyValueRow
                     title={t('asset_details.about.title', {
                         name: assetDetails.name,
@@ -64,7 +64,7 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                 </KeyValueRow>
             )}
 
-            {!!assetDetails.assetId &&
+            {Boolean(assetDetails.assetId) &&
                 assetDetails.assetId !== ALGO_ASSET_ID && (
                     <KeyValueRow
                         title={t('asset_details.about.asa_id')}
@@ -81,7 +81,7 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                     </KeyValueRow>
                 )}
 
-            {!!assetDetails.creator?.address && (
+            {Boolean(assetDetails.creator?.address) && (
                 <KeyValueRow
                     title={t('asset_details.about.creator')}
                     verticalAlignment='center'
@@ -99,7 +99,7 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                 </KeyValueRow>
             )}
 
-            {!!assetDetails.url?.length && (
+            {Boolean(assetDetails.url?.length) && (
                 <KeyValueRow
                     title={
                         assetDetails.assetId === ALGO_ASSET_ID
@@ -117,7 +117,7 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                 </KeyValueRow>
             )}
 
-            {!!assetDetails.peraMetadata?.explorerUrl?.length && (
+            {Boolean(assetDetails.peraMetadata?.explorerUrl?.length) && (
                 <KeyValueRow
                     title={t('asset_details.about.show_on')}
                     verticalAlignment='center'
@@ -138,7 +138,7 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                 </KeyValueRow>
             )}
 
-            {!!assetDetails.peraMetadata?.projectUrl?.length && (
+            {Boolean(assetDetails.peraMetadata?.projectUrl?.length) && (
                 <KeyValueRow
                     title={t('asset_details.about.project_website')}
                     verticalAlignment='center'

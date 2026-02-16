@@ -31,7 +31,7 @@ export const useSigningRequestAnalysis = (request: TransactionSignRequest) => {
         () =>
             request.txs
                 .map(tx => mapToDisplayableTransaction(tx))
-                .filter((tx): tx is PeraDisplayableTransaction => !!tx),
+                .filter((tx): tx is PeraDisplayableTransaction => Boolean(tx)),
         [request.txs],
     )
 

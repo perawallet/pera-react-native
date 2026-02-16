@@ -59,7 +59,7 @@ export const isLedgerAccount = (
 }
 
 export const isRekeyedAccount = (account: WalletAccount) => {
-    return !!account.rekeyAddress
+    return Boolean(account.rekeyAddress)
 }
 
 export const isAlgo25Account = (

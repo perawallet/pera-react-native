@@ -55,7 +55,7 @@ vi.mock('@components/core', () => ({
             Navigator: ({ children, tabBarHidden }: any) => (
                 <div
                     data-testid='tab-navigator'
-                    data-hidden-tabs={String(!!tabBarHidden)}
+                    data-hidden-tabs={String(Boolean(tabBarHidden))}
                 >
                     {children}
                 </div>

@@ -50,7 +50,9 @@ export const RoundButton = (props: RoundButtonProps) => {
                     variant={variant}
                 />
             </PWTouchableOpacity>
-            {!!title && <PWText style={styles.titleStyle}>{title}</PWText>}
+            {Boolean(title) && (
+                <PWText style={styles.titleStyle}>{title}</PWText>
+            )}
         </PWView>
     )
 }

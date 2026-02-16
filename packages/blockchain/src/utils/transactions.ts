@@ -246,8 +246,8 @@ export const getAssetTransferType = (
     const receiverAddress = assetTransfer.receiver
     const isToSelf = senderAddress === receiverAddress
     const isZeroAmount = assetTransfer.amount === 0n
-    const hasCloseRemainder = !!assetTransfer.closeTo
-    const hasAssetSender = !!assetTransfer.sender
+    const hasCloseRemainder = Boolean(assetTransfer.closeTo)
+    const hasAssetSender = Boolean(assetTransfer.sender)
 
     if (hasAssetSender) {
         return 'clawback'

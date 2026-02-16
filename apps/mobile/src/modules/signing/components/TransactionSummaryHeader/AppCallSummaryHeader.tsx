@@ -39,7 +39,7 @@ export const AppCallSummaryHeader = ({
                 >
                     {t(`transactions.type.${transaction.txType}`)}
                 </PWText>
-                {!!appId && <ApplicationDisplay applicationId={appId} />}
+                {Boolean(appId) && <ApplicationDisplay applicationId={appId} />}
             </PWView>
         </PWView>
     )

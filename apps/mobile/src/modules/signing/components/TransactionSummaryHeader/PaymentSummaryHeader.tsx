@@ -65,7 +65,7 @@ export const PaymentSummaryHeader = ({
                     variant='h1'
                     style={styles.amountValue}
                 />
-                {!!value && (
+                {Boolean(value) && (
                     <CurrencyDisplay
                         currency={preferredFiatCurrency}
                         precision={DEFAULT_PRECISION}

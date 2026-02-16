@@ -34,8 +34,8 @@ export const RekeyGuardBottomSheet = (props: RekeyGuardBottomSheetProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
     const { getPreference } = usePreferences()
-    const isRekeySupportEnabled = !!getPreference(
-        UserPreferences.rekeySupportEnabled,
+    const isRekeySupportEnabled = Boolean(
+        getPreference(UserPreferences.rekeySupportEnabled),
     )
 
     return (

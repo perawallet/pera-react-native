@@ -75,7 +75,7 @@ export function createLazyStore<T extends StoreApi<unknown>>(
             logger.debug(`Initializing zustand store ${name}`)
             store = realStore
             resetStateFn = resetState
-            logger.debug(`Store ${name} initialized: ${!!store}`)
+            logger.debug(`Store ${name} initialized: ${Boolean(store)}`)
         },
         clear() {
             if (store) {

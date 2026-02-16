@@ -104,7 +104,7 @@ export const TransactionWarnings = ({
                             }
                         />
 
-                        {!!closeAddress && (
+                        {Boolean(closeAddress) && (
                             <PWView style={styles.warningSection}>
                                 <PWView
                                     style={styles.warningSectionIconContainer}
@@ -129,14 +129,14 @@ export const TransactionWarnings = ({
                                 </PWView>
                             </PWView>
                         )}
-                        {!!rekeyAddress && (
+                        {Boolean(rekeyAddress) && (
                             <PWDivider
                                 style={styles.divider}
                                 color={theme.colors.layerGray}
                             />
                         )}
 
-                        {!!rekeyAddress && (
+                        {Boolean(rekeyAddress) && (
                             <PWView style={styles.warningSection}>
                                 <PWView
                                     style={styles.warningSectionIconContainer}

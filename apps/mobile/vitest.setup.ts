@@ -314,7 +314,7 @@ vi.mock('@components/core', () => {
                 'div',
                 { 'data-testid': testID || 'PWNumpad' },
                 keys
-                    .filter((key): key is string => !!key)
+                    .filter((key): key is string => Boolean(key))
                     .map(key =>
                         key === 'delete'
                             ? React.createElement('button', {
@@ -1703,14 +1703,18 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
                 account?.type === 'hardware' &&
                 account?.hardwareDetails?.manufacturer === 'ledger',
         ),
-        isRekeyedAccount: vi.fn((account: any) => !!account?.rekeyAddress),
-        isHDWalletAccount: vi.fn((account: any) => !!account?.hdWalletDetails),
+        isRekeyedAccount: vi.fn((account: any) =>
+            Boolean(account?.rekeyAddress),
+        ),
+        isHDWalletAccount: vi.fn((account: any) =>
+            Boolean(account?.hdWalletDetails),
+        ),
         isAlgo25Account: vi.fn((account: any) => account?.type === 'algo25'),
         isWatchAccount: vi.fn((account: any) => account?.type === 'watch'),
         isMultisigAccount: vi.fn(
             (account: any) => account?.type === 'multisig',
         ),
-        canSignWithAccount: vi.fn((account: any) => !!account?.canSign),
+        canSignWithAccount: vi.fn((account: any) => Boolean(account?.canSign)),
         useAccountAssetBalanceQuery: vi.fn(() => ({
             data: null,
             isPending: false,

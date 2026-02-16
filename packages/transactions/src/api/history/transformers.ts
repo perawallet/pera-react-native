@@ -103,8 +103,8 @@ export const transformTransactionHistoryResponse = (
 ): TransactionHistoryResult => ({
     transactions: response.results.map(transformTransactionItem),
     pagination: {
-        hasNextPage: !!response.next,
-        hasPreviousPage: !!response.previous,
+        hasNextPage: Boolean(response.next),
+        hasPreviousPage: Boolean(response.previous),
         nextUrl: response.next ?? null,
         previousUrl: response.previous ?? null,
         totalFetched: response.results.length,

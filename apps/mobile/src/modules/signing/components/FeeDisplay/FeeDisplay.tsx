@@ -70,7 +70,7 @@ export const FeeDisplay = ({ transaction, label }: FeeDisplayProps) => {
                     )}
                 </PWView>
             </PWView>
-            {!!transaction && (
+            {Boolean(transaction) && (
                 <PWButton
                     variant='link'
                     style={styles.transactionDetails}

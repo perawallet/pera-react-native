@@ -215,7 +215,7 @@ export const SendFundsTransactionConfirmation = ({
                 />
             </KeyValueRow>
             <Divider style={styles.divider} />
-            {!!selectedAccount && (
+            {Boolean(selectedAccount) && (
                 <KeyValueRow title={t('send_funds.confirmation.account')}>
                     <AccountDisplay
                         account={selectedAccount}
@@ -227,7 +227,7 @@ export const SendFundsTransactionConfirmation = ({
                     />
                 </KeyValueRow>
             )}
-            {!!destination && (
+            {Boolean(destination) && (
                 <KeyValueRow title={t('send_funds.confirmation.to')}>
                     <AddressDisplay
                         address={destination}
@@ -273,8 +273,8 @@ export const SendFundsTransactionConfirmation = ({
             )}
             <Divider style={styles.divider} />
             <KeyValueRow title={t('send_funds.confirmation.note')}>
-                {!!note && <PWText>{note}</PWText>}
-                {!!note && (
+                {Boolean(note) && <PWText>{note}</PWText>}
+                {Boolean(note) && (
                     <PWTouchableOpacity
                         onPress={openNote}
                         style={styles.linkContainer}

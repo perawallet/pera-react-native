@@ -46,7 +46,7 @@ export const PinEditView = ({ mode, onSuccess, onClose }: PinEditViewProps) => {
 
     return (
         <PWBottomSheet
-            isVisible={!!mode}
+            isVisible={Boolean(mode)}
             containerStyle={styles.container}
             innerContainerStyle={styles.innerContainer}
             scrollEnabled={false}

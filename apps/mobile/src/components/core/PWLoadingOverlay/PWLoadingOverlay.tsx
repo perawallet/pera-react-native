@@ -36,7 +36,7 @@ export const PWLoadingOverlay = ({
             overlayStyle={styles.overlay}
             backdropStyle={styles.overlayBackdrop}
         >
-            {!!title && <PWText variant='body'>{title}</PWText>}
+            {Boolean(title) && <PWText variant='body'>{title}</PWText>}
             <ActivityIndicator
                 size='large'
                 color={theme.colors.linkPrimary}

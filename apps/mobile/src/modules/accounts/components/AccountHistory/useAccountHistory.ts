@@ -116,7 +116,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     } = useTransactionHistoryQuery({
         accountAddress: account?.address ?? '',
         network,
-        isEnabled: !!account?.address,
+        isEnabled: Boolean(account?.address),
         afterTime,
         beforeTime,
     })

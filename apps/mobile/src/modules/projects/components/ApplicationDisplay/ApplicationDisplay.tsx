@@ -30,7 +30,7 @@ export const ApplicationDisplay = ({
     const { t } = useLanguage()
     const { data: application, isLoading } = useApplicationQuery({
         applicationId: applicationId,
-        isEnabled: !!applicationId,
+        isEnabled: Boolean(applicationId),
     })
 
     return (
@@ -42,7 +42,7 @@ export const ApplicationDisplay = ({
                 <PWView style={styles.container}>
                     <PWView style={styles.row}>
                         <PWText variant='h4'>{application.name}</PWText>
-                        {!!application?.project?.verificationTier && (
+                        {Boolean(application?.project?.verificationTier) && (
                             <ProjectVerificationIcon
                                 tier={application.project.verificationTier}
                                 size='sm'

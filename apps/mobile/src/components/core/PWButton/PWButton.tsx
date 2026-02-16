@@ -83,7 +83,7 @@ export const PWButton = ({
             {...getTestProps(testID)}
             {...props}
         >
-            {!!icon && !isLoading && (
+            {Boolean(icon) && !isLoading && (
                 <PWIcon
                     name={icon}
                     variant={iconVariant}
@@ -94,10 +94,10 @@ export const PWButton = ({
                     }
                 />
             )}
-            {!!title && !isLoading && (
+            {Boolean(title) && !isLoading && (
                 <PWText style={styles.titleStyle}>{title}</PWText>
             )}
-            {!!iconRight && !isLoading && (
+            {Boolean(iconRight) && !isLoading && (
                 <PWIcon
                     name={iconRight}
                     variant={iconVariant}

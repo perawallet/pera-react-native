@@ -120,7 +120,7 @@ export const ContactListScreen = () => {
                     }
                 />
             )}
-            {(!!groupedContacts.length || search.length) && (
+            {(Boolean(groupedContacts.length) || search.length) && (
                 <PWView style={styles.flex}>
                     <SearchInput
                         placeholder={t('contacts.list.search_placeholder')}

@@ -37,7 +37,7 @@ export const AddNotePanel = ({
 }: AddNotePanelProps) => {
     const styles = useStyles()
     const { note, setNote } = useSendFunds()
-    const [isEdit, setIsEdit] = useState(!!note)
+    const [isEdit, setIsEdit] = useState(Boolean(note))
     const { t } = useLanguage()
 
     const {
@@ -61,7 +61,7 @@ export const AddNotePanel = ({
 
     useEffect(() => {
         reset({ note })
-        setIsEdit(!!note)
+        setIsEdit(Boolean(note))
     }, [note, reset])
 
     return (

@@ -39,6 +39,6 @@ export const useTransactionDetailQuery = ({
                 )
             return mapIndexerTxToDisplayableTransaction(response.transaction)
         },
-        enabled: isEnabled && !!transactionId,
+        enabled: isEnabled && Boolean(transactionId),
     })
 }

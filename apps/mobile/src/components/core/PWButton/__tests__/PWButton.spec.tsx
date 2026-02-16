@@ -44,7 +44,7 @@ describe('PWButton', () => {
 
         // When loading, loading indicator should be present.
         // Since we don't have explicit testID, check for absence of text or verify logic.
-        // Implementation: {!!props.title && !props.loading && <Text...>}
+        // Implementation: {Boolean(props.title) && !props.loading && <Text...>}
         expect(screen.queryByText('Click Me')).toBeNull()
     })
 })

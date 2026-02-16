@@ -34,11 +34,11 @@ export const AppCallDetailsPanel = ({
     }
 
     const hasAdvancedDetails =
-        !!appCall.applicationArgs?.length ||
-        !!appCall.accounts?.length ||
-        !!appCall.foreignApps?.length ||
-        !!appCall.foreignAssets?.length ||
-        !!appCall.boxReferences?.length
+        Boolean(appCall.applicationArgs?.length) ||
+        Boolean(appCall.accounts?.length) ||
+        Boolean(appCall.foreignApps?.length) ||
+        Boolean(appCall.foreignAssets?.length) ||
+        Boolean(appCall.boxReferences?.length)
 
     if (!hasAdvancedDetails) {
         return null

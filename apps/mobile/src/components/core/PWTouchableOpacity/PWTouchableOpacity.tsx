@@ -28,7 +28,7 @@ export const PWTouchableOpacity = ({
             {...rest}
             {...getTestProps(testID)}
             activeOpacity={activeOpacity ?? DEFAULT_ACTIVE_OPACITY}
-            accessible={!!testID}
+            accessible={Boolean(testID)}
         >
             {children}
         </TouchableOpacity>

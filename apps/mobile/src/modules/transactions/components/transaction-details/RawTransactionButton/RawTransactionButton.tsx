@@ -47,7 +47,7 @@ export const RawTransactionButton = ({
         copyToClipboard(rawText)
     }
 
-    if (!transaction.rawTransaction || !!transaction.id) {
+    if (!transaction.rawTransaction || Boolean(transaction.id)) {
         return null
     }
 

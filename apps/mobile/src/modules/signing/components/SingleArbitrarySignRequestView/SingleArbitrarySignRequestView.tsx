@@ -44,7 +44,7 @@ export const SingleArbitrarySignRequestView = ({
                     {t('signing.arbitrary_data_view.body')}
                 </PWText>
                 <PWText style={styles.message}>{request.message}</PWText>
-                {!!account && (
+                {Boolean(account) && (
                     <PWView style={styles.accountContainer}>
                         <PWText style={styles.onBehalfOf}>
                             {t('signing.arbitrary_data_view.on_behalf_of')}

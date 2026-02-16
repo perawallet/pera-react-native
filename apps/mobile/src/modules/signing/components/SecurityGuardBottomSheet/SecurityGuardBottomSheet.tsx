@@ -78,7 +78,9 @@ export const SecurityGuardBottomSheet = (
     const { t } = useLanguage()
     const styles = useStyles()
     const { getPreference } = usePreferences()
-    const isSupportEnabled = !!getPreference(preferenceKeyMap[warningType])
+    const isSupportEnabled = Boolean(
+        getPreference(preferenceKeyMap[warningType]),
+    )
     const keys = i18nKeyMap[warningType]
 
     return (

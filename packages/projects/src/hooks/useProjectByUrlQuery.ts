@@ -39,6 +39,6 @@ export const useProjectByUrlQuery = (
             })
             return projects[0] ?? null
         },
-        enabled: isEnabled && !!url,
+        enabled: isEnabled && Boolean(url),
     })
 }

@@ -43,7 +43,7 @@ export const EditContactScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { theme } = useTheme()
     const { isOpen, open, close } = useModalState()
-    const isEditMode = !!selectedContact
+    const isEditMode = Boolean(selectedContact)
 
     const {
         control,
