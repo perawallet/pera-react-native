@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useLayoutEffect } from 'react'
+import { useCallback, useLayoutEffect, useRef } from 'react'
 import {
     useAccountAssetBalanceQuery,
     useSelectedAccount,
@@ -60,10 +60,13 @@ export const useSendFundsBottomSheet = (
         selectedAsset?.assetId,
     ])
 
-    const handleFinished = () => {
+    const onCloseRef = useRef(onClose)
+    onCloseRef.current = onClose
+
+    const handleFinished = useCallback(() => {
         reset()
-        onClose()
-    }
+        onCloseRef.current()
+    }, [reset])
 
     useLayoutEffect(() => {
         if (isVisible) {

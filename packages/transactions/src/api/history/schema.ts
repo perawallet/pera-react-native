@@ -25,12 +25,12 @@ const coerceNumber = z.union([
  * Schema for swap group detail from API response
  */
 export const transactionSwapGroupDetailSchema = z.object({
-    asset_in_id: coerceNumber,
-    asset_in_unit_name: z.string(),
-    asset_out_id: coerceNumber,
-    asset_out_unit_name: z.string(),
-    amount_in: z.string(),
-    amount_out: z.string(),
+    asset_in_id: coerceNumber.optional(),
+    asset_in_unit_name: z.string().optional().default(''),
+    asset_out_id: coerceNumber.optional(),
+    asset_out_unit_name: z.string().optional().default(''),
+    amount_in: z.string().optional().default('0'),
+    amount_out: z.string().optional().default('0'),
 })
 
 /**
@@ -48,7 +48,7 @@ export const transactionAssetSummarySchema = z.object({
  * Schema for interpreted meaning from API response
  */
 export const transactionInterpretedMeaningSchema = z.object({
-    title: z.string(),
+    title: z.string().optional().default(''),
     description: z.string().optional().default(''),
 })
 

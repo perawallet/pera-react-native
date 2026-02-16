@@ -30,12 +30,14 @@ const transformSwapGroupDetail = (
 ): TransactionSwapGroupDetail | null => {
     if (!detail) return null
     return {
-        assetInId: Number(detail.asset_in_id),
-        assetInUnitName: detail.asset_in_unit_name,
-        assetOutId: Number(detail.asset_out_id),
-        assetOutUnitName: detail.asset_out_unit_name,
-        amountIn: detail.amount_in,
-        amountOut: detail.amount_out,
+        assetInId:
+            detail.asset_in_id != null ? Number(detail.asset_in_id) : null,
+        assetInUnitName: detail.asset_in_unit_name ?? '',
+        assetOutId:
+            detail.asset_out_id != null ? Number(detail.asset_out_id) : null,
+        assetOutUnitName: detail.asset_out_unit_name ?? '',
+        amountIn: detail.amount_in ?? '0',
+        amountOut: detail.amount_out ?? '0',
     }
 }
 
@@ -62,7 +64,7 @@ const transformInterpretedMeaning = (
 ): TransactionInterpretedMeaning | null => {
     if (!meaning) return null
     return {
-        title: meaning.title,
+        title: meaning.title ?? '',
         description: meaning.description ?? '',
     }
 }

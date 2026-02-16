@@ -44,11 +44,11 @@ export type TransactionType =
  */
 export interface TransactionSwapGroupDetail {
     /** The asset ID being swapped from (input asset) */
-    assetInId: number
+    assetInId: number | null
     /** The ticker symbol/unit name of the input asset (e.g., "ALGO", "USDC") */
     assetInUnitName: string
     /** The asset ID being swapped to (output asset) */
-    assetOutId: number
+    assetOutId: number | null
     /** The ticker symbol/unit name of the output asset */
     assetOutUnitName: string
     /** The amount of input asset being swapped, as a string to preserve precision */
