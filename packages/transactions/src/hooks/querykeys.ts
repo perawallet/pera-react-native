@@ -24,7 +24,7 @@ export const transactionQueryKeys = {
     historyWithFilters: (
         accountAddress: string,
         filters: {
-            assetId?: number
+            assetId?: string
             afterTime?: string
             beforeTime?: string
             limit?: number

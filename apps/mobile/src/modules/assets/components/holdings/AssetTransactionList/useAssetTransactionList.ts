@@ -40,52 +40,29 @@ type UseAssetTransactionListParams = {
     asset: PeraAsset
 }
 
-/**
- * Return type for useAssetTransactionList hook.
- */
 export type UseAssetTransactionListResult = {
-    /** Sections grouped by date for SectionList */
     sections: TransactionSection[]
-    /** Whether initial data is loading */
     isLoading: boolean
-    /** Whether more data is being fetched */
     isFetchingNextPage: boolean
-    /** Whether there was an error */
     isError: boolean
-    /** Error if one occurred */
     error: Error | null
-    /** Whether there are more pages */
     hasNextPage: boolean
-    /** Function to load more transactions */
     handleLoadMore: () => void
-    /** Function to refresh the list */
     handleRefresh: () => void
-    /** Whether data is empty */
-    isEmpty: boolean
-    /** Function to export transaction history to CSV */
     handleExportCsv: () => void
-    /** Whether CSV export is in progress */
     isExportingCsv: boolean
-
-    /** Current active filter */
     activeFilter: TransactionFilter
-    /** Current custom range if active */
     customRange?: CustomDateRange
-    /** Function to apply a new filter */
     handleApplyFilter: (
         filter: TransactionFilter,
         range?: CustomDateRange,
     ) => void
-    /** Function to handle pressing a transaction item */
     handleTransactionPress: (transaction: TransactionHistoryItem) => void
+    isFilterVisible: boolean
+    handleOpenFilter: () => void
+    handleCloseFilter: () => void
 }
 
-/**
- * Hook that manages the asset transaction list state and logic.
- *
- * Fetches and displays transactions filtered by a specific asset ID.
- * Supports CSV export with asset filtering.
- */
 export const useAssetTransactionList = ({
     account,
     asset,
@@ -98,13 +75,14 @@ export const useAssetTransactionList = ({
         TransactionFilter.AllTime,
     )
     const [customRange, setCustomRange] = useState<CustomDateRange>()
+    const [isFilterVisible, setIsFilterVisible] = useState(false)
 
     const { afterTime, beforeTime } = useMemo(
         () => getFilterTimes(activeFilter, customRange),
         [activeFilter, customRange],
     )
 
-    const assetId = parseInt(asset.assetId, 10)
+    const assetId = asset.assetId
 
     const {
         transactions,
@@ -185,7 +163,13 @@ export const useAssetTransactionList = ({
         [navigation],
     )
 
-    const isEmpty = !isLoading && transactions.length === 0
+    const handleOpenFilter = useCallback(() => {
+        setIsFilterVisible(true)
+    }, [])
+
+    const handleCloseFilter = useCallback(() => {
+        setIsFilterVisible(false)
+    }, [])
 
     return {
         sections,
@@ -196,7 +180,6 @@ export const useAssetTransactionList = ({
         hasNextPage,
         handleLoadMore,
         handleRefresh,
-        isEmpty,
         handleExportCsv,
         isExportingCsv,
         activeFilter,
@@ -211,5 +194,8 @@ export const useAssetTransactionList = ({
             }
         },
         handleTransactionPress,
+        isFilterVisible,
+        handleOpenFilter,
+        handleCloseFilter,
     }
 }

@@ -124,7 +124,7 @@ describe('useAssetTransactionList', () => {
     })
 
     describe('initialization', () => {
-        it('queries transactions with correct assetId', () => {
+        it('queries transactions with correct assetId as string', () => {
             renderHook(() =>
                 useAssetTransactionList({
                     account: mockAccount,
@@ -134,7 +134,7 @@ describe('useAssetTransactionList', () => {
 
             expect(useTransactionHistoryQuery).toHaveBeenCalledWith({
                 accountAddress: mockAccount.address,
-                assetId: 12345,
+                assetId: '12345',
                 network: 'mainnet',
                 isEnabled: true,
                 afterTime: undefined,
@@ -142,7 +142,7 @@ describe('useAssetTransactionList', () => {
             })
         })
 
-        it('parses string assetId to number', () => {
+        it('passes assetId as string to query', () => {
             const assetWithStringId = {
                 ...mockAsset,
                 assetId: '67890',
@@ -157,7 +157,7 @@ describe('useAssetTransactionList', () => {
 
             expect(useTransactionHistoryQuery).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    assetId: 67890,
+                    assetId: '67890',
                 }),
             )
         })
@@ -177,7 +177,7 @@ describe('useAssetTransactionList', () => {
 
             expect(useTransactionHistoryQuery).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    assetId: 0,
+                    assetId: '0',
                 }),
             )
         })
@@ -216,7 +216,6 @@ describe('useAssetTransactionList', () => {
             )
 
             expect(result.current.sections).toHaveLength(0)
-            expect(result.current.isEmpty).toBe(true)
         })
 
         it('groups multiple transactions on same date', () => {
@@ -278,23 +277,6 @@ describe('useAssetTransactionList', () => {
 
             expect(result.current.isFetchingNextPage).toBe(true)
         })
-
-        it('isEmpty is false when loading', () => {
-            vi.mocked(useTransactionHistoryQuery).mockReturnValue({
-                transactions: [],
-                isLoading: true,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any)
-
-            const { result } = renderHook(() =>
-                useAssetTransactionList({
-                    account: mockAccount,
-                    asset: mockAsset,
-                }),
-            )
-
-            expect(result.current.isEmpty).toBe(false)
-        })
     })
 
     describe('filter handling', () => {
@@ -313,7 +295,7 @@ describe('useAssetTransactionList', () => {
             expect(useTransactionHistoryQuery).toHaveBeenCalledWith(
                 expect.objectContaining({
                     afterTime: expect.any(String),
-                    assetId: 12345,
+                    assetId: '12345',
                 }),
             )
         })
@@ -376,7 +358,7 @@ describe('useAssetTransactionList', () => {
 
             expect(useTransactionHistoryQuery).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    assetId: 12345,
+                    assetId: '12345',
                     afterTime: expect.any(String),
                     beforeTime: expect.any(String),
                 }),
@@ -487,7 +469,7 @@ describe('useAssetTransactionList', () => {
 
             expect(mockExportCsv).toHaveBeenCalledWith({
                 accountAddress: mockAccount.address,
-                assetId: 12345,
+                assetId: '12345',
             })
         })
 
@@ -526,7 +508,7 @@ describe('useAssetTransactionList', () => {
 
             expect(mockExportCsv).toHaveBeenCalledWith({
                 accountAddress: mockAccount.address,
-                assetId: 99999,
+                assetId: '99999',
             })
         })
 
@@ -691,6 +673,53 @@ describe('useAssetTransactionList', () => {
             expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
                 transactionId: 'TX_ASSET_123',
             })
+        })
+    })
+
+    describe('filter visibility', () => {
+        it('isFilterVisible defaults to false', () => {
+            const { result } = renderHook(() =>
+                useAssetTransactionList({
+                    account: mockAccount,
+                    asset: mockAsset,
+                }),
+            )
+
+            expect(result.current.isFilterVisible).toBe(false)
+        })
+
+        it('handleOpenFilter sets isFilterVisible to true', () => {
+            const { result } = renderHook(() =>
+                useAssetTransactionList({
+                    account: mockAccount,
+                    asset: mockAsset,
+                }),
+            )
+
+            act(() => {
+                result.current.handleOpenFilter()
+            })
+
+            expect(result.current.isFilterVisible).toBe(true)
+        })
+
+        it('handleCloseFilter sets isFilterVisible to false', () => {
+            const { result } = renderHook(() =>
+                useAssetTransactionList({
+                    account: mockAccount,
+                    asset: mockAsset,
+                }),
+            )
+
+            act(() => {
+                result.current.handleOpenFilter()
+            })
+            expect(result.current.isFilterVisible).toBe(true)
+
+            act(() => {
+                result.current.handleCloseFilter()
+            })
+            expect(result.current.isFilterVisible).toBe(false)
         })
     })
 

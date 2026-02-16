@@ -39,7 +39,7 @@ export type ExportCsvParams = {
     /** Optional: Custom filename for the exported CSV (defaults to {address}.csv) */
     filename?: string
     /** Optional: Filter transactions by a specific asset ID */
-    assetId?: number
+    assetId?: string
 }
 
 /**
@@ -57,7 +57,7 @@ export type CsvExportResult = {
     /** The number of transaction rows in the CSV (excluding header) */
     rowCount: number
     /** The asset ID that was filtered (if any) */
-    assetId?: number
+    assetId?: string
 }
 
 /**

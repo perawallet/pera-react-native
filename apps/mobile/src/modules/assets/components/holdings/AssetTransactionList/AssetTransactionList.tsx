@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useState } from 'react'
 import { ActivityIndicator, SectionList } from 'react-native'
 import { useStyles } from './styles'
 import { PWButton, PWText, PWView } from '@components/core'
@@ -43,7 +42,6 @@ export const AssetTransactionList = ({
         sections,
         isLoading,
         isFetchingNextPage,
-        isEmpty,
         handleLoadMore,
         handleExportCsv,
         isExportingCsv,
@@ -51,9 +49,10 @@ export const AssetTransactionList = ({
         customRange,
         handleApplyFilter,
         handleTransactionPress,
+        isFilterVisible,
+        handleOpenFilter,
+        handleCloseFilter,
     } = useAssetTransactionList({ account, asset })
-
-    const [isFilterVisible, setIsFilterVisible] = useState(false)
 
     const renderItem = ({ item }: { item: TransactionHistoryItem }) => (
         <TransactionListItem
@@ -71,31 +70,10 @@ export const AssetTransactionList = ({
     const keyExtractor = (item: TransactionHistoryItem) => item.id
 
     const renderFooter = () => {
-        if (isFetchingNextPage) {
-            return (
-                <PWView style={styles.loadingFooter}>
-                    <ActivityIndicator size='small' />
-                </PWView>
-            )
-        }
-        return null
-    }
-
-    const renderEmptyComponent = () => {
-        if (isLoading) {
-            return (
-                <PWView style={styles.loadingContainer}>
-                    <ActivityIndicator size='large' />
-                </PWView>
-            )
-        }
-
-        return (
-            <EmptyView
-                style={styles.emptyView}
-                title={t('asset_details.transaction_list.empty_title')}
-                body={t('asset_details.transaction_list.empty_body')}
-            />
+        return !isFetchingNextPage ? null : (
+            <PWView style={styles.loadingFooter}>
+                <ActivityIndicator size='small' />
+            </PWView>
         )
     }
 
@@ -125,7 +103,7 @@ export const AssetTransactionList = ({
                                     variant='link'
                                     icon='sliders'
                                     paddingStyle='dense'
-                                    onPress={() => setIsFilterVisible(true)}
+                                    onPress={handleOpenFilter}
                                 />
                                 <PWButton
                                     title={t(
@@ -142,7 +120,11 @@ export const AssetTransactionList = ({
                     </PWView>
                 }
                 ListEmptyComponent={
-                    !isLoading && isEmpty ? renderEmptyComponent() : null
+                    <EmptyView
+                        style={styles.emptyView}
+                        title={t('asset_details.transaction_list.empty_title')}
+                        body={t('asset_details.transaction_list.empty_body')}
+                    />
                 }
                 ListFooterComponent={renderFooter}
             />
@@ -155,7 +137,7 @@ export const AssetTransactionList = ({
 
             <TransactionsFilterBottomSheet
                 isVisible={isFilterVisible}
-                onClose={() => setIsFilterVisible(false)}
+                onClose={handleCloseFilter}
                 activeFilter={activeFilter}
                 onApplyFilter={handleApplyFilter}
                 initialCustomRange={customRange}

@@ -28,7 +28,7 @@ export type UseTransactionHistoryQueryParams = {
     /** The network to fetch transactions from */
     network: Network
     /** Optional: Filter transactions to only show those involving a specific asset */
-    assetId?: number
+    assetId?: string
     /** Optional: Only return transactions confirmed after this time (ISO 8601) */
     afterTime?: string
     /** Optional: Only return transactions confirmed before this time (ISO 8601) */

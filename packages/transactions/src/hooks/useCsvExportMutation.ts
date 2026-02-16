@@ -42,7 +42,7 @@ export type ExportMutationParams = {
     /** Optional custom filename */
     filename?: string
     /** Optional asset ID filter */
-    assetId?: number
+    assetId?: string
 }
 
 /**

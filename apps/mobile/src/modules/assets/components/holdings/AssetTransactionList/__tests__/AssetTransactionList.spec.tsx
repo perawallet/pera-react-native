@@ -63,7 +63,6 @@ vi.mock('../useAssetTransactionList', () => ({
         sections: [],
         isLoading: false,
         isFetchingNextPage: false,
-        isEmpty: true,
         handleLoadMore: vi.fn(),
         handleRefresh: vi.fn(),
         handleExportCsv: vi.fn(),
@@ -75,6 +74,9 @@ vi.mock('../useAssetTransactionList', () => ({
         hasNextPage: false,
         isError: false,
         error: null,
+        isFilterVisible: false,
+        handleOpenFilter: vi.fn(),
+        handleCloseFilter: vi.fn(),
     })),
 }))
 
@@ -112,7 +114,6 @@ describe('AssetTransactionList', () => {
             sections: [],
             isLoading: false,
             isFetchingNextPage: false,
-            isEmpty: true,
             handleLoadMore: vi.fn(),
             handleRefresh: vi.fn(),
             hasNextPage: false,
@@ -124,6 +125,9 @@ describe('AssetTransactionList', () => {
             customRange: undefined,
             handleApplyFilter: vi.fn(),
             handleTransactionPress: vi.fn(),
+            isFilterVisible: false,
+            handleOpenFilter: vi.fn(),
+            handleCloseFilter: vi.fn(),
         } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         render(
@@ -144,7 +148,6 @@ describe('AssetTransactionList', () => {
             sections: [],
             isLoading: false,
             isFetchingNextPage: false,
-            isEmpty: true,
             handleLoadMore: vi.fn(),
             handleRefresh: vi.fn(),
             hasNextPage: false,
@@ -156,6 +159,9 @@ describe('AssetTransactionList', () => {
             customRange: undefined,
             handleApplyFilter: vi.fn(),
             handleTransactionPress: vi.fn(),
+            isFilterVisible: false,
+            handleOpenFilter: vi.fn(),
+            handleCloseFilter: vi.fn(),
         } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         render(
@@ -174,7 +180,6 @@ describe('AssetTransactionList', () => {
             sections: [],
             isLoading: false,
             isFetchingNextPage: false,
-            isEmpty: true,
             handleLoadMore: vi.fn(),
             handleRefresh: vi.fn(),
             hasNextPage: false,
@@ -186,6 +191,9 @@ describe('AssetTransactionList', () => {
             customRange: undefined,
             handleApplyFilter: vi.fn(),
             handleTransactionPress: vi.fn(),
+            isFilterVisible: false,
+            handleOpenFilter: vi.fn(),
+            handleCloseFilter: vi.fn(),
         } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         render(
@@ -239,7 +247,6 @@ describe('AssetTransactionList', () => {
             sections: mockSections,
             isLoading: false,
             isFetchingNextPage: false,
-            isEmpty: false,
             handleLoadMore: vi.fn(),
             handleRefresh: vi.fn(),
             hasNextPage: false,
@@ -251,6 +258,9 @@ describe('AssetTransactionList', () => {
             customRange: undefined,
             handleApplyFilter: vi.fn(),
             handleTransactionPress: vi.fn(),
+            isFilterVisible: false,
+            handleOpenFilter: vi.fn(),
+            handleCloseFilter: vi.fn(),
         } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         render(
@@ -269,7 +279,6 @@ describe('AssetTransactionList', () => {
             sections: [],
             isLoading: true,
             isFetchingNextPage: false,
-            isEmpty: false,
             handleLoadMore: vi.fn(),
             handleRefresh: vi.fn(),
             hasNextPage: false,
@@ -281,6 +290,9 @@ describe('AssetTransactionList', () => {
             customRange: undefined,
             handleApplyFilter: vi.fn(),
             handleTransactionPress: vi.fn(),
+            isFilterVisible: false,
+            handleOpenFilter: vi.fn(),
+            handleCloseFilter: vi.fn(),
         } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         render(
@@ -306,35 +318,5 @@ describe('AssetTransactionList', () => {
         )
 
         expect(screen.getByText('Custom Header Content')).toBeTruthy()
-    })
-
-    it('does not show empty state while loading', () => {
-        vi.mocked(useAssetTransactionList).mockReturnValueOnce({
-            sections: [],
-            isLoading: true,
-            isFetchingNextPage: false,
-            isEmpty: false,
-            handleLoadMore: vi.fn(),
-            handleRefresh: vi.fn(),
-            hasNextPage: false,
-            isError: false,
-            error: null,
-            handleExportCsv: vi.fn(),
-            isExportingCsv: false,
-            activeFilter: 'all_time',
-            customRange: undefined,
-            handleApplyFilter: vi.fn(),
-            handleTransactionPress: vi.fn(),
-        } as any) // eslint-disable-line @typescript-eslint/no-explicit-any
-
-        render(
-            <AssetTransactionList
-                account={mockAccount}
-                asset={mockAsset}
-            />,
-        )
-
-        // Empty state should not be shown while loading
-        expect(screen.queryByText('No transactions yet')).toBeNull()
     })
 })

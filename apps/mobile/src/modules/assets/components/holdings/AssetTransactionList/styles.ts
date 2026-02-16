@@ -33,10 +33,6 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.md,
         alignItems: 'center',
     },
-    loadingContainer: {
-        paddingVertical: theme.spacing['3xl'],
-        alignItems: 'center',
-    },
     loadingOverlay: {
         position: 'absolute',
         top: 0,

@@ -181,13 +181,13 @@ describe('useCsvExportMutation', () => {
         expect(result.current.result).toBeNull()
     })
 
-    it('passes assetId to fetchTransactionsCsv', async () => {
+    it('passes assetId as string to fetchTransactionsCsv', async () => {
         const mockResult = {
             csvContent: 'date,amount\n2024-01-01,1000',
             filename: 'export.csv',
             accountAddress: VALID_ADDRESS,
             rowCount: 1,
-            assetId: 12345,
+            assetId: '12345',
         }
         vi.mocked(fetchTransactionsCsv).mockResolvedValueOnce(mockResult)
 
@@ -203,7 +203,7 @@ describe('useCsvExportMutation', () => {
         act(() => {
             result.current.exportCsv({
                 accountAddress: VALID_ADDRESS,
-                assetId: 12345,
+                assetId: '12345',
             })
         })
 
@@ -213,9 +213,9 @@ describe('useCsvExportMutation', () => {
             accountAddress: VALID_ADDRESS,
             dateRange: undefined,
             filename: undefined,
-            assetId: 12345,
+            assetId: '12345',
             network: Networks.mainnet,
         })
-        expect(result.current.result?.assetId).toBe(12345)
+        expect(result.current.result?.assetId).toBe('12345')
     })
 })
