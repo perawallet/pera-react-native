@@ -29,7 +29,7 @@ export const useSendFundsInfoPanel = (
 ): UseSendFundsInfoPanelResult => {
     const { getPreference, setPreference } = usePreferences()
     const [forceOpen, setForceOpen] = useState(false)
-    const hasAgreed = getPreference(UserPreferences.spendAgreed)
+    const hasAgreed = getPreference(UserPreferences.transactionInfoAgreed)
     const { pushWebView } = useWebView()
 
     useEffect(() => {
@@ -50,7 +50,7 @@ export const useSendFundsInfoPanel = (
     }
 
     const handleClose = () => {
-        setPreference(UserPreferences.spendAgreed, true)
+        setPreference(UserPreferences.transactionInfoAgreed, true)
         onClose()
     }
 

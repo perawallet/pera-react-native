@@ -124,7 +124,7 @@ describe('AddNotePanel', () => {
             />,
         )
 
-        expect(container.textContent).toContain('send_funds.confirmation.edit')
+        expect(container.textContent).toContain('send_funds.add_note.edit')
     })
 
     it('calls onClose when close icon is pressed', () => {

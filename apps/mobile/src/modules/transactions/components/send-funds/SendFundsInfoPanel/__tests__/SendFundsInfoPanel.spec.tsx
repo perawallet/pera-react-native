@@ -70,6 +70,7 @@ vi.mock('@components/core', () => ({
     PWView: ({ children }: any) => <div>{children}</div>,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWIcon: ({ name }: any) => <div data-testid={`icon-${name}`} />,
+    PWDivider: () => <hr />,
 }))
 
 describe('SendFundsInfoPanel', () => {
@@ -148,7 +149,8 @@ describe('SendFundsInfoPanel', () => {
             />,
         )
 
-        fireEvent.click(screen.getByTestId('trans-component-0'))
+        const transComponents = screen.getAllByTestId('trans-component-0')
+        fireEvent.click(transComponents[transComponents.length - 1])
 
         expect(mockHandleOpenInfoLink).toHaveBeenCalledTimes(1)
     })

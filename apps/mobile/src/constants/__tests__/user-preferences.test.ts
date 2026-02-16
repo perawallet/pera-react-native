@@ -13,10 +13,10 @@
 import { UserPreferences } from '../user-preferences'
 
 describe('UserPreferences', () => {
-    it('exposes the expected spend agreement key', () => {
+    it('exposes the expected transaction info agreement key', () => {
         expect(UserPreferences).toHaveProperty(
-            'spendAgreed',
-            'send-fund-agreed',
+            'transactionInfoAgreed',
+            'transaction-info-agreed',
         )
     })
 })
