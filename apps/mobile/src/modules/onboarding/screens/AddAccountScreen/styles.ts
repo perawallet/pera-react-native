@@ -25,7 +25,6 @@ export const useStyles = makeStyles(theme => ({
         position: 'absolute',
         top: 0,
         right: 0,
-
     },
     headerContainer: {
         flexDirection: 'row',
@@ -40,7 +39,7 @@ export const useStyles = makeStyles(theme => ({
     headerImage: {
         width: 137,
         height: 217,
-        resizeMode: 'contain'
+        resizeMode: 'contain',
     },
     scrollContent: {
         paddingBottom: theme.spacing['3xl'],

@@ -50,7 +50,7 @@ export const AddAccountScreen = () => {
 
     return (
         <>
-            <PWView style={[styles.imageContainer]}>
+            <PWView style={styles.imageContainer}>
                 <PWImage
                     source={welcomeBackground}
                     style={styles.headerImage}
