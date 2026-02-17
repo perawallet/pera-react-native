@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
-import { useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
-import { STAKING_DISCLAIMER_STORAGE_KEY } from '../constants'
+import { useCallback } from 'react'
+import { usePreferences } from '@perawallet/wallet-core-settings'
+import { UserPreferences } from '@constants/user-preferences'
 
 type UseStakingDisclaimerResult = {
     isDisclaimerAccepted: boolean
@@ -20,15 +20,15 @@ type UseStakingDisclaimerResult = {
 }
 
 export const useStakingDisclaimer = (): UseStakingDisclaimerResult => {
-    const storage = useKeyValueStorageService()
-    const [isDisclaimerAccepted, setIsDisclaimerAccepted] = useState(() => {
-        return storage.getItem(STAKING_DISCLAIMER_STORAGE_KEY) === 'true'
-    })
+    const { getPreference, setPreference } = usePreferences()
+
+    const isDisclaimerAccepted = !!getPreference(
+        UserPreferences.stakingDisclaimerAccepted,
+    )
 
     const acceptDisclaimer = useCallback(() => {
-        storage.setItem(STAKING_DISCLAIMER_STORAGE_KEY, 'true')
-        setIsDisclaimerAccepted(true)
-    }, [storage])
+        setPreference(UserPreferences.stakingDisclaimerAccepted, true)
+    }, [setPreference])
 
     return {
         isDisclaimerAccepted,

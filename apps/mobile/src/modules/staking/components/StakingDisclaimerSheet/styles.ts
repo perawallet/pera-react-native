@@ -16,6 +16,7 @@ export const useStyles = makeStyles(theme => {
     return {
         bulletList: {
             gap: theme.spacing.sm,
+            paddingHorizontal: theme.spacing.md,
         },
         bulletText: {
             color: theme.colors.textGray,

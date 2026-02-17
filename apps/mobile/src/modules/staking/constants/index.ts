@@ -17,5 +17,3 @@ export const STAKING_TYPE_LABEL_KEYS: Record<StakingType, string> = {
     pools: 'staking.type_pools',
     delegated: 'staking.type_delegated',
 }
-
-export const STAKING_DISCLAIMER_STORAGE_KEY = 'pera.staking.disclaimerAccepted'
