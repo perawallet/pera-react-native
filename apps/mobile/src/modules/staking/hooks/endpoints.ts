@@ -11,14 +11,14 @@
  */
 
 import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+
+import { stakingProjectsApiResponseSchema } from '../models/schema'
 import type { StakingProjectsApiResponse } from '../models'
 
 const STAKING_PROJECTS_INFORMATION_ENDPOINT =
     '/v1/staking/projects-information/'
 
-export const fetchStakingProjectsInfo = async (
-    network: Network,
-): Promise<StakingProjectsApiResponse> => {
+export const fetchStakingProjectsInfo = async (network: Network) => {
     const response = await queryClient<StakingProjectsApiResponse>({
         backend: 'pera',
         network,
@@ -26,5 +26,5 @@ export const fetchStakingProjectsInfo = async (
         url: STAKING_PROJECTS_INFORMATION_ENDPOINT,
     })
 
-    return response.data
+    return stakingProjectsApiResponseSchema.parse(response.data)
 }

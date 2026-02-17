@@ -35,7 +35,7 @@ type UseStakingProjectsQueryResult = {
     refetch: () => void
 }
 
-const parseTvlValue = (value?: string) => {
+const parseTvlValue = (value?: string | null) => {
     const parsedValue = Number(value ?? '0')
     return Number.isFinite(parsedValue) ? parsedValue : 0
 }
