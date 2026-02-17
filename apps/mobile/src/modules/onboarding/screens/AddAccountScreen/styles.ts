@@ -17,9 +17,20 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         flexDirection: 'column',
     },
+    imageContainer: {
+        display: 'flex',
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        justifyContent: 'flex-end',
+        position: 'absolute',
+        top: 0,
+        right: 0,
+
+    },
     headerContainer: {
         flexDirection: 'row',
         alignItems: 'center',
+        paddingVertical: theme.spacing.xl,
     },
     headerTitle: {
         fontWeight: '600',
@@ -27,9 +38,9 @@ export const useStyles = makeStyles(theme => ({
         alignSelf: 'flex-end',
     },
     headerImage: {
-        width: 267,
-        height: 307,
-        resizeMode: 'contain',
+        width: 137,
+        height: 217,
+        resizeMode: 'contain'
     },
     scrollContent: {
         paddingBottom: theme.spacing['3xl'],

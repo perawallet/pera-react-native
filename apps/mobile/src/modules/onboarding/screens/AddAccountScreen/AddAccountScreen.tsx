@@ -50,6 +50,12 @@ export const AddAccountScreen = () => {
 
     return (
         <>
+            <PWView style={[styles.imageContainer]}>
+                <PWImage
+                    source={welcomeBackground}
+                    style={styles.headerImage}
+                />
+            </PWView>
             <PWView style={[styles.rootContainer, { paddingTop: insets.top }]}>
                 <PWToolbar
                     left={
@@ -68,10 +74,6 @@ export const AddAccountScreen = () => {
                     >
                         {t('onboarding.add_account.title')}
                     </PWText>
-                    <PWImage
-                        source={welcomeBackground}
-                        style={styles.headerImage}
-                    />
                 </PWView>
 
                 <PWScrollView contentContainerStyle={styles.scrollContent}>
