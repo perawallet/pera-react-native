@@ -32,33 +32,33 @@ export const useStyles = makeStyles(
             },
             description: {
                 color: theme.colors.textGray,
-                lineHeight: 20,
             },
             headerTextContainer: {
                 flexDirection: 'row',
                 gap: theme.spacing.lg,
             },
             logo: {
-                borderRadius: theme.spacing['3xl'],
-                height: 40,
-                width: 40,
+                borderRadius: 100,
+                height: theme.spacing.xxl,
+                width: theme.spacing.xxl,
             },
             tvlAlgoValue: {
                 color: theme.colors.textGray,
-                fontWeight: '400',
             },
             tvlLabel: {
                 color: theme.colors.textMain,
-                fontWeight: '500',
             },
             tvlRow: {
                 alignItems: 'center',
                 flexDirection: 'row',
                 gap: theme.spacing.sm,
             },
-            tvlUsdValue: {
+            tvlFiatContainer: {
+                flexDirection: 'row',
+                alignItems: 'center',
+            },
+            tvlFiatValue: {
                 color: theme.colors.textGray,
-                fontWeight: '400',
             },
             tvlValueContainer: {
                 flexDirection: 'row',

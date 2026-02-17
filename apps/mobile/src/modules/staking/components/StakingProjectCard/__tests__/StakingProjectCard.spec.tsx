@@ -12,26 +12,19 @@
 
 import { fireEvent, render, screen } from '@test-utils/render'
 import { describe, expect, it, vi } from 'vitest'
-import type { Decimal } from 'decimal.js'
 import type { StakingProject } from '@modules/staking/models'
 import { StakingProjectCard } from '../StakingProjectCard'
 
-vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
-    const actual =
-        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
-    return {
-        ...actual,
-        formatWithUnits: (val: Decimal) => ({
-            amount: val.toNumber(),
-            unit: '',
-        }),
-        formatNumber: (val: number) => ({
-            sign: '',
-            integer: val.toLocaleString(),
-            fraction: '',
-        }),
-    }
-})
+vi.mock('@perawallet/wallet-core-currencies', () => ({
+    useCurrency: vi.fn(() => ({
+        preferredFiatCurrency: 'USD',
+        usdToPreferred: (val: unknown) => val,
+    })),
+}))
+
+vi.mock('@components/CurrencyDisplay', () => ({
+    CurrencyDisplay: () => <div>CurrencyDisplay</div>,
+}))
 
 const PROJECT: StakingProject = {
     id: 'tinyman',
@@ -61,10 +54,9 @@ describe('StakingProjectCard', () => {
                 'Stake your Algo on Tinyman to collect rewards and receive tALGO',
             ),
         ).toBeTruthy()
-        expect(screen.getByText('Liquid Staking')).toBeTruthy()
+        expect(screen.getByText('staking.type_liquid')).toBeTruthy()
         expect(screen.getByText('TVL')).toBeTruthy()
-        expect(screen.getByText('2,500,000 ALGO')).toBeTruthy()
-        expect(screen.getByText('($3,100,000)')).toBeTruthy()
+        expect(screen.getAllByText('CurrencyDisplay')).toHaveLength(2)
     })
 
     it('calls onPress with project when card is pressed', () => {

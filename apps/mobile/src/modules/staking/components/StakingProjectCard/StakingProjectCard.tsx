@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-import { Decimal } from 'decimal.js'
-import { formatNumber, formatWithUnits } from '@perawallet/wallet-core-shared'
+import {useCallback, useMemo} from 'react'
+import {Decimal} from 'decimal.js'
+import {useCurrency} from '@perawallet/wallet-core-currencies'
 import {
     PWIcon,
     PWImage,
@@ -20,16 +20,10 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import type { StakingProject } from '../../models'
-import { StakingTypeBadge } from '../StakingTypeBadge'
-import { useStyles } from './styles'
-
-const formatCompactValue = (value: number): string => {
-    const { amount, unit } = formatWithUnits(new Decimal(value))
-    const { integer, fraction } = formatNumber(amount, 2)
-
-    return `${integer}${fraction}${unit}`
-}
+import {CurrencyDisplay} from '@components/CurrencyDisplay'
+import type {StakingProject} from '../../models'
+import {StakingTypeBadge} from '../StakingTypeBadge'
+import {useStyles} from './styles'
 
 export type StakingProjectCardProps = {
     project: StakingProject
@@ -42,7 +36,13 @@ export const StakingProjectCard = ({
     isLast = false,
     onPress,
 }: StakingProjectCardProps) => {
-    const styles = useStyles({ isLast })
+    const styles = useStyles({isLast})
+    const {preferredFiatCurrency, usdToPreferred} = useCurrency()
+
+    const tvlInPreferredCurrency = useMemo(
+        () => usdToPreferred(new Decimal(project.tvlInUsd)),
+        [usdToPreferred, project.tvlInUsd],
+    )
 
     const handlePress = useCallback(() => {
         onPress(project)
@@ -55,7 +55,7 @@ export const StakingProjectCard = ({
             testID={`staking-project-card-${project.id}`}
         >
             <PWImage
-                source={{ uri: project.logoUrl }}
+                source={{uri: project.logoUrl}}
                 style={styles.logo}
                 resizeMode='cover'
             />
@@ -83,12 +83,30 @@ export const StakingProjectCard = ({
                         />
                         <PWText style={styles.tvlLabel}>TVL</PWText>
                         <PWView style={styles.tvlValueContainer}>
-                            <PWText style={styles.tvlAlgoValue}>
-                                {`${formatCompactValue(project.tvlInAlgo)} ALGO`}
-                            </PWText>
-                            <PWText style={styles.tvlUsdValue}>
-                                {`($${formatCompactValue(project.tvlInUsd)})`}
-                            </PWText>
+                            <CurrencyDisplay
+                                currency='ALGO'
+                                value={new Decimal(project.tvlInAlgo)}
+                                precision={2}
+                                truncateToUnits
+                                showSymbol
+                                style={styles.tvlAlgoValue}
+                            />
+                            <PWView style={styles.tvlFiatContainer}>
+                                <PWText style={styles.tvlFiatValue}>
+                                    {'('}
+                                </PWText>
+                                <CurrencyDisplay
+                                    currency={preferredFiatCurrency}
+                                    value={tvlInPreferredCurrency}
+                                    precision={2}
+                                    truncateToUnits
+                                    showSymbol
+                                    style={styles.tvlFiatValue}
+                                />
+                                <PWText style={styles.tvlFiatValue}>
+                                    {')'}
+                                </PWText>
+                            </PWView>
                         </PWView>
                     </PWView>
                 )}
