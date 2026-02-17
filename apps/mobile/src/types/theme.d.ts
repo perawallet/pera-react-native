@@ -125,6 +125,11 @@ declare module '@rneui/themed' {
         suspiciousBannerBg: string
         suspiciousBannerContent: string
 
+        // Staking Badges
+        stakingLiquidBadge: string
+        stakingPoolsBadge: string
+        stakingDelegatedBadge: string
+
         // Toast
         toastBg: string
         toastTitle: string

@@ -12,18 +12,11 @@
 
 import type { StakingType } from '../models'
 
-export const STAKING_TYPE_LABELS: Record<StakingType, string> = {
-    liquid: 'Liquid Staking',
-    pools: 'Staking Pools',
-    delegated: 'Delegated Staking',
+export const STAKING_TYPE_LABEL_KEYS: Record<StakingType, string> = {
+    liquid: 'staking.type_liquid',
+    pools: 'staking.type_pools',
+    delegated: 'staking.type_delegated',
 }
-
-export const STAKING_TYPE_COLORS: Record<StakingType, string> = {
-    liquid: 'rgba(255,110,92,1)',
-    pools: 'rgba(31,142,157,1)',
-    delegated: 'rgba(255,174,227,1)',
-}
-
 
 export const STAKING_DISCLAIMER_STORAGE_KEY = 'pera.staking.disclaimerAccepted'
 
