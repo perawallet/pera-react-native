@@ -10,30 +10,18 @@
  limitations under the License
  */
 
-export type StakingType = 'liquid' | 'pools' | 'delegated'
+import { z } from 'zod'
 
-export type StakingProjectId =
-    | 'folks'
-    | 'tinyman'
-    | 'compx'
-    | 'pact'
-    | 'reti'
-    | 'valar'
-    | 'messina'
-    | 'myth'
+const stakingProjectTvlSchema = z.object({
+    tvl_in_algo: z.string().nullable(),
+    tvl_in_usd: z.string().nullable(),
+})
 
-export type StakingProjectInfo = {
-    id: StakingProjectId
-    title: string
-    description: string
-    logoUrl: string
-    link: string
-    type: StakingType
-}
+export const stakingProjectsApiResponseSchema = z.record(
+    z.string(),
+    stakingProjectTvlSchema,
+)
 
-export type StakingProject = StakingProjectInfo & {
-    tvlInAlgo: number
-    tvlInUsd: number
-}
-
-export type { StakingProjectsApiResponse } from './schema'
+export type StakingProjectsApiResponse = z.infer<
+    typeof stakingProjectsApiResponseSchema
+>
