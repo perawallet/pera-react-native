@@ -23,7 +23,7 @@ import {
 import { Trans } from 'react-i18next'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
-import { STAKING_TERMS_URL } from '../../constants'
+import { config } from '@perawallet/wallet-core-config'
 import { useStakingDisclaimerSheet } from './useStakingDisclaimerSheet'
 import { useStyles } from './styles'
 
@@ -62,7 +62,7 @@ export const StakingDisclaimerSheet = ({
         onClose()
         pushWebView({
             id: uuid(),
-            url: STAKING_TERMS_URL,
+            url: config.termsOfServiceUrl,
         })
     }
 
@@ -80,7 +80,11 @@ export const StakingDisclaimerSheet = ({
                         onPress={onClose}
                     />
                 }
-                center={<PWText variant='h4'>{t('staking.disclaimer.title')}</PWText>}
+                center={
+                    <PWText variant='h4'>
+                        {t('staking.disclaimer.title')}
+                    </PWText>
+                }
             />
 
             <PWScrollView

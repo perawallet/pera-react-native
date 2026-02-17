@@ -30,7 +30,7 @@ export const useStyles = makeStyles(theme => {
             color: theme.colors.textMain,
             lineHeight: theme.spacing.lg,
         },
-        paragraph: { 
+        paragraph: {
             color: theme.colors.textGray,
             lineHeight: theme.spacing.lg,
         },

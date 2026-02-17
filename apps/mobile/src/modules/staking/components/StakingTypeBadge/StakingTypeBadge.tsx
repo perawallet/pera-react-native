@@ -27,7 +27,12 @@ export const StakingTypeBadge = ({ type }: StakingTypeBadgeProps) => {
     return (
         <PWView style={styles.container}>
             <PWView style={styles.dot} />
-            <PWText variant='caption' style={styles.label}>{t(STAKING_TYPE_LABEL_KEYS[type])}</PWText>
+            <PWText
+                variant='caption'
+                style={styles.label}
+            >
+                {t(STAKING_TYPE_LABEL_KEYS[type])}
+            </PWText>
         </PWView>
     )
 }

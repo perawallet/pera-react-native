@@ -32,8 +32,9 @@ export const useStyles = makeStyles(
                 paddingHorizontal: theme.spacing.sm,
             },
             dot: {
-                backgroundColor:
-                    theme.colors[STAKING_TYPE_BADGE_COLORS[type]] as string,
+                backgroundColor: theme.colors[
+                    STAKING_TYPE_BADGE_COLORS[type]
+                ] as string,
                 borderRadius: theme.spacing.xs,
                 height: theme.spacing.sm,
                 width: theme.spacing.sm,

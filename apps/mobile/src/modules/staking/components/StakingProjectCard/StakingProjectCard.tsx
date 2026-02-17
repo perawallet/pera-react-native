@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import {useCallback, useMemo} from 'react'
-import {Decimal} from 'decimal.js'
-import {useCurrency} from '@perawallet/wallet-core-currencies'
+import { useCallback, useMemo } from 'react'
+import { Decimal } from 'decimal.js'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     PWIcon,
     PWImage,
@@ -20,10 +20,10 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import {CurrencyDisplay} from '@components/CurrencyDisplay'
-import type {StakingProject} from '../../models'
-import {StakingTypeBadge} from '../StakingTypeBadge'
-import {useStyles} from './styles'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import type { StakingProject } from '../../models'
+import { StakingTypeBadge } from '../StakingTypeBadge'
+import { useStyles } from './styles'
 
 export type StakingProjectCardProps = {
     project: StakingProject
@@ -36,8 +36,8 @@ export const StakingProjectCard = ({
     isLast = false,
     onPress,
 }: StakingProjectCardProps) => {
-    const styles = useStyles({isLast})
-    const {preferredFiatCurrency, usdToPreferred} = useCurrency()
+    const styles = useStyles({ isLast })
+    const { preferredFiatCurrency, usdToPreferred } = useCurrency()
 
     const tvlInPreferredCurrency = useMemo(
         () => usdToPreferred(new Decimal(project.tvlInUsd)),
@@ -55,7 +55,7 @@ export const StakingProjectCard = ({
             testID={`staking-project-card-${project.id}`}
         >
             <PWImage
-                source={{uri: project.logoUrl}}
+                source={{ uri: project.logoUrl }}
                 style={styles.logo}
                 resizeMode='cover'
             />

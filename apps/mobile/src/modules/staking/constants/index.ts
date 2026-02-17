@@ -19,6 +19,3 @@ export const STAKING_TYPE_LABEL_KEYS: Record<StakingType, string> = {
 }
 
 export const STAKING_DISCLAIMER_STORAGE_KEY = 'pera.staking.disclaimerAccepted'
-
-export const STAKING_TERMS_URL = 'https://perawallet.app/terms-and-services/'
-export const STAKING_DEFI_URL = 'https://algorand.co/ecosystem/defi'
