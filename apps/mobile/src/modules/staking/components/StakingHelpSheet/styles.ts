@@ -24,8 +24,6 @@ export const useStyles = makeStyles(
             },
             stakingTypeDescription: {
                 color: theme.colors.textGray,
-                lineHeight: 24,
-                fontSize: 15,
             },
             stakingTypeHeader: {
                 alignItems: 'center',

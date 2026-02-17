@@ -17,9 +17,9 @@ import {
     PWToolbar,
     PWView,
 } from '@components/core'
-import { STAKING_TYPE_DESCRIPTIONS } from '../../constants'
+import { useLanguage } from '@hooks/useLanguage'
 import type { StakingType } from '../../models'
-import { StakingTypeBadge } from '../StakingTypeBadge'
+import { StakingTypeRow } from './StakingTypeRow'
 import { useStyles } from './styles'
 
 export type StakingHelpSheetProps = {
@@ -33,7 +33,8 @@ export const StakingHelpSheet = ({
     isVisible,
     onClose,
 }: StakingHelpSheetProps) => {
-    const styles = useStyles()
+    const styles = useStyles({ isLast: false })
+    const { t } = useLanguage()
 
     return (
         <PWBottomSheet
@@ -49,22 +50,16 @@ export const StakingHelpSheet = ({
                         onPress={onClose}
                     />
                 }
-                center={<PWText variant='h4'>Staking Types</PWText>}
+                center={<PWText variant='h4'>{t('staking.help.title')}</PWText>}
             />
 
             <PWView style={styles.contentContainer}>
-                {STAKING_TYPES.map(type => (
-                    <PWView
+                {STAKING_TYPES.map((type, index) => (
+                    <StakingTypeRow
                         key={type}
-                        style={styles.stakingTypeRow}
-                    >
-                        <PWView style={styles.stakingTypeHeader}>
-                            <StakingTypeBadge type={type} />
-                        </PWView>
-                        <PWText style={styles.stakingTypeDescription}>
-                            {STAKING_TYPE_DESCRIPTIONS[type]}
-                        </PWText>
-                    </PWView>
+                        type={type}
+                        isLast={index === STAKING_TYPES.length - 1}
+                    />
                 ))}
             </PWView>
         </PWBottomSheet>

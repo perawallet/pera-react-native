@@ -38,7 +38,7 @@ describe('StakingDisclaimerSheet', () => {
             />,
         )
 
-        fireEvent.click(screen.getByText('Accept'))
+        fireEvent.click(screen.getByText('staking.disclaimer.accept'))
         expect(onAccept).not.toHaveBeenCalled()
 
         mockUseStakingDisclaimerSheet.mockReturnValue({
@@ -53,7 +53,7 @@ describe('StakingDisclaimerSheet', () => {
             />,
         )
 
-        fireEvent.click(screen.getByText('Accept'))
+        fireEvent.click(screen.getByText('staking.disclaimer.accept'))
         expect(onAccept).toHaveBeenCalledTimes(1)
     })
 })

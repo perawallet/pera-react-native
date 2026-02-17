@@ -24,12 +24,6 @@ export const STAKING_TYPE_COLORS: Record<StakingType, string> = {
     delegated: 'rgba(255,174,227,1)',
 }
 
-export const STAKING_TYPE_DESCRIPTIONS: Record<StakingType, string> = {
-    liquid: 'Liquid staking applications allow users to stake their Algo while maintaining liquidity. The typical process asks users to deposit Algo and mint new tokens that represent ownership and value of staked Algo, and can be used across the DeFi ecosystem.',
-    pools: 'Staking pools enable groups of individuals to participate in consensus together. Users can stake Algo to a validator and get rewarded based on validator rewards. Options like DEX liquidity pool staking are also available.',
-    delegated:
-        'Delegated staking involves using a third-party to run a node on your behalf while your Algo remains in your wallet. This is useful for users who want to secure the network and collect rewards without running their own node.',
-}
 
 export const STAKING_DISCLAIMER_STORAGE_KEY = 'pera.staking.disclaimerAccepted'
 
