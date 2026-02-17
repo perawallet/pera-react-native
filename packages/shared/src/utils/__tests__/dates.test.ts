@@ -14,6 +14,7 @@ import { describe, it, expect } from 'vitest'
 import {
     isValidISODate,
     formatISODate,
+    formatDisplayDate,
     parseRoundTime,
     toISODateString,
     getDateRangeParams,
@@ -51,6 +52,14 @@ describe('formatISODate', () => {
     it('pads single-digit months and days', () => {
         expect(formatISODate(new Date(2024, 0, 5))).toBe('2024-01-05')
         expect(formatISODate(new Date(2024, 8, 9))).toBe('2024-09-09')
+    })
+})
+
+describe('formatDisplayDate', () => {
+    it('formats ISO date to human-readable format', () => {
+        expect(formatDisplayDate('2025-11-06')).toBe('Nov 6, 2025')
+        expect(formatDisplayDate('2024-01-01')).toBe('Jan 1, 2024')
+        expect(formatDisplayDate('2024-12-31')).toBe('Dec 31, 2024')
     })
 })
 
