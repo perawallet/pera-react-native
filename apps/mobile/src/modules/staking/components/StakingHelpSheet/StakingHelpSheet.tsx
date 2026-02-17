@@ -59,6 +59,7 @@ export const StakingHelpSheet = ({
                         key={type}
                         type={type}
                         isLast={index === STAKING_TYPES.length - 1}
+                        onClose={onClose}
                     />
                 ))}
             </PWView>

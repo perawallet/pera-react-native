@@ -11,7 +11,10 @@
  */
 
 import { PWText, PWView } from '@components/core'
+import { Trans } from 'react-i18next'
 import { useLanguage } from '@hooks/useLanguage'
+import { useWebView } from '@modules/webview'
+import { config } from '@perawallet/wallet-core-config'
 import type { StakingType } from '../../models'
 import { StakingTypeBadge } from '../StakingTypeBadge'
 import { useStyles } from './styles'
@@ -25,23 +28,54 @@ const STAKING_TYPE_DESCRIPTION_KEYS: Record<StakingType, string> = {
 type StakingTypeRowProps = {
     type: StakingType
     isLast: boolean
+    onClose: () => void
 }
 
-export const StakingTypeRow = ({ type, isLast }: StakingTypeRowProps) => {
+export const StakingTypeRow = ({
+    type,
+    isLast,
+    onClose,
+}: StakingTypeRowProps) => {
     const styles = useStyles({ isLast })
     const { t } = useLanguage()
+    const { pushWebView } = useWebView()
+
+    const handleDefiPress = () => {
+        onClose()
+        pushWebView({
+            url: config.algorandDefiUrl,
+        })
+    }
 
     return (
         <PWView style={styles.stakingTypeRow}>
             <PWView style={styles.stakingTypeHeader}>
                 <StakingTypeBadge type={type} />
             </PWView>
-            <PWText
-                variant='body'
-                style={styles.stakingTypeDescription}
-            >
-                {t(STAKING_TYPE_DESCRIPTION_KEYS[type])}
-            </PWText>
+            {type === 'liquid' ? (
+                <PWText
+                    variant='body'
+                    style={styles.stakingTypeDescription}
+                >
+                    <Trans
+                        i18nKey={STAKING_TYPE_DESCRIPTION_KEYS[type]}
+                        components={[
+                            <PWText
+                                key='defi'
+                                variant='link'
+                                onPress={handleDefiPress}
+                            />,
+                        ]}
+                    />
+                </PWText>
+            ) : (
+                <PWText
+                    variant='body'
+                    style={styles.stakingTypeDescription}
+                >
+                    {t(STAKING_TYPE_DESCRIPTION_KEYS[type])}
+                </PWText>
+            )}
         </PWView>
     )
 }
