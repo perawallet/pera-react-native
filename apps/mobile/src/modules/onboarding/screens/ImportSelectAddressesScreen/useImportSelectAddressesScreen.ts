@@ -21,7 +21,7 @@ import {
     DerivationTypes,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
-import { useIsOnboarding } from '@modules/onboarding/hooks'
+import { useExitAccountFlow } from '@modules/onboarding/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 
@@ -53,7 +53,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const { discoverRekeyedAccounts } = useAccountDiscovery()
     const navigation = useAppNavigation()
 
-    const { setIsOnboarding } = useIsOnboarding()
+    const { exitAccountFlow } = useExitAccountFlow()
 
     const alreadyImportedAddresses = useMemo(() => {
         return new Set(allAccounts.map(acc => acc.address))
@@ -122,20 +122,20 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
                 )
 
                 if (!discoveredRekeyedAccounts) {
-                    setIsOnboarding(false)
+                    exitAccountFlow()
                     setIsProcessing(false)
                     return
                 }
 
                 if (discoveredRekeyedAccounts.length === 0) {
-                    setIsOnboarding(false)
+                    exitAccountFlow()
                 } else {
                     navigation.replace('ImportRekeyedAddresses', {
                         accounts: discoveredRekeyedAccounts,
                     })
                 }
             } catch {
-                setIsOnboarding(false)
+                exitAccountFlow()
             } finally {
                 setIsProcessing(false)
             }
@@ -145,7 +145,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         selectedAddresses,
         allAccounts,
         discoverRekeyedAccounts,
-        setIsOnboarding,
+        exitAccountFlow,
         navigation,
     ])
 
