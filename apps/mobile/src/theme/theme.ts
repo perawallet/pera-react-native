@@ -90,6 +90,10 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             asaSuspiciousText: '#DB4645',
             asaSuspiciousBg: 'rgba(255, 109, 95, 0.16)',
 
+            stakingLiquidBadge: 'rgba(255,110,92,1)',
+            stakingPoolsBadge: 'rgba(31,142,157,1)',
+            stakingDelegatedBadge: 'rgba(255,174,227,1)',
+
             backdrop: 'rgba(0, 0, 0, 0.4)',
 
             //Backgrounds
@@ -162,6 +166,10 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             asaVerifiedBg: 'rgba(13, 127, 255, 0.16)',
             asaSuspiciousText: '#FF6D5F',
             asaSuspiciousBg: 'rgba(255, 109, 95, 0.16)',
+
+            stakingLiquidBadge: 'rgba(255,110,92,1)',
+            stakingPoolsBadge: 'rgba(31,142,157,1)',
+            stakingDelegatedBadge: 'rgba(255,174,227,1)',
 
             backdrop: 'rgba(0, 0, 0, 0.4)',
 

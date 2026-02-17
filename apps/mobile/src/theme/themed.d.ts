@@ -38,6 +38,9 @@ declare module '@rneui/themed' {
         asaVerifiedBg: string
         asaSuspiciousText: string
         asaSuspiciousBg: string
+        stakingLiquidBadge: string
+        stakingPoolsBadge: string
+        stakingDelegatedBadge: string
         backdrop: string
         altBackground: string
         linkPrimary: string

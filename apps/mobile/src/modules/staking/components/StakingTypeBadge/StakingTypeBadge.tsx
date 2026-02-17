@@ -11,7 +11,8 @@
  */
 
 import { PWText, PWView } from '@components/core'
-import { STAKING_TYPE_LABELS } from '../../constants'
+import { useLanguage } from '@hooks/useLanguage'
+import { STAKING_TYPE_LABEL_KEYS } from '../../constants'
 import type { StakingType } from '../../models'
 import { useStyles } from './styles'
 
@@ -21,11 +22,12 @@ export type StakingTypeBadgeProps = {
 
 export const StakingTypeBadge = ({ type }: StakingTypeBadgeProps) => {
     const styles = useStyles({ type })
+    const { t } = useLanguage()
 
     return (
         <PWView style={styles.container}>
             <PWView style={styles.dot} />
-            <PWText style={styles.label}>{STAKING_TYPE_LABELS[type]}</PWText>
+            <PWText variant='caption' style={styles.label}>{t(STAKING_TYPE_LABEL_KEYS[type])}</PWText>
         </PWView>
     )
 }

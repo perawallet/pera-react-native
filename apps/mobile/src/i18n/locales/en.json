@@ -796,6 +796,9 @@
             "terms_agreement": "By proceeding, you agree to these <0>terms</0>.",
             "accept": "Accept"
         },
+        "type_liquid": "Liquid Staking",
+        "type_pools": "Staking Pools",
+        "type_delegated": "Delegated Staking",
         "help": {
             "title": "Staking Types",
             "liquid_description": "Liquid staking applications allow users to stake their Algo while maintaining liquidity. The typical process asks users to deposit Algo and mint new tokens that represent ownership and value of staked Algo, and can be used across the DeFi ecosystem.",

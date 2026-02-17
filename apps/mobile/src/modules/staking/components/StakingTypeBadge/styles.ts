@@ -10,9 +10,14 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-import { STAKING_TYPE_COLORS } from '../../constants'
+import { Colors, makeStyles } from '@rneui/themed'
 import type { StakingType } from '../../models'
+
+const STAKING_TYPE_BADGE_COLORS: Record<StakingType, keyof Colors> = {
+    liquid: 'stakingLiquidBadge',
+    pools: 'stakingPoolsBadge',
+    delegated: 'stakingDelegatedBadge',
+}
 
 export const useStyles = makeStyles(
     (theme, { type }: { type: StakingType }) => {
@@ -27,14 +32,14 @@ export const useStyles = makeStyles(
                 paddingHorizontal: theme.spacing.sm,
             },
             dot: {
-                backgroundColor: STAKING_TYPE_COLORS[type],
+                backgroundColor:
+                    theme.colors[STAKING_TYPE_BADGE_COLORS[type]] as string,
                 borderRadius: theme.spacing.xs,
                 height: theme.spacing.sm,
                 width: theme.spacing.sm,
             },
             label: {
                 color: theme.colors.textGray,
-                fontSize: 12,
             },
         }
     },
