@@ -11,7 +11,10 @@
  */
 
 import { NavigatorScreenParams } from '@react-navigation/native'
-import { OnboardingStackParamList } from '@modules/onboarding/routes/types'
+import {
+    OnboardingStackParamList,
+    AddAccountStackParamList,
+} from '@modules/onboarding/routes/types'
 import { TabBarStackParamList } from '@routes/tabbar'
 import { SettingsStackParamsList } from '@modules/settings/routes'
 import { ContactsStackParamsList } from '@modules/contacts/routes'
@@ -21,6 +24,7 @@ import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockch
 export type RootStackParamList = {
     Onboarding: NavigatorScreenParams<OnboardingStackParamList>
     TabBar: NavigatorScreenParams<TabBarStackParamList>
+    AddAccount: NavigatorScreenParams<AddAccountStackParamList>
     Notifications: undefined
     Settings: NavigatorScreenParams<SettingsStackParamsList>
     Contacts: NavigatorScreenParams<ContactsStackParamsList>
@@ -33,6 +37,7 @@ export type RootStackParamList = {
 
 export type AppStackParamList = RootStackParamList &
     OnboardingStackParamList &
+    AddAccountStackParamList &
     TabBarStackParamList &
     SettingsStackParamsList &
     ContactsStackParamsList &

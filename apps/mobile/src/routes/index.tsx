@@ -18,7 +18,10 @@ import {
 import { StakingScreen } from '@modules/staking/screens/StakingScreen'
 import { NotificationsScreen } from '@modules/notifications/screens/NotificationsScreen'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
-import { OnboardingStackNavigator } from '@modules/onboarding/routes'
+import {
+    OnboardingStackNavigator,
+    AddAccountStackNavigator,
+} from '@modules/onboarding/routes'
 import { screenListeners } from './listeners'
 import { TabBarStackNavigator } from './tabbar'
 import { ContactsStackNavigator } from '@modules/contacts/routes'
@@ -85,6 +88,10 @@ export const MainRoutes = () => {
                             <RootStack.Screen
                                 name='Contacts'
                                 component={ContactsStackNavigator}
+                            />
+                            <RootStack.Screen
+                                name='AddAccount'
+                                component={AddAccountStackNavigator}
                             />
                             <RootStack.Screen
                                 name='Staking'

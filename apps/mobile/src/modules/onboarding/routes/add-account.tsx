@@ -16,19 +16,21 @@ import {
     createNativeStackNavigator,
     NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
-import { OnboardingScreen } from '@modules/onboarding/screens/OnboardingScreen'
+import { AddAccountScreen } from '@modules/onboarding/screens/AddAccountScreen'
+import { WatchAccountScreen } from '@modules/onboarding/screens/WatchAccountScreen'
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen'
 import { ImportAccountScreen } from '@modules/onboarding/screens/ImportAccountScreen'
 import { ImportInfoScreen } from '@modules/onboarding/screens/ImportInfoScreen'
 import { ImportSelectAddressesScreen } from '@modules/onboarding/screens/ImportSelectAddressesScreen'
 import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/ImportRekeyedAddressesScreen'
+import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen'
 import { AccountErrorBoundary } from '@modules/accounts/components/AccountErrorBoundary/AccountErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { screenListeners } from '@routes/listeners'
 import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
 import type React from 'react'
 
-import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen'
+import { AddAccountStackParamList } from './types'
 
 // Wrap screens with AccountErrorBoundary to catch account-related errors
 const withAccountErrorBoundary = <P extends object>(
@@ -44,8 +46,10 @@ const withAccountErrorBoundary = <P extends object>(
     }
 }
 
-const OnboardingScreenWithErrorBoundary =
-    withAccountErrorBoundary(OnboardingScreen)
+const AddAccountScreenWithErrorBoundary =
+    withAccountErrorBoundary(AddAccountScreen)
+const WatchAccountScreenWithErrorBoundary =
+    withAccountErrorBoundary(WatchAccountScreen)
 const NameAccountScreenWithErrorBoundary =
     withAccountErrorBoundary(NameAccountScreen)
 const ImportAccountScreenWithErrorBoundary =
@@ -61,19 +65,12 @@ const ImportRekeyedAddressesScreenWithErrorBoundary = withAccountErrorBoundary(
     ImportRekeyedAddressesScreen,
 )
 
-import { OnboardingStackParamList } from './types'
-export type {
-    OnboardingStackParamList,
-    AddAccountStackParamList,
-} from './types'
-export { AddAccountStackNavigator } from './add-account'
+const AddAccountStack = createNativeStackNavigator<AddAccountStackParamList>()
 
-const OnboardingStack = createNativeStackNavigator<OnboardingStackParamList>()
-
-export const OnboardingStackNavigator = () => {
+export const AddAccountStackNavigator = () => {
     return (
-        <OnboardingStack.Navigator
-            initialRouteName='OnboardingHome'
+        <AddAccountStack.Navigator
+            initialRouteName='AddAccountHome'
             screenOptions={{
                 headerShown: false,
                 header: (props: NativeStackHeaderProps) => (
@@ -83,12 +80,28 @@ export const OnboardingStackNavigator = () => {
             }}
             screenListeners={screenListeners}
         >
-            <OnboardingStack.Screen
-                name='OnboardingHome'
+            <AddAccountStack.Screen
+                name='AddAccountHome'
                 layout={fullScreenLayout}
-                component={OnboardingScreenWithErrorBoundary}
+                component={AddAccountScreenWithErrorBoundary}
             />
-            <OnboardingStack.Screen
+            <AddAccountStack.Screen
+                name='WatchAccount'
+                options={{
+                    headerShown: false,
+                }}
+                layout={safeAreaLayout}
+                component={WatchAccountScreenWithErrorBoundary}
+            />
+            <AddAccountStack.Screen
+                name='NameAccount'
+                options={{
+                    headerShown: false,
+                }}
+                layout={safeAreaLayout}
+                component={NameAccountScreenWithErrorBoundary}
+            />
+            <AddAccountStack.Screen
                 name='ImportInfo'
                 options={{
                     headerShown: false,
@@ -97,15 +110,7 @@ export const OnboardingStackNavigator = () => {
                 layout={safeAreaLayout}
                 component={ImportInfoScreenWithErrorBoundary}
             />
-            <OnboardingStack.Screen
-                name='NameAccount'
-                options={{
-                    headerShown: false,
-                }}
-                layout={safeAreaLayout}
-                component={NameAccountScreenWithErrorBoundary}
-            />
-            <OnboardingStack.Screen
+            <AddAccountStack.Screen
                 name='ImportAccount'
                 options={{
                     headerShown: false,
@@ -113,7 +118,7 @@ export const OnboardingStackNavigator = () => {
                 layout={safeAreaLayout}
                 component={ImportAccountScreenWithErrorBoundary}
             />
-            <OnboardingStack.Screen
+            <AddAccountStack.Screen
                 name='SearchAccounts'
                 options={{
                     headerShown: false,
@@ -121,7 +126,7 @@ export const OnboardingStackNavigator = () => {
                 layout={fullScreenLayout}
                 component={SearchAccountsScreenWithErrorBoundary}
             />
-            <OnboardingStack.Screen
+            <AddAccountStack.Screen
                 name='ImportSelectAddresses'
                 options={{
                     headerShown: false,
@@ -129,7 +134,7 @@ export const OnboardingStackNavigator = () => {
                 layout={safeAreaLayout}
                 component={ImportSelectAddressesScreenWithErrorBoundary}
             />
-            <OnboardingStack.Screen
+            <AddAccountStack.Screen
                 name='ImportRekeyedAddresses'
                 options={{
                     headerShown: false,
@@ -137,6 +142,6 @@ export const OnboardingStackNavigator = () => {
                 layout={safeAreaLayout}
                 component={ImportRekeyedAddressesScreenWithErrorBoundary}
             />
-        </OnboardingStack.Navigator>
+        </AddAccountStack.Navigator>
     )
 }
