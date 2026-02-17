@@ -15,7 +15,11 @@ import {
     TransactionFilter,
     type CustomDateRange,
 } from '../TransactionsFilterBottomSheet'
-import { formatISODate, parseRoundTime } from '@perawallet/wallet-core-shared'
+import {
+    formatISODate,
+    formatDisplayDate,
+    parseRoundTime,
+} from '@perawallet/wallet-core-shared'
 import type { TransactionSection } from './useAccountHistory'
 
 /**
@@ -25,7 +29,6 @@ export const groupTransactionsByDate = (
     transactions: TransactionHistoryItem[],
 ): TransactionSection[] => {
     const groups: Record<string, TransactionHistoryItem[]> = {}
-    const dateFormats: Record<string, string> = {}
 
     transactions.forEach(tx => {
         const dateKey = formatISODate(parseRoundTime(tx.roundTime))
@@ -39,7 +42,7 @@ export const groupTransactionsByDate = (
         .sort(([a], [b]) => b.localeCompare(a)) // Sort by date descending
         .map(([date, data]) => ({
             date,
-            title: dateFormats[date],
+            title: formatDisplayDate(date),
             data,
         }))
 }
