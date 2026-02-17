@@ -11,4 +11,4 @@
  */
 
 export { PWInput } from './PWInput'
-export type { PWInputProps } from './PWInput'
+export type { PWInputProps, PWInputRef } from './PWInput'
