@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { Decimal } from 'decimal.js'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     PWIcon,
@@ -40,7 +39,7 @@ export const StakingProjectCard = ({
     const { preferredFiatCurrency, usdToPreferred } = useCurrency()
 
     const tvlInPreferredCurrency = useMemo(
-        () => usdToPreferred(new Decimal(project.tvlInUsd)),
+        () => usdToPreferred(project.tvlInUsd),
         [usdToPreferred, project.tvlInUsd],
     )
 
@@ -75,7 +74,7 @@ export const StakingProjectCard = ({
                     {project.description}
                 </PWText>
 
-                {project.tvlInAlgo > 0 && (
+                {project.tvlInAlgo.gt(0) && (
                     <PWView style={styles.tvlRow}>
                         <PWIcon
                             name='locked'
@@ -85,7 +84,7 @@ export const StakingProjectCard = ({
                         <PWView style={styles.tvlValueContainer}>
                             <CurrencyDisplay
                                 currency='ALGO'
-                                value={new Decimal(project.tvlInAlgo)}
+                                value={project.tvlInAlgo}
                                 precision={2}
                                 truncateToUnits
                                 showSymbol
