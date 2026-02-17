@@ -87,6 +87,7 @@ export const TransactionListItem = ({
                                     showSymbol
                                     alignRight
                                     style={getAmountStyle(amount)}
+                                    variant='h4'
                                 />
                             </PWView>
                         ))}
