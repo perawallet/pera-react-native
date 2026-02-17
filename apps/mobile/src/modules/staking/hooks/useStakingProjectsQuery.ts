@@ -12,6 +12,7 @@
 
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Decimal } from 'decimal.js'
 import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import {
     RemoteConfigKeys,
@@ -35,9 +36,12 @@ type UseStakingProjectsQueryResult = {
     refetch: () => void
 }
 
-const parseTvlValue = (value?: string | null) => {
-    const parsedValue = Number(value ?? '0')
-    return Number.isFinite(parsedValue) ? parsedValue : 0
+const parseTvlValue = (value?: string | null): Decimal => {
+    try {
+        return new Decimal(value ?? '0')
+    } catch {
+        return new Decimal(0)
+    }
 }
 
 const mapProjects = (
@@ -51,11 +55,11 @@ const mapProjects = (
 
             return {
                 ...project,
-                tvlInAlgo: microAlgosToAlgos(tvlInMicroAlgos).toNumber(),
+                tvlInAlgo: microAlgosToAlgos(tvlInMicroAlgos),
                 tvlInUsd: parseTvlValue(projectTvl?.tvl_in_usd),
             }
         })
-        .sort((a, b) => b.tvlInAlgo - a.tvlInAlgo)
+        .sort((a, b) => b.tvlInAlgo.minus(a.tvlInAlgo).toNumber())
 }
 
 export const useStakingProjectsQuery = (): UseStakingProjectsQueryResult => {

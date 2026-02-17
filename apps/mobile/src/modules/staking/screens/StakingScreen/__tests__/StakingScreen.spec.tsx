@@ -12,6 +12,7 @@
 
 import React from 'react'
 import { fireEvent, render, screen } from '@test-utils/render'
+import { Decimal } from 'decimal.js'
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { StakingScreen } from '../StakingScreen'
 
@@ -117,8 +118,8 @@ describe('StakingScreen', () => {
             logoUrl: 'https://example.com/logo.png',
             link: 'https://app.folks.finance',
             type: 'liquid',
-            tvlInAlgo: 100,
-            tvlInUsd: 120,
+            tvlInAlgo: new Decimal(100),
+            tvlInUsd: new Decimal(120),
         }
 
         mockUseStakingScreen.mockReturnValue({

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Decimal } from 'decimal.js'
+
 export type StakingType = 'liquid' | 'pools' | 'delegated'
 
 export type StakingProjectId =
@@ -32,8 +34,8 @@ export type StakingProjectInfo = {
 }
 
 export type StakingProject = StakingProjectInfo & {
-    tvlInAlgo: number
-    tvlInUsd: number
+    tvlInAlgo: Decimal
+    tvlInUsd: Decimal
 }
 
 export type { StakingProjectsApiResponse } from './schema'

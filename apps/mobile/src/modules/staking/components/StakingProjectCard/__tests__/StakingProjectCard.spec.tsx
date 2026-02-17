@@ -11,6 +11,7 @@
  */
 
 import { fireEvent, render, screen } from '@test-utils/render'
+import { Decimal } from 'decimal.js'
 import { describe, expect, it, vi } from 'vitest'
 import type { StakingProject } from '@modules/staking/models'
 import { StakingProjectCard } from '../StakingProjectCard'
@@ -35,8 +36,8 @@ const PROJECT: StakingProject = {
         'https://algorand.co/hs-fs/hubfs/tALGO@2x.png?width=80&height=80&name=tALGO@2x.png',
     link: 'https://app.tinyman.org/liquid-stake/stake',
     type: 'liquid',
-    tvlInAlgo: 2500000,
-    tvlInUsd: 3100000,
+    tvlInAlgo: new Decimal(2500000),
+    tvlInUsd: new Decimal(3100000),
 }
 
 describe('StakingProjectCard', () => {
