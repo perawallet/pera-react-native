@@ -240,17 +240,6 @@ export const useTransactionListItem = ({
             )
         }
 
-        // Always show fee for transactions that cost the user
-        if (isOutgoing || transaction.txType === 'acfg') {
-            const feeAmount = microAlgosToAlgos(transaction.fee || 0)
-            result.push({
-                value: feeAmount.abs(),
-                currency: 'ALGO',
-                precision: 3,
-                prefix: '-',
-            })
-        }
-
         return result
     }, [transaction, userAddress])
 
