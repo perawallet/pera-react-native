@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Linking } from 'react-native'
+import { v4 as uuid } from 'uuid'
 import {
     PWBottomSheet,
     PWButton,
@@ -20,6 +20,9 @@ import {
     PWToolbar,
     PWView,
 } from '@components/core'
+import { Trans } from 'react-i18next'
+import { useLanguage } from '@hooks/useLanguage'
+import { useWebView } from '@modules/webview'
 import { STAKING_TERMS_URL } from '../../constants'
 import { useStakingDisclaimerSheet } from './useStakingDisclaimerSheet'
 import { useStyles } from './styles'
@@ -30,18 +33,18 @@ export type StakingDisclaimerSheetProps = {
     onClose: () => void
 }
 
-const DISCLAIMER_BULLETS = [
-    'Pera does not control or assume liability for your use of staking services. We expressly disclaim liability for potential losses related to staking services.',
-    'Pera cannot guarantee uninterrupted staking operations. Service interruptions can occur due to updates, network changes, provider actions, or congestion.',
-    'Pera cannot ensure staking availability for any specific digital asset. Feasibility depends on blockchain rules and third-party provider terms.',
-    'Pera has no control over staking rewards provided by the Algorand blockchain network.',
-    'Pera does not provide advice or predictions about digital asset value or suitability. The decision to use staking services is your own.',
-    'Pera never takes custody of rewards or assets and has no control over Proof-of-Stake networks where validation rights may be delegated.',
-    'Pera does not guarantee you will receive staking rewards or any specific reward rates.',
-    'Pera is not responsible for staking provider failures to transfer rewards or losses due to risks such as slashing.',
-    'Pera does not guarantee uninterrupted or error-free operation of staking services, nor prevention of disruptions caused by third parties.',
-    'Pera is not liable for breaches committed by users in relation to third-party staking agreements.',
-]
+const DISCLAIMER_BULLET_KEYS = [
+    'staking.disclaimer.bullet_liability',
+    'staking.disclaimer.bullet_interruptions',
+    'staking.disclaimer.bullet_availability',
+    'staking.disclaimer.bullet_rewards_control',
+    'staking.disclaimer.bullet_no_advice',
+    'staking.disclaimer.bullet_no_custody',
+    'staking.disclaimer.bullet_no_guarantee',
+    'staking.disclaimer.bullet_provider_failures',
+    'staking.disclaimer.bullet_no_error_free',
+    'staking.disclaimer.bullet_user_breaches',
+] as const
 
 export const StakingDisclaimerSheet = ({
     isVisible,
@@ -49,12 +52,18 @@ export const StakingDisclaimerSheet = ({
     onClose,
 }: StakingDisclaimerSheetProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
+    const { pushWebView } = useWebView()
     const { isScrolledToBottom, handleScroll } = useStakingDisclaimerSheet({
         isVisible,
     })
 
     const handleTermsPress = () => {
-        void Linking.openURL(STAKING_TERMS_URL)
+        onClose()
+        pushWebView({
+            id: uuid(),
+            url: STAKING_TERMS_URL,
+        })
     }
 
     return (
@@ -71,7 +80,7 @@ export const StakingDisclaimerSheet = ({
                         onPress={onClose}
                     />
                 }
-                center={<PWText variant='h4'>Terms of Service</PWText>}
+                center={<PWText variant='h4'>{t('staking.disclaimer.title')}</PWText>}
             />
 
             <PWScrollView
@@ -83,56 +92,52 @@ export const StakingDisclaimerSheet = ({
                 showsVerticalScrollIndicator={false}
             >
                 <PWText style={styles.emphasizedText}>
-                    Pera Wallet gives you access to third-party staking
-                    services. When you use these services, you work directly
-                    with a provider that stakes your digital assets for
-                    transaction validation on the Algorand network.
+                    {t('staking.disclaimer.intro')}
                 </PWText>
 
                 <PWText style={styles.paragraph}>
-                    Before staking, conduct thorough research and analysis to
-                    ensure alignment with your financial goals and risk
-                    tolerance.
+                    {t('staking.disclaimer.research_warning')}
                 </PWText>
 
                 <PWText style={styles.paragraph}>
-                    In order to access staking services, you acknowledge and
-                    agree to the following:
+                    {t('staking.disclaimer.acknowledgment_prompt')}
                 </PWText>
 
                 <PWView style={styles.bulletList}>
-                    {DISCLAIMER_BULLETS.map(item => (
+                    {DISCLAIMER_BULLET_KEYS.map(key => (
                         <PWText
-                            key={item}
+                            key={key}
                             style={styles.bulletText}
                         >
-                            {`- ${item}`}
+                            {`- ${t(key)}`}
                         </PWText>
                     ))}
                 </PWView>
 
                 <PWText style={styles.paragraph}>
-                    By choosing to use staking services, you acknowledge these
-                    conditions and understand the inherent risks.
+                    {t('staking.disclaimer.closing')}
                 </PWText>
 
                 <PWText style={styles.paragraph}>
-                    By proceeding, you agree to these{' '}
-                    <PWText
-                        style={styles.termsLink}
-                        onPress={handleTermsPress}
-                    >
-                        terms
-                    </PWText>
-                    .
+                    <Trans
+                        i18nKey='staking.disclaimer.terms_agreement'
+                        components={[
+                            <PWText
+                                key='terms'
+                                variant='link'
+                                onPress={handleTermsPress}
+                            />,
+                        ]}
+                    />
                 </PWText>
             </PWScrollView>
 
             <PWButton
                 variant='primary'
-                title='Accept'
+                title={t('staking.disclaimer.accept')}
                 onPress={onAccept}
                 isDisabled={!isScrolledToBottom}
+                style={styles.acceptButton}
             />
         </PWBottomSheet>
     )

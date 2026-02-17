@@ -19,30 +19,31 @@ export const useStyles = makeStyles(theme => {
         },
         bulletText: {
             color: theme.colors.textGray,
-            lineHeight: 20,
+            lineHeight: theme.spacing.lg,
         },
         container: {
             gap: theme.spacing.md,
             padding: theme.spacing.lg,
+            marginTop: theme.spacing['3xl'],
         },
         emphasizedText: {
             color: theme.colors.textMain,
-            lineHeight: 20,
+            lineHeight: theme.spacing.lg,
         },
-        paragraph: {
+        paragraph: { 
             color: theme.colors.textGray,
-            lineHeight: 20,
+            lineHeight: theme.spacing.lg,
         },
         scrollView: {
-            maxHeight: 420,
+            flex: 1,
+            marginHorizontal: theme.spacing.md,
         },
         scrollViewContent: {
             gap: theme.spacing.md,
             paddingBottom: theme.spacing.lg,
         },
-        termsLink: {
-            color: theme.colors.linkPrimary,
-            fontWeight: '600',
+        acceptButton: {
+            marginBottom: theme.spacing.xl,
         },
     }
 })
