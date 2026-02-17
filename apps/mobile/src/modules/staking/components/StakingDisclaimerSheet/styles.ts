@@ -16,6 +16,7 @@ export const useStyles = makeStyles(theme => {
     return {
         bulletList: {
             gap: theme.spacing.sm,
+            paddingHorizontal: theme.spacing.md,
         },
         bulletText: {
             color: theme.colors.textGray,
@@ -33,10 +34,6 @@ export const useStyles = makeStyles(theme => {
         paragraph: {
             color: theme.colors.textGray,
             lineHeight: theme.spacing.lg,
-        },
-        scrollView: {
-            flex: 1,
-            marginHorizontal: theme.spacing.md,
         },
         scrollViewContent: {
             gap: theme.spacing.md,

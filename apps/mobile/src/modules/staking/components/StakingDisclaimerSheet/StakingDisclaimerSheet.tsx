@@ -15,7 +15,6 @@ import {
     PWBottomSheet,
     PWButton,
     PWIcon,
-    PWScrollView,
     PWText,
     PWToolbar,
     PWView,
@@ -71,6 +70,11 @@ export const StakingDisclaimerSheet = ({
             isVisible={isVisible}
             onBackdropPress={onClose}
             innerContainerStyle={styles.container}
+            scrollViewProps={{
+                onScroll: handleScroll,
+                scrollEventThrottle: 16,
+                showsVerticalScrollIndicator: false,
+            }}
         >
             <PWToolbar
                 left={
@@ -87,14 +91,7 @@ export const StakingDisclaimerSheet = ({
                 }
             />
 
-            <PWScrollView
-                testID='staking-disclaimer-scrollview'
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollViewContent}
-                onScroll={handleScroll}
-                scrollEventThrottle={16}
-                showsVerticalScrollIndicator={false}
-            >
+            <PWView style={styles.scrollViewContent}>
                 <PWText style={styles.emphasizedText}>
                     {t('staking.disclaimer.intro')}
                 </PWText>
@@ -134,7 +131,7 @@ export const StakingDisclaimerSheet = ({
                         ]}
                     />
                 </PWText>
-            </PWScrollView>
+            </PWView>
 
             <PWButton
                 variant='primary'
