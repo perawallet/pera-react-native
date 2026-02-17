@@ -10,18 +10,5 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-accounts'
-
-export * from './models'
-export * from './hooks'
-export * from './errors'
-export * from './utils'
-export * from './account-discovery'
-
-export {
-    initAccountsStore,
-    registerAccountsStore,
-    useAccountsStore,
-} from './store'
-
-export { WORDLIST } from './wordlist'
+export { WordSuggestionDropdown } from './WordSuggestionDropdown'
+export type { WordSuggestionDropdownProps } from './WordSuggestionDropdown'
