@@ -20,6 +20,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { LoadingView } from '@components/LoadingView'
 import { useNavigation } from '@react-navigation/native'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -32,7 +33,7 @@ import type { StakingProject } from '@modules/staking/models'
 import { useStakingScreen } from './useStakingScreen'
 import { useStyles } from './styles'
 
-const SKELETON_ITEMS = [0, 1, 2, 3, 4]
+const SKELETON_COUNT = 5
 
 export const StakingScreen = () => {
     const styles = useStyles()
@@ -84,17 +85,19 @@ export const StakingScreen = () => {
                 <PWText style={styles.subtitle}>{t('staking.subtitle')}</PWText>
 
                 {isLoading && (
-                    <PWView style={styles.skeletonContainer}>
-                        {SKELETON_ITEMS.map(item => (
+                    <LoadingView
+                        variant='skeleton'
+                        count={SKELETON_COUNT}
+                        style={styles.skeletonContainer}
+                        renderSkeleton={index => (
                             <PWView
-                                key={`staking-skeleton-${item}`}
+                                key={index}
                                 style={styles.skeletonCard}
                                 testID='staking-skeleton'
                             >
                                 <PWSkeleton
                                     circle
-                                    height={40}
-                                    width={40}
+                                    style={styles.skeletonLogo}
                                 />
                                 <PWView style={styles.skeletonContent}>
                                     <PWSkeleton style={styles.skeletonTitle} />
@@ -104,8 +107,8 @@ export const StakingScreen = () => {
                                     <PWSkeleton style={styles.skeletonTvlRow} />
                                 </PWView>
                             </PWView>
-                        ))}
-                    </PWView>
+                        )}
+                    />
                 )}
 
                 {!isLoading && isError && (

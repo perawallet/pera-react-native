@@ -17,10 +17,30 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { StakingScreen } from '../StakingScreen'
 
 const mockUseStakingScreen = vi.hoisted(() => vi.fn())
+const mockSetOptions = vi.hoisted(() => vi.fn())
 
 vi.mock('../useStakingScreen', () => ({
     useStakingScreen: mockUseStakingScreen,
 }))
+
+vi.mock('@react-navigation/native', async () => {
+    const actual = await vi.importActual<
+        typeof import('@react-navigation/native')
+    >('@react-navigation/native')
+    return {
+        ...actual,
+        useNavigation: () => ({
+            navigate: vi.fn(),
+            goBack: vi.fn(),
+            reset: vi.fn(),
+            setOptions: mockSetOptions,
+            push: vi.fn(),
+            addListener: vi.fn(),
+            removeListener: vi.fn(),
+            isFocused: vi.fn(() => true),
+        }),
+    }
+})
 
 type MockCardProps = {
     project: { title: string }
@@ -55,7 +75,6 @@ describe('StakingScreen', () => {
         isError: false,
         isHelpVisible: false,
         isDisclaimerVisible: false,
-        handleBack: vi.fn(),
         handleRetry: vi.fn(),
         handleProjectPress: vi.fn(),
         handleHelpOpen: vi.fn(),
@@ -91,27 +110,31 @@ describe('StakingScreen', () => {
 
         render(<StakingScreen />)
 
-        fireEvent.click(screen.getByText('Retry'))
+        fireEvent.click(screen.getByText('staking.retry'))
 
         expect(handleRetry).toHaveBeenCalledTimes(1)
     })
 
-    it('handles toolbar actions', () => {
-        const handleBack = vi.fn()
+    it('sets up header right button that opens help', () => {
         const handleHelpOpen = vi.fn()
 
         mockUseStakingScreen.mockReturnValue({
             ...baseState,
-            handleBack,
             handleHelpOpen,
         })
 
         render(<StakingScreen />)
 
-        fireEvent.click(screen.getByTestId('staking-back-button'))
+        const setOptionsCall = mockSetOptions.mock.calls[0]?.[0] as {
+            headerRight?: () => React.ReactNode
+        }
+
+        expect(setOptionsCall?.headerRight).toBeDefined()
+
+        render(setOptionsCall.headerRight!() as React.ReactElement)
+
         fireEvent.click(screen.getByTestId('staking-help-button'))
 
-        expect(handleBack).toHaveBeenCalledTimes(1)
         expect(handleHelpOpen).toHaveBeenCalledTimes(1)
     })
 
