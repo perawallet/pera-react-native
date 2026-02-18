@@ -28,6 +28,7 @@ import { useImportAccountScreen } from './useImportAccountScreen'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { ImportAccountSupportOptionsBottomSheet } from './ImportAccountSupportOptionsBottomSheet'
 import { QRScannerView } from '@components/QRScannerView'
+import { WordSuggestionDropdown } from './WordSuggestionDropdown'
 
 export const ImportAccountScreen = () => {
     const { theme } = useTheme()
@@ -54,6 +55,9 @@ export const ImportAccountScreen = () => {
         isQRScannerVisible,
         handleCloseQRScanner,
         handleQRScannerSuccess,
+        suggestions,
+        handleSelectSuggestion,
+        setInputRef,
     } = useImportAccountScreen()
     const styles = useStyles({ insets, isKeyboardVisible, keyboardHeight })
 
@@ -80,6 +84,7 @@ export const ImportAccountScreen = () => {
                 <ScrollView
                     style={styles.scrollContainer}
                     contentContainerStyle={styles.scrollView}
+                    keyboardShouldPersistTaps='handled'
                 >
                     <PWText variant='h1'>
                         {t('onboarding.import_account.title')}
@@ -100,64 +105,88 @@ export const ImportAccountScreen = () => {
                                         .map((word, index) => {
                                             const offsetIndex =
                                                 index + columnOffset
+                                            const isFocused =
+                                                focused === offsetIndex
 
                                             return (
                                                 <PWView
                                                     style={
-                                                        styles.inputContainerRow
+                                                        isFocused
+                                                            ? styles.focusedInputContainerRow
+                                                            : styles.inputContainerRow
                                                     }
                                                     key={`wordinput-${offsetIndex}`}
                                                 >
                                                     <PWText
                                                         variant='h4'
                                                         style={
-                                                            focused ===
-                                                            offsetIndex
+                                                            isFocused
                                                                 ? styles.focusedLabel
                                                                 : styles.label
                                                         }
                                                     >
                                                         {offsetIndex + 1}
                                                     </PWText>
-                                                    <PWInput
-                                                        containerStyle={
-                                                            styles.inputOuterContainer
+                                                    <PWView
+                                                        style={
+                                                            styles.inputWrapper
                                                         }
-                                                        inputContainerStyle={
-                                                            focused ===
-                                                            offsetIndex
-                                                                ? styles.focusedInputContainer
-                                                                : styles.inputContainer
-                                                        }
-                                                        inputStyle={
-                                                            styles.input
-                                                        }
-                                                        renderErrorMessage={
-                                                            false
-                                                        }
-                                                        value={word}
-                                                        cursorColor={
-                                                            theme.colors
-                                                                .textMain
-                                                        }
-                                                        onChangeText={event =>
-                                                            updateWord(
-                                                                event,
-                                                                offsetIndex,
-                                                            )
-                                                        }
-                                                        onFocus={() =>
-                                                            setFocused(
-                                                                offsetIndex,
-                                                            )
-                                                        }
-                                                        autoFocus={
-                                                            column === 0 &&
-                                                            index === 0
-                                                        }
-                                                        autoCapitalize='none'
-                                                        autoCorrect
-                                                    />
+                                                    >
+                                                        <PWInput
+                                                            ref={ref =>
+                                                                setInputRef(
+                                                                    offsetIndex,
+                                                                    ref,
+                                                                )
+                                                            }
+                                                            containerStyle={
+                                                                styles.inputOuterContainer
+                                                            }
+                                                            inputContainerStyle={
+                                                                isFocused
+                                                                    ? styles.focusedInputContainer
+                                                                    : styles.inputContainer
+                                                            }
+                                                            inputStyle={
+                                                                styles.input
+                                                            }
+                                                            renderErrorMessage={
+                                                                false
+                                                            }
+                                                            value={word}
+                                                            cursorColor={
+                                                                theme.colors
+                                                                    .textMain
+                                                            }
+                                                            onChangeText={event =>
+                                                                updateWord(
+                                                                    event,
+                                                                    offsetIndex,
+                                                                )
+                                                            }
+                                                            onFocus={() =>
+                                                                setFocused(
+                                                                    offsetIndex,
+                                                                )
+                                                            }
+                                                            autoFocus={
+                                                                column === 0 &&
+                                                                index === 0
+                                                            }
+                                                            autoCapitalize='none'
+                                                            autoCorrect={false}
+                                                        />
+                                                        {isFocused && (
+                                                            <WordSuggestionDropdown
+                                                                suggestions={
+                                                                    suggestions
+                                                                }
+                                                                onSelectSuggestion={
+                                                                    handleSelectSuggestion
+                                                                }
+                                                            />
+                                                        )}
+                                                    </PWView>
                                                 </PWView>
                                             )
                                         })}

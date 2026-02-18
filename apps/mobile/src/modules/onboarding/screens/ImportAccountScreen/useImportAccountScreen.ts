@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
 import { Keyboard, Platform, Linking } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 
@@ -19,9 +19,11 @@ import { OnboardingStackParamList } from '../../routes/types'
 import {
     useImportAccount,
     ImportAccountType,
+    WORDLIST,
 } from '@perawallet/wallet-core-accounts'
 import { RECOVERY_PASSPHRASE_SUPPORT_URL } from '@perawallet/wallet-core-config'
 
+import type { PWInputRef } from '@components/core'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -34,6 +36,8 @@ const MNEMONIC_LENGTH_MAP: Record<ImportAccountType, number> = {
     hdWallet: 24,
     algo25: 25,
 }
+
+const MAX_SUGGESTIONS = 4
 
 export type UseImportAccountScreenResult = {
     words: string[]
@@ -56,6 +60,9 @@ export type UseImportAccountScreenResult = {
     isQRScannerVisible: boolean
     handleCloseQRScanner: () => void
     handleQRScannerSuccess: (url: string) => void
+    suggestions: string[]
+    handleSelectSuggestion: (word: string) => void
+    setInputRef: (index: number, ref: PWInputRef | null) => void
 }
 
 export function useImportAccountScreen(): UseImportAccountScreenResult {
@@ -110,7 +117,67 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         close: handleCloseQRScanner,
     } = useModalState()
 
+    const inputRefs = useRef<(PWInputRef | null)[]>(
+        new Array(mnemonicLength).fill(null),
+    )
+
+    const setInputRef = useCallback((index: number, ref: PWInputRef | null) => {
+        inputRefs.current[index] = ref
+    }, [])
+
+    const focusInput = useCallback((index: number) => {
+        inputRefs.current[index]?.focus()
+    }, [])
+
     const canImport = useMemo(() => words.every(w => w.length > 0), [words])
+
+    const suggestions = useMemo(() => {
+        const currentWord = words[focused]?.toLowerCase() ?? ''
+
+        if (currentWord.length === 0) {
+            return []
+        }
+
+        const matches: string[] = []
+
+        for (const word of WORDLIST) {
+            if (word.startsWith(currentWord)) {
+                matches.push(word)
+
+                if (matches.length >= MAX_SUGGESTIONS) {
+                    break
+                }
+            }
+        }
+
+        // If the only match is an exact match, no suggestions needed
+        if (matches.length === 1 && matches[0] === currentWord) {
+            return []
+        }
+
+        return matches
+    }, [words, focused])
+
+    const handleSelectSuggestion = useCallback(
+        (word: string) => {
+            setWords(prev => {
+                const next = [...prev]
+
+                next[focused] = word
+                return next
+            })
+
+            const nextIndex = focused + 1
+
+            if (nextIndex < mnemonicLength) {
+                setFocused(nextIndex)
+                setTimeout(() => {
+                    focusInput(nextIndex)
+                }, 50)
+            }
+        },
+        [focused, mnemonicLength, focusInput],
+    )
 
     const updateWord = useCallback(
         (word: string, index: number) => {
@@ -263,5 +330,8 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         isQRScannerVisible,
         handleCloseQRScanner,
         handleQRScannerSuccess,
+        suggestions,
+        handleSelectSuggestion,
+        setInputRef,
     }
 }

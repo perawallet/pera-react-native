@@ -32,8 +32,8 @@ export type AmountDisplay = {
     currency: string
     /** Number of decimal places for this currency */
     precision: number
-    /** Prefix to show (e.g., '+', '-'). Also determines styling: '+' = positive (green), '-' = negative (red) */
-    prefix: '+' | '-'
+    /** Prefix to show (e.g., '+', '-'). Also determines styling: '+' = positive (green), '-' = negative (red). Undefined for zero values. */
+    prefix?: '+' | '-'
 }
 
 export type UseTransactionListItemParams = {
@@ -57,12 +57,13 @@ const createAlgoAmount = (
     isOutgoing: boolean,
 ): AmountDisplay => {
     const rawAmount = microAlgosToAlgos(microAlgos || 0)
+    const absValue = rawAmount.abs()
 
     return {
-        value: rawAmount.abs(),
+        value: absValue,
         currency: 'ALGO',
         precision: ALGO_ASSET.decimals,
-        prefix: isOutgoing ? '-' : '+',
+        prefix: absValue.isZero() ? undefined : isOutgoing ? '-' : '+',
     }
 }
 
@@ -79,12 +80,13 @@ const createAssetAmount = (
         ? 0
         : Math.max(0, Math.min(19, decimals))
     const rawAmount = baseUnitsToDisplayUnits(amount || 0, safeDecimals)
+    const absValue = rawAmount.abs()
 
     return {
-        value: rawAmount.abs(),
+        value: absValue,
         currency: unitName,
         precision: safeDecimals,
-        prefix: isOutgoing ? '-' : '+',
+        prefix: absValue.isZero() ? undefined : isOutgoing ? '-' : '+',
     }
 }
 
@@ -193,12 +195,13 @@ export const useTransactionListItem = ({
         if (transaction.swapGroupDetail) {
             const { amountOut, assetOutUnitName } = transaction.swapGroupDetail
             const rawAmount = baseUnitsToDisplayUnits(amountOut || 0, 6)
+            const absValue = rawAmount.abs()
 
             result.push({
-                value: rawAmount.abs(),
+                value: absValue,
                 currency: assetOutUnitName,
                 precision: 6,
-                prefix: '+',
+                prefix: absValue.isZero() ? undefined : '+',
             })
             return result
         }
@@ -238,17 +241,6 @@ export const useTransactionListItem = ({
                     false,
                 ),
             )
-        }
-
-        // Always show fee for transactions that cost the user
-        if (isOutgoing || transaction.txType === 'acfg') {
-            const feeAmount = microAlgosToAlgos(transaction.fee || 0)
-            result.push({
-                value: feeAmount.abs(),
-                currency: 'ALGO',
-                precision: 3,
-                prefix: '-',
-            })
         }
 
         return result

@@ -57,6 +57,7 @@ export const useStyles = makeStyles(
             },
             column: {
                 width: '47%',
+                overflow: 'visible',
             },
             scrollContainer: {
                 flex: 1,
@@ -77,12 +78,26 @@ export const useStyles = makeStyles(
                 flexDirection: 'row',
                 gap: theme.spacing.sm,
                 alignItems: 'center',
+                overflow: 'visible',
+            },
+            focusedInputContainerRow: {
+                marginTop: theme.spacing.sm,
+                flexDirection: 'row',
+                gap: theme.spacing.sm,
+                alignItems: 'center',
+                overflow: 'visible',
+                zIndex: theme.zIndex.layer1,
             },
             label: {
                 color: theme.colors.textGray,
             },
             focusedLabel: {
                 color: theme.colors.textMain,
+            },
+            inputWrapper: {
+                flex: 1,
+                position: 'relative',
+                overflow: 'visible',
             },
             inputOuterContainer: {
                 flexShrink: 1,

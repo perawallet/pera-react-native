@@ -84,9 +84,10 @@ export const TransactionListItem = ({
                                     currency={amount.currency}
                                     precision={amount.precision}
                                     prefix={amount.prefix}
-                                    showSymbol={amount.currency === 'ALGO'}
+                                    showSymbol
                                     alignRight
                                     style={getAmountStyle(amount)}
+                                    variant='h4'
                                 />
                             </PWView>
                         ))}
