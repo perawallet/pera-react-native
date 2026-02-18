@@ -39,6 +39,9 @@
       ],
       "@utils/*": [
         "utils/*"
+      ],
+      "@stores/*": [
+        "stores/*"
       ]
     },
     "lib": [

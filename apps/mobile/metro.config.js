@@ -65,6 +65,15 @@ const polyfillMap = {
 
 // Custom resolver function
 const customResolveRequest = (context, moduleName, platform) => {
+    if (moduleName === 'crypto' || moduleName === 'node:crypto') {
+        // when importing crypto, resolve to react-native-quick-crypto
+        return context.resolveRequest(
+            context,
+            'react-native-quick-crypto',
+            platform,
+        )
+    }
+
     // Handle path aliases
     for (const [alias, aliasPath] of Object.entries(aliasMap)) {
         if (moduleName.startsWith(alias + '/')) {
