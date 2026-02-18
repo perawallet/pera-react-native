@@ -17,17 +17,11 @@ import {
     useUpdateDeviceMutation,
 } from '@perawallet/wallet-core-platform-integration'
 import { useAccountsStore } from '../store'
-import { useHDWallet } from './useHDWallet'
 import { v7 as uuidv7 } from 'uuid'
-import { AccountTypes, WalletAccount, ImportAccountType } from '../models'
+import { AccountTypes, WalletAccount } from '../models'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import {
-    useWithKey,
-    useKMS,
-    KeyType,
-    KeyPair,
-} from '@perawallet/wallet-core-kms'
+import { KeyNotFoundError, useKMS } from '@perawallet/wallet-core-kms'
 import { NoHDWalletError } from '../errors'
 import { KEY_DOMAIN } from '../constants'
 
@@ -35,122 +29,102 @@ export const useCreateAccount = () => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
     const accounts = useAccountsStore(state => state.accounts)
-    const { generateMasterKey, deriveAccountAddress } = useHDWallet()
     const setAccounts = useAccountsStore(state => state.setAccounts)
     const deviceInfo = useDeviceInfoService()
     const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
-    const { executeWithKey } = useWithKey()
-    const { saveKey, getKey } = useKMS()
+    const { loadKey, createHDWalletKey, createAlgo25Key, withHDSession } =
+        useKMS()
 
-    return async ({
+    const saveAndUpdateAccounts = async (newAccount: WalletAccount) => {
+        accounts.push(newAccount)
+        setAccounts([...accounts])
+
+        if (deviceID) {
+            await updateDeviceOnBackend({
+                deviceId: deviceID,
+                data: {
+                    platform: deviceInfo.getDevicePlatform(),
+                    accounts: accounts.map(a => a.address),
+                },
+            })
+        }
+    }
+
+    const createHdWalletAccount = async ({
         walletId,
         account,
         keyIndex,
-        type = 'hdWallet',
     }: {
         walletId?: string
         account: number
         keyIndex: number
-        type?: ImportAccountType
     }) => {
         const rootWalletId = walletId ?? uuidv7()
-        //TODO dry this code - maybe create a useHDWalletKey hook and share with useImportAccount
-        let rootKey = getKey(rootWalletId)
+        let rootKey = loadKey(rootWalletId)
 
         if (!rootKey) {
-            const masterKey = await generateMasterKey()
-            const keyData = {
-                seed: masterKey.seed.toString('base64'),
-                entropy: masterKey.entropy,
-            }
-            const stringifiedObj = JSON.stringify(keyData)
-            rootKey = {
-                id: rootWalletId,
-                publicKey: '',
-                privateDataStorageKey: '',
-                domain: KEY_DOMAIN,
-                createdAt: new Date(),
-                type:
-                    type === 'hdWallet'
-                        ? KeyType.HDWalletRootKey
-                        : KeyType.Algo25Key,
-            } as KeyPair
-
-            rootKey = await saveKey(
-                rootKey,
-                new TextEncoder().encode(stringifiedObj),
-            )
-            masterKey.seed.fill(0)
-        }
-
-        if (rootKey && rootKey.type === KeyType.Algo25Key) {
-            const newAccount: WalletAccount = {
-                id: uuidv7(),
-                address: rootKey.publicKey,
-                type: AccountTypes.algo25,
-                canSign: true,
-                keyPairId: rootKey.id,
-            }
-
-            accounts.push(newAccount)
-            setAccounts([...accounts])
-
-            if (deviceID) {
-                updateDeviceOnBackend({
-                    deviceId: deviceID,
-                    data: {
-                        platform: deviceInfo.getDevicePlatform(),
-                        accounts: accounts.map(a => a.address),
-                    },
-                })
-            }
-            return newAccount
+            rootKey = await createHDWalletKey({ id: rootWalletId })
         }
 
         if (!rootKey?.id) {
             throw new NoHDWalletError(rootWalletId)
         }
 
-        return executeWithKey(rootKey.id, KEY_DOMAIN, async data => {
-            const masterKeyData = JSON.parse(new TextDecoder().decode(data))
-            if (!masterKeyData?.seed) {
-                throw new NoHDWalletError(rootWalletId)
-            }
-
-            const { address } = await deriveAccountAddress({
-                seed: Buffer.from(masterKeyData.seed, 'base64'),
-                account,
-                keyIndex,
-                derivationType: BIP32DerivationType.Peikert,
-            })
-
-            const newAccount: WalletAccount = {
-                id: uuidv7(),
-                address: encodeAlgorandAddress(address),
-                type: AccountTypes.hdWallet,
-                canSign: true,
-                hdWalletDetails: {
-                    walletId: rootWalletId,
-                    account: account,
-                    change: 0,
-                    keyIndex: keyIndex,
+        const newAccount = await withHDSession(
+            rootKey,
+            KEY_DOMAIN,
+            async session => {
+                const addressBytes = await session.getPublicKey({
+                    account,
+                    keyIndex,
                     derivationType: BIP32DerivationType.Peikert,
-                },
-            }
-
-            accounts.push(newAccount)
-            setAccounts([...accounts])
-
-            if (deviceID) {
-                updateDeviceOnBackend({
-                    deviceId: deviceID,
-                    data: {
-                        platform: deviceInfo.getDevicePlatform(),
-                        accounts: accounts.map(a => a.address),
-                    },
                 })
-            }
-            return newAccount
-        })
+
+                const newAccount: WalletAccount = {
+                    id: uuidv7(),
+                    address: encodeAlgorandAddress(addressBytes),
+                    type: AccountTypes.hdWallet,
+                    hdWalletDetails: {
+                        account: account,
+                        change: 0,
+                        keyIndex: keyIndex,
+                        derivationType: BIP32DerivationType.Peikert,
+                    },
+                    keyPairId: rootWalletId,
+                }
+                return newAccount
+            },
+        )
+
+        await saveAndUpdateAccounts(newAccount)
+        return newAccount
+    }
+
+    const createAlgo25WalletAccount = async () => {
+        const keyId = uuidv7()
+        let rootKey = loadKey(keyId)
+
+        if (!rootKey) {
+            rootKey = await createAlgo25Key({ id: keyId })
+        }
+
+        if (!rootKey?.id) {
+            throw new KeyNotFoundError(keyId)
+        }
+
+        const newAccount: WalletAccount = {
+            id: uuidv7(),
+            address: rootKey.publicKey,
+            type: AccountTypes.algo25,
+            keyPairId: rootKey.id,
+        }
+
+        await saveAndUpdateAccounts(newAccount)
+        return newAccount
+    }
+
+    return {
+        createHdWalletAccount,
+        createAlgo25WalletAccount,
     }
 }

@@ -38,13 +38,19 @@ vi.mock('@perawallet/wallet-core-platform-integration', () => ({
     })),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
+vi.mock('../useTransactionSigner', () => ({
     useTransactionSigner: vi.fn(() => ({
         signTransactions: mockSignTransactions,
     })),
+}))
+
+vi.mock('../useArbitraryDataSigner', () => ({
     useArbitraryDataSigner: vi.fn(() => ({
         signArbitraryData: mockSignArbitraryData,
     })),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => [
         { address: 'ADDR1', canSign: true, type: 'algo25' },
         { address: 'ADDR2', canSign: true, type: 'algo25' },

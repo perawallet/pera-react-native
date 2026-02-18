@@ -16,11 +16,9 @@ import {
     useAlgorandClient,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
-import {
-    useTransactionSigner,
-    useArbitraryDataSigner,
-    useAllAccounts,
-} from '@perawallet/wallet-core-accounts'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { useTransactionSigner } from './useTransactionSigner'
+import { useArbitraryDataSigner } from './useArbitraryDataSigner'
 import { useSigningStore } from '../store'
 import type {
     SignRequest,

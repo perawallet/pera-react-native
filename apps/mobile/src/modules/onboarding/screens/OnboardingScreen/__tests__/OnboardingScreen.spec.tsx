@@ -36,7 +36,7 @@ vi.mock('@modules/webview', () => ({
 }))
 
 // Mock account creation
-const mockCreateAccount = vi.fn()
+const mockCreateHdWalletAccount = vi.fn()
 const mockUseHasAccounts = vi.fn(() => false)
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
@@ -44,7 +44,9 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     )
     return {
         ...actual,
-        useCreateAccount: () => mockCreateAccount,
+        useCreateAccount: () => ({
+            createHdWalletAccount: mockCreateHdWalletAccount,
+        }),
         useHasAccounts: () => mockUseHasAccounts(),
     }
 })
@@ -148,9 +150,8 @@ describe('OnboardingScreen', () => {
             id: 'test-id',
             address: 'TEST_ADDRESS',
             type: 'hdWallet' as const,
-            canSign: true,
+            keyPairId: 'test-wallet-id',
             hdWalletDetails: {
-                walletId: 'test-wallet-id',
                 account: 0,
                 change: 0,
                 keyIndex: 0,
@@ -158,7 +159,7 @@ describe('OnboardingScreen', () => {
             },
         }
 
-        mockCreateAccount.mockResolvedValue(mockAccount)
+        mockCreateHdWalletAccount.mockResolvedValue(mockAccount)
 
         render(<OnboardingScreen />)
 
@@ -169,7 +170,7 @@ describe('OnboardingScreen', () => {
 
         // Wait for async account creation
         await vi.waitFor(() => {
-            expect(mockCreateAccount).toHaveBeenCalledWith({
+            expect(mockCreateHdWalletAccount).toHaveBeenCalledWith({
                 account: 0,
                 keyIndex: 0,
             })
@@ -234,9 +235,8 @@ describe('OnboardingScreen', () => {
                 id: 'test-id',
                 address: 'TEST_ADDRESS',
                 type: 'hdWallet' as const,
-                canSign: true,
+                keyPairId: 'test-wallet-id',
                 hdWalletDetails: {
-                    walletId: 'test-wallet-id',
                     account: 0,
                     change: 0,
                     keyIndex: 0,
@@ -244,7 +244,7 @@ describe('OnboardingScreen', () => {
                 },
             }
 
-            mockCreateAccount.mockResolvedValue(mockAccount)
+            mockCreateHdWalletAccount.mockResolvedValue(mockAccount)
 
             render(<OnboardingScreen />)
 
@@ -254,7 +254,7 @@ describe('OnboardingScreen', () => {
             fireEvent.click(createButton)
 
             await vi.waitFor(() => {
-                expect(mockCreateAccount).toHaveBeenCalledWith({
+                expect(mockCreateHdWalletAccount).toHaveBeenCalledWith({
                     account: 0,
                     keyIndex: 0,
                 })

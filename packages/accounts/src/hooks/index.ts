@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-export * from './useHDWallet'
 export * from './useAccountBalancesQuery'
 export * from './useAccountBalancesHistoryQuery'
 export * from './useAccountsAssetBalanceHistoryQuery'
@@ -24,7 +23,5 @@ export * from './useRemoveAccountById'
 export * from './useSelectedAccount'
 export * from './useSelectedAccountAddress'
 export * from './useSigningAccounts'
-export * from './useArbitraryDataSigner'
-export * from './useTransactionSigner'
 export * from './useUpdateAccount'
 export * from './useAccountDiscovery'

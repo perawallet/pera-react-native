@@ -112,10 +112,10 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
             }
 
             try {
-                const walletId = accounts[0].hdWalletDetails.walletId
+                const walletKeyId = accounts[0].keyPairId
                 const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
                     {
-                        walletId,
+                        walletKeyId,
                         derivationType: DerivationTypes.Peikert,
                         accountAddresses: accounts.map(a => a.address),
                     },

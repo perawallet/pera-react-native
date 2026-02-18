@@ -10,86 +10,153 @@
  limitations under the License
  */
 
-import { useSecureStorageService } from '@perawallet/wallet-core-platform-integration'
 import { useKeyManagerStore } from '../store'
-import { KeyPair } from '../models'
-import { v7 as uuidv7 } from 'uuid'
-import { useCallback } from 'react'
-import { logger } from '@perawallet/wallet-core-shared'
-import { useWithKey } from './useWithKey'
-import { getSeedFromMasterKey } from '../utils'
+import { KeyPair, KeyType } from '../models'
+import type { HDDerivationParams } from '../models/session'
+import { createHDWalletKey, withHDSession } from '../crypto/hd-wallet'
+import { createAlgo25Key, withAlgo25Session } from '../crypto/algo25'
+import { deleteKey } from '../utils'
+import { InvalidKeyError, KeyNotFoundError } from '../errors'
 
 export const useKMS = () => {
     const keys = useKeyManagerStore(state => state.keys)
-    const addKey = useKeyManagerStore(state => state.addKey)
-    const removeKey = useKeyManagerStore(state => state.removeKey)
     const getKey = useKeyManagerStore(state => state.getKey)
-    const secureStorage = useSecureStorageService()
 
-    /**
-     * Store a key in the key manager store.
-     *
-     * @param key the metadata about the key
-     * @param privateKeyData base64 encoded private key data
-     */
-    const saveKey = useCallback(
-        async (key: KeyPair, privateKeyData: Uint8Array) => {
-            const storageKey = key.id ?? uuidv7()
-            key.id = storageKey
-            key.privateDataStorageKey = key.publicKey.length
-                ? `${key.type}-${key.publicKey}`
-                : `${key.type}-${storageKey}`
-            key.createdAt = new Date()
-            logger.debug('Creating key', key)
-            await secureStorage.setItem(
-                key.privateDataStorageKey,
-                privateKeyData,
-            )
-            addKey(key)
+    const loadKey = (keyId: string): KeyPair => {
+        const key = getKey(keyId)
 
-            return key
-        },
-        [addKey, secureStorage],
-    )
+        if (!key) {
+            throw new KeyNotFoundError(keyId)
+        }
 
-    const deleteKey = useCallback(
-        async (id: string) => {
-            const key = getKey(id)
-            if (!key) {
-                return
-            }
+        return key
+    }
 
-            if (key.privateDataStorageKey) {
-                await secureStorage.removeItem(key.privateDataStorageKey)
-            }
-            logger.debug('Deleting key', key)
-            removeKey(id)
-        },
-        [getKey, removeKey, secureStorage],
-    )
+    const signTransactionWithKey = async (
+        keyId: string,
+        domain: string,
+        encodedTx: Uint8Array,
+        derivationParams?: HDDerivationParams,
+    ): Promise<Uint8Array> => {
+        const key = loadKey(keyId)
 
-    const { executeWithKey } = useWithKey()
+        switch (key.type) {
+            case KeyType.HDWalletDerivedKey:
+            case KeyType.HDWalletRootKey:
+                if (!derivationParams) {
+                    throw new InvalidKeyError(keyId)
+                }
+                return withHDSession(key, domain, session =>
+                    session.signTransaction(derivationParams, encodedTx),
+                )
+            case KeyType.Algo25Key:
+                return withAlgo25Session(key, domain, session =>
+                    session.signTransaction(encodedTx),
+                )
+            default:
+                throw new InvalidKeyError(key.id ?? 'unknown')
+        }
+    }
 
-    const executeWithSeed = useCallback(
-        async <T>(
-            id: string,
-            domain: string,
-            handler: (seed: Uint8Array) => Promise<T>,
-        ) => {
-            return executeWithKey(id, domain, async privateData => {
-                const seed = getSeedFromMasterKey(privateData)
-                return handler(seed)
-            })
-        },
-        [executeWithKey],
-    )
+    const signDataWithKey = async (
+        keyId: string,
+        domain: string,
+        data: Uint8Array,
+        derivationParams?: HDDerivationParams,
+    ): Promise<Uint8Array> => {
+        const key = loadKey(keyId)
+
+        switch (key.type) {
+            case KeyType.HDWalletDerivedKey:
+            case KeyType.HDWalletRootKey:
+                if (!derivationParams) {
+                    throw new InvalidKeyError(keyId)
+                }
+                return withHDSession(key, domain, session =>
+                    session.signData(derivationParams, data),
+                )
+            case KeyType.Algo25Key:
+                return withAlgo25Session(key, domain, session =>
+                    session.signData(data),
+                )
+            default:
+                throw new InvalidKeyError(key.id ?? 'unknown')
+        }
+    }
+
+    const batchSignTransactionWithKey = async (
+        keyId: string,
+        domain: string,
+        encodedTxs: Uint8Array[],
+        derivationParams?: HDDerivationParams,
+    ): Promise<Uint8Array[]> => {
+        const key = loadKey(keyId)
+
+        switch (key.type) {
+            case KeyType.HDWalletDerivedKey:
+            case KeyType.HDWalletRootKey:
+                if (!derivationParams) {
+                    throw new InvalidKeyError(keyId)
+                }
+                return withHDSession(key, domain, session =>
+                    Promise.all(
+                        encodedTxs.map(async tx =>
+                            session.signTransaction(derivationParams, tx),
+                        ),
+                    ),
+                )
+            case KeyType.Algo25Key:
+                return withAlgo25Session(key, domain, session =>
+                    Promise.all(
+                        encodedTxs.map(async tx => session.signTransaction(tx)),
+                    ),
+                )
+            default:
+                throw new InvalidKeyError(key.id ?? 'unknown')
+        }
+    }
+
+    const batchSignDataWithKey = async (
+        keyId: string,
+        domain: string,
+        data: Uint8Array[],
+        derivationParams?: HDDerivationParams,
+    ): Promise<Uint8Array[]> => {
+        const key = loadKey(keyId)
+
+        switch (key.type) {
+            case KeyType.HDWalletDerivedKey:
+            case KeyType.HDWalletRootKey:
+                if (!derivationParams) {
+                    throw new InvalidKeyError(keyId)
+                }
+                return withHDSession(key, domain, session =>
+                    Promise.all(
+                        data.map(async d =>
+                            session.signData(derivationParams, d),
+                        ),
+                    ),
+                )
+            case KeyType.Algo25Key:
+                return withAlgo25Session(key, domain, session =>
+                    Promise.all(data.map(async d => session.signData(d))),
+                )
+            default:
+                throw new InvalidKeyError(key.id ?? 'unknown')
+        }
+    }
 
     return {
         keys,
         deleteKey,
-        saveKey,
-        getKey,
-        executeWithKey,
-        executeWithSeed,
+        loadKey,
+        withAlgo25Session,
+        createAlgo25Key,
+        withHDSession,
+        createHDWalletKey,
+        signTransactionWithKey,
+        batchSignTransactionWithKey,
+        signDataWithKey,
+        batchSignDataWithKey,
     }
 }

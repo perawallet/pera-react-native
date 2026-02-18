@@ -54,10 +54,10 @@ export class KeyAccessError extends KeyManagementError {
  * Key not found in secure storage
  */
 export class KeyNotFoundError extends KeyManagementError {
-    constructor(walletId: string) {
+    constructor(keyId: string) {
         super(ERROR_I18N_KEYS.KEY_NOT_FOUND, undefined, {
             severity: ErrorSeverity.CRITICAL,
-            params: { walletId },
+            params: { keyId },
         })
     }
 }
@@ -66,10 +66,10 @@ export class KeyNotFoundError extends KeyManagementError {
  * Key not found in secure storage
  */
 export class InvalidKeyError extends KeyManagementError {
-    constructor(walletId: string) {
+    constructor(keyId: string) {
         super(ERROR_I18N_KEYS.INVALID_KEY, undefined, {
             severity: ErrorSeverity.CRITICAL,
-            params: { walletId },
+            params: { keyId },
         })
     }
 }

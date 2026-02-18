@@ -44,13 +44,17 @@ const mockSetSelectedAccountAddress = vi.fn()
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [],
     useUpdateAccount: () => vi.fn(),
-    useCreateAccount: () =>
-        vi.fn().mockResolvedValue({ address: 'test-address' }),
+    useCreateAccount: () => ({
+        createHdWalletAccount: vi
+            .fn()
+            .mockResolvedValue({ address: 'test-address' }),
+    }),
     useSelectedAccountAddress: () => ({
         selectedAccountAddress: null,
         setSelectedAccountAddress: mockSetSelectedAccountAddress,
     }),
     getAccountDisplayName: () => 'Account 1',
+    isHDWalletAccount: () => false,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     WalletAccount: {} as any,
 }))

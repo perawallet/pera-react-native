@@ -1091,6 +1091,9 @@ importers:
 
   packages/kms:
     dependencies:
+      '@algorandfoundation/algokit-utils':
+        specifier: 'catalog:'
+        version: 10.0.0-alpha.29
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
         version: 2.0.0-canary.1
@@ -1103,9 +1106,15 @@ importers:
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
+      bip39:
+        specifier: 'catalog:'
+        version: 3.1.0
       react:
         specifier: 'catalog:'
         version: 19.1.0
+      tweetnacl:
+        specifier: ^1.0.3
+        version: 1.0.3
       uuid:
         specifier: 'catalog:'
         version: 13.0.0
@@ -1633,6 +1642,9 @@ importers:
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
+      '@perawallet/wallet-core-kms':
+        specifier: workspace:*
+        version: link:../kms
       '@perawallet/wallet-core-platform-integration':
         specifier: workspace:*
         version: link:../platform-integration
@@ -13467,7 +13479,9 @@ snapshots:
       metro-runtime: 0.83.3
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
     optional: true
 
   '@react-native/normalize-colors@0.74.89': {}

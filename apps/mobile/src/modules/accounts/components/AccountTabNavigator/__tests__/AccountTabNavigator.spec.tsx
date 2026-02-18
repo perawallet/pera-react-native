@@ -37,7 +37,7 @@ const mockAccount: WalletAccount = {
     address: 'TEST_ADDRESS_123',
     name: 'Test Account',
     type: 'algo25',
-    canSign: true,
+    keyPairId: 'pk',
 }
 
 describe('AccountTabNavigator', () => {

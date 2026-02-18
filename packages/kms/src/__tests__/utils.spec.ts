@@ -10,38 +10,457 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi } from 'vitest'
-import { getSeedFromMasterKey } from '../utils'
+import { describe, test, expect, vi, beforeEach } from 'vitest'
+import {
+    getSeedFromMasterKey,
+    getEntropyFromMasterKey,
+    saveKey,
+    deleteKey,
+    executeWithKey,
+} from '../utils'
+import {
+    AccessControlPermission,
+    KeyPair,
+    KeyType,
+    StoredKeyMaterial,
+} from '../models'
+import { KeyAccessError, KeyManagementError } from '../errors'
+import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    decodeFromBase64: vi.fn((base64: string) => {
-        const binaryString = atob(base64)
-        const bytes = new Uint8Array(binaryString.length)
-        for (let i = 0; i < binaryString.length; i++) {
-            bytes[i] = binaryString.charCodeAt(i)
-        }
-        return bytes
+const mockSetItem = vi.fn()
+const mockGetItem = vi.fn()
+const mockRemoveItem = vi.fn()
+
+vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+    useSecureStorageService: () => ({
+        setItem: mockSetItem,
+        getItem: mockGetItem,
+        removeItem: mockRemoveItem,
     }),
 }))
 
-describe('kms/utils - getSeedFromMasterKey', () => {
-    test('obtains seed from JSON stringified master key data', () => {
-        const masterKey = {
-            seed: btoa('test-seed'),
-            entropy: 'test-entropy',
-        }
-        const keyData = new TextEncoder().encode(JSON.stringify(masterKey))
-        const seed = getSeedFromMasterKey(keyData)
+const mockAddKey = vi.fn()
+const mockRemoveKey = vi.fn()
+const mockGetKey = vi.fn()
 
-        expect(seed).toEqual(
-            new Uint8Array(new TextEncoder().encode('test-seed')),
-        )
+vi.mock('../store', () => ({
+    useKeyManagerStore: (selector: any) => {
+        const state = {
+            addKey: mockAddKey,
+            removeKey: mockRemoveKey,
+            getKey: mockGetKey,
+        }
+        return selector(state)
+    },
+}))
+
+vi.mock('uuid', () => ({
+    v7: () => 'mock-uuid-v7',
+}))
+
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const actual = await vi.importActual<object>(
+        '@perawallet/wallet-core-shared',
+    )
+    return {
+        ...actual,
+        decodeFromBase64: vi.fn((base64: string) => {
+            const binaryString = atob(base64)
+            const bytes = new Uint8Array(binaryString.length)
+            for (let i = 0; i < binaryString.length; i++) {
+                bytes[i] = binaryString.charCodeAt(i)
+            }
+            return bytes
+        }),
+        logger: {
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+        },
+    }
+})
+
+describe('kms/utils', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
     })
 
-    test('obtains seed from raw master key data', () => {
-        const keyData = new Uint8Array([1, 2, 3, 4])
-        const seed = getSeedFromMasterKey(keyData)
+    describe('getSeedFromMasterKey', () => {
+        test('obtains seed from StoredKeyMaterial with base64 seed', () => {
+            const storedKey: StoredKeyMaterial = {
+                seed: btoa('test-seed'),
+                seedFormat: 'base64',
+            }
+            const seed = getSeedFromMasterKey(storedKey)
 
-        expect(seed).toEqual(new Uint8Array([1, 2, 3, 4]))
+            expect(seed).toEqual(
+                new Uint8Array(new TextEncoder().encode('test-seed')),
+            )
+        })
+
+        test('obtains seed from StoredKeyMaterial with entropy', () => {
+            const storedKey: StoredKeyMaterial = {
+                seed: btoa('test-seed'),
+                seedFormat: 'base64',
+                entropy: btoa('test-entropy'),
+            }
+            const seed = getSeedFromMasterKey(storedKey)
+
+            expect(seed).toEqual(
+                new Uint8Array(new TextEncoder().encode('test-seed')),
+            )
+        })
+
+        test('throws KeyManagementError when decoding fails', () => {
+            vi.mocked(decodeFromBase64).mockImplementationOnce(() => {
+                throw new Error('decode failed')
+            })
+
+            const storedKey: StoredKeyMaterial = {
+                seed: 'invalid',
+                seedFormat: 'base64',
+            }
+
+            expect(() => getSeedFromMasterKey(storedKey)).toThrow(
+                KeyManagementError,
+            )
+        })
+    })
+
+    describe('getEntropyFromMasterKey', () => {
+        test('returns decoded entropy when present', () => {
+            const storedKey: StoredKeyMaterial = {
+                seed: btoa('seed'),
+                seedFormat: 'base64',
+                entropy: btoa('test-entropy'),
+            }
+            const entropy = getEntropyFromMasterKey(storedKey)
+
+            expect(entropy).toEqual(
+                new Uint8Array(new TextEncoder().encode('test-entropy')),
+            )
+        })
+
+        test('returns null when entropy is not present', () => {
+            const storedKey: StoredKeyMaterial = {
+                seed: btoa('seed'),
+                seedFormat: 'base64',
+            }
+            const entropy = getEntropyFromMasterKey(storedKey)
+
+            expect(entropy).toBeNull()
+        })
+
+        test('throws KeyManagementError when decoding fails', () => {
+            vi.mocked(decodeFromBase64).mockImplementationOnce(() => {
+                throw new Error('decode failed')
+            })
+
+            const storedKey: StoredKeyMaterial = {
+                seed: btoa('seed'),
+                seedFormat: 'base64',
+                entropy: 'invalid-entropy',
+            }
+
+            expect(() => getEntropyFromMasterKey(storedKey)).toThrow(
+                KeyManagementError,
+            )
+        })
+    })
+
+    describe('saveKey', () => {
+        test('stores key data in secure storage and adds to store', async () => {
+            const key: KeyPair = {
+                id: 'key-1',
+                publicKey: 'TESTADDR',
+                type: KeyType.Algo25Key,
+                privateDataStorageKey: '',
+                createdAt: new Date(),
+            }
+            const keyData: StoredKeyMaterial = {
+                seed: btoa('secret'),
+                seedFormat: 'base64',
+            }
+
+            const result = await saveKey(key, keyData)
+
+            expect(mockSetItem).toHaveBeenCalledTimes(1)
+            expect(mockSetItem.mock.calls[0][0]).toBe(
+                `${KeyType.Algo25Key}-TESTADDR`,
+            )
+            const storedValue = mockSetItem.mock.calls[0][1]
+            expect(storedValue.constructor.name).toBe('Uint8Array')
+            expect(mockAddKey).toHaveBeenCalledWith(result)
+            expect(result.id).toBe('key-1')
+            expect(result.privateDataStorageKey).toBe(
+                `${KeyType.Algo25Key}-TESTADDR`,
+            )
+        })
+
+        test('generates uuid for id when not provided', async () => {
+            const key: KeyPair = {
+                publicKey: '',
+                type: KeyType.HDWalletRootKey,
+                privateDataStorageKey: '',
+            }
+            const keyData: StoredKeyMaterial = {
+                seed: btoa('secret'),
+                seedFormat: 'base64',
+            }
+
+            const result = await saveKey(key, keyData)
+
+            expect(result.id).toBe('mock-uuid-v7')
+        })
+
+        test('uses storageKey with id when publicKey is empty', async () => {
+            const key: KeyPair = {
+                id: 'hd-key-1',
+                publicKey: '',
+                type: KeyType.HDWalletRootKey,
+                privateDataStorageKey: '',
+            }
+            const keyData: StoredKeyMaterial = {
+                seed: btoa('secret'),
+                seedFormat: 'base64',
+            }
+
+            const result = await saveKey(key, keyData)
+
+            expect(result.privateDataStorageKey).toBe(
+                `${KeyType.HDWalletRootKey}-hd-key-1`,
+            )
+        })
+
+        test('stores serialized key data as encoded bytes', async () => {
+            const key: KeyPair = {
+                id: 'key-1',
+                publicKey: 'ADDR',
+                type: KeyType.Algo25Key,
+                privateDataStorageKey: '',
+            }
+            const keyData: StoredKeyMaterial = {
+                seed: 'dGVzdA==',
+                seedFormat: 'base64',
+            }
+
+            await saveKey(key, keyData)
+
+            const storedBytes = mockSetItem.mock.calls[0][1] as Uint8Array
+            const decoded = JSON.parse(new TextDecoder().decode(storedBytes))
+            expect(decoded).toEqual(keyData)
+        })
+    })
+
+    describe('deleteKey', () => {
+        test('removes key from secure storage and store', async () => {
+            const key: KeyPair = {
+                id: 'key-1',
+                publicKey: 'ADDR',
+                type: KeyType.Algo25Key,
+                privateDataStorageKey: 'algo25-key-ADDR',
+            }
+            mockGetKey.mockReturnValue(key)
+
+            await deleteKey('key-1')
+
+            expect(mockRemoveItem).toHaveBeenCalledWith('algo25-key-ADDR')
+            expect(mockRemoveKey).toHaveBeenCalledWith('key-1')
+        })
+
+        test('does nothing when key is not found', async () => {
+            mockGetKey.mockReturnValue(null)
+
+            await deleteKey('nonexistent')
+
+            expect(mockRemoveItem).not.toHaveBeenCalled()
+            expect(mockRemoveKey).not.toHaveBeenCalled()
+        })
+
+        test('skips secure storage removal when no privateDataStorageKey', async () => {
+            const key: KeyPair = {
+                id: 'key-1',
+                publicKey: 'ADDR',
+                type: KeyType.Algo25Key,
+            }
+            mockGetKey.mockReturnValue(key)
+
+            await deleteKey('key-1')
+
+            expect(mockRemoveItem).not.toHaveBeenCalled()
+            expect(mockRemoveKey).toHaveBeenCalledWith('key-1')
+        })
+    })
+
+    describe('executeWithKey', () => {
+        const makeKey = (overrides?: Partial<KeyPair>): KeyPair => ({
+            id: 'key-1',
+            publicKey: 'ADDR',
+            type: KeyType.Algo25Key,
+            privateDataStorageKey: 'algo25-key-ADDR',
+            ...overrides,
+        })
+
+        const mockStoredData: StoredKeyMaterial = {
+            seed: btoa('test-seed'),
+            seedFormat: 'base64',
+        }
+
+        test('retrieves private key and calls handler', async () => {
+            const key = makeKey()
+            const encoded = new TextEncoder().encode(
+                JSON.stringify(mockStoredData),
+            )
+            mockGetItem.mockResolvedValue(encoded)
+
+            const handler = vi.fn().mockResolvedValue('result')
+            const result = await executeWithKey(key, 'test-domain', handler)
+
+            expect(mockGetItem).toHaveBeenCalledWith('algo25-key-ADDR')
+            expect(handler).toHaveBeenCalledWith(mockStoredData)
+            expect(result).toBe('result')
+        })
+
+        test('throws KeyAccessError when privateDataStorageKey is missing', async () => {
+            const key = makeKey({ privateDataStorageKey: undefined })
+
+            await expect(
+                executeWithKey(key, 'test-domain', vi.fn()),
+            ).rejects.toThrow(KeyAccessError)
+        })
+
+        test('throws KeyAccessError when no private key found in storage', async () => {
+            const key = makeKey()
+            mockGetItem.mockResolvedValue(null)
+
+            await expect(
+                executeWithKey(key, 'test-domain', vi.fn()),
+            ).rejects.toThrow(KeyAccessError)
+        })
+
+        test('allows access when ACL grants ReadPrivate for domain', async () => {
+            const key = makeKey({
+                acl: [
+                    {
+                        domains: ['test-domain'],
+                        permissions: [AccessControlPermission.ReadPrivate],
+                    },
+                ],
+            })
+            const encoded = new TextEncoder().encode(
+                JSON.stringify(mockStoredData),
+            )
+            mockGetItem.mockResolvedValue(encoded)
+
+            const handler = vi.fn().mockResolvedValue('ok')
+            const result = await executeWithKey(key, 'test-domain', handler)
+
+            expect(result).toBe('ok')
+        })
+
+        test('throws KeyAccessError when ACL denies access for domain', async () => {
+            const key = makeKey({
+                acl: [
+                    {
+                        domains: ['other-domain'],
+                        permissions: [AccessControlPermission.ReadPrivate],
+                    },
+                ],
+            })
+
+            await expect(
+                executeWithKey(key, 'test-domain', vi.fn()),
+            ).rejects.toThrow(KeyAccessError)
+        })
+
+        test('throws KeyAccessError when ACL lacks ReadPrivate permission', async () => {
+            const key = makeKey({
+                acl: [
+                    {
+                        domains: ['test-domain'],
+                        permissions: [AccessControlPermission.ReadPublic],
+                    },
+                ],
+            })
+
+            await expect(
+                executeWithKey(key, 'test-domain', vi.fn()),
+            ).rejects.toThrow(KeyAccessError)
+        })
+
+        test('skips ACL check when key has no ACL', async () => {
+            const key = makeKey({ acl: undefined })
+            const encoded = new TextEncoder().encode(
+                JSON.stringify(mockStoredData),
+            )
+            mockGetItem.mockResolvedValue(encoded)
+
+            const handler = vi.fn().mockResolvedValue('ok')
+            const result = await executeWithKey(key, 'test-domain', handler)
+
+            expect(result).toBe('ok')
+        })
+
+        test('re-throws AppError from handler without wrapping', async () => {
+            const key = makeKey()
+            const encoded = new TextEncoder().encode(
+                JSON.stringify(mockStoredData),
+            )
+            mockGetItem.mockResolvedValue(encoded)
+
+            const appError = new KeyAccessError()
+            const handler = vi.fn().mockRejectedValue(appError)
+
+            await expect(
+                executeWithKey(key, 'test-domain', handler),
+            ).rejects.toBe(appError)
+        })
+
+        test('wraps non-AppError from handler in KeyAccessError', async () => {
+            const key = makeKey()
+            const encoded = new TextEncoder().encode(
+                JSON.stringify(mockStoredData),
+            )
+            mockGetItem.mockResolvedValue(encoded)
+
+            const genericError = new Error('something broke')
+            const handler = vi.fn().mockRejectedValue(genericError)
+
+            await expect(
+                executeWithKey(key, 'test-domain', handler),
+            ).rejects.toThrow(KeyAccessError)
+        })
+
+        test('zeros out private key memory after successful execution', async () => {
+            const key = makeKey()
+            const encoded = new TextEncoder().encode(
+                JSON.stringify(mockStoredData),
+            )
+            mockGetItem.mockResolvedValue(encoded)
+
+            const handler = vi.fn().mockResolvedValue('ok')
+            await executeWithKey(key, 'test-domain', handler)
+
+            // The encoded Uint8Array should have been zeroed out
+            expect(encoded.every(byte => byte === 0)).toBe(true)
+        })
+
+        test('zeros out private key memory even when handler throws', async () => {
+            const key = makeKey()
+            const encoded = new TextEncoder().encode(
+                JSON.stringify(mockStoredData),
+            )
+            mockGetItem.mockResolvedValue(encoded)
+
+            const handler = vi.fn().mockRejectedValue(new Error('fail'))
+
+            await expect(
+                executeWithKey(key, 'test-domain', handler),
+            ).rejects.toThrow()
+
+            // Memory should still be zeroed despite the error
+            expect(encoded.every(byte => byte === 0)).toBe(true)
+        })
     })
 })

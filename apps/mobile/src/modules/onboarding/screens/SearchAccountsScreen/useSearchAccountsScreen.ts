@@ -19,7 +19,6 @@ import { RouteProp, useRoute } from '@react-navigation/native'
 import {
     useAccountDiscovery,
     AccountTypes,
-    isHDWalletAccount,
     DerivationTypes,
 } from '@perawallet/wallet-core-accounts'
 import { OnboardingStackParamList } from '../../routes/types'
@@ -46,9 +45,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const { discoverAccounts, discoverRekeyedAccounts } = useAccountDiscovery()
     const { setIsOnboarding } = useIsOnboarding()
 
-    const walletId = isHDWalletAccount(account)
-        ? account.hdWalletDetails.walletId
-        : account.keyPairId
+    const walletKeyId = account.keyPairId
 
     const dotOpacities = useRef(
         Array.from(
@@ -86,7 +83,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const hasSearched = useRef(false)
 
     const searchAccounts = useCallback(async () => {
-        if (!walletId || hasSearched.current) {
+        if (!walletKeyId || hasSearched.current) {
             return
         }
 
@@ -97,7 +94,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 const derivationType = account.hdWalletDetails.derivationType
 
                 const discoveredAccounts = await discoverAccounts({
-                    walletId,
+                    walletKeyId,
                     derivationType,
                 })
 
@@ -114,7 +111,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             } else if (account.type === AccountTypes.algo25) {
                 const discoveredRekeyedAccounts = await discoverRekeyedAccounts(
                     {
-                        walletId,
+                        walletKeyId,
                         derivationType: DerivationTypes.Peikert,
                         accountAddresses: [account.address],
                     },
@@ -139,7 +136,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
             navigation.goBack()
         }
     }, [
-        walletId,
+        walletKeyId,
         discoverAccounts,
         discoverRekeyedAccounts,
         navigation,

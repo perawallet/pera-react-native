@@ -13,7 +13,6 @@
 import {
     WalletAccount,
     HDWalletAccount,
-    Algo25Account,
     ImportAccountType,
 } from '@perawallet/wallet-core-accounts'
 
@@ -28,7 +27,7 @@ export type OnboardingStackParamList = {
         accounts: HDWalletAccount[]
     }
     ImportRekeyedAddresses: {
-        accounts: Algo25Account[]
+        accounts: WalletAccount[]
     }
     ImportInfo: {
         accountType: ImportAccountType

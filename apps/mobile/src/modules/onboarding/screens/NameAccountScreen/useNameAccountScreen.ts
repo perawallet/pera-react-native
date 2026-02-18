@@ -39,7 +39,7 @@ export const useNameAccountScreen = () => {
 
     const accounts = useAllAccounts()
     const updateAccount = useUpdateAccount()
-    const createAccount = useCreateAccount()
+    const { createHdWalletAccount } = useCreateAccount()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { t } = useLanguage()
     const { showToast } = useToast()
@@ -57,7 +57,7 @@ export const useNameAccountScreen = () => {
 
         accounts.forEach(acc => {
             if (isHDWalletAccount(acc)) {
-                hdWalletIds.add(acc.hdWalletDetails.walletId)
+                hdWalletIds.add(acc.keyPairId)
             } else {
                 otherAccountsCount++
             }
@@ -89,7 +89,8 @@ export const useNameAccountScreen = () => {
             await new Promise(resolve => requestAnimationFrame(resolve))
 
             const targetAccount: WalletAccount =
-                account || (await createAccount({ account: 0, keyIndex: 0 }))
+                account ||
+                (await createHdWalletAccount({ account: 0, keyIndex: 0 }))
 
             targetAccount.name = walletDisplay
             updateAccount(targetAccount)

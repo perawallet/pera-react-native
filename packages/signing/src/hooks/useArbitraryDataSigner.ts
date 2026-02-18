@@ -10,18 +10,35 @@
  limitations under the License
  */
 
-import { useAccountsStore } from '../store'
-import { useHDWallet } from './useHDWallet'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
-import { KEY_DOMAIN } from '../constants'
-import { isAlgo25Account, isHDWalletAccount } from '../utils'
-import { Algo25Account, HDWalletAccount, WalletAccount } from '../models'
+import {
+    isAlgo25Account,
+    isHDWalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import type {
+    Algo25Account,
+    HDWalletAccount,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import { SIGNING_KEY_DOMAIN } from '../constants'
+
+const concatBytes = (...arrays: Uint8Array[]): Uint8Array => {
+    const totalLength = arrays.reduce((acc, arr) => acc + arr.length, 0)
+    const result = new Uint8Array(totalLength)
+    let offset = 0
+    for (const arr of arrays) {
+        result.set(arr, offset)
+        offset += arr.length
+    }
+    return result
+}
 
 export const useArbitraryDataSigner = () => {
     const accounts = useAccountsStore(state => state.accounts)
-    const { signTransaction } = useHDWallet()
-    const { executeWithKey, executeWithSeed } = useKMS()
+    const { loadKey, withHDSession, withAlgo25Session } = useKMS()
 
     const signHDWalletArbitraryData = useCallback(
         async (
@@ -29,71 +46,66 @@ export const useArbitraryDataSigner = () => {
             data: string | string[],
         ): Promise<Uint8Array[]> => {
             const hdWalletDetails = account.hdWalletDetails
-            const storageKey = hdWalletDetails.walletId
 
-            return await executeWithSeed(
-                storageKey,
-                KEY_DOMAIN,
-                async (seed: Uint8Array) => {
-                    const seedBuffer = Buffer.from(seed)
+            const key = loadKey(account.keyPairId)
+            return await withHDSession(
+                key,
+                SIGNING_KEY_DOMAIN,
+                async session => {
                     const toSign = typeof data === 'string' ? [data] : data
 
                     const signatures = await Promise.all(
-                        toSign.map(async data => {
+                        toSign.map(async item => {
                             const prefixedData = new Uint8Array(
-                                Buffer.concat([
-                                    //MX prefix required by algosdk.verifyBytes
-                                    Buffer.from('MX', 'utf-8'),
-                                    Buffer.from(data, 'base64'),
-                                ]),
+                                concatBytes(
+                                    new TextEncoder().encode('MX'),
+                                    decodeFromBase64(item),
+                                ),
                             )
-                            const signature = await signTransaction(
-                                seedBuffer,
-                                hdWalletDetails,
+                            return session.signData(
+                                {
+                                    account: hdWalletDetails.account,
+                                    keyIndex: hdWalletDetails.keyIndex,
+                                    derivationType:
+                                        hdWalletDetails.derivationType,
+                                },
                                 prefixedData,
                             )
-
-                            return signature
                         }),
                     )
                     return signatures
                 },
             )
         },
-        [executeWithSeed, signTransaction],
+        [withHDSession],
     )
 
     const signAlgo25ArbitraryData = useCallback(
         async (
             account: Algo25Account,
-            _: string | string[],
+            data: string | string[],
         ): Promise<Uint8Array[]> => {
-            const storageKey = account.keyPairId
+            const key = loadKey(account.keyPairId)
+            return await withAlgo25Session(
+                key,
+                SIGNING_KEY_DOMAIN,
+                async session => {
+                    const toSign = typeof data === 'string' ? [data] : data
 
-            if (!storageKey) {
-                return Promise.reject(
-                    `No signing keys found for ${account.address}`,
-                )
-            }
-
-            return await executeWithKey(
-                storageKey,
-                KEY_DOMAIN,
-                async keyData => {
-                    if (!keyData) {
-                        throw new Error(
-                            `No signing keys found for ${account.address}`,
-                        )
-                    }
-
-                    //TODO implement this properly - this is not signing anything!
-                    throw new Error(
-                        'Algo25 arbitrary data signing not implemented',
+                    const signatures = await Promise.all(
+                        toSign.map(async item => {
+                            const prefixedData = concatBytes(
+                                new TextEncoder().encode('MX'),
+                                decodeFromBase64(item),
+                            )
+                            return session.signData(prefixedData)
+                        }),
                     )
+                    return signatures
                 },
             )
         },
-        [executeWithKey],
+        [withAlgo25Session],
     )
 
     const signArbitraryData = useCallback(

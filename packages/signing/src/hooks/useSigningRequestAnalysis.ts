@@ -15,7 +15,10 @@ import {
     type PeraDisplayableTransaction,
     mapToDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    canSignWithAccount,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import type { TransactionSignRequest } from '../models'
 import { calculateTotalFee } from '../utils/fees'
 import { aggregateTransactionWarnings } from '../utils/warnings'
@@ -41,7 +44,10 @@ export const useSigningRequestAnalysis = (request: TransactionSignRequest) => {
     )
 
     const signableAddresses = useMemo(
-        () => new Set(accounts.filter(a => a.canSign).map(a => a.address)),
+        () =>
+            new Set(
+                accounts.filter(a => canSignWithAccount(a)).map(a => a.address),
+            ),
         [accounts],
     )
 

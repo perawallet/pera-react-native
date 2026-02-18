@@ -17,53 +17,46 @@ import {
     discoverRekeyedAccounts as baseDiscoverRekeyedAccounts,
 } from '../account-discovery'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
-
-const KEY_DOMAIN = 'account-discovery'
+import { KEY_DOMAIN } from '../constants'
 
 export const useAccountDiscovery = () => {
-    const { executeWithSeed } = useKMS()
+    const { withHDSession, loadKey } = useKMS()
 
     const discoverAccounts = useCallback(
         async (params: {
-            walletId: string
+            walletKeyId: string
             derivationType: BIP32DerivationType
             accountGapLimit?: number
             keyIndexGapLimit?: number
         }) => {
-            return executeWithSeed(
-                params.walletId,
-                KEY_DOMAIN,
-                async (seed: Uint8Array) => {
-                    return baseDiscoverAccounts({
-                        ...params,
-                        seed: Buffer.from(seed),
-                    })
-                },
-            )
+            const key = loadKey(params.walletKeyId)
+            return withHDSession(key, KEY_DOMAIN, async session => {
+                return baseDiscoverAccounts({
+                    ...params,
+                    session,
+                })
+            })
         },
-        [executeWithSeed],
+        [withHDSession],
     )
 
     const discoverRekeyedAccounts = useCallback(
         async (params: {
-            walletId: string
+            walletKeyId: string
             derivationType: BIP32DerivationType
             accountGapLimit?: number
             keyIndexGapLimit?: number
             accountAddresses?: string[]
         }) => {
-            return executeWithSeed(
-                params.walletId,
-                KEY_DOMAIN,
-                async (seed: Uint8Array) => {
-                    return baseDiscoverRekeyedAccounts({
-                        ...params,
-                        seed: Buffer.from(seed),
-                    })
-                },
-            )
+            const key = loadKey(params.walletKeyId)
+            return withHDSession(key, KEY_DOMAIN, async session => {
+                return baseDiscoverRekeyedAccounts({
+                    ...params,
+                    session,
+                })
+            })
         },
-        [executeWithSeed],
+        [withHDSession],
     )
 
     return {

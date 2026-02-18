@@ -47,9 +47,7 @@ vi.mock('@hooks/useToast', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
-    useKMS: () => ({
-        executeWithSeed: vi.fn((_, __, fn) => fn(new Uint8Array(32))),
-    }),
+    useKMS: () => ({}),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
@@ -79,9 +77,8 @@ vi.mock('@react-navigation/native', () => ({
                 id: '1',
                 address: 'MOCK_ADDRESS',
                 type: AccountTypes.hdWallet,
-                canSign: true,
+                keyPairId: 'wallet-1',
                 hdWalletDetails: {
-                    walletId: '1',
                     account: 0,
                     change: 0,
                     keyIndex: 0,

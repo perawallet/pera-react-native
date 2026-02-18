@@ -26,6 +26,13 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(),
+    AccountTypes: {
+        algo25: 'algo25',
+        hdWallet: 'hdWallet',
+        hardware: 'hardware',
+        multisig: 'multisig',
+        watch: 'watch',
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({

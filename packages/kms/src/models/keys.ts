@@ -43,3 +43,9 @@ export type KeyPair = {
     acl?: AccessControl[] // who can access this key or what can be done with it
     type: KeyType
 }
+
+export type StoredKeyMaterial = {
+    seed: string
+    seedFormat: string
+    entropy?: string
+}

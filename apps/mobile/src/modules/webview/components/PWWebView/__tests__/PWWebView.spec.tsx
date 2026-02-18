@@ -26,13 +26,9 @@ vi.mock('../WebViewFooterBar', () => ({
     WebViewFooterBar: () => <div data-testid='footer-bar'>FooterBar</div>,
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useTransactionSigner: vi.fn(() => ({
-        signTransactions: vi.fn(),
-    })),
-    useAllAccounts: vi.fn(() => []),
-    useArbitraryDataSigner: vi.fn(() => ({
-        signData: vi.fn(),
+vi.mock('@hooks/usePeraWebviewInterface', () => ({
+    usePeraWebviewInterface: vi.fn(() => ({
+        handleMessage: vi.fn(),
     })),
 }))
 
