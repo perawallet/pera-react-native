@@ -164,7 +164,7 @@ describe('useStakingProjectsQuery', () => {
         mocks.getStringValue.mockReturnValue(
             JSON.stringify([
                 {
-                    id: 'unknown',
+                    id: '',
                     title: 'Invalid',
                     description: 'Invalid',
                     logoUrl: 'https://example.com/logo.png',
