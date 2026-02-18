@@ -16,7 +16,6 @@ import {
     NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { StakingScreen } from '@modules/staking/screens/StakingScreen'
-import { StakingDAppScreen } from '@modules/staking/screens/StakingDAppScreen'
 import { NotificationsScreen } from '@modules/notifications/screens/NotificationsScreen'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { OnboardingStackNavigator } from '@modules/onboarding/routes'
@@ -91,10 +90,6 @@ export const MainRoutes = () => {
                                 name='Staking'
                                 layout={safeAreaLayout}
                                 component={StakingScreen}
-                            />
-                            <RootStack.Screen
-                                name='StakingDApp'
-                                component={StakingDAppScreen}
                             />
                             <RootStack.Screen
                                 name='TransactionDetails'

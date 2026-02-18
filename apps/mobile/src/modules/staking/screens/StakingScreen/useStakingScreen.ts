@@ -13,6 +13,7 @@
 import { useCallback, useRef, useState } from 'react'
 import { useAnalyticsService } from '@perawallet/wallet-core-platform-integration'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useWebView } from '@modules/webview'
 import {
     useStakingDisclaimer,
     useStakingProjectsQuery,
@@ -37,6 +38,7 @@ type UseStakingScreenResult = {
 export const useStakingScreen = (): UseStakingScreenResult => {
     const navigation = useAppNavigation()
     const analyticsService = useAnalyticsService()
+    const { pushWebView } = useWebView()
     const {
         data: projects,
         isLoading,
@@ -60,12 +62,12 @@ export const useStakingScreen = (): UseStakingScreenResult => {
                 url: project.link,
             })
 
-            navigation.push('StakingDApp', {
-                title: project.title,
+            pushWebView({
                 url: project.link,
+                enablePeraConnect: true,
             })
         },
-        [analyticsService, navigation],
+        [analyticsService, pushWebView],
     )
 
     const handleProjectPress = useCallback(
