@@ -10,8 +10,5 @@
  limitations under the License
  */
 
-export * from './StakingTypeBadge'
-export * from './StakingProjectCard'
-export * from './StakingHelpSheet'
-export * from './StakingDisclaimerSheet'
-export * from './StakingErrorBoundary'
+export { StakingErrorBoundary } from './StakingErrorBoundary'
+export type { StakingErrorBoundaryProps } from './StakingErrorBoundary'

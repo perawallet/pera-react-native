@@ -23,7 +23,6 @@ type UseStakingScreenResult = {
     projects: StakingProject[]
     isLoading: boolean
     isError: boolean
-    error: Error | null
     isHelpVisible: boolean
     isDisclaimerVisible: boolean
     handleBack: () => void
@@ -38,8 +37,7 @@ type UseStakingScreenResult = {
 export const useStakingScreen = (): UseStakingScreenResult => {
     const navigation = useAppNavigation()
     const analyticsService = useAnalyticsService()
-    const { projects, isLoading, isError, error, refetch } =
-        useStakingProjectsQuery()
+    const { projects, isLoading, isError, refetch } = useStakingProjectsQuery()
     const { isDisclaimerAccepted, acceptDisclaimer } = useStakingDisclaimer()
 
     const [isHelpVisible, setIsHelpVisible] = useState(false)
@@ -112,7 +110,6 @@ export const useStakingScreen = (): UseStakingScreenResult => {
         projects,
         isLoading,
         isError,
-        error,
         isHelpVisible,
         isDisclaimerVisible,
         handleBack,

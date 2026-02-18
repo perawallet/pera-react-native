@@ -158,6 +158,9 @@
             "title": "An error has occurred",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
         },
+        "retry": {
+            "label": "Retry"
+        },
         "hex": {
             "label": "Hex"
         },

@@ -134,7 +134,9 @@ describe('useStakingProjectsQuery', () => {
         expect(result.current.projects[0].id).toBe('pact')
         expect(result.current.projects[1].id).toBe('folks')
         expect(result.current.projects[2].id).toBe('valar')
-        expect(result.current.projects[0].tvlInAlgo).toEqual(new Decimal('0.002'))
+        expect(result.current.projects[0].tvlInAlgo).toEqual(
+            new Decimal('0.002'),
+        )
         expect(result.current.projects[0].tvlInUsd).toEqual(new Decimal('2500'))
         expect(result.current.projects.length).toBe(3)
     })
@@ -151,22 +153,16 @@ describe('useStakingProjectsQuery', () => {
         expect(result.current.error?.message).toBe('Failed')
     })
 
-    it('returns error state when remote config json is invalid', async () => {
+    it('throws when remote config json is invalid', () => {
         mocks.getStringValue.mockReturnValue('not-json')
         mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
-        const { result } = renderHook(() => useStakingProjectsQuery(), {
-            wrapper,
-        })
-
-        await waitFor(() => expect(result.current.isError).toBe(true))
-
-        expect(result.current.error?.message).toBe(
-            'Invalid staking projects remote config JSON',
-        )
+        expect(() =>
+            renderHook(() => useStakingProjectsQuery(), { wrapper }),
+        ).toThrow('Invalid staking projects remote config JSON')
     })
 
-    it('returns error state when remote config schema is invalid', async () => {
+    it('throws when remote config schema is invalid', () => {
         mocks.getStringValue.mockReturnValue(
             JSON.stringify([
                 {
@@ -181,15 +177,9 @@ describe('useStakingProjectsQuery', () => {
         )
         mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
-        const { result } = renderHook(() => useStakingProjectsQuery(), {
-            wrapper,
-        })
-
-        await waitFor(() => expect(result.current.isError).toBe(true))
-
-        expect(result.current.error?.message).toBe(
-            'Invalid staking project id at index 0',
-        )
+        expect(() =>
+            renderHook(() => useStakingProjectsQuery(), { wrapper }),
+        ).toThrow('Invalid staking project id at index 0')
     })
 
     it('uses the active network when fetching', async () => {

@@ -21,8 +21,10 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
 import {
     StakingDisclaimerSheet,
+    StakingErrorBoundary,
     StakingHelpSheet,
     StakingProjectCard,
 } from '@modules/staking/components'
@@ -34,6 +36,7 @@ const SKELETON_ITEMS = [0, 1, 2, 3, 4]
 
 export const StakingScreen = () => {
     const styles = useStyles()
+    const { t } = useLanguage()
     const {
         projects,
         isLoading,
@@ -85,63 +88,65 @@ export const StakingScreen = () => {
                 }
             />
 
-            <PWText style={styles.subtitle}>
-                Secure the protocol and receive Staking Rewards!
-            </PWText>
+            <StakingErrorBoundary t={t}>
+                <PWText style={styles.subtitle}>
+                    Secure the protocol and receive Staking Rewards!
+                </PWText>
 
-            {isLoading && (
-                <PWView style={styles.skeletonContainer}>
-                    {SKELETON_ITEMS.map(item => (
-                        <PWView
-                            key={`staking-skeleton-${item}`}
-                            style={styles.skeletonCard}
-                            testID='staking-skeleton'
-                        >
-                            <PWSkeleton
-                                circle
-                                height={40}
-                                width={40}
-                            />
-                            <PWView style={styles.skeletonContent}>
-                                <PWSkeleton style={styles.skeletonTitle} />
+                {isLoading && (
+                    <PWView style={styles.skeletonContainer}>
+                        {SKELETON_ITEMS.map(item => (
+                            <PWView
+                                key={`staking-skeleton-${item}`}
+                                style={styles.skeletonCard}
+                                testID='staking-skeleton'
+                            >
                                 <PWSkeleton
-                                    style={styles.skeletonDescription}
+                                    circle
+                                    height={40}
+                                    width={40}
                                 />
-                                <PWSkeleton style={styles.skeletonTvlRow} />
+                                <PWView style={styles.skeletonContent}>
+                                    <PWSkeleton style={styles.skeletonTitle} />
+                                    <PWSkeleton
+                                        style={styles.skeletonDescription}
+                                    />
+                                    <PWSkeleton style={styles.skeletonTvlRow} />
+                                </PWView>
                             </PWView>
-                        </PWView>
-                    ))}
-                </PWView>
-            )}
+                        ))}
+                    </PWView>
+                )}
 
-            {!isLoading && isError && (
-                <PWView style={styles.errorContainer}>
-                    <PWText
-                        variant='h4'
-                        style={styles.errorTitle}
-                    >
-                        Failed to load staking projects
-                    </PWText>
-                    <PWText style={styles.errorDescription}>
-                        Please try again in a moment.
-                    </PWText>
-                    <PWButton
-                        variant='primary'
-                        title='Retry'
-                        onPress={handleRetry}
+                {!isLoading && isError && (
+                    <PWView style={styles.errorContainer}>
+                        <PWText
+                            variant='h4'
+                            style={styles.errorTitle}
+                        >
+                            Failed to load staking projects
+                        </PWText>
+                        <PWText style={styles.errorDescription}>
+                            Please try again in a moment.
+                        </PWText>
+                        <PWButton
+                            variant='primary'
+                            title='Retry'
+                            onPress={handleRetry}
+                        />
+                    </PWView>
+                )}
+
+                {!isLoading && !isError && (
+                    <PWFlatList
+                        data={projects}
+                        renderItem={renderProject}
+                        keyExtractor={item => item.id}
+                        style={styles.list}
+                        contentContainerStyle={styles.listContentContainer}
                     />
-                </PWView>
-            )}
-
-            {!isLoading && !isError && (
-                <PWFlatList
-                    data={projects}
-                    renderItem={renderProject}
-                    keyExtractor={item => item.id}
-                    style={styles.list}
-                    contentContainerStyle={styles.listContentContainer}
-                />
-            )}
+                )}
+            </StakingErrorBoundary>
 
             <StakingHelpSheet
                 isVisible={isHelpVisible}

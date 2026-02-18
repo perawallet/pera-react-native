@@ -74,32 +74,17 @@ export const useStakingProjectsQuery = (): UseStakingProjectsQueryResult => {
         RemoteConfigKeys.staking_projects,
     )
 
-    const parsedProjects = useMemo(() => {
-        try {
-            return {
-                projects: parseStakingProjectsConfig(remoteProjectsConfig),
-                error: null,
-            }
-        } catch (error) {
-            return {
-                projects: [] as StakingProjectInfo[],
-                error:
-                    error instanceof Error
-                        ? error
-                        : new Error('Failed to parse staking projects config'),
-            }
-        }
-    }, [remoteProjectsConfig])
+    const parsedProjects = useMemo(
+        () => parseStakingProjectsConfig(remoteProjectsConfig),
+        [remoteProjectsConfig],
+    )
 
-    const projects = useMemo(() => {
-        if (parsedProjects.error) {
-            return []
-        }
-        return mapProjects(parsedProjects.projects, query.data)
-    }, [parsedProjects.error, parsedProjects.projects, query.data])
+    const projects = useMemo(
+        () => mapProjects(parsedProjects, query.data),
+        [parsedProjects, query.data],
+    )
 
-    const queryError = query.error instanceof Error ? query.error : null
-    const error = parsedProjects.error ?? queryError
+    const error = query.error instanceof Error ? query.error : null
 
     const refetch = () => {
         void query.refetch()
@@ -107,8 +92,8 @@ export const useStakingProjectsQuery = (): UseStakingProjectsQueryResult => {
 
     return {
         projects,
-        isLoading: query.isPending && !parsedProjects.error,
-        isError: !!parsedProjects.error || query.isError,
+        isLoading: query.isPending,
+        isError: query.isError,
         error,
         refetch,
     }
