@@ -49,6 +49,20 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'column',
         gap: theme.spacing.md,
     },
+    otherOptionsButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.md,
+        paddingHorizontal: theme.spacing.xl,
+        paddingVertical: theme.spacing.lg,
+    },
+    otherOptionsIconWrapper: {
+        backgroundColor: theme.colors.layerGrayLighter,
+        borderRadius: theme.spacing.lg,
+        padding: theme.spacing.md,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
     footerContainer: {
         flex: 1,
         justifyContent: 'flex-end',

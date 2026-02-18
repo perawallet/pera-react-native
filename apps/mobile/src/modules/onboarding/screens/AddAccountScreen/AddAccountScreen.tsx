@@ -19,6 +19,7 @@ import {
     PWScrollView,
     PWText,
     PWToolbar,
+    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
@@ -49,6 +50,8 @@ export const AddAccountScreen = () => {
         handleCreateAlgo25,
         handleTermsPress,
         handlePrivacyPress,
+        isOtherOptionsVisible,
+        handleToggleOtherOptions,
     } = useAddAccountScreen()
 
     return (
@@ -110,47 +113,66 @@ export const AddAccountScreen = () => {
                             onPress={handleImportAccount}
                         />
 
-                        <PanelButton
-                            testID='add_account_watch_button'
-                            title={t(
-                                'onboarding.add_account.watch_address_option_title',
-                            )}
-                            description={t(
-                                'onboarding.add_account.watch_address_option_description',
-                            )}
-                            titleWeight='h4'
-                            leftIcon='eye'
-                            onPress={handleWatchAddress}
-                        />
+                        {isOtherOptionsVisible && (
+                            <>
+                                <PanelButton
+                                    testID='add_account_watch_button'
+                                    title={t(
+                                        'onboarding.add_account.watch_address_option_title',
+                                    )}
+                                    description={t(
+                                        'onboarding.add_account.watch_address_option_description',
+                                    )}
+                                    titleWeight='h4'
+                                    leftIcon='eye'
+                                    onPress={handleWatchAddress}
+                                />
 
-                        <PanelButton
-                            testID='add_account_create_universal_wallet_button'
-                            title={t(
-                                'onboarding.add_account.create_universal_wallet_option_title',
-                            )}
-                            description={t(
-                                'onboarding.add_account.create_universal_wallet_option_description',
-                            )}
-                            titleWeight='h4'
-                            leftIcon='wallet-with-algo'
-                            onPress={handleCreateUniversalWallet}
-                            disabled={isCreatingAccount}
-                        />
+                                <PanelButton
+                                    testID='add_account_create_universal_wallet_button'
+                                    title={t(
+                                        'onboarding.add_account.create_universal_wallet_option_title',
+                                    )}
+                                    description={t(
+                                        'onboarding.add_account.create_universal_wallet_option_description',
+                                    )}
+                                    titleWeight='h4'
+                                    leftIcon='wallet-with-algo'
+                                    onPress={handleCreateUniversalWallet}
+                                    disabled={isCreatingAccount}
+                                />
 
-                        <PanelButton
-                            testID='add_account_create_algo25_button'
-                            title={t(
-                                'onboarding.add_account.create_algo25_option_title',
-                            )}
-                            description={t(
-                                'onboarding.add_account.create_algo25_option_description',
-                            )}
-                            titleWeight='h4'
-                            leftIcon='wallet'
-                            onPress={handleCreateAlgo25}
-                            disabled={isCreatingAccount}
-                        />
+                                <PanelButton
+                                    testID='add_account_create_algo25_button'
+                                    title={t(
+                                        'onboarding.add_account.create_algo25_option_title',
+                                    )}
+                                    description={t(
+                                        'onboarding.add_account.create_algo25_option_description',
+                                    )}
+                                    titleWeight='h4'
+                                    leftIcon='wallet'
+                                    onPress={handleCreateAlgo25}
+                                    disabled={isCreatingAccount}
+                                />
+                            </>
+                        )}
                     </PWView>
+
+                    {!isOtherOptionsVisible && (
+                        <PWTouchableOpacity
+                            style={styles.otherOptionsButton}
+                            onPress={handleToggleOtherOptions}
+                            testID='add_account_see_other_options_button'
+                        >
+                            <PWView style={styles.otherOptionsIconWrapper}>
+                                <PWIcon name='chevron-down' />
+                            </PWView>
+                            <PWText variant='h4'>
+                                {t('onboarding.add_account.see_other_options')}
+                            </PWText>
+                        </PWTouchableOpacity>
+                    )}
 
                     <PWView style={styles.footerContainer}>
                         <PWText style={styles.termsAndPrivacyText}>

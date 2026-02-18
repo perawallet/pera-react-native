@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import {
     useCreateAccount,
@@ -29,6 +29,7 @@ type UseAddAccountScreenResult = {
     hasHDWallet: boolean
     isCreatingAccount: boolean
     isImportOptionsVisible: boolean
+    isOtherOptionsVisible: boolean
     handleClose: () => void
     handleAddAccount: () => void
     handleImportAccount: () => void
@@ -40,6 +41,7 @@ type UseAddAccountScreenResult = {
     handleCreateAlgo25: () => void
     handleTermsPress: () => void
     handlePrivacyPress: () => void
+    handleToggleOtherOptions: () => void
 }
 
 export const useAddAccountScreen = (): UseAddAccountScreenResult => {
@@ -70,6 +72,7 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
     )
 
     const hasHDWallet = hdWalletAccounts.length > 0
+    const [isOtherOptionsVisible, setIsOtherOptionsVisible] = useState(false)
 
     const handleClose = useCallback(() => {
         navigation.goBack()
@@ -139,6 +142,10 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
         closeImportOptions()
         navigation.push('ImportInfo', { accountType: 'algo25' })
     }, [closeImportOptions, navigation])
+
+    const handleToggleOtherOptions = useCallback(() => {
+        setIsOtherOptionsVisible(prev => !prev)
+    }, [])
 
     const handleTermsPress = useCallback(() => {
         pushWebView({
@@ -234,5 +241,7 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
         handleCreateAlgo25,
         handleTermsPress,
         handlePrivacyPress,
+        isOtherOptionsVisible,
+        handleToggleOtherOptions,
     }
 }
