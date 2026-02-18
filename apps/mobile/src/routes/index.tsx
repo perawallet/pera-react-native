@@ -90,7 +90,7 @@ export const MainRoutes = () => {
                                 name='Staking'
                                 options={{
                                     headerShown: true,
-                                    title: 'Stake on Algorand',
+                                    title: 'staking.title',
                                     header: (props: NativeStackHeaderProps) => (
                                         <NavigationHeader {...props} />
                                     ),

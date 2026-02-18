@@ -780,6 +780,7 @@
         }
     },
     "staking": {
+        "title": "Stake on Algorand",
         "subtitle": "Secure the protocol and receive Staking Rewards!",
         "error_title": "Failed to load staking projects",
         "error_description": "Please try again in a moment.",
