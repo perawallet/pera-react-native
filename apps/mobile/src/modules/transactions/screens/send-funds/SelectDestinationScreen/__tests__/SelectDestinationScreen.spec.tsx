@@ -20,6 +20,8 @@ import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 const mockNavigate = vi.fn()
 const mockGoBack = vi.fn()
 
+const mockSetOptions = vi.fn()
+
 vi.mock('@react-navigation/native', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@react-navigation/native')>()
@@ -28,6 +30,7 @@ vi.mock('@react-navigation/native', async importOriginal => {
         useNavigation: () => ({
             navigate: mockNavigate,
             goBack: mockGoBack,
+            setOptions: mockSetOptions,
         }),
     }
 })
@@ -41,8 +44,6 @@ vi.mock('@hooks/useLanguage', () => ({
 vi.mock('@components/core', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWView: ({ children, ...rest }: any) => <div {...rest}>{children}</div>,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWHeader: ({ children }: any) => <div>{children}</div>,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWText: ({ children }: any) => <span>{children}</span>,
 }))
@@ -165,9 +166,13 @@ describe('SelectDestinationScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('ConfirmTransaction')
     })
 
-    it('shows asset name in header', () => {
-        const { getByText } = render(<SelectDestinationScreen />)
+    it('sets up header with asset name via navigation.setOptions', () => {
+        render(<SelectDestinationScreen />)
 
-        expect(getByText('Test Asset')).toBeTruthy()
+        expect(mockSetOptions).toHaveBeenCalledWith(
+            expect.objectContaining({
+                headerTitle: expect.any(Function),
+            }),
+        )
     })
 })

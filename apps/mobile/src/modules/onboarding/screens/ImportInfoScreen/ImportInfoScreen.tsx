@@ -10,51 +10,34 @@
  limitations under the License
  */
 
-import React from 'react'
-import {
-    PWButton,
-    PWIcon,
-    PWText,
-    PWToolbar,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import React, { useLayoutEffect } from 'react'
+import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useImportInfoScreen } from './useImportInfoScreen'
+import { useNavigation } from '@react-navigation/native'
 
 export const ImportInfoScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const {
-        handleBackPress,
-        handleRecoverPress,
-        handleInfoPress,
-        KeyImageComponent,
-    } = useImportInfoScreen()
+    const navigation = useNavigation()
+    const { handleRecoverPress, handleInfoPress, KeyImageComponent } =
+        useImportInfoScreen()
+
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <PWIcon
+                    name='info'
+                    onPress={handleInfoPress}
+                    testID='info-button'
+                />
+            ),
+        })
+    }, [navigation, handleInfoPress])
 
     return (
         <PWView style={styles.root}>
-            <PWToolbar
-                testID='import-info-toolbar'
-                left={
-                    <PWTouchableOpacity
-                        onPress={handleBackPress}
-                        testID='back-button'
-                    >
-                        <PWIcon name='chevron-left' />
-                    </PWTouchableOpacity>
-                }
-                right={
-                    <PWTouchableOpacity
-                        onPress={handleInfoPress}
-                        testID='info-button'
-                    >
-                        <PWIcon name='info' />
-                    </PWTouchableOpacity>
-                }
-            />
-
             <PWView style={styles.content}>
                 <KeyImageComponent
                     style={styles.image}

@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { PWHeader, PWText, PWView } from '@components/core'
+import { PWText, PWView } from '@components/core'
 import { AddressSearchView } from '@components/AddressSearchView'
-import { useMemo } from 'react'
+import { useLayoutEffect, useMemo } from 'react'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useStyles } from './styles'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
@@ -42,9 +42,21 @@ export const SelectDestinationScreen = () => {
         navigation.navigate('ConfirmTransaction')
     }
 
-    const handleBack = () => {
-        navigation.goBack()
-    }
+    useLayoutEffect(() => {
+        if (!asset) return
+
+        navigation.setOptions({
+            headerTitle: () => (
+                <PWView style={styles.assetTitleContainer}>
+                    <AssetIcon
+                        asset={asset}
+                        size='md'
+                    />
+                    <PWText>{asset.name}</PWText>
+                </PWView>
+            ),
+        })
+    }, [navigation, asset, styles.assetTitleContainer])
 
     if (!selectedAsset || !asset) {
         return (
@@ -57,18 +69,6 @@ export const SelectDestinationScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <PWHeader
-                leftIcon='chevron-left'
-                onLeftPress={handleBack}
-            >
-                <PWView style={styles.assetTitleContainer}>
-                    <AssetIcon
-                        asset={asset}
-                        size='md'
-                    />
-                    <PWText>{asset.name}</PWText>
-                </PWView>
-            </PWHeader>
             <AddressSearchView
                 onSelected={handleSelected}
                 excludeAddress={selectedAccount?.address}

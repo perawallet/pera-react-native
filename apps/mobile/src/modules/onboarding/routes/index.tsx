@@ -71,9 +71,12 @@ export const OnboardingStackNavigator = () => {
         <OnboardingStack.Navigator
             initialRouteName='OnboardingHome'
             screenOptions={{
-                headerShown: false,
+                headerShown: true,
                 header: (props: NativeStackHeaderProps) => (
-                    <NavigationHeader {...props} />
+                    <NavigationHeader
+                        {...props}
+                        safeArea={false}
+                    />
                 ),
                 ...SCREEN_ANIMATION_CONFIG,
             }}
@@ -81,13 +84,13 @@ export const OnboardingStackNavigator = () => {
         >
             <OnboardingStack.Screen
                 name='OnboardingHome'
+                options={{ headerShown: false }}
                 layout={fullScreenLayout}
                 component={OnboardingScreenWithErrorBoundary}
             />
             <OnboardingStack.Screen
                 name='ImportInfo'
                 options={{
-                    headerShown: false,
                     title: '',
                 }}
                 layout={safeAreaLayout}
@@ -95,41 +98,27 @@ export const OnboardingStackNavigator = () => {
             />
             <OnboardingStack.Screen
                 name='NameAccount'
-                options={{
-                    headerShown: false,
-                }}
                 layout={safeAreaLayout}
                 component={NameAccountScreenWithErrorBoundary}
             />
             <OnboardingStack.Screen
                 name='ImportAccount'
-                options={{
-                    headerShown: false,
-                }}
                 layout={safeAreaLayout}
                 component={ImportAccountScreenWithErrorBoundary}
             />
             <OnboardingStack.Screen
                 name='SearchAccounts'
-                options={{
-                    headerShown: false,
-                }}
+                options={{ headerShown: false }}
                 layout={fullScreenLayout}
                 component={SearchAccountsScreenWithErrorBoundary}
             />
             <OnboardingStack.Screen
                 name='ImportSelectAddresses'
-                options={{
-                    headerShown: false,
-                }}
                 layout={safeAreaLayout}
                 component={ImportSelectAddressesScreenWithErrorBoundary}
             />
             <OnboardingStack.Screen
                 name='ImportRekeyedAddresses'
-                options={{
-                    headerShown: false,
-                }}
                 layout={safeAreaLayout}
                 component={ImportRekeyedAddressesScreenWithErrorBoundary}
             />

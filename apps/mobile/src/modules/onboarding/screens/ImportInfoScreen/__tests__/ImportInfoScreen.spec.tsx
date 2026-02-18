@@ -19,6 +19,7 @@ import { RECOVERY_PASSPHRASE_SUPPORT_URL } from '@perawallet/wallet-core-config'
 // Mock navigation
 const mockGoBack = vi.fn()
 const mockPush = vi.fn()
+const mockSetOptions = vi.fn()
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
@@ -26,6 +27,8 @@ vi.mock('@hooks/useAppNavigation', () => ({
         push: mockPush,
     }),
 }))
+
+// Note: useAppNavigation mock is still needed by useImportInfoScreen hook
 
 vi.mock('@assets/images/key.svg', () => ({
     default: (props: React.SVGProps<SVGSVGElement>) => {
@@ -67,6 +70,10 @@ vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
     return {
         ...actual,
+        useNavigation: () => ({
+            setOptions: mockSetOptions,
+            goBack: mockGoBack,
+        }),
         useRoute: () => ({
             params: { accountType: 'hdWallet' },
         }),
@@ -94,13 +101,14 @@ describe('ImportInfoScreen', () => {
         expect(screen.getByText('onboarding.import_info.button')).toBeTruthy()
     })
 
-    it('navigates back when back button is pressed', () => {
+    it('sets up header with info button via navigation.setOptions', () => {
         render(<ImportInfoScreen />)
 
-        const backButton = screen.getByTestId('back-button')
-        fireEvent.click(backButton)
-
-        expect(mockGoBack).toHaveBeenCalled()
+        expect(mockSetOptions).toHaveBeenCalledWith(
+            expect.objectContaining({
+                headerRight: expect.any(Function),
+            }),
+        )
     })
 
     it('navigates to ImportAccount when recover button is pressed', () => {
@@ -114,11 +122,16 @@ describe('ImportInfoScreen', () => {
         })
     })
 
-    it('handles info button press', () => {
+    it('handles info button press via headerRight', () => {
         render(<ImportInfoScreen />)
 
-        const infoButton = screen.getByTestId('info-button')
-        fireEvent.click(infoButton)
+        // Extract the headerRight render function from setOptions call
+        const setOptionsCall = mockSetOptions.mock.calls[0][0]
+        const headerRight = setOptionsCall.headerRight
+
+        // Render the headerRight component and click it
+        const { getByTestId } = render(headerRight())
+        fireEvent.click(getByTestId('info-button'))
 
         expect(mockPushWebView).toHaveBeenCalledWith({
             url: RECOVERY_PASSPHRASE_SUPPORT_URL,
