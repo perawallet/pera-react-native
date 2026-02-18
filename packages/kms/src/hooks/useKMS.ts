@@ -13,14 +13,17 @@
 import { useKeyManagerStore } from '../store'
 import { KeyPair, KeyType } from '../models'
 import type { HDDerivationParams } from '../models/session'
-import { createHDWalletKey, withHDSession } from '../crypto/hd-wallet'
-import { createAlgo25Key, withAlgo25Session } from '../crypto/algo25'
-import { deleteKey } from '../utils'
 import { InvalidKeyError, KeyNotFoundError } from '../errors'
+import { useAlgo25 } from './useAlgo25'
+import { useHDWallet } from './useHDWallet'
+import { useKMSService } from './useKMSServices'
 
 export const useKMS = () => {
     const keys = useKeyManagerStore(state => state.keys)
     const getKey = useKeyManagerStore(state => state.getKey)
+    const { withAlgo25Session, createAlgo25Key } = useAlgo25()
+    const { withHDSession, createHDWalletKey } = useHDWallet()
+    const { deleteKey } = useKMSService()
 
     const loadKey = (keyId: string): KeyPair => {
         const key = getKey(keyId)
@@ -149,6 +152,7 @@ export const useKMS = () => {
     return {
         keys,
         deleteKey,
+        getKey,
         loadKey,
         withAlgo25Session,
         createAlgo25Key,

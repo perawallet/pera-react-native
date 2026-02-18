@@ -32,8 +32,13 @@ export const useCreateAccount = () => {
     const setAccounts = useAccountsStore(state => state.setAccounts)
     const deviceInfo = useDeviceInfoService()
     const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
-    const { loadKey, createHDWalletKey, createAlgo25Key, withHDSession } =
-        useKMS()
+    const {
+        getKey,
+        loadKey,
+        createHDWalletKey,
+        createAlgo25Key,
+        withHDSession,
+    } = useKMS()
 
     const saveAndUpdateAccounts = async (newAccount: WalletAccount) => {
         accounts.push(newAccount)
@@ -60,7 +65,7 @@ export const useCreateAccount = () => {
         keyIndex: number
     }) => {
         const rootWalletId = walletId ?? uuidv7()
-        let rootKey = loadKey(rootWalletId)
+        let rootKey = getKey(rootWalletId)
 
         if (!rootKey) {
             rootKey = await createHDWalletKey({ id: rootWalletId })

@@ -18,19 +18,15 @@ import {
     XHDWalletAPI,
 } from '@algorandfoundation/xhd-wallet-api'
 import * as bip39 from 'bip39'
-import messageSchema from './message-schema.json'
-import { WORDLIST } from './wordlist'
+import messageSchema from '../crypto/message-schema.json'
+import { WORDLIST } from '../crypto/wordlist'
 import type { HDDerivationParams, KMSHDWalletSession } from '../models/session'
 import { v7 as uuid } from 'uuid'
 import { KeyPair, KeyType } from '../models'
-import {
-    executeWithKey,
-    getEntropyFromMasterKey,
-    getSeedFromMasterKey,
-    saveKey,
-} from '../utils'
+import { getEntropyFromMasterKey, getSeedFromMasterKey } from '../utils'
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import { InvalidKeyError } from '../errors'
+import { useKMSService } from './useKMSServices'
 
 const api = new XHDWalletAPI()
 
@@ -91,7 +87,7 @@ const signData = async (
     )
 }
 
-export const generateHDMasterKey = async (mnemonic?: string) => {
+const generateHDMasterKey = async (mnemonic?: string) => {
     const storableMnemonic =
         mnemonic ??
         bip39.generateMnemonic(HD_MNEMONIC_LENGTH, undefined, WORDLIST)
@@ -104,55 +100,64 @@ export const generateHDMasterKey = async (mnemonic?: string) => {
     }
 }
 
-export const createHDWalletKey = async (params?: {
-    id?: string
-    mnemonic?: string
-}) => {
-    const keyId = params?.id ?? uuid()
-    const masterKey = await generateHDMasterKey(params?.mnemonic)
+export const useHDWallet = () => {
+    const { saveKey, executeWithKey } = useKMSService()
 
-    const keyPair: KeyPair = {
-        id: keyId,
-        publicKey: '',
-        privateDataStorageKey: '',
-        createdAt: new Date(),
-        type: KeyType.HDWalletRootKey,
+    const createHDWalletKey = async (params?: {
+        id?: string
+        mnemonic?: string
+    }) => {
+        const keyId = params?.id ?? uuid()
+        const masterKey = await generateHDMasterKey(params?.mnemonic)
+
+        const keyPair: KeyPair = {
+            id: keyId,
+            publicKey: '',
+            privateDataStorageKey: '',
+            createdAt: new Date(),
+            type: KeyType.HDWalletRootKey,
+        }
+
+        const savedKey = await saveKey(keyPair, {
+            seed: encodeToBase64(masterKey.seed),
+            seedFormat: 'base64',
+            entropy: masterKey.entropy,
+        })
+        masterKey.seed.fill(0)
+
+        return savedKey
     }
 
-    const savedKey = await saveKey(keyPair, {
-        seed: encodeToBase64(masterKey.seed),
-        seedFormat: 'base64',
-        entropy: masterKey.entropy,
-    })
-    masterKey.seed.fill(0)
+    const withHDSession = async <T>(
+        key: KeyPair,
+        domain: string,
+        handler: (session: KMSHDWalletSession) => Promise<T>,
+    ): Promise<T> => {
+        return executeWithKey(key, domain, async privateData => {
+            const seedBuffer = Buffer.from(getSeedFromMasterKey(privateData))
+            const session: KMSHDWalletSession = {
+                signTransaction: (
+                    params: HDDerivationParams,
+                    encodedTx: Uint8Array,
+                ) => signTransaction(seedBuffer, params, encodedTx),
+                signData: (params: HDDerivationParams, data: Uint8Array) =>
+                    signData(seedBuffer, params, data),
+                getPublicKey: (params: HDDerivationParams) =>
+                    deriveAddress(seedBuffer, params),
+                getMnemonic: () => {
+                    const entropy = getEntropyFromMasterKey(privateData)
+                    if (!entropy) {
+                        throw new InvalidKeyError(key.id ?? 'unknown')
+                    }
+                    return entropyToMnemonic(Buffer.from(entropy))
+                },
+            }
+            return await handler(session)
+        })
+    }
 
-    return savedKey
-}
-
-export const withHDSession = async <T>(
-    key: KeyPair,
-    domain: string,
-    handler: (session: KMSHDWalletSession) => Promise<T>,
-): Promise<T> => {
-    return executeWithKey(key, domain, async privateData => {
-        const seedBuffer = Buffer.from(getSeedFromMasterKey(privateData))
-        const session: KMSHDWalletSession = {
-            signTransaction: (
-                params: HDDerivationParams,
-                encodedTx: Uint8Array,
-            ) => signTransaction(seedBuffer, params, encodedTx),
-            signData: (params: HDDerivationParams, data: Uint8Array) =>
-                signData(seedBuffer, params, data),
-            getPublicKey: (params: HDDerivationParams) =>
-                deriveAddress(seedBuffer, params),
-            getMnemonic: () => {
-                const entropy = getEntropyFromMasterKey(privateData)
-                if (!entropy) {
-                    throw new InvalidKeyError(key.id ?? 'unknown')
-                }
-                return entropyToMnemonic(Buffer.from(entropy))
-            },
-        }
-        return await handler(session)
-    })
+    return {
+        createHDWalletKey,
+        withHDSession,
+    }
 }
