@@ -12,6 +12,33 @@
 
 import { z } from 'zod'
 
+const nonEmptyString = z.string().trim().min(1)
+
+export const stakingTypeSchema = z.enum(['liquid', 'pools', 'delegated'])
+
+export const stakingProjectInfoSchema = z.object({
+    id: nonEmptyString,
+    title: nonEmptyString,
+    description: nonEmptyString,
+    logoUrl: nonEmptyString,
+    link: nonEmptyString,
+    type: stakingTypeSchema,
+})
+
+export const stakingProjectsConfigSchema = z
+    .array(stakingProjectInfoSchema)
+    .refine(
+        projects => {
+            const ids = projects.map(p => p.id)
+            return new Set(ids).size === ids.length
+        },
+        { message: 'Duplicate staking project ids found' },
+    )
+
+export type StakingType = z.infer<typeof stakingTypeSchema>
+
+export type StakingProjectInfo = z.infer<typeof stakingProjectInfoSchema>
+
 const stakingProjectTvlSchema = z.object({
     tvl_in_algo: z.string().nullable(),
     tvl_in_usd: z.string().nullable(),
