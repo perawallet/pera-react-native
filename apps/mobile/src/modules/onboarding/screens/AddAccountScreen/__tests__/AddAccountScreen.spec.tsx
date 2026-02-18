@@ -58,8 +58,29 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
+const mockPushWebView = vi.fn()
+vi.mock('@modules/webview', () => ({
+    useWebView: () => ({
+        pushWebView: mockPushWebView,
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-config', async () => {
+    const actual = await vi.importActual<object>(
+        '@perawallet/wallet-core-config',
+    )
+    return {
+        ...actual,
+        config: {
+            termsOfServiceUrl: 'https://example.com/terms',
+            privacyPolicyUrl: 'https://example.com/privacy',
+        },
+    }
+})
+
 vi.mock('react-i18next', async () => {
     const actual = await vi.importActual<object>('react-i18next')
+    const React = await import('react')
     return {
         ...actual,
         useTranslation: () => ({
@@ -69,6 +90,22 @@ vi.mock('react-i18next', async () => {
                 language: 'en',
             },
         }),
+        Trans: ({
+            components,
+        }: {
+            components: React.ReactElement<React.PropsWithChildren<unknown>>[]
+        }) => (
+            <>
+                By adding a wallet, you agree to Pera Wallet&apos;s
+                {React.cloneElement(components[0], {
+                    children: 'Terms and Conditions',
+                })}
+                and
+                {React.cloneElement(components[1], {
+                    children: 'Privacy Policy',
+                })}
+            </>
+        ),
     }
 })
 
@@ -184,6 +221,11 @@ describe('AddAccountScreen', () => {
     it('navigates to WatchAccount when Watch an Address is pressed', () => {
         render(<AddAccountScreen />)
 
+        const toggleButton = screen.getByTestId(
+            'add_account_see_other_options_button',
+        )
+        fireEvent.click(toggleButton)
+
         const watchButton = screen.getByText(
             'onboarding.add_account.watch_address_option_title',
         )
@@ -210,6 +252,11 @@ describe('AddAccountScreen', () => {
         mockCreateAccount.mockResolvedValue(mockAccount)
 
         render(<AddAccountScreen />)
+
+        const toggleButton = screen.getByTestId(
+            'add_account_see_other_options_button',
+        )
+        fireEvent.click(toggleButton)
 
         const createButton = screen.getByText(
             'onboarding.add_account.create_universal_wallet_option_title',
@@ -238,6 +285,11 @@ describe('AddAccountScreen', () => {
         mockCreateAccount.mockResolvedValue(mockAccount)
 
         render(<AddAccountScreen />)
+
+        const toggleButton = screen.getByTestId(
+            'add_account_see_other_options_button',
+        )
+        fireEvent.click(toggleButton)
 
         const createButton = screen.getByText(
             'onboarding.add_account.create_algo25_option_title',
@@ -312,6 +364,11 @@ describe('AddAccountScreen', () => {
 
         render(<AddAccountScreen />)
 
+        const toggleButton = screen.getByTestId(
+            'add_account_see_other_options_button',
+        )
+        fireEvent.click(toggleButton)
+
         const createButton = screen.getByText(
             'onboarding.add_account.create_universal_wallet_option_title',
         )
@@ -324,5 +381,68 @@ describe('AddAccountScreen', () => {
                 }),
             )
         })
+    })
+
+    it('hides secondary options by default and shows See other options button', () => {
+        render(<AddAccountScreen />)
+
+        expect(
+            screen.getByTestId('add_account_see_other_options_button'),
+        ).toBeTruthy()
+        expect(
+            screen.getByText('onboarding.add_account.see_other_options'),
+        ).toBeTruthy()
+
+        expect(
+            screen.queryByText(
+                'onboarding.add_account.watch_address_option_title',
+            ),
+        ).toBeNull()
+        expect(
+            screen.queryByText(
+                'onboarding.add_account.create_universal_wallet_option_title',
+            ),
+        ).toBeNull()
+        expect(
+            screen.queryByText(
+                'onboarding.add_account.create_algo25_option_title',
+            ),
+        ).toBeNull()
+    })
+
+    it('reveals secondary options when See other options is pressed', () => {
+        render(<AddAccountScreen />)
+
+        const toggleButton = screen.getByTestId(
+            'add_account_see_other_options_button',
+        )
+        fireEvent.click(toggleButton)
+
+        expect(
+            screen.getByText(
+                'onboarding.add_account.watch_address_option_title',
+            ),
+        ).toBeTruthy()
+        expect(
+            screen.getByText(
+                'onboarding.add_account.create_universal_wallet_option_title',
+            ),
+        ).toBeTruthy()
+        expect(
+            screen.getByText(
+                'onboarding.add_account.create_algo25_option_title',
+            ),
+        ).toBeTruthy()
+
+        expect(
+            screen.queryByTestId('add_account_see_other_options_button'),
+        ).toBeNull()
+    })
+
+    it('renders footer with terms and privacy text', () => {
+        render(<AddAccountScreen />)
+
+        expect(screen.getByText('Terms and Conditions')).toBeTruthy()
+        expect(screen.getByText('Privacy Policy')).toBeTruthy()
     })
 })

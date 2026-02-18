@@ -56,6 +56,26 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
+const mockPushWebView = vi.fn()
+vi.mock('@modules/webview', () => ({
+    useWebView: () => ({
+        pushWebView: mockPushWebView,
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-config', async () => {
+    const actual = await vi.importActual<object>(
+        '@perawallet/wallet-core-config',
+    )
+    return {
+        ...actual,
+        config: {
+            termsOfServiceUrl: 'https://example.com/terms',
+            privacyPolicyUrl: 'https://example.com/privacy',
+        },
+    }
+})
+
 vi.mock('react-i18next', async () => {
     const actual = await vi.importActual<object>('react-i18next')
     return {
@@ -352,5 +372,55 @@ describe('useAddAccountScreen', () => {
         })
 
         expect(result.current.isCreatingAccount).toBe(false)
+    })
+
+    it('isOtherOptionsVisible is false by default', () => {
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        expect(result.current.isOtherOptionsVisible).toBe(false)
+    })
+
+    it('handleToggleOtherOptions toggles isOtherOptionsVisible', () => {
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        expect(result.current.isOtherOptionsVisible).toBe(false)
+
+        act(() => {
+            result.current.handleToggleOtherOptions()
+        })
+
+        expect(result.current.isOtherOptionsVisible).toBe(true)
+
+        act(() => {
+            result.current.handleToggleOtherOptions()
+        })
+
+        expect(result.current.isOtherOptionsVisible).toBe(false)
+    })
+
+    it('handleTermsPress opens terms of service webview', () => {
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        act(() => {
+            result.current.handleTermsPress()
+        })
+
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: 'https://example.com/terms',
+            id: 'terms-of-service',
+        })
+    })
+
+    it('handlePrivacyPress opens privacy policy webview', () => {
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        act(() => {
+            result.current.handlePrivacyPress()
+        })
+
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: 'https://example.com/privacy',
+            id: 'privacy-policy',
+        })
     })
 })
