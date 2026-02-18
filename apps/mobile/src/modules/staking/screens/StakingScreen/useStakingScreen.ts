@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useRef } from 'react'
 import { useAnalyticsService } from '@perawallet/wallet-core-platform-integration'
 import { useWebView } from '@modules/webview'
+import { useModalState } from '@hooks/useModalState'
 import {
     useStakingDisclaimer,
     useStakingProjectsQuery,
@@ -44,8 +45,8 @@ export const useStakingScreen = (): UseStakingScreenResult => {
     } = useStakingProjectsQuery()
     const { isDisclaimerAccepted, acceptDisclaimer } = useStakingDisclaimer()
 
-    const [isHelpVisible, setIsHelpVisible] = useState(false)
-    const [isDisclaimerVisible, setIsDisclaimerVisible] = useState(false)
+    const helpModal = useModalState()
+    const disclaimerModal = useModalState()
     const pendingProjectRef = useRef<StakingProject | null>(null)
 
     const openProject = useCallback(
@@ -71,14 +72,14 @@ export const useStakingScreen = (): UseStakingScreenResult => {
             }
 
             pendingProjectRef.current = project
-            setIsDisclaimerVisible(true)
+            disclaimerModal.open()
         },
-        [isDisclaimerAccepted, openProject],
+        [isDisclaimerAccepted, openProject, disclaimerModal],
     )
 
     const handleDisclaimerAccept = useCallback(() => {
         acceptDisclaimer()
-        setIsDisclaimerVisible(false)
+        disclaimerModal.close()
 
         if (!pendingProjectRef.current) {
             return
@@ -87,20 +88,12 @@ export const useStakingScreen = (): UseStakingScreenResult => {
         const project = pendingProjectRef.current
         pendingProjectRef.current = null
         openProject(project)
-    }, [acceptDisclaimer, openProject])
+    }, [acceptDisclaimer, openProject, disclaimerModal])
 
     const handleDisclaimerClose = useCallback(() => {
         pendingProjectRef.current = null
-        setIsDisclaimerVisible(false)
-    }, [])
-
-    const handleHelpClose = useCallback(() => {
-        setIsHelpVisible(false)
-    }, [])
-
-    const handleHelpOpen = useCallback(() => {
-        setIsHelpVisible(true)
-    }, [])
+        disclaimerModal.close()
+    }, [disclaimerModal])
 
     const handleRetry = useCallback(() => {
         refetch()
@@ -110,12 +103,12 @@ export const useStakingScreen = (): UseStakingScreenResult => {
         projects,
         isLoading,
         isError,
-        isHelpVisible,
-        isDisclaimerVisible,
+        isHelpVisible: helpModal.isOpen,
+        isDisclaimerVisible: disclaimerModal.isOpen,
         handleRetry,
         handleProjectPress,
-        handleHelpOpen,
-        handleHelpClose,
+        handleHelpOpen: helpModal.open,
+        handleHelpClose: helpModal.close,
         handleDisclaimerAccept,
         handleDisclaimerClose,
     }
