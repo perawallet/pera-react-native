@@ -88,7 +88,14 @@ export const MainRoutes = () => {
                             />
                             <RootStack.Screen
                                 name='Staking'
-                                layout={safeAreaLayout}
+                                options={{
+                                    headerShown: true,
+                                    title: 'Stake on Algorand',
+                                    header: (props: NativeStackHeaderProps) => (
+                                        <NavigationHeader {...props} />
+                                    ),
+                                }}
+                                layout={fullScreenLayout}
                                 component={StakingScreen}
                             />
                             <RootStack.Screen
