@@ -81,9 +81,7 @@ export const StakingScreen = () => {
     return (
         <PWView style={styles.container}>
             <StakingErrorBoundary t={t}>
-                <PWText style={styles.subtitle}>
-                    Secure the protocol and receive Staking Rewards!
-                </PWText>
+                <PWText style={styles.subtitle}>{t('staking.subtitle')}</PWText>
 
                 {isLoading && (
                     <PWView style={styles.skeletonContainer}>
@@ -116,14 +114,14 @@ export const StakingScreen = () => {
                             variant='h4'
                             style={styles.errorTitle}
                         >
-                            Failed to load staking projects
+                            {t('staking.error_title')}
                         </PWText>
                         <PWText style={styles.errorDescription}>
-                            Please try again in a moment.
+                            {t('staking.error_description')}
                         </PWText>
                         <PWButton
                             variant='primary'
-                            title='Retry'
+                            title={t('staking.retry')}
                             onPress={handleRetry}
                         />
                     </PWView>
