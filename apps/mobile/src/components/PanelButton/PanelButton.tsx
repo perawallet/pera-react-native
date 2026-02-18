@@ -59,9 +59,7 @@ export const PanelButton = (props: PanelButtonProps) => {
                 {!!leftIcon && (
                     <PWIcon
                         name={leftIcon}
-                        variant={
-                            variant === 'error' ? 'error' : 'primary'
-                        }
+                        variant={variant === 'error' ? 'error' : 'primary'}
                     />
                 )}
                 <PWView style={themeStyle.textContainerStyle}>
