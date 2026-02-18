@@ -26,6 +26,7 @@ import { ImportOptionsBottomSheet } from '../OnboardingScreen/ImportOptionsBotto
 import { useAddAccountScreen } from './useAddAccountScreen'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
+import { Trans } from 'react-i18next'
 
 import welcomeBackground from '@assets/images/welcome-background.webp'
 
@@ -46,6 +47,8 @@ export const AddAccountScreen = () => {
         handleWatchAddress,
         handleCreateUniversalWallet,
         handleCreateAlgo25,
+        handleTermsPress,
+        handlePrivacyPress,
     } = useAddAccountScreen()
 
     return (
@@ -147,6 +150,26 @@ export const AddAccountScreen = () => {
                             onPress={handleCreateAlgo25}
                             disabled={isCreatingAccount}
                         />
+                    </PWView>
+
+                    <PWView style={styles.footerContainer}>
+                        <PWText style={styles.termsAndPrivacyText}>
+                            <Trans
+                                i18nKey='onboarding.add_account.terms_and_privacy'
+                                components={[
+                                    <PWText
+                                        key='terms'
+                                        variant='link'
+                                        onPress={handleTermsPress}
+                                    />,
+                                    <PWText
+                                        key='privacy'
+                                        variant='link'
+                                        onPress={handlePrivacyPress}
+                                    />,
+                                ]}
+                            />
+                        </PWText>
                     </PWView>
                 </PWScrollView>
             </PWView>

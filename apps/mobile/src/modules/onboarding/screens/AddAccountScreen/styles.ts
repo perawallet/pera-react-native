@@ -49,4 +49,14 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'column',
         gap: theme.spacing.md,
     },
+    footerContainer: {
+        flex: 1,
+        justifyContent: 'flex-end',
+        alignItems: 'center',
+        padding: theme.spacing['3xl'],
+    },
+    termsAndPrivacyText: {
+        textAlign: 'center',
+        color: theme.colors.textGray,
+    },
 }))

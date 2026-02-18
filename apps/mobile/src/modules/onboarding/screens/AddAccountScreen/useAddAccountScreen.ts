@@ -22,6 +22,8 @@ import { useModalState } from '@hooks/useModalState'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
+import { useWebView } from '@modules/webview'
+import { config } from '@perawallet/wallet-core-config'
 
 type UseAddAccountScreenResult = {
     hasHDWallet: boolean
@@ -36,6 +38,8 @@ type UseAddAccountScreenResult = {
     handleWatchAddress: () => void
     handleCreateUniversalWallet: () => void
     handleCreateAlgo25: () => void
+    handleTermsPress: () => void
+    handlePrivacyPress: () => void
 }
 
 export const useAddAccountScreen = (): UseAddAccountScreenResult => {
@@ -44,6 +48,7 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
     const createAccount = useCreateAccount()
     const { showToast } = useToast()
     const { t } = useLanguage()
+    const { pushWebView } = useWebView()
     const {
         isOpen: isImportOptionsVisible,
         open: openImportOptions,
@@ -135,6 +140,20 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
         navigation.push('ImportInfo', { accountType: 'algo25' })
     }, [closeImportOptions, navigation])
 
+    const handleTermsPress = useCallback(() => {
+        pushWebView({
+            url: config.termsOfServiceUrl,
+            id: 'terms-of-service',
+        })
+    }, [pushWebView])
+
+    const handlePrivacyPress = useCallback(() => {
+        pushWebView({
+            url: config.privacyPolicyUrl,
+            id: 'privacy-policy',
+        })
+    }, [pushWebView])
+
     const handleWatchAddress = useCallback(() => {
         navigation.push('WatchAccount')
     }, [navigation])
@@ -213,5 +232,7 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
         handleWatchAddress,
         handleCreateUniversalWallet,
         handleCreateAlgo25,
+        handleTermsPress,
+        handlePrivacyPress,
     }
 }
