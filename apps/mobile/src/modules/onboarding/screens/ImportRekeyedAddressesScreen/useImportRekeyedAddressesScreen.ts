@@ -62,7 +62,7 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
     }, [accounts, alreadyImportedAddresses])
 
     const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(
-        () => new Set(newAccounts.map(acc => acc.address)),
+        () => new Set(),
     )
 
     const isAllSelected =
