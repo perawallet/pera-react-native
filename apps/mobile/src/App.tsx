@@ -30,6 +30,11 @@ SplashScreen.preventAutoHideAsync()
 import { NotifierWrapper } from 'react-native-notifier'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useLanguage } from '@hooks/useLanguage'
+import { keyStore, keyStoreHooks } from '@stores/index'
+import {
+    AlgorandProvider,
+    ReactNativeProvider,
+} from '@providers/ReactNativeProvider.tsx'
 
 export const App = () => {
     const [persister, setPersister] = useState<Persister>()
@@ -67,9 +72,26 @@ export const App = () => {
             {bootstrapped && persister && (
                 <GestureHandlerRootView>
                     <NotifierWrapper>
-                        <QueryProvider persister={persister}>
-                            <RootComponent fcmToken={fcmToken} />
-                        </QueryProvider>
+                        <ReactNativeProvider
+                            provider={
+                                new AlgorandProvider(
+                                    {
+                                        id: 'pera-wallet',
+                                        name: 'Pera Wallet',
+                                    },
+                                    {
+                                        keystore: {
+                                            store: keyStore,
+                                            hooks: keyStoreHooks,
+                                        },
+                                    },
+                                )
+                            }
+                        >
+                            <QueryProvider persister={persister}>
+                                <RootComponent fcmToken={fcmToken} />
+                            </QueryProvider>
+                        </ReactNativeProvider>
                     </NotifierWrapper>
                 </GestureHandlerRootView>
             )}

@@ -238,6 +238,7 @@ module.exports = {
         enableCodeScanner: true,
       },
     ],
+      "@react-native-community/datetimepicker",
     // Note: The following packages are autolinked and don't require config plugins:
     // - react-native-mmkv
     // - react-native-keychain
