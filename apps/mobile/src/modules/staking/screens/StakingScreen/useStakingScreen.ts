@@ -12,7 +12,6 @@
 
 import { useCallback, useRef, useState } from 'react'
 import { useAnalyticsService } from '@perawallet/wallet-core-platform-integration'
-import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useWebView } from '@modules/webview'
 import {
     useStakingDisclaimer,
@@ -26,7 +25,6 @@ type UseStakingScreenResult = {
     isError: boolean
     isHelpVisible: boolean
     isDisclaimerVisible: boolean
-    handleBack: () => void
     handleRetry: () => void
     handleProjectPress: (project: StakingProject) => void
     handleHelpOpen: () => void
@@ -36,7 +34,6 @@ type UseStakingScreenResult = {
 }
 
 export const useStakingScreen = (): UseStakingScreenResult => {
-    const navigation = useAppNavigation()
     const analyticsService = useAnalyticsService()
     const { pushWebView } = useWebView()
     const {
@@ -50,10 +47,6 @@ export const useStakingScreen = (): UseStakingScreenResult => {
     const [isHelpVisible, setIsHelpVisible] = useState(false)
     const [isDisclaimerVisible, setIsDisclaimerVisible] = useState(false)
     const pendingProjectRef = useRef<StakingProject | null>(null)
-
-    const handleBack = useCallback(() => {
-        navigation.goBack()
-    }, [navigation])
 
     const openProject = useCallback(
         (project: StakingProject) => {
@@ -119,7 +112,6 @@ export const useStakingScreen = (): UseStakingScreenResult => {
         isError,
         isHelpVisible,
         isDisclaimerVisible,
-        handleBack,
         handleRetry,
         handleProjectPress,
         handleHelpOpen,

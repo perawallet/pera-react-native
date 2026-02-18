@@ -77,9 +77,5 @@ export const useStyles = makeStyles(theme => {
             marginBottom: theme.spacing.lg,
             marginHorizontal: theme.spacing.lg,
         },
-        toolbar: {
-            marginHorizontal: theme.spacing.lg,
-            marginTop: theme.spacing.sm,
-        },
     }
 })

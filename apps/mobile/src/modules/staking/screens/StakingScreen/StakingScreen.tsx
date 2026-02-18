@@ -10,17 +10,17 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useLayoutEffect } from 'react'
 import {
     PWButton,
     PWFlatList,
     PWIcon,
     PWSkeleton,
     PWText,
-    PWToolbar,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { useNavigation } from '@react-navigation/native'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     StakingDisclaimerSheet,
@@ -37,13 +37,13 @@ const SKELETON_ITEMS = [0, 1, 2, 3, 4]
 export const StakingScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const navigation = useNavigation()
     const {
         projects,
         isLoading,
         isError,
         isHelpVisible,
         isDisclaimerVisible,
-        handleBack,
         handleRetry,
         handleProjectPress,
         handleHelpOpen,
@@ -51,6 +51,19 @@ export const StakingScreen = () => {
         handleDisclaimerAccept,
         handleDisclaimerClose,
     } = useStakingScreen()
+
+    useLayoutEffect(() => {
+        navigation.setOptions({
+            headerRight: () => (
+                <PWTouchableOpacity
+                    onPress={handleHelpOpen}
+                    testID='staking-help-button'
+                >
+                    <PWIcon name='question-mark' />
+                </PWTouchableOpacity>
+            ),
+        })
+    }, [navigation, handleHelpOpen])
 
     const renderProject = useCallback(
         ({ item, index }: { item: StakingProject; index: number }) => {
@@ -67,27 +80,6 @@ export const StakingScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <PWToolbar
-                style={styles.toolbar}
-                left={
-                    <PWTouchableOpacity
-                        onPress={handleBack}
-                        testID='staking-back-button'
-                    >
-                        <PWIcon name='chevron-left' />
-                    </PWTouchableOpacity>
-                }
-                center={<PWText variant='h3'>Stake on Algorand</PWText>}
-                right={
-                    <PWTouchableOpacity
-                        onPress={handleHelpOpen}
-                        testID='staking-help-button'
-                    >
-                        <PWIcon name='question-mark' />
-                    </PWTouchableOpacity>
-                }
-            />
-
             <StakingErrorBoundary t={t}>
                 <PWText style={styles.subtitle}>
                     Secure the protocol and receive Staking Rewards!
