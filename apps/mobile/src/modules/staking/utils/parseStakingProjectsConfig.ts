@@ -10,31 +10,9 @@
  limitations under the License
  */
 
-import type {
-    StakingProjectId,
-    StakingProjectInfo,
-    StakingType,
-} from '../models'
-
-const STAKING_PROJECT_IDS: StakingProjectId[] = [
-    'folks',
-    'tinyman',
-    'compx',
-    'pact',
-    'reti',
-    'valar',
-    'messina',
-    'myth',
-]
+import type { StakingProjectInfo, StakingType } from '../models'
 
 const STAKING_TYPES: StakingType[] = ['liquid', 'pools', 'delegated']
-
-const hasValidProjectId = (value: unknown): value is StakingProjectId => {
-    return (
-        typeof value === 'string' &&
-        STAKING_PROJECT_IDS.includes(value as StakingProjectId)
-    )
-}
 
 const hasValidStakingType = (value: unknown): value is StakingType => {
     return (
@@ -60,7 +38,7 @@ const mapStakingProject = (
     const project = rawProject as Record<string, unknown>
     const { id, title, description, logoUrl, link, type } = project
 
-    if (!hasValidProjectId(id)) {
+    if (!hasValidString(id)) {
         throw new Error(`Invalid staking project id at index ${index}`)
     }
 

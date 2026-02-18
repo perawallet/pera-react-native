@@ -14,18 +14,8 @@ import type { Decimal } from 'decimal.js'
 
 export type StakingType = 'liquid' | 'pools' | 'delegated'
 
-export type StakingProjectId =
-    | 'folks'
-    | 'tinyman'
-    | 'compx'
-    | 'pact'
-    | 'reti'
-    | 'valar'
-    | 'messina'
-    | 'myth'
-
 export type StakingProjectInfo = {
-    id: StakingProjectId
+    id: string
     title: string
     description: string
     logoUrl: string
