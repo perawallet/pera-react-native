@@ -93,7 +93,7 @@ export const AddAccountScreen = () => {
                                 description={t(
                                     'onboarding.add_account.add_account_option_description',
                                 )}
-                                titleWeight='h4'
+                                titleWeight='h3'
                                 leftIcon='wallet-with-algo'
                                 onPress={handleAddAccount}
                                 disabled={isCreatingAccount}
@@ -108,7 +108,7 @@ export const AddAccountScreen = () => {
                             description={t(
                                 'onboarding.add_account.import_account_option_description',
                             )}
-                            titleWeight='h4'
+                            titleWeight='h3'
                             leftIcon='key'
                             onPress={handleImportAccount}
                         />
@@ -123,7 +123,7 @@ export const AddAccountScreen = () => {
                                     description={t(
                                         'onboarding.add_account.watch_address_option_description',
                                     )}
-                                    titleWeight='h4'
+                                    titleWeight='h3'
                                     leftIcon='eye'
                                     onPress={handleWatchAddress}
                                 />
@@ -136,7 +136,7 @@ export const AddAccountScreen = () => {
                                     description={t(
                                         'onboarding.add_account.create_universal_wallet_option_description',
                                     )}
-                                    titleWeight='h4'
+                                    titleWeight='h3'
                                     leftIcon='wallet-with-algo'
                                     onPress={handleCreateUniversalWallet}
                                     disabled={isCreatingAccount}
@@ -150,7 +150,7 @@ export const AddAccountScreen = () => {
                                     description={t(
                                         'onboarding.add_account.create_algo25_option_description',
                                     )}
-                                    titleWeight='h4'
+                                    titleWeight='h3'
                                     leftIcon='wallet'
                                     onPress={handleCreateAlgo25}
                                     disabled={isCreatingAccount}

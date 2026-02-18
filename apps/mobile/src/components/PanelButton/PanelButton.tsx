@@ -56,24 +56,22 @@ export const PanelButton = (props: PanelButtonProps) => {
                 style={[style, themeStyle.buttonStyle]}
                 {...getTestProps(testID, 'view')}
             >
+                {!!leftIcon && (
+                    <PWIcon
+                        name={leftIcon}
+                        variant={
+                            variant === 'error' ? 'error' : 'primary'
+                        }
+                    />
+                )}
                 <PWView style={themeStyle.textContainerStyle}>
-                    <PWView style={themeStyle.titleStyle}>
-                        {!!leftIcon && (
-                            <PWIcon
-                                name={leftIcon}
-                                variant={
-                                    variant === 'error' ? 'error' : 'primary'
-                                }
-                            />
-                        )}
-                        <PWText
-                            style={themeStyle.textStyle}
-                            variant={titleWeight}
-                            {...getTestProps(testID, 'text')}
-                        >
-                            {title}
-                        </PWText>
-                    </PWView>
+                    <PWText
+                        style={themeStyle.textStyle}
+                        variant={titleWeight}
+                        {...getTestProps(testID, 'text')}
+                    >
+                        {title}
+                    </PWText>
                     {!!description && (
                         <PWText style={themeStyle.descriptionStyle}>
                             {description}
