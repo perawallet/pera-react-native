@@ -11,21 +11,15 @@
  */
 
 import type { Decimal } from 'decimal.js'
-
-export type StakingType = 'liquid' | 'pools' | 'delegated'
-
-export type StakingProjectInfo = {
-    id: string
-    title: string
-    description: string
-    logoUrl: string
-    link: string
-    type: StakingType
-}
+import type { StakingProjectInfo } from './schema'
 
 export type StakingProject = StakingProjectInfo & {
     tvlInAlgo: Decimal
     tvlInUsd: Decimal
 }
 
-export type { StakingProjectsApiResponse } from './schema'
+export type {
+    StakingType,
+    StakingProjectInfo,
+    StakingProjectsApiResponse,
+} from './schema'

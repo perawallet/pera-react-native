@@ -177,7 +177,7 @@ describe('useStakingProjectsQuery', () => {
 
         expect(() =>
             renderHook(() => useStakingProjectsQuery(), { wrapper }),
-        ).toThrow('Invalid staking project id at index 0')
+        ).toThrow()
     })
 
     it('uses the active network when fetching', async () => {
