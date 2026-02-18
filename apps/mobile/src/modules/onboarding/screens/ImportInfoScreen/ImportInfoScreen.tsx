@@ -10,31 +10,28 @@
  limitations under the License
  */
 
-import React, { useLayoutEffect } from 'react'
+import React from 'react'
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useImportInfoScreen } from './useImportInfoScreen'
-import { useNavigation } from '@react-navigation/native'
+import { useScreenHeader } from '@hooks/useScreenHeader'
 
 export const ImportInfoScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const navigation = useNavigation()
     const { handleRecoverPress, handleInfoPress, KeyImageComponent } =
         useImportInfoScreen()
 
-    useLayoutEffect(() => {
-        navigation.setOptions({
-            headerRight: () => (
-                <PWIcon
-                    name='info'
-                    onPress={handleInfoPress}
-                    testID='info-button'
-                />
-            ),
-        })
-    }, [navigation, handleInfoPress])
+    useScreenHeader({
+        right: (
+            <PWIcon
+                name='info'
+                onPress={handleInfoPress}
+                testID='info-button'
+            />
+        ),
+    })
 
     return (
         <PWView style={styles.root}>

@@ -12,7 +12,7 @@
 
 import { PWText, PWView } from '@components/core'
 import { AddressSearchView } from '@components/AddressSearchView'
-import { useLayoutEffect, useMemo } from 'react'
+import { useMemo } from 'react'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useStyles } from './styles'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
@@ -23,6 +23,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
+import { useScreenHeader } from '@hooks/useScreenHeader'
 
 export const SelectDestinationScreen = () => {
     const { selectedAsset, setDestination } = useSendFunds()
@@ -42,21 +43,17 @@ export const SelectDestinationScreen = () => {
         navigation.navigate('ConfirmTransaction')
     }
 
-    useLayoutEffect(() => {
-        if (!asset) return
-
-        navigation.setOptions({
-            headerTitle: () => (
-                <PWView style={styles.assetTitleContainer}>
-                    <AssetIcon
-                        asset={asset}
-                        size='md'
-                    />
-                    <PWText>{asset.name}</PWText>
-                </PWView>
-            ),
-        })
-    }, [navigation, asset, styles.assetTitleContainer])
+    useScreenHeader({
+        title: asset ? (
+            <PWView style={styles.assetTitleContainer}>
+                <AssetIcon
+                    asset={asset}
+                    size='md'
+                />
+                <PWText>{asset.name}</PWText>
+            </PWView>
+        ) : undefined,
+    })
 
     if (!selectedAsset || !asset) {
         return (

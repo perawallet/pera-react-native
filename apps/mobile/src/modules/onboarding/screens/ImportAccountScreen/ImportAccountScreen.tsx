@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useLayoutEffect } from 'react'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
 import {
@@ -25,7 +24,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { KeyboardAvoidingView, ScrollView } from 'react-native'
 import { useImportAccountScreen } from './useImportAccountScreen'
-import { useNavigation } from '@react-navigation/native'
+import { useScreenHeader } from '@hooks/useScreenHeader'
 import { ImportAccountSupportOptionsBottomSheet } from './ImportAccountSupportOptionsBottomSheet'
 import { QRScannerView } from '@components/QRScannerView'
 import { WordSuggestionDropdown } from './WordSuggestionDropdown'
@@ -33,7 +32,6 @@ import { WordSuggestionDropdown } from './WordSuggestionDropdown'
 export const ImportAccountScreen = () => {
     const { theme } = useTheme()
     const insets = useSafeAreaInsets()
-    const navigation = useNavigation()
     const {
         words,
         focused,
@@ -63,16 +61,14 @@ export const ImportAccountScreen = () => {
 
     const wordsPerColumn = Math.ceil(mnemonicLength / 2)
 
-    useLayoutEffect(() => {
-        navigation.setOptions({
-            headerRight: () => (
-                <PWIcon
-                    name='ellipsis'
-                    onPress={handleOpenSupportOptions}
-                />
-            ),
-        })
-    }, [navigation, handleOpenSupportOptions])
+    useScreenHeader({
+        right: (
+            <PWIcon
+                name='ellipsis'
+                onPress={handleOpenSupportOptions}
+            />
+        ),
+    })
 
     return (
         <PWView style={styles.mainContainer}>

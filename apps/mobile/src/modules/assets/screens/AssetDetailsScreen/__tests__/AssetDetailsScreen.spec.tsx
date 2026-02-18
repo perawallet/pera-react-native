@@ -17,21 +17,11 @@ import {
     AssetDetailsScreen,
     AssetDetailsScreenProps,
 } from '../AssetDetailsScreen'
+import { useScreenHeader } from '@hooks/useScreenHeader'
 
-const mockSetOptions = vi.fn()
-
-vi.mock('@react-navigation/native', async importOriginal => {
-    const actual =
-        await importOriginal<typeof import('@react-navigation/native')>()
-    return {
-        ...actual,
-        useNavigation: () => ({
-            setOptions: mockSetOptions,
-            goBack: vi.fn(),
-            canGoBack: () => true,
-        }),
-    }
-})
+vi.mock('@hooks/useScreenHeader', () => ({
+    useScreenHeader: vi.fn(),
+}))
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual('@perawallet/wallet-core-accounts')
@@ -85,7 +75,7 @@ vi.mock('@components/core/PWTabView/PWTabView', () => ({
 }))
 
 describe('AssetDetailsScreen', () => {
-    it('sets up header with account name and address via navigation.setOptions', () => {
+    it('sets up header with account name and address via useScreenHeader', () => {
         render(
             <AssetDetailsScreen
                 route={
@@ -99,10 +89,10 @@ describe('AssetDetailsScreen', () => {
             />,
         )
 
-        expect(mockSetOptions).toHaveBeenCalledWith(
+        expect(useScreenHeader).toHaveBeenCalledWith(
             expect.objectContaining({
-                headerTitle: expect.any(Function),
-                headerRight: expect.any(Function),
+                title: expect.anything(),
+                right: expect.anything(),
             }),
         )
     })

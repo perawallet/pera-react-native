@@ -15,11 +15,11 @@ import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ImportInfoScreen } from '../ImportInfoScreen'
 import { RECOVERY_PASSPHRASE_SUPPORT_URL } from '@perawallet/wallet-core-config'
+import { useScreenHeader } from '@hooks/useScreenHeader'
 
 // Mock navigation
 const mockGoBack = vi.fn()
 const mockPush = vi.fn()
-const mockSetOptions = vi.fn()
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
@@ -29,6 +29,10 @@ vi.mock('@hooks/useAppNavigation', () => ({
 }))
 
 // Note: useAppNavigation mock is still needed by useImportInfoScreen hook
+
+vi.mock('@hooks/useScreenHeader', () => ({
+    useScreenHeader: vi.fn(),
+}))
 
 vi.mock('@assets/images/key.svg', () => ({
     default: (props: React.SVGProps<SVGSVGElement>) => {
@@ -70,10 +74,6 @@ vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
     return {
         ...actual,
-        useNavigation: () => ({
-            setOptions: mockSetOptions,
-            goBack: mockGoBack,
-        }),
         useRoute: () => ({
             params: { accountType: 'hdWallet' },
         }),
@@ -101,12 +101,12 @@ describe('ImportInfoScreen', () => {
         expect(screen.getByText('onboarding.import_info.button')).toBeTruthy()
     })
 
-    it('sets up header with info button via navigation.setOptions', () => {
+    it('sets up header with info button via useScreenHeader', () => {
         render(<ImportInfoScreen />)
 
-        expect(mockSetOptions).toHaveBeenCalledWith(
+        expect(useScreenHeader).toHaveBeenCalledWith(
             expect.objectContaining({
-                headerRight: expect.any(Function),
+                right: expect.anything(),
             }),
         )
     })
@@ -125,12 +125,13 @@ describe('ImportInfoScreen', () => {
     it('handles info button press via headerRight', () => {
         render(<ImportInfoScreen />)
 
-        // Extract the headerRight render function from setOptions call
-        const setOptionsCall = mockSetOptions.mock.calls[0][0]
-        const headerRight = setOptionsCall.headerRight
+        // Extract the right element from useScreenHeader call
+        const hookCall = (useScreenHeader as ReturnType<typeof vi.fn>).mock
+            .calls[0][0]
+        const rightElement = hookCall.right
 
-        // Render the headerRight component and click it
-        const { getByTestId } = render(headerRight())
+        // Render the right element and click it
+        const { getByTestId } = render(rightElement)
         fireEvent.click(getByTestId('info-button'))
 
         expect(mockPushWebView).toHaveBeenCalledWith({

@@ -16,11 +16,10 @@ import { SelectDestinationScreen } from '../SelectDestinationScreen'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { useScreenHeader } from '@hooks/useScreenHeader'
 
 const mockNavigate = vi.fn()
 const mockGoBack = vi.fn()
-
-const mockSetOptions = vi.fn()
 
 vi.mock('@react-navigation/native', async importOriginal => {
     const actual =
@@ -30,10 +29,13 @@ vi.mock('@react-navigation/native', async importOriginal => {
         useNavigation: () => ({
             navigate: mockNavigate,
             goBack: mockGoBack,
-            setOptions: mockSetOptions,
         }),
     }
 })
+
+vi.mock('@hooks/useScreenHeader', () => ({
+    useScreenHeader: vi.fn(),
+}))
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -166,12 +168,12 @@ describe('SelectDestinationScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('ConfirmTransaction')
     })
 
-    it('sets up header with asset name via navigation.setOptions', () => {
+    it('sets up header with asset name via useScreenHeader', () => {
         render(<SelectDestinationScreen />)
 
-        expect(mockSetOptions).toHaveBeenCalledWith(
+        expect(useScreenHeader).toHaveBeenCalledWith(
             expect.objectContaining({
-                headerTitle: expect.any(Function),
+                title: expect.anything(),
             }),
         )
     })

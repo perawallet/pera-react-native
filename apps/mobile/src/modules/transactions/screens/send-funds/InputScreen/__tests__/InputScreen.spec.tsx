@@ -23,10 +23,13 @@ vi.mock('@react-navigation/native', async importOriginal => {
         ...actual,
         useNavigation: () => ({
             navigate: vi.fn(),
-            setOptions: vi.fn(),
         }),
     }
 })
+
+vi.mock('@hooks/useScreenHeader', () => ({
+    useScreenHeader: vi.fn(),
+}))
 
 vi.mock('@components/core', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

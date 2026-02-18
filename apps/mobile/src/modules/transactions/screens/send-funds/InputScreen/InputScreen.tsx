@@ -31,7 +31,8 @@ import { useModalState } from '@hooks/useModalState'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
-import { useCallback, useLayoutEffect } from 'react'
+import { useCallback } from 'react'
+import { useScreenHeader } from '@hooks/useScreenHeader'
 
 export const InputScreen = () => {
     const styles = useStyles()
@@ -67,52 +68,39 @@ export const InputScreen = () => {
         }
     }, [canSelectAsset, navigation, onFinished])
 
-    useLayoutEffect(() => {
-        navigation.setOptions({
-            headerLeft: () => (
-                <PWIcon
-                    name={!canSelectAsset ? 'chevron-left' : 'cross'}
-                    onPress={handleBack}
+    useScreenHeader({
+        left: (
+            <PWIcon
+                name={!canSelectAsset ? 'chevron-left' : 'cross'}
+                onPress={handleBack}
+            />
+        ),
+        right: (
+            <PWIcon
+                name='info'
+                onPress={infoState.open}
+            />
+        ),
+        title: (
+            <PWView style={styles.headerTitleContainer}>
+                <PWText>
+                    {t('send_funds.input_view.title', {
+                        asset: asset?.name,
+                    })}
+                </PWText>
+                <AccountDisplay
+                    account={selectedAccount ?? undefined}
+                    style={styles.accountDisplay}
+                    iconProps={{ width: 16, height: 16 }}
+                    textProps={{
+                        style: styles.accountDisplaySubHeading,
+                    }}
+                    showChevron={false}
+                    compact
                 />
-            ),
-            headerRight: () => (
-                <PWIcon
-                    name='info'
-                    onPress={infoState.open}
-                />
-            ),
-            headerTitle: () => (
-                <PWView style={styles.headerTitleContainer}>
-                    <PWText>
-                        {t('send_funds.input_view.title', {
-                            asset: asset?.name,
-                        })}
-                    </PWText>
-                    <AccountDisplay
-                        account={selectedAccount ?? undefined}
-                        style={styles.accountDisplay}
-                        iconProps={{ width: 16, height: 16 }}
-                        textProps={{
-                            style: styles.accountDisplaySubHeading,
-                        }}
-                        showChevron={false}
-                        compact
-                    />
-                </PWView>
-            ),
-        })
-    }, [
-        navigation,
-        canSelectAsset,
-        handleBack,
-        infoState.open,
-        t,
-        asset?.name,
-        selectedAccount,
-        styles.headerTitleContainer,
-        styles.accountDisplay,
-        styles.accountDisplaySubHeading,
-    ])
+            </PWView>
+        ),
+    })
 
     if (!asset || !selectedAsset || !params || !accountInformation) {
         return <LoadingView variant='circle' />

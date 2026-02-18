@@ -11,13 +11,12 @@
  */
 
 import { createPWTabNavigator } from '@components/core/PWTabView/PWTabView'
-import { useNavigation } from '@react-navigation/native'
 import {
     getAccountDisplayName,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { useCallback, useLayoutEffect } from 'react'
+import { useCallback } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useStyles } from './styles'
 import { AssetMarkets } from '@modules/assets/components/market/AssetMarkets'
@@ -30,6 +29,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { AccountStackParamsList } from '@modules/accounts/routes'
 import { PWView, PWText } from '@components/core'
+import { useScreenHeader } from '@hooks/useScreenHeader'
 
 export type AssetDetailsScreenProps = NativeStackScreenProps<
     AccountStackParamsList,
@@ -51,7 +51,6 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles({ insets, safeArea: false })
 
-    const navigation = useNavigation()
     const account = useSelectedAccount()
     const { data: asset, isPending } = useSingleAssetDetailsQuery(assetId ?? '')
 
@@ -63,40 +62,31 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
         })
     }, [showToast, t])
 
-    useLayoutEffect(() => {
-        navigation.setOptions({
-            headerTitle: () => (
-                <PWView style={styles.headerTitleContainer}>
-                    <PWText
-                        variant='h4'
-                        numberOfLines={1}
-                    >
-                        {account?.name || getAccountDisplayName(account)}
-                    </PWText>
-                    <PWText
-                        variant='caption'
-                        style={styles.headerSubtitle}
-                        numberOfLines={1}
-                    >
-                        {truncateAlgorandAddress(account?.address ?? '')}
-                    </PWText>
-                </PWView>
-            ),
-            headerRight: () =>
-                account ? (
-                    <AccountIcon
-                        account={account}
-                        onPress={notImplemented}
-                    />
-                ) : null,
-        })
-    }, [
-        navigation,
-        account,
-        notImplemented,
-        styles.headerTitleContainer,
-        styles.headerSubtitle,
-    ])
+    useScreenHeader({
+        title: (
+            <PWView style={styles.headerTitleContainer}>
+                <PWText
+                    variant='h4'
+                    numberOfLines={1}
+                >
+                    {account?.name || getAccountDisplayName(account)}
+                </PWText>
+                <PWText
+                    variant='caption'
+                    style={styles.headerSubtitle}
+                    numberOfLines={1}
+                >
+                    {truncateAlgorandAddress(account?.address ?? '')}
+                </PWText>
+            </PWView>
+        ),
+        right: account ? (
+            <AccountIcon
+                account={account}
+                onPress={notImplemented}
+            />
+        ) : null,
+    })
 
     if (!asset || !account || isPending) {
         return (

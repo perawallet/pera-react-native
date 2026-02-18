@@ -22,8 +22,8 @@ import {
 import { useStyles } from './styles'
 import { WalletConnectSessionItem } from '@modules/settings/components/WalletConnect/WalletConnectSessionItem'
 import { Dialog, Text, useTheme } from '@rneui/themed'
-import { useLayoutEffect, useState } from 'react'
-import { useNavigation } from '@react-navigation/native'
+import { useState } from 'react'
+import { useScreenHeader } from '@hooks/useScreenHeader'
 
 const renderItem = ({ item }: { item: WalletConnectConnection }) => {
     return <WalletConnectSessionItem session={item} />
@@ -37,21 +37,17 @@ export const SettingsWalletConnectScreen = () => {
     const styles = useStyles()
     const { theme } = useTheme()
     const [isLoading, setIsLoading] = useState(false)
-    const navigation = useNavigation()
 
-    useLayoutEffect(() => {
-        if (connections.length > 0) {
-            navigation.setOptions({
-                title: t('settings.main.wallet_connect_title'),
-                headerRight: () => (
-                    <PWIcon
-                        name='camera'
-                        onPress={scannerState.open}
-                    />
-                ),
-            })
-        }
-    }, [navigation, scannerState, connections])
+    useScreenHeader({
+        title: t('settings.main.wallet_connect_title'),
+        right: (
+            <PWIcon
+                name='camera'
+                onPress={scannerState.open}
+            />
+        ),
+        enabled: connections.length > 0,
+    })
 
     const handleDeleteAll = () => {
         setIsLoading(true)
