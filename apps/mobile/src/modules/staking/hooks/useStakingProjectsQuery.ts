@@ -29,7 +29,7 @@ import { getStakingProjectsQueryKey } from './queryKeys'
 import { parseStakingProjectsConfig } from '../utils'
 
 type UseStakingProjectsQueryResult = {
-    projects: StakingProject[]
+    data: StakingProject[]
     isLoading: boolean
     isError: boolean
     error: Error | null
@@ -91,7 +91,7 @@ export const useStakingProjectsQuery = (): UseStakingProjectsQueryResult => {
     }
 
     return {
-        projects,
+        data: projects,
         isLoading: query.isPending,
         isError: query.isError,
         error,

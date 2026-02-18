@@ -131,14 +131,12 @@ describe('useStakingProjectsQuery', () => {
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
 
-        expect(result.current.projects[0].id).toBe('pact')
-        expect(result.current.projects[1].id).toBe('folks')
-        expect(result.current.projects[2].id).toBe('valar')
-        expect(result.current.projects[0].tvlInAlgo).toEqual(
-            new Decimal('0.002'),
-        )
-        expect(result.current.projects[0].tvlInUsd).toEqual(new Decimal('2500'))
-        expect(result.current.projects.length).toBe(3)
+        expect(result.current.data[0].id).toBe('pact')
+        expect(result.current.data[1].id).toBe('folks')
+        expect(result.current.data[2].id).toBe('valar')
+        expect(result.current.data[0].tvlInAlgo).toEqual(new Decimal('0.002'))
+        expect(result.current.data[0].tvlInUsd).toEqual(new Decimal('2500'))
+        expect(result.current.data.length).toBe(3)
     })
 
     it('returns error state when tvl request fails', async () => {
