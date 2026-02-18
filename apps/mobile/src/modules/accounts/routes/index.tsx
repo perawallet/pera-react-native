@@ -19,7 +19,7 @@ import { NavigationHeader } from '@components/NavigationHeader'
 import { screenListeners } from '@routes/listeners'
 import { AccountScreen } from '@modules/accounts/screens/AccountScreen'
 import { AssetDetailsScreen } from '@modules/assets/screens/AssetDetailsScreen'
-import { safeAreaLayout, safeAreaLayoutWithTabBar } from '@layouts/index'
+import { fullScreenLayout, safeAreaLayoutWithTabBar } from '@layouts/index'
 
 import { AccountStackParamsList } from './types'
 export type { AccountStackParamsList } from './types'
@@ -33,14 +33,12 @@ export const AccountStackNavigator = () => {
             screenOptions={{
                 headerShown: true,
                 header: (props: NativeStackHeaderProps) => (
-                    <NavigationHeader
-                        {...props}
-                        safeArea={false}
-                    />
+                    <NavigationHeader {...props} />
                 ),
                 ...SCREEN_ANIMATION_CONFIG,
             }}
             screenListeners={screenListeners}
+            layout={fullScreenLayout}
         >
             <AccountStack.Screen
                 name='AccountDetails'
@@ -50,7 +48,6 @@ export const AccountStackNavigator = () => {
             />
             <AccountStack.Screen
                 name='AssetDetails'
-                layout={safeAreaLayout}
                 component={AssetDetailsScreen}
             />
         </AccountStack.Navigator>

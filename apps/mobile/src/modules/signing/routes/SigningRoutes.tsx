@@ -14,7 +14,10 @@ import type {
     SignRequest,
     TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
-import { createStackNavigator } from '@react-navigation/stack'
+import {
+    createStackNavigator,
+    type StackHeaderProps,
+} from '@react-navigation/stack'
 import { useMemo } from 'react'
 import { SigningStackParamList } from './types'
 import {
@@ -65,7 +68,7 @@ export const SigningRoutes = ({ request }: SigningRoutesProps) => {
             detachInactiveScreens={false}
             screenOptions={{
                 headerShown: true,
-                header: props => (
+                header: (props: StackHeaderProps) => (
                     <NavigationHeader
                         {...props}
                         safeArea={false}

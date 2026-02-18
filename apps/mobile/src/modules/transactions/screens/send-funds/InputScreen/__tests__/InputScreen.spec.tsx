@@ -45,7 +45,7 @@ vi.mock('@components/core', () => ({
     PWView: vi.fn(({ children }: any) => <div>{children}</div>),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWText: vi.fn(({ children }: any) => <span>{children}</span>),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     PWIcon: vi.fn(() => <div />),
 }))
 

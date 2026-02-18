@@ -72,22 +72,24 @@ export const NavigationHeader = (props: NavigationHeaderProps) => {
     }, [props.options?.headerLeft, props.navigation, styles.backButton])
 
     return (
-        <PWToolbar
-            style={styles.container}
-            left={left}
-            center={
-                typeof title === 'string' ? (
-                    <PWText
-                        variant='h4'
-                        style={styles.title}
-                    >
-                        {title}
-                    </PWText>
-                ) : (
-                    title
-                )
-            }
-            right={props.options?.headerRight?.({})}
-        />
+        props.options?.headerShown && (
+            <PWToolbar
+                style={styles.container}
+                left={left}
+                center={
+                    typeof title === 'string' ? (
+                        <PWText
+                            variant='h4'
+                            style={styles.title}
+                        >
+                            {title}
+                        </PWText>
+                    ) : (
+                        title
+                    )
+                }
+                right={props.options?.headerRight?.({})}
+            />
+        )
     )
 }

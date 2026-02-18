@@ -25,7 +25,7 @@ import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/Import
 import { AccountErrorBoundary } from '@modules/accounts/components/AccountErrorBoundary/AccountErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { screenListeners } from '@routes/listeners'
-import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
+import { fullScreenLayout } from '@layouts/index'
 import type React from 'react'
 
 import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen'
@@ -93,17 +93,14 @@ export const OnboardingStackNavigator = () => {
                 options={{
                     title: '',
                 }}
-                layout={safeAreaLayout}
                 component={ImportInfoScreenWithErrorBoundary}
             />
             <OnboardingStack.Screen
                 name='NameAccount'
-                layout={safeAreaLayout}
                 component={NameAccountScreenWithErrorBoundary}
             />
             <OnboardingStack.Screen
                 name='ImportAccount'
-                layout={safeAreaLayout}
                 component={ImportAccountScreenWithErrorBoundary}
             />
             <OnboardingStack.Screen
@@ -114,12 +111,10 @@ export const OnboardingStackNavigator = () => {
             />
             <OnboardingStack.Screen
                 name='ImportSelectAddresses'
-                layout={safeAreaLayout}
                 component={ImportSelectAddressesScreenWithErrorBoundary}
             />
             <OnboardingStack.Screen
                 name='ImportRekeyedAddresses'
-                layout={safeAreaLayout}
                 component={ImportRekeyedAddressesScreenWithErrorBoundary}
             />
         </OnboardingStack.Navigator>
