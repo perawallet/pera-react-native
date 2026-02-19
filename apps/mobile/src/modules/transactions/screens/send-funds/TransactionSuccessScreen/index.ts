@@ -10,16 +10,4 @@
  limitations under the License
  */
 
-import type { StackScreenProps } from '@react-navigation/stack'
-
-export type SendFundsStackParamList = {
-    AssetSelection: undefined
-    InputAmount: undefined
-    SelectDestination: undefined
-    ConfirmTransaction: undefined
-    TransactionProcessing: undefined
-    TransactionSuccess: { transactionId: string }
-}
-
-export type SendFundsStackScreenProps<T extends keyof SendFundsStackParamList> =
-    StackScreenProps<SendFundsStackParamList, T>
+export { TransactionSuccessScreen } from './TransactionSuccessScreen'

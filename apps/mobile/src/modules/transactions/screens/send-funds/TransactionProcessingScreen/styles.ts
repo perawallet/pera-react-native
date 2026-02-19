@@ -10,16 +10,21 @@
  limitations under the License
  */
 
-import type { StackScreenProps } from '@react-navigation/stack'
+import { makeStyles } from '@rneui/themed'
 
-export type SendFundsStackParamList = {
-    AssetSelection: undefined
-    InputAmount: undefined
-    SelectDestination: undefined
-    ConfirmTransaction: undefined
-    TransactionProcessing: undefined
-    TransactionSuccess: { transactionId: string }
-}
-
-export type SendFundsStackScreenProps<T extends keyof SendFundsStackParamList> =
-    StackScreenProps<SendFundsStackParamList, T>
+export const useStyles = makeStyles(theme => ({
+    container: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: theme.spacing.md,
+    },
+    title: {
+        marginTop: theme.spacing.xl,
+    },
+    subtitle: {
+        marginTop: theme.spacing.sm,
+        color: theme.colors.textGray,
+        textAlign: 'center',
+    },
+}))

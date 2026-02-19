@@ -23,22 +23,15 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useTransactionSigner } from '@perawallet/wallet-core-signing'
 import {
-    ALGO_ASSET,
-    ALGO_ASSET_ID,
-    toDecimalUnits,
     useAssetFiatPricesQuery,
     useAssetsQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
-import {
-    useAlgorandClient,
-    useSuggestedParametersQuery,
-} from '@perawallet/wallet-core-blockchain'
+import { useSuggestedParametersQuery } from '@perawallet/wallet-core-blockchain'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import {
-    DEFAULT_PRECISION,
-    formatCurrency,
-} from '@perawallet/wallet-core-shared'
+import { useNavigation } from '@react-navigation/native'
+import type { StackNavigationProp } from '@react-navigation/stack'
+import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 
 type useTransactionConfirmationScreenResult = {
     asset: PeraAsset | null | undefined
@@ -56,16 +49,15 @@ type useTransactionConfirmationScreenResult = {
     noteOpen: boolean
     openNote: () => void
     closeNote: () => void
-    handleConfirm: () => Promise<void>
+    handleConfirm: () => void
     isReady: boolean
 }
 
 export const useTransactionConfirmationScreen =
     (): useTransactionConfirmationScreenResult => {
-        const { selectedAsset, amount, destination, note, onFinished } =
-            useSendFunds()
-        const { signTransactions } = useTransactionSigner()
-        const algokit = useAlgorandClient(signTransactions)
+        const navigation =
+            useNavigation<StackNavigationProp<SendFundsStackParamList>>()
+        const { selectedAsset, amount, destination, note } = useSendFunds()
 
         const { data: assets } = useAssetsQuery()
         const asset = useMemo(() => {
@@ -105,29 +97,7 @@ export const useTransactionConfirmationScreen =
                 selectedAsset?.assetId,
             )
 
-        const onSuccess = () => {
-            showToast(
-                {
-                    title: 'Transfer Successful',
-                    body: `You successfully sent ${formatCurrency(
-                        amount!,
-                        asset?.decimals ?? DEFAULT_PRECISION,
-                        asset?.unitName ?? '',
-                        'en-US',
-                        false,
-                        undefined,
-                        2,
-                    )} ${asset?.unitName ?? ''}.`,
-                    type: 'success',
-                },
-                {
-                    notifier: bottomSheetNotifier.current ?? undefined,
-                },
-            )
-            onFinished?.()
-        }
-
-        const handleConfirm = async () => {
+        const handleConfirm = () => {
             if (
                 !selectedAccount ||
                 !selectedAsset ||
@@ -148,43 +118,7 @@ export const useTransactionConfirmationScreen =
                 return
             }
 
-            try {
-                if (selectedAsset.assetId === ALGO_ASSET_ID) {
-                    await algokit.send.payment({
-                        sender: selectedAccount!.address,
-                        receiver: destination!,
-                        amount: BigInt(
-                            toDecimalUnits(amount, ALGO_ASSET).toString(),
-                        ).microAlgo(),
-                        note,
-                    })
-
-                    onSuccess()
-                } else {
-                    await algokit.send.assetTransfer({
-                        sender: selectedAccount!.address,
-                        receiver: destination!,
-                        amount: BigInt(
-                            toDecimalUnits(amount.toNumber(), asset).toString(),
-                        ),
-                        assetId: BigInt(selectedAsset.assetId),
-                        note,
-                    })
-
-                    onSuccess()
-                }
-            } catch (error) {
-                showToast(
-                    {
-                        title: 'Error sending transaction',
-                        body: `${error}`,
-                        type: 'error',
-                    },
-                    {
-                        notifier: bottomSheetNotifier.current ?? undefined,
-                    },
-                )
-            }
+            navigation.navigate('TransactionProcessing')
         }
 
         const isReady = !!(selectedAccount && selectedAsset && amount && asset)
