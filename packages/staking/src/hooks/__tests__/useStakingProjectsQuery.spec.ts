@@ -13,7 +13,6 @@
 import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
-import { Decimal } from 'decimal.js'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useStakingProjectsQuery } from '../useStakingProjectsQuery'
 
@@ -134,8 +133,8 @@ describe('useStakingProjectsQuery', () => {
         expect(result.current.data[0].id).toBe('pact')
         expect(result.current.data[1].id).toBe('folks')
         expect(result.current.data[2].id).toBe('valar')
-        expect(result.current.data[0].tvlInAlgo).toEqual(new Decimal('0.002'))
-        expect(result.current.data[0].tvlInUsd).toEqual(new Decimal('2500'))
+        expect(result.current.data[0].tvlInAlgo.toString()).toBe('0.002')
+        expect(result.current.data[0].tvlInUsd.toString()).toBe('2500')
         expect(result.current.data.length).toBe(3)
     })
 

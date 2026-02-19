@@ -10,9 +10,16 @@
  limitations under the License
  */
 
+import type { Decimal } from 'decimal.js'
+import type { StakingProjectInfo } from './schema'
+
+export type StakingProject = StakingProjectInfo & {
+    tvlInAlgo: Decimal
+    tvlInUsd: Decimal
+}
+
 export type {
-    StakingProject,
     StakingType,
     StakingProjectInfo,
     StakingProjectsApiResponse,
-} from '@perawallet/wallet-core-staking'
+} from './schema'
