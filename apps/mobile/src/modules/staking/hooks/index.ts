@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { useStakingProjectsQuery } from './useStakingProjectsQuery'
+export { useStakingProjectsQuery } from '@perawallet/wallet-core-staking'
 export { useStakingDisclaimer } from './useStakingDisclaimer'

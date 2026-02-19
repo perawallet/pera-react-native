@@ -49,6 +49,7 @@
     "@perawallet/wallet-core-signing": "workspace:*",
     "@perawallet/wallet-core-swaps": "workspace:*",
     "@perawallet/wallet-core-projects": "workspace:*",
+    "@perawallet/wallet-core-staking": "workspace:*",
     "@perawallet/wallet-core-transactions": "workspace:*",
     "@perawallet/wallet-core-walletconnect": "workspace:*",
     "@react-native-community/datetimepicker": "^8.6.0",

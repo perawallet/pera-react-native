@@ -10,9 +10,7 @@
  limitations under the License
  */
 
-export type {
-    StakingProject,
-    StakingType,
-    StakingProjectInfo,
-    StakingProjectsApiResponse,
-} from '@perawallet/wallet-core-staking'
+export const name = '@perawallet/wallet-core-staking'
+
+export * from './hooks'
+export * from './models'
