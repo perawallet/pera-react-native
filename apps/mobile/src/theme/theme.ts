@@ -21,11 +21,9 @@ export const getNavigationTheme = (mode: 'light' | 'dark' = 'light') => ({
     ...DefaultTheme,
     colors: {
         ...DefaultTheme.colors,
-        background:
-            mode === 'light' ? palette.white : palette.gray[900],
+        background: mode === 'light' ? palette.white : palette.gray[900],
         text: mode === 'light' ? palette.gray[400] : palette.gray[500],
-        primary:
-            mode === 'light' ? palette.gray[900] : palette.gray[50],
+        primary: mode === 'light' ? palette.gray[900] : palette.gray[50],
     },
     dark: mode === 'dark',
 })
