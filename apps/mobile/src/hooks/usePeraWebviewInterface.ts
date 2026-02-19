@@ -47,10 +47,7 @@ import {
     sendErrorToWebview,
     sendMessageToWebview,
 } from './webview/handlers'
-import {
-    generateOrderedUniqueId,
-    logger,
-} from '@perawallet/wallet-core-shared'
+import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import { getAccountType } from './webview/utils'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 

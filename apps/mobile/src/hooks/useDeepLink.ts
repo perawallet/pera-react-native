@@ -13,10 +13,7 @@
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useToast } from './useToast'
-import {
-    generateOrderedUniqueId,
-    logger,
-} from '@perawallet/wallet-core-shared'
+import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from './deeplink/parser'
 import { DeeplinkType } from './deeplink/types'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
