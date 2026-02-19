@@ -38,7 +38,7 @@ export const useImportAccount = () => {
             })
         } else {
             await createAlgo25Key({ id: rootWalletId, mnemonic })
-            return await createAlgo25WalletAccount()
+            return await createAlgo25WalletAccount({ id: rootWalletId })
         }
     }
 }

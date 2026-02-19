@@ -34,7 +34,6 @@ export const useCreateAccount = () => {
     const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
     const {
         getKey,
-        getKeyOrThrow,
         createHDWalletKey,
         createAlgo25Key,
         withHDSession,
@@ -105,9 +104,9 @@ export const useCreateAccount = () => {
         return newAccount
     }
 
-    const createAlgo25WalletAccount = async () => {
-        const keyId = generateOrderedUniqueId()
-        let rootKey = getKeyOrThrow(keyId)
+    const createAlgo25WalletAccount = async ({ id }: { id?: string }) => {
+        const keyId = id ?? generateOrderedUniqueId()
+        let rootKey = getKey(keyId)
 
         if (!rootKey) {
             rootKey = await createAlgo25Key({ id: keyId })

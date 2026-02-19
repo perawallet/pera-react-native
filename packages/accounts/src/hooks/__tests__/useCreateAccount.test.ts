@@ -233,38 +233,37 @@ describe('useCreateAccount', () => {
     })
 
     test('throws for algo25 when createAlgo25Key fails', async () => {
-        kmsMock.getKeyOrThrow.mockReturnValueOnce(null)
         kmsMock.createAlgo25Key.mockRejectedValueOnce(
             new Error('Algo25 creation failed'),
         )
-
-        uuidSpies.v7.mockImplementationOnce(() => 'WALLET1')
 
         const { result } = renderHook(() => useCreateAccount())
 
         await act(async () => {
             await expect(
-                result.current.createAlgo25WalletAccount(),
+                result.current.createAlgo25WalletAccount({
+                    id: 'WALLET1',
+                }),
             ).rejects.toThrow('Algo25 creation failed')
         })
     })
 
     test('creates algo25 account from existing key', async () => {
-        kmsMock.getKeyOrThrow.mockReturnValueOnce({
+        kmsMock.getKey.mockReturnValueOnce({
             id: 'WALLET1',
             type: KeyType.Algo25Key,
             publicKey: 'ALGO25_PUBLIC_KEY',
         })
 
-        uuidSpies.v7
-            .mockImplementationOnce(() => 'WALLET1')
-            .mockImplementationOnce(() => 'ACC1')
+        uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
 
         const { result } = renderHook(() => useCreateAccount())
 
         let created: any
         await act(async () => {
-            created = await result.current.createAlgo25WalletAccount()
+            created = await result.current.createAlgo25WalletAccount({
+                id: 'WALLET1',
+            })
         })
 
         expect(created.type).toBe('algo25')
