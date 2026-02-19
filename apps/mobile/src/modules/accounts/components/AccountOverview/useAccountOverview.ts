@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import Decimal from 'decimal.js'
 import {
     AccountBalanceHistoryItem,
@@ -55,10 +55,11 @@ export type UseAccountOverviewResult = {
 export const useAccountOverview = (
     account: WalletAccount,
 ): UseAccountOverviewResult => {
-    const { preferredCurrency } = useCurrency()
+    const { preferredCurrency, usdToPreferred } = useCurrency()
     const { portfolioAlgoValue, accountBalances, isPending } =
         useAccountBalancesQuery(account ? [account] : [])
-    const { portfolioPreferredValue } = usePortfolioTotals(accountBalances)
+    const { portfolioUsdValue } = usePortfolioTotals(accountBalances)
+    const portfolioPreferredValue = useMemo(() => usdToPreferred(portfolioUsdValue), [usdToPreferred, portfolioUsdValue])
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AccountBalanceHistoryItem>()
     const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true)

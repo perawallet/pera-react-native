@@ -47,13 +47,16 @@ export type PortfolioViewProps = {
 
 export const PortfolioView = (props: PortfolioViewProps) => {
     const styles = useStyles()
-    const { preferredCurrency } = useCurrency()
+    const { preferredCurrency, usdToPreferred } = useCurrency()
     const { t } = useLanguage()
 
     const accounts = useAllAccounts()
     const { portfolioAlgoValue, accountBalances, isPending } =
         useAccountBalancesQuery(accounts)
-    const { portfolioPreferredValue } = usePortfolioTotals(accountBalances)
+    const { portfolioUsdValue } = usePortfolioTotals(accountBalances)
+    const portfolioPreferredValue = useMemo(() => {
+        return usdToPreferred(portfolioUsdValue)
+    }, [portfolioUsdValue, usdToPreferred])
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AccountBalanceHistoryItem>()
     const { getPreference, setPreference } = usePreferences()

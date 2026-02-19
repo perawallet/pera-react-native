@@ -17,8 +17,8 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type { AccountBalances } from '../models'
 
 type PortfolioTotals = {
-    portfolioPreferredValue: Decimal
-    accountPreferredValues: Map<string, Decimal>
+    portfolioUsdValue: Decimal
+    accountUsdValues: Map<string, Decimal>
     isPending: boolean
 }
 
@@ -29,8 +29,8 @@ export const usePortfolioTotals = (
     const { usdToPreferred } = useCurrency()
 
     return useMemo(() => {
-        const accountPreferredValues = new Map<string, Decimal>()
-        let portfolioPreferredValue = Decimal(0)
+        const accountUsdValues = new Map<string, Decimal>()
+        let portfolioUsdValue = Decimal(0)
 
         accountBalances.forEach((balance, address) => {
             let accountUsdTotal = Decimal(0)
@@ -41,15 +41,14 @@ export const usePortfolioTotals = (
                     assetBalance.amount.times(usdPrice),
                 )
             })
-            const accountPreferred = usdToPreferred(accountUsdTotal)
-            accountPreferredValues.set(address, accountPreferred)
-            portfolioPreferredValue =
-                portfolioPreferredValue.plus(accountPreferred)
+            accountUsdValues.set(address, accountUsdTotal)
+            portfolioUsdValue =
+                portfolioUsdValue.plus(accountUsdTotal)
         })
 
         return {
-            portfolioPreferredValue,
-            accountPreferredValues,
+            portfolioUsdValue,
+            accountUsdValues,
             isPending,
         }
     }, [accountBalances, usdPrices, usdToPreferred, isPending])

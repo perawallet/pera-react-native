@@ -67,8 +67,8 @@ describe('AccountWithBalance', () => {
             isPending: false,
         } as ReturnType<typeof useAccountBalancesQuery>)
         vi.mocked(usePortfolioTotals).mockReturnValue({
-            portfolioPreferredValue: new Decimal(50.25),
-            accountPreferredValues: new Map([
+            portfolioUsdValue: new Decimal(50.25),
+            accountUsdValues: new Map([
                 ['test-address', new Decimal(50.25)],
             ]),
             isPending: false,
