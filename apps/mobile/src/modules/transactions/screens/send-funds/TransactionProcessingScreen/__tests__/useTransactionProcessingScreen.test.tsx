@@ -14,9 +14,7 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useTransactionProcessingScreen } from '../useTransactionProcessingScreen'
 import Decimal from 'decimal.js'
-import {
-    useSelectedAccount,
-} from '@perawallet/wallet-core-accounts'
+import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import { useToast } from '@hooks/useToast'
@@ -48,6 +46,9 @@ vi.mock('@components/core', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-signing', () => ({
     useTransactionSigner: vi.fn(),
 }))
 

@@ -16,9 +16,7 @@ import { BackHandler } from 'react-native'
 import { bottomSheetNotifier } from '@components/core'
 import { useToast } from '@hooks/useToast'
 import { useSendFunds } from '@modules/transactions/hooks'
-import {
-    useSelectedAccount,
-} from '@perawallet/wallet-core-accounts'
+import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
     ALGO_ASSET,
     ALGO_ASSET_ID,
