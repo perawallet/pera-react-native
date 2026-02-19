@@ -13,7 +13,7 @@
 import React from 'react'
 import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { useScreenHeader } from '../useScreenHeader'
+import { useNavigationHeader } from '../useNavigationHeader'
 
 const mockSetOptions = vi.fn()
 
@@ -28,7 +28,7 @@ vi.mock('@react-navigation/native', async importOriginal => {
     }
 })
 
-describe('useScreenHeader', () => {
+describe('useNavigationHeader', () => {
     beforeEach(() => {
         vi.clearAllMocks()
     })
@@ -36,7 +36,7 @@ describe('useScreenHeader', () => {
     it('sets headerRight when right is provided', () => {
         const rightElement = React.createElement('div', null, 'right')
 
-        renderHook(() => useScreenHeader({ right: rightElement }))
+        renderHook(() => useNavigationHeader({ right: rightElement }))
 
         expect(mockSetOptions).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -54,7 +54,7 @@ describe('useScreenHeader', () => {
     it('sets headerLeft when left is provided', () => {
         const leftElement = React.createElement('div', null, 'left')
 
-        renderHook(() => useScreenHeader({ left: leftElement }))
+        renderHook(() => useNavigationHeader({ left: leftElement }))
 
         expect(mockSetOptions).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -69,7 +69,7 @@ describe('useScreenHeader', () => {
     it('sets headerTitle when title is a ReactNode', () => {
         const titleElement = React.createElement('div', null, 'Title')
 
-        renderHook(() => useScreenHeader({ title: titleElement }))
+        renderHook(() => useNavigationHeader({ title: titleElement }))
 
         expect(mockSetOptions).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -83,7 +83,7 @@ describe('useScreenHeader', () => {
     })
 
     it('sets title string when title is a string', () => {
-        renderHook(() => useScreenHeader({ title: 'My Title' }))
+        renderHook(() => useNavigationHeader({ title: 'My Title' }))
 
         expect(mockSetOptions).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -97,7 +97,7 @@ describe('useScreenHeader', () => {
 
     it('does not call setOptions when enabled is false', () => {
         renderHook(() =>
-            useScreenHeader({
+            useNavigationHeader({
                 right: React.createElement('div'),
                 enabled: false,
             }),
@@ -112,7 +112,7 @@ describe('useScreenHeader', () => {
         const titleElement = React.createElement('div', null, 'title')
 
         renderHook(() =>
-            useScreenHeader({
+            useNavigationHeader({
                 left: leftElement,
                 right: rightElement,
                 title: titleElement,
@@ -126,7 +126,7 @@ describe('useScreenHeader', () => {
     })
 
     it('sets headerRight to render null when right is null', () => {
-        renderHook(() => useScreenHeader({ right: null }))
+        renderHook(() => useNavigationHeader({ right: null }))
 
         expect(mockSetOptions).toHaveBeenCalledWith(
             expect.objectContaining({

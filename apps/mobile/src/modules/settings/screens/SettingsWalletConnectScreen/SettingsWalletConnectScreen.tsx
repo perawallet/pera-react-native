@@ -23,7 +23,7 @@ import { useStyles } from './styles'
 import { WalletConnectSessionItem } from '@modules/settings/components/WalletConnect/WalletConnectSessionItem'
 import { Dialog, Text, useTheme } from '@rneui/themed'
 import { useState } from 'react'
-import { useScreenHeader } from '@hooks/useScreenHeader'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
 
 const renderItem = ({ item }: { item: WalletConnectConnection }) => {
     return <WalletConnectSessionItem session={item} />
@@ -38,7 +38,7 @@ export const SettingsWalletConnectScreen = () => {
     const { theme } = useTheme()
     const [isLoading, setIsLoading] = useState(false)
 
-    useScreenHeader({
+    useNavigationHeader({
         title: t('settings.main.wallet_connect_title'),
         right: (
             <PWIcon

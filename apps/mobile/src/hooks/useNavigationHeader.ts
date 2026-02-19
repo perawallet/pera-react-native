@@ -20,7 +20,7 @@ type UseScreenHeaderOptions = {
     enabled?: boolean
 }
 
-export const useScreenHeader = ({
+export const useNavigationHeader = ({
     left,
     right,
     title,

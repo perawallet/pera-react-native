@@ -17,10 +17,10 @@ import {
     AssetDetailsScreen,
     AssetDetailsScreenProps,
 } from '../AssetDetailsScreen'
-import { useScreenHeader } from '@hooks/useScreenHeader'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
 
-vi.mock('@hooks/useScreenHeader', () => ({
-    useScreenHeader: vi.fn(),
+vi.mock('@hooks/useNavigationHeader', () => ({
+    useNavigationHeader: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
@@ -75,7 +75,7 @@ vi.mock('@components/core/PWTabView/PWTabView', () => ({
 }))
 
 describe('AssetDetailsScreen', () => {
-    it('sets up header with account name and address via useScreenHeader', () => {
+    it('sets up header with account name and address via useNavigationHeader', () => {
         render(
             <AssetDetailsScreen
                 route={
@@ -89,7 +89,7 @@ describe('AssetDetailsScreen', () => {
             />,
         )
 
-        expect(useScreenHeader).toHaveBeenCalledWith(
+        expect(useNavigationHeader).toHaveBeenCalledWith(
             expect.objectContaining({
                 title: expect.anything(),
                 right: expect.anything(),

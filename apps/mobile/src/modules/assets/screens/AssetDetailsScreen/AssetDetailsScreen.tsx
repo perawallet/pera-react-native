@@ -29,7 +29,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { AccountStackParamsList } from '@modules/accounts/routes'
 import { PWView, PWText } from '@components/core'
-import { useScreenHeader } from '@hooks/useScreenHeader'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
 
 export type AssetDetailsScreenProps = NativeStackScreenProps<
     AccountStackParamsList,
@@ -62,7 +62,7 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
         })
     }, [showToast, t])
 
-    useScreenHeader({
+    useNavigationHeader({
         title: (
             <PWView style={styles.headerTitleContainer}>
                 <PWText

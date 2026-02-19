@@ -15,7 +15,7 @@ import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ImportInfoScreen } from '../ImportInfoScreen'
 import { RECOVERY_PASSPHRASE_SUPPORT_URL } from '@perawallet/wallet-core-config'
-import { useScreenHeader } from '@hooks/useScreenHeader'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
 
 // Mock navigation
 const mockGoBack = vi.fn()
@@ -30,8 +30,8 @@ vi.mock('@hooks/useAppNavigation', () => ({
 
 // Note: useAppNavigation mock is still needed by useImportInfoScreen hook
 
-vi.mock('@hooks/useScreenHeader', () => ({
-    useScreenHeader: vi.fn(),
+vi.mock('@hooks/useNavigationHeader', () => ({
+    useNavigationHeader: vi.fn(),
 }))
 
 vi.mock('@assets/images/key.svg', () => ({
@@ -101,10 +101,10 @@ describe('ImportInfoScreen', () => {
         expect(screen.getByText('onboarding.import_info.button')).toBeTruthy()
     })
 
-    it('sets up header with info button via useScreenHeader', () => {
+    it('sets up header with info button via useNavigationHeader', () => {
         render(<ImportInfoScreen />)
 
-        expect(useScreenHeader).toHaveBeenCalledWith(
+        expect(useNavigationHeader).toHaveBeenCalledWith(
             expect.objectContaining({
                 right: expect.anything(),
             }),
@@ -125,8 +125,8 @@ describe('ImportInfoScreen', () => {
     it('handles info button press via headerRight', () => {
         render(<ImportInfoScreen />)
 
-        // Extract the right element from useScreenHeader call
-        const hookCall = (useScreenHeader as ReturnType<typeof vi.fn>).mock
+        // Extract the right element from useNavigationHeader call
+        const hookCall = (useNavigationHeader as ReturnType<typeof vi.fn>).mock
             .calls[0][0]
         const rightElement = hookCall.right
 

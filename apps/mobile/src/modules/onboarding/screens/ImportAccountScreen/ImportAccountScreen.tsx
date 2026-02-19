@@ -24,7 +24,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { KeyboardAvoidingView, ScrollView } from 'react-native'
 import { useImportAccountScreen } from './useImportAccountScreen'
-import { useScreenHeader } from '@hooks/useScreenHeader'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { ImportAccountSupportOptionsBottomSheet } from './ImportAccountSupportOptionsBottomSheet'
 import { QRScannerView } from '@components/QRScannerView'
 import { WordSuggestionDropdown } from './WordSuggestionDropdown'
@@ -61,7 +61,7 @@ export const ImportAccountScreen = () => {
 
     const wordsPerColumn = Math.ceil(mnemonicLength / 2)
 
-    useScreenHeader({
+    useNavigationHeader({
         right: (
             <PWIcon
                 name='ellipsis'

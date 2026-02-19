@@ -23,7 +23,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
-import { useScreenHeader } from '@hooks/useScreenHeader'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
 
 export const SelectDestinationScreen = () => {
     const { selectedAsset, setDestination } = useSendFunds()
@@ -43,7 +43,7 @@ export const SelectDestinationScreen = () => {
         navigation.navigate('ConfirmTransaction')
     }
 
-    useScreenHeader({
+    useNavigationHeader({
         title: asset ? (
             <PWView style={styles.assetTitleContainer}>
                 <AssetIcon

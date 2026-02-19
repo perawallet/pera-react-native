@@ -27,8 +27,8 @@ vi.mock('@react-navigation/native', async importOriginal => {
     }
 })
 
-vi.mock('@hooks/useScreenHeader', () => ({
-    useScreenHeader: vi.fn(),
+vi.mock('@hooks/useNavigationHeader', () => ({
+    useNavigationHeader: vi.fn(),
 }))
 
 vi.mock('@components/core', () => ({

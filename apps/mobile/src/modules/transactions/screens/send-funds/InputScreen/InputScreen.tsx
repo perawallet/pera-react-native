@@ -32,7 +32,7 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { useCallback } from 'react'
-import { useScreenHeader } from '@hooks/useScreenHeader'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
 
 export const InputScreen = () => {
     const styles = useStyles()
@@ -68,7 +68,7 @@ export const InputScreen = () => {
         }
     }, [canSelectAsset, navigation, onFinished])
 
-    useScreenHeader({
+    useNavigationHeader({
         left: (
             <PWIcon
                 name={!canSelectAsset ? 'chevron-left' : 'cross'}

@@ -15,7 +15,7 @@ import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useImportInfoScreen } from './useImportInfoScreen'
-import { useScreenHeader } from '@hooks/useScreenHeader'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
 
 export const ImportInfoScreen = () => {
     const styles = useStyles()
@@ -23,7 +23,7 @@ export const ImportInfoScreen = () => {
     const { handleRecoverPress, handleInfoPress, KeyImageComponent } =
         useImportInfoScreen()
 
-    useScreenHeader({
+    useNavigationHeader({
         right: (
             <PWIcon
                 name='info'
