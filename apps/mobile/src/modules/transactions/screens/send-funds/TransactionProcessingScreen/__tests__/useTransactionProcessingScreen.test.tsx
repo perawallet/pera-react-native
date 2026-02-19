@@ -16,12 +16,12 @@ import { useTransactionProcessingScreen } from '../useTransactionProcessingScree
 import Decimal from 'decimal.js'
 import {
     useSelectedAccount,
-    useTransactionSigner,
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import { useToast } from '@hooks/useToast'
 import { useSendFunds } from '@modules/transactions/hooks'
+import { useTransactionSigner } from '@perawallet/wallet-core-signing'
 
 const mockReplace = vi.fn()
 const mockGoBack = vi.fn()

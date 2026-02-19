@@ -12,13 +12,13 @@
 
 import { useCallback, useEffect } from 'react'
 import { BackHandler } from 'react-native'
-import { v4 as uuid } from 'uuid'
 
 import { useWebView } from '@hooks/usePeraWebviewInterface'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
+import { generateUniqueId } from '@perawallet/wallet-core-shared'
 
 type UseTransactionSuccessScreenResult = {
     handleDone: () => void
@@ -41,7 +41,7 @@ export const useTransactionSuccessScreen =
         const handleViewInExplorer = useCallback(() => {
             pushWebView({
                 url: `${networkConfig.explorerUrl}/tx/${transactionId}`,
-                id: uuid(),
+                id: generateUniqueId(),
             })
         }, [networkConfig.explorerUrl, transactionId, pushWebView])
 

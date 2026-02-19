@@ -18,7 +18,6 @@ import { useToast } from '@hooks/useToast'
 import { useSendFunds } from '@modules/transactions/hooks'
 import {
     useSelectedAccount,
-    useTransactionSigner,
 } from '@perawallet/wallet-core-accounts'
 import {
     ALGO_ASSET,
@@ -30,6 +29,7 @@ import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
+import { useTransactionSigner } from '@perawallet/wallet-core-signing'
 
 export const useTransactionProcessingScreen = () => {
     const navigation =
