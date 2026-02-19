@@ -10,9 +10,24 @@
  limitations under the License
  */
 
-export {
-    useOnboardingStore,
-    useShouldPlayConfetti,
-    useIsOnboarding,
-} from './useOnboardingStore'
-export { useExitAccountFlow } from './useExitAccountFlow'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    rootContainer: {
+        flex: 1,
+        flexDirection: 'column',
+    },
+    contentContainer: {
+        flex: 1,
+        paddingHorizontal: theme.spacing.xl,
+        paddingTop: theme.spacing.xl,
+        gap: theme.spacing.xl,
+    },
+    description: {
+        color: theme.colors.textGray,
+    },
+    footerContainer: {
+        paddingHorizontal: theme.spacing.xl,
+        paddingBottom: theme.spacing['3xl'],
+    },
+}))

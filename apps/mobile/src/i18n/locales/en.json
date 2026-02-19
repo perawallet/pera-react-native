@@ -373,6 +373,31 @@
             "fetching": "Fetching rekeyed accounts...",
             "rekeyed_account_subtitle": "Rekeyed account",
             "importing_accounts": "Importing accounts..."
+        },
+        "add_account": {
+            "title": "Add an\naccount",
+            "add_account_option_title": "Add Account",
+            "add_account_option_description": "Add a new account to your existing Universal Wallet",
+            "import_account_option_title": "Import Account",
+            "import_account_option_description": "Import an existing Algorand account with various methods",
+            "watch_address_option_title": "Watch an Address",
+            "watch_address_option_description": "Monitor an Algorand address by providing its address",
+            "create_universal_wallet_option_title": "Create a Universal Wallet",
+            "create_universal_wallet_option_description": "Wallet that lets you derive new accounts, all using the same 24 word mnemonic",
+            "create_algo25_option_title": "Create an Algo25 Account",
+            "create_algo25_option_description": "Legacy format that is specific to Algorand",
+            "terms_and_privacy": "By adding a wallet, you agree to Pera Wallet's <0>Terms and Conditions</0> and <1>Privacy Policy</1>",
+            "see_other_options": "See other options"
+        },
+        "watch_account": {
+            "title": "Watch an Address",
+            "description": "Enter or scan an Algorand address to add it as a watch-only account. You will be able to view its balance and transactions but cannot sign transactions.",
+            "address_label": "Algorand Address",
+            "address_placeholder": "Enter or paste an address",
+            "watch_button": "Watch Account",
+            "invalid_address": "Please enter a valid Algorand address",
+            "success_title": "Account added",
+            "success_body": "Watch account has been added successfully"
         }
     },
     "portfolio": {
