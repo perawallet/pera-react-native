@@ -21,7 +21,6 @@ import {
     type AssetWithAccountBalance,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useTransactionSigner } from '@perawallet/wallet-core-signing'
 import {
     useAssetFiatPricesQuery,
     useAssetsQuery,
