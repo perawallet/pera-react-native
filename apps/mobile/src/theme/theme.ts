@@ -14,19 +14,18 @@
 
 import { DefaultTheme } from '@react-navigation/native'
 import { createTheme } from '@rneui/themed'
-import { fontFamilies } from '@constants/fonts'
-
-export const getFontFamily = (weight: 300 | 400 | 500 | 600 | 700) => {
-    return fontFamilies.DMSANS[weight]
-}
+import { palette } from './colors'
+import { getFontFamily } from './typography'
 
 export const getNavigationTheme = (mode: 'light' | 'dark' = 'light') => ({
     ...DefaultTheme,
     colors: {
         ...DefaultTheme.colors,
-        background: mode === 'light' ? '#FFFFFF' : '#18181B',
-        text: mode === 'light' ? '#A1A1AA' : '#71717A',
-        primary: mode === 'light' ? '#18181B' : '#FAFAFA',
+        background:
+            mode === 'light' ? palette.white : palette.gray[900],
+        text: mode === 'light' ? palette.gray[400] : palette.gray[500],
+        primary:
+            mode === 'light' ? palette.gray[900] : palette.gray[50],
     },
     dark: mode === 'dark',
 })
@@ -35,100 +34,100 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
     createTheme({
         lightColors: {
             // @rneui built-ins (kept for internal use)
-            primary: '#27272A',
-            secondary: '#6B46FE',
-            background: '#FFFFFF',
-            black: '#18181B',
-            white: '#FFFFFF',
-            grey0: '#FAFAFA',
-            grey1: '#F1F1F2',
-            grey2: '#E4E4E7',
-            grey3: '#D4D4D8',
-            grey4: '#A1A1AA',
-            grey5: '#71717A',
-            success: '#2CB7BC',
-            warning: '#FFEE55',
-            error: '#DB4645',
+            primary: palette.gray[800],
+            secondary: palette.purple[600],
+            background: palette.white,
+            black: palette.gray[900],
+            white: palette.white,
+            grey0: palette.gray[50],
+            grey1: palette.gray[100],
+            grey2: palette.gray[200],
+            grey3: palette.gray[300],
+            grey4: palette.gray[400],
+            grey5: palette.gray[500],
+            success: palette.turquoise[600],
+            warning: palette.yellow[400],
+            error: palette.salmon[600],
             divider: 'rgba(0,0,0,0.05)',
 
             // Defaults
-            systemElements: '#000000',
+            systemElements: palette.black,
 
             // Text
-            textGray: '#71717A',
-            textGrayLighter: '#A1A1AA',
-            textMain: '#18181B',
-            textWhite: '#FFFFFF',
+            textGray: palette.gray[500],
+            textGrayLighter: palette.gray[400],
+            textMain: palette.gray[900],
+            textWhite: palette.white,
 
             // Layer
-            layerGray: '#E4E4E7',
-            layerGrayLighter: '#F1F1F2',
-            layerGrayLightest: '#FAFAFA',
+            layerGray: palette.gray[200],
+            layerGrayLighter: palette.gray[100],
+            layerGrayLightest: palette.gray[50],
 
             // Link
-            linkPrimary: '#1F8E9D',
-            linkIcon: '#2CB7BC',
+            linkPrimary: palette.turquoise[700],
+            linkIcon: palette.turquoise[600],
 
             // Button Primary
-            buttonPrimaryBg: '#27272A',
-            buttonPrimaryText: '#FFFFFF',
-            buttonPrimaryFocusBg: '#18181B',
-            buttonPrimaryDisabledBg: '#F1F1F2',
-            buttonPrimaryDisabledText: '#71717A',
+            buttonPrimaryBg: palette.gray[800],
+            buttonPrimaryText: palette.white,
+            buttonPrimaryFocusBg: palette.gray[900],
+            buttonPrimaryDisabledBg: palette.gray[100],
+            buttonPrimaryDisabledText: palette.gray[500],
 
             // Button Secondary
-            buttonSecondaryBg: '#F1F1F2',
-            buttonSecondaryFocusBg: '#E4E4E7',
-            buttonSecondaryDisabledBg: '#F1F1F2',
-            buttonSecondaryText: '#18181B',
-            buttonSecondaryDisabledText: '#71717A',
+            buttonSecondaryBg: palette.gray[100],
+            buttonSecondaryFocusBg: palette.gray[200],
+            buttonSecondaryDisabledBg: palette.gray[100],
+            buttonSecondaryText: palette.gray[900],
+            buttonSecondaryDisabledText: palette.gray[500],
 
             // Button Ghost
-            buttonGhostBg: '#FFFFFF',
-            buttonGhostFocusBg: '#F1F1F2',
-            buttonGhostDisabledBg: '#FFFFFF',
-            buttonGhostText: '#18181B',
-            buttonGhostDisabledText: '#71717A',
+            buttonGhostBg: palette.white,
+            buttonGhostFocusBg: palette.gray[100],
+            buttonGhostDisabledBg: palette.white,
+            buttonGhostText: palette.gray[900],
+            buttonGhostDisabledText: palette.gray[500],
 
             // Button Float
-            buttonFloatBg: '#FFFFFF',
-            buttonFloatFocusBg: '#F1F1F2',
-            buttonFloatIconMain: '#18181B',
-            buttonFloatIconLighter: '#FFFFFF',
+            buttonFloatBg: palette.white,
+            buttonFloatFocusBg: palette.gray[100],
+            buttonFloatIconMain: palette.gray[900],
+            buttonFloatIconLighter: palette.white,
 
             // Button Helper
-            buttonHelperBg: '#27272A',
-            buttonHelperFocusBg: '#3F3F46',
-            buttonHelperDisabledBg: '#F1F1F2',
-            buttonHelperIcon: '#FFFFFF',
-            buttonHelperDisabledIcon: '#71717A',
-            buttonHelperPeraIcon: '#FFEE55',
+            buttonHelperBg: palette.gray[800],
+            buttonHelperFocusBg: palette.gray[700],
+            buttonHelperDisabledBg: palette.gray[100],
+            buttonHelperIcon: palette.white,
+            buttonHelperDisabledIcon: palette.gray[500],
+            buttonHelperPeraIcon: palette.yellow[400],
 
             // Button Square
             buttonSquareBg: 'rgba(44, 183, 188, 0.12)',
             buttonSquareFocusBg: 'rgba(44, 183, 188, 0.28)',
-            buttonSquareSecondaryBg: '#F1F1F2',
-            buttonSquareIcon: '#1F8E9D',
-            buttonSquareSecondaryIcon: '#71717A',
+            buttonSquareSecondaryBg: palette.gray[100],
+            buttonSquareIcon: palette.turquoise[700],
+            buttonSquareSecondaryIcon: palette.gray[500],
 
             // Helpers
-            positive: '#1F8E9D',
-            positiveLighter: '#D8FDEE',
-            negative: '#DB4645',
-            negativeLighter: '#FFECDF',
-            successCheckmark: '#FFFFFF',
-            heroBg: '#FAFAFA',
+            positive: palette.turquoise[700],
+            positiveLighter: palette.turquoise[100],
+            negative: palette.salmon[600],
+            negativeLighter: palette.salmon[100],
+            successCheckmark: palette.white,
+            heroBg: palette.gray[50],
 
             // Banner
-            bannerBg: '#2CB7BC',
+            bannerBg: palette.turquoise[600],
             bannerButton: 'rgba(255, 255, 255, 0.12)',
             bannerIconBg: 'rgba(31, 142, 157, 0.2)',
-            bannerText: '#FFFFFF',
+            bannerText: palette.white,
 
             // Alert
-            alertNegative: '#DB4645',
-            alertContent: '#FFFFFF',
-            alertPositive: '#2CB7BC',
+            alertNegative: palette.salmon[600],
+            alertContent: palette.white,
+            alertPositive: palette.turquoise[600],
 
             // Wallet
             wallet1: '#F5B2C6',
@@ -138,42 +137,42 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             wallet3: '#8755D5',
             wallet3Icon: '#FFAEE3',
             wallet3IconGovernor: '#8755D5',
-            wallet4: '#8BF4DB',
-            wallet4Icon: '#136880',
-            wallet4IconGovernor: '#1F8E9D',
-            wallet5: '#FF9B86',
+            wallet4: palette.turquoise[300],
+            wallet4Icon: palette.turquoise[800],
+            wallet4IconGovernor: palette.turquoise[700],
+            wallet5: palette.salmon[400],
             wallet5Icon: '#424F76',
 
             // ASA Icons
-            trustedIconBg: '#2CB7BC',
-            trustedIconInline: '#FFFFFF',
+            trustedIconBg: palette.turquoise[600],
+            trustedIconInline: palette.white,
             verifiedIconBg: '#CEEEFE',
             verifiedIconInline: '#0D7FFF',
             verifiedIconSolidBg: '#0D7FFF',
-            verifiedIconSolidInline: '#FFFFFF',
-            suspiciousIconBg: '#FF6D5F',
-            suspiciousIconInline: '#FFFFFF',
+            verifiedIconSolidInline: palette.white,
+            suspiciousIconBg: palette.salmon[500],
+            suspiciousIconInline: palette.white,
 
             // ASA Banners
-            trustedBannerContent: '#1F8E9D',
+            trustedBannerContent: palette.turquoise[700],
             trustedBannerBg: 'rgba(44, 183, 188, 0.16)',
             verifiedBannerContent: '#0D7FFF',
             verifiedBannerBg: 'rgba(13, 127, 255, 0.16)',
-            suspiciousBannerContent: '#DB4645',
+            suspiciousBannerContent: palette.salmon[600],
             suspiciousBannerBg: 'rgba(255, 109, 95, 0.16)',
 
             // Toast
             toastBg: 'rgba(24, 24, 27, 0.9)',
-            toastTitle: '#FFFFFF',
+            toastTitle: palette.white,
             toastDescription: 'rgba(255, 255, 255, 0.6)',
 
             // Testnet
-            testnetBg: '#EDB21C',
-            testnetText: '#18181B',
+            testnetBg: palette.yellow[500],
+            testnetText: palette.gray[900],
 
             // Algo Icon
-            algoIconBg: '#000000',
-            algoIcon: '#FFFFFF',
+            algoIconBg: palette.black,
+            algoIcon: palette.white,
 
             // QR Scanner
             qrScannerBg: 'rgba(0, 0, 0, 0.7)',
@@ -186,25 +185,25 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             keyboardAccessoryLine: '#C7C8CC',
 
             // Tab Bar
-            tabBarButton: '#27272A',
+            tabBarButton: palette.gray[800],
             tabBarBg: 'rgba(255, 255, 255, 0.84)',
-            tabBarIconActive: '#18181B',
-            tabBarIconNonActive: '#A1A1AA',
+            tabBarIconActive: palette.gray[900],
+            tabBarIconNonActive: palette.gray[400],
             tabBarIconDisabled: 'rgba(161, 161, 170, 0.5)',
 
             // Bottom Sheet
             bottomSheetLine: '#E6E7E9',
 
             // Modality
-            modalityBg: '#18181B',
+            modalityBg: palette.gray[900],
 
             // Switches
-            switchBg: '#2CB7BC',
-            switchOffBg: '#A1A1AA',
+            switchBg: palette.turquoise[600],
+            switchOffBg: palette.gray[400],
 
             // NFT Icon
             nftIconBg: 'rgba(24, 24, 27, 0.6)',
-            nftIcon: '#FFFFFF',
+            nftIcon: palette.white,
 
             // Dapp
             dappMoonpay: '#7D01FF',
@@ -213,104 +212,104 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             dappBidali: '#6241E2',
 
             // Legacy (no Figma equivalent)
-            favorite: '#EDB21C',
+            favorite: palette.yellow[500],
         },
         darkColors: {
             // @rneui built-ins (kept for internal use)
-            primary: '#FFEE55',
-            secondary: '#AC8EFF',
-            background: '#18181B',
-            black: '#FFFFFF',
-            white: '#F1F1F2',
-            grey0: '#27272A',
-            grey1: '#27272A',
-            grey2: '#3F3F46',
-            grey3: '#3F3F46',
-            grey4: '#71717A',
-            grey5: '#71717A',
-            success: '#FFEE55',
+            primary: palette.yellow[400],
+            secondary: palette.purple[400],
+            background: palette.gray[900],
+            black: palette.white,
+            white: palette.gray[100],
+            grey0: palette.gray[800],
+            grey1: palette.gray[800],
+            grey2: palette.gray[700],
+            grey3: palette.gray[700],
+            grey4: palette.gray[500],
+            grey5: palette.gray[500],
+            success: palette.yellow[400],
             warning: '#b66129',
-            error: '#FF6D5F',
+            error: palette.salmon[500],
             divider: 'rgba(255, 255, 255, 0.05)',
 
             // Defaults
-            systemElements: '#FFFFFF',
+            systemElements: palette.white,
 
             // Text
-            textGray: '#A1A1AA',
-            textGrayLighter: '#71717A',
-            textMain: '#F1F1F2',
-            textWhite: '#FFFFFF',
+            textGray: palette.gray[400],
+            textGrayLighter: palette.gray[500],
+            textMain: palette.gray[100],
+            textWhite: palette.white,
 
             // Layer
-            layerGray: '#3F3F46',
-            layerGrayLighter: '#27272A',
-            layerGrayLightest: '#27272A',
+            layerGray: palette.gray[700],
+            layerGrayLighter: palette.gray[800],
+            layerGrayLightest: palette.gray[800],
 
             // Link
-            linkPrimary: '#FFEE55',
-            linkIcon: '#F1F1F2',
+            linkPrimary: palette.yellow[400],
+            linkIcon: palette.gray[100],
 
             // Button Primary
-            buttonPrimaryBg: '#FFEE55',
-            buttonPrimaryText: '#18181B',
-            buttonPrimaryFocusBg: '#EDB21C',
-            buttonPrimaryDisabledBg: '#27272A',
-            buttonPrimaryDisabledText: '#71717A',
+            buttonPrimaryBg: palette.yellow[400],
+            buttonPrimaryText: palette.gray[900],
+            buttonPrimaryFocusBg: palette.yellow[500],
+            buttonPrimaryDisabledBg: palette.gray[800],
+            buttonPrimaryDisabledText: palette.gray[500],
 
             // Button Secondary
-            buttonSecondaryBg: '#27272A',
-            buttonSecondaryFocusBg: '#18181B',
-            buttonSecondaryDisabledBg: '#27272A',
-            buttonSecondaryText: '#F1F1F2',
-            buttonSecondaryDisabledText: '#71717A',
+            buttonSecondaryBg: palette.gray[800],
+            buttonSecondaryFocusBg: palette.gray[900],
+            buttonSecondaryDisabledBg: palette.gray[800],
+            buttonSecondaryText: palette.gray[100],
+            buttonSecondaryDisabledText: palette.gray[500],
 
             // Button Ghost
-            buttonGhostBg: '#18181B',
-            buttonGhostFocusBg: '#27272A',
-            buttonGhostDisabledBg: '#18181B',
-            buttonGhostText: '#F1F1F2',
-            buttonGhostDisabledText: '#71717A',
+            buttonGhostBg: palette.gray[900],
+            buttonGhostFocusBg: palette.gray[800],
+            buttonGhostDisabledBg: palette.gray[900],
+            buttonGhostText: palette.gray[100],
+            buttonGhostDisabledText: palette.gray[500],
 
             // Button Float
-            buttonFloatBg: '#FFFFFF',
-            buttonFloatFocusBg: '#F1F1F2',
-            buttonFloatIconMain: '#18181B',
+            buttonFloatBg: palette.white,
+            buttonFloatFocusBg: palette.gray[100],
+            buttonFloatIconMain: palette.gray[900],
             buttonFloatIconLighter: '#17171A',
 
             // Button Helper
             buttonHelperBg: 'rgba(255, 238, 85, 0.1)',
             buttonHelperFocusBg: 'rgba(255, 238, 85, 0.2)',
             buttonHelperDisabledBg: 'rgba(255, 238, 85, 0.05)',
-            buttonHelperIcon: '#FFEE55',
+            buttonHelperIcon: palette.yellow[400],
             buttonHelperDisabledIcon: 'rgba(255, 238, 85, 0.5)',
-            buttonHelperPeraIcon: '#FFEE55',
+            buttonHelperPeraIcon: palette.yellow[400],
 
             // Button Square
             buttonSquareBg: 'rgba(44, 183, 188, 0.12)',
             buttonSquareFocusBg: 'rgba(44, 183, 188, 0.28)',
-            buttonSquareSecondaryBg: '#27272A',
-            buttonSquareIcon: '#2CB7BC',
-            buttonSquareSecondaryIcon: '#71717A',
+            buttonSquareSecondaryBg: palette.gray[800],
+            buttonSquareIcon: palette.turquoise[600],
+            buttonSquareSecondaryIcon: palette.gray[500],
 
             // Helpers
-            positive: '#2CB7BC',
+            positive: palette.turquoise[600],
             positiveLighter: 'rgba(44, 183, 188, 0.12)',
-            negative: '#FF6D5F',
+            negative: palette.salmon[500],
             negativeLighter: 'rgba(255, 109, 95, 0.12)',
-            successCheckmark: '#18181B',
+            successCheckmark: palette.gray[900],
             heroBg: '#1D1D21',
 
             // Banner
-            bannerBg: '#27272A',
+            bannerBg: palette.gray[800],
             bannerButton: 'rgba(24, 24, 27, 0.12)',
             bannerIconBg: 'rgba(24, 24, 27, 0.2)',
-            bannerText: '#FFFFFF',
+            bannerText: palette.white,
 
             // Alert
-            alertNegative: '#FF6D5F',
-            alertContent: '#18181B',
-            alertPositive: '#2CB7BC',
+            alertNegative: palette.salmon[500],
+            alertContent: palette.gray[900],
+            alertPositive: palette.turquoise[600],
 
             // Wallet
             wallet1: '#F5B2C6',
@@ -320,42 +319,42 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             wallet3: '#8755D5',
             wallet3Icon: '#FFAEE3',
             wallet3IconGovernor: '#8755D5',
-            wallet4: '#8BF4DB',
-            wallet4Icon: '#136880',
-            wallet4IconGovernor: '#2CB7BC',
-            wallet5: '#FF9B86',
+            wallet4: palette.turquoise[300],
+            wallet4Icon: palette.turquoise[800],
+            wallet4IconGovernor: palette.turquoise[600],
+            wallet5: palette.salmon[400],
             wallet5Icon: '#424F76',
 
             // ASA Icons
-            trustedIconBg: '#2CB7BC',
-            trustedIconInline: '#18181B',
+            trustedIconBg: palette.turquoise[600],
+            trustedIconInline: palette.gray[900],
             verifiedIconBg: '#48A7FE',
-            verifiedIconInline: '#18181B',
+            verifiedIconInline: palette.gray[900],
             verifiedIconSolidBg: '#48A7FE',
-            verifiedIconSolidInline: '#18181B',
-            suspiciousIconBg: '#FF6D5F',
-            suspiciousIconInline: '#18181B',
+            verifiedIconSolidInline: palette.gray[900],
+            suspiciousIconBg: palette.salmon[500],
+            suspiciousIconInline: palette.gray[900],
 
             // ASA Banners
-            trustedBannerContent: '#2CB7BC',
+            trustedBannerContent: palette.turquoise[600],
             trustedBannerBg: 'rgba(44, 183, 188, 0.16)',
             verifiedBannerContent: '#48A7FE',
             verifiedBannerBg: 'rgba(13, 127, 255, 0.16)',
-            suspiciousBannerContent: '#FF6D5F',
+            suspiciousBannerContent: palette.salmon[500],
             suspiciousBannerBg: 'rgba(255, 109, 95, 0.16)',
 
             // Toast
             toastBg: 'rgba(82, 82, 91, 0.92)',
-            toastTitle: '#FFFFFF',
+            toastTitle: palette.white,
             toastDescription: 'rgba(255, 255, 255, 0.6)',
 
             // Testnet
-            testnetBg: '#EDB21C',
-            testnetText: '#18181B',
+            testnetBg: palette.yellow[500],
+            testnetText: palette.gray[900],
 
             // Algo Icon
-            algoIconBg: '#000000',
-            algoIcon: '#FFFFFF',
+            algoIconBg: palette.black,
+            algoIcon: palette.white,
 
             // QR Scanner
             qrScannerBg: 'rgba(0, 0, 0, 0.7)',
@@ -368,25 +367,25 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             keyboardAccessoryLine: '#393939',
 
             // Tab Bar
-            tabBarButton: '#27272A',
+            tabBarButton: palette.gray[800],
             tabBarBg: 'rgba(24, 24, 27, 0.84)',
-            tabBarIconActive: '#FAFAFA',
-            tabBarIconNonActive: '#71717A',
+            tabBarIconActive: palette.gray[50],
+            tabBarIconNonActive: palette.gray[500],
             tabBarIconDisabled: 'rgba(113, 113, 122, 0.5)',
 
             // Bottom Sheet
-            bottomSheetLine: '#3F3F46',
+            bottomSheetLine: palette.gray[700],
 
             // Modality
-            modalityBg: '#000000',
+            modalityBg: palette.black,
 
             // Switches
-            switchBg: '#EDB21C',
-            switchOffBg: '#27272A',
+            switchBg: palette.yellow[500],
+            switchOffBg: palette.gray[800],
 
             // NFT Icon
             nftIconBg: 'rgba(24, 24, 27, 0.6)',
-            nftIcon: '#FFFFFF',
+            nftIcon: palette.white,
 
             // Dapp
             dappMoonpay: '#7D01FF',
@@ -395,7 +394,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             dappBidali: '#6241E2',
 
             // Legacy (no Figma equivalent)
-            favorite: '#EDB21C',
+            favorite: palette.yellow[500],
         },
         mode,
         spacing: {
@@ -423,7 +422,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
         },
         shadows: {
             sm: {
-                shadowColor: '#000000',
+                shadowColor: palette.black,
                 shadowOffset: {
                     width: 0,
                     height: 2,
@@ -433,7 +432,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                 elevation: 2,
             },
             md: {
-                shadowColor: '#000000',
+                shadowColor: palette.black,
                 shadowOffset: {
                     width: 0,
                     height: 2,

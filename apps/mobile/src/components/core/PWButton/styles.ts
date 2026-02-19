@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 import { PWButtonProps } from './PWButton'
-import { getFontFamily } from '@theme/theme'
+import { getFontFamily } from '@theme/typography'
 
 export const useStyles = makeStyles((theme, props: PWButtonProps) => {
     const variantStyles = {
