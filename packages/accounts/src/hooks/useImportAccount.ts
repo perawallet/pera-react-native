@@ -13,7 +13,7 @@
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCreateAccount } from './useCreateAccount'
 import { ImportAccountType } from '../models'
-import { generateOrderedUniqueId } from 'shared/dist'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 
 export const useImportAccount = () => {
     const { createHDWalletKey, createAlgo25Key } = useKMS()
