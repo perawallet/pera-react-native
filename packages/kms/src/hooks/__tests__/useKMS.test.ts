@@ -344,11 +344,9 @@ describe('useKMS', () => {
 
         await expect(
             act(async () => {
-                await result.current.signDataWithKey(
-                    'hd-key',
-                    'test-domain',
-                    [new Uint8Array([1])],
-                )
+                await result.current.signDataWithKey('hd-key', 'test-domain', [
+                    new Uint8Array([1]),
+                ])
             }),
         ).rejects.toThrow()
     })

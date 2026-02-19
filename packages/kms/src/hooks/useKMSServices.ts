@@ -34,9 +34,9 @@ export const useKMSService = () => {
             const stringifiedObj = JSON.stringify(keyData)
 
             const storageLocation = key.publicKey.length
-                    ? `${key.type}-${key.publicKey}`
-                    : `${key.type}-${storageKey}`
-            const modifiedKey: KeyPair = { 
+                ? `${key.type}-${key.publicKey}`
+                : `${key.type}-${storageKey}`
+            const modifiedKey: KeyPair = {
                 ...key,
                 id: storageKey,
                 privateDataStorageKey: storageLocation,
