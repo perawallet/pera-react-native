@@ -17,19 +17,25 @@ import Decimal from 'decimal.js'
 import {
     useSelectedAccount,
     useAccountAssetBalanceQuery,
-    useTransactionSigner,
 } from '@perawallet/wallet-core-accounts'
 import {
     useAssetsQuery,
     useAssetFiatPricesQuery,
 } from '@perawallet/wallet-core-assets'
-import {
-    useSuggestedParametersQuery,
-    useAlgorandClient,
-} from '@perawallet/wallet-core-blockchain'
+import { useSuggestedParametersQuery } from '@perawallet/wallet-core-blockchain'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useToast } from '@hooks/useToast'
 import { useSendFunds } from '@modules/transactions/hooks'
+
+const mockNavigate = vi.fn()
+
+vi.mock('@react-navigation/native', () => ({
+    useNavigation: () => ({
+        navigate: mockNavigate,
+    }),
+}))
+
+vi.mock('@react-navigation/stack', () => ({}))
 
 vi.mock('@components/core', () => ({
     bottomSheetNotifier: { current: null },
@@ -41,7 +47,6 @@ vi.mock('@components/core', () => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
     useAccountAssetBalanceQuery: vi.fn(),
-    useTransactionSigner: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -63,7 +68,6 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useSuggestedParametersQuery: vi.fn(),
-    useAlgorandClient: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-currencies', () => ({
@@ -83,24 +87,9 @@ vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
 }))
 
-// Mock BigInt to return an object with microAlgo method for AlgoKit compatibility
-const originalBigInt = global.BigInt
-const mockBigIntFn = vi.fn((value: string | number | bigint) => {
-    const bigIntValue = originalBigInt(value)
-    return {
-        microAlgo: () => bigIntValue,
-        valueOf: () => bigIntValue,
-        toString: () => bigIntValue.toString(),
-    }
-})
-vi.stubGlobal('BigInt', mockBigIntFn)
-
 describe('useTransactionConfirmationScreen', () => {
     const mockOnNext = vi.fn()
     const mockShowToast = vi.fn()
-    const mockSignTransactions = vi.fn()
-    const mockPayment = vi.fn()
-    const mockAssetTransfer = vi.fn()
 
     const mockAccount = {
         address: 'TEST_ADDRESS',
@@ -111,22 +100,11 @@ describe('useTransactionConfirmationScreen', () => {
         assetId: '123',
     }
 
-    const mockAlgoAsset = {
-        assetId: '0',
-    }
-
     const mockAsset = {
         id: '123',
         decimals: 6,
         name: 'Test Asset',
         unitName: 'TEST',
-    }
-
-    const mockAlgoAssetData = {
-        id: '0',
-        decimals: 6,
-        name: 'Algorand',
-        unitName: 'ALGO',
     }
 
     const mockSendFundsState = {
@@ -145,23 +123,12 @@ describe('useTransactionConfirmationScreen', () => {
         reset: vi.fn(),
     }
 
-    const mockAlgokit = {
-        send: {
-            payment: mockPayment,
-            assetTransfer: mockAssetTransfer,
-        },
-    }
-
     beforeEach(() => {
         vi.clearAllMocks()
         ;(useToast as Mock).mockReturnValue({
             showToast: mockShowToast,
         })
         ;(useSelectedAccount as Mock).mockReturnValue(null)
-        ;(useTransactionSigner as Mock).mockReturnValue({
-            signTransactions: mockSignTransactions,
-        })
-        ;(useAlgorandClient as Mock).mockReturnValue(mockAlgokit)
         ;(useAssetsQuery as Mock).mockReturnValue({
             data: new Map(),
         })
@@ -280,7 +247,7 @@ describe('useTransactionConfirmationScreen', () => {
     })
 
     describe('handleConfirm', () => {
-        it('should show error toast when required data is missing', async () => {
+        it('should show error toast when required data is missing', () => {
             ;(useSelectedAccount as Mock).mockReturnValue(null)
             ;(useSendFunds as Mock).mockReturnValue({
                 ...mockSendFundsState,
@@ -293,8 +260,8 @@ describe('useTransactionConfirmationScreen', () => {
                 useTransactionConfirmationScreen(),
             )
 
-            await act(async () => {
-                await result.current.handleConfirm()
+            act(() => {
+                result.current.handleConfirm()
             })
 
             expect(mockShowToast).toHaveBeenCalledWith(
@@ -305,153 +272,31 @@ describe('useTransactionConfirmationScreen', () => {
                 },
                 { notifier: undefined },
             )
-            expect(mockOnNext).not.toHaveBeenCalled()
+            expect(mockNavigate).not.toHaveBeenCalled()
         })
 
-        it('should send ALGO payment when selectedAsset is ALGO', async () => {
-            ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
-            ;(useSendFunds as Mock).mockReturnValue({
-                ...mockSendFundsState,
-                selectedAsset: mockAlgoAsset,
-                amount: new Decimal(5),
-                destination: 'DEST_ADDRESS',
-                note: 'Test note',
-            })
-            ;(useAssetsQuery as Mock).mockReturnValue({
-                data: new Map([['0', mockAlgoAssetData]]),
-            })
-
-            mockPayment.mockResolvedValue({ txId: 'PAYMENT_TX_ID' })
-
-            const { result } = renderHook(() =>
-                useTransactionConfirmationScreen(),
-            )
-
-            await act(async () => {
-                await result.current.handleConfirm()
-            })
-
-            expect(mockPayment).toHaveBeenCalledWith({
-                sender: 'TEST_ADDRESS',
-                receiver: 'DEST_ADDRESS',
-                amount: expect.any(BigInt),
-                note: 'Test note',
-            })
-            expect(mockAssetTransfer).not.toHaveBeenCalled()
-            expect(mockShowToast).toHaveBeenCalledWith(
-                {
-                    title: 'Transfer Successful',
-                    body: 'You successfully sent 10.00 ALGO.',
-                    type: 'success',
-                },
-                { notifier: undefined },
-            )
-            expect(mockOnNext).toHaveBeenCalled()
-        })
-
-        it('should send ASA transfer when selectedAsset is not ALGO', async () => {
+        it('should navigate to TransactionProcessing when data is valid', () => {
             ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
             ;(useSendFunds as Mock).mockReturnValue({
                 ...mockSendFundsState,
                 selectedAsset: mockSelectedAsset,
                 amount: new Decimal(10),
                 destination: 'DEST_ADDRESS',
-                note: 'ASA note',
             })
             ;(useAssetsQuery as Mock).mockReturnValue({
                 data: new Map([['123', mockAsset]]),
             })
 
-            mockAssetTransfer.mockResolvedValue({ txId: 'ASSET_TX_ID' })
-
             const { result } = renderHook(() =>
                 useTransactionConfirmationScreen(),
             )
 
-            await act(async () => {
-                await result.current.handleConfirm()
+            act(() => {
+                result.current.handleConfirm()
             })
 
-            expect(mockAssetTransfer).toHaveBeenCalledWith({
-                sender: 'TEST_ADDRESS',
-                receiver: 'DEST_ADDRESS',
-                amount: expect.objectContaining({
-                    microAlgo: expect.any(Function),
-                }),
-                assetId: expect.objectContaining({
-                    microAlgo: expect.any(Function),
-                }),
-                note: 'ASA note',
-            })
-            expect(mockPayment).not.toHaveBeenCalled()
-            expect(mockShowToast).toHaveBeenCalledWith(
-                {
-                    title: 'Transfer Successful',
-                    body: 'You successfully sent 10.00 TEST.',
-                    type: 'success',
-                },
-                { notifier: undefined },
-            )
-            expect(mockOnNext).toHaveBeenCalled()
-        })
-
-        it('should call onNext on successful transaction', async () => {
-            ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
-            ;(useSendFunds as Mock).mockReturnValue({
-                ...mockSendFundsState,
-                selectedAsset: mockAlgoAsset,
-                amount: new Decimal(5),
-                destination: 'DEST_ADDRESS',
-            })
-            ;(useAssetsQuery as Mock).mockReturnValue({
-                data: new Map([['0', mockAlgoAssetData]]),
-            })
-
-            mockPayment.mockResolvedValue({ txId: 'SUCCESS_TX_ID' })
-
-            const { result } = renderHook(() =>
-                useTransactionConfirmationScreen(),
-            )
-
-            await act(async () => {
-                await result.current.handleConfirm()
-            })
-
-            expect(mockOnNext).toHaveBeenCalledTimes(1)
-        })
-
-        it('should show error toast on transaction failure', async () => {
-            ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
-            ;(useSendFunds as Mock).mockReturnValue({
-                ...mockSendFundsState,
-                selectedAsset: mockAlgoAsset,
-                amount: new Decimal(5),
-                destination: 'DEST_ADDRESS',
-            })
-            ;(useAssetsQuery as Mock).mockReturnValue({
-                data: new Map([['0', mockAlgoAssetData]]),
-            })
-
-            const mockError = new Error('Network error')
-            mockPayment.mockRejectedValue(mockError)
-
-            const { result } = renderHook(() =>
-                useTransactionConfirmationScreen(),
-            )
-
-            await act(async () => {
-                await result.current.handleConfirm()
-            })
-
-            expect(mockShowToast).toHaveBeenCalledWith(
-                {
-                    title: 'Error sending transaction',
-                    body: `${mockError}`,
-                    type: 'error',
-                },
-                { notifier: undefined },
-            )
-            expect(mockOnNext).not.toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledWith('TransactionProcessing')
+            expect(mockShowToast).not.toHaveBeenCalled()
         })
     })
 

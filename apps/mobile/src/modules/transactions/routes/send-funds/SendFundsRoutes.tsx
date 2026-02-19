@@ -22,6 +22,8 @@ import { AssetSelectionScreen } from '../../screens/send-funds/AssetSelectionScr
 import { InputScreen } from '../../screens/send-funds/InputScreen/InputScreen'
 import { SelectDestinationScreen } from '../../screens/send-funds/SelectDestinationScreen/SelectDestinationScreen'
 import { TransactionConfirmationScreen } from '../../screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
+import { TransactionProcessingScreen } from '../../screens/send-funds/TransactionProcessingScreen'
+import { TransactionSuccessScreen } from '../../screens/send-funds/TransactionSuccessScreen'
 import { useStyles } from './styles'
 import type { SendFundsStackParamList } from './types'
 
@@ -76,6 +78,24 @@ export const SendFundsRoutes = () => {
                 component={TransactionConfirmationScreen}
                 options={{
                     title: 'send_funds.confirmation.title',
+                }}
+            />
+
+            <Stack.Screen
+                name='TransactionProcessing'
+                component={TransactionProcessingScreen}
+                options={{
+                    headerShown: false,
+                    gestureEnabled: false,
+                }}
+            />
+
+            <Stack.Screen
+                name='TransactionSuccess'
+                component={TransactionSuccessScreen}
+                options={{
+                    headerShown: false,
+                    gestureEnabled: false,
                 }}
             />
         </Stack.Navigator>
