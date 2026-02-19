@@ -98,10 +98,7 @@ export const useTransactionProcessingScreen = () => {
                         sender: selectedAccount.address,
                         receiver: destination,
                         amount: BigInt(
-                            toDecimalUnits(
-                                amount.toNumber(),
-                                asset,
-                            ).toString(),
+                            toDecimalUnits(amount, asset).toString(),
                         ),
                         assetId: BigInt(selectedAsset.assetId),
                         note,

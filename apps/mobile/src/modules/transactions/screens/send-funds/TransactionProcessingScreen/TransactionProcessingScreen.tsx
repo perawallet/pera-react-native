@@ -10,27 +10,30 @@
  limitations under the License
  */
 
-import { ActivityIndicator } from 'react-native'
+import LottieView from 'lottie-react-native'
 
 import { PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useTheme } from '@rneui/themed'
+import peraTransactionLoading from '@assets/animations/pera-transaction-loading.json'
 import { useStyles } from './styles'
 import { useTransactionProcessingScreen } from './useTransactionProcessingScreen'
 
 export const TransactionProcessingScreen = () => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const { t } = useLanguage()
 
     useTransactionProcessingScreen()
 
     return (
         <PWView style={styles.container}>
-            <ActivityIndicator
-                size='large'
-                color={theme.colors.linkPrimary}
-            />
+            <PWView style={styles.spinnerCircle}>
+                <LottieView
+                    autoPlay
+                    loop
+                    source={peraTransactionLoading}
+                    style={styles.animation}
+                />
+            </PWView>
             <PWText
                 variant='h3'
                 style={styles.title}

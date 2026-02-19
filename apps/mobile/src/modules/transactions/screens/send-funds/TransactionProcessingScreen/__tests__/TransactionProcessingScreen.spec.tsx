@@ -44,6 +44,8 @@ vi.mock('@components/core', () => ({
 vi.mock('../styles', () => ({
     useStyles: () => ({
         container: {},
+        spinnerCircle: {},
+        animation: {},
         title: {},
         subtitle: {},
     }),
@@ -53,21 +55,19 @@ vi.mock('../useTransactionProcessingScreen', () => ({
     useTransactionProcessingScreen: vi.fn(),
 }))
 
-vi.mock('react-native', () => ({
-    ActivityIndicator: (props: { size: string; color: string }) => (
-        <div
-            data-testid='activity-indicator'
-            data-size={props.size}
-            data-color={props.color}
-        />
-    ),
+vi.mock('lottie-react-native', () => ({
+    default: () => <div data-testid='lottie-view' />,
+}))
+
+vi.mock('@assets/animations/pera-transaction-loading.json', () => ({
+    default: {},
 }))
 
 describe('TransactionProcessingScreen', () => {
-    it('renders ActivityIndicator', () => {
+    it('renders lottie animation', () => {
         const { getByTestId } = render(<TransactionProcessingScreen />)
 
-        expect(getByTestId('activity-indicator')).toBeTruthy()
+        expect(getByTestId('lottie-view')).toBeTruthy()
     })
 
     it('renders title text', () => {

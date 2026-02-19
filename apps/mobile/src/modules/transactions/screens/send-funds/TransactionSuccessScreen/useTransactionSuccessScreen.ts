@@ -28,9 +28,7 @@ type UseTransactionSuccessScreenResult = {
 export const useTransactionSuccessScreen =
     (): UseTransactionSuccessScreenResult => {
         const route =
-            useRoute<
-                RouteProp<SendFundsStackParamList, 'TransactionSuccess'>
-            >()
+            useRoute<RouteProp<SendFundsStackParamList, 'TransactionSuccess'>>()
         const { transactionId } = route.params
         const { onFinished } = useSendFunds()
         const { networkConfig } = useNetwork()
