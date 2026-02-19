@@ -14,6 +14,7 @@ import { KeyPair } from './keys'
 import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 
 export * from './keys'
+export * from './session'
 
 export type KeyManagerState = BaseStoreState & {
     keys: Map<string, KeyPair>

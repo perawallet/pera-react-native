@@ -20,9 +20,11 @@
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-platform-integration": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
+    "@algorandfoundation/algokit-utils": "catalog:",
     "@algorandfoundation/xhd-wallet-api": "catalog:",
+    "bip39": "catalog:",
+    "tweetnacl": "^1.0.3",
     "react": "catalog:",
-    "uuid": "catalog:",
     "zustand": "catalog:"
   },
   "devDependencies": {

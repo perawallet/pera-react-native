@@ -74,7 +74,6 @@ describe('useAssetTransactionList', () => {
         address: 'VALID_ADDRESS_58_CHARS_LONG_AAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         name: 'Test Account',
         type: 'algo25',
-        canSign: true,
     } as WalletAccount
 
     const mockAsset: PeraAsset = {

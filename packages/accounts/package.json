@@ -27,13 +27,10 @@
     "@perawallet/wallet-core-kms": "workspace:*",
     "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@algorandfoundation/algokit-utils": "catalog:",
-    "tweetnacl": "^1.0.3",
     "@tanstack/react-query": "catalog:",
-    "bip39": "catalog:",
     "decimal.js": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "uuid": "catalog:",
     "zustand": "catalog:"
   },
   "devDependencies": {

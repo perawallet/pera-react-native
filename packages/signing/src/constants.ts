@@ -12,3 +12,4 @@
 
 export const MAX_TRANSACTION_SIGN_REQUESTS = 1000
 export const MAX_DATA_SIGN_REQUESTS = 1000
+export const SIGNING_KEY_DOMAIN = 'pera.accounts'

@@ -32,7 +32,6 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import React from 'react'
 import { useWebView } from '@hooks/usePeraWebviewInterface'
-import { v7 as uuid } from 'uuid'
 import {
     useSigningAccounts,
     WalletAccount,
@@ -41,6 +40,7 @@ import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { ScrollView } from 'react-native-gesture-handler'
 import { useToast } from '@hooks/useToast'
 import { PermissionItem } from '../PermissionItem'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 
 export type ConnectionViewProps = {
     request: WalletConnectSessionRequest
@@ -67,7 +67,10 @@ export const ConnectionView = ({ request }: ConnectionViewProps) => {
 
     const handlePressUrl = () => {
         if (!request.peerMeta.url) return
-        pushWebView({ id: uuid(), url: request.peerMeta.url })
+        pushWebView({
+            id: generateOrderedUniqueId(),
+            url: request.peerMeta.url,
+        })
     }
 
     const handleCancel = () => {

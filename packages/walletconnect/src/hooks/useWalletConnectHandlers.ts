@@ -13,6 +13,7 @@
 import {
     decodeFromBase64,
     encodeToBase64,
+    generateOrderedUniqueId,
     logger,
     Network,
     Networks,
@@ -48,7 +49,6 @@ import {
     useAllAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { v7 as uuid } from 'uuid'
 
 const validateRequest = (
     connector: WalletConnect,
@@ -194,7 +194,7 @@ export const useWalletConnectHandlers = () => {
             )
 
             addSignRequest({
-                id: uuid(),
+                id: generateOrderedUniqueId(),
                 type: 'arbitrary-data',
                 transport: 'callback',
                 transportId: connector.clientId,
@@ -253,7 +253,7 @@ export const useWalletConnectHandlers = () => {
             )
 
             addSignRequest({
-                id: uuid(),
+                id: generateOrderedUniqueId(),
                 type: 'transactions',
                 transport: 'callback',
                 transportId: connector.clientId,

@@ -51,7 +51,8 @@ type UseAddAccountScreenResult = {
 
 export const useAddAccountScreen = (): UseAddAccountScreenResult => {
     const navigation = useAppNavigation()
-    const createAccount = useCreateAccount()
+    const { createHdWalletAccount, createAlgo25WalletAccount } =
+        useCreateAccount()
     const { createNextHDAccount, hasHDWallet } = useCreateNextHDAccount()
     const { showToast } = useToast()
     const { t } = useLanguage()
@@ -150,7 +151,7 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
         openCreatingAccount()
         deferToNextCycle(async () => {
             try {
-                const newAccount = await createAccount({
+                const newAccount = await createHdWalletAccount({
                     account: 0,
                     keyIndex: 0,
                 })
@@ -170,7 +171,7 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
     }, [
         openCreatingAccount,
         closeCreatingAccount,
-        createAccount,
+        createHdWalletAccount,
         navigation,
         showToast,
         t,
@@ -180,11 +181,7 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
         openCreatingAccount()
         deferToNextCycle(async () => {
             try {
-                const newAccount = await createAccount({
-                    account: 0,
-                    keyIndex: 0,
-                    type: 'algo25',
-                })
+                const newAccount = await createAlgo25WalletAccount({})
                 navigation.push('NameAccount', { account: newAccount })
             } catch (error) {
                 showToast({
@@ -201,7 +198,7 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
     }, [
         openCreatingAccount,
         closeCreatingAccount,
-        createAccount,
+        createAlgo25WalletAccount,
         navigation,
         showToast,
         t,

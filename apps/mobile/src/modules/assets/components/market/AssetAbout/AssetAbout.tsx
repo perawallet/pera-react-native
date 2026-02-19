@@ -12,13 +12,15 @@
 
 import { View } from 'react-native'
 import { useStyles } from './styles'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    truncateAlgorandAddress,
+} from '@perawallet/wallet-core-shared'
 import { PWButton, PWText } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@hooks/usePeraWebviewInterface'
-import { v7 as uuid } from 'uuid'
 import { useClipboard } from '@hooks/useClipboard'
 
 export type AssetAboutProps = {
@@ -44,7 +46,7 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
 
     const openLink = (url: string) => {
         pushWebView({
-            id: uuid(),
+            id: generateOrderedUniqueId(),
             url,
         })
     }

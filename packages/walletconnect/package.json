@@ -27,7 +27,6 @@
     "@walletconnect/types": "1.8.0",
     "@walletconnect/utils": "1.8.0",
     "react": "catalog:",
-    "uuid": "catalog:",
     "zustand": "catalog:"
   },
   "devDependencies": {

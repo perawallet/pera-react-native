@@ -31,7 +31,6 @@ export type AccountType = (typeof AccountTypes)[keyof typeof AccountTypes]
 export type ImportAccountType = 'hdWallet' | 'algo25'
 
 export type HDWalletDetails = {
-    walletId: string
     account: number
     change: number
     keyIndex: number
@@ -60,18 +59,19 @@ export type BaseWalletAccount = {
     name?: string
     type: AccountType
     address: string
-    canSign: boolean
     keyPairId?: string
     rekeyAddress?: string
 }
 
 export type Algo25Account = BaseWalletAccount & {
     type: typeof AccountTypes.algo25
+    keyPairId: string
 }
 
 export type HDWalletAccount = BaseWalletAccount & {
     type: typeof AccountTypes.hdWallet
     hdWalletDetails: HDWalletDetails
+    keyPairId: string
 }
 
 export type MultiSigAccount = BaseWalletAccount & {

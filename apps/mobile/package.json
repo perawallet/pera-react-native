@@ -116,8 +116,7 @@
     "sharp": "^0.34.5",
     "tsyringe": "catalog:",
     "util": "catalog:",
-    "uuid": "catalog:",
-    "zod": "^4.1.12",
+    "zod": "catalog:",
     "zustand": "catalog:"
   },
   "devDependencies": {

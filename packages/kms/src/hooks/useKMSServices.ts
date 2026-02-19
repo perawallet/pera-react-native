@@ -11,30 +11,71 @@
  */
 
 import { useSecureStorageService } from '@perawallet/wallet-core-platform-integration'
-import { AppError, logger } from '@perawallet/wallet-core-shared'
-import { KeyAccessError, KeyNotFoundError } from '../errors'
 import { useKeyManagerStore } from '../store'
+import {
+    AppError,
+    generateOrderedUniqueId,
+    logger,
+} from '@perawallet/wallet-core-shared'
+import { AccessControlPermission, KeyPair, StoredKeyMaterial } from '../models'
+import { KeyAccessError } from '../errors'
 import { useCallback } from 'react'
-import { AccessControlPermission } from '../models'
 
-export const useWithKey = () => {
+export const useKMSService = () => {
     const secureStorage = useSecureStorageService()
+    const addKey = useKeyManagerStore(state => state.addKey)
     const getKey = useKeyManagerStore(state => state.getKey)
+    const removeKey = useKeyManagerStore(state => state.removeKey)
+
+    const saveKey = useCallback(
+        async (key: KeyPair, keyData: StoredKeyMaterial) => {
+            const storageKey = key.id ?? generateOrderedUniqueId()
+
+            const stringifiedObj = JSON.stringify(keyData)
+
+            const storageLocation = key.publicKey.length
+                ? `${key.type}-${key.publicKey}`
+                : `${key.type}-${storageKey}`
+            const modifiedKey: KeyPair = {
+                ...key,
+                id: storageKey,
+                privateDataStorageKey: storageLocation,
+                createdAt: new Date(),
+            }
+
+            await secureStorage.setItem(
+                storageLocation,
+                new TextEncoder().encode(stringifiedObj),
+            )
+            addKey(modifiedKey)
+
+            return modifiedKey
+        },
+        [addKey, secureStorage],
+    )
+
+    const deleteKey = useCallback(
+        async (id: string) => {
+            const key = getKey(id)
+            if (!key) {
+                return
+            }
+
+            if (key.privateDataStorageKey) {
+                await secureStorage.removeItem(key.privateDataStorageKey)
+            }
+            logger.debug('Deleting key', key)
+            removeKey(id)
+        },
+        [getKey, removeKey, secureStorage],
+    )
 
     const executeWithKey = useCallback(
         async <T>(
-            keyId: string,
+            key: KeyPair,
             domain: string,
-            handler: (privateKey: Uint8Array) => Promise<T>,
+            handler: (privateKey: StoredKeyMaterial) => Promise<T>,
         ) => {
-            const key = getKey(keyId)
-
-            logger.debug('Executing with key', { keyId, key })
-
-            if (!key) {
-                throw new KeyNotFoundError(keyId)
-            }
-
             if (key.acl?.length) {
                 const hasAccess = key.acl.some(
                     acl =>
@@ -62,7 +103,10 @@ export const useWithKey = () => {
             }
 
             try {
-                const result = await handler(privateKey)
+                const storedKey: StoredKeyMaterial = JSON.parse(
+                    new TextDecoder().decode(privateKey),
+                )
+                const result = await handler(storedKey)
 
                 return result
             } catch (error) {
@@ -77,10 +121,12 @@ export const useWithKey = () => {
                 }
             }
         },
-        [getKey, secureStorage],
+        [secureStorage],
     )
 
     return {
+        deleteKey,
+        saveKey,
         executeWithKey,
     }
 }

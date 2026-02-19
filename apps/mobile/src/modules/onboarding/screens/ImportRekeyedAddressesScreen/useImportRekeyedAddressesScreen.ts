@@ -16,7 +16,7 @@ import { OnboardingStackParamList } from '../../routes/types'
 import {
     useAllAccounts,
     useAccountsStore,
-    Algo25Account,
+    WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useIsOnboarding } from '@modules/onboarding/hooks'
@@ -28,7 +28,7 @@ type ImportRekeyedAddressesRouteProp = RouteProp<
 >
 
 export type UseImportRekeyedAddressesScreenResult = {
-    accounts: Algo25Account[]
+    accounts: WalletAccount[]
     selectedAddresses: Set<string>
     isAllSelected: boolean
     areAllImported: boolean

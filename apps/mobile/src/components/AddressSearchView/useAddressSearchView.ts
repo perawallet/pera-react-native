@@ -13,6 +13,7 @@
 import { useMemo, useState } from 'react'
 import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
 import {
+    AccountTypes,
     useAllAccounts,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -78,9 +79,8 @@ export const useAddressSearchView = (
             items.push({
                 type: 'account',
                 account: {
-                    type: 'watch',
+                    type: AccountTypes.watch,
                     address: value,
-                    canSign: false,
                 },
                 key: `address-${value}`,
             })

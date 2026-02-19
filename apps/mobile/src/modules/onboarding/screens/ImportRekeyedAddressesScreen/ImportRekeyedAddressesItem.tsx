@@ -20,12 +20,12 @@ import {
     PWChip,
     PWRoundIcon,
 } from '@components/core'
-import { Algo25Account } from '@perawallet/wallet-core-accounts'
+import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
 type ImportRekeyedAddressesItemProps = {
-    account: Algo25Account
+    account: WalletAccount
     isImported: boolean
     isSelected: boolean
     onToggle: (address: string) => void

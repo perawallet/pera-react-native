@@ -20,7 +20,7 @@ import {
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
-import { v7 as uuidv7 } from 'uuid'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 
 type UseWatchAccountScreenResult = {
     address: string
@@ -67,7 +67,7 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
         }
 
         const newAccount = {
-            id: uuidv7(),
+            id: generateOrderedUniqueId(),
             address,
             type: AccountTypes.watch,
             canSign: false,

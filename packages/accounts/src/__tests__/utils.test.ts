@@ -20,14 +20,7 @@ import {
     isMultisigAccount,
     isRekeyedAccount,
     isWatchAccount,
-    createHDWalletKeyDataFromMnemonic,
-    createAlgo25WalletKeyDataFromMnemonic,
 } from '../utils'
-import { vi } from 'vitest'
-
-vi.mock('@algorandfoundation/algokit-utils/algo25', () => ({
-    seedFromMnemonic: vi.fn(() => new Uint8Array(32).fill(1)),
-}))
 
 vi.mock('bip39', () => ({
     mnemonicToSeed: vi.fn(async () => Buffer.from(new Uint8Array(64).fill(2))),
@@ -118,7 +111,7 @@ describe('services/accounts/utils - account type checks', () => {
         id: '1',
         type: 'hdWallet',
         address: 'ADDR1',
-        canSign: true,
+        keyPairId: 'pk1',
     } as any
 
     test('isHDWalletAccount returns true if type is hdWallet', () => {
@@ -201,40 +194,13 @@ describe('services/accounts/utils - account type checks', () => {
         ).toBe(true)
     })
 
-    test('canSignWithAccount returns canSign property', () => {
+    test('canSignWithAccount checks keyPairId', () => {
         expect(canSignWithAccount(baseAccount)).toBe(true)
         expect(
             canSignWithAccount({
                 ...baseAccount,
-                canSign: false,
+                keyPairId: undefined,
             } as any),
         ).toBe(false)
-    })
-})
-
-describe('services/accounts/utils - createHDWalletKeyDataFromMnemonic', () => {
-    test('creates key pair from valid mnemonic', async () => {
-        const mnemonic =
-            'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art'
-        const result = await createHDWalletKeyDataFromMnemonic(mnemonic)
-
-        expect(result.seed).toBeInstanceOf(Buffer)
-        expect(result.seed.length).toBe(64) // BIP39 seed is 512 bits
-        expect(result.entropy).toBeDefined()
-        expect(result.type).toBe('hdwallet-root-key')
-    })
-})
-
-describe('services/accounts/utils - createAlgo25WalletKeyDataFromMnemonic', () => {
-    test('creates key pair from valid mnemonic', async () => {
-        const mnemonic =
-            'since theory average article fly finger table squirrel music degree arrest shallow unit medal update elevator snap code tip body switch mirror page able total'
-        const result = await createAlgo25WalletKeyDataFromMnemonic(mnemonic)
-
-        expect(result.seed).toBeInstanceOf(Buffer)
-        expect(result.seed.length).toBe(32) // Algo25 seed is 256 bits
-        expect(result.entropy).toBeDefined()
-        expect(result.publicKey).toBeDefined()
-        expect(result.type).toBe('algo25-key')
     })
 })

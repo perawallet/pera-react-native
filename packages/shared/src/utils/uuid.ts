@@ -10,16 +10,12 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-accounts'
+import { v4 as uuidv4, v7 as uuidv7 } from 'uuid'
 
-export * from './models'
-export * from './hooks'
-export * from './errors'
-export * from './utils'
-export * from './account-discovery'
+export const generateUniqueId = (): string => {
+    return uuidv4()
+}
 
-export {
-    initAccountsStore,
-    registerAccountsStore,
-    useAccountsStore,
-} from './store'
+export const generateOrderedUniqueId = (): string => {
+    return uuidv7()
+}

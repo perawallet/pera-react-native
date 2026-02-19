@@ -10,30 +10,29 @@
  limitations under the License
  */
 
-import { v7 as uuidv7 } from 'uuid'
-import {
-    BIP32DerivationType,
-    fromSeed,
-    XHDWalletAPI,
-    KeyContext,
-} from '@algorandfoundation/xhd-wallet-api'
+import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import {
     encodeAlgorandAddress,
     getAlgorandClient,
 } from '@perawallet/wallet-core-blockchain'
 import { Account } from '@algorandfoundation/algokit-utils/indexer-client'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import { AccountTypes, Algo25Account, HDWalletAccount } from './models/accounts'
+import type { KMSHDWalletSession } from '@perawallet/wallet-core-kms'
+import {
+    AccountTypes,
+    HDWalletAccount,
+    WalletAccount,
+    WatchAccount,
+} from './models/accounts'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 
 const ACCOUNT_GAP_LIMIT = 5
 const KEY_INDEX_GAP_LIMIT = 5
 
-const api = new XHDWalletAPI()
-
 type DiscoverAccountsParams = {
-    seed: Buffer
+    session: KMSHDWalletSession
     derivationType: BIP32DerivationType
-    walletId: string
+    walletKeyId: string
     accountGapLimit?: number
     keyIndexGapLimit?: number
     accountAddresses?: string[]
@@ -63,9 +62,8 @@ async function checkActivity(
 type ScanAccountKeysParams = {
     accountIdx: number
     keyIndexGapLimit: number
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    rootKey: any
-    walletId: string
+    session: KMSHDWalletSession
+    walletKeyId: string
     derivationType: BIP32DerivationType
     algorandClient: AlgorandClient
 }
@@ -78,8 +76,8 @@ type ScanResult = {
 async function scanAccountKeys({
     accountIdx,
     keyIndexGapLimit,
-    rootKey,
-    walletId,
+    session,
+    walletKeyId,
     derivationType,
     algorandClient,
 }: ScanAccountKeysParams): Promise<ScanResult> {
@@ -95,22 +93,19 @@ async function scanAccountKeys({
         for (let i = 0; i < batchSize; i++) {
             const currentKeyIdx = keyIdx + i
             tasks.push(async () => {
-                const addressBytes = await api.keyGen(
-                    rootKey,
-                    KeyContext.Address,
-                    accountIdx,
-                    currentKeyIdx,
+                const addressBytes = await session.getPublicKey({
+                    account: accountIdx,
+                    keyIndex: currentKeyIdx,
                     derivationType,
-                )
+                })
                 const address = encodeAlgorandAddress(addressBytes)
 
                 const accountData: HDWalletAccount = {
-                    id: uuidv7(),
+                    id: generateOrderedUniqueId(),
                     address,
                     type: AccountTypes.hdWallet,
-                    canSign: true,
+                    keyPairId: walletKeyId,
                     hdWalletDetails: {
-                        walletId,
                         account: accountIdx,
                         change: 0,
                         keyIndex: currentKeyIdx,
@@ -153,14 +148,13 @@ async function scanAccountKeys({
 }
 
 export async function discoverAccounts({
-    seed,
+    session,
     derivationType,
-    walletId,
+    walletKeyId,
     accountGapLimit = ACCOUNT_GAP_LIMIT,
     keyIndexGapLimit = KEY_INDEX_GAP_LIMIT,
 }: DiscoverAccountsParams): Promise<HDWalletAccount[]> {
     const algorandClient = getAlgorandClient()
-    const rootKey = fromSeed(seed)
     const foundAccounts: HDWalletAccount[] = []
     let firstAccount: HDWalletAccount | null = null
 
@@ -176,8 +170,8 @@ export async function discoverAccounts({
                 scanAccountKeys({
                     accountIdx: accountIndex + i,
                     keyIndexGapLimit,
-                    rootKey,
-                    walletId,
+                    session,
+                    walletKeyId,
                     derivationType,
                     algorandClient,
                 }),
@@ -237,7 +231,7 @@ async function checkRekeyed(
 type ScanRekeyedKeysParams = {
     accountIdx: number
     keyIndexGapLimit: number
-    rootKey: Uint8Array
+    session: KMSHDWalletSession
     derivationType: BIP32DerivationType
     algorandClient: AlgorandClient
 }
@@ -245,11 +239,11 @@ type ScanRekeyedKeysParams = {
 async function scanRekeyedKeys({
     accountIdx,
     keyIndexGapLimit,
-    rootKey,
+    session,
     derivationType,
     algorandClient,
-}: ScanRekeyedKeysParams): Promise<Algo25Account[]> {
-    const foundAccounts: Algo25Account[] = []
+}: ScanRekeyedKeysParams): Promise<WalletAccount[]> {
+    const foundAccounts: WalletAccount[] = []
     let keyGap = 0
     let keyIdx = 0
 
@@ -260,13 +254,11 @@ async function scanRekeyedKeys({
         for (let i = 0; i < batchSize; i++) {
             const currentKeyIdx = keyIdx + i
             tasks.push(async () => {
-                const addressBytes = await api.keyGen(
-                    rootKey,
-                    KeyContext.Address,
-                    accountIdx,
-                    currentKeyIdx,
+                const addressBytes = await session.getPublicKey({
+                    account: accountIdx,
+                    keyIndex: currentKeyIdx,
                     derivationType,
-                )
+                })
                 const address = encodeAlgorandAddress(addressBytes)
                 const rekeyedAccounts = await checkRekeyed(
                     algorandClient,
@@ -274,11 +266,10 @@ async function scanRekeyedKeys({
                 )
 
                 return rekeyedAccounts.map(
-                    (account: { address: string }): Algo25Account => ({
-                        id: uuidv7(),
+                    (account: { address: string }): WatchAccount => ({
+                        id: generateOrderedUniqueId(),
                         address: account.address,
-                        type: AccountTypes.algo25,
-                        canSign: true,
+                        type: AccountTypes.watch,
                         rekeyAddress: address,
                     }),
                 )
@@ -306,12 +297,12 @@ async function scanRekeyedKeys({
 }
 
 export async function discoverRekeyedAccounts({
-    seed,
+    session,
     derivationType,
     accountGapLimit = ACCOUNT_GAP_LIMIT,
     keyIndexGapLimit = KEY_INDEX_GAP_LIMIT,
     accountAddresses,
-}: DiscoverAccountsParams): Promise<Algo25Account[]> {
+}: DiscoverAccountsParams): Promise<WalletAccount[]> {
     const algorandClient = getAlgorandClient()
 
     if (accountAddresses && accountAddresses.length > 0) {
@@ -319,11 +310,10 @@ export async function discoverRekeyedAccounts({
             const rekeyedAccounts = await checkRekeyed(algorandClient, address)
 
             return rekeyedAccounts.map(
-                (account: { address: string }): Algo25Account => ({
-                    id: uuidv7(),
+                (account: { address: string }): WalletAccount => ({
+                    id: generateOrderedUniqueId(),
                     address: account.address,
-                    type: AccountTypes.algo25,
-                    canSign: true,
+                    type: AccountTypes.watch,
                     rekeyAddress: address,
                 }),
             )
@@ -333,8 +323,7 @@ export async function discoverRekeyedAccounts({
         return results.flat()
     }
 
-    const rootKey = fromSeed(seed)
-    const foundAccounts: Algo25Account[] = []
+    const foundAccounts: WalletAccount[] = []
 
     let accountGap = 0
     let accountIndex = 0
@@ -348,7 +337,7 @@ export async function discoverRekeyedAccounts({
                 scanRekeyedKeys({
                     accountIdx: accountIndex + i,
                     keyIndexGapLimit,
-                    rootKey,
+                    session,
                     derivationType,
                     algorandClient,
                 }),
