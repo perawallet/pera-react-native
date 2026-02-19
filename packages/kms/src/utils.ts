@@ -14,7 +14,7 @@ import {
     decodeFromBase64,
     ERROR_I18N_KEYS,
 } from '@perawallet/wallet-core-shared'
-import { StoredKeyMaterial } from './models'
+import { KeyPair, StoredKeyMaterial } from './models'
 import { KeyManagementError } from './errors'
 
 export const getSeedFromMasterKey = (
@@ -34,5 +34,17 @@ export const getEntropyFromMasterKey = (
         return storedKey.entropy ? decodeFromBase64(storedKey.entropy) : null
     } catch (e) {
         throw new KeyManagementError(ERROR_I18N_KEYS.INVALID_KEY, e as Error)
+    }
+}
+
+export const makeKeyPair = (source: Partial<KeyPair>): KeyPair => {
+    return {
+        id: source.id ?? '',
+        publicKey: source.publicKey ?? '',
+        privateDataStorageKey: source.privateDataStorageKey ?? '',
+        type: source.type ?? 'unknown',
+        createdAt: source.createdAt ?? new Date(),
+        expiresAt: source.expiresAt,
+        acl: source.acl ?? [],
     }
 }

@@ -66,5 +66,6 @@ export const isMultisigAccount = (
 }
 
 export const canSignWithAccount = (account: WalletAccount) => {
+    //TODO: this needs to handle rekeys as well...
     return !!account.keyPairId
 }

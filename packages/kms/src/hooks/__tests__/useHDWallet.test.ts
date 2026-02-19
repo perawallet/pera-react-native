@@ -62,11 +62,16 @@ vi.mock('../useKMSServices', () => ({
 const mockGetSeedFromMasterKey = vi.fn()
 const mockGetEntropyFromMasterKey = vi.fn()
 
-vi.mock('../../utils', () => ({
-    getSeedFromMasterKey: (...args: any[]) => mockGetSeedFromMasterKey(...args),
-    getEntropyFromMasterKey: (...args: any[]) =>
-        mockGetEntropyFromMasterKey(...args),
-}))
+vi.mock('../../utils', async () => {
+    const actual = await vi.importActual<object>('../../utils')
+    return {
+        ...actual,
+        getSeedFromMasterKey: (...args: any[]) =>
+            mockGetSeedFromMasterKey(...args),
+        getEntropyFromMasterKey: (...args: any[]) =>
+            mockGetEntropyFromMasterKey(...args),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<object>(

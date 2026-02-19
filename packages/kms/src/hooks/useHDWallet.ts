@@ -10,97 +10,26 @@
  limitations under the License
  */
 
-import {
-    BIP32DerivationType,
-    Encoding,
-    fromSeed,
-    KeyContext,
-    XHDWalletAPI,
-} from '@algorandfoundation/xhd-wallet-api'
-import * as bip39 from 'bip39'
-import messageSchema from '../crypto/message-schema.json'
-import { WORDLIST } from '../crypto/wordlist'
 import type { HDDerivationParams, KMSHDWalletSession } from '../models/session'
 import { KeyPair, KeyType } from '../models'
-import { getEntropyFromMasterKey, getSeedFromMasterKey } from '../utils'
+import {
+    getEntropyFromMasterKey,
+    getSeedFromMasterKey,
+    makeKeyPair,
+} from '../utils'
 import {
     encodeToBase64,
     generateOrderedUniqueId,
 } from '@perawallet/wallet-core-shared'
 import { InvalidKeyError } from '../errors'
 import { useKMSService } from './useKMSServices'
-
-const api = new XHDWalletAPI()
-
-const HD_MNEMONIC_LENGTH = 256
-
-const entropyToMnemonic = (entropy: Buffer) => {
-    return bip39.entropyToMnemonic(entropy)
-}
-
-const deriveAddress = async (
-    seed: Buffer,
-    params: HDDerivationParams,
-): Promise<Uint8Array> => {
-    const rootKey = fromSeed(seed)
-    return api.keyGen(
-        rootKey,
-        KeyContext.Address,
-        params.account,
-        params.keyIndex,
-        params.derivationType as BIP32DerivationType,
-    )
-}
-
-const signTransaction = async (
-    seed: Buffer,
-    params: HDDerivationParams,
-    encodedTx: Uint8Array,
-): Promise<Uint8Array> => {
-    const rootKey = fromSeed(seed)
-    return api.signAlgoTransaction(
-        rootKey,
-        KeyContext.Address,
-        params.account,
-        params.keyIndex,
-        encodedTx,
-        params.derivationType as BIP32DerivationType,
-    )
-}
-
-const signData = async (
-    seed: Buffer,
-    params: HDDerivationParams,
-    data: Uint8Array,
-): Promise<Uint8Array> => {
-    const rootKey = fromSeed(seed)
-    const metadata = {
-        encoding: Encoding.BASE64,
-        schema: messageSchema,
-    }
-    return api.signData(
-        rootKey,
-        KeyContext.Address,
-        params.account,
-        params.keyIndex,
-        data,
-        metadata,
-        params.derivationType as BIP32DerivationType,
-    )
-}
-
-const generateHDMasterKey = async (mnemonic?: string) => {
-    const storableMnemonic =
-        mnemonic ??
-        bip39.generateMnemonic(HD_MNEMONIC_LENGTH, undefined, WORDLIST)
-    const seed = await bip39.mnemonicToSeed(storableMnemonic)
-    const entropy = await bip39.mnemonicToEntropy(storableMnemonic)
-    return {
-        seed,
-        entropy,
-        mnemonic: storableMnemonic,
-    }
-}
+import {
+    deriveAddress,
+    entropyToMnemonic,
+    generateHDMasterKey,
+    signData,
+    signTransaction,
+} from '../crypto/hdwallet-utils'
 
 export const useHDWallet = () => {
     const { saveKey, executeWithKey } = useKMSService()
@@ -112,13 +41,10 @@ export const useHDWallet = () => {
         const keyId = params?.id ?? generateOrderedUniqueId()
         const masterKey = await generateHDMasterKey(params?.mnemonic)
 
-        const keyPair: KeyPair = {
+        const keyPair = makeKeyPair({
             id: keyId,
-            publicKey: '',
-            privateDataStorageKey: '',
-            createdAt: new Date(),
             type: KeyType.HDWalletRootKey,
-        }
+        })
 
         const savedKey = await saveKey(keyPair, {
             seed: encodeToBase64(masterKey.seed),

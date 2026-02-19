@@ -24,7 +24,7 @@ import {
 } from '@algorandfoundation/algokit-utils/algo25'
 import { encodeAddress } from '@algorandfoundation/algokit-utils'
 import { useKMSService } from './useKMSServices'
-import { getSeedFromMasterKey } from '../utils'
+import { getSeedFromMasterKey, makeKeyPair } from '../utils'
 
 export const useAlgo25 = () => {
     const { saveKey, executeWithKey } = useKMSService()
@@ -59,13 +59,11 @@ export const useAlgo25 = () => {
         const keyId = params.id ?? generateOrderedUniqueId()
         const secret = await generateAlgo25Key(params.mnemonic)
 
-        const keyPair: KeyPair = {
+        const keyPair = makeKeyPair({
             id: keyId,
             publicKey: encodeAddress(algo25PublicKeyFromSeed(secret)),
-            privateDataStorageKey: '',
-            createdAt: new Date(),
             type: KeyType.Algo25Key,
-        }
+        })
 
         const savedKey = await saveKey(keyPair, {
             seed: encodeToBase64(secret),

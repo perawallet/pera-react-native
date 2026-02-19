@@ -52,7 +52,7 @@ export type AddAccountStackParamList = {
         accounts: HDWalletAccount[]
     }
     ImportRekeyedAddresses: {
-        accounts: Algo25Account[]
+        accounts: WalletAccount[]
     }
     ImportInfo: {
         accountType: ImportAccountType

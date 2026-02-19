@@ -15,7 +15,10 @@ import { renderHook, act } from '@testing-library/react'
 import { useCreateNextHDAccount } from '../useCreateNextHDAccount'
 import type { WalletAccount } from '../../models'
 
-const mockCreateAccount = vi.fn()
+const mockCreateAccount = {
+    createHdWalletAccount: vi.fn(),
+    createAlgo25WalletAccount: vi.fn(),
+}
 const mockUseAllAccounts = vi.fn((): WalletAccount[] => [])
 
 vi.mock('../useAllAccounts', () => ({
@@ -30,14 +33,13 @@ const HD_ACCOUNT = {
     id: 'hd-1',
     address: 'HD_ADDRESS',
     type: 'hdWallet' as const,
-    canSign: true,
     hdWalletDetails: {
-        walletId: 'wallet-1',
         account: 0,
         change: 0,
         keyIndex: 0,
         derivationType: 9 as const,
     },
+    keyPairId: 'wallet-1',
 }
 
 describe('useCreateNextHDAccount', () => {
@@ -73,7 +75,7 @@ describe('useCreateNextHDAccount', () => {
         })
 
         expect(account).toBeNull()
-        expect(mockCreateAccount).not.toHaveBeenCalled()
+        expect(mockCreateAccount.createHdWalletAccount).not.toHaveBeenCalled()
     })
 
     test('createNextHDAccount calculates correct next keyIndex', async () => {
@@ -92,9 +94,9 @@ describe('useCreateNextHDAccount', () => {
             id: 'new-hd',
             address: 'NEW_HD_ADDRESS',
             type: 'hdWallet' as const,
-            canSign: true,
+            keyPairId: 'wallet-1',
         }
-        mockCreateAccount.mockResolvedValue(newAccount)
+        mockCreateAccount.createHdWalletAccount.mockResolvedValue(newAccount)
 
         const { result } = renderHook(() => useCreateNextHDAccount())
 
@@ -102,7 +104,7 @@ describe('useCreateNextHDAccount', () => {
             await result.current.createNextHDAccount()
         })
 
-        expect(mockCreateAccount).toHaveBeenCalledWith({
+        expect(mockCreateAccount.createHdWalletAccount).toHaveBeenCalledWith({
             walletId: 'wallet-1',
             account: 0,
             keyIndex: 3,
@@ -111,11 +113,10 @@ describe('useCreateNextHDAccount', () => {
 
     test('createNextHDAccount uses walletId from first HD account', async () => {
         mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
-        mockCreateAccount.mockResolvedValue({
+        mockCreateAccount.createHdWalletAccount.mockResolvedValue({
             id: 'new',
             address: 'NEW',
             type: 'hdWallet',
-            canSign: true,
         })
 
         const { result } = renderHook(() => useCreateNextHDAccount())
@@ -124,7 +125,7 @@ describe('useCreateNextHDAccount', () => {
             await result.current.createNextHDAccount()
         })
 
-        expect(mockCreateAccount).toHaveBeenCalledWith({
+        expect(mockCreateAccount.createHdWalletAccount).toHaveBeenCalledWith({
             walletId: 'wallet-1',
             account: 0,
             keyIndex: 1,
