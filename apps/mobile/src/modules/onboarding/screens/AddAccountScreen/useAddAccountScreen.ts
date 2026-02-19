@@ -14,9 +14,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import {
     useCreateAccount,
-    useAllAccounts,
-    AccountTypes,
-    HDWalletAccount,
+    useCreateNextHDAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useModalState } from '@hooks/useModalState'
 import { useToast } from '@hooks/useToast'
@@ -24,21 +22,28 @@ import { useLanguage } from '@hooks/useLanguage'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
+import { type IconName } from '@components/core'
+
+export type AccountOption = {
+    testID: string
+    titleKey: string
+    descriptionKey: string
+    leftIcon: IconName
+    onPress: () => void
+    isDisabled?: boolean
+}
 
 type UseAddAccountScreenResult = {
-    hasHDWallet: boolean
     isCreatingAccount: boolean
     isImportOptionsVisible: boolean
     isOtherOptionsVisible: boolean
+    mainOptions: AccountOption[]
+    otherOptions: AccountOption[]
     handleClose: () => void
-    handleAddAccount: () => void
     handleImportAccount: () => void
     handleCloseImportOptions: () => void
     handleHDWalletPress: () => void
     handleAlgo25Press: () => void
-    handleWatchAddress: () => void
-    handleCreateUniversalWallet: () => void
-    handleCreateAlgo25: () => void
     handleTermsPress: () => void
     handlePrivacyPress: () => void
     handleToggleOtherOptions: () => void
@@ -46,8 +51,8 @@ type UseAddAccountScreenResult = {
 
 export const useAddAccountScreen = (): UseAddAccountScreenResult => {
     const navigation = useAppNavigation()
-    const accounts = useAllAccounts()
     const createAccount = useCreateAccount()
+    const { createNextHDAccount, hasHDWallet } = useCreateNextHDAccount()
     const { showToast } = useToast()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
@@ -63,15 +68,6 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
         close: closeCreatingAccount,
     } = useModalState()
 
-    const hdWalletAccounts = useMemo(
-        () =>
-            accounts.filter(
-                (a): a is HDWalletAccount => a.type === AccountTypes.hdWallet,
-            ),
-        [accounts],
-    )
-
-    const hasHDWallet = hdWalletAccounts.length > 0
     const [isOtherOptionsVisible, setIsOtherOptionsVisible] = useState(false)
 
     const handleClose = useCallback(() => {
@@ -79,30 +75,15 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
     }, [navigation])
 
     const handleAddAccount = useCallback(() => {
-        if (hdWalletAccounts.length === 0) return
+        if (!hasHDWallet) return
 
         openCreatingAccount()
         deferToNextCycle(async () => {
             try {
-                const firstHDAccount = hdWalletAccounts[0]
-                const walletId = firstHDAccount.hdWalletDetails.walletId
-
-                const sameWalletAccounts = hdWalletAccounts.filter(
-                    a => a.hdWalletDetails.walletId === walletId,
-                )
-                const nextKeyIndex =
-                    Math.max(
-                        ...sameWalletAccounts.map(
-                            a => a.hdWalletDetails.keyIndex,
-                        ),
-                    ) + 1
-
-                const newAccount = await createAccount({
-                    walletId,
-                    account: 0,
-                    keyIndex: nextKeyIndex,
-                })
-                navigation.push('NameAccount', { account: newAccount })
+                const newAccount = await createNextHDAccount()
+                if (newAccount) {
+                    navigation.push('NameAccount', { account: newAccount })
+                }
             } catch (error) {
                 showToast({
                     title: t('onboarding.create_account.error_title'),
@@ -116,10 +97,10 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
             }
         })
     }, [
-        hdWalletAccounts,
+        hasHDWallet,
+        createNextHDAccount,
         openCreatingAccount,
         closeCreatingAccount,
-        createAccount,
         navigation,
         showToast,
         t,
@@ -226,19 +207,79 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
         t,
     ])
 
+    const mainOptions: AccountOption[] = useMemo(
+        () =>
+            [
+                hasHDWallet && {
+                    testID: 'add_account_add_button',
+                    titleKey: 'onboarding.add_account.add_account_option_title',
+                    descriptionKey:
+                        'onboarding.add_account.add_account_option_description',
+                    leftIcon: 'wallet-add' as IconName,
+                    onPress: handleAddAccount,
+                    isDisabled: isCreatingAccount,
+                },
+                {
+                    testID: 'add_account_import_button',
+                    titleKey:
+                        'onboarding.add_account.import_account_option_title',
+                    descriptionKey:
+                        'onboarding.add_account.import_account_option_description',
+                    leftIcon: 'fund' as IconName,
+                    onPress: handleImportAccount,
+                },
+            ].filter(Boolean) as AccountOption[],
+        [hasHDWallet, handleAddAccount, isCreatingAccount, handleImportAccount],
+    )
+
+    const otherOptions: AccountOption[] = useMemo(
+        () => [
+            {
+                testID: 'add_account_watch_button',
+                titleKey: 'onboarding.add_account.watch_address_option_title',
+                descriptionKey:
+                    'onboarding.add_account.watch_address_option_description',
+                leftIcon: 'eye' as IconName,
+                onPress: handleWatchAddress,
+            },
+            {
+                testID: 'add_account_create_universal_wallet_button',
+                titleKey:
+                    'onboarding.add_account.create_universal_wallet_option_title',
+                descriptionKey:
+                    'onboarding.add_account.create_universal_wallet_option_description',
+                leftIcon: 'wallet-with-algo' as IconName,
+                onPress: handleCreateUniversalWallet,
+                isDisabled: isCreatingAccount,
+            },
+            {
+                testID: 'add_account_create_algo25_button',
+                titleKey: 'onboarding.add_account.create_algo25_option_title',
+                descriptionKey:
+                    'onboarding.add_account.create_algo25_option_description',
+                leftIcon: 'wallet' as IconName,
+                onPress: handleCreateAlgo25,
+                isDisabled: isCreatingAccount,
+            },
+        ],
+        [
+            handleWatchAddress,
+            handleCreateUniversalWallet,
+            handleCreateAlgo25,
+            isCreatingAccount,
+        ],
+    )
+
     return {
-        hasHDWallet,
         isCreatingAccount,
         isImportOptionsVisible,
+        mainOptions,
+        otherOptions,
         handleClose,
-        handleAddAccount,
         handleImportAccount,
         handleCloseImportOptions,
         handleHDWalletPress,
         handleAlgo25Press,
-        handleWatchAddress,
-        handleCreateUniversalWallet,
-        handleCreateAlgo25,
         handleTermsPress,
         handlePrivacyPress,
         isOtherOptionsVisible,

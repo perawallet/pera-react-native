@@ -27,7 +27,6 @@ type UseWatchAccountScreenResult = {
     isValidAddress: boolean
     handleAddressChange: (text: string) => void
     handleWatchAccount: () => void
-    handleGoBack: () => void
 }
 
 export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
@@ -48,7 +47,14 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
     }, [])
 
     const handleWatchAccount = useCallback(() => {
-        if (!isValidAlgorandAddress(address)) return
+        if (!isValidAlgorandAddress(address)) {
+            showToast({
+                title: t('onboarding.watch_account.invalid_address'),
+                body: '',
+                type: 'error',
+            })
+            return
+        }
 
         const alreadyExists = accounts.some(a => a.address === address)
         if (alreadyExists) {
@@ -63,7 +69,7 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
         const newAccount = {
             id: uuidv7(),
             address,
-            type: AccountTypes.watch as typeof AccountTypes.watch,
+            type: AccountTypes.watch,
             canSign: false,
         }
 
@@ -73,7 +79,7 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
         showToast({
             title: t('onboarding.watch_account.success_title'),
             body: t('onboarding.watch_account.success_body'),
-            type: 'success' as const,
+            type: 'success',
         })
 
         navigation.navigate('TabBar', { screen: 'Home' })
@@ -87,15 +93,10 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
         navigation,
     ])
 
-    const handleGoBack = useCallback(() => {
-        navigation.goBack()
-    }, [navigation])
-
     return {
         address,
         isValidAddress,
         handleAddressChange,
         handleWatchAccount,
-        handleGoBack,
     }
 }

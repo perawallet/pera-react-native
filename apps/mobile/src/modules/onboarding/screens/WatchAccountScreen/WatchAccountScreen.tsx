@@ -11,7 +11,7 @@
  */
 
 import React from 'react'
-import { PWButton, PWIcon, PWText, PWToolbar, PWView } from '@components/core'
+import { PWButton, PWText, PWView } from '@components/core'
 import { AddressEntryField } from '@components/AddressEntryField'
 import { useWatchAccountScreen } from './useWatchAccountScreen'
 import { useStyles } from './styles'
@@ -20,30 +20,13 @@ import { useLanguage } from '@hooks/useLanguage'
 export const WatchAccountScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const {
-        address,
-        isValidAddress,
-        handleAddressChange,
-        handleWatchAccount,
-        handleGoBack,
-    } = useWatchAccountScreen()
+    const { address, isValidAddress, handleAddressChange, handleWatchAccount } =
+        useWatchAccountScreen()
 
     return (
         <PWView style={styles.rootContainer}>
-            <PWToolbar
-                left={
-                    <PWIcon
-                        name='chevron-left'
-                        onPress={handleGoBack}
-                    />
-                }
-            />
-
             <PWView style={styles.contentContainer}>
-                <PWText
-                    variant='h1'
-                    style={styles.headerTitle}
-                >
+                <PWText variant='h1'>
                     {t('onboarding.watch_account.title')}
                 </PWText>
 

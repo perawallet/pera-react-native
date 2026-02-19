@@ -36,18 +36,14 @@ export const AddAccountScreen = () => {
     const { t } = useLanguage()
     const insets = useSafeAreaInsets()
     const {
-        hasHDWallet,
         isCreatingAccount,
         isImportOptionsVisible,
+        mainOptions,
+        otherOptions,
         handleClose,
-        handleAddAccount,
-        handleImportAccount,
         handleCloseImportOptions,
         handleHDWalletPress,
         handleAlgo25Press,
-        handleWatchAddress,
-        handleCreateUniversalWallet,
-        handleCreateAlgo25,
         handleTermsPress,
         handlePrivacyPress,
         isOtherOptionsVisible,
@@ -84,79 +80,32 @@ export const AddAccountScreen = () => {
 
                 <PWScrollView contentContainerStyle={styles.scrollContent}>
                     <PWView style={styles.mainContainer}>
-                        {hasHDWallet && (
+                        {mainOptions.map(option => (
                             <PanelButton
-                                testID='add_account_add_button'
-                                title={t(
-                                    'onboarding.add_account.add_account_option_title',
-                                )}
-                                description={t(
-                                    'onboarding.add_account.add_account_option_description',
-                                )}
+                                key={option.testID}
+                                testID={option.testID}
+                                title={t(option.titleKey)}
+                                description={t(option.descriptionKey)}
                                 titleWeight='h3'
-                                leftIcon='wallet-add'
-                                onPress={handleAddAccount}
-                                disabled={isCreatingAccount}
+                                leftIcon={option.leftIcon}
+                                onPress={option.onPress}
+                                disabled={option.isDisabled}
                             />
-                        )}
+                        ))}
 
-                        <PanelButton
-                            testID='add_account_import_button'
-                            title={t(
-                                'onboarding.add_account.import_account_option_title',
-                            )}
-                            description={t(
-                                'onboarding.add_account.import_account_option_description',
-                            )}
-                            titleWeight='h3'
-                            leftIcon='fund'
-                            onPress={handleImportAccount}
-                        />
-
-                        {isOtherOptionsVisible && (
-                            <>
+                        {isOtherOptionsVisible &&
+                            otherOptions.map(option => (
                                 <PanelButton
-                                    testID='add_account_watch_button'
-                                    title={t(
-                                        'onboarding.add_account.watch_address_option_title',
-                                    )}
-                                    description={t(
-                                        'onboarding.add_account.watch_address_option_description',
-                                    )}
+                                    key={option.testID}
+                                    testID={option.testID}
+                                    title={t(option.titleKey)}
+                                    description={t(option.descriptionKey)}
                                     titleWeight='h3'
-                                    leftIcon='eye'
-                                    onPress={handleWatchAddress}
+                                    leftIcon={option.leftIcon}
+                                    onPress={option.onPress}
+                                    disabled={option.isDisabled}
                                 />
-
-                                <PanelButton
-                                    testID='add_account_create_universal_wallet_button'
-                                    title={t(
-                                        'onboarding.add_account.create_universal_wallet_option_title',
-                                    )}
-                                    description={t(
-                                        'onboarding.add_account.create_universal_wallet_option_description',
-                                    )}
-                                    titleWeight='h3'
-                                    leftIcon='wallet-with-algo'
-                                    onPress={handleCreateUniversalWallet}
-                                    disabled={isCreatingAccount}
-                                />
-
-                                <PanelButton
-                                    testID='add_account_create_algo25_button'
-                                    title={t(
-                                        'onboarding.add_account.create_algo25_option_title',
-                                    )}
-                                    description={t(
-                                        'onboarding.add_account.create_algo25_option_description',
-                                    )}
-                                    titleWeight='h3'
-                                    leftIcon='wallet'
-                                    onPress={handleCreateAlgo25}
-                                    disabled={isCreatingAccount}
-                                />
-                            </>
-                        )}
+                            ))}
                     </PWView>
 
                     {!isOtherOptionsVisible && (

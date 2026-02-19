@@ -26,6 +26,7 @@ vi.mock('@hooks/useAppNavigation', () => ({
 }))
 
 const mockCreateAccount = vi.fn()
+const mockCreateNextHDAccount = vi.fn()
 const mockUseAllAccounts = vi.fn((): WalletAccount[] => [])
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
@@ -36,6 +37,12 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         ...actual,
         useCreateAccount: () => mockCreateAccount,
         useAllAccounts: () => mockUseAllAccounts(),
+        useCreateNextHDAccount: () => ({
+            createNextHDAccount: mockCreateNextHDAccount,
+            hasHDWallet: mockUseAllAccounts().some(
+                (a: WalletAccount) => a.type === 'hdWallet',
+            ),
+        }),
     }
 })
 
@@ -110,20 +117,56 @@ describe('useAddAccountScreen', () => {
         mockUseAllAccounts.mockReturnValue([])
     })
 
-    it('returns hasHDWallet as false when no HD wallet accounts exist', () => {
+    it('mainOptions excludes add account option when no HD wallet exists', () => {
         mockUseAllAccounts.mockReturnValue([])
 
         const { result } = renderHook(() => useAddAccountScreen())
 
-        expect(result.current.hasHDWallet).toBe(false)
+        const addOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_add_button',
+        )
+        expect(addOption).toBeUndefined()
     })
 
-    it('returns hasHDWallet as true when HD wallet accounts exist', () => {
+    it('mainOptions includes add account option when HD wallet exists', () => {
         mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
 
         const { result } = renderHook(() => useAddAccountScreen())
 
-        expect(result.current.hasHDWallet).toBe(true)
+        const addOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_add_button',
+        )
+        expect(addOption).toBeDefined()
+    })
+
+    it('mainOptions always includes import account option', () => {
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const importOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_import_button',
+        )
+        expect(importOption).toBeDefined()
+    })
+
+    it('otherOptions includes watch, universal wallet, and algo25 options', () => {
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        expect(result.current.otherOptions).toHaveLength(3)
+        expect(
+            result.current.otherOptions.find(
+                o => o.testID === 'add_account_watch_button',
+            ),
+        ).toBeDefined()
+        expect(
+            result.current.otherOptions.find(
+                o => o.testID === 'add_account_create_universal_wallet_button',
+            ),
+        ).toBeDefined()
+        expect(
+            result.current.otherOptions.find(
+                o => o.testID === 'add_account_create_algo25_button',
+            ),
+        ).toBeDefined()
     })
 
     it('handleClose navigates back', () => {
@@ -196,17 +239,21 @@ describe('useAddAccountScreen', () => {
         })
     })
 
-    it('handleWatchAddress navigates to WatchAccount', () => {
+    it('watch address option navigates to WatchAccount', () => {
         const { result } = renderHook(() => useAddAccountScreen())
 
+        const watchOption = result.current.otherOptions.find(
+            o => o.testID === 'add_account_watch_button',
+        )!
+
         act(() => {
-            result.current.handleWatchAddress()
+            watchOption.onPress()
         })
 
         expect(mockPush).toHaveBeenCalledWith('WatchAccount')
     })
 
-    it('handleCreateUniversalWallet creates account and navigates to NameAccount', async () => {
+    it('universal wallet option creates account and navigates to NameAccount', async () => {
         const newAccount = {
             id: 'new-id',
             address: 'NEW_ADDRESS',
@@ -217,8 +264,12 @@ describe('useAddAccountScreen', () => {
 
         const { result } = renderHook(() => useAddAccountScreen())
 
+        const universalOption = result.current.otherOptions.find(
+            o => o.testID === 'add_account_create_universal_wallet_button',
+        )!
+
         await act(async () => {
-            result.current.handleCreateUniversalWallet()
+            universalOption.onPress()
         })
 
         expect(mockCreateAccount).toHaveBeenCalledWith({
@@ -230,13 +281,17 @@ describe('useAddAccountScreen', () => {
         })
     })
 
-    it('handleCreateUniversalWallet shows error toast on failure', async () => {
+    it('universal wallet option shows error toast on failure', async () => {
         mockCreateAccount.mockRejectedValue(new Error('Creation failed'))
 
         const { result } = renderHook(() => useAddAccountScreen())
 
+        const universalOption = result.current.otherOptions.find(
+            o => o.testID === 'add_account_create_universal_wallet_button',
+        )!
+
         await act(async () => {
-            result.current.handleCreateUniversalWallet()
+            universalOption.onPress()
         })
 
         expect(mockShowToast).toHaveBeenCalledWith(
@@ -244,7 +299,7 @@ describe('useAddAccountScreen', () => {
         )
     })
 
-    it('handleCreateAlgo25 creates algo25 account and navigates to NameAccount', async () => {
+    it('algo25 option creates algo25 account and navigates to NameAccount', async () => {
         const newAccount = {
             id: 'algo25-id',
             address: 'ALGO25_ADDRESS',
@@ -255,8 +310,12 @@ describe('useAddAccountScreen', () => {
 
         const { result } = renderHook(() => useAddAccountScreen())
 
+        const algo25Option = result.current.otherOptions.find(
+            o => o.testID === 'add_account_create_algo25_button',
+        )!
+
         await act(async () => {
-            result.current.handleCreateAlgo25()
+            algo25Option.onPress()
         })
 
         expect(mockCreateAccount).toHaveBeenCalledWith({
@@ -269,13 +328,17 @@ describe('useAddAccountScreen', () => {
         })
     })
 
-    it('handleCreateAlgo25 shows error toast on failure', async () => {
+    it('algo25 option shows error toast on failure', async () => {
         mockCreateAccount.mockRejectedValue(new Error('Creation failed'))
 
         const { result } = renderHook(() => useAddAccountScreen())
 
+        const algo25Option = result.current.otherOptions.find(
+            o => o.testID === 'add_account_create_algo25_button',
+        )!
+
         await act(async () => {
-            result.current.handleCreateAlgo25()
+            algo25Option.onPress()
         })
 
         expect(mockShowToast).toHaveBeenCalledWith(
@@ -283,17 +346,8 @@ describe('useAddAccountScreen', () => {
         )
     })
 
-    it('handleAddAccount derives next key index from existing HD wallet accounts', async () => {
-        const secondHDAccount = {
-            ...HD_ACCOUNT,
-            id: 'hd-2',
-            address: 'HD_ADDRESS_2',
-            hdWalletDetails: {
-                ...HD_ACCOUNT.hdWalletDetails,
-                keyIndex: 2,
-            },
-        }
-        mockUseAllAccounts.mockReturnValue([HD_ACCOUNT, secondHDAccount])
+    it('add account option calls createNextHDAccount and navigates to NameAccount', async () => {
+        mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
 
         const newAccount = {
             id: 'new-hd',
@@ -301,44 +355,50 @@ describe('useAddAccountScreen', () => {
             type: 'hdWallet' as const,
             canSign: true,
         }
-        mockCreateAccount.mockResolvedValue(newAccount)
+        mockCreateNextHDAccount.mockResolvedValue(newAccount)
 
         const { result } = renderHook(() => useAddAccountScreen())
 
+        const addOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_add_button',
+        )!
+
         await act(async () => {
-            result.current.handleAddAccount()
+            addOption.onPress()
         })
 
-        expect(mockCreateAccount).toHaveBeenCalledWith({
-            walletId: 'wallet-1',
-            account: 0,
-            keyIndex: 3,
-        })
+        expect(mockCreateNextHDAccount).toHaveBeenCalled()
         expect(mockPush).toHaveBeenCalledWith('NameAccount', {
             account: newAccount,
         })
     })
 
-    it('handleAddAccount does nothing when no HD wallet accounts exist', async () => {
+    it('add account option does nothing when no HD wallet accounts exist', async () => {
         mockUseAllAccounts.mockReturnValue([])
 
         const { result } = renderHook(() => useAddAccountScreen())
 
-        await act(async () => {
-            result.current.handleAddAccount()
-        })
-
-        expect(mockCreateAccount).not.toHaveBeenCalled()
+        const addOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_add_button',
+        )
+        expect(addOption).toBeUndefined()
+        expect(mockCreateNextHDAccount).not.toHaveBeenCalled()
     })
 
-    it('handleAddAccount shows error toast on failure', async () => {
+    it('add account option shows error toast on failure', async () => {
         mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
-        mockCreateAccount.mockRejectedValue(new Error('Derivation failed'))
+        mockCreateNextHDAccount.mockRejectedValue(
+            new Error('Derivation failed'),
+        )
 
         const { result } = renderHook(() => useAddAccountScreen())
 
+        const addOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_add_button',
+        )!
+
         await act(async () => {
-            result.current.handleAddAccount()
+            addOption.onPress()
         })
 
         expect(mockShowToast).toHaveBeenCalledWith(
@@ -359,10 +419,14 @@ describe('useAddAccountScreen', () => {
 
         expect(result.current.isCreatingAccount).toBe(false)
 
+        const universalOption = result.current.otherOptions.find(
+            o => o.testID === 'add_account_create_universal_wallet_button',
+        )!
+
         // Start creation - deferToNextCycle is synchronous in tests
         // so isCreatingAccount will be set then unset
         await act(async () => {
-            result.current.handleCreateUniversalWallet()
+            universalOption.onPress()
             // At this point openCreatingAccount was called
         })
 

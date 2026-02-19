@@ -105,15 +105,6 @@ describe('WatchAccountScreen', () => {
         ).toBeTruthy()
     })
 
-    it('navigates back when back button is pressed', () => {
-        render(<WatchAccountScreen />)
-
-        const backButton = screen.getByTestId('icon-chevron-left')
-        fireEvent.click(backButton)
-
-        expect(mockGoBack).toHaveBeenCalledTimes(1)
-    })
-
     it('adds watch account when valid address is submitted', () => {
         render(<WatchAccountScreen />)
 

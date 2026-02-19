@@ -119,17 +119,7 @@ describe('useWatchAccountScreen', () => {
         expect(result.current.isValidAddress).toBe(true)
     })
 
-    it('handleGoBack navigates back', () => {
-        const { result } = renderHook(() => useWatchAccountScreen())
-
-        act(() => {
-            result.current.handleGoBack()
-        })
-
-        expect(mockGoBack).toHaveBeenCalledTimes(1)
-    })
-
-    it('handleWatchAccount does nothing for invalid address', () => {
+    it('handleWatchAccount shows error toast for invalid address', () => {
         const { result } = renderHook(() => useWatchAccountScreen())
 
         act(() => {
@@ -142,6 +132,9 @@ describe('useWatchAccountScreen', () => {
 
         expect(mockSetAccounts).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
+        expect(mockShowToast).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'error' }),
+        )
     })
 
     it('handleWatchAccount creates watch account for valid address', () => {

@@ -28,6 +28,7 @@ vi.mock('@hooks/useAppNavigation', () => ({
 }))
 
 const mockCreateAccount = vi.fn()
+const mockCreateNextHDAccount = vi.fn()
 const mockUseAllAccounts = vi.fn((): WalletAccount[] => [])
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
@@ -38,6 +39,12 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         ...actual,
         useCreateAccount: () => mockCreateAccount,
         useAllAccounts: () => mockUseAllAccounts(),
+        useCreateNextHDAccount: () => ({
+            createNextHDAccount: mockCreateNextHDAccount,
+            hasHDWallet: mockUseAllAccounts().some(
+                (a: WalletAccount) => a.type === 'hdWallet',
+            ),
+        }),
     }
 })
 
@@ -338,7 +345,7 @@ describe('AddAccountScreen', () => {
         }
 
         mockUseAllAccounts.mockReturnValue([existingAccount])
-        mockCreateAccount.mockResolvedValue(newAccount)
+        mockCreateNextHDAccount.mockResolvedValue(newAccount)
 
         render(<AddAccountScreen />)
 
@@ -348,11 +355,7 @@ describe('AddAccountScreen', () => {
         fireEvent.click(addButton)
 
         await vi.waitFor(() => {
-            expect(mockCreateAccount).toHaveBeenCalledWith({
-                walletId: 'wallet-1',
-                account: 0,
-                keyIndex: 1,
-            })
+            expect(mockCreateNextHDAccount).toHaveBeenCalled()
             expect(mockPush).toHaveBeenCalledWith('NameAccount', {
                 account: newAccount,
             })

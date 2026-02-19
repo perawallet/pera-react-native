@@ -23,9 +23,6 @@ export const useStyles = makeStyles(theme => ({
         paddingTop: theme.spacing.xl,
         gap: theme.spacing.xl,
     },
-    headerTitle: {
-        fontWeight: '600',
-    },
     description: {
         color: theme.colors.textGray,
     },
