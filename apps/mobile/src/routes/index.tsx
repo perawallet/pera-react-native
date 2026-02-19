@@ -35,7 +35,7 @@ import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import { useIsOnboarding } from '@modules/onboarding/hooks'
 
 import { RootStackParamList } from './types'
-import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
+import { fullScreenLayout } from '@layouts/index'
 export type { RootStackParamList } from './types'
 
 const RootStack = createNativeStackNavigator<RootStackParamList>()
@@ -99,10 +99,14 @@ export const MainRoutes = () => {
                             />
                             <RootStack.Screen
                                 name='TransactionDetails'
-                                layout={safeAreaLayout}
+                                layout={fullScreenLayout}
                                 component={TransactionDetailsScreen}
                                 options={{
-                                    headerShown: false,
+                                    headerShown: true,
+                                    header: (props: NativeStackHeaderProps) => (
+                                        <NavigationHeader {...props} />
+                                    ),
+                                    title: 'signing.transactions.details',
                                 }}
                             />
                         </>

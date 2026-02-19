@@ -16,6 +16,7 @@ import { SelectDestinationScreen } from '../SelectDestinationScreen'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
 
 const mockNavigate = vi.fn()
 const mockGoBack = vi.fn()
@@ -32,6 +33,10 @@ vi.mock('@react-navigation/native', async importOriginal => {
     }
 })
 
+vi.mock('@hooks/useNavigationHeader', () => ({
+    useNavigationHeader: vi.fn(),
+}))
+
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
         t: (key: string) => key,
@@ -41,8 +46,6 @@ vi.mock('@hooks/useLanguage', () => ({
 vi.mock('@components/core', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWView: ({ children, ...rest }: any) => <div {...rest}>{children}</div>,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWHeader: ({ children }: any) => <div>{children}</div>,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWText: ({ children }: any) => <span>{children}</span>,
 }))
@@ -165,9 +168,13 @@ describe('SelectDestinationScreen', () => {
         expect(mockNavigate).toHaveBeenCalledWith('ConfirmTransaction')
     })
 
-    it('shows asset name in header', () => {
-        const { getByText } = render(<SelectDestinationScreen />)
+    it('sets up header with asset name via useNavigationHeader', () => {
+        render(<SelectDestinationScreen />)
 
-        expect(getByText('Test Asset')).toBeTruthy()
+        expect(useNavigationHeader).toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: expect.anything(),
+            }),
+        )
     })
 })

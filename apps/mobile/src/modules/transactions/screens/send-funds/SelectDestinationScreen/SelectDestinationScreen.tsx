@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWHeader, PWText, PWView } from '@components/core'
+import { PWText, PWView } from '@components/core'
 import { AddressSearchView } from '@components/AddressSearchView'
 import { useMemo } from 'react'
 import { useSendFunds } from '@modules/transactions/hooks'
@@ -23,6 +23,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
 
 export const SelectDestinationScreen = () => {
     const { selectedAsset, setDestination } = useSendFunds()
@@ -42,9 +43,17 @@ export const SelectDestinationScreen = () => {
         navigation.navigate('ConfirmTransaction')
     }
 
-    const handleBack = () => {
-        navigation.goBack()
-    }
+    useNavigationHeader({
+        title: asset ? (
+            <PWView style={styles.assetTitleContainer}>
+                <AssetIcon
+                    asset={asset}
+                    size='md'
+                />
+                <PWText>{asset.name}</PWText>
+            </PWView>
+        ) : undefined,
+    })
 
     if (!selectedAsset || !asset) {
         return (
@@ -57,18 +66,6 @@ export const SelectDestinationScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <PWHeader
-                leftIcon='chevron-left'
-                onLeftPress={handleBack}
-            >
-                <PWView style={styles.assetTitleContainer}>
-                    <AssetIcon
-                        asset={asset}
-                        size='md'
-                    />
-                    <PWText>{asset.name}</PWText>
-                </PWView>
-            </PWHeader>
             <AddressSearchView
                 onSelected={handleSelected}
                 excludeAddress={selectedAccount?.address}

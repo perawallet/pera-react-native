@@ -17,20 +17,16 @@ import {
     PWInput,
     PWLoadingOverlay,
     PWText,
-    PWToolbar,
-    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { KeyboardAvoidingView, Platform } from 'react-native'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNameAccountScreen } from './useNameAccountScreen'
-import { useAppNavigation } from '@hooks/useAppNavigation'
 import { getAccountDisplayName } from '@perawallet/wallet-core-accounts'
 
 export const NameAccountScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const navigation = useAppNavigation()
 
     const {
         walletDisplay,
@@ -46,17 +42,6 @@ export const NameAccountScreen = () => {
             style={styles.mainContainer}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         >
-            <PWToolbar
-                left={
-                    <PWTouchableOpacity
-                        onPress={navigation.goBack}
-                        testID='name_account_back_button'
-                    >
-                        <PWIcon name='chevron-left' />
-                    </PWTouchableOpacity>
-                }
-            />
-
             <PWView style={styles.content}>
                 <PWView style={styles.headerContainer}>
                     <PWText variant='h1'>
