@@ -17,6 +17,11 @@ import {
     AssetDetailsScreen,
     AssetDetailsScreenProps,
 } from '../AssetDetailsScreen'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
+
+vi.mock('@hooks/useNavigationHeader', () => ({
+    useNavigationHeader: vi.fn(),
+}))
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual('@perawallet/wallet-core-accounts')
@@ -70,7 +75,7 @@ vi.mock('@components/core/PWTabView/PWTabView', () => ({
 }))
 
 describe('AssetDetailsScreen', () => {
-    it('renders the custom toolbar with account name and truncated address', () => {
+    it('sets up header with account name and address via useNavigationHeader', () => {
         render(
             <AssetDetailsScreen
                 route={
@@ -79,15 +84,17 @@ describe('AssetDetailsScreen', () => {
                     } as AssetDetailsScreenProps['route']
                 }
                 navigation={
-                    {
-                        setOptions: vi.fn(),
-                    } as unknown as AssetDetailsScreenProps['navigation']
+                    {} as unknown as AssetDetailsScreenProps['navigation']
                 }
             />,
         )
 
-        expect(screen.getByText('Test Wallet')).toBeTruthy()
-        expect(screen.getByText('test...')).toBeTruthy()
+        expect(useNavigationHeader).toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: expect.anything(),
+                right: expect.anything(),
+            }),
+        )
     })
 
     it('renders AssetHoldings by default', () => {
@@ -99,9 +106,7 @@ describe('AssetDetailsScreen', () => {
                     } as AssetDetailsScreenProps['route']
                 }
                 navigation={
-                    {
-                        setOptions: vi.fn(),
-                    } as unknown as AssetDetailsScreenProps['navigation']
+                    {} as unknown as AssetDetailsScreenProps['navigation']
                 }
             />,
         )

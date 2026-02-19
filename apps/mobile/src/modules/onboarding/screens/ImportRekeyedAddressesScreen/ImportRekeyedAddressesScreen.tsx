@@ -11,18 +11,10 @@
  */
 
 import React from 'react'
-import {
-    PWView,
-    PWToolbar,
-    PWIcon,
-    PWTouchableOpacity,
-    PWFlatList,
-    PWLoadingOverlay,
-} from '@components/core'
+import { PWView, PWFlatList, PWLoadingOverlay } from '@components/core'
 
 import { useStyles } from './styles'
 import { useImportRekeyedAddressesScreen } from './useImportRekeyedAddressesScreen'
-import { useAppNavigation } from '@hooks/useAppNavigation'
 import { ImportRekeyedAddressesItem } from './ImportRekeyedAddressesItem'
 import { ImportRekeyedAddressesHeader } from './ImportRekeyedAddressesHeader'
 import { ImportRekeyedAddressesFooter } from './ImportRekeyedAddressesFooter'
@@ -40,18 +32,9 @@ export const ImportRekeyedAddressesScreen = () => {
         handleSkip,
         t,
     } = useImportRekeyedAddressesScreen()
-    const navigation = useAppNavigation()
 
     return (
         <PWView style={styles.container}>
-            <PWToolbar
-                left={
-                    <PWTouchableOpacity onPress={navigation.goBack}>
-                        <PWIcon name='chevron-left' />
-                    </PWTouchableOpacity>
-                }
-            />
-
             <PWFlatList
                 style={styles.list}
                 contentContainerStyle={styles.listContent}
