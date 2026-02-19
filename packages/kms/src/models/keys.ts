@@ -12,7 +12,6 @@
 
 export const KeyType = {
     HDWalletRootKey: 'hdwallet-root-key',
-    HDWalletDerivedKey: 'hdwallet-derived-key',
     DeterministicP256Key: 'deterministic-p256-key',
     Algo25Key: 'algo25-key',
 }
@@ -46,6 +45,6 @@ export type KeyPair = {
 
 export type StoredKeyMaterial = {
     seed: string
-    seedFormat: string
+    seedFormat: 'base64'
     entropy?: string
 }

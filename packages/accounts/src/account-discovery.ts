@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { v7 as uuidv7 } from 'uuid'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import {
     encodeAlgorandAddress,
@@ -25,6 +24,7 @@ import {
     WalletAccount,
     WatchAccount,
 } from './models/accounts'
+import { generateTimeorderedUniqueId } from '@perawallet/wallet-core-shared'
 
 const ACCOUNT_GAP_LIMIT = 5
 const KEY_INDEX_GAP_LIMIT = 5
@@ -101,7 +101,7 @@ async function scanAccountKeys({
                 const address = encodeAlgorandAddress(addressBytes)
 
                 const accountData: HDWalletAccount = {
-                    id: uuidv7(),
+                    id: generateTimeorderedUniqueId(),
                     address,
                     type: AccountTypes.hdWallet,
                     keyPairId: walletKeyId,
@@ -267,7 +267,7 @@ async function scanRekeyedKeys({
 
                 return rekeyedAccounts.map(
                     (account: { address: string }): WatchAccount => ({
-                        id: uuidv7(),
+                        id: generateTimeorderedUniqueId(),
                         address: account.address,
                         type: AccountTypes.watch,
                         rekeyAddress: address,
@@ -311,7 +311,7 @@ export async function discoverRekeyedAccounts({
 
             return rekeyedAccounts.map(
                 (account: { address: string }): WalletAccount => ({
-                    id: uuidv7(),
+                    id: generateTimeorderedUniqueId(),
                     address: account.address,
                     type: AccountTypes.watch,
                     rekeyAddress: address,

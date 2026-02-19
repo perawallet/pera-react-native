@@ -10,14 +10,12 @@
  limitations under the License
  */
 
-export * from './addresses'
-export * from './arrays'
-export * from './dates'
-export * from './store'
-export * from './store-registry'
-export * from './strings'
-export * from './logging'
-export * from './objects'
-export * from './async'
-export * from './urls'
-export * from './uuid'
+import { v4 as uuidv4, v7 as uuidv7 } from 'uuid'
+
+export const generateUniqueId = (): string => {
+    return uuidv4()
+}
+
+export const generateTimeorderedUniqueId = (): string => {
+    return uuidv7()
+}

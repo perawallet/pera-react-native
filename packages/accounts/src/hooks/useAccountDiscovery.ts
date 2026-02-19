@@ -20,7 +20,7 @@ import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { KEY_DOMAIN } from '../constants'
 
 export const useAccountDiscovery = () => {
-    const { withHDSession, loadKey } = useKMS()
+    const { withHDSession, getKeyOrThrow } = useKMS()
 
     const discoverAccounts = useCallback(
         async (params: {
@@ -29,7 +29,7 @@ export const useAccountDiscovery = () => {
             accountGapLimit?: number
             keyIndexGapLimit?: number
         }) => {
-            const key = loadKey(params.walletKeyId)
+            const key = getKeyOrThrow(params.walletKeyId)
             return withHDSession(key, KEY_DOMAIN, async session => {
                 return baseDiscoverAccounts({
                     ...params,
@@ -48,7 +48,7 @@ export const useAccountDiscovery = () => {
             keyIndexGapLimit?: number
             accountAddresses?: string[]
         }) => {
-            const key = loadKey(params.walletKeyId)
+            const key = getKeyOrThrow(params.walletKeyId)
             return withHDSession(key, KEY_DOMAIN, async session => {
                 return baseDiscoverRekeyedAccounts({
                     ...params,

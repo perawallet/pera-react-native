@@ -22,23 +22,12 @@ import type {
     HDWalletAccount,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import { decodeFromBase64, concatBytes } from '@perawallet/wallet-core-shared'
 import { SIGNING_KEY_DOMAIN } from '../constants'
-
-const concatBytes = (...arrays: Uint8Array[]): Uint8Array => {
-    const totalLength = arrays.reduce((acc, arr) => acc + arr.length, 0)
-    const result = new Uint8Array(totalLength)
-    let offset = 0
-    for (const arr of arrays) {
-        result.set(arr, offset)
-        offset += arr.length
-    }
-    return result
-}
 
 export const useArbitraryDataSigner = () => {
     const accounts = useAccountsStore(state => state.accounts)
-    const { loadKey, withHDSession, withAlgo25Session } = useKMS()
+    const { getKeyOrThrow, withHDSession, withAlgo25Session } = useKMS()
 
     const signHDWalletArbitraryData = useCallback(
         async (
@@ -47,7 +36,7 @@ export const useArbitraryDataSigner = () => {
         ): Promise<Uint8Array[]> => {
             const hdWalletDetails = account.hdWalletDetails
 
-            const key = loadKey(account.keyPairId)
+            const key = getKeyOrThrow(account.keyPairId)
             return await withHDSession(
                 key,
                 SIGNING_KEY_DOMAIN,
@@ -85,7 +74,7 @@ export const useArbitraryDataSigner = () => {
             account: Algo25Account,
             data: string | string[],
         ): Promise<Uint8Array[]> => {
-            const key = loadKey(account.keyPairId)
+            const key = getKeyOrThrow(account.keyPairId)
             return await withAlgo25Session(
                 key,
                 SIGNING_KEY_DOMAIN,

@@ -10,8 +10,8 @@
  limitations under the License
  */
 
+import { generateTimeorderedUniqueId } from '@perawallet/wallet-core-shared'
 import { create } from 'zustand'
-import { v7 as uuidv7 } from 'uuid'
 
 export type WebViewRequest = {
     id: string
@@ -44,7 +44,7 @@ export const useWebViewStore = create<WebViewStore>()(set => ({
         set(state => ({
             openWebViews: [
                 ...state.openWebViews,
-                { ...view, id: view.id ?? uuidv7() },
+                { ...view, id: view.id ?? generateTimeorderedUniqueId() },
             ],
         })),
     popWebView: () =>

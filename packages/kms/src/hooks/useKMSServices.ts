@@ -12,9 +12,12 @@
 
 import { useSecureStorageService } from '@perawallet/wallet-core-platform-integration'
 import { useKeyManagerStore } from '../store'
-import { AppError, logger } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    generateTimeorderedUniqueId,
+    logger,
+} from '@perawallet/wallet-core-shared'
 import { AccessControlPermission, KeyPair, StoredKeyMaterial } from '../models'
-import { v7 as uuid } from 'uuid'
 import { KeyAccessError } from '../errors'
 import { useCallback } from 'react'
 
@@ -26,23 +29,28 @@ export const useKMSService = () => {
 
     const saveKey = useCallback(
         async (key: KeyPair, keyData: StoredKeyMaterial) => {
-            const storageKey = key.id ?? uuid()
+            const storageKey = key.id ?? generateTimeorderedUniqueId()
 
             const stringifiedObj = JSON.stringify(keyData)
 
-            key.id = storageKey
-            key.privateDataStorageKey = key.publicKey.length
-                ? `${key.type}-${key.publicKey}`
-                : `${key.type}-${storageKey}`
-            key.createdAt = new Date()
-            logger.debug('Creating key', key)
+            const storageLocation = key.publicKey.length
+                    ? `${key.type}-${key.publicKey}`
+                    : `${key.type}-${storageKey}`
+            const modifiedKey: KeyPair = { 
+                ...key,
+                id: storageKey,
+                privateDataStorageKey: storageLocation,
+                createdAt: new Date(),
+            }
+
+            logger.debug('Creating key', modifiedKey)
             await secureStorage.setItem(
-                key.privateDataStorageKey,
+                storageLocation,
                 new TextEncoder().encode(stringifiedObj),
             )
-            addKey(key)
+            addKey(modifiedKey)
 
-            return key
+            return modifiedKey
         },
         [addKey, secureStorage],
     )

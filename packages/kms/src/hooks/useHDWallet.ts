@@ -21,10 +21,12 @@ import * as bip39 from 'bip39'
 import messageSchema from '../crypto/message-schema.json'
 import { WORDLIST } from '../crypto/wordlist'
 import type { HDDerivationParams, KMSHDWalletSession } from '../models/session'
-import { v7 as uuid } from 'uuid'
 import { KeyPair, KeyType } from '../models'
 import { getEntropyFromMasterKey, getSeedFromMasterKey } from '../utils'
-import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import {
+    encodeToBase64,
+    generateTimeorderedUniqueId,
+} from '@perawallet/wallet-core-shared'
 import { InvalidKeyError } from '../errors'
 import { useKMSService } from './useKMSServices'
 
@@ -107,7 +109,7 @@ export const useHDWallet = () => {
         id?: string
         mnemonic?: string
     }) => {
-        const keyId = params?.id ?? uuid()
+        const keyId = params?.id ?? generateTimeorderedUniqueId()
         const masterKey = await generateHDMasterKey(params?.mnemonic)
 
         const keyPair: KeyPair = {
@@ -152,7 +154,12 @@ export const useHDWallet = () => {
                     return entropyToMnemonic(Buffer.from(entropy))
                 },
             }
-            return await handler(session)
+
+            try {
+                return await handler(session)
+            } finally {
+                seedBuffer.fill(0)
+            }
         })
     }
 

@@ -39,8 +39,8 @@
     "reflect-metadata": "catalog:",
     "tsyringe": "catalog:",
     "util": "catalog:",
-    "uuid": "^13.0.0",
-    "zod": "^4.1.12",
+    "uuid": "catalog:",
+    "zod": "catalog:",
     "zustand": "catalog:"
   },
   "devDependencies": {

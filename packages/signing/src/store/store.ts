@@ -20,9 +20,9 @@ import type { SigningStore, SignRequest } from '../models'
 import {
     createLazyStore,
     DataStoreRegistry,
+    generateTimeorderedUniqueId,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
-import { v7 as uuidv7 } from 'uuid'
 
 const STORE_NAME = 'signing-store'
 const lazy =
@@ -46,7 +46,7 @@ const createSigningStore = (storage: KeyValueStorageService) =>
                     const existing = get().pendingSignRequests ?? []
                     const newRequest = {
                         ...request,
-                        id: request.id ?? uuidv7(),
+                        id: request.id ?? generateTimeorderedUniqueId(),
                     }
                     if (!existing.find(r => r.id === newRequest.id)) {
                         set({ pendingSignRequests: [...existing, newRequest] })

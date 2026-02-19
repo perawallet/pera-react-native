@@ -38,7 +38,7 @@ const mockSession = vi.hoisted(() => ({
 
 const kmsMock = vi.hoisted(() => ({
     getKey: vi.fn(),
-    loadKey: vi.fn(),
+    getKeyOrThrow: vi.fn(),
     createHDWalletKey: vi.fn(),
     createAlgo25Key: vi.fn(),
     withHDSession: vi.fn(async (_key: any, _domain: any, handler: any) =>
@@ -103,13 +103,13 @@ describe('useImportAccount', () => {
         vi.clearAllMocks()
         uuidSpies.v7.mockReset()
         kmsMock.getKey.mockReset()
-        kmsMock.loadKey.mockReset()
+        kmsMock.getKeyOrThrow.mockReset()
         kmsMock.createHDWalletKey.mockReset()
         kmsMock.createAlgo25Key.mockReset()
         kmsMock.withHDSession.mockReset()
 
         kmsMock.getKey.mockReturnValue(null)
-        kmsMock.loadKey.mockReturnValue(null)
+        kmsMock.getKeyOrThrow.mockReturnValue(null)
         kmsMock.createHDWalletKey.mockResolvedValue({
             id: 'WALLET1',
             type: KeyType.HDWalletRootKey,

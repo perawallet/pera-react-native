@@ -38,7 +38,7 @@ const mockSession = vi.hoisted(() => ({
 
 const kmsMock = vi.hoisted(() => ({
     getKey: vi.fn(),
-    loadKey: vi.fn(),
+    getKeyOrThrow: vi.fn(),
     createHDWalletKey: vi.fn(),
     createAlgo25Key: vi.fn(),
     withHDSession: vi.fn(async (_key: any, _domain: any, handler: any) =>
@@ -103,13 +103,13 @@ describe('useCreateAccount', () => {
         vi.clearAllMocks()
         uuidSpies.v7.mockReset()
         kmsMock.getKey.mockReset()
-        kmsMock.loadKey.mockReset()
+        kmsMock.getKeyOrThrow.mockReset()
         kmsMock.createHDWalletKey.mockReset()
         kmsMock.createAlgo25Key.mockReset()
         kmsMock.withHDSession.mockReset()
 
         kmsMock.getKey.mockReturnValue(null)
-        kmsMock.loadKey.mockReturnValue(null)
+        kmsMock.getKeyOrThrow.mockReturnValue(null)
         kmsMock.createHDWalletKey.mockResolvedValue({
             id: 'WALLET1',
             type: KeyType.HDWalletRootKey,
@@ -224,7 +224,7 @@ describe('useCreateAccount', () => {
     })
 
     test('throws for algo25 when createAlgo25Key fails', async () => {
-        kmsMock.loadKey.mockReturnValueOnce(null)
+        kmsMock.getKeyOrThrow.mockReturnValueOnce(null)
         kmsMock.createAlgo25Key.mockRejectedValueOnce(
             new Error('Algo25 creation failed'),
         )
@@ -241,7 +241,7 @@ describe('useCreateAccount', () => {
     })
 
     test('creates algo25 account from existing key', async () => {
-        kmsMock.loadKey.mockReturnValueOnce({
+        kmsMock.getKeyOrThrow.mockReturnValueOnce({
             id: 'WALLET1',
             type: KeyType.Algo25Key,
             publicKey: 'ALGO25_PUBLIC_KEY',

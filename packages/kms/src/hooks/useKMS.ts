@@ -25,7 +25,7 @@ export const useKMS = () => {
     const { withHDSession, createHDWalletKey } = useHDWallet()
     const { deleteKey } = useKMSService()
 
-    const loadKey = (keyId: string): KeyPair => {
+    const getKeyOrThrow = (keyId: string): KeyPair => {
         const key = getKey(keyId)
 
         if (!key) {
@@ -35,68 +35,15 @@ export const useKMS = () => {
         return key
     }
 
-    const signTransactionWithKey = async (
-        keyId: string,
-        domain: string,
-        encodedTx: Uint8Array,
-        derivationParams?: HDDerivationParams,
-    ): Promise<Uint8Array> => {
-        const key = loadKey(keyId)
-
-        switch (key.type) {
-            case KeyType.HDWalletDerivedKey:
-            case KeyType.HDWalletRootKey:
-                if (!derivationParams) {
-                    throw new InvalidKeyError(keyId)
-                }
-                return withHDSession(key, domain, session =>
-                    session.signTransaction(derivationParams, encodedTx),
-                )
-            case KeyType.Algo25Key:
-                return withAlgo25Session(key, domain, session =>
-                    session.signTransaction(encodedTx),
-                )
-            default:
-                throw new InvalidKeyError(key.id ?? 'unknown')
-        }
-    }
-
-    const signDataWithKey = async (
-        keyId: string,
-        domain: string,
-        data: Uint8Array,
-        derivationParams?: HDDerivationParams,
-    ): Promise<Uint8Array> => {
-        const key = loadKey(keyId)
-
-        switch (key.type) {
-            case KeyType.HDWalletDerivedKey:
-            case KeyType.HDWalletRootKey:
-                if (!derivationParams) {
-                    throw new InvalidKeyError(keyId)
-                }
-                return withHDSession(key, domain, session =>
-                    session.signData(derivationParams, data),
-                )
-            case KeyType.Algo25Key:
-                return withAlgo25Session(key, domain, session =>
-                    session.signData(data),
-                )
-            default:
-                throw new InvalidKeyError(key.id ?? 'unknown')
-        }
-    }
-
-    const batchSignTransactionWithKey = async (
+    const signTransactionsWithKey = async (
         keyId: string,
         domain: string,
         encodedTxs: Uint8Array[],
         derivationParams?: HDDerivationParams,
     ): Promise<Uint8Array[]> => {
-        const key = loadKey(keyId)
+        const key = getKeyOrThrow(keyId)
 
         switch (key.type) {
-            case KeyType.HDWalletDerivedKey:
             case KeyType.HDWalletRootKey:
                 if (!derivationParams) {
                     throw new InvalidKeyError(keyId)
@@ -119,16 +66,15 @@ export const useKMS = () => {
         }
     }
 
-    const batchSignDataWithKey = async (
+    const signDataWithKey = async (
         keyId: string,
         domain: string,
         data: Uint8Array[],
         derivationParams?: HDDerivationParams,
     ): Promise<Uint8Array[]> => {
-        const key = loadKey(keyId)
+        const key = getKeyOrThrow(keyId)
 
         switch (key.type) {
-            case KeyType.HDWalletDerivedKey:
             case KeyType.HDWalletRootKey:
                 if (!derivationParams) {
                     throw new InvalidKeyError(keyId)
@@ -153,14 +99,12 @@ export const useKMS = () => {
         keys,
         deleteKey,
         getKey,
-        loadKey,
+        getKeyOrThrow,
         withAlgo25Session,
         createAlgo25Key,
         withHDSession,
         createHDWalletKey,
-        signTransactionWithKey,
-        batchSignTransactionWithKey,
+        signTransactionsWithKey,
         signDataWithKey,
-        batchSignDataWithKey,
     }
 }

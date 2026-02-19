@@ -17,13 +17,13 @@ import {
     useUpdateDeviceMutation,
 } from '@perawallet/wallet-core-platform-integration'
 import { useAccountsStore } from '../store'
-import { v7 as uuidv7 } from 'uuid'
 import { AccountTypes, WalletAccount } from '../models'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { KeyNotFoundError, useKMS } from '@perawallet/wallet-core-kms'
 import { NoHDWalletError } from '../errors'
 import { KEY_DOMAIN } from '../constants'
+import { generateTimeorderedUniqueId } from '@perawallet/wallet-core-shared'
 
 export const useCreateAccount = () => {
     const { network } = useNetwork()
@@ -34,7 +34,7 @@ export const useCreateAccount = () => {
     const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
     const {
         getKey,
-        loadKey,
+        getKeyOrThrow,
         createHDWalletKey,
         createAlgo25Key,
         withHDSession,
@@ -64,7 +64,7 @@ export const useCreateAccount = () => {
         account: number
         keyIndex: number
     }) => {
-        const rootWalletId = walletId ?? uuidv7()
+        const rootWalletId = walletId ?? generateTimeorderedUniqueId()
         let rootKey = getKey(rootWalletId)
 
         if (!rootKey) {
@@ -86,7 +86,7 @@ export const useCreateAccount = () => {
                 })
 
                 const newAccount: WalletAccount = {
-                    id: uuidv7(),
+                    id: generateTimeorderedUniqueId(),
                     address: encodeAlgorandAddress(addressBytes),
                     type: AccountTypes.hdWallet,
                     hdWalletDetails: {
@@ -106,8 +106,8 @@ export const useCreateAccount = () => {
     }
 
     const createAlgo25WalletAccount = async () => {
-        const keyId = uuidv7()
-        let rootKey = loadKey(keyId)
+        const keyId = generateTimeorderedUniqueId()
+        let rootKey = getKeyOrThrow(keyId)
 
         if (!rootKey) {
             rootKey = await createAlgo25Key({ id: keyId })
@@ -118,7 +118,7 @@ export const useCreateAccount = () => {
         }
 
         const newAccount: WalletAccount = {
-            id: uuidv7(),
+            id: generateTimeorderedUniqueId(),
             address: rootKey.publicKey,
             type: AccountTypes.algo25,
             keyPairId: rootKey.id,

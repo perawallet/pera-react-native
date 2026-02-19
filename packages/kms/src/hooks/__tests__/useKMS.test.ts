@@ -121,15 +121,15 @@ describe('useKMS', () => {
         expect(keyResult).toEqual(mockKey)
     })
 
-    it('should loadKey and throw if not found', () => {
+    it('should getKeyOrThrow and throw if not found', () => {
         mockGetKey.mockReturnValue(null)
 
         const { result } = renderHook(() => useKMS())
 
-        expect(() => result.current.loadKey('missing-id')).toThrow()
+        expect(() => result.current.getKeyOrThrow('missing-id')).toThrow()
     })
 
-    it('should loadKey successfully when key exists', () => {
+    it('should getKeyOrThrow successfully when key exists', () => {
         const key: KeyPair = {
             id: 'test-id',
             publicKey: 'pub',
@@ -139,106 +139,10 @@ describe('useKMS', () => {
 
         const { result } = renderHook(() => useKMS())
 
-        expect(result.current.loadKey('test-id')).toEqual(key)
+        expect(result.current.getKeyOrThrow('test-id')).toEqual(key)
     })
 
-    it('should signTransactionWithKey using HD session for HD keys', async () => {
-        const key: KeyPair = {
-            id: 'hd-key',
-            publicKey: 'pub',
-            type: KeyType.HDWalletRootKey,
-        }
-        mockGetKey.mockReturnValue(key)
-        mockWithHDSession.mockImplementation(
-            async (_key: any, _domain: string, handler: any) => {
-                const mockSession = {
-                    signTransaction: vi.fn(async () =>
-                        new Uint8Array(64).fill(1),
-                    ),
-                }
-                return handler(mockSession)
-            },
-        )
-
-        const { result } = renderHook(() => useKMS())
-
-        let signed: Uint8Array | undefined
-        await act(async () => {
-            signed = await result.current.signTransactionWithKey(
-                'hd-key',
-                'test-domain',
-                new Uint8Array([1, 2, 3]),
-                { account: 0, keyIndex: 0, derivationType: 9 },
-            )
-        })
-
-        expect(signed).toEqual(new Uint8Array(64).fill(1))
-        expect(mockWithHDSession).toHaveBeenCalledWith(
-            key,
-            'test-domain',
-            expect.any(Function),
-        )
-    })
-
-    it('should signTransactionWithKey using Algo25 session for Algo25 keys', async () => {
-        const key: KeyPair = {
-            id: 'algo-key',
-            publicKey: 'pub',
-            type: KeyType.Algo25Key,
-        }
-        mockGetKey.mockReturnValue(key)
-        mockWithAlgo25Session.mockImplementation(
-            async (_key: any, _domain: string, handler: any) => {
-                const mockSession = {
-                    signTransaction: vi.fn(async () =>
-                        new Uint8Array(64).fill(2),
-                    ),
-                }
-                return handler(mockSession)
-            },
-        )
-
-        const { result } = renderHook(() => useKMS())
-
-        let signed: Uint8Array | undefined
-        await act(async () => {
-            signed = await result.current.signTransactionWithKey(
-                'algo-key',
-                'test-domain',
-                new Uint8Array([1, 2, 3]),
-            )
-        })
-
-        expect(signed).toEqual(new Uint8Array(64).fill(2))
-        expect(mockWithAlgo25Session).toHaveBeenCalledWith(
-            key,
-            'test-domain',
-            expect.any(Function),
-        )
-    })
-
-    it('should throw InvalidKeyError for HD sign without derivationParams', async () => {
-        const key: KeyPair = {
-            id: 'hd-key',
-            publicKey: 'pub',
-            type: KeyType.HDWalletRootKey,
-        }
-        mockGetKey.mockReturnValue(key)
-
-        const { result } = renderHook(() => useKMS())
-
-        await expect(
-            act(async () => {
-                await result.current.signTransactionWithKey(
-                    'hd-key',
-                    'test-domain',
-                    new Uint8Array([1, 2, 3]),
-                )
-            }),
-        ).rejects.toThrow()
-    })
-
-    it('should batchSignTransactionWithKey for multiple transactions', async () => {
+    it('should signTransactionsWithKey for multiple transactions', async () => {
         const key: KeyPair = {
             id: 'hd-key',
             publicKey: 'pub',
@@ -261,7 +165,7 @@ describe('useKMS', () => {
 
         let signed: Uint8Array[] | undefined
         await act(async () => {
-            signed = await result.current.batchSignTransactionWithKey(
+            signed = await result.current.signTransactionsWithKey(
                 'hd-key',
                 'test-domain',
                 [new Uint8Array([1]), new Uint8Array([2])],
@@ -292,141 +196,7 @@ describe('useKMS', () => {
         expect(result.current.getKey('test-key')).toEqual(key)
     })
 
-    it('should signDataWithKey using HD session for HD keys', async () => {
-        const key: KeyPair = {
-            id: 'hd-key',
-            publicKey: 'pub',
-            type: KeyType.HDWalletRootKey,
-        }
-        mockGetKey.mockReturnValue(key)
-        mockWithHDSession.mockImplementation(
-            async (_key: any, _domain: string, handler: any) => {
-                const mockSession = {
-                    signData: vi.fn(async () => new Uint8Array(64).fill(3)),
-                }
-                return handler(mockSession)
-            },
-        )
-
-        const { result } = renderHook(() => useKMS())
-
-        let signed: Uint8Array | undefined
-        await act(async () => {
-            signed = await result.current.signDataWithKey(
-                'hd-key',
-                'test-domain',
-                new Uint8Array([1, 2, 3]),
-                { account: 0, keyIndex: 0, derivationType: 9 },
-            )
-        })
-
-        expect(signed).toEqual(new Uint8Array(64).fill(3))
-        expect(mockWithHDSession).toHaveBeenCalledWith(
-            key,
-            'test-domain',
-            expect.any(Function),
-        )
-    })
-
-    it('should signDataWithKey using Algo25 session for Algo25 keys', async () => {
-        const key: KeyPair = {
-            id: 'algo-key',
-            publicKey: 'pub',
-            type: KeyType.Algo25Key,
-        }
-        mockGetKey.mockReturnValue(key)
-        mockWithAlgo25Session.mockImplementation(
-            async (_key: any, _domain: string, handler: any) => {
-                const mockSession = {
-                    signData: vi.fn(async () => new Uint8Array(64).fill(4)),
-                }
-                return handler(mockSession)
-            },
-        )
-
-        const { result } = renderHook(() => useKMS())
-
-        let signed: Uint8Array | undefined
-        await act(async () => {
-            signed = await result.current.signDataWithKey(
-                'algo-key',
-                'test-domain',
-                new Uint8Array([1, 2, 3]),
-            )
-        })
-
-        expect(signed).toEqual(new Uint8Array(64).fill(4))
-        expect(mockWithAlgo25Session).toHaveBeenCalledWith(
-            key,
-            'test-domain',
-            expect.any(Function),
-        )
-    })
-
-    it('should throw InvalidKeyError for HD signData without derivationParams', async () => {
-        const key: KeyPair = {
-            id: 'hd-key',
-            publicKey: 'pub',
-            type: KeyType.HDWalletRootKey,
-        }
-        mockGetKey.mockReturnValue(key)
-
-        const { result } = renderHook(() => useKMS())
-
-        await expect(
-            act(async () => {
-                await result.current.signDataWithKey(
-                    'hd-key',
-                    'test-domain',
-                    new Uint8Array([1, 2, 3]),
-                )
-            }),
-        ).rejects.toThrow()
-    })
-
-    it('should throw InvalidKeyError for signTransactionWithKey with unsupported key type', async () => {
-        const key: KeyPair = {
-            id: 'p256-key',
-            publicKey: 'pub',
-            type: KeyType.DeterministicP256Key,
-        }
-        mockGetKey.mockReturnValue(key)
-
-        const { result } = renderHook(() => useKMS())
-
-        await expect(
-            act(async () => {
-                await result.current.signTransactionWithKey(
-                    'p256-key',
-                    'test-domain',
-                    new Uint8Array([1, 2, 3]),
-                )
-            }),
-        ).rejects.toThrow()
-    })
-
-    it('should throw InvalidKeyError for signDataWithKey with unsupported key type', async () => {
-        const key: KeyPair = {
-            id: 'p256-key',
-            publicKey: 'pub',
-            type: KeyType.DeterministicP256Key,
-        }
-        mockGetKey.mockReturnValue(key)
-
-        const { result } = renderHook(() => useKMS())
-
-        await expect(
-            act(async () => {
-                await result.current.signDataWithKey(
-                    'p256-key',
-                    'test-domain',
-                    new Uint8Array([1, 2, 3]),
-                )
-            }),
-        ).rejects.toThrow()
-    })
-
-    it('should batchSignTransactionWithKey using Algo25 session', async () => {
+    it('should signTransactionsWithKey using Algo25 session', async () => {
         const key: KeyPair = {
             id: 'algo-key',
             publicKey: 'pub',
@@ -449,7 +219,7 @@ describe('useKMS', () => {
 
         let signed: Uint8Array[] | undefined
         await act(async () => {
-            signed = await result.current.batchSignTransactionWithKey(
+            signed = await result.current.signTransactionsWithKey(
                 'algo-key',
                 'test-domain',
                 [new Uint8Array([1]), new Uint8Array([2])],
@@ -464,7 +234,7 @@ describe('useKMS', () => {
         )
     })
 
-    it('should throw for batchSignTransactionWithKey with HD key without derivationParams', async () => {
+    it('should throw for signTransactionsWithKey with HD key without derivationParams', async () => {
         const key: KeyPair = {
             id: 'hd-key',
             publicKey: 'pub',
@@ -476,7 +246,7 @@ describe('useKMS', () => {
 
         await expect(
             act(async () => {
-                await result.current.batchSignTransactionWithKey(
+                await result.current.signTransactionsWithKey(
                     'hd-key',
                     'test-domain',
                     [new Uint8Array([1])],
@@ -485,7 +255,7 @@ describe('useKMS', () => {
         ).rejects.toThrow()
     })
 
-    it('should batchSignDataWithKey using HD session', async () => {
+    it('should signDataWithKey using HD session', async () => {
         const key: KeyPair = {
             id: 'hd-key',
             publicKey: 'pub',
@@ -508,7 +278,7 @@ describe('useKMS', () => {
 
         let signed: Uint8Array[] | undefined
         await act(async () => {
-            signed = await result.current.batchSignDataWithKey(
+            signed = await result.current.signDataWithKey(
                 'hd-key',
                 'test-domain',
                 [new Uint8Array([1]), new Uint8Array([2])],
@@ -524,7 +294,7 @@ describe('useKMS', () => {
         )
     })
 
-    it('should batchSignDataWithKey using Algo25 session', async () => {
+    it('should signDataWithKey using Algo25 session', async () => {
         const key: KeyPair = {
             id: 'algo-key',
             publicKey: 'pub',
@@ -547,7 +317,7 @@ describe('useKMS', () => {
 
         let signed: Uint8Array[] | undefined
         await act(async () => {
-            signed = await result.current.batchSignDataWithKey(
+            signed = await result.current.signDataWithKey(
                 'algo-key',
                 'test-domain',
                 [new Uint8Array([1]), new Uint8Array([2])],
@@ -562,7 +332,7 @@ describe('useKMS', () => {
         )
     })
 
-    it('should throw for batchSignDataWithKey with HD key without derivationParams', async () => {
+    it('should throw for signDataWithKey with HD key without derivationParams', async () => {
         const key: KeyPair = {
             id: 'hd-key',
             publicKey: 'pub',
@@ -574,7 +344,7 @@ describe('useKMS', () => {
 
         await expect(
             act(async () => {
-                await result.current.batchSignDataWithKey(
+                await result.current.signDataWithKey(
                     'hd-key',
                     'test-domain',
                     [new Uint8Array([1])],
@@ -583,7 +353,7 @@ describe('useKMS', () => {
         ).rejects.toThrow()
     })
 
-    it('should throw for batchSignTransactionWithKey with unsupported key type', async () => {
+    it('should throw for signTransactionsWithKey with unsupported key type', async () => {
         const key: KeyPair = {
             id: 'p256-key',
             publicKey: 'pub',
@@ -595,7 +365,7 @@ describe('useKMS', () => {
 
         await expect(
             act(async () => {
-                await result.current.batchSignTransactionWithKey(
+                await result.current.signTransactionsWithKey(
                     'p256-key',
                     'test-domain',
                     [new Uint8Array([1])],
@@ -604,7 +374,7 @@ describe('useKMS', () => {
         ).rejects.toThrow()
     })
 
-    it('should throw for batchSignDataWithKey with unsupported key type', async () => {
+    it('should throw for signDataWithKey with unsupported key type', async () => {
         const key: KeyPair = {
             id: 'p256-key',
             publicKey: 'pub',
@@ -616,46 +386,13 @@ describe('useKMS', () => {
 
         await expect(
             act(async () => {
-                await result.current.batchSignDataWithKey(
+                await result.current.signDataWithKey(
                     'p256-key',
                     'test-domain',
                     [new Uint8Array([1])],
                 )
             }),
         ).rejects.toThrow()
-    })
-
-    it('should signTransactionWithKey for HDWalletDerivedKey type', async () => {
-        const key: KeyPair = {
-            id: 'hd-derived',
-            publicKey: 'pub',
-            type: KeyType.HDWalletDerivedKey,
-        }
-        mockGetKey.mockReturnValue(key)
-        mockWithHDSession.mockImplementation(
-            async (_key: any, _domain: string, handler: any) => {
-                const mockSession = {
-                    signTransaction: vi.fn(async () =>
-                        new Uint8Array(64).fill(5),
-                    ),
-                }
-                return handler(mockSession)
-            },
-        )
-
-        const { result } = renderHook(() => useKMS())
-
-        let signed: Uint8Array | undefined
-        await act(async () => {
-            signed = await result.current.signTransactionWithKey(
-                'hd-derived',
-                'test-domain',
-                new Uint8Array([1, 2, 3]),
-                { account: 0, keyIndex: 1, derivationType: 9 },
-            )
-        })
-
-        expect(signed).toEqual(new Uint8Array(64).fill(5))
     })
 
     it('should expose the keys map from the store', () => {

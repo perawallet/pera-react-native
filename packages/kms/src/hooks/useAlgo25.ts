@@ -12,9 +12,12 @@
 
 import nacl from 'tweetnacl'
 import { KeyManagementError } from '../errors'
-import { encodeToBase64, ERROR_I18N_KEYS } from '@perawallet/wallet-core-shared'
+import {
+    encodeToBase64,
+    ERROR_I18N_KEYS,
+    generateTimeorderedUniqueId,
+} from '@perawallet/wallet-core-shared'
 import { KeyPair, KeyType, KMSAlgo25Session } from '../models'
-import { v7 as uuid } from 'uuid'
 import {
     seedFromMnemonic,
     mnemonicFromSeed,
@@ -53,7 +56,7 @@ export const useAlgo25 = () => {
         id?: string
         mnemonic?: string
     }) => {
-        const keyId = params.id ?? uuid()
+        const keyId = params.id ?? generateTimeorderedUniqueId()
         const secret = await generateAlgo25Key(params.mnemonic)
 
         const keyPair: KeyPair = {
@@ -87,7 +90,12 @@ export const useAlgo25 = () => {
                 getPublicKey: () => algo25PublicKeyFromSeed(seed),
                 getMnemonic: () => mnemonicFromSeed(seed),
             }
-            return await handler(session)
+
+            try {
+                return await handler(session)
+            } finally {
+                seed.fill(0)
+            }
         })
     }
 

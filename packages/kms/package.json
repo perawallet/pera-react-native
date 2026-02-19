@@ -25,7 +25,6 @@
     "bip39": "catalog:",
     "tweetnacl": "^1.0.3",
     "react": "catalog:",
-    "uuid": "catalog:",
     "zustand": "catalog:"
   },
   "devDependencies": {

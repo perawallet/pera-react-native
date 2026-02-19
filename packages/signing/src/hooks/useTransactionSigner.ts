@@ -34,7 +34,7 @@ import { SIGNING_KEY_DOMAIN } from '../constants'
 
 export const useTransactionSigner = () => {
     const accounts = useAccountsStore(state => state.accounts)
-    const { loadKey, withHDSession, withAlgo25Session } = useKMS()
+    const { getKeyOrThrow, withHDSession, withAlgo25Session } = useKMS()
     const { encodeTransaction } = useTransactionEncoder()
 
     const signHDWalletTransactions = useCallback(
@@ -44,7 +44,7 @@ export const useTransactionSigner = () => {
         ): Promise<PeraSignedTransaction[]> => {
             const hdWalletDetails = account.hdWalletDetails
 
-            const key = loadKey(account.keyPairId)
+            const key = getKeyOrThrow(account.keyPairId)
             return await withHDSession(
                 key,
                 SIGNING_KEY_DOMAIN,
@@ -85,7 +85,7 @@ export const useTransactionSigner = () => {
             account: Algo25Account,
             txns: PeraTransactionGroup,
         ): Promise<PeraSignedTransaction[]> => {
-            const key = loadKey(account.keyPairId)
+            const key = getKeyOrThrow(account.keyPairId)
             return await withAlgo25Session(
                 key,
                 SIGNING_KEY_DOMAIN,

@@ -20,7 +20,7 @@ import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
-import { v4 as uuid } from 'uuid'
+import { generateUniqueId } from '@perawallet/wallet-core-shared'
 
 export const SettingsDeveloperScreen = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
@@ -37,7 +37,7 @@ export const SettingsDeveloperScreen = () => {
     const openDispenser = () => {
         pushWebView({
             url: config.dispenserUrl,
-            id: uuid(),
+            id: generateUniqueId(),
             enablePeraConnect: true,
         })
     }
