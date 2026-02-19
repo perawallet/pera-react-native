@@ -18,7 +18,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
     },
     value: {
-        color: theme.colors.helperNegative,
+        color: theme.colors.negative,
     },
     transactionDetails: {
         alignSelf: 'flex-start',

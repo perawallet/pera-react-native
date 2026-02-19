@@ -55,9 +55,9 @@ export const useStyles = makeStyles(theme => ({
         fontWeight: '500',
     },
     amountPositive: {
-        color: theme.colors.helperPositive,
+        color: theme.colors.positive,
     },
     amountNegative: {
-        color: theme.colors.helperNegative,
+        color: theme.colors.negative,
     },
 }))

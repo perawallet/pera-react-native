@@ -33,7 +33,7 @@ export const useStyles = makeStyles(theme => ({
         width: 80,
         height: 80,
         borderRadius: theme.spacing.sm,
-        backgroundColor: theme.colors.error,
+        backgroundColor: theme.colors.alertNegative,
         justifyContent: 'center',
         alignItems: 'center',
         marginBottom: theme.spacing['4xl'],

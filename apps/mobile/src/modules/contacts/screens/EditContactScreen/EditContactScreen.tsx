@@ -173,7 +173,7 @@ export const EditContactScreen = () => {
                 <PWDialog.Actions>
                     <PWDialog.Button
                         title={t('common.delete.label')}
-                        titleStyle={{ color: theme.colors.error }}
+                        titleStyle={{ color: theme.colors.alertNegative }}
                         onPress={removeContact}
                     />
                     <PWDialog.Button

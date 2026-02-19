@@ -14,7 +14,7 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     overlayBackdrop: {
-        backgroundColor: 'rgba(52, 52, 52, 0.8)',
+        backgroundColor: theme.colors.backdropModalBg,
     },
     overlay: {
         padding: theme.spacing.xl,
