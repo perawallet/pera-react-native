@@ -82,7 +82,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
             backgroundColor,
         },
         titleStyle: {
-            fontFamily: getFontFamily(false, 500),
+            fontFamily: getFontFamily(500),
             fontSize: 15,
             lineHeight: 24,
             flexWrap: 'nowrap',

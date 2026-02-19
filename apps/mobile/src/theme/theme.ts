@@ -16,14 +16,8 @@ import { DefaultTheme } from '@react-navigation/native'
 import { createTheme } from '@rneui/themed'
 import { fontFamilies } from '@constants/fonts'
 
-export const getFontFamily = (
-    isMonoSpace: boolean,
-    weight: 300 | 400 | 500 | 600 | 700,
-) => {
-    const selectedFontFamily = isMonoSpace
-        ? fontFamilies.DMMONO
-        : fontFamilies.DMSANS
-    return selectedFontFamily[weight]
+export const getFontFamily = (weight: 300 | 400 | 500 | 600 | 700) => {
+    return fontFamilies.DMSANS[weight]
 }
 
 export const getNavigationTheme = (mode: 'light' | 'dark' = 'light') => ({
@@ -505,13 +499,13 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                     paddingHorizontal: 0,
                 },
                 inputStyle: {
-                    fontFamily: getFontFamily(false, 400),
+                    fontFamily: getFontFamily(400),
                     fontSize: 13,
                     color: theme.colors.textMain,
                     borderRadius: theme.spacing.xs,
                 },
                 labelStyle: {
-                    fontFamily: getFontFamily(false, 400),
+                    fontFamily: getFontFamily(400),
                     fontSize: 13,
                     color: theme.colors.textGray,
                     marginBottom: theme.spacing.xs,
@@ -576,27 +570,27 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             Text: () => ({
                 //TODO: It seems to be selecting the wrong font at larger sizes - we may need additional font files
                 h1Style: {
-                    fontFamily: getFontFamily(false, 500),
+                    fontFamily: getFontFamily(500),
                     fontSize: 32,
                     lineHeight: 40,
                 },
                 h2Style: {
-                    fontFamily: getFontFamily(false, 500),
+                    fontFamily: getFontFamily(500),
                     fontSize: 25,
                     lineHeight: 24,
                 },
                 h3Style: {
-                    fontFamily: getFontFamily(false, 500),
+                    fontFamily: getFontFamily(500),
                     fontSize: 19,
                     lineHeight: 24,
                 },
                 h4Style: {
-                    fontFamily: getFontFamily(false, 500),
+                    fontFamily: getFontFamily(500),
                     fontSize: 15,
                     lineHeight: 24,
                 },
                 style: {
-                    fontFamily: getFontFamily(false, 400),
+                    fontFamily: getFontFamily(400),
                     fontSize: 13,
                     lineHeight: 24,
                 },

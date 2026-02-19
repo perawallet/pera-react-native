@@ -27,12 +27,12 @@ export const useStyles = makeStyles(theme => {
         },
         amount: {
             color: theme.colors.textMain,
-            fontFamily: getFontFamily(true, 400),
+            fontFamily: getFontFamily(400),
             alignSelf: 'center',
         },
         amountPlaceholder: {
             color: theme.colors.textGrayLighter,
-            fontFamily: getFontFamily(true, 400),
+            fontFamily: getFontFamily(400),
             alignSelf: 'center',
         },
         buttonContainer: {

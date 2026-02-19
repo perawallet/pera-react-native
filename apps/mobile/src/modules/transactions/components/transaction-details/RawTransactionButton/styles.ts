@@ -22,6 +22,6 @@ export const useStyles = makeStyles(theme => ({
         padding: theme.spacing.md,
     },
     rawTransactionText: {
-        fontFamily: getFontFamily(true, 400),
+        fontFamily: getFontFamily(400),
     },
 }))
