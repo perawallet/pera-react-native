@@ -65,16 +65,11 @@ export const WealthTrend = ({ account, period }: WealthTrendProps) => {
         const firstDp = dataPoints.at(0)?.algoValue ?? Decimal(0)
         const lastDp = dataPoints.at(-1)?.algoValue ?? Decimal(0)
 
-        logger.debug('WealthTrend', {
-            first: dataPoints.at(0)?.toString(),
-            last: dataPoints.at(-1)?.toString(),
-        })
-
         return [
             lastDp.minus(firstDp),
-            lastDp.isZero()
+            firstDp.isZero()
                 ? Decimal(0)
-                : lastDp.minus(firstDp).div(lastDp).mul(100),
+                : lastDp.minus(firstDp).div(firstDp).mul(100),
             lastDp.greaterThanOrEqualTo(firstDp),
         ]
     }, [dataPoints])

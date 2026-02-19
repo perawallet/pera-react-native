@@ -66,8 +66,14 @@ describe('WealthTrend', () => {
     it('displays positive trend with percentage', () => {
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
             data: [
-                { preferredValue: new Decimal(100), algoValue: new Decimal(100) },
-                { preferredValue: new Decimal(120), algoValue: new Decimal(120) },
+                {
+                    preferredValue: new Decimal(100),
+                    algoValue: new Decimal(100),
+                },
+                {
+                    preferredValue: new Decimal(120),
+                    algoValue: new Decimal(120),
+                },
             ],
             isPending: false,
         } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
@@ -80,7 +86,10 @@ describe('WealthTrend', () => {
     it('displays negative trend with percentage', () => {
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
             data: [
-                { preferredValue: new Decimal(100), algoValue: new Decimal(100) },
+                {
+                    preferredValue: new Decimal(100),
+                    algoValue: new Decimal(100),
+                },
                 { preferredValue: new Decimal(80), algoValue: new Decimal(80) },
             ],
             isPending: false,
@@ -94,7 +103,12 @@ describe('WealthTrend', () => {
     it('uses single account when account prop is provided', () => {
         const mockAccount = { address: 'test-address' }
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: [{ preferredValue: new Decimal(100), algoValue: new Decimal(100) }],
+            data: [
+                {
+                    preferredValue: new Decimal(100),
+                    algoValue: new Decimal(100),
+                },
+            ],
             isPending: false,
         } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
 
