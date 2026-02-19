@@ -123,5 +123,5 @@ export const useTransactionProcessingScreen = () => {
         }
 
         execute()
-    }, [])  
+    }, [])
 }
