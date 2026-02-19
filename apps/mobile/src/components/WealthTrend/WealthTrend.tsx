@@ -15,7 +15,6 @@ import { useStyles } from './styles'
 import {
     DEFAULT_PRECISION,
     HistoryPeriod,
-    logger,
 } from '@perawallet/wallet-core-shared'
 import { useMemo } from 'react'
 import Decimal from 'decimal.js'
