@@ -16,7 +16,10 @@ import { useWalletConnectHandlers } from '../useWalletConnectHandlers'
 import { useWalletConnectStore } from '../../store'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
-import { Networks } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    Networks,
+} from '@perawallet/wallet-core-shared'
 import {
     useAllAccounts,
     isLedgerAccount,
@@ -32,14 +35,6 @@ import { WalletConnectTransactionPayload } from 'walletconnect/src/models'
 vi.mock('../../store', () => ({
     useWalletConnectStore: vi.fn(),
 }))
-
-vi.mock('uuid', async importOriginal => {
-    const actual = await importOriginal<typeof import('uuid')>()
-    return {
-        ...actual,
-        v7: vi.fn(() => 'MOCK_UUID'),
-    }
-})
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useTransactionEncoder: vi.fn(() => ({
@@ -91,6 +86,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         },
         decodeFromBase64: vi.fn(() => new Uint8Array([1, 2, 3, 4])),
         encodeToBase64: vi.fn(() => 'AQIDBA=='),
+        generateOrderedUniqueId: vi.fn(() => 'MOCK_UUID'),
     }
 })
 

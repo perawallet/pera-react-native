@@ -16,6 +16,7 @@ import nacl from 'tweetnacl'
 import { useAlgo25 } from '../useAlgo25'
 import { KeyType, KeyPair, StoredKeyMaterial } from '../../models'
 import { KeyManagementError } from '../../errors'
+import { generateOrderedUniqueId } from 'shared/dist'
 
 const mockSeedFromMnemonic = vi.fn()
 const mockMnemonicFromSeed = vi.fn()
@@ -47,10 +48,6 @@ vi.mock('../../utils', () => ({
     getSeedFromMasterKey: (...args: any[]) => mockGetSeedFromMasterKey(...args),
 }))
 
-vi.mock('uuid', () => ({
-    v7: () => 'mock-uuid-v7',
-}))
-
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-shared',
@@ -60,6 +57,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         encodeToBase64: vi.fn((data: Uint8Array) =>
             Buffer.from(data).toString('base64'),
         ),
+        generateOrderedUniqueId: () => 'mock-uuid-v7',
     }
 })
 

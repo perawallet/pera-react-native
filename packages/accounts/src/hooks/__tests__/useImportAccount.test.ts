@@ -17,7 +17,6 @@ import { useAccountsStore } from '../../store'
 import { KeyType } from '@perawallet/wallet-core-kms'
 
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
-vi.mock('uuid', () => ({ v7: uuidSpies.v7 }))
 
 vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
     BIP32DerivationType: { Peikert: 9 },
@@ -31,6 +30,16 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         Buffer.from(address).toString('base64'),
     ),
 }))
+
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const actual = await vi.importActual<object>(
+        '@perawallet/wallet-core-shared',
+    )
+    return {
+        ...actual,
+        generateOrderedUniqueId: uuidSpies.v7,
+    }
+})
 
 const mockSession = vi.hoisted(() => ({
     getPublicKey: vi.fn(),

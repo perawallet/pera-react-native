@@ -68,10 +68,6 @@ vi.mock('../../utils', () => ({
         mockGetEntropyFromMasterKey(...args),
 }))
 
-vi.mock('uuid', () => ({
-    v7: () => 'mock-uuid-v7',
-}))
-
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-shared',
@@ -81,6 +77,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         encodeToBase64: vi.fn((data: Uint8Array) =>
             Buffer.from(data).toString('base64'),
         ),
+        generateOrderedUniqueId: () => 'mock-uuid-v7',
     }
 })
 

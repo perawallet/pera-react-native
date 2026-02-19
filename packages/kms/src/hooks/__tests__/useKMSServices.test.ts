@@ -48,10 +48,6 @@ vi.mock('../../store', () => ({
     },
 }))
 
-vi.mock('uuid', () => ({
-    v7: () => 'mock-uuid-v7',
-}))
-
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-shared',
@@ -64,6 +60,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
             warn: vi.fn(),
             error: vi.fn(),
         },
+        generateOrderedUniqueId: () => 'mock-uuid-v7',
     }
 })
 
