@@ -91,13 +91,11 @@ describe('useImportRekeyedAddressesScreen', () => {
         vi.useRealTimers()
     })
 
-    it('initializes with all non-imported accounts selected', () => {
+    it('initializes with no accounts selected', () => {
         const { result } = renderHook(() => useImportRekeyedAddressesScreen())
 
-        expect(result.current.selectedAddresses.size).toBe(2)
-        expect(result.current.selectedAddresses.has('ACC1')).toBe(true)
-        expect(result.current.selectedAddresses.has('ACC2')).toBe(true)
-        expect(result.current.canContinue).toBe(true)
+        expect(result.current.selectedAddresses.size).toBe(0)
+        expect(result.current.canContinue).toBe(false)
     })
 
     it('toggling selection updates state', () => {
@@ -107,19 +105,19 @@ describe('useImportRekeyedAddressesScreen', () => {
             result.current.toggleSelection('ACC1')
         })
 
-        expect(result.current.selectedAddresses.has('ACC1')).toBe(false)
-        expect(result.current.selectedAddresses.has('ACC2')).toBe(true)
-        expect(result.current.canContinue).toBe(true) // ACC2 still selected
+        expect(result.current.selectedAddresses.has('ACC1')).toBe(true)
+        expect(result.current.selectedAddresses.has('ACC2')).toBe(false)
+        expect(result.current.canContinue).toBe(true)
 
         act(() => {
-            result.current.toggleSelection('ACC2')
+            result.current.toggleSelection('ACC1')
         })
 
         expect(result.current.selectedAddresses.size).toBe(0)
         expect(result.current.canContinue).toBe(false)
     })
 
-    it('excludes already imported addresses from initial selection', () => {
+    it('tracks already imported addresses without selecting any', () => {
         vi.mocked(useAllAccounts).mockReturnValue([
             { ...MOCK_ACCOUNTS[0] }, // ACC1 is already imported
         ])
@@ -127,12 +125,17 @@ describe('useImportRekeyedAddressesScreen', () => {
         const { result } = renderHook(() => useImportRekeyedAddressesScreen())
 
         expect(result.current.alreadyImportedAddresses.has('ACC1')).toBe(true)
-        expect(result.current.selectedAddresses.has('ACC1')).toBe(false)
-        expect(result.current.selectedAddresses.has('ACC2')).toBe(true)
+        expect(result.current.selectedAddresses.size).toBe(0)
     })
 
-    it('handleContinue imports accounts and finishes onboarding', () => {
+    it('handleContinue imports selected accounts and finishes onboarding', () => {
         const { result } = renderHook(() => useImportRekeyedAddressesScreen())
+
+        // Select both accounts
+        act(() => {
+            result.current.toggleSelection('ACC1')
+            result.current.toggleSelection('ACC2')
+        })
 
         act(() => {
             result.current.handleContinue()
@@ -148,18 +151,10 @@ describe('useImportRekeyedAddressesScreen', () => {
 
         expect(mockSetAccounts).toHaveBeenCalledWith(MOCK_ACCOUNTS)
         expect(mockSetIsOnboarding).toHaveBeenCalledWith(false)
-        // Since component unmounts or state updates might happen async, check hook result if possible,
-        // but typically in test environment hook might not update if unmounted/navigated.
-        // However, we can check side effects.
     })
 
-    it('handleContinue is skipped if no accounts selected', () => {
+    it('handleContinue exits onboarding without importing if no accounts selected', () => {
         const { result } = renderHook(() => useImportRekeyedAddressesScreen())
-
-        // Deselect all
-        act(() => {
-            result.current.toggleSelectAll()
-        })
 
         expect(result.current.selectedAddresses.size).toBe(0)
 
@@ -167,8 +162,6 @@ describe('useImportRekeyedAddressesScreen', () => {
             result.current.handleContinue()
         })
 
-        // Should exit immediately, just setIsOnboarding(false) theoretically,
-        // but current logic: if accountsToAdd.length === 0 -> setIsOnboarding(false).
         expect(mockSetIsOnboarding).toHaveBeenCalledWith(false)
         expect(mockSetAccounts).not.toHaveBeenCalled()
         expect(result.current.isImporting).toBe(false)

@@ -53,6 +53,20 @@ export const parseRoundTime = (unixTimestamp: number): Date => {
 }
 
 /**
+ * Formats an ISO date string (YYYY-MM-DD) into a human-readable format (e.g., "Nov 6, 2025").
+ */
+export const formatDisplayDate = (isoDate: string): string => {
+    const [year, month, day] = isoDate.split('-').map(Number)
+    const date = new Date(year, month - 1, day)
+
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    })
+}
+
+/**
  * Creates an ISO 8601 date string for filtering transactions by date.
  */
 export const toISODateString = (date: Date): string => {

@@ -10,9 +10,16 @@
  limitations under the License
  */
 
+import { forwardRef, useImperativeHandle, useRef } from 'react'
+import { TextInput } from 'react-native'
 import { Input as RNEInput, InputProps as RNEInputProps } from '@rneui/themed'
 import { useStyles } from './styles'
 import { getTestProps } from '@utils/test-id-helper'
+
+export type PWInputRef = {
+    focus: () => void
+    blur: () => void
+}
 
 export type PWInputProps = {
     value?: string
@@ -41,24 +48,45 @@ export type PWInputProps = {
     testID?: string
 }
 
-export const PWInput = ({
-    containerStyle,
-    inputContainerStyle,
-    inputStyle,
-    labelStyle,
-    testID,
-    ...props
-}: PWInputProps) => {
-    const styles = useStyles()
+export const PWInput = forwardRef<PWInputRef, PWInputProps>(
+    (
+        {
+            containerStyle,
+            inputContainerStyle,
+            inputStyle,
+            labelStyle,
+            testID,
+            ...props
+        },
+        ref,
+    ) => {
+        const styles = useStyles()
+        const inputRef = useRef<TextInput>(null)
 
-    return (
-        <RNEInput
-            {...props}
-            {...getTestProps(testID)}
-            containerStyle={[styles.container, containerStyle]}
-            inputContainerStyle={[styles.inputContainer, inputContainerStyle]}
-            inputStyle={[styles.input, inputStyle]}
-            labelStyle={[styles.label, labelStyle]}
-        />
-    )
-}
+        useImperativeHandle(ref, () => ({
+            focus: () => {
+                inputRef.current?.focus()
+            },
+            blur: () => {
+                inputRef.current?.blur()
+            },
+        }))
+
+        return (
+            <RNEInput
+                ref={inputRef}
+                {...props}
+                {...getTestProps(testID)}
+                containerStyle={[styles.container, containerStyle]}
+                inputContainerStyle={[
+                    styles.inputContainer,
+                    inputContainerStyle,
+                ]}
+                inputStyle={[styles.input, inputStyle]}
+                labelStyle={[styles.label, labelStyle]}
+            />
+        )
+    },
+)
+
+PWInput.displayName = 'PWInput'

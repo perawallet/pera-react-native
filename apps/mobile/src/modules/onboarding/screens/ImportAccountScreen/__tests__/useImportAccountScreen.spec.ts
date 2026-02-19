@@ -44,6 +44,19 @@ vi.mock('@hooks/useAppNavigation', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useImportAccount: vi.fn(),
+    WORDLIST: [
+        'abandon',
+        'ability',
+        'able',
+        'about',
+        'above',
+        'absent',
+        'absorb',
+        'abstract',
+        'absurd',
+        'abuse',
+        'zoo',
+    ],
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -164,6 +177,109 @@ describe('useImportAccountScreen', () => {
             title: 'onboarding.import_account.invalid_mnemonic_title',
             body: 'onboarding.import_account.invalid_mnemonic_body',
             type: 'error',
+        })
+    })
+
+    describe('suggestions', () => {
+        it('returns empty suggestions when no prefix is typed', () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            expect(result.current.suggestions).toEqual([])
+        })
+
+        it('returns matching suggestions based on typed prefix', () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            act(() => {
+                result.current.updateWord('ab', 0)
+                result.current.setFocused(0)
+            })
+
+            expect(result.current.suggestions).toEqual([
+                'abandon',
+                'ability',
+                'able',
+                'about',
+            ])
+        })
+
+        it('returns empty suggestions when word exactly matches a BIP39 word and is the only match', () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            act(() => {
+                result.current.updateWord('zoo', 0)
+                result.current.setFocused(0)
+            })
+
+            expect(result.current.suggestions).toEqual([])
+        })
+
+        it('limits suggestions to 4', () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            act(() => {
+                result.current.updateWord('ab', 0)
+                result.current.setFocused(0)
+            })
+
+            expect(result.current.suggestions.length).toBeLessThanOrEqual(4)
+        })
+
+        it('returns suggestions for the focused word only', () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            act(() => {
+                result.current.updateWord('ab', 0)
+                result.current.updateWord('zo', 1)
+                result.current.setFocused(1)
+            })
+
+            expect(result.current.suggestions).toEqual(['zoo'])
+        })
+    })
+
+    describe('handleSelectSuggestion', () => {
+        it('fills the focused word with the selected suggestion', () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            act(() => {
+                result.current.setFocused(5)
+            })
+
+            act(() => {
+                result.current.handleSelectSuggestion('abandon')
+            })
+
+            expect(result.current.words[5]).toBe('abandon')
+        })
+
+        it('advances focused index to the next input after selection', () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            act(() => {
+                result.current.setFocused(5)
+            })
+
+            act(() => {
+                result.current.handleSelectSuggestion('abandon')
+            })
+
+            expect(result.current.focused).toBe(6)
+        })
+
+        it('does not advance past the last word index', () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            act(() => {
+                result.current.setFocused(23)
+            })
+
+            act(() => {
+                result.current.handleSelectSuggestion('abandon')
+            })
+
+            expect(result.current.words[23]).toBe('abandon')
+            expect(result.current.focused).toBe(23)
         })
     })
 })
