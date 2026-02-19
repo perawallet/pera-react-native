@@ -12,12 +12,27 @@
 
 import { makeStyles } from '@rneui/themed'
 
+const SPINNER_CIRCLE_SIZE = 60
+
 export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: theme.spacing.md,
+    },
+    spinnerCircle: {
+        width: SPINNER_CIRCLE_SIZE,
+        height: SPINNER_CIRCLE_SIZE,
+        borderRadius: SPINNER_CIRCLE_SIZE / 2,
+        backgroundColor: theme.colors.buttonHelperBg,
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+    },
+    animation: {
+        width: theme.spacing['3xl'],
+        height: theme.spacing['3xl'],
     },
     title: {
         marginTop: theme.spacing.xl,

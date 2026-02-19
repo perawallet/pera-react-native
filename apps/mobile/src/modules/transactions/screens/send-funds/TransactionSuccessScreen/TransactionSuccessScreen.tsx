@@ -26,7 +26,7 @@ export const TransactionSuccessScreen = () => {
                 <PWView style={styles.iconCircle}>
                     <PWIcon
                         name='check'
-                        variant='buttonPrimary'
+                        variant='white'
                     />
                 </PWView>
                 <PWText
@@ -43,6 +43,7 @@ export const TransactionSuccessScreen = () => {
                 <PWButton
                     title={t('send_funds.success.view_in_explorer')}
                     variant='link'
+                    paddingStyle='none'
                     onPress={handleViewInExplorer}
                 />
                 <PWButton

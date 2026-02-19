@@ -46,7 +46,10 @@ vi.mock('@components/core', () => ({
     ),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWIcon: ({ name, variant }: any) => (
-        <div data-testid={`icon-${name}`} data-variant={variant} />
+        <div
+            data-testid={`icon-${name}`}
+            data-variant={variant}
+        />
     ),
 }))
 
