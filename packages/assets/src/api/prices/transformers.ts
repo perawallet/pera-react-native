@@ -22,7 +22,7 @@ export const transformAssetPriceResponse = (
     data: AssetPriceResponse,
 ): AssetPrice => {
     return {
-        assetId: data.asset_id,
+        assetId: data.asset_id.toString(),
         usdPrice: Decimal(data.usd_value ?? '0'),
     }
 }

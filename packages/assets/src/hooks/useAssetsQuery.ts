@@ -21,12 +21,11 @@ import {
 } from '../api'
 import {
     ALGO_ASSET_ID,
-    AssetsResponse,
-    PublicAssetResponse,
     type PeraAsset,
 } from '../models'
 import { DEFAULT_PAGE_SIZE, partition } from '@perawallet/wallet-core-shared'
 import { getAlgoQueryKey, getAssetsQueryKey } from './querykeys'
+import { AssetsResponse, PublicAssetResponse } from '../api/assets/schema'
 
 export const useAssetsQuery = (ids?: string[]) => {
     let assetIDs = useAssetsStore(state => state.assetIDs)

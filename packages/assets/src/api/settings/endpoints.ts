@@ -11,7 +11,7 @@
  */
 
 import { queryClient, type Network } from '@perawallet/wallet-core-shared'
-import type { AssetResponse } from '../../models'
+import { AssetResponse, assetResponseSchema } from '../assets/schema'
 
 export const toggleAssetFavorite = async ({
     assetID,
@@ -35,7 +35,7 @@ export const toggleAssetFavorite = async ({
         },
     })
 
-    return response.data
+    return assetResponseSchema.parse(response.data)
 }
 
 export const toggleAssetPriceAlert = async ({
@@ -60,5 +60,5 @@ export const toggleAssetPriceAlert = async ({
         },
     })
 
-    return response.data
+    return assetResponseSchema.parse(response.data)
 }

@@ -15,12 +15,7 @@ import {
     queryClient,
     type Network,
 } from '@perawallet/wallet-core-shared'
-import type {
-    AssetResponse,
-    AssetsResponse,
-    IndexerAssetResponse,
-    PublicAssetResponse,
-} from '../../models'
+import { assetResponseSchema, assetsResponseSchema, indexerAssetResponseSchema, publicAssetResponseSchema, type AssetResponse, type AssetsResponse, type IndexerAssetResponse, type PublicAssetResponse } from './schema'
 
 export const fetchAssets = async (assetIDs: string[]) => {
     const response = await queryClient<AssetsResponse, string[]>({
@@ -33,7 +28,7 @@ export const fetchAssets = async (assetIDs: string[]) => {
         },
     })
 
-    return response.data
+    return assetsResponseSchema.parse(response.data)
 }
 
 export const fetchAccountAssets = async (address: string, network: Network) => {
@@ -44,7 +39,7 @@ export const fetchAccountAssets = async (address: string, network: Network) => {
         url: `/v2/accounts/${address}/assets/`,
     })
 
-    return response.data
+    return assetsResponseSchema.parse(response.data)
 }
 
 export const fetchAssetDetails = async (assetID: string) => {
@@ -55,7 +50,7 @@ export const fetchAssetDetails = async (assetID: string) => {
         url: `/v1/assets/${assetID}`,
     })
 
-    return response.data
+    return assetResponseSchema.parse(response.data)
 }
 
 export const fetchPublicAssetDetails = async (assetID: string) => {
@@ -66,7 +61,7 @@ export const fetchPublicAssetDetails = async (assetID: string) => {
         url: `/v1/public/assets/${assetID}`,
     })
 
-    return response.data
+    return publicAssetResponseSchema.parse(response.data)
 }
 
 export const fetchIndexerAssetDetails = async (assetID: string) => {
@@ -77,5 +72,5 @@ export const fetchIndexerAssetDetails = async (assetID: string) => {
         url: `/v2/assets/${assetID}`,
     })
 
-    return response.data
+    return indexerAssetResponseSchema.parse(response.data)
 }

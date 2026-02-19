@@ -16,7 +16,6 @@ import { useQueries } from '@tanstack/react-query'
 import {
     ALGO_ASSET_ID,
     type AssetPrices,
-    type PublicAssetResponse,
 } from '../models'
 import {
     fetchAssetPrices,
@@ -26,6 +25,7 @@ import {
 import type { AssetPriceResponse } from '../api'
 import { DEFAULT_PAGE_SIZE, partition } from '@perawallet/wallet-core-shared'
 import { getAssetPricesQueryKey } from './querykeys'
+import { PublicAssetResponse } from '../api/assets/schema'
 
 export const useAssetPricesQuery = (enabled?: boolean) => {
     const assetIDs = useAssetsStore(state => state.assetIDs)
@@ -42,6 +42,14 @@ export const useAssetPricesQuery = (enabled?: boolean) => {
                     queryKey: getAssetPricesQueryKey(chunk),
                     enabled: enabled ?? true,
                     queryFn: async () => fetchAssetPrices(chunk),
+                    select: (data: { results: AssetPriceResponse[] }) => {
+                        return {
+                            results: data.results.map(asset => ({
+                                asset_id: `${asset.asset_id}`,    
+                                usd_value: asset.usd_value,
+                            })),
+                        }
+                    }
                 }
             }),
             {
@@ -71,7 +79,7 @@ export const useAssetPricesQuery = (enabled?: boolean) => {
         queries.forEach(query => {
             query.data?.results?.forEach((asset: AssetPriceResponse) => {
                 const assetPrice = transformAssetPriceResponse(asset)
-                assetPrices.set(asset.asset_id, assetPrice)
+                assetPrices.set(asset.asset_id.toString(), assetPrice)
             })
         })
         return {

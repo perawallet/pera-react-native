@@ -13,8 +13,8 @@
 import { z } from 'zod'
 
 export const assetPriceResponseSchema = z.object({
-    asset_id: z.string(),
-    usd_value: z.string(),
+    asset_id: z.number().or(z.string()),
+    usd_value: z.string().optional().nullable(),
 })
 
 export const assetPricesResponseSchema = z.object({

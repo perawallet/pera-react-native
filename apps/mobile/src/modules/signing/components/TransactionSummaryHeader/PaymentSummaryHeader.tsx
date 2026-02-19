@@ -70,6 +70,8 @@ export const PaymentSummaryHeader = ({
                     sourceAssetId={ALGO_ASSET_ID}
                     variant='h4'
                     style={styles.secondaryAmountValue}
+                    precision={ALGO_ASSET.decimals}
+                    minPrecision={DEFAULT_PRECISION}
                 />
             </PWView>
         </PWView>

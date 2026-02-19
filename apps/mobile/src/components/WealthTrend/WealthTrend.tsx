@@ -12,7 +12,7 @@
 
 import { PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
-import { formatCurrency, HistoryPeriod } from '@perawallet/wallet-core-shared'
+import { DEFAULT_PRECISION, formatCurrency, HistoryPeriod, logger } from '@perawallet/wallet-core-shared'
 import { useMemo } from 'react'
 import Decimal from 'decimal.js'
 import { useSettings } from '@perawallet/wallet-core-settings'
@@ -22,6 +22,9 @@ import {
     useAllAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 
 export type WealthTrendProps = {
     account?: WalletAccount
@@ -49,15 +52,22 @@ export const WealthTrend = ({ account, period }: WealthTrendProps) => {
 
     const dataPoints = useMemo(
         () =>
-            data?.map(p => {
-                return p.preferredValue
-            }) ?? [],
+            data?.map(p => ({
+                value: p.preferredValue,
+                algoValue: p.algoValue,
+                datetime: p.datetime,
+            })) ?? [],
         [data],
     )
 
     const [absolute, percentage, isPositive] = useMemo(() => {
-        const firstDp = dataPoints.at(0) ?? Decimal(0)
-        const lastDp = dataPoints.at(-1) ?? Decimal(0)
+        const firstDp = dataPoints.at(0)?.algoValue ?? Decimal(0)
+        const lastDp = dataPoints.at(-1)?.algoValue ?? Decimal(0)
+
+        logger.debug('WealthTrend', {
+            first: dataPoints.at(0)?.toString(),
+            last: dataPoints.at(-1)?.toString(),
+        })
 
         return [
             lastDp.minus(firstDp),
@@ -72,18 +82,15 @@ export const WealthTrend = ({ account, period }: WealthTrendProps) => {
         <></>
     ) : (
         <PWView style={styles.container}>
-            <PWText
-                style={isPositive ? styles.itemUp : styles.itemDown}
+            <PreferredCurrencyDisplay
                 variant='h4'
-            >
-                {formatCurrency(
-                    absolute,
-                    2,
-                    preferredCurrency,
-                    undefined,
-                    true,
-                )}
-            </PWText>
+                sourceAmount={absolute}
+                sourceAssetId={ALGO_ASSET_ID}
+                precision={ALGO_ASSET.decimals}
+                minPrecision={DEFAULT_PRECISION}
+                showSymbol
+                style={isPositive ? styles.itemUp : styles.itemDown}
+            />
             <PWView style={styles.percentageContainer}>
                 <PWIcon
                     name={isPositive ? 'arrow-up' : 'arrow-down'}

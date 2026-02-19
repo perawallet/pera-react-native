@@ -60,28 +60,12 @@ export const useSettingsCurrencyScreen = () => {
         invalidateAssetPrices()
     }
 
-    const isAlgoPrimary = preferredCurrency === 'ALGO'
-
-    const primaryCurrency = useMemo(() => {
-        if (isAlgoPrimary) {
-            return ALGO_ASSET.unitName
-        }
-        return preferredCurrency
-    }, [isAlgoPrimary, preferredCurrency])
-
-    const secondaryCurrency = useMemo(() => {
-        if (isAlgoPrimary) {
-            return fallbackCurrency
-        }
-        return ALGO_ASSET.unitName
-    }, [isAlgoPrimary, fallbackCurrency])
-
     return {
         setCurrency,
         search,
         setSearch,
         filteredData,
-        primaryCurrency,
-        secondaryCurrency,
+        preferredCurrency,
+        fallbackCurrency,
     }
 }

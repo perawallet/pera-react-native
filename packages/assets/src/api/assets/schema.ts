@@ -20,8 +20,8 @@ export const assetResponseSchema = z.object({
     fraction_decimals: z.number(),
     total: z.string(),
     usd_value: z.string().nullable().optional(),
-    is_verified: z.boolean().optional(),
-    is_deleted: z.boolean(),
+    is_verified: z.boolean().optional().nullable(),
+    is_deleted: z.boolean().optional().nullable(),
     verification_tier: z.string(),
     explorer_url: z.string().optional(),
     collectible: z.any().optional(),
@@ -48,8 +48,8 @@ export const publicAssetResponseSchema = z.object({
     fraction_decimals: z.number(),
     total_supply: z.number(),
     total_supply_as_str: z.string(),
-    is_deleted: z.string().optional(),
-    creator_address: z.string(),
+    is_deleted: z.boolean().optional().nullable(),
+    creator_address: z.string().optional().nullable(),
     url: z.string().optional(),
     logo: z.string().optional(),
     verification_tier: z.string(),
@@ -84,3 +84,9 @@ export const indexerAssetResponseSchema = z.object({
     }),
     'current-round': z.number(),
 })
+
+
+export type PublicAssetResponse = z.infer<typeof publicAssetResponseSchema>
+export type AssetResponse = z.infer<typeof assetResponseSchema>
+export type AssetsResponse = z.infer<typeof assetsResponseSchema>
+export type IndexerAssetResponse = z.infer<typeof indexerAssetResponseSchema>

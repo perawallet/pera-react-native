@@ -62,7 +62,6 @@ export const AccountOverview = ({
                         account={account}
                         hasBalance={hasBalance}
                         portfolioAlgoValue={portfolioAlgoValue}
-                        portfolioPreferredValue={portfolioPreferredValue}
                         isPending={isPending}
                         period={period}
                         setPeriod={setPeriod}

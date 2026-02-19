@@ -31,12 +31,12 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { NoFundsButtonPanel } from '../NoFundsButtonPanel'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 
 export type AccountOverviewHeaderProps = {
     account: WalletAccount
     hasBalance: boolean
     portfolioAlgoValue: Decimal
-    portfolioPreferredValue: Decimal
     isPending: boolean
     period: HistoryPeriod
     setPeriod: (period: HistoryPeriod) => void
@@ -58,7 +58,6 @@ export const AccountOverviewHeader = ({
     account,
     hasBalance,
     portfolioAlgoValue,
-    portfolioPreferredValue,
     isPending,
     period,
     setPeriod,
@@ -98,19 +97,9 @@ export const AccountOverviewHeader = ({
                     />
                 </PWView>
                 <PWView style={styles.secondaryValueBar}>
-                    <CurrencyDisplay
-                        variant='h4'
-                        style={styles.valueTitle}
-                        value={
-                            selectedPoint
-                                ? Decimal(selectedPoint.preferredValue)
-                                : portfolioPreferredValue
-                        }
-                        currency={preferredCurrency}
-                        prefix='≈ '
-                        precision={2}
-                        isLoading={isPending}
-                    />
+                    <PreferredCurrencyDisplay variant='h4' style={styles.valueTitle} 
+                            sourceAmount={selectedPoint ? selectedPoint.algoValue : portfolioAlgoValue} sourceAssetId={ALGO_ASSET.assetId} precision={2} showSymbol prefix='≈ ' isLoading={isPending} />
+
                     {!selectedPoint && (
                         <WealthTrend
                             account={account}

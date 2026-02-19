@@ -19,7 +19,7 @@ export const currencyResponseSchema = z.object({
     symbol: z.string(),
     exchange_price: z.string().optional().nullable(),
     last_updated_at: z.string().optional().nullable(),
-    usd_value: z.string().optional().nullable(),
+    usd_value: z.number().optional().nullable(),
 })
 
 export const currenciesListResponseSchema = z.array(currencyResponseSchema)

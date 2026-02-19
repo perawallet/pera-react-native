@@ -18,6 +18,8 @@ import { Currency } from '@perawallet/wallet-core-currencies'
 import { SearchInput } from '@components/SearchInput'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsCurrencyScreen } from './useSettingsCurrencyScreen'
+import { logger } from '@perawallet/wallet-core-shared'
+import { useCallback } from 'react'
 
 export const SettingsCurrencyScreen = () => {
     const styles = useStyles()
@@ -31,7 +33,9 @@ export const SettingsCurrencyScreen = () => {
         filteredData,
     } = useSettingsCurrencyScreen()
 
-    const renderItem = ({ item }: { item: Currency }) => {
+    const keyExtractor = (item: Currency) => item.id
+
+    const renderItem = useCallback(({ item }: { item: Currency }) => {
         return (
             <PWRadioButton
                 title={`${item.name} (${item.id})`}
@@ -39,7 +43,7 @@ export const SettingsCurrencyScreen = () => {
                 isSelected={preferredCurrency === item.id}
             />
         )
-    }
+    }, [preferredCurrency, setCurrency])
 
     return (
         <PWView style={styles.container}>
@@ -58,6 +62,8 @@ export const SettingsCurrencyScreen = () => {
             <PWFlatList
                 data={filteredData}
                 renderItem={renderItem}
+                keyExtractor={keyExtractor}
+                extraData={preferredCurrency}
             />
         </PWView>
     )

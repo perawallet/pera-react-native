@@ -13,24 +13,24 @@
 import Decimal from 'decimal.js'
 import {
     ALGO_ASSET_ID,
-    type AssetResponse,
-    type IndexerAssetResponse,
+    PeraAssetType,
+    PeraAssetVerificationTier,
     type PeraAsset,
-    type PublicAssetResponse,
 } from '../../models'
+import { AssetResponse, IndexerAssetResponse, PublicAssetResponse } from './schema'
 
 export const transformAssetResponse = (data: AssetResponse): PeraAsset => {
     return {
         assetId: `${data.asset_id}`,
         name: data.name,
         peraMetadata: {
-            isDeleted: data.is_deleted,
-            verificationTier: data.verification_tier,
+            isDeleted: data.is_deleted ?? false,
+            verificationTier: data.verification_tier as PeraAssetVerificationTier,
             category: data.category ?? undefined,
-            isVerified: data.is_verified,
+            isVerified: data.is_verified ?? false,
             explorerUrl: data.explorer_url,
             collectible: data.collectible,
-            type: data.type,
+            type: data.type as PeraAssetType,
             labels: data.labels,
             logo: data.logo,
             isFavorited: data.is_favorited ?? false,
@@ -67,8 +67,8 @@ export const transformPublicAssetResponse = (
         assetId: `${asset.asset_id}`,
         name: asset.name,
         peraMetadata: {
-            isDeleted: asset.is_deleted === 'true',
-            verificationTier: asset.verification_tier,
+            isDeleted: asset.is_deleted === true,
+            verificationTier: asset.verification_tier as PeraAssetVerificationTier,
             isVerified:
                 asset.verification_tier === 'verified' ||
                 `${asset.asset_id}` === ALGO_ASSET_ID,
@@ -78,7 +78,7 @@ export const transformPublicAssetResponse = (
         decimals: asset.fraction_decimals,
         totalSupply: Decimal(asset.total_supply_as_str),
         creator: {
-            address: asset.creator_address,
+            address: asset.creator_address ?? '',
         },
         url: asset.url,
     }
