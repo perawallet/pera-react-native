@@ -59,7 +59,10 @@ export const useAccountOverview = (
     const { portfolioAlgoValue, accountBalances, isPending } =
         useAccountBalancesQuery(account ? [account] : [])
     const { portfolioUsdValue } = usePortfolioTotals(accountBalances)
-    const portfolioPreferredValue = useMemo(() => usdToPreferred(portfolioUsdValue), [usdToPreferred, portfolioUsdValue])
+    const portfolioPreferredValue = useMemo(
+        () => usdToPreferred(portfolioUsdValue),
+        [usdToPreferred, portfolioUsdValue],
+    )
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AccountBalanceHistoryItem>()
     const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true)

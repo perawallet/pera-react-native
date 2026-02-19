@@ -15,7 +15,12 @@ import {
     queryClient,
     type HistoryPeriod,
 } from '@perawallet/wallet-core-shared'
-import { assetPriceHistoryResponseSchema, assetPricesResponseSchema, type AssetPriceHistoryResponse, type AssetPricesResponse } from './schema'
+import {
+    assetPriceHistoryResponseSchema,
+    assetPricesResponseSchema,
+    type AssetPriceHistoryResponse,
+    type AssetPricesResponse,
+} from './schema'
 
 export const fetchAssetPrices = async (assetIDs: string[]) => {
     const response = await queryClient<AssetPricesResponse, string[]>({

@@ -62,7 +62,6 @@ export const AccountOverviewHeader = ({
     period,
     setPeriod,
     selectedPoint,
-    preferredCurrency,
     togglePrivacyMode,
     handleChartSelectionChange,
     handleSwap,
@@ -97,8 +96,20 @@ export const AccountOverviewHeader = ({
                     />
                 </PWView>
                 <PWView style={styles.secondaryValueBar}>
-                    <PreferredCurrencyDisplay variant='h4' style={styles.valueTitle} 
-                            sourceAmount={selectedPoint ? selectedPoint.algoValue : portfolioAlgoValue} sourceAssetId={ALGO_ASSET.assetId} precision={2} showSymbol prefix='≈ ' isLoading={isPending} />
+                    <PreferredCurrencyDisplay
+                        variant='h4'
+                        style={styles.valueTitle}
+                        sourceAmount={
+                            selectedPoint
+                                ? selectedPoint.algoValue
+                                : portfolioAlgoValue
+                        }
+                        sourceAssetId={ALGO_ASSET.assetId}
+                        precision={2}
+                        showSymbol
+                        prefix='≈ '
+                        isLoading={isPending}
+                    />
 
                     {!selectedPoint && (
                         <WealthTrend

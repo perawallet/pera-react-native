@@ -12,17 +12,19 @@
 
 import { PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
-import { DEFAULT_PRECISION, formatCurrency, HistoryPeriod, logger } from '@perawallet/wallet-core-shared'
+import {
+    DEFAULT_PRECISION,
+    HistoryPeriod,
+    logger,
+} from '@perawallet/wallet-core-shared'
 import { useMemo } from 'react'
 import Decimal from 'decimal.js'
 import { useSettings } from '@perawallet/wallet-core-settings'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     useAccountBalancesHistoryQuery,
     useAllAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 
@@ -33,7 +35,6 @@ export type WealthTrendProps = {
 
 export const WealthTrend = ({ account, period }: WealthTrendProps) => {
     const styles = useStyles()
-    const { preferredCurrency } = useCurrency()
     const { privacyMode } = useSettings()
 
     const accounts = useAllAccounts()

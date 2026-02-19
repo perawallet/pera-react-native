@@ -17,7 +17,11 @@ import {
     PeraAssetVerificationTier,
     type PeraAsset,
 } from '../../models'
-import { AssetResponse, IndexerAssetResponse, PublicAssetResponse } from './schema'
+import {
+    AssetResponse,
+    IndexerAssetResponse,
+    PublicAssetResponse,
+} from './schema'
 
 export const transformAssetResponse = (data: AssetResponse): PeraAsset => {
     return {
@@ -25,13 +29,14 @@ export const transformAssetResponse = (data: AssetResponse): PeraAsset => {
         name: data.name,
         peraMetadata: {
             isDeleted: data.is_deleted ?? false,
-            verificationTier: data.verification_tier as PeraAssetVerificationTier,
+            verificationTier:
+                data.verification_tier as PeraAssetVerificationTier,
             category: data.category ?? undefined,
             isVerified: data.is_verified ?? false,
-            explorerUrl: data.explorer_url,
+            explorerUrl: data.explorer_url ?? undefined,
             collectible: data.collectible,
             type: data.type as PeraAssetType,
-            labels: data.labels,
+            labels: data.labels ?? undefined,
             logo: data.logo,
             isFavorited: data.is_favorited ?? false,
             isPriceAlertEnabled: data.is_price_alert_enabled ?? false,
@@ -68,7 +73,8 @@ export const transformPublicAssetResponse = (
         name: asset.name,
         peraMetadata: {
             isDeleted: asset.is_deleted === true,
-            verificationTier: asset.verification_tier as PeraAssetVerificationTier,
+            verificationTier:
+                asset.verification_tier as PeraAssetVerificationTier,
             isVerified:
                 asset.verification_tier === 'verified' ||
                 `${asset.asset_id}` === ALGO_ASSET_ID,

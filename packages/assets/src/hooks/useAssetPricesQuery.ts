@@ -13,10 +13,7 @@
 import { useMemo } from 'react'
 import { useAssetsStore } from '../store'
 import { useQueries } from '@tanstack/react-query'
-import {
-    ALGO_ASSET_ID,
-    type AssetPrices,
-} from '../models'
+import { ALGO_ASSET_ID, type AssetPrices } from '../models'
 import {
     fetchAssetPrices,
     fetchPublicAssetDetails,
@@ -45,11 +42,11 @@ export const useAssetPricesQuery = (enabled?: boolean) => {
                     select: (data: { results: AssetPriceResponse[] }) => {
                         return {
                             results: data.results.map(asset => ({
-                                asset_id: `${asset.asset_id}`,    
+                                asset_id: `${asset.asset_id}`,
                                 usd_value: asset.usd_value,
                             })),
                         }
-                    }
+                    },
                 }
             }),
             {

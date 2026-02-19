@@ -42,8 +42,7 @@ export const usePortfolioTotals = (
                 )
             })
             accountUsdValues.set(address, accountUsdTotal)
-            portfolioUsdValue =
-                portfolioUsdValue.plus(accountUsdTotal)
+            portfolioUsdValue = portfolioUsdValue.plus(accountUsdTotal)
         })
 
         return {

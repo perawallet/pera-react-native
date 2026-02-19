@@ -55,7 +55,9 @@ export const AccountWithBalance = ({
 
                 <PreferredCurrencyDisplay
                     sourceAssetId='ALGO'
-                    sourceAmount={accountBalances.get(account.address)?.algoValue}
+                    sourceAmount={
+                        accountBalances.get(account.address)?.algoValue
+                    }
                     precision={2}
                     minPrecision={2}
                     style={styles.fiatBalance}

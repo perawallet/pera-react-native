@@ -19,10 +19,7 @@ import {
     transformAssetResponse,
     transformPublicAssetResponse,
 } from '../api'
-import {
-    ALGO_ASSET_ID,
-    type PeraAsset,
-} from '../models'
+import { ALGO_ASSET_ID, type PeraAsset } from '../models'
 import { DEFAULT_PAGE_SIZE, partition } from '@perawallet/wallet-core-shared'
 import { getAlgoQueryKey, getAssetsQueryKey } from './querykeys'
 import { AssetsResponse, PublicAssetResponse } from '../api/assets/schema'

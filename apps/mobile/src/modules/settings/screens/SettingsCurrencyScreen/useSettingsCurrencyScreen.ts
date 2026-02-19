@@ -10,16 +10,13 @@
  limitations under the License
  */
 
-import {
-    ALGO_ASSET,
-    useInvalidateAssetPrices,
-} from '@perawallet/wallet-core-assets'
+import { useInvalidateAssetPrices } from '@perawallet/wallet-core-assets'
 import {
     Currency,
     useCurrenciesQuery,
     useCurrency,
 } from '@perawallet/wallet-core-currencies'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export const useSettingsCurrencyScreen = () => {
     const {

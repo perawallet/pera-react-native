@@ -15,7 +15,16 @@ import {
     queryClient,
     type Network,
 } from '@perawallet/wallet-core-shared'
-import { assetResponseSchema, assetsResponseSchema, indexerAssetResponseSchema, publicAssetResponseSchema, type AssetResponse, type AssetsResponse, type IndexerAssetResponse, type PublicAssetResponse } from './schema'
+import {
+    assetResponseSchema,
+    assetsResponseSchema,
+    indexerAssetResponseSchema,
+    publicAssetResponseSchema,
+    type AssetResponse,
+    type AssetsResponse,
+    type IndexerAssetResponse,
+    type PublicAssetResponse,
+} from './schema'
 
 export const fetchAssets = async (assetIDs: string[]) => {
     const response = await queryClient<AssetsResponse, string[]>({

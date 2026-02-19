@@ -23,14 +23,14 @@ export const assetResponseSchema = z.object({
     is_verified: z.boolean().optional().nullable(),
     is_deleted: z.boolean().optional().nullable(),
     verification_tier: z.string(),
-    explorer_url: z.string().optional(),
+    explorer_url: z.string().nullable().optional(),
     collectible: z.any().optional(),
     creator: z.object({
         address: z.string(),
     }),
-    type: z.string().optional(),
+    type: z.string().nullable().optional(),
     category: z.number().nullable(),
-    labels: z.array(z.any()).optional(),
+    labels: z.array(z.any()).nullable().optional(),
     is_favorited: z.boolean().optional(),
     is_price_alert_enabled: z.boolean().optional(),
 })
@@ -84,7 +84,6 @@ export const indexerAssetResponseSchema = z.object({
     }),
     'current-round': z.number(),
 })
-
 
 export type PublicAssetResponse = z.infer<typeof publicAssetResponseSchema>
 export type AssetResponse = z.infer<typeof assetResponseSchema>

@@ -31,7 +31,6 @@ export const AccountOverview = ({
     const styles = useStyles()
     const {
         portfolioAlgoValue,
-        portfolioPreferredValue,
         isPending,
         period,
         setPeriod,
