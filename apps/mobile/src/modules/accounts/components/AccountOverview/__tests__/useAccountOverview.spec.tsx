@@ -51,14 +51,19 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         isError: false,
     })),
     usePortfolioTotals: vi.fn(() => ({
-        portfolioPreferredValue: new Decimal('200'),
-        accountPreferredValues: new Map(),
+        portfolioUsdValue: new Decimal('200'),
+        accountUsdValues: new Map(),
         isPending: false,
     })),
 }))
 
 vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: vi.fn(() => ({ preferredCurrency: 'USD' })),
+    useCurrency: vi.fn(() => ({
+        preferredCurrency: 'USD',
+        fallbackCurrency: 'USD',
+        usdToPreferred: vi.fn((amount: Decimal) => amount),
+        algoUsdPrice: new Decimal(0),
+    })),
 }))
 
 vi.mock('@perawallet/wallet-core-settings', () => ({

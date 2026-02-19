@@ -25,6 +25,19 @@ const mockAccount = {
     name: 'Test Account',
 } as WalletAccount
 
+vi.mock('@perawallet/wallet-core-currencies', () => ({
+    useCurrency: vi.fn(() => ({
+        preferredCurrency: 'USD',
+        fallbackCurrency: 'USD',
+        usdToPreferred: vi.fn((amount: Decimal) => amount),
+        algoUsdPrice: new Decimal(0),
+    })),
+    usePreferredCurrencyPriceQuery: vi.fn(() => ({
+        data: null,
+        isPending: false,
+    })),
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<

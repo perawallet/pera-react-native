@@ -23,7 +23,16 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: vi.fn(() => ({ preferredCurrency: 'USD' })),
+    useCurrency: vi.fn(() => ({
+        preferredCurrency: 'USD',
+        fallbackCurrency: 'USD',
+        usdToPreferred: vi.fn((amount: Decimal) => amount),
+        algoUsdPrice: new Decimal(0),
+    })),
+    usePreferredCurrencyPriceQuery: vi.fn(() => ({
+        data: null,
+        isPending: false,
+    })),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
@@ -57,8 +66,8 @@ describe('WealthTrend', () => {
     it('displays positive trend with percentage', () => {
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
             data: [
-                { preferredValue: new Decimal(100) },
-                { preferredValue: new Decimal(120) },
+                { preferredValue: new Decimal(100), algoValue: new Decimal(100) },
+                { preferredValue: new Decimal(120), algoValue: new Decimal(120) },
             ],
             isPending: false,
         } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
@@ -71,8 +80,8 @@ describe('WealthTrend', () => {
     it('displays negative trend with percentage', () => {
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
             data: [
-                { preferredValue: new Decimal(100) },
-                { preferredValue: new Decimal(80) },
+                { preferredValue: new Decimal(100), algoValue: new Decimal(100) },
+                { preferredValue: new Decimal(80), algoValue: new Decimal(80) },
             ],
             isPending: false,
         } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
@@ -85,7 +94,7 @@ describe('WealthTrend', () => {
     it('uses single account when account prop is provided', () => {
         const mockAccount = { address: 'test-address' }
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: [{ preferredValue: new Decimal(100) }],
+            data: [{ preferredValue: new Decimal(100), algoValue: new Decimal(100) }],
             isPending: false,
         } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
 

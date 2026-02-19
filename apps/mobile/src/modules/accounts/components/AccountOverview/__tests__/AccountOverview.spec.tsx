@@ -53,14 +53,23 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         isError: false,
     })),
     usePortfolioTotals: vi.fn(() => ({
-        portfolioPreferredValue: new Decimal('200'),
-        accountPreferredValues: new Map(),
+        portfolioUsdValue: new Decimal('200'),
+        accountUsdValues: new Map(),
         isPending: false,
     })),
 }))
 
 vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: vi.fn(() => ({ preferredCurrency: 'USD' })),
+    useCurrency: vi.fn(() => ({
+        preferredCurrency: 'USD',
+        fallbackCurrency: 'USD',
+        usdToPreferred: vi.fn((amount: Decimal) => amount),
+        algoUsdPrice: new Decimal(0),
+    })),
+    usePreferredCurrencyPriceQuery: vi.fn(() => ({
+        data: null,
+        isPending: false,
+    })),
 }))
 
 vi.mock('@hooks/useIsDarkMode', () => ({
@@ -117,6 +126,15 @@ vi.mock('@components/CurrencyDisplay', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     CurrencyDisplay: ({ value }: any) => (
         <div data-testid='currency-display'>{value?.toString()}</div>
+    ),
+}))
+
+vi.mock('@components/PreferredCurrencyDisplay', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PreferredCurrencyDisplay: ({ sourceAmount }: any) => (
+        <div data-testid='preferred-currency-display'>
+            {sourceAmount?.toString()}
+        </div>
     ),
 }))
 
@@ -190,9 +208,10 @@ describe('AccountOverview', () => {
                 chartVisible={true}
             />,
         )
-        // Primary and secondary values
-        expect(screen.getByText('100')).toBeTruthy()
-        expect(screen.getByText('200')).toBeTruthy()
+        // Primary ALGO value and secondary preferred currency value
+        expect(screen.getByTestId('currency-display')).toBeTruthy()
+        expect(screen.getByTestId('preferred-currency-display')).toBeTruthy()
+        expect(screen.getAllByText('100').length).toBeGreaterThanOrEqual(1)
     })
 
     it('toggles privacy mode on press', async () => {
@@ -210,7 +229,7 @@ describe('AccountOverview', () => {
                 chartVisible={true}
             />,
         )
-        fireEvent.click(screen.getByText('100'))
+        fireEvent.click(screen.getByTestId('currency-display'))
 
         expect(setPrivacyMode).toHaveBeenCalledWith(true)
     })

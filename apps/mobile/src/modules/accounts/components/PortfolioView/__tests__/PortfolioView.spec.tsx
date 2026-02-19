@@ -12,7 +12,17 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
+import Decimal from 'decimal.js'
 import { PortfolioView } from '../PortfolioView'
+
+vi.mock('@perawallet/wallet-core-currencies', () => ({
+    useCurrency: vi.fn(() => ({
+        preferredCurrency: 'USD',
+        fallbackCurrency: 'USD',
+        usdToPreferred: vi.fn((amount: Decimal) => amount),
+        algoUsdPrice: new Decimal(0),
+    })),
+}))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -27,8 +37,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             accountBalances: new Map(),
         })),
         usePortfolioTotals: vi.fn(() => ({
-            portfolioPreferredValue: '200',
-            accountPreferredValues: new Map(),
+            portfolioUsdValue: '200',
+            accountUsdValues: new Map(),
             isPending: false,
         })),
         useAllAccounts: vi.fn(() => []),
