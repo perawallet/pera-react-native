@@ -13,7 +13,7 @@
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useToast } from './useToast'
-import { logger } from '@perawallet/wallet-core-shared'
+import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from './deeplink/parser'
 import { DeeplinkType } from './deeplink/types'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
@@ -22,7 +22,6 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useWebView } from './usePeraWebviewInterface'
-import { v7 as uuidv7 } from 'uuid'
 import { useEffect, useRef } from 'react'
 import { Linking } from 'react-native'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
@@ -134,7 +133,7 @@ export const useDeepLink = () => {
                     // TODO: We need to use a proper transaction construction method here and
                     //navigate somewhere other than the qr code scanner.
                     addSignRequest({
-                        id: uuidv7(),
+                        id: generateOrderedUniqueId(),
                         type: 'transactions',
                         transport: 'algod',
                         txs: [],
@@ -145,7 +144,7 @@ export const useDeepLink = () => {
                     // TODO: We need to use a proper transaction construction method here and
                     //navigate somewhere other than the qr code scanner.
                     addSignRequest({
-                        id: uuidv7(),
+                        id: generateOrderedUniqueId(),
                         type: 'transactions',
                         transport: 'algod',
                         txs: [],
@@ -185,7 +184,7 @@ export const useDeepLink = () => {
                     // TODO: We need to use a proper transaction construction method here and
                     //navigate somewhere other than the qr code scanner.
                     addSignRequest({
-                        id: uuidv7(),
+                        id: generateOrderedUniqueId(),
                         type: 'transactions',
                         transport: 'algod',
                         txs: [],
@@ -210,7 +209,10 @@ export const useDeepLink = () => {
 
                 case DeeplinkType.INTERNAL_BROWSER:
                 case DeeplinkType.DISCOVER_BROWSER:
-                    pushWebView({ id: uuidv7(), url: parsedData.url })
+                    pushWebView({
+                        id: generateOrderedUniqueId(),
+                        url: parsedData.url,
+                    })
                     break
 
                 case DeeplinkType.DISCOVER_PATH:

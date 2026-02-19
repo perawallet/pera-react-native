@@ -58,7 +58,6 @@ describe('SearchAccountsScreen', () => {
                     id: '1',
                     address: 'MOCK_ADDRESS',
                     type: AccountTypes.hdWallet,
-                    canSign: true,
                     hdWalletDetails: {
                         walletId: '1',
                         account: 0,
@@ -66,6 +65,7 @@ describe('SearchAccountsScreen', () => {
                         keyIndex: 0,
                         derivationType: 9,
                     },
+                    keyPairId: 'pk',
                 },
             },
         } as RouteProp<OnboardingStackParamList, 'SearchAccounts'>)

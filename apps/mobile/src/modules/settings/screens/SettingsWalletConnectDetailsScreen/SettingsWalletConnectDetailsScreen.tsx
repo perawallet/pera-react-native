@@ -29,9 +29,11 @@ import { useMemo, useState } from 'react'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { WalletConnectSettingsStackParamsList } from '@modules/settings/routes'
 import { useWebView } from '@hooks/usePeraWebviewInterface'
-import { v7 as uuid } from 'uuid'
 import { KeyValueRow } from '@components/KeyValueRow'
-import { formatDatetime } from '@perawallet/wallet-core-shared'
+import {
+    formatDatetime,
+    generateOrderedUniqueId,
+} from '@perawallet/wallet-core-shared'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { ScrollView } from 'react-native-gesture-handler'
@@ -114,7 +116,10 @@ export const SettingsWalletConnectDetailsScreen = ({
         if (!session.session?.peerMeta?.url) {
             return
         }
-        pushWebView({ id: uuid(), url: session.session.peerMeta.url })
+        pushWebView({
+            id: generateOrderedUniqueId(),
+            url: session.session.peerMeta.url,
+        })
     }
 
     const peerMeta = session.session?.peerMeta

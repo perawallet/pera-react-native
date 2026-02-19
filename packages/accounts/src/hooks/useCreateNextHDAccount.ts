@@ -22,7 +22,7 @@ type UseCreateNextHDAccountResult = {
 
 export const useCreateNextHDAccount = (): UseCreateNextHDAccountResult => {
     const accounts = useAllAccounts()
-    const createAccount = useCreateAccount()
+    const { createHdWalletAccount } = useCreateAccount()
 
     const hdWalletAccounts = useMemo(
         () =>
@@ -38,18 +38,22 @@ export const useCreateNextHDAccount = (): UseCreateNextHDAccountResult => {
         if (hdWalletAccounts.length === 0) return null
 
         const firstHDAccount = hdWalletAccounts[0]
-        const walletId = firstHDAccount.hdWalletDetails.walletId
+        const walletId = firstHDAccount.keyPairId
 
         const sameWalletAccounts = hdWalletAccounts.filter(
-            a => a.hdWalletDetails.walletId === walletId,
+            a => a.keyPairId === walletId,
         )
         const nextKeyIndex =
             Math.max(
                 ...sameWalletAccounts.map(a => a.hdWalletDetails.keyIndex),
             ) + 1
 
-        return createAccount({ walletId, account: 0, keyIndex: nextKeyIndex })
-    }, [hdWalletAccounts, createAccount])
+        return createHdWalletAccount({
+            walletId,
+            account: 0,
+            keyIndex: nextKeyIndex,
+        })
+    }, [hdWalletAccounts, createHdWalletAccount])
 
     return { createNextHDAccount, hasHDWallet }
 }

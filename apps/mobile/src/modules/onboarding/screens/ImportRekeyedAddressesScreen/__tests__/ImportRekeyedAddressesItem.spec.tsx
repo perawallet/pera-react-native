@@ -19,8 +19,8 @@ const MOCK_ACCOUNT = {
     id: '1',
     address: 'MOCK_ADDRESS',
     type: AccountTypes.algo25,
-    canSign: true,
     rekeyAddress: 'REKEY_ADDRESS',
+    keyPairId: 'pk',
 }
 
 describe('ImportRekeyedAddressesItem', () => {

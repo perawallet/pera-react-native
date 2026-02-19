@@ -18,10 +18,10 @@ import { useSendFunds } from '@modules/transactions/hooks'
 import {
     useAccountAssetBalanceQuery,
     useSelectedAccount,
-    useTransactionSigner,
     type AssetWithAccountBalance,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useTransactionSigner } from '@perawallet/wallet-core-signing'
 import {
     ALGO_ASSET,
     ALGO_ASSET_ID,

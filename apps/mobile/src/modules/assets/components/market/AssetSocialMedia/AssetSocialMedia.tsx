@@ -21,7 +21,7 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@hooks/usePeraWebviewInterface'
-import { v7 as uuid } from 'uuid'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 
 export type AssetSocialMediaProps = {
     assetDetails: PeraAsset
@@ -58,7 +58,7 @@ export const AssetSocialMedia = ({ assetDetails }: AssetSocialMediaProps) => {
 
     const openLink = (url: string) => {
         pushWebView({
-            id: uuid(),
+            id: generateOrderedUniqueId(),
             url,
         })
     }

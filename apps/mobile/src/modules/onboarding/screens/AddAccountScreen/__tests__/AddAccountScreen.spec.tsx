@@ -27,7 +27,8 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 
-const mockCreateAccount = vi.fn()
+const mockCreateHdWalletAccount = vi.fn()
+const mockCreateAlgo25WalletAccount = vi.fn()
 const mockCreateNextHDAccount = vi.fn()
 const mockUseAllAccounts = vi.fn((): WalletAccount[] => [])
 
@@ -37,7 +38,10 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     )
     return {
         ...actual,
-        useCreateAccount: () => mockCreateAccount,
+        useCreateAccount: () => ({
+            createHdWalletAccount: mockCreateHdWalletAccount,
+            createAlgo25WalletAccount: mockCreateAlgo25WalletAccount,
+        }),
         useAllAccounts: () => mockUseAllAccounts(),
         useCreateNextHDAccount: () => ({
             createNextHDAccount: mockCreateNextHDAccount,
@@ -151,14 +155,13 @@ describe('AddAccountScreen', () => {
                 id: 'test-id',
                 address: 'TEST_ADDRESS',
                 type: 'hdWallet',
-                canSign: true,
                 hdWalletDetails: {
-                    walletId: 'test-wallet-id',
                     account: 0,
                     change: 0,
                     keyIndex: 0,
                     derivationType: 9,
                 },
+                keyPairId: 'wallet-1',
             },
         ])
 
@@ -256,7 +259,7 @@ describe('AddAccountScreen', () => {
             },
         }
 
-        mockCreateAccount.mockResolvedValue(mockAccount)
+        mockCreateHdWalletAccount.mockResolvedValue(mockAccount)
 
         render(<AddAccountScreen />)
 
@@ -271,7 +274,7 @@ describe('AddAccountScreen', () => {
         fireEvent.click(createButton)
 
         await vi.waitFor(() => {
-            expect(mockCreateAccount).toHaveBeenCalledWith({
+            expect(mockCreateHdWalletAccount).toHaveBeenCalledWith({
                 account: 0,
                 keyIndex: 0,
             })
@@ -289,7 +292,7 @@ describe('AddAccountScreen', () => {
             canSign: true,
         }
 
-        mockCreateAccount.mockResolvedValue(mockAccount)
+        mockCreateAlgo25WalletAccount.mockResolvedValue(mockAccount)
 
         render(<AddAccountScreen />)
 
@@ -304,11 +307,7 @@ describe('AddAccountScreen', () => {
         fireEvent.click(createButton)
 
         await vi.waitFor(() => {
-            expect(mockCreateAccount).toHaveBeenCalledWith({
-                account: 0,
-                keyIndex: 0,
-                type: 'algo25',
-            })
+            expect(mockCreateAlgo25WalletAccount).toHaveBeenCalledWith({})
             expect(mockPush).toHaveBeenCalledWith('NameAccount', {
                 account: mockAccount,
             })
@@ -320,14 +319,13 @@ describe('AddAccountScreen', () => {
             id: 'existing-id',
             address: 'EXISTING_ADDRESS',
             type: 'hdWallet' as const,
-            canSign: true,
             hdWalletDetails: {
-                walletId: 'wallet-1',
                 account: 0,
                 change: 0,
                 keyIndex: 0,
                 derivationType: 9 as const,
             },
+            keyPairId: 'wallet-1',
         }
 
         const newAccount = {
@@ -363,7 +361,9 @@ describe('AddAccountScreen', () => {
     })
 
     it('shows error toast when account creation fails', async () => {
-        mockCreateAccount.mockRejectedValue(new Error('Creation failed'))
+        mockCreateHdWalletAccount.mockRejectedValue(
+            new Error('Creation failed'),
+        )
 
         render(<AddAccountScreen />)
 

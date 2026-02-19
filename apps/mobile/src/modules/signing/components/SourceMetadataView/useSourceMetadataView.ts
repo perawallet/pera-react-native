@@ -12,11 +12,13 @@
 
 import { useMemo } from 'react'
 
-import { stripUrlScheme } from '@perawallet/wallet-core-shared'
+import {
+    stripUrlScheme,
+    generateUniqueId,
+} from '@perawallet/wallet-core-shared'
 import { useProjectByUrlQuery } from '@perawallet/wallet-core-projects'
 import { SignRequestSource } from '@perawallet/wallet-core-signing'
 import { useWebView } from '@hooks/usePeraWebviewInterface'
-import { v4 as uuid } from 'uuid'
 
 export const useSourceMetadataView = (metadata: SignRequestSource) => {
     const { data: project } = useProjectByUrlQuery({
@@ -41,7 +43,7 @@ export const useSourceMetadataView = (metadata: SignRequestSource) => {
 
     const handlePressUrl = () => {
         if (!metadata.url) return
-        pushWebView({ id: uuid(), url: metadata.url })
+        pushWebView({ id: generateUniqueId(), url: metadata.url })
     }
 
     return {

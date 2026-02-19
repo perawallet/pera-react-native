@@ -25,9 +25,10 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => [
-        { address: 'ADDR1', canSign: true },
-        { address: 'ADDR2', canSign: false },
+        { address: 'ADDR1', keyPairId: 'key-1' },
+        { address: 'ADDR2' },
     ]),
+    canSignWithAccount: vi.fn((a: { keyPairId?: string }) => !!a.keyPairId),
 }))
 
 const makeMockTx = (sender: string, group?: Uint8Array) => ({

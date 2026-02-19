@@ -13,9 +13,8 @@
 export const name = '@perawallet/wallet-core-kms'
 
 export * from './hooks/useKMS'
-export * from './hooks/useWithKey'
 export * from './models'
 export * from './errors'
-export * from './utils'
+export { WORDLIST as MNEMONIC_WORDLIST } from './crypto/wordlist'
 
-export { initKeyManagerStore, registerKeyManagerStore } from './store'
+export { registerKeyManagerStore } from './store'

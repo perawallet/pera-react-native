@@ -19,8 +19,8 @@ import { OnboardingStackParamList } from '../../routes/types'
 import {
     useImportAccount,
     ImportAccountType,
-    WORDLIST,
 } from '@perawallet/wallet-core-accounts'
+import { MNEMONIC_WORDLIST as WORDLIST } from '@perawallet/wallet-core-kms'
 import { RECOVERY_PASSPHRASE_SUPPORT_URL } from '@perawallet/wallet-core-config'
 
 import type { PWInputRef } from '@components/core'

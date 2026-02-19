@@ -10,11 +10,9 @@
  limitations under the License
  */
 
-import { useAccountsStore } from '../store'
-import { useHDWallet } from './useHDWallet'
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
-import { KEY_DOMAIN } from '../constants'
 import {
     Address,
     encodeAlgorandAddress,
@@ -23,13 +21,20 @@ import {
     PeraTransactionGroup,
     useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
-import { isAlgo25Account, isHDWalletAccount } from '../utils'
-import { Algo25Account, HDWalletAccount, WalletAccount } from '../models'
+import {
+    isAlgo25Account,
+    isHDWalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import type {
+    Algo25Account,
+    HDWalletAccount,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { SIGNING_KEY_DOMAIN } from '../constants'
 
 export const useTransactionSigner = () => {
     const accounts = useAccountsStore(state => state.accounts)
-    const { signTransaction } = useHDWallet()
-    const { executeWithKey, executeWithSeed } = useKMS()
+    const { getKeyOrThrow, withHDSession, withAlgo25Session } = useKMS()
     const { encodeTransaction } = useTransactionEncoder()
 
     const signHDWalletTransactions = useCallback(
@@ -38,19 +43,20 @@ export const useTransactionSigner = () => {
             txns: PeraTransactionGroup,
         ): Promise<PeraSignedTransaction[]> => {
             const hdWalletDetails = account.hdWalletDetails
-            const storageKey = hdWalletDetails.walletId
 
-            return await executeWithSeed(
-                storageKey,
-                KEY_DOMAIN,
-                async (seed: Uint8Array) => {
-                    const seedBuffer = Buffer.from(seed)
-
+            const key = getKeyOrThrow(account.keyPairId)
+            return await withHDSession(
+                key,
+                SIGNING_KEY_DOMAIN,
+                async session => {
                     const signedTxns = txns.map(async txn => {
                         const encodedTransaction = encodeTransaction(txn)
-                        const signature = await signTransaction(
-                            seedBuffer,
-                            hdWalletDetails,
+                        const signature = await session.signTransaction(
+                            {
+                                account: hdWalletDetails.account,
+                                keyIndex: hdWalletDetails.keyIndex,
+                                derivationType: hdWalletDetails.derivationType,
+                            },
                             encodedTransaction,
                         )
 
@@ -71,38 +77,42 @@ export const useTransactionSigner = () => {
                 },
             )
         },
-        [encodeTransaction, executeWithSeed, signTransaction],
+        [encodeTransaction, withHDSession],
     )
 
     const signAlgo25Transactions = useCallback(
         async (
             account: Algo25Account,
-            _: PeraTransactionGroup,
+            txns: PeraTransactionGroup,
         ): Promise<PeraSignedTransaction[]> => {
-            const storageKey = account.keyPairId
+            const key = getKeyOrThrow(account.keyPairId)
+            return await withAlgo25Session(
+                key,
+                SIGNING_KEY_DOMAIN,
+                async session => {
+                    const signedTxns = txns.map(async txn => {
+                        const encodedTransaction = encodeTransaction(txn)
+                        const signature =
+                            await session.signTransaction(encodedTransaction)
 
-            if (!storageKey) {
-                return Promise.reject(
-                    `No signing keys found for ${account.address}`,
-                )
-            }
-
-            return await executeWithKey(
-                storageKey,
-                KEY_DOMAIN,
-                async keyData => {
-                    if (!keyData) {
-                        throw new Error(
-                            `No signing keys found for ${account.address}`,
+                        const senderPublicKey = encodeAlgorandAddress(
+                            txn.sender.publicKey,
                         )
-                    }
-
-                    //TODO: implement this once we can find algo25 signing in algokit-utils somewhere
-                    throw new Error('Algo25 signing not implemented')
+                        const signedTxn: PeraSignedTransaction = {
+                            txn,
+                            sig: signature,
+                            authAddress:
+                                account.address !== senderPublicKey
+                                    ? Address.fromString(account.address)
+                                    : undefined,
+                        }
+                        return signedTxn
+                    })
+                    return Promise.all(signedTxns)
                 },
             )
         },
-        [executeWithKey],
+        [encodeTransaction, withAlgo25Session],
     )
 
     const signSingleAccountTransactions = useCallback(

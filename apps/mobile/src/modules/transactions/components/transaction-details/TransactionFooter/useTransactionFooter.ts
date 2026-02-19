@@ -12,10 +12,10 @@
 
 import { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { useMemo } from 'react'
-import { v4 as uuid } from 'uuid'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { useWebView } from '@hooks/usePeraWebviewInterface'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
+import { generateUniqueId } from '@perawallet/wallet-core-shared'
 
 export const useTransactionFooter = (
     transaction: PeraDisplayableTransaction,
@@ -26,7 +26,7 @@ export const useTransactionFooter = (
     const showInExplorer = () => {
         pushWebView({
             url: `${networkConfig.explorerUrl}/tx/${transaction.id}`,
-            id: uuid(),
+            id: generateUniqueId(),
         })
     }
 
@@ -55,7 +55,7 @@ export const useTransactionFooter = (
         }
         pushWebView({
             url: assetUrl,
-            id: uuid(),
+            id: generateUniqueId(),
         })
     }
 

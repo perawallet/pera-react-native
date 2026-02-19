@@ -10,16 +10,41 @@
  limitations under the License
  */
 
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
+import {
+    decodeFromBase64,
+    ERROR_I18N_KEYS,
+} from '@perawallet/wallet-core-shared'
+import { KeyPair, StoredKeyMaterial } from './models'
+import { KeyManagementError } from './errors'
 
-export const getSeedFromMasterKey = (keyData: Uint8Array): Uint8Array => {
+export const getSeedFromMasterKey = (
+    storedKey: StoredKeyMaterial,
+): Uint8Array => {
     try {
-        // Try to parse as JSON first (new format)
-        const masterKey = JSON.parse(new TextDecoder().decode(keyData))
+        return decodeFromBase64(storedKey.seed)
+    } catch (e) {
+        throw new KeyManagementError(ERROR_I18N_KEYS.INVALID_KEY, e as Error)
+    }
+}
 
-        return decodeFromBase64(masterKey.seed)
-    } catch {
-        // Fall back to treating it as raw seed data (old format or tests)
-        return keyData
+export const getEntropyFromMasterKey = (
+    storedKey: StoredKeyMaterial,
+): Uint8Array | null => {
+    try {
+        return storedKey.entropy ? decodeFromBase64(storedKey.entropy) : null
+    } catch (e) {
+        throw new KeyManagementError(ERROR_I18N_KEYS.INVALID_KEY, e as Error)
+    }
+}
+
+export const makeKeyPair = (source: Partial<KeyPair>): KeyPair => {
+    return {
+        id: source.id ?? '',
+        publicKey: source.publicKey ?? '',
+        privateDataStorageKey: source.privateDataStorageKey ?? '',
+        type: source.type ?? 'unknown',
+        createdAt: source.createdAt ?? new Date(),
+        expiresAt: source.expiresAt,
+        acl: source.acl ?? [],
     }
 }

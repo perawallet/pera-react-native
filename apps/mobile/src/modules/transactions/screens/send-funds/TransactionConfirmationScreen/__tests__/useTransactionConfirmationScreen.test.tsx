@@ -17,8 +17,8 @@ import Decimal from 'decimal.js'
 import {
     useSelectedAccount,
     useAccountAssetBalanceQuery,
-    useTransactionSigner,
 } from '@perawallet/wallet-core-accounts'
+import { useTransactionSigner } from '@perawallet/wallet-core-signing'
 import {
     useAssetsQuery,
     useAssetFiatPricesQuery,
@@ -41,6 +41,9 @@ vi.mock('@components/core', () => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
     useAccountAssetBalanceQuery: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-signing', () => ({
     useTransactionSigner: vi.fn(),
 }))
 

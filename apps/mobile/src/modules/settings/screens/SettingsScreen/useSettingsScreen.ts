@@ -15,7 +15,7 @@ import { useWebView } from '@modules/webview'
 import { useModalState } from '@hooks/useModalState'
 import { useSettingsOptions } from './useSettingsOptions'
 import { SettingsStackParamsList } from '@modules/settings/routes'
-import { v4 as uuid } from 'uuid'
+import { generateUniqueId } from '@perawallet/wallet-core-shared'
 
 export const useSettingsScreen = () => {
     const navigation = useAppNavigation()
@@ -37,7 +37,7 @@ export const useSettingsScreen = () => {
     }
 
     const openWebView = (url: string) => {
-        const id = uuid()
+        const id = generateUniqueId()
         pushWebView({
             url,
             id,

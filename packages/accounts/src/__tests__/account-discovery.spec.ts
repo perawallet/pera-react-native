@@ -13,23 +13,11 @@
 import { describe, it, expect, vi } from 'vitest'
 import { discoverAccounts, discoverRekeyedAccounts } from '../account-discovery'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
+import type { KMSHDWalletSession } from '@perawallet/wallet-core-kms'
 
-// Mock the API to avoid actual key generation which might be slow or require wasm
-vi.mock('@algorandfoundation/xhd-wallet-api', () => {
-    class MockAPI {
-        keyGen = vi.fn((_root, _ctx, account, keyIndex) => {
-            // Return Uint8Array to match real API (mocking the bytes logic)
-            return Promise.resolve(new Uint8Array([account, keyIndex]))
-        })
-    }
-
-    return {
-        XHDWalletAPI: MockAPI,
-        fromSeed: vi.fn(),
-        KeyContext: { Address: 0 },
-        BIP32DerivationType: { Peikert: 0 },
-    }
-})
+vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
+    BIP32DerivationType: { Peikert: 0 },
+}))
 
 // Mock encodeAlgorandAddress to return string representation of bytes
 const mockGetAlgorandClient = vi.fn()
@@ -41,8 +29,17 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     getAlgorandClient: () => mockGetAlgorandClient(),
 }))
 
+const createMockSession = (): KMSHDWalletSession => ({
+    getPublicKey: vi.fn(
+        async (params: { account: number; keyIndex: number }) =>
+            new Uint8Array([params.account, params.keyIndex]),
+    ),
+    signTransaction: vi.fn(),
+    signData: vi.fn(),
+    getMnemonic: vi.fn(),
+})
+
 describe('discoverAccounts', () => {
-    const seed = Buffer.from('test-seed')
     const derivationType = BIP32DerivationType.Peikert
 
     const createMockAlgorandClient = (
@@ -81,19 +78,14 @@ describe('discoverAccounts', () => {
             }),
         )
 
+        const session = createMockSession()
         const accounts = await discoverAccounts({
-            seed,
+            session,
             derivationType,
-            walletId: 'test-wallet',
+            walletKeyId: 'test-wallet',
             keyIndexGapLimit: 2,
             accountGapLimit: 1,
         })
-
-        // Account 0 check:
-        // 0/0: Skipped (root).
-        // 0/1: Inactive. Gap=1.
-        // 0/2: Active. Gap=0. Found.
-        // ...
 
         // We expect 0/0 and 0/2
         expect(accounts).toHaveLength(2)
@@ -109,14 +101,11 @@ describe('discoverAccounts', () => {
             }),
         )
 
-        // 0/0 Active. Found. Gap 0.
-        // Account 1 inactive -> gap 1.
-        // Account 2/0 active -> Found. Gap 0.
-
+        const session = createMockSession()
         const accounts = await discoverAccounts({
-            seed,
+            session,
             derivationType,
-            walletId: 'test-wallet',
+            walletKeyId: 'test-wallet',
             accountGapLimit: 5,
             keyIndexGapLimit: 1,
         })
@@ -130,28 +119,25 @@ describe('discoverAccounts', () => {
         mockGetAlgorandClient.mockReturnValue(
             createMockAlgorandClient(address => {
                 // Simulate activity for first 6 accounts (0..5) keys 0
-                // address format is ADDRESS_accountIndex_keyIndex
                 const parts = address.split('_')
                 const account = parseInt(parts[1])
                 const key = parseInt(parts[2])
-                // Only key 0 active for accounts
                 return key === 0 && account <= 10
             }),
         )
 
+        const session = createMockSession()
         const accounts = await discoverAccounts({
-            seed,
+            session,
             derivationType,
-            walletId: 'test-wallet',
+            walletKeyId: 'test-wallet',
             accountGapLimit: 5,
             keyIndexGapLimit: 1,
         })
 
         // Accounts 0..10 are found.
-        // Total 11 accounts found.
         expect(accounts).toHaveLength(11)
         expect(accounts[0].hdWalletDetails.account).toBe(0)
-        expect(accounts[10].hdWalletDetails.account).toBe(10)
         expect(accounts[10].hdWalletDetails.account).toBe(10)
     })
 
@@ -160,10 +146,11 @@ describe('discoverAccounts', () => {
             createMockAlgorandClient(() => false),
         )
 
+        const session = createMockSession()
         const accounts = await discoverAccounts({
-            seed,
+            session,
             derivationType,
-            walletId: 'test-wallet',
+            walletKeyId: 'test-wallet',
             accountGapLimit: 2,
             keyIndexGapLimit: 2,
         })
@@ -176,7 +163,6 @@ describe('discoverAccounts', () => {
 })
 
 describe('discoverRekeyedAccounts', () => {
-    const seed = Buffer.from('test-seed')
     const derivationType = BIP32DerivationType.Peikert
 
     it('should find rekeyed accounts', async () => {
@@ -199,10 +185,11 @@ describe('discoverRekeyedAccounts', () => {
             },
         })
 
+        const session = createMockSession()
         const accounts = await discoverRekeyedAccounts({
-            seed,
+            session,
             derivationType,
-            walletId: 'test-wallet',
+            walletKeyId: 'test-wallet',
             keyIndexGapLimit: 1,
             accountGapLimit: 1,
         })
@@ -215,7 +202,6 @@ describe('discoverRekeyedAccounts', () => {
         const mockSearchForAccounts = vi
             .fn()
             .mockImplementation(async params => {
-                // Mock indexer check for explicit address
                 if (params && params.authAddr === 'EXPLICIT_ADDRESS') {
                     return {
                         accounts: [{ address: 'REKEYED_FROM_EXPLICIT' }],
@@ -232,10 +218,11 @@ describe('discoverRekeyedAccounts', () => {
             },
         })
 
+        const session = createMockSession()
         const accounts = await discoverRekeyedAccounts({
-            seed,
+            session,
             derivationType,
-            walletId: 'test-wallet',
+            walletKeyId: 'test-wallet',
             accountAddresses: ['EXPLICIT_ADDRESS', 'OTHER_ADDRESS'],
         })
 

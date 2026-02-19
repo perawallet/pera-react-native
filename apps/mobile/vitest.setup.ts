@@ -1537,6 +1537,8 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     ),
     formatWithUnits: vi.fn(value => String(value)),
     formatNumber: vi.fn(value => String(value)),
+    generateUniqueId: vi.fn(() => 'mock-uuid'),
+    generateOrderedUniqueId: vi.fn(() => 'mock-time-uuid'),
     AppError: class AppError extends Error {
         constructor(message: string) {
             super(message)
@@ -1710,7 +1712,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         isMultisigAccount: vi.fn(
             (account: any) => account?.type === 'multisig',
         ),
-        canSignWithAccount: vi.fn((account: any) => !!account?.canSign),
+        canSignWithAccount: vi.fn((account: any) => !!account?.keyPairId),
         useAccountAssetBalanceQuery: vi.fn(() => ({
             data: null,
             isPending: false,

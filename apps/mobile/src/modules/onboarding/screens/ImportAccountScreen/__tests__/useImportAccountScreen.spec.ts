@@ -44,7 +44,10 @@ vi.mock('@hooks/useAppNavigation', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useImportAccount: vi.fn(),
-    WORDLIST: [
+}))
+
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    MNEMONIC_WORDLIST: [
         'abandon',
         'ability',
         'able',

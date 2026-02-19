@@ -26,15 +26,15 @@ const MOCK_ACCOUNTS = [
         id: '1',
         address: 'ACC1',
         type: AccountTypes.algo25,
-        canSign: true,
         rekeyAddress: 'REKEY',
+        keyPairId: 'pk',
     },
     {
         id: '2',
         address: 'ACC2',
         type: AccountTypes.algo25,
-        canSign: true,
         rekeyAddress: 'REKEY',
+        keyPairId: 'pk2',
     },
 ]
 

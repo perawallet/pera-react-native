@@ -20,7 +20,7 @@ describe('webview/utils - getAccountType', () => {
     const baseAccount: WalletAccount = {
         type: 'hdWallet',
         address: 'ADDR1',
-        canSign: true,
+        keyPairId: 'pk',
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any as WalletAccount
 
@@ -49,7 +49,7 @@ describe('webview/utils - getAccountType', () => {
             getAccountType({
                 ...baseAccount,
                 rekeyAddress: 'ADDR2',
-                canSign: true,
+                keyPairId: 'pk',
             }),
         ).toBe('RekeyedAuth')
     })
@@ -59,8 +59,9 @@ describe('webview/utils - getAccountType', () => {
             getAccountType({
                 ...baseAccount,
                 rekeyAddress: 'ADDR2',
-                canSign: false,
-            }),
+                keyPairId: undefined,
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            } as any),
         ).toBe('Rekeyed')
     })
 
@@ -69,6 +70,7 @@ describe('webview/utils - getAccountType', () => {
             getAccountType({
                 ...baseAccount,
                 type: 'algo25',
+                keyPairId: 'pk',
             }),
         ).toBe('Algo25')
     })

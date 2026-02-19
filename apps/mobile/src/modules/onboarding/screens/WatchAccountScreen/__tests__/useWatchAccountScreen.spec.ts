@@ -64,9 +64,15 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-vi.mock('uuid', () => ({
-    v7: () => 'mock-uuid',
-}))
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const actual = await vi.importActual<object>(
+        '@perawallet/wallet-core-shared',
+    )
+    return {
+        ...actual,
+        generateOrderedUniqueId: () => 'mock-uuid',
+    }
+})
 
 vi.mock('react-i18next', async () => {
     const actual = await vi.importActual<object>('react-i18next')
