@@ -48,5 +48,5 @@ export const useNavigationHeader = ({
         }
 
         navigation.setOptions(options)
-    })
+    }, [enabled, left, right, title, navigation])
 }
