@@ -15,10 +15,10 @@ import {
     useSelectedAccount,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useIsOnboarding } from '@modules/onboarding/hooks'
 import { useStyles } from './styles'
 import { AccountMenuBottomSheet } from '@modules/accounts/components/AccountMenuBottomSheet'
 import { useModalState } from '@hooks/useModalState'
+import { useAppNavigation } from '@hooks/useAppNavigation'
 
 import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
 import { AccountDisplay } from '../AccountDisplay'
@@ -34,7 +34,7 @@ export const AccountSelection = ({
     const styles = useStyles()
     const account = useSelectedAccount()
     const accountMenuState = useModalState()
-    const { setIsOnboarding } = useIsOnboarding()
+    const navigation = useAppNavigation()
 
     const handleSelected = (selectedAccount: WalletAccount) => {
         accountMenuState.close()
@@ -43,8 +43,8 @@ export const AccountSelection = ({
 
     const handleAddAccount = useCallback(() => {
         accountMenuState.close()
-        setIsOnboarding(true)
-    }, [accountMenuState, setIsOnboarding])
+        navigation.navigate('AddAccount', { screen: 'AddAccountHome' })
+    }, [accountMenuState, navigation])
 
     return (
         <>

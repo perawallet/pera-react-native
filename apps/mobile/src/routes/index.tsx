@@ -18,7 +18,10 @@ import {
 import { StakingScreen } from '@modules/staking/screens/StakingScreen'
 import { NotificationsScreen } from '@modules/notifications/screens/NotificationsScreen'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
-import { OnboardingStackNavigator } from '@modules/onboarding/routes'
+import {
+    OnboardingStackNavigator,
+    AddAccountStackNavigator,
+} from '@modules/onboarding/routes'
 import { screenListeners } from './listeners'
 import { TabBarStackNavigator } from './tabbar'
 import { ContactsStackNavigator } from '@modules/contacts/routes'
@@ -32,7 +35,7 @@ import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import { useIsOnboarding } from '@modules/onboarding/hooks'
 
 import { RootStackParamList } from './types'
-import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
+import { fullScreenLayout } from '@layouts/index'
 export type { RootStackParamList } from './types'
 
 const RootStack = createNativeStackNavigator<RootStackParamList>()
@@ -87,15 +90,23 @@ export const MainRoutes = () => {
                                 component={ContactsStackNavigator}
                             />
                             <RootStack.Screen
+                                name='AddAccount'
+                                component={AddAccountStackNavigator}
+                            />
+                            <RootStack.Screen
                                 name='Staking'
                                 component={StakingScreen}
                             />
                             <RootStack.Screen
                                 name='TransactionDetails'
-                                layout={safeAreaLayout}
+                                layout={fullScreenLayout}
                                 component={TransactionDetailsScreen}
                                 options={{
-                                    headerShown: false,
+                                    headerShown: true,
+                                    header: (props: NativeStackHeaderProps) => (
+                                        <NavigationHeader {...props} />
+                                    ),
+                                    title: 'signing.transactions.details',
                                 }}
                             />
                         </>

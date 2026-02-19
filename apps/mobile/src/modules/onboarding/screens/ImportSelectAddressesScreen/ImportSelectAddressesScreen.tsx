@@ -14,8 +14,6 @@ import React from 'react'
 import {
     PWView,
     PWText,
-    PWToolbar,
-    PWIcon,
     PWTouchableOpacity,
     PWButton,
     PWCheckbox,
@@ -26,7 +24,6 @@ import {
 
 import { useStyles } from './styles'
 import { useImportSelectAddressesScreen } from './useImportSelectAddressesScreen'
-import { useAppNavigation } from '@hooks/useAppNavigation'
 import {
     getAccountDisplayName,
     HDWalletAccount,
@@ -47,7 +44,6 @@ export const ImportSelectAddressesScreen = () => {
         handleContinue,
         t,
     } = useImportSelectAddressesScreen()
-    const navigation = useAppNavigation()
 
     const renderItem = ({ item }: { item: HDWalletAccount }) => {
         const isImported = alreadyImportedAddresses.has(item.address)
@@ -89,14 +85,6 @@ export const ImportSelectAddressesScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <PWToolbar
-                left={
-                    <PWTouchableOpacity onPress={navigation.goBack}>
-                        <PWIcon name='chevron-left' />
-                    </PWTouchableOpacity>
-                }
-            />
-
             <PWView style={styles.content}>
                 <PWText
                     variant='h1'

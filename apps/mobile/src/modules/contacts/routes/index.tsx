@@ -21,7 +21,8 @@ import { ContactListHeaderButtons } from '@modules/contacts/components/ContactLi
 import { ViewContactHeaderButtons } from '@modules/contacts/components/ViewContactHeaderButtons'
 import { ViewContactScreen } from '@modules/contacts/screens/ViewContactScreen'
 import { EditContactScreen } from '@modules/contacts/screens/EditContactScreen'
-import { headeredLayout } from '@layouts/index'
+import { fullScreenLayout } from '@layouts/index'
+import { screenListeners } from '@routes/listeners'
 
 export type ContactsStackParamsList = {
     ContactsList: undefined
@@ -36,7 +37,6 @@ export const ContactsStackNavigator = () => {
     return (
         <ContactsStack.Navigator
             initialRouteName='ContactsList'
-            layout={headeredLayout}
             screenOptions={{
                 headerShown: true,
                 header: (props: NativeStackHeaderProps) => (
@@ -44,6 +44,8 @@ export const ContactsStackNavigator = () => {
                 ),
                 ...SCREEN_ANIMATION_CONFIG,
             }}
+            screenListeners={screenListeners}
+            layout={fullScreenLayout}
         >
             <ContactsStack.Screen
                 name='ContactsList'

@@ -79,5 +79,8 @@ export const useStyles = makeStyles(theme => {
             fontSize: theme.spacing.md,
             marginTop: theme.spacing.xs / 2,
         },
+        headerTitleContainer: {
+            alignItems: 'center',
+        },
     }
 })

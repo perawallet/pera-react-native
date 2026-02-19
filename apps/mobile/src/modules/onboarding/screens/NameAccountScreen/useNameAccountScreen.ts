@@ -26,7 +26,7 @@ import { useRoute, RouteProp } from '@react-navigation/native'
 import { OnboardingStackParamList } from '../../routes'
 import {
     useShouldPlayConfetti,
-    useIsOnboarding,
+    useExitAccountFlow,
 } from '@modules/onboarding/hooks'
 
 type NameAccountScreenRouteProp = RouteProp<
@@ -44,7 +44,7 @@ export const useNameAccountScreen = () => {
     const { t } = useLanguage()
     const { showToast } = useToast()
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
-    const { setIsOnboarding } = useIsOnboarding()
+    const { exitAccountFlow } = useExitAccountFlow()
 
     const routeAccount = route.params?.account
 
@@ -102,7 +102,7 @@ export const useNameAccountScreen = () => {
             // Set confetti state - AccountScreen will read this and play the animation
             setShouldPlayConfetti(true)
 
-            setIsOnboarding(false)
+            exitAccountFlow()
         } catch (error) {
             showToast({
                 title: t('onboarding.create_account.error_title'),

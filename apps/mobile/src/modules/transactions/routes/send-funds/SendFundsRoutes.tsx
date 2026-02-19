@@ -64,17 +64,11 @@ export const SendFundsRoutes = () => {
             <Stack.Screen
                 name='InputAmount'
                 component={InputScreen}
-                options={{
-                    headerShown: false,
-                }}
             />
 
             <Stack.Screen
                 name='SelectDestination'
                 component={SelectDestinationScreen}
-                options={{
-                    headerShown: false,
-                }}
             />
 
             <Stack.Screen

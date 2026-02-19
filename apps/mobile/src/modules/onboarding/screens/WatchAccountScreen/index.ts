@@ -10,9 +10,4 @@
  limitations under the License
  */
 
-export {
-    useOnboardingStore,
-    useShouldPlayConfetti,
-    useIsOnboarding,
-} from './useOnboardingStore'
-export { useExitAccountFlow } from './useExitAccountFlow'
+export { WatchAccountScreen } from './WatchAccountScreen'

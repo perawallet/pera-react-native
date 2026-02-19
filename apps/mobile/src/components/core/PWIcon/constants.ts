@@ -77,6 +77,7 @@ import ThumbDownIcon from '@assets/icons/thumb-down.svg'
 import ThumbUpIcon from '@assets/icons/thumb-up.svg'
 import TrashIcon from '@assets/icons/trash.svg'
 import TreeIcon from '@assets/icons/tree.svg'
+import WalletAddIcon from '@assets/icons/wallet-add.svg'
 import WalletConnectIcon from '@assets/icons/wallet-connect.svg'
 import WalletWithAlgoIcon from '@assets/icons/wallet-with-algo.svg'
 import WalletIcon from '@assets/icons/wallet.svg'
@@ -185,6 +186,7 @@ export const ICON_LIBRARY = {
     trash: TrashIcon,
     tree: TreeIcon,
     undo: UndoIcon,
+    'wallet-add': WalletAddIcon,
     'wallet-connect': WalletConnectIcon,
     'wallet-with-algo': WalletWithAlgoIcon,
     wallet: WalletIcon,

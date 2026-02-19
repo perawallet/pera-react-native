@@ -16,18 +16,18 @@ import { AccountSelection } from '../AccountSelection'
 import { useModalState } from '@hooks/useModalState'
 import { AccountMenuBottomSheet } from '@modules/accounts/components/AccountMenuBottomSheet'
 
-const mockSetIsOnboarding = vi.fn()
+const mockNavigate = vi.fn()
+
+vi.mock('@hooks/useAppNavigation', () => ({
+    useAppNavigation: () => ({
+        navigate: mockNavigate,
+        goBack: vi.fn(),
+    }),
+}))
 
 vi.mock('@perawallet/wallet-core-accounts', async () => ({
     useSelectedAccount: vi.fn(() => null),
     useAllAccounts: vi.fn(() => []),
-}))
-
-vi.mock('@modules/onboarding/hooks', () => ({
-    useIsOnboarding: () => ({
-        isOnboarding: false,
-        setIsOnboarding: mockSetIsOnboarding,
-    }),
 }))
 
 vi.mock('@hooks/useModalState', () => ({
@@ -72,7 +72,7 @@ describe('AccountSelection', () => {
         expect(openMock).toHaveBeenCalled()
     })
 
-    it('closes bottom sheet and starts onboarding when add account is triggered', () => {
+    it('closes bottom sheet and navigates to AddAccount when add account is triggered', () => {
         const closeMock = vi.fn()
         const useModalStateMock = vi.mocked(useModalState)
         useModalStateMock.mockReturnValue({
@@ -90,6 +90,8 @@ describe('AccountSelection', () => {
         onAddAccount()
 
         expect(closeMock).toHaveBeenCalled()
-        expect(mockSetIsOnboarding).toHaveBeenCalledWith(true)
+        expect(mockNavigate).toHaveBeenCalledWith('AddAccount', {
+            screen: 'AddAccountHome',
+        })
     })
 })

@@ -41,4 +41,45 @@ describe('PanelButton', () => {
 
         expect(screen.getByText('Button Title')).toBeTruthy()
     })
+
+    it('renders the description when provided', () => {
+        render(
+            <PanelButton
+                title='Title'
+                description='Description text'
+                titleWeight='h4'
+                onPress={() => {}}
+            />,
+        )
+
+        expect(screen.getByText('Description text')).toBeTruthy()
+    })
+
+    it('does not render description when not provided', () => {
+        render(
+            <PanelButton
+                title='Title Only'
+                titleWeight='h4'
+                onPress={() => {}}
+            />,
+        )
+
+        expect(screen.getByText('Title Only')).toBeTruthy()
+        expect(screen.queryByText('Description text')).toBeNull()
+    })
+
+    it('renders with a left icon via testID', () => {
+        render(
+            <PanelButton
+                testID='panel_btn'
+                title='With Icon'
+                titleWeight='h4'
+                leftIcon='wallet'
+                onPress={() => {}}
+            />,
+        )
+
+        expect(screen.getByText('With Icon')).toBeTruthy()
+        expect(screen.getByTestId('panel_btn_view')).toBeTruthy()
+    })
 })

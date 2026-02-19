@@ -22,7 +22,7 @@ import {
     DerivationTypes,
 } from '@perawallet/wallet-core-accounts'
 import { OnboardingStackParamList } from '../../routes/types'
-import { useIsOnboarding } from '../../hooks'
+import { useExitAccountFlow } from '../../hooks'
 
 export type UseSearchAccountsScreenResult = {
     t: (key: string) => string
@@ -43,7 +43,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const { showToast } = useToast()
     const navigation = useAppNavigation()
     const { discoverAccounts, discoverRekeyedAccounts } = useAccountDiscovery()
-    const { setIsOnboarding } = useIsOnboarding()
+    const { exitAccountFlow } = useExitAccountFlow()
 
     const walletKeyId = account.keyPairId
 
@@ -102,7 +102,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
 
                 // Only the master account was found, skip the selection screen
                 if (discoveredAccounts.length === 1) {
-                    setIsOnboarding(false)
+                    exitAccountFlow()
                 } else {
                     navigation.replace('ImportSelectAddresses', {
                         accounts: discoveredAccounts,
@@ -120,7 +120,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 if (!discoveredRekeyedAccounts) return
 
                 if (discoveredRekeyedAccounts.length === 0) {
-                    setIsOnboarding(false)
+                    exitAccountFlow()
                 } else {
                     navigation.replace('ImportRekeyedAddresses', {
                         accounts: discoveredRekeyedAccounts,
@@ -143,7 +143,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         account,
         t,
         showToast,
-        setIsOnboarding,
+        exitAccountFlow,
     ])
 
     useEffect(() => {
