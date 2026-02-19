@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+export * from './useAlgoUsdPriceQuery'
 export * from './useCurrenciesQuery'
 export * from './useCurrency'
 export * from './usePreferredCurrencyPriceQuery'

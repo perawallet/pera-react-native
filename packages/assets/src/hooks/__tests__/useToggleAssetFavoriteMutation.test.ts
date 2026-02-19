@@ -13,12 +13,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { useToggleAssetFavoriteMutation } from '../useToggleAssetFavoriteMutation'
-import { toggleAssetFavorite } from '../endpoints'
+import { toggleAssetFavorite } from '../../api'
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
 import { getAssetDetailsQueryKey } from '../querykeys'
 
-vi.mock('../endpoints', () => ({
+vi.mock('../../api', () => ({
     toggleAssetFavorite: vi.fn(),
 }))
 

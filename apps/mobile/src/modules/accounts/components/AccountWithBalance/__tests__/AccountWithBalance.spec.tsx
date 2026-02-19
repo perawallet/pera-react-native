@@ -16,6 +16,7 @@ import { AccountWithBalance } from '../AccountWithBalance'
 import {
     WalletAccount,
     useAccountBalancesQuery,
+    usePortfolioTotals,
 } from '@perawallet/wallet-core-accounts'
 import Decimal from 'decimal.js'
 
@@ -33,6 +34,11 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         ...actual,
         useAccountBalancesQuery: vi.fn(() => ({
             accountBalances: new Map(),
+            isPending: false,
+        })),
+        usePortfolioTotals: vi.fn(() => ({
+            portfolioPreferredValue: new Decimal(0),
+            accountPreferredValues: new Map(),
             isPending: false,
         })),
     }
@@ -53,7 +59,6 @@ describe('AccountWithBalance', () => {
                 'test-address',
                 {
                     algoValue: new Decimal(100.5),
-                    fiatValue: new Decimal(50.25),
                 },
             ],
         ])
@@ -61,6 +66,13 @@ describe('AccountWithBalance', () => {
             accountBalances: mockBalanceMap,
             isPending: false,
         } as ReturnType<typeof useAccountBalancesQuery>)
+        vi.mocked(usePortfolioTotals).mockReturnValue({
+            portfolioPreferredValue: new Decimal(50.25),
+            accountPreferredValues: new Map([
+                ['test-address', new Decimal(50.25)],
+            ]),
+            isPending: false,
+        })
 
         const { container } = render(
             <AccountWithBalance account={mockAccount} />,

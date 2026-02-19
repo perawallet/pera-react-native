@@ -23,10 +23,9 @@ import {
     ALGO_ASSET,
     ALGO_ASSET_ID,
     toWholeUnits,
-    useAssetFiatPricesQuery,
+    useAssetPricesQuery,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { getAccountBalancesQueryKey } from './querykeys'
 import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
@@ -36,14 +35,12 @@ export const useAccountBalancesQuery = (
     accounts: WalletAccount[],
     enabled?: boolean,
 ): AccountBalancesWithTotals => {
-    const { usdToPreferred } = useCurrency()
     const { network } = useNetwork()
     const algokit = useAlgorandClient()
     if (!accounts?.length) {
         return {
             accountBalances: new Map(),
             portfolioAlgoValue: Decimal(0),
-            portfolioFiatValue: Decimal(0),
             isPending: false,
             isFetched: false,
             isRefetching: false,
@@ -69,16 +66,15 @@ export const useAccountBalancesQuery = (
     const { data: assets } = useAssetsQuery(
         results.flatMap(r => r.data?.assets?.map(a => `${a.assetId}`) ?? []),
     )
-    const { data: assetPrices } = useAssetFiatPricesQuery()
+    const { data: assetPrices } = useAssetPricesQuery()
     const usdAlgoPrice = useMemo(
-        () => assetPrices?.get(ALGO_ASSET_ID)?.fiatPrice ?? Decimal(0),
+        () => assetPrices?.get(ALGO_ASSET_ID)?.usdPrice ?? Decimal(0),
         [assetPrices],
     )
 
     const {
         accountBalances,
         portfolioAlgoValue,
-        portfolioFiatValue,
         isPending,
         isFetched,
         isRefetching,
@@ -86,29 +82,25 @@ export const useAccountBalancesQuery = (
     } = useMemo(() => {
         const accountBalanceList = results.map(r => {
             let algoValue = Decimal(0)
-            let fiatValue = Decimal(0)
 
             const assetBalances: AssetWithAccountBalance[] = []
             r.data?.assets?.forEach(assetHolding => {
                 const usdAssetPrice =
-                    assetPrices?.get(`${assetHolding.assetId}`)?.fiatPrice ??
+                    assetPrices?.get(`${assetHolding.assetId}`)?.usdPrice ??
                     Decimal(0)
                 const asset = assets.get(`${assetHolding.assetId}`)
                 const assetAmount = Decimal(assetHolding.amount ?? '0').div(
                     Decimal(10).pow(asset?.decimals ?? 0),
                 )
                 const usdAssetValue = assetAmount.times(usdAssetPrice)
-                const algoAssetValue = usdAssetPrice.isZero()
+                const algoAssetValue = usdAlgoPrice.isZero()
                     ? Decimal(0)
                     : usdAssetValue.div(usdAlgoPrice)
-                const fiatAssetValue = usdToPreferred(usdAssetValue)
                 algoValue = algoValue.plus(algoAssetValue)
-                fiatValue = fiatValue.plus(fiatAssetValue)
                 assetBalances.push({
                     assetId: `${assetHolding.assetId}`,
                     amount: assetAmount,
                     algoValue: algoAssetValue,
-                    fiatValue: fiatAssetValue,
                 })
             })
 
@@ -117,22 +109,17 @@ export const useAccountBalancesQuery = (
                 r.data?.balance?.microAlgos ?? 0n,
                 ALGO_ASSET,
             )
-            const usdAlgoValue = algoAmount.times(usdAlgoPrice)
-            const fiatAlgoValue = usdToPreferred(usdAlgoValue)
             algoValue = algoValue.plus(algoAmount)
-            fiatValue = fiatValue.plus(fiatAlgoValue)
 
             assetBalances.push({
                 assetId: ALGO_ASSET_ID,
                 amount: algoAmount,
                 algoValue: algoAmount,
-                fiatValue: fiatAlgoValue,
             })
 
             return {
                 assetBalances,
                 algoValue,
-                fiatValue,
                 isPending: r.isPending,
                 isFetched: r.isFetched,
                 isRefetching: r.isRefetching,
@@ -148,26 +135,20 @@ export const useAccountBalancesQuery = (
             (acc, cur) => acc.plus(cur.algoValue),
             Decimal(0),
         )
-        const portfolioFiatValue = accountBalanceList.reduce(
-            (acc, cur) => acc.plus(cur.fiatValue),
-            Decimal(0),
-        )
 
         return {
             accountBalances,
             portfolioAlgoValue,
-            portfolioFiatValue,
             isPending: results.some(r => r.isPending),
             isFetched: results.every(r => r.isFetched),
             isRefetching: results.some(r => r.isRefetching),
             isError: results.some(r => r.isError),
         }
-    }, [results, accounts, usdToPreferred, assets, assetPrices])
+    }, [results, accounts, assets, assetPrices])
 
     return {
         accountBalances,
         portfolioAlgoValue,
-        portfolioFiatValue,
         isPending,
         isFetched,
         isRefetching,

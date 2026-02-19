@@ -19,15 +19,13 @@ import {
     type PeraAsset,
 } from '../models'
 import {
-    mapAssetResponseToPeraAsset,
-    mapIndexerAssetToPeraAsset,
-    mapPublicAssetResponseToPeraAsset,
-} from './mappers'
-import {
+    transformAssetResponse,
+    transformIndexerAssetResponse,
+    transformPublicAssetResponse,
     fetchAssetDetails,
     fetchIndexerAssetDetails,
     fetchPublicAssetDetails,
-} from './endpoints'
+} from '../api'
 import {
     getAssetDetailsQueryKey,
     getIndexerAssetDetailsQueryKey,
@@ -47,7 +45,7 @@ export const useSingleAssetDetailsQuery = (assetId: string) => {
     } = useQuery({
         queryKey: getAssetDetailsQueryKey(assetId),
         queryFn: () => fetchAssetDetails(assetId),
-        select: data => mapAssetResponseToPeraAsset(data),
+        select: data => transformAssetResponse(data),
         enabled: !!assetId.length && assetId !== ALGO_ASSET_ID,
     })
 
@@ -61,14 +59,14 @@ export const useSingleAssetDetailsQuery = (assetId: string) => {
     } = useQuery({
         queryKey: getIndexerAssetDetailsQueryKey(assetId),
         queryFn: () => fetchIndexerAssetDetails(assetId),
-        select: data => mapIndexerAssetToPeraAsset(data),
+        select: data => transformIndexerAssetResponse(data),
         enabled: !!assetId.length && assetId !== ALGO_ASSET_ID,
     })
 
     const { data: algoData, refetch: algoRefetch } = useQuery({
         queryKey: getPublicAssetDetailsQueryKey(assetId),
         queryFn: () => fetchPublicAssetDetails(assetId),
-        select: data => mapPublicAssetResponseToPeraAsset(data),
+        select: data => transformPublicAssetResponse(data),
         enabled: !!assetId.length,
     })
 

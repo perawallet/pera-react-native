@@ -23,10 +23,10 @@ import { useEffect, useMemo, useState } from 'react'
 
 export const useSettingsCurrencyScreen = () => {
     const {
-        setPreferredFiatCurrency,
-        setShowAlgoAsPrimaryCurrency,
-        showAlgoAsPrimaryCurrency,
-        preferredFiatCurrency,
+        setPreferredCurrency,
+        setFallbackCurrency,
+        fallbackCurrency,
+        preferredCurrency,
     } = useCurrency()
     const [search, setSearch] = useState<string>()
     const [filteredData, setFilteredData] = useState<Currency[]>([])
@@ -51,28 +51,30 @@ export const useSettingsCurrencyScreen = () => {
 
     const setCurrency = (currency: Currency) => {
         if (currency.id === 'ALGO') {
-            setShowAlgoAsPrimaryCurrency(true)
-            setPreferredFiatCurrency('USD')
+            setPreferredCurrency('ALGO')
+            setFallbackCurrency('USD')
         } else {
-            setPreferredFiatCurrency(currency.id)
-            setShowAlgoAsPrimaryCurrency(false)
+            setPreferredCurrency(currency.id)
+            setFallbackCurrency(currency.id)
         }
         invalidateAssetPrices()
     }
 
+    const isAlgoPrimary = preferredCurrency === 'ALGO'
+
     const primaryCurrency = useMemo(() => {
-        if (showAlgoAsPrimaryCurrency) {
+        if (isAlgoPrimary) {
             return ALGO_ASSET.unitName
         }
-        return preferredFiatCurrency
-    }, [showAlgoAsPrimaryCurrency, preferredFiatCurrency])
+        return preferredCurrency
+    }, [isAlgoPrimary, preferredCurrency])
 
     const secondaryCurrency = useMemo(() => {
-        if (showAlgoAsPrimaryCurrency) {
-            return preferredFiatCurrency
+        if (isAlgoPrimary) {
+            return fallbackCurrency
         }
         return ALGO_ASSET.unitName
-    }, [showAlgoAsPrimaryCurrency, preferredFiatCurrency])
+    }, [isAlgoPrimary, fallbackCurrency])
 
     return {
         setCurrency,

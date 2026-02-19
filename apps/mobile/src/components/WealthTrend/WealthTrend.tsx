@@ -30,7 +30,7 @@ export type WealthTrendProps = {
 
 export const WealthTrend = ({ account, period }: WealthTrendProps) => {
     const styles = useStyles()
-    const { preferredFiatCurrency } = useCurrency()
+    const { preferredCurrency } = useCurrency()
     const { privacyMode } = useSettings()
 
     const accounts = useAllAccounts()
@@ -50,7 +50,7 @@ export const WealthTrend = ({ account, period }: WealthTrendProps) => {
     const dataPoints = useMemo(
         () =>
             data?.map(p => {
-                return p.fiatValue
+                return p.preferredValue
             }) ?? [],
         [data],
     )
@@ -76,11 +76,10 @@ export const WealthTrend = ({ account, period }: WealthTrendProps) => {
                 style={isPositive ? styles.itemUp : styles.itemDown}
                 variant='h4'
             >
-                {isPositive ? '+' : '-'}
                 {formatCurrency(
                     absolute,
                     2,
-                    preferredFiatCurrency,
+                    preferredCurrency,
                     undefined,
                     true,
                 )}

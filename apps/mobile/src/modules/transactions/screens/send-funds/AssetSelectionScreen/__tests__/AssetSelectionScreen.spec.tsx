@@ -93,8 +93,8 @@ vi.mock('@modules/transactions/hooks', () => ({
 const mockSetSelectedAsset = vi.fn()
 
 const mockAssets = [
-    { assetId: '0', amount: '1000000', algoValue: '1', fiatValue: '0.25' },
-    { assetId: '123', amount: '500', algoValue: '0.5', fiatValue: '0.10' },
+    { assetId: '0', amount: '1000000', algoValue: '1' },
+    { assetId: '123', amount: '500', algoValue: '0.5' },
 ]
 
 describe('AssetSelectionScreen', () => {

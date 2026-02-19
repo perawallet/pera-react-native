@@ -195,7 +195,7 @@ export type AssetPriceResponse = {
 
 export type AssetPrice = {
     assetId: string
-    fiatPrice: Decimal
+    usdPrice: Decimal
 }
 
 export type AssetPrices = Map<string, AssetPrice>

@@ -207,6 +207,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             none: 0,
             sm: 1,
             md: 2,
+            lg: 4,
         },
         shadows: {
             sm: {

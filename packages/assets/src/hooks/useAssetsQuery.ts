@@ -13,11 +13,12 @@
 import { useEffect, useMemo } from 'react'
 import { useAssetsStore } from '../store'
 import { useQueries } from '@tanstack/react-query'
-import { fetchAssets, fetchPublicAssetDetails } from './endpoints'
 import {
-    mapAssetResponseToPeraAsset,
-    mapPublicAssetResponseToPeraAsset,
-} from './mappers'
+    fetchAssets,
+    fetchPublicAssetDetails,
+    transformAssetResponse,
+    transformPublicAssetResponse,
+} from '../api'
 import {
     ALGO_ASSET_ID,
     AssetsResponse,
@@ -55,7 +56,7 @@ export const useAssetsQuery = (ids?: string[]) => {
                     queryFn: async () => fetchAssets(chunk),
                     select: (data: AssetsResponse) => {
                         const peraAssets = data.results.map(
-                            mapAssetResponseToPeraAsset,
+                            transformAssetResponse,
                         )
                         return {
                             results: peraAssets,
@@ -69,7 +70,7 @@ export const useAssetsQuery = (ids?: string[]) => {
                 queryKey: getAlgoQueryKey(),
                 queryFn: async () => fetchPublicAssetDetails(ALGO_ASSET_ID),
                 select: (data: PublicAssetResponse) => {
-                    const peraAsset = mapPublicAssetResponseToPeraAsset(data)
+                    const peraAsset = transformPublicAssetResponse(data)
                     return {
                         results: [peraAsset],
                         next: null,

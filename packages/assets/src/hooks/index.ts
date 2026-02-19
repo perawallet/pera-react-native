@@ -11,7 +11,7 @@
  */
 
 export * from './useAssetsQuery'
-export * from './useAssetFiatPricesQuery'
+export * from './useAssetPricesQuery'
 export * from './useAssetPriceHistoryQuery'
 export * from './useSingleAssetDetailsQuery'
 export * from './useInvalidateAssetPrices'

@@ -13,35 +13,13 @@
 import Decimal from 'decimal.js'
 import {
     ALGO_ASSET_ID,
-    type AssetPriceHistoryResponseItem,
-    type AssetPriceResponse,
     type AssetResponse,
     type IndexerAssetResponse,
     type PeraAsset,
     type PublicAssetResponse,
-} from '../models'
+} from '../../models'
 
-export const mapAssetPriceResponseToAssetPrice = (
-    data: AssetPriceResponse,
-    usdToPreferred: (amount: Decimal) => Decimal,
-) => {
-    return {
-        assetId: data.asset_id,
-        fiatPrice: usdToPreferred(Decimal(data.usd_value ?? '0')),
-    }
-}
-
-export const mapAssetPriceHistoryResponseToAssetPriceHistoryItem = (
-    data: AssetPriceHistoryResponseItem,
-    usdToPreferred: (amount: Decimal) => Decimal,
-) => {
-    return {
-        datetime: new Date(data.datetime),
-        fiatPrice: usdToPreferred(Decimal(data.price ?? '0')),
-    }
-}
-
-export const mapAssetResponseToPeraAsset = (data: AssetResponse): PeraAsset => {
+export const transformAssetResponse = (data: AssetResponse): PeraAsset => {
     return {
         assetId: `${data.asset_id}`,
         name: data.name,
@@ -65,7 +43,7 @@ export const mapAssetResponseToPeraAsset = (data: AssetResponse): PeraAsset => {
     }
 }
 
-export const mapIndexerAssetToPeraAsset = (
+export const transformIndexerAssetResponse = (
     response: IndexerAssetResponse,
 ): PeraAsset => {
     const asset = response.asset
@@ -82,7 +60,7 @@ export const mapIndexerAssetToPeraAsset = (
     }
 }
 
-export const mapPublicAssetResponseToPeraAsset = (
+export const transformPublicAssetResponse = (
     asset: PublicAssetResponse,
 ): PeraAsset => {
     return {

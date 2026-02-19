@@ -46,17 +46,21 @@ vi.mock('react-native-tab-view', () => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountBalancesQuery: vi.fn(() => ({
         portfolioAlgoValue: new Decimal('100'),
-        portfolioFiatValue: new Decimal('200'),
         isPending: false,
         accountBalances: new Map(),
         isFetched: true,
         isRefetching: false,
         isError: false,
     })),
+    usePortfolioTotals: vi.fn(() => ({
+        portfolioPreferredValue: new Decimal('200'),
+        accountPreferredValues: new Map(),
+        isPending: false,
+    })),
 }))
 
 vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: vi.fn(() => ({ preferredFiatCurrency: 'USD' })),
+    useCurrency: vi.fn(() => ({ preferredCurrency: 'USD' })),
 }))
 
 vi.mock('@hooks/useIsDarkMode', () => ({
@@ -218,7 +222,6 @@ describe('AccountOverview', () => {
             )
             vi.mocked(useAccountBalancesQuery).mockReturnValue({
                 portfolioAlgoValue: new Decimal('0'),
-                portfolioFiatValue: new Decimal('0'),
                 isPending: false,
                 accountBalances: new Map(),
                 isFetched: true,

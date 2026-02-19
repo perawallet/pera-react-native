@@ -11,18 +11,24 @@
  */
 
 import { useMemo } from 'react'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useAssetsStore } from '../store'
 import { useQueries } from '@tanstack/react-query'
-import { ALGO_ASSET_ID, PublicAssetResponse, type AssetPrices } from '../models'
-import { fetchAssetFiatPrices, fetchPublicAssetDetails } from './endpoints'
-import { mapAssetPriceResponseToAssetPrice } from './mappers'
+import {
+    ALGO_ASSET_ID,
+    type AssetPrices,
+    type PublicAssetResponse,
+} from '../models'
+import {
+    fetchAssetPrices,
+    fetchPublicAssetDetails,
+    transformAssetPriceResponse,
+} from '../api'
+import type { AssetPriceResponse } from '../api'
 import { DEFAULT_PAGE_SIZE, partition } from '@perawallet/wallet-core-shared'
-import { getAssetFiatPricesQueryKey } from './querykeys'
+import { getAssetPricesQueryKey } from './querykeys'
 
-export const useAssetFiatPricesQuery = (enabled?: boolean) => {
+export const useAssetPricesQuery = (enabled?: boolean) => {
     const assetIDs = useAssetsStore(state => state.assetIDs)
-    const { usdToPreferred } = useCurrency()
 
     const queriesDefinitions = useMemo(() => {
         const chunks = partition(
@@ -33,13 +39,13 @@ export const useAssetFiatPricesQuery = (enabled?: boolean) => {
         return [
             ...chunks.map(chunk => {
                 return {
-                    queryKey: getAssetFiatPricesQueryKey(chunk),
+                    queryKey: getAssetPricesQueryKey(chunk),
                     enabled: enabled ?? true,
-                    queryFn: async () => fetchAssetFiatPrices(chunk),
+                    queryFn: async () => fetchAssetPrices(chunk),
                 }
             }),
             {
-                queryKey: getAssetFiatPricesQueryKey([ALGO_ASSET_ID]),
+                queryKey: getAssetPricesQueryKey([ALGO_ASSET_ID]),
                 enabled: enabled ?? true,
                 queryFn: async () => fetchPublicAssetDetails(ALGO_ASSET_ID),
                 select: (data: PublicAssetResponse) => {
@@ -63,11 +69,8 @@ export const useAssetFiatPricesQuery = (enabled?: boolean) => {
     return useMemo(() => {
         const assetPrices: AssetPrices = new Map()
         queries.forEach(query => {
-            query.data?.results?.forEach(asset => {
-                const assetPrice = mapAssetPriceResponseToAssetPrice(
-                    asset,
-                    usdToPreferred,
-                )
+            query.data?.results?.forEach((asset: AssetPriceResponse) => {
+                const assetPrice = transformAssetPriceResponse(asset)
                 assetPrices.set(asset.asset_id, assetPrice)
             })
         })
@@ -78,5 +81,5 @@ export const useAssetFiatPricesQuery = (enabled?: boolean) => {
             isRefetching: queries.some(query => query.isRefetching),
             isError: queries.some(query => query.isError),
         }
-    }, [queries, usdToPreferred])
+    }, [queries])
 }

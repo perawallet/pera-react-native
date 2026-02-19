@@ -13,46 +13,69 @@
 import { useCallback } from 'react'
 import { useCurrenciesStore } from '../store'
 import { usePreferredCurrencyPriceQuery } from './usePreferredCurrencyPriceQuery'
+import { useAlgoUsdPriceQuery } from './useAlgoUsdPriceQuery'
 import Decimal from 'decimal.js'
 
 export const useCurrency = () => {
-    const preferredFiatCurrency = useCurrenciesStore(
-        state => state.preferredFiatCurrency,
+    const preferredCurrency = useCurrenciesStore(
+        state => state.preferredCurrency,
     )
-    const setPreferredFiatCurrency = useCurrenciesStore(
-        state => state.setPreferredFiatCurrency,
+    const setPreferredCurrency = useCurrenciesStore(
+        state => state.setPreferredCurrency,
     )
-    const showAlgoAsPrimaryCurrency = useCurrenciesStore(
-        state => state.showAlgoAsPrimaryCurrency,
+    const fallbackCurrency = useCurrenciesStore(state => state.fallbackCurrency)
+    const setFallbackCurrency = useCurrenciesStore(
+        state => state.setFallbackCurrency,
     )
-    const setShowAlgoAsPrimaryCurrency = useCurrenciesStore(
-        state => state.setShowAlgoAsPrimaryCurrency,
-    )
-    const { data, isPending } = usePreferredCurrencyPriceQuery(
-        preferredFiatCurrency,
-    )
+
+    const isAlgoPreferred = preferredCurrency === 'ALGO'
+
+    const { data: preferredRate, isPending: preferredRatePending } =
+        usePreferredCurrencyPriceQuery(preferredCurrency, !isAlgoPreferred)
+
+    const { data: algoUsdPrice, isPending: algoUsdPricePending } =
+        useAlgoUsdPriceQuery(isAlgoPreferred)
 
     const usdToPreferred = useCallback<(usdAmount: Decimal) => Decimal>(
         (usdAmount: Decimal) => {
-            if (isPending) {
-                return Decimal(0)
-            }
-
-            if (preferredFiatCurrency === 'USD') {
+            if (preferredCurrency === 'USD') {
                 return usdAmount
             }
 
-            const usdValue = data?.usdPrice ?? Decimal('0')
+            if (isAlgoPreferred) {
+                if (
+                    algoUsdPricePending ||
+                    !algoUsdPrice ||
+                    algoUsdPrice.isZero()
+                ) {
+                    return Decimal(0)
+                }
+                return usdAmount.div(algoUsdPrice)
+            }
+
+            if (preferredRatePending) {
+                return Decimal(0)
+            }
+
+            const usdValue = preferredRate?.usdPrice ?? Decimal('0')
             return usdAmount.mul(usdValue)
         },
-        [isPending, data, preferredFiatCurrency],
+        [
+            preferredCurrency,
+            isAlgoPreferred,
+            algoUsdPrice,
+            algoUsdPricePending,
+            preferredRatePending,
+            preferredRate,
+        ],
     )
 
     return {
-        preferredFiatCurrency,
-        setPreferredFiatCurrency,
-        showAlgoAsPrimaryCurrency,
-        setShowAlgoAsPrimaryCurrency,
+        preferredCurrency,
+        setPreferredCurrency,
+        fallbackCurrency,
+        setFallbackCurrency,
         usdToPreferred,
+        algoUsdPrice: algoUsdPrice ?? Decimal(0),
     }
 }

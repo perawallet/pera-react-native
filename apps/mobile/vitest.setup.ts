@@ -1633,7 +1633,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     },
     useAssetPriceHistoryQuery: vi.fn(() => ({ data: [], isPending: false })),
     useAssetsQuery: vi.fn(() => ({ data: [], isPending: false })),
-    useAssetFiatPricesQuery: vi.fn(() => ({
+    useAssetPricesQuery: vi.fn(() => ({
         data: new Map(),
         isPending: false,
     })),
@@ -1756,8 +1756,8 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
 // Mock @perawallet/wallet-core-currencies
 vi.mock('@perawallet/wallet-core-currencies', () => ({
     useCurrency: vi.fn(() => ({
-        preferredFiatCurrency: 'USD',
-        portfolioFiatValue: '0',
+        preferredCurrency: 'USD',
+        portfolioPreferredValue: '0',
     })),
 }))
 

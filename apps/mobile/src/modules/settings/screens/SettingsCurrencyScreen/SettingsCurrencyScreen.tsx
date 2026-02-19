@@ -23,8 +23,8 @@ export const SettingsCurrencyScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
-        primaryCurrency,
-        secondaryCurrency,
+        preferredCurrency,
+        fallbackCurrency,
         setCurrency,
         search,
         setSearch,
@@ -36,7 +36,7 @@ export const SettingsCurrencyScreen = () => {
             <PWRadioButton
                 title={`${item.name} (${item.id})`}
                 onPress={() => setCurrency(item)}
-                isSelected={primaryCurrency === item.id}
+                isSelected={preferredCurrency === item.id}
             />
         )
     }
@@ -46,8 +46,8 @@ export const SettingsCurrencyScreen = () => {
             <Text h3>{t('settings.currency.title')}</Text>
             <Text>
                 {t('settings.currency.description', {
-                    primaryCurrency,
-                    secondaryCurrency,
+                    preferredCurrency,
+                    fallbackCurrency,
                 })}
             </Text>
             <SearchInput

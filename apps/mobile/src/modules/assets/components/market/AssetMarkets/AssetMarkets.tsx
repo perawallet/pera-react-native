@@ -19,8 +19,8 @@ import {
     AssetTitle,
 } from '@modules/assets/components'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { AssetPriceChart } from '../AssetPriceChart/AssetPriceChart'
-import { useMemo } from 'react'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import Decimal from 'decimal.js'
 import {
@@ -45,7 +45,6 @@ import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import {
     AssetPriceHistoryItem,
     PeraAsset,
-    useAssetFiatPricesQuery,
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
@@ -69,7 +68,7 @@ const Loading = () => {
 
 export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
     const styles = useStyles()
-    const { preferredFiatCurrency } = useCurrency()
+    const { preferredCurrency, usdToPreferred } = useCurrency()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AssetPriceHistoryItem>()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
@@ -86,18 +85,6 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
         isError,
         isPending,
     } = useSingleAssetDetailsQuery(asset.assetId)
-    const { data: prices } = useAssetFiatPricesQuery()
-    const fiatPrice = useMemo(
-        () => prices.get(asset.assetId) ?? null,
-        [asset, prices],
-    )
-
-    const currentPrice = useMemo(() => {
-        if (selectedPoint) {
-            return new Decimal(selectedPoint.fiatPrice)
-        }
-        return fiatPrice?.fiatPrice ?? null
-    }, [selectedPoint, fiatPrice])
 
     const openDiscover = () => {
         //TODO: pass relative URL to go straight to the asset
@@ -151,13 +138,25 @@ export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
                 </PWView>
                 <PWView style={styles.priceContainer}>
                     <PWView>
-                        <CurrencyDisplay
-                            variant='h1'
-                            value={currentPrice}
-                            currency={preferredFiatCurrency}
-                            precision={6}
-                            minPrecision={2}
-                        />
+                        {selectedPoint ? (
+                            <CurrencyDisplay
+                                variant='h1'
+                                value={usdToPreferred(
+                                    new Decimal(selectedPoint.usdPrice),
+                                )}
+                                currency={preferredCurrency}
+                                precision={6}
+                                minPrecision={2}
+                            />
+                        ) : (
+                            <PreferredCurrencyDisplay
+                                variant='h1'
+                                sourceAmount={new Decimal(1)}
+                                sourceAssetId={asset.assetId}
+                                precision={6}
+                                minPrecision={2}
+                            />
+                        )}
 
                         <PWView style={styles.trendContainer}>
                             <PriceTrend

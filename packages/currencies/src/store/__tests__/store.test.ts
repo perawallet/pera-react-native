@@ -28,45 +28,80 @@ describe('CurrenciesStore', () => {
         initCurrenciesStore()
     })
 
-    test('should initialize with USD as default currency', () => {
+    test('should initialize with USD as default preferred currency', () => {
         const { result } = renderHook(() => useCurrenciesStore())
 
-        expect(result.current.preferredFiatCurrency).toBe('USD')
+        expect(result.current.preferredCurrency).toBe('USD')
+    })
+
+    test('should initialize with USD as default fallback currency', () => {
+        const { result } = renderHook(() => useCurrenciesStore())
+
+        expect(result.current.fallbackCurrency).toBe('USD')
     })
 
     test('should update preferred currency', () => {
         const { result } = renderHook(() => useCurrenciesStore())
 
         act(() => {
-            result.current.setPreferredFiatCurrency('EUR')
+            result.current.setPreferredCurrency('EUR')
         })
 
-        expect(result.current.preferredFiatCurrency).toBe('EUR')
+        expect(result.current.preferredCurrency).toBe('EUR')
+    })
+
+    test('should update fallback currency', () => {
+        const { result } = renderHook(() => useCurrenciesStore())
+
+        act(() => {
+            result.current.setFallbackCurrency('GBP')
+        })
+
+        expect(result.current.fallbackCurrency).toBe('GBP')
     })
 
     test('should update to different currencies', () => {
         const { result } = renderHook(() => useCurrenciesStore())
 
         act(() => {
-            result.current.setPreferredFiatCurrency('GBP')
+            result.current.setPreferredCurrency('GBP')
         })
-        expect(result.current.preferredFiatCurrency).toBe('GBP')
+        expect(result.current.preferredCurrency).toBe('GBP')
 
         act(() => {
-            result.current.setPreferredFiatCurrency('JPY')
+            result.current.setPreferredCurrency('JPY')
         })
-        expect(result.current.preferredFiatCurrency).toBe('JPY')
+        expect(result.current.preferredCurrency).toBe('JPY')
     })
 
     test('should persist preferred currency across re-renders', () => {
         const { result, rerender } = renderHook(() => useCurrenciesStore())
 
         act(() => {
-            result.current.setPreferredFiatCurrency('CAD')
+            result.current.setPreferredCurrency('CAD')
         })
 
         rerender()
 
-        expect(result.current.preferredFiatCurrency).toBe('CAD')
+        expect(result.current.preferredCurrency).toBe('CAD')
+    })
+
+    test('should reset state to defaults', () => {
+        const { result } = renderHook(() => useCurrenciesStore())
+
+        act(() => {
+            result.current.setPreferredCurrency('EUR')
+            result.current.setFallbackCurrency('GBP')
+        })
+
+        expect(result.current.preferredCurrency).toBe('EUR')
+        expect(result.current.fallbackCurrency).toBe('GBP')
+
+        act(() => {
+            result.current.resetState()
+        })
+
+        expect(result.current.preferredCurrency).toBe('USD')
+        expect(result.current.fallbackCurrency).toBe('USD')
     })
 })

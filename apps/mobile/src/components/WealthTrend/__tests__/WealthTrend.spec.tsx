@@ -16,6 +16,16 @@ import { WealthTrend } from '../WealthTrend'
 import { useAccountBalancesHistoryQuery } from '@perawallet/wallet-core-accounts'
 import Decimal from 'decimal.js'
 
+vi.mock('@perawallet/wallet-core-settings', () => ({
+    useSettings: vi.fn(() => ({
+        privacyMode: false,
+    })),
+}))
+
+vi.mock('@perawallet/wallet-core-currencies', () => ({
+    useCurrency: vi.fn(() => ({ preferredCurrency: 'USD' })),
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<
@@ -47,23 +57,22 @@ describe('WealthTrend', () => {
     it('displays positive trend with percentage', () => {
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
             data: [
-                { fiatValue: new Decimal(100) },
-                { fiatValue: new Decimal(120) },
+                { preferredValue: new Decimal(100) },
+                { preferredValue: new Decimal(120) },
             ],
             isPending: false,
         } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
 
         const { container } = render(<WealthTrend period='one-week' />)
-        // Should show positive indicator
-        expect(container.textContent).toContain('+')
+        // Should show percentage value
         expect(container.textContent).toContain('%')
     })
 
     it('displays negative trend with percentage', () => {
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
             data: [
-                { fiatValue: new Decimal(100) },
-                { fiatValue: new Decimal(80) },
+                { preferredValue: new Decimal(100) },
+                { preferredValue: new Decimal(80) },
             ],
             isPending: false,
         } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
@@ -76,7 +85,7 @@ describe('WealthTrend', () => {
     it('uses single account when account prop is provided', () => {
         const mockAccount = { address: 'test-address' }
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: [{ fiatValue: new Decimal(100) }],
+            data: [{ preferredValue: new Decimal(100) }],
             isPending: false,
         } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
 

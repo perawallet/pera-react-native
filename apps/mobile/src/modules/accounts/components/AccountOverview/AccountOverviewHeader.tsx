@@ -36,12 +36,12 @@ export type AccountOverviewHeaderProps = {
     account: WalletAccount
     hasBalance: boolean
     portfolioAlgoValue: Decimal
-    portfolioFiatValue: Decimal
+    portfolioPreferredValue: Decimal
     isPending: boolean
     period: HistoryPeriod
     setPeriod: (period: HistoryPeriod) => void
     selectedPoint: AccountBalanceHistoryItem | null
-    preferredFiatCurrency: string
+    preferredCurrency: string
     togglePrivacyMode: () => void
     handleChartSelectionChange: (
         selected: AccountBalanceHistoryItem | null,
@@ -58,12 +58,12 @@ export const AccountOverviewHeader = ({
     account,
     hasBalance,
     portfolioAlgoValue,
-    portfolioFiatValue,
+    portfolioPreferredValue,
     isPending,
     period,
     setPeriod,
     selectedPoint,
-    preferredFiatCurrency,
+    preferredCurrency,
     togglePrivacyMode,
     handleChartSelectionChange,
     handleSwap,
@@ -103,10 +103,10 @@ export const AccountOverviewHeader = ({
                         style={styles.valueTitle}
                         value={
                             selectedPoint
-                                ? Decimal(selectedPoint.fiatValue)
-                                : portfolioFiatValue
+                                ? Decimal(selectedPoint.preferredValue)
+                                : portfolioPreferredValue
                         }
-                        currency={preferredFiatCurrency}
+                        currency={preferredCurrency}
                         prefix='≈ '
                         precision={2}
                         isLoading={isPending}

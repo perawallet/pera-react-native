@@ -12,6 +12,7 @@
 
 import {
     useAccountBalancesQuery,
+    usePortfolioTotals,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { PWView, PWViewProps } from '@components/core'
@@ -33,8 +34,9 @@ export const AccountWithBalance = ({
     ...rest
 }: AccountWithBalanceProps) => {
     const styles = useStyles({ isHighlighted })
-    const { preferredFiatCurrency } = useCurrency()
+    const { preferredCurrency } = useCurrency()
     const { accountBalances } = useAccountBalancesQuery([account], true)
+    const { accountPreferredValues } = usePortfolioTotals(accountBalances)
 
     return (
         <PWView
@@ -55,8 +57,8 @@ export const AccountWithBalance = ({
                 />
 
                 <CurrencyDisplay
-                    currency={preferredFiatCurrency}
-                    value={accountBalances.get(account.address)?.fiatValue}
+                    currency={preferredCurrency}
+                    value={accountPreferredValues.get(account.address)}
                     precision={2}
                     minPrecision={2}
                     style={styles.fiatBalance}

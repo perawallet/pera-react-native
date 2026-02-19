@@ -10,23 +10,14 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Decimal } from 'decimal.js'
-import type { CurrencyPrice, CurrencyResponse } from '../models'
-import { fetchCurrency } from './endpoints'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
+import { fetchCurrency } from '../api/currencies'
 import { getPreferredCurrencyPriceQueryKey } from './querykeys'
-
-const mapCurrencyToPrice = (data: CurrencyResponse): CurrencyPrice => {
-    return {
-        id: data.currency_id,
-        usdPrice: Decimal(data.usd_value ?? '0'),
-    }
-}
 
 export const usePreferredCurrencyPriceQuery = (
     preferredFiatCurrency: string,
+    enabled: boolean = true,
 ) => {
     const { network } = useNetwork()
     return useQuery({
@@ -34,10 +25,12 @@ export const usePreferredCurrencyPriceQuery = (
             network,
             preferredFiatCurrency,
         ),
-        queryFn: () => fetchCurrency(network, preferredFiatCurrency),
-        select: useCallback(
-            (data: CurrencyResponse) => mapCurrencyToPrice(data),
-            [],
-        ),
+        queryFn: ({ signal }) =>
+            fetchCurrency({
+                currencyId: preferredFiatCurrency,
+                network,
+                signal,
+            }),
+        enabled: enabled,
     })
 }

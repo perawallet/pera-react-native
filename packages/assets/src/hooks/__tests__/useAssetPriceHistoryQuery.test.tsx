@@ -22,17 +22,13 @@ const mocks = vi.hoisted(() => ({
     fetchAssetPriceHistory: vi.fn(),
 }))
 
-vi.mock('../endpoints', () => ({
-    fetchAssetPriceHistory: mocks.fetchAssetPriceHistory,
-}))
-
-// Mock currencies
-const mockUsdToPreferred = vi.fn((amount: Decimal) => amount.mul(2))
-vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: vi.fn(() => ({
-        usdToPreferred: mockUsdToPreferred,
-    })),
-}))
+vi.mock('../../api', async importOriginal => {
+    const actual = await importOriginal<typeof import('../../api')>()
+    return {
+        ...actual,
+        fetchAssetPriceHistory: mocks.fetchAssetPriceHistory,
+    }
+})
 
 describe('useAssetPriceHistoryQuery', () => {
     let queryClient: QueryClient
@@ -46,13 +42,10 @@ describe('useAssetPriceHistoryQuery', () => {
                 },
             },
         })
-        mockUsdToPreferred.mockImplementation((amount: Decimal) =>
-            amount.mul(2),
-        )
     })
 
     describe('useAssetPriceHistoryQuery hook', () => {
-        it('fetches data successfully and converts prices', async () => {
+        it('fetches data successfully and stores raw USD prices', async () => {
             const assetID = '123'
             const period = 'one-day'
             const mockData = [{ datetime: '2023-01-01T00:00:00Z', price: '10' }]
@@ -68,7 +61,7 @@ describe('useAssetPriceHistoryQuery', () => {
             await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
             expect(result.current.data).toHaveLength(1)
-            expect(result.current.data?.[0].fiatPrice).toEqual(new Decimal(20)) // 10 * 2
+            expect(result.current.data?.[0].usdPrice).toEqual(new Decimal(10))
             expect(result.current.data?.[0].datetime).toBeInstanceOf(Date)
         })
 

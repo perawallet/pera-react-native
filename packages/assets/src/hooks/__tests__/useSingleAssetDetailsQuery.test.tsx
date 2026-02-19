@@ -24,11 +24,15 @@ const mocks = vi.hoisted(() => ({
     fetchPublicAssetDetails: vi.fn(),
 }))
 
-vi.mock('../endpoints', () => ({
-    fetchAssetDetails: mocks.fetchAssetDetails,
-    fetchIndexerAssetDetails: mocks.fetchIndexerAssetDetails,
-    fetchPublicAssetDetails: mocks.fetchPublicAssetDetails,
-}))
+vi.mock('../../api', async importOriginal => {
+    const actual = await importOriginal<typeof import('../../api')>()
+    return {
+        ...actual,
+        fetchAssetDetails: mocks.fetchAssetDetails,
+        fetchIndexerAssetDetails: mocks.fetchIndexerAssetDetails,
+        fetchPublicAssetDetails: mocks.fetchPublicAssetDetails,
+    }
+})
 
 describe('useSingleAssetDetailsQuery', () => {
     let queryClient: QueryClient

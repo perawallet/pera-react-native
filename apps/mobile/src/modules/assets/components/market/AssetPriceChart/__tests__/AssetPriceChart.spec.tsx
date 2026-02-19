@@ -75,8 +75,8 @@ describe('AssetPriceChart', () => {
 
     it('renders chart when data is available', () => {
         const mockData = [
-            { fiatPrice: new Decimal(100), datetime: new Date() },
-            { fiatPrice: new Decimal(110), datetime: new Date() },
+            { usdPrice: new Decimal(100), datetime: new Date() },
+            { usdPrice: new Decimal(110), datetime: new Date() },
         ]
         vi.mocked(useAssetPriceHistoryQuery).mockReturnValue({
             data: mockData,
@@ -96,7 +96,7 @@ describe('AssetPriceChart', () => {
 
     it('calls onSelectionChanged callback when provided', () => {
         const onSelectionChanged = vi.fn()
-        const mockData = [{ fiatPrice: new Decimal(100), datetime: new Date() }]
+        const mockData = [{ usdPrice: new Decimal(100), datetime: new Date() }]
         vi.mocked(useAssetPriceHistoryQuery).mockReturnValue({
             data: mockData,
             isPending: false,

@@ -27,10 +27,14 @@ const mocks = vi.hoisted(() => ({
     fetchPublicAssetDetails: vi.fn(),
 }))
 
-vi.mock('../endpoints', () => ({
-    fetchAssets: mocks.fetchAssets,
-    fetchPublicAssetDetails: mocks.fetchPublicAssetDetails,
-}))
+vi.mock('../../api', async importOriginal => {
+    const actual = await importOriginal<typeof import('../../api')>()
+    return {
+        ...actual,
+        fetchAssets: mocks.fetchAssets,
+        fetchPublicAssetDetails: mocks.fetchPublicAssetDetails,
+    }
+})
 
 // Mock store
 vi.mock('../../store', async () => {

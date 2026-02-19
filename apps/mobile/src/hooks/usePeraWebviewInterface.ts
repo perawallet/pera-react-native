@@ -85,7 +85,7 @@ export const usePeraWebviewInterface = (
     const deviceID = useDeviceID(network)
     const { theme } = useSettings()
     const deviceInfo = useDeviceInfoService()
-    const { preferredFiatCurrency } = useCurrency()
+    const { preferredCurrency } = useCurrency()
     const analytics = useAnalyticsService()
     const { t } = useLanguage()
     const { pushWebView: pushWebViewContext } = useWebView()
@@ -251,7 +251,7 @@ export const usePeraWebviewInterface = (
                     deviceModel: deviceInfo.getDeviceModel(),
                     theme,
                     network,
-                    currency: preferredFiatCurrency,
+                    currency: preferredCurrency,
                     region: deviceInfo.getDeviceCountry(),
                     language: deviceInfo.getDeviceLocale(),
                 }
@@ -261,7 +261,7 @@ export const usePeraWebviewInterface = (
         [
             deviceID,
             deviceInfo,
-            preferredFiatCurrency,
+            preferredCurrency,
             securedConnection,
             theme,
             network,
@@ -405,12 +405,12 @@ export const usePeraWebviewInterface = (
             const payload = {
                 theme,
                 network,
-                currency: preferredFiatCurrency,
+                currency: preferredCurrency,
                 language: 'en-US', //TODO pull from app locale
             }
             sendMessageToWebview(message.id, payload, webview)
         },
-        [preferredFiatCurrency, theme, network, webview],
+        [preferredCurrency, theme, network, webview],
     )
 
     const openWalletConnect = useCallback(

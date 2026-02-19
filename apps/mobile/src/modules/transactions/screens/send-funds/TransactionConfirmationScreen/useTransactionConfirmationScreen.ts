@@ -26,7 +26,6 @@ import {
     ALGO_ASSET,
     ALGO_ASSET_ID,
     toDecimalUnits,
-    useAssetFiatPricesQuery,
     useAssetsQuery,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
@@ -34,7 +33,6 @@ import {
     useAlgorandClient,
     useSuggestedParametersQuery,
 } from '@perawallet/wallet-core-blockchain'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     DEFAULT_PRECISION,
     formatCurrency,
@@ -46,8 +44,6 @@ type useTransactionConfirmationScreenResult = {
     destination: string | undefined
     selectedAccount: WalletAccount | null
     selectedAsset: AssetWithAccountBalance | undefined
-    fiatPrice: Decimal | null
-    preferredFiatCurrency: string
     params: { minFee: bigint } | undefined
     paramsPending: boolean
     currentBalance: AssetWithAccountBalance | null
@@ -76,17 +72,6 @@ export const useTransactionConfirmationScreen =
         const selectedAccount = useSelectedAccount()
         const { showToast } = useToast()
         const [noteOpen, setNoteOpen] = useState(false)
-        const { preferredFiatCurrency } = useCurrency()
-        const { data: fiatPrices } = useAssetFiatPricesQuery()
-        const fiatPrice = useMemo<Decimal | null>(() => {
-            const price = selectedAsset
-                ? fiatPrices.get(selectedAsset?.assetId)?.fiatPrice
-                : null
-            if (price) {
-                return amount?.mul(price) ?? null
-            }
-            return null
-        }, [selectedAsset, fiatPrices, amount])
 
         const { data: params, isPending: paramsPending } =
             useSuggestedParametersQuery()
@@ -195,8 +180,6 @@ export const useTransactionConfirmationScreen =
             destination,
             selectedAccount,
             selectedAsset,
-            fiatPrice,
-            preferredFiatCurrency,
             params,
             paramsPending,
             currentBalance,

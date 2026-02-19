@@ -31,13 +31,13 @@ export const AccountOverview = ({
     const styles = useStyles()
     const {
         portfolioAlgoValue,
-        portfolioFiatValue,
+        portfolioPreferredValue,
         isPending,
         period,
         setPeriod,
         selectedPoint,
         scrollingEnabled,
-        preferredFiatCurrency,
+        preferredCurrency,
         hasBalance,
         togglePrivacyMode,
         handleChartSelectionChange,
@@ -62,12 +62,12 @@ export const AccountOverview = ({
                         account={account}
                         hasBalance={hasBalance}
                         portfolioAlgoValue={portfolioAlgoValue}
-                        portfolioFiatValue={portfolioFiatValue}
+                        portfolioPreferredValue={portfolioPreferredValue}
                         isPending={isPending}
                         period={period}
                         setPeriod={setPeriod}
                         selectedPoint={selectedPoint}
-                        preferredFiatCurrency={preferredFiatCurrency}
+                        preferredCurrency={preferredCurrency}
                         togglePrivacyMode={togglePrivacyMode}
                         handleChartSelectionChange={handleChartSelectionChange}
                         handleSwap={handleSwap}

@@ -24,6 +24,7 @@
     "@perawallet/wallet-core-shared": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "decimal.js": "catalog:",
+    "zod": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "zustand": "catalog:"

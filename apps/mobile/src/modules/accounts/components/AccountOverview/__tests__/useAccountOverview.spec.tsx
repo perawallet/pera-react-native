@@ -44,17 +44,21 @@ vi.mock('@hooks/useLanguage', () => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountBalancesQuery: vi.fn(() => ({
         portfolioAlgoValue: new Decimal('100'),
-        portfolioFiatValue: new Decimal('200'),
         isPending: false,
         accountBalances: new Map(),
         isFetched: true,
         isRefetching: false,
         isError: false,
     })),
+    usePortfolioTotals: vi.fn(() => ({
+        portfolioPreferredValue: new Decimal('200'),
+        accountPreferredValues: new Map(),
+        isPending: false,
+    })),
 }))
 
 vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: vi.fn(() => ({ preferredFiatCurrency: 'USD' })),
+    useCurrency: vi.fn(() => ({ preferredCurrency: 'USD' })),
 }))
 
 vi.mock('@perawallet/wallet-core-settings', () => ({
@@ -85,8 +89,8 @@ describe('useAccountOverview', () => {
         const { result } = renderHook(() => useAccountOverview(mockAccount))
 
         expect(result.current.portfolioAlgoValue.toString()).toBe('100')
-        expect(result.current.portfolioFiatValue.toString()).toBe('200')
-        expect(result.current.preferredFiatCurrency).toBe('USD')
+        expect(result.current.portfolioPreferredValue.toString()).toBe('200')
+        expect(result.current.preferredCurrency).toBe('USD')
     })
 
     it('determines hasBalance correctly when balance is greater than zero', () => {
@@ -101,7 +105,6 @@ describe('useAccountOverview', () => {
         )
         vi.mocked(useAccountBalancesQuery).mockReturnValue({
             portfolioAlgoValue: new Decimal('0'),
-            portfolioFiatValue: new Decimal('0'),
             isPending: false,
             accountBalances: new Map(),
             isFetched: true,
@@ -242,7 +245,7 @@ describe('useAccountOverview', () => {
         const mockPoint = {
             datetime: new Date(),
             algoValue: new Decimal('100'),
-            fiatValue: new Decimal('200'),
+            preferredValue: new Decimal('200'),
             round: 12345,
         }
 
@@ -258,7 +261,7 @@ describe('useAccountOverview', () => {
         const mockPoint = {
             datetime: new Date(),
             algoValue: new Decimal('100'),
-            fiatValue: new Decimal('200'),
+            preferredValue: new Decimal('200'),
             round: 12345,
         }
         const { useChartInteraction } = await import(

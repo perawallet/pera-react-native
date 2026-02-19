@@ -56,11 +56,12 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
             isPending: false,
             isError: false,
         })),
-        useAssetFiatPricesQuery: vi.fn(() => ({
-            data: new Map(),
-        })),
     }
 })
+
+vi.mock('@components/PreferredCurrencyDisplay', () => ({
+    PreferredCurrencyDisplay: () => <div>PreferredCurrencyDisplay</div>,
+}))
 
 vi.mock('@hooks/useChartInteraction', () => ({
     useChartInteraction: () => ({

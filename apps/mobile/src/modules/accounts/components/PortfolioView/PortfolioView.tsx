@@ -33,6 +33,7 @@ import {
     useAccountBalancesQuery,
     useAccountBalancesHistoryQuery,
     useAllAccounts,
+    usePortfolioTotals,
 } from '@perawallet/wallet-core-accounts'
 import Decimal from 'decimal.js'
 import { usePreferences } from '@perawallet/wallet-core-settings'
@@ -46,12 +47,13 @@ export type PortfolioViewProps = {
 
 export const PortfolioView = (props: PortfolioViewProps) => {
     const styles = useStyles()
-    const { preferredFiatCurrency } = useCurrency()
+    const { preferredCurrency } = useCurrency()
     const { t } = useLanguage()
 
     const accounts = useAllAccounts()
-    const { portfolioAlgoValue, portfolioFiatValue, isPending } =
+    const { portfolioAlgoValue, accountBalances, isPending } =
         useAccountBalancesQuery(accounts)
+    const { portfolioPreferredValue } = usePortfolioTotals(accountBalances)
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AccountBalanceHistoryItem>()
     const { getPreference, setPreference } = usePreferences()
@@ -69,7 +71,7 @@ export const PortfolioView = (props: PortfolioViewProps) => {
     )
 
     const historyDataPoints = useMemo(
-        () => historyData?.map(p => p.fiatValue) ?? [],
+        () => historyData?.map(p => p.preferredValue) ?? [],
         [historyData],
     )
 
@@ -132,10 +134,10 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                         style={styles.valueTitle}
                         value={
                             selectedPoint
-                                ? selectedPoint.fiatValue
-                                : portfolioFiatValue
+                                ? selectedPoint.preferredValue
+                                : portfolioPreferredValue
                         }
-                        currency={preferredFiatCurrency}
+                        currency={preferredCurrency}
                         prefix='≈ '
                         precision={2}
                         isLoading={isPending}
@@ -183,7 +185,7 @@ export const PortfolioView = (props: PortfolioViewProps) => {
                             {formatCurrency(
                                 trendAbsolute.abs(),
                                 2,
-                                preferredFiatCurrency,
+                                preferredCurrency,
                                 undefined,
                                 true,
                             )}

@@ -66,7 +66,7 @@ export const AssetWealthChart = ({
     const dataPoints = useMemo(() => {
         return (data?.map(p => {
             return {
-                value: p.fiatValue.toNumber(),
+                value: p.preferredValue.toNumber(),
                 timestamp: p.datetime,
             }
         }) ?? []) as DataPoint[]

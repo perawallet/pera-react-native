@@ -15,6 +15,7 @@ import Decimal from 'decimal.js'
 import {
     AccountBalanceHistoryItem,
     useAccountBalancesQuery,
+    usePortfolioTotals,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
@@ -28,13 +29,13 @@ import { useModalState } from '@hooks/useModalState'
 
 export type UseAccountOverviewResult = {
     portfolioAlgoValue: Decimal
-    portfolioFiatValue: Decimal
+    portfolioPreferredValue: Decimal
     isPending: boolean
     period: HistoryPeriod
     setPeriod: (period: HistoryPeriod) => void
     selectedPoint: AccountBalanceHistoryItem | null
     scrollingEnabled: boolean
-    preferredFiatCurrency: string
+    preferredCurrency: string
     hasBalance: boolean
     togglePrivacyMode: () => void
     handleChartSelectionChange: (
@@ -54,9 +55,10 @@ export type UseAccountOverviewResult = {
 export const useAccountOverview = (
     account: WalletAccount,
 ): UseAccountOverviewResult => {
-    const { preferredFiatCurrency } = useCurrency()
-    const { portfolioAlgoValue, portfolioFiatValue, isPending } =
+    const { preferredCurrency } = useCurrency()
+    const { portfolioAlgoValue, accountBalances, isPending } =
         useAccountBalancesQuery(account ? [account] : [])
+    const { portfolioPreferredValue } = usePortfolioTotals(accountBalances)
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AccountBalanceHistoryItem>()
     const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true)
@@ -116,13 +118,13 @@ export const useAccountOverview = (
 
     return {
         portfolioAlgoValue,
-        portfolioFiatValue,
+        portfolioPreferredValue,
         isPending,
         period,
         setPeriod,
         selectedPoint,
         scrollingEnabled,
-        preferredFiatCurrency,
+        preferredCurrency,
         hasBalance: portfolioAlgoValue.gt(0),
         togglePrivacyMode,
         handleChartSelectionChange,

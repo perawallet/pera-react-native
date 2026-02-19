@@ -16,13 +16,11 @@ export type AssetWithAccountBalance = {
     assetId: string
     amount: Decimal
     algoValue: Decimal
-    fiatValue: Decimal
 }
 
 export type AccountBalancesWithTotals = {
     accountBalances: AccountBalances
     portfolioAlgoValue: Decimal
-    portfolioFiatValue: Decimal
     isPending: boolean
     isFetched: boolean
     isRefetching: boolean
@@ -32,7 +30,6 @@ export type AccountBalancesWithTotals = {
 export type AccountBalance = {
     assetBalances: AssetWithAccountBalance[]
     algoValue: Decimal
-    fiatValue: Decimal
     isPending: boolean
     isFetched: boolean
     isRefetching: boolean
@@ -54,7 +51,7 @@ export type AccountAssetBalanceResponse = {
 
 export type AccountBalanceHistoryItem = {
     datetime: Date
-    fiatValue: Decimal
+    preferredValue: Decimal
     algoValue: Decimal
     round: number
 }
@@ -73,7 +70,7 @@ export type AccountBalanceHistoryResponse = {
 export type AccountAssetBalanceHistoryItem = {
     datetime: string
     algoValue: Decimal
-    fiatValue: Decimal
+    preferredValue: Decimal
     round: number
 }
 

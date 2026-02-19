@@ -11,7 +11,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { toggleAssetPriceAlert } from './endpoints'
+import { toggleAssetPriceAlert } from '../api'
 import { getAssetDetailsQueryKey } from './querykeys'
 import { type AssetResponse } from '../models'
 import { type Network } from '@perawallet/wallet-core-shared'
