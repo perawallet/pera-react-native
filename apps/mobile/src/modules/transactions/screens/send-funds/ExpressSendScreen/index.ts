@@ -10,13 +10,4 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-blockchain'
-
-export * from './models'
-export * from './hooks'
-export * from './errors'
-export * from './utils'
-export * from './schema'
-export * from './arc59'
-
-export { initBlockchainStore, registerBlockchainStore } from './store'
+export { ExpressSendScreen } from './ExpressSendScreen'

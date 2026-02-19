@@ -66,6 +66,12 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: vi.fn(),
+    useArc59Transaction: vi.fn(() => ({
+        sendViaInbox: vi.fn(),
+    })),
+    useExpressTransaction: vi.fn(() => ({
+        sendExpress: vi.fn(),
+    })),
 }))
 
 vi.mock('@hooks/useToast', () => ({
@@ -128,6 +134,8 @@ describe('useTransactionProcessingScreen', () => {
         amount: undefined,
         destination: undefined,
         note: undefined,
+        sendMode: 'normal' as const,
+        arc59Summary: undefined,
         onFinished: vi.fn(),
         canSelectAsset: true,
         setSelectedAsset: vi.fn(),
@@ -136,6 +144,8 @@ describe('useTransactionProcessingScreen', () => {
         setNote: vi.fn(),
         setDestination: vi.fn(),
         setOnFinished: vi.fn(),
+        setSendMode: vi.fn(),
+        setArc59Summary: vi.fn(),
         reset: vi.fn(),
     }
 

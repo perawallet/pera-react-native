@@ -10,13 +10,15 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-blockchain'
-
-export * from './models'
-export * from './hooks'
-export * from './errors'
-export * from './utils'
-export * from './schema'
-export * from './arc59'
-
-export { initBlockchainStore, registerBlockchainStore } from './store'
+export const ARC59_CONFIG = {
+    testnet: {
+        appId: 643020148n,
+        appAddress:
+            'YIIC6GF4DUJYZTYTZ5UEOAXONUUKZRDFOTV4EKSGD5E7BYE6EE3IVPYEDQ',
+    },
+    mainnet: {
+        appId: 2449590623n,
+        appAddress:
+            'EZRVNZFJGOUZC67FUMEC7ZMVP232TPICFTQCVZ6EQEIRRT3TIHSKZULRNI',
+    },
+} as const
