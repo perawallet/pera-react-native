@@ -37,6 +37,7 @@ const mockSession = vi.hoisted(() => ({
 }))
 
 const kmsMock = vi.hoisted(() => ({
+    getKey: vi.fn(),
     loadKey: vi.fn(),
     createHDWalletKey: vi.fn(),
     createAlgo25Key: vi.fn(),
@@ -101,6 +102,13 @@ describe('useCreateAccount', () => {
         useAccountsStore.setState({ accounts: [] })
         vi.clearAllMocks()
         uuidSpies.v7.mockReset()
+        kmsMock.getKey.mockReset()
+        kmsMock.loadKey.mockReset()
+        kmsMock.createHDWalletKey.mockReset()
+        kmsMock.createAlgo25Key.mockReset()
+        kmsMock.withHDSession.mockReset()
+
+        kmsMock.getKey.mockReturnValue(null)
         kmsMock.loadKey.mockReturnValue(null)
         kmsMock.createHDWalletKey.mockResolvedValue({
             id: 'WALLET1',
@@ -112,6 +120,11 @@ describe('useCreateAccount', () => {
             type: KeyType.Algo25Key,
             publicKey: 'ALGO25_PUBLIC_KEY',
         })
+        kmsMock.withHDSession.mockImplementation(
+            async (_key: any, _domain: any, handler: any) =>
+                handler(mockSession),
+        )
+        mockSession.getPublicKey.mockReset()
         mockSession.getPublicKey.mockResolvedValue(new Uint8Array(32).fill(2))
     })
 
@@ -145,7 +158,7 @@ describe('useCreateAccount', () => {
     })
 
     test('creates account with existing key', async () => {
-        kmsMock.loadKey.mockReturnValueOnce({
+        kmsMock.getKey.mockReturnValueOnce({
             id: 'EXISTING_WALLET',
             type: KeyType.HDWalletRootKey,
             publicKey: '',
@@ -169,7 +182,7 @@ describe('useCreateAccount', () => {
     })
 
     test('throws error when session getPublicKey fails', async () => {
-        kmsMock.loadKey.mockReturnValueOnce({
+        kmsMock.getKey.mockReturnValueOnce({
             id: 'WALLET1',
             type: KeyType.HDWalletRootKey,
             publicKey: '',
@@ -211,6 +224,7 @@ describe('useCreateAccount', () => {
     })
 
     test('throws for algo25 when createAlgo25Key fails', async () => {
+        kmsMock.loadKey.mockReturnValueOnce(null)
         kmsMock.createAlgo25Key.mockRejectedValueOnce(
             new Error('Algo25 creation failed'),
         )

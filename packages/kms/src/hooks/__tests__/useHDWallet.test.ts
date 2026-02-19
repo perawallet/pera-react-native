@@ -11,11 +11,8 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import {
-    generateHDMasterKey,
-    createHDWalletKey,
-    withHDSession,
-} from '../hd-wallet'
+import { renderHook, act } from '@testing-library/react'
+import { useHDWallet } from '../useHDWallet'
 import { KeyType, KeyPair, StoredKeyMaterial } from '../../models'
 import { InvalidKeyError } from '../../errors'
 
@@ -48,18 +45,24 @@ vi.mock('bip39', () => ({
     entropyToMnemonic: (...args: any[]) => mockEntropyToMnemonic(...args),
 }))
 
-vi.mock('../wordlist', () => ({
+vi.mock('../../crypto/wordlist', () => ({
     WORDLIST: ['abandon', 'ability', 'able'],
 }))
 
 const mockSaveKey = vi.fn()
 const mockExecuteWithKey = vi.fn()
+
+vi.mock('../useKMSServices', () => ({
+    useKMSService: () => ({
+        saveKey: (...args: any[]) => mockSaveKey(...args),
+        executeWithKey: (...args: any[]) => mockExecuteWithKey(...args),
+    }),
+}))
+
 const mockGetSeedFromMasterKey = vi.fn()
 const mockGetEntropyFromMasterKey = vi.fn()
 
 vi.mock('../../utils', () => ({
-    saveKey: (...args: any[]) => mockSaveKey(...args),
-    executeWithKey: (...args: any[]) => mockExecuteWithKey(...args),
     getSeedFromMasterKey: (...args: any[]) => mockGetSeedFromMasterKey(...args),
     getEntropyFromMasterKey: (...args: any[]) =>
         mockGetEntropyFromMasterKey(...args),
@@ -81,48 +84,9 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
-describe('crypto/hd-wallet', () => {
+describe('useHDWallet', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-    })
-
-    describe('generateHDMasterKey', () => {
-        test('generates a new mnemonic when none is provided', async () => {
-            const fakeMnemonic = 'word1 word2 word3'
-            const fakeSeed = Buffer.from('seed-data')
-            const fakeEntropy = 'abcdef1234567890'
-
-            mockGenerateMnemonic.mockReturnValue(fakeMnemonic)
-            mockMnemonicToSeed.mockResolvedValue(fakeSeed)
-            mockMnemonicToEntropy.mockReturnValue(fakeEntropy)
-
-            const result = await generateHDMasterKey()
-
-            expect(mockGenerateMnemonic).toHaveBeenCalledWith(256, undefined, [
-                'abandon',
-                'ability',
-                'able',
-            ])
-            expect(result.mnemonic).toBe(fakeMnemonic)
-            expect(result.seed).toBe(fakeSeed)
-            expect(result.entropy).toBe(fakeEntropy)
-        })
-
-        test('uses provided mnemonic instead of generating', async () => {
-            const mnemonic = 'provided mnemonic words'
-            const fakeSeed = Buffer.from('seed-data')
-            const fakeEntropy = 'abc123'
-
-            mockMnemonicToSeed.mockResolvedValue(fakeSeed)
-            mockMnemonicToEntropy.mockReturnValue(fakeEntropy)
-
-            const result = await generateHDMasterKey(mnemonic)
-
-            expect(mockGenerateMnemonic).not.toHaveBeenCalled()
-            expect(mockMnemonicToSeed).toHaveBeenCalledWith(mnemonic)
-            expect(mockMnemonicToEntropy).toHaveBeenCalledWith(mnemonic)
-            expect(result.mnemonic).toBe(mnemonic)
-        })
     })
 
     describe('createHDWalletKey', () => {
@@ -135,18 +99,30 @@ describe('crypto/hd-wallet', () => {
         })
 
         test('creates an HD wallet root key', async () => {
-            const result = await createHDWalletKey({
-                id: 'hd-1',
-                mnemonic: 'my mnemonic',
+            const { result } = renderHook(() => useHDWallet())
+
+            let keyResult: KeyPair | undefined
+            await act(async () => {
+                keyResult = await result.current.createHDWalletKey({
+                    id: 'hd-1',
+                    mnemonic: 'my mnemonic',
+                })
             })
 
-            expect(result.id).toBe('hd-1')
-            expect(result.publicKey).toBe('')
-            expect(result.type).toBe(KeyType.HDWalletRootKey)
+            expect(keyResult!.id).toBe('hd-1')
+            expect(keyResult!.publicKey).toBe('')
+            expect(keyResult!.type).toBe(KeyType.HDWalletRootKey)
         })
 
         test('saves key with seed and entropy', async () => {
-            await createHDWalletKey({ id: 'hd-1', mnemonic: 'my mnemonic' })
+            const { result } = renderHook(() => useHDWallet())
+
+            await act(async () => {
+                await result.current.createHDWalletKey({
+                    id: 'hd-1',
+                    mnemonic: 'my mnemonic',
+                })
+            })
 
             expect(mockSaveKey).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -162,18 +138,56 @@ describe('crypto/hd-wallet', () => {
         })
 
         test('generates uuid when id is not provided', async () => {
-            const result = await createHDWalletKey()
+            const { result } = renderHook(() => useHDWallet())
 
-            expect(result.id).toBe('mock-uuid-v7')
+            let keyResult: KeyPair | undefined
+            await act(async () => {
+                keyResult = await result.current.createHDWalletKey()
+            })
+
+            expect(keyResult!.id).toBe('mock-uuid-v7')
         })
 
         test('zeros out the master seed after saving', async () => {
             const fakeSeed = Buffer.from('seed-data-to-clear')
             mockMnemonicToSeed.mockResolvedValue(fakeSeed)
 
-            await createHDWalletKey({ mnemonic: 'test' })
+            const { result } = renderHook(() => useHDWallet())
+
+            await act(async () => {
+                await result.current.createHDWalletKey({ mnemonic: 'test' })
+            })
 
             expect(fakeSeed.every(byte => byte === 0)).toBe(true)
+        })
+
+        test('uses provided mnemonic instead of generating', async () => {
+            const { result } = renderHook(() => useHDWallet())
+
+            await act(async () => {
+                await result.current.createHDWalletKey({
+                    mnemonic: 'provided mnemonic words',
+                })
+            })
+
+            expect(mockGenerateMnemonic).not.toHaveBeenCalled()
+            expect(mockMnemonicToSeed).toHaveBeenCalledWith(
+                'provided mnemonic words',
+            )
+        })
+
+        test('generates a new mnemonic when none is provided', async () => {
+            const { result } = renderHook(() => useHDWallet())
+
+            await act(async () => {
+                await result.current.createHDWalletKey()
+            })
+
+            expect(mockGenerateMnemonic).toHaveBeenCalledWith(256, undefined, [
+                'abandon',
+                'ability',
+                'able',
+            ])
         })
     })
 
@@ -210,18 +224,23 @@ describe('crypto/hd-wallet', () => {
             const mockSig = new Uint8Array(64).fill(1)
             mockSignAlgoTransaction.mockResolvedValue(mockSig)
 
-            const result = await withHDSession(
-                mockKey,
-                'test-domain',
-                async session => {
-                    return session.signTransaction(
-                        derivationParams,
-                        new Uint8Array([1, 2, 3]),
-                    )
-                },
-            )
+            const { result } = renderHook(() => useHDWallet())
 
-            expect(result).toBe(mockSig)
+            let signResult: Uint8Array | undefined
+            await act(async () => {
+                signResult = await result.current.withHDSession(
+                    mockKey,
+                    'test-domain',
+                    async session => {
+                        return session.signTransaction(
+                            derivationParams,
+                            new Uint8Array([1, 2, 3]),
+                        )
+                    },
+                )
+            })
+
+            expect(signResult).toBe(mockSig)
             expect(mockSignAlgoTransaction).toHaveBeenCalledWith(
                 'mock-root-key',
                 0, // KeyContext.Address
@@ -236,18 +255,23 @@ describe('crypto/hd-wallet', () => {
             const mockSig = new Uint8Array(64).fill(2)
             mockSignData.mockResolvedValue(mockSig)
 
-            const result = await withHDSession(
-                mockKey,
-                'test-domain',
-                async session => {
-                    return session.signData(
-                        derivationParams,
-                        new Uint8Array([4, 5, 6]),
-                    )
-                },
-            )
+            const { result } = renderHook(() => useHDWallet())
 
-            expect(result).toBe(mockSig)
+            let signResult: Uint8Array | undefined
+            await act(async () => {
+                signResult = await result.current.withHDSession(
+                    mockKey,
+                    'test-domain',
+                    async session => {
+                        return session.signData(
+                            derivationParams,
+                            new Uint8Array([4, 5, 6]),
+                        )
+                    },
+                )
+            })
+
+            expect(signResult).toBe(mockSig)
             expect(mockSignData).toHaveBeenCalledWith(
                 'mock-root-key',
                 0, // KeyContext.Address
@@ -263,15 +287,20 @@ describe('crypto/hd-wallet', () => {
             const mockPubKey = new Uint8Array(32).fill(3)
             mockKeyGen.mockResolvedValue(mockPubKey)
 
-            const result = await withHDSession(
-                mockKey,
-                'test-domain',
-                async session => {
-                    return session.getPublicKey(derivationParams)
-                },
-            )
+            const { result } = renderHook(() => useHDWallet())
 
-            expect(result).toBe(mockPubKey)
+            let pubKeyResult: Uint8Array | undefined
+            await act(async () => {
+                pubKeyResult = await result.current.withHDSession(
+                    mockKey,
+                    'test-domain',
+                    async session => {
+                        return session.getPublicKey(derivationParams)
+                    },
+                )
+            })
+
+            expect(pubKeyResult).toBe(mockPubKey)
             expect(mockKeyGen).toHaveBeenCalledWith(
                 'mock-root-key',
                 0, // KeyContext.Address
@@ -286,30 +315,51 @@ describe('crypto/hd-wallet', () => {
             mockGetEntropyFromMasterKey.mockReturnValue(new Uint8Array(entropy))
             mockEntropyToMnemonic.mockReturnValue('recovered mnemonic words')
 
-            const result = await withHDSession(
-                mockKey,
-                'test-domain',
-                async session => {
-                    return session.getMnemonic()
-                },
-            )
+            const { result } = renderHook(() => useHDWallet())
 
-            expect(result).toBe('recovered mnemonic words')
+            let mnemonicResult: string | undefined
+            await act(async () => {
+                mnemonicResult = await result.current.withHDSession(
+                    mockKey,
+                    'test-domain',
+                    async session => {
+                        return session.getMnemonic()
+                    },
+                )
+            })
+
+            expect(mnemonicResult).toBe('recovered mnemonic words')
             expect(mockEntropyToMnemonic).toHaveBeenCalled()
         })
 
         test('session getMnemonic throws InvalidKeyError when no entropy', async () => {
             mockGetEntropyFromMasterKey.mockReturnValue(null)
 
+            const { result } = renderHook(() => useHDWallet())
+
             await expect(
-                withHDSession(mockKey, 'test-domain', async session => {
-                    return session.getMnemonic()
+                act(async () => {
+                    await result.current.withHDSession(
+                        mockKey,
+                        'test-domain',
+                        async session => {
+                            return session.getMnemonic()
+                        },
+                    )
                 }),
             ).rejects.toThrow(InvalidKeyError)
         })
 
         test('passes the correct key and domain to executeWithKey', async () => {
-            await withHDSession(mockKey, 'my-domain', async () => 'ok')
+            const { result } = renderHook(() => useHDWallet())
+
+            await act(async () => {
+                await result.current.withHDSession(
+                    mockKey,
+                    'my-domain',
+                    async () => 'ok',
+                )
+            })
 
             expect(mockExecuteWithKey).toHaveBeenCalledWith(
                 mockKey,

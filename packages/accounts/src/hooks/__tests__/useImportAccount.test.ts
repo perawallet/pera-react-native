@@ -37,6 +37,7 @@ const mockSession = vi.hoisted(() => ({
 }))
 
 const kmsMock = vi.hoisted(() => ({
+    getKey: vi.fn(),
     loadKey: vi.fn(),
     createHDWalletKey: vi.fn(),
     createAlgo25Key: vi.fn(),
@@ -101,6 +102,13 @@ describe('useImportAccount', () => {
         useAccountsStore.setState({ accounts: [] })
         vi.clearAllMocks()
         uuidSpies.v7.mockReset()
+        kmsMock.getKey.mockReset()
+        kmsMock.loadKey.mockReset()
+        kmsMock.createHDWalletKey.mockReset()
+        kmsMock.createAlgo25Key.mockReset()
+        kmsMock.withHDSession.mockReset()
+
+        kmsMock.getKey.mockReturnValue(null)
         kmsMock.loadKey.mockReturnValue(null)
         kmsMock.createHDWalletKey.mockResolvedValue({
             id: 'WALLET1',
@@ -112,12 +120,17 @@ describe('useImportAccount', () => {
             type: KeyType.Algo25Key,
             publicKey: 'ALGO25_PUBLIC_KEY',
         })
+        kmsMock.withHDSession.mockImplementation(
+            async (_key: any, _domain: any, handler: any) =>
+                handler(mockSession),
+        )
+        mockSession.getPublicKey.mockReset()
         mockSession.getPublicKey.mockResolvedValue(new Uint8Array(32).fill(2))
     })
 
     test('imports HD wallet account with mnemonic', async () => {
-        // After createHDWalletKey, loadKey should return the created key
-        kmsMock.loadKey.mockReturnValueOnce({
+        // After createHDWalletKey, getKey should return the created key
+        kmsMock.getKey.mockReturnValueOnce({
             id: 'WALLET1',
             type: KeyType.HDWalletRootKey,
             publicKey: '',
@@ -167,7 +180,7 @@ describe('useImportAccount', () => {
     })
 
     test('throws when address derivation fails', async () => {
-        kmsMock.loadKey.mockReturnValueOnce({
+        kmsMock.getKey.mockReturnValueOnce({
             id: 'WALLET1',
             type: KeyType.HDWalletRootKey,
             publicKey: '',

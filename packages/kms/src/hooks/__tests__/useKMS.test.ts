@@ -33,29 +33,30 @@ vi.mock('../../store', () => ({
 }))
 
 const mockDeleteKey = vi.fn()
-vi.mock('../../utils', () => ({
-    deleteKey: (...args: any[]) => mockDeleteKey(...args),
-    getSeedFromMasterKey: vi.fn(() => new Uint8Array(32).fill(7)),
-    getEntropyFromMasterKey: vi.fn(() => null),
-    saveKey: vi.fn(async (key: any) => key),
-    executeWithKey: vi.fn(),
+vi.mock('../useKMSServices', () => ({
+    useKMSService: () => ({
+        deleteKey: (...args: any[]) => mockDeleteKey(...args),
+    }),
 }))
 
 const mockCreateHDWalletKey = vi.fn()
 const mockWithHDSession = vi.fn()
 
-vi.mock('../../crypto/hd-wallet', () => ({
-    createHDWalletKey: (...args: any[]) => mockCreateHDWalletKey(...args),
-    withHDSession: (...args: any[]) => mockWithHDSession(...args),
-    generateHDMasterKey: vi.fn(),
+vi.mock('../useHDWallet', () => ({
+    useHDWallet: () => ({
+        createHDWalletKey: (...args: any[]) => mockCreateHDWalletKey(...args),
+        withHDSession: (...args: any[]) => mockWithHDSession(...args),
+    }),
 }))
 
 const mockCreateAlgo25Key = vi.fn()
 const mockWithAlgo25Session = vi.fn()
 
-vi.mock('../../crypto/algo25', () => ({
-    createAlgo25Key: (...args: any[]) => mockCreateAlgo25Key(...args),
-    withAlgo25Session: (...args: any[]) => mockWithAlgo25Session(...args),
+vi.mock('../useAlgo25', () => ({
+    useAlgo25: () => ({
+        createAlgo25Key: (...args: any[]) => mockCreateAlgo25Key(...args),
+        withAlgo25Session: (...args: any[]) => mockWithAlgo25Session(...args),
+    }),
 }))
 
 describe('useKMS', () => {
@@ -64,7 +65,7 @@ describe('useKMS', () => {
         mockKeys.clear()
     })
 
-    it('should delete a key via deleteKey from utils', async () => {
+    it('should delete a key via deleteKey from useKMSService', async () => {
         const { result } = renderHook(() => useKMS())
 
         await act(async () => {
@@ -74,7 +75,7 @@ describe('useKMS', () => {
         expect(mockDeleteKey).toHaveBeenCalledWith('test-id')
     })
 
-    it('should expose createHDWalletKey from crypto/hd-wallet', async () => {
+    it('should expose createHDWalletKey from useHDWallet', async () => {
         const mockKey: KeyPair = {
             id: 'wallet-1',
             publicKey: '',
@@ -95,7 +96,7 @@ describe('useKMS', () => {
         expect(keyResult).toEqual(mockKey)
     })
 
-    it('should expose createAlgo25Key from crypto/algo25', async () => {
+    it('should expose createAlgo25Key from useAlgo25', async () => {
         const mockKey: KeyPair = {
             id: 'algo25-1',
             publicKey: 'ALGO25_ADDR',
@@ -271,13 +272,24 @@ describe('useKMS', () => {
         expect(signed).toHaveLength(2)
     })
 
-    it('should not expose saveKey, executeWithKey, or executeWithSeed', () => {
+    it('should not expose saveKey or executeWithKey', () => {
         const { result } = renderHook(() => useKMS())
 
         expect(result.current).not.toHaveProperty('saveKey')
         expect(result.current).not.toHaveProperty('executeWithKey')
-        expect(result.current).not.toHaveProperty('executeWithSeed')
-        expect(result.current).not.toHaveProperty('getKey')
+    })
+
+    it('should expose getKey from the store', () => {
+        const key: KeyPair = {
+            id: 'test-key',
+            publicKey: 'pub',
+            type: KeyType.Algo25Key,
+        }
+        mockGetKey.mockReturnValue(key)
+
+        const { result } = renderHook(() => useKMS())
+
+        expect(result.current.getKey('test-key')).toEqual(key)
     })
 
     it('should signDataWithKey using HD session for HD keys', async () => {
