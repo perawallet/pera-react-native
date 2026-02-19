@@ -35,13 +35,13 @@ const useStyles = makeStyles(theme => {
             backgroundColor: theme.colors.success,
         },
         successStyleText: {
-            color: theme.colors.white,
+            color: theme.colors.alertContent,
         },
         errorStyle: {
-            backgroundColor: theme.colors.error,
+            backgroundColor: theme.colors.alertNegative,
         },
         errorStyleText: {
-            color: theme.colors.white,
+            color: theme.colors.alertContent,
         },
         infoStyle: {
             backgroundColor: theme.colors.background,

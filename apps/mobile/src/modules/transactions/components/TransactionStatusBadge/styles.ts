@@ -20,12 +20,12 @@ export const useStyles = makeStyles(
                 color: theme.colors.textGray,
             },
             completed: {
-                backgroundColor: theme.colors.asaTrustedBg,
-                color: theme.colors.asaTrustedText,
+                backgroundColor: theme.colors.trustedBannerBg,
+                color: theme.colors.trustedBannerContent,
             },
             failed: {
-                backgroundColor: theme.colors.asaSuspiciousBg,
-                color: theme.colors.asaSuspiciousText,
+                backgroundColor: theme.colors.suspiciousBannerBg,
+                color: theme.colors.suspiciousBannerContent,
             },
         }
 

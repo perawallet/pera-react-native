@@ -26,10 +26,10 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
         },
         helper: {
             backgroundColor: theme.colors.buttonSquareBg,
-            color: theme.colors.buttonSquareText,
+            color: theme.colors.buttonSquareIcon,
         },
         destructive: {
-            backgroundColor: theme.colors.error,
+            backgroundColor: theme.colors.alertNegative,
             color: theme.colors.textWhite,
         },
         link: {
@@ -38,7 +38,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
         },
         errorLink: {
             backgroundColor: theme.colors.background,
-            color: theme.colors.error,
+            color: theme.colors.alertNegative,
         },
     }
 

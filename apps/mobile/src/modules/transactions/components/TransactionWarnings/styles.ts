@@ -57,7 +57,7 @@ export const useStyles = makeStyles(theme => {
             marginHorizontal: theme.spacing.lg,
             padding: theme.spacing.md,
             borderRadius: theme.spacing.md,
-            backgroundColor: theme.colors.asaSuspiciousBg,
+            backgroundColor: theme.colors.suspiciousBannerBg,
         },
         warningTitleContainer: {
             flexDirection: 'row',
@@ -77,7 +77,7 @@ export const useStyles = makeStyles(theme => {
             width: '100%',
         },
         warningTitle: {
-            color: theme.colors.asaSuspiciousText,
+            color: theme.colors.suspiciousBannerContent,
             backgroundColor: 'transparent',
         },
     }

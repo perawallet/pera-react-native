@@ -24,20 +24,20 @@ export const useStyles = makeStyles(theme => {
         radioContainer: {
             borderWidth: theme.borders.sm,
             borderRadius: theme.spacing.xl,
-            borderColor: theme.colors.layerGrayLight,
+            borderColor: theme.colors.layerGray,
             width: theme.spacing.xl,
             height: theme.spacing.xl,
             justifyContent: 'center',
             alignItems: 'center',
         },
         selectedBorder: {
-            borderColor: theme.colors.helperPositive,
+            borderColor: theme.colors.positive,
         },
         selectedRadio: {
             borderRadius: theme.spacing.lg,
             width: theme.spacing.md,
             height: theme.spacing.md,
-            backgroundColor: theme.colors.helperPositive,
+            backgroundColor: theme.colors.positive,
         },
         input: {
             paddingHorizontal: theme.spacing.md,

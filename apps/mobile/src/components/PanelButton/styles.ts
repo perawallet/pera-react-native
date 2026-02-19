@@ -17,8 +17,8 @@ export const useStyles = makeStyles((theme, props: PanelButtonProps) => {
     let backgroundColor = theme.colors.layerGrayLighter
     let color = theme.colors.textMain
     if (props.variant === 'error') {
-        backgroundColor = theme.colors.asaSuspiciousBg
-        color = theme.colors.error
+        backgroundColor = theme.colors.suspiciousBannerBg
+        color = theme.colors.alertNegative
     }
     return {
         buttonStyle: {

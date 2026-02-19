@@ -20,7 +20,7 @@ export const useStyles = makeStyles(theme => ({
         width: theme.spacing.lg,
         height: theme.spacing.lg,
         borderRadius: theme.spacing.lg,
-        backgroundColor: theme.colors.error,
+        backgroundColor: theme.colors.alertNegative,
         alignItems: 'center',
         justifyContent: 'center',
     },

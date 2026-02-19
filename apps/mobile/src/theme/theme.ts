@@ -40,149 +40,368 @@ export const getNavigationTheme = (mode: 'light' | 'dark' = 'light') => ({
 export const getTheme = (mode: 'light' | 'dark' = 'light') =>
     createTheme({
         lightColors: {
-            // Primary/secondary brand
-            primary: '#27272A', // ButtonPrimary/bg (light)
-            secondary: '#6B46FE', // ButtonSecondary/newText (light) - used as accent
-            // Surfaces
-            background: '#FFFFFF', // Defaults/bg (light)
-            // Neutrals
-            black: '#18181B', // Text/main (light)
+            // @rneui built-ins (kept for internal use)
+            primary: '#27272A',
+            secondary: '#6B46FE',
+            background: '#FFFFFF',
+            black: '#18181B',
             white: '#FFFFFF',
-            grey0: '#FAFAFA', // Layer/grayLightest (light)
-            grey1: '#F1F1F2', // Layer/grayLighter (light)
-            grey2: '#E4E4E7', // Layer/grayLight (light)
-            grey3: '#D4D4D8', // Layer/gray (light)
-            grey4: '#A1A1AA', // Separator/grayLighter (light)
-            grey5: '#71717A', // ButtonPrimary/newDisabledText
+            grey0: '#FAFAFA',
+            grey1: '#F1F1F2',
+            grey2: '#E4E4E7',
+            grey3: '#D4D4D8',
+            grey4: '#A1A1AA',
+            grey5: '#71717A',
+            success: '#2CB7BC',
+            warning: '#FFEE55',
+            error: '#DB4645',
+            divider: 'rgba(0,0,0,0.05)',
 
-            //Layer colors
-            layerGray: '#D4D4D8',
-            layerGrayLight: '#D4D4D8',
-            layerGrayLighter: '#F1F1F2',
-            layerGrayLightest: '#FAFAFA',
+            // Defaults
+            systemElements: '#000000',
 
-            //Text colors
+            // Text
             textGray: '#71717A',
             textGrayLighter: '#A1A1AA',
             textMain: '#18181B',
-            textSonicSilver: '#71717A',
             textWhite: '#FFFFFF',
 
-            //Button
+            // Layer
+            layerGray: '#E4E4E7',
+            layerGrayLighter: '#F1F1F2',
+            layerGrayLightest: '#FAFAFA',
+
+            // Link
+            linkPrimary: '#1F8E9D',
+            linkIcon: '#2CB7BC',
+
+            // Button Primary
             buttonPrimaryBg: '#27272A',
             buttonPrimaryText: '#FFFFFF',
+            buttonPrimaryFocusBg: '#18181B',
+            buttonPrimaryDisabledBg: '#F1F1F2',
+            buttonPrimaryDisabledText: '#71717A',
 
+            // Button Secondary
+            buttonSecondaryBg: '#F1F1F2',
+            buttonSecondaryFocusBg: '#E4E4E7',
+            buttonSecondaryDisabledBg: '#F1F1F2',
+            buttonSecondaryText: '#18181B',
+            buttonSecondaryDisabledText: '#71717A',
+
+            // Button Ghost
+            buttonGhostBg: '#FFFFFF',
+            buttonGhostFocusBg: '#F1F1F2',
+            buttonGhostDisabledBg: '#FFFFFF',
+            buttonGhostText: '#18181B',
+            buttonGhostDisabledText: '#71717A',
+
+            // Button Float
+            buttonFloatBg: '#FFFFFF',
+            buttonFloatFocusBg: '#F1F1F2',
+            buttonFloatIconMain: '#18181B',
+            buttonFloatIconLighter: '#FFFFFF',
+
+            // Button Helper
             buttonHelperBg: '#27272A',
-            buttonHelperText: '#FFFFFF',
+            buttonHelperFocusBg: '#3F3F46',
+            buttonHelperDisabledBg: '#F1F1F2',
+            buttonHelperIcon: '#FFFFFF',
+            buttonHelperDisabledIcon: '#71717A',
+            buttonHelperPeraIcon: '#FFEE55',
 
+            // Button Square
             buttonSquareBg: 'rgba(44, 183, 188, 0.12)',
-            buttonSquareText: '#1F8E9D',
+            buttonSquareFocusBg: 'rgba(44, 183, 188, 0.28)',
+            buttonSquareSecondaryBg: '#F1F1F2',
+            buttonSquareIcon: '#1F8E9D',
+            buttonSquareSecondaryIcon: '#71717A',
 
-            //Helpers
-            helperPositive: '#1F8E9D',
-            helperNegative: '#DB4645',
-            helperGray200: 'rgba(143, 143, 148, 0.2)',
+            // Helpers
+            positive: '#1F8E9D',
+            positiveLighter: '#D8FDEE',
+            negative: '#DB4645',
+            negativeLighter: '#FFECDF',
+            successCheckmark: '#FFFFFF',
+            heroBg: '#FAFAFA',
 
-            asaTrustedText: '#1F8E9D',
-            asaTrustedBg: 'rgba(44, 183, 188, 0.16)',
-            asaVerifiedText: '#0D7FFF',
-            asaVerifiedBg: 'rgba(13, 127, 255, 0.16)',
-            asaSuspiciousText: '#DB4645',
-            asaSuspiciousBg: 'rgba(255, 109, 95, 0.16)',
+            // Banner
+            bannerBg: '#2CB7BC',
+            bannerButton: 'rgba(255, 255, 255, 0.12)',
+            bannerIconBg: 'rgba(31, 142, 157, 0.2)',
+            bannerText: '#FFFFFF',
 
-            backdrop: 'rgba(0, 0, 0, 0.4)',
+            // Alert
+            alertNegative: '#DB4645',
+            alertContent: '#FFFFFF',
+            alertPositive: '#2CB7BC',
 
-            //Backgrounds
-            altBackground: '#27272A',
+            // Wallet
+            wallet1: '#F5B2C6',
+            wallet1Icon: '#9B1F69',
+            wallet2: '#FF6E5C',
+            wallet2Icon: '#FFEAC2',
+            wallet3: '#8755D5',
+            wallet3Icon: '#FFAEE3',
+            wallet3IconGovernor: '#8755D5',
+            wallet4: '#8BF4DB',
+            wallet4Icon: '#136880',
+            wallet4IconGovernor: '#1F8E9D',
+            wallet5: '#FF9B86',
+            wallet5Icon: '#424F76',
 
-            //Links
-            linkPrimary: '#1F8E9D',
+            // ASA Icons
+            trustedIconBg: '#2CB7BC',
+            trustedIconInline: '#FFFFFF',
+            verifiedIconBg: '#CEEEFE',
+            verifiedIconInline: '#0D7FFF',
+            verifiedIconSolidBg: '#0D7FFF',
+            verifiedIconSolidInline: '#FFFFFF',
+            suspiciousIconBg: '#FF6D5F',
+            suspiciousIconInline: '#FFFFFF',
+
+            // ASA Banners
+            trustedBannerContent: '#1F8E9D',
+            trustedBannerBg: 'rgba(44, 183, 188, 0.16)',
+            verifiedBannerContent: '#0D7FFF',
+            verifiedBannerBg: 'rgba(13, 127, 255, 0.16)',
+            suspiciousBannerContent: '#DB4645',
+            suspiciousBannerBg: 'rgba(255, 109, 95, 0.16)',
+
+            // Toast
+            toastBg: 'rgba(24, 24, 27, 0.9)',
+            toastTitle: '#FFFFFF',
+            toastDescription: 'rgba(255, 255, 255, 0.6)',
+
+            // Testnet
+            testnetBg: '#EDB21C',
+            testnetText: '#18181B',
+
+            // Algo Icon
+            algoIconBg: '#000000',
+            algoIcon: '#FFFFFF',
+
+            // QR Scanner
+            qrScannerBg: 'rgba(0, 0, 0, 0.7)',
+
+            // Backdrop
+            backdropModalBg: 'rgba(0, 0, 0, 0.64)',
+
+            // Keyboard
+            keyboardAccessoryBg: '#D1D5DB',
+            keyboardAccessoryLine: '#C7C8CC',
 
             // Tab Bar
-            tabIconActive: '#18181B',
-            tabIconPassive: '#A1A1AA',
+            tabBarButton: '#27272A',
+            tabBarBg: 'rgba(255, 255, 255, 0.84)',
+            tabBarIconActive: '#18181B',
+            tabBarIconNonActive: '#A1A1AA',
+            tabBarIconDisabled: 'rgba(161, 161, 170, 0.5)',
 
-            testnetBackground: '#EDB21C',
+            // Bottom Sheet
+            bottomSheetLine: '#E6E7E9',
 
-            // States
-            success: '#2CB7BC', // Alert/positive
-            warning: '#FFEE55', // Link/primary (dark variant) used as generic warning
-            error: '#DB4645', // Alert/negative (light)
+            // Modality
+            modalityBg: '#18181B',
+
+            // Switches
+            switchBg: '#2CB7BC',
+            switchOffBg: '#A1A1AA',
+
+            // NFT Icon
+            nftIconBg: 'rgba(24, 24, 27, 0.6)',
+            nftIcon: '#FFFFFF',
+
+            // Dapp
+            dappMoonpay: '#7D01FF',
+            dappSardine: '#2925CB',
+            dappTransak: '#2A6BE6',
+            dappBidali: '#6241E2',
+
+            // Legacy (no Figma equivalent)
             favorite: '#EDB21C',
-            // Misc
-            divider: 'rgba(0,0,0,0.05)', // Border/default (light)
         },
         darkColors: {
-            // Primary/secondary brand (dark variants)
-            primary: '#FFEE55', // ButtonPrimary/newBg (dark)
-            secondary: '#AC8EFF', // ButtonSecondary/newText (dark)
-            // Surfaces
-            background: '#18181B', // Defaults/bg (dark)
-            // Neutrals
+            // @rneui built-ins (kept for internal use)
+            primary: '#FFEE55',
+            secondary: '#AC8EFF',
+            background: '#18181B',
             black: '#FFFFFF',
-            white: '#F1F1F2', // Text/main (dark)
-            grey0: '#27272A', // Layer/grayLightest (dark)
-            grey1: '#27272A', // Layer/grayLighter (dark)
-            grey2: '#3F3F46', // Layer/grayLight (dark)
-            grey3: '#3F3F46', // Layer/gray (dark)
-            grey4: '#71717A', // Separator/grayLighter (dark)
-            grey5: '#71717A', // ButtonPrimary/newDisabledText
+            white: '#F1F1F2',
+            grey0: '#27272A',
+            grey1: '#27272A',
+            grey2: '#3F3F46',
+            grey3: '#3F3F46',
+            grey4: '#71717A',
+            grey5: '#71717A',
+            success: '#FFEE55',
+            warning: '#b66129',
+            error: '#FF6D5F',
+            divider: 'rgba(255, 255, 255, 0.05)',
 
-            //Layer colors
-            layerGray: '#3F3F46',
-            layerGrayLight: '#3F3F46',
-            layerGrayLighter: '#27272A',
-            layerGrayLightest: '#27272A',
+            // Defaults
+            systemElements: '#FFFFFF',
 
-            //Text colors
+            // Text
             textGray: '#A1A1AA',
             textGrayLighter: '#71717A',
             textMain: '#F1F1F2',
-            textSonicSilver: '#A1A1AA',
             textWhite: '#FFFFFF',
 
-            //Button
+            // Layer
+            layerGray: '#3F3F46',
+            layerGrayLighter: '#27272A',
+            layerGrayLightest: '#27272A',
+
+            // Link
+            linkPrimary: '#FFEE55',
+            linkIcon: '#F1F1F2',
+
+            // Button Primary
             buttonPrimaryBg: '#FFEE55',
             buttonPrimaryText: '#18181B',
+            buttonPrimaryFocusBg: '#EDB21C',
+            buttonPrimaryDisabledBg: '#27272A',
+            buttonPrimaryDisabledText: '#71717A',
 
+            // Button Secondary
+            buttonSecondaryBg: '#27272A',
+            buttonSecondaryFocusBg: '#18181B',
+            buttonSecondaryDisabledBg: '#27272A',
+            buttonSecondaryText: '#F1F1F2',
+            buttonSecondaryDisabledText: '#71717A',
+
+            // Button Ghost
+            buttonGhostBg: '#18181B',
+            buttonGhostFocusBg: '#27272A',
+            buttonGhostDisabledBg: '#18181B',
+            buttonGhostText: '#F1F1F2',
+            buttonGhostDisabledText: '#71717A',
+
+            // Button Float
+            buttonFloatBg: '#FFFFFF',
+            buttonFloatFocusBg: '#F1F1F2',
+            buttonFloatIconMain: '#18181B',
+            buttonFloatIconLighter: '#17171A',
+
+            // Button Helper
             buttonHelperBg: 'rgba(255, 238, 85, 0.1)',
-            buttonHelperText: '#FFEE55',
+            buttonHelperFocusBg: 'rgba(255, 238, 85, 0.2)',
+            buttonHelperDisabledBg: 'rgba(255, 238, 85, 0.05)',
+            buttonHelperIcon: '#FFEE55',
+            buttonHelperDisabledIcon: 'rgba(255, 238, 85, 0.5)',
+            buttonHelperPeraIcon: '#FFEE55',
 
+            // Button Square
             buttonSquareBg: 'rgba(44, 183, 188, 0.12)',
-            buttonSquareText: '#2CB7BC',
+            buttonSquareFocusBg: 'rgba(44, 183, 188, 0.28)',
+            buttonSquareSecondaryBg: '#27272A',
+            buttonSquareIcon: '#2CB7BC',
+            buttonSquareSecondaryIcon: '#71717A',
 
-            //Helpers
-            helperPositive: '#2CB7BC',
-            helperNegative: '#DB4645',
-            helperGray200: 'rgba(143, 143, 148, 0.2)',
+            // Helpers
+            positive: '#2CB7BC',
+            positiveLighter: 'rgba(44, 183, 188, 0.12)',
+            negative: '#FF6D5F',
+            negativeLighter: 'rgba(255, 109, 95, 0.12)',
+            successCheckmark: '#18181B',
+            heroBg: '#1D1D21',
 
-            asaTrustedText: '#2CB7BC',
-            asaTrustedBg: 'rgba(44, 183, 188, 0.16)',
-            asaVerifiedText: '#48A7FE',
-            asaVerifiedBg: 'rgba(13, 127, 255, 0.16)',
-            asaSuspiciousText: '#FF6D5F',
-            asaSuspiciousBg: 'rgba(255, 109, 95, 0.16)',
+            // Banner
+            bannerBg: '#27272A',
+            bannerButton: 'rgba(24, 24, 27, 0.12)',
+            bannerIconBg: 'rgba(24, 24, 27, 0.2)',
+            bannerText: '#FFFFFF',
 
-            backdrop: 'rgba(0, 0, 0, 0.4)',
+            // Alert
+            alertNegative: '#FF6D5F',
+            alertContent: '#18181B',
+            alertPositive: '#2CB7BC',
 
-            //Backgrounds
-            altBackground: '#F1F1F2',
+            // Wallet
+            wallet1: '#F5B2C6',
+            wallet1Icon: '#9B1F69',
+            wallet2: '#FF6E5C',
+            wallet2Icon: '#FFEAC2',
+            wallet3: '#8755D5',
+            wallet3Icon: '#FFAEE3',
+            wallet3IconGovernor: '#8755D5',
+            wallet4: '#8BF4DB',
+            wallet4Icon: '#136880',
+            wallet4IconGovernor: '#2CB7BC',
+            wallet5: '#FF9B86',
+            wallet5Icon: '#424F76',
 
-            //Links
-            linkPrimary: '#1F8E9D',
+            // ASA Icons
+            trustedIconBg: '#2CB7BC',
+            trustedIconInline: '#18181B',
+            verifiedIconBg: '#48A7FE',
+            verifiedIconInline: '#18181B',
+            verifiedIconSolidBg: '#48A7FE',
+            verifiedIconSolidInline: '#18181B',
+            suspiciousIconBg: '#FF6D5F',
+            suspiciousIconInline: '#18181B',
+
+            // ASA Banners
+            trustedBannerContent: '#2CB7BC',
+            trustedBannerBg: 'rgba(44, 183, 188, 0.16)',
+            verifiedBannerContent: '#48A7FE',
+            verifiedBannerBg: 'rgba(13, 127, 255, 0.16)',
+            suspiciousBannerContent: '#FF6D5F',
+            suspiciousBannerBg: 'rgba(255, 109, 95, 0.16)',
+
+            // Toast
+            toastBg: 'rgba(82, 82, 91, 0.92)',
+            toastTitle: '#FFFFFF',
+            toastDescription: 'rgba(255, 255, 255, 0.6)',
+
+            // Testnet
+            testnetBg: '#EDB21C',
+            testnetText: '#18181B',
+
+            // Algo Icon
+            algoIconBg: '#000000',
+            algoIcon: '#FFFFFF',
+
+            // QR Scanner
+            qrScannerBg: 'rgba(0, 0, 0, 0.7)',
+
+            // Backdrop
+            backdropModalBg: 'rgba(0, 0, 0, 0.86)',
+
+            // Keyboard
+            keyboardAccessoryBg: '#292929',
+            keyboardAccessoryLine: '#393939',
 
             // Tab Bar
-            tabIconActive: '#FAFAFA',
-            tabIconPassive: '#71717A',
+            tabBarButton: '#27272A',
+            tabBarBg: 'rgba(24, 24, 27, 0.84)',
+            tabBarIconActive: '#FAFAFA',
+            tabBarIconNonActive: '#71717A',
+            tabBarIconDisabled: 'rgba(113, 113, 122, 0.5)',
 
-            testnetBackground: '#EDB21C',
+            // Bottom Sheet
+            bottomSheetLine: '#3F3F46',
 
-            // States
-            success: '#2CB7BC', // Alert/positive
-            warning: '#b66129', // Link/primary (dark)
-            error: '#FF6D5F', // Alert/negative (dark)
-            // Misc
-            divider: 'rgba(255,255,255,0.05)', // Border/default (dark)
+            // Modality
+            modalityBg: '#000000',
+
+            // Switches
+            switchBg: '#EDB21C',
+            switchOffBg: '#27272A',
+
+            // NFT Icon
+            nftIconBg: 'rgba(24, 24, 27, 0.6)',
+            nftIcon: '#FFFFFF',
+
+            // Dapp
+            dappMoonpay: '#7D01FF',
+            dappSardine: '#2925CB',
+            dappTransak: '#2A6BE6',
+            dappBidali: '#6241E2',
+
+            // Legacy (no Figma equivalent)
+            favorite: '#EDB21C',
         },
         mode,
         spacing: {
@@ -250,10 +469,10 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                         ? theme.colors.buttonSquareBg
                         : theme.colors.background,
                     color: props?.checked
-                        ? theme.colors.buttonSquareText
+                        ? theme.colors.buttonSquareIcon
                         : theme.colors.textMain,
                     paddingHorizontal: 0,
-                    borderColor: theme.colors.helperPositive,
+                    borderColor: theme.colors.positive,
                     borderWidth: theme.borders.md,
                     borderRadius: theme.spacing.xs,
                     height: theme.spacing.xl,
@@ -267,7 +486,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                     backgroundColor: theme.colors.layerGrayLightest,
                 },
                 backdropStyle: {
-                    backgroundColor: theme.colors.backdrop,
+                    backgroundColor: theme.colors.backdropModalBg,
                 },
             }),
             DialogTitle: (_, theme) => ({
@@ -322,7 +541,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                     backgroundColor: theme.colors.layerGrayLighter,
                 },
                 style: {
-                    backgroundColor: theme.colors.layerGrayLight,
+                    backgroundColor: theme.colors.layerGray,
                     borderWidth: theme.borders.md,
                     borderColor: theme.colors.background,
                 },
@@ -332,10 +551,10 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                 containerStyle: {
                     margin: 0,
                     flex: 1,
-                    backgroundColor: theme.colors.backdrop,
+                    backgroundColor: theme.colors.backdropModalBg,
                 },
                 backdropStyle: {
-                    backgroundColor: theme.colors.backdrop,
+                    backgroundColor: theme.colors.backdropModalBg,
                 },
                 scrollViewProps: {
                     contentContainerStyle: {
@@ -349,8 +568,8 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             }),
             Switch: (_, theme) => ({
                 trackColor: {
-                    false: theme.colors.layerGray,
-                    true: theme.colors.helperPositive,
+                    false: theme.colors.switchOffBg,
+                    true: theme.colors.switchBg,
                 },
                 thumbColor: theme.colors.textWhite,
             }),

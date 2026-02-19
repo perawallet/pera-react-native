@@ -55,7 +55,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
     },
     checkIcon: {
-        backgroundColor: theme.colors.helperPositive + '1A', // 10% opacity roughly
+        backgroundColor: theme.colors.positive + '1A', // 10% opacity roughly
         borderRadius: 20,
         padding: 4,
     },
@@ -71,7 +71,7 @@ export const useStyles = makeStyles(theme => ({
     dateInputWrapper: {
         flex: 1,
         borderBottomWidth: 1,
-        borderBottomColor: theme.colors.grey2,
+        borderBottomColor: theme.colors.layerGray,
         paddingBottom: theme.spacing.xs,
         marginHorizontal: theme.spacing.xs,
     },
