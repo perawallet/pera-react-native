@@ -16,6 +16,6 @@ export const generateUniqueId = (): string => {
     return uuidv4()
 }
 
-export const generateTimeorderedUniqueId = (): string => {
+export const generateOrderedUniqueId = (): string => {
     return uuidv7()
 }

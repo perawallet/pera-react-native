@@ -13,7 +13,7 @@
 import { View } from 'react-native'
 import { useStyles } from './styles'
 import {
-    generateTimeorderedUniqueId,
+    generateOrderedUniqueId,
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
 import { PWButton, PWText } from '@components/core'
@@ -46,7 +46,7 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
 
     const openLink = (url: string) => {
         pushWebView({
-            id: generateTimeorderedUniqueId(),
+            id: generateOrderedUniqueId(),
             url,
         })
     }

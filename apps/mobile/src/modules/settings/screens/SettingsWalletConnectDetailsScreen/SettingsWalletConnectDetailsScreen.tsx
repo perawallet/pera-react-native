@@ -32,7 +32,7 @@ import { useWebView } from '@hooks/usePeraWebviewInterface'
 import { KeyValueRow } from '@components/KeyValueRow'
 import {
     formatDatetime,
-    generateTimeorderedUniqueId,
+    generateOrderedUniqueId,
 } from '@perawallet/wallet-core-shared'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
@@ -117,7 +117,7 @@ export const SettingsWalletConnectDetailsScreen = ({
             return
         }
         pushWebView({
-            id: generateTimeorderedUniqueId(),
+            id: generateOrderedUniqueId(),
             url: session.session.peerMeta.url,
         })
     }

@@ -14,7 +14,7 @@ import { useSecureStorageService } from '@perawallet/wallet-core-platform-integr
 import { useKeyManagerStore } from '../store'
 import {
     AppError,
-    generateTimeorderedUniqueId,
+    generateOrderedUniqueId,
     logger,
 } from '@perawallet/wallet-core-shared'
 import { AccessControlPermission, KeyPair, StoredKeyMaterial } from '../models'
@@ -29,7 +29,7 @@ export const useKMSService = () => {
 
     const saveKey = useCallback(
         async (key: KeyPair, keyData: StoredKeyMaterial) => {
-            const storageKey = key.id ?? generateTimeorderedUniqueId()
+            const storageKey = key.id ?? generateOrderedUniqueId()
 
             const stringifiedObj = JSON.stringify(keyData)
 

@@ -14,7 +14,7 @@ import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useToast } from './useToast'
 import {
-    generateTimeorderedUniqueId,
+    generateOrderedUniqueId,
     logger,
 } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from './deeplink/parser'
@@ -136,7 +136,7 @@ export const useDeepLink = () => {
                     // TODO: We need to use a proper transaction construction method here and
                     //navigate somewhere other than the qr code scanner.
                     addSignRequest({
-                        id: generateTimeorderedUniqueId(),
+                        id: generateOrderedUniqueId(),
                         type: 'transactions',
                         transport: 'algod',
                         txs: [],
@@ -147,7 +147,7 @@ export const useDeepLink = () => {
                     // TODO: We need to use a proper transaction construction method here and
                     //navigate somewhere other than the qr code scanner.
                     addSignRequest({
-                        id: generateTimeorderedUniqueId(),
+                        id: generateOrderedUniqueId(),
                         type: 'transactions',
                         transport: 'algod',
                         txs: [],
@@ -187,7 +187,7 @@ export const useDeepLink = () => {
                     // TODO: We need to use a proper transaction construction method here and
                     //navigate somewhere other than the qr code scanner.
                     addSignRequest({
-                        id: generateTimeorderedUniqueId(),
+                        id: generateOrderedUniqueId(),
                         type: 'transactions',
                         transport: 'algod',
                         txs: [],
@@ -213,7 +213,7 @@ export const useDeepLink = () => {
                 case DeeplinkType.INTERNAL_BROWSER:
                 case DeeplinkType.DISCOVER_BROWSER:
                     pushWebView({
-                        id: generateTimeorderedUniqueId(),
+                        id: generateOrderedUniqueId(),
                         url: parsedData.url,
                     })
                     break

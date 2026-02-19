@@ -23,5 +23,3 @@ export {
     registerAccountsStore,
     useAccountsStore,
 } from './store'
-
-export { WORDLIST } from './wordlist'

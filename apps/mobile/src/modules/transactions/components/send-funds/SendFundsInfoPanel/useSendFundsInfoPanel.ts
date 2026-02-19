@@ -16,7 +16,7 @@ import { UserPreferences } from '@constants/user-preferences'
 import { useWebView } from '@hooks/usePeraWebviewInterface'
 import { config } from '@perawallet/wallet-core-config'
 import { SHORT_PROMPT_DISPLAY_DELAY } from '@constants/ui'
-import { generateTimeorderedUniqueId } from '@perawallet/wallet-core-shared'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 
 type UseSendFundsInfoPanelResult = {
     forceOpen: boolean
@@ -44,7 +44,7 @@ export const useSendFundsInfoPanel = (
 
     const handleOpenInfoLink = () => {
         pushWebView({
-            id: generateTimeorderedUniqueId(),
+            id: generateOrderedUniqueId(),
             url: config.sendFundsFaqUrl,
         })
     }

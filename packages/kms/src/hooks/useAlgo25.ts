@@ -15,7 +15,7 @@ import { KeyManagementError } from '../errors'
 import {
     encodeToBase64,
     ERROR_I18N_KEYS,
-    generateTimeorderedUniqueId,
+    generateOrderedUniqueId,
 } from '@perawallet/wallet-core-shared'
 import { KeyPair, KeyType, KMSAlgo25Session } from '../models'
 import {
@@ -56,7 +56,7 @@ export const useAlgo25 = () => {
         id?: string
         mnemonic?: string
     }) => {
-        const keyId = params.id ?? generateTimeorderedUniqueId()
+        const keyId = params.id ?? generateOrderedUniqueId()
         const secret = await generateAlgo25Key(params.mnemonic)
 
         const keyPair: KeyPair = {

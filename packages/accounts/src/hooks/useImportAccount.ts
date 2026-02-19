@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { v7 as uuidv7 } from 'uuid'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCreateAccount } from './useCreateAccount'
 import { ImportAccountType } from '../models'
+import { generateOrderedUniqueId } from 'shared/dist'
 
 export const useImportAccount = () => {
     const { createHDWalletKey, createAlgo25Key } = useKMS()
@@ -27,7 +27,7 @@ export const useImportAccount = () => {
         mnemonic: string
         type: ImportAccountType
     }) => {
-        const rootWalletId = uuidv7()
+        const rootWalletId = generateOrderedUniqueId()
 
         if (type === 'hdWallet') {
             await createHDWalletKey({ id: rootWalletId, mnemonic })

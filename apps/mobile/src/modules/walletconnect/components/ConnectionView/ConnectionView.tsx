@@ -40,7 +40,7 @@ import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { ScrollView } from 'react-native-gesture-handler'
 import { useToast } from '@hooks/useToast'
 import { PermissionItem } from '../PermissionItem'
-import { generateTimeorderedUniqueId } from '@perawallet/wallet-core-shared'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 
 export type ConnectionViewProps = {
     request: WalletConnectSessionRequest
@@ -68,7 +68,7 @@ export const ConnectionView = ({ request }: ConnectionViewProps) => {
     const handlePressUrl = () => {
         if (!request.peerMeta.url) return
         pushWebView({
-            id: generateTimeorderedUniqueId(),
+            id: generateOrderedUniqueId(),
             url: request.peerMeta.url,
         })
     }

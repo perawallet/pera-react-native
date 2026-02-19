@@ -1537,6 +1537,8 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     ),
     formatWithUnits: vi.fn(value => String(value)),
     formatNumber: vi.fn(value => String(value)),
+    generateUniqueId: vi.fn(() => 'mock-uuid'),
+    generateOrderedUniqueId: vi.fn(() => 'mock-time-uuid'),
     AppError: class AppError extends Error {
         constructor(message: string) {
             super(message)

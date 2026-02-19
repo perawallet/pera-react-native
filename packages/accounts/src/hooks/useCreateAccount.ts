@@ -23,7 +23,7 @@ import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { KeyNotFoundError, useKMS } from '@perawallet/wallet-core-kms'
 import { NoHDWalletError } from '../errors'
 import { KEY_DOMAIN } from '../constants'
-import { generateTimeorderedUniqueId } from '@perawallet/wallet-core-shared'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 
 export const useCreateAccount = () => {
     const { network } = useNetwork()
@@ -64,7 +64,7 @@ export const useCreateAccount = () => {
         account: number
         keyIndex: number
     }) => {
-        const rootWalletId = walletId ?? generateTimeorderedUniqueId()
+        const rootWalletId = walletId ?? generateOrderedUniqueId()
         let rootKey = getKey(rootWalletId)
 
         if (!rootKey) {
@@ -86,7 +86,7 @@ export const useCreateAccount = () => {
                 })
 
                 const newAccount: WalletAccount = {
-                    id: generateTimeorderedUniqueId(),
+                    id: generateOrderedUniqueId(),
                     address: encodeAlgorandAddress(addressBytes),
                     type: AccountTypes.hdWallet,
                     hdWalletDetails: {
@@ -106,7 +106,7 @@ export const useCreateAccount = () => {
     }
 
     const createAlgo25WalletAccount = async () => {
-        const keyId = generateTimeorderedUniqueId()
+        const keyId = generateOrderedUniqueId()
         let rootKey = getKeyOrThrow(keyId)
 
         if (!rootKey) {
@@ -118,7 +118,7 @@ export const useCreateAccount = () => {
         }
 
         const newAccount: WalletAccount = {
-            id: generateTimeorderedUniqueId(),
+            id: generateOrderedUniqueId(),
             address: rootKey.publicKey,
             type: AccountTypes.algo25,
             keyPairId: rootKey.id,

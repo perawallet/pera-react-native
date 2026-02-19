@@ -25,7 +25,7 @@ import { KeyPair, KeyType } from '../models'
 import { getEntropyFromMasterKey, getSeedFromMasterKey } from '../utils'
 import {
     encodeToBase64,
-    generateTimeorderedUniqueId,
+    generateOrderedUniqueId,
 } from '@perawallet/wallet-core-shared'
 import { InvalidKeyError } from '../errors'
 import { useKMSService } from './useKMSServices'
@@ -109,7 +109,7 @@ export const useHDWallet = () => {
         id?: string
         mnemonic?: string
     }) => {
-        const keyId = params?.id ?? generateTimeorderedUniqueId()
+        const keyId = params?.id ?? generateOrderedUniqueId()
         const masterKey = await generateHDMasterKey(params?.mnemonic)
 
         const keyPair: KeyPair = {

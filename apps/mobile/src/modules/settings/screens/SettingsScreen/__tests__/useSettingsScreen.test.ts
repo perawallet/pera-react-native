@@ -35,9 +35,15 @@ vi.mock('../useSettingsOptions', () => ({
     })),
 }))
 
-vi.mock('uuid', () => ({
-    v4: vi.fn(() => 'mock-uuid'),
-}))
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const actual = await vi.importActual<object>(
+        '@perawallet/wallet-core-shared',
+    )
+    return {
+        ...actual,
+        generateUniqueId: vi.fn(() => 'mock-uuid'),
+    }
+})
 
 describe('useSettingsScreen', () => {
     const mockPush = vi.fn()

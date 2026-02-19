@@ -40,6 +40,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         error: vi.fn(),
     },
     createLazyStore: vi.fn(() => () => ({})),
+    generateOrderedUniqueId: vi.fn(() => 'test-id'),
 }))
 
 vi.mock('@perawallet/wallet-core-platform-integration', () => ({

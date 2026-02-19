@@ -13,7 +13,7 @@
 import {
     decodeFromBase64,
     encodeToBase64,
-    generateTimeorderedUniqueId,
+    generateOrderedUniqueId,
     logger,
     Network,
     Networks,
@@ -194,7 +194,7 @@ export const useWalletConnectHandlers = () => {
             )
 
             addSignRequest({
-                id: generateTimeorderedUniqueId(),
+                id: generateOrderedUniqueId(),
                 type: 'arbitrary-data',
                 transport: 'callback',
                 transportId: connector.clientId,
@@ -253,7 +253,7 @@ export const useWalletConnectHandlers = () => {
             )
 
             addSignRequest({
-                id: generateTimeorderedUniqueId(),
+                id: generateOrderedUniqueId(),
                 type: 'transactions',
                 transport: 'callback',
                 transportId: connector.clientId,

@@ -20,9 +20,9 @@ import type { Contact, ContactsState } from '../models'
 import {
     createLazyStore,
     DataStoreRegistry,
+    generateOrderedUniqueId,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
-import { v7 as uuidv7 } from 'uuid'
 
 const STORE_NAME = 'contacts-store'
 const lazy =
@@ -49,7 +49,7 @@ const createContactsStore = (storage: KeyValueStorageService) =>
                     const existing = get().contacts ?? []
                     const newContact = {
                         ...contact,
-                        id: contact.id ?? uuidv7(),
+                        id: contact.id ?? generateOrderedUniqueId(),
                     }
                     if (!existing.find(r => r.id === newContact.id)) {
                         set({ contacts: [...existing, newContact] })

@@ -48,7 +48,7 @@ import {
     sendMessageToWebview,
 } from './webview/handlers'
 import {
-    generateTimeorderedUniqueId,
+    generateOrderedUniqueId,
     logger,
 } from '@perawallet/wallet-core-shared'
 import { getAccountType } from './webview/utils'
@@ -289,7 +289,7 @@ export const usePeraWebviewInterface = (
                 const address = message.params!['address'] as string
                 try {
                     addSignRequest({
-                        id: generateTimeorderedUniqueId(),
+                        id: generateOrderedUniqueId(),
                         type: 'transactions',
                         transport: 'callback',
                         txs: txns,
@@ -354,7 +354,7 @@ export const usePeraWebviewInterface = (
                 ] as SignRequestSource
                 try {
                     addSignRequest({
-                        id: generateTimeorderedUniqueId(),
+                        id: generateOrderedUniqueId(),
                         type: 'arbitrary-data',
                         transport: 'callback',
                         transportId: message.id,
