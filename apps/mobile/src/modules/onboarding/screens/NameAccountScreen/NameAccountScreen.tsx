@@ -13,12 +13,12 @@
 import { useStyles } from './styles'
 import {
     PWButton,
-    PWIcon,
     PWInput,
     PWLoadingOverlay,
     PWText,
     PWView,
 } from '@components/core'
+import { AccountIcon } from '@modules/accounts/components/AccountIcon'
 import { KeyboardAvoidingView, Platform } from 'react-native'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNameAccountScreen } from './useNameAccountScreen'
@@ -35,7 +35,6 @@ export const NameAccountScreen = () => {
         handleFinish,
         numWallets,
         account,
-        accountIconName,
     } = useNameAccountScreen()
 
     return (
@@ -56,10 +55,7 @@ export const NameAccountScreen = () => {
                     </PWText>
                 </PWView>
                 <PWView style={styles.walletNameContainer}>
-                    <PWIcon
-                        name={accountIconName}
-                        variant='secondary'
-                    />
+                    <AccountIcon account={account} />
                     <PWText
                         variant='h4'
                         style={styles.nameText}

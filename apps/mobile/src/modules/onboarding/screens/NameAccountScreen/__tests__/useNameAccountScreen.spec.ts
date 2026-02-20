@@ -77,7 +77,10 @@ vi.mock('react-i18next', async () => {
         ...actual,
         useTranslation: () => ({
             t: (key: string, opts?: Record<string, unknown>) => {
-                if (key === 'onboarding.name_account.wallet_label' && opts?.count) {
+                if (
+                    key === 'onboarding.name_account.wallet_label' &&
+                    opts?.count
+                ) {
                     return `Wallet ${opts.count}`
                 }
                 return key
@@ -116,42 +119,6 @@ describe('useNameAccountScreen', () => {
 
         expect(result.current.walletDisplay).toBe('My Wallet')
         expect(result.current.account).toBeDefined()
-    })
-
-    it('returns wallet icon for non-watch accounts', () => {
-        mockRouteParams = {
-            account: {
-                id: '1',
-                address: 'ADDR',
-                type: 'hdWallet',
-                name: 'HD Account',
-                keyPairId: 'kp1',
-            },
-        }
-
-        const { result } = renderHook(() => useNameAccountScreen())
-
-        expect(result.current.accountIconName).toBe('wallet')
-    })
-
-    it('returns eye icon for watch accounts', () => {
-        mockRouteParams = {
-            account: {
-                id: '1',
-                address: 'WATCH_ADDR',
-                type: 'watch',
-            },
-        }
-
-        const { result } = renderHook(() => useNameAccountScreen())
-
-        expect(result.current.accountIconName).toBe('eye')
-    })
-
-    it('returns wallet icon when no account is passed', () => {
-        const { result } = renderHook(() => useNameAccountScreen())
-
-        expect(result.current.accountIconName).toBe('wallet')
     })
 
     it('handleNameChange updates walletDisplay', () => {
@@ -217,7 +184,9 @@ describe('useNameAccountScreen', () => {
     })
 
     it('handleFinish shows error toast on failure', async () => {
-        mockCreateHdWalletAccount.mockRejectedValue(new Error('Creation failed'))
+        mockCreateHdWalletAccount.mockRejectedValue(
+            new Error('Creation failed'),
+        )
 
         const { result } = renderHook(() => useNameAccountScreen())
 

@@ -54,7 +54,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     getAccountDisplayName: (account: { name?: string }) =>
         account?.name ?? 'Account 1',
     isHDWalletAccount: () => false,
+    isAlgo25Account: () => false,
+    isLedgerAccount: () => false,
     isWatchAccount: (account: { type: string }) => account?.type === 'watch',
+    isRekeyedAccount: () => false,
     WalletAccount: {} as unknown,
 }))
 
@@ -91,9 +94,7 @@ describe('NameAccountScreen', () => {
     it('renders the title and description', () => {
         render(<NameAccountScreen />)
 
-        expect(
-            screen.getByText('onboarding.name_account.title'),
-        ).toBeTruthy()
+        expect(screen.getByText('onboarding.name_account.title')).toBeTruthy()
         expect(
             screen.getByText('onboarding.name_account.description'),
         ).toBeTruthy()
@@ -158,35 +159,5 @@ describe('NameAccountScreen', () => {
             )
             expect(mockCreateHdWalletAccount).not.toHaveBeenCalled()
         })
-    })
-
-    it('renders eye icon for watch accounts', () => {
-        mockRouteParams = {
-            account: {
-                id: '1',
-                address: 'WATCH_ADDR',
-                type: 'watch',
-            },
-        }
-
-        render(<NameAccountScreen />)
-
-        expect(screen.getByTestId('icon-eye')).toBeTruthy()
-    })
-
-    it('renders wallet icon for non-watch accounts', () => {
-        mockRouteParams = {
-            account: {
-                id: '1',
-                address: 'ADDR',
-                type: 'hdWallet',
-                name: 'HD Account',
-                keyPairId: 'kp1',
-            },
-        }
-
-        render(<NameAccountScreen />)
-
-        expect(screen.getByTestId('icon-wallet')).toBeTruthy()
     })
 })
