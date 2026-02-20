@@ -87,7 +87,14 @@ export const SelectDestinationScreen = () => {
                 navigation.navigate('ARC59SendSummary')
             }
         },
-        [selectedAsset, accounts, accountBalances, setSendMode, setDestination, navigation],
+        [
+            selectedAsset,
+            accounts,
+            accountBalances,
+            setSendMode,
+            setDestination,
+            navigation,
+        ],
     )
 
     useNavigationHeader({

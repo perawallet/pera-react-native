@@ -98,9 +98,7 @@ describe('fetchArc59SendSummary', () => {
     })
 
     test('propagates errors from queryClient', async () => {
-        ;(queryClient as Mock).mockRejectedValue(
-            new Error('Request failed'),
-        )
+        ;(queryClient as Mock).mockRejectedValue(new Error('Request failed'))
 
         await expect(
             fetchArc59SendSummary('testnet', RECEIVER, ASSET_ID),

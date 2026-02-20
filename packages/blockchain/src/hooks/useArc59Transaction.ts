@@ -58,7 +58,7 @@ export const useArc59Transaction = (
                 await appClient.send.call({
                     method: 'arc59_optRouterIn',
                     args: [assetId],
-                    extraFee: (suggestedParams.minFee).microAlgo(),
+                    extraFee: suggestedParams.minFee.microAlgo(),
                 })
             }
 
@@ -88,7 +88,9 @@ export const useArc59Transaction = (
                         receiver,
                         0,
                     ],
-                    extraFee: (suggestedParams.minFee * BigInt(summary.inner_tx_count)).microAlgo(),
+                    extraFee: (
+                        suggestedParams.minFee * BigInt(summary.inner_tx_count)
+                    ).microAlgo(),
                 }),
             )
 

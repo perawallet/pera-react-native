@@ -273,11 +273,13 @@ describe('env-loader', () => {
             arc59: {
                 testnet: {
                     appId: 643020148n,
-                    appAddress: 'YIIC6GF4DUJYZTYTZ5UEOAXONUUKZRDFOTV4EKSGD5E7BYE6EE3IVPYEDQ',
+                    appAddress:
+                        'YIIC6GF4DUJYZTYTZ5UEOAXONUUKZRDFOTV4EKSGD5E7BYE6EE3IVPYEDQ',
                 },
                 mainnet: {
                     appId: 2449590623n,
-                    appAddress: 'EZRVNZFJGOUZC67FUMEC7ZMVP232TPICFTQCVZ6EQEIRRT3TIHSKZULRNI',
+                    appAddress:
+                        'EZRVNZFJGOUZC67FUMEC7ZMVP232TPICFTQCVZ6EQEIRRT3TIHSKZULRNI',
                 },
             },
             defaultNetwork: 'mainnet',

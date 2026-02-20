@@ -63,10 +63,8 @@ export const useARC59SendSummaryScreen =
         const assetId = selectedAsset?.assetId ?? ''
         const receiverAddress = destination ?? ''
 
-        const { data: summary, isLoading: summaryLoading } = useArc59SendSummaryQuery(
-            receiverAddress,
-            assetId,
-        )
+        const { data: summary, isLoading: summaryLoading } =
+            useArc59SendSummaryQuery(receiverAddress, assetId)
 
         const { data: asset, isLoading: assetLoading } =
             useSingleAssetDetailsQuery(assetId)

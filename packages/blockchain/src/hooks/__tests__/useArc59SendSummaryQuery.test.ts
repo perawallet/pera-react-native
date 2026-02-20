@@ -125,9 +125,7 @@ describe('useArc59SendSummaryQuery', () => {
         )
 
         // Query is disabled, should stay in pending state without fetching
-        await waitFor(() =>
-            expect(result.current.fetchStatus).toBe('idle'),
-        )
+        await waitFor(() => expect(result.current.fetchStatus).toBe('idle'))
 
         expect(fetchArc59SendSummary).not.toHaveBeenCalled()
         expect(result.current.data).toBeUndefined()
@@ -141,9 +139,7 @@ describe('useArc59SendSummaryQuery', () => {
             { wrapper },
         )
 
-        await waitFor(() =>
-            expect(result.current.fetchStatus).toBe('idle'),
-        )
+        await waitFor(() => expect(result.current.fetchStatus).toBe('idle'))
 
         expect(fetchArc59SendSummary).not.toHaveBeenCalled()
         expect(result.current.data).toBeUndefined()

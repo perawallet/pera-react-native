@@ -24,12 +24,7 @@ export const useArc59SendSummaryQuery = (
 
     return useQuery({
         queryKey: getArc59SendSummaryQueryKey(receiverAddress, assetId),
-        queryFn: () =>
-            fetchArc59SendSummary(
-                network,
-                receiverAddress,
-                assetId,
-            ),
+        queryFn: () => fetchArc59SendSummary(network, receiverAddress, assetId),
         enabled: !!receiverAddress && !!assetId,
     })
 }

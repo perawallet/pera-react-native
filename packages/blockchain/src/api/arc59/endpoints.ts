@@ -31,7 +31,7 @@ export const fetchArc59SendSummary = async (
         network: network,
         method: 'GET',
         url: getArc59SendSummaryEndpoint(receiverAddress, assetId),
-    })  
+    })
 
     return arc59SendSummaryResponseSchema.parse(response.data)
 }

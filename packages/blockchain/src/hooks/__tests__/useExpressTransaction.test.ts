@@ -66,9 +66,7 @@ describe('useExpressTransaction', () => {
     })
 
     test('returns sendExpress function', () => {
-        const { result } = renderHook(() =>
-            useExpressTransaction(mockSigner),
-        )
+        const { result } = renderHook(() => useExpressTransaction(mockSigner))
 
         expect(result.current.sendExpress).toBeTypeOf('function')
     })
@@ -80,9 +78,7 @@ describe('useExpressTransaction', () => {
     })
 
     test('looks up receiver account info', async () => {
-        const { result } = renderHook(() =>
-            useExpressTransaction(mockSigner),
-        )
+        const { result } = renderHook(() => useExpressTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendExpress({
@@ -97,9 +93,7 @@ describe('useExpressTransaction', () => {
     })
 
     test('fetches suggested params for fee calculation', async () => {
-        const { result } = renderHook(() =>
-            useExpressTransaction(mockSigner),
-        )
+        const { result } = renderHook(() => useExpressTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendExpress({
@@ -123,9 +117,7 @@ describe('useExpressTransaction', () => {
             minBalance: 100_000n,
         })
 
-        const { result } = renderHook(() =>
-            useExpressTransaction(mockSigner),
-        )
+        const { result } = renderHook(() => useExpressTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendExpress({
@@ -156,9 +148,7 @@ describe('useExpressTransaction', () => {
             minBalance: 100_000n,
         })
 
-        const { result } = renderHook(() =>
-            useExpressTransaction(mockSigner),
-        )
+        const { result } = renderHook(() => useExpressTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendExpress({
@@ -169,8 +159,7 @@ describe('useExpressTransaction', () => {
             })
         })
 
-        const expectedFunding =
-            100_000n + ASSET_MBR + MIN_FEE - 150_000n // 51_000n
+        const expectedFunding = 100_000n + ASSET_MBR + MIN_FEE - 150_000n // 51_000n
 
         expect(mockChain.addPayment).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -188,9 +177,7 @@ describe('useExpressTransaction', () => {
             minBalance: 100_000n,
         })
 
-        const { result } = renderHook(() =>
-            useExpressTransaction(mockSigner),
-        )
+        const { result } = renderHook(() => useExpressTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendExpress({
@@ -213,9 +200,7 @@ describe('useExpressTransaction', () => {
             minBalance: 100_000n,
         })
 
-        const { result } = renderHook(() =>
-            useExpressTransaction(mockSigner),
-        )
+        const { result } = renderHook(() => useExpressTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendExpress({
@@ -230,9 +215,7 @@ describe('useExpressTransaction', () => {
     })
 
     test('opts in the receiver for the asset', async () => {
-        const { result } = renderHook(() =>
-            useExpressTransaction(mockSigner),
-        )
+        const { result } = renderHook(() => useExpressTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendExpress({
@@ -252,9 +235,7 @@ describe('useExpressTransaction', () => {
     })
 
     test('transfers the asset from sender to receiver', async () => {
-        const { result } = renderHook(() =>
-            useExpressTransaction(mockSigner),
-        )
+        const { result } = renderHook(() => useExpressTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendExpress({
@@ -282,9 +263,7 @@ describe('useExpressTransaction', () => {
             minBalance: 100_000n,
         })
 
-        const { result } = renderHook(() =>
-            useExpressTransaction(mockSigner),
-        )
+        const { result } = renderHook(() => useExpressTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendExpress({
@@ -302,9 +281,7 @@ describe('useExpressTransaction', () => {
     })
 
     test('returns txIds from the atomic group', async () => {
-        const { result } = renderHook(() =>
-            useExpressTransaction(mockSigner),
-        )
+        const { result } = renderHook(() => useExpressTransaction(mockSigner))
 
         let txResult: { txIds: string[] } | undefined
 
@@ -323,9 +300,7 @@ describe('useExpressTransaction', () => {
     test('propagates errors from send', async () => {
         mockChain.send.mockRejectedValue(new Error('Transaction failed'))
 
-        const { result } = renderHook(() =>
-            useExpressTransaction(mockSigner),
-        )
+        const { result } = renderHook(() => useExpressTransaction(mockSigner))
 
         await expect(
             act(async () => {
@@ -349,9 +324,7 @@ describe('useExpressTransaction', () => {
             minBalance: 300_000n,
         })
 
-        const { result } = renderHook(() =>
-            useExpressTransaction(mockSigner),
-        )
+        const { result } = renderHook(() => useExpressTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendExpress({

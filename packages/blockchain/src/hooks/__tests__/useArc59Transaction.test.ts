@@ -108,9 +108,7 @@ describe('useArc59Transaction', () => {
 
         mockAlgokit = {
             newGroup: vi.fn().mockReturnValue(mockComposer),
-            getSuggestedParams: vi
-                .fn()
-                .mockResolvedValue(mockSuggestedParams),
+            getSuggestedParams: vi.fn().mockResolvedValue(mockSuggestedParams),
             createTransaction: {
                 assetTransfer: vi.fn().mockResolvedValue('mock-axfer-txn'),
             },
@@ -239,7 +237,9 @@ describe('useArc59Transaction', () => {
             await result.current.sendViaInbox(baseParams)
         })
 
-        expect(mockAlgokit.createTransaction.assetTransfer).toHaveBeenCalledWith(
+        expect(
+            mockAlgokit.createTransaction.assetTransfer,
+        ).toHaveBeenCalledWith(
             expect.objectContaining({
                 sender: 'SENDER_ADDRESS',
                 receiver: 'TESTNET_APP_ADDRESS',
