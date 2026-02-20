@@ -25,7 +25,7 @@ vi.mock('@perawallet/wallet-core-platform-integration', () => ({
 
 // Mock the fetch function
 const mockFetchCurrency = vi.hoisted(() => vi.fn())
-vi.mock('../endpoints', () => ({
+vi.mock('../../api/currencies', () => ({
     fetchCurrency: mockFetchCurrency,
 }))
 
@@ -53,8 +53,8 @@ describe('usePreferredCurrencyPriceQuery', () => {
 
     it('fetches and transforms currency price', async () => {
         const mockData = {
-            currency_id: 'EUR',
-            usd_value: '0.85',
+            id: 'EUR',
+            usdPrice: Decimal('0.85'),
         }
 
         mockFetchCurrency.mockResolvedValue(mockData)
@@ -75,33 +75,20 @@ describe('usePreferredCurrencyPriceQuery', () => {
     it('uses correct network and currency', async () => {
         mockUseNetwork.mockReturnValue({ network: 'testnet' })
         mockFetchCurrency.mockResolvedValue({
-            currency_id: 'GBP',
-            usd_value: '1.25',
+            id: 'GBP',
+            usdPrice: Decimal('1.25'),
         })
 
         renderHook(() => usePreferredCurrencyPriceQuery('GBP'), { wrapper })
 
         await waitFor(() =>
-            expect(mockFetchCurrency).toHaveBeenCalledWith('testnet', 'GBP'),
+            expect(mockFetchCurrency).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    currencyId: 'GBP',
+                    network: 'testnet',
+                }),
+            ),
         )
-    })
-
-    it('handles null usd_value', async () => {
-        const mockData = {
-            currency_id: 'JPY',
-            usd_value: null,
-        }
-
-        mockFetchCurrency.mockResolvedValue(mockData)
-
-        const { result } = renderHook(
-            () => usePreferredCurrencyPriceQuery('JPY'),
-            { wrapper },
-        )
-
-        await waitFor(() => expect(result.current.isSuccess).toBe(true))
-
-        expect(result.current.data?.usdPrice).toEqual(Decimal('0'))
     })
 
     it('handles loading state', () => {
@@ -117,8 +104,8 @@ describe('usePreferredCurrencyPriceQuery', () => {
 
     it('transforms different currency values correctly', async () => {
         const mockData = {
-            currency_id: 'CAD',
-            usd_value: '0.73',
+            id: 'CAD',
+            usdPrice: Decimal('0.73'),
         }
 
         mockFetchCurrency.mockResolvedValue(mockData)

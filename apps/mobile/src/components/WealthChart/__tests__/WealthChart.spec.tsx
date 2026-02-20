@@ -71,8 +71,8 @@ describe('WealthChart', () => {
 
     it('renders chart when data is available', () => {
         const mockData = [
-            { fiatValue: new Decimal(100), datetime: new Date() },
-            { fiatValue: new Decimal(110), datetime: new Date() },
+            { preferredValue: new Decimal(100), datetime: new Date() },
+            { preferredValue: new Decimal(110), datetime: new Date() },
         ]
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
             data: mockData,
@@ -90,7 +90,9 @@ describe('WealthChart', () => {
 
     it('uses single account address when account prop is provided', () => {
         const mockAccount = { address: 'test-address', name: 'Test' }
-        const mockData = [{ fiatValue: new Decimal(100), datetime: new Date() }]
+        const mockData = [
+            { preferredValue: new Decimal(100), datetime: new Date() },
+        ]
 
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
             data: mockData,
@@ -115,7 +117,7 @@ describe('WealthChart', () => {
         ] as any) // eslint-disable-line @typescript-eslint/no-explicit-any
 
         vi.mocked(useAccountBalancesHistoryQuery).mockReturnValue({
-            data: [{ fiatValue: new Decimal(200), datetime: new Date() }],
+            data: [{ preferredValue: new Decimal(200), datetime: new Date() }],
             isPending: false,
         } as unknown as ReturnType<typeof useAccountBalancesHistoryQuery>)
 

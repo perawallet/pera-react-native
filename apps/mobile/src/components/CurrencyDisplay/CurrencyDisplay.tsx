@@ -91,7 +91,7 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
     }
     return (
         <PWView style={themeStyle.container}>
-            {isAlgo && showSymbol && (
+            {isAlgo && showSymbol && !privacyMode && (
                 <AlgoIcon
                     color={theme.colors.textMain}
                     style={[themeStyle.algoIcon, props.style]}

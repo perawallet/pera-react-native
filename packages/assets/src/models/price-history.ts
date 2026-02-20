@@ -14,16 +14,7 @@ import { Decimal } from 'decimal.js'
 
 export type AssetPriceHistoryItem = {
     datetime: Date
-    fiatPrice: Decimal
+    usdPrice: Decimal
 }
 
 export type AssetPriceHistory = AssetPriceHistoryItem[]
-
-export type AssetPriceHistoryResponseItem = {
-    datetime: string
-    price: number
-}
-
-export type AssetPriceHistoryResponse = AssetPriceHistoryResponseItem[]
-
-export type AssetPriceChartDataQueryResponse = AssetPriceHistoryResponse

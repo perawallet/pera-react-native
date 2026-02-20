@@ -34,7 +34,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: vi.fn(() => ({ preferredFiatCurrency: 'USD' })),
+    useCurrency: vi.fn(() => ({ preferredCurrency: 'USD' })),
 }))
 
 vi.mock('@hooks/useIsDarkMode', () => ({
@@ -46,12 +46,16 @@ vi.mock('../AssetIcon', () => ({
     AssetIcon: () => null,
 }))
 
+// Mock PreferredCurrencyDisplay since it has complex dependencies
+vi.mock('@components/PreferredCurrencyDisplay', () => ({
+    PreferredCurrencyDisplay: () => null,
+}))
+
 describe('AccountAssetItemView', () => {
     it('renders asset info for Algo', () => {
         const accountBalance = {
             assetId: 0,
             amount: '1000000',
-            fiatValue: '100',
         } as unknown as AssetWithAccountBalance
 
         render(<AccountAssetItemView accountBalance={accountBalance} />)
@@ -83,7 +87,6 @@ describe('AccountAssetItemView', () => {
         const accountBalance = {
             assetId: 123,
             amount: '500',
-            fiatValue: '50',
         } as unknown as AssetWithAccountBalance
 
         render(<AccountAssetItemView accountBalance={accountBalance} />)

@@ -21,16 +21,12 @@ import {
     type AssetWithAccountBalance,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    useAssetFiatPricesQuery,
-    useAssetsQuery,
-    type PeraAsset,
-} from '@perawallet/wallet-core-assets'
+import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
 import { useSuggestedParametersQuery } from '@perawallet/wallet-core-blockchain'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
+import { useLanguage } from '@hooks/useLanguage'
 
 type useTransactionConfirmationScreenResult = {
     asset: PeraAsset | null | undefined
@@ -38,8 +34,6 @@ type useTransactionConfirmationScreenResult = {
     destination: string | undefined
     selectedAccount: WalletAccount | null
     selectedAsset: AssetWithAccountBalance | undefined
-    fiatPrice: Decimal | null
-    preferredFiatCurrency: string
     params: { minFee: bigint } | undefined
     paramsPending: boolean
     currentBalance: AssetWithAccountBalance | null
@@ -57,6 +51,7 @@ export const useTransactionConfirmationScreen =
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
         const { selectedAsset, amount, destination, note } = useSendFunds()
+        const { t } = useLanguage()
 
         const { data: assets } = useAssetsQuery()
         const asset = useMemo(() => {
@@ -67,17 +62,6 @@ export const useTransactionConfirmationScreen =
         const selectedAccount = useSelectedAccount()
         const { showToast } = useToast()
         const [noteOpen, setNoteOpen] = useState(false)
-        const { preferredFiatCurrency } = useCurrency()
-        const { data: fiatPrices } = useAssetFiatPricesQuery()
-        const fiatPrice = useMemo<Decimal | null>(() => {
-            const price = selectedAsset
-                ? fiatPrices.get(selectedAsset?.assetId)?.fiatPrice
-                : null
-            if (price) {
-                return amount?.mul(price) ?? null
-            }
-            return null
-        }, [selectedAsset, fiatPrices, amount])
 
         const { data: params, isPending: paramsPending } =
             useSuggestedParametersQuery()
@@ -106,8 +90,8 @@ export const useTransactionConfirmationScreen =
             ) {
                 showToast(
                     {
-                        title: 'Invalid transaction',
-                        body: 'Something appears to have gone wrong with this transaction.',
+                        title: t('errors.transaction.title'),
+                        body: t('errors.transaction.body'),
                         type: 'error',
                     },
                     {
@@ -128,8 +112,6 @@ export const useTransactionConfirmationScreen =
             destination,
             selectedAccount,
             selectedAsset,
-            fiatPrice,
-            preferredFiatCurrency,
             params,
             paramsPending,
             currentBalance,

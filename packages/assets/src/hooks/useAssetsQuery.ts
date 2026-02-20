@@ -13,21 +13,20 @@
 import { useEffect, useMemo } from 'react'
 import { useAssetsStore } from '../store'
 import { useQueries } from '@tanstack/react-query'
-import { fetchAssets, fetchPublicAssetDetails } from './endpoints'
 import {
-    mapAssetResponseToPeraAsset,
-    mapPublicAssetResponseToPeraAsset,
-} from './mappers'
-import {
-    ALGO_ASSET_ID,
-    AssetsResponse,
-    PublicAssetResponse,
-    type PeraAsset,
-} from '../models'
+    fetchAssets,
+    fetchPublicAssetDetails,
+    transformAssetResponse,
+    transformPublicAssetResponse,
+} from '../api'
+import { ALGO_ASSET_ID, type PeraAsset } from '../models'
 import { DEFAULT_PAGE_SIZE, partition } from '@perawallet/wallet-core-shared'
 import { getAlgoQueryKey, getAssetsQueryKey } from './querykeys'
+import { AssetsResponse, PublicAssetResponse } from '../api/assets/schema'
+import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 
 export const useAssetsQuery = (ids?: string[]) => {
+    const { network } = useNetwork()
     let assetIDs = useAssetsStore(state => state.assetIDs)
     const setAssetIDs = useAssetsStore(state => state.setAssetIDs)
 
@@ -52,10 +51,10 @@ export const useAssetsQuery = (ids?: string[]) => {
             ...chunks.map(chunk => {
                 return {
                     queryKey: getAssetsQueryKey(chunk),
-                    queryFn: async () => fetchAssets(chunk),
+                    queryFn: async () => fetchAssets(chunk, network),
                     select: (data: AssetsResponse) => {
                         const peraAssets = data.results.map(
-                            mapAssetResponseToPeraAsset,
+                            transformAssetResponse,
                         )
                         return {
                             results: peraAssets,
@@ -67,9 +66,10 @@ export const useAssetsQuery = (ids?: string[]) => {
             }),
             {
                 queryKey: getAlgoQueryKey(),
-                queryFn: async () => fetchPublicAssetDetails(ALGO_ASSET_ID),
+                queryFn: async () =>
+                    fetchPublicAssetDetails(ALGO_ASSET_ID, network),
                 select: (data: PublicAssetResponse) => {
-                    const peraAsset = mapPublicAssetResponseToPeraAsset(data)
+                    const peraAsset = transformPublicAssetResponse(data)
                     return {
                         results: [peraAsset],
                         next: null,

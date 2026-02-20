@@ -39,11 +39,16 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useAccountAssetBalanceQuery: vi.fn(() => ({
-            data: { amount: new Decimal(100), fiatValue: new Decimal(50) },
+            data: { amount: new Decimal(100) },
             isPending: false,
         })),
     }
 })
+
+// Mock PreferredCurrencyDisplay since it has complex dependencies
+vi.mock('@components/PreferredCurrencyDisplay', () => ({
+    PreferredCurrencyDisplay: () => null,
+}))
 
 // Mock complex children
 vi.mock('../../AssetTransactionList/AssetTransactionList', () => ({
@@ -89,7 +94,7 @@ describe('AssetHoldings', () => {
 
     it('displays crypto amount from balance query', () => {
         vi.mocked(useAccountAssetBalanceQuery).mockReturnValue({
-            data: { amount: new Decimal(500), fiatValue: new Decimal(250) },
+            data: { amount: new Decimal(500) },
             isPending: false,
         } as unknown as ReturnType<typeof useAccountAssetBalanceQuery>)
 

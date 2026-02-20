@@ -22,6 +22,7 @@ import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 
 import { KeyValueRow } from '@components/KeyValueRow'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import Decimal from 'decimal.js'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
@@ -40,8 +41,7 @@ export const TransactionConfirmationScreen = () => {
         amount,
         destination,
         selectedAccount,
-        fiatPrice,
-        preferredFiatCurrency,
+        selectedAsset,
         params,
         paramsPending,
         currentBalance,
@@ -69,13 +69,13 @@ export const TransactionConfirmationScreen = () => {
                     showSymbol
                     value={amount ?? Decimal(0)}
                 />
-                <CurrencyDisplay
+                <PreferredCurrencyDisplay
                     style={styles.secondaryAmount}
-                    currency={preferredFiatCurrency}
+                    sourceAmount={amount}
+                    sourceAssetId={selectedAsset?.assetId ?? ''}
                     precision={asset?.decimals ?? DEFAULT_PRECISION}
                     minPrecision={DEFAULT_PRECISION}
                     showSymbol
-                    value={fiatPrice ? amount!.mul(fiatPrice) : null}
                 />
             </KeyValueRow>
             <PWDivider />
@@ -122,12 +122,12 @@ export const TransactionConfirmationScreen = () => {
                         value={currentBalance.amount}
                         isLoading={currentBalancePending}
                     />
-                    <CurrencyDisplay
-                        currency={preferredFiatCurrency}
+                    <PreferredCurrencyDisplay
+                        sourceAmount={currentBalance.amount}
+                        sourceAssetId={selectedAsset?.assetId ?? ''}
                         precision={asset?.decimals ?? DEFAULT_PRECISION}
                         minPrecision={DEFAULT_PRECISION}
                         showSymbol
-                        value={currentBalance.fiatValue}
                         style={styles.secondaryAmount}
                     />
                 </KeyValueRow>

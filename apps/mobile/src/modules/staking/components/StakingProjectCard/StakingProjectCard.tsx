@@ -36,7 +36,7 @@ export const StakingProjectCard = ({
     onPress,
 }: StakingProjectCardProps) => {
     const styles = useStyles({ isLast })
-    const { preferredFiatCurrency, usdToPreferred } = useCurrency()
+    const { preferredCurrency, usdToPreferred } = useCurrency()
 
     const tvlInPreferredCurrency = useMemo(
         () => usdToPreferred(project.tvlInUsd),
@@ -95,7 +95,7 @@ export const StakingProjectCard = ({
                                     {'('}
                                 </PWText>
                                 <CurrencyDisplay
-                                    currency={preferredFiatCurrency}
+                                    currency={preferredCurrency}
                                     value={tvlInPreferredCurrency}
                                     precision={2}
                                     truncateToUnits

@@ -70,7 +70,9 @@ describe('useInvalidateAssetPrices', () => {
             ).toBe(true)
             expect(predicate({ queryKey: ['assets', 'other'] })).toBe(false)
             expect(predicate({ queryKey: ['assets/prices'] })).toBe(true)
-            expect(predicate({ queryKey: ['assets/prices/fiat'] })).toBe(true)
+            expect(predicate({ queryKey: ['assets/prices/preferred'] })).toBe(
+                true,
+            )
             expect(predicate({ queryKey: ['assets/prices/history'] })).toBe(
                 true,
             )
@@ -121,7 +123,9 @@ describe('useInvalidateAssetPrices', () => {
         // Setup multiple queries in the cache
         queryClient.setQueryData(['assets/prices', 'ALGO'], { price: 1.5 })
         queryClient.setQueryData(['assets/prices', 'BTC'], { price: 50000 })
-        queryClient.setQueryData(['assets/prices/fiat', 'USD'], { rate: 1.0 })
+        queryClient.setQueryData(['assets/prices/preferred', 'USD'], {
+            rate: 1.0,
+        })
         queryClient.setQueryData(['assets/other'], { data: 'something' })
 
         const { result } = renderHook(() => useInvalidateAssetPrices(), {
@@ -154,9 +158,9 @@ describe('useInvalidateAssetPrices', () => {
                 true,
             )
             expect(predicate({ queryKey: ['assets/prices', 'BTC'] })).toBe(true)
-            expect(predicate({ queryKey: ['assets/prices/fiat', 'USD'] })).toBe(
-                true,
-            )
+            expect(
+                predicate({ queryKey: ['assets/prices/preferred', 'USD'] }),
+            ).toBe(true)
             expect(predicate({ queryKey: ['assets/other'] })).toBe(false)
         }
     })

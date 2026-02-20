@@ -13,7 +13,7 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useFeeWarning } from '../useFeeWarning'
-import { useAssetFiatPricesQuery } from '@perawallet/wallet-core-assets'
+import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
 import { useRemoteConfigService } from '@perawallet/wallet-core-platform-integration'
 import {
     useSigningRequest,
@@ -22,7 +22,7 @@ import {
 import Decimal from 'decimal.js'
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    useAssetFiatPricesQuery: vi.fn(),
+    useAssetPricesQuery: vi.fn(),
     ALGO_ASSET_ID: '0',
 }))
 
@@ -61,9 +61,9 @@ describe('useFeeWarning', () => {
     const setupAlgoPrice = (price: Decimal | undefined) => {
         const priceMap = new Map()
         if (price) {
-            priceMap.set('0', { assetId: '0', fiatPrice: price })
+            priceMap.set('0', { assetId: '0', usdPrice: price })
         }
-        ;(useAssetFiatPricesQuery as Mock).mockReturnValue({
+        ;(useAssetPricesQuery as Mock).mockReturnValue({
             data: priceMap,
         })
     }
@@ -164,7 +164,7 @@ describe('useFeeWarning', () => {
     })
 
     it('returns showWarning: false when ALGO price is not loaded', () => {
-        ;(useAssetFiatPricesQuery as Mock).mockReturnValue({
+        ;(useAssetPricesQuery as Mock).mockReturnValue({
             data: undefined,
         })
         setupSigningAnalysis(

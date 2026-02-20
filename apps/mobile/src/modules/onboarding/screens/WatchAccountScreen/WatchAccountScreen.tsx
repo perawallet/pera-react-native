@@ -20,8 +20,20 @@ import { useLanguage } from '@hooks/useLanguage'
 export const WatchAccountScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { address, isValidAddress, handleAddressChange, handleWatchAccount } =
-        useWatchAccountScreen()
+    const {
+        address,
+        isValidAddress,
+        isDuplicateAddress,
+        handleAddressChange,
+        handleWatchAccount,
+    } = useWatchAccountScreen()
+
+    const errorMessage =
+        address.length > 0 && isDuplicateAddress
+            ? t('onboarding.watch_account.duplicate_address')
+            : address.length > 0 && !isValidAddress
+              ? t('onboarding.watch_account.invalid_address')
+              : undefined
 
     return (
         <PWView style={styles.rootContainer}>
@@ -44,11 +56,7 @@ export const WatchAccountScreen = () => {
                     onChangeText={handleAddressChange}
                     allowQRCode
                     onScanned={handleAddressChange}
-                    errorMessage={
-                        address.length > 0 && !isValidAddress
-                            ? t('onboarding.watch_account.invalid_address')
-                            : undefined
-                    }
+                    errorMessage={errorMessage}
                 />
             </PWView>
 
@@ -58,7 +66,7 @@ export const WatchAccountScreen = () => {
                     variant='primary'
                     title={t('onboarding.watch_account.watch_button')}
                     onPress={handleWatchAccount}
-                    isDisabled={!isValidAddress}
+                    isDisabled={!isValidAddress || isDuplicateAddress}
                 />
             </PWView>
         </PWView>

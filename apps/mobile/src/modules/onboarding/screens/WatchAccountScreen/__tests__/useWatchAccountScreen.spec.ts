@@ -16,17 +16,18 @@ import { useWatchAccountScreen } from '../useWatchAccountScreen'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockNavigate = vi.fn()
+const mockPush = vi.fn()
 const mockGoBack = vi.fn()
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
         navigate: mockNavigate,
+        push: mockPush,
         goBack: mockGoBack,
     }),
 }))
 
 const mockSetAccounts = vi.fn()
-const mockSetSelectedAccountAddress = vi.fn()
 const mockUseAllAccounts = vi.fn((): WalletAccount[] => [])
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
@@ -39,7 +40,6 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
         useAccountsStore: (selector: (state: unknown) => unknown) => {
             const state = {
                 setAccounts: mockSetAccounts,
-                setSelectedAccountAddress: mockSetSelectedAccountAddress,
             }
             return selector(state)
         },
@@ -57,13 +57,6 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     }
 })
 
-const mockShowToast = vi.fn()
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({
-        showToast: mockShowToast,
-    }),
-}))
-
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-shared',
@@ -71,20 +64,6 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     return {
         ...actual,
         generateOrderedUniqueId: () => 'mock-uuid',
-    }
-})
-
-vi.mock('react-i18next', async () => {
-    const actual = await vi.importActual<object>('react-i18next')
-    return {
-        ...actual,
-        useTranslation: () => ({
-            t: (key: string) => key,
-            i18n: {
-                changeLanguage: vi.fn(),
-                language: 'en',
-            },
-        }),
     }
 })
 
@@ -99,6 +78,7 @@ describe('useWatchAccountScreen', () => {
 
         expect(result.current.address).toBe('')
         expect(result.current.isValidAddress).toBe(false)
+        expect(result.current.isDuplicateAddress).toBe(false)
     })
 
     it('handleAddressChange updates address', () => {
@@ -125,7 +105,43 @@ describe('useWatchAccountScreen', () => {
         expect(result.current.isValidAddress).toBe(true)
     })
 
-    it('handleWatchAccount shows error toast for invalid address', () => {
+    it('isDuplicateAddress is true when address already exists', () => {
+        mockUseAllAccounts.mockReturnValue([
+            {
+                id: 'existing',
+                address: 'VALID_ALGORAND_ADDRESS',
+                type: 'watch',
+            } as WalletAccount,
+        ])
+
+        const { result } = renderHook(() => useWatchAccountScreen())
+
+        act(() => {
+            result.current.handleAddressChange('VALID_ALGORAND_ADDRESS')
+        })
+
+        expect(result.current.isDuplicateAddress).toBe(true)
+    })
+
+    it('isDuplicateAddress is false for invalid address even if it exists', () => {
+        mockUseAllAccounts.mockReturnValue([
+            {
+                id: 'existing',
+                address: 'invalid',
+                type: 'watch',
+            } as WalletAccount,
+        ])
+
+        const { result } = renderHook(() => useWatchAccountScreen())
+
+        act(() => {
+            result.current.handleAddressChange('invalid')
+        })
+
+        expect(result.current.isDuplicateAddress).toBe(false)
+    })
+
+    it('handleWatchAccount does nothing for invalid address', () => {
         const { result } = renderHook(() => useWatchAccountScreen())
 
         act(() => {
@@ -137,49 +153,15 @@ describe('useWatchAccountScreen', () => {
         })
 
         expect(mockSetAccounts).not.toHaveBeenCalled()
-        expect(mockNavigate).not.toHaveBeenCalled()
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
-        )
+        expect(mockPush).not.toHaveBeenCalled()
     })
 
-    it('handleWatchAccount creates watch account for valid address', () => {
-        const { result } = renderHook(() => useWatchAccountScreen())
-
-        act(() => {
-            result.current.handleAddressChange('VALID_ALGORAND_ADDRESS')
-        })
-
-        act(() => {
-            result.current.handleWatchAccount()
-        })
-
-        expect(mockSetAccounts).toHaveBeenCalledWith([
-            {
-                id: 'mock-uuid',
-                address: 'VALID_ALGORAND_ADDRESS',
-                type: 'watch',
-                canSign: false,
-            },
-        ])
-        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
-            'VALID_ALGORAND_ADDRESS',
-        )
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: 'success',
-            }),
-        )
-        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Home' })
-    })
-
-    it('handleWatchAccount shows error for duplicate address', () => {
+    it('handleWatchAccount does nothing for duplicate address', () => {
         mockUseAllAccounts.mockReturnValue([
             {
                 id: 'existing',
                 address: 'VALID_ALGORAND_ADDRESS',
                 type: 'watch',
-                canSign: false,
             } as WalletAccount,
         ])
 
@@ -194,10 +176,30 @@ describe('useWatchAccountScreen', () => {
         })
 
         expect(mockSetAccounts).not.toHaveBeenCalled()
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
-        )
-        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(mockPush).not.toHaveBeenCalled()
+    })
+
+    it('handleWatchAccount creates watch account and navigates to NameAccount', () => {
+        const { result } = renderHook(() => useWatchAccountScreen())
+
+        act(() => {
+            result.current.handleAddressChange('VALID_ALGORAND_ADDRESS')
+        })
+
+        act(() => {
+            result.current.handleWatchAccount()
+        })
+
+        const expectedAccount = {
+            id: 'mock-uuid',
+            address: 'VALID_ALGORAND_ADDRESS',
+            type: 'watch',
+        }
+
+        expect(mockSetAccounts).toHaveBeenCalledWith([expectedAccount])
+        expect(mockPush).toHaveBeenCalledWith('NameAccount', {
+            account: expectedAccount,
+        })
     })
 
     it('handleWatchAccount appends to existing accounts', () => {
@@ -205,7 +207,6 @@ describe('useWatchAccountScreen', () => {
             id: 'existing',
             address: 'OTHER_ADDRESS',
             type: 'watch',
-            canSign: false,
         } as WalletAccount
 
         mockUseAllAccounts.mockReturnValue([existingAccount])
@@ -226,7 +227,6 @@ describe('useWatchAccountScreen', () => {
                 id: 'mock-uuid',
                 address: 'VALID_ALGORAND_ADDRESS',
                 type: 'watch',
-                canSign: false,
             },
         ])
     })

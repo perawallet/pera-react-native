@@ -24,7 +24,7 @@ vi.mock('@perawallet/wallet-core-platform-integration', () => ({
 
 // Mock the fetch function
 const mockFetchCurrenciesList = vi.hoisted(() => vi.fn())
-vi.mock('../endpoints', () => ({
+vi.mock('../../api/currencies', () => ({
     fetchCurrenciesList: mockFetchCurrenciesList,
 }))
 
@@ -52,8 +52,8 @@ describe('useCurrenciesQuery', () => {
 
     it('fetches and transforms currencies list', async () => {
         const mockData = [
-            { currency_id: 'USD', name: 'US Dollar', symbol: '$' },
-            { currency_id: 'EUR', name: 'Euro', symbol: '€' },
+            { id: 'USD', name: 'US Dollar', symbol: '$' },
+            { id: 'EUR', name: 'Euro', symbol: '€' },
         ]
 
         mockFetchCurrenciesList.mockResolvedValue(mockData)
@@ -76,7 +76,9 @@ describe('useCurrenciesQuery', () => {
         renderHook(() => useCurrenciesQuery(), { wrapper })
 
         await waitFor(() =>
-            expect(mockFetchCurrenciesList).toHaveBeenCalledWith('testnet'),
+            expect(mockFetchCurrenciesList).toHaveBeenCalledWith(
+                expect.objectContaining({ network: 'testnet' }),
+            ),
         )
     })
 

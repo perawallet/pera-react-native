@@ -20,10 +20,18 @@ export const useStyles = makeStyles(theme => {
             justifyContent: 'flex-start',
             alignItems: 'center',
             gap: theme.spacing.lg,
+            paddingBottom: theme.spacing.lg,
         },
         h1: {
-            fontSize: 32,
+            fontSize: theme.spacing.xxl,
             lineHeight: 40,
+        },
+        mainContentContainer: {
+            flexGrow: 1,
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: theme.spacing.lg,
+            width: '100%',
         },
         amount: {
             color: theme.colors.textMain,
@@ -64,8 +72,6 @@ export const useStyles = makeStyles(theme => {
         },
         secondaryButtonTitle: {
             color: theme.colors.textGray,
-            fontWeight: '400',
-            fontSize: 12,
         },
         numpadContainer: {
             paddingHorizontal: theme.spacing.xl,
@@ -76,7 +82,6 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
         },
         accountDisplaySubHeading: {
-            fontSize: theme.spacing.md,
             marginTop: theme.spacing.xs / 2,
         },
         headerTitleContainer: {

@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { toggleAssetFavorite, toggleAssetPriceAlert } from '../endpoints'
+import { toggleAssetFavorite, toggleAssetPriceAlert } from '../../api'
 import { Networks } from '@perawallet/wallet-core-shared'
 
 // Track the last queryClient call for assertions

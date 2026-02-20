@@ -13,7 +13,7 @@
 import { useMemo } from 'react'
 import Decimal from 'decimal.js'
 import {
-    useAssetFiatPricesQuery,
+    useAssetPricesQuery,
     ALGO_ASSET_ID,
 } from '@perawallet/wallet-core-assets'
 import {
@@ -47,9 +47,9 @@ export const useFeeWarning = (): UseFeeWarningResult => {
     )
 
     const remoteConfigService = useRemoteConfigService()
-    const { data: assetPrices } = useAssetFiatPricesQuery(true)
+    const { data: assetPrices } = useAssetPricesQuery(true)
 
-    const algoPrice = assetPrices?.get(ALGO_ASSET_ID)?.fiatPrice
+    const algoPrice = assetPrices?.get(ALGO_ASSET_ID)?.usdPrice
 
     if (signableTransactionCount === 0 || !algoPrice) {
         return { showWarning: false, fee }

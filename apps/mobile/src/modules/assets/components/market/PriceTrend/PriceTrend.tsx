@@ -36,7 +36,7 @@ export const PriceTrend = ({
     showAbsolute = false,
 }: PriceTrendProps) => {
     const styles = useStyles()
-    const { preferredFiatCurrency } = useCurrency()
+    const { preferredCurrency } = useCurrency()
 
     const { data: chartData } = useAssetPriceHistoryQuery(
         assetId,
@@ -44,11 +44,11 @@ export const PriceTrend = ({
     )
 
     const [calculatedPercentage, calculatedValue] = useMemo(() => {
-        const dataPoints = chartData?.map(p => p.fiatPrice) ?? []
+        const dataPoints = chartData?.map(p => p.usdPrice) ?? []
 
         const firstDp = dataPoints.at(0) ?? Decimal(0)
         const lastDp =
-            selectedDataPoint?.fiatPrice ?? dataPoints.at(-1) ?? Decimal(0)
+            selectedDataPoint?.usdPrice ?? dataPoints.at(-1) ?? Decimal(0)
 
         if (lastDp.isZero()) return [Decimal(0), Decimal(0)]
 
@@ -74,7 +74,7 @@ export const PriceTrend = ({
                     {formatCurrency(
                         changeValue.abs(),
                         2,
-                        preferredFiatCurrency,
+                        preferredCurrency,
                         undefined,
                         true,
                     )}

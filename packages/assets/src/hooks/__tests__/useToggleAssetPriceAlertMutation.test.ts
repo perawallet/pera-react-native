@@ -13,12 +13,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { useToggleAssetPriceAlertMutation } from '../useToggleAssetPriceAlertMutation'
-import { toggleAssetPriceAlert } from '../endpoints'
+import { toggleAssetPriceAlert } from '../../api'
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
 import { getAssetDetailsQueryKey } from '../querykeys'
 
-vi.mock('../endpoints', () => ({
+vi.mock('../../api', () => ({
     toggleAssetPriceAlert: vi.fn(),
 }))
 

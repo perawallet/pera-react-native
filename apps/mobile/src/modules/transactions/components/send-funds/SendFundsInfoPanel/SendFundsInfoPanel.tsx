@@ -23,8 +23,8 @@ import { Trans } from 'react-i18next'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSendFundsInfoPanel } from './useSendFundsInfoPanel'
-import { useWindowDimensions } from 'react-native'
 import { useTheme } from '@rneui/themed'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export type SendFundsInfoPanelProps = {
     onClose: () => void
@@ -35,9 +35,9 @@ export const SendFundsInfoPanel = ({
     onClose,
     ...rest
 }: SendFundsInfoPanelProps) => {
-    const dimensions = useWindowDimensions()
+    const insets = useSafeAreaInsets()
     const { theme } = useTheme()
-    const styles = useStyles(dimensions)
+    const styles = useStyles({ insets })
     const { t } = useLanguage()
     const { forceOpen, handleOpenInfoLink, handleClose } =
         useSendFundsInfoPanel(onClose)

@@ -11,10 +11,10 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { toggleAssetFavorite } from './endpoints'
+import { toggleAssetFavorite } from '../api'
 import { getAssetDetailsQueryKey } from './querykeys'
-import { type AssetResponse } from '../models'
 import { type Network } from '@perawallet/wallet-core-shared'
+import { AssetResponse } from '../api/assets/schema'
 
 type UseToggleAssetFavoriteMutationParams = {
     assetID: string
