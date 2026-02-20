@@ -87,6 +87,10 @@ vi.mock('@hooks/useToast', () => ({
     useToast: vi.fn(),
 }))
 
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({ t: (key: string) => key }),
+}))
+
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
 }))
@@ -269,8 +273,8 @@ describe('useTransactionConfirmationScreen', () => {
 
             expect(mockShowToast).toHaveBeenCalledWith(
                 {
-                    title: 'Invalid transaction',
-                    body: 'Something appears to have gone wrong with this transaction.',
+                    title: 'errors.transaction.title',
+                    body: 'errors.transaction.body',
                     type: 'error',
                 },
                 { notifier: undefined },
