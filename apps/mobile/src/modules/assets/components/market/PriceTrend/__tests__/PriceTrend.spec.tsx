@@ -30,8 +30,8 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
 describe('PriceTrend', () => {
     it('displays positive trend with percentage', () => {
         const mockData = [
-            { fiatPrice: new Decimal(100), datetime: new Date() },
-            { fiatPrice: new Decimal(120), datetime: new Date() },
+            { usdPrice: new Decimal(100), datetime: new Date() },
+            { usdPrice: new Decimal(120), datetime: new Date() },
         ]
         vi.mocked(useAssetPriceHistoryQuery).mockReturnValue({
             data: mockData,
@@ -49,8 +49,8 @@ describe('PriceTrend', () => {
 
     it('displays negative trend with percentage', () => {
         const mockData = [
-            { fiatPrice: new Decimal(100), datetime: new Date() },
-            { fiatPrice: new Decimal(80), datetime: new Date() },
+            { usdPrice: new Decimal(100), datetime: new Date() },
+            { usdPrice: new Decimal(80), datetime: new Date() },
         ]
         vi.mocked(useAssetPriceHistoryQuery).mockReturnValue({
             data: mockData,
@@ -67,8 +67,8 @@ describe('PriceTrend', () => {
 
     it('shows absolute value when showAbsolute is true', () => {
         const mockData = [
-            { fiatPrice: new Decimal(100), datetime: new Date() },
-            { fiatPrice: new Decimal(150), datetime: new Date() },
+            { usdPrice: new Decimal(100), datetime: new Date() },
+            { usdPrice: new Decimal(150), datetime: new Date() },
         ]
         vi.mocked(useAssetPriceHistoryQuery).mockReturnValue({
             data: mockData,
@@ -86,8 +86,8 @@ describe('PriceTrend', () => {
 
     it('handles zero price data gracefully', () => {
         const mockData = [
-            { fiatPrice: new Decimal(0), datetime: new Date() },
-            { fiatPrice: new Decimal(0), datetime: new Date() },
+            { usdPrice: new Decimal(0), datetime: new Date() },
+            { usdPrice: new Decimal(0), datetime: new Date() },
         ]
         vi.mocked(useAssetPriceHistoryQuery).mockReturnValue({
             data: mockData,

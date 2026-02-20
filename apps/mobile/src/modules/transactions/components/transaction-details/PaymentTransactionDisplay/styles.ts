@@ -33,11 +33,11 @@ export const useStyles = makeStyles(theme => ({
     },
     amountPositive: {
         marginVertical: theme.spacing.sm,
-        color: theme.colors.helperPositive,
+        color: theme.colors.positive,
     },
     amountNegative: {
         marginVertical: theme.spacing.sm,
-        color: theme.colors.helperNegative,
+        color: theme.colors.negative,
     },
     detailContainer: {
         paddingHorizontal: theme.spacing.sm,

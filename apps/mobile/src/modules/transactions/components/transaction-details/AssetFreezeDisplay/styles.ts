@@ -36,7 +36,7 @@ export const useStyles = makeStyles(theme => ({
         width: '100%',
     },
     frozenStatus: {
-        color: theme.colors.error,
+        color: theme.colors.alertNegative,
     },
     unfrozenStatus: {
         color: theme.colors.success,

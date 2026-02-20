@@ -84,7 +84,7 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
 
 vi.mock('@perawallet/wallet-core-currencies', () => ({
     useCurrency: vi.fn(() => ({
-        preferredFiatCurrency: 'USD',
+        preferredCurrency: 'USD',
     })),
 }))
 

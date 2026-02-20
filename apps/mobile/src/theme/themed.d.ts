@@ -14,36 +14,173 @@ import '@rneui/themed'
 
 declare module '@rneui/themed' {
     export interface Colors {
-        layerGray: string
-        layerGrayLight: string
-        layerGrayLighter: string
-        layerGrayLightest: string
+        // Defaults
+        systemElements: string
+
+        // Text
         textGray: string
         textGrayLighter: string
         textMain: string
-        textSonicSilver: string
         textWhite: string
+
+        // Layer
+        layerGray: string
+        layerGrayLighter: string
+        layerGrayLightest: string
+
+        // Link
+        linkPrimary: string
+        linkIcon: string
+
+        // Button Primary
         buttonPrimaryBg: string
         buttonPrimaryText: string
+        buttonPrimaryFocusBg: string
+        buttonPrimaryDisabledBg: string
+        buttonPrimaryDisabledText: string
+
+        // Button Secondary
+        buttonSecondaryBg: string
+        buttonSecondaryFocusBg: string
+        buttonSecondaryDisabledBg: string
+        buttonSecondaryText: string
+        buttonSecondaryDisabledText: string
+
+        // Button Ghost
+        buttonGhostBg: string
+        buttonGhostFocusBg: string
+        buttonGhostDisabledBg: string
+        buttonGhostText: string
+        buttonGhostDisabledText: string
+
+        // Button Float
+        buttonFloatBg: string
+        buttonFloatFocusBg: string
+        buttonFloatIconMain: string
+        buttonFloatIconLighter: string
+
+        // Button Helper
         buttonHelperBg: string
-        buttonHelperText: string
+        buttonHelperFocusBg: string
+        buttonHelperDisabledBg: string
+        buttonHelperIcon: string
+        buttonHelperDisabledIcon: string
+        buttonHelperPeraIcon: string
+
+        // Button Square
         buttonSquareBg: string
-        buttonSquareText: string
-        helperPositive: string
-        helperNegative: string
-        helperGray200: string
-        asaTrustedText: string
-        asaTrustedBg: string
-        asaVerifiedText: string
-        asaVerifiedBg: string
-        asaSuspiciousText: string
-        asaSuspiciousBg: string
-        backdrop: string
-        altBackground: string
-        linkPrimary: string
-        tabIconActive: string
-        tabIconPassive: string
-        testnetBackground: string
+        buttonSquareFocusBg: string
+        buttonSquareSecondaryBg: string
+        buttonSquareIcon: string
+        buttonSquareSecondaryIcon: string
+
+        // Helpers
+        positive: string
+        positiveLighter: string
+        negative: string
+        negativeLighter: string
+        successCheckmark: string
+        heroBg: string
+
+        // Banner
+        bannerBg: string
+        bannerButton: string
+        bannerIconBg: string
+        bannerText: string
+
+        // Alert
+        alertNegative: string
+        alertContent: string
+        alertPositive: string
+
+        // Wallet
+        wallet1: string
+        wallet1Icon: string
+        wallet2: string
+        wallet2Icon: string
+        wallet3: string
+        wallet3Icon: string
+        wallet3IconGovernor: string
+        wallet4: string
+        wallet4Icon: string
+        wallet4IconGovernor: string
+        wallet5: string
+        wallet5Icon: string
+
+        // ASA Icons
+        trustedIconBg: string
+        trustedIconInline: string
+        verifiedIconBg: string
+        verifiedIconInline: string
+        verifiedIconSolidBg: string
+        verifiedIconSolidInline: string
+        suspiciousIconBg: string
+        suspiciousIconInline: string
+
+        // ASA Banners
+        trustedBannerBg: string
+        trustedBannerContent: string
+        verifiedBannerBg: string
+        verifiedBannerContent: string
+        suspiciousBannerBg: string
+        suspiciousBannerContent: string
+
+        // Staking Badges
+        stakingLiquidBadge: string
+        stakingPoolsBadge: string
+        stakingDelegatedBadge: string
+
+        // Toast
+        toastBg: string
+        toastTitle: string
+        toastDescription: string
+
+        // Testnet
+        testnetBg: string
+        testnetText: string
+
+        // Algo Icon
+        algoIconBg: string
+        algoIcon: string
+
+        // QR Scanner
+        qrScannerBg: string
+
+        // Backdrop
+        backdropModalBg: string
+
+        // Keyboard
+        keyboardAccessoryBg: string
+        keyboardAccessoryLine: string
+
+        // Tab Bar
+        tabBarButton: string
+        tabBarBg: string
+        tabBarIconActive: string
+        tabBarIconNonActive: string
+        tabBarIconDisabled: string
+
+        // Bottom Sheet
+        bottomSheetLine: string
+
+        // Modality
+        modalityBg: string
+
+        // Switches
+        switchBg: string
+        switchOffBg: string
+
+        // NFT Icon
+        nftIconBg: string
+        nftIcon: string
+
+        // Dapp
+        dappMoonpay: string
+        dappSardine: string
+        dappTransak: string
+        dappBidali: string
+
+        // Legacy (no Figma equivalent, kept for compatibility)
         favorite: string
     }
 
@@ -66,6 +203,7 @@ declare module '@rneui/themed' {
             none: number
             sm: number
             md: number
+            lg: number
         }
         shadows: {
             sm: {

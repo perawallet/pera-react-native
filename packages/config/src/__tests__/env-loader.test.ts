@@ -267,6 +267,7 @@ describe('env-loader', () => {
             sendFundsFaqUrl: 'https://faq.example.com',
             swapSupportUrl: 'https://swap-support.example.com',
             dispenserUrl: 'https://dispenser.example.com',
+            algorandDefiUrl: 'https://defi.example.com',
             debugEnabled: false,
             profilingEnabled: false,
             pollingEnabled: true,

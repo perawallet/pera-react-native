@@ -57,6 +57,7 @@ export const configSchema = z.object({
 
     sendFundsFaqUrl: z.url(),
     swapSupportUrl: z.url(),
+    algorandDefiUrl: z.url(),
 
     debugEnabled: z.boolean(),
     profilingEnabled: z.boolean(),
@@ -99,6 +100,7 @@ const productionConfig = {
     swapSupportUrl:
         'https://support.perawallet.app/en/article/pera-swap-swapping-with-pera-1ep84ky/',
     dispenserUrl: 'https://lora.algokit.io/testnet/fund/',
+    algorandDefiUrl: 'https://algorand.co/ecosystem/defi',
 
     notificationRefreshTime: THIRTY_SECONDS,
     remoteConfigRefreshTime: ONE_HOUR,
@@ -142,6 +144,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     peraDemoDappUrl: 'PERA_DEMO_DAPP_URL',
     sendFundsFaqUrl: 'SEND_FUNDS_FAQ_URL',
     swapSupportUrl: 'SWAP_SUPPORT_URL',
+    algorandDefiUrl: 'ALGORAND_DEFI_URL',
     dispenserUrl: 'DISPENSER_URL',
 
     debugEnabled: 'DEBUG_ENABLED',

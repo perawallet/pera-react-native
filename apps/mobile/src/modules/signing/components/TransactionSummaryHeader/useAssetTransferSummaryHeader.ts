@@ -10,16 +10,11 @@
  limitations under the License
  */
 
-import {
-    ALGO_ASSET_ID,
-    useAssetFiatPricesQuery,
-    useSingleAssetDetailsQuery,
-} from '@perawallet/wallet-core-assets'
+import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import {
     getAssetTransferType,
     PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
 import Decimal from 'decimal.js'
 import { useMemo } from 'react'
 
@@ -30,7 +25,6 @@ export const useAssetTransferSummaryHeader = (
         () => getAssetTransferType(transaction),
         [transaction],
     )
-    const { preferredFiatCurrency, showAlgoAsPrimaryCurrency } = useCurrency()
 
     const label = useMemo(() => {
         switch (transferType) {
@@ -57,37 +51,11 @@ export const useAssetTransferSummaryHeader = (
         return transaction.assetTransferTransaction?.amount ?? 0n
     }, [transaction])
 
+    const { data: asset } = useSingleAssetDetailsQuery(assetId)
+
     const amount = useMemo(() => {
         return Decimal(microAmount).div(10 ** (asset?.decimals ?? 0))
     }, [transaction])
-
-    const { data: asset, isPending } = useSingleAssetDetailsQuery(assetId)
-    const { data: assetPrices, isPending: assetPricesPending } =
-        useAssetFiatPricesQuery(!!assetId)
-
-    const secondaryAssetName = useMemo(() => {
-        if (showAlgoAsPrimaryCurrency) {
-            return preferredFiatCurrency
-        }
-        return 'ALGO'
-    }, [showAlgoAsPrimaryCurrency, asset])
-
-    const value = useMemo(() => {
-        if (assetPricesPending) {
-            return undefined
-        }
-
-        if (showAlgoAsPrimaryCurrency) {
-            const algoPrice =
-                assetPrices?.get(ALGO_ASSET_ID)?.fiatPrice ?? new Decimal(0)
-            const assetPrice =
-                assetPrices?.get(assetId)?.fiatPrice ?? new Decimal(0)
-            return assetPrice.mul(amount).div(algoPrice)
-        }
-        return (assetPrices?.get(assetId)?.fiatPrice ?? new Decimal(0)).mul(
-            amount,
-        )
-    }, [assetPrices, isPending])
 
     return {
         label,
@@ -95,7 +63,5 @@ export const useAssetTransferSummaryHeader = (
         assetId,
         receiver,
         amount,
-        secondaryAssetName,
-        value,
     }
 }

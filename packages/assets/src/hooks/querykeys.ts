@@ -15,8 +15,8 @@ import { ALGO_ASSET_ID } from '../models'
 
 export const MODULE_PREFIX = 'assets'
 
-export const getAssetFiatPricesQueryKey = (assetIDs: string[]) => {
-    return [MODULE_PREFIX, 'prices', 'fiat', { assetIDs }]
+export const getAssetPricesQueryKey = (assetIDs: string[]) => {
+    return [MODULE_PREFIX, 'prices', 'usd', { assetIDs }]
 }
 
 export const getAssetPriceHistoryQueryKey = (

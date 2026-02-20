@@ -54,7 +54,7 @@ export const AssetPriceChart = ({
         () =>
             data?.map(p => {
                 return {
-                    value: p.fiatPrice.toNumber(),
+                    value: p.usdPrice.toNumber(),
                     timestamp: p.datetime,
                 }
             }) ?? [],
@@ -124,7 +124,7 @@ export const AssetPriceChart = ({
                     data={dataPoints}
                     hideAxesAndRules
                     height={CHART_HEIGHT}
-                    color={theme.colors.helperPositive}
+                    color={theme.colors.positive}
                     startFillColor='#28A79B'
                     endFillColor='#28A79B'
                     startOpacity={0.3}
@@ -146,7 +146,7 @@ export const AssetPriceChart = ({
                         pointerStripColor: theme.colors.textGrayLighter,
                         pointerStripWidth: 1,
                         pointerStripHeight: CHART_HEIGHT,
-                        pointerColor: theme.colors.helperPositive,
+                        pointerColor: theme.colors.positive,
                         strokeDashArray: [6, 2],
                     }}
                     getPointerProps={onFocus}

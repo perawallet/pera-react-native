@@ -20,7 +20,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     useAssetsQuery,
-    useAssetFiatPricesQuery,
+    useAssetPricesQuery,
 } from '@perawallet/wallet-core-assets'
 import { useSuggestedParametersQuery } from '@perawallet/wallet-core-blockchain'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
@@ -55,7 +55,7 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetsQuery: vi.fn(),
-    useAssetFiatPricesQuery: vi.fn(),
+    useAssetPricesQuery: vi.fn(),
     ALGO_ASSET_ID: '0',
     ALGO_ASSET: { id: '0', decimals: 6 },
     toDecimalUnits: (value: number | Decimal) => {
@@ -136,11 +136,11 @@ describe('useTransactionConfirmationScreen', () => {
         ;(useAssetsQuery as Mock).mockReturnValue({
             data: new Map(),
         })
-        ;(useAssetFiatPricesQuery as Mock).mockReturnValue({
+        ;(useAssetPricesQuery as Mock).mockReturnValue({
             data: new Map(),
         })
         ;(useCurrency as Mock).mockReturnValue({
-            preferredFiatCurrency: 'USD',
+            preferredCurrency: 'USD',
         })
         ;(useSuggestedParametersQuery as Mock).mockReturnValue({
             data: { minFee: 1000 },
@@ -149,7 +149,6 @@ describe('useTransactionConfirmationScreen', () => {
         ;(useAccountAssetBalanceQuery as Mock).mockReturnValue({
             data: {
                 amount: new Decimal(100),
-                fiatValue: new Decimal(200),
             },
             isPending: false,
         })
@@ -326,79 +325,6 @@ describe('useTransactionConfirmationScreen', () => {
         })
     })
 
-    describe('fiatPrice calculation', () => {
-        it('should calculate fiatPrice correctly when price data exists', () => {
-            const mockAmount = new Decimal(10)
-            const mockPrice = new Decimal(5)
-
-            ;(useSendFunds as Mock).mockReturnValue({
-                ...mockSendFundsState,
-                selectedAsset: mockSelectedAsset,
-                amount: mockAmount,
-            })
-            ;(useAssetFiatPricesQuery as Mock).mockReturnValue({
-                data: new Map([['123', { fiatPrice: mockPrice }]]),
-            })
-
-            const { result } = renderHook(() =>
-                useTransactionConfirmationScreen(),
-            )
-
-            expect(result.current.fiatPrice).toEqual(mockAmount.mul(mockPrice))
-        })
-
-        it('should return null for fiatPrice when no price data exists', () => {
-            ;(useSendFunds as Mock).mockReturnValue({
-                ...mockSendFundsState,
-                selectedAsset: mockSelectedAsset,
-                amount: new Decimal(10),
-            })
-            ;(useAssetFiatPricesQuery as Mock).mockReturnValue({
-                data: new Map(),
-            })
-
-            const { result } = renderHook(() =>
-                useTransactionConfirmationScreen(),
-            )
-
-            expect(result.current.fiatPrice).toBeNull()
-        })
-
-        it('should return null for fiatPrice when amount is undefined', () => {
-            ;(useSendFunds as Mock).mockReturnValue({
-                ...mockSendFundsState,
-                selectedAsset: mockSelectedAsset,
-                amount: undefined,
-            })
-            ;(useAssetFiatPricesQuery as Mock).mockReturnValue({
-                data: new Map([[123, { fiatPrice: new Decimal(5) }]]),
-            })
-
-            const { result } = renderHook(() =>
-                useTransactionConfirmationScreen(),
-            )
-
-            expect(result.current.fiatPrice).toBeNull()
-        })
-
-        it('should return null for fiatPrice when selectedAsset is undefined', () => {
-            ;(useSendFunds as Mock).mockReturnValue({
-                ...mockSendFundsState,
-                selectedAsset: undefined,
-                amount: new Decimal(10),
-            })
-            ;(useAssetFiatPricesQuery as Mock).mockReturnValue({
-                data: new Map([[123, { fiatPrice: new Decimal(5) }]]),
-            })
-
-            const { result } = renderHook(() =>
-                useTransactionConfirmationScreen(),
-            )
-
-            expect(result.current.fiatPrice).toBeNull()
-        })
-    })
-
     describe('asset resolution', () => {
         it('should resolve asset from assets map', () => {
             ;(useSendFunds as Mock).mockReturnValue({
@@ -454,7 +380,6 @@ describe('useTransactionConfirmationScreen', () => {
             const mockParams = { minFee: 1000 }
             const mockCurrentBalance = {
                 amount: new Decimal(100),
-                fiatValue: new Decimal(200),
             }
 
             ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
@@ -477,7 +402,7 @@ describe('useTransactionConfirmationScreen', () => {
                 isPending: false,
             })
             ;(useCurrency as Mock).mockReturnValue({
-                preferredFiatCurrency: 'EUR',
+                preferredCurrency: 'EUR',
             })
 
             const { result } = renderHook(() =>
@@ -493,7 +418,6 @@ describe('useTransactionConfirmationScreen', () => {
             expect(result.current.paramsPending).toBe(false)
             expect(result.current.currentBalance).toEqual(mockCurrentBalance)
             expect(result.current.currentBalancePending).toBe(false)
-            expect(result.current.preferredFiatCurrency).toBe('EUR')
         })
     })
 })

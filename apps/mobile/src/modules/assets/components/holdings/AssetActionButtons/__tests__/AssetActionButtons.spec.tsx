@@ -74,7 +74,6 @@ const mockAsset = {
 
 const mockAssetHolding = {
     amount: 100,
-    fiatValue: 50,
 }
 
 describe('AssetActionButtons', () => {

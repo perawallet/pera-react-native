@@ -1,6 +1,6 @@
 # Pera Wallet
 
-React Native monorepo for Pera Wallet. **Always use `pnpm`** for all commands.
+React Native monorepo for Pera Wallet, a non-custodial Algorand crypto wallet. **Always use `pnpm`** for all commands.
 
 ```sh
 pnpm build                          # Run to confirm no type/compile issues

@@ -12,6 +12,7 @@
 
 import { AssetIcon } from '../AssetIcon'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import {
     PWIcon,
     PWIconSize,
@@ -23,7 +24,6 @@ import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
 
 export type AccountAssetItemViewProps = {
     accountBalance: AssetWithAccountBalance
@@ -37,7 +37,6 @@ export const AccountAssetItemView = ({
 }: AccountAssetItemViewProps) => {
     const styles = useStyles()
 
-    const { preferredFiatCurrency } = useCurrency()
     const { data: assets } = useAssetsQuery([accountBalance.assetId])
 
     const asset = useMemo(() => {
@@ -113,9 +112,9 @@ export const AccountAssetItemView = ({
                         showSymbol
                         style={styles.primaryAmount}
                     />
-                    <CurrencyDisplay
-                        currency={preferredFiatCurrency}
-                        value={accountBalance.fiatValue}
+                    <PreferredCurrencyDisplay
+                        sourceAmount={accountBalance.amount}
+                        sourceAssetId={accountBalance.assetId}
                         precision={2}
                         minPrecision={2}
                         showSymbol

@@ -32,8 +32,8 @@ export const useCurrenciesStore: UseBoundStore<
 > = lazy.useStore
 
 const initialState = {
-    preferredFiatCurrency: 'USD',
-    showAlgoAsPrimaryCurrency: false,
+    preferredCurrency: 'USD',
+    fallbackCurrency: 'USD',
 }
 
 const createCurrenciesStore = (storage: KeyValueStorageService) =>
@@ -41,11 +41,10 @@ const createCurrenciesStore = (storage: KeyValueStorageService) =>
         persist(
             set => ({
                 ...initialState,
-                setPreferredFiatCurrency: (currency: string) =>
-                    set({ preferredFiatCurrency: currency }),
-                setShowAlgoAsPrimaryCurrency: (
-                    showAlgoAsPrimaryCurrency: boolean,
-                ) => set({ showAlgoAsPrimaryCurrency }),
+                setPreferredCurrency: (currency: string) =>
+                    set({ preferredCurrency: currency }),
+                setFallbackCurrency: (currency: string) =>
+                    set({ fallbackCurrency: currency }),
                 resetState: () => set(initialState),
             }),
             {
@@ -53,8 +52,8 @@ const createCurrenciesStore = (storage: KeyValueStorageService) =>
                 storage: createJSONStorage(() => storage),
                 version: 1,
                 partialize: state => ({
-                    preferredFiatCurrency: state.preferredFiatCurrency,
-                    showAlgoAsPrimaryCurrency: state.showAlgoAsPrimaryCurrency,
+                    preferredCurrency: state.preferredCurrency,
+                    fallbackCurrency: state.fallbackCurrency,
                 }),
             },
         ),

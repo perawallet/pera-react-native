@@ -29,7 +29,7 @@ export const useStyles = makeStyles(theme => ({
         minWidth: 200,
         ...theme.shadows.md,
         borderWidth: 1,
-        borderColor: theme.colors.layerGrayLight,
+        borderColor: theme.colors.layerGray,
     },
     item: {
         flexDirection: 'row',
@@ -42,6 +42,6 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textMain,
     },
     labelDestructive: {
-        color: theme.colors.error,
+        color: theme.colors.alertNegative,
     },
 }))

@@ -30,7 +30,7 @@ export const useStyles = makeStyles(theme => {
         radioContainer: {
             borderWidth: theme.borders.sm,
             borderRadius: theme.spacing.xl,
-            borderColor: theme.colors.layerGrayLight,
+            borderColor: theme.colors.layerGray,
             width: theme.spacing.xl,
             height: theme.spacing.xl,
             justifyContent: 'center',
@@ -40,7 +40,7 @@ export const useStyles = makeStyles(theme => {
             borderRadius: theme.spacing.lg,
             width: theme.spacing.lg,
             height: theme.spacing.lg,
-            backgroundColor: theme.colors.helperPositive,
+            backgroundColor: theme.colors.positive,
         },
         input: {
             paddingHorizontal: theme.spacing.md,

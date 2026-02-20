@@ -12,11 +12,15 @@
 
 import type { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useQuery } from '@tanstack/react-query'
-import { fetchAssetPriceHistory } from './endpoints'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
-import type { AssetPriceHistoryResponse } from '../models'
+import {
+    fetchAssetPriceHistory,
+    transformAssetPriceHistoryResponse,
+} from '../api'
+import type {
+    AssetPriceHistoryResponse,
+    AssetPriceHistoryResponseItem,
+} from '../api'
 import { useCallback } from 'react'
-import { mapAssetPriceHistoryResponseToAssetPriceHistoryItem } from './mappers'
 import { getAssetPriceHistoryQueryKey } from './querykeys'
 
 export const useAssetPriceHistoryQuery = (
@@ -24,20 +28,16 @@ export const useAssetPriceHistoryQuery = (
     period: HistoryPeriod,
 ) => {
     const queryKey = getAssetPriceHistoryQueryKey(assetID, period)
-    const { usdToPreferred } = useCurrency()
 
     return useQuery({
         queryKey,
         queryFn: () => fetchAssetPriceHistory(assetID, period),
         select: useCallback(
             (data: AssetPriceHistoryResponse) =>
-                data.map(item =>
-                    mapAssetPriceHistoryResponseToAssetPriceHistoryItem(
-                        item,
-                        usdToPreferred,
-                    ),
+                data.map((item: AssetPriceHistoryResponseItem) =>
+                    transformAssetPriceHistoryResponse(item),
                 ),
-            [usdToPreferred],
+            [],
         ),
     })
 }

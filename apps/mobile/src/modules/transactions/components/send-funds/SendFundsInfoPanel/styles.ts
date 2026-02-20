@@ -11,14 +11,13 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { ScaledSize } from 'react-native'
+import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
-    const height = dimensions.height - 200
+export const useStyles = makeStyles((theme, props: { insets: EdgeInsets }) => {
     return {
         container: {
-            height,
             padding: theme.spacing.xl,
+            paddingBottom: props.insets.bottom,
             paddingTop: theme.spacing.xxl,
             borderTopStartRadius: theme.spacing.sm,
             borderTopEndRadius: theme.spacing.sm,
@@ -38,11 +37,10 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
         },
         postamble: {
             lineHeight: theme.spacing.lg,
-            marginTop: theme.spacing.lg,
+            marginVertical: theme.spacing.lg,
         },
         tipsContainer: {
             gap: theme.spacing.xl,
-            flexShrink: 1,
         },
         tip: {
             flexDirection: 'row',
@@ -67,7 +65,7 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
             flexShrink: 1,
         },
         redText: {
-            color: theme.colors.error,
+            color: theme.colors.alertNegative,
         },
         link: {
             marginLeft: theme.spacing.xs,

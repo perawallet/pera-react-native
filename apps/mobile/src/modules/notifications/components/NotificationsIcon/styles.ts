@@ -15,12 +15,14 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     badge: {
         position: 'absolute',
-        top: -theme.spacing.sm,
-        right: -theme.spacing.sm,
+        top: -theme.spacing.xs,
+        right: -theme.spacing.xs,
         width: theme.spacing.lg,
         height: theme.spacing.lg,
         borderRadius: theme.spacing.lg,
-        backgroundColor: theme.colors.error,
+        borderWidth: theme.borders.lg,
+        borderColor: theme.colors.background,
+        backgroundColor: theme.colors.alertNegative,
         alignItems: 'center',
         justifyContent: 'center',
     },

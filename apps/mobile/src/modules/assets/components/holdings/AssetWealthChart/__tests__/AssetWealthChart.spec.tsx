@@ -78,8 +78,8 @@ describe('AssetWealthChart', () => {
 
     it('renders chart when data is available', () => {
         const mockData = [
-            { fiatValue: new Decimal(100), datetime: new Date() },
-            { fiatValue: new Decimal(110), datetime: new Date() },
+            { preferredValue: new Decimal(100), datetime: new Date() },
+            { preferredValue: new Decimal(110), datetime: new Date() },
         ]
         vi.mocked(useAccountsAssetsBalanceHistoryQuery).mockReturnValue({
             data: mockData,
@@ -98,7 +98,9 @@ describe('AssetWealthChart', () => {
     })
 
     it('accepts different period values', () => {
-        const mockData = [{ fiatValue: new Decimal(100), datetime: new Date() }]
+        const mockData = [
+            { preferredValue: new Decimal(100), datetime: new Date() },
+        ]
         vi.mocked(useAccountsAssetsBalanceHistoryQuery).mockReturnValue({
             data: mockData,
             isPending: false,
