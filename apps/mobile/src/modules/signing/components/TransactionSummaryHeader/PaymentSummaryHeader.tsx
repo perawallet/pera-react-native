@@ -16,7 +16,8 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { PWText, PWView } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { AddressDisplay } from '@components/AddressDisplay'
@@ -34,8 +35,7 @@ export const PaymentSummaryHeader = ({
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
-    const { value, preferredFiatCurrency } =
-        usePaymentSummaryHeader(transaction)
+    const { amount } = usePaymentSummaryHeader(transaction)
 
     return (
         <PWView style={styles.container}>
@@ -65,17 +65,14 @@ export const PaymentSummaryHeader = ({
                     variant='h1'
                     style={styles.amountValue}
                 />
-                {!!value && (
-                    <CurrencyDisplay
-                        currency={preferredFiatCurrency}
-                        precision={DEFAULT_PRECISION}
-                        minPrecision={DEFAULT_PRECISION}
-                        value={value}
-                        showSymbol
-                        variant='h4'
-                        style={styles.secondaryAmountValue}
-                    />
-                )}
+                <PreferredCurrencyDisplay
+                    sourceAmount={amount}
+                    sourceAssetId={ALGO_ASSET_ID}
+                    variant='h4'
+                    style={styles.secondaryAmountValue}
+                    precision={ALGO_ASSET.decimals}
+                    minPrecision={DEFAULT_PRECISION}
+                />
             </PWView>
         </PWView>
     )

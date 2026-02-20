@@ -26,6 +26,7 @@ import {
     AssetTitle,
 } from '@modules/assets/components'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import Decimal from 'decimal.js'
 import {
     AccountBalanceHistoryItem,
@@ -48,7 +49,7 @@ export type AssetHoldingsProps = {
 export const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
     const styles = useStyles()
     const { data: assetDetails } = useSingleAssetDetailsQuery(asset.assetId)
-    const { preferredFiatCurrency } = useCurrency()
+    const { preferredCurrency } = useCurrency()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AccountBalanceHistoryItem>()
 
@@ -70,12 +71,10 @@ export const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
         return currentCrypto
     }, [assetHolding, selectedPoint])
 
-    const fiatAmount = useMemo(() => {
-        const currentUSD = selectedPoint
-            ? (selectedPoint.fiatValue ?? Decimal(0))
-            : (assetHolding?.fiatValue ?? Decimal(0))
-        return currentUSD
-    }, [assetHolding, selectedPoint])
+    const selectedPreferredValue = useMemo(() => {
+        if (!selectedPoint) return null
+        return selectedPoint.preferredValue ?? Decimal(0)
+    }, [selectedPoint])
 
     return (
         <AssetTransactionList
@@ -120,12 +119,23 @@ export const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
                     </PWView>
 
                     <PWView style={styles.secondaryValueContainer}>
-                        <CurrencyDisplay
-                            value={fiatAmount}
-                            currency={preferredFiatCurrency}
-                            precision={2}
-                            minPrecision={2}
-                        />
+                        {selectedPoint ? (
+                            <CurrencyDisplay
+                                value={selectedPreferredValue}
+                                currency={preferredCurrency}
+                                precision={2}
+                                minPrecision={2}
+                            />
+                        ) : (
+                            <PreferredCurrencyDisplay
+                                sourceAmount={
+                                    assetHolding?.amount ?? Decimal(0)
+                                }
+                                sourceAssetId={asset.assetId}
+                                precision={2}
+                                minPrecision={2}
+                            />
+                        )}
                         {!!selectedPoint && (
                             <PWText>
                                 {formatDatetime(selectedPoint.datetime)}

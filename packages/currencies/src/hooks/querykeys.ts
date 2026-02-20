@@ -14,12 +14,14 @@ import { Network } from '@perawallet/wallet-core-shared'
 
 export const MODULE_PREFIX = 'currencies'
 
-export const getCurrenciesQueryKey = (network: Network) => [
-    MODULE_PREFIX,
-    { network },
-]
+export const currencyQueryKeys = {
+    all: [MODULE_PREFIX] as const,
+    list: (network: Network) => [MODULE_PREFIX, { network }] as const,
+    price: (network: Network, preferredFiatCurrency: string) =>
+        [MODULE_PREFIX, { network, preferredFiatCurrency }] as const,
+    algoUsdPrice: [MODULE_PREFIX, 'algo-usd-price'] as const,
+}
 
-export const getPreferredCurrencyPriceQueryKey = (
-    network: Network,
-    preferredFiatCurrency: string,
-) => [MODULE_PREFIX, { network, preferredFiatCurrency }]
+// Aliases for backward compatibility
+export const getCurrenciesQueryKey = currencyQueryKeys.list
+export const getPreferredCurrencyPriceQueryKey = currencyQueryKeys.price

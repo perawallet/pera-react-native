@@ -525,7 +525,7 @@
     "settings": {
         "currency": {
             "title": "Main Currency",
-            "description": "Your main currency is {{primaryCurrency}}, and secondary currency is {{secondaryCurrency}}.",
+            "description": "Your main currency is {{preferredCurrency}}, and secondary currency is {{fallbackCurrency}}.",
             "search_placeholder": "Search"
         },
         "main": {

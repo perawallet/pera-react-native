@@ -113,7 +113,25 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         unitName: 'ALGO',
         decimals: 6,
     },
+    ALGO_ASSET_ID: '0',
     toWholeUnits: vi.fn(() => new Decimal('0.001')),
+    useAssetPricesQuery: vi.fn(() => ({
+        data: new Map(),
+        isPending: false,
+    })),
+}))
+
+vi.mock('@perawallet/wallet-core-currencies', () => ({
+    useCurrency: vi.fn(() => ({
+        preferredCurrency: 'USD',
+        fallbackCurrency: 'USD',
+        algoUsdPrice: new Decimal(0),
+        usdToPreferred: (v: Decimal) => v,
+    })),
+    usePreferredCurrencyPriceQuery: vi.fn(() => ({
+        data: undefined,
+        isPending: false,
+    })),
 }))
 
 vi.mock('../styles', () => ({
@@ -140,13 +158,11 @@ const defaultHookReturn = {
     amount: new Decimal('10.5'),
     destination: 'DEST_ADDRESS_ABC123',
     selectedAccount: { address: 'ACCOUNT_ADDRESS_ABC123' },
-    fiatPrice: new Decimal('1.25'),
-    preferredFiatCurrency: 'USD',
+    preferredCurrency: 'USD',
     params: { minFee: 1000 },
     paramsPending: false,
     currentBalance: {
         amount: new Decimal('100'),
-        fiatValue: new Decimal('125'),
     },
     currentBalancePending: false,
     note: undefined as string | undefined,

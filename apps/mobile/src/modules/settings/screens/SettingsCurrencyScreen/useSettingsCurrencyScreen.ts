@@ -10,23 +10,20 @@
  limitations under the License
  */
 
-import {
-    ALGO_ASSET,
-    useInvalidateAssetPrices,
-} from '@perawallet/wallet-core-assets'
+import { useInvalidateAssetPrices } from '@perawallet/wallet-core-assets'
 import {
     Currency,
     useCurrenciesQuery,
     useCurrency,
 } from '@perawallet/wallet-core-currencies'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
 export const useSettingsCurrencyScreen = () => {
     const {
-        setPreferredFiatCurrency,
-        setShowAlgoAsPrimaryCurrency,
-        showAlgoAsPrimaryCurrency,
-        preferredFiatCurrency,
+        setPreferredCurrency,
+        setFallbackCurrency,
+        fallbackCurrency,
+        preferredCurrency,
     } = useCurrency()
     const [search, setSearch] = useState<string>()
     const [filteredData, setFilteredData] = useState<Currency[]>([])
@@ -51,35 +48,21 @@ export const useSettingsCurrencyScreen = () => {
 
     const setCurrency = (currency: Currency) => {
         if (currency.id === 'ALGO') {
-            setShowAlgoAsPrimaryCurrency(true)
-            setPreferredFiatCurrency('USD')
+            setPreferredCurrency('ALGO')
+            setFallbackCurrency('USD')
         } else {
-            setPreferredFiatCurrency(currency.id)
-            setShowAlgoAsPrimaryCurrency(false)
+            setPreferredCurrency(currency.id)
+            setFallbackCurrency(currency.id)
         }
         invalidateAssetPrices()
     }
-
-    const primaryCurrency = useMemo(() => {
-        if (showAlgoAsPrimaryCurrency) {
-            return ALGO_ASSET.unitName
-        }
-        return preferredFiatCurrency
-    }, [showAlgoAsPrimaryCurrency, preferredFiatCurrency])
-
-    const secondaryCurrency = useMemo(() => {
-        if (showAlgoAsPrimaryCurrency) {
-            return preferredFiatCurrency
-        }
-        return ALGO_ASSET.unitName
-    }, [showAlgoAsPrimaryCurrency, preferredFiatCurrency])
 
     return {
         setCurrency,
         search,
         setSearch,
         filteredData,
-        primaryCurrency,
-        secondaryCurrency,
+        preferredCurrency,
+        fallbackCurrency,
     }
 }

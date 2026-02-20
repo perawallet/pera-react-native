@@ -14,7 +14,6 @@ import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { InputScreen } from '../InputScreen'
 import { useInputScreen } from '../useInputScreen'
-import Decimal from 'decimal.js'
 
 vi.mock('@react-navigation/native', async importOriginal => {
     const actual =
@@ -54,6 +53,15 @@ vi.mock('@components/CurrencyDisplay', () => ({
     CurrencyDisplay: vi.fn(({ value, currency }: any) => (
         <span>
             {value?.toString()} {currency}
+        </span>
+    )),
+}))
+
+vi.mock('@components/PreferredCurrencyDisplay', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PreferredCurrencyDisplay: vi.fn(({ sourceAmount, sourceAssetId }: any) => (
+        <span data-testid='preferred-currency-display'>
+            {sourceAmount?.toString()} {sourceAssetId}
         </span>
     )),
 }))
@@ -109,12 +117,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(() => null),
 }))
 
-vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: vi.fn(() => ({
-        preferredFiatCurrency: 'USD',
-    })),
-}))
-
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
         t: (key: string) => key,
@@ -141,7 +143,6 @@ const defaultInputViewReturn = {
     params: { minFee: 1000 },
     accountInformation: { amount: 1000000n, minBalance: 100000n },
     cryptoValue: null,
-    fiatValue: null,
     setMax: mockSetMax,
     handleKey: mockHandleKey,
     handleNext: mockHandleNext,
@@ -212,28 +213,25 @@ describe('InputScreen', () => {
         expect(screen.getByText('10 ALGO')).toBeTruthy()
     })
 
-    it('shows "--" when fiatValue is null', () => {
-        ;(useInputScreen as Mock).mockReturnValue({
-            ...defaultInputViewReturn,
-            cryptoValue: '10',
-            fiatValue: null,
-        })
-
+    it('renders PreferredCurrencyDisplay with null sourceAmount when cryptoValue is null', () => {
         render(<InputScreen />)
 
-        expect(screen.getByText('--')).toBeTruthy()
+        const display = screen.getByTestId('preferred-currency-display')
+        expect(display).toBeTruthy()
+        expect(display.textContent).toContain('0')
     })
 
-    it('renders fiat CurrencyDisplay when fiatValue is present', () => {
+    it('renders PreferredCurrencyDisplay with sourceAmount when cryptoValue is present', () => {
         ;(useInputScreen as Mock).mockReturnValue({
             ...defaultInputViewReturn,
             cryptoValue: '10',
-            fiatValue: Decimal('25.50'),
         })
 
         render(<InputScreen />)
 
-        expect(screen.getByText('25.5 USD')).toBeTruthy()
+        const display = screen.getByTestId('preferred-currency-display')
+        expect(display).toBeTruthy()
+        expect(display.textContent).toContain('10')
     })
 
     it('disables next button when cryptoValue is falsy', () => {

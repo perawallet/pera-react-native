@@ -51,7 +51,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         data: mockAssets,
         isPending: false,
     })),
-    useAssetFiatPricesQuery: vi.fn(() => ({
+    useAssetPricesQuery: vi.fn(() => ({
         data: mockAssetPrices,
         isPending: false,
     })),
@@ -134,12 +134,10 @@ describe('useAccountBalances', () => {
 
         const accountData = result.current.accountBalances.get('ADDR1')
         expect(accountData).toBeDefined()
-        // With empty asset prices mock, fiatValue is 0 but algoValue includes the ALGO balance
+        // With empty asset prices mock, algoValue includes the ALGO balance
         expect(accountData?.algoValue).toEqual(Decimal(1))
-        expect(accountData?.fiatValue).toEqual(Decimal(0))
 
         expect(result.current.portfolioAlgoValue).toEqual(Decimal(1))
-        expect(result.current.portfolioFiatValue).toEqual(Decimal(0))
     })
 
     it('handles loading state', () => {
@@ -199,9 +197,9 @@ describe('useAccountBalances', () => {
         // Setup asset metadata and prices
         mockAssets.set('456', { id: '456', decimals: 2, name: 'Test Token' })
         mockAssets.set('789', { id: '789', decimals: 6, name: 'Another Token' })
-        mockAssetPrices.set('0', { fiatPrice: Decimal(2) }) // ALGO at $2
-        mockAssetPrices.set('456', { fiatPrice: Decimal(10) }) // Token at $10
-        mockAssetPrices.set('789', { fiatPrice: Decimal(0.5) }) // Token at $0.50
+        mockAssetPrices.set('0', { usdPrice: Decimal(2) }) // ALGO at $2
+        mockAssetPrices.set('456', { usdPrice: Decimal(10) }) // Token at $10
+        mockAssetPrices.set('789', { usdPrice: Decimal(0.5) }) // Token at $0.50
 
         // Mock algokit response format
         // Note: the hook reads balance.algos and divides by 10^6
@@ -268,7 +266,7 @@ describe('useAccountBalances', () => {
             decimals: 0,
             name: 'No Price Token',
         })
-        mockAssetPrices.set('0', { fiatPrice: Decimal(1) })
+        mockAssetPrices.set('0', { usdPrice: Decimal(1) })
         // No price for asset 999, should default to 0
 
         // Mock algokit response format
@@ -319,8 +317,8 @@ describe('useAccountAssetBalanceQuery', () => {
         }
 
         mockAssets.set('123', { id: '123', decimals: 4, name: 'Target Asset' })
-        mockAssetPrices.set('0', { fiatPrice: Decimal(1) })
-        mockAssetPrices.set('123', { fiatPrice: Decimal(5) })
+        mockAssetPrices.set('0', { usdPrice: Decimal(1) })
+        mockAssetPrices.set('123', { usdPrice: Decimal(5) })
 
         // Mock algokit response format
         mockGetInformation.mockResolvedValue({
@@ -361,7 +359,7 @@ describe('useAccountAssetBalanceQuery', () => {
             canSign: true,
         }
 
-        mockAssetPrices.set('0', { fiatPrice: Decimal(1) })
+        mockAssetPrices.set('0', { usdPrice: Decimal(1) })
 
         // Mock algokit response with no assets
         mockGetInformation.mockResolvedValue({

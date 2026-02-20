@@ -29,7 +29,12 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useSelectedAccount: vi.fn(() => undefined),
         useAccountBalancesQuery: vi.fn(() => ({
             portfolioAlgoValue: '0',
-            portfolioFiatValue: '0',
+            isPending: false,
+            accountBalances: new Map(),
+        })),
+        usePortfolioTotals: vi.fn(() => ({
+            portfolioPreferredValue: '0',
+            accountPreferredValues: new Map(),
             isPending: false,
         })),
     }

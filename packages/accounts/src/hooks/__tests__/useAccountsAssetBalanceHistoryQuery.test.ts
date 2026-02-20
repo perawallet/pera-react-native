@@ -39,7 +39,7 @@ const mockPreferredCurrency = 'USD'
 vi.mock('@perawallet/wallet-core-currencies', () => ({
     useCurrency: () => ({
         usdToPreferred: mockUsdToPreferred,
-        preferredFiatCurrency: mockPreferredCurrency,
+        preferredCurrency: mockPreferredCurrency,
     }),
 }))
 
@@ -111,13 +111,13 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
             expect(result.current.data?.[0]).toEqual({
                 datetime: new Date('2024-01-01T00:00:00Z'),
                 algoValue: new Decimal('10.5'),
-                fiatValue: new Decimal(50), // 25 * 2
+                preferredValue: new Decimal(50), // 25 * 2
                 round: 10000,
             })
             expect(result.current.data?.[1]).toEqual({
                 datetime: new Date('2024-01-02T00:00:00Z'),
                 algoValue: new Decimal('12.0'),
-                fiatValue: new Decimal(60), // 30 * 2
+                preferredValue: new Decimal(60), // 30 * 2
                 round: 10001,
             })
         })
@@ -150,7 +150,7 @@ describe('useAccountsAssetsBalanceHistoryQuery', () => {
             expect(result.current.data?.[0]).toEqual({
                 datetime: new Date('2024-01-01T00:00:00Z'),
                 algoValue: new Decimal(0),
-                fiatValue: new Decimal(0),
+                preferredValue: new Decimal(0),
                 round: 10000,
             })
         })
