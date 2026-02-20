@@ -43,7 +43,7 @@ export const AssetFavoriteButton = ({
             <PWRoundIcon
                 icon={isFavorite ? 'star-filled' : 'star'}
                 size='sm'
-                variant={isFavorite ? 'favorite' : 'primary'}
+                variant={isFavorite ? 'favorite' : 'secondary'}
                 style={styles.icon}
             />
         </PWTouchableOpacity>

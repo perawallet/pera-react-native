@@ -21,7 +21,7 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.background,
         borderRadius: theme.spacing.sm,
         borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGrayLight,
+        borderColor: theme.colors.layerGray,
         zIndex: theme.zIndex.layer2,
         ...theme.shadows.md,
     },

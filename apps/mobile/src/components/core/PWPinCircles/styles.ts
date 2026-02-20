@@ -32,7 +32,7 @@ export const useStyles = makeStyles(theme => ({
         borderColor: theme.colors.textMain,
     },
     circleError: {
-        backgroundColor: theme.colors.error,
-        borderColor: theme.colors.error,
+        backgroundColor: theme.colors.alertNegative,
+        borderColor: theme.colors.alertNegative,
     },
 }))

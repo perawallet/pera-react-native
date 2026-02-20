@@ -12,6 +12,7 @@
 
 import { describe, it, expect } from 'vitest'
 import React from 'react'
+import { Text } from 'react-native'
 import { render, screen } from '@test-utils/render'
 import { LoadingView } from '../LoadingView'
 
@@ -29,5 +30,24 @@ describe('LoadingView', () => {
             />,
         )
         expect(screen.getAllByTestId('RNESkeleton')).toHaveLength(3)
+    })
+
+    it('renders custom skeletons when renderSkeleton is provided', () => {
+        render(
+            <LoadingView
+                variant='skeleton'
+                count={3}
+                renderSkeleton={index => (
+                    <Text
+                        key={index}
+                        testID='custom-skeleton'
+                    >
+                        Skeleton {index}
+                    </Text>
+                )}
+            />,
+        )
+        expect(screen.getAllByTestId('custom-skeleton')).toHaveLength(3)
+        expect(screen.queryAllByTestId('RNESkeleton')).toHaveLength(0)
     })
 })

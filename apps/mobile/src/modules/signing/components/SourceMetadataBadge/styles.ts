@@ -19,7 +19,7 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: theme.colors.altBackground,
+        backgroundColor: theme.colors.modalityBg,
         borderRadius: ICON_SIZE,
         paddingVertical: theme.spacing.xs,
         paddingHorizontal: theme.spacing.md,

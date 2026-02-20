@@ -31,7 +31,7 @@ export const useStyles = makeStyles(theme => {
             borderRadius: theme.spacing.xl,
         },
         link: {
-            color: theme.colors.helperPositive,
+            color: theme.colors.positive,
         },
         description: {
             color: theme.colors.textGray,
@@ -59,12 +59,12 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.xs,
         },
         mainnetText: {
-            color: theme.colors.helperPositive,
+            color: theme.colors.positive,
             textTransform: 'uppercase',
             fontSize: 10,
         },
         testnetText: {
-            color: theme.colors.testnetBackground,
+            color: theme.colors.testnetBg,
             textTransform: 'uppercase',
             fontSize: 10,
         },

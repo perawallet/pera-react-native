@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 import { PWButtonProps } from './PWButton'
-import { getFontFamily } from '@theme/theme'
+import { getFontFamily } from '@theme/typography'
 
 export const useStyles = makeStyles((theme, props: PWButtonProps) => {
     const variantStyles = {
@@ -26,10 +26,10 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
         },
         helper: {
             backgroundColor: theme.colors.buttonSquareBg,
-            color: theme.colors.buttonSquareText,
+            color: theme.colors.buttonSquareIcon,
         },
         destructive: {
-            backgroundColor: theme.colors.error,
+            backgroundColor: theme.colors.alertNegative,
             color: theme.colors.textWhite,
         },
         link: {
@@ -38,7 +38,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
         },
         errorLink: {
             backgroundColor: theme.colors.background,
-            color: theme.colors.error,
+            color: theme.colors.alertNegative,
         },
     }
 
@@ -82,7 +82,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
             backgroundColor,
         },
         titleStyle: {
-            fontFamily: getFontFamily(false, 500),
+            fontFamily: getFontFamily(500),
             fontSize: 15,
             lineHeight: 24,
             flexWrap: 'nowrap',

@@ -10,18 +10,20 @@
  limitations under the License
  */
 
-import { ActivityIndicator } from 'react-native'
+import { ActivityIndicator, StyleProp, ViewStyle } from 'react-native'
 import { PWSkeleton } from '@components/core/PWSkeleton'
 import { PWView } from '@components/core/PWView'
 import { useTheme } from '@rneui/themed'
 import { useStyles } from './styles'
-import { PropsWithChildren } from 'react'
+import { PropsWithChildren, ReactNode } from 'react'
 
 export type LoadingViewProps = {
     variant: 'circle' | 'skeleton'
     size?: 'sm' | 'lg'
     count?: number
     isLoading?: boolean
+    renderSkeleton?: (index: number) => ReactNode
+    style?: StyleProp<ViewStyle>
 } & PropsWithChildren
 
 export const LoadingView = ({
@@ -29,10 +31,12 @@ export const LoadingView = ({
     size = 'sm',
     count = 1,
     isLoading = true,
+    renderSkeleton,
+    style,
     children,
 }: LoadingViewProps) => {
     const { theme } = useTheme()
-    const styles = useStyles()
+    const defaultStyles = useStyles()
 
     if (!isLoading) {
         return children
@@ -40,7 +44,7 @@ export const LoadingView = ({
 
     if (variant === 'circle') {
         return (
-            <PWView style={styles.container}>
+            <PWView style={[defaultStyles.container, style]}>
                 <ActivityIndicator
                     size={size === 'sm' ? 'small' : 'large'}
                     color={theme.colors.linkPrimary}
@@ -51,18 +55,22 @@ export const LoadingView = ({
 
     if (variant === 'skeleton') {
         return (
-            <PWView style={styles.container}>
-                {Array.from({ length: count }, (_, i) => (
-                    <PWSkeleton
-                        key={i}
-                        style={styles.skeleton}
-                        height={
-                            size === 'sm'
-                                ? theme.spacing['3xl']
-                                : theme.spacing['5xl']
-                        }
-                    />
-                ))}
+            <PWView style={[defaultStyles.container, style]}>
+                {Array.from({ length: count }, (_, i) =>
+                    renderSkeleton ? (
+                        renderSkeleton(i)
+                    ) : (
+                        <PWSkeleton
+                            key={i}
+                            style={defaultStyles.skeleton}
+                            height={
+                                size === 'sm'
+                                    ? theme.spacing['3xl']
+                                    : theme.spacing['5xl']
+                            }
+                        />
+                    ),
+                )}
             </PWView>
         )
     }

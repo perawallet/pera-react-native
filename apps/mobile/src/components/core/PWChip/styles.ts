@@ -21,8 +21,8 @@ type Props = {
 export const useStyles = makeStyles((theme, { variant }: Props) => {
     const variantStyles = {
         helper: {
-            backgroundColor: theme.colors.asaTrustedBg,
-            color: theme.colors.asaTrustedText,
+            backgroundColor: theme.colors.trustedBannerBg,
+            color: theme.colors.trustedBannerContent,
         },
         secondary: {
             backgroundColor: theme.colors.layerGrayLighter,

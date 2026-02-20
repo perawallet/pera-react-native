@@ -38,16 +38,16 @@ export const useStyles = makeStyles(theme => ({
         borderRadius: theme.spacing.xs,
     },
     dot1: {
-        backgroundColor: theme.colors.grey2, // Gray 200
+        backgroundColor: theme.colors.layerGray,
     },
     dot2: {
-        backgroundColor: theme.colors.grey4, // Gray 400
+        backgroundColor: theme.colors.textGrayLighter,
     },
     dot3: {
-        backgroundColor: theme.colors.grey5, // Gray 600
+        backgroundColor: theme.colors.textGray,
     },
     dot4: {
-        backgroundColor: theme.colors.black, // Gray 800
+        backgroundColor: theme.colors.textMain,
     },
     title: {
         textAlign: 'center',

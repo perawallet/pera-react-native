@@ -52,7 +52,7 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
         },
         sortButtonTitle: {
-            color: theme.colors.helperPositive,
+            color: theme.colors.positive,
         },
         addButtonContainer: {
             flexDirection: 'row',
@@ -62,7 +62,7 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.sm,
         },
         addButtonTitle: {
-            color: theme.colors.buttonSquareText,
+            color: theme.colors.buttonSquareIcon,
         },
         fullWidth: {
             width: '100%',

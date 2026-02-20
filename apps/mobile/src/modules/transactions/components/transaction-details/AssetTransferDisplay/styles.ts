@@ -52,9 +52,9 @@ export const useStyles = makeStyles(theme => ({
         lineHeight: theme.spacing.md,
     },
     amountPositive: {
-        color: theme.colors.helperPositive,
+        color: theme.colors.positive,
     },
     amountNegative: {
-        color: theme.colors.helperNegative,
+        color: theme.colors.negative,
     },
 }))

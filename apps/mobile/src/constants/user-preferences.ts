@@ -19,6 +19,7 @@ export const UserPreferences = {
     assetFreezeSupportEnabled: 'asset-freeze-support-enabled',
 
     transactionRequestFaqShown: 'transaction-request-faq-shown',
+    stakingDisclaimerAccepted: 'staking-disclaimer-accepted',
 
     expressSendWarningDismissed: 'express-send-warning-dismissed',
 

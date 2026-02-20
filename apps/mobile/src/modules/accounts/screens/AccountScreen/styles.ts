@@ -27,7 +27,7 @@ export const useStyles = makeStyles(theme => {
         },
         accountSelection: {
             borderWidth: theme.borders.sm,
-            borderColor: theme.colors.layerGrayLight,
+            borderColor: theme.colors.layerGray,
             borderRadius: theme.spacing.xl,
             paddingVertical: theme.spacing.xs,
             paddingHorizontal: theme.spacing.md,

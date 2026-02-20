@@ -63,7 +63,7 @@ export const useStyles = makeStyles(theme => ({
         height: 40,
     },
     addButtonTitle: {
-        color: theme.colors.buttonSquareText,
+        color: theme.colors.buttonSquareIcon,
     },
     itemContainer: {
         marginVertical: theme.spacing.md,
