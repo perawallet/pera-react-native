@@ -521,6 +521,16 @@
             "current_balance": "Current Balance",
             "note": "Note",
             "confirm_button": "Confirm transfer"
+        },
+        "processing": {
+            "title": "Sending the transaction",
+            "subtitle": "Your transaction is being processed by the Algorand network."
+        },
+        "success": {
+            "title": "Asset transfer completed",
+            "subtitle": "Your transaction was successfully received by the Algorand network",
+            "view_in_explorer": "View Transaction Detail in Pera Explorer",
+            "done": "Done"
         }
     },
     "settings": {
