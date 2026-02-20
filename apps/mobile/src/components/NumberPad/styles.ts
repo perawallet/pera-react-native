@@ -11,7 +11,6 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getFontFamily } from '@theme/theme'
 
 export const useStyles = makeStyles(theme => {
     return {
@@ -33,7 +32,6 @@ export const useStyles = makeStyles(theme => {
         keyText: {
             fontSize: theme.spacing.xl,
             lineHeight: 40,
-            fontFamily: getFontFamily(true, 400),
         },
     }
 })

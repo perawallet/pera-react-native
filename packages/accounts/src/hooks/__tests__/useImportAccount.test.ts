@@ -160,7 +160,6 @@ describe('useImportAccount', () => {
         })
 
         expect(kmsMock.createHDWalletKey).toHaveBeenCalledWith({
-            id: 'WALLET1',
             mnemonic: 'test mnemonic',
         })
         expect(imported.address).toBeTruthy()
@@ -244,7 +243,6 @@ describe('useImportAccount', () => {
         })
 
         expect(kmsMock.createAlgo25Key).toHaveBeenNthCalledWith(1, {
-            id: 'WALLET1',
             mnemonic: 'test mnemonic',
         })
         expect(imported.address).toBe('ALGO25_PUBLIC_KEY')
