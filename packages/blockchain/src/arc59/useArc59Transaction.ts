@@ -71,20 +71,13 @@ export const useArc59Transaction = (
                 })
             }
 
-            // Add asset transfer to ARC59 app
-            composer.addAssetTransfer({
-                sender,
-                receiver: config.appAddress,
-                amount,
-                assetId,
-            })
-
             // Call arc59_sendAsset with fee pooling for inner transactions
+            // The axfer arg is automatically added to the group by AlgoKit
             composer.addAppCallMethodCall(
                 await appClient.params.call({
                     method: 'arc59_sendAsset',
                     args: [
-                        algokit.createTransaction.assetTransfer({
+                        await algokit.createTransaction.assetTransfer({
                             sender,
                             receiver: config.appAddress,
                             amount,

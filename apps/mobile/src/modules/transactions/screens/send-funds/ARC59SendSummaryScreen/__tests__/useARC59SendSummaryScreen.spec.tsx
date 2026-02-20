@@ -18,8 +18,6 @@ import { useSendFunds } from '@modules/transactions/hooks'
 const mockNavigate = vi.fn()
 const mockGoBack = vi.fn()
 const mockReplace = vi.fn()
-const mockHasPreference = vi.fn()
-const mockSetPreference = vi.fn()
 const mockSetArc59Summary = vi.fn()
 
 vi.mock('@react-navigation/native', () => ({
@@ -27,13 +25,6 @@ vi.mock('@react-navigation/native', () => ({
         navigate: mockNavigate,
         goBack: mockGoBack,
         replace: mockReplace,
-    }),
-}))
-
-vi.mock('@perawallet/wallet-core-settings', () => ({
-    usePreferences: () => ({
-        hasPreference: mockHasPreference,
-        setPreference: mockSetPreference,
     }),
 }))
 
@@ -56,6 +47,10 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 vi.mock('@perawallet/wallet-core-assets', () => ({
     ALGO_ASSET: { id: '0', decimals: 6 },
     toWholeUnits: vi.fn((value: number) => value / 1_000_000),
+    useSingleAssetDetailsQuery: vi.fn(() => ({
+        data: null,
+        isLoading: false,
+    })),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -63,6 +58,12 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         (value: number, _precision: number, currency: string) =>
             `${value.toFixed(6)} ${currency}`,
     ),
+    logger: {
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+    },
 }))
 
 vi.mock('@rneui/themed', () => {
@@ -104,7 +105,6 @@ const mockSummary = {
 describe('useARC59SendSummaryScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockHasPreference.mockReturnValue(true)
         ;(useSendFunds as Mock).mockReturnValue({
             selectedAsset: { assetId: 123 },
             destination: 'RECEIVERADDR',
@@ -119,12 +119,32 @@ describe('useARC59SendSummaryScreen', () => {
         expect(result.current.isLoading).toBe(true)
     })
 
-    it('navigates to TransactionProcessing on handleSend', () => {
+    it('shows warning on handleSend', async () => {
         const { result } = renderHook(() => useARC59SendSummaryScreen())
 
         result.current.handleSend()
 
+        await waitFor(() => {
+            expect(result.current.isWarningVisible).toBe(true)
+        })
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('navigates to TransactionProcessing on handleWarningConfirm', async () => {
+        const { result } = renderHook(() => useARC59SendSummaryScreen())
+
+        result.current.handleSend()
+
+        await waitFor(() => {
+            expect(result.current.isWarningVisible).toBe(true)
+        })
+
+        result.current.handleWarningConfirm()
+
         expect(mockNavigate).toHaveBeenCalledWith('TransactionProcessing')
+        await waitFor(() => {
+            expect(result.current.isWarningVisible).toBe(false)
+        })
     })
 
     it('goes back on handleClose', () => {
@@ -135,7 +155,7 @@ describe('useARC59SendSummaryScreen', () => {
         expect(mockGoBack).toHaveBeenCalled()
     })
 
-    it('sets warning visible on handleReadMore', async () => {
+    it('shows warning on handleReadMore', async () => {
         const { result } = renderHook(() => useARC59SendSummaryScreen())
 
         result.current.handleReadMore()
@@ -145,30 +165,10 @@ describe('useARC59SendSummaryScreen', () => {
         })
     })
 
-    it('saves preference and hides warning on handleWarningConfirm', async () => {
+    it('hides warning on handleWarningClose without navigating', async () => {
         const { result } = renderHook(() => useARC59SendSummaryScreen())
 
-        result.current.handleReadMore()
-
-        await waitFor(() => {
-            expect(result.current.isWarningVisible).toBe(true)
-        })
-
-        result.current.handleWarningConfirm()
-
-        expect(mockSetPreference).toHaveBeenCalledWith(
-            'has-seen-arc59-warning',
-            'true',
-        )
-        await waitFor(() => {
-            expect(result.current.isWarningVisible).toBe(false)
-        })
-    })
-
-    it('hides warning on handleWarningClose without saving preference', async () => {
-        const { result } = renderHook(() => useARC59SendSummaryScreen())
-
-        result.current.handleReadMore()
+        result.current.handleSend()
 
         await waitFor(() => {
             expect(result.current.isWarningVisible).toBe(true)
@@ -176,13 +176,13 @@ describe('useARC59SendSummaryScreen', () => {
 
         result.current.handleWarningClose()
 
-        expect(mockSetPreference).not.toHaveBeenCalled()
         await waitFor(() => {
             expect(result.current.isWarningVisible).toBe(false)
         })
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
-    it('formats fee from summary', async () => {
+    it('computes fee from summary', async () => {
         const { useArc59SendSummaryQuery } = await import(
             '@perawallet/wallet-core-blockchain'
         )
@@ -193,7 +193,7 @@ describe('useARC59SendSummaryScreen', () => {
 
         const { result } = renderHook(() => useARC59SendSummaryScreen())
 
-        expect(result.current.formattedFee).toBe('0.300000 ALGO')
+        expect(result.current.fee).toBe(0.3)
         expect(result.current.isLoading).toBe(false)
     })
 })

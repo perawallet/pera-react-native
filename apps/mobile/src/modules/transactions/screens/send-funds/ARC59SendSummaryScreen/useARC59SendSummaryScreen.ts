@@ -13,17 +13,20 @@
 import { FC, useCallback, useEffect, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
-import { usePreferences } from '@perawallet/wallet-core-settings'
 import {
     useArc59SendSummaryQuery,
     useAccountInformationQuery,
     type Arc59SendSummaryResponse,
 } from '@perawallet/wallet-core-blockchain'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET, PeraAsset, toWholeUnits, useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
+import {
+    ALGO_ASSET,
+    PeraAsset,
+    toWholeUnits,
+    useSingleAssetDetailsQuery,
+} from '@perawallet/wallet-core-assets'
 import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { useSendFunds } from '@modules/transactions/hooks'
-import { UserPreferences } from '@constants/user-preferences'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import LightHeaderImage from '@assets/images/asset-inbox-send-light.svg'
 import DarkHeaderImage from '@assets/images/asset-inbox-send-dark.svg'
@@ -51,7 +54,6 @@ export const useARC59SendSummaryScreen =
     (): UseARC59SendSummaryScreenResult => {
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
-        const { hasPreference, setPreference } = usePreferences()
         const { selectedAsset, destination, amount, setArc59Summary } =
             useSendFunds()
         const selectedAccount = useSelectedAccount()
@@ -66,9 +68,8 @@ export const useARC59SendSummaryScreen =
             assetId,
         )
 
-        const { data: asset, isLoading: assetLoading } = useSingleAssetDetailsQuery(
-            assetId,
-        )
+        const { data: asset, isLoading: assetLoading } =
+            useSingleAssetDetailsQuery(assetId)
 
         const { data: accountInfo } = useAccountInformationQuery(
             selectedAccount?.address ?? '',
@@ -78,7 +79,7 @@ export const useARC59SendSummaryScreen =
 
         const headerImage = mode === 'dark' ? DarkHeaderImage : LightHeaderImage
 
-        // Check for insufficient balance, then show warning if balance is ok
+        // Check for insufficient balance
         useEffect(() => {
             if (!summary || !accountInfo) return
 
@@ -97,14 +98,8 @@ export const useARC59SendSummaryScreen =
                         'ALGO',
                     ),
                 })
-                return
             }
-
-            // Only show warning after confirming balance is sufficient
-            if (!hasPreference(UserPreferences.hasSeenArc59Warning)) {
-                setIsWarningVisible(true)
-            }
-        }, [summary, accountInfo, navigation, hasPreference])
+        }, [summary, accountInfo, navigation])
 
         // Store the summary for transaction processing
         useEffect(() => {
@@ -118,8 +113,8 @@ export const useARC59SendSummaryScreen =
             : null
 
         const handleSend = useCallback(() => {
-            navigation.navigate('TransactionProcessing')
-        }, [navigation])
+            setIsWarningVisible(true)
+        }, [])
 
         const handleClose = useCallback(() => {
             navigation.goBack()
@@ -130,9 +125,9 @@ export const useARC59SendSummaryScreen =
         }, [])
 
         const handleWarningConfirm = useCallback(() => {
-            setPreference(UserPreferences.hasSeenArc59Warning, 'true')
             setIsWarningVisible(false)
-        }, [setPreference])
+            navigation.navigate('TransactionProcessing')
+        }, [navigation])
 
         const handleWarningClose = useCallback(() => {
             setIsWarningVisible(false)

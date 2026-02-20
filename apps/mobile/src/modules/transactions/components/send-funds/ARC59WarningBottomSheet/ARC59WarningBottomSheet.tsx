@@ -29,24 +29,24 @@ type ARC59WarningBottomSheetProps = {
 const WARNING_ITEMS = [
     {
         title: 'send_funds.arc59_warning.item1',
-        success: true
+        success: true,
     },
     {
         title: 'send_funds.arc59_warning.item2',
-        success: true
+        success: true,
     },
     {
         title: 'send_funds.arc59_warning.item3',
-        success: false
+        success: false,
     },
     {
         title: 'send_funds.arc59_warning.item4',
-        success: false
+        success: false,
     },
     {
         title: 'send_funds.arc59_warning.item5',
-        success: false
-    }
+        success: false,
+    },
 ]
 
 export const ARC59WarningBottomSheet = ({
@@ -76,15 +76,16 @@ export const ARC59WarningBottomSheet = ({
             </PWText>
             <PWView style={styles.warningItems}>
                 {WARNING_ITEMS.map((item, index) => (
-                    <PWView key={index} style={styles.warningItem}>
+                    <PWView
+                        key={index}
+                        style={styles.warningItem}
+                    >
                         <PWIcon
                             name={item.success ? 'check' : 'cross'}
                             size='md'
                             variant={item.success ? 'positive' : 'error'}
                         />
-                        <PWText style={styles.message}>
-                            {t(item.title)}
-                        </PWText>
+                        <PWText style={styles.message}>{t(item.title)}</PWText>
                     </PWView>
                 ))}
             </PWView>

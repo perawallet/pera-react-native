@@ -10,17 +10,16 @@
  limitations under the License
  */
 
-import { ActivityIndicator } from 'react-native'
 import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { ARC59WarningBottomSheet } from '@modules/transactions/components/send-funds/ARC59WarningBottomSheet'
 import { useStyles } from './styles'
 import { useARC59SendSummaryScreen } from './useARC59SendSummaryScreen'
-import { KeyValueRow } from '@components/KeyValueRow'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { AssetTitle } from '@modules/assets/components'
+import { LoadingView } from '@components/LoadingView'
 
 export const ARC59SendSummaryScreen = () => {
     const styles = useStyles()
@@ -42,11 +41,7 @@ export const ARC59SendSummaryScreen = () => {
     } = useARC59SendSummaryScreen()
 
     if (isLoading) {
-        return (
-            <PWView style={styles.loadingContainer}>
-                <ActivityIndicator />
-            </PWView>
-        )
+        return <LoadingView variant='circle' />
     }
 
     return (
@@ -75,7 +70,14 @@ export const ARC59SendSummaryScreen = () => {
 
                 <PWView style={styles.bottomContainer}>
                     <PWView style={styles.row}>
-                        {asset ? <AssetTitle asset={asset} nameVariant='h3' /> : <PWText variant='h3'>{assetId}</PWText>}
+                        {asset ? (
+                            <AssetTitle
+                                asset={asset}
+                                nameVariant='h3'
+                            />
+                        ) : (
+                            <PWText variant='h3'>{assetId}</PWText>
+                        )}
                         <CurrencyDisplay
                             value={amount}
                             currency={asset?.unitName ?? ''}
@@ -88,7 +90,9 @@ export const ARC59SendSummaryScreen = () => {
                     <PWView style={styles.divider} />
 
                     <PWView style={styles.row}>
-                        <PWText style={styles.rowLabel}>{t('send_funds.arc59_summary.fees_label')}</PWText>
+                        <PWText style={styles.rowLabel}>
+                            {t('send_funds.arc59_summary.fees_label')}
+                        </PWText>
                         <CurrencyDisplay
                             value={fee}
                             currency={'ALGO'}

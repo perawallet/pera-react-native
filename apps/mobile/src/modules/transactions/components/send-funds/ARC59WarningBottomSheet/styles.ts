@@ -18,6 +18,9 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xl,
         alignItems: 'center',
     },
+    icon: {
+        alignSelf: 'center',
+    },
     message: {
         textAlign: 'center',
         color: theme.colors.textGray,

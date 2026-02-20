@@ -20,7 +20,6 @@ export const UserPreferences = {
 
     transactionRequestFaqShown: 'transaction-request-faq-shown',
 
-    hasSeenArc59Warning: 'has-seen-arc59-warning',
     expressSendWarningDismissed: 'express-send-warning-dismissed',
 
     //prompts (don't set these directly, they are set by the prompts module but held here to avoid accidental name collisions)
