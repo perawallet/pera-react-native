@@ -22,10 +22,7 @@ import {
 import { KeyboardAvoidingView, Platform } from 'react-native'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNameAccountScreen } from './useNameAccountScreen'
-import {
-    getAccountDisplayName,
-    isWatchAccount,
-} from '@perawallet/wallet-core-accounts'
+import { getAccountDisplayName } from '@perawallet/wallet-core-accounts'
 
 export const NameAccountScreen = () => {
     const styles = useStyles()
@@ -38,6 +35,7 @@ export const NameAccountScreen = () => {
         handleFinish,
         numWallets,
         account,
+        accountIconName,
     } = useNameAccountScreen()
 
     return (
@@ -59,11 +57,7 @@ export const NameAccountScreen = () => {
                 </PWView>
                 <PWView style={styles.walletNameContainer}>
                     <PWIcon
-                        name={
-                            account && isWatchAccount(account)
-                                ? 'eye'
-                                : 'wallet'
-                        }
+                        name={accountIconName}
                         variant='secondary'
                     />
                     <PWText

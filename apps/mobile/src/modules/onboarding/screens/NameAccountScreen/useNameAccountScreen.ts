@@ -19,6 +19,7 @@ import {
     useCreateAccount,
     useSelectedAccountAddress,
     isHDWalletAccount,
+    isWatchAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -49,6 +50,9 @@ export const useNameAccountScreen = () => {
     const routeAccount = route.params?.account
 
     const [account] = useState<WalletAccount | undefined>(routeAccount)
+
+    const accountIconName =
+        account && isWatchAccount(account) ? ('eye' as const) : ('wallet' as const)
 
     const numWallets = useMemo(() => {
         // TODO: making sure this is ordered might be important. Come back at this once integrating multiple wallets.
@@ -123,5 +127,6 @@ export const useNameAccountScreen = () => {
         handleFinish,
         numWallets,
         account,
+        accountIconName,
     }
 }
