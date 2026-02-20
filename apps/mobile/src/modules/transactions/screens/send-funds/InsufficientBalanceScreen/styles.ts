@@ -28,7 +28,7 @@ export const useStyles = makeStyles(theme => ({
         width: ICON_CIRCLE_SIZE,
         height: ICON_CIRCLE_SIZE,
         borderRadius: ICON_CIRCLE_SIZE / 2,
-        backgroundColor: theme.colors.helperNegative,
+        backgroundColor: theme.colors.negative,
         justifyContent: 'center',
         alignItems: 'center',
     },
