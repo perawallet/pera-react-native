@@ -36,7 +36,10 @@ export const StakingTypeRow = ({ type, isLast }: StakingTypeRowProps) => {
             <PWView style={styles.stakingTypeHeader}>
                 <StakingTypeBadge type={type} />
             </PWView>
-            <PWText variant='body' style={styles.stakingTypeDescription}>
+            <PWText
+                variant='body'
+                style={styles.stakingTypeDescription}
+            >
                 {t(STAKING_TYPE_DESCRIPTION_KEYS[type])}
             </PWText>
         </PWView>

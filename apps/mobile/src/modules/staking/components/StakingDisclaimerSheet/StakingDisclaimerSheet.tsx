@@ -10,12 +10,10 @@
  limitations under the License
  */
 
-import { v4 as uuid } from 'uuid'
 import {
     PWBottomSheet,
     PWButton,
     PWIcon,
-    PWScrollView,
     PWText,
     PWToolbar,
     PWView,
@@ -61,7 +59,6 @@ export const StakingDisclaimerSheet = ({
     const handleTermsPress = () => {
         onClose()
         pushWebView({
-            id: uuid(),
             url: STAKING_TERMS_URL,
         })
     }
@@ -71,6 +68,12 @@ export const StakingDisclaimerSheet = ({
             isVisible={isVisible}
             onBackdropPress={onClose}
             innerContainerStyle={styles.container}
+            scrollViewProps={{
+                onScroll: handleScroll,
+                scrollEventThrottle: 16,
+                showsVerticalScrollIndicator: false,
+                contentContainerStyle: styles.scrollViewContent,
+            }}
         >
             <PWToolbar
                 left={
@@ -80,57 +83,52 @@ export const StakingDisclaimerSheet = ({
                         onPress={onClose}
                     />
                 }
-                center={<PWText variant='h4'>{t('staking.disclaimer.title')}</PWText>}
+                center={
+                    <PWText variant='h4'>
+                        {t('staking.disclaimer.title')}
+                    </PWText>
+                }
             />
 
-            <PWScrollView
-                testID='staking-disclaimer-scrollview'
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollViewContent}
-                onScroll={handleScroll}
-                scrollEventThrottle={16}
-                showsVerticalScrollIndicator={false}
-            >
-                <PWText style={styles.emphasizedText}>
-                    {t('staking.disclaimer.intro')}
-                </PWText>
+            <PWText style={styles.emphasizedText}>
+                {t('staking.disclaimer.intro')}
+            </PWText>
 
-                <PWText style={styles.paragraph}>
-                    {t('staking.disclaimer.research_warning')}
-                </PWText>
+            <PWText style={styles.paragraph}>
+                {t('staking.disclaimer.research_warning')}
+            </PWText>
 
-                <PWText style={styles.paragraph}>
-                    {t('staking.disclaimer.acknowledgment_prompt')}
-                </PWText>
+            <PWText style={styles.paragraph}>
+                {t('staking.disclaimer.acknowledgment_prompt')}
+            </PWText>
 
-                <PWView style={styles.bulletList}>
-                    {DISCLAIMER_BULLET_KEYS.map(key => (
+            <PWView style={styles.bulletList}>
+                {DISCLAIMER_BULLET_KEYS.map(key => (
+                    <PWText
+                        key={key}
+                        style={styles.bulletText}
+                    >
+                        {`- ${t(key)}`}
+                    </PWText>
+                ))}
+            </PWView>
+
+            <PWText style={styles.paragraph}>
+                {t('staking.disclaimer.closing')}
+            </PWText>
+
+            <PWText style={styles.paragraph}>
+                <Trans
+                    i18nKey='staking.disclaimer.terms_agreement'
+                    components={[
                         <PWText
-                            key={key}
-                            style={styles.bulletText}
-                        >
-                            {`- ${t(key)}`}
-                        </PWText>
-                    ))}
-                </PWView>
-
-                <PWText style={styles.paragraph}>
-                    {t('staking.disclaimer.closing')}
-                </PWText>
-
-                <PWText style={styles.paragraph}>
-                    <Trans
-                        i18nKey='staking.disclaimer.terms_agreement'
-                        components={[
-                            <PWText
-                                key='terms'
-                                variant='link'
-                                onPress={handleTermsPress}
-                            />,
-                        ]}
-                    />
-                </PWText>
-            </PWScrollView>
+                            key='terms'
+                            variant='link'
+                            onPress={handleTermsPress}
+                        />,
+                    ]}
+                />
+            </PWText>
 
             <PWButton
                 variant='primary'

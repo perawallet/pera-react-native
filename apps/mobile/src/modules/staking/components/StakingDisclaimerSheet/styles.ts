@@ -30,20 +30,16 @@ export const useStyles = makeStyles(theme => {
             color: theme.colors.textMain,
             lineHeight: theme.spacing.lg,
         },
-        paragraph: { 
+        paragraph: {
             color: theme.colors.textGray,
             lineHeight: theme.spacing.lg,
-        },
-        scrollView: {
-            flex: 1,
-            marginHorizontal: theme.spacing.md,
         },
         scrollViewContent: {
             gap: theme.spacing.md,
             paddingBottom: theme.spacing.lg,
         },
         acceptButton: {
-            marginBottom: theme.spacing.xl,
+            marginVertical: theme.spacing.xl,
         },
     }
 })
