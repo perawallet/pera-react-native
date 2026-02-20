@@ -21,10 +21,7 @@ import {
     type AssetWithAccountBalance,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    useAssetsQuery,
-    type PeraAsset,
-} from '@perawallet/wallet-core-assets'
+import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
 import { useSuggestedParametersQuery } from '@perawallet/wallet-core-blockchain'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
