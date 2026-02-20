@@ -527,6 +527,42 @@
             "subtitle": "Your transaction was successfully received by the Algorand network",
             "view_in_explorer": "View Transaction Detail in Pera Explorer",
             "done": "Done"
+        },
+        "express_send": {
+            "title": "Express Send",
+            "body_1": "The receiver hasn't opted into this asset yet. Since both accounts are in your wallet, Pera can handle the opt-in automatically.",
+            "body_2": "Pera will combine the transactions into a single atomic group so everything happens at once.",
+            "how_it_works": "How it works",
+            "step_1": "Send a small ALGO payment to cover the receiver's opt-in fee",
+            "step_2": "Opt the receiver into the asset",
+            "step_3": "Send the asset to the receiver",
+            "continue": "Continue",
+            "dont_show_again": "Don't show this again"
+        },
+        "arc59_summary": {
+            "title": "Send to Asset Inbox",
+            "description": "The receiver is not opted into this asset. You can send it to their asset inbox instead.",
+            "read_more": "Read more",
+            "fees_label": "Protocol & minimum balance fees",
+            "disclaimer": "The fee above will be used to cover the minimum balance requirements of the receiver. If the receiver rejects the asset, you will not receive anything back.",
+            "send_button": "Send to Receiver",
+            "close_button": "Close"
+        },
+        "arc59_warning": {
+            "title": "Warning",
+            "message": "Before sending these funds, make sure the user can access their Asset Inbox:",
+            "confirm": "I Understand",
+            "cancel": "Cancel",
+            "item1": "Pera Wallet Users",
+            "item2": "Lute Wallet Users",
+            "item3": "Centralized Exchanges",
+            "item4": "Smart Contract Wallets",
+            "item5": "Decentralized Exchanges"
+        },
+        "insufficient_balance": {
+            "title": "Minimum Balance",
+            "message": "This account doesn't have the required minimum balance of {{amount}} ALGO for this operation.",
+            "done": "Done"
         }
     },
     "settings": {

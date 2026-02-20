@@ -96,7 +96,7 @@ export const SendFundsRoutes = () => {
                 name='ARC59SendSummary'
                 component={ARC59SendSummaryScreen}
                 options={{
-                    title: 'send_funds.arc59_summary.title',
+                    headerShown: false,
                 }}
             />
 

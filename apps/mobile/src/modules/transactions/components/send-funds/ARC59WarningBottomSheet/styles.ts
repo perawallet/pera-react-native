@@ -15,11 +15,8 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     bottomSheetContainer: {
         padding: theme.spacing.xl,
-        gap: theme.spacing.lg,
+        gap: theme.spacing.xl,
         alignItems: 'center',
-    },
-    icon: {
-        marginVertical: theme.spacing.md,
     },
     message: {
         textAlign: 'center',
@@ -28,5 +25,13 @@ export const useStyles = makeStyles(theme => ({
     actions: {
         gap: theme.spacing.md,
         width: '100%',
+    },
+    warningItems: {
+        gap: theme.spacing.sm,
+    },
+    warningItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.md,
     },
 }))

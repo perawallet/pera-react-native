@@ -11,21 +11,29 @@
  */
 
 import { ActivityIndicator } from 'react-native'
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { ARC59WarningBottomSheet } from '@modules/transactions/components/send-funds/ARC59WarningBottomSheet'
 import { useStyles } from './styles'
 import { useARC59SendSummaryScreen } from './useARC59SendSummaryScreen'
+import { KeyValueRow } from '@components/KeyValueRow'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
+import { AssetTitle } from '@modules/assets/components'
 
 export const ARC59SendSummaryScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
+
     const {
         isLoading,
         isWarningVisible,
-        formattedAmount,
-        formattedFee,
-        assetUnitName,
+        amount,
+        assetId,
+        fee,
+        asset,
+        HeaderImageComponent,
         handleSend,
         handleClose,
         handleReadMore,
@@ -51,46 +59,48 @@ export const ARC59SendSummaryScreen = () => {
                     {t('send_funds.arc59_summary.title')}
                 </PWText>
 
-                <PWIcon
-                    name='inbox'
-                    size='xxl'
-                    style={styles.inboxIcon}
-                />
+                <PWView style={styles.header}>
+                    <HeaderImageComponent style={styles.inboxIcon} />
 
-                <PWText style={styles.description}>
-                    {t('send_funds.arc59_summary.description')}{' '}
-                    <PWText
-                        style={styles.readMoreText}
-                        onPress={handleReadMore}
-                    >
-                        {t('send_funds.arc59_summary.read_more')}
-                    </PWText>
-                </PWText>
-
-                <PWView style={styles.row}>
-                    <PWText style={styles.rowLabel}>{assetUnitName}</PWText>
-                    <PWText
-                        variant='h4'
-                        style={styles.rowValue}
-                    >
-                        {formattedAmount}
+                    <PWText style={styles.description}>
+                        {t('send_funds.arc59_summary.description')}{' '}
+                        <PWText
+                            style={styles.readMoreText}
+                            onPress={handleReadMore}
+                        >
+                            {t('send_funds.arc59_summary.read_more')}
+                        </PWText>
                     </PWText>
                 </PWView>
 
-                <PWView style={styles.divider} />
+                <PWView style={styles.bottomContainer}>
+                    <PWView style={styles.row}>
+                        {asset ? <AssetTitle asset={asset} nameVariant='h3' /> : <PWText variant='h3'>{assetId}</PWText>}
+                        <CurrencyDisplay
+                            value={amount}
+                            currency={asset?.unitName ?? ''}
+                            precision={asset?.decimals ?? DEFAULT_PRECISION}
+                            minPrecision={DEFAULT_PRECISION}
+                            variant='h3'
+                        />
+                    </PWView>
 
-                <PWView style={styles.row}>
-                    <PWText style={styles.rowLabel}>
-                        {t('send_funds.arc59_summary.fees_label')}
+                    <PWView style={styles.divider} />
+
+                    <PWView style={styles.row}>
+                        <PWText style={styles.rowLabel}>{t('send_funds.arc59_summary.fees_label')}</PWText>
+                        <CurrencyDisplay
+                            value={fee}
+                            currency={'ALGO'}
+                            precision={ALGO_ASSET.decimals}
+                            minPrecision={DEFAULT_PRECISION}
+                        />
+                    </PWView>
+
+                    <PWText style={styles.disclaimer}>
+                        {t('send_funds.arc59_summary.disclaimer')}
                     </PWText>
-                    <PWText style={styles.rowValue}>{formattedFee}</PWText>
                 </PWView>
-
-                <PWView style={styles.divider} />
-
-                <PWText style={styles.disclaimer}>
-                    {t('send_funds.arc59_summary.disclaimer')}
-                </PWText>
             </PWView>
 
             <PWView style={styles.footer}>

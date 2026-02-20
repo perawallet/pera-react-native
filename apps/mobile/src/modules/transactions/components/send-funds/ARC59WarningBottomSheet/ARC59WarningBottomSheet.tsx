@@ -26,6 +26,29 @@ type ARC59WarningBottomSheetProps = {
     onConfirm: () => void
 }
 
+const WARNING_ITEMS = [
+    {
+        title: 'send_funds.arc59_warning.item1',
+        success: true
+    },
+    {
+        title: 'send_funds.arc59_warning.item2',
+        success: true
+    },
+    {
+        title: 'send_funds.arc59_warning.item3',
+        success: false
+    },
+    {
+        title: 'send_funds.arc59_warning.item4',
+        success: false
+    },
+    {
+        title: 'send_funds.arc59_warning.item5',
+        success: false
+    }
+]
+
 export const ARC59WarningBottomSheet = ({
     isVisible,
     onClose,
@@ -43,13 +66,29 @@ export const ARC59WarningBottomSheet = ({
             <PWIcon
                 name='info'
                 variant='error'
-                size='xl'
+                size='xxl'
                 style={styles.icon}
             />
             <PWText variant='h3'>{t('send_funds.arc59_warning.title')}</PWText>
+
             <PWText style={styles.message}>
                 {t('send_funds.arc59_warning.message')}
             </PWText>
+            <PWView style={styles.warningItems}>
+                {WARNING_ITEMS.map((item, index) => (
+                    <PWView key={index} style={styles.warningItem}>
+                        <PWIcon
+                            name={item.success ? 'check' : 'cross'}
+                            size='md'
+                            variant={item.success ? 'positive' : 'error'}
+                        />
+                        <PWText style={styles.message}>
+                            {t(item.title)}
+                        </PWText>
+                    </PWView>
+                ))}
+            </PWView>
+
             <PWView style={styles.actions}>
                 <PWButton
                     variant='primary'

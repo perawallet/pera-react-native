@@ -53,17 +53,51 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     })),
 }))
 
+vi.mock('@perawallet/wallet-core-assets', () => ({
+    ALGO_ASSET: { id: '0', decimals: 6 },
+    toWholeUnits: vi.fn((value: number) => value / 1_000_000),
+}))
+
+vi.mock('@perawallet/wallet-core-shared', () => ({
+    formatCurrency: vi.fn(
+        (value: number, _precision: number, currency: string) =>
+            `${value.toFixed(6)} ${currency}`,
+    ),
+}))
+
+vi.mock('@rneui/themed', () => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const passthrough = ({ children }: any) => children
+    return {
+        useThemeMode: () => ({ mode: 'light', setMode: vi.fn() }),
+        createTheme: (config: Record<string, unknown>) => config,
+        ThemeProvider: passthrough,
+        makeStyles:
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (fn: (...args: any[]) => Record<string, unknown>) => () =>
+                fn({}, {}),
+    }
+})
+
+vi.mock('@assets/images/asset-inbox-send-light.svg', () => ({
+    default: 'LightHeaderImage',
+}))
+
+vi.mock('@assets/images/asset-inbox-send-dark.svg', () => ({
+    default: 'DarkHeaderImage',
+}))
+
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
 }))
 
 const mockSummary = {
     is_arc59_opted_in: false,
-    minimum_balance_requirement: 0.1,
+    minimum_balance_requirement: 100_000,
     inner_tx_count: 4,
-    total_protocol_and_mbr_fee: 0.3,
+    total_protocol_and_mbr_fee: 300_000,
     inbox_address: 'INBOXADDR',
-    algo_fund_amount: 300000,
+    algo_fund_amount: 300_000,
     warning_message: null,
 }
 
@@ -159,7 +193,7 @@ describe('useARC59SendSummaryScreen', () => {
 
         const { result } = renderHook(() => useARC59SendSummaryScreen())
 
-        expect(result.current.formattedFee).toBe('0.30')
+        expect(result.current.formattedFee).toBe('0.300000 ALGO')
         expect(result.current.isLoading).toBe(false)
     })
 })

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { FC, useCallback, useEffect, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import { usePreferences } from '@perawallet/wallet-core-settings'
@@ -20,17 +20,26 @@ import {
     type Arc59SendSummaryResponse,
 } from '@perawallet/wallet-core-blockchain'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { ALGO_ASSET, PeraAsset, toWholeUnits, useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
+import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { UserPreferences } from '@constants/user-preferences'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
+import LightHeaderImage from '@assets/images/asset-inbox-send-light.svg'
+import DarkHeaderImage from '@assets/images/asset-inbox-send-dark.svg'
+import { useThemeMode } from '@rneui/themed'
+import { SvgProps } from 'react-native-svg'
+import Decimal from 'decimal.js'
 
 type UseARC59SendSummaryScreenResult = {
     summary: Arc59SendSummaryResponse | null
     isLoading: boolean
     isWarningVisible: boolean
-    formattedAmount: string
-    formattedFee: string
-    assetUnitName: string
+    assetId: string
+    amount: Decimal | null
+    fee: Decimal | null
+    asset: PeraAsset | null
+    HeaderImageComponent: FC<SvgProps>
     handleSend: () => void
     handleClose: () => void
     handleReadMore: () => void
@@ -47,12 +56,17 @@ export const useARC59SendSummaryScreen =
             useSendFunds()
         const selectedAccount = useSelectedAccount()
         const [isWarningVisible, setIsWarningVisible] = useState(false)
+        const { mode } = useThemeMode()
 
         const assetId = selectedAsset?.assetId ?? ''
         const receiverAddress = destination ?? ''
 
-        const { summary, isLoading } = useArc59SendSummaryQuery(
+        const { summary, isLoading: summaryLoading } = useArc59SendSummaryQuery(
             receiverAddress,
+            assetId,
+        )
+
+        const { data: asset, isLoading: assetLoading } = useSingleAssetDetailsQuery(
             assetId,
         )
 
@@ -60,32 +74,37 @@ export const useARC59SendSummaryScreen =
             selectedAccount?.address ?? '',
         )
 
-        // Show warning on first visit
-        useEffect(() => {
-            if (
-                summary &&
-                !hasPreference(UserPreferences.hasSeenArc59Warning)
-            ) {
-                setIsWarningVisible(true)
-            }
-        }, [summary, hasPreference])
+        const isLoading = summaryLoading || assetLoading
 
-        // Check for insufficient balance
+        const headerImage = mode === 'dark' ? DarkHeaderImage : LightHeaderImage
+
+        // Check for insufficient balance, then show warning if balance is ok
         useEffect(() => {
             if (!summary || !accountInfo) return
 
             const availableAlgo = accountInfo.amount - accountInfo.minBalance
-            const requiredMicroAlgo = BigInt(
-                summary.total_protocol_and_mbr_fee * 1_000_000,
-            )
+            const requiredMicroAlgo = BigInt(summary.total_protocol_and_mbr_fee)
 
             if (availableAlgo < requiredMicroAlgo) {
+                const requiredAlgo = toWholeUnits(
+                    summary.total_protocol_and_mbr_fee,
+                    ALGO_ASSET,
+                )
                 navigation.replace('InsufficientBalance', {
-                    requiredBalance:
-                        summary.total_protocol_and_mbr_fee.toFixed(6),
+                    requiredBalance: formatCurrency(
+                        requiredAlgo,
+                        ALGO_ASSET.decimals,
+                        'ALGO',
+                    ),
                 })
+                return
             }
-        }, [summary, accountInfo, navigation])
+
+            // Only show warning after confirming balance is sufficient
+            if (!hasPreference(UserPreferences.hasSeenArc59Warning)) {
+                setIsWarningVisible(true)
+            }
+        }, [summary, accountInfo, navigation, hasPreference])
 
         // Store the summary for transaction processing
         useEffect(() => {
@@ -94,16 +113,9 @@ export const useARC59SendSummaryScreen =
             }
         }, [summary, setArc59Summary])
 
-        const assetUnitName = selectedAsset?.assetId
-            ? selectedAsset.assetId
-            : 'ASA'
-
-        const formattedAmount = amount
-            ? `${amount.toString()} ${assetUnitName}`
-            : ''
-        const formattedFee = summary
-            ? summary.total_protocol_and_mbr_fee.toFixed(2)
-            : '...'
+        const fee = summary
+            ? toWholeUnits(summary.total_protocol_and_mbr_fee, ALGO_ASSET)
+            : null
 
         const handleSend = useCallback(() => {
             navigation.navigate('TransactionProcessing')
@@ -130,9 +142,11 @@ export const useARC59SendSummaryScreen =
             summary,
             isLoading,
             isWarningVisible,
-            formattedAmount,
-            formattedFee,
-            assetUnitName,
+            assetId,
+            fee,
+            amount: amount ?? null,
+            HeaderImageComponent: headerImage,
+            asset: asset ?? null,
             handleSend,
             handleClose,
             handleReadMore,

@@ -15,7 +15,8 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
-        paddingHorizontal: theme.spacing.md,
+        backgroundColor: theme.colors.layerGrayLightest,
+        borderRadius: theme.spacing.md,
     },
     content: {
         flex: 1,
@@ -25,14 +26,9 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'center',
         marginBottom: theme.spacing.md,
     },
-    inboxIcon: {
-        alignSelf: 'center',
-        marginBottom: theme.spacing.lg,
-    },
     description: {
         textAlign: 'center',
         color: theme.colors.textMain,
-        marginBottom: theme.spacing.xl,
     },
     readMoreText: {
         color: theme.colors.linkPrimary,
@@ -41,7 +37,6 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: theme.spacing.md,
     },
     rowLabel: {
         color: theme.colors.textGray,
@@ -57,13 +52,30 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textMain,
         marginTop: theme.spacing.md,
     },
-    footer: {
-        paddingBottom: theme.spacing.xl,
-        gap: theme.spacing.md,
-    },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    inboxIcon: {
+        alignSelf: 'center',
+        marginBottom: theme.spacing.lg,
+    },
+    header: {
+        alignItems: 'center',
+        paddingHorizontal: theme.spacing.md,
+        paddingVertical: theme.spacing['3xl'],
+    },
+    bottomContainer: {
+        backgroundColor: theme.colors.background,
+        paddingVertical: theme.spacing.xl,
+        paddingHorizontal: theme.spacing.md,
+        flexGrow: 1,
+        gap: theme.spacing.md,
+    },
+    footer: {
+        paddingBottom: theme.spacing.xl,
+        gap: theme.spacing.md,
+        backgroundColor: theme.colors.background,
     },
 }))
