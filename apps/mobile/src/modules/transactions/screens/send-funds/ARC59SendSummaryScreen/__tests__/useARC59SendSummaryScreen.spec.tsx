@@ -36,7 +36,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useArc59SendSummaryQuery: vi.fn(() => ({
-        summary: null,
+        data: null,
         isLoading: true,
     })),
     useAccountInformationQuery: vi.fn(() => ({
@@ -187,7 +187,7 @@ describe('useARC59SendSummaryScreen', () => {
             '@perawallet/wallet-core-blockchain'
         )
         ;(useArc59SendSummaryQuery as Mock).mockReturnValue({
-            summary: mockSummary,
+            data: mockSummary,
             isLoading: false,
         })
 
