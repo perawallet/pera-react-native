@@ -89,7 +89,7 @@ export const useTransactionProcessingScreen = () => {
                 let txId: string
 
                 switch (sendMode) {
-                    case 'express':
+                    case 'express': {
                         const expressResult = await sendExpress({
                             sender: selectedAccount.address,
                             receiver: destination,
@@ -101,7 +101,8 @@ export const useTransactionProcessingScreen = () => {
                         txId =
                             expressResult.txIds[expressResult.txIds.length - 1]
                         break
-                    case 'arc59':
+                    }
+                    case 'arc59': {
                         if (arc59Summary) {
                             const arc59Result = await sendViaInbox({
                                 sender: selectedAccount.address,
@@ -120,7 +121,8 @@ export const useTransactionProcessingScreen = () => {
                             )
                         }
                         break
-                    case 'normal':
+                    }
+                    case 'normal': {
                         if (selectedAsset.assetId === ALGO_ASSET_ID) {
                             const result = await algokit.send.payment({
                                 sender: selectedAccount.address,
@@ -147,6 +149,7 @@ export const useTransactionProcessingScreen = () => {
                             txId = result.txIds[0]
                         }
                         break
+                    }
                 }
 
                 navigation.replace('TransactionSuccess', {

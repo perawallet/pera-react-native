@@ -1,0 +1,1 @@
+export const OPT_IN_MBR_COST = 100_000n // 0.1 ALGO

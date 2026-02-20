@@ -10,46 +10,26 @@
  limitations under the License
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, UseQueryResult } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
-import { fetchArc59SendSummary } from './api'
-import type { Arc59SendSummaryResponse } from './schema'
-
-const MODULE_PREFIX = 'arc59'
-
-export const getArc59SendSummaryQueryKey = (
-    receiverAddress: string,
-    assetId: string,
-) => [MODULE_PREFIX, 'send-summary', { receiverAddress, assetId }]
-
-type UseArc59SendSummaryQueryResult = {
-    summary: Arc59SendSummaryResponse | null
-    isLoading: boolean
-    isError: boolean
-    error: Error | null
-}
+import { fetchArc59SendSummary } from '../api/arc59'
+import type { Arc59SendSummaryResponse } from '../api/arc59'
+import { getArc59SendSummaryQueryKey } from './querykeys'
 
 export const useArc59SendSummaryQuery = (
     receiverAddress: string,
     assetId: string,
-): UseArc59SendSummaryQueryResult => {
-    const { networkConfig } = useNetwork()
+): UseQueryResult<Arc59SendSummaryResponse> => {
+    const { network } = useNetwork()
 
-    const query = useQuery({
+    return useQuery({
         queryKey: getArc59SendSummaryQueryKey(receiverAddress, assetId),
         queryFn: () =>
             fetchArc59SendSummary(
-                networkConfig.backendUrl,
+                network,
                 receiverAddress,
                 assetId,
             ),
         enabled: !!receiverAddress && !!assetId,
     })
-
-    return {
-        summary: query.data ?? null,
-        isLoading: query.isLoading,
-        isError: query.isError,
-        error: query.error,
-    }
 }

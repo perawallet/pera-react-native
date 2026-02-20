@@ -10,26 +10,28 @@
  limitations under the License
  */
 
+import { Network, queryClient } from '@perawallet/wallet-core-shared'
 import {
     arc59SendSummaryResponseSchema,
     type Arc59SendSummaryResponse,
 } from './schema'
 
+const getArc59SendSummaryEndpoint = (
+    receiverAddress: string,
+    assetId: string,
+) => `/v1/arc59/send-summary/${receiverAddress}/${assetId}`
+
 export const fetchArc59SendSummary = async (
-    backendUrl: string,
+    network: Network,
     receiverAddress: string,
     assetId: string,
 ): Promise<Arc59SendSummaryResponse> => {
-    const response = await fetch(
-        `${backendUrl}/v1/asa-inboxes/summary/send-flow/${receiverAddress}/${assetId}/`,
-    )
+    const response = await queryClient<Arc59SendSummaryResponse>({
+        backend: 'pera',
+        network: network,
+        method: 'GET',
+        url: getArc59SendSummaryEndpoint(receiverAddress, assetId),
+    })  
 
-    if (!response.ok) {
-        throw new Error(
-            `Failed to fetch ARC59 send summary: ${response.status}`,
-        )
-    }
-
-    const data: unknown = await response.json()
-    return arc59SendSummaryResponseSchema.parse(data)
+    return arc59SendSummaryResponseSchema.parse(response.data)
 }

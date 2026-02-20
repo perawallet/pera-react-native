@@ -12,9 +12,9 @@
 
 import { useCallback } from 'react'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
-import { useAlgorandClient } from '../hooks/useAlgorandClient'
-import { ARC59_CONFIG } from './constants'
-import type { Arc59SendSummaryResponse } from './schema'
+import { config } from '@perawallet/wallet-core-config'
+import { useAlgorandClient } from './useAlgorandClient'
+import type { Arc59SendSummaryResponse } from '../api/arc59'
 import type { PeraTransactionSigner } from '../models'
 import arc59AppSpec from './arc59-app-spec.json'
 import { AppClient } from '@algorandfoundation/algokit-utils/types/app-client'
@@ -40,13 +40,15 @@ export const useArc59Transaction = (
     const sendViaInbox = useCallback(
         async (params: SendViaInboxParams): Promise<{ txIds: string[] }> => {
             const { sender, receiver, assetId, amount, summary } = params
-            const config = isMainnet
-                ? ARC59_CONFIG.mainnet
-                : ARC59_CONFIG.testnet
+            const arc59Config = isMainnet
+                ? config.arc59.mainnet
+                : config.arc59.testnet
+
+            const suggestedParams = await algokit.getSuggestedParams()
 
             const appClient = new AppClient({
                 appSpec: JSON.stringify(arc59AppSpec),
-                appId: config.appId,
+                appId: arc59Config.appId,
                 algorand: algokit,
                 defaultSender: sender,
             })
@@ -56,7 +58,7 @@ export const useArc59Transaction = (
                 await appClient.send.call({
                     method: 'arc59_optRouterIn',
                     args: [assetId],
-                    extraFee: (1000).microAlgo(),
+                    extraFee: (suggestedParams.minFee).microAlgo(),
                 })
             }
 
@@ -66,7 +68,7 @@ export const useArc59Transaction = (
             if (summary.algo_fund_amount > 0) {
                 composer.addPayment({
                     sender,
-                    receiver: config.appAddress,
+                    receiver: arc59Config.appAddress,
                     amount: BigInt(summary.algo_fund_amount).microAlgo(),
                 })
             }
@@ -79,14 +81,14 @@ export const useArc59Transaction = (
                     args: [
                         await algokit.createTransaction.assetTransfer({
                             sender,
-                            receiver: config.appAddress,
+                            receiver: arc59Config.appAddress,
                             amount,
                             assetId,
                         }),
                         receiver,
                         0,
                     ],
-                    extraFee: (1000 * summary.inner_tx_count).microAlgo(),
+                    extraFee: (suggestedParams.minFee * BigInt(summary.inner_tx_count)).microAlgo(),
                 }),
             )
 

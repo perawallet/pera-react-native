@@ -35,7 +35,7 @@ import { SvgProps } from 'react-native-svg'
 import Decimal from 'decimal.js'
 
 type UseARC59SendSummaryScreenResult = {
-    summary: Arc59SendSummaryResponse | null
+    summary?: Arc59SendSummaryResponse
     isLoading: boolean
     isWarningVisible: boolean
     assetId: string
@@ -63,7 +63,7 @@ export const useARC59SendSummaryScreen =
         const assetId = selectedAsset?.assetId ?? ''
         const receiverAddress = destination ?? ''
 
-        const { summary, isLoading: summaryLoading } = useArc59SendSummaryQuery(
+        const { data: summary, isLoading: summaryLoading } = useArc59SendSummaryQuery(
             receiverAddress,
             assetId,
         )

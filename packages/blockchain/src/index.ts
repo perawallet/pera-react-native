@@ -17,6 +17,6 @@ export * from './hooks'
 export * from './errors'
 export * from './utils'
 export * from './schema'
-export * from './arc59'
+export * from './api/arc59'
 
 export { initBlockchainStore, registerBlockchainStore } from './store'

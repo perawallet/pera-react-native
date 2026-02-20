@@ -11,8 +11,9 @@
  */
 
 import { useCallback } from 'react'
-import { useAlgorandClient } from '../hooks/useAlgorandClient'
+import { useAlgorandClient } from './useAlgorandClient'
 import type { PeraTransactionSigner } from '../models'
+import { OPT_IN_MBR_COST } from '../constants'
 
 type SendExpressParams = {
     sender: string
@@ -40,7 +41,7 @@ export const useExpressTransaction = (
                 .addPayment({
                     sender,
                     receiver,
-                    amount: (100_000).microAlgo(), // 0.1 ALGO for asset opt-in MBR
+                    amount: (OPT_IN_MBR_COST).microAlgo(), // 0.1 ALGO for asset opt-in MBR
                 })
                 .addAssetOptIn({
                     sender: receiver,
