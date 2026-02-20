@@ -50,13 +50,15 @@ type useTransactionConfirmationScreenResult = {
     closeNote: () => void
     handleConfirm: () => void
     isReady: boolean
+    isCloseAccount: boolean
 }
 
 export const useTransactionConfirmationScreen =
     (): useTransactionConfirmationScreenResult => {
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
-        const { selectedAsset, amount, destination, note } = useSendFunds()
+        const { selectedAsset, amount, destination, note, isCloseAccount } =
+            useSendFunds()
 
         const { data: assets } = useAssetsQuery()
         const asset = useMemo(() => {
@@ -140,5 +142,6 @@ export const useTransactionConfirmationScreen =
             closeNote,
             handleConfirm,
             isReady,
+            isCloseAccount,
         }
     }

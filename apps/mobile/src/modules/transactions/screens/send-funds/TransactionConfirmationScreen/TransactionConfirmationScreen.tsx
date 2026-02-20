@@ -31,6 +31,7 @@ import { ALGO_ASSET, toWholeUnits } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { LoadingView } from '@components/LoadingView'
 import { useTransactionConfirmationScreen } from './useTransactionConfirmationScreen'
+import { CloseAccountWarning } from './CloseAccountWarning'
 
 export const TransactionConfirmationScreen = () => {
     const styles = useStyles()
@@ -52,6 +53,7 @@ export const TransactionConfirmationScreen = () => {
         closeNote,
         handleConfirm,
         isReady,
+        isCloseAccount,
     } = useTransactionConfirmationScreen()
 
     if (!isReady) {
@@ -162,6 +164,7 @@ export const TransactionConfirmationScreen = () => {
                 )}
             </KeyValueRow>
             <PWView style={styles.buttonContainer}>
+                {isCloseAccount && <CloseAccountWarning />}
                 <PWButton
                     title={t('send_funds.confirmation.confirm_button')}
                     variant='primary'

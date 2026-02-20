@@ -36,8 +36,15 @@ import { useTransactionSigner } from '@perawallet/wallet-core-signing'
 export const useTransactionProcessingScreen = () => {
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
-    const { selectedAsset, amount, destination, note, sendMode, arc59Summary } =
-        useSendFunds()
+    const {
+        selectedAsset,
+        amount,
+        destination,
+        note,
+        sendMode,
+        arc59Summary,
+        isCloseAccount,
+    } = useSendFunds()
     const { signTransactions } = useTransactionSigner()
     const algokit = useAlgorandClient(signTransactions)
     const { sendViaInbox } = useArc59Transaction(signTransactions)
@@ -127,12 +134,17 @@ export const useTransactionProcessingScreen = () => {
                             const result = await algokit.send.payment({
                                 sender: selectedAccount.address,
                                 receiver: destination,
-                                amount: BigInt(
-                                    toDecimalUnits(
-                                        amount,
-                                        ALGO_ASSET,
-                                    ).toString(),
-                                ).microAlgo(),
+                                amount: isCloseAccount
+                                    ? BigInt(0).microAlgo()
+                                    : BigInt(
+                                          toDecimalUnits(
+                                              amount,
+                                              ALGO_ASSET,
+                                          ).toString(),
+                                      ).microAlgo(),
+                                ...(isCloseAccount && {
+                                    closeRemainderTo: destination,
+                                }),
                                 note,
                             })
                             txId = result.txIds[0]

@@ -18,7 +18,8 @@ import { useTransactionSuccessScreen } from './useTransactionSuccessScreen'
 export const TransactionSuccessScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { handleDone, handleViewInExplorer } = useTransactionSuccessScreen()
+    const { handleDone, handleViewInExplorer, isCloseAccount } =
+        useTransactionSuccessScreen()
 
     return (
         <PWView style={styles.container}>
@@ -33,10 +34,14 @@ export const TransactionSuccessScreen = () => {
                     variant='h3'
                     style={styles.title}
                 >
-                    {t('send_funds.success.title')}
+                    {isCloseAccount
+                        ? t('send_funds.close_account.success_title')
+                        : t('send_funds.success.title')}
                 </PWText>
                 <PWText style={styles.subtitle}>
-                    {t('send_funds.success.subtitle')}
+                    {isCloseAccount
+                        ? t('send_funds.close_account.success_subtitle')
+                        : t('send_funds.success.subtitle')}
                 </PWText>
             </PWView>
             <PWView style={styles.footer}>

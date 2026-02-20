@@ -31,7 +31,7 @@ import {
     onMessage,
 } from '@react-native-firebase/messaging'
 import {
-    FirebaseAnalyticsTypes,
+    type Analytics,
     getAnalytics,
     logEvent as logEventGA,
 } from '@react-native-firebase/analytics'
@@ -57,7 +57,7 @@ export class RNFirebaseService
 {
     remoteConfig: FirebaseRemoteConfigTypes.Module | null = null
     messaging: FirebaseMessagingTypes.Module | null = null
-    analytics: FirebaseAnalyticsTypes.Module | null = null
+    analytics: Analytics | null = null
     crashlytics: FirebaseCrashlyticsTypes.Module | null = null
 
     async initializeRemoteConfig() {

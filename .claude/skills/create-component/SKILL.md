@@ -69,6 +69,10 @@ If creating a core component, add export to `apps/mobile/src/components/core/ind
 
 See `references/testing.md` for templates.
 
+### 8. Add any necessary internationalization strings
+
+- Add to `apps/mobile/src/i18n/locales/en.json`
+
 ### 8. Subcomponents (if needed)
 
 - Create in the same folder as the main component

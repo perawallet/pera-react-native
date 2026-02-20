@@ -20,6 +20,8 @@ import { useWebView } from '@hooks/usePeraWebviewInterface'
 const mockOnFinished = vi.fn()
 const mockPushWebView = vi.fn()
 const mockRemove = vi.fn()
+const mockRemoveAccountById = vi.fn()
+const mockSetSelectedAccountAddress = vi.fn()
 
 vi.mock('react-native', () => ({
     BackHandler: {
@@ -35,6 +37,24 @@ vi.mock('@react-navigation/native', () => ({
 
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useRemoveAccountById: vi.fn(() => mockRemoveAccountById),
+    useSelectedAccount: vi.fn(() => ({ id: 'account-1', address: 'ADDR1' })),
+    useSelectedAccountAddress: vi.fn(() => ({
+        selectedAccountAddress: 'ADDR1',
+        setSelectedAccountAddress: mockSetSelectedAccountAddress,
+    })),
+    useAccountsStore: vi.fn(
+        (selector: (state: Record<string, unknown>) => unknown) =>
+            selector({
+                accounts: [
+                    { id: 'account-1', address: 'ADDR1' },
+                    { id: 'account-2', address: 'ADDR2' },
+                ],
+            }),
+    ),
 }))
 
 vi.mock('@perawallet/wallet-core-platform-integration', () => ({
@@ -54,6 +74,7 @@ describe('useTransactionSuccessScreen', () => {
         vi.clearAllMocks()
         ;(useSendFunds as Mock).mockReturnValue({
             onFinished: mockOnFinished,
+            isCloseAccount: false,
         })
         ;(useNetwork as Mock).mockReturnValue({
             networkConfig: {

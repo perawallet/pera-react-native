@@ -76,6 +76,7 @@ vi.mock('@hooks/useLanguage', () => ({
 // Mock the useSendFunds hook
 const mockSetAmount = vi.fn()
 const mockSetNote = vi.fn()
+const mockSetIsCloseAccount = vi.fn()
 const mockSendFundsState = {
     selectedAsset: { assetId: 0 },
     canSelectAsset: true,
@@ -87,6 +88,7 @@ const mockSendFundsState = {
     setAmount: mockSetAmount,
     setNote: mockSetNote,
     setDestination: vi.fn(),
+    setIsCloseAccount: mockSetIsCloseAccount,
     reset: vi.fn(),
 }
 
@@ -135,6 +137,7 @@ describe('useInputScreen', () => {
             data: {
                 amount: 100_000_000n,
                 minBalance: 100_000n,
+                assets: [{ assetId: 123, amount: 0n, isFrozen: false }],
             },
         })
     })
@@ -227,7 +230,11 @@ describe('useInputScreen', () => {
         // totalBalance = 100 - 0.001 = 99.999
         // value=99.5 → > maxAmount but < totalBalance → show panel
         ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: { amount: 100_000_000n, minBalance: 1_000_000n },
+            data: {
+                amount: 100_000_000n,
+                minBalance: 1_000_000n,
+                assets: [{ assetId: 123, amount: 0n, isFrozen: false }],
+            },
         })
 
         const { result } = renderHook(() => useInputScreen())
@@ -349,7 +356,11 @@ describe('useInputScreen', () => {
     it('dismisses max exceeded state', () => {
         // Set up scenario where panel shows (value > maxAmount but <= totalBalance)
         ;(useAccountInformationQuery as Mock).mockReturnValue({
-            data: { amount: 100_000_000n, minBalance: 1_000_000n },
+            data: {
+                amount: 100_000_000n,
+                minBalance: 1_000_000n,
+                assets: [{ assetId: 123, amount: 0n, isFrozen: false }],
+            },
         })
 
         const { result } = renderHook(() => useInputScreen())
@@ -364,5 +375,123 @@ describe('useInputScreen', () => {
             result.current.dismissMaxExceeded()
         })
         expect(result.current.isMaxExceeded).toBe(false)
+    })
+
+    it('shows close account panel when ALGO exceeds MBR and no opted-in ASAs', () => {
+        // Account with no ASAs
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
+            data: {
+                amount: 100_000_000n,
+                minBalance: 100_000n,
+                assets: [],
+            },
+        })
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setCryptoValue('99.95')
+        })
+        act(() => {
+            result.current.handleNext()
+        })
+        expect(result.current.isCloseAccountEligible).toBe(true)
+        expect(result.current.isMaxExceeded).toBe(false)
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('shows insufficient balance panel when ALGO exceeds MBR but has opted-in ASAs', () => {
+        // Account with ASAs
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
+            data: {
+                amount: 100_000_000n,
+                minBalance: 1_000_000n,
+                assets: [{ assetId: 123, amount: 0n, isFrozen: false }],
+            },
+        })
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setCryptoValue('99.5')
+        })
+        act(() => {
+            result.current.handleNext()
+        })
+        expect(result.current.isMaxExceeded).toBe(true)
+        expect(result.current.isCloseAccountEligible).toBe(false)
+    })
+
+    it('handleConfirmCloseAccount sets close account flag and navigates', () => {
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
+            data: {
+                amount: 100_000_000n,
+                minBalance: 100_000n,
+                assets: [],
+            },
+        })
+
+        const { result } = renderHook(() => useInputScreen())
+        // First trigger the panel
+        act(() => {
+            result.current.setCryptoValue('99.95')
+        })
+        act(() => {
+            result.current.handleNext()
+        })
+        expect(result.current.isCloseAccountEligible).toBe(true)
+
+        // Confirm close account
+        act(() => {
+            result.current.handleConfirmCloseAccount()
+        })
+        expect(result.current.isCloseAccountEligible).toBe(false)
+        expect(mockSetIsCloseAccount).toHaveBeenCalledWith(true)
+        // amount = totalBalance - fee = 100 - 0.001 = 99.999
+        expect(mockSetAmount).toHaveBeenCalled()
+        expect(mockSetAmount.mock.calls[0][0].toString()).toBe('99.999')
+        expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
+    })
+
+    it('dismissCloseAccount resets close account eligible state', () => {
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
+            data: {
+                amount: 100_000_000n,
+                minBalance: 100_000n,
+                assets: [],
+            },
+        })
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setCryptoValue('99.95')
+        })
+        act(() => {
+            result.current.handleNext()
+        })
+        expect(result.current.isCloseAccountEligible).toBe(true)
+
+        act(() => {
+            result.current.dismissCloseAccount()
+        })
+        expect(result.current.isCloseAccountEligible).toBe(false)
+    })
+
+    it('resets isCloseAccount when amount is within maxAmount on next', () => {
+        ;(useAccountInformationQuery as Mock).mockReturnValue({
+            data: {
+                amount: 100_000_000n,
+                minBalance: 100_000n,
+                assets: [],
+            },
+        })
+
+        const { result } = renderHook(() => useInputScreen())
+        act(() => {
+            result.current.setCryptoValue('5')
+        })
+        act(() => {
+            result.current.handleNext()
+        })
+        expect(mockSetIsCloseAccount).toHaveBeenCalledWith(false)
+        expect(mockNavigate).toHaveBeenCalledWith('SelectDestination')
     })
 })

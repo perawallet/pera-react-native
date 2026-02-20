@@ -22,6 +22,7 @@ import { AddNotePanel } from '../../../components/send-funds/AddNotePanel'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { SendFundsInfoPanel } from '../../../components/send-funds/SendFundsInfoPanel/SendFundsInfoPanel'
 import { InsufficientBalancePanel } from '../../../components/send-funds/InsufficientBalancePanel'
+import { CloseAccountPanel } from '../../../components/send-funds/CloseAccountPanel'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { LoadingView } from '@components/LoadingView'
@@ -52,6 +53,9 @@ export const InputScreen = () => {
         isMaxExceeded,
         dismissMaxExceeded,
         minBalanceDisplay,
+        isCloseAccountEligible,
+        dismissCloseAccount,
+        handleConfirmCloseAccount,
     } = useInputScreen()
     const { preferredFiatCurrency } = useCurrency()
     const selectedAccount = useSelectedAccount()
@@ -181,6 +185,11 @@ export const InputScreen = () => {
                 onClose={dismissMaxExceeded}
                 onContinue={handleContinuePastMbr}
                 minBalance={minBalanceDisplay}
+            />
+            <CloseAccountPanel
+                isVisible={isCloseAccountEligible}
+                onClose={dismissCloseAccount}
+                onConfirm={handleConfirmCloseAccount}
             />
         </PWView>
     )
