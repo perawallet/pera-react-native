@@ -158,6 +158,9 @@
             "title": "An error has occurred",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
         },
+        "retry": {
+            "label": "Retry"
+        },
         "hex": {
             "label": "Hex"
         },
@@ -811,6 +814,41 @@
             "permissions": "Advanced Permissions",
             "permissions_info_title": "Advanced Permissions",
             "permissions_info_body": "WalletConnect is a communications protocol for web3, enabling wallets and dApps to securely connect and interact. With each new version, WalletConnect introduces new ways to handle, sign and/or display transaction requests coming from third party projects."
+        }
+    },
+    "staking": {
+        "title": "Stake on Algorand",
+        "subtitle": "Secure the protocol and receive Staking Rewards!",
+        "error_title": "Failed to load staking projects",
+        "error_description": "Please try again in a moment.",
+        "retry": "Retry",
+        "disclaimer": {
+            "title": "Terms of Service",
+            "intro": "Pera Wallet gives you access to third-party staking services. When you use these services, you work directly with a provider that stakes your digital assets for transaction validation on the Algorand network.",
+            "research_warning": "Before staking, conduct thorough research and analysis to ensure alignment with your financial goals and risk tolerance.",
+            "acknowledgment_prompt": "In order to access staking services, you acknowledge and agree to the following:",
+            "bullet_liability": "Pera does not control or assume liability for your use of staking services. We expressly disclaim liability for potential losses related to staking services.",
+            "bullet_interruptions": "Pera cannot guarantee uninterrupted staking operations. Service interruptions can occur due to updates, network changes, provider actions, or congestion.",
+            "bullet_availability": "Pera cannot ensure staking availability for any specific digital asset. Feasibility depends on blockchain rules and third-party provider terms.",
+            "bullet_rewards_control": "Pera has no control over staking rewards provided by the Algorand blockchain network.",
+            "bullet_no_advice": "Pera does not provide advice or predictions about digital asset value or suitability. The decision to use staking services is your own.",
+            "bullet_no_custody": "Pera never takes custody of rewards or assets and has no control over Proof-of-Stake networks where validation rights may be delegated.",
+            "bullet_no_guarantee": "Pera does not guarantee you will receive staking rewards or any specific reward rates.",
+            "bullet_provider_failures": "Pera is not responsible for staking provider failures to transfer rewards or losses due to risks such as slashing.",
+            "bullet_no_error_free": "Pera does not guarantee uninterrupted or error-free operation of staking services, nor prevention of disruptions caused by third parties.",
+            "bullet_user_breaches": "Pera is not liable for breaches committed by users in relation to third-party staking agreements.",
+            "closing": "By choosing to use staking services, you acknowledge these conditions and understand the inherent risks.",
+            "terms_agreement": "By proceeding, you agree to these <0>terms</0>.",
+            "accept": "Accept"
+        },
+        "type_liquid": "Liquid Staking",
+        "type_pools": "Staking Pools",
+        "type_delegated": "Delegated Staking",
+        "help": {
+            "title": "Staking Types",
+            "liquid_description": "Liquid staking applications allow users to stake their Algo while maintaining liquidity. The typical process asks users to deposit Algo and mint new tokens that represent ownership and value of staked Algo, and can be used across the <0>DeFi ecosystem</0>.",
+            "pools_description": "Staking pools enable groups of individuals to participate in consensus together. Users can stake Algo to a validator and get rewarded based on validator rewards. Options like DEX liquidity pool staking are also available.",
+            "delegated_description": "Delegated staking involves using a third-party to run a node on your behalf while your Algo remains in your wallet. This is useful for users who want to secure the network and collect rewards without running their own node."
         }
     }
 }

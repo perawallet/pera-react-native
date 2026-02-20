@@ -14,6 +14,7 @@ export const RemoteConfigKeys = {
     welcome_message: 'welcome_message',
     fee_warning_standard_fee: 'fee_warning_standard_fee',
     fee_warning_usd_threshold: 'fee_warning_usd_threshold',
+    staking_projects: 'staking_projects',
 } as const
 
 export type RemoteConfigKey =
@@ -26,6 +27,7 @@ export const RemoteConfigDefaults: Record<
     welcome_message: 'Hello',
     fee_warning_standard_fee: 0.001,
     fee_warning_usd_threshold: 0.01,
+    staking_projects: '',
 }
 
 export type RemoteConfigStore = {

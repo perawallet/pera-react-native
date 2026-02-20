@@ -159,6 +159,11 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             suspiciousBannerContent: palette.salmon[600],
             suspiciousBannerBg: 'rgba(255, 109, 95, 0.16)',
 
+            // Staking Badges
+            stakingLiquidBadge: 'rgba(255,110,92,1)',
+            stakingPoolsBadge: 'rgba(31,142,157,1)',
+            stakingDelegatedBadge: 'rgba(255,174,227,1)',
+
             // Toast
             toastBg: 'rgba(24, 24, 27, 0.9)',
             toastTitle: palette.white,
@@ -340,6 +345,11 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             verifiedBannerBg: 'rgba(13, 127, 255, 0.16)',
             suspiciousBannerContent: palette.salmon[500],
             suspiciousBannerBg: 'rgba(255, 109, 95, 0.16)',
+
+            // Staking Badges
+            stakingLiquidBadge: 'rgba(255,110,92,1)',
+            stakingPoolsBadge: 'rgba(31,142,157,1)',
+            stakingDelegatedBadge: 'rgba(255,174,227,1)',
 
             // Toast
             toastBg: 'rgba(82, 82, 91, 0.92)',

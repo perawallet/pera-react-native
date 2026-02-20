@@ -15,12 +15,73 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => {
     return {
         container: {
+            backgroundColor: theme.colors.background,
             flex: 1,
-            backgroundColor: theme.colors.background,
         },
-        webview: {
-            flexGrow: 1,
-            backgroundColor: theme.colors.background,
+        errorContainer: {
+            alignItems: 'center',
+            flex: 1,
+            gap: theme.spacing.md,
+            justifyContent: 'center',
+            marginHorizontal: theme.spacing.lg,
+        },
+        errorDescription: {
+            color: theme.colors.textGray,
+            textAlign: 'center',
+        },
+        errorTitle: {
+            textAlign: 'center',
+        },
+        list: {
+            flex: 1,
+        },
+        listContentContainer: {
+            gap: theme.spacing.md,
+            paddingBottom: theme.spacing.xxl,
+            paddingHorizontal: theme.spacing.md,
+        },
+        skeletonContainer: {
+            gap: theme.spacing.lg,
+            paddingHorizontal: theme.spacing.sm,
+            paddingVertical: 0,
+            justifyContent: 'flex-start',
+        },
+        skeletonCard: {
+            flexDirection: 'row',
+            gap: theme.spacing.md,
+            paddingHorizontal: theme.spacing.md,
+            paddingTop: theme.spacing.lg,
+        },
+        skeletonLogo: {
+            width: theme.spacing.xxl,
+            height: theme.spacing.xxl,
+            borderWidth: 0,
+        },
+        skeletonDescription: {
+            borderRadius: theme.spacing.sm,
+            height: theme.spacing.xxl,
+        },
+        skeletonContent: {
+            gap: theme.spacing.xs,
+            width: '100%',
+            flexShrink: 1,
+        },
+        skeletonTitle: {
+            borderRadius: theme.spacing.sm,
+            height: theme.spacing.xl,
+            width: '40%',
+            marginBottom: theme.spacing.sm,
+        },
+        skeletonTvlRow: {
+            borderRadius: theme.spacing.sm,
+            height: theme.spacing.md,
+            width: '50%',
+            marginTop: theme.spacing.sm,
+        },
+        subtitle: {
+            color: theme.colors.textGray,
+            marginBottom: theme.spacing.lg,
+            marginHorizontal: theme.spacing.lg,
         },
     }
 })

@@ -95,6 +95,14 @@ export const MainRoutes = () => {
                             />
                             <RootStack.Screen
                                 name='Staking'
+                                options={{
+                                    headerShown: true,
+                                    title: 'staking.title',
+                                    header: (props: NativeStackHeaderProps) => (
+                                        <NavigationHeader {...props} />
+                                    ),
+                                }}
+                                layout={fullScreenLayout}
                                 component={StakingScreen}
                             />
                             <RootStack.Screen
