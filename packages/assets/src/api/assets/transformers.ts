@@ -13,47 +13,30 @@
 import Decimal from 'decimal.js'
 import {
     ALGO_ASSET_ID,
-    type AssetPriceHistoryResponseItem,
-    type AssetPriceResponse,
-    type AssetResponse,
-    type IndexerAssetResponse,
+    PeraAssetType,
+    PeraAssetVerificationTier,
     type PeraAsset,
-    type PublicAssetResponse,
-} from '../models'
+} from '../../models'
+import {
+    AssetResponse,
+    IndexerAssetResponse,
+    PublicAssetResponse,
+} from './schema'
 
-export const mapAssetPriceResponseToAssetPrice = (
-    data: AssetPriceResponse,
-    usdToPreferred: (amount: Decimal) => Decimal,
-) => {
-    return {
-        assetId: data.asset_id,
-        fiatPrice: usdToPreferred(Decimal(data.usd_value ?? '0')),
-    }
-}
-
-export const mapAssetPriceHistoryResponseToAssetPriceHistoryItem = (
-    data: AssetPriceHistoryResponseItem,
-    usdToPreferred: (amount: Decimal) => Decimal,
-) => {
-    return {
-        datetime: new Date(data.datetime),
-        fiatPrice: usdToPreferred(Decimal(data.price ?? '0')),
-    }
-}
-
-export const mapAssetResponseToPeraAsset = (data: AssetResponse): PeraAsset => {
+export const transformAssetResponse = (data: AssetResponse): PeraAsset => {
     return {
         assetId: `${data.asset_id}`,
         name: data.name,
         peraMetadata: {
-            isDeleted: data.is_deleted,
-            verificationTier: data.verification_tier,
+            isDeleted: data.is_deleted ?? false,
+            verificationTier:
+                data.verification_tier as PeraAssetVerificationTier,
             category: data.category ?? undefined,
-            isVerified: data.is_verified,
-            explorerUrl: data.explorer_url,
+            isVerified: data.is_verified ?? false,
+            explorerUrl: data.explorer_url ?? undefined,
             collectible: data.collectible,
-            type: data.type,
-            labels: data.labels,
+            type: data.type as PeraAssetType,
+            labels: data.labels ?? undefined,
             logo: data.logo,
             isFavorited: data.is_favorited ?? false,
             isPriceAlertEnabled: data.is_price_alert_enabled ?? false,
@@ -65,7 +48,7 @@ export const mapAssetResponseToPeraAsset = (data: AssetResponse): PeraAsset => {
     }
 }
 
-export const mapIndexerAssetToPeraAsset = (
+export const transformIndexerAssetResponse = (
     response: IndexerAssetResponse,
 ): PeraAsset => {
     const asset = response.asset
@@ -82,15 +65,16 @@ export const mapIndexerAssetToPeraAsset = (
     }
 }
 
-export const mapPublicAssetResponseToPeraAsset = (
+export const transformPublicAssetResponse = (
     asset: PublicAssetResponse,
 ): PeraAsset => {
     return {
         assetId: `${asset.asset_id}`,
         name: asset.name,
         peraMetadata: {
-            isDeleted: asset.is_deleted === 'true',
-            verificationTier: asset.verification_tier,
+            isDeleted: asset.is_deleted === true,
+            verificationTier:
+                asset.verification_tier as PeraAssetVerificationTier,
             isVerified:
                 asset.verification_tier === 'verified' ||
                 `${asset.asset_id}` === ALGO_ASSET_ID,
@@ -100,7 +84,7 @@ export const mapPublicAssetResponseToPeraAsset = (
         decimals: asset.fraction_decimals,
         totalSupply: Decimal(asset.total_supply_as_str),
         creator: {
-            address: asset.creator_address,
+            address: asset.creator_address ?? '',
         },
         url: asset.url,
     }

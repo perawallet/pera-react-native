@@ -113,13 +113,13 @@ describe('useAccountBalancesHistoryQuery', () => {
             expect(result.current.data).toHaveLength(2)
             expect(result.current.data?.[0]).toEqual({
                 datetime: new Date('2024-01-01T00:00:00Z'),
-                fiatValue: new Decimal(150), // 100 * 1.5
+                preferredValue: new Decimal(150), // 100 * 1.5
                 algoValue: new Decimal(500),
                 round: 12345,
             })
             expect(result.current.data?.[1]).toEqual({
                 datetime: new Date('2024-01-02T00:00:00Z'),
-                fiatValue: new Decimal(180), // 120 * 1.5
+                preferredValue: new Decimal(180), // 120 * 1.5
                 algoValue: new Decimal(550),
                 round: 12346,
             })

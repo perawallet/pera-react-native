@@ -68,7 +68,7 @@ export const WealthChart = ({
             data?.map(p => {
                 return {
                     datetime: p.datetime,
-                    value: p.fiatValue.toNumber(),
+                    value: p.preferredValue.toNumber(),
                 }
             }) ?? [],
         [data],

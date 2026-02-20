@@ -21,7 +21,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import {
     useAssetsQuery,
-    useAssetFiatPricesQuery,
+    useAssetPricesQuery,
 } from '@perawallet/wallet-core-assets'
 import {
     useSuggestedParametersQuery,
@@ -51,7 +51,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetsQuery: vi.fn(),
-    useAssetFiatPricesQuery: vi.fn(),
+    useAssetPricesQuery: vi.fn(),
     ALGO_ASSET_ID: 0,
     ALGO_ASSET: { id: 0, decimals: 6 },
     toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>
@@ -114,8 +114,8 @@ describe('useInputScreen', () => {
                 [1, { id: 1, decimals: 0 }],
             ]),
         })
-        ;(useAssetFiatPricesQuery as Mock).mockReturnValue({
-            data: new Map([[0, { fiatPrice: Decimal(1.5) }]]),
+        ;(useAssetPricesQuery as Mock).mockReturnValue({
+            data: new Map([[0, { usdPrice: Decimal(1.5) }]]),
         })
         ;(useAccountBalancesQuery as Mock).mockReturnValue({
             accountBalances: new Map([

@@ -14,6 +14,7 @@ import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import Decimal from 'decimal.js'
 
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { useStyles } from './styles'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import { NumberPad } from '@components/NumberPad'
@@ -24,7 +25,6 @@ import { SendFundsInfoPanel } from '../../../components/send-funds/SendFundsInfo
 import { InsufficientBalancePanel } from '../../../components/send-funds/InsufficientBalancePanel'
 import { CloseAccountPanel } from '../../../components/send-funds/CloseAccountPanel'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { LoadingView } from '@components/LoadingView'
 import { useInputScreen } from './useInputScreen'
 import { useLanguage } from '@hooks/useLanguage'
@@ -45,7 +45,6 @@ export const InputScreen = () => {
         params,
         accountInformation,
         cryptoValue,
-        fiatValue,
         setMax,
         handleKey,
         handleNext,
@@ -57,7 +56,6 @@ export const InputScreen = () => {
         dismissCloseAccount,
         handleConfirmCloseAccount,
     } = useInputScreen()
-    const { preferredFiatCurrency } = useCurrency()
     const selectedAccount = useSelectedAccount()
     const { canSelectAsset, note, onFinished } = useSendFunds()
     const { t } = useLanguage()
@@ -112,51 +110,49 @@ export const InputScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <CurrencyDisplay
-                currency={asset.unitName ?? ''}
-                precision={asset.decimals}
-                value={cryptoValue ? Decimal(cryptoValue) : Decimal(0)}
-                style={[
-                    cryptoValue ? styles.amount : styles.amountPlaceholder,
-                    styles.h1,
-                ]} //h1Style doesn't seem to override fontfamily
-                showSymbol={false}
-                minPrecision={2}
-            />
-            {fiatValue ? (
+            <PWView style={styles.mainContentContainer}>
                 <CurrencyDisplay
-                    currency={preferredFiatCurrency}
-                    precision={6}
-                    value={fiatValue}
-                    style={styles.amountPlaceholder}
-                    showSymbol
+                    currency={asset.unitName ?? ''}
+                    precision={asset.decimals}
+                    value={cryptoValue ? Decimal(cryptoValue) : Decimal(0)}
+                    style={[
+                        cryptoValue ? styles.amount : styles.amountPlaceholder,
+                        styles.h1,
+                    ]} //h1Style doesn't seem to override fontfamily
+                    showSymbol={false}
                     minPrecision={2}
                 />
-            ) : (
-                <PWText style={styles.amountPlaceholder}>--</PWText>
-            )}
-
-            <PWView style={styles.buttonContainer}>
-                <PWButton
-                    title={
-                        note
-                            ? t('send_funds.confirmation.edit')
-                            : t('send_funds.add_note.button')
-                    }
-                    variant='secondary'
-                    style={styles.secondaryButton}
-                    onPress={noteState.open}
+                <PreferredCurrencyDisplay
+                    sourceAmount={cryptoValue ? Decimal(cryptoValue) : null}
+                    sourceAssetId={selectedAsset?.assetId ?? ''}
+                    precision={6}
+                    showSymbol
+                    minPrecision={2}
+                    style={styles.amountPlaceholder}
                 />
-                <PWButton
-                    title={t('send_funds.input.max')}
-                    variant='secondary'
-                    style={styles.secondaryButton}
-                    onPress={setMax}
-                />
-            </PWView>
 
-            <PWView style={styles.numpadContainer}>
-                <NumberPad onPress={handleKey} />
+                <PWView style={styles.buttonContainer}>
+                    <PWButton
+                        title={
+                            note
+                                ? t('send_funds.confirmation.edit')
+                                : t('send_funds.add_note.button')
+                        }
+                        variant='secondary'
+                        style={styles.secondaryButton}
+                        onPress={noteState.open}
+                    />
+                    <PWButton
+                        title={t('send_funds.input.max')}
+                        variant='secondary'
+                        style={styles.secondaryButton}
+                        onPress={setMax}
+                    />
+                </PWView>
+
+                <PWView style={styles.numpadContainer}>
+                    <NumberPad onPress={handleKey} />
+                </PWView>
             </PWView>
 
             <AccountAssetItemView

@@ -18,36 +18,42 @@ import { Currency } from '@perawallet/wallet-core-currencies'
 import { SearchInput } from '@components/SearchInput'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSettingsCurrencyScreen } from './useSettingsCurrencyScreen'
+import { useCallback } from 'react'
 
 export const SettingsCurrencyScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
-        primaryCurrency,
-        secondaryCurrency,
+        preferredCurrency,
+        fallbackCurrency,
         setCurrency,
         search,
         setSearch,
         filteredData,
     } = useSettingsCurrencyScreen()
 
-    const renderItem = ({ item }: { item: Currency }) => {
-        return (
-            <PWRadioButton
-                title={`${item.name} (${item.id})`}
-                onPress={() => setCurrency(item)}
-                isSelected={primaryCurrency === item.id}
-            />
-        )
-    }
+    const keyExtractor = (item: Currency) => item.id
+
+    const renderItem = useCallback(
+        ({ item }: { item: Currency }) => {
+            return (
+                <PWRadioButton
+                    title={`${item.name} (${item.id})`}
+                    onPress={() => setCurrency(item)}
+                    isSelected={preferredCurrency === item.id}
+                />
+            )
+        },
+        [preferredCurrency, setCurrency],
+    )
 
     return (
         <PWView style={styles.container}>
             <Text h3>{t('settings.currency.title')}</Text>
             <Text>
                 {t('settings.currency.description', {
-                    primaryCurrency,
-                    secondaryCurrency,
+                    preferredCurrency,
+                    fallbackCurrency,
                 })}
             </Text>
             <SearchInput
@@ -58,6 +64,8 @@ export const SettingsCurrencyScreen = () => {
             <PWFlatList
                 data={filteredData}
                 renderItem={renderItem}
+                keyExtractor={keyExtractor}
+                extraData={preferredCurrency}
             />
         </PWView>
     )

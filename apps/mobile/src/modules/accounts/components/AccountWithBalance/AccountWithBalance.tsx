@@ -19,8 +19,8 @@ import { useStyles } from './styles'
 
 import { AccountDisplay } from '../AccountDisplay'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 
 export type AccountWithBalanceProps = {
     account: WalletAccount
@@ -33,7 +33,6 @@ export const AccountWithBalance = ({
     ...rest
 }: AccountWithBalanceProps) => {
     const styles = useStyles({ isHighlighted })
-    const { preferredFiatCurrency } = useCurrency()
     const { accountBalances } = useAccountBalancesQuery([account], true)
 
     return (
@@ -54,9 +53,11 @@ export const AccountWithBalance = ({
                     style={styles.algoBalance}
                 />
 
-                <CurrencyDisplay
-                    currency={preferredFiatCurrency}
-                    value={accountBalances.get(account.address)?.fiatValue}
+                <PreferredCurrencyDisplay
+                    sourceAssetId='ALGO'
+                    sourceAmount={
+                        accountBalances.get(account.address)?.algoValue
+                    }
                     precision={2}
                     minPrecision={2}
                     style={styles.fiatBalance}

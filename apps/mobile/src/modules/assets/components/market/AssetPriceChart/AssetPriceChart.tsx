@@ -54,7 +54,7 @@ export const AssetPriceChart = ({
         () =>
             data?.map(p => {
                 return {
-                    value: p.fiatPrice.toNumber(),
+                    value: p.usdPrice.toNumber(),
                     timestamp: p.datetime,
                 }
             }) ?? [],

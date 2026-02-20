@@ -94,6 +94,19 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     initBlockchainStore: vi.fn(),
 }))
 
+vi.mock('@perawallet/wallet-core-currencies', () => ({
+    useCurrency: vi.fn(() => ({
+        preferredCurrency: 'USD',
+        fallbackCurrency: 'USD',
+        usdToPreferred: vi.fn((amount: Decimal) => amount),
+        algoUsdPrice: new Decimal(0),
+    })),
+    usePreferredCurrencyPriceQuery: vi.fn(() => ({
+        data: null,
+        isPending: false,
+    })),
+}))
+
 vi.mock('@perawallet/wallet-core-projects', () => ({
     useProjectByUrlQuery: vi.fn(() => ({
         data: null,
@@ -132,11 +145,15 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useAccountBalancesQuery: vi.fn(() => ({
             accountBalances: new Map(),
             portfolioAlgoValue: new Decimal(0),
-            portfolioFiatValue: new Decimal(0),
             isPending: false,
             isFetched: true,
             isRefetching: false,
             isError: false,
+        })),
+        usePortfolioTotals: vi.fn(() => ({
+            portfolioPreferredValue: new Decimal(0),
+            accountPreferredValues: new Map(),
+            isPending: false,
         })),
     }
 })

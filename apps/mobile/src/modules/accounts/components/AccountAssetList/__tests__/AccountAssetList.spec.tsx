@@ -55,8 +55,24 @@ vi.mock('@shopify/flash-list', () => ({
 
 vi.mock('@perawallet/wallet-core-assets', async () => ({
     useAssetsQuery: vi.fn(() => ({ data: new Map() })),
-    ALGO_ASSET: { decimals: 6 },
-    ALGO_ASSET_ID: 0,
+    ALGO_ASSET: { decimals: 6, unitName: 'ALGO' },
+    ALGO_ASSET_ID: '0',
+    useAssetPricesQuery: vi.fn(() => ({
+        data: new Map(),
+        isPending: false,
+    })),
+}))
+
+vi.mock('@perawallet/wallet-core-currencies', () => ({
+    useCurrency: vi.fn(() => ({
+        preferredCurrency: 'USD',
+        fallbackCurrency: 'USD',
+        algoUsdPrice: { isZero: () => true },
+    })),
+    usePreferredCurrencyPriceQuery: vi.fn(() => ({
+        data: undefined,
+        isPending: false,
+    })),
 }))
 
 describe('AccountAssetList', () => {

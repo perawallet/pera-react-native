@@ -26,21 +26,9 @@ export type CurrencyPrice = {
 
 export type CurrenciesList = Currency[]
 
-export type CurrenciesListResponse = CurrencyResponse[]
-
-export type CurrencyResponse = {
-    readonly generated_at?: string
-    currency_id: string
-    name: string
-    symbol: string
-    readonly exchange_price?: string
-    readonly last_updated_at?: string
-    readonly usd_value?: string
-}
-
 export type CurrenciesStore = BaseStoreState & {
-    preferredFiatCurrency: string
-    showAlgoAsPrimaryCurrency: boolean
-    setPreferredFiatCurrency: (currency: string) => void
-    setShowAlgoAsPrimaryCurrency: (showAlgoAsPrimaryCurrency: boolean) => void
+    preferredCurrency: string
+    setPreferredCurrency: (currency: string) => void
+    fallbackCurrency: string
+    setFallbackCurrency: (currency: string) => void
 }

@@ -16,7 +16,6 @@ import nacl from 'tweetnacl'
 import { useAlgo25 } from '../useAlgo25'
 import { KeyType, KeyPair, StoredKeyMaterial } from '../../models'
 import { KeyManagementError } from '../../errors'
-import { generateOrderedUniqueId } from 'shared/dist'
 
 const mockSeedFromMnemonic = vi.fn()
 const mockMnemonicFromSeed = vi.fn()

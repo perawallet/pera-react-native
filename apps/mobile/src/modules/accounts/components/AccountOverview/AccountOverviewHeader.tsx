@@ -31,17 +31,17 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { NoFundsButtonPanel } from '../NoFundsButtonPanel'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 
 export type AccountOverviewHeaderProps = {
     account: WalletAccount
     hasBalance: boolean
     portfolioAlgoValue: Decimal
-    portfolioFiatValue: Decimal
     isPending: boolean
     period: HistoryPeriod
     setPeriod: (period: HistoryPeriod) => void
     selectedPoint: AccountBalanceHistoryItem | null
-    preferredFiatCurrency: string
+    preferredCurrency: string
     togglePrivacyMode: () => void
     handleChartSelectionChange: (
         selected: AccountBalanceHistoryItem | null,
@@ -58,12 +58,10 @@ export const AccountOverviewHeader = ({
     account,
     hasBalance,
     portfolioAlgoValue,
-    portfolioFiatValue,
     isPending,
     period,
     setPeriod,
     selectedPoint,
-    preferredFiatCurrency,
     togglePrivacyMode,
     handleChartSelectionChange,
     handleSwap,
@@ -98,19 +96,21 @@ export const AccountOverviewHeader = ({
                     />
                 </PWView>
                 <PWView style={styles.secondaryValueBar}>
-                    <CurrencyDisplay
+                    <PreferredCurrencyDisplay
                         variant='h4'
                         style={styles.valueTitle}
-                        value={
+                        sourceAmount={
                             selectedPoint
-                                ? Decimal(selectedPoint.fiatValue)
-                                : portfolioFiatValue
+                                ? selectedPoint.algoValue
+                                : portfolioAlgoValue
                         }
-                        currency={preferredFiatCurrency}
-                        prefix='≈ '
+                        sourceAssetId={ALGO_ASSET.assetId}
                         precision={2}
+                        showSymbol
+                        prefix='≈ '
                         isLoading={isPending}
                     />
+
                     {!selectedPoint && (
                         <WealthTrend
                             account={account}

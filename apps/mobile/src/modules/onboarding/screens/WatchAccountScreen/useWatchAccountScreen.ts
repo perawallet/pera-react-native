@@ -16,15 +16,15 @@ import {
     useAccountsStore,
     useAllAccounts,
     AccountTypes,
+    WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { useToast } from '@hooks/useToast'
-import { useLanguage } from '@hooks/useLanguage'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 
 type UseWatchAccountScreenResult = {
     address: string
     isValidAddress: boolean
+    isDuplicateAddress: boolean
     handleAddressChange: (text: string) => void
     handleWatchAccount: () => void
 }
@@ -33,36 +33,18 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
     const navigation = useAppNavigation()
     const accounts = useAllAccounts()
     const setAccounts = useAccountsStore(state => state.setAccounts)
-    const setSelectedAccountAddress = useAccountsStore(
-        state => state.setSelectedAccountAddress,
-    )
-    const { showToast } = useToast()
-    const { t } = useLanguage()
     const [address, setAddress] = useState('')
 
     const isValidAddress = isValidAlgorandAddress(address)
+    const isDuplicateAddress =
+        isValidAddress && accounts.some(a => a.address === address)
 
     const handleAddressChange = useCallback((text: string) => {
         setAddress(text)
     }, [])
 
     const handleWatchAccount = useCallback(() => {
-        if (!isValidAlgorandAddress(address)) {
-            showToast({
-                title: t('onboarding.watch_account.invalid_address'),
-                body: '',
-                type: 'error',
-            })
-            return
-        }
-
-        const alreadyExists = accounts.some(a => a.address === address)
-        if (alreadyExists) {
-            showToast({
-                title: t('onboarding.watch_account.invalid_address'),
-                body: '',
-                type: 'error',
-            })
+        if (!isValidAlgorandAddress(address) || isDuplicateAddress) {
             return
         }
 
@@ -70,32 +52,18 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
             id: generateOrderedUniqueId(),
             address,
             type: AccountTypes.watch,
-            canSign: false,
         }
 
         setAccounts([...accounts, newAccount])
-        setSelectedAccountAddress(address)
-
-        showToast({
-            title: t('onboarding.watch_account.success_title'),
-            body: t('onboarding.watch_account.success_body'),
-            type: 'success',
+        navigation.push('NameAccount', {
+            account: newAccount as WalletAccount,
         })
-
-        navigation.navigate('TabBar', { screen: 'Home' })
-    }, [
-        address,
-        accounts,
-        setAccounts,
-        setSelectedAccountAddress,
-        showToast,
-        t,
-        navigation,
-    ])
+    }, [address, isDuplicateAddress, accounts, setAccounts, navigation])
 
     return {
         address,
         isValidAddress,
+        isDuplicateAddress,
         handleAddressChange,
         handleWatchAccount,
     }

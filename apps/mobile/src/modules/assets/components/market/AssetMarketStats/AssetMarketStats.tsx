@@ -12,15 +12,11 @@
 
 import { useStyles } from './styles'
 import { formatNumber, formatWithUnits } from '@perawallet/wallet-core-shared'
-import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import Decimal from 'decimal.js'
 import { PWText, PWView } from '@components/core'
 import { useMemo } from 'react'
-import {
-    PeraAsset,
-    useAssetFiatPricesQuery,
-} from '@perawallet/wallet-core-assets'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { InfoButton } from '@components/InfoButton'
 
@@ -30,7 +26,6 @@ export type AssetMarketStatsProps = {
 
 export const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
     const styles = useStyles()
-    const { preferredFiatCurrency } = useCurrency()
     const { t } = useLanguage()
 
     const supply = useMemo(() => {
@@ -47,17 +42,6 @@ export const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
         return `${integer}${fraction}${unit}`
     }, [assetDetails.totalSupply, assetDetails.decimals])
 
-    const { data } = useAssetFiatPricesQuery()
-
-    const price = useMemo(() => {
-        if (!data) {
-            return null
-        }
-
-        const fiatPriceAsset = data.get(assetDetails.assetId)
-        return fiatPriceAsset?.fiatPrice ?? null
-    }, [data, assetDetails.assetId])
-
     return (
         <PWView style={styles.container}>
             <PWText style={styles.sectionTitle}>
@@ -68,10 +52,10 @@ export const AssetMarketStats = ({ assetDetails }: AssetMarketStatsProps) => {
                     <PWText style={styles.label}>
                         {t('asset_details.markets.price')}
                     </PWText>
-                    <CurrencyDisplay
+                    <PreferredCurrencyDisplay
                         variant='h2'
-                        value={price}
-                        currency={preferredFiatCurrency}
+                        sourceAmount={new Decimal(1)}
+                        sourceAssetId={assetDetails.assetId}
                         precision={6}
                         minPrecision={2}
                     />

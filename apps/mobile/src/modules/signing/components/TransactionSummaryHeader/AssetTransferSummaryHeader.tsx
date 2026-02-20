@@ -13,6 +13,7 @@
 import { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { PWText, PWView } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
@@ -32,15 +33,8 @@ export const AssetTransferSummaryHeader = ({
     const { theme } = useTheme()
     const { t } = useLanguage()
 
-    const {
-        label,
-        asset,
-        receiver,
-        amount,
-        assetId,
-        secondaryAssetName,
-        value,
-    } = useAssetTransferSummaryHeader(transaction)
+    const { label, asset, receiver, amount, assetId } =
+        useAssetTransferSummaryHeader(transaction)
 
     return (
         <PWView style={styles.container}>
@@ -72,12 +66,12 @@ export const AssetTransferSummaryHeader = ({
                         style={styles.amountValue}
                     />
                 )}
-                {value?.isZero() ? null : (
-                    <CurrencyDisplay
-                        currency={secondaryAssetName}
+                {amount.isZero() ? null : (
+                    <PreferredCurrencyDisplay
+                        sourceAmount={amount}
+                        sourceAssetId={assetId}
                         precision={DEFAULT_PRECISION}
                         minPrecision={DEFAULT_PRECISION}
-                        value={value}
                         showSymbol
                         variant='h4'
                         style={styles.secondaryAmountValue}

@@ -35,7 +35,6 @@ import { PromptContainer } from '@modules/prompts'
 import { AccountTabNavigator } from '@modules/accounts/components/AccountTabNavigator'
 import { NotificationsIcon } from '@modules/notifications/components/NotificationsIcon'
 
-//TODO hook up all the button panel buttons correctly
 //TODO implement more menu
 //TODO figure out and implement banners/spot banners
 //TODO implement account info screen somewhere (see old app top right corner)

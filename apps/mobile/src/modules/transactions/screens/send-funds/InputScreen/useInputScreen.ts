@@ -21,7 +21,6 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     ALGO_ASSET,
-    useAssetFiatPricesQuery,
     ALGO_ASSET_ID,
     toWholeUnits,
     useAssetsQuery,
@@ -53,15 +52,6 @@ export const useInputScreen = () => {
         if (!selectedAsset?.assetId) return null
         return assets.get(selectedAsset?.assetId)
     }, [selectedAsset, assets])
-    const { data: fiatPrices } = useAssetFiatPricesQuery()
-    const fiatPrice = useMemo(
-        () =>
-            selectedAsset?.assetId
-                ? (fiatPrices.get(selectedAsset?.assetId)?.fiatPrice ?? null)
-                : null,
-        [selectedAsset, fiatPrices],
-    )
-
     const { data: params } = useSuggestedParametersQuery()
     const { data: accountInformation } = useAccountInformationQuery(
         selectedAccount?.address ?? '',
@@ -116,14 +106,6 @@ export const useInputScreen = () => {
         }
         return '0'
     }, [selectedAsset?.assetId, accountInformation])
-
-    const fiatValue = useMemo(() => {
-        if (!value || !fiatPrice) {
-            return null
-        }
-
-        return Decimal(value).mul(fiatPrice)
-    }, [value, fiatPrice])
 
     const setMax = useCallback(() => {
         setValue(totalBalance.toString())
@@ -256,7 +238,6 @@ export const useInputScreen = () => {
         params,
         accountInformation,
         minBalanceDisplay,
-        fiatValue,
         cryptoValue: value,
         isMaxExceeded,
         isCloseAccountEligible,

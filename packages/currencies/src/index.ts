@@ -14,5 +14,10 @@ export const name = '@perawallet/currencies'
 
 export * from './hooks'
 export * from './models'
+export { fetchCurrenciesList, fetchCurrency } from './api/currencies'
+export type {
+    FetchCurrenciesListParams,
+    FetchCurrencyParams,
+} from './api/currencies'
 
 export { initCurrenciesStore, registerCurrenciesStore } from './store'

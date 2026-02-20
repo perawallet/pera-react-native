@@ -203,6 +203,7 @@ declare module '@rneui/themed' {
             none: number
             sm: number
             md: number
+            lg: number
         }
         shadows: {
             sm: {

@@ -398,6 +398,7 @@
             "address_placeholder": "Enter or paste an address",
             "watch_button": "Watch Account",
             "invalid_address": "Please enter a valid Algorand address",
+            "duplicate_address": "This address has already been added to your wallet",
             "success_title": "Account added",
             "success_body": "Watch account has been added successfully"
         }
@@ -575,7 +576,7 @@
     "settings": {
         "currency": {
             "title": "Main Currency",
-            "description": "Your main currency is {{primaryCurrency}}, and secondary currency is {{secondaryCurrency}}.",
+            "description": "Your main currency is {{preferredCurrency}}, and secondary currency is {{fallbackCurrency}}.",
             "search_placeholder": "Search"
         },
         "main": {

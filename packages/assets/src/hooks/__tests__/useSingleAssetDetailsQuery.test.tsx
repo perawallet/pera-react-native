@@ -22,19 +22,39 @@ const mocks = vi.hoisted(() => ({
     fetchAssetDetails: vi.fn(),
     fetchIndexerAssetDetails: vi.fn(),
     fetchPublicAssetDetails: vi.fn(),
+    useNetwork: vi.fn(),
 }))
 
-vi.mock('../endpoints', () => ({
-    fetchAssetDetails: mocks.fetchAssetDetails,
-    fetchIndexerAssetDetails: mocks.fetchIndexerAssetDetails,
-    fetchPublicAssetDetails: mocks.fetchPublicAssetDetails,
-}))
+vi.mock(
+    '@perawallet/wallet-core-platform-integration',
+    async importOriginal => {
+        const actual =
+            await importOriginal<
+                typeof import('@perawallet/wallet-core-platform-integration')
+            >()
+        return {
+            ...actual,
+            useNetwork: mocks.useNetwork,
+        }
+    },
+)
+
+vi.mock('../../api', async importOriginal => {
+    const actual = await importOriginal<typeof import('../../api')>()
+    return {
+        ...actual,
+        fetchAssetDetails: mocks.fetchAssetDetails,
+        fetchIndexerAssetDetails: mocks.fetchIndexerAssetDetails,
+        fetchPublicAssetDetails: mocks.fetchPublicAssetDetails,
+    }
+})
 
 describe('useSingleAssetDetailsQuery', () => {
     let queryClient: QueryClient
 
     beforeEach(() => {
         vi.clearAllMocks()
+        mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
         queryClient = new QueryClient({
             defaultOptions: {
                 queries: {
