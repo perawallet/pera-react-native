@@ -39,3 +39,28 @@ export type OnboardingStackParamList = {
         account: WalletAccount
     }
 }
+
+export type AddAccountStackParamList = {
+    AddAccountHome: undefined
+    WatchAccount: undefined
+    NameAccount:
+        | {
+              account?: WalletAccount
+          }
+        | undefined
+    ImportSelectAddresses: {
+        accounts: HDWalletAccount[]
+    }
+    ImportRekeyedAddresses: {
+        accounts: WalletAccount[]
+    }
+    ImportInfo: {
+        accountType: ImportAccountType
+    }
+    ImportAccount: {
+        accountType: ImportAccountType
+    }
+    SearchAccounts: {
+        account: WalletAccount
+    }
+}

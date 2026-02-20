@@ -43,7 +43,6 @@ export const useKMSService = () => {
                 createdAt: new Date(),
             }
 
-            logger.debug('Creating key', modifiedKey)
             await secureStorage.setItem(
                 storageLocation,
                 new TextEncoder().encode(stringifiedObj),

@@ -18,14 +18,13 @@ import {
     PWInput,
     PWLoadingOverlay,
     PWText,
-    PWToolbar,
     PWView,
 } from '@components/core'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { KeyboardAvoidingView, ScrollView } from 'react-native'
 import { useImportAccountScreen } from './useImportAccountScreen'
-import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { ImportAccountSupportOptionsBottomSheet } from './ImportAccountSupportOptionsBottomSheet'
 import { QRScannerView } from '@components/QRScannerView'
 import { WordSuggestionDropdown } from './WordSuggestionDropdown'
@@ -33,7 +32,6 @@ import { WordSuggestionDropdown } from './WordSuggestionDropdown'
 export const ImportAccountScreen = () => {
     const { theme } = useTheme()
     const insets = useSafeAreaInsets()
-    const navigation = useAppNavigation()
     const {
         words,
         focused,
@@ -63,24 +61,18 @@ export const ImportAccountScreen = () => {
 
     const wordsPerColumn = Math.ceil(mnemonicLength / 2)
 
+    useNavigationHeader({
+        right: (
+            <PWIcon
+                name='ellipsis'
+                onPress={handleOpenSupportOptions}
+            />
+        ),
+    })
+
     return (
         <PWView style={styles.mainContainer}>
             <KeyboardAvoidingView style={styles.mainContainer}>
-                <PWToolbar
-                    left={
-                        <PWIcon
-                            name='chevron-left'
-                            onPress={navigation.goBack}
-                        />
-                    }
-                    right={
-                        <PWIcon
-                            name='ellipsis'
-                            onPress={handleOpenSupportOptions}
-                        />
-                    }
-                />
-
                 <ScrollView
                     style={styles.scrollContainer}
                     contentContainerStyle={styles.scrollView}

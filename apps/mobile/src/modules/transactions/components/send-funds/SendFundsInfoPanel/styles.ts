@@ -65,7 +65,7 @@ export const useStyles = makeStyles((theme, props: { insets: EdgeInsets }) => {
             flexShrink: 1,
         },
         redText: {
-            color: theme.colors.error,
+            color: theme.colors.alertNegative,
         },
         link: {
             marginLeft: theme.spacing.xs,

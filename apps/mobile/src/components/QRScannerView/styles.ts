@@ -56,7 +56,7 @@ export const useStyles = makeStyles(theme => {
             bottom: 0,
             left: 0,
             right: 0,
-            backgroundColor: theme.colors.backdrop,
+            backgroundColor: theme.colors.backdropModalBg,
         },
     }
 })

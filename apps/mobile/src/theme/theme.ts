@@ -14,25 +14,16 @@
 
 import { DefaultTheme } from '@react-navigation/native'
 import { createTheme } from '@rneui/themed'
-import { fontFamilies } from '@constants/fonts'
-
-export const getFontFamily = (
-    isMonoSpace: boolean,
-    weight: 300 | 400 | 500 | 600 | 700,
-) => {
-    const selectedFontFamily = isMonoSpace
-        ? fontFamilies.DMMONO
-        : fontFamilies.DMSANS
-    return selectedFontFamily[weight]
-}
+import { palette } from './colors'
+import { getFontFamily } from './typography'
 
 export const getNavigationTheme = (mode: 'light' | 'dark' = 'light') => ({
     ...DefaultTheme,
     colors: {
         ...DefaultTheme.colors,
-        background: mode === 'light' ? '#FFFFFF' : '#18181B',
-        text: mode === 'light' ? '#A1A1AA' : '#71717A',
-        primary: mode === 'light' ? '#18181B' : '#FAFAFA',
+        background: mode === 'light' ? palette.white : palette.gray[900],
+        text: mode === 'light' ? palette.gray[400] : palette.gray[500],
+        primary: mode === 'light' ? palette.gray[900] : palette.gray[50],
     },
     dark: mode === 'dark',
 })
@@ -40,149 +31,378 @@ export const getNavigationTheme = (mode: 'light' | 'dark' = 'light') => ({
 export const getTheme = (mode: 'light' | 'dark' = 'light') =>
     createTheme({
         lightColors: {
-            // Primary/secondary brand
-            primary: '#27272A', // ButtonPrimary/bg (light)
-            secondary: '#6B46FE', // ButtonSecondary/newText (light) - used as accent
-            // Surfaces
-            background: '#FFFFFF', // Defaults/bg (light)
-            // Neutrals
-            black: '#18181B', // Text/main (light)
-            white: '#FFFFFF',
-            grey0: '#FAFAFA', // Layer/grayLightest (light)
-            grey1: '#F1F1F2', // Layer/grayLighter (light)
-            grey2: '#E4E4E7', // Layer/grayLight (light)
-            grey3: '#D4D4D8', // Layer/gray (light)
-            grey4: '#A1A1AA', // Separator/grayLighter (light)
-            grey5: '#71717A', // ButtonPrimary/newDisabledText
+            // @rneui built-ins (kept for internal use)
+            primary: palette.gray[800],
+            secondary: palette.purple[600],
+            background: palette.white,
+            black: palette.gray[900],
+            white: palette.white,
+            grey0: palette.gray[50],
+            grey1: palette.gray[100],
+            grey2: palette.gray[200],
+            grey3: palette.gray[300],
+            grey4: palette.gray[400],
+            grey5: palette.gray[500],
+            success: palette.turquoise[600],
+            warning: palette.yellow[400],
+            error: palette.salmon[600],
+            divider: 'rgba(0,0,0,0.05)',
 
-            //Layer colors
-            layerGray: '#D4D4D8',
-            layerGrayLight: '#D4D4D8',
-            layerGrayLighter: '#F1F1F2',
-            layerGrayLightest: '#FAFAFA',
+            // Defaults
+            systemElements: palette.black,
 
-            //Text colors
-            textGray: '#71717A',
-            textGrayLighter: '#A1A1AA',
-            textMain: '#18181B',
-            textSonicSilver: '#71717A',
-            textWhite: '#FFFFFF',
+            // Text
+            textGray: palette.gray[500],
+            textGrayLighter: palette.gray[400],
+            textMain: palette.gray[900],
+            textWhite: palette.white,
 
-            //Button
-            buttonPrimaryBg: '#27272A',
-            buttonPrimaryText: '#FFFFFF',
+            // Layer
+            layerGray: palette.gray[200],
+            layerGrayLighter: palette.gray[100],
+            layerGrayLightest: palette.gray[50],
 
-            buttonHelperBg: '#27272A',
-            buttonHelperText: '#FFFFFF',
+            // Link
+            linkPrimary: palette.turquoise[700],
+            linkIcon: palette.turquoise[600],
 
+            // Button Primary
+            buttonPrimaryBg: palette.gray[800],
+            buttonPrimaryText: palette.white,
+            buttonPrimaryFocusBg: palette.gray[900],
+            buttonPrimaryDisabledBg: palette.gray[100],
+            buttonPrimaryDisabledText: palette.gray[500],
+
+            // Button Secondary
+            buttonSecondaryBg: palette.gray[100],
+            buttonSecondaryFocusBg: palette.gray[200],
+            buttonSecondaryDisabledBg: palette.gray[100],
+            buttonSecondaryText: palette.gray[900],
+            buttonSecondaryDisabledText: palette.gray[500],
+
+            // Button Ghost
+            buttonGhostBg: palette.white,
+            buttonGhostFocusBg: palette.gray[100],
+            buttonGhostDisabledBg: palette.white,
+            buttonGhostText: palette.gray[900],
+            buttonGhostDisabledText: palette.gray[500],
+
+            // Button Float
+            buttonFloatBg: palette.white,
+            buttonFloatFocusBg: palette.gray[100],
+            buttonFloatIconMain: palette.gray[900],
+            buttonFloatIconLighter: palette.white,
+
+            // Button Helper
+            buttonHelperBg: palette.gray[800],
+            buttonHelperFocusBg: palette.gray[700],
+            buttonHelperDisabledBg: palette.gray[100],
+            buttonHelperIcon: palette.white,
+            buttonHelperDisabledIcon: palette.gray[500],
+            buttonHelperPeraIcon: palette.yellow[400],
+
+            // Button Square
             buttonSquareBg: 'rgba(44, 183, 188, 0.12)',
-            buttonSquareText: '#1F8E9D',
+            buttonSquareFocusBg: 'rgba(44, 183, 188, 0.28)',
+            buttonSquareSecondaryBg: palette.gray[100],
+            buttonSquareIcon: palette.turquoise[700],
+            buttonSquareSecondaryIcon: palette.gray[500],
 
-            //Helpers
-            helperPositive: '#1F8E9D',
-            helperNegative: '#DB4645',
-            helperGray200: 'rgba(143, 143, 148, 0.2)',
+            // Helpers
+            positive: palette.turquoise[700],
+            positiveLighter: palette.turquoise[100],
+            negative: palette.salmon[600],
+            negativeLighter: palette.salmon[100],
+            successCheckmark: palette.white,
+            heroBg: palette.gray[50],
 
-            asaTrustedText: '#1F8E9D',
-            asaTrustedBg: 'rgba(44, 183, 188, 0.16)',
-            asaVerifiedText: '#0D7FFF',
-            asaVerifiedBg: 'rgba(13, 127, 255, 0.16)',
-            asaSuspiciousText: '#DB4645',
-            asaSuspiciousBg: 'rgba(255, 109, 95, 0.16)',
+            // Banner
+            bannerBg: palette.turquoise[600],
+            bannerButton: 'rgba(255, 255, 255, 0.12)',
+            bannerIconBg: 'rgba(31, 142, 157, 0.2)',
+            bannerText: palette.white,
 
-            backdrop: 'rgba(0, 0, 0, 0.4)',
+            // Alert
+            alertNegative: palette.salmon[600],
+            alertContent: palette.white,
+            alertPositive: palette.turquoise[600],
 
-            //Backgrounds
-            altBackground: '#27272A',
+            // Wallet
+            wallet1: palette.blush[600],
+            wallet1Icon: '#9B1F69',
+            wallet2: palette.salmon[500],
+            wallet2Icon: '#FFEAC2',
+            wallet3: palette.purple[500],
+            wallet3Icon: '#FFAEE3',
+            wallet3IconGovernor: palette.purple[500],
+            wallet4: palette.turquoise[300],
+            wallet4Icon: palette.turquoise[800],
+            wallet4IconGovernor: palette.turquoise[700],
+            wallet5: palette.salmon[400],
+            wallet5Icon: '#424F76',
 
-            //Links
-            linkPrimary: '#1F8E9D',
+            // ASA Icons
+            trustedIconBg: palette.turquoise[600],
+            trustedIconInline: palette.white,
+            verifiedIconBg: '#CEEEFE',
+            verifiedIconInline: '#0D7FFF',
+            verifiedIconSolidBg: '#0D7FFF',
+            verifiedIconSolidInline: palette.white,
+            suspiciousIconBg: palette.salmon[500],
+            suspiciousIconInline: palette.white,
+
+            // ASA Banners
+            trustedBannerContent: palette.turquoise[700],
+            trustedBannerBg: 'rgba(44, 183, 188, 0.16)',
+            verifiedBannerContent: '#0D7FFF',
+            verifiedBannerBg: 'rgba(13, 127, 255, 0.16)',
+            suspiciousBannerContent: palette.salmon[600],
+            suspiciousBannerBg: 'rgba(255, 109, 95, 0.16)',
+
+            // Staking Badges
+            stakingLiquidBadge: 'rgba(255,110,92,1)',
+            stakingPoolsBadge: 'rgba(31,142,157,1)',
+            stakingDelegatedBadge: 'rgba(255,174,227,1)',
+
+            // Toast
+            toastBg: 'rgba(24, 24, 27, 0.9)',
+            toastTitle: palette.white,
+            toastDescription: 'rgba(255, 255, 255, 0.6)',
+
+            // Testnet
+            testnetBg: palette.yellow[500],
+            testnetText: palette.gray[900],
+
+            // Algo Icon
+            algoIconBg: palette.black,
+            algoIcon: palette.white,
+
+            // QR Scanner
+            qrScannerBg: 'rgba(0, 0, 0, 0.7)',
+
+            // Backdrop
+            backdropModalBg: 'rgba(0, 0, 0, 0.64)',
+
+            // Keyboard
+            keyboardAccessoryBg: '#D1D5DB',
+            keyboardAccessoryLine: '#C7C8CC',
 
             // Tab Bar
-            tabIconActive: '#18181B',
-            tabIconPassive: '#A1A1AA',
+            tabBarButton: palette.gray[800],
+            tabBarBg: 'rgba(255, 255, 255, 0.84)',
+            tabBarIconActive: palette.gray[900],
+            tabBarIconNonActive: palette.gray[400],
+            tabBarIconDisabled: 'rgba(161, 161, 170, 0.5)',
 
-            testnetBackground: '#EDB21C',
+            // Bottom Sheet
+            bottomSheetLine: '#E6E7E9',
 
-            // States
-            success: '#2CB7BC', // Alert/positive
-            warning: '#FFEE55', // Link/primary (dark variant) used as generic warning
-            error: '#DB4645', // Alert/negative (light)
-            favorite: '#EDB21C',
-            // Misc
-            divider: 'rgba(0,0,0,0.05)', // Border/default (light)
+            // Modality
+            modalityBg: palette.gray[900],
+
+            // Switches
+            switchBg: palette.turquoise[600],
+            switchOffBg: palette.gray[400],
+
+            // NFT Icon
+            nftIconBg: 'rgba(24, 24, 27, 0.6)',
+            nftIcon: palette.white,
+
+            // Dapp
+            dappMoonpay: '#7D01FF',
+            dappSardine: '#2925CB',
+            dappTransak: '#2A6BE6',
+            dappBidali: '#6241E2',
+
+            // Legacy (no Figma equivalent)
+            favorite: palette.yellow[500],
         },
         darkColors: {
-            // Primary/secondary brand (dark variants)
-            primary: '#FFEE55', // ButtonPrimary/newBg (dark)
-            secondary: '#AC8EFF', // ButtonSecondary/newText (dark)
-            // Surfaces
-            background: '#18181B', // Defaults/bg (dark)
-            // Neutrals
-            black: '#FFFFFF',
-            white: '#F1F1F2', // Text/main (dark)
-            grey0: '#27272A', // Layer/grayLightest (dark)
-            grey1: '#27272A', // Layer/grayLighter (dark)
-            grey2: '#3F3F46', // Layer/grayLight (dark)
-            grey3: '#3F3F46', // Layer/gray (dark)
-            grey4: '#71717A', // Separator/grayLighter (dark)
-            grey5: '#71717A', // ButtonPrimary/newDisabledText
+            // @rneui built-ins (kept for internal use)
+            primary: palette.yellow[400],
+            secondary: palette.purple[400],
+            background: palette.gray[900],
+            black: palette.white,
+            white: palette.gray[100],
+            grey0: palette.gray[800],
+            grey1: palette.gray[800],
+            grey2: palette.gray[700],
+            grey3: palette.gray[700],
+            grey4: palette.gray[500],
+            grey5: palette.gray[500],
+            success: palette.yellow[400],
+            warning: '#b66129',
+            error: palette.salmon[500],
+            divider: 'rgba(255, 255, 255, 0.05)',
 
-            //Layer colors
-            layerGray: '#3F3F46',
-            layerGrayLight: '#3F3F46',
-            layerGrayLighter: '#27272A',
-            layerGrayLightest: '#27272A',
+            // Defaults
+            systemElements: palette.white,
 
-            //Text colors
-            textGray: '#A1A1AA',
-            textGrayLighter: '#71717A',
-            textMain: '#F1F1F2',
-            textSonicSilver: '#A1A1AA',
-            textWhite: '#FFFFFF',
+            // Text
+            textGray: palette.gray[400],
+            textGrayLighter: palette.gray[500],
+            textMain: palette.gray[100],
+            textWhite: palette.white,
 
-            //Button
-            buttonPrimaryBg: '#FFEE55',
-            buttonPrimaryText: '#18181B',
+            // Layer
+            layerGray: palette.gray[700],
+            layerGrayLighter: palette.gray[800],
+            layerGrayLightest: palette.gray[800],
 
+            // Link
+            linkPrimary: palette.yellow[400],
+            linkIcon: palette.gray[100],
+
+            // Button Primary
+            buttonPrimaryBg: palette.yellow[400],
+            buttonPrimaryText: palette.gray[900],
+            buttonPrimaryFocusBg: palette.yellow[500],
+            buttonPrimaryDisabledBg: palette.gray[800],
+            buttonPrimaryDisabledText: palette.gray[500],
+
+            // Button Secondary
+            buttonSecondaryBg: palette.gray[800],
+            buttonSecondaryFocusBg: palette.gray[900],
+            buttonSecondaryDisabledBg: palette.gray[800],
+            buttonSecondaryText: palette.gray[100],
+            buttonSecondaryDisabledText: palette.gray[500],
+
+            // Button Ghost
+            buttonGhostBg: palette.gray[900],
+            buttonGhostFocusBg: palette.gray[800],
+            buttonGhostDisabledBg: palette.gray[900],
+            buttonGhostText: palette.gray[100],
+            buttonGhostDisabledText: palette.gray[500],
+
+            // Button Float
+            buttonFloatBg: palette.white,
+            buttonFloatFocusBg: palette.gray[100],
+            buttonFloatIconMain: palette.gray[900],
+            buttonFloatIconLighter: '#17171A',
+
+            // Button Helper
             buttonHelperBg: 'rgba(255, 238, 85, 0.1)',
-            buttonHelperText: '#FFEE55',
+            buttonHelperFocusBg: 'rgba(255, 238, 85, 0.2)',
+            buttonHelperDisabledBg: 'rgba(255, 238, 85, 0.05)',
+            buttonHelperIcon: palette.yellow[400],
+            buttonHelperDisabledIcon: 'rgba(255, 238, 85, 0.5)',
+            buttonHelperPeraIcon: palette.yellow[400],
 
+            // Button Square
             buttonSquareBg: 'rgba(44, 183, 188, 0.12)',
-            buttonSquareText: '#2CB7BC',
+            buttonSquareFocusBg: 'rgba(44, 183, 188, 0.28)',
+            buttonSquareSecondaryBg: palette.gray[800],
+            buttonSquareIcon: palette.turquoise[600],
+            buttonSquareSecondaryIcon: palette.gray[500],
 
-            //Helpers
-            helperPositive: '#2CB7BC',
-            helperNegative: '#DB4645',
-            helperGray200: 'rgba(143, 143, 148, 0.2)',
+            // Helpers
+            positive: palette.turquoise[600],
+            positiveLighter: 'rgba(44, 183, 188, 0.12)',
+            negative: palette.salmon[500],
+            negativeLighter: 'rgba(255, 109, 95, 0.12)',
+            successCheckmark: palette.gray[900],
+            heroBg: '#1D1D21',
 
-            asaTrustedText: '#2CB7BC',
-            asaTrustedBg: 'rgba(44, 183, 188, 0.16)',
-            asaVerifiedText: '#48A7FE',
-            asaVerifiedBg: 'rgba(13, 127, 255, 0.16)',
-            asaSuspiciousText: '#FF6D5F',
-            asaSuspiciousBg: 'rgba(255, 109, 95, 0.16)',
+            // Banner
+            bannerBg: palette.gray[800],
+            bannerButton: 'rgba(24, 24, 27, 0.12)',
+            bannerIconBg: 'rgba(24, 24, 27, 0.2)',
+            bannerText: palette.white,
 
-            backdrop: 'rgba(0, 0, 0, 0.4)',
+            // Alert
+            alertNegative: palette.salmon[500],
+            alertContent: palette.gray[900],
+            alertPositive: palette.turquoise[600],
 
-            //Backgrounds
-            altBackground: '#F1F1F2',
+            // Wallet
+            wallet1: palette.blush[600],
+            wallet1Icon: '#9B1F69',
+            wallet2: palette.salmon[500],
+            wallet2Icon: '#FFEAC2',
+            wallet3: palette.purple[500],
+            wallet3Icon: '#FFAEE3',
+            wallet3IconGovernor: palette.purple[500],
+            wallet4: palette.turquoise[300],
+            wallet4Icon: palette.turquoise[800],
+            wallet4IconGovernor: palette.turquoise[600],
+            wallet5: palette.salmon[400],
+            wallet5Icon: '#424F76',
 
-            //Links
-            linkPrimary: '#1F8E9D',
+            // ASA Icons
+            trustedIconBg: palette.turquoise[600],
+            trustedIconInline: palette.gray[900],
+            verifiedIconBg: '#48A7FE',
+            verifiedIconInline: palette.gray[900],
+            verifiedIconSolidBg: '#48A7FE',
+            verifiedIconSolidInline: palette.gray[900],
+            suspiciousIconBg: palette.salmon[500],
+            suspiciousIconInline: palette.gray[900],
+
+            // ASA Banners
+            trustedBannerContent: palette.turquoise[600],
+            trustedBannerBg: 'rgba(44, 183, 188, 0.16)',
+            verifiedBannerContent: '#48A7FE',
+            verifiedBannerBg: 'rgba(13, 127, 255, 0.16)',
+            suspiciousBannerContent: palette.salmon[500],
+            suspiciousBannerBg: 'rgba(255, 109, 95, 0.16)',
+
+            // Staking Badges
+            stakingLiquidBadge: 'rgba(255,110,92,1)',
+            stakingPoolsBadge: 'rgba(31,142,157,1)',
+            stakingDelegatedBadge: 'rgba(255,174,227,1)',
+
+            // Toast
+            toastBg: 'rgba(82, 82, 91, 0.92)',
+            toastTitle: palette.white,
+            toastDescription: 'rgba(255, 255, 255, 0.6)',
+
+            // Testnet
+            testnetBg: palette.yellow[500],
+            testnetText: palette.gray[900],
+
+            // Algo Icon
+            algoIconBg: palette.black,
+            algoIcon: palette.white,
+
+            // QR Scanner
+            qrScannerBg: 'rgba(0, 0, 0, 0.7)',
+
+            // Backdrop
+            backdropModalBg: 'rgba(0, 0, 0, 0.86)',
+
+            // Keyboard
+            keyboardAccessoryBg: '#292929',
+            keyboardAccessoryLine: '#393939',
 
             // Tab Bar
-            tabIconActive: '#FAFAFA',
-            tabIconPassive: '#71717A',
+            tabBarButton: palette.gray[800],
+            tabBarBg: 'rgba(24, 24, 27, 0.84)',
+            tabBarIconActive: palette.gray[50],
+            tabBarIconNonActive: palette.gray[500],
+            tabBarIconDisabled: 'rgba(113, 113, 122, 0.5)',
 
-            testnetBackground: '#EDB21C',
+            // Bottom Sheet
+            bottomSheetLine: palette.gray[700],
 
-            // States
-            success: '#2CB7BC', // Alert/positive
-            warning: '#b66129', // Link/primary (dark)
-            error: '#FF6D5F', // Alert/negative (dark)
-            // Misc
-            divider: 'rgba(255,255,255,0.05)', // Border/default (dark)
+            // Modality
+            modalityBg: palette.black,
+
+            // Switches
+            switchBg: palette.yellow[500],
+            switchOffBg: palette.gray[800],
+
+            // NFT Icon
+            nftIconBg: 'rgba(24, 24, 27, 0.6)',
+            nftIcon: palette.white,
+
+            // Dapp
+            dappMoonpay: '#7D01FF',
+            dappSardine: '#2925CB',
+            dappTransak: '#2A6BE6',
+            dappBidali: '#6241E2',
+
+            // Legacy (no Figma equivalent)
+            favorite: palette.yellow[500],
         },
         mode,
         spacing: {
@@ -211,7 +431,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
         },
         shadows: {
             sm: {
-                shadowColor: '#000000',
+                shadowColor: palette.black,
                 shadowOffset: {
                     width: 0,
                     height: 2,
@@ -221,7 +441,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                 elevation: 2,
             },
             md: {
-                shadowColor: '#000000',
+                shadowColor: palette.black,
                 shadowOffset: {
                     width: 0,
                     height: 2,
@@ -251,10 +471,10 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                         ? theme.colors.buttonSquareBg
                         : theme.colors.background,
                     color: props?.checked
-                        ? theme.colors.buttonSquareText
+                        ? theme.colors.buttonSquareIcon
                         : theme.colors.textMain,
                     paddingHorizontal: 0,
-                    borderColor: theme.colors.helperPositive,
+                    borderColor: theme.colors.positive,
                     borderWidth: theme.borders.md,
                     borderRadius: theme.spacing.xs,
                     height: theme.spacing.xl,
@@ -268,7 +488,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                     backgroundColor: theme.colors.layerGrayLightest,
                 },
                 backdropStyle: {
-                    backgroundColor: theme.colors.backdrop,
+                    backgroundColor: theme.colors.backdropModalBg,
                 },
             }),
             DialogTitle: (_, theme) => ({
@@ -287,13 +507,13 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                     paddingHorizontal: 0,
                 },
                 inputStyle: {
-                    fontFamily: getFontFamily(false, 400),
+                    fontFamily: getFontFamily(400),
                     fontSize: 13,
                     color: theme.colors.textMain,
                     borderRadius: theme.spacing.xs,
                 },
                 labelStyle: {
-                    fontFamily: getFontFamily(false, 400),
+                    fontFamily: getFontFamily(400),
                     fontSize: 13,
                     color: theme.colors.textGray,
                     marginBottom: theme.spacing.xs,
@@ -323,7 +543,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                     backgroundColor: theme.colors.layerGrayLighter,
                 },
                 style: {
-                    backgroundColor: theme.colors.layerGrayLight,
+                    backgroundColor: theme.colors.layerGray,
                     borderWidth: theme.borders.md,
                     borderColor: theme.colors.background,
                 },
@@ -333,10 +553,10 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                 containerStyle: {
                     margin: 0,
                     flex: 1,
-                    backgroundColor: theme.colors.backdrop,
+                    backgroundColor: theme.colors.backdropModalBg,
                 },
                 backdropStyle: {
-                    backgroundColor: theme.colors.backdrop,
+                    backgroundColor: theme.colors.backdropModalBg,
                 },
                 scrollViewProps: {
                     contentContainerStyle: {
@@ -350,35 +570,35 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             }),
             Switch: (_, theme) => ({
                 trackColor: {
-                    false: theme.colors.layerGray,
-                    true: theme.colors.helperPositive,
+                    false: theme.colors.switchOffBg,
+                    true: theme.colors.switchBg,
                 },
                 thumbColor: theme.colors.textWhite,
             }),
             Text: () => ({
                 //TODO: It seems to be selecting the wrong font at larger sizes - we may need additional font files
                 h1Style: {
-                    fontFamily: getFontFamily(false, 500),
+                    fontFamily: getFontFamily(500),
                     fontSize: 32,
                     lineHeight: 40,
                 },
                 h2Style: {
-                    fontFamily: getFontFamily(false, 500),
+                    fontFamily: getFontFamily(500),
                     fontSize: 25,
                     lineHeight: 24,
                 },
                 h3Style: {
-                    fontFamily: getFontFamily(false, 500),
+                    fontFamily: getFontFamily(500),
                     fontSize: 19,
                     lineHeight: 24,
                 },
                 h4Style: {
-                    fontFamily: getFontFamily(false, 500),
+                    fontFamily: getFontFamily(500),
                     fontSize: 15,
                     lineHeight: 24,
                 },
                 style: {
-                    fontFamily: getFontFamily(false, 400),
+                    fontFamily: getFontFamily(400),
                     fontSize: 13,
                     lineHeight: 24,
                 },

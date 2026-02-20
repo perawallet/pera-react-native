@@ -13,7 +13,6 @@
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCreateAccount } from './useCreateAccount'
 import { ImportAccountType } from '../models'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 
 export const useImportAccount = () => {
     const { createHDWalletKey, createAlgo25Key } = useKMS()
@@ -27,18 +26,16 @@ export const useImportAccount = () => {
         mnemonic: string
         type: ImportAccountType
     }) => {
-        const rootWalletId = generateOrderedUniqueId()
-
         if (type === 'hdWallet') {
-            await createHDWalletKey({ id: rootWalletId, mnemonic })
+            const key = await createHDWalletKey({ mnemonic })
             return await createHdWalletAccount({
-                walletId: rootWalletId,
+                walletId: key.id,
                 account: 0,
                 keyIndex: 0,
             })
         } else {
-            await createAlgo25Key({ id: rootWalletId, mnemonic })
-            return await createAlgo25WalletAccount({ id: rootWalletId })
+            const key = await createAlgo25Key({ mnemonic })
+            return await createAlgo25WalletAccount({ id: key.id })
         }
     }
 }

@@ -134,7 +134,7 @@ export const WealthChart = ({
                     data={dataPoints}
                     hideAxesAndRules
                     height={CHART_HEIGHT}
-                    color={theme.colors.helperPositive}
+                    color={theme.colors.positive}
                     startFillColor='#28A79B'
                     endFillColor='#28A79B'
                     startOpacity={0.3}
@@ -156,7 +156,7 @@ export const WealthChart = ({
                         pointerStripColor: theme.colors.textGrayLighter,
                         pointerStripWidth: 1,
                         pointerStripHeight: CHART_HEIGHT,
-                        pointerColor: theme.colors.helperPositive,
+                        pointerColor: theme.colors.positive,
                         strokeDashArray: [6, 2],
                     }}
                     getPointerProps={onFocus}

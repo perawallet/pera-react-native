@@ -21,7 +21,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             backgroundColor: theme.colors.background,
         },
         testnetBar: {
-            backgroundColor: theme.colors.testnetBackground,
+            backgroundColor: theme.colors.testnetBg,
             height: insets.top,
             zIndex: theme.zIndex.layer1,
             position: 'absolute',
@@ -50,7 +50,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
         },
         testnetText: {
             ...getTypography(theme, 'caption'),
-            color: theme.colors.black,
+            color: theme.colors.testnetText,
             textAlign: 'center',
             marginTop: theme.spacing.xs,
         },

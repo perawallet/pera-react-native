@@ -19,6 +19,7 @@ export const UserPreferences = {
     assetFreezeSupportEnabled: 'asset-freeze-support-enabled',
 
     transactionRequestFaqShown: 'transaction-request-faq-shown',
+    stakingDisclaimerAccepted: 'staking-disclaimer-accepted',
 
     //prompts (don't set these directly, they are set by the prompts module but held here to avoid accidental name collisions)
     _securityPinSetupPrompt: 'security_pin_setup_prompt',

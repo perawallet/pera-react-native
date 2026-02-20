@@ -26,6 +26,10 @@ vi.mock('@react-navigation/native', async importOriginal => {
     }
 })
 
+vi.mock('@hooks/useNavigationHeader', () => ({
+    useNavigationHeader: vi.fn(),
+}))
+
 vi.mock('@components/core', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWButton: vi.fn(({ title, onPress, isDisabled }: any) => (
@@ -40,8 +44,8 @@ vi.mock('@components/core', () => ({
     PWView: vi.fn(({ children }: any) => <div>{children}</div>),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWText: vi.fn(({ children }: any) => <span>{children}</span>),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWHeader: vi.fn(({ children }: any) => <div>{children}</div>),
+
+    PWIcon: vi.fn(() => <div />),
 }))
 
 vi.mock('@components/CurrencyDisplay', () => ({

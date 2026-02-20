@@ -64,28 +64,28 @@ export const AssetVerificationCard = ({
         if (isTrusted) {
             return [
                 CARD_CONFIGS.trusted,
-                { backgroundColor: theme.colors.asaTrustedBg },
-                { color: theme.colors.asaTrustedText },
+                { backgroundColor: theme.colors.trustedBannerBg },
+                { color: theme.colors.trustedBannerContent },
             ]
         }
         if (isVerified) {
             return [
                 CARD_CONFIGS.verified,
-                { backgroundColor: theme.colors.asaVerifiedBg },
-                { color: theme.colors.asaVerifiedText },
+                { backgroundColor: theme.colors.verifiedBannerBg },
+                { color: theme.colors.verifiedBannerContent },
             ]
         }
         if (isSuspicious) {
             return [
                 CARD_CONFIGS.suspicious,
-                { backgroundColor: theme.colors.asaSuspiciousBg },
-                { color: theme.colors.asaSuspiciousText },
+                { backgroundColor: theme.colors.suspiciousBannerBg },
+                { color: theme.colors.suspiciousBannerContent },
             ]
         }
         return [
             CARD_CONFIGS.suspicious,
-            { backgroundColor: theme.colors.asaSuspiciousBg },
-            { color: theme.colors.asaSuspiciousText },
+            { backgroundColor: theme.colors.suspiciousBannerBg },
+            { color: theme.colors.suspiciousBannerContent },
         ]
     }, [isTrusted, isVerified, isSuspicious, theme, CARD_CONFIGS])
 

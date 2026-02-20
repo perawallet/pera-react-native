@@ -11,7 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getFontFamily } from '@theme/theme'
+import { getFontFamily } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => {
     return {
@@ -35,12 +35,12 @@ export const useStyles = makeStyles(theme => {
         },
         amount: {
             color: theme.colors.textMain,
-            fontFamily: getFontFamily(true, 400),
+            fontFamily: getFontFamily(400),
             alignSelf: 'center',
         },
         amountPlaceholder: {
             color: theme.colors.textGrayLighter,
-            fontFamily: getFontFamily(true, 400),
+            fontFamily: getFontFamily(400),
             alignSelf: 'center',
         },
         buttonContainer: {
@@ -83,6 +83,9 @@ export const useStyles = makeStyles(theme => {
         },
         accountDisplaySubHeading: {
             marginTop: theme.spacing.xs / 2,
+        },
+        headerTitleContainer: {
+            alignItems: 'center',
         },
     }
 })

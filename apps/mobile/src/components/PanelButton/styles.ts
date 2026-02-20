@@ -17,39 +17,33 @@ export const useStyles = makeStyles((theme, props: PanelButtonProps) => {
     let backgroundColor = theme.colors.layerGrayLighter
     let color = theme.colors.textMain
     if (props.variant === 'error') {
-        backgroundColor = theme.colors.asaSuspiciousBg
-        color = theme.colors.error
+        backgroundColor = theme.colors.suspiciousBannerBg
+        color = theme.colors.alertNegative
     }
     return {
         buttonStyle: {
             backgroundColor,
             borderRadius: theme.spacing.lg,
-            justifyContent: 'space-between',
             flexDirection: 'row',
-            alignItems: 'center',
+            alignItems: 'flex-start',
             paddingHorizontal: theme.spacing.lg,
-        },
-        titleStyle: {
-            flexShrink: 1,
-            backgroundColor: 'transparent',
+            paddingVertical: theme.spacing.lg,
             gap: theme.spacing.md,
-            flexDirection: 'row',
         },
         textStyle: {
             flexShrink: 1,
             backgroundColor: 'transparent',
             color,
-            verticalAlign: 'middle',
         },
         descriptionStyle: {
             flexShrink: 1,
             backgroundColor: 'transparent',
             lineHeight: theme.spacing.xl,
+            color: theme.colors.textGray,
         },
         textContainerStyle: {
-            flexShrink: 1,
+            flex: 1,
             backgroundColor: 'transparent',
-            padding: theme.spacing.lg,
         },
     }
 })

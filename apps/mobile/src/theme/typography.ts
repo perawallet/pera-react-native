@@ -12,7 +12,11 @@
 
 import { Theme } from '@rneui/themed'
 import { TextStyle } from 'react-native'
-import { getFontFamily } from './theme'
+import { fontFamilies } from '@constants/fonts'
+
+export const getFontFamily = (weight: 300 | 400 | 500 | 600 | 700) => {
+    return fontFamilies.DMSANS[weight]
+}
 
 export type TypographyVariant =
     | 'h1'
@@ -29,49 +33,49 @@ export const getTypography = (
 ): TextStyle => {
     const typography: Record<TypographyVariant, TextStyle> = {
         h1: {
-            fontFamily: getFontFamily(false, 500),
+            fontFamily: getFontFamily(500),
             fontSize: 32,
             lineHeight: 40,
             color: theme.colors.textMain,
             fontWeight: 500,
         },
         h2: {
-            fontFamily: getFontFamily(false, 500),
+            fontFamily: getFontFamily(500),
             fontSize: 25,
             lineHeight: 24,
             color: theme.colors.textMain,
             fontWeight: 500,
         },
         h3: {
-            fontFamily: getFontFamily(false, 500),
+            fontFamily: getFontFamily(500),
             fontSize: 19,
             lineHeight: 24,
             color: theme.colors.textMain,
             fontWeight: 500,
         },
         h4: {
-            fontFamily: getFontFamily(false, 600),
+            fontFamily: getFontFamily(600),
             fontSize: 15,
             lineHeight: 24,
             color: theme.colors.textMain,
             fontWeight: 600,
         },
         body: {
-            fontFamily: getFontFamily(false, 400),
+            fontFamily: getFontFamily(400),
             fontSize: 13,
             lineHeight: 24,
             color: theme.colors.textMain,
             fontWeight: 400,
         },
         caption: {
-            fontFamily: getFontFamily(false, 400),
+            fontFamily: getFontFamily(400),
             fontSize: 11,
             lineHeight: 24,
             color: theme.colors.textMain,
             fontWeight: 400,
         },
         link: {
-            fontFamily: getFontFamily(false, 500),
+            fontFamily: getFontFamily(500),
             fontSize: 13,
             lineHeight: 24,
             color: theme.colors.linkPrimary,

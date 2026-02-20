@@ -35,10 +35,6 @@ describe('fontFamilies', () => {
         expect(fontFamilies.DMSANS[400]).toBe('DMSans-Regular')
         expect(fontFamilies.DMSANS[500]).toBe('DMSans-Medium')
         expect(fontFamilies.DMSANS[700]).toBe('DMSans-Bold')
-
-        expect(fontFamilies.DMMONO[300]).toBe('DMMono-Regular')
-        expect(fontFamilies.DMMONO[500]).toBe('DMMono-Medium')
-        expect(fontFamilies.DMMONO[700]).toBe('DMMono-Medium')
     })
 
     it('returns the expected font names on Android', async () => {
@@ -48,9 +44,5 @@ describe('fontFamilies', () => {
         expect(fontFamilies.DMSANS[400]).toBe('DMSansRegular')
         expect(fontFamilies.DMSANS[500]).toBe('DMSansMedium')
         expect(fontFamilies.DMSANS[700]).toBe('DMSansBold')
-
-        expect(fontFamilies.DMMONO[300]).toBe('DMMonoRegular')
-        expect(fontFamilies.DMMONO[500]).toBe('DMMonoRegular')
-        expect(fontFamilies.DMMONO[700]).toBe('DMMonoRegular')
     })
 })

@@ -16,7 +16,7 @@ import { NameAccountScreen } from '../NameAccountScreen'
 
 // Mock store functions
 const mockSetShouldPlayConfetti = vi.fn()
-const mockSetIsOnboarding = vi.fn()
+const mockExitAccountFlow = vi.fn()
 
 // Mock useNavigation
 const mockReplace = vi.fn()
@@ -64,9 +64,8 @@ vi.mock('@modules/onboarding/hooks', () => ({
         shouldPlayConfetti: false,
         setShouldPlayConfetti: mockSetShouldPlayConfetti,
     }),
-    useIsOnboarding: () => ({
-        isOnboarding: true,
-        setIsOnboarding: mockSetIsOnboarding,
+    useExitAccountFlow: () => ({
+        exitAccountFlow: mockExitAccountFlow,
     }),
 }))
 
@@ -77,7 +76,7 @@ describe('NameAccountScreen', () => {
         fireEvent.click(button)
         await waitFor(() => {
             expect(mockSetShouldPlayConfetti).toHaveBeenCalledWith(true)
-            expect(mockSetIsOnboarding).toHaveBeenCalledWith(false)
+            expect(mockExitAccountFlow).toHaveBeenCalled()
             expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
                 'test-address',
             )

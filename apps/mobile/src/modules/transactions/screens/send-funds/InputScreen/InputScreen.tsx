@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWHeader, PWText, PWView } from '@components/core'
+import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import Decimal from 'decimal.js'
 
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
@@ -32,6 +32,7 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { useCallback } from 'react'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
 
 export const InputScreen = () => {
     const styles = useStyles()
@@ -65,30 +66,46 @@ export const InputScreen = () => {
         }
     }, [canSelectAsset, navigation, onFinished])
 
+    useNavigationHeader({
+        left: (
+            <PWIcon
+                name={!canSelectAsset ? 'chevron-left' : 'cross'}
+                onPress={handleBack}
+            />
+        ),
+        right: (
+            <PWIcon
+                name='info'
+                onPress={infoState.open}
+            />
+        ),
+        title: (
+            <PWView style={styles.headerTitleContainer}>
+                <PWText>
+                    {t('send_funds.input_view.title', {
+                        asset: asset?.name,
+                    })}
+                </PWText>
+                <AccountDisplay
+                    account={selectedAccount ?? undefined}
+                    style={styles.accountDisplay}
+                    iconProps={{ width: 16, height: 16 }}
+                    textProps={{
+                        style: styles.accountDisplaySubHeading,
+                    }}
+                    showChevron={false}
+                    compact
+                />
+            </PWView>
+        ),
+    })
+
     if (!asset || !selectedAsset || !params || !accountInformation) {
         return <LoadingView variant='circle' />
     }
 
     return (
         <PWView style={styles.container}>
-            <PWHeader
-                leftIcon={!canSelectAsset ? 'chevron-left' : 'cross'}
-                onLeftPress={handleBack}
-                rightIcon='info'
-                onRightPress={infoState.open}
-            >
-                <PWText>
-                    {t('send_funds.input_view.title', { asset: asset?.name })}
-                </PWText>
-                <AccountDisplay
-                    account={selectedAccount ?? undefined}
-                    style={styles.accountDisplay}
-                    iconProps={{ width: 16, height: 16 }}
-                    textProps={{ style: styles.accountDisplaySubHeading }}
-                    showChevron={false}
-                    compact
-                />
-            </PWHeader>
             <PWView style={styles.mainContentContainer}>
                 <CurrencyDisplay
                     currency={asset.unitName ?? ''}

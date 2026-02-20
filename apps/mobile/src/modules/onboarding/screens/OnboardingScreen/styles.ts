@@ -40,7 +40,7 @@ export const useStyles = makeStyles(theme => {
         },
         mainContainer: {
             backgroundColor: theme.colors.background,
-            color: theme.colors.white,
+            color: theme.colors.textWhite,
             paddingHorizontal: theme.spacing.xl,
             flexDirection: 'column',
         },
@@ -55,7 +55,7 @@ export const useStyles = makeStyles(theme => {
             color: theme.colors.textGray,
         },
         overlayBackdrop: {
-            backgroundColor: 'rgba(52, 52, 52, 0.8)',
+            backgroundColor: theme.colors.backdropModalBg,
         },
         overlay: {
             padding: theme.spacing.xl,

@@ -20,12 +20,4 @@ export const fontFamilies = {
         600: isIOS() ? 'DMSans-SemiBold' : 'DMSansSemiBold',
         700: isIOS() ? 'DMSans-Bold' : 'DMSansBold',
     },
-    DMMONO: {
-        //We duplicate some here because we only use regular and medium
-        300: isIOS() ? 'DMMono-Regular' : 'DMMonoRegular',
-        400: isIOS() ? 'DMMono-Regular' : 'DMMonoRegular',
-        500: isIOS() ? 'DMMono-Medium' : 'DMMonoRegular',
-        600: isIOS() ? 'DMMono-Medium' : 'DMMonoRegular',
-        700: isIOS() ? 'DMMono-Medium' : 'DMMonoRegular',
-    },
 }

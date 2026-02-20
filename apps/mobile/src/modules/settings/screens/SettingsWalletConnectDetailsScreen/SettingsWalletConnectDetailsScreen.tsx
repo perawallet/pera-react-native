@@ -240,7 +240,7 @@ export const SettingsWalletConnectDetailsScreen = ({
                 <Dialog.Actions>
                     <Dialog.Button
                         title={t('common.delete.label')}
-                        titleStyle={{ color: theme.colors.error }}
+                        titleStyle={{ color: theme.colors.alertNegative }}
                         onPress={handleDelete}
                         disabled={isLoading}
                     />

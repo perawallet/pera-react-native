@@ -15,6 +15,7 @@ import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ImportInfoScreen } from '../ImportInfoScreen'
 import { RECOVERY_PASSPHRASE_SUPPORT_URL } from '@perawallet/wallet-core-config'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
 
 // Mock navigation
 const mockGoBack = vi.fn()
@@ -25,6 +26,12 @@ vi.mock('@hooks/useAppNavigation', () => ({
         goBack: mockGoBack,
         push: mockPush,
     }),
+}))
+
+// Note: useAppNavigation mock is still needed by useImportInfoScreen hook
+
+vi.mock('@hooks/useNavigationHeader', () => ({
+    useNavigationHeader: vi.fn(),
 }))
 
 vi.mock('@assets/images/key.svg', () => ({
@@ -94,13 +101,14 @@ describe('ImportInfoScreen', () => {
         expect(screen.getByText('onboarding.import_info.button')).toBeTruthy()
     })
 
-    it('navigates back when back button is pressed', () => {
+    it('sets up header with info button via useNavigationHeader', () => {
         render(<ImportInfoScreen />)
 
-        const backButton = screen.getByTestId('back-button')
-        fireEvent.click(backButton)
-
-        expect(mockGoBack).toHaveBeenCalled()
+        expect(useNavigationHeader).toHaveBeenCalledWith(
+            expect.objectContaining({
+                right: expect.anything(),
+            }),
+        )
     })
 
     it('navigates to ImportAccount when recover button is pressed', () => {
@@ -114,11 +122,17 @@ describe('ImportInfoScreen', () => {
         })
     })
 
-    it('handles info button press', () => {
+    it('handles info button press via headerRight', () => {
         render(<ImportInfoScreen />)
 
-        const infoButton = screen.getByTestId('info-button')
-        fireEvent.click(infoButton)
+        // Extract the right element from useNavigationHeader call
+        const hookCall = (useNavigationHeader as ReturnType<typeof vi.fn>).mock
+            .calls[0][0]
+        const rightElement = hookCall.right
+
+        // Render the right element and click it
+        const { getByTestId } = render(rightElement)
+        fireEvent.click(getByTestId('info-button'))
 
         expect(mockPushWebView).toHaveBeenCalledWith({
             url: RECOVERY_PASSPHRASE_SUPPORT_URL,

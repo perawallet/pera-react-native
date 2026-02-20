@@ -19,12 +19,12 @@ export const useStyles = makeStyles((theme, props: PWBadgeProps) => {
     let backgroundColor = theme.colors.buttonPrimaryBg
     let textColor = theme.colors.buttonPrimaryText
     if (variant === 'testnet') {
-        backgroundColor = theme.colors.testnetBackground
+        backgroundColor = theme.colors.testnetBg
     } else if (variant === 'secondary') {
         textColor = theme.colors.textMain
         backgroundColor = theme.colors.layerGrayLighter
     } else if (variant === 'positive') {
-        textColor = theme.colors.helperPositive
+        textColor = theme.colors.positive
         backgroundColor = theme.colors.buttonSquareBg
     }
 

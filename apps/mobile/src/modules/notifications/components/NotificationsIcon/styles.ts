@@ -22,7 +22,7 @@ export const useStyles = makeStyles(theme => ({
         borderRadius: theme.spacing.lg,
         borderWidth: theme.borders.lg,
         borderColor: theme.colors.background,
-        backgroundColor: theme.colors.error,
+        backgroundColor: theme.colors.alertNegative,
         alignItems: 'center',
         justifyContent: 'center',
     },

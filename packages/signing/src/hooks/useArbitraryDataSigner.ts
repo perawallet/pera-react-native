@@ -41,7 +41,7 @@ export const useArbitraryDataSigner = () => {
                 key,
                 SIGNING_KEY_DOMAIN,
                 async session => {
-                    const toSign = typeof data === 'string' ? [data] : data
+                    const toSign = [data].flat()
 
                     const signatures = await Promise.all(
                         toSign.map(async item => {

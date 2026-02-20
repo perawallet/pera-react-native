@@ -15,3 +15,4 @@ export {
     useShouldPlayConfetti,
     useIsOnboarding,
 } from './useOnboardingStore'
+export { useExitAccountFlow } from './useExitAccountFlow'
