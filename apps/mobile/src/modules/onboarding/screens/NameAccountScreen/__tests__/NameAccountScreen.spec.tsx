@@ -11,23 +11,26 @@
  */
 
 import { render, fireEvent, screen, waitFor } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { NameAccountScreen } from '../NameAccountScreen'
 
-// Mock store functions
 const mockSetShouldPlayConfetti = vi.fn()
 const mockExitAccountFlow = vi.fn()
-
-// Mock useNavigation
 const mockReplace = vi.fn()
 const mockNavigate = vi.fn()
+const mockSetSelectedAccountAddress = vi.fn()
+const mockUpdateAccount = vi.fn()
+const mockCreateHdWalletAccount = vi
+    .fn()
+    .mockResolvedValue({ address: 'test-address' })
 
-// Mock useRoute
+let mockRouteParams: { account?: unknown } | undefined
+
 vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
     return {
         ...actual,
-        useRoute: () => ({ params: undefined }),
+        useRoute: () => ({ params: mockRouteParams }),
     }
 })
 
@@ -38,25 +41,21 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 
-// Mock hooks
-const mockSetSelectedAccountAddress = vi.fn()
-
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [],
-    useUpdateAccount: () => vi.fn(),
+    useUpdateAccount: () => mockUpdateAccount,
     useCreateAccount: () => ({
-        createHdWalletAccount: vi
-            .fn()
-            .mockResolvedValue({ address: 'test-address' }),
+        createHdWalletAccount: mockCreateHdWalletAccount,
     }),
     useSelectedAccountAddress: () => ({
         selectedAccountAddress: null,
         setSelectedAccountAddress: mockSetSelectedAccountAddress,
     }),
-    getAccountDisplayName: () => 'Account 1',
+    getAccountDisplayName: (account: { name?: string }) =>
+        account?.name ?? 'Account 1',
     isHDWalletAccount: () => false,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    WalletAccount: {} as any,
+    isWatchAccount: (account: { type: string }) => account?.type === 'watch',
+    WalletAccount: {} as unknown,
 }))
 
 vi.mock('@modules/onboarding/hooks', () => ({
@@ -69,7 +68,55 @@ vi.mock('@modules/onboarding/hooks', () => ({
     }),
 }))
 
+vi.mock('react-i18next', async () => {
+    const actual = await vi.importActual<object>('react-i18next')
+    return {
+        ...actual,
+        useTranslation: () => ({
+            t: (key: string) => key,
+            i18n: { changeLanguage: vi.fn(), language: 'en' },
+        }),
+    }
+})
+
 describe('NameAccountScreen', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+        mockRouteParams = undefined
+        mockCreateHdWalletAccount.mockResolvedValue({
+            address: 'test-address',
+        })
+    })
+
+    it('renders the title and description', () => {
+        render(<NameAccountScreen />)
+
+        expect(
+            screen.getByText('onboarding.name_account.title'),
+        ).toBeTruthy()
+        expect(
+            screen.getByText('onboarding.name_account.description'),
+        ).toBeTruthy()
+    })
+
+    it('renders the name input and finish button', () => {
+        render(<NameAccountScreen />)
+
+        expect(screen.getByTestId('name_account_name_input')).toBeTruthy()
+        expect(
+            screen.getByText('onboarding.name_account.finish_button'),
+        ).toBeTruthy()
+    })
+
+    it('allows editing the account name', () => {
+        render(<NameAccountScreen />)
+
+        const input = screen.getByTestId('name_account_name_input')
+        fireEvent.change(input, { target: { value: 'My Custom Name' } })
+
+        expect((input as HTMLInputElement).value).toBe('My Custom Name')
+    })
+
     it('sets confetti state and triggers navigation on finish', async () => {
         render(<NameAccountScreen />)
         const button = screen.getByText('onboarding.name_account.finish_button')
@@ -81,5 +128,65 @@ describe('NameAccountScreen', () => {
                 'test-address',
             )
         })
+    })
+
+    it('updates existing account name on finish when account is provided', async () => {
+        mockRouteParams = {
+            account: {
+                id: '1',
+                address: 'EXISTING_ADDR',
+                type: 'hdWallet',
+                name: 'Original',
+                keyPairId: 'kp1',
+            },
+        }
+
+        render(<NameAccountScreen />)
+
+        const input = screen.getByTestId('name_account_name_input')
+        fireEvent.change(input, { target: { value: 'Renamed' } })
+
+        const button = screen.getByText('onboarding.name_account.finish_button')
+        fireEvent.click(button)
+
+        await waitFor(() => {
+            expect(mockUpdateAccount).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    name: 'Renamed',
+                    address: 'EXISTING_ADDR',
+                }),
+            )
+            expect(mockCreateHdWalletAccount).not.toHaveBeenCalled()
+        })
+    })
+
+    it('renders eye icon for watch accounts', () => {
+        mockRouteParams = {
+            account: {
+                id: '1',
+                address: 'WATCH_ADDR',
+                type: 'watch',
+            },
+        }
+
+        render(<NameAccountScreen />)
+
+        expect(screen.getByTestId('icon-eye')).toBeTruthy()
+    })
+
+    it('renders wallet icon for non-watch accounts', () => {
+        mockRouteParams = {
+            account: {
+                id: '1',
+                address: 'ADDR',
+                type: 'hdWallet',
+                name: 'HD Account',
+                keyPairId: 'kp1',
+            },
+        }
+
+        render(<NameAccountScreen />)
+
+        expect(screen.getByTestId('icon-wallet')).toBeTruthy()
     })
 })
