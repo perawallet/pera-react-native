@@ -23,8 +23,10 @@ import { ALGO_ASSET_ID, type PeraAsset } from '../models'
 import { DEFAULT_PAGE_SIZE, partition } from '@perawallet/wallet-core-shared'
 import { getAlgoQueryKey, getAssetsQueryKey } from './querykeys'
 import { AssetsResponse, PublicAssetResponse } from '../api/assets/schema'
+import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 
 export const useAssetsQuery = (ids?: string[]) => {
+    const { network } = useNetwork()
     let assetIDs = useAssetsStore(state => state.assetIDs)
     const setAssetIDs = useAssetsStore(state => state.setAssetIDs)
 
@@ -49,7 +51,7 @@ export const useAssetsQuery = (ids?: string[]) => {
             ...chunks.map(chunk => {
                 return {
                     queryKey: getAssetsQueryKey(chunk),
-                    queryFn: async () => fetchAssets(chunk),
+                    queryFn: async () => fetchAssets(chunk, network),
                     select: (data: AssetsResponse) => {
                         const peraAssets = data.results.map(
                             transformAssetResponse,
@@ -64,7 +66,7 @@ export const useAssetsQuery = (ids?: string[]) => {
             }),
             {
                 queryKey: getAlgoQueryKey(),
-                queryFn: async () => fetchPublicAssetDetails(ALGO_ASSET_ID),
+                queryFn: async () => fetchPublicAssetDetails(ALGO_ASSET_ID, network),
                 select: (data: PublicAssetResponse) => {
                     const peraAsset = transformPublicAssetResponse(data)
                     return {

@@ -32,9 +32,11 @@ import {
     getPublicAssetDetailsQueryKey,
 } from './querykeys'
 import { stripNulls } from '@perawallet/wallet-core-shared'
+import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 
 //Fetches data from the indexer and Pera backend and returns the combined data
 export const useSingleAssetDetailsQuery = (assetId: string) => {
+    const { network } = useNetwork()
     const {
         data: peraData,
         isLoading: peraLoading,
@@ -44,7 +46,7 @@ export const useSingleAssetDetailsQuery = (assetId: string) => {
         refetch: peraRefetch,
     } = useQuery({
         queryKey: getAssetDetailsQueryKey(assetId),
-        queryFn: () => fetchAssetDetails(assetId),
+        queryFn: () => fetchAssetDetails(assetId, network),
         select: data => transformAssetResponse(data),
         enabled: !!assetId.length && assetId !== ALGO_ASSET_ID,
     })
@@ -58,14 +60,14 @@ export const useSingleAssetDetailsQuery = (assetId: string) => {
         refetch: indexerRefetch,
     } = useQuery({
         queryKey: getIndexerAssetDetailsQueryKey(assetId),
-        queryFn: () => fetchIndexerAssetDetails(assetId),
+        queryFn: () => fetchIndexerAssetDetails(assetId, network),
         select: data => transformIndexerAssetResponse(data),
         enabled: !!assetId.length && assetId !== ALGO_ASSET_ID,
     })
 
     const { data: algoData, refetch: algoRefetch } = useQuery({
         queryKey: getPublicAssetDetailsQueryKey(assetId),
-        queryFn: () => fetchPublicAssetDetails(assetId),
+        queryFn: () => fetchPublicAssetDetails(assetId, network),
         select: data => transformPublicAssetResponse(data),
         enabled: !!assetId.length,
     })

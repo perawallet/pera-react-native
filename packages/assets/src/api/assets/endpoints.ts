@@ -11,7 +11,6 @@
  */
 
 import {
-    Networks,
     queryClient,
     type Network,
 } from '@perawallet/wallet-core-shared'
@@ -26,10 +25,10 @@ import {
     type PublicAssetResponse,
 } from './schema'
 
-export const fetchAssets = async (assetIDs: string[]) => {
+export const fetchAssets = async (assetIDs: string[], network: Network) => {
     const response = await queryClient<AssetsResponse, string[]>({
         backend: 'pera',
-        network: Networks.mainnet,
+        network: network,
         method: 'GET',
         url: `/v1/assets/`,
         params: {
@@ -51,10 +50,10 @@ export const fetchAccountAssets = async (address: string, network: Network) => {
     return assetsResponseSchema.parse(response.data)
 }
 
-export const fetchAssetDetails = async (assetID: string) => {
+export const fetchAssetDetails = async (assetID: string, network: Network) => {
     const response = await queryClient<AssetResponse, string>({
         backend: 'pera',
-        network: Networks.mainnet,
+        network: network,
         method: 'GET',
         url: `/v1/assets/${assetID}`,
     })
@@ -62,10 +61,10 @@ export const fetchAssetDetails = async (assetID: string) => {
     return assetResponseSchema.parse(response.data)
 }
 
-export const fetchPublicAssetDetails = async (assetID: string) => {
+export const fetchPublicAssetDetails = async (assetID: string, network: Network) => {
     const response = await queryClient<PublicAssetResponse, string>({
         backend: 'pera',
-        network: Networks.mainnet,
+        network: network,
         method: 'GET',
         url: `/v1/public/assets/${assetID}`,
     })
@@ -73,10 +72,10 @@ export const fetchPublicAssetDetails = async (assetID: string) => {
     return publicAssetResponseSchema.parse(response.data)
 }
 
-export const fetchIndexerAssetDetails = async (assetID: string) => {
+export const fetchIndexerAssetDetails = async (assetID: string, network: Network) => {
     const response = await queryClient<IndexerAssetResponse, string>({
         backend: 'indexer',
-        network: Networks.mainnet,
+        network: network,
         method: 'GET',
         url: `/v2/assets/${assetID}`,
     })

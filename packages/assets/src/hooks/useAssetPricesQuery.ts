@@ -23,8 +23,10 @@ import type { AssetPriceResponse } from '../api'
 import { DEFAULT_PAGE_SIZE, partition } from '@perawallet/wallet-core-shared'
 import { getAssetPricesQueryKey } from './querykeys'
 import { PublicAssetResponse } from '../api/assets/schema'
+import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 
 export const useAssetPricesQuery = (enabled?: boolean) => {
+    const { network } = useNetwork()
     const assetIDs = useAssetsStore(state => state.assetIDs)
 
     const queriesDefinitions = useMemo(() => {
@@ -52,7 +54,7 @@ export const useAssetPricesQuery = (enabled?: boolean) => {
             {
                 queryKey: getAssetPricesQueryKey([ALGO_ASSET_ID]),
                 enabled: enabled ?? true,
-                queryFn: async () => fetchPublicAssetDetails(ALGO_ASSET_ID),
+                queryFn: async () => fetchPublicAssetDetails(ALGO_ASSET_ID, network),
                 select: (data: PublicAssetResponse) => {
                     return {
                         results: [

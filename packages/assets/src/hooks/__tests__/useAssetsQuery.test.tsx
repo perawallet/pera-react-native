@@ -25,6 +25,7 @@ import { useAssetsStore } from '../../store'
 const mocks = vi.hoisted(() => ({
     fetchAssets: vi.fn(),
     fetchPublicAssetDetails: vi.fn(),
+    useNetwork: vi.fn(),
 }))
 
 vi.mock('../../api', async importOriginal => {
@@ -35,6 +36,20 @@ vi.mock('../../api', async importOriginal => {
         fetchPublicAssetDetails: mocks.fetchPublicAssetDetails,
     }
 })
+
+vi.mock(
+    '@perawallet/wallet-core-platform-integration',
+    async importOriginal => {
+        const actual =
+            await importOriginal<
+                typeof import('@perawallet/wallet-core-platform-integration')
+            >()
+        return {
+            ...actual,
+            useNetwork: mocks.useNetwork,
+        }
+    },
+)
 
 // Mock store
 vi.mock('../../store', async () => {
@@ -56,6 +71,7 @@ describe('useAssetsQuery', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
         useAssetsStore.setState({ assetIDs: [] })
         queryClient = new QueryClient({
             defaultOptions: {
