@@ -19,7 +19,7 @@ import {
 
 import { useStyles } from './styles'
 import { useWindowDimensions } from 'react-native'
-import { TransactionErrorBoundary } from '@modules/transactions/components/BaseErrorBoundary/TransactionErrorBoundary'
+import { TransactionErrorBoundary } from '@modules/transactions/components/TransactionErrorBoundary/TransactionErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { SendFundsRoutes } from '../../../routes/send-funds'
 import { useSendFundsBottomSheet } from './useSendFundsBottomSheet'

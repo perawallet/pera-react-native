@@ -76,7 +76,7 @@ vi.mock('@components/core', () => ({
 }))
 
 vi.mock(
-    '@modules/transactions/components/BaseErrorBoundary/TransactionErrorBoundary',
+    '@modules/transactions/components/TransactionErrorBoundary/TransactionErrorBoundary',
     () => ({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         TransactionErrorBoundary: ({ children }: any) => (

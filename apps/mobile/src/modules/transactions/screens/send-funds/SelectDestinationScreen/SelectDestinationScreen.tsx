@@ -12,13 +12,18 @@
 
 import { PWText, PWView } from '@components/core'
 import { AddressSearchView } from '@components/AddressSearchView'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useStyles } from './styles'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
 import { EmptyView } from '@components/EmptyView'
-import { useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import {
+    canSignWithAccount,
+    useAccountBalancesQuery,
+    useAccountsStore,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
@@ -26,8 +31,10 @@ import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 
 export const SelectDestinationScreen = () => {
-    const { selectedAsset, setDestination } = useSendFunds()
+    const { selectedAsset, setDestination, setSendMode } = useSendFunds()
     const selectedAccount = useSelectedAccount()
+    const accounts = useAccountsStore(state => state.accounts)
+    const { accountBalances } = useAccountBalancesQuery(accounts)
     const styles = useStyles()
     const { data: assets } = useAssetsQuery()
     const asset = useMemo(() => {
@@ -38,10 +45,57 @@ export const SelectDestinationScreen = () => {
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
 
-    const handleSelected = (address: string) => {
-        setDestination(address)
-        navigation.navigate('ConfirmTransaction')
-    }
+    const handleSelected = useCallback(
+        (address: string) => {
+            setDestination(address)
+
+            // ALGO sends always go through normal flow
+            if (
+                !selectedAsset?.assetId ||
+                selectedAsset.assetId === ALGO_ASSET_ID
+            ) {
+                setSendMode('normal')
+                navigation.navigate('ConfirmTransaction')
+                return
+            }
+
+            // Check if receiver already holds the asset (opted in)
+            const receiverBalances = accountBalances.get(address)
+            const isReceiverOptedIn = receiverBalances?.assetBalances.some(
+                b => b.assetId === selectedAsset.assetId,
+            )
+
+            if (isReceiverOptedIn) {
+                // Receiver already opted in — normal transfer
+                setSendMode('normal')
+                navigation.navigate('ConfirmTransaction')
+                return
+            }
+
+            // Check if receiver is a local account we can sign for
+            const localAccount = accounts.find(a => a.address === address)
+            const isLocalSignable =
+                localAccount && canSignWithAccount(localAccount)
+
+            if (isLocalSignable) {
+                // Express send: local account, we handle opt-in + transfer
+                setSendMode('express')
+                navigation.navigate('ExpressSend')
+            } else {
+                // ARC59: external account or local but can't sign (watch/hardware)
+                setSendMode('arc59')
+                navigation.navigate('ARC59SendSummary')
+            }
+        },
+        [
+            selectedAsset,
+            accounts,
+            accountBalances,
+            setSendMode,
+            setDestination,
+            navigation,
+        ],
+    )
 
     useNavigationHeader({
         title: asset ? (

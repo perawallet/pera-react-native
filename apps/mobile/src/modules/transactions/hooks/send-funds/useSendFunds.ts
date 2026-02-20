@@ -12,7 +12,10 @@
 
 import { create } from 'zustand'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-blockchain'
 import Decimal from 'decimal.js'
+
+type SendMode = 'normal' | 'express' | 'arc59'
 
 type SendFundsState = {
     selectedAsset?: AssetWithAccountBalance
@@ -21,6 +24,8 @@ type SendFundsState = {
     note?: string
     destination?: string
     onFinished?: () => void
+    sendMode: SendMode
+    arc59Summary?: Arc59SendSummaryResponse
 }
 
 type SendFundsActions = {
@@ -30,6 +35,8 @@ type SendFundsActions = {
     setNote: (note?: string) => void
     setDestination: (address?: string) => void
     setOnFinished: (fn: () => void) => void
+    setSendMode: (mode: SendMode) => void
+    setArc59Summary: (summary?: Arc59SendSummaryResponse) => void
     reset: () => void
 }
 
@@ -42,6 +49,8 @@ const initialState: SendFundsState = {
     note: undefined,
     destination: undefined,
     onFinished: undefined,
+    sendMode: 'normal',
+    arc59Summary: undefined,
 }
 
 export const useSendFundsStore = create<SendFundsStore>()(set => ({
@@ -52,6 +61,8 @@ export const useSendFundsStore = create<SendFundsStore>()(set => ({
     setNote: note => set({ note }),
     setDestination: address => set({ destination: address }),
     setOnFinished: fn => set({ onFinished: fn }),
+    setSendMode: mode => set({ sendMode: mode }),
+    setArc59Summary: summary => set({ arc59Summary: summary }),
     reset: () => set(initialState),
 }))
 
@@ -64,12 +75,16 @@ type UseSendFundsResult = {
     note?: string
     destination?: string
     onFinished?: () => void
+    sendMode: SendMode
+    arc59Summary?: Arc59SendSummaryResponse
     setSelectedAsset: (asset?: AssetWithAccountBalance) => void
     setCanSelectAsset: (canSelect: boolean) => void
     setAmount: (amount?: Decimal) => void
     setNote: (note?: string) => void
     setDestination: (address?: string) => void
     setOnFinished: (fn: () => void) => void
+    setSendMode: (mode: SendMode) => void
+    setArc59Summary: (summary?: Arc59SendSummaryResponse) => void
     reset: () => void
 }
 
@@ -80,6 +95,8 @@ export const useSendFunds = (): UseSendFundsResult => {
     const note = useSendFundsStore(state => state.note)
     const destination = useSendFundsStore(state => state.destination)
     const onFinished = useSendFundsStore(state => state.onFinished)
+    const sendMode = useSendFundsStore(state => state.sendMode)
+    const arc59Summary = useSendFundsStore(state => state.arc59Summary)
     const setSelectedAsset = useSendFundsStore(state => state.setSelectedAsset)
     const setCanSelectAsset = useSendFundsStore(
         state => state.setCanSelectAsset,
@@ -88,6 +105,8 @@ export const useSendFunds = (): UseSendFundsResult => {
     const setNote = useSendFundsStore(state => state.setNote)
     const setDestination = useSendFundsStore(state => state.setDestination)
     const setOnFinished = useSendFundsStore(state => state.setOnFinished)
+    const setSendMode = useSendFundsStore(state => state.setSendMode)
+    const setArc59Summary = useSendFundsStore(state => state.setArc59Summary)
     const reset = useSendFundsStore(state => state.reset)
 
     return {
@@ -97,12 +116,16 @@ export const useSendFunds = (): UseSendFundsResult => {
         note,
         destination,
         onFinished,
+        sendMode,
+        arc59Summary,
         setSelectedAsset,
         setCanSelectAsset,
         setAmount,
         setNote,
         setDestination,
         setOnFinished,
+        setSendMode,
+        setArc59Summary,
         reset,
     }
 }

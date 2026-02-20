@@ -21,6 +21,8 @@ export const UserPreferences = {
     transactionRequestFaqShown: 'transaction-request-faq-shown',
     stakingDisclaimerAccepted: 'staking-disclaimer-accepted',
 
+    expressSendWarningDismissed: 'express-send-warning-dismissed',
+
     //prompts (don't set these directly, they are set by the prompts module but held here to avoid accidental name collisions)
     _securityPinSetupPrompt: 'security_pin_setup_prompt',
 } as const

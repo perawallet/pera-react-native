@@ -23,7 +23,11 @@ import {
     toDecimalUnits,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import {
+    useAlgorandClient,
+    useArc59Transaction,
+    useExpressTransaction,
+} from '@perawallet/wallet-core-blockchain'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
@@ -32,9 +36,12 @@ import { useTransactionSigner } from '@perawallet/wallet-core-signing'
 export const useTransactionProcessingScreen = () => {
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
-    const { selectedAsset, amount, destination, note } = useSendFunds()
+    const { selectedAsset, amount, destination, note, sendMode, arc59Summary } =
+        useSendFunds()
     const { signTransactions } = useTransactionSigner()
     const algokit = useAlgorandClient(signTransactions)
+    const { sendViaInbox } = useArc59Transaction(signTransactions)
+    const { sendExpress } = useExpressTransaction(signTransactions)
     const selectedAccount = useSelectedAccount()
     const { data: assets } = useAssetsQuery()
     const { showToast } = useToast()
@@ -81,27 +88,68 @@ export const useTransactionProcessingScreen = () => {
             try {
                 let txId: string
 
-                if (selectedAsset.assetId === ALGO_ASSET_ID) {
-                    const result = await algokit.send.payment({
-                        sender: selectedAccount.address,
-                        receiver: destination,
-                        amount: BigInt(
-                            toDecimalUnits(amount, ALGO_ASSET).toString(),
-                        ).microAlgo(),
-                        note,
-                    })
-                    txId = result.txIds[0]
-                } else {
-                    const result = await algokit.send.assetTransfer({
-                        sender: selectedAccount.address,
-                        receiver: destination,
-                        amount: BigInt(
-                            toDecimalUnits(amount, asset).toString(),
-                        ),
-                        assetId: BigInt(selectedAsset.assetId),
-                        note,
-                    })
-                    txId = result.txIds[0]
+                switch (sendMode) {
+                    case 'express': {
+                        const expressResult = await sendExpress({
+                            sender: selectedAccount.address,
+                            receiver: destination,
+                            assetId: BigInt(selectedAsset.assetId),
+                            amount: BigInt(
+                                toDecimalUnits(amount, asset).toString(),
+                            ),
+                        })
+                        txId =
+                            expressResult.txIds[expressResult.txIds.length - 1]
+                        break
+                    }
+                    case 'arc59': {
+                        if (arc59Summary) {
+                            const arc59Result = await sendViaInbox({
+                                sender: selectedAccount.address,
+                                receiver: destination,
+                                assetId: BigInt(selectedAsset.assetId),
+                                amount: BigInt(
+                                    toDecimalUnits(amount, asset).toString(),
+                                ),
+                                summary: arc59Summary,
+                            })
+                            txId =
+                                arc59Result.txIds[arc59Result.txIds.length - 1]
+                        } else {
+                            throw new Error(
+                                'Missing ARC59 summary for ARC59 transaction',
+                            )
+                        }
+                        break
+                    }
+                    case 'normal': {
+                        if (selectedAsset.assetId === ALGO_ASSET_ID) {
+                            const result = await algokit.send.payment({
+                                sender: selectedAccount.address,
+                                receiver: destination,
+                                amount: BigInt(
+                                    toDecimalUnits(
+                                        amount,
+                                        ALGO_ASSET,
+                                    ).toString(),
+                                ).microAlgo(),
+                                note,
+                            })
+                            txId = result.txIds[0]
+                        } else {
+                            const result = await algokit.send.assetTransfer({
+                                sender: selectedAccount.address,
+                                receiver: destination,
+                                amount: BigInt(
+                                    toDecimalUnits(amount, asset).toString(),
+                                ),
+                                assetId: BigInt(selectedAsset.assetId),
+                                note,
+                            })
+                            txId = result.txIds[0]
+                        }
+                        break
+                    }
                 }
 
                 navigation.replace('TransactionSuccess', {

@@ -79,19 +79,30 @@ vi.mock('@modules/assets/components/AssetIcon', () => ({
     AssetIcon: () => <div data-testid='asset-icon' />,
 }))
 
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useAccountInformationQuery: vi.fn(() => ({ data: null })),
+}))
+
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetsQuery: vi.fn(),
+    ALGO_ASSET_ID: '0',
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
+    useAccountsStore: vi.fn(() => []),
+    useAccountBalancesQuery: vi.fn(() => ({
+        accountBalances: new Map(),
+    })),
+    canSignWithAccount: vi.fn(() => false),
 }))
 
 const mockSetDestination = vi.fn()
+const mockSetSendMode = vi.fn()
 
 const mockAsset = {
     id: 123,
@@ -108,6 +119,7 @@ describe('SelectDestinationScreen', () => {
         ;(useSendFunds as any).mockReturnValue({
             selectedAsset: { assetId: 123 },
             setDestination: mockSetDestination,
+            setSendMode: mockSetSendMode,
         })
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -126,6 +138,7 @@ describe('SelectDestinationScreen', () => {
         ;(useSendFunds as any).mockReturnValue({
             selectedAsset: undefined,
             setDestination: mockSetDestination,
+            setSendMode: mockSetSendMode,
         })
 
         const { getByTestId } = render(<SelectDestinationScreen />)
@@ -159,13 +172,14 @@ describe('SelectDestinationScreen', () => {
         )
     })
 
-    it('calls setDestination and navigates to ConfirmTransaction when an address is selected', () => {
+    it('calls setDestination and navigates to ARC59SendSummary for ASA send to external address', () => {
         const { getByTestId } = render(<SelectDestinationScreen />)
 
         fireEvent.click(getByTestId('select-address-btn'))
 
         expect(mockSetDestination).toHaveBeenCalledWith('SELECTED_ADDRESS')
-        expect(mockNavigate).toHaveBeenCalledWith('ConfirmTransaction')
+        expect(mockSetSendMode).toHaveBeenCalledWith('arc59')
+        expect(mockNavigate).toHaveBeenCalledWith('ARC59SendSummary')
     })
 
     it('sets up header with asset name via useNavigationHeader', () => {

@@ -12,26 +12,29 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
-    return {
-        container: {
-            flex: 1,
-        },
-        searchField: {
-            borderRadius: theme.spacing.sm,
-            paddingHorizontal: theme.spacing.sm,
-        },
-        sectionHeader: {
-            marginTop: theme.spacing.lg,
-        },
-        contentContainer: {
-            gap: theme.spacing.lg,
-        },
-        title: {},
-        accountDisplay: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: theme.spacing.md,
-        },
-    }
-})
+export const useStyles = makeStyles(theme => ({
+    bottomSheetContainer: {
+        padding: theme.spacing.xl,
+        gap: theme.spacing.xl,
+        alignItems: 'center',
+    },
+    icon: {
+        alignSelf: 'center',
+    },
+    message: {
+        textAlign: 'center',
+        color: theme.colors.textGray,
+    },
+    actions: {
+        gap: theme.spacing.md,
+        width: '100%',
+    },
+    warningItems: {
+        gap: theme.spacing.sm,
+    },
+    warningItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.md,
+    },
+}))

@@ -22,6 +22,9 @@ import { AssetSelectionScreen } from '../../screens/send-funds/AssetSelectionScr
 import { InputScreen } from '../../screens/send-funds/InputScreen/InputScreen'
 import { SelectDestinationScreen } from '../../screens/send-funds/SelectDestinationScreen/SelectDestinationScreen'
 import { TransactionConfirmationScreen } from '../../screens/send-funds/TransactionConfirmationScreen/TransactionConfirmationScreen'
+import { ExpressSendScreen } from '../../screens/send-funds/ExpressSendScreen'
+import { ARC59SendSummaryScreen } from '../../screens/send-funds/ARC59SendSummaryScreen'
+import { InsufficientBalanceScreen } from '../../screens/send-funds/InsufficientBalanceScreen'
 import { TransactionProcessingScreen } from '../../screens/send-funds/TransactionProcessingScreen'
 import { TransactionSuccessScreen } from '../../screens/send-funds/TransactionSuccessScreen'
 import { useStyles } from './styles'
@@ -78,6 +81,30 @@ export const SendFundsRoutes = () => {
                 component={TransactionConfirmationScreen}
                 options={{
                     title: 'send_funds.confirmation.title',
+                }}
+            />
+
+            <Stack.Screen
+                name='ExpressSend'
+                component={ExpressSendScreen}
+                options={{
+                    title: 'send_funds.express_send.title',
+                }}
+            />
+
+            <Stack.Screen
+                name='ARC59SendSummary'
+                component={ARC59SendSummaryScreen}
+                options={{
+                    headerShown: false,
+                }}
+            />
+
+            <Stack.Screen
+                name='InsufficientBalance'
+                component={InsufficientBalanceScreen}
+                options={{
+                    title: 'send_funds.insufficient_balance.title',
                 }}
             />
 

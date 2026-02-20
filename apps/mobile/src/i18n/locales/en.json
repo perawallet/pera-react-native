@@ -51,7 +51,6 @@
         },
         "transaction_list": {
             "title": "Transactions",
-            "label": "Transactions",
             "empty_title": "No transactions",
             "empty_body": "No transactions found",
             "filter": "Filter",
@@ -476,7 +475,6 @@
             "done": "Done",
             "placeholder": "Enter your note",
             "button": "+ Add Note",
-            "button_plain": "Add Note",
             "edit": "Edit Note"
         },
         "asset_selection": {
@@ -491,7 +489,6 @@
             "preamble": "Before you finalize your transaction keep in mind a couple of tips",
             "tip_1": "When sending to an address for the first time, it is useful to send a small test transaction before sending a large amount.",
             "tip_2": "Exchanges change their deposit addresses frequently, and saved exchange addresses may no longer be in use. <0>Ensure you are sending to the correct address</0>",
-            "tap_here": "tap here",
             "more_info": "For more information on transacting, <0>tap here</0>",
             "i_understand": "I Understand"
         },
@@ -500,7 +497,6 @@
             "next": "Next",
             "error_title": "Invalid Amount",
             "error_body": "Please enter an amount greater than {{min}}.",
-            "error_exceeds_max": "The amount exceeds your available balance.",
             "exceeds_max_title": "Insufficient Balance",
             "exceeds_max_body": "The amount exceeds your available balance.",
             "min_balance_title": "Min Balance",
@@ -530,6 +526,42 @@
             "title": "Asset transfer completed",
             "subtitle": "Your transaction was successfully received by the Algorand network",
             "view_in_explorer": "View Transaction Detail in Pera Explorer",
+            "done": "Done"
+        },
+        "express_send": {
+            "title": "Express Send",
+            "body_1": "The receiver hasn't opted into this asset yet. Since both accounts are in your wallet, Pera can handle the opt-in automatically.",
+            "body_2": "Pera will combine the transactions into a single atomic group so everything happens at once.",
+            "how_it_works": "How it works",
+            "step_1": "Send a small ALGO payment to cover the receiver's opt-in fee",
+            "step_2": "Opt the receiver into the asset",
+            "step_3": "Send the asset to the receiver",
+            "continue": "Continue",
+            "dont_show_again": "Don't show this again"
+        },
+        "arc59_summary": {
+            "title": "Send to Asset Inbox",
+            "description": "The receiver is not opted into this asset. You can send it to their asset inbox instead.",
+            "read_more": "Read more",
+            "fees_label": "Protocol & minimum balance fees",
+            "disclaimer": "The fee above will be used to cover the minimum balance requirements of the receiver. If the receiver rejects the asset, you will not receive anything back.",
+            "send_button": "Send to Receiver",
+            "close_button": "Close"
+        },
+        "arc59_warning": {
+            "title": "Warning",
+            "message": "Before sending these funds, make sure the user can access their Asset Inbox:",
+            "confirm": "I Understand",
+            "cancel": "Cancel",
+            "item1": "Pera Wallet Users",
+            "item2": "Lute Wallet Users",
+            "item3": "Centralized Exchanges",
+            "item4": "Smart Contract Wallets",
+            "item5": "Decentralized Exchanges"
+        },
+        "insufficient_balance": {
+            "title": "Minimum Balance",
+            "message": "This account doesn't have the required minimum balance of {{amount}} ALGO for this operation.",
             "done": "Done"
         }
     },
