@@ -15,6 +15,12 @@ import { BackHandler } from 'react-native'
 
 import { useWebView } from '@hooks/usePeraWebviewInterface'
 import { useSendFunds } from '@modules/transactions/hooks'
+import {
+    useRemoveAccountById,
+    useSelectedAccount,
+    useSelectedAccountAddress,
+    useAccountsStore,
+} from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
@@ -23,6 +29,7 @@ import { generateUniqueId } from '@perawallet/wallet-core-shared'
 type UseTransactionSuccessScreenResult = {
     handleDone: () => void
     handleViewInExplorer: () => void
+    isCloseAccount: boolean
 }
 
 export const useTransactionSuccessScreen =
@@ -30,13 +37,33 @@ export const useTransactionSuccessScreen =
         const route =
             useRoute<RouteProp<SendFundsStackParamList, 'TransactionSuccess'>>()
         const { transactionId } = route.params
-        const { onFinished } = useSendFunds()
+        const { onFinished, isCloseAccount } = useSendFunds()
         const { networkConfig } = useNetwork()
         const { pushWebView } = useWebView()
+        const removeAccountById = useRemoveAccountById()
+        const selectedAccount = useSelectedAccount()
+        const accounts = useAccountsStore(state => state.accounts)
+        const { setSelectedAccountAddress } = useSelectedAccountAddress()
 
         const handleDone = useCallback(() => {
+            if (isCloseAccount && selectedAccount?.id) {
+                removeAccountById(selectedAccount.id)
+                const remaining = accounts.filter(
+                    a => a.id !== selectedAccount.id,
+                )
+                setSelectedAccountAddress(
+                    remaining.length > 0 ? remaining[0].address : null,
+                )
+            }
             onFinished?.()
-        }, [onFinished])
+        }, [
+            onFinished,
+            isCloseAccount,
+            selectedAccount,
+            removeAccountById,
+            accounts,
+            setSelectedAccountAddress,
+        ])
 
         const handleViewInExplorer = useCallback(() => {
             pushWebView({
@@ -59,5 +86,6 @@ export const useTransactionSuccessScreen =
         return {
             handleDone,
             handleViewInExplorer,
+            isCloseAccount,
         }
     }

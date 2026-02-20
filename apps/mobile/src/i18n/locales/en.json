@@ -528,6 +528,14 @@
             "view_in_explorer": "View Transaction Detail in Pera Explorer",
             "done": "Done"
         },
+        "close_account": {
+            "title": "Close Account",
+            "body": "This account has no opted-in assets. Sending the full balance will close the account on the Algorand network and remove it from your wallet.",
+            "confirm": "Close Account & Send",
+            "warning": "This transaction will close your account and remove it from your wallet.",
+            "success_title": "Account Closed",
+            "success_subtitle": "Your account has been closed and removed from your wallet"
+        },
         "express_send": {
             "title": "Express Send",
             "body_1": "The receiver hasn't opted into this asset yet. Since both accounts are in your wallet, Pera can handle the opt-in automatically.",

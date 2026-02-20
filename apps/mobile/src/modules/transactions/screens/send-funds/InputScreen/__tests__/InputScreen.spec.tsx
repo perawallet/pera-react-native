@@ -101,6 +101,10 @@ vi.mock('../../../../components/send-funds/InsufficientBalancePanel', () => ({
     )),
 }))
 
+vi.mock('../../../../components/send-funds/CloseAccountPanel', () => ({
+    CloseAccountPanel: vi.fn(() => <div data-testid='close-account-panel' />),
+}))
+
 vi.mock('../useInputScreen', () => ({
     useInputScreen: vi.fn(),
 }))
@@ -136,6 +140,8 @@ const mockSetMax = vi.fn()
 const mockHandleKey = vi.fn()
 const mockDismissMaxExceeded = vi.fn()
 const mockHandleContinuePastMbr = vi.fn()
+const mockDismissCloseAccount = vi.fn()
+const mockHandleConfirmCloseAccount = vi.fn()
 
 const defaultInputViewReturn = {
     asset: { name: 'Algorand', unitName: 'ALGO', decimals: 6 },
@@ -150,6 +156,9 @@ const defaultInputViewReturn = {
     isMaxExceeded: false,
     dismissMaxExceeded: mockDismissMaxExceeded,
     minBalanceDisplay: '0.1',
+    isCloseAccountEligible: false,
+    dismissCloseAccount: mockDismissCloseAccount,
+    handleConfirmCloseAccount: mockHandleConfirmCloseAccount,
 }
 
 describe('InputScreen', () => {

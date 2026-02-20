@@ -26,6 +26,7 @@ type SendFundsState = {
     onFinished?: () => void
     sendMode: SendMode
     arc59Summary?: Arc59SendSummaryResponse
+    isCloseAccount: boolean
 }
 
 type SendFundsActions = {
@@ -37,6 +38,7 @@ type SendFundsActions = {
     setOnFinished: (fn: () => void) => void
     setSendMode: (mode: SendMode) => void
     setArc59Summary: (summary?: Arc59SendSummaryResponse) => void
+    setIsCloseAccount: (isClose: boolean) => void
     reset: () => void
 }
 
@@ -51,6 +53,7 @@ const initialState: SendFundsState = {
     onFinished: undefined,
     sendMode: 'normal',
     arc59Summary: undefined,
+    isCloseAccount: false,
 }
 
 export const useSendFundsStore = create<SendFundsStore>()(set => ({
@@ -63,6 +66,7 @@ export const useSendFundsStore = create<SendFundsStore>()(set => ({
     setOnFinished: fn => set({ onFinished: fn }),
     setSendMode: mode => set({ sendMode: mode }),
     setArc59Summary: summary => set({ arc59Summary: summary }),
+    setIsCloseAccount: isClose => set({ isCloseAccount: isClose }),
     reset: () => set(initialState),
 }))
 
@@ -77,6 +81,7 @@ type UseSendFundsResult = {
     onFinished?: () => void
     sendMode: SendMode
     arc59Summary?: Arc59SendSummaryResponse
+    isCloseAccount: boolean
     setSelectedAsset: (asset?: AssetWithAccountBalance) => void
     setCanSelectAsset: (canSelect: boolean) => void
     setAmount: (amount?: Decimal) => void
@@ -85,6 +90,7 @@ type UseSendFundsResult = {
     setOnFinished: (fn: () => void) => void
     setSendMode: (mode: SendMode) => void
     setArc59Summary: (summary?: Arc59SendSummaryResponse) => void
+    setIsCloseAccount: (isClose: boolean) => void
     reset: () => void
 }
 
@@ -107,6 +113,10 @@ export const useSendFunds = (): UseSendFundsResult => {
     const setOnFinished = useSendFundsStore(state => state.setOnFinished)
     const setSendMode = useSendFundsStore(state => state.setSendMode)
     const setArc59Summary = useSendFundsStore(state => state.setArc59Summary)
+    const isCloseAccount = useSendFundsStore(state => state.isCloseAccount)
+    const setIsCloseAccount = useSendFundsStore(
+        state => state.setIsCloseAccount,
+    )
     const reset = useSendFundsStore(state => state.reset)
 
     return {
@@ -118,6 +128,7 @@ export const useSendFunds = (): UseSendFundsResult => {
         onFinished,
         sendMode,
         arc59Summary,
+        isCloseAccount,
         setSelectedAsset,
         setCanSelectAsset,
         setAmount,
@@ -126,6 +137,7 @@ export const useSendFunds = (): UseSendFundsResult => {
         setOnFinished,
         setSendMode,
         setArc59Summary,
+        setIsCloseAccount,
         reset,
     }
 }

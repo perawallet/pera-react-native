@@ -38,7 +38,7 @@ export const useInputScreen = () => {
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const selectedAccount = useSelectedAccount()
-    const { selectedAsset, setAmount } = useSendFunds()
+    const { selectedAsset, setAmount, setIsCloseAccount } = useSendFunds()
     const [value, setValue] = useState<string | null>()
     const { showToast } = useToast()
     const { t } = useLanguage()
@@ -112,6 +112,14 @@ export const useInputScreen = () => {
     }, [totalBalance])
 
     const [isMaxExceeded, setIsMaxExceeded] = useState(false)
+    const [isCloseAccountEligible, setIsCloseAccountEligible] = useState(false)
+
+    const hasNoOptedInAssets = useMemo(() => {
+        return (
+            selectedAsset?.assetId === ALGO_ASSET_ID &&
+            (accountInformation?.assets?.length ?? 0) === 0
+        )
+    }, [selectedAsset?.assetId, accountInformation?.assets])
 
     const handleNext = useCallback(() => {
         if (!value || Decimal(value).lte(0)) {
@@ -143,17 +151,45 @@ export const useInputScreen = () => {
         }
 
         if (Decimal(value).gt(maxAmount)) {
-            setIsMaxExceeded(true)
+            if (hasNoOptedInAssets) {
+                setIsCloseAccountEligible(true)
+            } else {
+                setIsMaxExceeded(true)
+            }
             return
         }
 
+        setIsCloseAccount(false)
         setAmount(Decimal(value ?? '0'))
         navigation.navigate('SelectDestination')
-    }, [value, maxAmount, totalBalance, navigation, showToast, t])
+    }, [
+        value,
+        maxAmount,
+        totalBalance,
+        navigation,
+        showToast,
+        t,
+        hasNoOptedInAssets,
+        setIsCloseAccount,
+    ])
 
     const dismissMaxExceeded = useCallback(() => {
         setIsMaxExceeded(false)
     }, [])
+
+    const dismissCloseAccount = useCallback(() => {
+        setIsCloseAccountEligible(false)
+    }, [])
+
+    const handleConfirmCloseAccount = useCallback(() => {
+        const fee = toWholeUnits(params?.minFee ?? 0, ALGO_ASSET)
+        const closeAmount = Decimal.max(totalBalance.sub(fee), Decimal(0))
+        setIsCloseAccountEligible(false)
+        setIsCloseAccount(true)
+        setAmount(closeAmount)
+        setValue(closeAmount.toString())
+        navigation.navigate('SelectDestination')
+    }, [totalBalance, params, navigation, setAmount, setIsCloseAccount])
 
     const handleContinuePastMbr = useCallback(() => {
         setIsMaxExceeded(false)
@@ -204,11 +240,14 @@ export const useInputScreen = () => {
         minBalanceDisplay,
         cryptoValue: value,
         isMaxExceeded,
+        isCloseAccountEligible,
         setMax,
         handleNext,
         handleKey,
         handleContinuePastMbr,
         dismissMaxExceeded,
+        dismissCloseAccount,
+        handleConfirmCloseAccount,
 
         //exposed for testing only
         setCryptoValue: setValue,
