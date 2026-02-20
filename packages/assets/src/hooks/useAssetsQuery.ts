@@ -66,7 +66,8 @@ export const useAssetsQuery = (ids?: string[]) => {
             }),
             {
                 queryKey: getAlgoQueryKey(),
-                queryFn: async () => fetchPublicAssetDetails(ALGO_ASSET_ID, network),
+                queryFn: async () =>
+                    fetchPublicAssetDetails(ALGO_ASSET_ID, network),
                 select: (data: PublicAssetResponse) => {
                     const peraAsset = transformPublicAssetResponse(data)
                     return {

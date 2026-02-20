@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    queryClient,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import { queryClient, type Network } from '@perawallet/wallet-core-shared'
 import {
     assetResponseSchema,
     assetsResponseSchema,
@@ -61,7 +58,10 @@ export const fetchAssetDetails = async (assetID: string, network: Network) => {
     return assetResponseSchema.parse(response.data)
 }
 
-export const fetchPublicAssetDetails = async (assetID: string, network: Network) => {
+export const fetchPublicAssetDetails = async (
+    assetID: string,
+    network: Network,
+) => {
     const response = await queryClient<PublicAssetResponse, string>({
         backend: 'pera',
         network: network,
@@ -72,7 +72,10 @@ export const fetchPublicAssetDetails = async (assetID: string, network: Network)
     return publicAssetResponseSchema.parse(response.data)
 }
 
-export const fetchIndexerAssetDetails = async (assetID: string, network: Network) => {
+export const fetchIndexerAssetDetails = async (
+    assetID: string,
+    network: Network,
+) => {
     const response = await queryClient<IndexerAssetResponse, string>({
         backend: 'indexer',
         network: network,

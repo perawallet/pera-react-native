@@ -54,7 +54,8 @@ export const useAssetPricesQuery = (enabled?: boolean) => {
             {
                 queryKey: getAssetPricesQueryKey([ALGO_ASSET_ID]),
                 enabled: enabled ?? true,
-                queryFn: async () => fetchPublicAssetDetails(ALGO_ASSET_ID, network),
+                queryFn: async () =>
+                    fetchPublicAssetDetails(ALGO_ASSET_ID, network),
                 select: (data: PublicAssetResponse) => {
                     return {
                         results: [
