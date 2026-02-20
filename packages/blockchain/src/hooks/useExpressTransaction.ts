@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { useAlgorandClient } from './useAlgorandClient'
 import type { PeraTransactionSigner } from '../models'
-import { OPT_IN_MBR_COST } from '../constants'
+import { ASSET_MBR } from '../constants'
 
 type SendExpressParams = {
     sender: string
@@ -35,14 +35,32 @@ export const useExpressTransaction = (
         async (params: SendExpressParams): Promise<{ txIds: string[] }> => {
             const { sender, receiver, assetId, amount } = params
 
-            // Atomic group: pay MBR + opt-in receiver + transfer asset
-            const result = await algokit
-                .newGroup()
-                .addPayment({
+            // Look up receiver's current balance to determine funding needed
+            const { amount: currentBalance, minBalance: currentMbr } =
+                await algokit.client.algod.accountInformation(receiver)
+
+            // After opt-in the receiver's MBR increases by ASSET_MBR.
+            // The opt-in tx fee is also paid from the receiver's balance.
+            const suggestedParams = await algokit.getSuggestedParams()
+            const mbrAfterOptIn = currentMbr + ASSET_MBR
+            const balanceNeeded = mbrAfterOptIn + suggestedParams.minFee
+            const fundingNeeded =
+                balanceNeeded > currentBalance
+                    ? balanceNeeded - currentBalance
+                    : 0n
+
+            const composer = algokit.newGroup()
+
+            // Only add payment if the receiver needs funding
+            if (fundingNeeded > 0n) {
+                composer.addPayment({
                     sender,
                     receiver,
-                    amount: (OPT_IN_MBR_COST).microAlgo(), // 0.1 ALGO for asset opt-in MBR
+                    amount: fundingNeeded.microAlgo(),
                 })
+            }
+
+            composer
                 .addAssetOptIn({
                     sender: receiver,
                     assetId,
@@ -53,8 +71,8 @@ export const useExpressTransaction = (
                     amount,
                     assetId,
                 })
-                .send()
 
+            const result = await composer.send()
             return { txIds: result.txIds }
         },
         [algokit],

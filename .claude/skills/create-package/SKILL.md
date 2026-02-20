@@ -9,7 +9,7 @@ description: Create a new business logic package in packages/
 ### 1. Create Package Directory
 
 ```sh
-mkdir -p packages/[package-name]/src/{hooks,models,store}
+mkdir -p packages/[package-name]/src/{api,hooks,models,store}
 mkdir -p packages/[package-name]/src/hooks/__tests__
 mkdir -p packages/[package-name]/src/store/__tests__
 ```

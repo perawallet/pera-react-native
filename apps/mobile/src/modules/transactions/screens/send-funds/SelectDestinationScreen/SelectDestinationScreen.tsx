@@ -20,6 +20,7 @@ import { EmptyView } from '@components/EmptyView'
 import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import {
     canSignWithAccount,
+    useAccountBalancesQuery,
     useAccountsStore,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -33,6 +34,7 @@ export const SelectDestinationScreen = () => {
     const { selectedAsset, setDestination, setSendMode } = useSendFunds()
     const selectedAccount = useSelectedAccount()
     const accounts = useAccountsStore(state => state.accounts)
+    const { accountBalances } = useAccountBalancesQuery(accounts)
     const styles = useStyles()
     const { data: assets } = useAssetsQuery()
     const asset = useMemo(() => {
@@ -57,6 +59,19 @@ export const SelectDestinationScreen = () => {
                 return
             }
 
+            // Check if receiver already holds the asset (opted in)
+            const receiverBalances = accountBalances.get(address)
+            const isReceiverOptedIn = receiverBalances?.assetBalances.some(
+                b => b.assetId === selectedAsset.assetId,
+            )
+
+            if (isReceiverOptedIn) {
+                // Receiver already opted in — normal transfer
+                setSendMode('normal')
+                navigation.navigate('ConfirmTransaction')
+                return
+            }
+
             // Check if receiver is a local account we can sign for
             const localAccount = accounts.find(a => a.address === address)
             const isLocalSignable =
@@ -72,7 +87,7 @@ export const SelectDestinationScreen = () => {
                 navigation.navigate('ARC59SendSummary')
             }
         },
-        [selectedAsset, accounts, setSendMode, setDestination, navigation],
+        [selectedAsset, accounts, accountBalances, setSendMode, setDestination, navigation],
     )
 
     useNavigationHeader({
