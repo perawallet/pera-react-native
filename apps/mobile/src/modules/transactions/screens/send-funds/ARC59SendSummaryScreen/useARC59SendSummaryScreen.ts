@@ -33,6 +33,7 @@ import DarkHeaderImage from '@assets/images/asset-inbox-send-dark.svg'
 import { useThemeMode } from '@rneui/themed'
 import { SvgProps } from 'react-native-svg'
 import Decimal from 'decimal.js'
+import { useModalState } from '@hooks/useModalState'
 
 type UseARC59SendSummaryScreenResult = {
     summary?: Arc59SendSummaryResponse
@@ -57,7 +58,7 @@ export const useARC59SendSummaryScreen =
         const { selectedAsset, destination, amount, setArc59Summary } =
             useSendFunds()
         const selectedAccount = useSelectedAccount()
-        const [isWarningVisible, setIsWarningVisible] = useState(false)
+        const warningModal = useModalState()
         const { mode } = useThemeMode()
 
         const assetId = selectedAsset?.assetId ?? ''
@@ -111,7 +112,7 @@ export const useARC59SendSummaryScreen =
             : null
 
         const handleSend = useCallback(() => {
-            setIsWarningVisible(true)
+            warningModal.open()
         }, [])
 
         const handleClose = useCallback(() => {
@@ -119,22 +120,22 @@ export const useARC59SendSummaryScreen =
         }, [navigation])
 
         const handleReadMore = useCallback(() => {
-            setIsWarningVisible(true)
+            warningModal.open()
         }, [])
 
         const handleWarningConfirm = useCallback(() => {
-            setIsWarningVisible(false)
+            warningModal.close()
             navigation.navigate('TransactionProcessing')
         }, [navigation])
 
         const handleWarningClose = useCallback(() => {
-            setIsWarningVisible(false)
+            warningModal.close()
         }, [])
 
         return {
             summary,
             isLoading,
-            isWarningVisible,
+            isWarningVisible: warningModal.isOpen,
             assetId,
             fee,
             amount: amount ?? null,
