@@ -1,0 +1,98 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useWindowDimensions } from 'react-native'
+import { useTheme } from '@rneui/themed'
+import QRCode from 'react-native-qrcode-svg'
+
+import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import { EmptyView } from '@components/EmptyView'
+import { useLanguage } from '@hooks/useLanguage'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { getAccountDisplayName } from '@perawallet/wallet-core-accounts'
+import { useReceiveFunds } from '@modules/transactions/hooks'
+import { useQRViewScreen } from './useQRViewScreen'
+import { useStyles } from './styles'
+
+export const QRViewScreen = () => {
+    const { t } = useLanguage()
+    const styles = useStyles()
+    const { width } = useWindowDimensions()
+    const { theme } = useTheme()
+    const { canSelectAccount, onFinished } = useReceiveFunds()
+    const {
+        account,
+        deeplink,
+        handleCopyAddress,
+        handleShareAddress,
+        handleBack,
+    } = useQRViewScreen(onFinished)
+
+    useNavigationHeader({
+        left: (
+            <PWIcon
+                name={canSelectAccount ? 'chevron-left' : 'cross'}
+                onPress={handleBack}
+            />
+        ),
+        title: account ? getAccountDisplayName(account) : '',
+    })
+
+    if (!account) {
+        return (
+            <EmptyView
+                title={t('receive_funds.qrview.error_title')}
+                body={t('receive_funds.qrview.error_body')}
+                button={
+                    <PWButton
+                        title={t('common.go_back.label')}
+                        variant='primary'
+                        onPress={onFinished}
+                    />
+                }
+            />
+        )
+    }
+
+    return (
+        <PWView style={styles.container}>
+            <PWView style={styles.contentContainer}>
+                <PWView style={styles.qrContainer}>
+                    <QRCode
+                        value={deeplink}
+                        size={width - theme.spacing['5xl'] * 2}
+                    />
+                </PWView>
+                <PWView style={styles.addressContainer}>
+                    <PWText variant='h3'>
+                        {getAccountDisplayName(account)}
+                    </PWText>
+                    <PWText style={styles.address}>{account.address}</PWText>
+                </PWView>
+            </PWView>
+            <PWView style={styles.buttonContainer}>
+                <PWButton
+                    title={t('receive_funds.qrview.copy_address')}
+                    variant='primary'
+                    icon='copy'
+                    onPress={handleCopyAddress}
+                />
+                <PWButton
+                    title={t('receive_funds.qrview.share')}
+                    variant='secondary'
+                    icon='share'
+                    onPress={handleShareAddress}
+                />
+            </PWView>
+        </PWView>
+    )
+}
