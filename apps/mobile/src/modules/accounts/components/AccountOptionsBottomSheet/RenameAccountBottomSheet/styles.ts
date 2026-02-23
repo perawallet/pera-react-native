@@ -12,20 +12,29 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        paddingBottom: theme.spacing.xxl,
-    },
-    title: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.md,
-    },
-    inputContainer: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingVertical: theme.spacing.md,
-    },
-    buttonContainer: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingTop: theme.spacing.md,
-    },
-}))
+type StyleProps = {
+    keyboardHeight: number
+}
+
+export const useStyles = makeStyles(
+    (theme, { keyboardHeight }: StyleProps) => ({
+        container: {
+            paddingBottom: theme.spacing.xxl,
+        },
+        keyboardContainer: {
+            paddingBottom: keyboardHeight,
+        },
+        title: {
+            paddingHorizontal: theme.spacing.lg,
+            paddingBottom: theme.spacing.md,
+        },
+        inputContainer: {
+            paddingHorizontal: theme.spacing.lg,
+            paddingVertical: theme.spacing.md,
+        },
+        buttonContainer: {
+            paddingHorizontal: theme.spacing.lg,
+            paddingTop: theme.spacing.md,
+        },
+    }),
+)

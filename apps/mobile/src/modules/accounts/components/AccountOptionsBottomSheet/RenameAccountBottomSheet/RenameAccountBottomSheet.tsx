@@ -38,9 +38,9 @@ export const RenameAccountBottomSheet = ({
     currentName,
 }: RenameAccountBottomSheetProps) => {
     const { t } = useLanguage()
-    const styles = useStyles()
     const [name, setName] = useState(currentName)
     const [keyboardHeight, setKeyboardHeight] = useState(0)
+    const styles = useStyles({ keyboardHeight })
 
     useEffect(() => {
         const showEvent =
@@ -73,7 +73,7 @@ export const RenameAccountBottomSheet = ({
             isVisible={isVisible}
             onBackdropPress={onClose}
             innerContainerStyle={styles.container}
-            containerStyle={{ paddingBottom: keyboardHeight }}
+            containerStyle={styles.keyboardContainer}
             scrollViewProps={{
                 keyboardShouldPersistTaps: 'handled',
             }}

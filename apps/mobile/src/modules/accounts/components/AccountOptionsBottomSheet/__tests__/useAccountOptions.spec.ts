@@ -451,5 +451,142 @@ describe('useAccountOptions', () => {
             )
             expect(notifOption?.icon).toBe('bell')
         })
+
+        it('calls onShowAddress when show-address option is pressed', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const showOption = result.current.options.find(
+                o => o.id === 'show-address',
+            )
+
+            act(() => {
+                showOption?.onPress()
+            })
+
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(mockOnShowAddress).toHaveBeenCalled()
+        })
+
+        it('shows not implemented toast for view-passphrase', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const passphraseOption = result.current.options.find(
+                o => o.id === 'view-passphrase',
+            )
+
+            act(() => {
+                passphraseOption?.onPress()
+            })
+
+            expect(mockShowToast).toHaveBeenCalledWith({
+                title: 'common.not_implemented.title',
+                body: 'common.not_implemented.body',
+                type: 'error',
+            })
+            expect(mockOnClose).toHaveBeenCalled()
+        })
+
+        it('shows not implemented toast for rekey-to-ledger', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const rekeyOption = result.current.options.find(
+                o => o.id === 'rekey-to-ledger',
+            )
+
+            act(() => {
+                rekeyOption?.onPress()
+            })
+
+            expect(mockShowToast).toHaveBeenCalledWith({
+                title: 'common.not_implemented.title',
+                body: 'common.not_implemented.body',
+                type: 'error',
+            })
+        })
+
+        it('shows not implemented toast for rekey-to-standard', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const rekeyOption = result.current.options.find(
+                o => o.id === 'rekey-to-standard',
+            )
+
+            act(() => {
+                rekeyOption?.onPress()
+            })
+
+            expect(mockShowToast).toHaveBeenCalledWith({
+                title: 'common.not_implemented.title',
+                body: 'common.not_implemented.body',
+                type: 'error',
+            })
+        })
+
+        it('shows not implemented toast for undo-rekey', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: rekeyedAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const undoOption = result.current.options.find(
+                o => o.id === 'undo-rekey',
+            )
+
+            act(() => {
+                undoOption?.onPress()
+            })
+
+            expect(mockShowToast).toHaveBeenCalledWith({
+                title: 'common.not_implemented.title',
+                body: 'common.not_implemented.body',
+                type: 'error',
+            })
+        })
+
+        it('does not navigate when removing the last account', () => {
+            mockAllAccounts.mockReturnValue([algo25Account])
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            act(() => {
+                result.current.handleConfirmRemove()
+            })
+
+            expect(mockRemoveAccountById).toHaveBeenCalledWith('acc-1')
+            expect(mockNavigate).not.toHaveBeenCalled()
+        })
     })
 })
