@@ -40,6 +40,7 @@ export default defineConfig({
                 'react/jsx-runtime',
                 'zustand',
                 '@tanstack/react-query',
+                '@perawallet/wallet-core-accounts',
                 '@perawallet/wallet-core-config',
                 '@perawallet/wallet-core-platform-integration',
                 '@perawallet/wallet-core-shared',

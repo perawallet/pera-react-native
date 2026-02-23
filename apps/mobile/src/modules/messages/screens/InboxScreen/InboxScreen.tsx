@@ -10,20 +10,70 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
+import { useTheme } from '@rneui/themed'
+import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-notifications'
 import { EmptyView } from '@components/EmptyView'
+import { LoadingView } from '@components/LoadingView'
+import { PWFlatList } from '@components/core'
+import { RefreshControl } from 'react-native-gesture-handler'
 import { useLanguage } from '@hooks/useLanguage'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { InboxItem } from '@modules/messages/components/InboxItem/InboxItem'
 import { useStyles } from './styles'
+import { useInboxScreen } from './useInboxScreen'
+
+const renderItem = ({ item }: { item: InboxItemModel }) => {
+    return <InboxItem item={item} />
+}
 
 export const InboxScreen = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
+    const { theme } = useTheme()
     const { t } = useLanguage()
 
+    const { inboxItems, isPending, isRefetching, refetch, keyExtractor } =
+        useInboxScreen()
+
+    const renderEmptyComponent = useCallback(() => {
+        if (isPending) {
+            return (
+                <LoadingView
+                    variant='skeleton'
+                    size='sm'
+                    count={5}
+                    style={styles.loadingContainer}
+                />
+            )
+        }
+        return (
+            <EmptyView
+                style={styles.emptyView}
+                icon='inbox'
+                title={t('messages.inbox.empty_title')}
+                body={t('messages.inbox.empty_body')}
+            />
+        )
+    }, [isPending, styles.emptyView, styles.loadingContainer, t])
+
     return (
-        <EmptyView
+        <PWFlatList
+            data={inboxItems}
+            renderItem={renderItem}
             style={styles.container}
-            icon='inbox'
-            title={t('messages.inbox.empty_title')}
-            body={t('messages.inbox.empty_body')}
+            contentContainerStyle={styles.messageContainer}
+            keyExtractor={keyExtractor}
+            ListEmptyComponent={renderEmptyComponent}
+            estimatedItemSize={theme.spacing.xxl}
+            refreshControl={
+                <RefreshControl
+                    refreshing={isRefetching}
+                    onRefresh={refetch}
+                    colors={[theme.colors.primary]}
+                    progressBackgroundColor={theme.colors.background}
+                />
+            }
         />
     )
 }

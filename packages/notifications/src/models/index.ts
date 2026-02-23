@@ -36,3 +36,61 @@ export type PeraNotification = {
     isUnread?: boolean
     icon?: NotificationIcon | null
 }
+
+export interface MultiSigAccount {
+    customId: string
+    createdAt: Date
+    address: string
+    version: number
+    threshold: number
+    participantAddresses: string[]
+}
+
+export type SignRequestStatus =
+    | 'pending'
+    | 'ready'
+    | 'submitting'
+    | 'confirmed'
+    | 'failed'
+    | 'expired'
+    | 'declined'
+
+export interface SignerResponse {
+    address: string
+    response: 'signed' | 'declined'
+}
+
+export interface TransactionList {
+    id: string
+    rawTransactions: string[]
+    firstValidBlock: number
+    lastValidBlock: number
+    expectedExpireDatetime: Date
+    responses: SignerResponse[]
+}
+
+export interface JointAccountSignRequest {
+    id: string
+    status: SignRequestStatus
+    type: string
+    createdAt: Date
+    expectedExpireDatetime: Date
+    failReasonDisplay: string | null
+    jointAccount: MultiSigAccount
+    transactionLists: TransactionList[]
+}
+
+export interface ASAInbox {
+    address: string
+    inboxAddress: string | null
+    requestCount: number
+}
+
+export type InboxItem =
+    | { type: 'joint_account_import'; data: MultiSigAccount; createdAt: Date }
+    | {
+          type: 'joint_account_sign'
+          data: JointAccountSignRequest
+          createdAt: Date
+      }
+    | { type: 'asa_inbox'; data: ASAInbox; createdAt: Date }
