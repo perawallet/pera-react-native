@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { Keyboard, Platform } from 'react-native'
 import {
     PWBottomSheet,
     PWButton,
@@ -39,6 +40,26 @@ export const RenameAccountBottomSheet = ({
     const { t } = useLanguage()
     const styles = useStyles()
     const [name, setName] = useState(currentName)
+    const [keyboardHeight, setKeyboardHeight] = useState(0)
+
+    useEffect(() => {
+        const showEvent =
+            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
+        const hideEvent =
+            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'
+
+        const showSubscription = Keyboard.addListener(showEvent, e => {
+            setKeyboardHeight(e.endCoordinates.height)
+        })
+        const hideSubscription = Keyboard.addListener(hideEvent, () => {
+            setKeyboardHeight(0)
+        })
+
+        return () => {
+            showSubscription.remove()
+            hideSubscription.remove()
+        }
+    }, [])
 
     const handleSave = () => {
         const trimmed = name.trim()
@@ -52,6 +73,10 @@ export const RenameAccountBottomSheet = ({
             isVisible={isVisible}
             onBackdropPress={onClose}
             innerContainerStyle={styles.container}
+            containerStyle={{ paddingBottom: keyboardHeight }}
+            scrollViewProps={{
+                keyboardShouldPersistTaps: 'handled',
+            }}
         >
             <PWToolbar
                 right={
