@@ -47,10 +47,7 @@ describe('useSelectedAccountAddress', () => {
 
     test('returns selected account address and setter', () => {
         useAccountsStore.setState({
-            accounts: [
-                { address: 'A' } as any,
-                { address: 'B' } as any,
-            ],
+            accounts: [{ address: 'A' } as any, { address: 'B' } as any],
             selectedAccountAddress: 'A',
         })
 

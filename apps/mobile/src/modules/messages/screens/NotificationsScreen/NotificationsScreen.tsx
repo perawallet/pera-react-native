@@ -13,7 +13,6 @@
 import { useTheme } from '@rneui/themed'
 import {
     PeraNotification,
-    useNotificationsListQuery,
 } from '@perawallet/wallet-core-notifications'
 import { ActivityIndicator } from 'react-native'
 import { EmptyView } from '@components/EmptyView'

@@ -41,12 +41,14 @@ export const MessagesScreen = () => {
     const settingsModal = useModalState()
 
     const initialTab = route.params?.initialTab ?? 'Inbox'
-    const [activeTab, setActiveTab] = useState<keyof MessagesTabsParamsList>(initialTab)
+    const [activeTab, setActiveTab] =
+        useState<keyof MessagesTabsParamsList>(initialTab)
 
     useNavigationHeader({
-        right: activeTab === 'Notifications'
-            ? <SettingsIcon onPress={settingsModal.open} />
-            : null,
+        right:
+            activeTab === 'Notifications' ? (
+                <SettingsIcon onPress={settingsModal.open} />
+            ) : null,
     })
 
     return (
@@ -54,11 +56,13 @@ export const MessagesScreen = () => {
             <Tab.Navigator
                 initialRouteName={initialTab}
                 screenListeners={{
-                    state: (e) => {
+                    state: e => {
                         const state = e.data?.state
                         if (state) {
                             const route = state.routes[state.index]
-                            setActiveTab(route.name as keyof MessagesTabsParamsList)
+                            setActiveTab(
+                                route.name as keyof MessagesTabsParamsList,
+                            )
                         }
                     },
                 }}

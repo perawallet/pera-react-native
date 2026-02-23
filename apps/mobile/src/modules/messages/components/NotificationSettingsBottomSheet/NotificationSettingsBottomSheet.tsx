@@ -13,9 +13,6 @@
 import {
     PWBottomSheet,
     PWHeader,
-    PWIcon,
-    PWText,
-    PWToolbar,
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'

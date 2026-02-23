@@ -261,8 +261,12 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('AssetDetail', {
-            assetId: '123',
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Home',
+            params: {
+                screen: 'AssetDetails',
+                params: { assetId: '123' },
+            },
         })
     })
 
@@ -437,8 +441,12 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('AssetDetail', {
-            assetId: '123',
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Home',
+            params: {
+                screen: 'AssetDetails',
+                params: { assetId: '123' },
+            },
         })
     })
 

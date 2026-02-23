@@ -58,7 +58,7 @@ describe('useNotificationPress', () => {
         expect(mockIsValidDeepLink).toHaveBeenCalledWith(notification.url)
         expect(mockHandleDeepLink).toHaveBeenCalledWith(
             notification.url,
-            false,
+            true,
             'deeplink',
         )
     })

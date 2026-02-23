@@ -37,7 +37,10 @@ const mapNotificationResponseToNotification = (
         isUnread: response.is_unread,
         icon: response.icon ?? null,
     }
-    logger.debug('Mapping notification response to notification', { response, notification })
+    logger.debug('Mapping notification response to notification', {
+        response,
+        notification,
+    })
     return notification
 }
 
