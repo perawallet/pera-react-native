@@ -229,6 +229,8 @@ describe('AddAccountScreen', () => {
     })
 
     it('navigates to WatchAccount when Watch an Address is pressed', () => {
+        mockUseAllAccounts.mockReturnValue([])
+
         render(<AddAccountScreen />)
 
         const toggleButton = screen.getByTestId(
@@ -244,7 +246,59 @@ describe('AddAccountScreen', () => {
         expect(mockPush).toHaveBeenCalledWith('WatchAccount')
     })
 
-    it('creates a new HD wallet when Create Universal Wallet is pressed', async () => {
+    it('creates a new HD wallet when Create Universal Wallet is pressed (no HD wallet)', async () => {
+        mockUseAllAccounts.mockReturnValue([])
+
+        const mockAccount = {
+            id: 'new-wallet-id',
+            address: 'NEW_ADDRESS',
+            type: 'hdWallet' as const,
+            canSign: true,
+            hdWalletDetails: {
+                walletId: 'new-wallet-id',
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: 9,
+            },
+        }
+
+        mockCreateHdWalletAccount.mockResolvedValue(mockAccount)
+
+        render(<AddAccountScreen />)
+
+        const createButton = screen.getByText(
+            'onboarding.add_account.create_universal_wallet_option_title',
+        )
+        fireEvent.click(createButton)
+
+        await vi.waitFor(() => {
+            expect(mockCreateHdWalletAccount).toHaveBeenCalledWith({
+                account: 0,
+                keyIndex: 0,
+            })
+            expect(mockPush).toHaveBeenCalledWith('NameAccount', {
+                account: mockAccount,
+            })
+        })
+    })
+
+    it('creates a new HD wallet when Create Universal Wallet is pressed (has HD wallet)', async () => {
+        mockUseAllAccounts.mockReturnValue([
+            {
+                id: 'existing-id',
+                address: 'EXISTING_ADDRESS',
+                type: 'hdWallet' as const,
+                hdWalletDetails: {
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9 as const,
+                },
+                keyPairId: 'wallet-1',
+            },
+        ])
+
         const mockAccount = {
             id: 'new-wallet-id',
             address: 'NEW_ADDRESS',
@@ -361,16 +415,12 @@ describe('AddAccountScreen', () => {
     })
 
     it('shows error toast when account creation fails', async () => {
+        mockUseAllAccounts.mockReturnValue([])
         mockCreateHdWalletAccount.mockRejectedValue(
             new Error('Creation failed'),
         )
 
         render(<AddAccountScreen />)
-
-        const toggleButton = screen.getByTestId(
-            'add_account_see_other_options_button',
-        )
-        fireEvent.click(toggleButton)
 
         const createButton = screen.getByText(
             'onboarding.add_account.create_universal_wallet_option_title',
@@ -386,14 +436,55 @@ describe('AddAccountScreen', () => {
         })
     })
 
-    it('hides secondary options by default and shows See other options button', () => {
+    it('hides secondary options by default when no HD wallet (Create Universal Wallet in main)', () => {
+        mockUseAllAccounts.mockReturnValue([])
+
         render(<AddAccountScreen />)
 
         expect(
             screen.getByTestId('add_account_see_other_options_button'),
         ).toBeTruthy()
+
+        // Create Universal Wallet is visible in main options
         expect(
-            screen.getByText('onboarding.add_account.see_other_options'),
+            screen.getByText(
+                'onboarding.add_account.create_universal_wallet_option_title',
+            ),
+        ).toBeTruthy()
+
+        // These are hidden behind "see other options"
+        expect(
+            screen.queryByText(
+                'onboarding.add_account.watch_address_option_title',
+            ),
+        ).toBeNull()
+        expect(
+            screen.queryByText(
+                'onboarding.add_account.create_algo25_option_title',
+            ),
+        ).toBeNull()
+    })
+
+    it('hides secondary options by default when HD wallet exists', () => {
+        mockUseAllAccounts.mockReturnValue([
+            {
+                id: 'existing-id',
+                address: 'EXISTING_ADDRESS',
+                type: 'hdWallet' as const,
+                hdWalletDetails: {
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9 as const,
+                },
+                keyPairId: 'wallet-1',
+            },
+        ])
+
+        render(<AddAccountScreen />)
+
+        expect(
+            screen.getByTestId('add_account_see_other_options_button'),
         ).toBeTruthy()
 
         expect(
@@ -413,7 +504,50 @@ describe('AddAccountScreen', () => {
         ).toBeNull()
     })
 
-    it('reveals secondary options when See other options is pressed', () => {
+    it('reveals secondary options when See other options is pressed (no HD wallet)', () => {
+        mockUseAllAccounts.mockReturnValue([])
+
+        render(<AddAccountScreen />)
+
+        const toggleButton = screen.getByTestId(
+            'add_account_see_other_options_button',
+        )
+        fireEvent.click(toggleButton)
+
+        expect(
+            screen.getByText(
+                'onboarding.add_account.watch_address_option_title',
+            ),
+        ).toBeTruthy()
+        expect(
+            screen.getByText(
+                'onboarding.add_account.create_algo25_option_title',
+            ),
+        ).toBeTruthy()
+
+        // Create Universal Wallet should NOT be in the expanded section (it's in main)
+        // It's still visible on screen (in main options), but only watch + algo25 were added
+        expect(
+            screen.queryByTestId('add_account_see_other_options_button'),
+        ).toBeNull()
+    })
+
+    it('reveals secondary options when See other options is pressed (has HD wallet)', () => {
+        mockUseAllAccounts.mockReturnValue([
+            {
+                id: 'existing-id',
+                address: 'EXISTING_ADDRESS',
+                type: 'hdWallet' as const,
+                hdWalletDetails: {
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9 as const,
+                },
+                keyPairId: 'wallet-1',
+            },
+        ])
+
         render(<AddAccountScreen />)
 
         const toggleButton = screen.getByTestId(
