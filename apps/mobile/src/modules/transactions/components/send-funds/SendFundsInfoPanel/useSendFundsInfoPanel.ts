@@ -13,7 +13,7 @@
 import { useEffect, useState } from 'react'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
-import { useWebView } from '@hooks/usePeraWebviewInterface'
+import { useWebView } from '@modules/webview/hooks'
 import { config } from '@perawallet/wallet-core-config'
 import { SHORT_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'

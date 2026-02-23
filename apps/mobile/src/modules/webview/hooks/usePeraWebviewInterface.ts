@@ -13,7 +13,7 @@
 /* eslint-disable max-lines */
 
 import WebView from 'react-native-webview'
-import { useToast } from './useToast'
+import { useToast } from '@hooks/useToast'
 import { Linking } from 'react-native'
 import {
     useAnalyticsService,
@@ -29,7 +29,7 @@ import { useSettings } from '@perawallet/wallet-core-settings'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useCallback } from 'react'
 import { useWebView } from '@modules/webview/hooks'
-import { useLanguage } from './useLanguage'
+import { useLanguage } from '@hooks/useLanguage'
 import {
     PeraSignedTransaction,
     PeraTransaction,
@@ -43,12 +43,13 @@ import {
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import {
+    JsonRpcErrorCode,
     requireSecure,
     sendErrorToWebview,
     sendMessageToWebview,
-} from './webview/handlers'
+} from './handlers'
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
-import { getAccountType } from './webview/utils'
+import { getAccountType } from './utils'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 
 type WebviewMessage = {
@@ -57,21 +58,6 @@ type WebviewMessage = {
     method: string
     params?: Record<string, unknown>
 }
-
-export const JsonRpcErrorCode = {
-    ParseError: -32700,
-    InvalidRequest: -32600,
-    MethodNotFound: -32601,
-    InvalidParams: -32602,
-    InternalError: -32603,
-    ServerErrorStart: -32000,
-    ServerErrorEnd: -32099,
-} as const
-
-export type JsonRpcErrorCode =
-    (typeof JsonRpcErrorCode)[keyof typeof JsonRpcErrorCode]
-
-export { useWebView } from '@modules/webview/hooks'
 
 export const usePeraWebviewInterface = (
     webview: WebView | null,
@@ -254,6 +240,7 @@ export const usePeraWebviewInterface = (
                     currency: preferredCurrency,
                     region: deviceInfo.getDeviceCountry(),
                     language: deviceInfo.getDeviceLocale(),
+                    protocolVersion: '3',
                 }
                 sendMessageToWebview(message.id, payload, webview)
             })
@@ -272,9 +259,7 @@ export const usePeraWebviewInterface = (
     const requestTransactionSigning = useCallback(
         (message: WebviewMessage) => {
             requireSecure(securedConnection, () => {
-                if (
-                    !hadRequiredParams(['txns', 'metadata', 'address'], message)
-                ) {
+                if (!hadRequiredParams(['txns', 'metadata'], message)) {
                     return
                 }
                 const txns = message.params![
@@ -283,7 +268,7 @@ export const usePeraWebviewInterface = (
                 const metadata = message.params![
                     'metadata'
                 ] as SignRequestSource
-                const address = message.params!['address'] as string
+
                 try {
                     addSignRequest({
                         id: generateOrderedUniqueId(),
@@ -291,7 +276,6 @@ export const usePeraWebviewInterface = (
                         transport: 'callback',
                         txs: txns,
                         transportId: message.id,
-                        addresses: [address],
                         sourceMetadata: metadata,
                         approve: async (signed: PeraSignedTransaction[]) => {
                             sendMessageToWebview(
@@ -457,6 +441,7 @@ export const usePeraWebviewInterface = (
             if (!Array.isArray(message)) {
                 message = [message]
             }
+            console.log('MESSAGE: ', { message })
             logger.debug('Received webview interface call', { message })
             message.forEach(message => {
                 switch (message.method) {

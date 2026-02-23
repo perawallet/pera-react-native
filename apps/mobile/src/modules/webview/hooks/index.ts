@@ -12,3 +12,5 @@
 
 export { useWebViewStore, useWebView, useWebViewStack } from './useWebViewStore'
 export type { WebViewRequest } from './useWebViewStore'
+export { usePeraWebviewInterface } from './usePeraWebviewInterface'
+export { JsonRpcErrorCode } from './handlers'

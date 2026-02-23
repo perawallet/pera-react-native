@@ -32,7 +32,7 @@ import {
 } from './injected-scripts'
 import { useToast } from '@hooks/useToast'
 import { useStyles } from './styles'
-import { usePeraWebviewInterface } from '@hooks/usePeraWebviewInterface'
+import { usePeraWebviewInterface } from '@modules/webview/hooks'
 import { EmptyView } from '@components/EmptyView'
 import { PWView, PWButton, bottomSheetNotifier } from '@components/core'
 import { LoadingView } from '@components/LoadingView'
