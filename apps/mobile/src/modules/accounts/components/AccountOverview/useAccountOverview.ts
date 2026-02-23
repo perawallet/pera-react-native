@@ -23,8 +23,6 @@ import { useSettings } from '@perawallet/wallet-core-settings'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
 import { useModalState } from '@hooks/useModalState'
 
 export type UseAccountOverviewResult = {
@@ -50,6 +48,8 @@ export type UseAccountOverviewResult = {
     handleReceive: () => void
     isReceiveFundsVisible: boolean
     handleCloseReceiveFunds: () => void
+    isAccountOptionsVisible: boolean
+    handleCloseAccountOptions: () => void
 }
 
 export const useAccountOverview = (
@@ -86,8 +86,6 @@ export const useAccountOverview = (
     )
 
     const navigation = useAppNavigation()
-    const { t } = useLanguage()
-    const { showToast } = useToast()
     const {
         isOpen: isSendFundsVisible,
         open: handleOpenSendFunds,
@@ -97,14 +95,6 @@ export const useAccountOverview = (
     const handleSwap = useCallback(() => {
         navigation.replace('TabBar', { screen: 'Swap' })
     }, [navigation])
-
-    const notImplemented = useCallback(() => {
-        showToast({
-            title: t('common.not_implemented.title'),
-            body: t('common.not_implemented.body'),
-            type: 'error',
-        })
-    }, [showToast, t])
 
     const handleBuyAlgo = useCallback(() => {
         navigation.navigate('TabBar', { screen: 'Fund' })
@@ -116,9 +106,19 @@ export const useAccountOverview = (
         close: handleCloseReceiveFunds,
     } = useModalState()
 
+    const {
+        isOpen: isAccountOptionsVisible,
+        open: handleOpenAccountOptions,
+        close: handleCloseAccountOptions,
+    } = useModalState()
+
     const handleReceive = useCallback(() => {
         handleOpenReceiveFunds()
     }, [handleOpenReceiveFunds])
+
+    const handleMore = useCallback(() => {
+        handleOpenAccountOptions()
+    }, [handleOpenAccountOptions])
 
     return {
         portfolioAlgoValue,
@@ -136,10 +136,12 @@ export const useAccountOverview = (
         handleOpenSendFunds,
         handleCloseSendFunds,
         handleSwap,
-        handleMore: notImplemented,
+        handleMore,
         handleBuyAlgo,
         handleReceive,
         isReceiveFundsVisible,
         handleCloseReceiveFunds,
+        isAccountOptionsVisible,
+        handleCloseAccountOptions,
     }
 }

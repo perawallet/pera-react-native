@@ -160,18 +160,32 @@ describe('useAccountOverview', () => {
         expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Fund' })
     })
 
-    it('shows not implemented toast when handleMore is called', () => {
+    it('opens account options when handleMore is called', () => {
+        const { result } = renderHook(() => useAccountOverview(mockAccount))
+
+        expect(result.current.isAccountOptionsVisible).toBe(false)
+
+        act(() => {
+            result.current.handleMore()
+        })
+
+        expect(result.current.isAccountOptionsVisible).toBe(true)
+    })
+
+    it('closes account options when handleCloseAccountOptions is called', () => {
         const { result } = renderHook(() => useAccountOverview(mockAccount))
 
         act(() => {
             result.current.handleMore()
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith({
-            title: 'common.not_implemented.title',
-            body: 'common.not_implemented.body',
-            type: 'error',
+        expect(result.current.isAccountOptionsVisible).toBe(true)
+
+        act(() => {
+            result.current.handleCloseAccountOptions()
         })
+
+        expect(result.current.isAccountOptionsVisible).toBe(false)
     })
 
     it('opens send funds modal when handleOpenSendFunds is called', () => {
