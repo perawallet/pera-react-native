@@ -305,9 +305,6 @@
         "inbox": {
             "empty_title": "No messages yet",
             "empty_body": "Your inbox messages will appear here"
-        },
-        "notification_settings": {
-            "title": "Notification Settings"
         }
     },
     "onboarding": {
@@ -411,9 +408,7 @@
             "address_placeholder": "Enter or paste an address",
             "watch_button": "Watch Account",
             "invalid_address": "Please enter a valid Algorand address",
-            "duplicate_address": "This address has already been added to your wallet",
-            "success_title": "Account added",
-            "success_body": "Watch account has been added successfully"
+            "duplicate_address": "This address has already been added to your wallet"
         }
     },
     "portfolio": {

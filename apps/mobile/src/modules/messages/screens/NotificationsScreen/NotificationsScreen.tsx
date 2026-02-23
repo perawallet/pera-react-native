@@ -11,9 +11,7 @@
  */
 
 import { useTheme } from '@rneui/themed'
-import {
-    PeraNotification,
-} from '@perawallet/wallet-core-notifications'
+import { PeraNotification } from '@perawallet/wallet-core-notifications'
 import { ActivityIndicator } from 'react-native'
 import { EmptyView } from '@components/EmptyView'
 import { useStyles } from './styles'

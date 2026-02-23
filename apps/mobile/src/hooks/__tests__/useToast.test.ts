@@ -131,4 +131,67 @@ describe('useToast', () => {
             }),
         )
     })
+
+    it('infoToast shows info-styled notification', () => {
+        const { result } = renderHook(() => useToast())
+
+        act(() => {
+            result.current.infoToast('Info Title', 'Info body text')
+        })
+
+        expect(Notifier.showNotification).toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'Info Title',
+                description: 'Info body text',
+                componentProps: expect.objectContaining({
+                    containerStyle: expect.arrayContaining([
+                        { backgroundColor: 'blue' },
+                    ]),
+                    titleStyle: { color: 'white' },
+                }),
+            }),
+        )
+    })
+
+    it('errorToast shows error-styled notification', () => {
+        const { result } = renderHook(() => useToast())
+
+        act(() => {
+            result.current.errorToast('Error Title', 'Error body text')
+        })
+
+        expect(Notifier.showNotification).toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'Error Title',
+                description: 'Error body text',
+                componentProps: expect.objectContaining({
+                    containerStyle: expect.arrayContaining([
+                        { backgroundColor: 'red' },
+                    ]),
+                    titleStyle: { color: 'white' },
+                }),
+            }),
+        )
+    })
+
+    it('successToast shows success-styled notification', () => {
+        const { result } = renderHook(() => useToast())
+
+        act(() => {
+            result.current.successToast('Success Title', 'Success body text')
+        })
+
+        expect(Notifier.showNotification).toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'Success Title',
+                description: 'Success body text',
+                componentProps: expect.objectContaining({
+                    containerStyle: expect.arrayContaining([
+                        { backgroundColor: 'green' },
+                    ]),
+                    titleStyle: { color: 'white' },
+                }),
+            }),
+        )
+    })
 })

@@ -10,11 +10,7 @@
  limitations under the License
  */
 
-import {
-    PWBottomSheet,
-    PWHeader,
-    PWView,
-} from '@components/core'
+import { PWBottomSheet, PWHeader, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { NotificationSettingsList } from '@modules/settings/components/NotificationSettingsList'
 import { useStyles } from './styles'
