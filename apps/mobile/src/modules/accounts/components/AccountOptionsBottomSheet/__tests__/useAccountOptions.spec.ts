@@ -27,6 +27,9 @@ const { mockIsAccountEnabled, mockSetAccountEnabled } = vi.hoisted(() => ({
 const { mockRemoveAccountById } = vi.hoisted(() => ({
     mockRemoveAccountById: vi.fn(),
 }))
+const { mockAllAccounts } = vi.hoisted(() => ({
+    mockAllAccounts: vi.fn((): WalletAccount[] => []),
+}))
 const { mockUpdateAccount } = vi.hoisted(() => ({
     mockUpdateAccount: vi.fn(),
 }))
@@ -72,6 +75,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         ...actual,
         useRemoveAccountById: () => mockRemoveAccountById,
         useUpdateAccount: () => mockUpdateAccount,
+        useAllAccounts: () => mockAllAccounts(),
     }
 })
 
@@ -111,6 +115,7 @@ describe('useAccountOptions', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockIsAccountEnabled.mockReturnValue(true)
+        mockAllAccounts.mockReturnValue([algo25Account, watchAccount])
     })
 
     describe('option visibility', () => {

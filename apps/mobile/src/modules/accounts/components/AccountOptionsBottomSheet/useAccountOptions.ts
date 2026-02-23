@@ -19,6 +19,7 @@ import {
     canSignWithAccount,
     useRemoveAccountById,
     useUpdateAccount,
+    useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { useNotificationPreferences } from '@perawallet/wallet-core-notifications'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
@@ -63,6 +64,7 @@ export const useAccountOptions = ({
     const { showToast } = useToast()
     const { copyToClipboard } = useClipboard()
     const { isAccountEnabled, setAccountEnabled } = useNotificationPreferences()
+    const accounts = useAllAccounts()
     const removeAccountById = useRemoveAccountById()
     const updateAccount = useUpdateAccount()
     const navigation = useAppNavigation()
@@ -165,12 +167,21 @@ export const useAccountOptions = ({
     )
 
     const handleConfirmRemove = useCallback(() => {
+        const hasOtherAccounts = accounts.length > 1
         if (account.id) {
             removeAccountById(account.id)
         }
         handleCloseRemoveConfirm()
-        navigation.navigate('TabBar', { screen: 'Home' })
-    }, [account.id, removeAccountById, handleCloseRemoveConfirm, navigation])
+        if (hasOtherAccounts) {
+            navigation.navigate('TabBar', { screen: 'Home' })
+        }
+    }, [
+        accounts.length,
+        account.id,
+        removeAccountById,
+        handleCloseRemoveConfirm,
+        navigation,
+    ])
 
     const notificationsEnabled = isAccountEnabled(account.address)
 
