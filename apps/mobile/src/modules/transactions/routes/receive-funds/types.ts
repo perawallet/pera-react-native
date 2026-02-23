@@ -10,8 +10,13 @@
  limitations under the License
  */
 
-export { useSendFundsStore, useSendFunds } from './send-funds/useSendFunds'
-export {
-    useReceiveFundsStore,
-    useReceiveFunds,
-} from './receive-funds/useReceiveFunds'
+import type { StackScreenProps } from '@react-navigation/stack'
+
+export type ReceiveFundsStackParamList = {
+    AccountSelection: undefined
+    QRView: undefined
+}
+
+export type ReceiveFundsStackScreenProps<
+    T extends keyof ReceiveFundsStackParamList,
+> = StackScreenProps<ReceiveFundsStackParamList, T>

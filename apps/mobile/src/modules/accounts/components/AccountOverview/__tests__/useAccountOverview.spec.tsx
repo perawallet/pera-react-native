@@ -55,6 +55,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         accountUsdValues: new Map(),
         isPending: false,
     })),
+    useSelectedAccount: vi.fn(() => undefined),
 }))
 
 vi.mock('@perawallet/wallet-core-currencies', () => ({
@@ -70,6 +71,13 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
     useSettings: vi.fn(() => ({
         privacyMode: false,
         setPrivacyMode: vi.fn(),
+    })),
+}))
+
+vi.mock('@modules/transactions/hooks', () => ({
+    useReceiveFunds: vi.fn(() => ({
+        setSelectedAccount: vi.fn(),
+        setCanSelectAccount: vi.fn(),
     })),
 }))
 

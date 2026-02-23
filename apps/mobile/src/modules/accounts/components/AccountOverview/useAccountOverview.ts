@@ -16,6 +16,7 @@ import {
     AccountBalanceHistoryItem,
     useAccountBalancesQuery,
     usePortfolioTotals,
+    useSelectedAccount,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
@@ -26,6 +27,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useModalState } from '@hooks/useModalState'
+import { useReceiveFunds } from '@modules/transactions/hooks'
 
 export type UseAccountOverviewResult = {
     portfolioAlgoValue: Decimal
@@ -67,6 +69,8 @@ export const useAccountOverview = (
         useChartInteraction<AccountBalanceHistoryItem>()
     const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true)
     const { privacyMode, setPrivacyMode } = useSettings()
+    const selectedAccount = useSelectedAccount()
+    const { setSelectedAccount, setCanSelectAccount } = useReceiveFunds()
 
     const togglePrivacyMode = useCallback(() => {
         setPrivacyMode(!privacyMode)
@@ -117,8 +121,12 @@ export const useAccountOverview = (
     } = useModalState()
 
     const handleReceive = useCallback(() => {
+        if (selectedAccount) {
+            setCanSelectAccount(false)
+            setSelectedAccount(selectedAccount)
+        }
         handleOpenReceiveFunds()
-    }, [handleOpenReceiveFunds])
+    }, [selectedAccount, handleOpenReceiveFunds])
 
     return {
         portfolioAlgoValue,
