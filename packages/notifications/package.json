@@ -25,7 +25,8 @@
     "react-dom": "catalog:",
     "zustand": "catalog:",
     "@tanstack/react-query": "catalog:",
-    "reflect-metadata": "catalog:"
+    "reflect-metadata": "catalog:",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:",

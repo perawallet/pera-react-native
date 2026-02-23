@@ -19,54 +19,7 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xl,
         padding: theme.spacing.xl,
     },
-    section: {
-        gap: theme.spacing.xl,
-    },
-    listItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    listItemContent: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-    },
-    header: {
-        gap: theme.spacing.lg,
-    },
-    headerRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    accountItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-    accountInfo: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-    },
-    accountTextContainer: {
-        flex: 1,
-    },
     scrollContent: {
         gap: theme.spacing.sm,
-    },
-    emptyStateContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: theme.spacing.xl,
-    },
-    grayText: {
-        color: theme.colors.textGray,
-    },
-    mainText: {
-        color: theme.colors.textMain,
     },
 }))

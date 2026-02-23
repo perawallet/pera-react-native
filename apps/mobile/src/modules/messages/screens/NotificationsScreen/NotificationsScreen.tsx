@@ -18,12 +18,14 @@ import {
 import { ActivityIndicator } from 'react-native'
 import { EmptyView } from '@components/EmptyView'
 import { useStyles } from './styles'
-import { NotificationItem } from '@modules/notifications/components/NotificationItem/NotificationItem'
+import { NotificationItem } from '@modules/messages/components/NotificationItem/NotificationItem'
 import { LoadingView } from '@components/LoadingView'
 import { PWFlatList } from '@components/core'
 import { RefreshControl } from 'react-native-gesture-handler'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useNotificationsScreen } from './useNotificationsScreen'
+import { useCallback } from 'react'
 
 export const NotificationsScreen = () => {
     const insets = useSafeAreaInsets()
@@ -31,34 +33,31 @@ export const NotificationsScreen = () => {
     const { theme } = useTheme()
     const { t } = useLanguage()
 
+    const {
+        notifications,
+        isPending,
+        isRefetching,
+        refetch,
+        loadMoreItems,
+        isFetchingNextPage,
+        keyExtractor,
+    } = useNotificationsScreen()
+
     const renderItem = ({ item }: { item: PeraNotification }) => {
         return <NotificationItem item={item} />
     }
 
-    const {
-        data: notifications,
-        isPending,
-        fetchNextPage,
-        isFetchingNextPage,
-        isRefetching,
-        refetch,
-    } = useNotificationsListQuery()
-
-    const loadMoreItems = async () => {
-        await fetchNextPage()
-    }
-
-    if (isPending) {
-        return (
-            <LoadingView
-                variant='skeleton'
-                size='sm'
-                count={5}
-            />
-        )
-    }
-
-    if (!notifications?.length) {
+    const renderEmptyComponent = useCallback(() => {
+        if (isPending) {
+            return (
+                <LoadingView
+                    variant='skeleton'
+                    size='sm'
+                    count={5}
+                    style={styles.loadingContainer}
+                />
+            )
+        }
         return (
             <EmptyView
                 style={styles.emptyView}
@@ -67,7 +66,7 @@ export const NotificationsScreen = () => {
                 body={t('notifications.empty_body')}
             />
         )
-    }
+    }, [isPending, styles.emptyView, styles.loadingContainer, t])
 
     return (
         <PWFlatList
@@ -77,6 +76,8 @@ export const NotificationsScreen = () => {
             contentContainerStyle={styles.messageContainer}
             onEndReached={loadMoreItems}
             onEndReachedThreshold={0.1}
+            keyExtractor={keyExtractor}
+            ListEmptyComponent={renderEmptyComponent}
             ListFooterComponent={
                 isFetchingNextPage ? (
                     <ActivityIndicator color={theme.colors.linkPrimary} />
@@ -86,7 +87,7 @@ export const NotificationsScreen = () => {
                 <RefreshControl
                     refreshing={isRefetching}
                     onRefresh={refetch}
-                    colors={[theme.colors.layerGray]}
+                    colors={[theme.colors.linkPrimary]}
                     progressBackgroundColor={theme.colors.background}
                 />
             }

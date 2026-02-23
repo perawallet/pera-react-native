@@ -119,7 +119,7 @@ describe('services/device/hooks', () => {
             store.current.setPushToken('test-fcm-token')
         })
 
-        const { result } = renderHook(() => useDevice('mainnet'), {
+        const { result } = renderHook(() => useDevice(), {
             wrapper: createWrapper(),
         })
 
@@ -158,7 +158,7 @@ describe('services/device/hooks', () => {
             store.current.setPushToken('test-fcm-token')
         })
 
-        const { result } = renderHook(() => useDevice('mainnet'), {
+        const { result } = renderHook(() => useDevice(), {
             wrapper: createWrapper(),
         })
 

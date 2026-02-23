@@ -297,6 +297,19 @@
         "empty_title": "No current notifications",
         "empty_body": "Your recent transactions, asset requests and other transactions will appear here"
     },
+    "messages": {
+        "tabs": {
+            "inbox": "Inbox",
+            "notifications": "Notifications"
+        },
+        "inbox": {
+            "empty_title": "No messages yet",
+            "empty_body": "Your inbox messages will appear here"
+        },
+        "notification_settings": {
+            "title": "Notification Settings"
+        }
+    },
     "onboarding": {
         "import_options": {
             "title": "Select your Mnemonic type",
@@ -450,7 +463,8 @@
         "node_settings": "Node Settings",
         "feature_flags": "Feature Flags",
         "dispenser": "Dispenser",
-        "developer_menu": "Developer Options"
+        "developer_menu": "Developer Options",
+        "messages": "Messages"
     },
     "security": {
         "pin": {

@@ -10,10 +10,18 @@
  limitations under the License
  */
 
-import { render } from '@test-utils/render'
+import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { NotificationItem } from '../NotificationItem'
-import { PeraNotification } from '@perawallet/wallet-core-notifications'
+import type { PeraNotification } from '@perawallet/wallet-core-notifications'
+
+const mockHandleNotificationPress = vi.fn()
+
+vi.mock('@modules/messages/hooks', () => ({
+    useNotificationPress: () => ({
+        handleNotificationPress: mockHandleNotificationPress,
+    }),
+}))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     formatRelativeTime: vi.fn(date => `formatted-${date.toISOString()}`),
@@ -27,65 +35,75 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 }))
 
 describe('NotificationItem', () => {
-    const mockNotification = {
+    const mockNotification: PeraNotification = {
         id: '1',
-        title: 'Title',
+        accountAddress: 'TESTADDR123',
         message: 'Test message',
+        url: 'perawallet://home',
         createdAt: new Date('2025-01-27T12:00:00Z'),
-        metadata: {},
     }
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
 
     it('renders message and formatted time', () => {
         const { getByText } = render(
-            <NotificationItem item={mockNotification as PeraNotification} />,
+            <NotificationItem item={mockNotification} />,
         )
 
         expect(getByText('Test message')).toBeTruthy()
         expect(getByText('formatted-2025-01-27T12:00:00.000Z')).toBeTruthy()
     })
 
-    it('renders default bell icon when no image url is provided', () => {
+    it('renders default bell icon when no icon is provided', () => {
         const { getByTestId } = render(
-            <NotificationItem item={mockNotification as PeraNotification} />,
+            <NotificationItem item={mockNotification} />,
         )
 
         expect(getByTestId('icon-bell')).toBeTruthy()
     })
 
-    it('renders image when image_url is provided', () => {
-        const notificationWithImage = {
+    it('renders image when icon logo is provided', () => {
+        const notificationWithIcon: PeraNotification = {
             ...mockNotification,
-            metadata: {
-                image_url: 'https://example.com/image.png',
+            icon: {
+                logo: 'https://example.com/image.png',
+                shape: 'rectangle',
             },
         }
 
         const { getByRole } = render(
-            <NotificationItem
-                item={notificationWithImage as PeraNotification}
-            />,
+            <NotificationItem item={notificationWithIcon} />,
         )
 
         expect(getByRole('img')).toBeTruthy()
     })
 
     it('renders circular image when shape is circle', () => {
-        const circularNotification = {
+        const circularNotification: PeraNotification = {
             ...mockNotification,
-            metadata: {
-                image_url: 'https://example.com/image.png',
-                icon: {
-                    shape: 'circle',
-                },
+            icon: {
+                logo: 'https://example.com/image.png',
+                shape: 'circle',
             },
         }
 
         const { getByRole } = render(
-            <NotificationItem
-                item={circularNotification as PeraNotification}
-            />,
+            <NotificationItem item={circularNotification} />,
         )
 
         expect(getByRole('img')).toBeTruthy()
+    })
+
+    it('calls handleNotificationPress when pressed', () => {
+        const { getByText } = render(
+            <NotificationItem item={mockNotification} />,
+        )
+
+        fireEvent.click(getByText('Test message'))
+        expect(mockHandleNotificationPress).toHaveBeenCalledWith(
+            mockNotification,
+        )
     })
 })

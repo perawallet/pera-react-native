@@ -14,9 +14,9 @@ import { describe, it, expect, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-core-platform-integration'
 import { useNotificationStatus } from '../useNotificationStatusQuery'
-import { fetchNotificationStatus } from '../endpoints'
+import { fetchNotificationStatus } from '../../api/notifications'
 
-vi.mock('../endpoints', () => ({
+vi.mock('../../api/notifications', () => ({
     fetchNotificationStatus: vi.fn(),
 }))
 

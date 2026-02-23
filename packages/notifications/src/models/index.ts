@@ -22,30 +22,17 @@ export type NotificationStatus = {
     hasNewNotification: boolean
 }
 
-export type NotificationStatusResponse = {
-    has_new_notification: boolean
+export type NotificationIcon = {
+    logo: string
+    shape: 'circle' | 'rectangle'
 }
 
 export type PeraNotification = {
     id: string
-    title: string
+    accountAddress: string
     message: string
+    url: string
     createdAt: Date
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    metadata: any
-}
-
-export type NotificationResponse = {
-    id: string
-    title: string
-    message: string
-    creation_datetime: string
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    metadata: any
-}
-
-export type NotificationsListResponse = {
-    results: NotificationResponse[]
-    next: string | null
-    previous: string | null
+    isUnread?: boolean
+    icon?: NotificationIcon | null
 }

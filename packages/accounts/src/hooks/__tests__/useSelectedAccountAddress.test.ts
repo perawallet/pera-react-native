@@ -46,7 +46,13 @@ describe('useSelectedAccountAddress', () => {
     })
 
     test('returns selected account address and setter', () => {
-        useAccountsStore.setState({ selectedAccountAddress: 'A' })
+        useAccountsStore.setState({
+            accounts: [
+                { address: 'A' } as any,
+                { address: 'B' } as any,
+            ],
+            selectedAccountAddress: 'A',
+        })
 
         const { result } = renderHook(() => useSelectedAccountAddress())
         expect(result.current.selectedAccountAddress).toBe('A')
@@ -60,5 +66,19 @@ describe('useSelectedAccountAddress', () => {
     test('returns null when no selected account address', () => {
         const { result } = renderHook(() => useSelectedAccountAddress())
         expect(result.current.selectedAccountAddress).toBeNull()
+    })
+
+    test('does not update when address does not exist in accounts', () => {
+        useAccountsStore.setState({
+            accounts: [{ address: 'A' } as any],
+            selectedAccountAddress: 'A',
+        })
+
+        const { result } = renderHook(() => useSelectedAccountAddress())
+
+        act(() => {
+            result.current.setSelectedAccountAddress('NONEXISTENT')
+        })
+        expect(useAccountsStore.getState().selectedAccountAddress).toBe('A')
     })
 })

@@ -13,41 +13,52 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
+    const imageSize = theme.spacing.xxl
     return {
         container: {
             flexDirection: 'row',
-            gap: theme.spacing.lg,
+            gap: theme.spacing.md,
             alignItems: 'flex-start',
+            justifyContent: 'flex-start',
         },
-        messageBox: {},
+        messageBox: {
+            flexShrink: 1,
+            overflow: 'hidden',
+        },
+        messageText: {
+            flexShrink: 1,
+            flexWrap: 'wrap',
+        },
         timeText: {
             color: theme.colors.textGray,
-            fontSize: 11,
         },
         iconContainerNoBorder: {
-            width: theme.spacing.xl * 1.65,
-            height: theme.spacing.xl * 1.65,
+            width: imageSize,
+            height: imageSize,
             borderRadius: theme.spacing.xl,
             alignItems: 'center',
             justifyContent: 'center',
+            marginTop: theme.spacing.xs,
         },
         iconContainer: {
-            width: theme.spacing.xl * 1.65,
-            height: theme.spacing.xl * 1.65,
+            width: imageSize,
+            height: imageSize,
             borderRadius: theme.spacing.xl,
             borderWidth: theme.borders.sm,
             borderColor: theme.colors.layerGrayLighter,
             alignItems: 'center',
             justifyContent: 'center',
+            marginTop: theme.spacing.xs,
         },
         image: {
             aspectRatio: 1,
             width: '100%',
+            borderRadius: theme.spacing.sm,
         },
         imageCircle: {
             aspectRatio: 1,
             width: '100%',
-            borderRadius: '50%',
+            borderRadius: imageSize / 2,
         },
     }
 })

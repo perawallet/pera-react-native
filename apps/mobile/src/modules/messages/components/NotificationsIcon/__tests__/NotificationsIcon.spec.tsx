@@ -51,11 +51,13 @@ describe('NotificationsIcon', () => {
         expect(getByTestId('notification-badge')).toBeTruthy()
     })
 
-    it('navigates to Notifications screen when pressed', () => {
+    it('navigates to Messages screen with Notifications tab when pressed', () => {
         const { getByRole } = render(<NotificationsIcon />)
 
         fireEvent.click(getByRole('button'))
 
-        expect(mockNavigate).toHaveBeenCalledWith('Notifications')
+        expect(mockNavigate).toHaveBeenCalledWith('Messages', {
+            initialTab: 'Notifications',
+        })
     })
 })

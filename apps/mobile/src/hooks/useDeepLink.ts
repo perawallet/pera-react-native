@@ -194,17 +194,21 @@ export const useDeepLink = () => {
                 case DeeplinkType.ASSET_DETAIL:
                 case DeeplinkType.ASSET_TRANSACTIONS:
                     setSelectedAccountAddress(parsedData.address)
-                    navigateToScreen(replaceCurrentScreen, 'AssetDetail', {
-                        assetId: parsedData.assetId,
+                    navigateToScreen(replaceCurrentScreen, 'TabBar', {
+                        screen: 'Home',
+                        params: {
+                            screen: 'AssetDetails',
+                            params: {
+                                assetId: parsedData.assetId,
+                            },
+                        },
                     })
                     break
 
                 case DeeplinkType.ASSET_INBOX:
-                    // TODO: Navigate to asset inbox screen
-                    infoPost(
-                        'Asset Inbox',
-                        'Asset inbox screen not implemented yet',
-                    )
+                    navigateToScreen(replaceCurrentScreen, 'Messages', {
+                        initialTab: 'Inbox',
+                    })
                     break
 
                 case DeeplinkType.INTERNAL_BROWSER:

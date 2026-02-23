@@ -15,6 +15,15 @@ import { describe, it, expect, vi } from 'vitest'
 import { NotificationsScreen } from '../NotificationsScreen'
 import { useNotificationsListQuery } from '@perawallet/wallet-core-notifications'
 
+vi.mock(
+    '@modules/messages/components/NotificationItem/NotificationItem',
+    () => ({
+        NotificationItem: ({ item }: { item: { message: string } }) => (
+            <span>{item.message}</span>
+        ),
+    }),
+)
+
 vi.mock('@perawallet/wallet-core-notifications', () => ({
     useNotificationsListQuery: vi.fn(() => ({
         data: [],
@@ -52,15 +61,17 @@ describe('NotificationsScreen', () => {
         const mockNotifications = [
             {
                 id: '1',
+                accountAddress: 'TESTADDR1',
                 message: 'Notification 1',
+                url: 'perawallet://home',
                 createdAt: '2025-01-27T12:00:00Z',
-                metadata: {},
             },
             {
                 id: '2',
+                accountAddress: 'TESTADDR2',
                 message: 'Notification 2',
+                url: 'perawallet://home',
                 createdAt: '2025-01-27T12:05:00Z',
-                metadata: {},
             },
         ]
 

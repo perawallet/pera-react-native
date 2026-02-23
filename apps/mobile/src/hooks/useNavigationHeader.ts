@@ -14,8 +14,8 @@ import { type ReactNode, useLayoutEffect } from 'react'
 import { useNavigation } from '@react-navigation/native'
 
 type UseScreenHeaderOptions = {
-    left?: ReactNode
-    right?: ReactNode
+    left?: ReactNode | null
+    right?: ReactNode | null
     title?: ReactNode | string
     enabled?: boolean
 }
@@ -34,10 +34,10 @@ export const useNavigationHeader = ({
         const options: Record<string, unknown> = {}
 
         if (left !== undefined) {
-            options.headerLeft = () => left
+            options.headerLeft = left === null ? undefined : () => left
         }
         if (right !== undefined) {
-            options.headerRight = () => right
+            options.headerRight = right === null ? undefined : () => right
         }
         if (title !== undefined) {
             if (typeof title === 'string') {

@@ -33,7 +33,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { ConfettiAnimation } from '@modules/accounts/components/ConfettiAnimation'
 import { PromptContainer } from '@modules/prompts'
 import { AccountTabNavigator } from '@modules/accounts/components/AccountTabNavigator'
-import { NotificationsIcon } from '@modules/notifications/components/NotificationsIcon'
+import { NotificationsIcon } from '@modules/messages/components/NotificationsIcon'
 
 //TODO implement more menu
 //TODO figure out and implement banners/spot banners

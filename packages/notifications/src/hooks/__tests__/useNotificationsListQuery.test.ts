@@ -14,9 +14,9 @@ import { describe, it, expect, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-core-platform-integration'
 import { useNotificationsListQuery } from '../useNotificationsListQuery'
-import { fetchNotificationList } from '../endpoints'
+import { fetchNotificationList } from '../../api/notifications'
 
-vi.mock('../endpoints', () => ({
+vi.mock('../../api/notifications', () => ({
     fetchNotificationList: vi.fn(),
 }))
 
@@ -45,10 +45,14 @@ describe('useNotificationsListQuery', () => {
             results: [
                 {
                     id: '1',
-                    title: 'Test Title',
+                    account_address: 'TESTADDR123',
                     message: 'Test Message',
+                    url: 'perawallet://account-detail?address=TESTADDR123',
                     creation_datetime: mockDate.toISOString(),
-                    metadata: { key: 'value' },
+                    icon: {
+                        logo: 'https://example.com/icon.png',
+                        shape: 'circle' as const,
+                    },
                 },
             ],
         }
@@ -71,10 +75,14 @@ describe('useNotificationsListQuery', () => {
         expect(result.current.data).toEqual([
             {
                 id: '1',
-                title: 'Test Title',
+                accountAddress: 'TESTADDR123',
                 message: 'Test Message',
+                url: 'perawallet://account-detail?address=TESTADDR123',
                 createdAt: mockDate,
-                metadata: { key: 'value' },
+                icon: {
+                    logo: 'https://example.com/icon.png',
+                    shape: 'circle',
+                },
             },
         ])
     })

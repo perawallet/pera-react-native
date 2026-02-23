@@ -19,7 +19,7 @@ describe('push-notifications/hooks/querykeys', () => {
 
         expect(key).toEqual([
             'notifications',
-            'list',
+            'listv2',
             { deviceID: 'device-123', network: 'mainnet' },
         ])
     })
