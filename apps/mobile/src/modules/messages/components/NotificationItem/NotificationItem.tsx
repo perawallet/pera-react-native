@@ -66,6 +66,9 @@ export const NotificationItem = ({ item }: NotificationItemProps) => {
             onPress={() => handleNotificationPress(item)}
             style={styles.container}
         >
+            <PWView style={styles.unreadIndicatorContainer}>
+                {item.isUnread && <PWView style={styles.unreadIndicator} />}
+            </PWView>
             {image}
             <PWView style={styles.messageBox}>
                 <PWText style={styles.messageText}>{item.message}</PWText>

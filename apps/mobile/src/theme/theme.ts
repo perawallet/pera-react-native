@@ -73,6 +73,13 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             buttonPrimaryDisabledBg: palette.gray[100],
             buttonPrimaryDisabledText: palette.gray[500],
 
+            // Button New Primary
+            buttonNewPrimaryBg: palette.purple[600],
+            buttonNewPrimaryText: palette.white,
+            buttonNewPrimaryFocusBg: palette.purple[700],
+            buttonNewPrimaryDisabledBg: palette.gray[100],
+            buttonNewPrimaryDisabledText: palette.gray[500],
+
             // Button Secondary
             buttonSecondaryBg: palette.gray[100],
             buttonSecondaryFocusBg: palette.gray[200],
@@ -259,6 +266,13 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             buttonPrimaryFocusBg: palette.yellow[500],
             buttonPrimaryDisabledBg: palette.gray[800],
             buttonPrimaryDisabledText: palette.gray[500],
+
+            // Button New Primary
+            buttonNewPrimaryBg: palette.purple[400],
+            buttonNewPrimaryText: palette.gray[900],
+            buttonNewPrimaryFocusBg: palette.purple[500],
+            buttonNewPrimaryDisabledBg: palette.gray[800],
+            buttonNewPrimaryDisabledText: palette.gray[500],
 
             // Button Secondary
             buttonSecondaryBg: palette.gray[800],

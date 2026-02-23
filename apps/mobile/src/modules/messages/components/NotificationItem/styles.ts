@@ -60,5 +60,16 @@ export const useStyles = makeStyles(theme => {
             width: '100%',
             borderRadius: imageSize / 2,
         },
+        unreadIndicatorContainer: {
+            width: theme.spacing.sm,
+        },
+        unreadIndicator: {
+            width: theme.spacing.sm,
+            height: theme.spacing.sm,
+            borderRadius: theme.spacing.sm / 2,
+            backgroundColor: theme.colors.buttonNewPrimaryBg,
+            position: 'absolute',
+            top: imageSize / 2,
+        },
     }
 })

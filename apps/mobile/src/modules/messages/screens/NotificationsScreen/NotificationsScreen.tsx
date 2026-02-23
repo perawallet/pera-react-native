@@ -24,6 +24,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNotificationsScreen } from './useNotificationsScreen'
 import { useCallback } from 'react'
 
+const renderItem = ({ item }: { item: PeraNotification }) => {
+    return <NotificationItem item={item} />
+}
+
 export const NotificationsScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
@@ -39,10 +43,6 @@ export const NotificationsScreen = () => {
         isFetchingNextPage,
         keyExtractor,
     } = useNotificationsScreen()
-
-    const renderItem = ({ item }: { item: PeraNotification }) => {
-        return <NotificationItem item={item} />
-    }
 
     const renderEmptyComponent = useCallback(() => {
         if (isPending) {
@@ -84,7 +84,7 @@ export const NotificationsScreen = () => {
                 <RefreshControl
                     refreshing={isRefetching}
                     onRefresh={refetch}
-                    colors={[theme.colors.linkPrimary]}
+                    colors={[theme.colors.primary]}
                     progressBackgroundColor={theme.colors.background}
                 />
             }

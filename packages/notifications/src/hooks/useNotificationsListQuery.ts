@@ -23,26 +23,18 @@ import {
 } from '../api/notifications'
 import type { PeraNotification } from '../models'
 import { getNotificationsListQueryKey } from './querykeys'
-import { logger } from '@perawallet/wallet-core-shared'
 
 const mapNotificationResponseToNotification = (
     response: NotificationResponse,
-): PeraNotification => {
-    const notification = {
-        id: response.id,
-        accountAddress: response.account_address,
-        message: response.message,
-        url: response.url,
-        createdAt: new Date(response.creation_datetime),
-        isUnread: response.is_unread,
-        icon: response.icon ?? null,
-    }
-    logger.debug('Mapping notification response to notification', {
-        response,
-        notification,
-    })
-    return notification
-}
+): PeraNotification => ({
+    id: response.id,
+    accountAddress: response.account_address,
+    message: response.message,
+    url: response.url,
+    createdAt: new Date(response.creation_datetime),
+    isUnread: response.is_unread,
+    icon: response.icon ?? null,
+})
 
 export const useNotificationsListQuery = () => {
     const { network } = useNetwork()

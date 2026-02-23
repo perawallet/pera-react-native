@@ -15,6 +15,17 @@ import { describe, it, expect, vi } from 'vitest'
 import { NotificationsScreen } from '../NotificationsScreen'
 import { useNotificationsListQuery } from '@perawallet/wallet-core-notifications'
 
+vi.mock('@react-navigation/native', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@react-navigation/native')>()
+    return {
+        ...actual,
+        useNavigation: vi.fn(() => ({
+            addListener: vi.fn(() => vi.fn()),
+        })),
+    }
+})
+
 vi.mock(
     '@modules/messages/components/NotificationItem/NotificationItem',
     () => ({
@@ -32,6 +43,9 @@ vi.mock('@perawallet/wallet-core-notifications', () => ({
         isFetchingNextPage: false,
         isRefetching: false,
         refetch: vi.fn(),
+    })),
+    useMarkNotificationsAsReadMutation: vi.fn(() => ({
+        markAsRead: vi.fn(),
     })),
 }))
 

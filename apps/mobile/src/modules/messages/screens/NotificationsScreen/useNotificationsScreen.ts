@@ -10,9 +10,12 @@
  limitations under the License
  */
 
+import { useEffect } from 'react'
+import { useNavigation } from '@react-navigation/native'
 import {
-    PeraNotification,
+    type PeraNotification,
     useNotificationsListQuery,
+    useMarkNotificationsAsReadMutation,
 } from '@perawallet/wallet-core-notifications'
 
 export type UseNotificationsScreenResult = {
@@ -26,6 +29,7 @@ export type UseNotificationsScreenResult = {
 }
 
 export const useNotificationsScreen = (): UseNotificationsScreenResult => {
+    const navigation = useNavigation()
     const {
         data,
         isPending,
@@ -34,6 +38,21 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
         isRefetching,
         refetch,
     } = useNotificationsListQuery()
+    const { markAsRead } = useMarkNotificationsAsReadMutation()
+
+    const notifications = data ?? []
+
+    useEffect(() => {
+        const unsubscribe = navigation.addListener('blur', () => {
+            const hasUnread = notifications.some(n => n.isUnread)
+
+            if (notifications.length > 0 && hasUnread) {
+                markAsRead(parseInt(notifications[0].id, 10))
+            }
+        })
+
+        return unsubscribe
+    }, [navigation, notifications, markAsRead])
 
     const loadMoreItems = async () => {
         await fetchNextPage()
@@ -41,7 +60,7 @@ export const useNotificationsScreen = (): UseNotificationsScreenResult => {
 
     return {
         isPending,
-        notifications: data ?? [],
+        notifications,
         isFetchingNextPage,
         isRefetching,
         keyExtractor: (item: PeraNotification) => item.id,

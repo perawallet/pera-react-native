@@ -59,6 +59,20 @@ export const fetchNotificationList = async (
     return notificationsListResponseSchema.parse(response.data)
 }
 
+export const updateLastSeenNotification = async (
+    network: Network,
+    deviceID: string,
+    lastSeenNotificationId: number,
+): Promise<void> => {
+    await queryClient({
+        backend: 'pera',
+        network,
+        method: 'PUT',
+        url: `/v1/devices/${deviceID}/update-last-seen-notification/`,
+        data: { last_seen_notification_id: lastSeenNotificationId },
+    })
+}
+
 export const updateNotificationEnabled = async (
     network: Network,
     deviceID: string,
