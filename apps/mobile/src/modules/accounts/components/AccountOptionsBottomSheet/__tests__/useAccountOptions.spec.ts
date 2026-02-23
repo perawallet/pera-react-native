@@ -113,91 +113,72 @@ describe('useAccountOptions', () => {
     })
 
     describe('option visibility', () => {
-        it('shows base options for all account types', () => {
+        it('shows all options for a regular algo25 account', () => {
             const { result } = renderHook(() =>
                 useAccountOptions(algo25Account, mockOnClose),
             )
 
             const optionIds = result.current.options.map(o => o.id)
-            expect(optionIds).toContain('copy-address')
-            expect(optionIds).toContain('show-qr')
-            expect(optionIds).toContain('rename-account')
-            expect(optionIds).toContain('toggle-notifications')
-            expect(optionIds).toContain('remove-account')
+            expect(optionIds).toEqual([
+                'copy-address',
+                'show-address',
+                'view-passphrase',
+                'rekey-to-ledger',
+                'rekey-to-standard',
+                'rename-account',
+                'toggle-notifications',
+                'remove-account',
+            ])
         })
 
-        it('shows view passphrase for algo25 accounts', () => {
-            const { result } = renderHook(() =>
-                useAccountOptions(algo25Account, mockOnClose),
-            )
-
-            const optionIds = result.current.options.map(o => o.id)
-            expect(optionIds).toContain('view-passphrase')
-        })
-
-        it('does not show view passphrase for watch accounts', () => {
+        it('shows only applicable options for a watch account', () => {
             const { result } = renderHook(() =>
                 useAccountOptions(watchAccount, mockOnClose),
             )
 
             const optionIds = result.current.options.map(o => o.id)
-            expect(optionIds).not.toContain('view-passphrase')
+            expect(optionIds).toEqual([
+                'copy-address',
+                'show-address',
+                'rename-account',
+                'toggle-notifications',
+                'remove-account',
+            ])
         })
 
-        it('does not show view passphrase for hardware accounts', () => {
+        it('shows all options including rekey for a rekeyed account', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions(rekeyedAccount, mockOnClose),
+            )
+
+            const optionIds = result.current.options.map(o => o.id)
+            expect(optionIds).toEqual([
+                'copy-address',
+                'show-address',
+                'view-passphrase',
+                'auth-address',
+                'undo-rekey',
+                'rekey-to-ledger',
+                'rekey-to-standard',
+                'rename-account',
+                'toggle-notifications',
+                'remove-account',
+            ])
+        })
+
+        it('hides passphrase and rekey for a hardware account', () => {
             const { result } = renderHook(() =>
                 useAccountOptions(hardwareAccount, mockOnClose),
             )
 
             const optionIds = result.current.options.map(o => o.id)
-            expect(optionIds).not.toContain('view-passphrase')
-        })
-
-        it('shows auth address for rekeyed accounts', () => {
-            const { result } = renderHook(() =>
-                useAccountOptions(rekeyedAccount, mockOnClose),
-            )
-
-            const optionIds = result.current.options.map(o => o.id)
-            expect(optionIds).toContain('auth-address')
-        })
-
-        it('does not show auth address for non-rekeyed accounts', () => {
-            const { result } = renderHook(() =>
-                useAccountOptions(algo25Account, mockOnClose),
-            )
-
-            const optionIds = result.current.options.map(o => o.id)
-            expect(optionIds).not.toContain('auth-address')
-        })
-
-        it('shows undo rekey for rekeyed accounts that can sign', () => {
-            const { result } = renderHook(() =>
-                useAccountOptions(rekeyedAccount, mockOnClose),
-            )
-
-            const optionIds = result.current.options.map(o => o.id)
-            expect(optionIds).toContain('undo-rekey')
-        })
-
-        it('shows rekey options for accounts that can sign', () => {
-            const { result } = renderHook(() =>
-                useAccountOptions(algo25Account, mockOnClose),
-            )
-
-            const optionIds = result.current.options.map(o => o.id)
-            expect(optionIds).toContain('rekey-to-ledger')
-            expect(optionIds).toContain('rekey-to-standard')
-        })
-
-        it('does not show rekey options for watch accounts', () => {
-            const { result } = renderHook(() =>
-                useAccountOptions(watchAccount, mockOnClose),
-            )
-
-            const optionIds = result.current.options.map(o => o.id)
-            expect(optionIds).not.toContain('rekey-to-ledger')
-            expect(optionIds).not.toContain('rekey-to-standard')
+            expect(optionIds).toEqual([
+                'copy-address',
+                'show-address',
+                'rename-account',
+                'toggle-notifications',
+                'remove-account',
+            ])
         })
     })
 
@@ -217,6 +198,19 @@ describe('useAccountOptions', () => {
 
             expect(mockCopyToClipboard).toHaveBeenCalledWith('ALGO25ADDRESS')
             expect(mockOnClose).toHaveBeenCalled()
+        })
+
+        it('includes truncated address as subtitle on copy-address option', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions(algo25Account, mockOnClose),
+            )
+
+            const copyOption = result.current.options.find(
+                o => o.id === 'copy-address',
+            )
+
+            expect(copyOption?.subtitle).toBeDefined()
+            expect(copyOption?.subtitle).toBe('ALGO25ADDRESS')
         })
 
         it('toggles notifications from enabled to disabled', () => {
@@ -371,7 +365,7 @@ describe('useAccountOptions', () => {
             expect(notifOption?.title).toBe(
                 'account_options.mute_notifications',
             )
-            expect(notifOption?.icon).toBe('bell-off')
+            expect(notifOption?.icon).toBe('bell')
         })
 
         it('shows notification unmute label when notifications are disabled', () => {

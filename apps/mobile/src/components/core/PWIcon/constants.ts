@@ -60,6 +60,7 @@ import PersonMenuIcon from '@assets/icons/person-menu.svg'
 import PersonIcon from '@assets/icons/person.svg'
 import PlusWithBorderIcon from '@assets/icons/plus-with-border.svg'
 import PlusIcon from '@assets/icons/plus.svg'
+import QrIcon from '@assets/icons/qr.svg'
 import QuestionMarkIcon from '@assets/icons/question-mark.svg'
 import RekeyIcon from '@assets/icons/rekey.svg'
 import ReloadIcon from '@assets/icons/reload.svg'
@@ -84,6 +85,7 @@ import WalletIcon from '@assets/icons/wallet.svg'
 import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 import SuspiciousAssetIcon from '@assets/icons/assets/suspicious.svg'
 import TrustedAssetIcon from '@assets/icons/assets/trusted.svg'
+import UnlinkIcon from '@assets/icons/unlink.svg'
 import UndoIcon from '@assets/icons/undo.svg'
 import DarkAlgo25AccountIcon from '@assets/icons/accounts/dark/algo25-account.svg'
 import DarkHdWalletAccountIcon from '@assets/icons/accounts/dark/hdwallet-account.svg'
@@ -168,6 +170,7 @@ export const ICON_LIBRARY = {
     'person-key': PersonKeyIcon,
     'plus-with-border': PlusWithBorderIcon,
     plus: PlusIcon,
+    qr: QrIcon,
     'question-mark': QuestionMarkIcon,
     rekey: RekeyIcon,
     reload: ReloadIcon,
@@ -185,6 +188,7 @@ export const ICON_LIBRARY = {
     thumb_up: ThumbUpIcon,
     trash: TrashIcon,
     tree: TreeIcon,
+    unlink: UnlinkIcon,
     undo: UndoIcon,
     'wallet-add': WalletAddIcon,
     'wallet-connect': WalletConnectIcon,

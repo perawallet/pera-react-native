@@ -21,6 +21,7 @@ import {
     useUpdateAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useNotificationPreferences } from '@perawallet/wallet-core-notifications'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -32,6 +33,7 @@ export type AccountOption = {
     id: string
     icon: IconName
     title: string
+    subtitle?: string
     onPress: () => void
     variant?: 'default' | 'destructive'
 }
@@ -185,13 +187,14 @@ export const useAccountOptions = (
             id: 'copy-address',
             icon: 'copy',
             title: t('account_options.copy_address'),
+            subtitle: truncateAlgorandAddress(account.address),
             onPress: handleCopyAddress,
         })
 
         items.push({
-            id: 'show-qr',
-            icon: 'inflow',
-            title: t('account_options.show_qr'),
+            id: 'show-address',
+            icon: 'qr',
+            title: t('account_options.show_address'),
             onPress: handleShowQr,
         })
 
@@ -247,7 +250,7 @@ export const useAccountOptions = (
 
         items.push({
             id: 'toggle-notifications',
-            icon: notificationsEnabled ? 'bell-off' : 'bell',
+            icon: 'bell',
             title: notificationsEnabled
                 ? t('account_options.mute_notifications')
                 : t('account_options.unmute_notifications'),
@@ -256,7 +259,7 @@ export const useAccountOptions = (
 
         items.push({
             id: 'remove-account',
-            icon: 'trash',
+            icon: 'unlink',
             title: t('account_options.remove_account'),
             onPress: handleOpenRemoveConfirm,
             variant: 'destructive',

@@ -14,15 +14,13 @@ import {
     PWBottomSheet,
     PWDivider,
     PWIcon,
-    PWListItem,
     PWText,
-    PWToolbar,
+    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import { useAccountOptions } from './useAccountOptions'
+import { AccountOption, useAccountOptions } from './useAccountOptions'
 import { RenameAccountBottomSheet } from './RenameAccountBottomSheet'
 import { RemoveAccountConfirmBottomSheet } from './RemoveAccountConfirmBottomSheet'
 import { ReceiveFundsBottomSheet } from '@modules/transactions/components/ReceiveFunds/ReceiveFundsBottomSheet/ReceiveFundsBottomSheet'
@@ -33,12 +31,50 @@ export type AccountOptionsBottomSheetProps = {
     account: WalletAccount
 }
 
+const OptionRow = ({
+    option,
+    styles,
+}: {
+    option: AccountOption
+    styles: ReturnType<typeof useStyles>
+}) => {
+    const isDestructive = option.variant === 'destructive'
+
+    return (
+        <PWTouchableOpacity
+            style={styles.optionRow}
+            onPress={option.onPress}
+        >
+            <PWIcon
+                name={option.icon}
+                variant={isDestructive ? 'error' : 'primary'}
+            />
+            <PWView style={styles.optionTextContainer}>
+                <PWText
+                    variant='h4'
+                    style={isDestructive ? styles.dangerText : undefined}
+                >
+                    {option.title}
+                </PWText>
+                {option.subtitle ? (
+                    <PWText
+                        variant='body'
+                        style={styles.optionSubtitle}
+                        numberOfLines={1}
+                    >
+                        {option.subtitle}
+                    </PWText>
+                ) : null}
+            </PWView>
+        </PWTouchableOpacity>
+    )
+}
+
 export const AccountOptionsBottomSheet = ({
     isVisible,
     onClose,
     account,
 }: AccountOptionsBottomSheetProps) => {
-    const { t } = useLanguage()
     const styles = useStyles()
     const {
         options,
@@ -55,7 +91,7 @@ export const AccountOptionsBottomSheet = ({
     const generalOptions = options.filter(
         o =>
             o.id === 'copy-address' ||
-            o.id === 'show-qr' ||
+            o.id === 'show-address' ||
             o.id === 'view-passphrase' ||
             o.id === 'auth-address',
     )
@@ -81,28 +117,12 @@ export const AccountOptionsBottomSheet = ({
                 onBackdropPress={onClose}
                 innerContainerStyle={styles.container}
             >
-                <PWToolbar
-                    right={
-                        <PWIcon
-                            name='cross'
-                            onPress={onClose}
-                        />
-                    }
-                />
-                <PWText
-                    variant='h3'
-                    style={styles.title}
-                >
-                    {t('account_options.title')}
-                </PWText>
-
                 <PWView>
                     {generalOptions.map(option => (
-                        <PWListItem
+                        <OptionRow
                             key={option.id}
-                            icon={option.icon}
-                            title={option.title}
-                            onPress={option.onPress}
+                            option={option}
+                            styles={styles}
                         />
                     ))}
                 </PWView>
@@ -112,11 +132,10 @@ export const AccountOptionsBottomSheet = ({
                         <PWDivider style={styles.divider} />
                         <PWView>
                             {rekeyOptions.map(option => (
-                                <PWListItem
+                                <OptionRow
                                     key={option.id}
-                                    icon={option.icon}
-                                    title={option.title}
-                                    onPress={option.onPress}
+                                    option={option}
+                                    styles={styles}
                                 />
                             ))}
                         </PWView>
@@ -126,11 +145,10 @@ export const AccountOptionsBottomSheet = ({
                 <PWDivider style={styles.divider} />
                 <PWView>
                     {managementOptions.map(option => (
-                        <PWListItem
+                        <OptionRow
                             key={option.id}
-                            icon={option.icon}
-                            title={option.title}
-                            onPress={option.onPress}
+                            option={option}
+                            styles={styles}
                         />
                     ))}
                 </PWView>

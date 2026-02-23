@@ -100,8 +100,8 @@
     "account_options": {
         "title": "Account Options",
         "copy_address": "Copy Address",
-        "show_qr": "Show QR",
-        "view_passphrase": "View Passphrase",
+        "show_address": "Show Address",
+        "view_passphrase": "View root wallet passphrase",
         "auth_address": "Auth Account Address",
         "undo_rekey": "Undo Rekey",
         "rekey_to_ledger": "Rekey to Ledger Account",
