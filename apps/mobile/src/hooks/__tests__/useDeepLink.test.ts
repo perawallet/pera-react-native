@@ -59,7 +59,7 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => ({
 }))
 
 vi.mock('../useToast', () => ({
-    useToast: vi.fn(() => ({ showToast: vi.fn() })),
+    useToast: vi.fn(() => ({ showToast: vi.fn(), errorToast: vi.fn() })),
 }))
 
 vi.mock('react-native', () => ({
