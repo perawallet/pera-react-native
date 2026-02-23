@@ -62,7 +62,10 @@ export const createAccountsStore = (storage: KeyValueStorageService) =>
                     } else if (
                         !accounts.find(a => a.address === currentSelected)
                     ) {
-                        set({ selectedAccountAddress: null })
+                        set({
+                            selectedAccountAddress:
+                                accounts.at(0)?.address ?? null,
+                        })
                     }
                 },
                 setSelectedAccountAddress: (address: string | null) => {

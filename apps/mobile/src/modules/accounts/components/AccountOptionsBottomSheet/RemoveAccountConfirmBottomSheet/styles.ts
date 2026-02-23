@@ -14,7 +14,7 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        paddingBottom: theme.spacing.xxl,
+        paddingVertical: theme.spacing.xxl,
         alignItems: 'center',
     },
     icon: {

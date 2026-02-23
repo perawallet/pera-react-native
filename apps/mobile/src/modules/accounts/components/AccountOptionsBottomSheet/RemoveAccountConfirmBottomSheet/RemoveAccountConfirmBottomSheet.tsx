@@ -52,7 +52,7 @@ export const RemoveAccountConfirmBottomSheet = ({
             </PWText>
             <PWView style={styles.actions}>
                 <PWButton
-                    variant='primary'
+                    variant='destructive'
                     title={t('account_options.remove_confirm')}
                     onPress={onConfirm}
                     paddingStyle='dense'

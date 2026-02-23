@@ -38,6 +38,12 @@ export type AccountOption = {
     variant?: 'default' | 'destructive'
 }
 
+export type UseAccountOptionsParams = {
+    account: WalletAccount
+    onClose: () => void
+    onShowAddress: () => void
+}
+
 export type UseAccountOptionsResult = {
     options: AccountOption[]
     isRenameVisible: boolean
@@ -46,14 +52,13 @@ export type UseAccountOptionsResult = {
     isRemoveConfirmVisible: boolean
     handleCloseRemoveConfirm: () => void
     handleConfirmRemove: () => void
-    isQrVisible: boolean
-    handleCloseQr: () => void
 }
 
-export const useAccountOptions = (
-    account: WalletAccount,
-    onClose: () => void,
-): UseAccountOptionsResult => {
+export const useAccountOptions = ({
+    account,
+    onClose,
+    onShowAddress,
+}: UseAccountOptionsParams): UseAccountOptionsResult => {
     const { t } = useLanguage()
     const { showToast } = useToast()
     const { copyToClipboard } = useClipboard()
@@ -74,12 +79,6 @@ export const useAccountOptions = (
         close: handleCloseRemoveConfirm,
     } = useModalState()
 
-    const {
-        isOpen: isQrVisible,
-        open: openQr,
-        close: handleCloseQr,
-    } = useModalState()
-
     const notImplemented = useCallback(() => {
         showToast({
             title: t('common.not_implemented.title'),
@@ -94,9 +93,10 @@ export const useAccountOptions = (
         onClose()
     }, [copyToClipboard, account.address, onClose])
 
-    const handleShowQr = useCallback(() => {
-        openQr()
-    }, [openQr])
+    const handleShowAddress = useCallback(() => {
+        onClose()
+        onShowAddress()
+    }, [onClose, onShowAddress])
 
     const handleViewPassphrase = useCallback(() => {
         notImplemented()
@@ -122,8 +122,9 @@ export const useAccountOptions = (
     }, [notImplemented])
 
     const handleOpenRename = useCallback(() => {
+        onClose()
         openRename()
-    }, [openRename])
+    }, [onClose, openRename])
 
     const handleToggleNotifications = useCallback(() => {
         const currentlyEnabled = isAccountEnabled(account.address)
@@ -146,21 +147,21 @@ export const useAccountOptions = (
     ])
 
     const handleOpenRemoveConfirm = useCallback(() => {
+        onClose()
         openRemoveConfirm()
-    }, [openRemoveConfirm])
+    }, [onClose, openRemoveConfirm])
 
     const handleRename = useCallback(
         (newName: string) => {
             updateAccount({ ...account, name: newName })
             handleCloseRename()
-            onClose()
             showToast({
                 title: t('account_options.rename_account'),
                 body: '',
                 type: 'success',
             })
         },
-        [updateAccount, account, handleCloseRename, onClose, showToast, t],
+        [updateAccount, account, handleCloseRename, showToast, t],
     )
 
     const handleConfirmRemove = useCallback(() => {
@@ -168,15 +169,8 @@ export const useAccountOptions = (
             removeAccountById(account.id)
         }
         handleCloseRemoveConfirm()
-        onClose()
         navigation.navigate('TabBar', { screen: 'Home' })
-    }, [
-        account.id,
-        removeAccountById,
-        handleCloseRemoveConfirm,
-        onClose,
-        navigation,
-    ])
+    }, [account.id, removeAccountById, handleCloseRemoveConfirm, navigation])
 
     const notificationsEnabled = isAccountEnabled(account.address)
 
@@ -195,7 +189,7 @@ export const useAccountOptions = (
             id: 'show-address',
             icon: 'qr',
             title: t('account_options.show_address'),
-            onPress: handleShowQr,
+            onPress: handleShowAddress,
         })
 
         if (isAlgo25Account(account) || isHDWalletAccount(account)) {
@@ -271,7 +265,7 @@ export const useAccountOptions = (
         account,
         notificationsEnabled,
         handleCopyAddress,
-        handleShowQr,
+        handleShowAddress,
         handleViewPassphrase,
         handleAuthAddress,
         handleUndoRekey,
@@ -290,7 +284,5 @@ export const useAccountOptions = (
         isRemoveConfirmVisible,
         handleCloseRemoveConfirm,
         handleConfirmRemove,
-        isQrVisible,
-        handleCloseQr,
     }
 }

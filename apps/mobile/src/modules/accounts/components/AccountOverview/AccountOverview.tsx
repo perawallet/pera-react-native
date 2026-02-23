@@ -95,6 +95,7 @@ export const AccountOverview = ({
             <AccountOptionsBottomSheet
                 isVisible={isAccountOptionsVisible}
                 onClose={handleCloseAccountOptions}
+                onShowAddress={handleReceive}
                 account={account}
             />
         </PWView>

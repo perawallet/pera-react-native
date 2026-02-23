@@ -23,11 +23,11 @@ import { useStyles } from './styles'
 import { AccountOption, useAccountOptions } from './useAccountOptions'
 import { RenameAccountBottomSheet } from './RenameAccountBottomSheet'
 import { RemoveAccountConfirmBottomSheet } from './RemoveAccountConfirmBottomSheet'
-import { ReceiveFundsBottomSheet } from '@modules/transactions/components/ReceiveFunds/ReceiveFundsBottomSheet/ReceiveFundsBottomSheet'
 
 export type AccountOptionsBottomSheetProps = {
     isVisible: boolean
     onClose: () => void
+    onShowAddress: () => void
     account: WalletAccount
 }
 
@@ -73,6 +73,7 @@ const OptionRow = ({
 export const AccountOptionsBottomSheet = ({
     isVisible,
     onClose,
+    onShowAddress,
     account,
 }: AccountOptionsBottomSheetProps) => {
     const styles = useStyles()
@@ -84,9 +85,7 @@ export const AccountOptionsBottomSheet = ({
         isRemoveConfirmVisible,
         handleCloseRemoveConfirm,
         handleConfirmRemove,
-        isQrVisible,
-        handleCloseQr,
-    } = useAccountOptions(account, onClose)
+    } = useAccountOptions({ account, onClose, onShowAddress })
 
     const generalOptions = options.filter(
         o =>
@@ -165,12 +164,6 @@ export const AccountOptionsBottomSheet = ({
                 isVisible={isRemoveConfirmVisible}
                 onClose={handleCloseRemoveConfirm}
                 onConfirm={handleConfirmRemove}
-            />
-
-            <ReceiveFundsBottomSheet
-                isVisible={isQrVisible}
-                onClose={handleCloseQr}
-                account={account}
             />
         </>
     )

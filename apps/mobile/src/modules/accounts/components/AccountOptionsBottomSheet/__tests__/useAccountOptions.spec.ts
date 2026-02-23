@@ -77,6 +77,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 
 describe('useAccountOptions', () => {
     const mockOnClose = vi.fn()
+    const mockOnShowAddress = vi.fn()
 
     const algo25Account: WalletAccount = {
         id: 'acc-1',
@@ -115,7 +116,11 @@ describe('useAccountOptions', () => {
     describe('option visibility', () => {
         it('shows all options for a regular algo25 account', () => {
             const { result } = renderHook(() =>
-                useAccountOptions(algo25Account, mockOnClose),
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
             )
 
             const optionIds = result.current.options.map(o => o.id)
@@ -133,7 +138,11 @@ describe('useAccountOptions', () => {
 
         it('shows only applicable options for a watch account', () => {
             const { result } = renderHook(() =>
-                useAccountOptions(watchAccount, mockOnClose),
+                useAccountOptions({
+                    account: watchAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
             )
 
             const optionIds = result.current.options.map(o => o.id)
@@ -148,7 +157,11 @@ describe('useAccountOptions', () => {
 
         it('shows all options including rekey for a rekeyed account', () => {
             const { result } = renderHook(() =>
-                useAccountOptions(rekeyedAccount, mockOnClose),
+                useAccountOptions({
+                    account: rekeyedAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
             )
 
             const optionIds = result.current.options.map(o => o.id)
@@ -168,7 +181,11 @@ describe('useAccountOptions', () => {
 
         it('hides passphrase and rekey for a hardware account', () => {
             const { result } = renderHook(() =>
-                useAccountOptions(hardwareAccount, mockOnClose),
+                useAccountOptions({
+                    account: hardwareAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
             )
 
             const optionIds = result.current.options.map(o => o.id)
@@ -185,7 +202,11 @@ describe('useAccountOptions', () => {
     describe('handlers', () => {
         it('copies address and closes when copy address is pressed', () => {
             const { result } = renderHook(() =>
-                useAccountOptions(algo25Account, mockOnClose),
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
             )
 
             const copyOption = result.current.options.find(
@@ -202,7 +223,11 @@ describe('useAccountOptions', () => {
 
         it('includes truncated address as subtitle on copy-address option', () => {
             const { result } = renderHook(() =>
-                useAccountOptions(algo25Account, mockOnClose),
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
             )
 
             const copyOption = result.current.options.find(
@@ -217,7 +242,11 @@ describe('useAccountOptions', () => {
             mockIsAccountEnabled.mockReturnValue(true)
 
             const { result } = renderHook(() =>
-                useAccountOptions(algo25Account, mockOnClose),
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
             )
 
             const notifOption = result.current.options.find(
@@ -244,7 +273,11 @@ describe('useAccountOptions', () => {
             mockIsAccountEnabled.mockReturnValue(false)
 
             const { result } = renderHook(() =>
-                useAccountOptions(algo25Account, mockOnClose),
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
             )
 
             const notifOption = result.current.options.find(
@@ -266,9 +299,13 @@ describe('useAccountOptions', () => {
             })
         })
 
-        it('opens rename sheet when rename is pressed', () => {
+        it('closes options sheet and opens rename sheet when rename is pressed', () => {
             const { result } = renderHook(() =>
-                useAccountOptions(algo25Account, mockOnClose),
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
             )
 
             expect(result.current.isRenameVisible).toBe(false)
@@ -281,12 +318,17 @@ describe('useAccountOptions', () => {
                 renameOption?.onPress()
             })
 
+            expect(mockOnClose).toHaveBeenCalled()
             expect(result.current.isRenameVisible).toBe(true)
         })
 
-        it('renames account and closes when handleRename is called', () => {
+        it('renames account and closes rename sheet when handleRename is called', () => {
             const { result } = renderHook(() =>
-                useAccountOptions(algo25Account, mockOnClose),
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
             )
 
             act(() => {
@@ -297,12 +339,16 @@ describe('useAccountOptions', () => {
                 ...algo25Account,
                 name: 'New Name',
             })
-            expect(mockOnClose).toHaveBeenCalled()
+            expect(result.current.isRenameVisible).toBe(false)
         })
 
-        it('opens remove confirm when remove is pressed', () => {
+        it('closes options sheet and opens remove confirm when remove is pressed', () => {
             const { result } = renderHook(() =>
-                useAccountOptions(algo25Account, mockOnClose),
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
             )
 
             expect(result.current.isRemoveConfirmVisible).toBe(false)
@@ -315,12 +361,17 @@ describe('useAccountOptions', () => {
                 removeOption?.onPress()
             })
 
+            expect(mockOnClose).toHaveBeenCalled()
             expect(result.current.isRemoveConfirmVisible).toBe(true)
         })
 
         it('removes account and navigates home when confirm remove is called', () => {
             const { result } = renderHook(() =>
-                useAccountOptions(algo25Account, mockOnClose),
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
             )
 
             act(() => {
@@ -331,12 +382,15 @@ describe('useAccountOptions', () => {
             expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
                 screen: 'Home',
             })
-            expect(mockOnClose).toHaveBeenCalled()
         })
 
         it('copies rekey auth address when auth address option is pressed', () => {
             const { result } = renderHook(() =>
-                useAccountOptions(rekeyedAccount, mockOnClose),
+                useAccountOptions({
+                    account: rekeyedAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
             )
 
             const authOption = result.current.options.find(
@@ -355,7 +409,11 @@ describe('useAccountOptions', () => {
             mockIsAccountEnabled.mockReturnValue(true)
 
             const { result } = renderHook(() =>
-                useAccountOptions(algo25Account, mockOnClose),
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
             )
 
             const notifOption = result.current.options.find(
@@ -372,7 +430,11 @@ describe('useAccountOptions', () => {
             mockIsAccountEnabled.mockReturnValue(false)
 
             const { result } = renderHook(() =>
-                useAccountOptions(algo25Account, mockOnClose),
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
             )
 
             const notifOption = result.current.options.find(
