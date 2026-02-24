@@ -13,7 +13,7 @@
 import { useState } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { createPWTabNavigator } from '@components/core/PWTabView/PWTabView'
-import { PWIcon, PWTouchableOpacity } from '@components/core'
+import { PWTouchableIcon } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { RootStackParamList } from '@routes/types'
 import { NotificationsScreen } from '../NotificationsScreen'
@@ -29,12 +29,6 @@ export type MessagesTabsParamsList = {
 
 const Tab = createPWTabNavigator<MessagesTabsParamsList>()
 
-const SettingsIcon = ({ onPress }: { onPress: () => void }) => (
-    <PWTouchableOpacity onPress={onPress}>
-        <PWIcon name='sliders' />
-    </PWTouchableOpacity>
-)
-
 export const MessagesScreen = () => {
     const { t } = useLanguage()
     const route = useRoute<RouteProp<RootStackParamList, 'Messages'>>()
@@ -47,7 +41,10 @@ export const MessagesScreen = () => {
     useNavigationHeader({
         right:
             activeTab === 'Notifications' ? (
-                <SettingsIcon onPress={settingsModal.open} />
+                <PWTouchableIcon
+                    name='sliders'
+                    onPress={settingsModal.open}
+                />
             ) : null,
     })
 

@@ -219,6 +219,10 @@
             "invalid_transaction": "Invalid transaction: {{cause}}",
             "signing": "Failed to sign the transaction: {{cause}}"
         },
+        "deeplink": {
+            "invalid_url_title": "Invalid Link",
+            "invalid_url_body": "The detected link does not appear to be valid. Please check the link and try again."
+        },
         "general": {
             "title": "An error occurred",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."

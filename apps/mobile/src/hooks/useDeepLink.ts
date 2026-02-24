@@ -27,6 +27,7 @@ import { Linking } from 'react-native'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 import { ALGORAND_SCHEME } from './deeplink/arc90-parser'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { useLanguage } from './useLanguage'
 
 type LinkSource = 'qr' | 'deeplink'
 
@@ -37,6 +38,7 @@ export const useDeepLink = () => {
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { pushWebView } = useWebView()
     const { connect } = useWalletConnect()
+    const { t } = useLanguage()
 
     const isValidDeepLink = (url: string): boolean => {
         if (isValidAlgorandAddress(url)) {
@@ -74,8 +76,8 @@ export const useDeepLink = () => {
 
         if (!parsedData) {
             errorToast(
-                'Invalid Link',
-                'The detected link does not appear to be valid',
+                t('errors.deeplink.invalid_url_title'),
+                t('errors.deeplink.invalid_url_body'),
             )
             onError?.()
             return
@@ -101,7 +103,6 @@ export const useDeepLink = () => {
                     break
 
                 case DeeplinkType.ADD_WATCH_ACCOUNT:
-                    // TODO: Navigate to watch account addition screen
                     infoToast(
                         'Add Watch Account',
                         'Watch account screen not implemented yet',
@@ -109,7 +110,6 @@ export const useDeepLink = () => {
                     break
 
                 case DeeplinkType.RECEIVER_ACCOUNT_SELECTION:
-                    // TODO: Navigate to receiver account selection
                     infoToast(
                         'Receiver Selection',
                         'Receiver account selection not implemented yet',
@@ -117,7 +117,6 @@ export const useDeepLink = () => {
                     break
 
                 case DeeplinkType.ADDRESS_ACTIONS:
-                    // TODO: Show address actions modal/screen
                     infoToast(
                         'Address Actions',
                         'Address actions screen not implemented yet',
