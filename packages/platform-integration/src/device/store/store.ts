@@ -73,7 +73,7 @@ export const createDeviceStore = (storage: KeyValueStorageService) =>
                     set({ pushToken: token })
                 },
                 setDeviceID: (network: Network, id: string | null) => {
-                    const deviceIDs = get().deviceIDs
+                    const deviceIDs = new Map(get().deviceIDs)
                     deviceIDs.set(network, id)
                     set({ deviceIDs })
                 },
@@ -91,7 +91,7 @@ export const createDeviceStore = (storage: KeyValueStorageService) =>
                 storage: createJSONStorage(() => storage),
                 version: 1,
                 partialize: state => ({
-                    deviceIDs: state.deviceIDs,
+                    deviceIDs: Object.fromEntries(state.deviceIDs),
                     pushToken: state.pushToken,
                     network: state.network,
                 }),
