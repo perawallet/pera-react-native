@@ -52,12 +52,25 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
+const { capturedHoldingsProps, capturedMarketsProps } = vi.hoisted(() => ({
+    capturedHoldingsProps: { current: {} as Record<string, unknown> },
+    capturedMarketsProps: { current: {} as Record<string, unknown> },
+}))
+
 vi.mock('@modules/assets/components/holdings/AssetHoldings', () => ({
-    AssetHoldings: () => <div data-testid='AssetHoldings' />,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    AssetHoldings: (props: any) => {
+        capturedHoldingsProps.current = props
+        return <div data-testid='AssetHoldings' />
+    },
 }))
 
 vi.mock('@modules/assets/components/market/AssetMarkets', () => ({
-    AssetMarkets: () => <div data-testid='AssetMarkets' />,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    AssetMarkets: (props: any) => {
+        capturedMarketsProps.current = props
+        return <div data-testid='AssetMarkets' />
+    },
 }))
 
 vi.mock('@components/core/PWTabView/PWTabView', () => ({
@@ -112,5 +125,43 @@ describe('AssetDetailsScreen', () => {
         )
 
         expect(screen.getByTestId('AssetHoldings')).toBeTruthy()
+    })
+
+    it('passes onSwipeEnabledChange to AssetHoldings', () => {
+        render(
+            <AssetDetailsScreen
+                route={
+                    {
+                        params: { assetId: '123' },
+                    } as AssetDetailsScreenProps['route']
+                }
+                navigation={
+                    {} as unknown as AssetDetailsScreenProps['navigation']
+                }
+            />,
+        )
+
+        expect(capturedHoldingsProps.current.onSwipeEnabledChange).toBeTypeOf(
+            'function',
+        )
+    })
+
+    it('passes onSwipeEnabledChange to AssetMarkets', () => {
+        render(
+            <AssetDetailsScreen
+                route={
+                    {
+                        params: { assetId: '123' },
+                    } as AssetDetailsScreenProps['route']
+                }
+                navigation={
+                    {} as unknown as AssetDetailsScreenProps['navigation']
+                }
+            />,
+        )
+
+        expect(capturedMarketsProps.current.onSwipeEnabledChange).toBeTypeOf(
+            'function',
+        )
     })
 })

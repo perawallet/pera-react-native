@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useEffect } from 'react'
 import { ScrollView } from 'react-native'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
@@ -53,6 +54,7 @@ import { UserPreferences } from '@constants/user-preferences'
 
 export type AssetMarketsProps = {
     asset: PeraAsset
+    onSwipeEnabledChange?: (enabled: boolean) => void
 }
 
 const Loading = () => {
@@ -66,11 +68,19 @@ const Loading = () => {
     )
 }
 
-export const AssetMarkets = ({ asset }: AssetMarketsProps) => {
+export const AssetMarkets = ({
+    asset,
+    onSwipeEnabledChange,
+}: AssetMarketsProps) => {
     const styles = useStyles()
     const { preferredCurrency, usdToPreferred } = useCurrency()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AssetPriceHistoryItem>()
+
+    useEffect(() => {
+        onSwipeEnabledChange?.(!selectedPoint)
+    }, [selectedPoint, onSwipeEnabledChange])
+
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { getPreference, setPreference } = usePreferences()
     const { t } = useLanguage()

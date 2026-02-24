@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useState } from 'react'
 import { createPWTabNavigator } from '@components/core/PWTabView/PWTabView'
 import { useLanguage } from '@hooks/useLanguage'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -35,9 +36,10 @@ export const AccountTabNavigator = ({
     chartVisible,
 }: AccountTabNavigatorProps) => {
     const { t } = useLanguage()
+    const [swipeEnabled, setSwipeEnabled] = useState(true)
 
     return (
-        <Tab.Navigator>
+        <Tab.Navigator screenOptions={{ swipeEnabled }}>
             <Tab.Screen
                 name='Overview'
                 options={{
@@ -48,6 +50,7 @@ export const AccountTabNavigator = ({
                     <AccountOverview
                         account={account}
                         chartVisible={chartVisible}
+                        onSwipeEnabledChange={setSwipeEnabled}
                     />
                 )}
             </Tab.Screen>

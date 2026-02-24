@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useEffect } from 'react'
 import { AccountOverviewHeader } from './AccountOverviewHeader'
 import { SendFundsBottomSheet } from '@modules/transactions/components/send-funds/SendFundsBottomSheet/SendFundsBottomSheet'
 import { ReceiveFundsBottomSheet } from '@modules/transactions/components/receive-funds/ReceiveFundsBottomSheet'
@@ -23,11 +24,13 @@ import { AccountOptionsBottomSheet } from '../AccountOptionsBottomSheet'
 export type AccountOverviewProps = {
     account: WalletAccount
     chartVisible: boolean
+    onSwipeEnabledChange?: (enabled: boolean) => void
 }
 
 export const AccountOverview = ({
     account,
     chartVisible,
+    onSwipeEnabledChange,
 }: AccountOverviewProps) => {
     const styles = useStyles()
     const {
@@ -53,6 +56,10 @@ export const AccountOverview = ({
         isAccountOptionsVisible,
         handleCloseAccountOptions,
     } = useAccountOverview(account)
+
+    useEffect(() => {
+        onSwipeEnabledChange?.(scrollingEnabled)
+    }, [scrollingEnabled, onSwipeEnabledChange])
 
     return (
         <PWView style={styles.container}>
