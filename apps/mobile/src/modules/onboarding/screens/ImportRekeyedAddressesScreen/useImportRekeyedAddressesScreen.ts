@@ -107,8 +107,10 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
 
         setIsImporting(true)
         deferToNextCycle(() => {
-            const { setAccounts } = useAccountsStore.getState()
+            const { setAccounts, setSelectedAccountAddress } =
+                useAccountsStore.getState()
             setAccounts([...allAccounts, ...accountsToAdd])
+            setSelectedAccountAddress(accountsToAdd[0].address)
             setIsOnboarding(false)
             setIsImporting(false)
         })

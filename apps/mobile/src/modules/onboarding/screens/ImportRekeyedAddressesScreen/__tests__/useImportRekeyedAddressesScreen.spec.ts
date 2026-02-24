@@ -67,6 +67,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 describe('useImportRekeyedAddressesScreen', () => {
     const mockSetIsOnboarding = vi.fn()
     const mockSetAccounts = vi.fn()
+    const mockSetSelectedAccountAddress = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
@@ -80,6 +81,7 @@ describe('useImportRekeyedAddressesScreen', () => {
 
         vi.mocked(useAccountsStore.getState).mockReturnValue({
             setAccounts: mockSetAccounts,
+            setSelectedAccountAddress: mockSetSelectedAccountAddress,
         } as unknown as ReturnType<typeof useAccountsStore.getState>)
 
         vi.mocked(useIsOnboarding).mockReturnValue({
@@ -150,6 +152,7 @@ describe('useImportRekeyedAddressesScreen', () => {
         })
 
         expect(mockSetAccounts).toHaveBeenCalledWith(MOCK_ACCOUNTS)
+        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith('ACC1')
         expect(mockSetIsOnboarding).toHaveBeenCalledWith(false)
     })
 
@@ -164,6 +167,7 @@ describe('useImportRekeyedAddressesScreen', () => {
 
         expect(mockSetIsOnboarding).toHaveBeenCalledWith(false)
         expect(mockSetAccounts).not.toHaveBeenCalled()
+        expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
         expect(result.current.isImporting).toBe(false)
     })
 

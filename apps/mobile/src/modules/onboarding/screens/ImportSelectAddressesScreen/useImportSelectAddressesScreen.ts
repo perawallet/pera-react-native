@@ -107,8 +107,10 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
             )
 
             if (accountsToAdd.length > 0) {
-                const { setAccounts } = useAccountsStore.getState()
+                const { setAccounts, setSelectedAccountAddress } =
+                    useAccountsStore.getState()
                 setAccounts([...allAccounts, ...accountsToAdd])
+                setSelectedAccountAddress(accountsToAdd[0].address)
             }
 
             try {
