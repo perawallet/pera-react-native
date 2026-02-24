@@ -424,13 +424,6 @@ vi.mock('@components/core', () => {
                 children,
             ),
         PWDropdownItem: createMockComponent('PWDropdownItem'),
-        PWTouchableIcon: ({ name, onPress, testID, ...props }: any) =>
-            React.createElement('button', {
-                ...props,
-                onClick: onPress,
-                role: 'button',
-                'data-testid': testID || `touchable-icon-${name}`,
-            }),
     }
 })
 
