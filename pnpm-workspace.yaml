@@ -5,7 +5,7 @@ packages:
 catalog:
   '@algorandfoundation/algokit-transact': ^10.0.0-alpha.29
   '@algorandfoundation/algokit-utils': ^10.0.0-alpha.29
-  '@algorandfoundation/xhd-wallet-api': 1.0.3
+  '@algorandfoundation/xhd-wallet-api': ^2.0.0-canary.1
   '@babel/runtime': ^7.28.4
   '@kubb/cli': ^4.5.8
   '@kubb/core': ^4.5.8
@@ -64,9 +64,6 @@ overrides:
   nanoid@<3.3.8: '>=3.3.8'
   node-fetch@<2.6.7: '>=2.6.7'
   ws@>=7.0.0 <7.5.10: 7.5.10
-
-patchedDependencies:
-  libsodium-wrappers-sumo@0.7.16: patches/libsodium-wrappers-sumo@0.7.16.patch
 
 supportedArchitectures:
   cpu: [x64, arm64]
