@@ -30,6 +30,10 @@ vi.mock('@modules/webview/hooks', () => ({
     usePeraWebviewInterface: vi.fn(() => ({
         handleMessage: vi.fn(),
     })),
+    useWebViewStore: vi.fn(selector => {
+        const state = { removeWebView: vi.fn() }
+        return selector ? selector(state) : state
+    }),
 }))
 
 describe('PWWebView', () => {

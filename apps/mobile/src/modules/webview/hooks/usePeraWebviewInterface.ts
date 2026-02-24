@@ -32,7 +32,7 @@ import { useWebView } from '@modules/webview/hooks'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     PeraSignedTransaction,
-    PeraTransaction,
+    useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import {
     type ArbitraryDataSignRequest,
@@ -48,7 +48,12 @@ import {
     sendErrorToWebview,
     sendMessageToWebview,
 } from './handlers'
-import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
+import {
+    decodeFromBase64,
+    encodeToBase64,
+    generateOrderedUniqueId,
+    logger,
+} from '@perawallet/wallet-core-shared'
 import { getAccountType } from './utils'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 
@@ -77,6 +82,8 @@ export const usePeraWebviewInterface = (
     const { pushWebView: pushWebViewContext } = useWebView()
     const { addSignRequest } = useSigningRequest()
     const { connect } = useWalletConnect()
+    const { decodeTransactions, encodeSignedTransaction } =
+        useTransactionEncoder()
 
     const hadRequiredParams = useCallback(
         (requiredParams: string[], message: WebviewMessage) => {
@@ -262,9 +269,12 @@ export const usePeraWebviewInterface = (
                 if (!hadRequiredParams(['txns', 'metadata'], message)) {
                     return
                 }
-                const txns = message.params![
-                    'txns'
-                ] as (PeraTransaction | null)[]
+                const rawTxns = message.params!['txns'] as (string | null)[]
+                const txns = decodeTransactions(
+                    rawTxns
+                        .filter((t): t is string => t !== null)
+                        .map(t => decodeFromBase64(t)),
+                )
                 const metadata = message.params![
                     'metadata'
                 ] as SignRequestSource
@@ -281,7 +291,11 @@ export const usePeraWebviewInterface = (
                             sendMessageToWebview(
                                 message.id,
                                 {
-                                    signedTxs: signed,
+                                    signedTxs: signed.map(s =>
+                                        encodeToBase64(
+                                            encodeSignedTransaction(s),
+                                        ),
+                                    ),
                                 },
                                 webview,
                             )
@@ -441,7 +455,6 @@ export const usePeraWebviewInterface = (
             if (!Array.isArray(message)) {
                 message = [message]
             }
-            console.log('MESSAGE: ', { message })
             logger.debug('Received webview interface call', { message })
             message.forEach(message => {
                 switch (message.method) {
