@@ -12,7 +12,6 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
-import { Keyboard } from 'react-native'
 import { render, screen, fireEvent } from '@test-utils/render'
 import { RenameAccountBottomSheet } from '../RenameAccountBottomSheet'
 
@@ -20,6 +19,10 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
         t: (key: string) => key,
     }),
+}))
+
+vi.mock('@hooks/useKeyboardHeight', () => ({
+    useKeyboardHeight: () => ({ keyboardHeight: 0, isKeyboardVisible: false }),
 }))
 
 describe('RenameAccountBottomSheet', () => {
@@ -32,9 +35,6 @@ describe('RenameAccountBottomSheet', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        vi.mocked(Keyboard.addListener).mockReturnValue({
-            remove: vi.fn(),
-        })
     })
 
     it('does not render content when isVisible is false', () => {
