@@ -75,7 +75,7 @@ export const SelectDestinationScreen = () => {
             // Check if receiver is a local account we can sign for
             const localAccount = accounts.find(a => a.address === address)
             const isLocalSignable =
-                localAccount && canSignWithAccount(localAccount)
+                localAccount && canSignWithAccount(localAccount, accounts)
 
             if (isLocalSignable) {
                 // Express send: local account, we handle opt-in + transfer

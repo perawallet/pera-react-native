@@ -10,14 +10,15 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
-import { useAccountsStore } from '../store'
-import { canSignWithAccount } from '../utils'
+export type UseKeyboardHeightResult = {
+    keyboardHeight: number
+    isKeyboardVisible: boolean
+}
 
-export const useSigningAccounts = () => {
-    const accounts = useAccountsStore(state => state.accounts)
-    return useMemo(
-        () => accounts.filter(account => canSignWithAccount(account, accounts)),
-        [accounts],
-    )
+/**
+ * Fallback implementation for TypeScript resolution.
+ * At runtime, Metro resolves to useKeyboardHeight.ios.ts or useKeyboardHeight.android.ts.
+ */
+export function useKeyboardHeight(): UseKeyboardHeightResult {
+    return { keyboardHeight: 0, isKeyboardVisible: false }
 }

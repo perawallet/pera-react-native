@@ -18,6 +18,7 @@ import { useStyles } from './styles'
 import { useAccountOverview } from './useAccountOverview'
 import { PWView } from '@components/core'
 import { AccountAssetList } from '../AccountAssetList'
+import { AccountOptionsBottomSheet } from '../AccountOptionsBottomSheet'
 
 export type AccountOverviewProps = {
     account: WalletAccount
@@ -49,6 +50,8 @@ export const AccountOverview = ({
         handleReceive,
         isReceiveFundsVisible,
         handleCloseReceiveFunds,
+        isAccountOptionsVisible,
+        handleCloseAccountOptions,
     } = useAccountOverview(account)
 
     return (
@@ -86,6 +89,13 @@ export const AccountOverview = ({
             <ReceiveFundsBottomSheet
                 isVisible={isReceiveFundsVisible}
                 onClose={handleCloseReceiveFunds}
+                account={account}
+            />
+
+            <AccountOptionsBottomSheet
+                isVisible={isAccountOptionsVisible}
+                onClose={handleCloseAccountOptions}
+                onShowAddress={handleReceive}
                 account={account}
             />
         </PWView>

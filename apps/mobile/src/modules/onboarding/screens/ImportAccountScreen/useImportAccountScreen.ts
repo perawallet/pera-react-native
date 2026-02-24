@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
-import { Keyboard, Platform, Linking } from 'react-native'
+import { useState, useCallback, useMemo, useRef } from 'react'
+import { Linking } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 
 import { RouteProp, useRoute } from '@react-navigation/native'
@@ -29,6 +29,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 import { useModalState } from '@hooks/useModalState'
+import { useKeyboardHeight } from '@hooks/useKeyboardHeight'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { DeeplinkType } from '@hooks/deeplink/types'
 
@@ -75,29 +76,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const { t } = useLanguage()
     const { parseDeeplink } = useDeepLink()
 
-    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false)
-    const [keyboardHeight, setKeyboardHeight] = useState(0)
-
-    useEffect(() => {
-        const showEvent =
-            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
-        const hideEvent =
-            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'
-
-        const showSubscription = Keyboard.addListener(showEvent, e => {
-            setIsKeyboardVisible(true)
-            setKeyboardHeight(e.endCoordinates.height)
-        })
-        const hideSubscription = Keyboard.addListener(hideEvent, () => {
-            setIsKeyboardVisible(false)
-            setKeyboardHeight(0)
-        })
-
-        return () => {
-            showSubscription.remove()
-            hideSubscription.remove()
-        }
-    }, [])
+    const { isKeyboardVisible, keyboardHeight } = useKeyboardHeight()
 
     const mnemonicLength = MNEMONIC_LENGTH_MAP[accountType]
 

@@ -1712,6 +1712,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         isMultisigAccount: vi.fn(
             (account: any) => account?.type === 'multisig',
         ),
+        hasSigningKeys: vi.fn((account: any) => !!account?.keyPairId),
         canSignWithAccount: vi.fn((account: any) => !!account?.keyPairId),
         useAccountAssetBalanceQuery: vi.fn(() => ({
             data: null,

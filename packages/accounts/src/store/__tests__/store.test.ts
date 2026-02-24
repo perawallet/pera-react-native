@@ -98,7 +98,7 @@ describe('services/accounts/store', () => {
         expect(useAccountsStore.getState().getSelectedAccount()).toBeNull()
     })
 
-    test('setAccounts resets selectedAccountIndex if selected account is removed', () => {
+    test('setAccounts selects first remaining account if selected account is removed', () => {
         const a1: WalletAccount = {
             id: '1',
             name: 'Alice',
@@ -120,9 +120,26 @@ describe('services/accounts/store', () => {
             a1.address,
         )
 
-        // Setting new accounts without the selected one should reset selection
+        // Setting new accounts without the selected one should fall back to first remaining
         useAccountsStore.getState().setAccounts([a2])
-        // It should reset to null because the selected account is gone
+        expect(useAccountsStore.getState().selectedAccountAddress).toBe(
+            a2.address,
+        )
+    })
+
+    test('setAccounts resets to null when all accounts are removed', () => {
+        const a1: WalletAccount = {
+            id: '1',
+            name: 'Alice',
+            type: 'algo25',
+            address: 'ALICE-ADDR',
+            canSign: true,
+        }
+
+        useAccountsStore.getState().setAccounts([a1])
+        useAccountsStore.getState().setSelectedAccountAddress(a1.address)
+
+        useAccountsStore.getState().setAccounts([])
         expect(useAccountsStore.getState().selectedAccountAddress).toBeNull()
     })
 
