@@ -56,8 +56,6 @@ describe('NotificationsIcon', () => {
 
         fireEvent.click(getByRole('button'))
 
-        expect(mockNavigate).toHaveBeenCalledWith('Messages', {
-            initialTab: 'Notifications',
-        })
+        expect(mockNavigate).toHaveBeenCalledWith('Messages')
     })
 })

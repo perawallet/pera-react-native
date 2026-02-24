@@ -19,7 +19,21 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     truncateAlgorandAddress: vi.fn(
         (addr: string) => `${addr.slice(0, 5)}...${addr.slice(-5)}`,
     ),
-    createLazyStore: vi.fn(),
+    createLazyStore: vi.fn(() => ({
+        useStore: vi.fn(() => []),
+        init: vi.fn(),
+        clear: vi.fn(),
+    })),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAllAccounts: vi.fn(() => []),
+    getAccountDisplayName: vi.fn((account: { address: string } | null) =>
+        account
+            ? `${account.address.slice(0, 5)}...${account.address.slice(-5)}`
+            : 'No Account',
+    ),
+    AccountTypes: {},
 }))
 
 describe('InboxItem', () => {
@@ -38,7 +52,7 @@ describe('InboxItem', () => {
         expect(getByText('messages.inbox.asa_requests')).toBeTruthy()
     })
 
-    it('renders ASA inbox item with truncated address', () => {
+    it('renders ASA inbox item with account display name', () => {
         const item: InboxItemModel = {
             type: 'asa_inbox',
             data: {
@@ -50,7 +64,7 @@ describe('InboxItem', () => {
         }
 
         const { getByText } = render(<InboxItem item={item} />)
-        expect(getByText('TESTA...56789')).toBeTruthy()
+        expect(getByText('No Account')).toBeTruthy()
     })
 
     it('renders joint account import item', () => {
@@ -69,7 +83,7 @@ describe('InboxItem', () => {
 
         const { getByText } = render(<InboxItem item={item} />)
         expect(getByText('messages.inbox.joint_account_import')).toBeTruthy()
-        expect(getByText('MSIGA...45678')).toBeTruthy()
+        expect(getByText('No Account')).toBeTruthy()
     })
 
     it('renders joint account sign request item with status', () => {

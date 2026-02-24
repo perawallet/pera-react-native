@@ -11,11 +11,17 @@
  */
 
 import { PWIcon, PWText, PWView } from '@components/core'
-import type { ASAInbox, InboxItem as InboxItemModel } from '@perawallet/wallet-core-notifications'
+import type {
+    ASAInbox,
+    InboxItem as InboxItemModel,
+} from '@perawallet/wallet-core-notifications'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useCallback } from 'react'
-import { getAccountDisplayName, useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    getAccountDisplayName,
+    useAllAccounts,
+} from '@perawallet/wallet-core-accounts'
 import { AccountIcon } from '@modules/accounts/components/AccountIcon'
 
 export type InboxItemProps = {
@@ -27,22 +33,66 @@ export const InboxItem = ({ item }: InboxItemProps) => {
     const { t } = useLanguage()
     const accounts = useAllAccounts()
 
-    const getIcon = useCallback((item: InboxItemModel) => {
-        if (item.type === 'asa_inbox') {
-            const account = accounts.find(acc => acc.address === (item.data as ASAInbox).address)
-            if (!account) return <PWIcon name='inbox' variant='secondary' size='lg' />
-            return <AccountIcon account={account} size='lg' />
-        }
-        if (item.type === 'joint_account_import') return <PWView style={styles.iconContainer}><PWIcon name='transactions/group' variant='secondary' size='lg' /></PWView>
-        if (item.type === 'joint_account_sign') return <PWView style={styles.iconContainer}><PWIcon name='edit-pen' variant='secondary' size='lg' /></PWView>
-        return <PWView style={styles.iconContainer}><PWIcon name='inbox' variant='secondary' size='lg' /></PWView>
-    }, [accounts])
+    const getIcon = useCallback(
+        (item: InboxItemModel) => {
+            if (item.type === 'asa_inbox') {
+                const account = accounts.find(
+                    acc => acc.address === (item.data as ASAInbox).address,
+                )
+                if (!account)
+                    return (
+                        <PWIcon
+                            name='inbox'
+                            variant='secondary'
+                            size='lg'
+                        />
+                    )
+                return (
+                    <AccountIcon
+                        account={account}
+                        size='lg'
+                    />
+                )
+            }
+            if (item.type === 'joint_account_import')
+                return (
+                    <PWView style={styles.iconContainer}>
+                        <PWIcon
+                            name='transactions/group'
+                            variant='secondary'
+                            size='lg'
+                        />
+                    </PWView>
+                )
+            if (item.type === 'joint_account_sign')
+                return (
+                    <PWView style={styles.iconContainer}>
+                        <PWIcon
+                            name='edit-pen'
+                            variant='secondary'
+                            size='lg'
+                        />
+                    </PWView>
+                )
+            return (
+                <PWView style={styles.iconContainer}>
+                    <PWIcon
+                        name='inbox'
+                        variant='secondary'
+                        size='lg'
+                    />
+                </PWView>
+            )
+        },
+        [accounts],
+    )
 
     const renderContent = () => {
-
         switch (item.type) {
             case 'asa_inbox': {
-                const account = accounts.find(acc => acc.address === item.data.address)
+                const account = accounts.find(
+                    acc => acc.address === item.data.address,
+                )
                 return (
                     <>
                         <PWText style={styles.titleText}>
@@ -60,7 +110,9 @@ export const InboxItem = ({ item }: InboxItemProps) => {
                 )
             }
             case 'joint_account_import': {
-                const account = accounts.find(acc => acc.address === item.data.address)
+                const account = accounts.find(
+                    acc => acc.address === item.data.address,
+                )
                 return (
                     <>
                         <PWText style={styles.titleText}>
