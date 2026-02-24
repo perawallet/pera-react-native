@@ -496,16 +496,15 @@ describe('usePeraWebviewInterface', () => {
             usePeraWebviewInterface(mockWebview, true),
         )
 
-        const data = { data: 'AQID', message: 'Sign this' }
+        const data = { data: 'AQID', message: 'Sign this', signer: 'addr1' }
         const metadata = { name: 'Test dApp' }
-        const address = 'addr1'
 
         await act(async () => {
             result.current.handleMessage({
                 id: '14',
                 jsonrpc: '2.0',
                 method: 'requestDataSigning',
-                params: { data, metadata, address },
+                params: { data, metadata },
             })
         })
 
@@ -514,7 +513,7 @@ describe('usePeraWebviewInterface', () => {
                 id: 'test-id',
                 type: 'arbitrary-data',
                 transport: 'callback',
-                data: [{ data: 'AQID', message: 'Sign this' }],
+                data: [{ data: 'AQID', message: 'Sign this', signer: 'addr1' }],
                 sourceMetadata: metadata,
             }),
         )
@@ -543,16 +542,15 @@ describe('usePeraWebviewInterface', () => {
             usePeraWebviewInterface(mockWebview, true),
         )
 
-        const data = { data: 'AQID' }
+        const data = { data: 'AQID', signer: 'addr1' }
         const metadata = { name: 'Test dApp' }
-        const address = 'addr1'
 
         await act(async () => {
             result.current.handleMessage({
                 id: '14-error',
                 jsonrpc: '2.0',
                 method: 'requestDataSigning',
-                params: { data, metadata, address },
+                params: { data, metadata },
             })
         })
 
@@ -829,7 +827,11 @@ describe('usePeraWebviewInterface', () => {
                     jsonrpc: '2.0',
                     method: 'requestDataSigning',
                     params: {
-                        data: { data: 'AQID', message: 'Sign this' },
+                        data: {
+                            data: 'AQID',
+                            message: 'Sign this',
+                            signer: 'addr1',
+                        },
                         metadata: { name: 'Test' },
                     },
                 })

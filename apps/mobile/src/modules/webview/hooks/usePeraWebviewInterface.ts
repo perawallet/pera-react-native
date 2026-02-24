@@ -341,9 +341,22 @@ export const usePeraWebviewInterface = (
                 if (!hadRequiredParams(['data', 'metadata'], message)) {
                     return
                 }
-                const dataMessage = message.params![
+                const data = message.params![
                     'data'
-                ] as PeraArbitraryDataMessage
+                ] as Partial<PeraArbitraryDataMessage>
+                const signer = data.signer
+
+                if (!signer) {
+                    sendErrorToWebview(
+                        message.id,
+                        JsonRpcErrorCode.InvalidParams,
+                        t('errors.webview.invalid_params', {
+                            params: 'signer',
+                        }),
+                        webview,
+                    )
+                    return
+                }
                 const metadata = message.params![
                     'metadata'
                 ] as SignRequestSource
@@ -354,13 +367,13 @@ export const usePeraWebviewInterface = (
                         transport: 'callback',
                         transportId: message.id,
                         sourceMetadata: metadata,
-                        data: [dataMessage],
+                        data: [data],
                         approve: async (
                             signed: PeraArbitraryDataSignResult[],
                         ) => {
                             sendMessageToWebview(
                                 message.id,
-                                signed.map(s => s.signature),
+                                signed.map(s => encodeToBase64(s.signature)),
                                 webview,
                             )
                         },
