@@ -29,7 +29,7 @@ describe('PWTouchableIcon', () => {
         const onPress = vi.fn()
         render(
             <PWTouchableIcon
-                name='close'
+                name='cross'
                 onPress={onPress}
             />,
         )
@@ -63,7 +63,7 @@ describe('PWTouchableIcon', () => {
         const onPress = vi.fn()
         render(
             <PWTouchableIcon
-                name='close'
+                name='cross'
                 onPress={onPress}
             />,
         )

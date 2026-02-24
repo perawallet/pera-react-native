@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWIcon, PWIconProps } from '../PWIcon'
+import { PWIcon, type PWIconProps } from '../PWIcon'
 import { PWTouchableOpacity } from '../PWTouchableOpacity'
 
 export type PWTouchableIconProps = {
