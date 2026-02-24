@@ -10,12 +10,4 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-kms'
-
-export * from './hooks/useKMS'
-export * from './models'
-export * from './errors'
-export * from './constants'
-export { WORDLIST as MNEMONIC_WORDLIST } from './crypto/wordlist'
-
-export { registerKeyManagerStore } from './store'
+export const KMS_DOMAIN = 'pera.accounts'

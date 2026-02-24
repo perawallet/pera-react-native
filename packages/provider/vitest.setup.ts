@@ -10,10 +10,9 @@
  limitations under the License
  */
 
-import { Store } from '@tanstack/react-store'
-import type { KeyStoreState } from '@algorandfoundation/keystore'
+import { vi } from 'vitest'
 
-export const keyStore = new Store<KeyStoreState>({
-    keys: [],
-    status: 'idle',
-})
+// Minimal setup for provider package
+vi.mock('@perawallet/react-native-keystore', () => ({
+    WithKeyStore: vi.fn(),
+}))

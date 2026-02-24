@@ -14,7 +14,13 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import nacl from 'tweetnacl'
 import { useAlgo25 } from '../useAlgo25'
-import { KeyType, KeyPair, StoredKeyMaterial } from '../../models'
+import {
+    AccessControlPermission,
+    KeyType,
+    KeyPair,
+    StoredKeyMaterial,
+} from '../../models'
+import { KMS_DOMAIN } from '../../constants'
 import { KeyManagementError } from '../../errors'
 
 const mockSeedFromMnemonic = vi.fn()
@@ -90,11 +96,25 @@ describe('useAlgo25', () => {
             expect(keyResult!.id).toBe('my-key')
             expect(keyResult!.publicKey).toBe('ALGO25ADDR')
             expect(keyResult!.type).toBe(KeyType.Algo25Key)
+            expect(keyResult!.privateDataStorageKey).toBe('my-key')
+            expect(keyResult!.acl).toEqual([
+                {
+                    domains: [KMS_DOMAIN],
+                    permissions: [AccessControlPermission.ReadPrivate],
+                },
+            ])
             expect(mockSaveKey).toHaveBeenCalledWith(
                 expect.objectContaining({
                     id: 'my-key',
                     publicKey: 'ALGO25ADDR',
                     type: KeyType.Algo25Key,
+                    privateDataStorageKey: 'my-key',
+                    acl: [
+                        {
+                            domains: [KMS_DOMAIN],
+                            permissions: [AccessControlPermission.ReadPrivate],
+                        },
+                    ],
                 }),
                 expect.objectContaining({
                     seed: expect.any(String),
@@ -154,7 +174,7 @@ describe('useAlgo25', () => {
             id: 'algo-key-1',
             publicKey: 'ADDR',
             type: KeyType.Algo25Key,
-            privateDataStorageKey: 'algo25-key-ADDR',
+            privateDataStorageKey: 'algo-key-1',
         }
 
         beforeEach(() => {

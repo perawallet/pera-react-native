@@ -29,6 +29,47 @@ export const storage: MMKV = new MMKV({
 })
 
 /**
+ * Rehydrates all keys from storage into the reactive store.
+ * Private keys are decrypted, removed, and then the metadata is stored.
+ * @param store - The reactive store instance
+ */
+export async function rehydrate({
+    store,
+}: {
+    store: Store<KeyStoreState>
+}): Promise<void> {
+    setStatus({ store, status: 'commiting' })
+    const masterKey = await getMasterKey()
+
+    try {
+        const keys: KeyData[] = []
+        for (const keyId of storage.getAllKeys()) {
+            const encryptedData = storage.getString(keyId)
+            if (encryptedData) {
+                try {
+                    const keyData = decode(
+                        decryptData(masterKey, encryptedData),
+                    ) as KeyData
+                    // remove the private keys from keyData before adding to state
+                    const { privateKey, publicKey, ...keyState } = keyData
+                    keys.push({ ...keyState } as KeyData)
+                } catch (e) {
+                    console.error(`Failed to decrypt key ${keyId}`, e)
+                }
+            }
+        }
+
+        store.setState(state => ({
+            ...state,
+            keys,
+        }))
+    } finally {
+        clearBuffer(masterKey)
+        setStatus({ store, status: 'idle' })
+    }
+}
+
+/**
  * Fetches a secret from persistent storage and decrypts it using the master key.
  * @param params - The fetch parameters.
  * @param params.keyId - The ID of the key to fetch

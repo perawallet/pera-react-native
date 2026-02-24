@@ -10,29 +10,27 @@
  limitations under the License
  */
 
-import { useKeyManagerStore } from '../store'
 import { KeyPair, KeyType } from '../models'
 import type { HDDerivationParams } from '../models/session'
 import { InvalidKeyError, KeyNotFoundError } from '../errors'
 import { useAlgo25 } from './useAlgo25'
 import { useHDWallet } from './useHDWallet'
-import { useKMSService } from './useKMSServices'
+import { useWallet } from '@perawallet/wallet-core-provider'
+import { keyToKeyPair } from '../utils'
 
 export const useKMS = () => {
-    const keys = useKeyManagerStore(state => state.keys)
-    const getKey = useKeyManagerStore(state => state.getKey)
+    const provider = useWallet()
     const { withAlgo25Session, createAlgo25Key } = useAlgo25()
     const { withHDSession, createHDWalletKey } = useHDWallet()
-    const { deleteKey } = useKMSService()
 
     const getKeyOrThrow = (keyId: string): KeyPair => {
-        const key = getKey(keyId)
+        const key = provider.keys.find(key => key.id === keyId)
 
         if (!key) {
             throw new KeyNotFoundError(keyId)
         }
 
-        return key
+        return keyToKeyPair(key)
     }
 
     const signTransactionsWithKey = async (
@@ -96,10 +94,13 @@ export const useKMS = () => {
     }
 
     return {
-        keys,
-        deleteKey,
-        getKey,
-        getKeyOrThrow,
+        keys: provider.keys,
+        deleteKey: provider.key.store.remove,
+        getKey: (keyId: string) => {
+            const key = provider.keys.find(key => key.id === keyId)
+            return key ? keyToKeyPair(key) : null
+        },
+        getKeyOrThrow: getKeyOrThrow,
         withAlgo25Session,
         createAlgo25Key,
         withHDSession,

@@ -11,7 +11,7 @@
  */
 
 import type { HDDerivationParams, KMSHDWalletSession } from '../models/session'
-import { KeyPair, KeyType } from '../models'
+import { AccessControlPermission, KeyPair, KeyType } from '../models'
 import {
     getEntropyFromMasterKey,
     getSeedFromMasterKey,
@@ -30,6 +30,7 @@ import {
     signData,
     signTransaction,
 } from '../crypto/hdwallet-utils'
+import { KMS_DOMAIN } from '../constants'
 
 export const useHDWallet = () => {
     const { saveKey, executeWithKey } = useKMSService()
@@ -44,6 +45,13 @@ export const useHDWallet = () => {
         const keyPair = makeKeyPair({
             id: keyId,
             type: KeyType.HDWalletRootKey,
+            privateDataStorageKey: keyId,
+            acl: [
+                {
+                    domains: [KMS_DOMAIN],
+                    permissions: [AccessControlPermission.ReadPrivate],
+                },
+            ],
         })
 
         const savedKey = await saveKey(keyPair, {

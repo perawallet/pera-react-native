@@ -11,9 +11,9 @@
  */
 
 import { useStore } from '@tanstack/react-store'
-import { AlgorandContext } from '@providers/ReactNativeProvider.tsx'
-import { useContext, useEffect } from 'react'
-import { keyStore } from '../stores'
+import { useContext } from 'react'
+import { AlgorandContext } from './AlgorandProvider'
+import { keyStore } from './stores/keyStore'
 
 export function useWallet() {
     const provider = useContext(AlgorandContext)
@@ -21,20 +21,6 @@ export function useWallet() {
 
     const keys = useStore(keyStore, s => s.keys)
     const status = useStore(keyStore, s => s.status)
-
-    // Add hooks or other state that you wish to provide to the context
-
-    useEffect(() => {
-        const onBeforeGenerate = (result: unknown) => {
-            // eslint-disable-next-line
-            console.log('(useWallet.ts) keystore-before-generate', result)
-        }
-        provider.key.store.hooks.before('generate', onBeforeGenerate)
-
-        return () => {
-            provider.key.store.hooks.remove('generate', onBeforeGenerate)
-        }
-    }, [])
 
     return {
         ...provider,

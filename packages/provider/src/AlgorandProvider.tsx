@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import { createContext, type Key, type ReactNode } from 'react'
+import { createContext, type Key } from 'react'
 import { type Extension, Provider } from '@algorandfoundation/wallet-provider'
 import { WithKeyStore } from '@perawallet/react-native-keystore'
 import type { KeyStoreAPI } from '@algorandfoundation/keystore'
 import type { HookCollection } from 'before-after-hook'
 
 export class AlgorandProvider extends Provider<readonly Extension[]> {
-    static EXTENSIONS = [WithKeyStore]
+    static EXTENSIONS = [WithKeyStore] as const
 
     keys!: Key[]
     key!: {
@@ -26,18 +26,3 @@ export class AlgorandProvider extends Provider<readonly Extension[]> {
 }
 
 export const AlgorandContext = createContext<null | AlgorandProvider>(null)
-
-export interface ReactNativeProviderProps {
-    children: ReactNode
-    provider: AlgorandProvider
-}
-export function ReactNativeProvider({
-    children,
-    provider,
-}: ReactNativeProviderProps) {
-    return (
-        <AlgorandContext.Provider value={provider}>
-            {children}
-        </AlgorandContext.Provider>
-    )
-}

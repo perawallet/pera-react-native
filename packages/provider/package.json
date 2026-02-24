@@ -1,5 +1,5 @@
 {
-  "name": "@perawallet/wallet-core-kms",
+  "name": "@perawallet/wallet-core-provider",
   "version": "0.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,29 +17,24 @@
     "lint": "eslint src"
   },
   "dependencies": {
-    "@algorandfoundation/algokit-utils": "catalog:",
-    "@algorandfoundation/xhd-wallet-api": "catalog:",
+    "@algorandfoundation/wallet-provider": "catalog:",
     "@algorandfoundation/keystore": "catalog:",
-    "@babel/runtime": "catalog:",
-    "@perawallet/wallet-core-platform-integration": "workspace:*",
+    "@perawallet/react-native-keystore": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
-    "@perawallet/wallet-core-provider": "workspace:*",
-    "bip39": "catalog:",
+    "@tanstack/react-store": "catalog:",
+    "before-after-hook": "^4.0.0",
     "react": "catalog:",
-    "tweetnacl": "^1.0.3",
-    "zustand": "catalog:"
+    "react-dom": "catalog:"
   },
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@testing-library/react": "catalog:",
     "@types/react": "catalog:",
-    "globals": "catalog:",
-    "react-dom": "catalog:",
-    "reflect-metadata": "catalog:",
     "typescript": "catalog:",
-    "typescript-eslint": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "^4.5.4",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "globals": "catalog:",
+    "typescript-eslint": "catalog:"
   }
 }

@@ -35,9 +35,7 @@ import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import { useIsOnboarding } from '@modules/onboarding/hooks'
 
 import { RootStackParamList } from './types'
-import { useWallet } from '@hooks/useWallet'
-import { useEffect } from 'react'
-import { randomBytes } from 'react-native-quick-crypto'
+import { useWallet } from '@perawallet/wallet-core-provider'
 import { fullScreenLayout } from '@layouts/index'
 export type { RootStackParamList } from './types'
 
@@ -49,29 +47,10 @@ export const MainRoutes = () => {
     const navTheme = getNavigationTheme(isDarkMode ? 'dark' : 'light')
     const hasAccounts = useHasAccounts()
     const { isOnboarding } = useIsOnboarding()
-    const { key, keys } = useWallet()
+    const { keys } = useWallet()
     // eslint-disable-next-line
     console.log(`(index.tsx) Keys: ${keys.length}`)
 
-    useEffect(() => {
-        if (keys.length === 0) {
-            key.store
-                .import(
-                    {
-                        type: 'hd-seed',
-                        algorithm: 'raw',
-                        extractable: true,
-                        keyUsages: ['deriveKey', 'deriveBits'],
-                        privateKey: new Uint8Array(randomBytes(64)),
-                    },
-                    'bytes',
-                )
-                .then(k => {
-                    // eslint-disable-next-line
-                    console.log('(index.tsx) Imported seed', k)
-                })
-        }
-    }, [])
     return (
         <NavigationContainer theme={navTheme}>
             {

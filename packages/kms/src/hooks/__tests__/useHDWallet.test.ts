@@ -13,7 +13,13 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useHDWallet } from '../useHDWallet'
-import { KeyType, KeyPair, StoredKeyMaterial } from '../../models'
+import {
+    AccessControlPermission,
+    KeyType,
+    KeyPair,
+    StoredKeyMaterial,
+} from '../../models'
+import { KMS_DOMAIN } from '../../constants'
 import { InvalidKeyError } from '../../errors'
 
 const mockKeyGen = vi.fn()
@@ -114,6 +120,13 @@ describe('useHDWallet', () => {
             expect(keyResult!.id).toBe('hd-1')
             expect(keyResult!.publicKey).toBe('')
             expect(keyResult!.type).toBe(KeyType.HDWalletRootKey)
+            expect(keyResult!.privateDataStorageKey).toBe('hd-1')
+            expect(keyResult!.acl).toEqual([
+                {
+                    domains: [KMS_DOMAIN],
+                    permissions: [AccessControlPermission.ReadPrivate],
+                },
+            ])
         })
 
         test('saves key with seed and entropy', async () => {

@@ -17,7 +17,12 @@ import {
     ERROR_I18N_KEYS,
     generateOrderedUniqueId,
 } from '@perawallet/wallet-core-shared'
-import { KeyPair, KeyType, KMSAlgo25Session } from '../models'
+import {
+    AccessControlPermission,
+    KeyPair,
+    KeyType,
+    KMSAlgo25Session,
+} from '../models'
 import {
     seedFromMnemonic,
     mnemonicFromSeed,
@@ -25,6 +30,7 @@ import {
 import { encodeAddress } from '@algorandfoundation/algokit-utils'
 import { useKMSService } from './useKMSServices'
 import { getSeedFromMasterKey, makeKeyPair } from '../utils'
+import { KMS_DOMAIN } from '../constants'
 
 export const useAlgo25 = () => {
     const { saveKey, executeWithKey } = useKMSService()
@@ -63,6 +69,13 @@ export const useAlgo25 = () => {
             id: keyId,
             publicKey: encodeAddress(algo25PublicKeyFromSeed(secret)),
             type: KeyType.Algo25Key,
+            privateDataStorageKey: keyId,
+            acl: [
+                {
+                    domains: [KMS_DOMAIN],
+                    permissions: [AccessControlPermission.ReadPrivate],
+                },
+            ],
         })
 
         const savedKey = await saveKey(keyPair, {

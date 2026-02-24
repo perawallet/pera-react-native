@@ -10,12 +10,15 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-kms'
+import { Store } from '@tanstack/react-store'
+import type { KeyStoreState } from '@algorandfoundation/keystore'
+import { rehydrate } from '@perawallet/react-native-keystore'
 
-export * from './hooks/useKMS'
-export * from './models'
-export * from './errors'
-export * from './constants'
-export { WORDLIST as MNEMONIC_WORDLIST } from './crypto/wordlist'
+export const keyStore = new Store<KeyStoreState>({
+    keys: [],
+    status: 'idle',
+})
 
-export { registerKeyManagerStore } from './store'
+export function rehydrateKeyStore() {
+    return rehydrate({ store: keyStore })
+}

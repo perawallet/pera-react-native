@@ -10,12 +10,21 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-kms'
+import type { ReactNode } from 'react'
+import { AlgorandContext, AlgorandProvider } from './AlgorandProvider'
 
-export * from './hooks/useKMS'
-export * from './models'
-export * from './errors'
-export * from './constants'
-export { WORDLIST as MNEMONIC_WORDLIST } from './crypto/wordlist'
+export interface ReactNativeProviderProps {
+    children: ReactNode
+    provider: AlgorandProvider
+}
 
-export { registerKeyManagerStore } from './store'
+export function ReactNativeProvider({
+    children,
+    provider,
+}: ReactNativeProviderProps) {
+    return (
+        <AlgorandContext.Provider value={provider}>
+            {children}
+        </AlgorandContext.Provider>
+    )
+}

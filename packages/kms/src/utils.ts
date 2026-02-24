@@ -12,10 +12,13 @@
 
 import {
     decodeFromBase64,
+    encodeToBase64,
     ERROR_I18N_KEYS,
+    generateOrderedUniqueId,
 } from '@perawallet/wallet-core-shared'
-import { KeyPair, StoredKeyMaterial } from './models'
+import { KeyPair, KeyType, StoredKeyMaterial } from './models'
 import { KeyManagementError } from './errors'
+import { KeyData } from '@algorandfoundation/keystore'
 
 export const getSeedFromMasterKey = (
     storedKey: StoredKeyMaterial,
@@ -46,5 +49,60 @@ export const makeKeyPair = (source: Partial<KeyPair>): KeyPair => {
         createdAt: source.createdAt ?? new Date(),
         expiresAt: source.expiresAt,
         acl: source.acl ?? [],
+    }
+}
+
+export function getStorageLocation(
+    key: Pick<KeyPair, 'publicKey' | 'id' | 'type'>,
+) {
+    return key.id ?? generateOrderedUniqueId()
+}
+export function keyToKeyPair(key: KeyData): KeyPair {
+    if (typeof key.privateKey === 'undefined')
+        throw new Error('Must have private key')
+    switch (key.type) {
+        case 'seed':
+            return {
+                id: key.id,
+                publicKey: key.publicKey ? encodeToBase64(key.publicKey) : '',
+                privateDataStorageKey: key.id,
+                type: KeyType.Algo25Key,
+            }
+        case 'hd-root-key':
+            return {
+                id: key.id,
+                publicKey: key.publicKey ? encodeToBase64(key.publicKey) : '',
+                privateDataStorageKey: key.id,
+                type: KeyType.HDWalletRootKey,
+            }
+        default:
+            throw new Error('Unsupported key type for mapping')
+    }
+}
+
+export function keyPairToKey(
+    keyPair: KeyPair,
+    privateKey: Uint8Array<ArrayBufferLike>,
+): KeyData {
+    switch (keyPair.type) {
+        case KeyType.Algo25Key:
+            return {
+                id: keyPair.id as string,
+                type: 'seed',
+                algorithm: 'raw',
+                extractable: true,
+                privateKey,
+            }
+        case KeyType.HDWalletRootKey:
+        case KeyType.DeterministicP256Key:
+            return {
+                id: keyPair.id as string,
+                type: 'hd-root-key',
+                algorithm: 'raw',
+                extractable: true,
+                privateKey,
+            }
+        default:
+            throw new Error('Unsupported key pair type for mapping')
     }
 }
