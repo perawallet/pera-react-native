@@ -10,5 +10,11 @@
  limitations under the License
  */
 
-export { ReceiveFundsAccountSelectionView } from './ReceiveFundsAccountSelectionView'
-export type { ReceiveFundsAccountSelectionViewProps } from './ReceiveFundsAccountSelectionView'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        gap: theme.spacing.lg,
+    },
+    accountItem: {},
+}))

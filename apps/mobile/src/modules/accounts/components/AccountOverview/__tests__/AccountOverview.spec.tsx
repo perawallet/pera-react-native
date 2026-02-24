@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
 import { render, screen, fireEvent } from '@test-utils/render'
 import Decimal from 'decimal.js'
@@ -56,6 +56,14 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         portfolioUsdValue: new Decimal('200'),
         accountUsdValues: new Map(),
         isPending: false,
+    })),
+    useSelectedAccount: vi.fn(() => undefined),
+}))
+
+vi.mock('@modules/transactions/hooks', () => ({
+    useReceiveFunds: vi.fn(() => ({
+        setSelectedAccount: vi.fn(),
+        setCanSelectAccount: vi.fn(),
     })),
 }))
 
@@ -186,7 +194,7 @@ vi.mock(
     }),
 )
 vi.mock(
-    '@modules/transactions/components/ReceiveFunds/ReceiveFundsBottomSheet/ReceiveFundsBottomSheet',
+    '@modules/transactions/components/receive-funds/ReceiveFundsBottomSheet',
     () => ({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ReceiveFundsBottomSheet: ({ isVisible }: any) =>

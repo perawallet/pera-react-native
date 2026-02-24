@@ -10,8 +10,4 @@
  limitations under the License
  */
 
-export { useSendFundsStore, useSendFunds } from './send-funds/useSendFunds'
-export {
-    useReceiveFundsStore,
-    useReceiveFunds,
-} from './receive-funds/useReceiveFunds'
+export { QRViewScreen } from './QRViewScreen'

@@ -216,6 +216,16 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
                     onPress: handleAddAccount,
                     isDisabled: isCreatingAccount,
                 },
+                !hasHDWallet && {
+                    testID: 'add_account_create_universal_wallet_button',
+                    titleKey:
+                        'onboarding.add_account.create_universal_wallet_option_title',
+                    descriptionKey:
+                        'onboarding.add_account.create_universal_wallet_option_description',
+                    leftIcon: 'wallet-with-algo' as IconName,
+                    onPress: handleCreateUniversalWallet,
+                    isDisabled: isCreatingAccount,
+                },
                 {
                     testID: 'add_account_import_button',
                     titleKey:
@@ -226,40 +236,50 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
                     onPress: handleImportAccount,
                 },
             ].filter(Boolean) as AccountOption[],
-        [hasHDWallet, handleAddAccount, isCreatingAccount, handleImportAccount],
+        [
+            hasHDWallet,
+            handleAddAccount,
+            handleCreateUniversalWallet,
+            isCreatingAccount,
+            handleImportAccount,
+        ],
     )
 
     const otherOptions: AccountOption[] = useMemo(
-        () => [
-            {
-                testID: 'add_account_watch_button',
-                titleKey: 'onboarding.add_account.watch_address_option_title',
-                descriptionKey:
-                    'onboarding.add_account.watch_address_option_description',
-                leftIcon: 'eye' as IconName,
-                onPress: handleWatchAddress,
-            },
-            {
-                testID: 'add_account_create_universal_wallet_button',
-                titleKey:
-                    'onboarding.add_account.create_universal_wallet_option_title',
-                descriptionKey:
-                    'onboarding.add_account.create_universal_wallet_option_description',
-                leftIcon: 'wallet-with-algo' as IconName,
-                onPress: handleCreateUniversalWallet,
-                isDisabled: isCreatingAccount,
-            },
-            {
-                testID: 'add_account_create_algo25_button',
-                titleKey: 'onboarding.add_account.create_algo25_option_title',
-                descriptionKey:
-                    'onboarding.add_account.create_algo25_option_description',
-                leftIcon: 'wallet' as IconName,
-                onPress: handleCreateAlgo25,
-                isDisabled: isCreatingAccount,
-            },
-        ],
+        () =>
+            [
+                {
+                    testID: 'add_account_watch_button',
+                    titleKey:
+                        'onboarding.add_account.watch_address_option_title',
+                    descriptionKey:
+                        'onboarding.add_account.watch_address_option_description',
+                    leftIcon: 'eye' as IconName,
+                    onPress: handleWatchAddress,
+                },
+                hasHDWallet && {
+                    testID: 'add_account_create_universal_wallet_button',
+                    titleKey:
+                        'onboarding.add_account.create_universal_wallet_option_title',
+                    descriptionKey:
+                        'onboarding.add_account.create_universal_wallet_option_description',
+                    leftIcon: 'wallet-with-algo' as IconName,
+                    onPress: handleCreateUniversalWallet,
+                    isDisabled: isCreatingAccount,
+                },
+                {
+                    testID: 'add_account_create_algo25_button',
+                    titleKey:
+                        'onboarding.add_account.create_algo25_option_title',
+                    descriptionKey:
+                        'onboarding.add_account.create_algo25_option_description',
+                    leftIcon: 'wallet' as IconName,
+                    onPress: handleCreateAlgo25,
+                    isDisabled: isCreatingAccount,
+                },
+            ].filter(Boolean) as AccountOption[],
         [
+            hasHDWallet,
             handleWatchAddress,
             handleCreateUniversalWallet,
             handleCreateAlgo25,

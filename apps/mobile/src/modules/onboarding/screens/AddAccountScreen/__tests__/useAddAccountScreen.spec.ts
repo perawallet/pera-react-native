@@ -131,6 +131,30 @@ describe('useAddAccountScreen', () => {
         expect(addOption).toBeUndefined()
     })
 
+    it('mainOptions includes Create Universal Wallet at top when no HD wallet exists', () => {
+        mockUseAllAccounts.mockReturnValue([])
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        expect(result.current.mainOptions[0]?.testID).toBe(
+            'add_account_create_universal_wallet_button',
+        )
+        expect(result.current.mainOptions[1]?.testID).toBe(
+            'add_account_import_button',
+        )
+    })
+
+    it('mainOptions excludes Create Universal Wallet when HD wallet exists', () => {
+        mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const universalOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_create_universal_wallet_button',
+        )
+        expect(universalOption).toBeUndefined()
+    })
+
     it('mainOptions includes add account option when HD wallet exists', () => {
         mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
 
@@ -151,7 +175,9 @@ describe('useAddAccountScreen', () => {
         expect(importOption).toBeDefined()
     })
 
-    it('otherOptions includes watch, universal wallet, and algo25 options', () => {
+    it('otherOptions includes watch, universal wallet, and algo25 when HD wallet exists', () => {
+        mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
+
         const { result } = renderHook(() => useAddAccountScreen())
 
         expect(result.current.otherOptions).toHaveLength(3)
@@ -165,6 +191,29 @@ describe('useAddAccountScreen', () => {
                 o => o.testID === 'add_account_create_universal_wallet_button',
             ),
         ).toBeDefined()
+        expect(
+            result.current.otherOptions.find(
+                o => o.testID === 'add_account_create_algo25_button',
+            ),
+        ).toBeDefined()
+    })
+
+    it('otherOptions excludes universal wallet when no HD wallet exists', () => {
+        mockUseAllAccounts.mockReturnValue([])
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        expect(result.current.otherOptions).toHaveLength(2)
+        expect(
+            result.current.otherOptions.find(
+                o => o.testID === 'add_account_watch_button',
+            ),
+        ).toBeDefined()
+        expect(
+            result.current.otherOptions.find(
+                o => o.testID === 'add_account_create_universal_wallet_button',
+            ),
+        ).toBeUndefined()
         expect(
             result.current.otherOptions.find(
                 o => o.testID === 'add_account_create_algo25_button',
@@ -267,7 +316,7 @@ describe('useAddAccountScreen', () => {
 
         const { result } = renderHook(() => useAddAccountScreen())
 
-        const universalOption = result.current.otherOptions.find(
+        const universalOption = result.current.mainOptions.find(
             o => o.testID === 'add_account_create_universal_wallet_button',
         )!
 
@@ -291,7 +340,7 @@ describe('useAddAccountScreen', () => {
 
         const { result } = renderHook(() => useAddAccountScreen())
 
-        const universalOption = result.current.otherOptions.find(
+        const universalOption = result.current.mainOptions.find(
             o => o.testID === 'add_account_create_universal_wallet_button',
         )!
 
@@ -422,7 +471,7 @@ describe('useAddAccountScreen', () => {
 
         expect(result.current.isCreatingAccount).toBe(false)
 
-        const universalOption = result.current.otherOptions.find(
+        const universalOption = result.current.mainOptions.find(
             o => o.testID === 'add_account_create_universal_wallet_button',
         )!
 

@@ -20,7 +20,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { QRScannerView } from '@components/QRScannerView'
 import { useModalState } from '@hooks/useModalState'
 import { useLanguage } from '@hooks/useLanguage'
-import { ReceiveFundsBottomSheet } from '@modules/transactions/components/ReceiveFunds/ReceiveFundsBottomSheet/ReceiveFundsBottomSheet'
+import { ReceiveFundsBottomSheet } from '@modules/transactions/components/receive-funds/ReceiveFundsBottomSheet'
 
 export const MenuScreen = () => {
     const styles = useStyles()
