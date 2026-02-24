@@ -38,9 +38,9 @@ export const useAssetPricesQuery = (enabled?: boolean) => {
         return [
             ...chunks.map(chunk => {
                 return {
-                    queryKey: getAssetPricesQueryKey(chunk),
+                    queryKey: getAssetPricesQueryKey(chunk, network),
                     enabled: enabled ?? true,
-                    queryFn: async () => fetchAssetPrices(chunk),
+                    queryFn: async () => fetchAssetPrices(chunk, network),
                     select: (data: { results: AssetPriceResponse[] }) => {
                         return {
                             results: data.results.map(asset => ({
@@ -52,7 +52,7 @@ export const useAssetPricesQuery = (enabled?: boolean) => {
                 }
             }),
             {
-                queryKey: getAssetPricesQueryKey([ALGO_ASSET_ID]),
+                queryKey: getAssetPricesQueryKey([ALGO_ASSET_ID], network),
                 enabled: enabled ?? true,
                 queryFn: async () =>
                     fetchPublicAssetDetails(ALGO_ASSET_ID, network),
@@ -68,7 +68,7 @@ export const useAssetPricesQuery = (enabled?: boolean) => {
                 },
             },
         ]
-    }, [assetIDs, enabled])
+    }, [assetIDs, enabled, network])
 
     const queries = useQueries({
         queries: queriesDefinitions,

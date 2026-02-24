@@ -50,7 +50,7 @@ export const useAssetsQuery = (ids?: string[]) => {
         return [
             ...chunks.map(chunk => {
                 return {
-                    queryKey: getAssetsQueryKey(chunk),
+                    queryKey: getAssetsQueryKey(chunk, network),
                     queryFn: async () => fetchAssets(chunk, network),
                     select: (data: AssetsResponse) => {
                         const peraAssets = data.results.map(
@@ -65,7 +65,7 @@ export const useAssetsQuery = (ids?: string[]) => {
                 }
             }),
             {
-                queryKey: getAlgoQueryKey(),
+                queryKey: getAlgoQueryKey(network),
                 queryFn: async () =>
                     fetchPublicAssetDetails(ALGO_ASSET_ID, network),
                 select: (data: PublicAssetResponse) => {
@@ -78,7 +78,7 @@ export const useAssetsQuery = (ids?: string[]) => {
                 },
             },
         ]
-    }, [assetIDs])
+    }, [assetIDs, network])
 
     const queries = useQueries({
         queries: queryDefinitions,

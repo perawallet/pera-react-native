@@ -84,16 +84,26 @@ describe('useAssetsQuery', () => {
 
     describe('getAssetsQueryKey', () => {
         it('returns correct query keys', () => {
-            expect(getAssetsQueryKey(['123'])).toEqual([
+            expect(getAssetsQueryKey(['123'], 'mainnet')).toEqual([
                 'assets',
-                { assetIDs: ['123'] },
+                { assetIDs: ['123'], network: 'mainnet' },
+            ])
+        })
+
+        it('includes network in query key', () => {
+            expect(getAssetsQueryKey(['123'], 'testnet')).toEqual([
+                'assets',
+                { assetIDs: ['123'], network: 'testnet' },
             ])
         })
     })
 
     describe('getAlgoQueryKey', () => {
         it('returns correct query keys', () => {
-            expect(getAlgoQueryKey()).toEqual(['assets', { algo: '0' }])
+            expect(getAlgoQueryKey('mainnet')).toEqual([
+                'assets',
+                { algo: '0', network: 'mainnet' },
+            ])
         })
     })
 
