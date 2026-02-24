@@ -38,7 +38,7 @@ export const ImportAccountScreen = () => {
         setFocused,
         canImport,
         processing,
-        updateWord,
+        handleWordChange,
         handleImportAccount,
         mnemonicLength,
         t,
@@ -151,7 +151,7 @@ export const ImportAccountScreen = () => {
                                                                     .textMain
                                                             }
                                                             onChangeText={event =>
-                                                                updateWord(
+                                                                handleWordChange(
                                                                     event,
                                                                     offsetIndex,
                                                                 )
