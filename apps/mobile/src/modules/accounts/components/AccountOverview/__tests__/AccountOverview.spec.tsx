@@ -309,4 +309,27 @@ describe('AccountOverview', () => {
             expect(screen.getByTestId('account-options-sheet')).toBeTruthy()
         })
     })
+
+    it('calls onSwipeEnabledChange with true on initial render', () => {
+        const onSwipeEnabledChange = vi.fn()
+        render(
+            <AccountOverview
+                account={mockAccount}
+                chartVisible={true}
+                onSwipeEnabledChange={onSwipeEnabledChange}
+            />,
+        )
+        expect(onSwipeEnabledChange).toHaveBeenCalledWith(true)
+    })
+
+    it('does not throw when onSwipeEnabledChange is not provided', () => {
+        expect(() =>
+            render(
+                <AccountOverview
+                    account={mockAccount}
+                    chartVisible={true}
+                />,
+            ),
+        ).not.toThrow()
+    })
 })

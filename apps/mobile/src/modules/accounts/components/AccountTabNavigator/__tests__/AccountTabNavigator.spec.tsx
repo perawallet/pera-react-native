@@ -20,9 +20,17 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     getAccountDisplayName: vi.fn(account => account.name),
 }))
 
+const { capturedOverviewProps } = vi.hoisted(() => ({
+    capturedOverviewProps: { current: {} as Record<string, unknown> },
+}))
+
 // Use absolute module paths for the component mocks
 vi.mock('../../AccountOverview', () => ({
-    AccountOverview: () => <span data-testid='AccountOverview' />,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    AccountOverview: (props: any) => {
+        capturedOverviewProps.current = props
+        return <span data-testid='AccountOverview' />
+    },
 }))
 
 vi.mock('../../AccountNfts', () => ({
@@ -70,5 +78,18 @@ describe('AccountTabNavigator', () => {
         )
 
         expect(screen.getByTestId('AccountOverview')).toBeTruthy()
+    })
+
+    it('passes onSwipeEnabledChange to AccountOverview', () => {
+        render(
+            <AccountTabNavigator
+                account={mockAccount}
+                chartVisible={true}
+            />,
+        )
+
+        expect(capturedOverviewProps.current.onSwipeEnabledChange).toBeTypeOf(
+            'function',
+        )
     })
 })

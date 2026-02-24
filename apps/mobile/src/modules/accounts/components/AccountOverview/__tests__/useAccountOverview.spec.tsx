@@ -281,33 +281,42 @@ describe('useAccountOverview', () => {
         })
 
         expect(setSelectedPoint).toHaveBeenCalledWith(mockPoint)
+        expect(result.current.scrollingEnabled).toBe(false)
     })
 
     it('enables scrolling when chart selection is cleared', async () => {
         const setSelectedPoint = vi.fn()
-        const mockPoint = {
-            datetime: new Date(),
-            algoValue: new Decimal('100'),
-            preferredValue: new Decimal('200'),
-            round: 12345,
-        }
         const { useChartInteraction } = await import(
             '@hooks/useChartInteraction'
         )
         vi.mocked(useChartInteraction).mockReturnValue({
             period: 'one-week' as const,
             setPeriod: vi.fn(),
-            selectedPoint: mockPoint,
+            selectedPoint: null,
             setSelectedPoint,
             clearSelection: vi.fn(),
         })
 
         const { result } = renderHook(() => useAccountOverview(mockAccount))
 
+        const mockPoint = {
+            datetime: new Date(),
+            algoValue: new Decimal('100'),
+            preferredValue: new Decimal('200'),
+            round: 12345,
+        }
+
+        act(() => {
+            result.current.handleChartSelectionChange(mockPoint)
+        })
+
+        expect(result.current.scrollingEnabled).toBe(false)
+
         act(() => {
             result.current.handleChartSelectionChange(null)
         })
 
         expect(setSelectedPoint).toHaveBeenCalledWith(null)
+        expect(result.current.scrollingEnabled).toBe(true)
     })
 })
