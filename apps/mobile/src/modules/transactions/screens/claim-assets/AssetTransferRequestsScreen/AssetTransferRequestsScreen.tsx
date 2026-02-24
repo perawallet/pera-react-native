@@ -12,41 +12,33 @@
 
 import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
-import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-notifications'
+import type { Arc59AssetRequest } from '@perawallet/wallet-core-blockchain'
+import { PWDivider, PWFlatList, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
-import { PWFlatList, PWView } from '@components/core'
-import { RefreshControl } from 'react-native-gesture-handler'
 import { useLanguage } from '@hooks/useLanguage'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { InboxItem } from '@modules/messages/components/InboxItem/InboxItem'
+import { AssetTransferRequestItem } from '@modules/transactions/components/claim-assets/AssetTransferRequestItem'
 import { useStyles } from './styles'
-import { useInboxScreen } from './useInboxScreen'
+import { useAssetTransferRequestsScreen } from './useAssetTransferRequestsScreen'
 
-export const InboxScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+export const AssetTransferRequestsScreen = () => {
+    const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
-
-    const {
-        inboxItems,
-        isPending,
-        isRefetching,
-        refetch,
-        keyExtractor,
-        handleInboxItemPress,
-    } = useInboxScreen()
+    const { assetRequests, isPending, handleItemPress } =
+        useAssetTransferRequestsScreen()
 
     const renderItem = useCallback(
-        ({ item }: { item: InboxItemModel }) => (
-            <InboxItem
+        ({ item, index }: { item: Arc59AssetRequest; index: number }) => (
+            <AssetTransferRequestItem
                 item={item}
-                onPress={() => handleInboxItemPress(item)}
+                onPress={() => handleItemPress(index)}
             />
         ),
-        [handleInboxItemPress],
+        [handleItemPress],
     )
+
+    const renderSeparator = useCallback(() => <PWDivider />, [])
 
     const renderEmptyComponent = useCallback(() => {
         if (isPending) {
@@ -69,25 +61,21 @@ export const InboxScreen = () => {
         )
     }, [isPending, styles.emptyView, styles.loadingContainer, t])
 
+    const keyExtractor = useCallback(
+        (item: Arc59AssetRequest) => String(item.asset.assetId),
+        [],
+    )
+
     return (
-        <PWView style={styles.container}>
-            <PWFlatList
-                data={inboxItems}
-                renderItem={renderItem}
-                style={styles.container}
-                contentContainerStyle={styles.messageContainer}
-                keyExtractor={keyExtractor}
-                ListEmptyComponent={renderEmptyComponent}
-                estimatedItemSize={theme.spacing.xxl}
-                refreshControl={
-                    <RefreshControl
-                        refreshing={isRefetching}
-                        onRefresh={refetch}
-                        colors={[theme.colors.primary]}
-                        progressBackgroundColor={theme.colors.background}
-                    />
-                }
-            />
-        </PWView>
+        <PWFlatList
+            data={assetRequests}
+            renderItem={renderItem}
+            style={styles.container}
+            contentContainerStyle={styles.contentContainer}
+            keyExtractor={keyExtractor}
+            ItemSeparatorComponent={renderSeparator}
+            ListEmptyComponent={renderEmptyComponent}
+            estimatedItemSize={theme.spacing.xxl}
+        />
     )
 }

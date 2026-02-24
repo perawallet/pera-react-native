@@ -78,6 +78,7 @@ describe('TransactionSuccessScreen', () => {
         ;(useTransactionSuccessScreen as any).mockReturnValue({
             handleDone: mockHandleDone,
             handleViewInExplorer: mockHandleViewInExplorer,
+            variant: 'payment',
         })
     })
 
@@ -87,7 +88,7 @@ describe('TransactionSuccessScreen', () => {
         expect(getByTestId('icon-check')).toBeTruthy()
     })
 
-    it('renders title text', () => {
+    it('renders payment title text', () => {
         const { getByText } = render(<TransactionSuccessScreen />)
 
         expect(getByText('send_funds.success.title')).toBeTruthy()
@@ -125,5 +126,33 @@ describe('TransactionSuccessScreen', () => {
         fireEvent.click(getByText('send_funds.success.done'))
 
         expect(mockHandleDone).toHaveBeenCalledTimes(1)
+    })
+
+    it('renders asset transferred title for asset_transfer variant', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(useTransactionSuccessScreen as any).mockReturnValue({
+            handleDone: mockHandleDone,
+            handleViewInExplorer: mockHandleViewInExplorer,
+            variant: 'asset_transfer',
+        })
+
+        const { getByText } = render(<TransactionSuccessScreen />)
+
+        expect(
+            getByText('send_funds.success.asset_transferred_title'),
+        ).toBeTruthy()
+    })
+
+    it('renders claim title for claim variant', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(useTransactionSuccessScreen as any).mockReturnValue({
+            handleDone: mockHandleDone,
+            handleViewInExplorer: mockHandleViewInExplorer,
+            variant: 'claim',
+        })
+
+        const { getByText } = render(<TransactionSuccessScreen />)
+
+        expect(getByText('messages.claim.success_title')).toBeTruthy()
     })
 })

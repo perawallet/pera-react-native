@@ -10,22 +10,25 @@
  limitations under the License
  */
 
+import { ASAInbox } from '@perawallet/wallet-core-notifications'
 import type { StackScreenProps } from '@react-navigation/stack'
 
-export type SendFundsStackParamList = {
-    AssetSelection: undefined
-    InputAmount: undefined
-    SelectDestination: undefined
-    ConfirmTransaction: undefined
-    ExpressSend: undefined
-    ARC59SendSummary: undefined
-    InsufficientBalance: { requiredBalance: string }
-    TransactionProcessing: undefined
-    TransactionSuccess: {
+export type MessagesStackParamList = {
+    MessagesHome: { initialTab?: 'Inbox' | 'Notifications' } | undefined
+    AssetTransferRequests: {
+        item: ASAInbox
+    }
+    AssetClaimDetail: { assetIndex: number }
+    ClaimProcessing: {
+        mode: 'claim' | 'reject'
+        assetIndex: number
+        shouldClaimAlgo: boolean
+    }
+    ClaimSuccess: {
         transactionId: string
-        variant?: 'payment' | 'asset_transfer' | 'close_account'
+        variant?: 'claim' | 'reject'
     }
 }
 
-export type SendFundsStackScreenProps<T extends keyof SendFundsStackParamList> =
-    StackScreenProps<SendFundsStackParamList, T>
+export type MessagesStackScreenProps<T extends keyof MessagesStackParamList> =
+    StackScreenProps<MessagesStackParamList, T>

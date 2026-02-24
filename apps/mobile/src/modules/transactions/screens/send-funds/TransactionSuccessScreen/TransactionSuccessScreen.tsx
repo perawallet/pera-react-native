@@ -13,12 +13,44 @@
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import { useTransactionSuccessScreen } from './useTransactionSuccessScreen'
+import {
+    useTransactionSuccessScreen,
+    type SuccessVariant,
+} from './useTransactionSuccessScreen'
+
+const getTitleKey = (variant: SuccessVariant): string => {
+    switch (variant) {
+        case 'close_account':
+            return 'send_funds.close_account.success_title'
+        case 'asset_transfer':
+            return 'send_funds.success.asset_transferred_title'
+        case 'claim':
+        case 'reject':
+            return 'messages.claim.success_title'
+        case 'payment':
+        default:
+            return 'send_funds.success.title'
+    }
+}
+
+const getSubtitleKey = (variant: SuccessVariant): string => {
+    switch (variant) {
+        case 'close_account':
+            return 'send_funds.close_account.success_subtitle'
+        case 'claim':
+        case 'reject':
+            return 'messages.claim.success_subtitle'
+        case 'asset_transfer':
+        case 'payment':
+        default:
+            return 'send_funds.success.subtitle'
+    }
+}
 
 export const TransactionSuccessScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { handleDone, handleViewInExplorer, isCloseAccount } =
+    const { handleDone, handleViewInExplorer, variant } =
         useTransactionSuccessScreen()
 
     return (
@@ -34,14 +66,10 @@ export const TransactionSuccessScreen = () => {
                     variant='h3'
                     style={styles.title}
                 >
-                    {isCloseAccount
-                        ? t('send_funds.close_account.success_title')
-                        : t('send_funds.success.title')}
+                    {t(getTitleKey(variant))}
                 </PWText>
                 <PWText style={styles.subtitle}>
-                    {isCloseAccount
-                        ? t('send_funds.close_account.success_subtitle')
-                        : t('send_funds.success.subtitle')}
+                    {t(getSubtitleKey(variant))}
                 </PWText>
             </PWView>
             <PWView style={styles.footer}>

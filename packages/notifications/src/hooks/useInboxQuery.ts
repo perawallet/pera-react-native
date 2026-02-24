@@ -46,7 +46,7 @@ export const useInboxQuery = (): UseInboxQueryResult => {
                 mapInboxResponse(data)
                     .filter(item => {
                         if (item.type === 'asa_inbox') {
-                            return item.data.requestCount > 0
+                            return item.data.requestCount >= 0
                         }
                         return true
                     })

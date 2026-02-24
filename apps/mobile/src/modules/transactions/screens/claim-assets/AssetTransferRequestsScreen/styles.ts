@@ -10,8 +10,24 @@
  limitations under the License
  */
 
-export { useSendFundsStore, useSendFunds } from './send-funds/useSendFunds'
-export {
-    useClaimAssetsStore,
-    useClaimAssets,
-} from './claim-assets/useClaimAssets'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        flex: 1,
+    },
+    contentContainer: {
+        paddingVertical: theme.spacing.md,
+        gap: theme.spacing.xs,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'flex-start',
+        alignItems: 'center',
+    },
+    emptyView: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+}))

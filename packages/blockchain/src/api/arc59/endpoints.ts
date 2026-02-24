@@ -13,7 +13,10 @@
 import { Network, queryClient } from '@perawallet/wallet-core-shared'
 import {
     arc59SendSummaryResponseSchema,
+    arc59AssetRequestsResponseSchema,
+    mapArc59AssetRequest,
     type Arc59SendSummaryResponse,
+    type Arc59AssetRequest,
 } from './schema'
 
 const getArc59SendSummaryEndpoint = (
@@ -34,4 +37,22 @@ export const fetchArc59SendSummary = async (
     })
 
     return arc59SendSummaryResponseSchema.parse(response.data)
+}
+
+const getArc59AssetRequestsEndpoint = (address: string) =>
+    `/v1/asa-inboxes/requests/${address}/`
+
+export const fetchArc59AssetRequests = async (
+    network: Network,
+    address: string,
+): Promise<Arc59AssetRequest[]> => {
+    const response = await queryClient<unknown>({
+        backend: 'pera',
+        network: network,
+        method: 'GET',
+        url: getArc59AssetRequestsEndpoint(address),
+    })
+
+    const parsed = arc59AssetRequestsResponseSchema.parse(response.data)
+    return parsed.results.map(mapArc59AssetRequest)
 }

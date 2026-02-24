@@ -21,6 +21,10 @@ vi.mock('@modules/messages/components/InboxItem/InboxItem', () => ({
     ),
 }))
 
+vi.mock('@modules/messages/components/ClaimAssetsBottomSheet', () => ({
+    ClaimAssetsBottomSheet: () => null,
+}))
+
 vi.mock('@perawallet/wallet-core-notifications', () => ({
     useInboxQuery: vi.fn(() => ({
         inboxItems: [],

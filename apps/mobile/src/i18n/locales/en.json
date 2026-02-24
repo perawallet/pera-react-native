@@ -313,6 +313,28 @@
             "asa_requests_other": "{{count}} incoming assets",
             "joint_account_import": "Joint Account Import Request",
             "joint_account_sign": "Joint Account Sign Request"
+        },
+        "claim": {
+            "asset_transfer_requests_title": "Asset Transfer Requests",
+            "asset_transfer_request_title": "Asset Transfer Request",
+            "senders": "Senders",
+            "amount": "Amount",
+            "copy_id": "Copy ID",
+            "account": "Account",
+            "claim": "Claim",
+            "reject": "Reject",
+            "reject_title": "Rejecting Requests",
+            "reject_body": "If you reject this request, the incoming asset will be permanently removed from circulation. It will not be returned to the sender. Instead, you will receive {{algoAmount}} ALGOs upon completion of this irreversible process. Please note that once rejected, the asset cannot be recovered.",
+            "reject_cancel": "Cancel",
+            "processing_title": "Sending the transaction",
+            "processing_subtitle": "Your transaction is being processed by the Algorand network",
+            "success_title": "Operation completed",
+            "success_subtitle": "Your transaction was successfully received by the Algorand network",
+            "success_view_explorer": "View Transaction detail in AlgoExplorer",
+            "success_done": "Done",
+            "sender_count_more": "+{{count}} more",
+            "insufficient_algo_claim": "You don't have enough ALGO to claim this asset. Add funds to cover the minimum balance requirement.",
+            "insufficient_algo_reject": "You don't have enough ALGO to reject this asset. Add funds to cover the transaction fees."
         }
     },
     "onboarding": {
@@ -540,7 +562,8 @@
             "subtitle": "Your transaction is being processed by the Algorand network."
         },
         "success": {
-            "title": "Asset transfer completed",
+            "title": "Transaction Processed",
+            "asset_transferred_title": "Asset Transferred",
             "subtitle": "Your transaction was successfully received by the Algorand network",
             "view_in_explorer": "View Transaction Detail in Pera Explorer",
             "done": "Done"

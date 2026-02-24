@@ -10,8 +10,4 @@
  limitations under the License
  */
 
-export { useSendFundsStore, useSendFunds } from './send-funds/useSendFunds'
-export {
-    useClaimAssetsStore,
-    useClaimAssets,
-} from './claim-assets/useClaimAssets'
+export { AssetClaimDetailScreen } from './AssetClaimDetailScreen'

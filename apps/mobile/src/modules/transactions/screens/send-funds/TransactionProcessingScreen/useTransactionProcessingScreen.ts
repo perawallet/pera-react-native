@@ -32,6 +32,7 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { useTransactionSigner } from '@perawallet/wallet-core-signing'
+import { t } from 'i18next'
 
 export const useTransactionProcessingScreen = () => {
     const navigation =
@@ -80,8 +81,8 @@ export const useTransactionProcessingScreen = () => {
             ) {
                 showToast(
                     {
-                        title: 'Invalid transaction',
-                        body: 'Something appears to have gone wrong with this transaction.',
+                        title: t('transactions.invalid_title'),
+                        body: t('transactions.invalid_body'),
                         type: 'error',
                     },
                     {

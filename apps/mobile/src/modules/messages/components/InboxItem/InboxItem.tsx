@@ -10,82 +10,25 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWView } from '@components/core'
-import type {
-    ASAInbox,
-    InboxItem as InboxItemModel,
-} from '@perawallet/wallet-core-notifications'
+import { PWText, PWTouchableOpacity, PWView } from '@components/core'
+import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-notifications'
 import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from './styles'
-import { useCallback } from 'react'
 import {
     getAccountDisplayName,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { AccountIcon } from '@modules/accounts/components/AccountIcon'
+import { useStyles } from './styles'
+import { InboxItemIcon } from './InboxItemIcon'
 
 export type InboxItemProps = {
     item: InboxItemModel
+    onPress?: () => void
 }
 
-export const InboxItem = ({ item }: InboxItemProps) => {
+export const InboxItem = ({ item, onPress }: InboxItemProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const accounts = useAllAccounts()
-
-    const getIcon = useCallback(
-        (item: InboxItemModel) => {
-            if (item.type === 'asa_inbox') {
-                const account = accounts.find(
-                    acc => acc.address === (item.data as ASAInbox).address,
-                )
-                if (!account)
-                    return (
-                        <PWIcon
-                            name='inbox'
-                            variant='secondary'
-                            size='lg'
-                        />
-                    )
-                return (
-                    <AccountIcon
-                        account={account}
-                        size='lg'
-                    />
-                )
-            }
-            if (item.type === 'joint_account_import')
-                return (
-                    <PWView style={styles.iconContainer}>
-                        <PWIcon
-                            name='transactions/group'
-                            variant='secondary'
-                            size='lg'
-                        />
-                    </PWView>
-                )
-            if (item.type === 'joint_account_sign')
-                return (
-                    <PWView style={styles.iconContainer}>
-                        <PWIcon
-                            name='edit-pen'
-                            variant='secondary'
-                            size='lg'
-                        />
-                    </PWView>
-                )
-            return (
-                <PWView style={styles.iconContainer}>
-                    <PWIcon
-                        name='inbox'
-                        variant='secondary'
-                        size='lg'
-                    />
-                </PWView>
-            )
-        },
-        [accounts],
-    )
 
     const renderContent = () => {
         switch (item.type) {
@@ -145,9 +88,13 @@ export const InboxItem = ({ item }: InboxItemProps) => {
     }
 
     return (
-        <PWView style={styles.container}>
-            {getIcon(item)}
+        <PWTouchableOpacity
+            style={styles.container}
+            onPress={onPress}
+            disabled={!onPress}
+        >
+            <InboxItemIcon item={item} />
             <PWView style={styles.messageBox}>{renderContent()}</PWView>
-        </PWView>
+        </PWTouchableOpacity>
     )
 }

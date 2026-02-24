@@ -33,3 +33,9 @@ export const getArc59SendSummaryQueryKey = (
     receiverAddress: string,
     assetId: string,
 ) => [MODULE_PREFIX, 'arc59-send-summary', { receiverAddress, assetId }]
+
+export const getArc59AssetRequestsQueryKey = (address: string) => [
+    MODULE_PREFIX,
+    'arc59-asset-requests',
+    { address },
+]

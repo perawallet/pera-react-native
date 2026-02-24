@@ -15,12 +15,12 @@ import { RouteProp, useRoute } from '@react-navigation/native'
 import { createPWTabNavigator } from '@components/core/PWTabView/PWTabView'
 import { PWTouchableIcon } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { RootStackParamList } from '@routes/types'
 import { NotificationsScreen } from '../NotificationsScreen'
 import { InboxScreen } from '../InboxScreen'
 import { NotificationSettingsBottomSheet } from '../../components/NotificationSettingsBottomSheet'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useModalState } from '@hooks/useModalState'
+import { MessagesStackParamList } from '@modules/messages/routes'
 
 export type MessagesTabsParamsList = {
     Inbox: undefined
@@ -31,7 +31,7 @@ const Tab = createPWTabNavigator<MessagesTabsParamsList>()
 
 export const MessagesScreen = () => {
     const { t } = useLanguage()
-    const route = useRoute<RouteProp<RootStackParamList, 'Messages'>>()
+    const route = useRoute<RouteProp<MessagesStackParamList, 'MessagesHome'>>()
     const settingsModal = useModalState()
 
     const initialTab = route.params?.initialTab ?? 'Inbox'

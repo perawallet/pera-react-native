@@ -10,32 +10,54 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import {
+    type ASAInbox,
     type InboxItem,
     useInboxQuery,
 } from '@perawallet/wallet-core-notifications'
+import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useToast } from '@hooks/useToast'
 
 export type UseInboxScreenResult = {
     inboxItems: InboxItem[]
     isPending: boolean
     isRefetching: boolean
     refetch: () => void
-    keyExtractor: (item: InboxItem) => string
+    keyExtractor: (item: InboxItem, index: number) => string
+    handleInboxItemPress: (item: InboxItem) => void
 }
 
-const getItemKey = (item: InboxItem): string => {
+const getItemKey = (item: InboxItem, index: number): string => {
     switch (item.type) {
         case 'joint_account_import':
             return `import-${item.data.customId}-${item.data.address}`
         case 'joint_account_sign':
             return `sign-${item.data.id}`
         case 'asa_inbox':
-            return `asa-${item.data.address}`
+            return `asa-${item.data.address}-${index}`
     }
 }
 
 export const useInboxScreen = (): UseInboxScreenResult => {
     const { inboxItems, isPending, isRefetching, refetch } = useInboxQuery()
+    const { push } = useAppNavigation()
+    const { errorToast } = useToast()
+
+    const handleInboxItemPress = useCallback((item: InboxItem) => {
+        if (item.type === 'asa_inbox') {
+            const asaInbox = item.data as ASAInbox
+            push('Messages', {
+                screen: 'AssetTransferRequests',
+                params: { item: asaInbox },
+            })
+        } else {
+            errorToast(
+                'common.not_implemented.title',
+                'common.not_implemented.body',
+            )
+        }
+    }, [])
 
     return {
         inboxItems,
@@ -43,5 +65,6 @@ export const useInboxScreen = (): UseInboxScreenResult => {
         isRefetching,
         refetch,
         keyExtractor: getItemKey,
+        handleInboxItemPress,
     }
 }
