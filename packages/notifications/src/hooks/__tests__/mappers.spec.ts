@@ -63,7 +63,9 @@ describe('mappers', () => {
             const result = mapMultiSigAccount(response)
 
             expect(result.createdAt).toBeInstanceOf(Date)
-            expect(result.createdAt.toISOString()).toBe('2025-06-20T14:45:30.000Z')
+            expect(result.createdAt.toISOString()).toBe(
+                '2025-06-20T14:45:30.000Z',
+            )
         })
     })
 
@@ -154,7 +156,9 @@ describe('mappers', () => {
             const result = mapSignRequest(response)
 
             expect(result.createdAt).toBeInstanceOf(Date)
-            expect(result.createdAt.toISOString()).toBe('2025-01-20T00:00:00.000Z')
+            expect(result.createdAt.toISOString()).toBe(
+                '2025-01-20T00:00:00.000Z',
+            )
             expect(result.expectedExpireDatetime).toBeInstanceOf(Date)
             expect(result.expectedExpireDatetime.toISOString()).toBe(
                 '2025-01-21T00:00:00.000Z',
@@ -287,7 +291,9 @@ describe('mappers', () => {
 
             expect(result).toHaveLength(1)
             expect(result[0].type).toBe('joint_account_import')
-            expect(result[0].createdAt).toEqual(new Date('2025-01-15T00:00:00Z'))
+            expect(result[0].createdAt).toEqual(
+                new Date('2025-01-15T00:00:00Z'),
+            )
             expect(result[0].data).toEqual({
                 customId: 'msig-1',
                 createdAt: new Date('2025-01-15T00:00:00Z'),
@@ -327,7 +333,9 @@ describe('mappers', () => {
 
             expect(result).toHaveLength(1)
             expect(result[0].type).toBe('joint_account_sign')
-            expect(result[0].createdAt).toEqual(new Date('2025-01-20T00:00:00Z'))
+            expect(result[0].createdAt).toEqual(
+                new Date('2025-01-20T00:00:00Z'),
+            )
         })
 
         it('should map asa_inboxes to InboxItems with epoch 0 createdAt', () => {
@@ -411,9 +419,15 @@ describe('mappers', () => {
             const result = mapInboxResponse(response)
 
             expect(result).toHaveLength(5)
-            expect(result.filter(item => item.type === 'joint_account_import')).toHaveLength(2)
-            expect(result.filter(item => item.type === 'joint_account_sign')).toHaveLength(1)
-            expect(result.filter(item => item.type === 'asa_inbox')).toHaveLength(2)
+            expect(
+                result.filter(item => item.type === 'joint_account_import'),
+            ).toHaveLength(2)
+            expect(
+                result.filter(item => item.type === 'joint_account_sign'),
+            ).toHaveLength(1)
+            expect(
+                result.filter(item => item.type === 'asa_inbox'),
+            ).toHaveLength(2)
         })
     })
 })

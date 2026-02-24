@@ -12,7 +12,12 @@
 
 import { describe, it, expect } from 'vitest'
 import { sortInboxItems } from '../utils'
-import type { InboxItem, MultiSigAccount, JointAccountSignRequest, ASAInbox } from '../models'
+import type {
+    InboxItem,
+    MultiSigAccount,
+    JointAccountSignRequest,
+    ASAInbox,
+} from '../models'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const createMultiSigAccount = (
@@ -262,16 +267,24 @@ describe('utils', () => {
                 )
 
                 expect(sorted[0].type).toBe('joint_account_import')
-                expect((sorted[0].data as MultiSigAccount).customId).toBe('import-newer')
+                expect((sorted[0].data as MultiSigAccount).customId).toBe(
+                    'import-newer',
+                )
 
                 expect(sorted[1].type).toBe('joint_account_import')
-                expect((sorted[1].data as MultiSigAccount).customId).toBe('import-older')
+                expect((sorted[1].data as MultiSigAccount).customId).toBe(
+                    'import-older',
+                )
 
                 expect(sorted[2].type).toBe('joint_account_sign')
-                expect((sorted[2].data as JointAccountSignRequest).id).toBe('sign-newer')
+                expect((sorted[2].data as JointAccountSignRequest).id).toBe(
+                    'sign-newer',
+                )
 
                 expect(sorted[3].type).toBe('joint_account_sign')
-                expect((sorted[3].data as JointAccountSignRequest).id).toBe('sign-older')
+                expect((sorted[3].data as JointAccountSignRequest).id).toBe(
+                    'sign-older',
+                )
 
                 expect(sorted[4].type).toBe('asa_inbox')
                 expect((sorted[4].data as ASAInbox).address).toBe('ADDR1')
