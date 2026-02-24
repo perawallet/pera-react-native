@@ -17,7 +17,7 @@ import { canSignWithAccount } from '../utils'
 export const useSigningAccounts = () => {
     const accounts = useAccountsStore(state => state.accounts)
     return useMemo(
-        () => accounts.filter(account => canSignWithAccount(account)),
+        () => accounts.filter(account => canSignWithAccount(account, accounts)),
         [accounts],
     )
 }

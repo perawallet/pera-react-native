@@ -17,6 +17,7 @@ import {
     isHDWalletAccount,
     isRekeyedAccount,
     canSignWithAccount,
+    hasSigningKeys,
     useRemoveAccountById,
     useUpdateAccount,
     useAllAccounts,
@@ -221,7 +222,7 @@ export const useAccountOptions = ({
             })
         }
 
-        if (isRekeyedAccount(account) && canSignWithAccount(account)) {
+        if (isRekeyedAccount(account) && hasSigningKeys(account)) {
             items.push({
                 id: 'undo-rekey',
                 icon: 'undo',
@@ -230,7 +231,7 @@ export const useAccountOptions = ({
             })
         }
 
-        if (canSignWithAccount(account)) {
+        if (canSignWithAccount(account, accounts)) {
             items.push({
                 id: 'rekey-to-ledger',
                 icon: 'rekey',

@@ -105,6 +105,13 @@ describe('useAccountOptions', () => {
         rekeyAddress: 'AUTHADDRESS',
     }
 
+    const rekeyedWatchAccount: WalletAccount = {
+        id: 'acc-5',
+        address: 'REKEYEDWATCHADDRESS',
+        type: AccountTypes.watch,
+        rekeyAddress: 'ALGO25ADDRESS',
+    }
+
     const hardwareAccount: WalletAccount = {
         id: 'acc-4',
         address: 'HARDWAREADDRESS',
@@ -182,6 +189,28 @@ describe('useAccountOptions', () => {
                 'toggle-notifications',
                 'remove-account',
             ])
+        })
+
+        it('shows rekey options but hides undo-rekey for a rekeyed watch account with auth in wallet', () => {
+            mockAllAccounts.mockReturnValue([
+                algo25Account,
+                rekeyedWatchAccount,
+            ])
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: rekeyedWatchAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const optionIds = result.current.options.map(o => o.id)
+            expect(optionIds).toContain('auth-address')
+            expect(optionIds).toContain('rekey-to-ledger')
+            expect(optionIds).toContain('rekey-to-standard')
+            expect(optionIds).not.toContain('undo-rekey')
+            expect(optionIds).not.toContain('view-passphrase')
         })
 
         it('hides passphrase and rekey for a hardware account', () => {

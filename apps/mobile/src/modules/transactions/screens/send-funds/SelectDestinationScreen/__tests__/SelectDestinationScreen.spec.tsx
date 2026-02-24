@@ -98,6 +98,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountBalancesQuery: vi.fn(() => ({
         accountBalances: new Map(),
     })),
+    hasSigningKeys: vi.fn(() => false),
     canSignWithAccount: vi.fn(() => false),
 }))
 
