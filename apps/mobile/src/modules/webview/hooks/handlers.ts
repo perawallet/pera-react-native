@@ -10,9 +10,21 @@
  limitations under the License
  */
 
-import { JsonRpcErrorCode } from '@hooks/usePeraWebviewInterface'
 import { logger } from '@perawallet/wallet-core-shared'
 import WebView from 'react-native-webview'
+
+export const JsonRpcErrorCode = {
+    ParseError: -32700,
+    InvalidRequest: -32600,
+    MethodNotFound: -32601,
+    InvalidParams: -32602,
+    InternalError: -32603,
+    ServerErrorStart: -32000,
+    ServerErrorEnd: -32099,
+} as const
+
+export type JsonRpcErrorCode =
+    (typeof JsonRpcErrorCode)[keyof typeof JsonRpcErrorCode]
 
 export const requireSecure = (
     securedConnection: boolean,

@@ -31,7 +31,7 @@ import {
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import React from 'react'
-import { useWebView } from '@hooks/usePeraWebviewInterface'
+import { useWebView } from '@modules/webview/hooks'
 import {
     useSigningAccounts,
     WalletAccount,

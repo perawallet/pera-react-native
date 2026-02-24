@@ -30,7 +30,7 @@ vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
     fromSeed: vi.fn(() => 'mock-root-key'),
     KeyContext: { Address: 0 },
     BIP32DerivationType: { Peikert: 9 },
-    Encoding: { BASE64: 'base64' },
+    Encoding: { BASE64: 'base64', NONE: 'none' },
 }))
 
 const mockGenerateMnemonic = vi.fn()
@@ -280,7 +280,7 @@ describe('useHDWallet', () => {
                 0, // account
                 0, // keyIndex
                 new Uint8Array([4, 5, 6]),
-                expect.objectContaining({ encoding: 'base64' }),
+                expect.objectContaining({ encoding: 'none' }),
                 9, // derivationType
             )
         })

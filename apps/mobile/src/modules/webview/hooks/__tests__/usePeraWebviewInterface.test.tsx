@@ -12,7 +12,8 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { usePeraWebviewInterface, useWebView } from '../usePeraWebviewInterface'
+import { usePeraWebviewInterface } from '../usePeraWebviewInterface'
+import { useWebView } from '..'
 import { Linking } from 'react-native'
 
 vi.mock('react-native', () => ({
@@ -41,6 +42,8 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     },
     createLazyStore: vi.fn(() => () => ({})),
     generateOrderedUniqueId: vi.fn(() => 'test-id'),
+    decodeFromBase64: vi.fn(t => t),
+    encodeToBase64: vi.fn(t => t),
 }))
 
 vi.mock('@perawallet/wallet-core-platform-integration', () => ({
@@ -89,7 +92,12 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 }))
 
 const mockAddSignRequest = vi.fn()
-vi.mock('@perawallet/wallet-core-blockchain', () => ({}))
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useTransactionEncoder: vi.fn(() => ({
+        decodeTransactions: vi.fn(txns => txns),
+        encodeSignedTransaction: vi.fn(t => t),
+    })),
+}))
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
 }))
@@ -106,7 +114,7 @@ vi.mock('@rneui/themed', () => ({
     makeStyles: () => () => ({}),
 }))
 
-vi.mock('../useLanguage', () => ({
+vi.mock('@hooks/useLanguage', () => ({
     useLanguage: vi.fn(() => ({
         t: (key: string, params?: Record<string, string>) => {
             if (key === 'errors.webview.unsupported_url' && params?.url) {
@@ -488,16 +496,15 @@ describe('usePeraWebviewInterface', () => {
             usePeraWebviewInterface(mockWebview, true),
         )
 
-        const data = { data: 'AQID', message: 'Sign this' }
+        const data = { data: 'AQID', message: 'Sign this', signer: 'addr1' }
         const metadata = { name: 'Test dApp' }
-        const address = 'addr1'
 
         await act(async () => {
             result.current.handleMessage({
                 id: '14',
                 jsonrpc: '2.0',
                 method: 'requestDataSigning',
-                params: { data, metadata, address },
+                params: { data, metadata },
             })
         })
 
@@ -506,7 +513,7 @@ describe('usePeraWebviewInterface', () => {
                 id: 'test-id',
                 type: 'arbitrary-data',
                 transport: 'callback',
-                data: [{ data: 'AQID', message: 'Sign this' }],
+                data: [{ data: 'AQID', message: 'Sign this', signer: 'addr1' }],
                 sourceMetadata: metadata,
             }),
         )
@@ -535,16 +542,15 @@ describe('usePeraWebviewInterface', () => {
             usePeraWebviewInterface(mockWebview, true),
         )
 
-        const data = { data: 'AQID' }
+        const data = { data: 'AQID', signer: 'addr1' }
         const metadata = { name: 'Test dApp' }
-        const address = 'addr1'
 
         await act(async () => {
             result.current.handleMessage({
                 id: '14-error',
                 jsonrpc: '2.0',
                 method: 'requestDataSigning',
-                params: { data, metadata, address },
+                params: { data, metadata },
             })
         })
 
@@ -821,7 +827,11 @@ describe('usePeraWebviewInterface', () => {
                     jsonrpc: '2.0',
                     method: 'requestDataSigning',
                     params: {
-                        data: { data: 'AQID', message: 'Sign this' },
+                        data: {
+                            data: 'AQID',
+                            message: 'Sign this',
+                            signer: 'addr1',
+                        },
                         metadata: { name: 'Test' },
                     },
                 })

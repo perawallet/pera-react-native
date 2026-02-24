@@ -45,12 +45,6 @@ export const useArbitraryDataSigner = () => {
 
                     const signatures = await Promise.all(
                         toSign.map(async item => {
-                            const prefixedData = new Uint8Array(
-                                concatBytes(
-                                    new TextEncoder().encode('MX'),
-                                    decodeFromBase64(item),
-                                ),
-                            )
                             return session.signData(
                                 {
                                     account: hdWalletDetails.account,
@@ -58,7 +52,7 @@ export const useArbitraryDataSigner = () => {
                                     derivationType:
                                         hdWalletDetails.derivationType,
                                 },
-                                prefixedData,
+                                decodeFromBase64(item),
                             )
                         }),
                     )

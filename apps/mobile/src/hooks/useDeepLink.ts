@@ -21,7 +21,7 @@ import {
     useSelectedAccountAddress,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useWebView } from './usePeraWebviewInterface'
+import { useWebView } from '@modules/webview/hooks'
 import { useEffect, useRef } from 'react'
 import { Linking } from 'react-native'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'

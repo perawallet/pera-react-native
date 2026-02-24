@@ -13,7 +13,7 @@
 /* eslint-disable max-lines */
 
 import WebView from 'react-native-webview'
-import { useToast } from './useToast'
+import { useToast } from '@hooks/useToast'
 import { Linking } from 'react-native'
 import {
     useAnalyticsService,
@@ -29,10 +29,10 @@ import { useSettings } from '@perawallet/wallet-core-settings'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useCallback } from 'react'
 import { useWebView } from '@modules/webview/hooks'
-import { useLanguage } from './useLanguage'
+import { useLanguage } from '@hooks/useLanguage'
 import {
     PeraSignedTransaction,
-    PeraTransaction,
+    useTransactionEncoder,
 } from '@perawallet/wallet-core-blockchain'
 import {
     type ArbitraryDataSignRequest,
@@ -43,12 +43,18 @@ import {
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import {
+    JsonRpcErrorCode,
     requireSecure,
     sendErrorToWebview,
     sendMessageToWebview,
-} from './webview/handlers'
-import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
-import { getAccountType } from './webview/utils'
+} from './handlers'
+import {
+    decodeFromBase64,
+    encodeToBase64,
+    generateOrderedUniqueId,
+    logger,
+} from '@perawallet/wallet-core-shared'
+import { getAccountType } from './utils'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 
 type WebviewMessage = {
@@ -57,21 +63,6 @@ type WebviewMessage = {
     method: string
     params?: Record<string, unknown>
 }
-
-export const JsonRpcErrorCode = {
-    ParseError: -32700,
-    InvalidRequest: -32600,
-    MethodNotFound: -32601,
-    InvalidParams: -32602,
-    InternalError: -32603,
-    ServerErrorStart: -32000,
-    ServerErrorEnd: -32099,
-} as const
-
-export type JsonRpcErrorCode =
-    (typeof JsonRpcErrorCode)[keyof typeof JsonRpcErrorCode]
-
-export { useWebView } from '@modules/webview/hooks'
 
 export const usePeraWebviewInterface = (
     webview: WebView | null,
@@ -91,6 +82,8 @@ export const usePeraWebviewInterface = (
     const { pushWebView: pushWebViewContext } = useWebView()
     const { addSignRequest } = useSigningRequest()
     const { connect } = useWalletConnect()
+    const { decodeTransactions, encodeSignedTransaction } =
+        useTransactionEncoder()
 
     const hadRequiredParams = useCallback(
         (requiredParams: string[], message: WebviewMessage) => {
@@ -254,6 +247,7 @@ export const usePeraWebviewInterface = (
                     currency: preferredCurrency,
                     region: deviceInfo.getDeviceCountry(),
                     language: deviceInfo.getDeviceLocale(),
+                    protocolVersion: '3',
                 }
                 sendMessageToWebview(message.id, payload, webview)
             })
@@ -272,18 +266,19 @@ export const usePeraWebviewInterface = (
     const requestTransactionSigning = useCallback(
         (message: WebviewMessage) => {
             requireSecure(securedConnection, () => {
-                if (
-                    !hadRequiredParams(['txns', 'metadata', 'address'], message)
-                ) {
+                if (!hadRequiredParams(['txns', 'metadata'], message)) {
                     return
                 }
-                const txns = message.params![
-                    'txns'
-                ] as (PeraTransaction | null)[]
+                const rawTxns = message.params!['txns'] as (string | null)[]
+                const txns = decodeTransactions(
+                    rawTxns
+                        .filter((t): t is string => t !== null)
+                        .map(t => decodeFromBase64(t)),
+                )
                 const metadata = message.params![
                     'metadata'
                 ] as SignRequestSource
-                const address = message.params!['address'] as string
+
                 try {
                     addSignRequest({
                         id: generateOrderedUniqueId(),
@@ -291,13 +286,16 @@ export const usePeraWebviewInterface = (
                         transport: 'callback',
                         txs: txns,
                         transportId: message.id,
-                        addresses: [address],
                         sourceMetadata: metadata,
                         approve: async (signed: PeraSignedTransaction[]) => {
                             sendMessageToWebview(
                                 message.id,
                                 {
-                                    signedTxs: signed,
+                                    signedTxs: signed.map(s =>
+                                        encodeToBase64(
+                                            encodeSignedTransaction(s),
+                                        ),
+                                    ),
                                 },
                                 webview,
                             )
@@ -343,9 +341,22 @@ export const usePeraWebviewInterface = (
                 if (!hadRequiredParams(['data', 'metadata'], message)) {
                     return
                 }
-                const dataMessage = message.params![
+                const data = message.params![
                     'data'
-                ] as PeraArbitraryDataMessage
+                ] as Partial<PeraArbitraryDataMessage>
+                const signer = data.signer
+
+                if (!signer) {
+                    sendErrorToWebview(
+                        message.id,
+                        JsonRpcErrorCode.InvalidParams,
+                        t('errors.webview.invalid_params', {
+                            params: 'signer',
+                        }),
+                        webview,
+                    )
+                    return
+                }
                 const metadata = message.params![
                     'metadata'
                 ] as SignRequestSource
@@ -356,13 +367,13 @@ export const usePeraWebviewInterface = (
                         transport: 'callback',
                         transportId: message.id,
                         sourceMetadata: metadata,
-                        data: [dataMessage],
+                        data: [data],
                         approve: async (
                             signed: PeraArbitraryDataSignResult[],
                         ) => {
                             sendMessageToWebview(
                                 message.id,
-                                signed.map(s => s.signature),
+                                signed.map(s => encodeToBase64(s.signature)),
                                 webview,
                             )
                         },

@@ -20,7 +20,7 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useWebView } from '@hooks/usePeraWebviewInterface'
+import { useWebView } from '@modules/webview/hooks'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 
 export type AssetSocialMediaProps = {

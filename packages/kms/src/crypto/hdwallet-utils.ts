@@ -18,7 +18,6 @@ import {
     XHDWalletAPI,
 } from '@algorandfoundation/xhd-wallet-api'
 import * as bip39 from 'bip39'
-import messageSchema from '../crypto/message-schema.json'
 import { WORDLIST } from '../crypto/wordlist'
 import { HDDerivationParams } from '../models'
 
@@ -67,8 +66,8 @@ export const signData = async (
 ): Promise<Uint8Array> => {
     const rootKey = fromSeed(seed)
     const metadata = {
-        encoding: Encoding.BASE64,
-        schema: messageSchema,
+        encoding: Encoding.NONE,
+        schema: {},
     }
     return api.signData(
         rootKey,
