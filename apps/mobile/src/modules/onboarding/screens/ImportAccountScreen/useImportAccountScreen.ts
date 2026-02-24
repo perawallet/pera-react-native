@@ -47,6 +47,7 @@ export type UseImportAccountScreenResult = {
     canImport: boolean
     processing: boolean
     updateWord: (word: string, index: number) => void
+    handleWordChange: (word: string, index: number) => void
     handleImportAccount: () => void
     mnemonicLength: number
     t: (key: string) => string
@@ -220,6 +221,39 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         [mnemonicLength, showToast, t],
     )
 
+    const handleWordChange = useCallback(
+        async (text: string, index: number) => {
+            const currentWord = words[index] ?? ''
+
+            if (text.length - currentWord.length > 1) {
+                try {
+                    const clipboardContent = await Clipboard.getStringAsync()
+
+                    if (clipboardContent) {
+                        const clipboardWords = clipboardContent
+                            .trim()
+                            .split(/\s+/)
+                            .filter(Boolean)
+                        const receivedWords = text
+                            .trim()
+                            .split(/\s+/)
+                            .filter(Boolean)
+
+                        if (clipboardWords.length > receivedWords.length) {
+                            updateWord(clipboardContent, index)
+                            return
+                        }
+                    }
+                } catch {
+                    // Clipboard read failed; fall through
+                }
+            }
+
+            updateWord(text, index)
+        },
+        [words, updateWord],
+    )
+
     const handleImportAccount = useCallback(() => {
         setProcessing(true)
         deferToNextCycle(async () => {
@@ -295,6 +329,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         canImport,
         processing,
         updateWord,
+        handleWordChange,
         handleImportAccount,
         mnemonicLength,
         t,
