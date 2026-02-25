@@ -16,7 +16,8 @@ import { useImportRekeyedAddressesScreen } from '../useImportRekeyedAddressesScr
 import { useRoute } from '@react-navigation/native'
 import {
     useAllAccounts,
-    useAccountsStore,
+    useSetAccounts,
+    useSelectedAccountAddress,
     AccountTypes,
 } from '@perawallet/wallet-core-accounts'
 import { useIsOnboarding } from '@modules/onboarding/hooks'
@@ -44,9 +45,8 @@ vi.mock('@react-navigation/native', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(),
-    useAccountsStore: {
-        getState: vi.fn(),
-    },
+    useSetAccounts: vi.fn(),
+    useSelectedAccountAddress: vi.fn(),
     AccountTypes: {
         algo25: 'algo25',
     },
@@ -79,10 +79,14 @@ describe('useImportRekeyedAddressesScreen', () => {
 
         vi.mocked(useAllAccounts).mockReturnValue([])
 
-        vi.mocked(useAccountsStore.getState).mockReturnValue({
+        vi.mocked(useSetAccounts).mockReturnValue({
             setAccounts: mockSetAccounts,
+        })
+
+        vi.mocked(useSelectedAccountAddress).mockReturnValue({
+            selectedAccountAddress: null,
             setSelectedAccountAddress: mockSetSelectedAccountAddress,
-        } as unknown as ReturnType<typeof useAccountsStore.getState>)
+        })
 
         vi.mocked(useIsOnboarding).mockReturnValue({
             setIsOnboarding: mockSetIsOnboarding,

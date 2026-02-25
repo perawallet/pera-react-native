@@ -62,11 +62,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
         discoverAccounts: mockDiscoverAccounts,
         discoverRekeyedAccounts: mockDiscoverRekeyedAccounts,
     }),
-    useAccountsStore: {
-        getState: () => ({
-            setSelectedAccountAddress: mockSetSelectedAccountAddress,
-        }),
-    },
+    useSelectedAccountAddress: () => ({
+        setSelectedAccountAddress: mockSetSelectedAccountAddress,
+    }),
 }))
 
 vi.mock('../../../hooks', () => ({

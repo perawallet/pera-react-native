@@ -15,7 +15,8 @@ import { RouteProp, useRoute } from '@react-navigation/native'
 import { OnboardingStackParamList } from '../../routes/types'
 import {
     useAllAccounts,
-    useAccountsStore,
+    useSetAccounts,
+    useSelectedAccountAddress,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
@@ -50,6 +51,8 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
     const allAccounts = useAllAccounts()
 
     const { setIsOnboarding } = useIsOnboarding()
+    const { setSelectedAccountAddress } = useSelectedAccountAddress()
+    const { setAccounts } = useSetAccounts()
 
     const alreadyImportedAddresses = useMemo(() => {
         return new Set(allAccounts.map(acc => acc.address))
@@ -107,14 +110,19 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
 
         setIsImporting(true)
         deferToNextCycle(() => {
-            const { setAccounts, setSelectedAccountAddress } =
-                useAccountsStore.getState()
             setAccounts([...allAccounts, ...accountsToAdd])
             setSelectedAccountAddress(accountsToAdd[0].address)
             setIsOnboarding(false)
             setIsImporting(false)
         })
-    }, [accounts, selectedAddresses, allAccounts, setIsOnboarding])
+    }, [
+        accounts,
+        selectedAddresses,
+        allAccounts,
+        setIsOnboarding,
+        setSelectedAccountAddress,
+        setAccounts,
+    ])
 
     const handleSkip = useCallback(() => {
         setIsOnboarding(false)
