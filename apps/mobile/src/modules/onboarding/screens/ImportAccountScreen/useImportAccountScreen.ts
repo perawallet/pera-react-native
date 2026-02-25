@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useState, useCallback, useMemo, useRef } from 'react'
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
 import { Linking } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 
@@ -24,6 +24,7 @@ import { MNEMONIC_WORDLIST as WORDLIST } from '@perawallet/wallet-core-kms'
 import { RECOVERY_PASSPHRASE_SUPPORT_URL } from '@perawallet/wallet-core-config'
 
 import type { PWInputRef } from '@components/core'
+import type { UseImportAccountScreenResult } from './types'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -39,33 +40,6 @@ const MNEMONIC_LENGTH_MAP: Record<ImportAccountType, number> = {
 }
 
 const MAX_SUGGESTIONS = 4
-
-export type UseImportAccountScreenResult = {
-    words: string[]
-    focused: number
-    setFocused: (index: number) => void
-    canImport: boolean
-    processing: boolean
-    updateWord: (word: string, index: number) => void
-    handleWordChange: (word: string, index: number) => void
-    handleImportAccount: () => void
-    mnemonicLength: number
-    t: (key: string) => string
-    isKeyboardVisible: boolean
-    keyboardHeight: number
-    isSupportOptionsVisible: boolean
-    handleOpenSupportOptions: () => void
-    handleCloseSupportOptions: () => void
-    handlePastePassphrase: () => void
-    handleScanQRCode: () => void
-    handleLearnMore: () => void
-    isQRScannerVisible: boolean
-    handleCloseQRScanner: () => void
-    handleQRScannerSuccess: (url: string) => void
-    suggestions: string[]
-    handleSelectSuggestion: (word: string) => void
-    setInputRef: (index: number, ref: PWInputRef | null) => void
-}
 
 export function useImportAccountScreen(): UseImportAccountScreenResult {
     const {
@@ -84,6 +58,8 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const [words, setWords] = useState<string[]>(
         new Array(mnemonicLength).fill(''),
     )
+    const wordsRef = useRef(words)
+    wordsRef.current = words
     const [focused, setFocused] = useState(0)
     const [processing, setProcessing] = useState(false)
     const {
@@ -101,13 +77,24 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         new Array(mnemonicLength).fill(null),
     )
 
-    const setInputRef = useCallback((index: number, ref: PWInputRef | null) => {
-        inputRefs.current[index] = ref
-    }, [])
+    const refCallbacks = useMemo(
+        () =>
+            Array.from(
+                { length: mnemonicLength },
+                (_, i) => (ref: PWInputRef | null) => {
+                    inputRefs.current[i] = ref
+                },
+            ),
+        [mnemonicLength],
+    )
 
     const focusInput = useCallback((index: number) => {
         inputRefs.current[index]?.focus()
     }, [])
+
+    useEffect(() => {
+        focusInput(focused)
+    }, [focused, focusInput])
 
     const canImport = useMemo(() => words.every(w => w.length > 0), [words])
 
@@ -151,12 +138,9 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
 
             if (nextIndex < mnemonicLength) {
                 setFocused(nextIndex)
-                setTimeout(() => {
-                    focusInput(nextIndex)
-                }, 50)
             }
         },
-        [focused, mnemonicLength, focusInput],
+        [focused, mnemonicLength],
     )
 
     const updateWord = useCallback(
@@ -223,7 +207,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
 
     const handleWordChange = useCallback(
         async (text: string, index: number) => {
-            const currentWord = words[index] ?? ''
+            const currentWord = wordsRef.current[index] ?? ''
 
             if (text.length - currentWord.length > 1) {
                 try {
@@ -251,7 +235,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
 
             updateWord(text, index)
         },
-        [words, updateWord],
+        [updateWord],
     )
 
     const handleImportAccount = useCallback(() => {
@@ -346,6 +330,6 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         handleQRScannerSuccess,
         suggestions,
         handleSelectSuggestion,
-        setInputRef,
+        refCallbacks,
     }
 }

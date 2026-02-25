@@ -14,15 +14,10 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        position: 'absolute',
-        top: '100%',
-        left: 0,
-        right: 0,
         backgroundColor: theme.colors.background,
         borderRadius: theme.spacing.sm,
         borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGray,
-        zIndex: theme.zIndex.layer2,
         ...theme.shadows.md,
     },
     suggestionItem: {
