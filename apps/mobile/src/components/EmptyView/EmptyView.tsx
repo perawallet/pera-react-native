@@ -16,6 +16,7 @@ import { PWText } from '@components/core/PWText'
 import { PWView, PWViewProps } from '@components/core/PWView'
 import { LoadingView } from '@components/LoadingView'
 import { useStyles } from './styles'
+import { ViewStyle } from 'react-native'
 
 export type EmptyViewProps = {
     title?: string
@@ -24,6 +25,7 @@ export type EmptyViewProps = {
     button?: React.ReactElement<unknown>
     isLoading?: boolean
     loadingView?: ReactNode
+    loadingStyle?: ViewStyle
 } & PWViewProps
 
 export const EmptyView = (props: EmptyViewProps) => {
@@ -36,6 +38,7 @@ export const EmptyView = (props: EmptyViewProps) => {
         button,
         isLoading,
         loadingView,
+        loadingStyle,
         ...rest
     } = props
 
@@ -48,6 +51,7 @@ export const EmptyView = (props: EmptyViewProps) => {
                 variant='skeleton'
                 size='sm'
                 count={5}
+                style={loadingStyle}
             />
         )
     }

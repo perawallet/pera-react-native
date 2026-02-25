@@ -10,18 +10,21 @@
  limitations under the License
  */
 
-import { PWBadge, PWIcon, PWTouchableOpacity, PWView } from '@components/core'
+import { PWBadge, PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
 import {
     DEFAULT_PRECISION,
+    logger,
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
-import { AssetTitle } from '@modules/assets/components'
+import { AssetIcon } from '@modules/assets/components'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { toWholeUnits } from '@perawallet/wallet-core-assets'
+import { useMemo } from 'react'
 
 export type AssetTransferRequestItemProps = {
     item: Arc59AssetRequest
@@ -39,26 +42,28 @@ export const AssetTransferRequestItem = ({
     const firstSender = senders.results[0]
     const remainingCount = senders.count - 1
 
+    const amount = useMemo(() => toWholeUnits(Decimal(totalAmount), asset), [totalAmount, asset])
+
     return (
         <PWTouchableOpacity
             style={styles.container}
             onPress={onPress}
         >
             <PWView style={styles.iconContainer}>
-                <PWIcon
-                    name='inbox'
-                    variant='secondary'
-                    size='lg'
+                <AssetIcon
+                    asset={asset}
+                    size='xl'
                 />
             </PWView>
             <PWView style={styles.contentContainer}>
                 <PWView style={styles.topRow}>
-                    <AssetTitle asset={asset} />
+                    <PWText variant='h4'>{asset.name}</PWText>
                     <CurrencyDisplay
-                        value={Decimal(totalAmount)}
+                        value={Decimal(amount)}
                         currency={asset?.unitName ?? ''}
                         precision={asset?.decimals}
                         minPrecision={DEFAULT_PRECISION}
+                        variant='h4'
                     />
                 </PWView>
                 <PWView style={styles.bottomRow}>
@@ -84,7 +89,7 @@ export const AssetTransferRequestItem = ({
                         )}
                     </PWView>
                     <PreferredCurrencyDisplay
-                        sourceAmount={Decimal(totalAmount)}
+                        sourceAmount={amount}
                         sourceAssetId={asset?.assetId}
                         precision={DEFAULT_PRECISION}
                         showSymbol

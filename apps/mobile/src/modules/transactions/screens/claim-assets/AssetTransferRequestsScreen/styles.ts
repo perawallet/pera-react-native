@@ -17,12 +17,21 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
     },
     contentContainer: {
+        flex: 1,
         paddingVertical: theme.spacing.md,
         gap: theme.spacing.xs,
+    },
+    loadingView: {
+        justifyContent: 'flex-start',
     },
     emptyView: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+    separator: {
+        marginVertical: theme.spacing.lg,
+        marginLeft: theme.spacing['4xl'],
+        marginRight: theme.spacing.xl,
     },
 }))

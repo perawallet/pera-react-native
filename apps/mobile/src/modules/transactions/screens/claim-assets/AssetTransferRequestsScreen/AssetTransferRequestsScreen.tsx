@@ -13,12 +13,14 @@
 import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
 import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
-import { PWDivider, PWFlatList } from '@components/core'
+import { PWDivider, PWFlatList, PWText } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { AssetTransferRequestItem } from '@modules/transactions/components/claim-assets/AssetTransferRequestItem'
 import { useStyles } from './styles'
 import { useAssetTransferRequestsScreen } from './useAssetTransferRequestsScreen'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { InfoButton } from '@components/InfoButton'
 
 export const AssetTransferRequestsScreen = () => {
     const styles = useStyles()
@@ -26,6 +28,16 @@ export const AssetTransferRequestsScreen = () => {
     const { t } = useLanguage()
     const { assetRequests, isPending, handleItemPress } =
         useAssetTransferRequestsScreen()
+
+    useNavigationHeader({
+        right: <InfoButton
+            title={t('arc59.requests.info_title')}
+            size='md'
+            variant='primary'
+        >
+            <PWText>{t('arc59.requests.info_body')}</PWText>
+        </InfoButton>,
+    })
 
     const renderItem = useCallback(
         ({ item, index }: { item: Arc59AssetRequest; index: number }) => (
@@ -37,10 +49,10 @@ export const AssetTransferRequestsScreen = () => {
         [handleItemPress],
     )
 
-    const renderSeparator = useCallback(() => <PWDivider />, [])
+    const renderSeparator = useCallback(() => <PWDivider style={styles.separator} />, [])
 
     const keyExtractor = useCallback(
-        (item: Arc59AssetRequest) => String(item.asset.assetId),
+        (item: Arc59AssetRequest, index: number) => String(item.id ?? '' + index),
         [],
     )
 
@@ -55,10 +67,11 @@ export const AssetTransferRequestsScreen = () => {
             ListEmptyComponent={
                 <EmptyView
                     isLoading={isPending}
+                    loadingStyle={styles.loadingView}
                     style={styles.emptyView}
                     icon='inbox'
-                    title={t('messages.inbox.empty_title')}
-                    body={t('messages.inbox.empty_body')}
+                    title={t('arc59.requests.empty_title')}
+                    body={t('arc59.requests.empty_body')}
                 />
             }
             estimatedItemSize={theme.spacing.xxl}

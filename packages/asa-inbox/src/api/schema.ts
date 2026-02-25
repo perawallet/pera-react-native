@@ -56,10 +56,11 @@ const arc59AssetSchema = z.object({
     fraction_decimals: z.number(),
     usd_value: z.string().nullable(),
     verification_tier: z.string(),
+    is_verified: z.boolean(),
     is_deleted: z.boolean(),
-    collectible: arc59AssetCollectibleSchema.nullable(),
+    collectible: arc59AssetCollectibleSchema.optional().nullable(),
     creator: arc59AssetCreatorSchema,
-    type: z.enum(['standard', 'collectible']),
+    type: z.enum(['standard_asset', 'collectible']),
 })
 
 const arc59SenderSchema = z.object({
@@ -67,7 +68,7 @@ const arc59SenderSchema = z.object({
         address: z.string(),
         name: z.string().nullable(),
     }),
-    amount: z.string(),
+    amount: z.coerce.string(),
 })
 
 const arc59SendersSchema = z.object({
@@ -76,10 +77,10 @@ const arc59SendersSchema = z.object({
 })
 
 export const arc59AssetRequestSchema = z.object({
-    total_amount: z.string(),
+    total_amount: z.coerce.string(),
     asset: arc59AssetSchema,
-    algo_gain_on_claim: z.string(),
-    algo_gain_on_reject: z.string(),
+    algo_gain_on_claim: z.coerce.string(),
+    algo_gain_on_reject: z.coerce.string(),
     senders: arc59SendersSchema,
     insufficient_algo_for_claiming: z.boolean(),
     insufficient_algo_for_rejecting: z.boolean(),
@@ -124,6 +125,7 @@ export const mapArc59AssetRequest = (
         peraMetadata: {
             verificationTier: raw.asset
                 .verification_tier as PeraAssetVerificationTier,
+            isVerified: raw.asset.is_verified,
             isDeleted: raw.asset.is_deleted,
             logo: raw.asset.logo,
             collectible: undefined, //TODO: map collectible type

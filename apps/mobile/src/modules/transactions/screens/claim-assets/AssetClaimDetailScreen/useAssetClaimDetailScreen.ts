@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import {
     useRoute,
     type RouteProp,
@@ -25,6 +25,7 @@ import { useModalState } from '@hooks/useModalState'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
+import { toWholeUnits } from '@perawallet/wallet-core-assets'
 
 type UseAssetClaimDetailScreenResult = {
     request: Arc59AssetRequest | null
@@ -112,9 +113,14 @@ export const useAssetClaimDetailScreen =
             }
         }, [request, copyToClipboard])
 
+        const amount = useMemo(() => {
+            if (!request) return Decimal(0)
+            return toWholeUnits(Decimal(request.totalAmount), request.asset)
+        }, [request])
+
         return {
             request,
-            amount: request ? Decimal(request.totalAmount) : Decimal(0),
+            amount,
             receiverAccount: account ?? null,
             isRejectSheetOpen: rejectModal.isOpen,
             handleClaim,

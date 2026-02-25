@@ -11,8 +11,10 @@
  */
 
 import {
+    PWBadge,
     PWButton,
     PWDivider,
+    PWIcon,
     PWScrollView,
     PWText,
     PWTouchableOpacity,
@@ -30,9 +32,12 @@ import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
 import Decimal from 'decimal.js'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export const AssetClaimDetailScreen = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const { t } = useLanguage()
     const {
         request,
@@ -66,13 +71,13 @@ export const AssetClaimDetailScreen = () => {
                         showSymbol
                         style={styles.usdText}
                     />
+                </PWView>
+
+                {request.id && <>
                     <PWView style={styles.assetIdRow}>
                         <PWText
-                            variant='caption'
                             style={styles.usdText}
-                        >
-                            {request.asset?.assetId}
-                        </PWText>
+                        >{request.id}</PWText>
                         <PWTouchableOpacity
                             style={styles.copyIdPill}
                             onPress={handleCopyAssetId}
@@ -82,16 +87,16 @@ export const AssetClaimDetailScreen = () => {
                             </PWText>
                         </PWTouchableOpacity>
                     </PWView>
-                </PWView>
 
-                <PWDivider style={styles.separator} />
+                    <PWDivider style={styles.separator} />
+                </>}
 
                 <PWView style={styles.accountRow}>
                     <PWText style={styles.headerLabelText}>
                         {t('messages.claim.account')}
                     </PWText>
                     {receiverAccount && (
-                        <AccountDisplay account={receiverAccount} />
+                        <AccountDisplay account={receiverAccount} showChevron={false} />
                     )}
                 </PWView>
 
@@ -113,9 +118,10 @@ export const AssetClaimDetailScreen = () => {
                         >
                             <AddressDisplay
                                 address={senderItem.sender.address}
+                                showCopy={false}
                             />
                             <CurrencyDisplay
-                                value={Decimal(senderItem.amount)}
+                                value={baseUnitsToDisplayUnits(Decimal(senderItem.amount), request.asset.decimals)}
                                 currency={request.asset?.unitName ?? ''}
                                 precision={request.asset?.decimals}
                                 minPrecision={DEFAULT_PRECISION}
@@ -127,18 +133,34 @@ export const AssetClaimDetailScreen = () => {
                 </PWView>
             </PWScrollView>
 
+            {request.algoGainOnClaim !== '5' && <>
+
+                <PWDivider style={styles.separator} />
+                <PWView style={styles.algoGainRow}>
+                    <PWIcon name='info' variant='secondary' style={styles.algoGainIcon} />
+                    <PWText variant='caption' style={styles.algoGainText}>
+                        {t('arc59.claim.algo_gain', {
+                            amount: baseUnitsToDisplayUnits(
+                                Decimal(request.algoGainOnClaim),
+                                6
+                            ),
+                        })}
+                    </PWText>
+                </PWView>
+            </>}
+
             <PWView style={styles.footer}>
                 <PWView style={styles.rejectButton}>
                     <PWButton
                         variant='secondary'
-                        title={t('messages.claim.reject')}
+                        title={t('arc59.claim.reject')}
                         onPress={handleRejectPress}
                     />
                 </PWView>
                 <PWView style={styles.claimButton}>
                     <PWButton
                         variant='primary'
-                        title={t('messages.claim.claim')}
+                        title={t('arc59.claim.claim')}
                         onPress={handleClaim}
                     />
                 </PWView>

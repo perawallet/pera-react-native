@@ -12,6 +12,19 @@
         "no_accounts_body": "There are no matching accounts",
         "search_placeholder": "Account address or short name"
     },
+     "arc59": {
+        "requests": {
+            "empty_title": "No Pending Asset Transfer Requests",
+            "empty_body": "When you have an asset transfer request, you can view it here. Tap to learn more about this feature.",
+            "info_title": "Asset Transfer Requests",
+            "info_body": "This feature is an inbox for your account. Others can send you assets and NFTs, even if you have not explicitly opted in to receive them. From here, you can choose to accept or reject the asset transfer requests."
+        },
+        "claim": {
+            "claim": "Claim",
+            "reject": "Reject",
+            "algo_gain": "You will receive {{amount}} ALGO in order to compensate the opt-in expenses."
+        }
+    },
     "asset_details": {
         "about": {
             "title": "About {{name}}",

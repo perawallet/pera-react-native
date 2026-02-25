@@ -10,13 +10,19 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
+import {
+    useRoute,
+    type RouteProp,
+} from '@react-navigation/native'
 import {
     useArc59AssetRequestsQuery,
     type Arc59AssetRequest,
 } from '@perawallet/wallet-core-asa-inbox'
 import { useClaimAssets } from '@modules/transactions/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import type { MessagesStackParamList } from '@modules/messages/routes/types'
+import { logger } from '@perawallet/wallet-core-shared'
 
 type UseAssetTransferRequestsScreenResult = {
     assetRequests: Arc59AssetRequest[]
@@ -27,7 +33,16 @@ type UseAssetTransferRequestsScreenResult = {
 export const useAssetTransferRequestsScreen =
     (): UseAssetTransferRequestsScreenResult => {
         const { push } = useAppNavigation()
-        const { accountAddress, setAssetRequests } = useClaimAssets()
+        const route =
+            useRoute<
+                RouteProp<MessagesStackParamList, 'AssetTransferRequests'>
+            >()
+        const { accountAddress, setAccountAddress, setAssetRequests } =
+            useClaimAssets()
+
+        useEffect(() => {
+            setAccountAddress(route.params.item.address)
+        }, [route.params.item.address, setAccountAddress])
         const { data: assetRequests, isPending } =
             useArc59AssetRequestsQuery(accountAddress)
 
@@ -46,7 +61,7 @@ export const useAssetTransferRequestsScreen =
         )
 
         return {
-            assetRequests: assetRequests ?? [],
+            assetRequests: [...(assetRequests ?? []), ...assetRequests ?? []],
             isPending,
             handleItemPress,
         }

@@ -11,31 +11,34 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles(theme => ({
+export const useStyles = makeStyles((theme, insets: EdgeInsets)  => ({
     container: {
         flex: 1,
+        paddingHorizontal: theme.spacing.xl,
+        marginBottom: insets.bottom,
     },
     scrollContent: {
-        paddingBottom: theme.spacing['3xl'],
+        flex: 1,
     },
     amountSection: {
+        flexGrow: 1,
         alignItems: 'center',
+        justifyContent: 'center',
         paddingVertical: theme.spacing.xl,
         gap: theme.spacing.xs,
     },
     assetIdRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'center',
-        gap: theme.spacing.sm,
-        marginTop: theme.spacing.sm,
+        justifyContent: 'space-between',
     },
     copyIdPill: {
         backgroundColor: theme.colors.layerGrayLighter,
-        paddingHorizontal: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.md,
         paddingVertical: theme.spacing.xs,
-        borderRadius: theme.spacing.sm,
+        borderRadius: theme.spacing.lg,
     },
     separator: {
         height: theme.borders.sm,
@@ -54,18 +57,16 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.sm,
     },
     sendersSection: {
-        marginTop: theme.spacing.md,
+        gap: theme.spacing.md,
     },
     sendersHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: theme.spacing.md,
     },
     senderRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: theme.spacing.sm,
     },
     senderAmountText: {
         color: theme.colors.success,
@@ -73,14 +74,13 @@ export const useStyles = makeStyles(theme => ({
     footer: {
         flexDirection: 'row',
         gap: theme.spacing.md,
-        paddingVertical: theme.spacing.lg,
-        paddingHorizontal: theme.spacing.md,
+        marginBottom: theme.spacing.xl
     },
     rejectButton: {
-        flex: 1,
+        flex: 2,
     },
     claimButton: {
-        flex: 2,
+        flex: 3,
     },
     usdText: {
         color: theme.colors.textGray,
@@ -88,4 +88,16 @@ export const useStyles = makeStyles(theme => ({
     headerLabelText: {
         color: theme.colors.textGray,
     },
+    algoGainRow: {
+        flexDirection: 'row',
+        gap: theme.spacing.sm,
+        paddingVertical: theme.spacing.lg,
+    },
+    algoGainText: {
+        flexShrink: 1,
+        flexWrap: 'wrap',
+    },
+    algoGainIcon: {
+        marginTop: theme.spacing.xs
+    }
 }))

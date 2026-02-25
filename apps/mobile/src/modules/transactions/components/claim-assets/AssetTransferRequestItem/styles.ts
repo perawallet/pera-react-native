@@ -17,7 +17,7 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.md,
-        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.xl,
     },
     iconContainer: {
         width: theme.spacing.xxl,
