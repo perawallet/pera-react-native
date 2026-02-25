@@ -10,17 +10,15 @@
  limitations under the License
  */
 
-import { useState } from 'react'
-import { RouteProp, useRoute } from '@react-navigation/native'
 import { createPWTabNavigator } from '@components/core/PWTabView/PWTabView'
-import { PWTouchableIcon } from '@components/core'
+import { PWTouchableIcon, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { NotificationsScreen } from '../NotificationsScreen'
 import { InboxScreen } from '../InboxScreen'
 import { NotificationSettingsBottomSheet } from '../../components/NotificationSettingsBottomSheet'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { useModalState } from '@hooks/useModalState'
-import { MessagesStackParamList } from '@modules/messages/routes'
+import { useStyles } from './styles'
+import { useMessagesScreen } from './useMessagesScreen'
 
 export type MessagesTabsParamsList = {
     Inbox: undefined
@@ -31,19 +29,25 @@ const Tab = createPWTabNavigator<MessagesTabsParamsList>()
 
 export const MessagesScreen = () => {
     const { t } = useLanguage()
-    const route = useRoute<RouteProp<MessagesStackParamList, 'MessagesHome'>>()
-    const settingsModal = useModalState()
+    const styles = useStyles()
 
-    const initialTab = route.params?.initialTab ?? 'Inbox'
-    const [activeTab, setActiveTab] =
-        useState<keyof MessagesTabsParamsList>(initialTab)
+    const {
+        initialTab,
+        openSettingsModal,
+        closeSettingsModal,
+        settingsModalIsOpen,
+        activeTab,
+        setActiveTab,
+        showInboxBadge,
+        showNotificationsBadge
+    } = useMessagesScreen()
 
     useNavigationHeader({
         right:
             activeTab === 'Notifications' ? (
                 <PWTouchableIcon
                     name='sliders'
-                    onPress={settingsModal.open}
+                    onPress={openSettingsModal}
                 />
             ) : null,
     })
@@ -66,19 +70,25 @@ export const MessagesScreen = () => {
             >
                 <Tab.Screen
                     name='Inbox'
-                    options={{ title: t('messages.tabs.inbox') }}
+                    options={{ 
+                        title: t('messages.tabs.inbox'), 
+                        tabBarBadge: () => <PWView style={showInboxBadge ? styles.unreadBadge : styles.badge} />
+                    }}
                     component={InboxScreen}
                 />
                 <Tab.Screen
                     name='Notifications'
-                    options={{ title: t('messages.tabs.notifications') }}
+                    options={{ 
+                        title: t('messages.tabs.notifications'),
+                        tabBarBadge: () => <PWView style={showNotificationsBadge ? styles.unreadBadge : styles.badge} />
+                    }}
                     component={NotificationsScreen}
                 />
             </Tab.Navigator>
 
             <NotificationSettingsBottomSheet
-                isVisible={settingsModal.isOpen}
-                onClose={settingsModal.close}
+                isVisible={settingsModalIsOpen}
+                onClose={closeSettingsModal}
             />
         </>
     )

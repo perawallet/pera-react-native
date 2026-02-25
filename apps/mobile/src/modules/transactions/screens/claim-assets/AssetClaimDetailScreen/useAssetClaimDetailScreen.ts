@@ -41,11 +41,11 @@ type UseAssetClaimDetailScreenResult = {
 
 export const useAssetClaimDetailScreen =
     (): UseAssetClaimDetailScreenResult => {
-        const { push } = useAppNavigation()
+        const { push, navigate } = useAppNavigation()
         const route =
             useRoute<RouteProp<MessagesStackParamList, 'AssetClaimDetail'>>()
         const { assetIndex } = route.params
-        const { assetRequests, accountAddress } = useClaimAssets()
+        const { assetRequests, accountAddress, setOnFinished } = useClaimAssets()
         const accounts = useAllAccounts()
         const { copyToClipboard } = useClipboard()
         const rejectModal = useModalState()
@@ -74,7 +74,11 @@ export const useAssetClaimDetailScreen =
                         request?.shouldUseFundsBeforeClaiming ?? false,
                 },
             })
-        }, [push, assetIndex, request, showToast, t])
+
+            setOnFinished(() => {
+                navigate('Home')
+            })
+        }, [push, navigate, assetIndex, request, showToast, t])
 
         const handleRejectPress = useCallback(() => {
             rejectModal.open()

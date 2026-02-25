@@ -74,6 +74,7 @@ export const PWTabBar = ({
                     const { options } = descriptors[route.key]
                     const label =
                         options.tabBarLabel ?? options.title ?? route.name
+                    const badge = options.tabBarBadge
                     const isFocused = state.index === index
 
                     // Cross-fade opacity based on position directly
@@ -123,7 +124,7 @@ export const PWTabBar = ({
                             <PWView style={styles.labelContainer}>
                                 {/* Inactive Layer */}
                                 <Animated.View
-                                    style={{ opacity: inactiveOpacity }}
+                                    style={[{ opacity: inactiveOpacity }, styles.labelTextContainer]}
                                 >
                                     <Animated.Text
                                         style={[
@@ -139,6 +140,9 @@ export const PWTabBar = ({
                                             styles.inactiveTitle.color!,
                                         )}
                                     </Animated.Text>
+                                    <Animated.View style={{ opacity: inactiveOpacity }}>
+                                        {badge?.()}
+                                    </Animated.View>
                                 </Animated.View>
 
                                 {/* Active Layer - Absolute overlay */}
@@ -159,6 +163,9 @@ export const PWTabBar = ({
                                             styles.activeTitle.color!,
                                         )}
                                     </Animated.Text>
+                                    <Animated.View style={{ opacity: activeOpacity }}>
+                                        {badge?.()}
+                                    </Animated.View>
                                 </Animated.View>
                             </PWView>
                         </PWTouchableOpacity>

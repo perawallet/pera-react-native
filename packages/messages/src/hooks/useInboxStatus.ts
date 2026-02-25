@@ -43,9 +43,9 @@ export const useInboxStatus = () => {
     })
 
     return {
-        data: {
-            hasUnreadItems:
-                inboxData?.length || notificationStatusData?.hasNewNotification,
-        },
+        hasUnreadItems:
+            inboxData?.length || notificationStatusData?.hasNewNotification,
+        hasUnreadInboxItems: inboxData?.length,
+        hasUnreadNotifications: notificationStatusData?.hasNewNotification
     }
 }

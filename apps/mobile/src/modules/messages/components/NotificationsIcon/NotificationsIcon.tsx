@@ -21,7 +21,7 @@ export type NotificationsIconProps = {} & SvgProps
 
 export const NotificationsIcon = (props: NotificationsIconProps) => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { data } = useInboxStatus()
+    const { hasUnreadItems } = useInboxStatus()
     const styles = useStyles()
 
     const goToNotifications = () => {
@@ -35,7 +35,7 @@ export const NotificationsIcon = (props: NotificationsIconProps) => {
                     name='inbox'
                     {...props}
                 />
-                {data?.hasUnreadItems && (
+                {hasUnreadItems && (
                     <PWView
                         style={styles.badge}
                         testID='notification-badge'

@@ -17,7 +17,7 @@ import {
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { screenListeners } from '@routes/listeners'
-import { fullScreenLayout } from '@layouts/index'
+import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
 
 import { AssetTransferRequestsScreen } from '@modules/transactions/screens/claim-assets/AssetTransferRequestsScreen/AssetTransferRequestsScreen'
 import { AssetClaimDetailScreen } from '@modules/transactions/screens/claim-assets/AssetClaimDetailScreen/AssetClaimDetailScreen'
@@ -75,6 +75,7 @@ export const MessagesStackNavigator = () => {
             <MessagesStack.Screen
                 name='ClaimSuccess'
                 component={TransactionSuccessScreen}
+                layout={safeAreaLayout}
                 options={{
                     headerShown: false,
                     gestureEnabled: false,
