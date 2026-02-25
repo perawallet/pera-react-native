@@ -16,6 +16,7 @@ import { useUpdateDeviceMutation } from './useUpdateDeviceMutation'
 import { useDeviceStore } from '../store'
 import { useDeviceInfoService } from './useDeviceInfoService'
 import { type Network } from '@perawallet/wallet-core-shared'
+import { useNetwork } from './useNetwork'
 
 export const useDeviceID = (network: Network) => {
     const deviceIDs = useDeviceStore(state => state.deviceIDs)
@@ -31,8 +32,9 @@ export const usePushToken = () => {
     }
 }
 
-export const useDevice = (network: Network) => {
+export const useDevice = () => {
     const deviceIDs = useDeviceStore(state => state.deviceIDs)
+    const { network } = useNetwork()
     const deviceId = useDeviceID(network)
     const { pushToken } = usePushToken()
     const setDeviceID = useDeviceStore(state => state.setDeviceID)

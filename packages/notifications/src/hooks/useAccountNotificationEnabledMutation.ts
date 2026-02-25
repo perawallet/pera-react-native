@@ -15,7 +15,7 @@ import {
     useDeviceID,
     useNetwork,
 } from '@perawallet/wallet-core-platform-integration'
-import { updateNotificationEnabled } from './endpoints'
+import { updateNotificationEnabled } from '../api/notifications'
 import { useQueryClient } from '@tanstack/react-query'
 import {
     getNotificationsListQueryKey,

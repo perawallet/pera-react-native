@@ -15,10 +15,12 @@ import {
     useDeviceID,
     useNetwork,
 } from '@perawallet/wallet-core-platform-integration'
-import { fetchNotificationStatus } from './endpoints'
+import {
+    fetchNotificationStatus,
+    type NotificationStatusResponse,
+} from '../api/notifications'
 import { config } from '@perawallet/wallet-core-config'
 import { useCallback } from 'react'
-import type { NotificationStatusResponse } from '../models'
 import { getNotificationStatusQueryKey } from './querykeys'
 
 export const useNotificationStatus = () => {

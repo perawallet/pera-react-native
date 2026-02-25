@@ -12,6 +12,7 @@
 
 export const name = '@perawallet/wallet-core-notifications'
 
+export * from './api'
 export * from './hooks'
 export * from './models'
 

@@ -15,16 +15,19 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SettingsNotificationsScreen } from '../SettingsNotificationsScreen'
 import { useSettingsNotificationsScreen } from '../useSettingsNotificationsScreen'
 
-vi.mock('../useSettingsNotificationsScreen', () => ({
-    useSettingsNotificationsScreen: vi.fn(() => ({
-        isSystemNotificationEnabled: true,
-        isSystemNotificationLoading: false,
-        accounts: [],
-        handleSystemNotificationToggle: vi.fn(),
-        handleAccountNotificationToggle: vi.fn(),
-        isAccountNotificationEnabled: vi.fn(() => true),
-    })),
-}))
+vi.mock(
+    '@modules/settings/screens/SettingsNotificationsScreen/useSettingsNotificationsScreen',
+    () => ({
+        useSettingsNotificationsScreen: vi.fn(() => ({
+            isSystemNotificationEnabled: true,
+            isSystemNotificationLoading: false,
+            accounts: [],
+            handleSystemNotificationToggle: vi.fn(),
+            handleAccountNotificationToggle: vi.fn(),
+            isAccountNotificationEnabled: vi.fn(() => true),
+        })),
+    }),
+)
 
 describe('SettingsNotificationsScreen', () => {
     beforeEach(() => {

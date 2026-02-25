@@ -94,7 +94,31 @@ export const useToast = () => {
         [styles],
     )
 
+    const infoToast = useCallback(
+        (title: string, body: string) => {
+            showToast({ title, body, type: 'info' })
+        },
+        [showToast],
+    )
+
+    const errorToast = useCallback(
+        (title: string, body: string) => {
+            showToast({ title, body, type: 'error' })
+        },
+        [showToast],
+    )
+
+    const successToast = useCallback(
+        (title: string, body: string) => {
+            showToast({ title, body, type: 'success' })
+        },
+        [showToast],
+    )
+
     return {
         showToast,
+        infoToast,
+        errorToast,
+        successToast,
     }
 }

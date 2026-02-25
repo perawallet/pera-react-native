@@ -25,7 +25,7 @@ export type RootStackParamList = {
     Onboarding: NavigatorScreenParams<OnboardingStackParamList>
     TabBar: NavigatorScreenParams<TabBarStackParamList>
     AddAccount: NavigatorScreenParams<AddAccountStackParamList>
-    Notifications: undefined
+    Messages: { initialTab?: 'Inbox' | 'Notifications' } | undefined
     Settings: NavigatorScreenParams<SettingsStackParamsList>
     Contacts: NavigatorScreenParams<ContactsStackParamsList>
     Staking: undefined

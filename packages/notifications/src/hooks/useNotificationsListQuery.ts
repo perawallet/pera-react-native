@@ -16,27 +16,25 @@ import {
     useNetwork,
 } from '@perawallet/wallet-core-platform-integration'
 import { useInfiniteQuery, type InfiniteData } from '@tanstack/react-query'
-import { fetchNotificationList } from './endpoints'
-import type {
-    NotificationResponse,
-    NotificationsListResponse,
-    PeraNotification,
-} from '../models'
+import {
+    fetchNotificationList,
+    type NotificationResponse,
+    type NotificationsListResponse,
+} from '../api/notifications'
+import type { PeraNotification } from '../models'
 import { getNotificationsListQueryKey } from './querykeys'
 
 const mapNotificationResponseToNotification = (
     response: NotificationResponse,
-): PeraNotification => {
-    return {
-        id: response.id,
-        title: response.title,
-        message: response.message,
-        createdAt: new Date(response.creation_datetime),
-        metadata: response.metadata
-            ? (response.metadata as Record<string, unknown>)
-            : {},
-    }
-}
+): PeraNotification => ({
+    id: response.id,
+    accountAddress: response.account_address,
+    message: response.message,
+    url: response.url,
+    createdAt: new Date(response.creation_datetime),
+    isUnread: response.is_unread,
+    icon: response.icon ?? null,
+})
 
 export const useNotificationsListQuery = () => {
     const { network } = useNetwork()
@@ -47,7 +45,7 @@ export const useNotificationsListQuery = () => {
         queryFn: ({ pageParam }) =>
             fetchNotificationList(
                 network,
-                deviceID!,
+                deviceID ?? '',
                 pageParam as string | undefined,
             ),
         initialPageParam: '',
@@ -57,7 +55,7 @@ export const useNotificationsListQuery = () => {
         getPreviousPageParam: firstPage => {
             return firstPage.previous
         },
-        enabled: !!deviceID,
+        enabled: !!deviceID?.length,
         select: useCallback((data: InfiniteData<NotificationsListResponse>) => {
             return data.pages.flatMap((p: NotificationsListResponse) =>
                 p.results.map((r: NotificationResponse) =>

@@ -16,7 +16,7 @@ import {
     NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { StakingScreen } from '@modules/staking/screens/StakingScreen'
-import { NotificationsScreen } from '@modules/notifications/screens/NotificationsScreen'
+import { MessagesScreen } from '@modules/messages/screens/MessagesScreen'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import {
     OnboardingStackNavigator,
@@ -71,15 +71,16 @@ export const MainRoutes = () => {
                                 component={TabBarStackNavigator}
                             />
                             <RootStack.Screen
-                                name='Notifications'
+                                name='Messages'
                                 options={{
                                     headerShown: true,
+                                    title: 'screens.messages',
                                     header: (props: NativeStackHeaderProps) => (
                                         <NavigationHeader {...props} />
                                     ),
                                 }}
                                 layout={fullScreenLayout}
-                                component={NotificationsScreen}
+                                component={MessagesScreen}
                             />
                             <RootStack.Screen
                                 name='Settings'

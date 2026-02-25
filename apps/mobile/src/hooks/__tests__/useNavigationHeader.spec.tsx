@@ -125,16 +125,13 @@ describe('useNavigationHeader', () => {
         expect(call.headerTitle()).toBe(titleElement)
     })
 
-    it('sets headerRight to render null when right is null', () => {
+    it('clears headerRight when right is null', () => {
         renderHook(() => useNavigationHeader({ right: null }))
 
         expect(mockSetOptions).toHaveBeenCalledWith(
             expect.objectContaining({
-                headerRight: expect.any(Function),
+                headerRight: undefined,
             }),
         )
-
-        const call = mockSetOptions.mock.calls[0][0]
-        expect(call.headerRight()).toBeNull()
     })
 })

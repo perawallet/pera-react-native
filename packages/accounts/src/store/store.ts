@@ -20,6 +20,7 @@ import type { AccountsState, WalletAccount } from '../models'
 import {
     createLazyStore,
     DataStoreRegistry,
+    logger,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 
@@ -69,6 +70,13 @@ export const createAccountsStore = (storage: KeyValueStorageService) =>
                     }
                 },
                 setSelectedAccountAddress: (address: string | null) => {
+                    const accounts = get().accounts
+                    if (address && !accounts.find(a => a.address === address)) {
+                        logger.warn(
+                            `Attempted to set selected account address to ${address}, but it does not exist in accounts list.`,
+                        )
+                        return
+                    }
                     set({ selectedAccountAddress: address })
                 },
                 resetState: () => set(initialState),

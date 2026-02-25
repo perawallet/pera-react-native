@@ -10,119 +10,16 @@
  limitations under the License
  */
 
-import {
-    PWFlatList,
-    PWSwitch,
-    PWText,
-    PWTextProps,
-    PWView,
-} from '@components/core'
-import { useLanguage } from '@hooks/useLanguage'
-import { useSettingsNotificationsScreen } from './useSettingsNotificationsScreen'
+import { NotificationSettingsList } from '@modules/settings/components/NotificationSettingsList'
 import { useStyles } from './styles'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { EmptyView } from '@components/EmptyView'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { useMemo } from 'react'
-import { AccountIconProps } from '@modules/accounts/components/AccountIcon'
-
-const iconProps = {
-    size: 'lg',
-} as AccountIconProps
-
-const AccountNotificationItem = ({
-    account,
-    isEnabled,
-    onToggle,
-}: {
-    account: WalletAccount
-    isEnabled: boolean
-    onToggle: (enabled: boolean) => void
-}) => {
-    const styles = useStyles()
-
-    const textProps = useMemo<PWTextProps>(
-        () => ({
-            style: styles.mainText,
-            variant: 'h4',
-        }),
-        [styles],
-    )
-
-    return (
-        <PWView style={styles.accountItem}>
-            <AccountDisplay
-                account={account}
-                showChevron={false}
-                iconProps={iconProps}
-                textProps={textProps}
-            />
-            <PWSwitch
-                value={isEnabled}
-                onValueChange={onToggle}
-            />
-        </PWView>
-    )
-}
 
 export const SettingsNotificationsScreen = () => {
-    const { t } = useLanguage()
     const styles = useStyles()
 
-    const {
-        isSystemNotificationEnabled,
-        isSystemNotificationLoading,
-        accounts,
-        handleSystemNotificationToggle,
-        handleAccountNotificationToggle,
-        isAccountNotificationEnabled,
-    } = useSettingsNotificationsScreen()
-
     return (
-        <PWFlatList
-            data={accounts}
-            keyExtractor={item => item.address}
+        <NotificationSettingsList
             style={styles.container}
             contentContainerStyle={styles.scrollContent}
-            ListEmptyComponent={
-                <EmptyView
-                    title={t('settings.notifications.no_accounts')}
-                    body={t('settings.notifications.no_accounts_body')}
-                />
-            }
-            renderItem={({ item }) => (
-                <AccountNotificationItem
-                    account={item}
-                    isEnabled={isAccountNotificationEnabled(item.address)}
-                    onToggle={enabled =>
-                        handleAccountNotificationToggle(item, enabled)
-                    }
-                />
-            )}
-            ListHeaderComponent={
-                <PWView style={styles.header}>
-                    <PWView style={styles.headerRow}>
-                        <PWText variant='body'>
-                            {t('settings.notifications.push_notifications')}
-                        </PWText>
-
-                        <PWSwitch
-                            value={isSystemNotificationEnabled}
-                            onValueChange={handleSystemNotificationToggle}
-                            disabled={isSystemNotificationLoading}
-                        />
-                    </PWView>
-
-                    <PWView style={styles.headerRow}>
-                        <PWText
-                            variant='caption'
-                            style={styles.grayText}
-                        >
-                            {t('settings.notifications.account_notifications')}
-                        </PWText>
-                    </PWView>
-                </PWView>
-            }
         />
     )
 }

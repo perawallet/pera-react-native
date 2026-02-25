@@ -39,6 +39,13 @@ declare module '@rneui/themed' {
         buttonPrimaryDisabledBg: string
         buttonPrimaryDisabledText: string
 
+        //Button New Primary
+        buttonNewPrimaryBg: string
+        buttonNewPrimaryText: string
+        buttonNewPrimaryFocusBg: string
+        buttonNewPrimaryDisabledBg: string
+        buttonNewPrimaryDisabledText: string
+
         // Button Secondary
         buttonSecondaryBg: string
         buttonSecondaryFocusBg: string

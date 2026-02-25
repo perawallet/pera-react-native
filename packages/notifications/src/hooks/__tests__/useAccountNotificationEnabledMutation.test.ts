@@ -14,9 +14,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-core-platform-integration'
 import { useAccountNotificationEnabledMutation } from '../useAccountNotificationEnabledMutation'
-import { updateNotificationEnabled } from '../endpoints'
+import { updateNotificationEnabled } from '../../api/notifications'
 
-vi.mock('../endpoints', () => ({
+vi.mock('../../api/notifications', () => ({
     updateNotificationEnabled: vi.fn(),
 }))
 

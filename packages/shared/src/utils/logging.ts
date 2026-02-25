@@ -42,7 +42,7 @@ export interface LogContext {
 }
 
 class Logger {
-    private level: LogLevel = LogLevel.ERROR // Default safe level
+    private level: LogLevel = LogLevel.INFO // Default safe level
 
     constructor() {
         // Initialize level based on config

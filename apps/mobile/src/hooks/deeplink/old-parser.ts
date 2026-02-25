@@ -57,6 +57,15 @@ export const parsePerawalletUri = (url: string): AnyParsedDeeplink | null => {
         } as AssetOptInDeeplink
     }
 
+    if (pathPart === 'asset/transactions') {
+        return {
+            type: DeeplinkType.ASSET_TRANSACTIONS,
+            sourceUrl: url,
+            address: params.account || '',
+            assetId: params.asset || '0',
+        } as AssetTransactionsDeeplink
+    }
+
     if (pathPart === 'discover' || normalizedUrl.includes('discover')) {
         return {
             type: DeeplinkType.DISCOVER_PATH,

@@ -27,16 +27,18 @@ import { Linking } from 'react-native'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 import { ALGORAND_SCHEME } from './deeplink/arc90-parser'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { useLanguage } from './useLanguage'
 
 type LinkSource = 'qr' | 'deeplink'
 
 export const useDeepLink = () => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { showToast } = useToast()
+    const { showToast, errorToast, infoToast } = useToast()
     const { addSignRequest } = useSigningRequest()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { pushWebView } = useWebView()
     const { connect } = useWalletConnect()
+    const { t } = useLanguage()
 
     const isValidDeepLink = (url: string): boolean => {
         if (isValidAlgorandAddress(url)) {
@@ -44,10 +46,6 @@ export const useDeepLink = () => {
         }
         const parsed = parseDeeplink(url)
         return parsed !== null
-    }
-
-    const infoPost = (title: string, body: string) => {
-        showToast({ title, body, type: 'info' })
     }
 
     const navigateToScreen = (
@@ -77,11 +75,10 @@ export const useDeepLink = () => {
         const parsedData = parseDeeplink(url)
 
         if (!parsedData) {
-            showToast({
-                title: 'Invalid Link',
-                body: 'The detected link does not appear to be valid',
-                type: 'error',
-            })
+            errorToast(
+                t('errors.deeplink.invalid_url_title'),
+                t('errors.deeplink.invalid_url_body'),
+            )
             onError?.()
             return
         }
@@ -106,24 +103,21 @@ export const useDeepLink = () => {
                     break
 
                 case DeeplinkType.ADD_WATCH_ACCOUNT:
-                    // TODO: Navigate to watch account addition screen
-                    infoPost(
+                    infoToast(
                         'Add Watch Account',
                         'Watch account screen not implemented yet',
                     )
                     break
 
                 case DeeplinkType.RECEIVER_ACCOUNT_SELECTION:
-                    // TODO: Navigate to receiver account selection
-                    infoPost(
+                    infoToast(
                         'Receiver Selection',
                         'Receiver account selection not implemented yet',
                     )
                     break
 
                 case DeeplinkType.ADDRESS_ACTIONS:
-                    // TODO: Show address actions modal/screen
-                    infoPost(
+                    infoToast(
                         'Address Actions',
                         'Address actions screen not implemented yet',
                     )
@@ -153,7 +147,7 @@ export const useDeepLink = () => {
 
                 case DeeplinkType.KEYREG:
                     // TODO: Handle the keyreg transaction construction and do something useful with it
-                    infoPost(
+                    infoToast(
                         'Key Registration',
                         'Keyreg screen not implemented yet',
                     )
@@ -166,7 +160,7 @@ export const useDeepLink = () => {
                     }
                     // TODO: Navigate to account recovery screen
                     // navigation.navigate('RecoverAccount', { mnemonic: parsedData.mnemonic })
-                    infoPost(
+                    infoToast(
                         'Recover Address',
                         'Account recovery not implemented yet',
                     )
@@ -194,17 +188,21 @@ export const useDeepLink = () => {
                 case DeeplinkType.ASSET_DETAIL:
                 case DeeplinkType.ASSET_TRANSACTIONS:
                     setSelectedAccountAddress(parsedData.address)
-                    navigateToScreen(replaceCurrentScreen, 'AssetDetail', {
-                        assetId: parsedData.assetId,
+                    navigateToScreen(replaceCurrentScreen, 'TabBar', {
+                        screen: 'Home',
+                        params: {
+                            screen: 'AssetDetails',
+                            params: {
+                                assetId: parsedData.assetId,
+                            },
+                        },
                     })
                     break
 
                 case DeeplinkType.ASSET_INBOX:
-                    // TODO: Navigate to asset inbox screen
-                    infoPost(
-                        'Asset Inbox',
-                        'Asset inbox screen not implemented yet',
-                    )
+                    navigateToScreen(replaceCurrentScreen, 'Messages', {
+                        initialTab: 'Inbox',
+                    })
                     break
 
                 case DeeplinkType.INTERNAL_BROWSER:
@@ -225,7 +223,7 @@ export const useDeepLink = () => {
                 case DeeplinkType.CARDS:
                     // TODO: Navigate to cards screen
                     // navigation.navigate('Cards', { path: parsedData.path })
-                    infoPost('Cards', 'Cards screen not implemented yet')
+                    infoToast('Cards', 'Cards screen not implemented yet')
                     break
 
                 case DeeplinkType.STAKING:
@@ -258,7 +256,7 @@ export const useDeepLink = () => {
 
                 case DeeplinkType.SELL:
                     //TODO implement sell
-                    infoPost('Sell', 'Sell screen not implemented yet')
+                    infoToast('Sell', 'Sell screen not implemented yet')
                     break
 
                 case DeeplinkType.ACCOUNT_DETAIL:

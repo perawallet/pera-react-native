@@ -94,7 +94,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     const isDarkMode = useIsDarkMode()
     const theme = getTheme(isDarkMode ? 'dark' : 'light')
     const { network } = useNetwork()
-    const { registerDevice } = useDevice(network)
+    const { registerDevice } = useDevice()
     const { startPolling, stopPolling } = usePolling()
     const accounts = useAllAccounts()
 
@@ -132,7 +132,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
                 subscription.remove()
             }
         }
-    }, [accounts])
+    }, [network, accounts])
 
     return (
         <ThemeProvider theme={theme}>

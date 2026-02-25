@@ -97,8 +97,7 @@ describe('Deeplink Parser - Old Format', () => {
     })
 
     describe('Asset Transactions', () => {
-        it('parses asset transactions', () => {
-            // Coverage for old-parser.ts lines 92-98
+        it('parses asset transactions with type query param', () => {
             const result = parseDeeplink(
                 `perawallet://?type=asset/transactions&asset=31566704&account=${TEST_ADDRESS}`,
             )
@@ -106,6 +105,30 @@ describe('Deeplink Parser - Old Format', () => {
             expect(result?.type).toBe(DeeplinkType.ASSET_TRANSACTIONS)
             if (result?.type === DeeplinkType.ASSET_TRANSACTIONS) {
                 expect(result.assetId).toBe('31566704')
+                expect(result.address).toBe(TEST_ADDRESS)
+            }
+        })
+
+        it('parses asset transactions with path-based URL', () => {
+            const result = parseDeeplink(
+                `perawallet://asset/transactions?account=${TEST_ADDRESS}&asset=31566704&transactionId=VTACN3KPDVRVVYJMLUHK5UJPK2IRABG7P5DXL77IGKQLE66X5TKA`,
+            )
+            expect(result).toBeDefined()
+            expect(result?.type).toBe(DeeplinkType.ASSET_TRANSACTIONS)
+            if (result?.type === DeeplinkType.ASSET_TRANSACTIONS) {
+                expect(result.assetId).toBe('31566704')
+                expect(result.address).toBe(TEST_ADDRESS)
+            }
+        })
+
+        it('parses asset transactions path URL with asset 0 (ALGO)', () => {
+            const result = parseDeeplink(
+                `perawallet://asset/transactions?account=${TEST_ADDRESS}&asset=0`,
+            )
+            expect(result).toBeDefined()
+            expect(result?.type).toBe(DeeplinkType.ASSET_TRANSACTIONS)
+            if (result?.type === DeeplinkType.ASSET_TRANSACTIONS) {
+                expect(result.assetId).toBe('0')
                 expect(result.address).toBe(TEST_ADDRESS)
             }
         })

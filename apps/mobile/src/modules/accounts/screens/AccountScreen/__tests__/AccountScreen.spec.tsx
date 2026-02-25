@@ -51,7 +51,7 @@ vi.mock('@modules/accounts/components/AccountTabNavigator', () => ({
 vi.mock('@modules/accounts/components/AccountSelection', () => ({
     AccountSelection: 'AccountSelection',
 }))
-vi.mock('@modules/notifications/components/NotificationsIcon', () => ({
+vi.mock('@modules/messages/components/NotificationsIcon', () => ({
     NotificationsIcon: 'NotificationsIcon',
 }))
 vi.mock('@components/QRScannerView', () => ({ QRScannerView: 'QRScannerView' }))
