@@ -1685,6 +1685,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             selectedAccountAddress: null,
             setSelectedAccountAddress: vi.fn(),
         })),
+        useSetAccounts: vi.fn(() => ({
+            setAccounts: vi.fn(),
+        })),
         useAccountBalancesHistoryQuery: vi.fn(() => ({
             data: [],
             isPending: false,

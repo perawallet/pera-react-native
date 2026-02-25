@@ -18,6 +18,7 @@ import { useToast } from '@hooks/useToast'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import {
     useAccountDiscovery,
+    useSelectedAccountAddress,
     AccountTypes,
     DerivationTypes,
 } from '@perawallet/wallet-core-accounts'
@@ -44,6 +45,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const navigation = useAppNavigation()
     const { discoverAccounts, discoverRekeyedAccounts } = useAccountDiscovery()
     const { exitAccountFlow } = useExitAccountFlow()
+    const { setSelectedAccountAddress } = useSelectedAccountAddress()
 
     const walletKeyId = account.keyPairId
 
@@ -102,6 +104,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
 
                 // Only the master account was found, skip the selection screen
                 if (discoveredAccounts.length === 1) {
+                    setSelectedAccountAddress(account.address)
                     exitAccountFlow()
                 } else {
                     navigation.replace('ImportSelectAddresses', {
@@ -120,6 +123,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 if (!discoveredRekeyedAccounts) return
 
                 if (discoveredRekeyedAccounts.length === 0) {
+                    setSelectedAccountAddress(account.address)
                     exitAccountFlow()
                 } else {
                     navigation.replace('ImportRekeyedAddresses', {
@@ -144,6 +148,7 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         t,
         showToast,
         exitAccountFlow,
+        setSelectedAccountAddress,
     ])
 
     useEffect(() => {
