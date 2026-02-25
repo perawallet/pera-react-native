@@ -182,6 +182,33 @@ describe('useTransactionHistoryQuery', () => {
         )
     })
 
+    test('refetches when network changes', async () => {
+        const { result, rerender } = renderHook(
+            ({ network }: { network: string }) =>
+                useTransactionHistoryQuery({
+                    accountAddress: mockAddress,
+                    network,
+                }),
+            { wrapper, initialProps: { network: 'mainnet' } },
+        )
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+        expect(endpoints.fetchTransactionHistory).toHaveBeenCalledWith(
+            expect.objectContaining({ network: 'mainnet' }),
+        )
+
+        // Switch network
+        ;(endpoints.fetchTransactionHistory as Mock).mockClear()
+        rerender({ network: 'testnet' })
+
+        await waitFor(() =>
+            expect(endpoints.fetchTransactionHistory).toHaveBeenCalledWith(
+                expect.objectContaining({ network: 'testnet' }),
+            ),
+        )
+    })
+
     test('fetches next page when fetchNextPage is called', async () => {
         const nextPageResult = {
             ...mockTransactionHistoryResult,

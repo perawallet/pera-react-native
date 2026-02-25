@@ -55,11 +55,15 @@ export const AccountAssetList = ({
     const headerState = useModalState(true)
     const [searchFilter, setSearchFilter] = useState('')
     const { accountBalances, isPending } = useAccountBalancesQuery([account])
-    const { data: assets } = useAssetsQuery()
     const balanceData = useMemo(
         () => accountBalances.get(account.address),
         [accountBalances, account.address],
     )
+    const assetIDs = useMemo(
+        () => balanceData?.assetBalances.map(b => b.assetId) ?? [],
+        [balanceData],
+    )
+    const { data: assets } = useAssetsQuery(assetIDs)
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
     const balances = useMemo(() => {

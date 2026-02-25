@@ -25,7 +25,17 @@ type PortfolioTotals = {
 export const usePortfolioTotals = (
     accountBalances: AccountBalances,
 ): PortfolioTotals => {
-    const { data: usdPrices, isPending } = useAssetPricesQuery()
+    const assetIDs = useMemo(() => {
+        const ids: string[] = []
+        accountBalances.forEach(balance => {
+            balance.assetBalances.forEach(ab => {
+                ids.push(ab.assetId)
+            })
+        })
+        return ids
+    }, [accountBalances])
+
+    const { data: usdPrices, isPending } = useAssetPricesQuery(assetIDs)
     const { usdToPreferred } = useCurrency()
 
     return useMemo(() => {

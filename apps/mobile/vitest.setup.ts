@@ -1648,7 +1648,6 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         error: null,
         isSuccess: false,
     })),
-    initAssetsStore: vi.fn(),
 }))
 
 // Mock @perawallet/wallet-core-settings
