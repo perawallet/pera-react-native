@@ -16,28 +16,21 @@ import {
     useNetwork,
 } from '@perawallet/wallet-core-platform-integration'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, UseQueryResult } from '@tanstack/react-query'
 import { fetchInbox, type InboxResponse } from '../api/inbox'
 import type { InboxItem } from '../models'
 import { getInboxQueryKey } from './querykeys'
 import { mapInboxResponse } from './mappers'
 import { sortInboxItems } from '../utils'
 
-export type UseInboxQueryResult = {
-    inboxItems: InboxItem[]
-    isPending: boolean
-    isRefetching: boolean
-    refetch: () => void
-}
-
-export const useInboxQuery = (): UseInboxQueryResult => {
+export const useInboxQuery = (): UseQueryResult<InboxItem[], Error> => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
     const accounts = useAllAccounts()
 
     const addresses = useMemo(() => accounts.map(a => a.address), [accounts])
 
-    const query = useQuery({
+    return useQuery({
         queryKey: getInboxQueryKey(network, deviceID ?? '', addresses.length),
         queryFn: () => fetchInbox(network, deviceID ?? '', addresses),
         enabled: !!deviceID?.length && !!addresses.length,
@@ -54,11 +47,4 @@ export const useInboxQuery = (): UseInboxQueryResult => {
             [accounts],
         ),
     })
-
-    return {
-        inboxItems: query.data ?? [],
-        isPending: query.isPending,
-        isRefetching: query.isRefetching,
-        refetch: query.refetch,
-    }
 }

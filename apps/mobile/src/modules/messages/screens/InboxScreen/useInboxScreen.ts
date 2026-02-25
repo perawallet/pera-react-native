@@ -40,7 +40,7 @@ const getItemKey = (item: InboxItem, index: number): string => {
 }
 
 export const useInboxScreen = (): UseInboxScreenResult => {
-    const { inboxItems, isPending, isRefetching, refetch } = useInboxQuery()
+    const { data: inboxItems, isPending, isRefetching, refetch } = useInboxQuery()
     const { push } = useAppNavigation()
     const { errorToast } = useToast()
 
@@ -60,7 +60,7 @@ export const useInboxScreen = (): UseInboxScreenResult => {
     }, [])
 
     return {
-        inboxItems,
+        inboxItems: inboxItems ?? [],
         isPending,
         isRefetching,
         refetch,

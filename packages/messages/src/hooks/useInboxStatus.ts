@@ -22,11 +22,15 @@ import {
 import { config } from '@perawallet/wallet-core-config'
 import { useCallback } from 'react'
 import { getNotificationStatusQueryKey } from './querykeys'
+import { useInboxQuery } from './useInboxQuery'
 
-export const useNotificationStatus = () => {
+export const useInboxStatus = () => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
-    return useQuery({
+
+    const {data: inboxData} = useInboxQuery()
+
+    const {data: notificationStatusData} = useQuery({
         queryKey: getNotificationStatusQueryKey(network, deviceID ?? ''),
         queryFn: () => fetchNotificationStatus(network, deviceID ?? ''),
         enabled: !!deviceID,
@@ -37,4 +41,10 @@ export const useNotificationStatus = () => {
             }
         }, []),
     })
+
+    return {
+        data: {
+            hasUnreadItems: inboxData?.length || notificationStatusData?.hasNewNotification
+        },
+    }
 }

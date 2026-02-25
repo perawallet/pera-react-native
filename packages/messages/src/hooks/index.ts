@@ -11,7 +11,7 @@
  */
 
 export * from './useNotificationPreferences'
-export * from './useNotificationStatusQuery'
+export * from './useInboxStatus'
 export * from './useNotificationsListQuery'
 export * from './useAccountNotificationEnabledMutation'
 export * from './useMarkNotificationsAsReadMutation'
