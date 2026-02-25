@@ -11,7 +11,7 @@
  */
 
 import { PWText, PWTouchableOpacity, PWView } from '@components/core'
-import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-notifications'
+import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     getAccountDisplayName,

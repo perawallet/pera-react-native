@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { ASAInbox } from '@perawallet/wallet-core-notifications'
+import { ASAInbox } from '@perawallet/wallet-core-messages'
 import type { StackScreenProps } from '@react-navigation/stack'
 
 export type MessagesStackParamList = {

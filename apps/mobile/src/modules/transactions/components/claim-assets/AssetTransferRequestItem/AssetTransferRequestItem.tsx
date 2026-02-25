@@ -10,13 +10,7 @@
  limitations under the License
  */
 
-import {
-    PWBadge,
-    PWIcon,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWBadge, PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { Arc59AssetRequest } from '@perawallet/wallet-core-blockchain'
 import {

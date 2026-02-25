@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-notifications'
+export const name = '@perawallet/wallet-core-messages'
 
 export * from './api'
 export * from './hooks'

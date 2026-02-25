@@ -11,7 +11,7 @@
  */
 
 import { PWIcon, PWView } from '@components/core'
-import type { InboxItem } from '@perawallet/wallet-core-notifications'
+import type { InboxItem } from '@perawallet/wallet-core-messages'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { AccountIcon } from '@modules/accounts/components/AccountIcon'
 import { useStyles } from './styles'

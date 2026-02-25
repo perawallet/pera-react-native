@@ -13,7 +13,7 @@
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { InboxScreen } from '../InboxScreen'
-import { useInboxQuery } from '@perawallet/wallet-core-notifications'
+import { useInboxQuery } from '@perawallet/wallet-core-messages'
 
 vi.mock('@modules/messages/components/InboxItem/InboxItem', () => ({
     InboxItem: ({ item }: { item: { type: string } }) => (
@@ -25,7 +25,7 @@ vi.mock('@modules/messages/components/ClaimAssetsBottomSheet', () => ({
     ClaimAssetsBottomSheet: () => null,
 }))
 
-vi.mock('@perawallet/wallet-core-notifications', () => ({
+vi.mock('@perawallet/wallet-core-messages', () => ({
     useInboxQuery: vi.fn(() => ({
         inboxItems: [],
         isPending: false,

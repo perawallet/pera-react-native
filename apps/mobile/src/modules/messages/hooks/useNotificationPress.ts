@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import type { PeraNotification } from '@perawallet/wallet-core-notifications'
+import type { PeraNotification } from '@perawallet/wallet-core-messages'
 import { useDeepLink } from '@hooks/useDeepLink'
 
 type UseNotificationPressResult = {

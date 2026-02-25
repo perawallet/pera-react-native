@@ -15,7 +15,7 @@ import {
     type ASAInbox,
     type InboxItem,
     useInboxQuery,
-} from '@perawallet/wallet-core-notifications'
+} from '@perawallet/wallet-core-messages'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 

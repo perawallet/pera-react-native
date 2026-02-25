@@ -15,7 +15,7 @@ import { useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     useNotificationPreferences,
     useAccountNotificationEnabledMutation,
-} from '@perawallet/wallet-core-notifications'
+} from '@perawallet/wallet-core-messages'
 import { useSystemNotificationPermission } from '../../hooks/useSystemNotificationPermission'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'

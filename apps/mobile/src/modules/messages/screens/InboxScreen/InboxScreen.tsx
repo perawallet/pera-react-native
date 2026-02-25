@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
-import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-notifications'
+import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
 import { PWFlatList, PWView } from '@components/core'

@@ -13,7 +13,7 @@
 import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { NotificationsIcon } from '../NotificationsIcon'
-import { useNotificationStatus } from '@perawallet/wallet-core-notifications'
+import { useNotificationStatus } from '@perawallet/wallet-core-messages'
 
 const mockNavigate = vi.fn()
 vi.mock('@react-navigation/native', async importOriginal => {
@@ -27,7 +27,7 @@ vi.mock('@react-navigation/native', async importOriginal => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-notifications', () => ({
+vi.mock('@perawallet/wallet-core-messages', () => ({
     useNotificationStatus: vi.fn(() => ({
         data: { hasNewNotification: false },
     })),

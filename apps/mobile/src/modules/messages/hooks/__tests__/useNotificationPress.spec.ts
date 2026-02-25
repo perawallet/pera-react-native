@@ -13,7 +13,7 @@
 import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useNotificationPress } from '../useNotificationPress'
-import type { PeraNotification } from '@perawallet/wallet-core-notifications'
+import type { PeraNotification } from '@perawallet/wallet-core-messages'
 
 const mockHandleDeepLink = vi.fn()
 const mockIsValidDeepLink = vi.fn()
