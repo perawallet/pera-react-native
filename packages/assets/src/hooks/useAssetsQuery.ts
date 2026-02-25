@@ -35,14 +35,14 @@ type UseAssetsQueryResult = {
 export const useAssetsQuery = (ids: string[]): UseAssetsQueryResult => {
     const { network } = useNetwork()
 
-    const idsRef = useRef(ids)
-    if (
-        ids.length !== idsRef.current.length ||
-        !ids.every((id, i) => id === idsRef.current[i])
-    ) {
-        idsRef.current = ids
+    // Keep a stable reference to ids — only update when the actual content changes.
+    // This prevents query recomputation when callers pass a new array with the same values.
+    const idsKey = ids.join(',')
+    const idsRef = useRef({ ids, key: idsKey })
+    if (idsKey !== idsRef.current.key) {
+        idsRef.current = { ids, key: idsKey }
     }
-    const stableIds = idsRef.current
+    const stableIds = idsRef.current.ids
 
     const queryDefinitions = useMemo(() => {
         const chunks = partition(stableIds, DEFAULT_PAGE_SIZE)
