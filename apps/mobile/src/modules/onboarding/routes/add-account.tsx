@@ -27,7 +27,7 @@ import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccounts
 import { AccountErrorBoundary } from '@modules/accounts/components/AccountErrorBoundary/AccountErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { screenListeners } from '@routes/listeners'
-import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
+import { fullScreenLayout } from '@layouts/index'
 import type React from 'react'
 
 import { AddAccountStackParamList } from './types'
@@ -72,7 +72,7 @@ export const AddAccountStackNavigator = () => {
         <AddAccountStack.Navigator
             initialRouteName='AddAccountHome'
             screenOptions={{
-                headerShown: false,
+                headerShown: true,
                 header: (props: NativeStackHeaderProps) => (
                     <NavigationHeader {...props} />
                 ),
@@ -82,40 +82,36 @@ export const AddAccountStackNavigator = () => {
         >
             <AddAccountStack.Screen
                 name='AddAccountHome'
+                options={{ headerShown: false }}
                 layout={fullScreenLayout}
                 component={AddAccountScreenWithErrorBoundary}
             />
             <AddAccountStack.Screen
                 name='WatchAccount'
                 options={{
-                    headerShown: false,
+                    title: '',
                 }}
-                layout={safeAreaLayout}
                 component={WatchAccountScreenWithErrorBoundary}
             />
             <AddAccountStack.Screen
                 name='NameAccount'
                 options={{
-                    headerShown: false,
+                    title: '',
                 }}
-                layout={safeAreaLayout}
                 component={NameAccountScreenWithErrorBoundary}
             />
             <AddAccountStack.Screen
                 name='ImportInfo'
                 options={{
-                    headerShown: false,
                     title: '',
                 }}
-                layout={safeAreaLayout}
                 component={ImportInfoScreenWithErrorBoundary}
             />
             <AddAccountStack.Screen
                 name='ImportAccount'
                 options={{
-                    headerShown: false,
+                    title: '',
                 }}
-                layout={safeAreaLayout}
                 component={ImportAccountScreenWithErrorBoundary}
             />
             <AddAccountStack.Screen
@@ -129,17 +125,15 @@ export const AddAccountStackNavigator = () => {
             <AddAccountStack.Screen
                 name='ImportSelectAddresses'
                 options={{
-                    headerShown: false,
+                    title: '',
                 }}
-                layout={safeAreaLayout}
                 component={ImportSelectAddressesScreenWithErrorBoundary}
             />
             <AddAccountStack.Screen
                 name='ImportRekeyedAddresses'
                 options={{
-                    headerShown: false,
+                    title: '',
                 }}
-                layout={safeAreaLayout}
                 component={ImportRekeyedAddressesScreenWithErrorBoundary}
             />
         </AddAccountStack.Navigator>
