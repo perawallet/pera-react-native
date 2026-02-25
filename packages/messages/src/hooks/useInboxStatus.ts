@@ -28,9 +28,9 @@ export const useInboxStatus = () => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
 
-    const {data: inboxData} = useInboxQuery()
+    const { data: inboxData } = useInboxQuery()
 
-    const {data: notificationStatusData} = useQuery({
+    const { data: notificationStatusData } = useQuery({
         queryKey: getNotificationStatusQueryKey(network, deviceID ?? ''),
         queryFn: () => fetchNotificationStatus(network, deviceID ?? ''),
         enabled: !!deviceID,
@@ -44,7 +44,8 @@ export const useInboxStatus = () => {
 
     return {
         data: {
-            hasUnreadItems: inboxData?.length || notificationStatusData?.hasNewNotification
+            hasUnreadItems:
+                inboxData?.length || notificationStatusData?.hasNewNotification,
         },
     }
 }

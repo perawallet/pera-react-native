@@ -28,8 +28,16 @@ export type EmptyViewProps = {
 
 export const EmptyView = (props: EmptyViewProps) => {
     const styles = useStyles()
-    const { title, body, icon, style, button, isLoading, loadingView, ...rest } =
-        props
+    const {
+        title,
+        body,
+        icon,
+        style,
+        button,
+        isLoading,
+        loadingView,
+        ...rest
+    } = props
 
     if (isLoading) {
         if (loadingView) {
