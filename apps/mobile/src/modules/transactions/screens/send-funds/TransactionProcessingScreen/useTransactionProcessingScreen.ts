@@ -81,8 +81,8 @@ export const useTransactionProcessingScreen = () => {
             ) {
                 showToast(
                     {
-                        title: t('transactions.invalid_title'),
-                        body: t('transactions.invalid_body'),
+                        title: t('transactions.processing_error.title'),
+                        body: t('transactions.processing_error.body'),
                         type: 'error',
                     },
                     {

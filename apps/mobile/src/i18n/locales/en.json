@@ -334,7 +334,6 @@
             "amount": "Amount",
             "copy_id": "Copy ID",
             "account": "Account",
-            "claim": "Claim",
             "reject": "Reject",
             "reject_title": "Rejecting Requests",
             "reject_body": "If you reject this request, the incoming asset will be permanently removed from circulation. It will not be returned to the sender. Instead, you will receive {{algoAmount}} ALGOs upon completion of this irreversible process. Please note that once rejected, the asset cannot be recovered.",
@@ -343,8 +342,6 @@
             "processing_subtitle": "Your transaction is being processed by the Algorand network",
             "success_title": "Operation completed",
             "success_subtitle": "Your transaction was successfully received by the Algorand network",
-            "success_view_explorer": "View Transaction detail in AlgoExplorer",
-            "success_done": "Done",
             "sender_count_more": "+{{count}} more",
             "insufficient_algo_claim": "You don't have enough ALGO to claim this asset. Add funds to cover the minimum balance requirement.",
             "insufficient_algo_reject": "You don't have enough ALGO to reject this asset. Add funds to cover the transaction fees."
@@ -821,6 +818,10 @@
         "unknown": {
             "title": "Unsupported Transaction Type",
             "body": "This transaction type is not supported."
+        },
+        "processing_error": {
+            "title": "The transaction is not valid",
+            "body": "The specified transaction appears to be invalid"
         },
         "asset_transfer": {
             "clawback_from": "Clawback From"
