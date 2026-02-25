@@ -82,6 +82,17 @@ vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
 }))
 
+vi.mock('i18next', () => ({
+    t: (key: string) => {
+        const translations: Record<string, string> = {
+            'transactions.invalid_title': 'Invalid transaction',
+            'transactions.invalid_body':
+                'Something appears to have gone wrong with this transaction.',
+        }
+        return translations[key] ?? key
+    },
+}))
+
 // Mock BigInt to return an object with microAlgo method for AlgoKit compatibility
 const originalBigInt = global.BigInt
 const mockBigIntFn = vi.fn((value: string | number | bigint) => {
@@ -136,6 +147,7 @@ describe('useTransactionProcessingScreen', () => {
         note: undefined,
         sendMode: 'normal' as const,
         arc59Summary: undefined,
+        isCloseAccount: false,
         onFinished: vi.fn(),
         canSelectAsset: true,
         setSelectedAsset: vi.fn(),
