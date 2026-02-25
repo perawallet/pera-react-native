@@ -13,9 +13,8 @@
 import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
 import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
-import { PWDivider, PWFlatList, PWView } from '@components/core'
+import { PWDivider, PWFlatList } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
-import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
 import { AssetTransferRequestItem } from '@modules/transactions/components/claim-assets/AssetTransferRequestItem'
 import { useStyles } from './styles'
@@ -40,27 +39,6 @@ export const AssetTransferRequestsScreen = () => {
 
     const renderSeparator = useCallback(() => <PWDivider />, [])
 
-    const renderEmptyComponent = useCallback(() => {
-        if (isPending) {
-            return (
-                <LoadingView
-                    variant='skeleton'
-                    size='sm'
-                    count={5}
-                    style={styles.loadingContainer}
-                />
-            )
-        }
-        return (
-            <EmptyView
-                style={styles.emptyView}
-                icon='inbox'
-                title={t('messages.inbox.empty_title')}
-                body={t('messages.inbox.empty_body')}
-            />
-        )
-    }, [isPending, styles.emptyView, styles.loadingContainer, t])
-
     const keyExtractor = useCallback(
         (item: Arc59AssetRequest) => String(item.asset.assetId),
         [],
@@ -74,7 +52,15 @@ export const AssetTransferRequestsScreen = () => {
             contentContainerStyle={styles.contentContainer}
             keyExtractor={keyExtractor}
             ItemSeparatorComponent={renderSeparator}
-            ListEmptyComponent={renderEmptyComponent}
+            ListEmptyComponent={
+                <EmptyView
+                    isLoading={isPending}
+                    style={styles.emptyView}
+                    icon='inbox'
+                    title={t('messages.inbox.empty_title')}
+                    body={t('messages.inbox.empty_body')}
+                />
+            }
             estimatedItemSize={theme.spacing.xxl}
         />
     )

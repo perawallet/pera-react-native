@@ -14,7 +14,6 @@ import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
 import { EmptyView } from '@components/EmptyView'
-import { LoadingView } from '@components/LoadingView'
 import { PWFlatList, PWView } from '@components/core'
 import { RefreshControl } from 'react-native-gesture-handler'
 import { useLanguage } from '@hooks/useLanguage'
@@ -48,27 +47,6 @@ export const InboxScreen = () => {
         [handleInboxItemPress],
     )
 
-    const renderEmptyComponent = useCallback(() => {
-        if (isPending) {
-            return (
-                <LoadingView
-                    variant='skeleton'
-                    size='sm'
-                    count={5}
-                    style={styles.loadingContainer}
-                />
-            )
-        }
-        return (
-            <EmptyView
-                style={styles.emptyView}
-                icon='inbox'
-                title={t('messages.inbox.empty_title')}
-                body={t('messages.inbox.empty_body')}
-            />
-        )
-    }, [isPending, styles.emptyView, styles.loadingContainer, t])
-
     return (
         <PWView style={styles.container}>
             <PWFlatList
@@ -77,7 +55,15 @@ export const InboxScreen = () => {
                 style={styles.container}
                 contentContainerStyle={styles.messageContainer}
                 keyExtractor={keyExtractor}
-                ListEmptyComponent={renderEmptyComponent}
+                ListEmptyComponent={
+                    <EmptyView
+                        isLoading={isPending}
+                        style={styles.emptyView}
+                        icon='inbox'
+                        title={t('messages.inbox.empty_title')}
+                        body={t('messages.inbox.empty_body')}
+                    />
+                }
                 estimatedItemSize={theme.spacing.xxl}
                 refreshControl={
                     <RefreshControl

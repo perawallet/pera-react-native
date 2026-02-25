@@ -20,11 +20,6 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.md,
         gap: theme.spacing.xs,
     },
-    loadingContainer: {
-        flex: 1,
-        justifyContent: 'flex-start',
-        alignItems: 'center',
-    },
     emptyView: {
         flex: 1,
         justifyContent: 'center',
