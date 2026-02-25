@@ -31,11 +31,12 @@ export const useAssetTransferRequestsScreen =
     (): UseAssetTransferRequestsScreenResult => {
         const { push } = useAppNavigation()
         const { accountAddress, setAssetRequests } = useClaimAssets()
-        const { assetRequests, isPending } =
+        const { data: assetRequests, isPending } =
             useArc59AssetRequestsQuery(accountAddress)
 
         const handleItemPress = useCallback(
             (index: number) => {
+                if (!assetRequests) return
                 setAssetRequests(assetRequests)
                 push('Messages', {
                     screen: 'AssetClaimDetail',
@@ -48,7 +49,7 @@ export const useAssetTransferRequestsScreen =
         )
 
         return {
-            assetRequests,
+            assetRequests: assetRequests ?? [],
             isPending,
             handleItemPress,
         }
