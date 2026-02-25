@@ -10,5 +10,8 @@
   },
   "include": [
     "src"
+  ],
+  "exclude": [
+    "**/*.generated.ts"
   ]
 }

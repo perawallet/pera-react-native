@@ -17,8 +17,7 @@ import {
     useAlgorandClient,
     type PeraTransactionSigner,
 } from '@perawallet/wallet-core-blockchain'
-import arc59AppSpec from './arc59-app-spec.json'
-import { AppClient } from '@algorandfoundation/algokit-utils/types/app-client'
+import { ARC59Client } from '../clients'
 
 type ClaimParams = {
     sender: string
@@ -67,8 +66,7 @@ export const useArc59ClaimTransaction = (
 
             const suggestedParams = await algokit.getSuggestedParams()
 
-            const appClient = new AppClient({
-                appSpec: JSON.stringify(arc59AppSpec),
+            const appClient = new ARC59Client({
                 appId: arc59Config.appId,
                 algorand: algokit,
                 defaultSender: sender,
@@ -78,8 +76,7 @@ export const useArc59ClaimTransaction = (
 
             if (shouldClaimAlgo) {
                 composer.addAppCallMethodCall(
-                    await appClient.params.call({
-                        method: 'arc59_claimAlgo',
+                    await appClient.params.arc59_claimAlgo({
                         args: [],
                         extraFee: suggestedParams.minFee.microAlgo(),
                     }),
@@ -96,8 +93,7 @@ export const useArc59ClaimTransaction = (
             }
 
             composer.addAppCallMethodCall(
-                await appClient.params.call({
-                    method: 'arc59_claim',
+                await appClient.params.arc59_claim({
                     args: [assetId],
                     extraFee: (suggestedParams.minFee * BigInt(2)).microAlgo(),
                 }),
@@ -118,8 +114,7 @@ export const useArc59ClaimTransaction = (
 
             const suggestedParams = await algokit.getSuggestedParams()
 
-            const appClient = new AppClient({
-                appSpec: JSON.stringify(arc59AppSpec),
+            const appClient = new ARC59Client({
                 appId: arc59Config.appId,
                 algorand: algokit,
                 defaultSender: sender,
@@ -129,8 +124,7 @@ export const useArc59ClaimTransaction = (
 
             if (shouldClaimAlgo) {
                 composer.addAppCallMethodCall(
-                    await appClient.params.call({
-                        method: 'arc59_claimAlgo',
+                    await appClient.params.arc59_claimAlgo({
                         args: [],
                         extraFee: suggestedParams.minFee.microAlgo(),
                     }),
@@ -138,8 +132,7 @@ export const useArc59ClaimTransaction = (
             }
 
             composer.addAppCallMethodCall(
-                await appClient.params.call({
-                    method: 'arc59_reject',
+                await appClient.params.arc59_reject({
                     args: [assetId],
                     extraFee: (suggestedParams.minFee * BigInt(2)).microAlgo(),
                 }),

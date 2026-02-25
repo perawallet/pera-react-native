@@ -18,8 +18,7 @@ import {
     type PeraTransactionSigner,
 } from '@perawallet/wallet-core-blockchain'
 import type { Arc59SendSummaryResponse } from '../api'
-import arc59AppSpec from './arc59-app-spec.json'
-import { AppClient } from '@algorandfoundation/algokit-utils/types/app-client'
+import { ARC59Client } from '../clients'
 
 type SendViaInboxParams = {
     sender: string
@@ -48,8 +47,7 @@ export const useArc59Transaction = (
 
             const suggestedParams = await algokit.getSuggestedParams()
 
-            const appClient = new AppClient({
-                appSpec: JSON.stringify(arc59AppSpec),
+            const appClient = new ARC59Client({
                 appId: arc59Config.appId,
                 algorand: algokit,
                 defaultSender: sender,
@@ -57,8 +55,7 @@ export const useArc59Transaction = (
 
             // If router is not opted into the asset, opt it in first
             if (!summary.is_arc59_opted_in) {
-                await appClient.send.call({
-                    method: 'arc59_optRouterIn',
+                await appClient.send.arc59_optRouterIn({
                     args: [assetId],
                     extraFee: suggestedParams.minFee.microAlgo(),
                 })
@@ -78,8 +75,7 @@ export const useArc59Transaction = (
             // Call arc59_sendAsset with fee pooling for inner transactions
             // The axfer arg is automatically added to the group by AlgoKit
             composer.addAppCallMethodCall(
-                await appClient.params.call({
-                    method: 'arc59_sendAsset',
+                await appClient.params.arc59_sendAsset({
                     args: [
                         await algokit.createTransaction.assetTransfer({
                             sender,

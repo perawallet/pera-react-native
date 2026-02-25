@@ -39,21 +39,21 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     },
 }))
 
-// Track AppClient constructor calls and allow per-test instance configuration
-let appClientConstructorArgs: unknown[] = []
-let mockAppClientSendCall: Mock
-let mockAppClientParamsCall: Mock
+// Track ARC59Client constructor calls and allow per-test instance configuration
+let arc59ClientConstructorArgs: unknown[] = []
+let mockSendOptRouterIn: Mock
+let mockParamsSendAsset: Mock
 
-vi.mock('@algorandfoundation/algokit-utils/types/app-client', () => {
+vi.mock('../../clients', () => {
     return {
-        AppClient: class MockAppClient {
-            send: { call: Mock }
-            params: { call: Mock }
+        ARC59Client: class MockARC59Client {
+            send: { arc59_optRouterIn: Mock }
+            params: { arc59_sendAsset: Mock }
 
             constructor(...args: unknown[]) {
-                appClientConstructorArgs.push(args[0])
-                this.send = { call: mockAppClientSendCall }
-                this.params = { call: mockAppClientParamsCall }
+                arc59ClientConstructorArgs.push(args[0])
+                this.send = { arc59_optRouterIn: mockSendOptRouterIn }
+                this.params = { arc59_sendAsset: mockParamsSendAsset }
             }
         },
     }
@@ -95,7 +95,7 @@ describe('useArc59Transaction', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        appClientConstructorArgs = []
+        arc59ClientConstructorArgs = []
 
         mockComposer = {
             addPayment: vi.fn().mockReturnThis(),
@@ -103,8 +103,8 @@ describe('useArc59Transaction', () => {
             send: vi.fn().mockResolvedValue({ txIds: ['tx1', 'tx2'] }),
         }
 
-        mockAppClientSendCall = vi.fn().mockResolvedValue({})
-        mockAppClientParamsCall = vi
+        mockSendOptRouterIn = vi.fn().mockResolvedValue({})
+        mockParamsSendAsset = vi
             .fn()
             .mockResolvedValue({ method: 'arc59_sendAsset' })
 
@@ -134,7 +134,7 @@ describe('useArc59Transaction', () => {
             await result.current.sendViaInbox(baseParams)
         })
 
-        expect(appClientConstructorArgs[0]).toEqual(
+        expect(arc59ClientConstructorArgs[0]).toEqual(
             expect.objectContaining({
                 appId: config.arc59.testnet.appId,
             }),
@@ -150,7 +150,7 @@ describe('useArc59Transaction', () => {
             await result.current.sendViaInbox(baseParams)
         })
 
-        expect(appClientConstructorArgs[0]).toEqual(
+        expect(arc59ClientConstructorArgs[0]).toEqual(
             expect.objectContaining({
                 appId: config.arc59.mainnet.appId,
             }),
@@ -169,9 +169,8 @@ describe('useArc59Transaction', () => {
             await result.current.sendViaInbox(params)
         })
 
-        expect(mockAppClientSendCall).toHaveBeenCalledWith(
+        expect(mockSendOptRouterIn).toHaveBeenCalledWith(
             expect.objectContaining({
-                method: 'arc59_optRouterIn',
                 args: [params.assetId],
             }),
         )
@@ -184,7 +183,7 @@ describe('useArc59Transaction', () => {
             await result.current.sendViaInbox(baseParams)
         })
 
-        expect(mockAppClientSendCall).not.toHaveBeenCalled()
+        expect(mockSendOptRouterIn).not.toHaveBeenCalled()
     })
 
     test('adds MBR payment when algo_fund_amount > 0', async () => {
@@ -224,11 +223,7 @@ describe('useArc59Transaction', () => {
             await result.current.sendViaInbox(baseParams)
         })
 
-        expect(mockAppClientParamsCall).toHaveBeenCalledWith(
-            expect.objectContaining({
-                method: 'arc59_sendAsset',
-            }),
-        )
+        expect(mockParamsSendAsset).toHaveBeenCalled()
         expect(mockComposer.addAppCallMethodCall).toHaveBeenCalled()
     })
 
@@ -285,7 +280,7 @@ describe('useArc59Transaction', () => {
             await result.current.sendViaInbox(params)
         })
 
-        expect(mockAppClientSendCall).toHaveBeenCalledWith(
+        expect(mockSendOptRouterIn).toHaveBeenCalledWith(
             expect.objectContaining({
                 extraFee: mockSuggestedParams.minFee.microAlgo(),
             }),
@@ -303,7 +298,7 @@ describe('useArc59Transaction', () => {
             mockSuggestedParams.minFee * BigInt(baseSummary.inner_tx_count)
         ).microAlgo()
 
-        expect(mockAppClientParamsCall).toHaveBeenCalledWith(
+        expect(mockParamsSendAsset).toHaveBeenCalledWith(
             expect.objectContaining({
                 extraFee: expectedFee,
             }),

@@ -38,15 +38,25 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     },
 }))
 
-let mockAppClientParamsCall: Mock
+let mockParamsClaimAlgo: Mock
+let mockParamsClaim: Mock
+let mockParamsReject: Mock
 
-vi.mock('@algorandfoundation/algokit-utils/types/app-client', () => {
+vi.mock('../../clients', () => {
     return {
-        AppClient: class MockAppClient {
-            params: { call: Mock }
+        ARC59Client: class MockARC59Client {
+            params: {
+                arc59_claimAlgo: Mock
+                arc59_claim: Mock
+                arc59_reject: Mock
+            }
 
             constructor() {
-                this.params = { call: mockAppClientParamsCall }
+                this.params = {
+                    arc59_claimAlgo: mockParamsClaimAlgo,
+                    arc59_claim: mockParamsClaim,
+                    arc59_reject: mockParamsReject,
+                }
             }
         },
     }
@@ -86,9 +96,11 @@ describe('useArc59ClaimTransaction', () => {
             send: vi.fn().mockResolvedValue({ txIds: ['tx1', 'tx2'] }),
         }
 
-        mockAppClientParamsCall = vi
+        mockParamsClaimAlgo = vi
             .fn()
-            .mockResolvedValue({ method: 'arc59_claim' })
+            .mockResolvedValue({ method: 'arc59_claimAlgo' })
+        mockParamsClaim = vi.fn().mockResolvedValue({ method: 'arc59_claim' })
+        mockParamsReject = vi.fn().mockResolvedValue({ method: 'arc59_reject' })
 
         mockAccountInformation = vi.fn().mockResolvedValue({
             assets: [{ assetId: 12345n, amount: 0n, isFrozen: false }],
@@ -122,11 +134,7 @@ describe('useArc59ClaimTransaction', () => {
                 await result.current.claimAsset(baseClaimParams)
             })
 
-            const calls = mockAppClientParamsCall.mock.calls
-            const methodNames = calls.map(
-                (c: { method: string }[]) => c[0].method,
-            )
-            expect(methodNames).not.toContain('arc59_claimAlgo')
+            expect(mockParamsClaimAlgo).not.toHaveBeenCalled()
         })
 
         test('prepends arc59_claimAlgo when shouldClaimAlgo is true', async () => {
@@ -141,12 +149,8 @@ describe('useArc59ClaimTransaction', () => {
                 })
             })
 
-            const calls = mockAppClientParamsCall.mock.calls
-            const methodNames = calls.map(
-                (c: { method: string }[]) => c[0].method,
-            )
-            expect(methodNames).toContain('arc59_claimAlgo')
-            expect(methodNames).toContain('arc59_claim')
+            expect(mockParamsClaimAlgo).toHaveBeenCalled()
+            expect(mockParamsClaim).toHaveBeenCalled()
         })
 
         test('sets extraFee to minFee for arc59_claimAlgo (1 inner txn)', async () => {
@@ -161,10 +165,11 @@ describe('useArc59ClaimTransaction', () => {
                 })
             })
 
-            const claimAlgoCall = mockAppClientParamsCall.mock.calls.find(
-                (c: { method: string }[]) => c[0].method === 'arc59_claimAlgo',
+            expect(mockParamsClaimAlgo).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    extraFee: MIN_FEE.microAlgo(),
+                }),
             )
-            expect(claimAlgoCall[0].extraFee).toEqual(MIN_FEE.microAlgo())
         })
 
         test('does not add asset opt-in when sender is already opted in', async () => {
@@ -224,11 +229,10 @@ describe('useArc59ClaimTransaction', () => {
                 await result.current.claimAsset(baseClaimParams)
             })
 
-            const claimCall = mockAppClientParamsCall.mock.calls.find(
-                (c: { method: string }[]) => c[0].method === 'arc59_claim',
-            )
-            expect(claimCall[0].extraFee).toEqual(
-                (MIN_FEE * BigInt(2)).microAlgo(),
+            expect(mockParamsClaim).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    extraFee: (MIN_FEE * BigInt(2)).microAlgo(),
+                }),
             )
         })
 
@@ -257,11 +261,7 @@ describe('useArc59ClaimTransaction', () => {
                 await result.current.rejectAsset(baseClaimParams)
             })
 
-            const calls = mockAppClientParamsCall.mock.calls
-            const methodNames = calls.map(
-                (c: { method: string }[]) => c[0].method,
-            )
-            expect(methodNames).not.toContain('arc59_claimAlgo')
+            expect(mockParamsClaimAlgo).not.toHaveBeenCalled()
         })
 
         test('prepends arc59_claimAlgo when shouldClaimAlgo is true', async () => {
@@ -276,12 +276,8 @@ describe('useArc59ClaimTransaction', () => {
                 })
             })
 
-            const calls = mockAppClientParamsCall.mock.calls
-            const methodNames = calls.map(
-                (c: { method: string }[]) => c[0].method,
-            )
-            expect(methodNames).toContain('arc59_claimAlgo')
-            expect(methodNames).toContain('arc59_reject')
+            expect(mockParamsClaimAlgo).toHaveBeenCalled()
+            expect(mockParamsReject).toHaveBeenCalled()
         })
 
         test('sets extraFee to minFee * 2 for arc59_reject (2 inner txns)', async () => {
@@ -293,11 +289,10 @@ describe('useArc59ClaimTransaction', () => {
                 await result.current.rejectAsset(baseClaimParams)
             })
 
-            const rejectCall = mockAppClientParamsCall.mock.calls.find(
-                (c: { method: string }[]) => c[0].method === 'arc59_reject',
-            )
-            expect(rejectCall[0].extraFee).toEqual(
-                (MIN_FEE * BigInt(2)).microAlgo(),
+            expect(mockParamsReject).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    extraFee: (MIN_FEE * BigInt(2)).microAlgo(),
+                }),
             )
         })
 

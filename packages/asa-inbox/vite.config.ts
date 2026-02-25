@@ -18,11 +18,19 @@ export default defineConfig({
     plugins: [
         dts({
             include: ['src'],
-            exclude: ['**/__tests__/**', '**/*.test.ts', '**/*.test.tsx'],
+            exclude: [
+                '**/__tests__/**',
+                '**/*.test.ts',
+                '**/*.test.tsx',
+                '**/*.generated.ts',
+            ],
             afterDiagnostic: diagnostics => {
-                if (diagnostics.length > 0) {
+                const nonGenerated = diagnostics.filter(
+                    d => !d.file?.fileName.includes('.generated.'),
+                )
+                if (nonGenerated.length > 0) {
                     throw new Error(
-                        `TypeScript declaration generation failed with ${diagnostics.length} error(s)`,
+                        `TypeScript declaration generation failed with ${nonGenerated.length} error(s)`,
                     )
                 }
             },
@@ -44,7 +52,7 @@ export default defineConfig({
                 '@perawallet/wallet-core-platform-integration',
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-core-assets',
-                '@algorandfoundation/algokit-utils',
+                /^@algorandfoundation\/algokit-utils/,
                 'zod',
             ],
         },

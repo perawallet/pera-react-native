@@ -14,7 +14,8 @@
     "build": "vite build",
     "dev": "vite build --watch",
     "test": "vitest run",
-    "lint": "eslint src"
+    "lint": "eslint src",
+    "generate:arc59": "pnpm exec algokit-client-generator generate -a src/hooks/arc59-app-spec.json -o src/clients/Arc59Client.generated.ts --preserve-names"
   },
   "dependencies": {
     "@algorandfoundation/algokit-utils": "catalog:",
@@ -31,6 +32,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@algorandfoundation/algokit-client-generator": "7.0.0-alpha.6",
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@testing-library/react": "catalog:",
     "@types/node": "^20.19.28",

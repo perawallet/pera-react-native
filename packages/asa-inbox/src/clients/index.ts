@@ -10,26 +10,10 @@
  limitations under the License
  */
 
-import devtools from "@perawallet/wallet-core-devtools/eslint";
-import tseslint from "typescript-eslint";
-import globals from "globals";
-
-/** @type {import("eslint").Linter.Config} */
-export default tseslint.config(
-  ...devtools,
-  {
-    ignores: ["**/*.generated.ts"],
-  },
-  {
-    languageOptions: {
-      parserOptions: {
-        project: "./tsconfig.json",
-        tsconfigRootDir: import.meta.dirname,
-      },
-      globals: {
-        ...globals.node,
-        ...globals.browser,
-      },
-    },
-  }
-);
+export { ARC59Client } from './Arc59Client.generated'
+export type {
+    ARC59Args,
+    ARC59Returns,
+    ARC59Types,
+    CallParams,
+} from './Arc59Client.generated'
