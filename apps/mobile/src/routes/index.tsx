@@ -16,7 +16,6 @@ import {
     NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { StakingScreen } from '@modules/staking/screens/StakingScreen'
-import { MessagesScreen } from '@modules/messages/screens/MessagesScreen'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import {
     OnboardingStackNavigator,

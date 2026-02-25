@@ -21,7 +21,6 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import {
     DEFAULT_PRECISION,
-    truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
 import { RejectConfirmBottomSheet } from '@modules/transactions/components/claim-assets/RejectConfirmBottomSheet'
 import { useStyles } from './styles'

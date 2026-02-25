@@ -11,14 +11,11 @@
  */
 
 import { useCallback } from 'react'
-import { useNavigation } from '@react-navigation/native'
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     useArc59AssetRequestsQuery,
     type Arc59AssetRequest,
 } from '@perawallet/wallet-core-asa-inbox'
 import { useClaimAssets } from '@modules/transactions/hooks'
-import type { MessagesStackParamList } from '@modules/messages/routes/types'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 
 type UseAssetTransferRequestsScreenResult = {

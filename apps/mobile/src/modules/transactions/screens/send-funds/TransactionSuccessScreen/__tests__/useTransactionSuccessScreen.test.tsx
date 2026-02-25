@@ -18,7 +18,6 @@ import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { useWebView } from '@hooks/usePeraWebviewInterface'
 
 const mockOnFinished = vi.fn()
-const mockClaimOnFinished = vi.fn()
 const mockPushWebView = vi.fn()
 const mockRemove = vi.fn()
 const mockRemoveAccountById = vi.fn()

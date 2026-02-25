@@ -17,22 +17,18 @@ import {
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { screenListeners } from '@routes/listeners'
-import { AccountScreen } from '@modules/accounts/screens/AccountScreen'
-import { fullScreenLayout, safeAreaLayoutWithTabBar } from '@layouts/index'
+import { fullScreenLayout } from '@layouts/index'
 
-import { PWIcon } from '@components/core'
 import { AssetTransferRequestsScreen } from '@modules/transactions/screens/claim-assets/AssetTransferRequestsScreen/AssetTransferRequestsScreen'
 import { AssetClaimDetailScreen } from '@modules/transactions/screens/claim-assets/AssetClaimDetailScreen/AssetClaimDetailScreen'
 import { TransactionSuccessScreen } from '@modules/transactions/screens/send-funds/TransactionSuccessScreen/TransactionSuccessScreen'
 import { ClaimProcessingScreen } from '@modules/transactions/screens/claim-assets/ClaimProcessingScreen/ClaimProcessingScreen'
-import { useClaimAssets } from '@modules/transactions/hooks/claim-assets/useClaimAssets'
 import { MessagesStackParamList } from './types'
 import { MessagesScreen } from '../screens/MessagesScreen'
 
 const MessagesStack = createNativeStackNavigator<MessagesStackParamList>()
 
 export const MessagesStackNavigator = () => {
-    const { onFinished } = useClaimAssets()
     return (
         <MessagesStack.Navigator
             initialRouteName='MessagesHome'

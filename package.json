@@ -14,7 +14,7 @@
     "lint": "turbo run lint",
     "lint:fix": "turbo run lint -- --fix",
     "lint:i18n": "node tools/i18n-lint.cjs",
-    "lint:copyright": "copyright-header -i \"apps/** packages/**\" -e \"*/node_modules/*\" -f tools/copyright.js",
+    "lint:copyright": "copyright-header -i \"apps/**\" -e \"*/node_modules/*\" -f tools/copyright.js && copyright-header -i \"packages/**\" -e \"*/node_modules/*\" -f tools/copyright.js",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "generate:all-apis": "kubb generate --config backend-kubb.config.ts && kubb generate --config algod-kubb.config.ts && kubb generate --config indexer-kubb.config.ts",
     "test": "bash tools/generate-config.sh && turbo run test -- --coverage",
