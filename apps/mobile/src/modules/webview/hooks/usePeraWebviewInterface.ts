@@ -25,7 +25,6 @@ import {
     getAccountDisplayName,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { useSettings } from '@perawallet/wallet-core-settings'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useCallback } from 'react'
 import { useWebView } from '@modules/webview/hooks'
@@ -56,6 +55,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { getAccountType } from './utils'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
 
 type WebviewMessage = {
     id: string
@@ -74,7 +74,8 @@ export const usePeraWebviewInterface = (
     const accounts = useAllAccounts()
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
-    const { theme } = useSettings()
+    const darkmode = useIsDarkMode()
+    const theme = darkmode ? 'dark' : 'light'
     const deviceInfo = useDeviceInfoService()
     const { preferredCurrency } = useCurrency()
     const analytics = useAnalyticsService()
