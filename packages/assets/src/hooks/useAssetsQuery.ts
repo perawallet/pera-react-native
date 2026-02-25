@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { useEffect, useMemo } from 'react'
-import { useAssetsStore } from '../store'
+import { useMemo, useRef } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import {
     fetchAssets,
@@ -25,60 +24,50 @@ import { getAlgoQueryKey, getAssetsQueryKey } from './querykeys'
 import { AssetsResponse, PublicAssetResponse } from '../api/assets/schema'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 
-export const useAssetsQuery = (ids?: string[]) => {
-    const { network } = useNetwork()
-    let assetIDs = useAssetsStore(state => state.assetIDs)
-    const setAssetIDs = useAssetsStore(state => state.setAssetIDs)
+type UseAssetsQueryResult = {
+    data: Map<string, PeraAsset>
+    isPending: boolean
+    isFetched: boolean
+    isRefetching: boolean
+    isError: boolean
+}
 
-    useEffect(() => {
-        let updated = false
-        if (
-            ids &&
-            (!assetIDs || !ids.every(id => assetIDs?.find(a => a === id)))
-        ) {
-            const set = new Set([...(assetIDs ?? []), ...ids])
-            assetIDs = [...set]
-            updated = true
-        }
-        if (updated) {
-            setAssetIDs(assetIDs)
-        }
-    }, [assetIDs, ids, setAssetIDs])
+export const useAssetsQuery = (ids: string[]): UseAssetsQueryResult => {
+    const { network } = useNetwork()
+
+    const idsRef = useRef(ids)
+    if (
+        ids.length !== idsRef.current.length ||
+        !ids.every((id, i) => id === idsRef.current[i])
+    ) {
+        idsRef.current = ids
+    }
+    const stableIds = idsRef.current
 
     const queryDefinitions = useMemo(() => {
-        const chunks = partition(assetIDs, DEFAULT_PAGE_SIZE)
+        const chunks = partition(stableIds, DEFAULT_PAGE_SIZE)
         return [
-            ...chunks.map(chunk => {
-                return {
-                    queryKey: getAssetsQueryKey(chunk, network),
-                    queryFn: async () => fetchAssets(chunk, network),
-                    select: (data: AssetsResponse) => {
-                        const peraAssets = data.results.map(
-                            transformAssetResponse,
-                        )
-                        return {
-                            results: peraAssets,
-                            next: data.next,
-                            previous: data.previous,
-                        }
-                    },
-                }
-            }),
+            ...chunks.map(chunk => ({
+                queryKey: getAssetsQueryKey(chunk, network),
+                queryFn: async () => fetchAssets(chunk, network),
+                select: (data: AssetsResponse) => ({
+                    results: data.results.map(transformAssetResponse),
+                    next: data.next,
+                    previous: data.previous,
+                }),
+            })),
             {
                 queryKey: getAlgoQueryKey(network),
                 queryFn: async () =>
                     fetchPublicAssetDetails(ALGO_ASSET_ID, network),
-                select: (data: PublicAssetResponse) => {
-                    const peraAsset = transformPublicAssetResponse(data)
-                    return {
-                        results: [peraAsset],
-                        next: null,
-                        previous: null,
-                    }
-                },
+                select: (data: PublicAssetResponse) => ({
+                    results: [transformPublicAssetResponse(data)],
+                    next: null,
+                    previous: null,
+                }),
             },
         ]
-    }, [assetIDs, network])
+    }, [stableIds, network])
 
     const queries = useQueries({
         queries: queryDefinitions,

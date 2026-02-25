@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Network } from '@perawallet/wallet-core-shared'
+
 const MODULE_PREFIX = 'transactions'
 
 /**
@@ -18,19 +20,30 @@ const MODULE_PREFIX = 'transactions'
 export const transactionQueryKeys = {
     all: [MODULE_PREFIX] as const,
 
-    history: (accountAddress: string) =>
-        [MODULE_PREFIX, 'history', { accountAddress }] as const,
+    history: (accountAddress: string, network: Network) =>
+        [MODULE_PREFIX, 'history', { accountAddress, network }] as const,
 
     historyWithFilters: (
         accountAddress: string,
+        network: Network,
         filters: {
             assetId?: string
             afterTime?: string
             beforeTime?: string
             limit?: number
         },
-    ) => [MODULE_PREFIX, 'history', { accountAddress, ...filters }] as const,
+    ) =>
+        [
+            MODULE_PREFIX,
+            'history',
+            { accountAddress, network, ...filters },
+        ] as const,
 
-    paginatedHistory: (accountAddress: string, url: string) =>
-        [MODULE_PREFIX, 'history', 'page', { accountAddress, url }] as const,
+    paginatedHistory: (accountAddress: string, network: Network, url: string) =>
+        [
+            MODULE_PREFIX,
+            'history',
+            'page',
+            { accountAddress, network, url },
+        ] as const,
 }

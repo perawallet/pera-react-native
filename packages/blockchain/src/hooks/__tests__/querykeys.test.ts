@@ -47,14 +47,21 @@ describe('querykeys', () => {
     })
 
     describe('getTransactionDetailQueryKey', () => {
-        test('includes the transaction ID in the key', () => {
-            const key = getTransactionDetailQueryKey('TXID123')
+        test('includes the transaction ID and network in the key', () => {
+            const key = getTransactionDetailQueryKey('TXID123', 'mainnet')
 
             expect(key).toEqual([
                 'blockchain',
                 'transaction-detail',
-                { transactionId: 'TXID123' },
+                { transactionId: 'TXID123', network: 'mainnet' },
             ])
+        })
+
+        test('produces different keys for different networks', () => {
+            const key1 = getTransactionDetailQueryKey('TXID123', 'mainnet')
+            const key2 = getTransactionDetailQueryKey('TXID123', 'testnet')
+
+            expect(key1).not.toEqual(key2)
         })
     })
 
