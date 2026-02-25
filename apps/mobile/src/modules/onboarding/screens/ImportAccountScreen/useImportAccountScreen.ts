@@ -279,10 +279,6 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         })
     }, [importAccount, words, accountType, navigation, showToast, t])
 
-    const handleOpenSupportOptions = useCallback(() => {
-        openSupportOptions()
-    }, [openSupportOptions])
-
     const handlePastePassphrase = useCallback(async () => {
         const content = await Clipboard.getStringAsync()
 
@@ -336,7 +332,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         isKeyboardVisible,
         keyboardHeight,
         isSupportOptionsVisible,
-        handleOpenSupportOptions,
+        handleOpenSupportOptions: openSupportOptions,
         handleCloseSupportOptions,
         handlePastePassphrase,
         handleScanQRCode,
