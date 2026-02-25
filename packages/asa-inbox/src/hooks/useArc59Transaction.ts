@@ -53,23 +53,29 @@ export const useArc59Transaction = (
                 defaultSender: sender,
             })
 
-            // If router is not opted into the asset, opt it in first
-            if (!summary.is_arc59_opted_in) {
-                await appClient.send.arc59_optRouterIn({
-                    args: [assetId],
-                    extraFee: suggestedParams.minFee.microAlgo(),
-                })
-            }
-
             const composer = algokit.newGroup()
 
-            // If algoFundAmount > 0: add MBR payment to cover inbox costs
-            if (summary.algo_fund_amount > 0) {
+            // Payment = algo_fund_amount + minimum_balance_requirement
+            const totalPaymentAmount =
+                BigInt(summary.algo_fund_amount) +
+                BigInt(summary.minimum_balance_requirement)
+
+            if (totalPaymentAmount > 0n) {
                 composer.addPayment({
                     sender,
                     receiver: arc59Config.appAddress,
-                    amount: BigInt(summary.algo_fund_amount).microAlgo(),
+                    amount: totalPaymentAmount.microAlgo(),
                 })
+            }
+
+            // If router is not opted into the asset, include opt-in in the atomic group
+            if (!summary.is_arc59_opted_in) {
+                composer.addAppCallMethodCall(
+                    await appClient.params.arc59_optRouterIn({
+                        args: [assetId],
+                        extraFee: suggestedParams.minFee.microAlgo(),
+                    }),
+                )
             }
 
             // Call arc59_sendAsset with fee pooling for inner transactions

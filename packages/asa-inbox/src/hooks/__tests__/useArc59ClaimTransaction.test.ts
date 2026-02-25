@@ -153,7 +153,7 @@ describe('useArc59ClaimTransaction', () => {
             expect(mockParamsClaim).toHaveBeenCalled()
         })
 
-        test('sets extraFee to minFee for arc59_claimAlgo (1 inner txn)', async () => {
+        test('sets staticFee to 0 for arc59_claimAlgo (fee pooled to main call)', async () => {
             const { result } = renderHook(() =>
                 useArc59ClaimTransaction(mockSigner),
             )
@@ -167,7 +167,7 @@ describe('useArc59ClaimTransaction', () => {
 
             expect(mockParamsClaimAlgo).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    extraFee: MIN_FEE.microAlgo(),
+                    staticFee: 0n.microAlgo(),
                 }),
             )
         })
@@ -184,7 +184,7 @@ describe('useArc59ClaimTransaction', () => {
             expect(mockComposer.addAssetOptIn).not.toHaveBeenCalled()
         })
 
-        test('adds asset opt-in when sender is not opted in', async () => {
+        test('adds asset opt-in with staticFee 0 when sender is not opted in', async () => {
             mockAccountInformation.mockResolvedValue({ assets: [] })
 
             const { result } = renderHook(() =>
@@ -198,6 +198,7 @@ describe('useArc59ClaimTransaction', () => {
             expect(mockComposer.addAssetOptIn).toHaveBeenCalledWith({
                 sender: 'SENDER_ADDRESS',
                 assetId: 12345n,
+                staticFee: 0n.microAlgo(),
             })
         })
 
@@ -217,10 +218,11 @@ describe('useArc59ClaimTransaction', () => {
             expect(mockComposer.addAssetOptIn).toHaveBeenCalledWith({
                 sender: 'SENDER_ADDRESS',
                 assetId: 12345n,
+                staticFee: 0n.microAlgo(),
             })
         })
 
-        test('sets extraFee to minFee * 2 for arc59_claim (2 inner txns)', async () => {
+        test('sets staticFee to 3 * minFee for arc59_claim (base case, opted in)', async () => {
             const { result } = renderHook(() =>
                 useArc59ClaimTransaction(mockSigner),
             )
@@ -229,9 +231,49 @@ describe('useArc59ClaimTransaction', () => {
                 await result.current.claimAsset(baseClaimParams)
             })
 
+            // Base fee: 3 * minFee (already opted in, no claimAlgo)
             expect(mockParamsClaim).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    extraFee: (MIN_FEE * BigInt(2)).microAlgo(),
+                    staticFee: (MIN_FEE * BigInt(3)).microAlgo(),
+                }),
+            )
+        })
+
+        test('adds 2 * minFee to claim fee when shouldClaimAlgo is true', async () => {
+            const { result } = renderHook(() =>
+                useArc59ClaimTransaction(mockSigner),
+            )
+
+            await act(async () => {
+                await result.current.claimAsset({
+                    ...baseClaimParams,
+                    shouldClaimAlgo: true,
+                })
+            })
+
+            // 3 * minFee (base) + 2 * minFee (claimAlgo) = 5 * minFee
+            expect(mockParamsClaim).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    staticFee: (MIN_FEE * BigInt(5)).microAlgo(),
+                }),
+            )
+        })
+
+        test('adds 1 * minFee to claim fee when not opted in', async () => {
+            mockAccountInformation.mockResolvedValue({ assets: [] })
+
+            const { result } = renderHook(() =>
+                useArc59ClaimTransaction(mockSigner),
+            )
+
+            await act(async () => {
+                await result.current.claimAsset(baseClaimParams)
+            })
+
+            // 3 * minFee (base) + 1 * minFee (opt-in) = 4 * minFee
+            expect(mockParamsClaim).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    staticFee: (MIN_FEE * BigInt(4)).microAlgo(),
                 }),
             )
         })
@@ -280,7 +322,7 @@ describe('useArc59ClaimTransaction', () => {
             expect(mockParamsReject).toHaveBeenCalled()
         })
 
-        test('sets extraFee to minFee * 2 for arc59_reject (2 inner txns)', async () => {
+        test('sets staticFee to 3 * minFee for arc59_reject (base case)', async () => {
             const { result } = renderHook(() =>
                 useArc59ClaimTransaction(mockSigner),
             )
@@ -289,9 +331,49 @@ describe('useArc59ClaimTransaction', () => {
                 await result.current.rejectAsset(baseClaimParams)
             })
 
+            // Base fee: 3 * minFee (no claimAlgo)
             expect(mockParamsReject).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    extraFee: (MIN_FEE * BigInt(2)).microAlgo(),
+                    staticFee: (MIN_FEE * BigInt(3)).microAlgo(),
+                }),
+            )
+        })
+
+        test('sets staticFee to 0 for arc59_claimAlgo in reject flow', async () => {
+            const { result } = renderHook(() =>
+                useArc59ClaimTransaction(mockSigner),
+            )
+
+            await act(async () => {
+                await result.current.rejectAsset({
+                    ...baseClaimParams,
+                    shouldClaimAlgo: true,
+                })
+            })
+
+            expect(mockParamsClaimAlgo).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    staticFee: 0n.microAlgo(),
+                }),
+            )
+        })
+
+        test('adds 2 * minFee to reject fee when shouldClaimAlgo is true', async () => {
+            const { result } = renderHook(() =>
+                useArc59ClaimTransaction(mockSigner),
+            )
+
+            await act(async () => {
+                await result.current.rejectAsset({
+                    ...baseClaimParams,
+                    shouldClaimAlgo: true,
+                })
+            })
+
+            // 3 * minFee (base) + 2 * minFee (claimAlgo) = 5 * minFee
+            expect(mockParamsReject).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    staticFee: (MIN_FEE * BigInt(5)).microAlgo(),
                 }),
             )
         })

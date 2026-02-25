@@ -29,7 +29,7 @@ vi.mock('@react-navigation/native', async importOriginal => {
 
 vi.mock('@perawallet/wallet-core-messages', () => ({
     useInboxStatus: vi.fn(() => ({
-        data: { hasUnreadItems: false },
+        hasUnreadItems: false,
     })),
 }))
 
@@ -42,7 +42,7 @@ describe('NotificationsIcon', () => {
 
     it('renders inbox-with-badge icon when there are new notifications', () => {
         vi.mocked(useInboxStatus).mockReturnValue({
-            data: { hasUnreadItems: true },
+            hasUnreadItems: true,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any)
 

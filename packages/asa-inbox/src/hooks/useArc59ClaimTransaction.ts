@@ -18,6 +18,7 @@ import {
     type PeraTransactionSigner,
 } from '@perawallet/wallet-core-blockchain'
 import { ARC59Client } from '../clients'
+import { BASE_CLAIM_TX_COUNT, BASE_REJECT_TX_COUNT, CLAIM_ALGO_TX_COUNT } from '../constants'
 
 type ClaimParams = {
     sender: string
@@ -73,29 +74,35 @@ export const useArc59ClaimTransaction = (
             })
 
             const composer = algokit.newGroup()
+            const optedIn = await isOptedInToAsset(sender, assetId)
+
+            // Calculate main call fee dynamically
+            // Base: 3 * minFee (claim itself + 2 inner txns)
+            let claimFee = BigInt(BASE_CLAIM_TX_COUNT) * suggestedParams.minFee
+            if (shouldClaimAlgo) claimFee += BigInt(CLAIM_ALGO_TX_COUNT) * suggestedParams.minFee
+            if (!optedIn) claimFee += suggestedParams.minFee
 
             if (shouldClaimAlgo) {
                 composer.addAppCallMethodCall(
                     await appClient.params.arc59_claimAlgo({
                         args: [],
-                        extraFee: suggestedParams.minFee.microAlgo(),
+                        staticFee: 0n.microAlgo(),
                     }),
                 )
             }
-
-            const optedIn = await isOptedInToAsset(sender, assetId)
 
             if (!optedIn) {
                 composer.addAssetOptIn({
                     sender,
                     assetId,
+                    staticFee: 0n.microAlgo(),
                 })
             }
 
             composer.addAppCallMethodCall(
                 await appClient.params.arc59_claim({
                     args: [assetId],
-                    extraFee: (suggestedParams.minFee * BigInt(2)).microAlgo(),
+                    staticFee: claimFee.microAlgo(),
                 }),
             )
 
@@ -122,11 +129,16 @@ export const useArc59ClaimTransaction = (
 
             const composer = algokit.newGroup()
 
+            // Calculate main call fee dynamically
+            // Base: 3 * minFee (reject itself + 2 inner txns)
+            let rejectFee = BigInt(BASE_REJECT_TX_COUNT) * suggestedParams.minFee
+            if (shouldClaimAlgo) rejectFee += BigInt(CLAIM_ALGO_TX_COUNT) * suggestedParams.minFee
+
             if (shouldClaimAlgo) {
                 composer.addAppCallMethodCall(
                     await appClient.params.arc59_claimAlgo({
                         args: [],
-                        extraFee: suggestedParams.minFee.microAlgo(),
+                        staticFee: 0n.microAlgo(),
                     }),
                 )
             }
@@ -134,7 +146,7 @@ export const useArc59ClaimTransaction = (
             composer.addAppCallMethodCall(
                 await appClient.params.arc59_reject({
                     args: [assetId],
-                    extraFee: (suggestedParams.minFee * BigInt(2)).microAlgo(),
+                    staticFee: rejectFee.microAlgo(),
                 }),
             )
 

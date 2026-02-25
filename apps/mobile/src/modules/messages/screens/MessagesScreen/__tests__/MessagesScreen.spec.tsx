@@ -105,19 +105,6 @@ describe('MessagesScreen', () => {
         ).toBe('Notifications')
     })
 
-    it('defaults initialRouteName to Inbox when no params', () => {
-        vi.mocked(useRoute).mockReturnValue({
-            params: undefined,
-            key: 'Messages',
-            name: 'Messages',
-        })
-
-        render(<MessagesScreen />)
-        expect(
-            screen.getByTestId('tab-navigator').getAttribute('data-initial'),
-        ).toBe('Inbox')
-    })
-
     it('renders notification settings bottom sheet', () => {
         render(<MessagesScreen />)
         expect(

@@ -13,11 +13,16 @@
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-core-platform-integration'
-import { useNotificationStatus } from '../useNotificationStatusQuery'
+import { useInboxStatus } from '../useInboxStatus'
 import { fetchNotificationStatus } from '../../api/notifications'
+import { useInboxQuery } from '../useInboxQuery'
 
 vi.mock('../../api/notifications', () => ({
     fetchNotificationStatus: vi.fn(),
+}))
+
+vi.mock('../useInboxQuery', () => ({
+    useInboxQuery: vi.fn(),
 }))
 
 vi.mock(
@@ -35,25 +40,30 @@ vi.mock(
     },
 )
 
-describe('useNotificationStatus', () => {
-    it('should fetch notification status and return hasNewNotification', async () => {
+describe('useInboxStatus', () => {
+    it('should fetch notification status and return hasUnreadItems', async () => {
         const mockResponse = {
             has_new_notification: true,
         }
         vi.mocked(fetchNotificationStatus).mockResolvedValue(mockResponse)
+        vi.mocked(useInboxQuery).mockReturnValue({
+            data: [],
+        } as unknown as ReturnType<typeof useInboxQuery>)
 
-        const { result } = renderHook(() => useNotificationStatus(), {
+        const { result } = renderHook(() => useInboxStatus(), {
             wrapper: createWrapper(),
         })
 
         await waitFor(() => {
-            expect(result.current.isSuccess).toBe(true)
+            expect(result.current.hasUnreadItems).toBe(true)
         })
 
         expect(fetchNotificationStatus).toHaveBeenCalledWith(
             'test-network',
             'test-device-id',
         )
-        expect(result.current.data).toEqual({ hasNewNotification: true })
+        expect(result.current.hasUnreadItems).toEqual(true)
+        expect(result.current.hasUnreadNotifications).toEqual(true)
+        expect(result.current.hasUnreadInboxItems).toBeFalsy()
     })
 })

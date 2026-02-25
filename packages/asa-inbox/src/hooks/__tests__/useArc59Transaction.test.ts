@@ -41,19 +41,20 @@ vi.mock('@perawallet/wallet-core-config', () => ({
 
 // Track ARC59Client constructor calls and allow per-test instance configuration
 let arc59ClientConstructorArgs: unknown[] = []
-let mockSendOptRouterIn: Mock
+let mockParamsOptRouterIn: Mock
 let mockParamsSendAsset: Mock
 
 vi.mock('../../clients', () => {
     return {
         ARC59Client: class MockARC59Client {
-            send: { arc59_optRouterIn: Mock }
-            params: { arc59_sendAsset: Mock }
+            params: { arc59_optRouterIn: Mock; arc59_sendAsset: Mock }
 
             constructor(...args: unknown[]) {
                 arc59ClientConstructorArgs.push(args[0])
-                this.send = { arc59_optRouterIn: mockSendOptRouterIn }
-                this.params = { arc59_sendAsset: mockParamsSendAsset }
+                this.params = {
+                    arc59_optRouterIn: mockParamsOptRouterIn,
+                    arc59_sendAsset: mockParamsSendAsset,
+                }
             }
         },
     }
@@ -103,7 +104,9 @@ describe('useArc59Transaction', () => {
             send: vi.fn().mockResolvedValue({ txIds: ['tx1', 'tx2'] }),
         }
 
-        mockSendOptRouterIn = vi.fn().mockResolvedValue({})
+        mockParamsOptRouterIn = vi
+            .fn()
+            .mockResolvedValue({ method: 'arc59_optRouterIn' })
         mockParamsSendAsset = vi
             .fn()
             .mockResolvedValue({ method: 'arc59_sendAsset' })
@@ -157,7 +160,7 @@ describe('useArc59Transaction', () => {
         )
     })
 
-    test('opts router in when not already opted in', async () => {
+    test('opts router in atomically when not already opted in', async () => {
         const params = {
             ...baseParams,
             summary: { ...baseSummary, is_arc59_opted_in: false },
@@ -169,10 +172,14 @@ describe('useArc59Transaction', () => {
             await result.current.sendViaInbox(params)
         })
 
-        expect(mockSendOptRouterIn).toHaveBeenCalledWith(
+        expect(mockParamsOptRouterIn).toHaveBeenCalledWith(
             expect.objectContaining({
                 args: [params.assetId],
             }),
+        )
+        // Opt-in should go through composer (atomic), not appClient.send
+        expect(mockComposer.addAppCallMethodCall).toHaveBeenCalledWith(
+            expect.objectContaining({ method: 'arc59_optRouterIn' }),
         )
     })
 
@@ -183,13 +190,17 @@ describe('useArc59Transaction', () => {
             await result.current.sendViaInbox(baseParams)
         })
 
-        expect(mockSendOptRouterIn).not.toHaveBeenCalled()
+        expect(mockParamsOptRouterIn).not.toHaveBeenCalled()
     })
 
-    test('adds MBR payment when algo_fund_amount > 0', async () => {
+    test('payment amount sums algo_fund_amount and minimum_balance_requirement', async () => {
         const params = {
             ...baseParams,
-            summary: { ...baseSummary, algo_fund_amount: 200000 },
+            summary: {
+                ...baseSummary,
+                algo_fund_amount: 200000,
+                minimum_balance_requirement: 100000,
+            },
         }
 
         const { result } = renderHook(() => useArc59Transaction(mockSigner))
@@ -202,15 +213,40 @@ describe('useArc59Transaction', () => {
             expect.objectContaining({
                 sender: 'SENDER_ADDRESS',
                 receiver: 'TESTNET_APP_ADDRESS',
+                amount: BigInt(300000).microAlgo(),
             }),
         )
     })
 
-    test('skips MBR payment when algo_fund_amount is 0', async () => {
+    test('adds payment for MBR even when algo_fund_amount is 0', async () => {
         const { result } = renderHook(() => useArc59Transaction(mockSigner))
 
         await act(async () => {
             await result.current.sendViaInbox(baseParams)
+        })
+
+        // baseSummary has minimum_balance_requirement: 100000
+        expect(mockComposer.addPayment).toHaveBeenCalledWith(
+            expect.objectContaining({
+                amount: BigInt(100000).microAlgo(),
+            }),
+        )
+    })
+
+    test('skips payment when both algo_fund_amount and MBR are 0', async () => {
+        const params = {
+            ...baseParams,
+            summary: {
+                ...baseSummary,
+                algo_fund_amount: 0,
+                minimum_balance_requirement: 0,
+            },
+        }
+
+        const { result } = renderHook(() => useArc59Transaction(mockSigner))
+
+        await act(async () => {
+            await result.current.sendViaInbox(params)
         })
 
         expect(mockComposer.addPayment).not.toHaveBeenCalled()
@@ -280,7 +316,7 @@ describe('useArc59Transaction', () => {
             await result.current.sendViaInbox(params)
         })
 
-        expect(mockSendOptRouterIn).toHaveBeenCalledWith(
+        expect(mockParamsOptRouterIn).toHaveBeenCalledWith(
             expect.objectContaining({
                 extraFee: mockSuggestedParams.minFee.microAlgo(),
             }),

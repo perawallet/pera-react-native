@@ -98,12 +98,12 @@ describe('useInboxQuery', () => {
             ['ADDR1', 'ADDR2'],
         )
 
-        const { inboxItems } = result.current
+        const { data: inboxItems } = result.current
         expect(inboxItems).toHaveLength(3)
 
-        expect(inboxItems[0].type).toBe('joint_account_import')
-        expect(inboxItems[1].type).toBe('joint_account_sign')
-        expect(inboxItems[2].type).toBe('asa_inbox')
+        expect(inboxItems?.[0].type).toBe('joint_account_import')
+        expect(inboxItems?.[1].type).toBe('joint_account_sign')
+        expect(inboxItems?.[2].type).toBe('asa_inbox')
     })
 
     it('should map multi-sig account fields to camelCase', async () => {
@@ -131,9 +131,9 @@ describe('useInboxQuery', () => {
             expect(result.current.isPending).toBe(false)
         })
 
-        const importItem = result.current.inboxItems[0]
-        expect(importItem.type).toBe('joint_account_import')
-        if (importItem.type === 'joint_account_import') {
+        const importItem = result.current.data?.[0]
+        expect(importItem?.type).toBe('joint_account_import')
+        if (importItem?.type === 'joint_account_import') {
             expect(importItem.data.customId).toBe('msig-1')
             expect(importItem.data.createdAt).toEqual(
                 new Date('2025-01-15T00:00:00Z'),
@@ -161,6 +161,6 @@ describe('useInboxQuery', () => {
             expect(result.current.isPending).toBe(false)
         })
 
-        expect(result.current.inboxItems).toEqual([])
+        expect(result.current.data).toEqual([])
     })
 })
