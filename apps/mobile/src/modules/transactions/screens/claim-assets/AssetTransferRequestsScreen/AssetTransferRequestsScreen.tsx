@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
-import type { Arc59AssetRequest } from '@perawallet/wallet-core-blockchain'
+import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
 import { PWDivider, PWFlatList, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'

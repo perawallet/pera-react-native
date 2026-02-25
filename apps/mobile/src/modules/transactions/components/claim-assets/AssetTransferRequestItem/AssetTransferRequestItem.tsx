@@ -12,7 +12,7 @@
 
 import { PWBadge, PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import type { Arc59AssetRequest } from '@perawallet/wallet-core-blockchain'
+import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
 import {
     DEFAULT_PRECISION,
     truncateAlgorandAddress,

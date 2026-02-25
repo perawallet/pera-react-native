@@ -25,7 +25,7 @@ import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { useRoute } from '@react-navigation/native'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
 import { useQueryClient } from '@tanstack/react-query'
-import { getArc59AssetRequestsQueryKey } from '@perawallet/wallet-core-blockchain'
+import { getArc59AssetRequestsQueryKey } from '@perawallet/wallet-core-asa-inbox'
 
 export type SuccessVariant =
     | 'payment'

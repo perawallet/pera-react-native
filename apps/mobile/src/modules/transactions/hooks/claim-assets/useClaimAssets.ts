@@ -11,7 +11,7 @@
  */
 
 import { create } from 'zustand'
-import type { Arc59AssetRequest } from '@perawallet/wallet-core-blockchain'
+import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
 
 type ClaimAssetsState = {
     accountAddress: string | null

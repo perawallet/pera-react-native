@@ -64,11 +64,14 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useAlgorandClient: vi.fn(),
+vi.mock('@perawallet/wallet-core-asa-inbox', () => ({
     useArc59Transaction: vi.fn(() => ({
         sendViaInbox: vi.fn(),
     })),
+}))
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useAlgorandClient: vi.fn(),
     useExpressTransaction: vi.fn(() => ({
         sendExpress: vi.fn(),
     })),

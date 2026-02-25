@@ -10,10 +10,15 @@
  limitations under the License
  */
 
-export * from './querykeys'
-export * from './useAccountInformationQuery'
-export * from './useAlgorandClient'
-export * from './useSuggestedParametersQuery'
-export * from './useTransactionDetailQuery'
-export * from './useTransactionEncoder'
-export * from './useExpressTransaction'
+const MODULE_PREFIX = 'asa-inbox'
+
+export const getArc59SendSummaryQueryKey = (
+    receiverAddress: string,
+    assetId: string,
+) => [MODULE_PREFIX, 'arc59-send-summary', { receiverAddress, assetId }]
+
+export const getArc59AssetRequestsQueryKey = (address: string) => [
+    MODULE_PREFIX,
+    'arc59-asset-requests',
+    { address },
+]

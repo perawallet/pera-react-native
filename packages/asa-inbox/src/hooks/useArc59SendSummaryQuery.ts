@@ -12,17 +12,19 @@
 
 import { useQuery, UseQueryResult } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
-import { fetchArc59AssetRequests, type Arc59AssetRequest } from '../api/arc59'
-import { getArc59AssetRequestsQueryKey } from './querykeys'
+import { fetchArc59SendSummary } from '../api'
+import type { Arc59SendSummaryResponse } from '../api'
+import { getArc59SendSummaryQueryKey } from './querykeys'
 
-export const useArc59AssetRequestsQuery = (
-    address: string | null,
-): UseQueryResult<Arc59AssetRequest[], Error> => {
+export const useArc59SendSummaryQuery = (
+    receiverAddress: string,
+    assetId: string,
+): UseQueryResult<Arc59SendSummaryResponse> => {
     const { network } = useNetwork()
 
     return useQuery({
-        queryKey: getArc59AssetRequestsQueryKey(address ?? ''),
-        queryFn: () => fetchArc59AssetRequests(network, address!),
-        enabled: !!address,
+        queryKey: getArc59SendSummaryQueryKey(receiverAddress, assetId),
+        queryFn: () => fetchArc59SendSummary(network, receiverAddress, assetId),
+        enabled: !!receiverAddress && !!assetId,
     })
 }

@@ -16,7 +16,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
 import { useArc59SendSummaryQuery } from '../useArc59SendSummaryQuery'
-import { fetchArc59SendSummary } from '../../api/arc59'
+import { fetchArc59SendSummary } from '../../api'
 
 vi.mock('@perawallet/wallet-core-platform-integration', () => ({
     useNetwork: vi.fn(() => ({
@@ -30,7 +30,7 @@ vi.mock('@perawallet/wallet-core-platform-integration', () => ({
     })),
 }))
 
-vi.mock('../../api/arc59', () => ({
+vi.mock('../../api', () => ({
     fetchArc59SendSummary: vi.fn(),
 }))
 

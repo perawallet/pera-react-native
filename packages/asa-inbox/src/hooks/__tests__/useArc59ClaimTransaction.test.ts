@@ -14,10 +14,12 @@ import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
 import { useArc59ClaimTransaction } from '../useArc59ClaimTransaction'
-import { useAlgorandClient } from '../useAlgorandClient'
+import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 
-vi.mock('../useAlgorandClient')
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useAlgorandClient: vi.fn(),
+}))
 vi.mock('@perawallet/wallet-core-platform-integration', () => ({
     useNetwork: vi.fn(),
 }))

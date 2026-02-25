@@ -207,6 +207,9 @@ importers:
       '@perawallet/wallet-core-accounts':
         specifier: workspace:*
         version: link:../../packages/accounts
+      '@perawallet/wallet-core-asa-inbox':
+        specifier: workspace:*
+        version: link:../../packages/asa-inbox
       '@perawallet/wallet-core-assets':
         specifier: workspace:*
         version: link:../../packages/assets
@@ -659,6 +662,76 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 4.0.16(@types/node@25.0.3)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.31.1)(msw@2.12.7(@types/node@25.0.3)(typescript@5.9.3))(terser@5.44.1)(yaml@2.8.2)
+
+  packages/asa-inbox:
+    dependencies:
+      '@algorandfoundation/algokit-utils':
+        specifier: 'catalog:'
+        version: 10.0.0-alpha.29
+      '@babel/runtime':
+        specifier: 'catalog:'
+        version: 7.28.4
+      '@perawallet/wallet-core-assets':
+        specifier: workspace:*
+        version: link:../assets
+      '@perawallet/wallet-core-blockchain':
+        specifier: workspace:*
+        version: link:../blockchain
+      '@perawallet/wallet-core-config':
+        specifier: workspace:*
+        version: link:../config
+      '@perawallet/wallet-core-platform-integration':
+        specifier: workspace:*
+        version: link:../platform-integration
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.90.14(react@19.1.0)
+      decimal.js:
+        specifier: 'catalog:'
+        version: 10.6.0
+      react:
+        specifier: 'catalog:'
+        version: 19.1.0
+      zod:
+        specifier: 'catalog:'
+        version: 4.2.1
+    devDependencies:
+      '@perawallet/wallet-core-devtools':
+        specifier: workspace:*
+        version: link:../devtools
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
+      '@types/node':
+        specifier: ^20.19.28
+        version: 20.19.28
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.1.17
+      globals:
+        specifier: 'catalog:'
+        version: 15.15.0
+      reflect-metadata:
+        specifier: 'catalog:'
+        version: 0.2.2
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.48.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
+      vite:
+        specifier: 'catalog:'
+        version: 7.3.0(@types/node@20.19.28)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.44.1)(yaml@2.8.2)
+      vite-plugin-dts:
+        specifier: ^4.5.4
+        version: 4.5.4(@types/node@20.19.28)(rollup@4.54.0)(typescript@5.9.3)(vite@7.3.0(@types/node@20.19.28)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.44.1)(yaml@2.8.2))
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.16(@types/node@20.19.28)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.31.1)(msw@2.12.7(@types/node@20.19.28)(typescript@5.9.3))(terser@5.44.1)(yaml@2.8.2)
 
   packages/assets:
     dependencies:
@@ -13537,9 +13610,7 @@ snapshots:
       metro-runtime: 0.83.3
     transitivePeerDependencies:
       - '@babel/core'
-      - bufferutil
       - supports-color
-      - utf-8-validate
     optional: true
 
   '@react-native/normalize-colors@0.74.89': {}
@@ -14047,6 +14118,15 @@ snapshots:
       '@testing-library/dom': 10.4.1
       react: 19.1.0
       react-dom: 19.1.0(react@19.1.0)
+    optionalDependencies:
+      '@types/react': 19.1.17
+
+  '@testing-library/react@16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      '@babel/runtime': 7.28.4
+      '@testing-library/dom': 10.4.1
+      react: 19.1.0
+      react-dom: 19.2.0(react@19.1.0)
     optionalDependencies:
       '@types/react': 19.1.17
 
@@ -18703,6 +18783,11 @@ snapshots:
     dependencies:
       react: 19.1.0
       scheduler: 0.26.0
+
+  react-dom@19.2.0(react@19.1.0):
+    dependencies:
+      react: 19.1.0
+      scheduler: 0.27.0
 
   react-dom@19.2.0(react@19.2.0):
     dependencies:

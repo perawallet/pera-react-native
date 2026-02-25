@@ -34,6 +34,7 @@
     "@notifee/react-native": "^9.1.8",
     "@perawallet/wallet-core-accounts": "workspace:*",
     "@perawallet/wallet-core-assets": "workspace:*",
+    "@perawallet/wallet-core-asa-inbox": "workspace:*",
     "@perawallet/wallet-core-blockchain": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-contacts": "workspace:*",

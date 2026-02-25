@@ -23,9 +23,9 @@ import {
     toDecimalUnits,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
+import { useArc59Transaction } from '@perawallet/wallet-core-asa-inbox'
 import {
     useAlgorandClient,
-    useArc59Transaction,
     useExpressTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useNavigation } from '@react-navigation/native'

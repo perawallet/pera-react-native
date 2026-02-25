@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-export * from './querykeys'
-export * from './useAccountInformationQuery'
-export * from './useAlgorandClient'
-export * from './useSuggestedParametersQuery'
-export * from './useTransactionDetailQuery'
-export * from './useTransactionEncoder'
-export * from './useExpressTransaction'
+export const name = '@perawallet/wallet-core-asa-inbox'
+
+export * from './api'
+export * from './hooks'

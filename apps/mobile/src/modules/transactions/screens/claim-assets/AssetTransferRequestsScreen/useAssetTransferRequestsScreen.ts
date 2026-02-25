@@ -16,7 +16,7 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     useArc59AssetRequestsQuery,
     type Arc59AssetRequest,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-asa-inbox'
 import { useClaimAssets } from '@modules/transactions/hooks'
 import type { MessagesStackParamList } from '@modules/messages/routes/types'
 import { useAppNavigation } from '@hooks/useAppNavigation'

@@ -13,9 +13,11 @@
 import { useCallback } from 'react'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { config } from '@perawallet/wallet-core-config'
-import { useAlgorandClient } from './useAlgorandClient'
-import type { Arc59SendSummaryResponse } from '../api/arc59'
-import type { PeraTransactionSigner } from '../models'
+import {
+    useAlgorandClient,
+    type PeraTransactionSigner,
+} from '@perawallet/wallet-core-blockchain'
+import type { Arc59SendSummaryResponse } from '../api'
 import arc59AppSpec from './arc59-app-spec.json'
 import { AppClient } from '@algorandfoundation/algokit-utils/types/app-client'
 

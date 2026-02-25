@@ -17,7 +17,7 @@ import {
     type RouteProp,
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import type { Arc59AssetRequest } from '@perawallet/wallet-core-blockchain'
+import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
 import { useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useClipboard } from '@hooks/useClipboard'
 import { useClaimAssets } from '@modules/transactions/hooks'
