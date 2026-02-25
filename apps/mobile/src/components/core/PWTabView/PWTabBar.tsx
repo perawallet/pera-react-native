@@ -124,7 +124,10 @@ export const PWTabBar = ({
                             <PWView style={styles.labelContainer}>
                                 {/* Inactive Layer */}
                                 <Animated.View
-                                    style={[{ opacity: inactiveOpacity }, styles.labelTextContainer]}
+                                    style={[
+                                        { opacity: inactiveOpacity },
+                                        styles.labelTextContainer,
+                                    ]}
                                 >
                                     <Animated.Text
                                         style={[
@@ -140,7 +143,9 @@ export const PWTabBar = ({
                                             styles.inactiveTitle.color!,
                                         )}
                                     </Animated.Text>
-                                    <Animated.View style={{ opacity: inactiveOpacity }}>
+                                    <Animated.View
+                                        style={{ opacity: inactiveOpacity }}
+                                    >
                                         {badge?.()}
                                     </Animated.View>
                                 </Animated.View>
@@ -163,7 +168,9 @@ export const PWTabBar = ({
                                             styles.activeTitle.color!,
                                         )}
                                     </Animated.Text>
-                                    <Animated.View style={{ opacity: activeOpacity }}>
+                                    <Animated.View
+                                        style={{ opacity: activeOpacity }}
+                                    >
                                         {badge?.()}
                                     </Animated.View>
                                 </Animated.View>

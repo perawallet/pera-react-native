@@ -12,19 +12,19 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles((theme) => ({
+export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
     },
     badge: {
         width: theme.spacing.sm,
         height: theme.spacing.sm,
-        backgroundColor: 'transparent'
+        backgroundColor: 'transparent',
     },
     unreadBadge: {
         width: theme.spacing.sm,
         height: theme.spacing.sm,
         borderRadius: theme.spacing.sm,
-        backgroundColor: theme.colors.buttonNewPrimaryBg
-    }
+        backgroundColor: theme.colors.buttonNewPrimaryBg,
+    },
 }))

@@ -11,10 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import {
-    useRoute,
-    type RouteProp,
-} from '@react-navigation/native'
+import { useRoute, type RouteProp } from '@react-navigation/native'
 import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
 import { useAllAccounts, WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useClipboard } from '@hooks/useClipboard'
@@ -45,7 +42,8 @@ export const useAssetClaimDetailScreen =
         const route =
             useRoute<RouteProp<MessagesStackParamList, 'AssetClaimDetail'>>()
         const { assetIndex } = route.params
-        const { assetRequests, accountAddress, setOnFinished } = useClaimAssets()
+        const { assetRequests, accountAddress, setOnFinished } =
+            useClaimAssets()
         const accounts = useAllAccounts()
         const { copyToClipboard } = useClipboard()
         const rejectModal = useModalState()

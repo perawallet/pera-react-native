@@ -21,9 +21,7 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    DEFAULT_PRECISION,
-} from '@perawallet/wallet-core-shared'
+import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { RejectConfirmBottomSheet } from '@modules/transactions/components/claim-assets/RejectConfirmBottomSheet'
 import { useStyles } from './styles'
 import { useAssetClaimDetailScreen } from './useAssetClaimDetailScreen'
@@ -73,30 +71,33 @@ export const AssetClaimDetailScreen = () => {
                     />
                 </PWView>
 
-                {request.id && <>
-                    <PWView style={styles.assetIdRow}>
-                        <PWText
-                            style={styles.usdText}
-                        >{request.id}</PWText>
-                        <PWTouchableOpacity
-                            style={styles.copyIdPill}
-                            onPress={handleCopyAssetId}
-                        >
-                            <PWText variant='caption'>
-                                {t('messages.claim.copy_id')}
-                            </PWText>
-                        </PWTouchableOpacity>
-                    </PWView>
+                {request.id && (
+                    <>
+                        <PWView style={styles.assetIdRow}>
+                            <PWText style={styles.usdText}>{request.id}</PWText>
+                            <PWTouchableOpacity
+                                style={styles.copyIdPill}
+                                onPress={handleCopyAssetId}
+                            >
+                                <PWText variant='caption'>
+                                    {t('messages.claim.copy_id')}
+                                </PWText>
+                            </PWTouchableOpacity>
+                        </PWView>
 
-                    <PWDivider style={styles.separator} />
-                </>}
+                        <PWDivider style={styles.separator} />
+                    </>
+                )}
 
                 <PWView style={styles.accountRow}>
                     <PWText style={styles.headerLabelText}>
                         {t('messages.claim.account')}
                     </PWText>
                     {receiverAccount && (
-                        <AccountDisplay account={receiverAccount} showChevron={false} />
+                        <AccountDisplay
+                            account={receiverAccount}
+                            showChevron={false}
+                        />
                     )}
                 </PWView>
 
@@ -121,7 +122,10 @@ export const AssetClaimDetailScreen = () => {
                                 showCopy={false}
                             />
                             <CurrencyDisplay
-                                value={baseUnitsToDisplayUnits(Decimal(senderItem.amount), request.asset.decimals)}
+                                value={baseUnitsToDisplayUnits(
+                                    Decimal(senderItem.amount),
+                                    request.asset.decimals,
+                                )}
                                 currency={request.asset?.unitName ?? ''}
                                 precision={request.asset?.decimals}
                                 minPrecision={DEFAULT_PRECISION}
@@ -133,21 +137,29 @@ export const AssetClaimDetailScreen = () => {
                 </PWView>
             </PWScrollView>
 
-            {request.algoGainOnClaim !== '5' && <>
-
-                <PWDivider style={styles.separator} />
-                <PWView style={styles.algoGainRow}>
-                    <PWIcon name='info' variant='secondary' style={styles.algoGainIcon} />
-                    <PWText variant='caption' style={styles.algoGainText}>
-                        {t('arc59.claim.algo_gain', {
-                            amount: baseUnitsToDisplayUnits(
-                                Decimal(request.algoGainOnClaim),
-                                6
-                            ),
-                        })}
-                    </PWText>
-                </PWView>
-            </>}
+            {request.algoGainOnClaim !== '5' && (
+                <>
+                    <PWDivider style={styles.separator} />
+                    <PWView style={styles.algoGainRow}>
+                        <PWIcon
+                            name='info'
+                            variant='secondary'
+                            style={styles.algoGainIcon}
+                        />
+                        <PWText
+                            variant='caption'
+                            style={styles.algoGainText}
+                        >
+                            {t('arc59.claim.algo_gain', {
+                                amount: baseUnitsToDisplayUnits(
+                                    Decimal(request.algoGainOnClaim),
+                                    6,
+                                ),
+                            })}
+                        </PWText>
+                    </PWView>
+                </>
+            )}
 
             <PWView style={styles.footer}>
                 <PWView style={styles.rejectButton}>

@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { PWBadge, PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import {
+    PWBadge,
+    PWIcon,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
 import {
@@ -42,7 +48,10 @@ export const AssetTransferRequestItem = ({
     const firstSender = senders.results[0]
     const remainingCount = senders.count - 1
 
-    const amount = useMemo(() => toWholeUnits(Decimal(totalAmount), asset), [totalAmount, asset])
+    const amount = useMemo(
+        () => toWholeUnits(Decimal(totalAmount), asset),
+        [totalAmount, asset],
+    )
 
     return (
         <PWTouchableOpacity

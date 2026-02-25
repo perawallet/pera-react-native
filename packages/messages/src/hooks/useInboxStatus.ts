@@ -46,6 +46,6 @@ export const useInboxStatus = () => {
         hasUnreadItems:
             inboxData?.length || notificationStatusData?.hasNewNotification,
         hasUnreadInboxItems: inboxData?.length,
-        hasUnreadNotifications: notificationStatusData?.hasNewNotification
+        hasUnreadNotifications: notificationStatusData?.hasNewNotification,
     }
 }

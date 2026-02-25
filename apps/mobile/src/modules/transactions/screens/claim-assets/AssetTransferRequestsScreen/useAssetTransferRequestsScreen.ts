@@ -11,10 +11,7 @@
  */
 
 import { useCallback, useEffect } from 'react'
-import {
-    useRoute,
-    type RouteProp,
-} from '@react-navigation/native'
+import { useRoute, type RouteProp } from '@react-navigation/native'
 import {
     useArc59AssetRequestsQuery,
     type Arc59AssetRequest,
@@ -61,7 +58,7 @@ export const useAssetTransferRequestsScreen =
         )
 
         return {
-            assetRequests: [...(assetRequests ?? []), ...assetRequests ?? []],
+            assetRequests: [...(assetRequests ?? []), ...(assetRequests ?? [])],
             isPending,
             handleItemPress,
         }

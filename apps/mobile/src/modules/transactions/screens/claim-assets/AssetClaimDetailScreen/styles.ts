@@ -13,7 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles((theme, insets: EdgeInsets)  => ({
+export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     container: {
         flex: 1,
         paddingHorizontal: theme.spacing.xl,
@@ -74,7 +74,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets)  => ({
     footer: {
         flexDirection: 'row',
         gap: theme.spacing.md,
-        marginBottom: theme.spacing.xl
+        marginBottom: theme.spacing.xl,
     },
     rejectButton: {
         flex: 2,
@@ -98,6 +98,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets)  => ({
         flexWrap: 'wrap',
     },
     algoGainIcon: {
-        marginTop: theme.spacing.xs
-    }
+        marginTop: theme.spacing.xs,
+    },
 }))

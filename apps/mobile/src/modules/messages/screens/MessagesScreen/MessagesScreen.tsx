@@ -39,7 +39,7 @@ export const MessagesScreen = () => {
         activeTab,
         setActiveTab,
         showInboxBadge,
-        showNotificationsBadge
+        showNotificationsBadge,
     } = useMessagesScreen()
 
     useNavigationHeader({
@@ -70,17 +70,33 @@ export const MessagesScreen = () => {
             >
                 <Tab.Screen
                     name='Inbox'
-                    options={{ 
-                        title: t('messages.tabs.inbox'), 
-                        tabBarBadge: () => <PWView style={showInboxBadge ? styles.unreadBadge : styles.badge} />
+                    options={{
+                        title: t('messages.tabs.inbox'),
+                        tabBarBadge: () => (
+                            <PWView
+                                style={
+                                    showInboxBadge
+                                        ? styles.unreadBadge
+                                        : styles.badge
+                                }
+                            />
+                        ),
                     }}
                     component={InboxScreen}
                 />
                 <Tab.Screen
                     name='Notifications'
-                    options={{ 
+                    options={{
                         title: t('messages.tabs.notifications'),
-                        tabBarBadge: () => <PWView style={showNotificationsBadge ? styles.unreadBadge : styles.badge} />
+                        tabBarBadge: () => (
+                            <PWView
+                                style={
+                                    showNotificationsBadge
+                                        ? styles.unreadBadge
+                                        : styles.badge
+                                }
+                            />
+                        ),
                     }}
                     component={NotificationsScreen}
                 />

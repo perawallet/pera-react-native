@@ -30,13 +30,15 @@ export const AssetTransferRequestsScreen = () => {
         useAssetTransferRequestsScreen()
 
     useNavigationHeader({
-        right: <InfoButton
-            title={t('arc59.requests.info_title')}
-            size='md'
-            variant='primary'
-        >
-            <PWText>{t('arc59.requests.info_body')}</PWText>
-        </InfoButton>,
+        right: (
+            <InfoButton
+                title={t('arc59.requests.info_title')}
+                size='md'
+                variant='primary'
+            >
+                <PWText>{t('arc59.requests.info_body')}</PWText>
+            </InfoButton>
+        ),
     })
 
     const renderItem = useCallback(
@@ -49,10 +51,14 @@ export const AssetTransferRequestsScreen = () => {
         [handleItemPress],
     )
 
-    const renderSeparator = useCallback(() => <PWDivider style={styles.separator} />, [])
+    const renderSeparator = useCallback(
+        () => <PWDivider style={styles.separator} />,
+        [],
+    )
 
     const keyExtractor = useCallback(
-        (item: Arc59AssetRequest, index: number) => String(item.id ?? '' + index),
+        (item: Arc59AssetRequest, index: number) =>
+            String(item.id ?? '' + index),
         [],
     )
 
