@@ -19,7 +19,6 @@ import {
 import { useClaimAssets } from '@modules/transactions/hooks'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import type { MessagesStackParamList } from '@modules/messages/routes/types'
-import { logger } from '@perawallet/wallet-core-shared'
 
 type UseAssetTransferRequestsScreenResult = {
     assetRequests: Arc59AssetRequest[]

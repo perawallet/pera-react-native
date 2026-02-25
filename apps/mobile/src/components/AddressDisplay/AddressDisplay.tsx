@@ -17,7 +17,6 @@ import {
     PWTouchableOpacity,
     PWTouchableOpacityProps,
     PWView,
-    PWViewProps,
 } from '@components/core'
 import { useStyles } from './styles'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'

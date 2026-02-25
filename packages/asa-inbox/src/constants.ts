@@ -10,6 +10,6 @@
  limitations under the License
  */
 
- export const BASE_CLAIM_TX_COUNT = 3
+export const BASE_CLAIM_TX_COUNT = 3
 export const BASE_REJECT_TX_COUNT = 3
 export const CLAIM_ALGO_TX_COUNT = 2

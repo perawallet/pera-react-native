@@ -11,7 +11,6 @@
  */
 
 import {
-    PWBadge,
     PWButton,
     PWDivider,
     PWIcon,

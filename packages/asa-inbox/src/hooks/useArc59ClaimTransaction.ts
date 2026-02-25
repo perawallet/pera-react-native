@@ -18,7 +18,11 @@ import {
     type PeraTransactionSigner,
 } from '@perawallet/wallet-core-blockchain'
 import { ARC59Client } from '../clients'
-import { BASE_CLAIM_TX_COUNT, BASE_REJECT_TX_COUNT, CLAIM_ALGO_TX_COUNT } from '../constants'
+import {
+    BASE_CLAIM_TX_COUNT,
+    BASE_REJECT_TX_COUNT,
+    CLAIM_ALGO_TX_COUNT,
+} from '../constants'
 
 type ClaimParams = {
     sender: string
@@ -79,7 +83,8 @@ export const useArc59ClaimTransaction = (
             // Calculate main call fee dynamically
             // Base: 3 * minFee (claim itself + 2 inner txns)
             let claimFee = BigInt(BASE_CLAIM_TX_COUNT) * suggestedParams.minFee
-            if (shouldClaimAlgo) claimFee += BigInt(CLAIM_ALGO_TX_COUNT) * suggestedParams.minFee
+            if (shouldClaimAlgo)
+                claimFee += BigInt(CLAIM_ALGO_TX_COUNT) * suggestedParams.minFee
             if (!optedIn) claimFee += suggestedParams.minFee
 
             if (shouldClaimAlgo) {
@@ -131,8 +136,11 @@ export const useArc59ClaimTransaction = (
 
             // Calculate main call fee dynamically
             // Base: 3 * minFee (reject itself + 2 inner txns)
-            let rejectFee = BigInt(BASE_REJECT_TX_COUNT) * suggestedParams.minFee
-            if (shouldClaimAlgo) rejectFee += BigInt(CLAIM_ALGO_TX_COUNT) * suggestedParams.minFee
+            let rejectFee =
+                BigInt(BASE_REJECT_TX_COUNT) * suggestedParams.minFee
+            if (shouldClaimAlgo)
+                rejectFee +=
+                    BigInt(CLAIM_ALGO_TX_COUNT) * suggestedParams.minFee
 
             if (shouldClaimAlgo) {
                 composer.addAppCallMethodCall(

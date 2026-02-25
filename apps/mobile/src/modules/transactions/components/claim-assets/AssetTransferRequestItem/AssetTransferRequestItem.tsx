@@ -10,18 +10,11 @@
  limitations under the License
  */
 
-import {
-    PWBadge,
-    PWIcon,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWBadge, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
 import {
     DEFAULT_PRECISION,
-    logger,
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
