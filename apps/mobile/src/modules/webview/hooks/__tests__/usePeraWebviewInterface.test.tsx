@@ -15,6 +15,7 @@ import { renderHook, act } from '@testing-library/react'
 import { usePeraWebviewInterface } from '../usePeraWebviewInterface'
 import { useWebView } from '..'
 import { Linking } from 'react-native'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
 
 vi.mock('react-native', () => ({
     Platform: {
@@ -25,6 +26,7 @@ vi.mock('react-native', () => ({
         canOpenURL: vi.fn().mockResolvedValue(true),
         openURL: vi.fn().mockResolvedValue(true),
     },
+    useColorScheme: vi.fn(() => 'light'),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     View: ({ children }: any) => children,
 }))
@@ -112,6 +114,10 @@ vi.mock('uuid', () => ({
 
 vi.mock('@rneui/themed', () => ({
     makeStyles: () => () => ({}),
+}))
+
+vi.mock('@hooks/useIsDarkMode', () => ({
+    useIsDarkMode: vi.fn(() => false),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -866,6 +872,54 @@ describe('usePeraWebviewInterface', () => {
             )
             expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
                 expect.stringContaining('"id":"26"'),
+            )
+        })
+    })
+
+    describe('dark mode theme handling', () => {
+        beforeEach(() => {
+            vi.mocked(useIsDarkMode).mockReturnValue(true)
+        })
+
+        afterEach(() => {
+            vi.mocked(useIsDarkMode).mockReturnValue(false)
+        })
+
+        it('should return dark theme in getPublicSettings when dark mode is active', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: 'dark-1',
+                    jsonrpc: '2.0',
+                    method: 'getPublicSettings',
+                    params: {},
+                })
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"theme":"dark"'),
+            )
+        })
+
+        it('should return dark theme in getSettings when dark mode is active', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(mockWebview, true),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: 'dark-2',
+                    jsonrpc: '2.0',
+                    method: 'getSettings',
+                    params: {},
+                })
+            })
+
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"theme":"dark"'),
             )
         })
     })
