@@ -937,5 +937,15 @@
             "pools_description": "Staking pools enable groups of individuals to participate in consensus together. Users can stake Algo to a validator and get rewarded based on validator rewards. Options like DEX liquidity pool staking are also available.",
             "delegated_description": "Delegated staking involves using a third-party to run a node on your behalf while your Algo remains in your wallet. This is useful for users who want to secure the network and collect rewards without running their own node."
         }
+    },
+    "swap": {
+        "introduction": {
+            "title": "Swap in Pera",
+            "description": "Pera Wallet provides an easy and fast way to swap assets. With P.E.R.A., swap requests are intelligently routed across multiple Algorand based decentralized exchanges to secure the best available price.",
+            "powered_by": "Powered by ",
+            "powered_by_brand": "P.E.R.A.",
+            "start_swapping": "Start Swapping",
+            "terms_agreement": "By continuing, you agree to our swap partner's <0>Terms of Service</0>"
+        }
     }
 }
