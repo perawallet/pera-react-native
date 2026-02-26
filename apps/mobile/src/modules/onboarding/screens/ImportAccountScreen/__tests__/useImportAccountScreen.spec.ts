@@ -11,6 +11,7 @@
  */
 
 import { renderHook, act } from '@testing-library/react'
+import * as Clipboard from 'expo-clipboard'
 import { useImportAccountScreen } from '../useImportAccountScreen'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 
@@ -158,6 +159,46 @@ describe('useImportAccountScreen', () => {
         expect(result.current.words[0]).toBe('')
     })
 
+    it('fills all slots when a newline-separated full mnemonic is pasted', () => {
+        const { result } = renderHook(() => useImportAccountScreen())
+        const mnemonic = new Array(24).fill('word').join('\n')
+
+        act(() => {
+            result.current.updateWord(mnemonic, 0)
+        })
+
+        expect(result.current.words.every(w => w === 'word')).toBe(true)
+    })
+
+    it('fills all slots when a mnemonic with extra newlines is pasted', () => {
+        const { result } = renderHook(() => useImportAccountScreen())
+        const mnemonic = new Array(24).fill('word').join('\n\n')
+
+        act(() => {
+            result.current.updateWord(mnemonic, 0)
+        })
+
+        expect(result.current.words.every(w => w === 'word')).toBe(true)
+    })
+
+    it('fills all slots when a mnemonic with mixed whitespace is pasted', () => {
+        const { result } = renderHook(() => useImportAccountScreen())
+        const words = new Array(24).fill('word')
+        // Join with a mix of spaces, newlines, double newlines, and \r\n
+        const mnemonic = [
+            words.slice(0, 3).join('\n'),
+            words.slice(3, 6).join('\n\n'),
+            words.slice(6, 10).join('\r\n'),
+            words.slice(10, 24).join(' '),
+        ].join('\n')
+
+        act(() => {
+            result.current.updateWord(mnemonic, 0)
+        })
+
+        expect(result.current.words.every(w => w === 'word')).toBe(true)
+    })
+
     it('treats spaces at the end of a single word as a single word update', () => {
         const { result } = renderHook(() => useImportAccountScreen())
 
@@ -283,6 +324,114 @@ describe('useImportAccountScreen', () => {
 
             expect(result.current.words[23]).toBe('abandon')
             expect(result.current.focused).toBe(23)
+        })
+    })
+
+    describe('handleWordChange', () => {
+        it('uses clipboard content when paste is detected and clipboard has more words', async () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            vi.mocked(Clipboard.getStringAsync).mockResolvedValue(
+                'help inhale music device trap calm',
+            )
+
+            await act(async () => {
+                await result.current.handleWordChange(
+                    'helpinhale music device trap calm',
+                    0,
+                )
+            })
+
+            expect(result.current.words[0]).toBe('help')
+            expect(result.current.words[1]).toBe('inhale')
+            expect(result.current.words[2]).toBe('music')
+            expect(result.current.words[3]).toBe('device')
+            expect(result.current.words[4]).toBe('trap')
+            expect(result.current.words[5]).toBe('calm')
+        })
+
+        it('falls back to received text when clipboard has same number of words', async () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            vi.mocked(Clipboard.getStringAsync).mockResolvedValue(
+                'apple banana cherry',
+            )
+
+            await act(async () => {
+                await result.current.handleWordChange('apple banana cherry', 0)
+            })
+
+            expect(result.current.words[0]).toBe('apple')
+            expect(result.current.words[1]).toBe('banana')
+            expect(result.current.words[2]).toBe('cherry')
+        })
+
+        it('does not read clipboard for single character changes (typing)', async () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            act(() => {
+                result.current.updateWord('appl', 0)
+            })
+
+            await act(async () => {
+                await result.current.handleWordChange('apple', 0)
+            })
+
+            expect(Clipboard.getStringAsync).not.toHaveBeenCalled()
+            expect(result.current.words[0]).toBe('apple')
+        })
+
+        it('falls back to received text when clipboard read fails', async () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            vi.mocked(Clipboard.getStringAsync).mockRejectedValue(
+                new Error('Permission denied'),
+            )
+
+            await act(async () => {
+                await result.current.handleWordChange('helpinhale music', 0)
+            })
+
+            expect(result.current.words[0]).toBe('helpinhale')
+            expect(result.current.words[1]).toBe('music')
+        })
+
+        it('uses clipboard for full 24-word mnemonic paste with newline corruption', async () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+            const fullMnemonic = new Array(24).fill('word').join(' ')
+
+            vi.mocked(Clipboard.getStringAsync).mockResolvedValue(fullMnemonic)
+
+            const mangledText =
+                'wordword ' + new Array(22).fill('word').join(' ')
+
+            await act(async () => {
+                await result.current.handleWordChange(mangledText, 0)
+            })
+
+            expect(result.current.words.every(w => w === 'word')).toBe(true)
+        })
+
+        it('uses clipboard when clipboard has newline-separated words with extra newlines', async () => {
+            const { result } = renderHook(() => useImportAccountScreen())
+
+            vi.mocked(Clipboard.getStringAsync).mockResolvedValue(
+                'help\n\ninhale\n\nmusic\n\ndevice\n\ntrap\n\ncalm',
+            )
+
+            await act(async () => {
+                await result.current.handleWordChange(
+                    'helpinhale music device trap calm',
+                    0,
+                )
+            })
+
+            expect(result.current.words[0]).toBe('help')
+            expect(result.current.words[1]).toBe('inhale')
+            expect(result.current.words[2]).toBe('music')
+            expect(result.current.words[3]).toBe('device')
+            expect(result.current.words[4]).toBe('trap')
+            expect(result.current.words[5]).toBe('calm')
         })
     })
 })

@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { useState, useCallback, useMemo, useEffect, useRef } from 'react'
-import { Keyboard, Platform, Linking } from 'react-native'
+import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
+import { Linking } from 'react-native'
 import * as Clipboard from 'expo-clipboard'
 
 import { RouteProp, useRoute } from '@react-navigation/native'
@@ -24,11 +24,13 @@ import { MNEMONIC_WORDLIST as WORDLIST } from '@perawallet/wallet-core-kms'
 import { RECOVERY_PASSPHRASE_SUPPORT_URL } from '@perawallet/wallet-core-config'
 
 import type { PWInputRef } from '@components/core'
+import type { UseImportAccountScreenResult } from './types'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 import { useModalState } from '@hooks/useModalState'
+import { useKeyboardHeight } from '@hooks/useKeyboardHeight'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { DeeplinkType } from '@hooks/deeplink/types'
 
@@ -38,32 +40,6 @@ const MNEMONIC_LENGTH_MAP: Record<ImportAccountType, number> = {
 }
 
 const MAX_SUGGESTIONS = 4
-
-export type UseImportAccountScreenResult = {
-    words: string[]
-    focused: number
-    setFocused: (index: number) => void
-    canImport: boolean
-    processing: boolean
-    updateWord: (word: string, index: number) => void
-    handleImportAccount: () => void
-    mnemonicLength: number
-    t: (key: string) => string
-    isKeyboardVisible: boolean
-    keyboardHeight: number
-    isSupportOptionsVisible: boolean
-    handleOpenSupportOptions: () => void
-    handleCloseSupportOptions: () => void
-    handlePastePassphrase: () => void
-    handleScanQRCode: () => void
-    handleLearnMore: () => void
-    isQRScannerVisible: boolean
-    handleCloseQRScanner: () => void
-    handleQRScannerSuccess: (url: string) => void
-    suggestions: string[]
-    handleSelectSuggestion: (word: string) => void
-    setInputRef: (index: number, ref: PWInputRef | null) => void
-}
 
 export function useImportAccountScreen(): UseImportAccountScreenResult {
     const {
@@ -75,35 +51,15 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     const { t } = useLanguage()
     const { parseDeeplink } = useDeepLink()
 
-    const [isKeyboardVisible, setIsKeyboardVisible] = useState(false)
-    const [keyboardHeight, setKeyboardHeight] = useState(0)
-
-    useEffect(() => {
-        const showEvent =
-            Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow'
-        const hideEvent =
-            Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide'
-
-        const showSubscription = Keyboard.addListener(showEvent, e => {
-            setIsKeyboardVisible(true)
-            setKeyboardHeight(e.endCoordinates.height)
-        })
-        const hideSubscription = Keyboard.addListener(hideEvent, () => {
-            setIsKeyboardVisible(false)
-            setKeyboardHeight(0)
-        })
-
-        return () => {
-            showSubscription.remove()
-            hideSubscription.remove()
-        }
-    }, [])
+    const { isKeyboardVisible, keyboardHeight } = useKeyboardHeight()
 
     const mnemonicLength = MNEMONIC_LENGTH_MAP[accountType]
 
     const [words, setWords] = useState<string[]>(
         new Array(mnemonicLength).fill(''),
     )
+    const wordsRef = useRef(words)
+    wordsRef.current = words
     const [focused, setFocused] = useState(0)
     const [processing, setProcessing] = useState(false)
     const {
@@ -121,13 +77,24 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         new Array(mnemonicLength).fill(null),
     )
 
-    const setInputRef = useCallback((index: number, ref: PWInputRef | null) => {
-        inputRefs.current[index] = ref
-    }, [])
+    const refCallbacks = useMemo(
+        () =>
+            Array.from(
+                { length: mnemonicLength },
+                (_, i) => (ref: PWInputRef | null) => {
+                    inputRefs.current[i] = ref
+                },
+            ),
+        [mnemonicLength],
+    )
 
     const focusInput = useCallback((index: number) => {
         inputRefs.current[index]?.focus()
     }, [])
+
+    useEffect(() => {
+        focusInput(focused)
+    }, [focused, focusInput])
 
     const canImport = useMemo(() => words.every(w => w.length > 0), [words])
 
@@ -171,12 +138,9 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
 
             if (nextIndex < mnemonicLength) {
                 setFocused(nextIndex)
-                setTimeout(() => {
-                    focusInput(nextIndex)
-                }, 50)
             }
         },
-        [focused, mnemonicLength, focusInput],
+        [focused, mnemonicLength],
     )
 
     const updateWord = useCallback(
@@ -241,6 +205,39 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         [mnemonicLength, showToast, t],
     )
 
+    const handleWordChange = useCallback(
+        async (text: string, index: number) => {
+            const currentWord = wordsRef.current[index] ?? ''
+
+            if (text.length - currentWord.length > 1) {
+                try {
+                    const clipboardContent = await Clipboard.getStringAsync()
+
+                    if (clipboardContent) {
+                        const clipboardWords = clipboardContent
+                            .trim()
+                            .split(/\s+/)
+                            .filter(Boolean)
+                        const receivedWords = text
+                            .trim()
+                            .split(/\s+/)
+                            .filter(Boolean)
+
+                        if (clipboardWords.length > receivedWords.length) {
+                            updateWord(clipboardContent, index)
+                            return
+                        }
+                    }
+                } catch {
+                    // Clipboard read failed; fall through
+                }
+            }
+
+            updateWord(text, index)
+        },
+        [updateWord],
+    )
+
     const handleImportAccount = useCallback(() => {
         setProcessing(true)
         deferToNextCycle(async () => {
@@ -265,10 +262,6 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
             }
         })
     }, [importAccount, words, accountType, navigation, showToast, t])
-
-    const handleOpenSupportOptions = useCallback(() => {
-        openSupportOptions()
-    }, [openSupportOptions])
 
     const handlePastePassphrase = useCallback(async () => {
         const content = await Clipboard.getStringAsync()
@@ -316,13 +309,14 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         canImport,
         processing,
         updateWord,
+        handleWordChange,
         handleImportAccount,
         mnemonicLength,
         t,
         isKeyboardVisible,
         keyboardHeight,
         isSupportOptionsVisible,
-        handleOpenSupportOptions,
+        handleOpenSupportOptions: openSupportOptions,
         handleCloseSupportOptions,
         handlePastePassphrase,
         handleScanQRCode,
@@ -332,6 +326,6 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         handleQRScannerSuccess,
         suggestions,
         handleSelectSuggestion,
-        setInputRef,
+        refCallbacks,
     }
 }

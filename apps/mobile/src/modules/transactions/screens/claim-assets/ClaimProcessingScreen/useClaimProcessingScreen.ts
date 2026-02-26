@@ -52,7 +52,7 @@ export const useClaimProcessingScreen = () => {
         const sendParams = {
             sendMode: mode,
             sender: accountAddress,
-            assetId: asset.asset.assetId,
+            asset: asset.asset,
             shouldClaimAlgo,
         } as SendClaimParams
 

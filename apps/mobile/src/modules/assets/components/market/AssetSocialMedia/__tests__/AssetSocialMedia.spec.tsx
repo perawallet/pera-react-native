@@ -17,7 +17,7 @@ import { PeraAsset } from '@perawallet/wallet-core-assets'
 
 const mockPushWebView = vi.fn()
 
-vi.mock('@hooks/usePeraWebviewInterface', () => ({
+vi.mock('@modules/webview/hooks', () => ({
     useWebView: () => ({
         pushWebView: mockPushWebView,
     }),

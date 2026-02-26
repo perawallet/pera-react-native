@@ -15,3 +15,7 @@ export {
     useClaimAssetsStore,
     useClaimAssets,
 } from './claim-assets/useClaimAssets'
+export {
+    useReceiveFundsStore,
+    useReceiveFunds,
+} from './receive-funds/useReceiveFunds'

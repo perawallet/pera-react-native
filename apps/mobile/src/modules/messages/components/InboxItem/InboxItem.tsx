@@ -19,6 +19,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
 import { InboxItemIcon } from './InboxItemIcon'
+import { useMemo } from 'react'
 
 export type InboxItemProps = {
     item: InboxItemModel
@@ -30,7 +31,7 @@ export const InboxItem = ({ item, onPress }: InboxItemProps) => {
     const { t } = useLanguage()
     const accounts = useAllAccounts()
 
-    const renderContent = () => {
+    const content = useMemo(() => {
         switch (item.type) {
             case 'asa_inbox': {
                 const account = accounts.find(
@@ -85,7 +86,7 @@ export const InboxItem = ({ item, onPress }: InboxItemProps) => {
                     </>
                 )
         }
-    }
+    }, [accounts, styles])
 
     return (
         <PWTouchableOpacity
@@ -94,7 +95,7 @@ export const InboxItem = ({ item, onPress }: InboxItemProps) => {
             disabled={!onPress}
         >
             <InboxItemIcon item={item} />
-            <PWView style={styles.messageBox}>{renderContent()}</PWView>
+            <PWView style={styles.messageBox}>{content}</PWView>
         </PWTouchableOpacity>
     )
 }

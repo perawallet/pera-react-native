@@ -26,6 +26,8 @@ import {
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
 
+const ALGO_PRICE_IDS = [ALGO_ASSET_ID]
+
 type UseFeeWarningResult = {
     showWarning: boolean
     fee: Decimal
@@ -47,7 +49,7 @@ export const useFeeWarning = (): UseFeeWarningResult => {
     )
 
     const remoteConfigService = useRemoteConfigService()
-    const { data: assetPrices } = useAssetPricesQuery(true)
+    const { data: assetPrices } = useAssetPricesQuery(ALGO_PRICE_IDS, true)
 
     const algoPrice = assetPrices?.get(ALGO_ASSET_ID)?.usdPrice
 

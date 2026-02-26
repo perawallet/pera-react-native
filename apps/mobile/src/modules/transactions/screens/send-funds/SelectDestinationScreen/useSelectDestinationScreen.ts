@@ -28,7 +28,7 @@ export const useSelectDestinationScreen = () => {
     const selectedAccount = useSelectedAccount()
     const accounts = useAllAccounts()
     const { accountBalances } = useAccountBalancesQuery(accounts)
-    const { data: assets } = useAssetsQuery()
+    const { data: assets } = useAssetsQuery(selectedAsset ? [selectedAsset.assetId] : [])
 
     const asset = useMemo(() => {
         if (!selectedAsset?.assetId) return null
@@ -68,7 +68,7 @@ export const useSelectDestinationScreen = () => {
             // Check if receiver is a local account we can sign for
             const localAccount = accounts.find(a => a.address === address)
             const isLocalSignable =
-                localAccount && canSignWithAccount(localAccount)
+                localAccount && canSignWithAccount(localAccount, accounts)
 
             if (isLocalSignable) {
                 // Express send: local account, we handle opt-in + transfer

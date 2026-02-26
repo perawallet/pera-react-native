@@ -50,7 +50,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccountAddress: () => ({ setSelectedAccountAddress: vi.fn() }),
 }))
 
-vi.mock('../usePeraWebviewInterface', () => ({
+vi.mock('@modules/webview/hooks', () => ({
     useWebView: () => ({ pushWebView: vi.fn() }),
 }))
 

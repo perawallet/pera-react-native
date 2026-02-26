@@ -63,14 +63,18 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
         const styles = useStyles()
         const inputRef = useRef<TextInput>(null)
 
-        useImperativeHandle(ref, () => ({
-            focus: () => {
-                inputRef.current?.focus()
-            },
-            blur: () => {
-                inputRef.current?.blur()
-            },
-        }))
+        useImperativeHandle(
+            ref,
+            () => ({
+                focus: () => {
+                    inputRef.current?.focus()
+                },
+                blur: () => {
+                    inputRef.current?.blur()
+                },
+            }),
+            [],
+        )
 
         return (
             <RNEInput

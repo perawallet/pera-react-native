@@ -55,7 +55,7 @@ export const useTransactionProcessingScreen = () => {
             sendMode,
             sender: selectedAccount,
             receiver: destination,
-            assetId: selectedAsset?.assetId,
+            asset: selectedAsset,
             amount,
             note,
             isCloseAccount,

@@ -89,4 +89,19 @@ describe('AssetMarkets', () => {
         expect(container.textContent).toContain('AssetDescription')
         expect(container.textContent).toContain('AssetSocialMedia')
     })
+
+    it('calls onSwipeEnabledChange with true when no chart point is selected', () => {
+        const onSwipeEnabledChange = vi.fn()
+        render(
+            <AssetMarkets
+                asset={mockAsset}
+                onSwipeEnabledChange={onSwipeEnabledChange}
+            />,
+        )
+        expect(onSwipeEnabledChange).toHaveBeenCalledWith(true)
+    })
+
+    it('does not throw when onSwipeEnabledChange is not provided', () => {
+        expect(() => render(<AssetMarkets asset={mockAsset} />)).not.toThrow()
+    })
 })

@@ -86,7 +86,7 @@ vi.mock(
     }),
 )
 
-vi.mock('@hooks/usePeraWebviewInterface', () => ({
+vi.mock('@modules/webview/hooks', () => ({
     useWebView: vi.fn(() => ({
         pushWebView: vi.fn(),
     })),

@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { Network } from '@perawallet/wallet-core-shared'
+
 const MODULE_PREFIX = 'blockchain'
 
 export const getAccountInformationQueryKey = (address: string) => [
@@ -23,8 +25,12 @@ export const getSuggestedParametersQueryKey = () => [
     'suggested-parameters',
 ]
 
-export const getTransactionDetailQueryKey = (transactionId: string) => [
-    MODULE_PREFIX,
-    'transaction-detail',
-    { transactionId },
-]
+export const getTransactionDetailQueryKey = (
+    transactionId: string,
+    network: Network,
+) => [MODULE_PREFIX, 'transaction-detail', { transactionId, network }]
+
+export const getArc59SendSummaryQueryKey = (
+    receiverAddress: string,
+    assetId: string,
+) => [MODULE_PREFIX, 'arc59-send-summary', { receiverAddress, assetId }]

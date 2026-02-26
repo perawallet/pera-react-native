@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
 import { render, screen, fireEvent } from '@test-utils/render'
 import Decimal from 'decimal.js'
@@ -56,6 +56,14 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         portfolioUsdValue: new Decimal('200'),
         accountUsdValues: new Map(),
         isPending: false,
+    })),
+    useSelectedAccount: vi.fn(() => undefined),
+}))
+
+vi.mock('@modules/transactions/hooks', () => ({
+    useReceiveFunds: vi.fn(() => ({
+        setSelectedAccount: vi.fn(),
+        setCanSelectAccount: vi.fn(),
     })),
 }))
 
@@ -186,13 +194,18 @@ vi.mock(
     }),
 )
 vi.mock(
-    '@modules/transactions/components/ReceiveFunds/ReceiveFundsBottomSheet/ReceiveFundsBottomSheet',
+    '@modules/transactions/components/receive-funds/ReceiveFundsBottomSheet',
     () => ({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ReceiveFundsBottomSheet: ({ isVisible }: any) =>
             isVisible ? <div data-testid='receive-funds-sheet' /> : null,
     }),
 )
+vi.mock('../../AccountOptionsBottomSheet', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    AccountOptionsBottomSheet: ({ isVisible }: any) =>
+        isVisible ? <div data-testid='account-options-sheet' /> : null,
+}))
 
 describe('AccountOverview', () => {
     const mockAccount = { address: 'addr' } as WalletAccount
@@ -285,7 +298,7 @@ describe('AccountOverview', () => {
             expect(screen.getByTestId('receive-funds-sheet')).toBeTruthy()
         })
 
-        it('shows not implemented toast when More is pressed', () => {
+        it('opens account options sheet when More is pressed', () => {
             render(
                 <AccountOverview
                     account={mockAccount}
@@ -293,11 +306,30 @@ describe('AccountOverview', () => {
                 />,
             )
             fireEvent.click(screen.getByText('More'))
-            expect(mockShowToast).toHaveBeenCalledWith({
-                title: 'common.not_implemented.title',
-                body: 'common.not_implemented.body',
-                type: 'error',
-            })
+            expect(screen.getByTestId('account-options-sheet')).toBeTruthy()
         })
+    })
+
+    it('calls onSwipeEnabledChange with true on initial render', () => {
+        const onSwipeEnabledChange = vi.fn()
+        render(
+            <AccountOverview
+                account={mockAccount}
+                chartVisible={true}
+                onSwipeEnabledChange={onSwipeEnabledChange}
+            />,
+        )
+        expect(onSwipeEnabledChange).toHaveBeenCalledWith(true)
+    })
+
+    it('does not throw when onSwipeEnabledChange is not provided', () => {
+        expect(() =>
+            render(
+                <AccountOverview
+                    account={mockAccount}
+                    chartVisible={true}
+                />,
+            ),
+        ).not.toThrow()
     })
 })

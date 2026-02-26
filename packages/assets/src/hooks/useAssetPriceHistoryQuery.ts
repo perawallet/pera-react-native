@@ -22,16 +22,18 @@ import type {
 } from '../api'
 import { useCallback } from 'react'
 import { getAssetPriceHistoryQueryKey } from './querykeys'
+import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 
 export const useAssetPriceHistoryQuery = (
     assetID: string,
     period: HistoryPeriod,
 ) => {
-    const queryKey = getAssetPriceHistoryQueryKey(assetID, period)
+    const { network } = useNetwork()
+    const queryKey = getAssetPriceHistoryQueryKey(assetID, period, network)
 
     return useQuery({
         queryKey,
-        queryFn: () => fetchAssetPriceHistory(assetID, period),
+        queryFn: () => fetchAssetPriceHistory(assetID, period, network),
         select: useCallback(
             (data: AssetPriceHistoryResponse) =>
                 data.map((item: AssetPriceHistoryResponseItem) =>

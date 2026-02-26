@@ -16,8 +16,8 @@ import type Decimal from 'decimal.js'
 import {
     ALGO_ASSET,
     ALGO_ASSET_ID,
+    PeraAsset,
     toDecimalUnits,
-    useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
 import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-asa-inbox'
 import {
@@ -36,7 +36,7 @@ type BaseSendParams = {
     sendMode: 'normal' | 'express' | 'sendArc59' | 'claimArc59' | 'rejectArc59'
     sender?: WalletAccount
     receiver?: string
-    assetId?: string
+    asset?: PeraAsset
     amount?: Decimal
     note?: string
 }
@@ -66,12 +66,11 @@ export const useTransactionSendFlow = () => {
     const { sendExpress } = useExpressTransaction(signTransactions)
     const { claimAsset, rejectAsset } =
         useArc59ClaimTransaction(signTransactions)
-    const { data: assets } = useAssetsQuery()
 
     const executeSend = useCallback(
         async (params: SendTransactionParams): Promise<string> => {
             if (
-                !params.assetId ||
+                !params.asset ||
                 !params.sender ||
                 !params.receiver ||
                 params.amount == null
@@ -79,13 +78,8 @@ export const useTransactionSendFlow = () => {
                 throw new InvalidSendParamsError()
             }
 
-            const asset =
-                params.assetId === ALGO_ASSET_ID
-                    ? ALGO_ASSET
-                    : assets.get(params.assetId)
-
-            if (!asset) {
-                throw new Error(`Asset ${params.assetId} not found`)
+            if (!params.asset) {
+                throw new Error(`Asset ${params.asset} not found`)
             }
 
             switch (params.sendMode) {
@@ -93,9 +87,9 @@ export const useTransactionSendFlow = () => {
                     const result = await sendExpress({
                         sender: params.sender.address,
                         receiver: params.receiver,
-                        assetId: BigInt(params.assetId),
+                        assetId: BigInt(params.asset.assetId),
                         amount: BigInt(
-                            toDecimalUnits(params.amount, asset).toString(),
+                            toDecimalUnits(params.amount, params.asset).toString(),
                         ),
                     })
                     return result.txIds[result.txIds.length - 1]
@@ -109,16 +103,16 @@ export const useTransactionSendFlow = () => {
                     const result = await sendViaInbox({
                         sender: params.sender.address,
                         receiver: params.receiver,
-                        assetId: BigInt(params.assetId),
+                        assetId: BigInt(params.asset.assetId),
                         amount: BigInt(
-                            toDecimalUnits(params.amount, asset).toString(),
+                            toDecimalUnits(params.amount, params.asset).toString(),
                         ),
                         summary: params.arc59Summary,
                     })
                     return result.txIds[result.txIds.length - 1]
                 }
                 case 'normal': {
-                    if (params.assetId === ALGO_ASSET_ID) {
+                    if (params.asset.assetId === ALGO_ASSET_ID) {
                         const result = await algokit.send.payment({
                             sender: params.sender.address,
                             receiver: params.receiver,
@@ -141,9 +135,9 @@ export const useTransactionSendFlow = () => {
                             sender: params.sender.address,
                             receiver: params.receiver,
                             amount: BigInt(
-                                toDecimalUnits(params.amount, asset).toString(),
+                                toDecimalUnits(params.amount, params.asset).toString(),
                             ),
-                            assetId: BigInt(params.assetId),
+                            assetId: BigInt(params.asset.assetId),
                             note: params.note,
                         })
                         return result.txIds[0]
@@ -156,21 +150,21 @@ export const useTransactionSendFlow = () => {
 
     const executeArc59 = useCallback(
         async (params: SendClaimParams): Promise<string> => {
-            if (!params.assetId || !params.sender) {
+            if (!params.asset || !params.sender) {
                 throw new InvalidSendParamsError()
             }
 
             if (params.sendMode === 'claimArc59') {
                 const result = await claimAsset({
                     sender: params.sender.address,
-                    assetId: BigInt(params.assetId),
+                    assetId: BigInt(params.asset.assetId),
                     shouldClaimAlgo: params.shouldClaimAlgo,
                 })
                 return result.txIds[result.txIds.length - 1]
             } else {
                 const result = await rejectAsset({
                     sender: params.sender.address,
-                    assetId: BigInt(params.assetId),
+                    assetId: BigInt(params.asset.assetId),
                     shouldClaimAlgo: params.shouldClaimAlgo,
                 })
                 return result.txIds[result.txIds.length - 1]

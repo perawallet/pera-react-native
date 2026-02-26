@@ -21,12 +21,16 @@ const {
     mockReplace,
     mockDiscoverAccounts,
     mockDiscoverRekeyedAccounts,
+    mockExitAccountFlow,
+    mockSetSelectedAccountAddress,
 } = vi.hoisted(() => ({
     mockShowToast: vi.fn(),
     mockGoBack: vi.fn(),
     mockReplace: vi.fn(),
     mockDiscoverAccounts: vi.fn(),
     mockDiscoverRekeyedAccounts: vi.fn(),
+    mockExitAccountFlow: vi.fn(),
+    mockSetSelectedAccountAddress: vi.fn(),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -57,6 +61,15 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     useAccountDiscovery: () => ({
         discoverAccounts: mockDiscoverAccounts,
         discoverRekeyedAccounts: mockDiscoverRekeyedAccounts,
+    }),
+    useSelectedAccountAddress: () => ({
+        setSelectedAccountAddress: mockSetSelectedAccountAddress,
+    }),
+}))
+
+vi.mock('../../../hooks', () => ({
+    useExitAccountFlow: () => ({
+        exitAccountFlow: mockExitAccountFlow,
     }),
 }))
 
@@ -121,6 +134,24 @@ describe('useSearchAccountsScreen', () => {
             expect(mockReplace).toHaveBeenCalledWith('ImportSelectAddresses', {
                 accounts: expect.any(Array),
             })
+        })
+    })
+
+    it('selects the imported account and exits when only one HD account is discovered', async () => {
+        const singleAccount = {
+            id: '1',
+            address: 'MOCK_ADDRESS',
+            type: AccountTypes.hdWallet,
+        }
+        mockDiscoverAccounts.mockResolvedValue([singleAccount])
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
+                'MOCK_ADDRESS',
+            )
+            expect(mockExitAccountFlow).toHaveBeenCalled()
         })
     })
 })

@@ -46,7 +46,11 @@ export const useInputScreen = () => {
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
     )
-    const { data: assets } = useAssetsQuery()
+    const assetIDs = useMemo(
+        () => (selectedAsset?.assetId ? [selectedAsset.assetId] : []),
+        [selectedAsset?.assetId],
+    )
+    const { data: assets } = useAssetsQuery(assetIDs)
 
     const asset = useMemo(() => {
         if (!selectedAsset?.assetId) return null

@@ -46,7 +46,9 @@ export const useSigningRequestAnalysis = (request: TransactionSignRequest) => {
     const signableAddresses = useMemo(
         () =>
             new Set(
-                accounts.filter(a => canSignWithAccount(a)).map(a => a.address),
+                accounts
+                    .filter(a => canSignWithAccount(a, accounts))
+                    .map(a => a.address),
             ),
         [accounts],
     )

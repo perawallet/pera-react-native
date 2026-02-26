@@ -16,6 +16,7 @@ import {
     AccountBalanceHistoryItem,
     useAccountBalancesQuery,
     usePortfolioTotals,
+    useSelectedAccount,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
@@ -23,9 +24,8 @@ import { useSettings } from '@perawallet/wallet-core-settings'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
 import { useModalState } from '@hooks/useModalState'
+import { useReceiveFunds } from '@modules/transactions/hooks'
 
 export type UseAccountOverviewResult = {
     portfolioAlgoValue: Decimal
@@ -50,6 +50,8 @@ export type UseAccountOverviewResult = {
     handleReceive: () => void
     isReceiveFundsVisible: boolean
     handleCloseReceiveFunds: () => void
+    isAccountOptionsVisible: boolean
+    handleCloseAccountOptions: () => void
 }
 
 export const useAccountOverview = (
@@ -67,6 +69,8 @@ export const useAccountOverview = (
         useChartInteraction<AccountBalanceHistoryItem>()
     const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true)
     const { privacyMode, setPrivacyMode } = useSettings()
+    const selectedAccount = useSelectedAccount()
+    const { setSelectedAccount, setCanSelectAccount } = useReceiveFunds()
 
     const togglePrivacyMode = useCallback(() => {
         setPrivacyMode(!privacyMode)
@@ -86,8 +90,6 @@ export const useAccountOverview = (
     )
 
     const navigation = useAppNavigation()
-    const { t } = useLanguage()
-    const { showToast } = useToast()
     const {
         isOpen: isSendFundsVisible,
         open: handleOpenSendFunds,
@@ -97,14 +99,6 @@ export const useAccountOverview = (
     const handleSwap = useCallback(() => {
         navigation.replace('TabBar', { screen: 'Swap' })
     }, [navigation])
-
-    const notImplemented = useCallback(() => {
-        showToast({
-            title: t('common.not_implemented.title'),
-            body: t('common.not_implemented.body'),
-            type: 'error',
-        })
-    }, [showToast, t])
 
     const handleBuyAlgo = useCallback(() => {
         navigation.navigate('TabBar', { screen: 'Fund' })
@@ -116,9 +110,23 @@ export const useAccountOverview = (
         close: handleCloseReceiveFunds,
     } = useModalState()
 
+    const {
+        isOpen: isAccountOptionsVisible,
+        open: handleOpenAccountOptions,
+        close: handleCloseAccountOptions,
+    } = useModalState()
+
     const handleReceive = useCallback(() => {
+        if (selectedAccount) {
+            setCanSelectAccount(false)
+            setSelectedAccount(selectedAccount)
+        }
         handleOpenReceiveFunds()
-    }, [handleOpenReceiveFunds])
+    }, [selectedAccount, handleOpenReceiveFunds])
+
+    const handleMore = useCallback(() => {
+        handleOpenAccountOptions()
+    }, [handleOpenAccountOptions])
 
     return {
         portfolioAlgoValue,
@@ -136,10 +144,12 @@ export const useAccountOverview = (
         handleOpenSendFunds,
         handleCloseSendFunds,
         handleSwap,
-        handleMore: notImplemented,
+        handleMore,
         handleBuyAlgo,
         handleReceive,
         isReceiveFundsVisible,
         handleCloseReceiveFunds,
+        isAccountOptionsVisible,
+        handleCloseAccountOptions,
     }
 }

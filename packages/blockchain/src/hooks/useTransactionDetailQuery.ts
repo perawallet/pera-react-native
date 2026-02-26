@@ -15,6 +15,7 @@ import { useAlgorandClient } from './useAlgorandClient'
 import { getTransactionDetailQueryKey } from './querykeys'
 import { mapIndexerTxToDisplayableTransaction } from '../utils/transactions'
 import type { PeraDisplayableTransaction } from '../models'
+import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 
 type UseTransactionDetailQueryParams = {
     transactionId: string
@@ -29,9 +30,10 @@ export const useTransactionDetailQuery = ({
     isEnabled = true,
 }: UseTransactionDetailQueryParams): UseTransactionDetailQueryResult => {
     const algokit = useAlgorandClient()
+    const { network } = useNetwork()
 
     return useQuery({
-        queryKey: getTransactionDetailQueryKey(transactionId),
+        queryKey: getTransactionDetailQueryKey(transactionId, network),
         queryFn: async () => {
             const response =
                 await algokit.client.indexer.lookupTransactionById(

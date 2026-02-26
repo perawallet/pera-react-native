@@ -18,7 +18,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { useProjectByUrlQuery } from '@perawallet/wallet-core-projects'
 import { SignRequestSource } from '@perawallet/wallet-core-signing'
-import { useWebView } from '@hooks/usePeraWebviewInterface'
+import { useWebView } from '@modules/webview/hooks'
 
 export const useSourceMetadataView = (metadata: SignRequestSource) => {
     const { data: project } = useProjectByUrlQuery({

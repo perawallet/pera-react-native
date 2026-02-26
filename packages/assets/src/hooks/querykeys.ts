@@ -10,28 +10,32 @@
  limitations under the License
  */
 
-import { HistoryPeriod } from '@perawallet/wallet-core-shared'
+import { HistoryPeriod, Network } from '@perawallet/wallet-core-shared'
 import { ALGO_ASSET_ID } from '../models'
 
 export const MODULE_PREFIX = 'assets'
 
-export const getAssetPricesQueryKey = (assetIDs: string[]) => {
-    return [MODULE_PREFIX, 'prices', 'usd', { assetIDs }]
+export const getAssetPricesQueryKey = (
+    assetIDs: string[],
+    network: Network,
+) => {
+    return [MODULE_PREFIX, 'prices', 'usd', { assetIDs, network }]
 }
 
 export const getAssetPriceHistoryQueryKey = (
     assetID: string,
     period: HistoryPeriod,
+    network: Network,
 ) => {
-    return [MODULE_PREFIX, 'prices', 'history', { assetID, period }]
+    return [MODULE_PREFIX, 'prices', 'history', { assetID, period, network }]
 }
 
-export const getAssetsQueryKey = (assetIDs: string[]) => {
-    return [MODULE_PREFIX, { assetIDs }]
+export const getAssetsQueryKey = (assetIDs: string[], network: Network) => {
+    return [MODULE_PREFIX, { assetIDs, network }]
 }
 
-export const getAlgoQueryKey = () => {
-    return [MODULE_PREFIX, { algo: ALGO_ASSET_ID }]
+export const getAlgoQueryKey = (network: Network) => {
+    return [MODULE_PREFIX, { algo: ALGO_ASSET_ID, network }]
 }
 
 export const getAssetDetailsQueryKey = (assetId: string) => [

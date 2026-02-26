@@ -16,7 +16,7 @@ import {
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useStyles } from './styles'
 import { AssetMarkets } from '@modules/assets/components/market/AssetMarkets'
@@ -62,6 +62,8 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
         })
     }, [showToast, t])
 
+    const [swipeEnabled, setSwipeEnabled] = useState(true)
+
     useNavigationHeader({
         title: (
             <PWView style={styles.headerTitleContainer}>
@@ -100,7 +102,7 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
 
     return (
         <PWView style={styles.contentContainer}>
-            <Tab.Navigator>
+            <Tab.Navigator screenOptions={{ swipeEnabled }}>
                 <Tab.Screen
                     name='Holdings'
                     options={{
@@ -111,6 +113,7 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
                         <AssetHoldings
                             account={account}
                             asset={asset}
+                            onSwipeEnabledChange={setSwipeEnabled}
                         />
                     )}
                 </Tab.Screen>
@@ -121,7 +124,12 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
                         title: t('asset_details.main_screen.markets_tab'),
                     }}
                 >
-                    {() => <AssetMarkets asset={asset} />}
+                    {() => (
+                        <AssetMarkets
+                            asset={asset}
+                            onSwipeEnabledChange={setSwipeEnabled}
+                        />
+                    )}
                 </Tab.Screen>
             </Tab.Navigator>
         </PWView>

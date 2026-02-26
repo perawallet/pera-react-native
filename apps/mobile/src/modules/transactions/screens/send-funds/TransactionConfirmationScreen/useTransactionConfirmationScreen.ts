@@ -55,7 +55,11 @@ export const useTransactionConfirmationScreen =
             useSendFunds()
         const { t } = useLanguage()
 
-        const { data: assets } = useAssetsQuery()
+        const assetIDs = useMemo(
+            () => (selectedAsset?.assetId ? [selectedAsset.assetId] : []),
+            [selectedAsset?.assetId],
+        )
+        const { data: assets } = useAssetsQuery(assetIDs)
         const asset = useMemo(() => {
             if (!selectedAsset?.assetId) return null
             return assets.get(selectedAsset?.assetId)

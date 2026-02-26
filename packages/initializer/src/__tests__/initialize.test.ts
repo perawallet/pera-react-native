@@ -13,7 +13,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { registerDataStores } from '../initialize'
 import { registerAccountsStore } from '@perawallet/wallet-core-accounts'
-import { registerAssetsStore } from '@perawallet/wallet-core-assets'
 import { registerBlockchainStore } from '@perawallet/wallet-core-blockchain'
 import { registerContactsStore } from '@perawallet/wallet-core-contacts'
 import { registerSigningStore } from '@perawallet/wallet-core-signing'
@@ -32,9 +31,6 @@ import { registerWalletConnectStore } from '@perawallet/wallet-core-walletconnec
 // Mock all dependencies
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     registerAccountsStore: vi.fn(),
-}))
-vi.mock('@perawallet/wallet-core-assets', () => ({
-    registerAssetsStore: vi.fn(),
 }))
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     registerBlockchainStore: vi.fn(),
@@ -80,7 +76,6 @@ describe('registerDataStores', () => {
         registerDataStores()
 
         expect(registerAccountsStore).toHaveBeenCalled()
-        expect(registerAssetsStore).toHaveBeenCalled()
         expect(registerBlockchainStore).toHaveBeenCalled()
         expect(registerContactsStore).toHaveBeenCalled()
         expect(registerCurrenciesStore).toHaveBeenCalled()

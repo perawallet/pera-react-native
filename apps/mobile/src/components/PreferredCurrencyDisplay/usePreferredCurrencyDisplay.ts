@@ -46,8 +46,9 @@ export const usePreferredCurrencyDisplay = (
     }, [needsFallback, fallbackCurrency, preferredCurrency])
 
     // Asset prices in USD
+    const priceIDs = useMemo(() => [sourceAssetId], [sourceAssetId])
     const { data: usdPrices, isPending: usdPricesPending } =
-        useAssetPricesQuery()
+        useAssetPricesQuery(priceIDs)
 
     // Fallback exchange rate (needed when displaying in fallback currency)
     const { data: fallbackRate, isPending: fallbackRatePending } =

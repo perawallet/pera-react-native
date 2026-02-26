@@ -133,4 +133,27 @@ describe('AssetHoldings', () => {
         )
         expect(container).toBeTruthy()
     })
+
+    it('calls onSwipeEnabledChange with true when no chart point is selected', () => {
+        const onSwipeEnabledChange = vi.fn()
+        render(
+            <AssetHoldings
+                account={mockAccount}
+                asset={mockAsset}
+                onSwipeEnabledChange={onSwipeEnabledChange}
+            />,
+        )
+        expect(onSwipeEnabledChange).toHaveBeenCalledWith(true)
+    })
+
+    it('does not throw when onSwipeEnabledChange is not provided', () => {
+        expect(() =>
+            render(
+                <AssetHoldings
+                    account={mockAccount}
+                    asset={mockAsset}
+                />,
+            ),
+        ).not.toThrow()
+    })
 })

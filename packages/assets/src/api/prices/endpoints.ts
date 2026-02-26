@@ -11,9 +11,9 @@
  */
 
 import {
-    Networks,
     queryClient,
     type HistoryPeriod,
+    type Network,
 } from '@perawallet/wallet-core-shared'
 import {
     assetPriceHistoryResponseSchema,
@@ -22,10 +22,13 @@ import {
     type AssetPricesResponse,
 } from './schema'
 
-export const fetchAssetPrices = async (assetIDs: string[]) => {
+export const fetchAssetPrices = async (
+    assetIDs: string[],
+    network: Network,
+) => {
     const response = await queryClient<AssetPricesResponse, string[]>({
         backend: 'pera',
-        network: Networks.mainnet,
+        network,
         method: 'GET',
         url: `/v1/assets/`,
         params: {
@@ -39,10 +42,11 @@ export const fetchAssetPrices = async (assetIDs: string[]) => {
 export const fetchAssetPriceHistory = async (
     assetID: string,
     period: HistoryPeriod,
+    network: Network,
 ) => {
     const res = await queryClient<AssetPriceHistoryResponse, unknown>({
         backend: 'pera',
-        network: Networks.mainnet,
+        network,
         method: 'GET',
         url: `/v1/assets/price-chart/`,
         params: {

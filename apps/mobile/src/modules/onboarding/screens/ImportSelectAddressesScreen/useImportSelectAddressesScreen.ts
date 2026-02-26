@@ -15,7 +15,8 @@ import { RouteProp, useRoute } from '@react-navigation/native'
 import { OnboardingStackParamList } from '../../routes/types'
 import {
     useAllAccounts,
-    useAccountsStore,
+    useSetAccounts,
+    useSelectedAccountAddress,
     HDWalletAccount,
     useAccountDiscovery,
     DerivationTypes,
@@ -54,6 +55,8 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     const navigation = useAppNavigation()
 
     const { exitAccountFlow } = useExitAccountFlow()
+    const { setSelectedAccountAddress } = useSelectedAccountAddress()
+    const { setAccounts } = useSetAccounts()
 
     const alreadyImportedAddresses = useMemo(() => {
         return new Set(allAccounts.map(acc => acc.address))
@@ -107,8 +110,8 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
             )
 
             if (accountsToAdd.length > 0) {
-                const { setAccounts } = useAccountsStore.getState()
                 setAccounts([...allAccounts, ...accountsToAdd])
+                setSelectedAccountAddress(accountsToAdd[0].address)
             }
 
             try {
@@ -147,6 +150,8 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
         discoverRekeyedAccounts,
         exitAccountFlow,
         navigation,
+        setSelectedAccountAddress,
+        setAccounts,
     ])
 
     const areAllImported = newAccounts.length === 0

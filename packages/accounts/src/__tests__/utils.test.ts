@@ -14,6 +14,7 @@ import { describe, test, expect } from 'vitest'
 import {
     canSignWithAccount,
     getAccountDisplayName,
+    hasSigningKeys,
     isAlgo25Account,
     isHDWalletAccount,
     isLedgerAccount,
@@ -194,13 +195,98 @@ describe('services/accounts/utils - account type checks', () => {
         ).toBe(true)
     })
 
-    test('canSignWithAccount checks keyPairId', () => {
-        expect(canSignWithAccount(baseAccount)).toBe(true)
+    test('hasSigningKeys checks keyPairId', () => {
+        expect(hasSigningKeys(baseAccount)).toBe(true)
         expect(
-            canSignWithAccount({
+            hasSigningKeys({
                 ...baseAccount,
                 keyPairId: undefined,
             } as any),
         ).toBe(false)
+    })
+
+    test('canSignWithAccount returns true for account with keyPairId', () => {
+        expect(canSignWithAccount(baseAccount, [])).toBe(true)
+    })
+
+    test('canSignWithAccount returns false for account without keyPairId', () => {
+        expect(
+            canSignWithAccount(
+                { ...baseAccount, keyPairId: undefined } as any,
+                [],
+            ),
+        ).toBe(false)
+    })
+
+    test('canSignWithAccount returns true for rekeyed account when auth account has keys', () => {
+        const authAccount = {
+            id: '2',
+            type: 'algo25',
+            address: 'AUTH_ADDR',
+            keyPairId: 'pk2',
+        } as any
+
+        const rekeyedAccount = {
+            id: '3',
+            type: 'watch',
+            address: 'REKEYED_ADDR',
+            rekeyAddress: 'AUTH_ADDR',
+        } as any
+
+        expect(canSignWithAccount(rekeyedAccount, [authAccount])).toBe(true)
+    })
+
+    test('canSignWithAccount returns false for rekeyed account when auth account has no keys', () => {
+        const authAccount = {
+            id: '2',
+            type: 'watch',
+            address: 'AUTH_ADDR',
+        } as any
+
+        const rekeyedAccount = {
+            id: '3',
+            type: 'watch',
+            address: 'REKEYED_ADDR',
+            rekeyAddress: 'AUTH_ADDR',
+        } as any
+
+        expect(canSignWithAccount(rekeyedAccount, [authAccount])).toBe(false)
+    })
+
+    test('canSignWithAccount returns false for rekeyed account when auth account is not in list', () => {
+        const rekeyedAccount = {
+            id: '3',
+            type: 'watch',
+            address: 'REKEYED_ADDR',
+            rekeyAddress: 'AUTH_ADDR',
+        } as any
+
+        expect(canSignWithAccount(rekeyedAccount, [])).toBe(false)
+    })
+
+    test('canSignWithAccount handles rekey chain', () => {
+        const rootAccount = {
+            id: '1',
+            type: 'algo25',
+            address: 'ROOT_ADDR',
+            keyPairId: 'pk1',
+        } as any
+
+        const middleAccount = {
+            id: '2',
+            type: 'watch',
+            address: 'MIDDLE_ADDR',
+            rekeyAddress: 'ROOT_ADDR',
+        } as any
+
+        const leafAccount = {
+            id: '3',
+            type: 'watch',
+            address: 'LEAF_ADDR',
+            rekeyAddress: 'MIDDLE_ADDR',
+        } as any
+
+        const accounts = [rootAccount, middleAccount, leafAccount]
+        expect(canSignWithAccount(leafAccount, accounts)).toBe(true)
     })
 })

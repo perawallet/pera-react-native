@@ -65,7 +65,20 @@ export const isMultisigAccount = (
     return account.type === AccountTypes.multisig
 }
 
-export const canSignWithAccount = (account: WalletAccount) => {
-    //TODO: this needs to handle rekeys as well...
+export const hasSigningKeys = (account: WalletAccount): boolean => {
     return !!account.keyPairId
+}
+
+export const canSignWithAccount = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+): boolean => {
+    if (hasSigningKeys(account)) return true
+    if (account.rekeyAddress) {
+        const authAccount = accounts.find(
+            a => a.address === account.rekeyAddress,
+        )
+        if (authAccount) return canSignWithAccount(authAccount, accounts)
+    }
+    return false
 }
