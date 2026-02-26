@@ -10,23 +10,27 @@
  limitations under the License
  */
 
+import { useEffect } from 'react'
 import { AccountOverviewHeader } from './AccountOverviewHeader'
 import { SendFundsBottomSheet } from '@modules/transactions/components/send-funds/SendFundsBottomSheet/SendFundsBottomSheet'
-import { ReceiveFundsBottomSheet } from '@modules/transactions/components/ReceiveFunds/ReceiveFundsBottomSheet/ReceiveFundsBottomSheet'
+import { ReceiveFundsBottomSheet } from '@modules/transactions/components/receive-funds/ReceiveFundsBottomSheet'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
 import { useAccountOverview } from './useAccountOverview'
 import { PWView } from '@components/core'
 import { AccountAssetList } from '../AccountAssetList'
+import { AccountOptionsBottomSheet } from '../AccountOptionsBottomSheet'
 
 export type AccountOverviewProps = {
     account: WalletAccount
     chartVisible: boolean
+    onSwipeEnabledChange?: (enabled: boolean) => void
 }
 
 export const AccountOverview = ({
     account,
     chartVisible,
+    onSwipeEnabledChange,
 }: AccountOverviewProps) => {
     const styles = useStyles()
     const {
@@ -49,7 +53,13 @@ export const AccountOverview = ({
         handleReceive,
         isReceiveFundsVisible,
         handleCloseReceiveFunds,
+        isAccountOptionsVisible,
+        handleCloseAccountOptions,
     } = useAccountOverview(account)
+
+    useEffect(() => {
+        onSwipeEnabledChange?.(scrollingEnabled)
+    }, [scrollingEnabled, onSwipeEnabledChange])
 
     return (
         <PWView style={styles.container}>
@@ -86,6 +96,13 @@ export const AccountOverview = ({
             <ReceiveFundsBottomSheet
                 isVisible={isReceiveFundsVisible}
                 onClose={handleCloseReceiveFunds}
+                account={account}
+            />
+
+            <AccountOptionsBottomSheet
+                isVisible={isAccountOptionsVisible}
+                onClose={handleCloseAccountOptions}
+                onShowAddress={handleReceive}
                 account={account}
             />
         </PWView>

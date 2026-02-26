@@ -10,8 +10,11 @@
  limitations under the License
  */
 
-import { useStyles } from './styles'
+import React from 'react'
+
 import { useTheme } from '@rneui/themed'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
 import {
     PWButton,
     PWIcon,
@@ -20,9 +23,9 @@ import {
     PWText,
     PWView,
 } from '@components/core'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { KeyboardAvoidingView, ScrollView } from 'react-native'
+import { useStyles } from './styles'
 import { useImportAccountScreen } from './useImportAccountScreen'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { ImportAccountSupportOptionsBottomSheet } from './ImportAccountSupportOptionsBottomSheet'
@@ -38,7 +41,7 @@ export const ImportAccountScreen = () => {
         setFocused,
         canImport,
         processing,
-        updateWord,
+        handleWordChange,
         handleImportAccount,
         mnemonicLength,
         t,
@@ -55,7 +58,7 @@ export const ImportAccountScreen = () => {
         handleQRScannerSuccess,
         suggestions,
         handleSelectSuggestion,
-        setInputRef,
+        refCallbacks,
     } = useImportAccountScreen()
     const styles = useStyles({ insets, isKeyboardVisible, keyboardHeight })
 
@@ -101,85 +104,90 @@ export const ImportAccountScreen = () => {
                                                 focused === offsetIndex
 
                                             return (
-                                                <PWView
-                                                    style={
-                                                        isFocused
-                                                            ? styles.focusedInputContainerRow
-                                                            : styles.inputContainerRow
-                                                    }
+                                                <React.Fragment
                                                     key={`wordinput-${offsetIndex}`}
                                                 >
-                                                    <PWText
-                                                        variant='h4'
-                                                        style={
-                                                            isFocused
-                                                                ? styles.focusedLabel
-                                                                : styles.label
-                                                        }
-                                                    >
-                                                        {offsetIndex + 1}
-                                                    </PWText>
                                                     <PWView
                                                         style={
-                                                            styles.inputWrapper
+                                                            isFocused
+                                                                ? styles.focusedInputContainerRow
+                                                                : styles.inputContainerRow
                                                         }
                                                     >
-                                                        <PWInput
-                                                            ref={ref =>
-                                                                setInputRef(
-                                                                    offsetIndex,
-                                                                    ref,
-                                                                )
-                                                            }
-                                                            containerStyle={
-                                                                styles.inputOuterContainer
-                                                            }
-                                                            inputContainerStyle={
+                                                        <PWText
+                                                            variant='h4'
+                                                            style={
                                                                 isFocused
-                                                                    ? styles.focusedInputContainer
-                                                                    : styles.inputContainer
+                                                                    ? styles.focusedLabel
+                                                                    : styles.label
                                                             }
-                                                            inputStyle={
-                                                                styles.input
+                                                        >
+                                                            {offsetIndex + 1}
+                                                        </PWText>
+                                                        <PWView
+                                                            style={
+                                                                styles.inputWrapper
                                                             }
-                                                            renderErrorMessage={
-                                                                false
-                                                            }
-                                                            value={word}
-                                                            cursorColor={
-                                                                theme.colors
-                                                                    .textMain
-                                                            }
-                                                            onChangeText={event =>
-                                                                updateWord(
-                                                                    event,
-                                                                    offsetIndex,
-                                                                )
-                                                            }
-                                                            onFocus={() =>
-                                                                setFocused(
-                                                                    offsetIndex,
-                                                                )
-                                                            }
-                                                            autoFocus={
-                                                                column === 0 &&
-                                                                index === 0
-                                                            }
-                                                            autoCapitalize='none'
-                                                            autoCorrect={false}
-                                                        />
-                                                        {isFocused && (
-                                                            <WordSuggestionDropdown
-                                                                suggestions={
-                                                                    suggestions
+                                                        >
+                                                            <PWInput
+                                                                ref={
+                                                                    refCallbacks[
+                                                                        offsetIndex
+                                                                    ]
                                                                 }
-                                                                onSelectSuggestion={
-                                                                    handleSelectSuggestion
+                                                                containerStyle={
+                                                                    styles.inputOuterContainer
+                                                                }
+                                                                inputContainerStyle={
+                                                                    isFocused
+                                                                        ? styles.focusedInputContainer
+                                                                        : styles.inputContainer
+                                                                }
+                                                                inputStyle={
+                                                                    styles.input
+                                                                }
+                                                                renderErrorMessage={
+                                                                    false
+                                                                }
+                                                                value={word}
+                                                                cursorColor={
+                                                                    theme.colors
+                                                                        .textMain
+                                                                }
+                                                                onChangeText={event =>
+                                                                    handleWordChange(
+                                                                        event,
+                                                                        offsetIndex,
+                                                                    )
+                                                                }
+                                                                onFocus={() =>
+                                                                    setFocused(
+                                                                        offsetIndex,
+                                                                    )
+                                                                }
+                                                                autoFocus={
+                                                                    column ===
+                                                                        0 &&
+                                                                    index === 0
+                                                                }
+                                                                autoCapitalize='none'
+                                                                autoCorrect={
+                                                                    false
                                                                 }
                                                             />
-                                                        )}
+                                                        </PWView>
                                                     </PWView>
-                                                </PWView>
+                                                    {isFocused && (
+                                                        <WordSuggestionDropdown
+                                                            suggestions={
+                                                                suggestions
+                                                            }
+                                                            onSelectSuggestion={
+                                                                handleSelectSuggestion
+                                                            }
+                                                        />
+                                                    )}
+                                                </React.Fragment>
                                             )
                                         })}
                                 </PWView>

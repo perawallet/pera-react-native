@@ -28,7 +28,7 @@ import { Dialog, Image, Text, useTheme } from '@rneui/themed'
 import { useMemo, useState } from 'react'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { WalletConnectSettingsStackParamsList } from '@modules/settings/routes'
-import { useWebView } from '@hooks/usePeraWebviewInterface'
+import { useWebView } from '@modules/webview/hooks'
 import { KeyValueRow } from '@components/KeyValueRow'
 import {
     formatDatetime,

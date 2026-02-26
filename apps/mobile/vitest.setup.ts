@@ -1648,7 +1648,6 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         error: null,
         isSuccess: false,
     })),
-    initAssetsStore: vi.fn(),
 }))
 
 // Mock @perawallet/wallet-core-settings
@@ -1685,6 +1684,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             selectedAccountAddress: null,
             setSelectedAccountAddress: vi.fn(),
         })),
+        useSetAccounts: vi.fn(() => ({
+            setAccounts: vi.fn(),
+        })),
         useAccountBalancesHistoryQuery: vi.fn(() => ({
             data: [],
             isPending: false,
@@ -1707,6 +1709,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         isMultisigAccount: vi.fn(
             (account: any) => account?.type === 'multisig',
         ),
+        hasSigningKeys: vi.fn((account: any) => !!account?.keyPairId),
         canSignWithAccount: vi.fn((account: any) => !!account?.keyPairId),
         useAccountAssetBalanceQuery: vi.fn(() => ({
             data: null,

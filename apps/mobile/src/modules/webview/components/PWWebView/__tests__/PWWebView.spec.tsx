@@ -26,10 +26,14 @@ vi.mock('../WebViewFooterBar', () => ({
     WebViewFooterBar: () => <div data-testid='footer-bar'>FooterBar</div>,
 }))
 
-vi.mock('@hooks/usePeraWebviewInterface', () => ({
+vi.mock('@modules/webview/hooks', () => ({
     usePeraWebviewInterface: vi.fn(() => ({
         handleMessage: vi.fn(),
     })),
+    useWebViewStore: vi.fn(selector => {
+        const state = { removeWebView: vi.fn() }
+        return selector ? selector(state) : state
+    }),
 }))
 
 describe('PWWebView', () => {

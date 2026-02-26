@@ -97,6 +97,29 @@
             "more": "More"
         }
     },
+    "account_options": {
+        "title": "Account Options",
+        "copy_address": "Copy Address",
+        "show_address": "Show Address",
+        "view_passphrase": "View root wallet passphrase",
+        "auth_address": "Auth Account Address",
+        "undo_rekey": "Undo Rekey",
+        "rekey_to_ledger": "Rekey to Ledger Account",
+        "rekey_to_standard": "Rekey to Standard Account",
+        "rename_account": "Rename Account",
+        "mute_notifications": "Mute Notifications",
+        "unmute_notifications": "Unmute Notifications",
+        "remove_account": "Remove Account",
+        "rename_title": "Rename Account",
+        "rename_placeholder": "Account name",
+        "rename_save": "Save",
+        "remove_title": "Remove Account",
+        "remove_message": "Are you sure you want to remove this account? You can always re-add it later.",
+        "remove_confirm": "Remove",
+        "remove_cancel": "Cancel",
+        "notifications_muted": "Notifications muted",
+        "notifications_unmuted": "Notifications unmuted"
+    },
     "camera": {
         "no_camera_device_found": {
             "label": "No camera device found."
@@ -707,7 +730,7 @@
         "signing_completed": {
             "transaction_title": "Transaction Processing",
             "transaction_body": "Your transaction has been sent successfully and is being processed.",
-            "data_title": "Data Signeing Successful",
+            "data_title": "Data Signing Successful",
             "data_body": "Your data has been signed successfully and sent to the requesting application."
         },
         "transaction_request_faq": {

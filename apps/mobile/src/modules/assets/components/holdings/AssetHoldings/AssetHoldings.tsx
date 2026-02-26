@@ -14,7 +14,7 @@ import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { PWButton, PWText, PWView } from '@components/core'
 import { AssetWealthChart } from '../AssetWealthChart/AssetWealthChart'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { AssetActionButtons } from '../AssetActionButtons/AssetActionButtons'
 import { AssetTransactionList } from '../AssetTransactionList/AssetTransactionList'
@@ -44,14 +44,23 @@ import { UserPreferences } from '@constants/user-preferences'
 export type AssetHoldingsProps = {
     account: WalletAccount
     asset: PeraAsset
+    onSwipeEnabledChange?: (enabled: boolean) => void
 }
 
-export const AssetHoldings = ({ account, asset }: AssetHoldingsProps) => {
+export const AssetHoldings = ({
+    account,
+    asset,
+    onSwipeEnabledChange,
+}: AssetHoldingsProps) => {
     const styles = useStyles()
     const { data: assetDetails } = useSingleAssetDetailsQuery(asset.assetId)
     const { preferredCurrency } = useCurrency()
     const { period, setPeriod, selectedPoint, setSelectedPoint } =
         useChartInteraction<AccountBalanceHistoryItem>()
+
+    useEffect(() => {
+        onSwipeEnabledChange?.(!selectedPoint)
+    }, [selectedPoint, onSwipeEnabledChange])
 
     const { getPreference, setPreference } = usePreferences()
     const chartVisible = !!getPreference(UserPreferences.chartVisible)

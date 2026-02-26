@@ -38,7 +38,7 @@ vi.mock(
     }),
 )
 vi.mock(
-    '@modules/transactions/components/ReceiveFunds/ReceiveFundsBottomSheet/ReceiveFundsBottomSheet',
+    '@modules/transactions/components/receive-funds/ReceiveFundsBottomSheet',
     () => ({
         ReceiveFundsBottomSheet: () => null,
     }),

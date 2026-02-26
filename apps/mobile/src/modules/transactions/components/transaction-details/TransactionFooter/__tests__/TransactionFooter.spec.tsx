@@ -14,7 +14,7 @@ import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { TransactionFooter } from '../TransactionFooter'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import { useWebView } from '@hooks/usePeraWebviewInterface'
+import { useWebView } from '@modules/webview/hooks'
 
 vi.mock('@perawallet/wallet-core-platform-integration', () => ({
     useNetwork: vi.fn(() => ({
@@ -34,7 +34,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     },
 }))
 
-vi.mock('@hooks/usePeraWebviewInterface', () => ({
+vi.mock('@modules/webview/hooks', () => ({
     useWebView: vi.fn(() => ({ pushWebView: vi.fn() })),
 }))
 

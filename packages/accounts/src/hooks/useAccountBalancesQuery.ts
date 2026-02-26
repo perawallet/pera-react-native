@@ -63,10 +63,11 @@ export const useAccountBalancesQuery = (
         queries: queries,
     })
 
-    const { data: assets } = useAssetsQuery(
-        results.flatMap(r => r.data?.assets?.map(a => `${a.assetId}`) ?? []),
+    const assetIDs = results.flatMap(
+        r => r.data?.assets?.map(a => `${a.assetId}`) ?? [],
     )
-    const { data: assetPrices } = useAssetPricesQuery()
+    const { data: assets } = useAssetsQuery(assetIDs)
+    const { data: assetPrices } = useAssetPricesQuery(assetIDs)
     const usdAlgoPrice = useMemo(
         () => assetPrices?.get(ALGO_ASSET_ID)?.usdPrice ?? Decimal(0),
         [assetPrices],

@@ -17,9 +17,6 @@ import { getAssetsQueryKey, getAlgoQueryKey } from '../querykeys'
 import { ALGO_ASSET_ID } from '../../models'
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
-import { useAssetsStore } from '../../store'
-
-// ... (rest of imports)
 
 // Mock endpoints
 const mocks = vi.hoisted(() => ({
@@ -51,28 +48,12 @@ vi.mock(
     },
 )
 
-// Mock store
-vi.mock('../../store', async () => {
-    const actual =
-        await vi.importActual<typeof import('../../store')>('../../store')
-    const mockStorage = {
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-    }
-    return {
-        ...actual,
-        useAssetsStore: actual.createAssetsStore(mockStorage as any),
-    }
-})
-
 describe('useAssetsQuery', () => {
     let queryClient: QueryClient
 
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
-        useAssetsStore.setState({ assetIDs: [] })
         queryClient = new QueryClient({
             defaultOptions: {
                 queries: {
@@ -84,58 +65,70 @@ describe('useAssetsQuery', () => {
 
     describe('getAssetsQueryKey', () => {
         it('returns correct query keys', () => {
-            expect(getAssetsQueryKey(['123'])).toEqual([
+            expect(getAssetsQueryKey(['123'], 'mainnet')).toEqual([
                 'assets',
-                { assetIDs: ['123'] },
+                { assetIDs: ['123'], network: 'mainnet' },
+            ])
+        })
+
+        it('includes network in query key', () => {
+            expect(getAssetsQueryKey(['123'], 'testnet')).toEqual([
+                'assets',
+                { assetIDs: ['123'], network: 'testnet' },
             ])
         })
     })
 
     describe('getAlgoQueryKey', () => {
         it('returns correct query keys', () => {
-            expect(getAlgoQueryKey()).toEqual(['assets', { algo: '0' }])
+            expect(getAlgoQueryKey('mainnet')).toEqual([
+                'assets',
+                { algo: '0', network: 'mainnet' },
+            ])
         })
     })
 
     describe('useAssetsQuery hook', () => {
-        it('fetches assets and appends ALGO_ASSET', async () => {
-            useAssetsStore.setState({ assetIDs: ['123'] })
+        const mockAssetResponse = {
+            results: [
+                {
+                    asset_id: 123,
+                    name: 'Test Asset',
+                    unit_name: 'TST',
+                    fraction_decimals: 6,
+                    total: '1000000',
+                    is_deleted: false,
+                    verification_tier: 'unverified',
+                    creator: { address: 'CREATOR123' },
+                    category: null,
+                    is_verified: false,
+                    explorer_url: null,
+                    collectible: null,
+                    type: null,
+                    labels: null,
+                    logo: null,
+                },
+            ],
+            next: null,
+            previous: null,
+        }
 
-            mocks.fetchAssets.mockResolvedValue({
-                results: [
-                    {
-                        asset_id: 123,
-                        name: 'Test Asset',
-                        unit_name: 'TST',
-                        fraction_decimals: 6,
-                        total: '1000000',
-                        is_deleted: false,
-                        verification_tier: 'unverified',
-                        creator: { address: 'CREATOR123' },
-                        category: null,
-                        is_verified: false,
-                        explorer_url: null,
-                        collectible: null,
-                        type: null,
-                        labels: null,
-                        logo: null,
-                    },
-                ],
-                next: null,
-                previous: null,
-            })
-            mocks.fetchPublicAssetDetails.mockResolvedValue({
-                asset_id: 0,
-                name: 'Algorand',
-                unit_name: 'ALGO',
-                fraction_decimals: 6,
-                total_supply_as_str: '10000000000000000',
-                is_deleted: 'false',
-                verification_tier: 'verified',
-                creator_address: '',
-                url: '',
-                logo: null,
-            })
+        const mockAlgoResponse = {
+            asset_id: 0,
+            name: 'Algorand',
+            unit_name: 'ALGO',
+            fraction_decimals: 6,
+            total_supply_as_str: '10000000000000000',
+            is_deleted: 'false',
+            verification_tier: 'verified',
+            creator_address: '',
+            url: '',
+            logo: null,
+        }
+
+        it('fetches assets and appends ALGO_ASSET', async () => {
+            mocks.fetchAssets.mockResolvedValue(mockAssetResponse)
+            mocks.fetchPublicAssetDetails.mockResolvedValue(mockAlgoResponse)
 
             const { result } = renderHook(() => useAssetsQuery(['123']), {
                 wrapper: createWrapper(queryClient),
@@ -147,7 +140,6 @@ describe('useAssetsQuery', () => {
             expect(result.current.data.size).toBe(2)
 
             expect(mocks.fetchAssets).toHaveBeenCalled()
-            expect(useAssetsStore.getState().assetIDs).toContain('123')
 
             expect(result.current.data.get('123')).toEqual(
                 expect.objectContaining({
@@ -163,40 +155,93 @@ describe('useAssetsQuery', () => {
             )
         })
 
-        it('updates store with new asset IDs', async () => {
-            mocks.fetchAssets.mockResolvedValue({
-                results: [],
-                next: null,
-                previous: null,
-            })
-            mocks.fetchPublicAssetDetails.mockResolvedValue({ asset_id: 0 })
+        it('does not refetch when ids reference changes but content is the same', async () => {
+            mocks.fetchAssets.mockResolvedValue(mockAssetResponse)
+            mocks.fetchPublicAssetDetails.mockResolvedValue(mockAlgoResponse)
 
-            renderHook(() => useAssetsQuery(['456']), {
-                wrapper: createWrapper(queryClient),
-            })
+            const { result, rerender } = renderHook(
+                ({ ids }: { ids: string[] }) => useAssetsQuery(ids),
+                {
+                    wrapper: createWrapper(queryClient),
+                    initialProps: { ids: ['123'] },
+                },
+            )
 
-            await waitFor(() => {
-                expect(useAssetsStore.getState().assetIDs).toContain('456')
-            })
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+            const fetchCount = mocks.fetchAssets.mock.calls.length
+
+            // Rerender with a new array reference containing the same content
+            rerender({ ids: ['123'] })
+
+            expect(mocks.fetchAssets.mock.calls.length).toBe(fetchCount)
         })
 
-        it('does not duplicate IDs in store', async () => {
-            useAssetsStore.setState({ assetIDs: ['123'] })
+        it('refetches when ids content actually changes', async () => {
+            mocks.fetchAssets.mockResolvedValue(mockAssetResponse)
+            mocks.fetchPublicAssetDetails.mockResolvedValue(mockAlgoResponse)
+
+            const { result, rerender } = renderHook(
+                ({ ids }: { ids: string[] }) => useAssetsQuery(ids),
+                {
+                    wrapper: createWrapper(queryClient),
+                    initialProps: { ids: ['123'] },
+                },
+            )
+
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+            mocks.fetchAssets.mockClear()
 
             mocks.fetchAssets.mockResolvedValue({
-                results: [],
+                results: [
+                    {
+                        ...mockAssetResponse.results[0],
+                        asset_id: 456,
+                        name: 'Another Asset',
+                    },
+                ],
                 next: null,
                 previous: null,
             })
-            mocks.fetchPublicAssetDetails.mockResolvedValue({ asset_id: 0 })
 
-            renderHook(() => useAssetsQuery(['123']), {
+            rerender({ ids: ['456'] })
+
+            await waitFor(() =>
+                expect(mocks.fetchAssets).toHaveBeenCalledWith(
+                    ['456'],
+                    'mainnet',
+                ),
+            )
+        })
+
+        it('refetches when network changes', async () => {
+            mocks.fetchAssets.mockResolvedValue(mockAssetResponse)
+            mocks.fetchPublicAssetDetails.mockResolvedValue(mockAlgoResponse)
+
+            const { result } = renderHook(() => useAssetsQuery(['123']), {
                 wrapper: createWrapper(queryClient),
             })
 
-            await waitFor(() => {
-                expect(useAssetsStore.getState().assetIDs).toEqual(['123'])
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+            mocks.fetchAssets.mockClear()
+            mocks.fetchPublicAssetDetails.mockClear()
+
+            // Switch to testnet — new queryClient ensures fresh cache
+            mocks.useNetwork.mockReturnValue({ network: 'testnet' })
+            mocks.fetchAssets.mockResolvedValue(mockAssetResponse)
+            mocks.fetchPublicAssetDetails.mockResolvedValue(mockAlgoResponse)
+
+            const testnetQueryClient = new QueryClient({
+                defaultOptions: { queries: { retry: false } },
             })
+
+            const { result: result2 } = renderHook(
+                () => useAssetsQuery(['123']),
+                { wrapper: createWrapper(testnetQueryClient) },
+            )
+
+            await waitFor(() => expect(result2.current.isPending).toBe(false))
+
+            expect(mocks.fetchAssets).toHaveBeenCalledWith(['123'], 'testnet')
         })
     })
 })

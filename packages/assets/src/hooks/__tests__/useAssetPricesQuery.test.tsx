@@ -16,7 +16,6 @@ import { useAssetPricesQuery } from '../useAssetPricesQuery'
 import Decimal from 'decimal.js'
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
-import { useAssetsStore } from '../../store'
 import { ALGO_ASSET_ID } from '../../models'
 
 // Mock endpoints
@@ -49,28 +48,12 @@ vi.mock(
     },
 )
 
-// Mock store
-vi.mock('../../store', async () => {
-    const actual =
-        await vi.importActual<typeof import('../../store')>('../../store')
-    const mockStorage = {
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-    }
-    return {
-        ...actual,
-        useAssetsStore: actual.createAssetsStore(mockStorage as any),
-    }
-})
-
 describe('useAssetPricesQuery', () => {
     let queryClient: QueryClient
 
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
-        useAssetsStore.setState({ assetIDs: [] })
         queryClient = new QueryClient({
             defaultOptions: {
                 queries: {
@@ -81,8 +64,6 @@ describe('useAssetPricesQuery', () => {
     })
 
     it('fetches and stores raw USD asset prices', async () => {
-        useAssetsStore.setState({ assetIDs: ['123'] })
-
         mocks.fetchAssetPrices.mockResolvedValue({
             results: [{ asset_id: '123', usd_value: '2.0' }],
             next: null,
@@ -92,7 +73,7 @@ describe('useAssetPricesQuery', () => {
             usd_value: '1.5',
         })
 
-        const { result } = renderHook(() => useAssetPricesQuery(), {
+        const { result } = renderHook(() => useAssetPricesQuery(['123']), {
             wrapper: createWrapper(queryClient),
         })
 
@@ -108,8 +89,6 @@ describe('useAssetPricesQuery', () => {
     })
 
     it('handles assets with null usd_value', async () => {
-        useAssetsStore.setState({ assetIDs: ['456'] })
-
         mocks.fetchAssetPrices.mockResolvedValue({
             results: [{ asset_id: '456', usd_value: null }],
             next: null,
@@ -119,7 +98,7 @@ describe('useAssetPricesQuery', () => {
             usd_value: '1.5',
         })
 
-        const { result } = renderHook(() => useAssetPricesQuery(), {
+        const { result } = renderHook(() => useAssetPricesQuery(['456']), {
             wrapper: createWrapper(queryClient),
         })
 
@@ -136,7 +115,7 @@ describe('useAssetPricesQuery', () => {
         mocks.fetchAssetPrices.mockReturnValue(new Promise(() => {}))
         mocks.fetchPublicAssetDetails.mockReturnValue(new Promise(() => {}))
 
-        const { result } = renderHook(() => useAssetPricesQuery(), {
+        const { result } = renderHook(() => useAssetPricesQuery(['123']), {
             wrapper: createWrapper(queryClient),
         })
 
@@ -144,15 +123,132 @@ describe('useAssetPricesQuery', () => {
     })
 
     it('handles error state', async () => {
-        useAssetsStore.setState({ assetIDs: ['123'] })
-
         mocks.fetchAssetPrices.mockRejectedValue(new Error('Failed'))
         mocks.fetchPublicAssetDetails.mockResolvedValue({ usd_value: '1.0' })
 
-        const { result } = renderHook(() => useAssetPricesQuery(), {
+        const { result } = renderHook(() => useAssetPricesQuery(['123']), {
             wrapper: createWrapper(queryClient),
         })
 
         await waitFor(() => expect(result.current.isError).toBe(true))
+    })
+
+    it('does not refetch when ids reference changes but content is the same', async () => {
+        mocks.fetchAssetPrices.mockResolvedValue({
+            results: [{ asset_id: '123', usd_value: '2.0' }],
+            next: null,
+            previous: null,
+        })
+        mocks.fetchPublicAssetDetails.mockResolvedValue({
+            usd_value: '1.5',
+        })
+
+        const { result, rerender } = renderHook(
+            ({ ids }: { ids: string[] }) => useAssetPricesQuery(ids),
+            {
+                wrapper: createWrapper(queryClient),
+                initialProps: { ids: ['123'] },
+            },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        const fetchCount = mocks.fetchAssetPrices.mock.calls.length
+
+        // Rerender with a new array reference containing the same content
+        rerender({ ids: ['123'] })
+
+        expect(mocks.fetchAssetPrices.mock.calls.length).toBe(fetchCount)
+    })
+
+    it('refetches when ids content actually changes', async () => {
+        mocks.fetchAssetPrices.mockResolvedValue({
+            results: [{ asset_id: '123', usd_value: '2.0' }],
+            next: null,
+            previous: null,
+        })
+        mocks.fetchPublicAssetDetails.mockResolvedValue({
+            usd_value: '1.5',
+        })
+
+        const { result, rerender } = renderHook(
+            ({ ids }: { ids: string[] }) => useAssetPricesQuery(ids),
+            {
+                wrapper: createWrapper(queryClient),
+                initialProps: { ids: ['123'] },
+            },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        mocks.fetchAssetPrices.mockClear()
+
+        mocks.fetchAssetPrices.mockResolvedValue({
+            results: [{ asset_id: '456', usd_value: '3.0' }],
+            next: null,
+            previous: null,
+        })
+
+        rerender({ ids: ['456'] })
+
+        await waitFor(() =>
+            expect(mocks.fetchAssetPrices).toHaveBeenCalledWith(
+                ['456'],
+                'mainnet',
+            ),
+        )
+    })
+
+    it('refetches when network changes', async () => {
+        mocks.fetchAssetPrices.mockResolvedValue({
+            results: [{ asset_id: '123', usd_value: '2.0' }],
+            next: null,
+            previous: null,
+        })
+        mocks.fetchPublicAssetDetails.mockResolvedValue({
+            usd_value: '1.5',
+        })
+
+        const { result } = renderHook(() => useAssetPricesQuery(['123']), {
+            wrapper: createWrapper(queryClient),
+        })
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        mocks.fetchAssetPrices.mockClear()
+        mocks.fetchPublicAssetDetails.mockClear()
+
+        // Switch to testnet
+        mocks.useNetwork.mockReturnValue({ network: 'testnet' })
+        mocks.fetchAssetPrices.mockResolvedValue({
+            results: [{ asset_id: '123', usd_value: '1.0' }],
+            next: null,
+            previous: null,
+        })
+        mocks.fetchPublicAssetDetails.mockResolvedValue({
+            usd_value: '0.5',
+        })
+
+        const testnetQueryClient = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        })
+
+        const { result: result2 } = renderHook(
+            () => useAssetPricesQuery(['123']),
+            { wrapper: createWrapper(testnetQueryClient) },
+        )
+
+        await waitFor(() => expect(result2.current.isPending).toBe(false))
+
+        expect(mocks.fetchAssetPrices).toHaveBeenCalledWith(['123'], 'testnet')
+    })
+
+    it('respects the enabled parameter', () => {
+        mocks.fetchAssetPrices.mockReturnValue(new Promise(() => {}))
+        mocks.fetchPublicAssetDetails.mockReturnValue(new Promise(() => {}))
+
+        renderHook(() => useAssetPricesQuery(['123'], false), {
+            wrapper: createWrapper(queryClient),
+        })
+
+        expect(mocks.fetchAssetPrices).not.toHaveBeenCalled()
+        expect(mocks.fetchPublicAssetDetails).not.toHaveBeenCalled()
     })
 })

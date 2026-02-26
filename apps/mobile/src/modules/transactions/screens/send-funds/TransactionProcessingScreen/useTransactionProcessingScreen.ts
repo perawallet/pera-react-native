@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { BackHandler } from 'react-native'
 
 import { bottomSheetNotifier } from '@components/core'
@@ -50,7 +50,11 @@ export const useTransactionProcessingScreen = () => {
     const { sendViaInbox } = useArc59Transaction(signTransactions)
     const { sendExpress } = useExpressTransaction(signTransactions)
     const selectedAccount = useSelectedAccount()
-    const { data: assets } = useAssetsQuery()
+    const assetIDs = useMemo(
+        () => (selectedAsset?.assetId ? [selectedAsset.assetId] : []),
+        [selectedAsset?.assetId],
+    )
+    const { data: assets } = useAssetsQuery(assetIDs)
     const { showToast } = useToast()
     const hasExecuted = useRef(false)
 

@@ -12,7 +12,7 @@
 
 import { PWListItem, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useWebView } from '@hooks/usePeraWebviewInterface'
+import { useWebView } from '@modules/webview/hooks'
 import { config } from '@perawallet/wallet-core-config'
 import { useStyles } from './styles'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'

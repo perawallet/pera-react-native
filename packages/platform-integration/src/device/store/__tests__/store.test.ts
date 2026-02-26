@@ -12,7 +12,10 @@
 
 import { vi, describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { registerTestPlatform } from '../../../test-utils'
+import {
+    registerTestPlatform,
+    MemoryKeyValueStorage,
+} from '../../../test-utils'
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
@@ -111,5 +114,73 @@ describe('device/store', () => {
         })
 
         expect(result.current.network).toBe('testnet')
+    })
+
+    test('should serialize deviceIDs as a plain object via partialize', async () => {
+        const storage = new MemoryKeyValueStorage()
+        registerTestPlatform({ keyValueStorage: storage })
+
+        const { createDeviceStore } = await import('../store')
+
+        const store = createDeviceStore(storage)
+
+        act(() => {
+            store.getState().setDeviceID('mainnet', 'test-device-123')
+        })
+
+        const persisted = storage.getItem('device-store')
+        expect(persisted).not.toBeNull()
+
+        const parsed = JSON.parse(persisted!)
+        expect(parsed.state.deviceIDs).toEqual({ mainnet: 'test-device-123' })
+    })
+
+    test('should rehydrate deviceIDs from persisted storage', async () => {
+        const storage = new MemoryKeyValueStorage()
+        storage.setItem(
+            'device-store',
+            JSON.stringify({
+                state: {
+                    deviceIDs: {
+                        mainnet: 'persisted-id-123',
+                        testnet: 'persisted-id-456',
+                    },
+                    pushToken: 'token-abc',
+                    network: 'mainnet',
+                },
+                version: 1,
+            }),
+        )
+
+        registerTestPlatform({ keyValueStorage: storage })
+
+        const { createDeviceStore } = await import('../store')
+
+        const store = createDeviceStore(storage)
+        const state = store.getState()
+
+        expect(state.deviceIDs).toBeInstanceOf(Map)
+        expect(state.deviceIDs.get('mainnet')).toBe('persisted-id-123')
+        expect(state.deviceIDs.get('testnet')).toBe('persisted-id-456')
+        expect(state.pushToken).toBe('token-abc')
+    })
+
+    test('should create a new Map reference when setting device ID', async () => {
+        registerTestPlatform()
+
+        const { initDeviceStore, useDeviceStore } = await import('../index')
+
+        initDeviceStore()
+
+        const { result } = renderHook(() => useDeviceStore())
+
+        const originalMap = result.current.deviceIDs
+
+        act(() => {
+            result.current.setDeviceID('mainnet', 'new-id')
+        })
+
+        expect(result.current.deviceIDs).not.toBe(originalMap)
+        expect(result.current.deviceIDs.get('mainnet')).toBe('new-id')
     })
 })

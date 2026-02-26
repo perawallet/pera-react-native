@@ -13,7 +13,7 @@
 import { useCallback, useEffect } from 'react'
 import { BackHandler } from 'react-native'
 
-import { useWebView } from '@hooks/usePeraWebviewInterface'
+import { useWebView } from '@modules/webview/hooks'
 import { useSendFunds } from '@modules/transactions/hooks'
 import {
     useRemoveAccountById,

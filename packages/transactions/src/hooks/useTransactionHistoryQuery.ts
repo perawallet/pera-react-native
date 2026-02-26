@@ -96,12 +96,16 @@ export const useTransactionHistoryQuery = (
     } = params
 
     const query = useInfiniteQuery({
-        queryKey: transactionQueryKeys.historyWithFilters(accountAddress, {
-            assetId,
-            afterTime,
-            beforeTime,
-            limit,
-        }),
+        queryKey: transactionQueryKeys.historyWithFilters(
+            accountAddress,
+            network,
+            {
+                assetId,
+                afterTime,
+                beforeTime,
+                limit,
+            },
+        ),
         queryFn: async ({
             pageParam,
             signal,

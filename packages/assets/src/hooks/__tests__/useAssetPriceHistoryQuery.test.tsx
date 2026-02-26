@@ -20,6 +20,7 @@ import Decimal from 'decimal.js'
 // Mock endpoints
 const mocks = vi.hoisted(() => ({
     fetchAssetPriceHistory: vi.fn(),
+    useNetwork: vi.fn(),
 }))
 
 vi.mock('../../api', async importOriginal => {
@@ -30,11 +31,26 @@ vi.mock('../../api', async importOriginal => {
     }
 })
 
+vi.mock(
+    '@perawallet/wallet-core-platform-integration',
+    async importOriginal => {
+        const actual =
+            await importOriginal<
+                typeof import('@perawallet/wallet-core-platform-integration')
+            >()
+        return {
+            ...actual,
+            useNetwork: mocks.useNetwork,
+        }
+    },
+)
+
 describe('useAssetPriceHistoryQuery', () => {
     let queryClient: QueryClient
 
     beforeEach(() => {
         vi.clearAllMocks()
+        mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
         queryClient = new QueryClient({
             defaultOptions: {
                 queries: {
