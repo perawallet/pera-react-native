@@ -22,8 +22,11 @@ describe('useSwapIntroduction', () => {
 
     it('returns isIntroductionSeen as false when preference is not set', () => {
         vi.mocked(usePreferences).mockReturnValue({
-            getPreference: vi.fn(() => undefined),
+            hasPreference: vi.fn(() => false),
+            getPreference: vi.fn(() => null),
             setPreference: vi.fn(),
+            deletePreference: vi.fn(),
+            clearAllPreferences: vi.fn(),
         })
 
         const { result } = renderHook(() => useSwapIntroduction())
@@ -33,8 +36,11 @@ describe('useSwapIntroduction', () => {
 
     it('returns isIntroductionSeen as true when preference is set', () => {
         vi.mocked(usePreferences).mockReturnValue({
+            hasPreference: vi.fn(() => true),
             getPreference: vi.fn(() => true),
             setPreference: vi.fn(),
+            deletePreference: vi.fn(),
+            clearAllPreferences: vi.fn(),
         })
 
         const { result } = renderHook(() => useSwapIntroduction())
@@ -46,8 +52,11 @@ describe('useSwapIntroduction', () => {
         const mockSetPreference = vi.fn()
 
         vi.mocked(usePreferences).mockReturnValue({
-            getPreference: vi.fn(),
+            hasPreference: vi.fn(() => false),
+            getPreference: vi.fn(() => null),
             setPreference: mockSetPreference,
+            deletePreference: vi.fn(),
+            clearAllPreferences: vi.fn(),
         })
 
         const { result } = renderHook(() => useSwapIntroduction())
