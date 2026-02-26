@@ -12,12 +12,11 @@
 
 import { PWIcon, PWText, PWView } from '@components/core'
 import type {
-    ASAInbox,
     InboxItem as InboxItemModel,
 } from '@perawallet/wallet-core-notifications'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import { useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 import {
     getAccountDisplayName,
     useAllAccounts,
@@ -55,16 +54,18 @@ export const InboxItem = ({ item }: InboxItemProps) => {
                             </PWText>
                         </>
                     ),
-                    icon: account ? 
+                    icon: account ? (
                         <AccountIcon
                             account={account}
                             size='lg'
                         />
-                    : <PWIcon
+                    ) : (
+                        <PWIcon
                             name='inbox'
                             variant='secondary'
                             size='lg'
                         />
+                    ),
                 }
             }
             case 'joint_account_import': {
@@ -85,13 +86,15 @@ export const InboxItem = ({ item }: InboxItemProps) => {
                             </PWText>
                         </>
                     ),
-                    icon: <PWView style={styles.iconContainer}>
-                        <PWIcon
-                            name='transactions/group'
-                            variant='secondary'
-                            size='lg'
-                        />
-                    </PWView>
+                    icon: (
+                        <PWView style={styles.iconContainer}>
+                            <PWIcon
+                                name='transactions/group'
+                                variant='secondary'
+                                size='lg'
+                            />
+                        </PWView>
+                    ),
                 }
             }
             case 'joint_account_sign':
@@ -109,13 +112,15 @@ export const InboxItem = ({ item }: InboxItemProps) => {
                             </PWText>
                         </>
                     ),
-                    icon: <PWView style={styles.iconContainer}>
-                        <PWIcon
-                            name='edit-pen'
-                            variant='secondary'
-                            size='lg'
-                        />
-                    </PWView>
+                    icon: (
+                        <PWView style={styles.iconContainer}>
+                            <PWIcon
+                                name='edit-pen'
+                                variant='secondary'
+                                size='lg'
+                            />
+                        </PWView>
+                    ),
                 }
         }
     }, [accounts, styles])
