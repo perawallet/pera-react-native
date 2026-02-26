@@ -11,9 +11,7 @@
  */
 
 import { PWIcon, PWText, PWView } from '@components/core'
-import type {
-    InboxItem as InboxItemModel,
-} from '@perawallet/wallet-core-notifications'
+import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-notifications'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
