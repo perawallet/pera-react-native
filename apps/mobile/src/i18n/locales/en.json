@@ -274,7 +274,8 @@
         },
         "transaction": {
             "title": "An error occurred processing this transaction",
-            "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
+            "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
+            "invalid_send_params": "The send request appears to have invalid parameters.  Please try again."
         },
         "kms": {
             "key_not_found": "Could not find the key for wallet {{walletId}}.",
