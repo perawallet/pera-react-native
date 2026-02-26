@@ -57,23 +57,23 @@ vi.mock('@perawallet/wallet-core-asa-inbox', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    useAssetsQuery: () => ({
-        data: new Map([
-            [
-                '123',
-                {
-                    assetId: '123',
-                    decimals: 6,
-                    name: 'Test Asset',
-                    unitName: 'TEST',
-                },
-            ],
-        ]),
-    }),
     ALGO_ASSET_ID: '0',
     ALGO_ASSET: { assetId: '0', decimals: 6, name: 'Algo', unitName: 'ALGO' },
     toDecimalUnits: (value: Decimal) => value,
 }))
+
+const ALGO_ASSET = {
+    assetId: '0',
+    decimals: 6,
+    name: 'Algo',
+    unitName: 'ALGO',
+}
+const TEST_ASSET = {
+    assetId: '123',
+    decimals: 6,
+    name: 'Test Asset',
+    unitName: 'TEST',
+}
 
 // Mock BigInt to return an object with microAlgo method for AlgoKit compatibility
 const originalBigInt = global.BigInt
@@ -102,7 +102,7 @@ describe('useTransactionSendFlow', () => {
                 sendMode: 'normal',
                 sender: { address: 'SENDER_ADDR', name: 'Test' } as never,
                 receiver: 'RECEIVER_ADDR',
-                assetId: '0',
+                asset: ALGO_ASSET as never,
                 amount: new Decimal(5),
                 note: 'test note',
             }
@@ -131,7 +131,7 @@ describe('useTransactionSendFlow', () => {
                 sendMode: 'normal',
                 sender: { address: 'SENDER_ADDR', name: 'Test' } as never,
                 receiver: 'RECEIVER_ADDR',
-                assetId: '0',
+                asset: ALGO_ASSET as never,
                 amount: new Decimal(0),
                 isCloseAccount: true,
             }
@@ -162,7 +162,7 @@ describe('useTransactionSendFlow', () => {
                 sendMode: 'normal',
                 sender: { address: 'SENDER_ADDR', name: 'Test' } as never,
                 receiver: 'RECEIVER_ADDR',
-                assetId: '123',
+                asset: TEST_ASSET as never,
                 amount: new Decimal(10),
                 note: 'asa note',
             }
@@ -195,7 +195,7 @@ describe('useTransactionSendFlow', () => {
                 sendMode: 'express',
                 sender: { address: 'SENDER_ADDR', name: 'Test' } as never,
                 receiver: 'RECEIVER_ADDR',
-                assetId: '123',
+                asset: TEST_ASSET as never,
                 amount: new Decimal(5),
             }
 
@@ -236,7 +236,7 @@ describe('useTransactionSendFlow', () => {
                 sendMode: 'sendArc59',
                 sender: { address: 'SENDER_ADDR', name: 'Test' } as never,
                 receiver: 'RECEIVER_ADDR',
-                assetId: '123',
+                asset: TEST_ASSET as never,
                 amount: new Decimal(5),
                 arc59Summary,
             }
@@ -263,7 +263,7 @@ describe('useTransactionSendFlow', () => {
                 sendMode: 'sendArc59',
                 sender: { address: 'SENDER_ADDR', name: 'Test' } as never,
                 receiver: 'RECEIVER_ADDR',
-                assetId: '123',
+                asset: TEST_ASSET as never,
                 amount: new Decimal(5),
             }
 
@@ -294,7 +294,7 @@ describe('useTransactionSendFlow', () => {
             const params: SendClaimParams = {
                 sendMode: 'claimArc59',
                 sender: { address: 'SENDER_ADDR', name: 'Test' } as never,
-                assetId: '123',
+                asset: TEST_ASSET as never,
                 shouldClaimAlgo: true,
             }
 
@@ -322,7 +322,7 @@ describe('useTransactionSendFlow', () => {
             const params: SendClaimParams = {
                 sendMode: 'rejectArc59',
                 sender: { address: 'SENDER_ADDR', name: 'Test' } as never,
-                assetId: '123',
+                asset: TEST_ASSET as never,
                 shouldClaimAlgo: false,
             }
 
@@ -375,7 +375,7 @@ describe('useTransactionSendFlow', () => {
                 sendMode: 'normal',
                 sender: { address: 'SENDER_ADDR', name: 'Test' } as never,
                 receiver: 'RECEIVER_ADDR',
-                assetId: '0',
+                asset: ALGO_ASSET as never,
                 amount: new Decimal(5),
             }
 
@@ -391,14 +391,14 @@ describe('useTransactionSendFlow', () => {
             expect(error).toBe(networkError)
         })
 
-        it('should throw when asset is not found', async () => {
+        it('should throw InvalidSendParamsError when asset is missing', async () => {
             const { result } = renderHook(() => useTransactionSendFlow())
 
             const params: SendTransactionParams = {
                 sendMode: 'normal',
                 sender: { address: 'SENDER_ADDR', name: 'Test' } as never,
                 receiver: 'RECEIVER_ADDR',
-                assetId: '999',
+                asset: undefined,
                 amount: new Decimal(5),
             }
 
@@ -412,7 +412,7 @@ describe('useTransactionSendFlow', () => {
             })
 
             expect(error).toBeDefined()
-            expect(error?.message).toBe('Asset 999 not found')
+            expect(error?.name).toBe('InvalidSendParamsError')
         })
     })
 })

@@ -28,14 +28,19 @@ import {
 import type { MessagesStackParamList } from '@modules/messages/routes/types'
 import { useLanguage } from '@hooks/useLanguage'
 import { config } from '@perawallet/wallet-core-config'
+import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
+import { useAppNavigation } from '@hooks/useAppNavigation'
+import { logger } from '@perawallet/wallet-core-shared'
 
 export const useClaimProcessingScreen = () => {
     const navigation =
         useNavigation<NativeStackNavigationProp<MessagesStackParamList>>()
+    const appNavigation = useAppNavigation()
     const route =
         useRoute<RouteProp<MessagesStackParamList, 'ClaimProcessing'>>()
     const { mode, assetIndex, shouldClaimAlgo } = route.params
-    const { assetRequests, accountAddress } = useClaimAssets()
+    const { assetRequests, accountAddress, setOnFinished } = useClaimAssets()
+    const account = useFindAccountByAddress(accountAddress ?? '')
     const { showToast } = useToast()
     const { t } = useLanguage()
 
@@ -51,7 +56,7 @@ export const useClaimProcessingScreen = () => {
 
         const sendParams = {
             sendMode: mode,
-            sender: accountAddress,
+            sender: account,
             asset: asset.asset,
             shouldClaimAlgo,
         } as SendClaimParams
@@ -60,8 +65,14 @@ export const useClaimProcessingScreen = () => {
             params: sendParams,
         })
             .then(txId => {
+                setOnFinished(() => {
+                    appNavigation.replace('TabBar', {
+                        screen: 'Home'
+                    })
+                })
                 navigation.replace('ClaimSuccess', {
                     transactionId: txId,
+                    variant: mode === 'claimArc59'? 'claim' : 'reject'
                 })
             })
             .catch(error => {

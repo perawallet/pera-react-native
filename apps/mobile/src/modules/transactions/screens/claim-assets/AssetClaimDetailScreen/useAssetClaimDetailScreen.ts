@@ -72,11 +72,7 @@ export const useAssetClaimDetailScreen =
                         request?.shouldUseFundsBeforeClaiming ?? false,
                 },
             })
-
-            setOnFinished(() => {
-                navigate('Home')
-            })
-        }, [push, navigate, assetIndex, request, showToast, t])
+        }, [push, assetIndex, request, showToast, t])
 
         const handleRejectPress = useCallback(() => {
             rejectModal.open()

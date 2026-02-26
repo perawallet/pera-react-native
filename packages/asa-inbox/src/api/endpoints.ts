@@ -22,7 +22,7 @@ import {
 const getArc59SendSummaryEndpoint = (
     receiverAddress: string,
     assetId: string,
-) => `/v1/arc59/send-summary/${receiverAddress}/${assetId}`
+) => `/v1/arc59/send-summary/${receiverAddress}/${assetId}/`
 
 export const fetchArc59SendSummary = async (
     network: Network,
