@@ -47,7 +47,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-asa-inbox', () => ({
-    useArc59Transaction: () => ({
+    useArc59SendTransaction: () => ({
         sendViaInbox: mockSendViaInbox,
     }),
     useArc59ClaimTransaction: () => ({

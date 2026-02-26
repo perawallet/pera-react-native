@@ -21,7 +21,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-asa-inbox'
 import {
-    useArc59Transaction,
+    useArc59SendTransaction,
     useArc59ClaimTransaction,
 } from '@perawallet/wallet-core-asa-inbox'
 import {
@@ -62,7 +62,7 @@ type UseTransactionSendFlowParams = {
 export const useTransactionSendFlow = () => {
     const { signTransactions } = useTransactionSigner()
     const algokit = useAlgorandClient(signTransactions)
-    const { sendViaInbox } = useArc59Transaction(signTransactions)
+    const { sendViaInbox } = useArc59SendTransaction(signTransactions)
     const { sendExpress } = useExpressTransaction(signTransactions)
     const { claimAsset, rejectAsset } =
         useArc59ClaimTransaction(signTransactions)

@@ -57,7 +57,7 @@ export const useAssetTransferRequestsScreen =
         )
 
         return {
-            assetRequests: [...(assetRequests ?? []), ...(assetRequests ?? [])],
+            assetRequests: assetRequests ?? [],
             isPending,
             handleItemPress,
         }

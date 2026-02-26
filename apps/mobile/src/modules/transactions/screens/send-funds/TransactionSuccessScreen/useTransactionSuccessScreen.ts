@@ -65,7 +65,7 @@ export const useTransactionSuccessScreen =
         const selectedAccount = useSelectedAccount()
         const accounts = useAccountsStore(state => state.accounts)
         const { setSelectedAccountAddress } = useSelectedAccountAddress()
-        const tanstackQueryClient = useQueryClient()
+        const queryClient = useQueryClient()
 
         const isClaimFlow =
             routeVariant === 'claim' || routeVariant === 'reject'
@@ -79,7 +79,7 @@ export const useTransactionSuccessScreen =
         const handleDone = useCallback(() => {
             if (isClaimFlow) {
                 if (claimAccountAddress) {
-                    tanstackQueryClient.invalidateQueries({
+                    queryClient.invalidateQueries({
                         queryKey:
                             getArc59AssetRequestsQueryKey(claimAccountAddress),
                     })
@@ -101,7 +101,7 @@ export const useTransactionSuccessScreen =
             isClaimFlow,
             claimOnFinished,
             claimAccountAddress,
-            tanstackQueryClient,
+            queryClient,
             sendFundsOnFinished,
             isCloseAccount,
             selectedAccount,

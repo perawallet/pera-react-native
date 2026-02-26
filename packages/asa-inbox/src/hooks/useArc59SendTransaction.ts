@@ -28,13 +28,13 @@ type SendViaInboxParams = {
     summary: Arc59SendSummaryResponse
 }
 
-type UseArc59TransactionResult = {
+type useArc59SendTransactionResult = {
     sendViaInbox: (params: SendViaInboxParams) => Promise<{ txIds: string[] }>
 }
 
-export const useArc59Transaction = (
+export const useArc59SendTransaction = (
     signer: PeraTransactionSigner,
-): UseArc59TransactionResult => {
+): useArc59SendTransactionResult => {
     const { isMainnet } = useNetwork()
     const algokit = useAlgorandClient(signer)
 

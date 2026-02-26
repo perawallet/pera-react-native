@@ -13,7 +13,7 @@
 import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
-import { useArc59Transaction } from '../useArc59Transaction'
+import { useArc59SendTransaction } from '../useArc59SendTransaction'
 import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { config } from '@perawallet/wallet-core-config'
@@ -80,7 +80,7 @@ const baseParams = {
     summary: baseSummary,
 }
 
-describe('useArc59Transaction', () => {
+describe('useArc59SendTransaction', () => {
     let mockComposer: {
         addPayment: Mock
         addAppCallMethodCall: Mock
@@ -123,7 +123,7 @@ describe('useArc59Transaction', () => {
     })
 
     test('returns sendViaInbox function', () => {
-        const { result } = renderHook(() => useArc59Transaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
 
         expect(result.current.sendViaInbox).toBeTypeOf('function')
     })
@@ -131,7 +131,7 @@ describe('useArc59Transaction', () => {
     test('uses testnet config when not on mainnet', async () => {
         ;(useNetwork as Mock).mockReturnValue({ isMainnet: false })
 
-        const { result } = renderHook(() => useArc59Transaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendViaInbox(baseParams)
@@ -147,7 +147,7 @@ describe('useArc59Transaction', () => {
     test('uses mainnet config when on mainnet', async () => {
         ;(useNetwork as Mock).mockReturnValue({ isMainnet: true })
 
-        const { result } = renderHook(() => useArc59Transaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendViaInbox(baseParams)
@@ -166,7 +166,7 @@ describe('useArc59Transaction', () => {
             summary: { ...baseSummary, is_arc59_opted_in: false },
         }
 
-        const { result } = renderHook(() => useArc59Transaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendViaInbox(params)
@@ -184,7 +184,7 @@ describe('useArc59Transaction', () => {
     })
 
     test('skips router opt-in when already opted in', async () => {
-        const { result } = renderHook(() => useArc59Transaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendViaInbox(baseParams)
@@ -203,7 +203,7 @@ describe('useArc59Transaction', () => {
             },
         }
 
-        const { result } = renderHook(() => useArc59Transaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendViaInbox(params)
@@ -219,7 +219,7 @@ describe('useArc59Transaction', () => {
     })
 
     test('adds payment for MBR even when algo_fund_amount is 0', async () => {
-        const { result } = renderHook(() => useArc59Transaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendViaInbox(baseParams)
@@ -243,7 +243,7 @@ describe('useArc59Transaction', () => {
             },
         }
 
-        const { result } = renderHook(() => useArc59Transaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendViaInbox(params)
@@ -253,7 +253,7 @@ describe('useArc59Transaction', () => {
     })
 
     test('adds arc59_sendAsset app call to the group', async () => {
-        const { result } = renderHook(() => useArc59Transaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendViaInbox(baseParams)
@@ -264,7 +264,7 @@ describe('useArc59Transaction', () => {
     })
 
     test('creates asset transfer with correct params', async () => {
-        const { result } = renderHook(() => useArc59Transaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendViaInbox(baseParams)
@@ -283,7 +283,7 @@ describe('useArc59Transaction', () => {
     })
 
     test('returns txIds from the composed group send', async () => {
-        const { result } = renderHook(() => useArc59Transaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
 
         let txResult: { txIds: string[] } | undefined
 
@@ -295,7 +295,7 @@ describe('useArc59Transaction', () => {
     })
 
     test('fetches suggested params before building transactions', async () => {
-        const { result } = renderHook(() => useArc59Transaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendViaInbox(baseParams)
@@ -310,7 +310,7 @@ describe('useArc59Transaction', () => {
             summary: { ...baseSummary, is_arc59_opted_in: false },
         }
 
-        const { result } = renderHook(() => useArc59Transaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendViaInbox(params)
@@ -324,7 +324,7 @@ describe('useArc59Transaction', () => {
     })
 
     test('uses suggestedParams.minFee * inner_tx_count for sendAsset extra fee', async () => {
-        const { result } = renderHook(() => useArc59Transaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendViaInbox(baseParams)
@@ -342,7 +342,7 @@ describe('useArc59Transaction', () => {
     })
 
     test('sends composer group after building', async () => {
-        const { result } = renderHook(() => useArc59Transaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
 
         await act(async () => {
             await result.current.sendViaInbox(baseParams)

@@ -12,6 +12,6 @@
 
 export * from './querykeys'
 export * from './useArc59SendSummaryQuery'
-export * from './useArc59Transaction'
+export * from './useArc59SendTransaction'
 export * from './useArc59ClaimTransaction'
 export * from './useArc59AssetRequestsQuery'
