@@ -19,6 +19,10 @@
             "info_title": "Asset Transfer Requests",
             "info_body": "This feature is an inbox for your account. Others can send you assets and NFTs, even if you have not explicitly opted in to receive them. From here, you can choose to accept or reject the asset transfer requests."
         },
+        "processing_error": {
+            "title": "Failed to process transaction",
+            "body": "There was an error trying to process your transaction request.  Please try again."
+        },
         "claim": {
             "claim": "Claim",
             "reject": "Reject",
@@ -821,7 +825,7 @@
         },
         "processing_error": {
             "title": "The transaction is not valid",
-            "body": "The specified transaction appears to be invalid"
+            "body": "The specified transaction appears to be invalid or could not be processed"
         },
         "asset_transfer": {
             "clawback_from": "Clawback From"

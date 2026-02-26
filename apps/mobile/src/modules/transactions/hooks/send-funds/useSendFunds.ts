@@ -15,7 +15,7 @@ import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-asa-inbox'
 import Decimal from 'decimal.js'
 
-type SendMode = 'normal' | 'express' | 'arc59'
+type SendMode = 'normal' | 'express' | 'sendArc59'
 
 type SendFundsState = {
     selectedAsset?: AssetWithAccountBalance

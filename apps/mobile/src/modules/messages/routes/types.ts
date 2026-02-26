@@ -20,7 +20,7 @@ export type MessagesStackParamList = {
     }
     AssetClaimDetail: { assetIndex: number }
     ClaimProcessing: {
-        mode: 'claim' | 'reject'
+        mode: 'claimArc59' | 'rejectArc59'
         assetIndex: number
         shouldClaimAlgo: boolean
     }

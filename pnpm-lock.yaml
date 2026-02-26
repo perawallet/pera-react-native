@@ -1901,12 +1901,30 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.28.4
+      '@perawallet/wallet-core-accounts':
+        specifier: workspace:*
+        version: link:../accounts
+      '@perawallet/wallet-core-asa-inbox':
+        specifier: workspace:*
+        version: link:../asa-inbox
+      '@perawallet/wallet-core-assets':
+        specifier: workspace:*
+        version: link:../assets
+      '@perawallet/wallet-core-blockchain':
+        specifier: workspace:*
+        version: link:../blockchain
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
+      '@perawallet/wallet-core-signing':
+        specifier: workspace:*
+        version: link:../signing
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.90.14(react@19.1.0)
+      decimal.js:
+        specifier: 'catalog:'
+        version: 10.6.0
       react:
         specifier: 'catalog:'
         version: 19.1.0
@@ -13638,9 +13656,7 @@ snapshots:
       metro-runtime: 0.83.3
     transitivePeerDependencies:
       - '@babel/core'
-      - bufferutil
       - supports-color
-      - utf-8-validate
     optional: true
 
   '@react-native/normalize-colors@0.74.89': {}

@@ -66,7 +66,7 @@ export const useAssetClaimDetailScreen =
             push('Messages', {
                 screen: 'ClaimProcessing',
                 params: {
-                    mode: 'claim',
+                    mode: 'claimArc59',
                     assetIndex,
                     shouldClaimAlgo:
                         request?.shouldUseFundsBeforeClaiming ?? false,
@@ -97,7 +97,7 @@ export const useAssetClaimDetailScreen =
             push('Messages', {
                 screen: 'ClaimProcessing',
                 params: {
-                    mode: 'reject',
+                    mode: 'rejectArc59',
                     assetIndex,
                     shouldClaimAlgo:
                         request?.shouldUseFundsBeforeRejecting ?? false,

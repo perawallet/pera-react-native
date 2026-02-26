@@ -74,6 +74,8 @@ export const ERROR_I18N_KEYS = {
     SIGNING_TRANSACTION_LIMIT_EXCEEDED:
         'errors.signing.transaction_limit_exceeded',
     SIGNING_DATA_LIMIT_EXCEEDED: 'errors.signing.data_limit_exceeded',
+
+    TRANSACTIONS_INVALID_SEND_PARAMS: 'errors.transactions.invalid_send_params',
 } as const
 
 /**

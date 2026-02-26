@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { BackHandler } from 'react-native'
 import {
     useNavigation,
@@ -21,11 +21,13 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { bottomSheetNotifier } from '@components/core'
 import { useToast } from '@hooks/useToast'
 import { useClaimAssets } from '@modules/transactions/hooks'
-import { useArc59ClaimTransaction } from '@perawallet/wallet-core-asa-inbox'
-import { useTransactionSigner } from '@perawallet/wallet-core-signing'
+import {
+    SendClaimParams,
+    useTransactionSendFlow,
+} from '@perawallet/wallet-core-transactions'
 import type { MessagesStackParamList } from '@modules/messages/routes/types'
 import { useLanguage } from '@hooks/useLanguage'
-import { logger } from '@perawallet/wallet-core-shared'
+import { config } from '@perawallet/wallet-core-config'
 
 export const useClaimProcessingScreen = () => {
     const navigation =
@@ -34,12 +36,10 @@ export const useClaimProcessingScreen = () => {
         useRoute<RouteProp<MessagesStackParamList, 'ClaimProcessing'>>()
     const { mode, assetIndex, shouldClaimAlgo } = route.params
     const { assetRequests, accountAddress } = useClaimAssets()
-    const { signTransactions } = useTransactionSigner()
-    const { claimAsset, rejectAsset } =
-        useArc59ClaimTransaction(signTransactions)
     const { showToast } = useToast()
-    const hasExecuted = useRef(false)
     const { t } = useLanguage()
+
+    const { execute } = useTransactionSendFlow()
 
     const asset = assetRequests[assetIndex]
 
@@ -48,63 +48,29 @@ export const useClaimProcessingScreen = () => {
             'hardwareBackPress',
             () => true,
         )
-        return () => subscription.remove()
-    }, [])
 
-    useEffect(() => {
-        if (hasExecuted.current) return
-        hasExecuted.current = true
+        const sendParams = {
+            sendMode: mode,
+            sender: accountAddress,
+            assetId: asset.asset.assetId,
+            shouldClaimAlgo,
+        } as SendClaimParams
 
-        const execute = async () => {
-            if (!accountAddress || !asset) {
-                logger.error(
-                    'No valid account or asset request found for claim processing',
-                )
-                showToast(
-                    {
-                        title: t('errors.transaction.title'),
-                        body: t('errors.transaction.body'),
-                        type: 'error',
-                    },
-                    {
-                        notifier: bottomSheetNotifier.current ?? undefined,
-                    },
-                )
-                navigation.goBack()
-                return
-            }
-
-            try {
-                let txId: string
-
-                if (mode === 'claim') {
-                    const result = await claimAsset({
-                        sender: accountAddress,
-                        assetId: BigInt(asset.asset.assetId),
-                        shouldClaimAlgo,
-                    })
-                    txId = result.txIds[result.txIds.length - 1]
-                } else {
-                    const result = await rejectAsset({
-                        sender: accountAddress,
-                        assetId: BigInt(asset.asset.assetId),
-                        shouldClaimAlgo,
-                    })
-                    txId = result.txIds[result.txIds.length - 1]
-                }
-
+        execute({
+            params: sendParams,
+        })
+            .then(txId => {
                 navigation.replace('ClaimSuccess', {
                     transactionId: txId,
-                    variant: mode,
                 })
-            } catch (error) {
-                logger.error('Error processing claim asset transaction', {
-                    error,
-                })
+            })
+            .catch(error => {
                 showToast(
                     {
-                        title: t('errors.transaction.title'),
-                        body: t('errors.transaction.body'),
+                        title: t('arc59.processing_error.title'),
+                        body: config.debugEnabled
+                            ? `${error}`
+                            : t('arc59.processing_error.body'),
                         type: 'error',
                     },
                     {
@@ -112,9 +78,8 @@ export const useClaimProcessingScreen = () => {
                     },
                 )
                 navigation.goBack()
-            }
-        }
+            })
 
-        execute()
+        return () => subscription.remove()
     }, [])
 }

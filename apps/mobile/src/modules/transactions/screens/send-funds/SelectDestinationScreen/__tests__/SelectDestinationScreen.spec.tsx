@@ -94,6 +94,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
+    useAllAccounts: vi.fn(() => []),
     useAccountsStore: vi.fn(() => []),
     useAccountBalancesQuery: vi.fn(() => ({
         accountBalances: new Map(),
@@ -178,7 +179,7 @@ describe('SelectDestinationScreen', () => {
         fireEvent.click(getByTestId('select-address-btn'))
 
         expect(mockSetDestination).toHaveBeenCalledWith('SELECTED_ADDRESS')
-        expect(mockSetSendMode).toHaveBeenCalledWith('arc59')
+        expect(mockSetSendMode).toHaveBeenCalledWith('sendArc59')
         expect(mockNavigate).toHaveBeenCalledWith('ARC59SendSummary')
     })
 
