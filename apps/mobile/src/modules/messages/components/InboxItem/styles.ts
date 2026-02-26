@@ -18,32 +18,8 @@ export const useStyles = makeStyles(theme => {
         container: {
             flexDirection: 'row',
             gap: theme.spacing.md,
-<<<<<<<< HEAD:apps/mobile/src/modules/messages/components/InboxItem/styles.ts
             alignItems: 'center',
             justifyContent: 'flex-start',
-========
-            alignItems: 'flex-start',
-            justifyContent: 'flex-start',
-        },
-        messageBox: {
-            flexShrink: 1,
-            overflow: 'hidden',
-        },
-        messageText: {
-            flexShrink: 1,
-            flexWrap: 'wrap',
-        },
-        timeText: {
-            color: theme.colors.textGray,
-        },
-        iconContainerNoBorder: {
-            width: imageSize,
-            height: imageSize,
-            borderRadius: theme.spacing.xl,
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginTop: theme.spacing.xs,
->>>>>>>> main:apps/mobile/src/modules/messages/components/NotificationItem/styles.ts
         },
         iconContainer: {
             width: imageSize,
@@ -55,7 +31,6 @@ export const useStyles = makeStyles(theme => {
             justifyContent: 'center',
             marginTop: theme.spacing.xs,
         },
-<<<<<<<< HEAD:apps/mobile/src/modules/messages/components/InboxItem/styles.ts
         messageBox: {
             flex: 1,
             overflow: 'hidden',
@@ -69,28 +44,6 @@ export const useStyles = makeStyles(theme => {
         },
         subtitleText: {
             color: theme.colors.textGray,
-========
-        image: {
-            aspectRatio: 1,
-            width: '100%',
-            borderRadius: theme.spacing.sm,
-        },
-        imageCircle: {
-            aspectRatio: 1,
-            width: '100%',
-            borderRadius: imageSize / 2,
-        },
-        unreadIndicatorContainer: {
-            width: theme.spacing.sm,
-        },
-        unreadIndicator: {
-            width: theme.spacing.sm,
-            height: theme.spacing.sm,
-            borderRadius: theme.spacing.sm / 2,
-            backgroundColor: theme.colors.buttonNewPrimaryBg,
-            position: 'absolute',
-            top: imageSize / 2,
->>>>>>>> main:apps/mobile/src/modules/messages/components/NotificationItem/styles.ts
         },
     }
 })
