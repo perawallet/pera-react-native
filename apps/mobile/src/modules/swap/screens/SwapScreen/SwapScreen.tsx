@@ -10,16 +10,35 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
+import { useModalState } from '@hooks/useModalState'
 import { EmptyView } from '@components/EmptyView'
+import { useSwapIntroduction } from '@modules/swap/hooks'
+import { SwapIntroduction } from '@modules/swap/components'
 
 export const SwapScreen = () => {
     const { t } = useLanguage()
+    const { isIntroductionSeen, markIntroductionSeen } = useSwapIntroduction()
+    const introModal = useModalState(!isIntroductionSeen)
+
+    const handleStartSwapping = useCallback(() => {
+        markIntroductionSeen()
+        introModal.close()
+    }, [markIntroductionSeen, introModal])
 
     return (
-        <EmptyView
-            title={t('common.not_implemented.title')}
-            body={t('common.not_implemented.body')}
-        />
+        <>
+            <EmptyView
+                title={t('common.not_implemented.title')}
+                body={t('common.not_implemented.body')}
+            />
+
+            <SwapIntroduction
+                isVisible={introModal.isOpen}
+                onStartSwapping={handleStartSwapping}
+                onClose={introModal.close}
+            />
+        </>
     )
 }
