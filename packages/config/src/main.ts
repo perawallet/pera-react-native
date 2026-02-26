@@ -99,9 +99,9 @@ const productionConfig = {
 
     mainnetExplorerUrl: 'https://explorer.perawallet.app',
     testnetExplorerUrl: 'https://testnet.explorer.perawallet.app',
-    discoverBaseUrl: 'https://discover-mobile.perawallet.app/',
-    stakingBaseUrl: 'https://staking-mobile.perawallet.app/',
-    onrampBaseUrl: 'https://onramp-mobile.perawallet.app/',
+    discoverBaseUrl: 'https://discover-mobile-staging.perawallet.app/',
+    stakingBaseUrl: 'https://staking-mobile-staging.perawallet.app/',
+    onrampBaseUrl: 'https://onramp-mobile-staging.perawallet.app/',
     supportBaseUrl: 'https://support.perawallet.app/',
     termsOfServiceUrl: 'https://perawallet.app/terms-and-services/',
     privacyPolicyUrl: 'https://perawallet.app/privacy-policy/',
