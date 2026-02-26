@@ -125,7 +125,7 @@ export const useARC59SendSummaryScreen =
 
         const handleWarningConfirm = useCallback(() => {
             warningModal.close()
-            navigation.navigate('TransactionProcessing')
+            navigation.push('TransactionProcessing')
         }, [navigation])
 
         const handleWarningClose = useCallback(() => {
