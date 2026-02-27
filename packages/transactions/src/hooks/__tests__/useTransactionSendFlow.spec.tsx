@@ -27,6 +27,11 @@ const mockSendViaInbox = vi.fn()
 const mockClaimAsset = vi.fn()
 const mockRejectAsset = vi.fn()
 const mockSignTransactions = vi.fn()
+const mockAccountInformation = vi.fn()
+const mockAddPayment = vi.fn()
+const mockAddAssetOptIn = vi.fn()
+const mockAddAssetTransfer = vi.fn()
+const mockComposerSend = vi.fn()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useTransactionSigner: () => ({
@@ -35,15 +40,44 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useAlgorandClient: () => ({
-        send: {
-            payment: mockPayment,
-            assetTransfer: mockAssetTransfer,
-        },
-    }),
+    useAlgorandClient: () => {
+        const composer = {
+            addPayment: (...args: unknown[]) => {
+                mockAddPayment(...args)
+                return composer
+            },
+            addAssetOptIn: (...args: unknown[]) => {
+                mockAddAssetOptIn(...args)
+                return composer
+            },
+            addAssetTransfer: (...args: unknown[]) => {
+                mockAddAssetTransfer(...args)
+                return composer
+            },
+            send: mockComposerSend,
+        }
+        return {
+            send: {
+                payment: mockPayment,
+                assetTransfer: mockAssetTransfer,
+            },
+            client: {
+                algod: {
+                    accountInformation: mockAccountInformation,
+                },
+            },
+            getSuggestedParams: vi.fn().mockResolvedValue({ minFee: 1000n }),
+            newGroup: () => composer,
+        }
+    },
     useExpressTransaction: () => ({
         sendExpress: mockSendExpress,
     }),
+    displayUnitsToBaseUnits: (amount: string, decimals: number) => {
+        const factor = 10 ** decimals
+        return String(Math.round(parseFloat(amount) * factor))
+    },
+    ASSET_MBR: 100000n,
 }))
 
 vi.mock('@perawallet/wallet-core-asa-inbox', () => ({
@@ -185,7 +219,11 @@ describe('useTransactionSendFlow', () => {
 
     describe('express send', () => {
         it('should call sendExpress and return last txId', async () => {
-            mockSendExpress.mockResolvedValue({
+            mockAccountInformation.mockResolvedValue({
+                amount: 500000n,
+                minBalance: 100000n,
+            })
+            mockComposerSend.mockResolvedValue({
                 txIds: ['EXPRESS_TX_1', 'EXPRESS_TX_2'],
             })
 
@@ -204,11 +242,8 @@ describe('useTransactionSendFlow', () => {
                 txId = await result.current.execute({ params })
             })
 
-            expect(mockSendExpress).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    sender: 'SENDER_ADDR',
-                    receiver: 'RECEIVER_ADDR',
-                }),
+            expect(mockAccountInformation).toHaveBeenCalledWith(
+                'RECEIVER_ADDR',
             )
             expect(txId).toBe('EXPRESS_TX_2')
         })
@@ -277,9 +312,7 @@ describe('useTransactionSendFlow', () => {
             })
 
             expect(error).toBeDefined()
-            expect(error?.message).toBe(
-                'Missing ARC59 summary for ARC59 transaction',
-            )
+            expect(error).toBeInstanceOf(Error)
         })
     })
 

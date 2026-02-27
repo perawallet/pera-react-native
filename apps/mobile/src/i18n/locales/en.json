@@ -115,7 +115,6 @@
         }
     },
     "account_options": {
-        "title": "Account Options",
         "copy_address": "Copy Address",
         "show_address": "Show Address",
         "view_passphrase": "View root wallet passphrase",
@@ -631,8 +630,7 @@
             "read_more": "Read more",
             "fees_label": "Protocol & minimum balance fees",
             "disclaimer": "The fee above will be used to cover the minimum balance requirements of the receiver. If the receiver rejects the asset, you will not receive anything back.",
-            "send_button": "Send to Receiver",
-            "close_button": "Close"
+            "send_button": "Send to Receiver"
         },
         "arc59_warning": {
             "title": "Warning",

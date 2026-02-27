@@ -36,7 +36,7 @@ vi.mock(
 )
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: vi.fn().mockReturnValue([
+    useSigningAccounts: vi.fn().mockReturnValue([
         { address: 'ADDR1', type: 'algo25' },
         { address: 'ADDR2', type: 'algo25' },
     ]),
