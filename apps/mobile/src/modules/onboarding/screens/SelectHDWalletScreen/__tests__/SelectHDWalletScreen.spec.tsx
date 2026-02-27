@@ -106,16 +106,18 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 vi.mock('@components/CurrencyDisplay', () => ({
-    CurrencyDisplay: ({ value }: any) => (
+    CurrencyDisplay: ({ value }: { value?: { toString(): string } }) => (
         <div data-testid='currency-display'>{value?.toString()}</div>
     ),
 }))
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 vi.mock('@components/PreferredCurrencyDisplay', () => ({
-    PreferredCurrencyDisplay: ({ sourceAmount }: any) => (
+    PreferredCurrencyDisplay: ({
+        sourceAmount,
+    }: {
+        sourceAmount?: { toString(): string }
+    }) => (
         <div data-testid='preferred-currency-display'>
             {sourceAmount?.toString()}
         </div>

@@ -130,7 +130,9 @@ export const SelectHDWalletScreen = () => {
                 </PWView>
                 <PWView style={styles.footer}>
                     <PWButton
-                        title={t('onboarding.select_hd_wallet.create_new_wallet')}
+                        title={t(
+                            'onboarding.select_hd_wallet.create_new_wallet',
+                        )}
                         onPress={handleCreateNewWallet}
                         variant='secondary'
                         isDisabled={isCreatingWallet}

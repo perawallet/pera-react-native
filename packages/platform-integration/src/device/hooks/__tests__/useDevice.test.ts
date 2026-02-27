@@ -113,8 +113,9 @@ describe('services/device/hooks', () => {
 
         const { result: store } = renderHook(() => useDeviceStore())
 
-        // Ensure no device ID
+        // Ensure mainnet network and no device ID
         act(() => {
+            store.current.setNetwork('mainnet')
             store.current.setDeviceID('mainnet', null)
             store.current.setPushToken('test-fcm-token')
         })
@@ -152,8 +153,9 @@ describe('services/device/hooks', () => {
 
         const { result: store } = renderHook(() => useDeviceStore())
 
-        // Set existing device ID
+        // Set mainnet network and existing device ID
         act(() => {
+            store.current.setNetwork('mainnet')
             store.current.setDeviceID('mainnet', 'existing-id')
             store.current.setPushToken('test-fcm-token')
         })
