@@ -110,11 +110,9 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                 // Only the master account was found, skip the selection screen
                 if (discoveredAccounts.length === 1) {
                     if (createIfEmpty) {
-                        const walletAccounts = allAccounts.filter(
-                            a =>
-                                isHDWalletAccount(a) &&
-                                a.keyPairId === account.keyPairId,
-                        )
+                        const walletAccounts = allAccounts
+                            .filter(isHDWalletAccount)
+                            .filter(a => a.keyPairId === account.keyPairId)
                         const nextKeyIndex =
                             walletAccounts.length > 0
                                 ? Math.max(

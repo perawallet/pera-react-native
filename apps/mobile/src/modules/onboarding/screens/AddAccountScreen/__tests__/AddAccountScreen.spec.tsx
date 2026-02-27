@@ -287,7 +287,15 @@ describe('AddAccountScreen', () => {
         })
     })
 
-    it('navigates to SelectHDWallet when Create Universal Wallet is pressed (has HD wallet)', () => {
+    it('creates a new HD wallet when Create Universal Wallet is pressed (has HD wallet)', async () => {
+        const mockAccount = {
+            id: 'new-id',
+            address: 'NEW_ADDRESS',
+            type: 'hdWallet' as const,
+            canSign: true,
+        }
+        mockCreateHdWalletAccount.mockResolvedValue(mockAccount)
+
         mockUseAllAccounts.mockReturnValue([
             {
                 id: 'existing-id',
@@ -315,8 +323,15 @@ describe('AddAccountScreen', () => {
         )
         fireEvent.click(createButton)
 
-        expect(mockPush).toHaveBeenCalledWith('SelectHDWallet')
-        expect(mockCreateHdWalletAccount).not.toHaveBeenCalled()
+        await vi.waitFor(() => {
+            expect(mockCreateHdWalletAccount).toHaveBeenCalledWith({
+                account: 0,
+                keyIndex: 0,
+            })
+            expect(mockPush).toHaveBeenCalledWith('NameAccount', {
+                account: mockAccount,
+            })
+        })
     })
 
     it('creates a new Algo25 account when Create Algo25 is pressed', async () => {
