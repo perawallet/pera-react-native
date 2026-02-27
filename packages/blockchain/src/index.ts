@@ -17,5 +17,6 @@ export * from './hooks'
 export * from './errors'
 export * from './utils'
 export * from './schema'
+export * from './constants'
 
 export { initBlockchainStore, registerBlockchainStore } from './store'

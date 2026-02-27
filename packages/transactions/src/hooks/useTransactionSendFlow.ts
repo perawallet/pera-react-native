@@ -15,6 +15,7 @@ import { useCallback } from 'react'
 import Decimal from 'decimal.js'
 import {
     ALGO_ASSET_ID,
+    PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-asa-inbox'
 import {
@@ -22,19 +23,19 @@ import {
     useArc59ClaimTransaction,
 } from '@perawallet/wallet-core-asa-inbox'
 import {
+    ASSET_MBR,
     displayUnitsToBaseUnits,
     useAlgorandClient,
-    useExpressTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useTransactionSigner } from '@perawallet/wallet-core-signing'
-import { AssetWithAccountBalance, WalletAccount } from '@perawallet/wallet-core-accounts'
+import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { InvalidSendParamsError } from '../errors'
 
 type BaseSendParams = {
     sendMode: 'normal' | 'express' | 'sendArc59' | 'claimArc59' | 'rejectArc59'
     sender?: WalletAccount
     receiver?: string
-    asset?: AssetWithAccountBalance
+    asset?: PeraAsset
     amount?: Decimal
     note?: string
 }
@@ -53,6 +54,13 @@ type SendClaimParams = BaseSendParams & {
 
 type SendParams = SendTransactionParams | SendClaimParams
 
+type SendExpressParams = {
+    sender: string
+    receiver: string
+    assetId: bigint
+    amount: bigint
+}
+
 type UseTransactionSendFlowParams = {
     params: SendParams | null
 }
@@ -61,9 +69,53 @@ export const useTransactionSendFlow = () => {
     const { signTransactions } = useTransactionSigner()
     const algokit = useAlgorandClient(signTransactions)
     const { sendViaInbox } = useArc59SendTransaction(signTransactions)
-    const { sendExpress } = useExpressTransaction(signTransactions)
     const { claimAsset, rejectAsset } =
         useArc59ClaimTransaction(signTransactions)
+
+
+    const sendExpress = useCallback(async (params: SendExpressParams): Promise<{ txIds: string[] }> => {
+        const { sender, receiver, assetId, amount } = params
+
+        // Look up receiver's current balance to determine funding needed
+        const { amount: currentBalance, minBalance: currentMbr } =
+            await algokit.client.algod.accountInformation(receiver)
+
+        // After opt-in the receiver's MBR increases by ASSET_MBR.
+        // The opt-in tx fee is also paid from the receiver's balance.
+        const suggestedParams = await algokit.getSuggestedParams()
+        const mbrAfterOptIn = currentMbr + ASSET_MBR
+        const balanceNeeded = mbrAfterOptIn + suggestedParams.minFee
+        const fundingNeeded =
+            balanceNeeded > currentBalance
+                ? balanceNeeded - currentBalance
+                : 0n
+
+        const composer = algokit.newGroup()
+
+        // Only add payment if the receiver needs funding
+        if (fundingNeeded > 0n) {
+            composer.addPayment({
+                sender,
+                receiver,
+                amount: fundingNeeded.microAlgo(),
+            })
+        }
+
+        composer
+            .addAssetOptIn({
+                sender: receiver,
+                assetId,
+            })
+            .addAssetTransfer({
+                sender,
+                receiver,
+                amount,
+                assetId,
+            })
+
+        const result = await composer.send()
+        return { txIds: result.txIds }
+    }, [algokit])
 
     const executeSend = useCallback(
         async (params: SendTransactionParams): Promise<string> => {
@@ -77,8 +129,10 @@ export const useTransactionSendFlow = () => {
                 throw new InvalidSendParamsError()
             }
 
+            const assetDecimals = params.asset?.decimals ?? 0
+
             const amountInBaseUnits = BigInt(
-                    displayUnitsToBaseUnits(params.amount, params.asset.asset?.decimals ?? 0).toString(),
+                    displayUnitsToBaseUnits(params.amount, assetDecimals ?? 0).toString(),
                 )
             const assetId = BigInt(params.asset.assetId)
 
