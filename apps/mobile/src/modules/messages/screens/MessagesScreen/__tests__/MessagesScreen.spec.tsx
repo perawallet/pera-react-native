@@ -64,6 +64,13 @@ vi.mock('@hooks/useNavigationHeader', () => ({
     useNavigationHeader: vi.fn(),
 }))
 
+vi.mock('@perawallet/wallet-core-messages', () => ({
+    useInboxStatus: vi.fn(() => ({
+        hasUnreadInboxItems: false,
+        hasUnreadNotifications: false,
+    })),
+}))
+
 vi.mock('@modules/messages/screens/NotificationsScreen', () => ({
     NotificationsScreen: () => <span data-testid='NotificationsScreen' />,
 }))

@@ -242,9 +242,7 @@ describe('useTransactionSendFlow', () => {
                 txId = await result.current.execute({ params })
             })
 
-            expect(mockAccountInformation).toHaveBeenCalledWith(
-                'RECEIVER_ADDR',
-            )
+            expect(mockAccountInformation).toHaveBeenCalledWith('RECEIVER_ADDR')
             expect(txId).toBe('EXPRESS_TX_2')
         })
     })

@@ -44,6 +44,7 @@ vi.mock('@components/core', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
+    useAccountBalancesInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
 }))
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
@@ -84,7 +85,8 @@ describe('useTransactionProcessingScreen', () => {
         name: 'Test Account',
     }
 
-    const mockSelectedAsset = { assetId: '123' }
+    const mockAsset = { id: '123', name: 'Test Asset' }
+    const mockSelectedAsset = { asset: mockAsset }
 
     const mockSendFundsState = {
         selectedAsset: undefined,
@@ -141,7 +143,7 @@ describe('useTransactionProcessingScreen', () => {
                 sendMode: 'normal',
                 sender: mockAccount,
                 receiver: 'DEST_ADDRESS',
-                assetId: '123',
+                asset: mockAsset,
                 amount: new Decimal(5),
                 note: 'Test note',
                 isCloseAccount: false,
@@ -168,7 +170,7 @@ describe('useTransactionProcessingScreen', () => {
                 sendMode: 'normal',
                 sender: null,
                 receiver: undefined,
-                assetId: undefined,
+                asset: undefined,
                 amount: undefined,
             }),
         })

@@ -25,8 +25,6 @@ import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { useRoute } from '@react-navigation/native'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
 
-
-
 export type SuccessVariant =
     | 'payment'
     | 'asset_transfer'

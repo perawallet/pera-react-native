@@ -134,9 +134,8 @@ describe('transactionInterpretedMeaningSchema', () => {
 
 describe('transactionHistoryItemResponseSchema', () => {
     it('parses a valid minimal transaction item', () => {
-        const result = transactionHistoryItemResponseSchema.parse(
-            makeValidItem(),
-        )
+        const result =
+            transactionHistoryItemResponseSchema.parse(makeValidItem())
 
         expect(result.id).toBe('TX123')
         expect(result.tx_type).toBe('pay')
