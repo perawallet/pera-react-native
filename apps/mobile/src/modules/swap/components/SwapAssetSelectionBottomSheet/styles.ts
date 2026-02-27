@@ -14,15 +14,12 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        flex: 1,
+        paddingBottom: theme.spacing.xl,
     },
-    titleSection: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-    formContainer: {
-        padding: theme.spacing.xl,
+    listContent: {
         gap: theme.spacing.md,
+    },
+    item: {
+        width: '100%',
     },
 }))

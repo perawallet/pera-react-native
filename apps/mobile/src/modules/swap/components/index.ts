@@ -11,3 +11,7 @@
  */
 
 export { SwapIntroduction } from './SwapIntroduction'
+export { SwapAssetSelectionBottomSheet } from './SwapAssetSelectionBottomSheet'
+export { SwapAssetSelector } from './SwapAssetSelector'
+export { SwapPaySection } from './SwapPaySection'
+export { SwapReceiveSection } from './SwapReceiveSection'

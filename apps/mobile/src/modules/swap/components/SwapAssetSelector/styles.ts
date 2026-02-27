@@ -14,15 +14,19 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        flex: 1,
+        borderRadius: theme.spacing.lg,
+        backgroundColor: theme.colors.layerGrayLightest,
     },
-    titleSection: {
+    content: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.sm,
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.md,
     },
-    formContainer: {
-        padding: theme.spacing.xl,
-        gap: theme.spacing.md,
+    icon: {
+        width: theme.spacing.xl,
+        height: theme.spacing.xl,
+        borderRadius: theme.spacing.xl / 2,
     },
 }))

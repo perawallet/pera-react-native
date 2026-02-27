@@ -14,12 +14,23 @@ import { useCallback } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { config } from '@perawallet/wallet-core-config'
-import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
-import { EmptyView } from '@components/EmptyView'
+import {
+    PWIcon,
+    PWScrollView,
+    PWText,
+    PWToolbar,
+    PWView,
+} from '@components/core'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import { useWebView } from '@modules/webview'
 import { useSwapIntroduction } from '@modules/swap/hooks'
-import { SwapIntroduction } from '@modules/swap/components'
+import {
+    SwapIntroduction,
+    SwapPaySection,
+    SwapReceiveSection,
+    SwapAssetSelectionBottomSheet,
+} from '@modules/swap/components'
+import { useSwapScreen } from './useSwapScreen'
 import { useStyles } from './styles'
 
 export const SwapScreen = () => {
@@ -28,6 +39,22 @@ export const SwapScreen = () => {
     const { pushWebView } = useWebView()
     const { isIntroductionSeen, markIntroductionSeen } = useSwapIntroduction()
     const introModal = useModalState(!isIntroductionSeen)
+
+    const {
+        payAssetId,
+        receiveAssetId,
+        payAmount,
+        receiveAmount,
+        payBalance,
+        receiveBalance,
+        payAssetModal,
+        receiveAssetModal,
+        handlePayAmountChange,
+        handleSwapDirection,
+        handleMaxPress,
+        handlePayAssetSelected,
+        handleReceiveAssetSelected,
+    } = useSwapScreen()
 
     const handleStartSwapping = useCallback(() => {
         markIntroductionSeen()
@@ -53,9 +80,35 @@ export const SwapScreen = () => {
                 right={<AccountSelection />}
             />
 
-            <EmptyView
-                title={t('common.not_implemented.title')}
-                body={t('common.not_implemented.body')}
+            <PWScrollView contentContainerStyle={styles.formContainer}>
+                <SwapPaySection
+                    assetId={payAssetId}
+                    balance={payBalance}
+                    amount={payAmount}
+                    onAmountChange={handlePayAmountChange}
+                    onAssetPress={payAssetModal.open}
+                />
+
+                <SwapReceiveSection
+                    assetId={receiveAssetId}
+                    balance={receiveBalance}
+                    amount={receiveAmount}
+                    onAssetPress={receiveAssetModal.open}
+                    onMaxPress={handleMaxPress}
+                    onSwapDirectionPress={handleSwapDirection}
+                />
+            </PWScrollView>
+
+            <SwapAssetSelectionBottomSheet
+                isVisible={payAssetModal.isOpen}
+                onClose={payAssetModal.close}
+                onAssetSelected={handlePayAssetSelected}
+            />
+
+            <SwapAssetSelectionBottomSheet
+                isVisible={receiveAssetModal.isOpen}
+                onClose={receiveAssetModal.close}
+                onAssetSelected={handleReceiveAssetSelected}
             />
 
             <SwapIntroduction
