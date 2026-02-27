@@ -10,26 +10,26 @@
  limitations under the License
  */
 
-import { useQueryClient } from "@tanstack/react-query"
-import { invalidateAllPredicate } from "./querykeys"
+import { useQueryClient } from '@tanstack/react-query'
+import { invalidateAllPredicate } from './querykeys'
 
 export const useArc59Invalidator = () => {
     const queryClient = useQueryClient()
 
     const invalidate = () => {
         queryClient.invalidateQueries({
-            predicate: invalidateAllPredicate
+            predicate: invalidateAllPredicate,
         })
     }
 
     const remove = () => {
         queryClient.removeQueries({
-            predicate: invalidateAllPredicate
+            predicate: invalidateAllPredicate,
         })
     }
 
     return {
         invalidate,
-        remove
+        remove,
     }
 }

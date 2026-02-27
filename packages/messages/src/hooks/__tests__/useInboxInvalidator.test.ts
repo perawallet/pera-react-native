@@ -17,8 +17,9 @@ import { useInboxInvalidator } from '../useInboxInvalidator'
 import { useQueryClient } from '@tanstack/react-query'
 import { invalidateAllPredicate } from '../querykeys'
 
-vi.mock('@tanstack/react-query', async (importOriginal) => {
-    const actual = await importOriginal<typeof import('@tanstack/react-query')>()
+vi.mock('@tanstack/react-query', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@tanstack/react-query')>()
     return {
         ...actual,
         useQueryClient: vi.fn(),

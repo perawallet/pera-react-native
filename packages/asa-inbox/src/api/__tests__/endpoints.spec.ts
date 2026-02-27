@@ -45,7 +45,7 @@ describe('fetchArc59SendSummary', () => {
             backend: 'pera',
             network: 'testnet',
             method: 'GET',
-            url: `/v1/arc59/send-summary/${RECEIVER}/${ASSET_ID}`,
+            url: `/v1/asa-inboxes/summary/send-flow/${RECEIVER}/${ASSET_ID}/`,
         })
     })
 

@@ -13,10 +13,7 @@
 import { useCallback } from 'react'
 
 import Decimal from 'decimal.js'
-import {
-    ALGO_ASSET_ID,
-    PeraAsset,
-} from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-asa-inbox'
 import {
     useArc59SendTransaction,
@@ -72,56 +69,58 @@ export const useTransactionSendFlow = () => {
     const { claimAsset, rejectAsset } =
         useArc59ClaimTransaction(signTransactions)
 
+    const sendExpress = useCallback(
+        async (params: SendExpressParams): Promise<{ txIds: string[] }> => {
+            const { sender, receiver, assetId, amount } = params
 
-    const sendExpress = useCallback(async (params: SendExpressParams): Promise<{ txIds: string[] }> => {
-        const { sender, receiver, assetId, amount } = params
+            // Look up receiver's current balance to determine funding needed
+            const { amount: currentBalance, minBalance: currentMbr } =
+                await algokit.client.algod.accountInformation(receiver)
 
-        // Look up receiver's current balance to determine funding needed
-        const { amount: currentBalance, minBalance: currentMbr } =
-            await algokit.client.algod.accountInformation(receiver)
+            // After opt-in the receiver's MBR increases by ASSET_MBR.
+            // The opt-in tx fee is also paid from the receiver's balance.
+            const suggestedParams = await algokit.getSuggestedParams()
+            const mbrAfterOptIn = currentMbr + ASSET_MBR
+            const balanceNeeded = mbrAfterOptIn + suggestedParams.minFee
+            const fundingNeeded =
+                balanceNeeded > currentBalance
+                    ? balanceNeeded - currentBalance
+                    : 0n
 
-        // After opt-in the receiver's MBR increases by ASSET_MBR.
-        // The opt-in tx fee is also paid from the receiver's balance.
-        const suggestedParams = await algokit.getSuggestedParams()
-        const mbrAfterOptIn = currentMbr + ASSET_MBR
-        const balanceNeeded = mbrAfterOptIn + suggestedParams.minFee
-        const fundingNeeded =
-            balanceNeeded > currentBalance
-                ? balanceNeeded - currentBalance
-                : 0n
+            const composer = algokit.newGroup()
 
-        const composer = algokit.newGroup()
+            // Only add payment if the receiver needs funding
+            if (fundingNeeded > 0n) {
+                composer.addPayment({
+                    sender,
+                    receiver,
+                    amount: fundingNeeded.microAlgo(),
+                })
+            }
 
-        // Only add payment if the receiver needs funding
-        if (fundingNeeded > 0n) {
-            composer.addPayment({
-                sender,
-                receiver,
-                amount: fundingNeeded.microAlgo(),
-            })
-        }
+            composer
+                .addAssetOptIn({
+                    sender: receiver,
+                    assetId,
+                })
+                .addAssetTransfer({
+                    sender,
+                    receiver,
+                    amount,
+                    assetId,
+                })
 
-        composer
-            .addAssetOptIn({
-                sender: receiver,
-                assetId,
-            })
-            .addAssetTransfer({
-                sender,
-                receiver,
-                amount,
-                assetId,
-            })
-
-        const result = await composer.send()
-        return { txIds: result.txIds }
-    }, [algokit])
+            const result = await composer.send()
+            return { txIds: result.txIds }
+        },
+        [algokit],
+    )
 
     const executeSend = useCallback(
         async (params: SendTransactionParams): Promise<string> => {
             if (
                 !params.asset ||
-                !params.asset.assetId || 
+                !params.asset.assetId ||
                 !params.sender ||
                 !params.receiver ||
                 params.amount == null
@@ -132,8 +131,11 @@ export const useTransactionSendFlow = () => {
             const assetDecimals = params.asset?.decimals ?? 0
 
             const amountInBaseUnits = BigInt(
-                    displayUnitsToBaseUnits(params.amount, assetDecimals ?? 0).toString(),
-                )
+                displayUnitsToBaseUnits(
+                    params.amount,
+                    assetDecimals ?? 0,
+                ).toString(),
+            )
             const assetId = BigInt(params.asset.assetId)
 
             switch (params.sendMode) {

@@ -62,7 +62,7 @@ export const useARC59SendSummaryScreen =
         const { mode } = useThemeMode()
 
         const assetId = selectedAsset?.assetId ?? ''
-        const receiverAddress = destination ?? '' 
+        const receiverAddress = destination ?? ''
 
         const { data: summary, isLoading: summaryLoading } =
             useArc59SendSummaryQuery(receiverAddress, assetId)

@@ -42,7 +42,7 @@ export const getAccountAssetBalanceHistoryQueryKey = (
     { period, currency, network, asset_id, account_address },
 ]
 
-export const getInvalidateAccountBalancesPredicate = (query: Query) => 
-    query.queryKey.length >=2 
-        && query.queryKey.at(0) === MODULE_PREFIX 
-        && query.queryKey.at(1) === 'balance'
+export const getInvalidateAccountBalancesPredicate = (query: Query) =>
+    query.queryKey.length >= 2 &&
+    query.queryKey.at(0) === MODULE_PREFIX &&
+    query.queryKey.at(1) === 'balance'

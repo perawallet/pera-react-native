@@ -42,8 +42,7 @@ export const useAssetClaimDetailScreen =
         const route =
             useRoute<RouteProp<MessagesStackParamList, 'AssetClaimDetail'>>()
         const { assetIndex } = route.params
-        const { assetRequests, accountAddress } =
-            useClaimAssets()
+        const { assetRequests, accountAddress } = useClaimAssets()
         const accounts = useAllAccounts()
         const { copyToClipboard } = useClipboard()
         const rejectModal = useModalState()

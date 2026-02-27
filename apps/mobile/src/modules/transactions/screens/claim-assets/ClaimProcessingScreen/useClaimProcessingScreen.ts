@@ -28,11 +28,13 @@ import {
 import type { MessagesStackParamList } from '@modules/messages/routes/types'
 import { useLanguage } from '@hooks/useLanguage'
 import { config } from '@perawallet/wallet-core-config'
-import { useAccountBalancesInvalidator, useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountBalancesInvalidator,
+    useFindAccountByAddress,
+} from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useArc59Invalidator } from '@perawallet/wallet-core-asa-inbox'
 import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
-import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 
 export const useClaimProcessingScreen = () => {
     const navigation =
@@ -48,7 +50,8 @@ export const useClaimProcessingScreen = () => {
 
     const { remove: removeArc59Queries } = useArc59Invalidator()
     const { invalidate: invalidateInboxQueries } = useInboxInvalidator()
-    const { invalidate: invalidateAccountBalances } = useAccountBalancesInvalidator()
+    const { invalidate: invalidateAccountBalances } =
+        useAccountBalancesInvalidator()
     const { execute } = useTransactionSendFlow()
 
     const asset = assetRequests[assetIndex]
@@ -75,12 +78,12 @@ export const useClaimProcessingScreen = () => {
                     invalidateInboxQueries()
                     invalidateAccountBalances()
                     appNavigation.replace('TabBar', {
-                        screen: 'Home'
+                        screen: 'Home',
                     })
                 })
                 navigation.replace('ClaimSuccess', {
                     transactionId: txId,
-                    variant: mode === 'claimArc59'? 'claim' : 'reject'
+                    variant: mode === 'claimArc59' ? 'claim' : 'reject',
                 })
             })
             .catch(error => {

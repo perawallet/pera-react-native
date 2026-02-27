@@ -26,7 +26,7 @@ export const getNotificationStatusQueryKey = (
     network: Network,
     deviceID: string,
 ) => {
-    return [MODULE_PREFIX, 'notification-status', { deviceID, network}]
+    return [MODULE_PREFIX, 'notification-status', { deviceID, network }]
 }
 
 export const getInboxQueryKey = (

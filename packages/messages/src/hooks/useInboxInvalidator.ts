@@ -10,19 +10,19 @@
  limitations under the License
  */
 
-import { useQueryClient } from "@tanstack/react-query"
-import { invalidateAllPredicate } from "./querykeys"
+import { useQueryClient } from '@tanstack/react-query'
+import { invalidateAllPredicate } from './querykeys'
 
 export const useInboxInvalidator = () => {
     const queryClient = useQueryClient()
 
     const invalidate = () => {
         queryClient.invalidateQueries({
-            predicate: invalidateAllPredicate
+            predicate: invalidateAllPredicate,
         })
     }
 
     return {
-        invalidate
+        invalidate,
     }
 }

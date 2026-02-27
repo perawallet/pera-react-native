@@ -50,7 +50,7 @@ const logError = (error: HTTPError) => {
         name: error.name,
         // safely attempt to get response info if available
         status: error.response?.status,
-        details: JSON.stringify(error)
+        details: JSON.stringify(error),
     })
     return error
 }

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { Query } from "@tanstack/react-query"
+import { Query } from '@tanstack/react-query'
 
 const MODULE_PREFIX = 'asa-inbox'
 
@@ -25,5 +25,5 @@ export const getArc59AssetRequestsQueryKey = (address: string) => [
     { address },
 ]
 
-export const invalidateAllPredicate = (query: Query) => 
+export const invalidateAllPredicate = (query: Query) =>
     query.queryKey.at(0) === MODULE_PREFIX

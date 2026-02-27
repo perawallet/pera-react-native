@@ -28,7 +28,9 @@ export const useSelectDestinationScreen = () => {
     const selectedAccount = useSelectedAccount()
     const accounts = useAllAccounts()
     const { accountBalances } = useAccountBalancesQuery(accounts)
-    const { data: assets } = useAssetsQuery(selectedAsset ? [selectedAsset.assetId] : [])
+    const { data: assets } = useAssetsQuery(
+        selectedAsset ? [selectedAsset.assetId] : [],
+    )
 
     const asset = useMemo(() => {
         if (!selectedAsset?.assetId) return null

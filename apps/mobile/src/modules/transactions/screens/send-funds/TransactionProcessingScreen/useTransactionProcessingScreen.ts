@@ -16,7 +16,10 @@ import { BackHandler } from 'react-native'
 import { bottomSheetNotifier } from '@components/core'
 import { useToast } from '@hooks/useToast'
 import { useSendFunds } from '@modules/transactions/hooks'
-import { useAccountBalancesInvalidator, useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountBalancesInvalidator,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
     SendTransactionParams,
     useTransactionSendFlow,
@@ -42,7 +45,8 @@ export const useTransactionProcessingScreen = () => {
     const selectedAccount = useSelectedAccount()
     const { showToast } = useToast()
     const { t } = useLanguage()
-    const { invalidate: invalidateAccountBalances } = useAccountBalancesInvalidator()
+    const { invalidate: invalidateAccountBalances } =
+        useAccountBalancesInvalidator()
 
     const { execute } = useTransactionSendFlow()
 
