@@ -100,6 +100,7 @@ export const useAccountBalancesQuery = (
                 algoValue = algoValue.plus(algoAssetValue)
                 assetBalances.push({
                     assetId: `${assetHolding.assetId}`,
+                    asset: asset,
                     amount: assetAmount,
                     algoValue: algoAssetValue,
                 })

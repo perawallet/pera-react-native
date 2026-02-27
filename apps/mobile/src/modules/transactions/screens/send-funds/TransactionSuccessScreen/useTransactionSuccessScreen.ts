@@ -25,7 +25,7 @@ import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { useRoute } from '@react-navigation/native'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
 import { useQueryClient } from '@tanstack/react-query'
-import { getArc59AssetRequestsQueryKey } from '@perawallet/wallet-core-asa-inbox'
+import { getArc59AssetRequestsQueryKey, useArc59Invalidator } from '@perawallet/wallet-core-asa-inbox'
 
 export type SuccessVariant =
     | 'payment'
@@ -65,7 +65,6 @@ export const useTransactionSuccessScreen =
         const selectedAccount = useSelectedAccount()
         const accounts = useAccountsStore(state => state.accounts)
         const { setSelectedAccountAddress } = useSelectedAccountAddress()
-        const queryClient = useQueryClient()
 
         const isClaimFlow =
             routeVariant === 'claim' || routeVariant === 'reject'
@@ -78,12 +77,6 @@ export const useTransactionSuccessScreen =
 
         const handleDone = useCallback(() => {
             if (isClaimFlow) {
-                if (claimAccountAddress) {
-                    queryClient.invalidateQueries({
-                        queryKey:
-                            getArc59AssetRequestsQueryKey(claimAccountAddress),
-                    })
-                }
                 claimOnFinished?.()
             } else {
                 if (isCloseAccount && selectedAccount?.id) {
@@ -101,7 +94,6 @@ export const useTransactionSuccessScreen =
             isClaimFlow,
             claimOnFinished,
             claimAccountAddress,
-            queryClient,
             sendFundsOnFinished,
             isCloseAccount,
             selectedAccount,

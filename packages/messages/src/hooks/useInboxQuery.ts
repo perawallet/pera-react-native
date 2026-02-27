@@ -15,7 +15,7 @@ import {
     useDeviceID,
     useNetwork,
 } from '@perawallet/wallet-core-platform-integration'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { useSigningAccounts } from '@perawallet/wallet-core-accounts'
 import { useQuery, UseQueryResult } from '@tanstack/react-query'
 import { fetchInbox, type InboxResponse } from '../api/inbox'
 import type { InboxItem } from '../models'
@@ -26,12 +26,12 @@ import { sortInboxItems } from '../utils'
 export const useInboxQuery = (): UseQueryResult<InboxItem[], Error> => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
-    const accounts = useAllAccounts()
+    const accounts = useSigningAccounts()
 
     const addresses = useMemo(() => accounts.map(a => a.address), [accounts])
 
     return useQuery({
-        queryKey: getInboxQueryKey(network, deviceID ?? '', addresses.length),
+        queryKey: getInboxQueryKey(network, deviceID ?? '', addresses),
         queryFn: () => fetchInbox(network, deviceID ?? '', addresses),
         enabled: !!deviceID?.length && !!addresses.length,
         select: useCallback(

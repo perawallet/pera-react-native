@@ -10,16 +10,13 @@
  limitations under the License
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation } from '@tanstack/react-query'
 import {
     useDeviceID,
     useNetwork,
 } from '@perawallet/wallet-core-platform-integration'
 import { updateLastSeenNotification } from '../api/notifications'
-import {
-    getNotificationsListQueryKey,
-    getNotificationStatusQueryKey,
-} from './querykeys'
+import { useInboxInvalidator } from './useInboxInvalidator'
 
 type UseMarkNotificationsAsReadMutationResult = {
     markAsRead: (lastSeenNotificationId: number) => void
@@ -29,7 +26,7 @@ export const useMarkNotificationsAsReadMutation =
     (): UseMarkNotificationsAsReadMutationResult => {
         const { network } = useNetwork()
         const deviceID = useDeviceID(network)
-        const queryClient = useQueryClient()
+        const { invalidate } = useInboxInvalidator()
 
         const { mutate } = useMutation({
             mutationFn: (lastSeenNotificationId: number) =>
@@ -39,18 +36,7 @@ export const useMarkNotificationsAsReadMutation =
                     lastSeenNotificationId,
                 ),
             onSuccess: () => {
-                queryClient.invalidateQueries({
-                    queryKey: getNotificationsListQueryKey(
-                        network,
-                        deviceID ?? '',
-                    ),
-                })
-                queryClient.invalidateQueries({
-                    queryKey: getNotificationStatusQueryKey(
-                        network,
-                        deviceID ?? '',
-                    ),
-                })
+                invalidate()
             },
         })
 

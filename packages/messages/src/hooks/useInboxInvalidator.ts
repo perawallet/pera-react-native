@@ -10,10 +10,19 @@
  limitations under the License
  */
 
-export * from './useNotificationPreferences'
-export * from './useInboxStatus'
-export * from './useNotificationsListQuery'
-export * from './useAccountNotificationEnabledMutation'
-export * from './useMarkNotificationsAsReadMutation'
-export * from './useInboxQuery'
-export * from './useInboxInvalidator'
+import { useQueryClient } from "@tanstack/react-query"
+import { invalidateAllPredicate } from "./querykeys"
+
+export const useInboxInvalidator = () => {
+    const queryClient = useQueryClient()
+
+    const invalidate = () => {
+        queryClient.invalidateQueries({
+            predicate: invalidateAllPredicate
+        })
+    }
+
+    return {
+        invalidate
+    }
+}

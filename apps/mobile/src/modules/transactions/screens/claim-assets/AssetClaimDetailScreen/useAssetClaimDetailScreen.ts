@@ -38,11 +38,11 @@ type UseAssetClaimDetailScreenResult = {
 
 export const useAssetClaimDetailScreen =
     (): UseAssetClaimDetailScreenResult => {
-        const { push, navigate } = useAppNavigation()
+        const { push } = useAppNavigation()
         const route =
             useRoute<RouteProp<MessagesStackParamList, 'AssetClaimDetail'>>()
         const { assetIndex } = route.params
-        const { assetRequests, accountAddress, setOnFinished } =
+        const { assetRequests, accountAddress } =
             useClaimAssets()
         const accounts = useAllAccounts()
         const { copyToClipboard } = useClipboard()

@@ -30,7 +30,8 @@ import { useLanguage } from '@hooks/useLanguage'
 import { config } from '@perawallet/wallet-core-config'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { logger } from '@perawallet/wallet-core-shared'
+import { useArc59Invalidator } from '@perawallet/wallet-core-asa-inbox'
+import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
 
 export const useClaimProcessingScreen = () => {
     const navigation =
@@ -44,6 +45,8 @@ export const useClaimProcessingScreen = () => {
     const { showToast } = useToast()
     const { t } = useLanguage()
 
+    const { remove: removeArc59Queries } = useArc59Invalidator()
+    const { invalidate: invalidateInboxQueries } = useInboxInvalidator()
     const { execute } = useTransactionSendFlow()
 
     const asset = assetRequests[assetIndex]
@@ -66,6 +69,8 @@ export const useClaimProcessingScreen = () => {
         })
             .then(txId => {
                 setOnFinished(() => {
+                    removeArc59Queries()
+                    invalidateInboxQueries()
                     appNavigation.replace('TabBar', {
                         screen: 'Home'
                     })

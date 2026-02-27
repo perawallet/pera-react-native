@@ -62,7 +62,7 @@ export const useARC59SendSummaryScreen =
         const { mode } = useThemeMode()
 
         const assetId = selectedAsset?.assetId ?? ''
-        const receiverAddress = destination ?? ''
+        const receiverAddress = destination ?? '' 
 
         const { data: summary, isLoading: summaryLoading } =
             useArc59SendSummaryQuery(receiverAddress, assetId)
@@ -125,7 +125,7 @@ export const useARC59SendSummaryScreen =
 
         const handleWarningConfirm = useCallback(() => {
             warningModal.close()
-            navigation.push('TransactionProcessing')
+            navigation.navigate('TransactionProcessing')
         }, [navigation])
 
         const handleWarningClose = useCallback(() => {

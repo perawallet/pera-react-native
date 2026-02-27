@@ -11,6 +11,7 @@
  */
 
 import { Network } from '@perawallet/wallet-core-shared'
+import { Query } from '@tanstack/react-query'
 
 const MODULE_PREFIX = 'notifications'
 
@@ -25,13 +26,17 @@ export const getNotificationStatusQueryKey = (
     network: Network,
     deviceID: string,
 ) => {
-    return ['v1', 'devices', deviceID, 'notification-status', network]
+    return [MODULE_PREFIX, 'notification-status', { deviceID, network}]
 }
 
 export const getInboxQueryKey = (
     network: Network,
     deviceID: string,
-    addressCount: number,
+    addresses: string[],
 ) => {
-    return [MODULE_PREFIX, 'inbox', { deviceID, network, addressCount }]
+    return [MODULE_PREFIX, 'inbox', { deviceID, network, addresses }]
+}
+
+export const invalidateAllPredicate = (query: Query) => {
+    return query.queryKey.at(0) === MODULE_PREFIX
 }

@@ -12,12 +12,9 @@
 
 import { useCallback } from 'react'
 
-import type Decimal from 'decimal.js'
+import Decimal from 'decimal.js'
 import {
-    ALGO_ASSET,
     ALGO_ASSET_ID,
-    PeraAsset,
-    toDecimalUnits,
 } from '@perawallet/wallet-core-assets'
 import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-asa-inbox'
 import {
@@ -25,18 +22,19 @@ import {
     useArc59ClaimTransaction,
 } from '@perawallet/wallet-core-asa-inbox'
 import {
+    displayUnitsToBaseUnits,
     useAlgorandClient,
     useExpressTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useTransactionSigner } from '@perawallet/wallet-core-signing'
-import { WalletAccount } from 'accounts/dist'
+import { AssetWithAccountBalance, WalletAccount } from '@perawallet/wallet-core-accounts'
 import { InvalidSendParamsError } from '../errors'
 
 type BaseSendParams = {
     sendMode: 'normal' | 'express' | 'sendArc59' | 'claimArc59' | 'rejectArc59'
     sender?: WalletAccount
     receiver?: string
-    asset?: PeraAsset
+    asset?: AssetWithAccountBalance
     amount?: Decimal
     note?: string
 }
@@ -71,6 +69,7 @@ export const useTransactionSendFlow = () => {
         async (params: SendTransactionParams): Promise<string> => {
             if (
                 !params.asset ||
+                !params.asset.assetId || 
                 !params.sender ||
                 !params.receiver ||
                 params.amount == null
@@ -78,35 +77,31 @@ export const useTransactionSendFlow = () => {
                 throw new InvalidSendParamsError()
             }
 
-            if (!params.asset) {
-                throw new Error(`Asset ${params.asset} not found`)
-            }
+            const amountInBaseUnits = BigInt(
+                    displayUnitsToBaseUnits(params.amount, params.asset.asset?.decimals ?? 0).toString(),
+                )
+            const assetId = BigInt(params.asset.assetId)
 
             switch (params.sendMode) {
                 case 'express': {
                     const result = await sendExpress({
                         sender: params.sender.address,
                         receiver: params.receiver,
-                        assetId: BigInt(params.asset.assetId),
-                        amount: BigInt(
-                            toDecimalUnits(params.amount, params.asset).toString(),
-                        ),
+                        assetId,
+                        amount: amountInBaseUnits,
                     })
                     return result.txIds[result.txIds.length - 1]
                 }
                 case 'sendArc59': {
                     if (!params.arc59Summary) {
-                        throw new Error(
-                            'Missing ARC59 summary for ARC59 transaction',
-                        )
+                        throw new InvalidSendParamsError()
                     }
+
                     const result = await sendViaInbox({
                         sender: params.sender.address,
                         receiver: params.receiver,
-                        assetId: BigInt(params.asset.assetId),
-                        amount: BigInt(
-                            toDecimalUnits(params.amount, params.asset).toString(),
-                        ),
+                        assetId,
+                        amount: amountInBaseUnits,
                         summary: params.arc59Summary,
                     })
                     return result.txIds[result.txIds.length - 1]
@@ -118,12 +113,7 @@ export const useTransactionSendFlow = () => {
                             receiver: params.receiver,
                             amount: params.isCloseAccount
                                 ? BigInt(0).microAlgo()
-                                : BigInt(
-                                      toDecimalUnits(
-                                          params.amount,
-                                          ALGO_ASSET,
-                                      ).toString(),
-                                  ).microAlgo(),
+                                : amountInBaseUnits.microAlgo(),
                             ...(params.isCloseAccount && {
                                 closeRemainderTo: params.receiver,
                             }),
@@ -134,10 +124,8 @@ export const useTransactionSendFlow = () => {
                         const result = await algokit.send.assetTransfer({
                             sender: params.sender.address,
                             receiver: params.receiver,
-                            amount: BigInt(
-                                toDecimalUnits(params.amount, params.asset).toString(),
-                            ),
-                            assetId: BigInt(params.asset.assetId),
+                            amount: amountInBaseUnits,
+                            assetId,
                             note: params.note,
                         })
                         return result.txIds[0]
