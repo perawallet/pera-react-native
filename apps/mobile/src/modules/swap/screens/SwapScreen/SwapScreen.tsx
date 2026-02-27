@@ -10,16 +10,59 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
+import { useModalState } from '@hooks/useModalState'
+import { config } from '@perawallet/wallet-core-config'
+import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
+import { AccountSelection } from '@modules/accounts/components/AccountSelection'
+import { useWebView } from '@modules/webview'
+import { useSwapIntroduction } from '@modules/swap/hooks'
+import { SwapIntroduction } from '@modules/swap/components'
+import { useStyles } from './styles'
 
 export const SwapScreen = () => {
     const { t } = useLanguage()
+    const styles = useStyles()
+    const { pushWebView } = useWebView()
+    const { isIntroductionSeen, markIntroductionSeen } = useSwapIntroduction()
+    const introModal = useModalState(!isIntroductionSeen)
+
+    const handleStartSwapping = useCallback(() => {
+        markIntroductionSeen()
+        introModal.close()
+    }, [markIntroductionSeen, introModal])
+
+    const handleInfoPress = useCallback(() => {
+        pushWebView({ url: config.swapSupportUrl })
+    }, [pushWebView])
 
     return (
-        <EmptyView
-            title={t('common.not_implemented.title')}
-            body={t('common.not_implemented.body')}
-        />
+        <PWView style={styles.container}>
+            <PWToolbar
+                left={
+                    <PWView style={styles.titleSection}>
+                        <PWText variant='h3'>{t('tabbar.swap')}</PWText>
+                        <PWIcon
+                            name='info'
+                            onPress={handleInfoPress}
+                        />
+                    </PWView>
+                }
+                right={<AccountSelection />}
+            />
+
+            <EmptyView
+                title={t('common.not_implemented.title')}
+                body={t('common.not_implemented.body')}
+            />
+
+            <SwapIntroduction
+                isVisible={introModal.isOpen}
+                onStartSwapping={handleStartSwapping}
+                onClose={introModal.close}
+            />
+        </PWView>
     )
 }

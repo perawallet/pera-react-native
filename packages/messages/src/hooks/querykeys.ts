@@ -40,3 +40,11 @@ export const getInboxQueryKey = (
 export const invalidateAllPredicate = (query: Query) => {
     return query.queryKey.at(0) === MODULE_PREFIX
 }
+
+export const getInboxQueryKey = (
+    network: Network,
+    deviceID: string,
+    addressCount: number,
+) => {
+    return [MODULE_PREFIX, 'inbox', { deviceID, network, addressCount }]
+}

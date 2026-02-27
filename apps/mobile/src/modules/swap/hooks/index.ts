@@ -10,15 +10,4 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-    },
-    titleSection: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-}))
+export { useSwapIntroduction } from './useSwapIntroduction'
