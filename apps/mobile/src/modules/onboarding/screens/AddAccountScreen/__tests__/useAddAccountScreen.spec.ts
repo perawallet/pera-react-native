@@ -359,8 +359,16 @@ describe('useAddAccountScreen', () => {
         )
     })
 
-    it('universal wallet option in otherOptions navigates to SelectHDWallet when HD wallet exists', () => {
+    it('universal wallet option in otherOptions creates new wallet when HD wallet exists', async () => {
         mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
+
+        const newAccount = {
+            id: 'new-id',
+            address: 'NEW_ADDRESS',
+            type: 'hdWallet' as const,
+            canSign: true,
+        }
+        mockCreateHdWalletAccount.mockResolvedValue(newAccount)
 
         const { result } = renderHook(() => useAddAccountScreen())
 
@@ -368,12 +376,17 @@ describe('useAddAccountScreen', () => {
             o => o.testID === 'add_account_create_universal_wallet_button',
         )!
 
-        act(() => {
+        await act(async () => {
             universalOption.onPress()
         })
 
-        expect(mockPush).toHaveBeenCalledWith('SelectHDWallet')
-        expect(mockCreateHdWalletAccount).not.toHaveBeenCalled()
+        expect(mockCreateHdWalletAccount).toHaveBeenCalledWith({
+            account: 0,
+            keyIndex: 0,
+        })
+        expect(mockPush).toHaveBeenCalledWith('NameAccount', {
+            account: newAccount,
+        })
     })
 
     it('algo25 option creates algo25 account and navigates to NameAccount', async () => {

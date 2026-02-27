@@ -164,6 +164,7 @@ describe('useSelectHDWalletScreen', () => {
 
         expect(mockPush).toHaveBeenCalledWith('SearchAccounts', {
             account: mockHDWalletGroups[0].firstAccount,
+            createIfEmpty: true,
         })
     })
 

@@ -149,16 +149,11 @@ describe('SelectHDWalletScreen', () => {
         expect(screen.getByTestId('select_hd_wallet_item_1')).toBeTruthy()
     })
 
-    it('displays named wallet with its name', () => {
-        render(<SelectHDWalletScreen />)
-        expect(screen.getByText('My Main Wallet')).toBeTruthy()
-    })
-
-    it('displays unnamed wallet with fallback label', () => {
+    it('displays wallet label for all wallets', () => {
         render(<SelectHDWalletScreen />)
         expect(
-            screen.getByText('onboarding.select_hd_wallet.wallet_label'),
-        ).toBeTruthy()
+            screen.getAllByText('onboarding.select_hd_wallet.wallet_label'),
+        ).toHaveLength(2)
     })
 
     it('displays account count for each wallet group', () => {
@@ -183,6 +178,7 @@ describe('SelectHDWalletScreen', () => {
 
         expect(mockPush).toHaveBeenCalledWith('SearchAccounts', {
             account: mockHDWalletGroups[0].firstAccount,
+            createIfEmpty: true,
         })
     })
 
@@ -193,6 +189,7 @@ describe('SelectHDWalletScreen', () => {
 
         expect(mockPush).toHaveBeenCalledWith('SearchAccounts', {
             account: mockHDWalletGroups[1].firstAccount,
+            createIfEmpty: true,
         })
     })
 

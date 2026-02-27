@@ -156,11 +156,6 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
     }, [navigation])
 
     const handleCreateUniversalWallet = useCallback(() => {
-        if (hasHDWallet) {
-            navigation.push('SelectHDWallet')
-            return
-        }
-
         openCreatingAccount()
         deferToNextCycle(async () => {
             try {
@@ -182,7 +177,6 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
             }
         })
     }, [
-        hasHDWallet,
         openCreatingAccount,
         closeCreatingAccount,
         createHdWalletAccount,

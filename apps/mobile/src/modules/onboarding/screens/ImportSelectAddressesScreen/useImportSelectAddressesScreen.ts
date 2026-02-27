@@ -69,7 +69,7 @@ export function useImportSelectAddressesScreen(): UseImportSelectAddressesScreen
     }, [accounts, alreadyImportedAddresses])
 
     const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(
-        () => new Set(newAccounts.map(acc => acc.address)),
+        () => new Set(),
     )
     const [isProcessing, setIsProcessing] = useState(false)
 

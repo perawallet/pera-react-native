@@ -37,6 +37,7 @@ export type OnboardingStackParamList = {
     }
     SearchAccounts: {
         account: WalletAccount
+        createIfEmpty?: boolean
     }
 }
 
@@ -63,5 +64,6 @@ export type AddAccountStackParamList = {
     }
     SearchAccounts: {
         account: WalletAccount
+        createIfEmpty?: boolean
     }
 }

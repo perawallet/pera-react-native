@@ -12,7 +12,8 @@
 
 import { useMemo } from 'react'
 import { useAllAccounts } from './useAllAccounts'
-import { AccountTypes, HDWalletAccount } from '../models'
+import { HDWalletAccount } from '../models'
+import { isHDWalletAccount } from '../utils'
 
 export type HDWalletGroup = {
     keyPairId: string
@@ -30,9 +31,7 @@ export const useHDWalletGroups = (): UseHDWalletGroupsResult => {
     const accounts = useAllAccounts()
 
     const hdWalletGroups = useMemo(() => {
-        const hdAccounts = accounts.filter(
-            (a): a is HDWalletAccount => a.type === AccountTypes.hdWallet,
-        )
+        const hdAccounts = accounts.filter(isHDWalletAccount)
 
         const groupMap = new Map<string, HDWalletAccount[]>()
         for (const account of hdAccounts) {

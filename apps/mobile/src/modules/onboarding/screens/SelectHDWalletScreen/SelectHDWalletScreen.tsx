@@ -46,11 +46,9 @@ export const SelectHDWalletScreen = () => {
         item: HDWalletGroup
         index: number
     }) => {
-        const walletLabel = item.firstAccount.name
-            ? item.firstAccount.name
-            : t('onboarding.select_hd_wallet.wallet_label', {
-                  number: index + 1,
-              })
+        const walletLabel = t('onboarding.select_hd_wallet.wallet_label', {
+            number: index + 1,
+        })
 
         const groupAlgoValue = item.accounts.reduce(
             (sum, acc) =>
@@ -67,7 +65,7 @@ export const SelectHDWalletScreen = () => {
                 testID={`select_hd_wallet_item_${index}`}
             >
                 <PWRoundIcon
-                    icon='wallet'
+                    icon='wallet-with-algo'
                     size='lg'
                     style={styles.walletIconContainer}
                 />

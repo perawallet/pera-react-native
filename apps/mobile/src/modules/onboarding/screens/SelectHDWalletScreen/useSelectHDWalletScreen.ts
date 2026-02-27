@@ -52,6 +52,7 @@ export const useSelectHDWalletScreen = (): UseSelectHDWalletScreenResult => {
         (group: HDWalletGroup) => {
             navigation.push('SearchAccounts', {
                 account: group.firstAccount,
+                createIfEmpty: true,
             })
         },
         [navigation],
