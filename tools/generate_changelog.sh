@@ -47,21 +47,21 @@ format_section() {
 }
 
 # Features
-FEATURES=$(git log ${LAST_REF}..HEAD --pretty=format:"%s" --grep="^feat" | sed -E 's/^feat(\([^)]*\))?[:]? *//')
+FEATURES=$(git log ${LAST_REF}..HEAD --pretty=format:"%s" --grep="^feat" | sed -E 's/^feat\(([^)]*)\)[:]? */\1: /; s/^feat[:]? *//')
 if [ -n "$FEATURES" ]; then
   SECTION=$(format_section "*Features:*" "$FEATURES")
   CHANGELOG="${CHANGELOG}${SECTION}"$'\n\n'
 fi
 
 # Bug fixes
-FIXES=$(git log ${LAST_REF}..HEAD --pretty=format:"%s" --grep="^fix" | sed -E 's/^fix(\([^)]*\))?[:]? *//')
+FIXES=$(git log ${LAST_REF}..HEAD --pretty=format:"%s" --grep="^fix" | sed -E 's/^fix\(([^)]*)\)[:]? */\1: /; s/^fix[:]? *//')
 if [ -n "$FIXES" ]; then
   SECTION=$(format_section "*Bug Fixes:*" "$FIXES")
   CHANGELOG="${CHANGELOG}${SECTION}"$'\n\n'
 fi
 
 # Other changes (chore, refactor, perf, test, docs, build)
-OTHER=$(git log ${LAST_REF}..HEAD --pretty=format:"%s" --grep="^\(chore\|refactor\|perf\|test\|docs\|build\)" | sed -E 's/^(chore|refactor|perf|test|docs|build)(\([^)]*\))?[:]? *//')
+OTHER=$(git log ${LAST_REF}..HEAD --pretty=format:"%s" --grep="^\(chore\|refactor\|perf\|test\|docs\|build\)" | sed -E 's/^(chore|refactor|perf|test|docs|build)\(([^)]*)\)[:]? */\2: /; s/^(chore|refactor|perf|test|docs|build)[:]? *//')
 if [ -n "$OTHER" ]; then
   SECTION=$(format_section "*Other:*" "$OTHER")
   CHANGELOG="${CHANGELOG}${SECTION}"$'\n\n'
