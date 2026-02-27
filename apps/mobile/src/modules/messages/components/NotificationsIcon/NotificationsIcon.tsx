@@ -25,7 +25,7 @@ export const NotificationsIcon = (props: NotificationsIconProps) => {
     const styles = useStyles()
 
     const goToNotifications = () => {
-        navigation.navigate('Messages', { initialTab: 'Notifications' })
+        navigation.navigate('Messages')
     }
 
     return (

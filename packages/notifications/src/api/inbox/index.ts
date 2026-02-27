@@ -10,9 +10,5 @@
  limitations under the License
  */
 
-export * from './useNotificationPreferences'
-export * from './useNotificationStatusQuery'
-export * from './useNotificationsListQuery'
-export * from './useAccountNotificationEnabledMutation'
-export * from './useMarkNotificationsAsReadMutation'
-export * from './useInboxQuery'
+export * from './endpoints'
+export * from './schema'

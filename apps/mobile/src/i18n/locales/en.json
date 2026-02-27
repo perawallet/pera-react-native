@@ -331,7 +331,11 @@
         },
         "inbox": {
             "empty_title": "No messages yet",
-            "empty_body": "Your inbox messages will appear here"
+            "empty_body": "Your inbox messages will appear here",
+            "asa_requests_one": "1 incoming asset",
+            "asa_requests_other": "{{count}} incoming assets",
+            "joint_account_import": "Joint Account Import Request",
+            "joint_account_sign": "Joint Account Sign Request"
         }
     },
     "onboarding": {
