@@ -10,4 +10,5 @@
  limitations under the License
  */
 
+export * from './inbox'
 export * from './notifications'

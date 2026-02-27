@@ -10,28 +10,23 @@
  limitations under the License
  */
 
-import { Network } from '@perawallet/wallet-core-shared'
+import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import { inboxResponseSchema, type InboxResponse } from './schema'
 
-const MODULE_PREFIX = 'notifications'
+const getInboxEndpoint = (deviceID: string) => `/v1/inbox/${deviceID}/`
 
-export const getNotificationsListQueryKey = (
+export const fetchInbox = async (
     network: Network,
     deviceID: string,
-) => {
-    return [MODULE_PREFIX, 'listv2', { deviceID, network }]
-}
+    addresses: string[],
+): Promise<InboxResponse> => {
+    const response = await queryClient<InboxResponse>({
+        backend: 'pera',
+        network,
+        method: 'POST',
+        url: getInboxEndpoint(deviceID),
+        data: { addresses },
+    })
 
-export const getNotificationStatusQueryKey = (
-    network: Network,
-    deviceID: string,
-) => {
-    return ['v1', 'devices', deviceID, 'notification-status', network]
-}
-
-export const getInboxQueryKey = (
-    network: Network,
-    deviceID: string,
-    addressCount: number,
-) => {
-    return [MODULE_PREFIX, 'inbox', { deviceID, network, addressCount }]
+    return inboxResponseSchema.parse(response.data)
 }

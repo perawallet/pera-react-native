@@ -1155,6 +1155,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.28.4
+      '@perawallet/wallet-core-accounts':
+        specifier: workspace:*
+        version: link:../accounts
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
