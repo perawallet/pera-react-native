@@ -38,6 +38,10 @@ vi.mock('@modules/swap/components', () => ({
         ) : null,
 }))
 
+vi.mock('@modules/accounts/components/AccountSelection', () => ({
+    AccountSelection: () => <div data-testid='account-selection' />,
+}))
+
 describe('SwapScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -52,6 +56,17 @@ describe('SwapScreen', () => {
         render(<SwapScreen />)
 
         expect(screen.getByTestId('swap-introduction')).toBeTruthy()
+    })
+
+    it('renders account selection', () => {
+        mockUseSwapIntroduction.mockReturnValue({
+            isIntroductionSeen: true,
+            markIntroductionSeen: vi.fn(),
+        })
+
+        render(<SwapScreen />)
+
+        expect(screen.getByTestId('account-selection')).toBeTruthy()
     })
 
     it('shows swap content when user has already seen introduction', () => {
