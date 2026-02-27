@@ -30,6 +30,8 @@ const mockCreateAlgo25WalletAccount = vi.fn()
 const mockCreateNextHDAccount = vi.fn()
 const mockUseAllAccounts = vi.fn((): WalletAccount[] => [])
 
+const mockHasMultipleHDWallets = vi.fn(() => false)
+
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-accounts',
@@ -46,6 +48,10 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
             hasHDWallet: mockUseAllAccounts().some(
                 (a: WalletAccount) => a.type === 'hdWallet',
             ),
+        }),
+        useHDWalletGroups: () => ({
+            hdWalletGroups: [],
+            hasMultipleHDWallets: mockHasMultipleHDWallets(),
         }),
     }
 })
@@ -353,6 +359,23 @@ describe('useAddAccountScreen', () => {
         )
     })
 
+    it('universal wallet option in otherOptions navigates to SelectHDWallet when HD wallet exists', () => {
+        mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const universalOption = result.current.otherOptions.find(
+            o => o.testID === 'add_account_create_universal_wallet_button',
+        )!
+
+        act(() => {
+            universalOption.onPress()
+        })
+
+        expect(mockPush).toHaveBeenCalledWith('SelectHDWallet')
+        expect(mockCreateHdWalletAccount).not.toHaveBeenCalled()
+    })
+
     it('algo25 option creates algo25 account and navigates to NameAccount', async () => {
         const newAccount = {
             id: 'algo25-id',
@@ -537,6 +560,53 @@ describe('useAddAccountScreen', () => {
         expect(mockPushWebView).toHaveBeenCalledWith({
             url: 'https://example.com/privacy',
             id: 'privacy-policy',
+        })
+    })
+
+    it('add account navigates to SelectHDWallet when multiple HD wallets exist', async () => {
+        mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
+        mockHasMultipleHDWallets.mockReturnValue(true)
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const addOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_add_button',
+        )!
+
+        await act(async () => {
+            addOption.onPress()
+        })
+
+        expect(mockPush).toHaveBeenCalledWith('SelectHDWallet')
+        expect(mockCreateNextHDAccount).not.toHaveBeenCalled()
+    })
+
+    it('add account does not navigate to SelectHDWallet when single HD wallet exists', async () => {
+        mockUseAllAccounts.mockReturnValue([HD_ACCOUNT])
+        mockHasMultipleHDWallets.mockReturnValue(false)
+
+        const newAccount = {
+            id: 'new-hd',
+            address: 'NEW_HD_ADDRESS',
+            type: 'hdWallet' as const,
+            canSign: true,
+        }
+        mockCreateNextHDAccount.mockResolvedValue(newAccount)
+
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const addOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_add_button',
+        )!
+
+        await act(async () => {
+            addOption.onPress()
+        })
+
+        expect(mockPush).not.toHaveBeenCalledWith('SelectHDWallet')
+        expect(mockCreateNextHDAccount).toHaveBeenCalled()
+        expect(mockPush).toHaveBeenCalledWith('NameAccount', {
+            account: newAccount,
         })
     })
 })

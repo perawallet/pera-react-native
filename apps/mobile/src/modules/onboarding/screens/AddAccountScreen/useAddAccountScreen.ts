@@ -15,6 +15,7 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import {
     useCreateAccount,
     useCreateNextHDAccount,
+    useHDWalletGroups,
 } from '@perawallet/wallet-core-accounts'
 import { useModalState } from '@hooks/useModalState'
 import { useToast } from '@hooks/useToast'
@@ -54,6 +55,7 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
     const { createHdWalletAccount, createAlgo25WalletAccount } =
         useCreateAccount()
     const { createNextHDAccount, hasHDWallet } = useCreateNextHDAccount()
+    const { hasMultipleHDWallets } = useHDWalletGroups()
     const { showToast } = useToast()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
@@ -78,6 +80,11 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
     const handleAddAccount = useCallback(() => {
         if (!hasHDWallet) return
 
+        if (hasMultipleHDWallets) {
+            navigation.push('SelectHDWallet')
+            return
+        }
+
         openCreatingAccount()
         deferToNextCycle(async () => {
             try {
@@ -99,6 +106,7 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
         })
     }, [
         hasHDWallet,
+        hasMultipleHDWallets,
         createNextHDAccount,
         openCreatingAccount,
         closeCreatingAccount,
@@ -148,6 +156,11 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
     }, [navigation])
 
     const handleCreateUniversalWallet = useCallback(() => {
+        if (hasHDWallet) {
+            navigation.push('SelectHDWallet')
+            return
+        }
+
         openCreatingAccount()
         deferToNextCycle(async () => {
             try {
@@ -169,6 +182,7 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
             }
         })
     }, [
+        hasHDWallet,
         openCreatingAccount,
         closeCreatingAccount,
         createHdWalletAccount,

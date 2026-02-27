@@ -49,6 +49,10 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
                 (a: WalletAccount) => a.type === 'hdWallet',
             ),
         }),
+        useHDWalletGroups: () => ({
+            hdWalletGroups: [],
+            hasMultipleHDWallets: false,
+        }),
     }
 })
 
@@ -283,7 +287,7 @@ describe('AddAccountScreen', () => {
         })
     })
 
-    it('creates a new HD wallet when Create Universal Wallet is pressed (has HD wallet)', async () => {
+    it('navigates to SelectHDWallet when Create Universal Wallet is pressed (has HD wallet)', () => {
         mockUseAllAccounts.mockReturnValue([
             {
                 id: 'existing-id',
@@ -299,22 +303,6 @@ describe('AddAccountScreen', () => {
             },
         ])
 
-        const mockAccount = {
-            id: 'new-wallet-id',
-            address: 'NEW_ADDRESS',
-            type: 'hdWallet' as const,
-            canSign: true,
-            hdWalletDetails: {
-                walletId: 'new-wallet-id',
-                account: 0,
-                change: 0,
-                keyIndex: 0,
-                derivationType: 9,
-            },
-        }
-
-        mockCreateHdWalletAccount.mockResolvedValue(mockAccount)
-
         render(<AddAccountScreen />)
 
         const toggleButton = screen.getByTestId(
@@ -327,15 +315,8 @@ describe('AddAccountScreen', () => {
         )
         fireEvent.click(createButton)
 
-        await vi.waitFor(() => {
-            expect(mockCreateHdWalletAccount).toHaveBeenCalledWith({
-                account: 0,
-                keyIndex: 0,
-            })
-            expect(mockPush).toHaveBeenCalledWith('NameAccount', {
-                account: mockAccount,
-            })
-        })
+        expect(mockPush).toHaveBeenCalledWith('SelectHDWallet')
+        expect(mockCreateHdWalletAccount).not.toHaveBeenCalled()
     })
 
     it('creates a new Algo25 account when Create Algo25 is pressed', async () => {
