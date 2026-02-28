@@ -267,59 +267,6 @@ workflows:
             - clone_depth: 0
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          title: Setup Environment Secrets
-          inputs:
-            - content: |
-                #!/usr/bin/env bash
-                set -ex
-
-                echo "Setting up secrets for environment: $ENVIRONMENT"
-
-                if [ "$ENVIRONMENT" == "production" ]; then
-                  PREFIX="PRODUCTION_"
-                else
-                  PREFIX="STAGING_"
-                fi
-
-                # List of secrets to alias
-                SECRETS=(
-                  "MAINNET_BACKEND_URL"
-                  "TESTNET_BACKEND_URL"
-                  "BACKEND_API_KEY"
-                  "IOS_GOOGLE_SERVICE_INFO_BASE64"
-                  "DISCOVER_BASE_URL"
-                  "STAKING_BASE_URL"
-                  "ONRAMP_BASE_URL"
-                )
-
-                for SECRET in "${SECRETS[@]}"; do
-                  SOURCE_VAR="${PREFIX}${SECRET}"
-                  # Use indirect expansion to get the value of the source variable
-                  VALUE="${!SOURCE_VAR}"
-
-                  if [ -n "$VALUE" ]; then
-                    echo "Aliasing $SOURCE_VAR to $SECRET"
-                    envman add --key "$SECRET" --value "$VALUE" --sensitive
-                  else
-                    echo "Warning: $SOURCE_VAR is not set or empty"
-                  fi
-                done
-
-                # Handle iOS Provisioning Profiles explicitly
-                if [ "$ENVIRONMENT" == "staging" ]; then
-                  echo "Setting IOS_PROVISIONING_PROFILE_NAME from STAGING_IOS_PROVISIONING_PROFILE_NAME"
-                  envman add --key "IOS_PROVISIONING_PROFILE_NAME" --value "$STAGING_IOS_PROVISIONING_PROFILE_NAME"
-                elif [ "$ENVIRONMENT" == "production" ]; then
-                  echo "Setting IOS_PROVISIONING_PROFILE_NAME from PRODUCTION_IOS_PROVISIONING_PROFILE_NAME"
-                  envman add --key "IOS_PROVISIONING_PROFILE_NAME" --value "$PRODUCTION_IOS_PROVISIONING_PROFILE_NAME"
-                fi
-
-                # IOS_TEAM_ID is expected to be a global secret, available as env var
-                if [ -z "$IOS_TEAM_ID" ]; then
-                  echo "Warning: IOS_TEAM_ID is not set"
-                fi
-      - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Generate Changelog (if not from pipeline)
           inputs:
             - content: |
@@ -404,6 +351,21 @@ workflows:
                 node_modules
                 apps/mobile/node_modules
                 packages/*/node_modules
+      - script@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          title: Setup Env Secrets
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                ./tools/setup-env-secrets
+      - script@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          title: Generate Config
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                set -ex
+                pnpm run generate:config
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Build packages
@@ -557,47 +519,6 @@ workflows:
             - clone_depth: 0
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          title: Setup Environment Secrets
-          inputs:
-            - content: |
-                #!/usr/bin/env bash
-                set -ex
-
-                echo "Setting up secrets for environment: $ENVIRONMENT"
-
-                if [ "$ENVIRONMENT" == "production" ]; then
-                  PREFIX="PRODUCTION_"
-                else
-                  PREFIX="STAGING_"
-                fi
-
-                # List of secrets to alias
-                SECRETS=(
-                  "MAINNET_BACKEND_URL"
-                  "TESTNET_BACKEND_URL"
-                  "BACKEND_API_KEY"
-                  "ANDROID_GOOGLE_SERVICES_BASE64"
-                  "FIREBASE_APP_ID_ANDROID"
-                  "DISCOVER_BASE_URL"
-                  "STAKING_BASE_URL"
-                  "STAKING_BASE_URL"
-                  "ONRAMP_BASE_URL"
-                )
-
-                for SECRET in "${SECRETS[@]}"; do
-                  SOURCE_VAR="${PREFIX}${SECRET}"
-                  # Use indirect expansion to get the value of the source variable
-                  VALUE="${!SOURCE_VAR}"
-
-                  if [ -n "$VALUE" ]; then
-                    echo "Aliasing $SOURCE_VAR to $SECRET"
-                    envman add --key "$SECRET" --value "$VALUE" --sensitive
-                  else
-                    echo "Warning: $SOURCE_VAR is not set or empty"
-                  fi
-                done
-      - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Generate Changelog (if not from pipeline)
           inputs:
             - content: |
@@ -682,6 +603,21 @@ workflows:
                 node_modules
                 apps/mobile/node_modules
                 packages/*/node_modules
+      - script@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          title: Setup Env Secrets
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                ./tools/setup-env-secrets
+      - script@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          title: Generate Config
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                set -ex
+                pnpm run generate:config
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Build packages
