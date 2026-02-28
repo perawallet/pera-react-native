@@ -12,14 +12,7 @@
 
 import React from 'react'
 import { useStyles } from './styles'
-import {
-    PWIcon,
-    PWImage,
-    PWLoadingOverlay,
-    PWText,
-    PWToolbar,
-    PWView,
-} from '@components/core'
+import { PWImage, PWLoadingOverlay, PWText, PWView } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
 import { useOnboardingScreen } from './useOnboardingScreen'
 
@@ -27,7 +20,7 @@ import welcomeBackground from '@assets/images/welcome-background.webp'
 import { useLanguage } from '@hooks/useLanguage'
 import { Trans } from 'react-i18next'
 
-import { ImportOptionsBottomSheet } from './ImportOptionsBottomSheet'
+import { ImportOptionsBottomSheet } from '../../components/ImportOptionsBottomSheet'
 
 export const OnboardingScreen = () => {
     const styles = useStyles()
@@ -42,23 +35,11 @@ export const OnboardingScreen = () => {
         handleHDWalletPress,
         handleAlgo25Press,
         isCreatingAccount,
-        canDismiss,
-        handleClose,
     } = useOnboardingScreen()
 
     return (
         <>
             <PWView style={styles.rootContainer}>
-                {canDismiss && (
-                    <PWToolbar
-                        right={
-                            <PWIcon
-                                name='cross'
-                                onPress={handleClose}
-                            />
-                        }
-                    />
-                )}
                 <PWView style={styles.headerContainer}>
                     <PWText
                         style={styles.headerTitle}
