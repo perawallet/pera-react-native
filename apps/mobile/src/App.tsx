@@ -27,6 +27,7 @@ import * as SplashScreen from 'expo-splash-screen'
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync()
+
 import { NotifierWrapper } from 'react-native-notifier'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useLanguage } from '@hooks/useLanguage'
@@ -51,10 +52,11 @@ export const App = () => {
                 })
 
                 setPersister(reactQueryPersistor)
+                
+                setBootstrapped(true)
 
                 //we defer the hiding so the initial layout can happen
                 setTimeout(() => {
-                    setBootstrapped(true)
                     SplashScreen.hideAsync()
                 }, 200)
             })

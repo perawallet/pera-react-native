@@ -137,13 +137,18 @@ export const useAccountBalancesQuery = (
             Decimal(0),
         )
 
+        const isPending = useMemo(() => results.some(r => r.isPending), [results])
+        const isFetched = useMemo(() => results.every(r => r.isFetched), [results])
+        const isRefetching = useMemo(() => results.some(r => r.isRefetching), [results])
+        const isError = useMemo(() => results.some(r => r.isError), [results])
+
         return {
-            accountBalances,
+            accountBalances: isPending ? new Map() : accountBalances,
             portfolioAlgoValue,
-            isPending: results.some(r => r.isPending),
-            isFetched: results.every(r => r.isFetched),
-            isRefetching: results.some(r => r.isRefetching),
-            isError: results.some(r => r.isError),
+            isPending,
+            isFetched,
+            isRefetching,
+            isError,
         }
     }, [results, accounts, assets, assetPrices])
 

@@ -32,6 +32,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { NoFundsButtonPanel } from '../NoFundsButtonPanel'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
+import { ExpandablePanel } from '@components/ExpandablePanel'
 
 export type AccountOverviewHeaderProps = {
     account: WalletAccount
@@ -74,8 +75,8 @@ export const AccountOverviewHeader = ({
     const styles = useStyles()
     const { t } = useLanguage()
 
-    return hasBalance ? (
-        <>
+    return hasBalance || isPending ? (
+        <PWView style={styles.headerContainer}>
             <PWTouchableOpacity
                 onPress={togglePrivacyMode}
                 style={styles.valueBarContainer}
@@ -128,7 +129,7 @@ export const AccountOverviewHeader = ({
                 </PWView>
             </PWTouchableOpacity>
 
-            {chartVisible && (
+            <ExpandablePanel isExpanded={chartVisible && !isPending}>
                 <PWView style={styles.chartContainer}>
                     <WealthChart
                         account={account}
@@ -140,17 +141,19 @@ export const AccountOverviewHeader = ({
                         onChange={setPeriod}
                     />
                 </PWView>
-            )}
+            </ExpandablePanel>
 
-            <ButtonPanel
-                onSwap={handleSwap}
-                onSend={handleOpenSendFunds}
-                onReceive={handleReceive}
-                onMore={handleMore}
-            />
-        </>
+            <ExpandablePanel isExpanded={!isPending}>
+                <ButtonPanel
+                    onSwap={handleSwap}
+                    onSend={handleOpenSendFunds}
+                    onReceive={handleReceive}
+                    onMore={handleMore}
+                />
+            </ExpandablePanel>
+        </PWView>
     ) : (
-        <>
+        <PWView style={styles.noBalanceHeaderContainer}>
             <PWView style={styles.noBalanceContainer}>
                 <PWText
                     variant='body'
@@ -170,6 +173,6 @@ export const AccountOverviewHeader = ({
                 onReceive={handleReceive}
                 onMore={handleMore}
             />
-        </>
+        </PWView>
     )
 }

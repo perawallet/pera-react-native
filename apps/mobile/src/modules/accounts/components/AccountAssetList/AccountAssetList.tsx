@@ -164,7 +164,7 @@ export const AccountAssetList = ({
                         </PWView>
                     }
                     ListEmptyComponent={
-                        <EmptyView
+                        isPending ? null : <EmptyView
                             title={
                                 searchFilter?.length
                                     ? t('account_details.assets.nomatch_title')
@@ -179,7 +179,7 @@ export const AccountAssetList = ({
                     }
                     ListFooterComponent={
                         isPending ? (
-                            <PWView style={styles.footer}>
+                            <PWView>
                                 <LoadingView
                                     variant='skeleton'
                                     size='sm'
