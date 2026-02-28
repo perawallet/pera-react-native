@@ -322,7 +322,7 @@ workflows:
       - restore-cache@2:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
-            - key: node-modules-{{ checksum "pnpm-lock.yaml" }}
+            - key: node-modules-ios-{{ checksum "pnpm-lock.yaml" }}
       - nvm@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           inputs:
@@ -357,7 +357,7 @@ workflows:
           inputs:
             - content: |
                 #!/usr/bin/env bash
-                ./tools/setup-env-secrets
+                ./tools/setup-env-secrets.sh
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Generate Config
@@ -609,7 +609,7 @@ workflows:
           inputs:
             - content: |
                 #!/usr/bin/env bash
-                ./tools/setup-env-secrets
+                ./tools/setup-env-secrets.sh
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Generate Config
