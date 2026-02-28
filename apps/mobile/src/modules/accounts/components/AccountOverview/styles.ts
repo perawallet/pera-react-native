@@ -118,10 +118,8 @@ export const useStyles = makeStyles(theme => {
             textAlign: 'center',
         },
         headerContainer: {
-            minHeight: 220 // Fixed value to prevent "bouncing" on load
+            minHeight: 220, // Fixed value to prevent "bouncing" on load
         },
-        noBalanceHeaderContainer: {
-
-        }
+        noBalanceHeaderContainer: {},
     }
 })

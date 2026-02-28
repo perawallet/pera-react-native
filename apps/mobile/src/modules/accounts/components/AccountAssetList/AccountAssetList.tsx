@@ -164,18 +164,26 @@ export const AccountAssetList = ({
                         </PWView>
                     }
                     ListEmptyComponent={
-                        isPending ? null : <EmptyView
-                            title={
-                                searchFilter?.length
-                                    ? t('account_details.assets.nomatch_title')
-                                    : t('account_details.assets.empty_title')
-                            }
-                            body={
-                                searchFilter?.length
-                                    ? t('account_details.assets.nomatch_body')
-                                    : t('account_details.assets.empty_body')
-                            }
-                        />
+                        isPending ? null : (
+                            <EmptyView
+                                title={
+                                    searchFilter?.length
+                                        ? t(
+                                              'account_details.assets.nomatch_title',
+                                          )
+                                        : t(
+                                              'account_details.assets.empty_title',
+                                          )
+                                }
+                                body={
+                                    searchFilter?.length
+                                        ? t(
+                                              'account_details.assets.nomatch_body',
+                                          )
+                                        : t('account_details.assets.empty_body')
+                                }
+                            />
+                        )
                     }
                     ListFooterComponent={
                         isPending ? (

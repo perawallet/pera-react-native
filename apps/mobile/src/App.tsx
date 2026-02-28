@@ -52,7 +52,7 @@ export const App = () => {
                 })
 
                 setPersister(reactQueryPersistor)
-                
+
                 setBootstrapped(true)
 
                 //we defer the hiding so the initial layout can happen
