@@ -153,7 +153,7 @@ export const AccountOverviewHeader = ({
             </ExpandablePanel>
         </PWView>
     ) : (
-        <PWView style={styles.noBalanceHeaderContainer}>
+        <PWView style={styles.headerContainer}>
             <PWView style={styles.noBalanceContainer}>
                 <PWText
                     variant='body'

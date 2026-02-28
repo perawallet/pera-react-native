@@ -120,6 +120,5 @@ export const useStyles = makeStyles(theme => {
         headerContainer: {
             minHeight: 220, // Fixed value to prevent "bouncing" on load
         },
-        noBalanceHeaderContainer: {},
     }
 })
