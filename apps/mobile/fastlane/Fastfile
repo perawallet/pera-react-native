@@ -160,8 +160,7 @@ platform :ios do
 
       upload_to_testflight(
         skip_waiting_for_build_processing: true,
-        ipa: "./build/ios/#{scheme}.ipa",
-        changelog: ENV["RELEASE_NOTES"] || ENV["CHANGELOG"] || "Build #{ENV['BUILD_NUMBER'] || 'dev'}"
+        ipa: "./build/ios/#{scheme}.ipa"
       )
   end
 
