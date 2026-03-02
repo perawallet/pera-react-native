@@ -32,8 +32,8 @@ export const useSwapsStore: UseBoundStore<
 > = lazy.useStore
 
 const initialState = {
-    fromAsset: '0',
-    toAsset: '1001',
+    fromAsset: '0', // ALGO
+    toAsset: '31566704', // USDC mainnet — network-aware correction handled at the hook level
 }
 
 const createSwapsStore = (storage: KeyValueStorageService) =>

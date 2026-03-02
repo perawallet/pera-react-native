@@ -11,6 +11,7 @@
  */
 
 import Decimal from 'decimal.js'
+import { type Network, isMainnet } from '@perawallet/wallet-core-config'
 
 export const PeraAssetVerificationTier = {
     verified: 'verified',
@@ -98,6 +99,12 @@ export type PeraAssetMetadata = {
 }
 
 export const ALGO_ASSET_ID = '0'
+
+export const USDC_ASSET_ID_MAINNET = '31566704'
+export const USDC_ASSET_ID_TESTNET = '10458941'
+
+export const getUsdcAssetId = (network: Network): string =>
+    isMainnet(network) ? USDC_ASSET_ID_MAINNET : USDC_ASSET_ID_TESTNET
 
 export const ALGO_ASSET: PeraAsset = {
     assetId: ALGO_ASSET_ID,
