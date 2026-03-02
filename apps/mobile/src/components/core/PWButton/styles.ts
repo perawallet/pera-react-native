@@ -34,9 +34,9 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
         },
         helper: {
             backgroundColor: !props.isDisabled
-                ? theme.colors.buttonHelperBg
+                ? theme.colors.buttonSquareBg
                 : theme.colors.buttonHelperDisabledBg,
-            color: theme.colors.textMain,
+            color: theme.colors.buttonSquareIcon,
         },
         destructive: {
             backgroundColor: theme.colors.alertNegative,

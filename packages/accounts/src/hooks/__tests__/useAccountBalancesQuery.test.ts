@@ -252,6 +252,108 @@ describe('useAccountBalances', () => {
         expect(result.current.portfolioAlgoValue).toEqual(Decimal(55.5))
     })
 
+    it('does not violate Rules of Hooks (no hooks inside useMemo)', async () => {
+        const account: WalletAccount = {
+            address: 'ADDR1',
+            name: 'Account 1',
+            id: '1',
+            type: 'algo25',
+            canSign: true,
+        }
+
+        mockGetInformation.mockResolvedValue({
+            address: 'ADDR1',
+            balance: { algos: 1, microAlgos: 1000000 },
+            assets: [],
+        })
+
+        const consoleErrorSpy = vi
+            .spyOn(console, 'error')
+            .mockImplementation(() => {})
+
+        const { result } = renderHook(
+            () => useAccountBalancesQuery([account]),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        const hooksViolation = consoleErrorSpy.mock.calls.some(call =>
+            call.some(
+                arg =>
+                    typeof arg === 'string' &&
+                    arg.includes('Do not call Hooks inside'),
+            ),
+        )
+
+        consoleErrorSpy.mockRestore()
+
+        expect(hooksViolation).toBe(false)
+    })
+
+    it('updates status flags correctly when accounts list changes', async () => {
+        const account1: WalletAccount = {
+            address: 'ADDR1',
+            name: 'Account 1',
+            id: '1',
+            type: 'algo25',
+            canSign: true,
+        }
+        const account2: WalletAccount = {
+            address: 'ADDR2',
+            name: 'Account 2',
+            id: '2',
+            type: 'algo25',
+            canSign: true,
+        }
+
+        mockGetInformation.mockImplementation((address: string) => {
+            if (address === 'ADDR1') {
+                return Promise.resolve({
+                    address: 'ADDR1',
+                    balance: { algos: 1, microAlgos: 1000000 },
+                    assets: [],
+                })
+            }
+            if (address === 'ADDR2') {
+                return Promise.resolve({
+                    address: 'ADDR2',
+                    balance: { algos: 2, microAlgos: 2000000 },
+                    assets: [],
+                })
+            }
+        })
+
+        const wrapper = createWrapper()
+
+        const { result, rerender } = renderHook(
+            ({ accounts }: { accounts: WalletAccount[] }) =>
+                useAccountBalancesQuery(accounts),
+            { initialProps: { accounts: [account1] }, wrapper },
+        )
+
+        await waitFor(() => {
+            expect(result.current.isPending).toBe(false)
+            expect(result.current.isFetched).toBe(true)
+        })
+
+        expect(result.current.accountBalances.get('ADDR1')).toBeDefined()
+
+        // Re-render with two accounts — exercises hook re-render path
+        rerender({ accounts: [account1, account2] })
+
+        await waitFor(() => {
+            expect(result.current.isFetched).toBe(true)
+            expect(result.current.isPending).toBe(false)
+        })
+
+        expect(result.current.accountBalances.get('ADDR1')).toBeDefined()
+        expect(result.current.accountBalances.get('ADDR2')).toBeDefined()
+        expect(
+            result.current.accountBalances.get('ADDR2')?.algoValue,
+        ).toEqual(Decimal(2))
+    })
+
     it('handles assets with zero price correctly', async () => {
         const account: WalletAccount = {
             address: 'ADDR1',

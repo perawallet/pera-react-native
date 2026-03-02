@@ -27,8 +27,8 @@ import {
 import { WalletConnectErrorBoundary } from '@modules/walletconnect/components/BaseErrorBoundary/WalletConnectErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { useModalState } from '@hooks/useModalState'
 import { ConnectionSuccessBottomSheet } from '../components/ConnectionSuccessBottomSheet/ConnectionSuccessBottomSheet'
+import { LONG_NOTIFICATION_DURATION } from '@constants/ui'
 
 export type WalletConnectProviderProps = {} & PropsWithChildren
 
@@ -47,9 +47,12 @@ export function WalletConnectProvider({
         (error: Error) => {
             showToast({
                 title: t('errors.signing.title'),
-                body: error.message,
+                body: t(error.message),
                 type: 'error',
-            })
+            },
+        {
+            duration: LONG_NOTIFICATION_DURATION
+        })
         },
         [showToast, t],
     )

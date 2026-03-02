@@ -291,8 +291,7 @@
         "walletconnect": {
             "title": "An error occurred processing an app request",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
-            "invalid_network": "Invalid Network",
-            "invalid_network_body": "You have received a request from an invalid network. Please switch your wallet to the correct network and try again.",
+            "invalid_network": "You have received a request from an invalid network. Please switch your wallet to the correct network and try again.",
             "sign_request": "Sign Request",
             "sign_request_body": "You have received an invalid request to sign a transaction. Please check the app and try again.",
             "permission": "Permission",
