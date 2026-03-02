@@ -19,7 +19,6 @@ import {
 import type { AccountsState, WalletAccount } from '../models'
 import {
     createLazyStore,
-    DataStoreRegistry,
     logger,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
@@ -100,10 +99,3 @@ export const initAccountsStore = () => {
 }
 
 export const clearAccountsStore = () => lazy.clear()
-
-export const registerAccountsStore = () =>
-    DataStoreRegistry.register({
-        name: STORE_NAME,
-        init: initAccountsStore,
-        clear: clearAccountsStore,
-    })

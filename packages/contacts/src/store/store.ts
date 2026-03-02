@@ -19,7 +19,6 @@ import {
 import type { Contact, ContactsState } from '../models'
 import {
     createLazyStore,
-    DataStoreRegistry,
     generateOrderedUniqueId,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
@@ -87,10 +86,3 @@ export const initContactsStore = () => {
 }
 
 export const clearContactsStore = () => lazy.clear()
-
-export const registerContactsStore = () =>
-    DataStoreRegistry.register({
-        name: STORE_NAME,
-        init: initContactsStore,
-        clear: clearContactsStore,
-    })

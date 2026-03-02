@@ -15,4 +15,4 @@ export const name = '@perawallet/wallet-core-swaps'
 export * from './hooks'
 export * from './models'
 
-export { initSwapsStore, registerSwapsStore } from './store'
+export { initSwapsStore, clearSwapsStore } from './store'

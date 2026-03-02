@@ -19,7 +19,6 @@ import {
 import type { KeyManagerState, KeyPair } from '../models'
 import {
     createLazyStore,
-    DataStoreRegistry,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 
@@ -112,10 +111,3 @@ export const initKeyManagerStore = () => {
 }
 
 export const clearKeyManagerStore = () => lazy.clear()
-
-export const registerKeyManagerStore = () =>
-    DataStoreRegistry.register({
-        name: STORE_NAME,
-        init: initKeyManagerStore,
-        clear: clearKeyManagerStore,
-    })

@@ -20,6 +20,6 @@ export * from './account-discovery'
 
 export {
     initAccountsStore,
-    registerAccountsStore,
+    clearAccountsStore,
     useAccountsStore,
 } from './store'

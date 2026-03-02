@@ -20,4 +20,4 @@ export type {
     FetchCurrencyParams,
 } from './api/currencies'
 
-export { initCurrenciesStore, registerCurrenciesStore } from './store'
+export { initCurrenciesStore, clearCurrenciesStore } from './store'

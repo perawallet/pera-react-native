@@ -69,9 +69,6 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         init: vi.fn(),
         clear: vi.fn(),
     }),
-    DataStoreRegistry: {
-        register: vi.fn(),
-    },
     logger: {
         debug: vi.fn(),
         error: vi.fn(),

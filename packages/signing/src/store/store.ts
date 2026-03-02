@@ -19,7 +19,6 @@ import {
 import type { SigningStore, SignRequest } from '../models'
 import {
     createLazyStore,
-    DataStoreRegistry,
     generateOrderedUniqueId,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
@@ -88,10 +87,3 @@ export const initSigningStore = () => {
 }
 
 export const clearSigningStore = () => lazy.clear()
-
-export const registerSigningStore = () =>
-    DataStoreRegistry.register({
-        name: STORE_NAME,
-        init: initSigningStore,
-        clear: clearSigningStore,
-    })

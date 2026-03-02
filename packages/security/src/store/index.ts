@@ -13,5 +13,5 @@
 export {
     useSecurityStore,
     initSecurityStore,
-    registerSecurityStore,
+    clearSecurityStore,
 } from './store'

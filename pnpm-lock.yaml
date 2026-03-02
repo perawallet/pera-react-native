@@ -1293,6 +1293,9 @@ importers:
       '@perawallet/wallet-core-kms':
         specifier: workspace:*
         version: link:../kms
+      '@perawallet/wallet-core-notifications':
+        specifier: workspace:*
+        version: link:../notifications
       '@perawallet/wallet-core-platform-extension':
         specifier: workspace:*
         version: link:../platform-extension
@@ -13460,7 +13463,9 @@ snapshots:
       metro-runtime: 0.83.3
     transitivePeerDependencies:
       - '@babel/core'
+      - bufferutil
       - supports-color
+      - utf-8-validate
     optional: true
 
   '@react-native/normalize-colors@0.74.89': {}

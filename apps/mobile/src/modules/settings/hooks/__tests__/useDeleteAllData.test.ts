@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useDeleteAllData } from '../useDeleteAllData'
 import { useKMS } from '@perawallet/wallet-core-kms'
-import { DataStoreRegistry } from '@perawallet/wallet-core-shared'
+import { clearDataStores } from '@perawallet/wallet-core-provider'
 import { useQueryClient } from '@tanstack/react-query'
 import { useDeleteDeviceMutation } from '@perawallet/wallet-core-platform-extension'
 
@@ -22,10 +22,11 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: vi.fn(),
 }))
 
+vi.mock('@perawallet/wallet-core-provider', () => ({
+    clearDataStores: vi.fn(),
+}))
+
 vi.mock('@perawallet/wallet-core-shared', () => ({
-    DataStoreRegistry: {
-        clearAll: vi.fn().mockResolvedValue(undefined),
-    },
     logger: { api: vi.fn(), error: vi.fn(), info: vi.fn() },
 }))
 
@@ -71,7 +72,7 @@ describe('useDeleteAllData', () => {
         expect(mockDeleteKey).toHaveBeenCalledWith('key-1')
         expect(mockDeleteKey).toHaveBeenCalledWith('key-2')
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
-        expect(DataStoreRegistry.clearAll).toHaveBeenCalledTimes(1)
+        expect(clearDataStores).toHaveBeenCalledTimes(1)
     })
 
     it('should not delete keys if id is missing', async () => {
@@ -103,7 +104,7 @@ describe('useDeleteAllData', () => {
         })
 
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
-        expect(DataStoreRegistry.clearAll).toHaveBeenCalledTimes(1)
+        expect(clearDataStores).toHaveBeenCalledTimes(1)
     })
 
     it('should continue if deleteKey fails', async () => {
@@ -117,7 +118,7 @@ describe('useDeleteAllData', () => {
 
         expect(mockDeleteKey).toHaveBeenCalled()
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
-        expect(DataStoreRegistry.clearAll).toHaveBeenCalledTimes(1)
+        expect(clearDataStores).toHaveBeenCalledTimes(1)
     })
 
     it('should handle missing queryClient gracefully', async () => {
@@ -131,7 +132,7 @@ describe('useDeleteAllData', () => {
 
         expect(mockRemoveQueries).not.toHaveBeenCalled()
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
-        expect(DataStoreRegistry.clearAll).toHaveBeenCalledTimes(1)
+        expect(clearDataStores).toHaveBeenCalledTimes(1)
     })
 
     it('should handle missing keys gracefully', async () => {
@@ -148,6 +149,6 @@ describe('useDeleteAllData', () => {
 
         expect(mockDeleteKey).not.toHaveBeenCalled()
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
-        expect(DataStoreRegistry.clearAll).toHaveBeenCalledTimes(1)
+        expect(clearDataStores).toHaveBeenCalledTimes(1)
     })
 })

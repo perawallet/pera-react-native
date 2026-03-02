@@ -11,72 +11,145 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { registerDataStores } from '../initialize'
-import { registerAccountsStore } from '@perawallet/wallet-core-accounts'
-import { registerBlockchainStore } from '@perawallet/wallet-core-blockchain'
-import { registerContactsStore } from '@perawallet/wallet-core-contacts'
-import { registerSigningStore } from '@perawallet/wallet-core-signing'
-import { registerCurrenciesStore } from '@perawallet/wallet-core-currencies'
-import { registerKeyManagerStore } from '@perawallet/wallet-core-kms'
-import { registerPollingStore } from '@perawallet/wallet-core-polling'
-import { registerSecurityStore } from '@perawallet/wallet-core-security'
-import { registerSettingsStore } from '@perawallet/wallet-core-settings'
-import { registerSwapsStore } from '@perawallet/wallet-core-swaps'
-import { registerWalletConnectStore } from '@perawallet/wallet-core-walletconnect'
+import { initializeDataStores, clearDataStores } from '../initialize'
+import {
+    initAccountsStore,
+    clearAccountsStore,
+} from '@perawallet/wallet-core-accounts'
+import {
+    initBlockchainStore,
+    clearBlockchainStore,
+} from '@perawallet/wallet-core-blockchain'
+import {
+    initContactsStore,
+    clearContactsStore,
+} from '@perawallet/wallet-core-contacts'
+import {
+    initSigningStore,
+    clearSigningStore,
+} from '@perawallet/wallet-core-signing'
+import {
+    initCurrenciesStore,
+    clearCurrenciesStore,
+} from '@perawallet/wallet-core-currencies'
+import {
+    initKeyManagerStore,
+    clearKeyManagerStore,
+} from '@perawallet/wallet-core-kms'
+import {
+    initNotificationsStore,
+    clearNotificationsStore,
+} from '@perawallet/wallet-core-notifications'
+import {
+    initPollingStore,
+    clearPollingStore,
+} from '@perawallet/wallet-core-polling'
+import {
+    initSecurityStore,
+    clearSecurityStore,
+} from '@perawallet/wallet-core-security'
+import {
+    initSettingsStore,
+    clearSettingsStore,
+} from '@perawallet/wallet-core-settings'
+import { initSwapsStore, clearSwapsStore } from '@perawallet/wallet-core-swaps'
+import {
+    initWalletConnectStore,
+    clearWalletConnectStore,
+} from '@perawallet/wallet-core-walletconnect'
 
 // Mock all dependencies
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    registerAccountsStore: vi.fn(),
+    initAccountsStore: vi.fn(),
+    clearAccountsStore: vi.fn(),
 }))
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    registerBlockchainStore: vi.fn(),
+    initBlockchainStore: vi.fn(),
+    clearBlockchainStore: vi.fn(),
 }))
 vi.mock('@perawallet/wallet-core-contacts', () => ({
-    registerContactsStore: vi.fn(),
+    initContactsStore: vi.fn(),
+    clearContactsStore: vi.fn(),
 }))
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    registerSigningStore: vi.fn(),
+    initSigningStore: vi.fn(),
+    clearSigningStore: vi.fn(),
 }))
 vi.mock('@perawallet/wallet-core-currencies', () => ({
-    registerCurrenciesStore: vi.fn(),
+    initCurrenciesStore: vi.fn(),
+    clearCurrenciesStore: vi.fn(),
 }))
 vi.mock('@perawallet/wallet-core-kms', () => ({
-    registerKeyManagerStore: vi.fn(),
+    initKeyManagerStore: vi.fn(),
+    clearKeyManagerStore: vi.fn(),
+}))
+vi.mock('@perawallet/wallet-core-notifications', () => ({
+    initNotificationsStore: vi.fn(),
+    clearNotificationsStore: vi.fn(),
 }))
 vi.mock('@perawallet/wallet-core-polling', () => ({
-    registerPollingStore: vi.fn(),
+    initPollingStore: vi.fn(),
+    clearPollingStore: vi.fn(),
 }))
 vi.mock('@perawallet/wallet-core-security', () => ({
-    registerSecurityStore: vi.fn(),
+    initSecurityStore: vi.fn(),
+    clearSecurityStore: vi.fn(),
 }))
 vi.mock('@perawallet/wallet-core-settings', () => ({
-    registerSettingsStore: vi.fn(),
+    initSettingsStore: vi.fn(),
+    clearSettingsStore: vi.fn(),
 }))
 vi.mock('@perawallet/wallet-core-swaps', () => ({
-    registerSwapsStore: vi.fn(),
+    initSwapsStore: vi.fn(),
+    clearSwapsStore: vi.fn(),
 }))
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
-    registerWalletConnectStore: vi.fn(),
+    initWalletConnectStore: vi.fn(),
+    clearWalletConnectStore: vi.fn(),
 }))
 
-describe('registerDataStores', () => {
+describe('initializeDataStores', () => {
     beforeEach(() => {
         vi.clearAllMocks()
     })
 
-    it('calls all store registration functions', () => {
-        registerDataStores()
+    it('calls all store initialization functions', () => {
+        initializeDataStores()
 
-        expect(registerAccountsStore).toHaveBeenCalled()
-        expect(registerBlockchainStore).toHaveBeenCalled()
-        expect(registerContactsStore).toHaveBeenCalled()
-        expect(registerCurrenciesStore).toHaveBeenCalled()
-        expect(registerKeyManagerStore).toHaveBeenCalled()
-        expect(registerPollingStore).toHaveBeenCalled()
-        expect(registerSecurityStore).toHaveBeenCalled()
-        expect(registerSettingsStore).toHaveBeenCalled()
-        expect(registerSigningStore).toHaveBeenCalled()
-        expect(registerSwapsStore).toHaveBeenCalled()
-        expect(registerWalletConnectStore).toHaveBeenCalled()
+        expect(initAccountsStore).toHaveBeenCalled()
+        expect(initBlockchainStore).toHaveBeenCalled()
+        expect(initContactsStore).toHaveBeenCalled()
+        expect(initCurrenciesStore).toHaveBeenCalled()
+        expect(initKeyManagerStore).toHaveBeenCalled()
+        expect(initNotificationsStore).toHaveBeenCalled()
+        expect(initPollingStore).toHaveBeenCalled()
+        expect(initSecurityStore).toHaveBeenCalled()
+        expect(initSettingsStore).toHaveBeenCalled()
+        expect(initSigningStore).toHaveBeenCalled()
+        expect(initSwapsStore).toHaveBeenCalled()
+        expect(initWalletConnectStore).toHaveBeenCalled()
+    })
+})
+
+describe('clearDataStores', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('calls all store clear functions', () => {
+        clearDataStores()
+
+        expect(clearAccountsStore).toHaveBeenCalled()
+        expect(clearBlockchainStore).toHaveBeenCalled()
+        expect(clearContactsStore).toHaveBeenCalled()
+        expect(clearCurrenciesStore).toHaveBeenCalled()
+        expect(clearKeyManagerStore).toHaveBeenCalled()
+        expect(clearNotificationsStore).toHaveBeenCalled()
+        expect(clearPollingStore).toHaveBeenCalled()
+        expect(clearSecurityStore).toHaveBeenCalled()
+        expect(clearSettingsStore).toHaveBeenCalled()
+        expect(clearSigningStore).toHaveBeenCalled()
+        expect(clearSwapsStore).toHaveBeenCalled()
+        expect(clearWalletConnectStore).toHaveBeenCalled()
     })
 })

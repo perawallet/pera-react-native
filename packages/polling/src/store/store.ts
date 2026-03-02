@@ -18,7 +18,6 @@ import {
 } from '@perawallet/wallet-core-platform-extension'
 import {
     createLazyStore,
-    DataStoreRegistry,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 import { PollingState } from '../models'
@@ -64,10 +63,3 @@ export const initPollingStore = () => {
 }
 
 export const clearPollingStore = () => lazy.clear()
-
-export const registerPollingStore = () =>
-    DataStoreRegistry.register({
-        name: STORE_NAME,
-        init: initPollingStore,
-        clear: clearPollingStore,
-    })

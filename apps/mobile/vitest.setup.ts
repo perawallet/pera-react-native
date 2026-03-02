@@ -1553,14 +1553,6 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         clear: vi.fn(),
         getStore: vi.fn(),
     })),
-    DataStoreRegistry: {
-        register: vi.fn(),
-        initializeAll: vi.fn(),
-        clearAll: vi.fn().mockResolvedValue(undefined),
-        getRegisteredStores: vi.fn(() => []),
-        reset: vi.fn(),
-        isInitialized: vi.fn(() => false),
-    },
     useClearAllData: vi.fn(() => vi.fn().mockResolvedValue(undefined)),
 }))
 

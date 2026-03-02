@@ -10,33 +10,86 @@
  limitations under the License
  */
 
-import { registerAccountsStore } from '@perawallet/wallet-core-accounts'
-import { registerBlockchainStore } from '@perawallet/wallet-core-blockchain'
-import { registerContactsStore } from '@perawallet/wallet-core-contacts'
-import { registerSigningStore } from '@perawallet/wallet-core-signing'
-import { registerCurrenciesStore } from '@perawallet/wallet-core-currencies'
-import { registerKeyManagerStore } from '@perawallet/wallet-core-kms'
-import { registerPollingStore } from '@perawallet/wallet-core-polling'
-import { registerSecurityStore } from '@perawallet/wallet-core-security'
-import { registerSettingsStore } from '@perawallet/wallet-core-settings'
-import { registerSwapsStore } from '@perawallet/wallet-core-swaps'
-import { registerWalletConnectStore } from '@perawallet/wallet-core-walletconnect'
+import {
+    initAccountsStore,
+    clearAccountsStore,
+} from '@perawallet/wallet-core-accounts'
+import {
+    initBlockchainStore,
+    clearBlockchainStore,
+} from '@perawallet/wallet-core-blockchain'
+import {
+    initContactsStore,
+    clearContactsStore,
+} from '@perawallet/wallet-core-contacts'
+import {
+    initCurrenciesStore,
+    clearCurrenciesStore,
+} from '@perawallet/wallet-core-currencies'
+import {
+    initKeyManagerStore,
+    clearKeyManagerStore,
+} from '@perawallet/wallet-core-kms'
+import {
+    initNotificationsStore,
+    clearNotificationsStore,
+} from '@perawallet/wallet-core-notifications'
+import {
+    initPollingStore,
+    clearPollingStore,
+} from '@perawallet/wallet-core-polling'
+import {
+    initSecurityStore,
+    clearSecurityStore,
+} from '@perawallet/wallet-core-security'
+import {
+    initSettingsStore,
+    clearSettingsStore,
+} from '@perawallet/wallet-core-settings'
+import {
+    initSigningStore,
+    clearSigningStore,
+} from '@perawallet/wallet-core-signing'
+import { initSwapsStore, clearSwapsStore } from '@perawallet/wallet-core-swaps'
+import {
+    initWalletConnectStore,
+    clearWalletConnectStore,
+} from '@perawallet/wallet-core-walletconnect'
 
 /**
- * Registers all data stores with DataStoreRegistry.
+ * Initializes all data stores synchronously.
  * DeviceStore and RemoteConfigStore are excluded — they are initialized
- * synchronously by the WithPlatformServicesExtension during provider construction.
+ * by the WithPlatformServicesExtension during provider construction.
  */
-export const registerDataStores = () => {
-    registerAccountsStore()
-    registerBlockchainStore()
-    registerContactsStore()
-    registerCurrenciesStore()
-    registerKeyManagerStore()
-    registerPollingStore()
-    registerSecurityStore()
-    registerSettingsStore()
-    registerSigningStore()
-    registerSwapsStore()
-    registerWalletConnectStore()
+export const initializeDataStores = () => {
+    initAccountsStore()
+    initBlockchainStore()
+    initContactsStore()
+    initCurrenciesStore()
+    initKeyManagerStore()
+    initNotificationsStore()
+    initPollingStore()
+    initSecurityStore()
+    initSettingsStore()
+    initSigningStore()
+    initSwapsStore()
+    initWalletConnectStore()
+}
+
+/**
+ * Clears persisted data and resets state for all data stores.
+ */
+export const clearDataStores = () => {
+    clearAccountsStore()
+    clearBlockchainStore()
+    clearContactsStore()
+    clearCurrenciesStore()
+    clearKeyManagerStore()
+    clearNotificationsStore()
+    clearPollingStore()
+    clearSecurityStore()
+    clearSettingsStore()
+    clearSigningStore()
+    clearSwapsStore()
+    clearWalletConnectStore()
 }

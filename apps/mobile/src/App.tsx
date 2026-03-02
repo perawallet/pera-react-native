@@ -14,18 +14,17 @@ import React, { useEffect, useState } from 'react'
 import './i18n'
 import { Text } from 'react-native'
 import { QueryProvider } from './providers/QueryProvider'
-import {
-    useBootstrapper,
-    platformServices,
-    initializeDataStores,
-} from './bootstrap/boostrap'
+import { useBootstrapper, platformServices } from './bootstrap/boostrap'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import { Persister } from '@tanstack/react-query-persist-client'
 import {
     algorandSafeQuerySerialize,
     algorandSafeQueryParse,
 } from '@perawallet/wallet-core-blockchain'
-import { PeraWalletProvider } from '@perawallet/wallet-core-provider'
+import {
+    PeraWalletProvider,
+    initializeDataStores,
+} from '@perawallet/wallet-core-provider'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { RootComponent } from '@components/RootComponent'
 import * as SplashScreen from 'expo-splash-screen'

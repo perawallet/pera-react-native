@@ -18,10 +18,7 @@ import {
     KeyValueStorageService,
     useKeyValueStorageService,
 } from '@perawallet/wallet-core-platform-extension'
-import {
-    createLazyStore,
-    DataStoreRegistry,
-} from '@perawallet/wallet-core-shared'
+import { createLazyStore } from '@perawallet/wallet-core-shared'
 
 const STORE_NAME = 'swaps-store'
 const lazy =
@@ -64,10 +61,3 @@ export const initSwapsStore = () => {
 }
 
 export const clearSwapsStore = () => lazy.clear()
-
-export const registerSwapsStore = () =>
-    DataStoreRegistry.register({
-        name: STORE_NAME,
-        init: initSwapsStore,
-        clear: clearSwapsStore,
-    })

@@ -16,8 +16,7 @@ import { RNFirebaseService } from '../platform/firebase'
 import { RNKeyValueStorageService } from '../platform/key-value-storage'
 import { RNSecureStorageService } from '../platform/secure-storage'
 import type { PlatformServices } from '@perawallet/wallet-core-platform-extension'
-import { DataStoreRegistry, logger } from '@perawallet/wallet-core-shared'
-import { registerDataStores } from '@perawallet/wallet-core-provider'
+import { logger } from '@perawallet/wallet-core-shared'
 import { useCallback } from 'react'
 
 const firebaseService = new RNFirebaseService()
@@ -30,16 +29,6 @@ export const platformServices: PlatformServices = {
     secureStorage: new RNSecureStorageService(),
     keyValueStorage: new RNKeyValueStorageService(),
     deviceInfo: new RNDeviceInfoStorageService(),
-}
-
-/**
- * Synchronously registers and initializes all data stores.
- * Called via PeraWalletProvider's onProviderReady callback,
- * after the provider singleton is set.
- */
-export const initializeDataStores = () => {
-    registerDataStores()
-    DataStoreRegistry.initializeAll()
 }
 
 export const useBootstrapper = () => {
