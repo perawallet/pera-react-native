@@ -14,6 +14,7 @@ import { config } from '@perawallet/wallet-core-config'
 import { useEffect, useRef } from 'react'
 import { AppState, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { MainRoutes } from '@routes/index'
 import { getTheme } from '@theme/theme'
 import { ThemeProvider } from '@rneui/themed'
@@ -136,13 +137,15 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
 
     return (
         <ThemeProvider theme={theme}>
-            <AutoLockGuard>
-                <WalletConnectProvider>
-                    <RootContentContainer fcmToken={fcmToken} />
-                    <WebViewOverlay />
-                </WalletConnectProvider>
-                <SigningOverlays />
-            </AutoLockGuard>
+            <BottomSheetModalProvider>
+                <AutoLockGuard>
+                    <WalletConnectProvider>
+                        <RootContentContainer fcmToken={fcmToken} />
+                        <WebViewOverlay />
+                    </WalletConnectProvider>
+                    <SigningOverlays />
+                </AutoLockGuard>
+            </BottomSheetModalProvider>
         </ThemeProvider>
     )
 }
