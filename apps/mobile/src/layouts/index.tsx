@@ -10,43 +10,43 @@
  limitations under the License
  */
 
-import { FullScreenLayout } from "@layouts/FullScreenLayout";
-import { HeaderedLayout } from "@layouts/HeaderedLayout";
-import { SafeAreaLayout } from "@layouts/SafeAreaLayout";
-import { BottomSheetLayout } from "layouts/BottomSheetLayout";
+import { FullScreenLayout } from '@layouts/FullScreenLayout'
+import { HeaderedLayout } from '@layouts/HeaderedLayout'
+import { SafeAreaLayout } from '@layouts/SafeAreaLayout'
+import { BottomSheetLayout } from 'layouts/BottomSheetLayout'
 
 const headeredLayout = ({ children }: { children: React.ReactNode }) => {
-	return <HeaderedLayout>{children}</HeaderedLayout>;
-};
+    return <HeaderedLayout>{children}</HeaderedLayout>
+}
 
 const safeAreaLayout = ({ children }: { children: React.ReactNode }) => {
-	return <SafeAreaLayout>{children}</SafeAreaLayout>;
-};
+    return <SafeAreaLayout>{children}</SafeAreaLayout>
+}
 
 const bottomSheetLayout = ({ children }: { children: React.ReactNode }) => {
-	return <BottomSheetLayout>{children}</BottomSheetLayout>;
-};
+    return <BottomSheetLayout>{children}</BottomSheetLayout>
+}
 
 const safeAreaLayoutWithTabBar = ({
-	children,
+    children,
 }: {
-	children: React.ReactNode;
+    children: React.ReactNode
 }) => {
-	return <SafeAreaLayout isTabBarVisible>{children}</SafeAreaLayout>;
-};
+    return <SafeAreaLayout isTabBarVisible>{children}</SafeAreaLayout>
+}
 
 const fullScreenLayout = ({ children }: { children: React.ReactNode }) => {
-	return <FullScreenLayout>{children}</FullScreenLayout>;
-};
+    return <FullScreenLayout>{children}</FullScreenLayout>
+}
 
 export {
-	headeredLayout,
-	safeAreaLayout,
-	bottomSheetLayout,
-	safeAreaLayoutWithTabBar,
-	fullScreenLayout,
-	FullScreenLayout,
-	HeaderedLayout,
-	SafeAreaLayout,
-	BottomSheetLayout,
-};
+    headeredLayout,
+    safeAreaLayout,
+    bottomSheetLayout,
+    safeAreaLayoutWithTabBar,
+    fullScreenLayout,
+    FullScreenLayout,
+    HeaderedLayout,
+    SafeAreaLayout,
+    BottomSheetLayout,
+}

@@ -10,14 +10,19 @@
  limitations under the License
  */
 
-import type { ViewProps } from "react-native";
-import { useStyles } from "./styles";
-import { PWView } from "@components/core";
+import type { ViewProps } from 'react-native'
+import { useStyles } from './styles'
+import { PWView } from '@components/core'
 
-export type BottomSheetLayoutProps = ViewProps & {};
+export type BottomSheetLayoutProps = ViewProps & {}
 
 export const BottomSheetLayout = (props: BottomSheetLayoutProps) => {
-	const styles = useStyles();
+    const styles = useStyles()
 
-	return <PWView style={styles.contentContainer} {...props} />;
-};
+    return (
+        <PWView
+            style={styles.contentContainer}
+            {...props}
+        />
+    )
+}
