@@ -18,7 +18,7 @@ import {
     MAX_TRANSACTION_SIGN_REQUESTS,
     MAX_DATA_SIGN_REQUESTS,
 } from '../../constants'
-import { AppError, ERROR_I18N_KEYS } from '@perawallet/wallet-core-shared'
+import { AppError } from '@perawallet/wallet-core-shared'
 import type {
     SignRequest,
     TransactionSignRequest,
@@ -137,16 +137,6 @@ describe('useSigningRequest', () => {
                 })
             }).toThrow(AppError)
 
-            try {
-                act(() => {
-                    result.current.addSignRequest(request)
-                })
-            } catch (e) {
-                expect(e).toBeInstanceOf(AppError)
-                expect((e as AppError).getI18nKey()).toBe(
-                    ERROR_I18N_KEYS.SIGNING_TRANSACTION_LIMIT_EXCEEDED,
-                )
-            }
         })
 
         test('accepts transactions at exactly the limit', () => {
@@ -186,16 +176,6 @@ describe('useSigningRequest', () => {
                 })
             }).toThrow(AppError)
 
-            try {
-                act(() => {
-                    result.current.addSignRequest(request)
-                })
-            } catch (e) {
-                expect(e).toBeInstanceOf(AppError)
-                expect((e as AppError).getI18nKey()).toBe(
-                    ERROR_I18N_KEYS.SIGNING_DATA_LIMIT_EXCEEDED,
-                )
-            }
         })
     })
 

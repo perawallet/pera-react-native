@@ -118,16 +118,16 @@ vi.mock(
     () => ({
         WalletConnectErrorBottomSheet: ({
             isVisible,
-            errorMessage,
+            error,
             onClose,
         }: {
             isVisible: boolean
-            errorMessage: string
+            error: Error | null
             onClose: () => void
         }) =>
             isVisible ? (
                 <div data-testid='ErrorSheet'>
-                    <span>{errorMessage}</span>
+                    <span>{error?.message}</span>
                     <button onClick={onClose}>mock-error-close</button>
                 </div>
             ) : null,

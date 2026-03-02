@@ -22,6 +22,14 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-core-shared', () => ({
+    logger: { debug: vi.fn() },
+}))
+
+vi.mock('@perawallet/wallet-core-config', () => ({
+    config: { debugEnabled: false },
+}))
+
 vi.mock('@components/core', () => ({
     PWBottomSheet: ({
         children,
@@ -59,7 +67,7 @@ describe('WalletConnectErrorBottomSheet', () => {
         render(
             <WalletConnectErrorBottomSheet
                 isVisible={false}
-                errorMessage='Some error'
+                error={new Error('Some error')}
                 onClose={mockOnClose}
             />,
         )
@@ -71,7 +79,7 @@ describe('WalletConnectErrorBottomSheet', () => {
         render(
             <WalletConnectErrorBottomSheet
                 isVisible={true}
-                errorMessage='Some error'
+                error={new Error('Some error')}
                 onClose={mockOnClose}
             />,
         )
@@ -83,7 +91,7 @@ describe('WalletConnectErrorBottomSheet', () => {
         render(
             <WalletConnectErrorBottomSheet
                 isVisible={true}
-                errorMessage='Invalid public key(s)'
+                error={new Error('Invalid public key(s)')}
                 onClose={mockOnClose}
             />,
         )
@@ -95,7 +103,7 @@ describe('WalletConnectErrorBottomSheet', () => {
         render(
             <WalletConnectErrorBottomSheet
                 isVisible={true}
-                errorMessage='Some error'
+                error={new Error('Some error')}
                 onClose={mockOnClose}
             />,
         )
@@ -107,7 +115,7 @@ describe('WalletConnectErrorBottomSheet', () => {
         render(
             <WalletConnectErrorBottomSheet
                 isVisible={true}
-                errorMessage='Some error'
+                error={new Error('Some error')}
                 onClose={mockOnClose}
             />,
         )

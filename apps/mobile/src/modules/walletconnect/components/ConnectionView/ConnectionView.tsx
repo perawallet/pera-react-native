@@ -31,6 +31,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { ConnectionViewHeader } from './ConnectionViewHeader'
+import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 
 export type ConnectionViewProps = {
     request: WalletConnectSessionRequest
@@ -47,7 +48,8 @@ export const ConnectionView = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const { removeSessionRequest } = useWalletConnectSessionRequests()
-    const { approveSession, rejectSession } = useWalletConnect()
+    const { network } = useNetwork()
+    const { approveSession, rejectSession } = useWalletConnect(network)
     const accounts = useSigningAccounts()
     const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>([])
 
@@ -94,6 +96,7 @@ export const ConnectionView = ({
             </PWTouchableOpacity>
         )
     }
+    
 
     return (
         <>

@@ -29,54 +29,24 @@ import { useLanguage } from '@hooks/useLanguage'
 import { ConnectionSuccessBottomSheet } from '../components/ConnectionSuccessBottomSheet/ConnectionSuccessBottomSheet'
 import { WalletConnectErrorBottomSheet } from '../components/WalletConnectErrorBottomSheet/WalletConnectErrorBottomSheet'
 import { logger } from '@perawallet/wallet-core-shared'
+import { useWalletConnectProvider } from './useWalletConnectProvider'
 
 export type WalletConnectProviderProps = {} & PropsWithChildren
 
 export function WalletConnectProvider({
     children,
 }: WalletConnectProviderProps) {
-    const { sessionRequests, removeSessionRequest } =
-        useWalletConnectSessionRequests()
-    const nextRequest = sessionRequests.at(0)
     const { height } = useWindowDimensions()
     const { t } = useLanguage()
-    const [successRequest, setSuccessRequest] =
-        useState<WalletConnectSessionRequest | null>(null)
-    const [connectionError, setConnectionError] = useState<Error | null>(null)
-
-    const handleSigningError = useCallback((error: Error) => {
-        logger.debug('Handling Error')
-        setConnectionError(error)
-    }, [])
-
-    const handleSuccess = (request: WalletConnectSessionRequest) => {
-        setSuccessRequest(request)
-    }
-
-    const clearSuccessRequest = () => {
-        setSuccessRequest(null)
-    }
-
-    const handleConnectionError = (error?: Error) => {
-        if (error) {
-            setConnectionError(error)
-        }
-    }
-
-    const clearConnectionError = () => {
-        if (nextRequest) {
-            removeSessionRequest(nextRequest)
-        }
-        setConnectionError(null)
-    }
-
-    const { initWalletConnect } = useWalletConnect({
-        onError: handleSigningError,
-    })
-
-    useEffect(() => {
-        initWalletConnect()
-    }, [])
+    const {
+        nextRequest,
+        successRequest,
+        connectionError,
+        handleConnectionError,
+        handleSuccess,
+        clearSuccessRequest,
+        clearConnectionError
+    } = useWalletConnectProvider()
 
     return (
         <WalletConnectErrorBoundary t={t}>

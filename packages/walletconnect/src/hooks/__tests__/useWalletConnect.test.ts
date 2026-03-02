@@ -36,6 +36,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => []),
 }))
 
+vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+}))
+
 vi.mock('@walletconnect/client', () => {
     return {
         default: vi.fn().mockImplementation(function (options) {
@@ -268,8 +272,10 @@ describe('useWalletConnect', () => {
 
             expect(mockHandleSignData).toHaveBeenCalledWith(
                 mockConnectorInstance,
+                'mainnet',
                 error,
                 payload,
+                expect.any(Function),
             )
         })
 
@@ -296,8 +302,10 @@ describe('useWalletConnect', () => {
 
             expect(mockHandleSignTransaction).toHaveBeenCalledWith(
                 mockConnectorInstance,
+                'mainnet',
                 error,
                 payload,
+                expect.any(Function),
             )
         })
 

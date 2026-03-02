@@ -82,7 +82,7 @@ export const usePeraWebviewInterface = (
     const { t } = useLanguage()
     const { pushWebView: pushWebViewContext } = useWebView()
     const { addSignRequest } = useSigningRequest()
-    const { connect } = useWalletConnect()
+    const { connect } = useWalletConnect(network)
     const { decodeTransactions, encodeSignedTransaction } =
         useTransactionEncoder()
 

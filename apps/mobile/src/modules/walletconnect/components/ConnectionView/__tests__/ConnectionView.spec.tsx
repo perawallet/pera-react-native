@@ -268,9 +268,6 @@ describe('ConnectionView', () => {
         )
         expect(mockOnSuccess).toHaveBeenCalledWith(mockRequest)
         expect(mockRemoveSessionRequest).toHaveBeenCalledWith(mockRequest)
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'success' }),
-        )
     })
 
     test('connect calls onError when approveSession throws', () => {

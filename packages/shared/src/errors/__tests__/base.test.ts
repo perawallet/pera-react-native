@@ -12,7 +12,6 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { AppError, ErrorSeverity, ErrorCategory } from '../base'
-import { ERROR_I18N_KEYS } from '../i18n-keys'
 
 describe('ErrorSeverity', () => {
     test('has correct values', () => {
@@ -46,26 +45,26 @@ describe('AppError', () => {
         vi.setSystemTime(mockDate)
     })
 
-    test('creates error with i18n key as message', () => {
-        const error = new AppError(ERROR_I18N_KEYS.UNKNOWN, {})
+    test('creates error with message', () => {
+        const error = new AppError('Something went wrong', {})
 
-        expect(error.message).toBe(ERROR_I18N_KEYS.UNKNOWN)
+        expect(error.message).toBe('Something went wrong')
     })
 
     test('sets error name to class name', () => {
-        const error = new AppError(ERROR_I18N_KEYS.UNKNOWN, {})
+        const error = new AppError('Something went wrong', {})
 
         expect(error.name).toBe('AppError')
     })
 
     test('sets timestamp to current date', () => {
-        const error = new AppError(ERROR_I18N_KEYS.UNKNOWN, {})
+        const error = new AppError('Something went wrong', {})
 
         expect(error.timestamp).toEqual(mockDate)
     })
 
     test('applies default metadata', () => {
-        const error = new AppError(ERROR_I18N_KEYS.UNKNOWN, {})
+        const error = new AppError('Something went wrong', {})
 
         expect(error.metadata).toEqual({
             severity: ErrorSeverity.MEDIUM,
@@ -76,7 +75,7 @@ describe('AppError', () => {
     })
 
     test('merges provided metadata with defaults', () => {
-        const error = new AppError(ERROR_I18N_KEYS.NETWORK_TIMEOUT, {
+        const error = new AppError('Network timed out', {
             severity: ErrorSeverity.HIGH,
             category: ErrorCategory.NETWORK,
             retryable: true,
@@ -92,19 +91,19 @@ describe('AppError', () => {
 
     test('stores original error when provided', () => {
         const originalError = new Error('Original error')
-        const error = new AppError(ERROR_I18N_KEYS.UNKNOWN, {}, originalError)
+        const error = new AppError('Something went wrong', {}, originalError)
 
         expect(error.originalError).toBe(originalError)
     })
 
     test('has no original error when not provided', () => {
-        const error = new AppError(ERROR_I18N_KEYS.UNKNOWN, {})
+        const error = new AppError('Something went wrong', {})
 
         expect(error.originalError).toBeUndefined()
     })
 
     test('stores metadata params', () => {
-        const error = new AppError(ERROR_I18N_KEYS.UNKNOWN, {
+        const error = new AppError('Something went wrong', {
             params: { field: 'test', value: 123 },
         })
 
@@ -112,7 +111,7 @@ describe('AppError', () => {
     })
 
     test('isMinor returns true for LOW severity', () => {
-        const error = new AppError(ERROR_I18N_KEYS.UNKNOWN, {
+        const error = new AppError('Something went wrong', {
             severity: ErrorSeverity.LOW,
         })
 
@@ -120,7 +119,7 @@ describe('AppError', () => {
     })
 
     test('isMinor returns false for MEDIUM severity', () => {
-        const error = new AppError(ERROR_I18N_KEYS.UNKNOWN, {
+        const error = new AppError('Something went wrong', {
             severity: ErrorSeverity.MEDIUM,
         })
 
@@ -128,7 +127,7 @@ describe('AppError', () => {
     })
 
     test('isMinor returns false for HIGH severity', () => {
-        const error = new AppError(ERROR_I18N_KEYS.UNKNOWN, {
+        const error = new AppError('Something went wrong', {
             severity: ErrorSeverity.HIGH,
         })
 
@@ -136,7 +135,7 @@ describe('AppError', () => {
     })
 
     test('isMinor returns false for CRITICAL severity', () => {
-        const error = new AppError(ERROR_I18N_KEYS.UNKNOWN, {
+        const error = new AppError('Something went wrong', {
             severity: ErrorSeverity.CRITICAL,
         })
 
@@ -144,7 +143,7 @@ describe('AppError', () => {
     })
 
     test('shouldReport returns false for LOW severity', () => {
-        const error = new AppError(ERROR_I18N_KEYS.UNKNOWN, {
+        const error = new AppError('Something went wrong', {
             severity: ErrorSeverity.LOW,
         })
 
@@ -152,7 +151,7 @@ describe('AppError', () => {
     })
 
     test('shouldReport returns false for MEDIUM severity', () => {
-        const error = new AppError(ERROR_I18N_KEYS.UNKNOWN, {
+        const error = new AppError('Something went wrong', {
             severity: ErrorSeverity.MEDIUM,
         })
 
@@ -160,7 +159,7 @@ describe('AppError', () => {
     })
 
     test('shouldReport returns true for HIGH severity', () => {
-        const error = new AppError(ERROR_I18N_KEYS.UNKNOWN, {
+        const error = new AppError('Something went wrong', {
             severity: ErrorSeverity.HIGH,
         })
 
@@ -168,22 +167,16 @@ describe('AppError', () => {
     })
 
     test('shouldReport returns true for CRITICAL severity', () => {
-        const error = new AppError(ERROR_I18N_KEYS.UNKNOWN, {
+        const error = new AppError('Something went wrong', {
             severity: ErrorSeverity.CRITICAL,
         })
 
         expect(error.shouldReport()).toBe(true)
     })
 
-    test('getI18nKey returns the error message', () => {
-        const error = new AppError(ERROR_I18N_KEYS.NETWORK_TIMEOUT, {})
-
-        expect(error.getI18nKey()).toBe(ERROR_I18N_KEYS.NETWORK_TIMEOUT)
-    })
-
     test('toJSON serializes error correctly', () => {
         const error = new AppError(
-            ERROR_I18N_KEYS.NETWORK_TIMEOUT,
+            'Network timed out',
             {
                 severity: ErrorSeverity.HIGH,
                 category: ErrorCategory.NETWORK,
@@ -195,7 +188,7 @@ describe('AppError', () => {
 
         expect(json).toMatchObject({
             name: 'AppError',
-            message: ERROR_I18N_KEYS.NETWORK_TIMEOUT,
+            message: 'Network timed out',
             metadata: {
                 severity: ErrorSeverity.HIGH,
                 category: ErrorCategory.NETWORK,
@@ -209,7 +202,7 @@ describe('AppError', () => {
     })
 
     test('toJSON handles error without original error', () => {
-        const error = new AppError(ERROR_I18N_KEYS.UNKNOWN, {})
+        const error = new AppError('Something went wrong', {})
 
         const json = error.toJSON()
 
@@ -217,14 +210,14 @@ describe('AppError', () => {
     })
 
     test('has stack trace', () => {
-        const error = new AppError(ERROR_I18N_KEYS.UNKNOWN, {})
+        const error = new AppError('Something went wrong', {})
 
         expect(error.stack).toBeDefined()
         expect(error.stack).toContain('AppError')
     })
 
     test('extends Error', () => {
-        const error = new AppError(ERROR_I18N_KEYS.UNKNOWN, {})
+        const error = new AppError('Something went wrong', {})
 
         expect(error instanceof Error).toBe(true)
         expect(error instanceof AppError).toBe(true)

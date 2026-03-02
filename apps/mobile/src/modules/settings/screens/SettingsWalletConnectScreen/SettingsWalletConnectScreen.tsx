@@ -24,6 +24,7 @@ import { WalletConnectSessionItem } from '@modules/settings/components/WalletCon
 import { Dialog, Text, useTheme } from '@rneui/themed'
 import { useState } from 'react'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 
 const renderItem = ({ item }: { item: WalletConnectConnection }) => {
     return <WalletConnectSessionItem session={item} />
@@ -31,7 +32,8 @@ const renderItem = ({ item }: { item: WalletConnectConnection }) => {
 
 export const SettingsWalletConnectScreen = () => {
     const { t } = useLanguage()
-    const { connections, deleteAllSessions } = useWalletConnect()
+    const { network } = useNetwork()
+    const { connections, deleteAllSessions } = useWalletConnect(network)
     const scannerState = useModalState()
     const deleteState = useModalState()
     const styles = useStyles()
