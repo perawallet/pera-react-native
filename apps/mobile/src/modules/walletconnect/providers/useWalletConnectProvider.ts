@@ -46,7 +46,6 @@ export const useWalletConnectProvider = () => {
     })
 
     useEffect(() => {
-        logger.debug("[WC] Noticed network change.  Reconnecting")
         initWalletConnect()
     }, [initWalletConnect, network])
 
