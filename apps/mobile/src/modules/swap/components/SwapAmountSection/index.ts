@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { SwapReceiveSection } from './SwapReceiveSection'
-export type { SwapReceiveSectionProps } from './SwapReceiveSection'
+export { SwapAmountSection } from './SwapAmountSection'
+export type { SwapAmountSectionProps } from './SwapAmountSection'

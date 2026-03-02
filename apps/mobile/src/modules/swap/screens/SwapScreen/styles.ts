@@ -16,13 +16,12 @@ export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
     },
+    toolbar: {
+        paddingHorizontal: theme.spacing.lg,
+    },
     titleSection: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.sm,
-    },
-    formContainer: {
-        padding: theme.spacing.xl,
-        gap: theme.spacing.md,
     },
 }))

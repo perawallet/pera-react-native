@@ -13,42 +13,36 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {},
-    headerRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: theme.spacing.sm,
-    },
-    label: {
-        color: theme.colors.textGray,
-    },
-    balance: {
-        color: theme.colors.textGray,
-    },
-    inputRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
+    formContainer: {
+        padding: theme.spacing.xl,
         gap: theme.spacing.md,
     },
-    amountContainer: {
-        flex: 1,
+    controlsRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
     },
-    inputContainer: {
-        paddingHorizontal: 0,
-        height: theme.spacing['5xl'],
+    swapDirectionButton: {
+        width: theme.spacing['4xl'],
+        height: theme.spacing['4xl'],
+        borderRadius: theme.spacing['4xl'] / 2,
+        backgroundColor: theme.colors.layerGrayLighter,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    inputInnerContainer: {
-        borderBottomWidth: 0,
-        paddingHorizontal: 0,
+    maxRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
     },
-    inputText: {
-        color: theme.colors.textMain,
-        paddingLeft: 0,
+    maxButton: {
+        borderRadius: theme.spacing['3xl'],
+        borderWidth: 1,
+        borderColor: theme.colors.layerGray,
+        paddingVertical: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.lg,
     },
-    fiatAmount: {
-        color: theme.colors.textGray,
-        marginTop: theme.spacing.xs,
+    maxText: {
+        color: theme.colors.buttonSecondaryText,
     },
 }))

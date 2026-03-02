@@ -33,25 +33,8 @@ vi.mock('@hooks/useModalState', () => ({
     useModalState: mockUseModalState,
 }))
 
-vi.mock('../useSwapScreen', () => ({
-    useSwapScreen: () => ({
-        payAssetId: null,
-        receiveAssetId: null,
-        payAmount: '0.00',
-        receiveAmount: '0.00',
-        payBalance: '',
-        receiveBalance: '',
-        payAssetModal: { isOpen: false, open: vi.fn(), close: vi.fn() },
-        receiveAssetModal: { isOpen: false, open: vi.fn(), close: vi.fn() },
-        handlePayAmountChange: vi.fn(),
-        handleSwapDirection: vi.fn(),
-        handleMaxPress: vi.fn(),
-        handlePayAssetSelected: vi.fn(),
-        handleReceiveAssetSelected: vi.fn(),
-    }),
-}))
-
 vi.mock('@modules/swap/components', () => ({
+    SwapForm: () => <div data-testid='swap-form' />,
     SwapIntroduction: ({
         isVisible,
         onStartSwapping,
@@ -66,12 +49,6 @@ vi.mock('@modules/swap/components', () => ({
                 onClick={onStartSwapping}
             />
         ) : null,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    SwapPaySection: () => <div data-testid='swap-pay-section' />,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    SwapReceiveSection: () => <div data-testid='swap-receive-section' />,
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    SwapAssetSelectionBottomSheet: () => null,
 }))
 
 vi.mock('@modules/accounts/components/AccountSelection', () => ({
@@ -114,7 +91,6 @@ describe('SwapScreen', () => {
         render(<SwapScreen />)
 
         expect(screen.queryByTestId('swap-introduction')).toBeNull()
-        expect(screen.getByTestId('swap-pay-section')).toBeTruthy()
-        expect(screen.getByTestId('swap-receive-section')).toBeTruthy()
+        expect(screen.getByTestId('swap-form')).toBeTruthy()
     })
 })

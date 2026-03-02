@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { SwapPaySection } from './SwapPaySection'
-export type { SwapPaySectionProps } from './SwapPaySection'
+export { SwapForm } from './SwapForm'

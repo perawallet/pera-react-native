@@ -16,7 +16,7 @@ import { useModalState } from '@hooks/useModalState'
 
 type ModalState = ReturnType<typeof useModalState>
 
-type UseSwapScreenResult = {
+type UseSwapFormResult = {
     payAssetId: string | null
     receiveAssetId: string | null
     payAmount: string
@@ -32,7 +32,7 @@ type UseSwapScreenResult = {
     handleReceiveAssetSelected: (asset: AssetWithAccountBalance) => void
 }
 
-export const useSwapScreen = (): UseSwapScreenResult => {
+export const useSwapForm = (): UseSwapFormResult => {
     const [payAssetId, setPayAssetId] = useState<string | null>(null)
     const [receiveAssetId, setReceiveAssetId] = useState<string | null>(null)
     const [payAmount, setPayAmount] = useState('0.00')

@@ -15,7 +15,8 @@ import { useLanguage } from '@hooks/useLanguage'
 import { SwapAssetSelector } from '../SwapAssetSelector'
 import { useStyles } from './styles'
 
-export type SwapPaySectionProps = {
+type SwapAmountSectionPayProps = {
+    variant: 'pay'
     assetId: string | null
     balance: string
     amount: string
@@ -23,24 +24,35 @@ export type SwapPaySectionProps = {
     onAssetPress: () => void
 }
 
-export const SwapPaySection = ({
-    assetId,
-    balance,
-    amount,
-    onAmountChange,
-    onAssetPress,
-}: SwapPaySectionProps) => {
+type SwapAmountSectionReceiveProps = {
+    variant: 'receive'
+    assetId: string | null
+    balance: string
+    amount: string
+    onAssetPress: () => void
+}
+
+export type SwapAmountSectionProps =
+    | SwapAmountSectionPayProps
+    | SwapAmountSectionReceiveProps
+
+export const SwapAmountSection = (props: SwapAmountSectionProps) => {
+    const { variant, assetId, balance, amount, onAssetPress } = props
     const { t } = useLanguage()
     const styles = useStyles()
 
+    const isPay = variant === 'pay'
+
     return (
-        <PWView style={styles.container}>
+        <PWView style={isPay ? styles.container : styles.receiveContainer}>
             <PWView style={styles.headerRow}>
                 <PWText
                     variant='body'
                     style={styles.label}
                 >
-                    {t('swap.form.you_pay')}
+                    {isPay
+                        ? t('swap.form.you_pay')
+                        : t('swap.form.you_receive')}
                 </PWText>
                 <PWText
                     variant='body'
@@ -52,15 +64,19 @@ export const SwapPaySection = ({
 
             <PWView style={styles.inputRow}>
                 <PWView style={styles.amountContainer}>
-                    <PWInput
-                        value={amount}
-                        onChangeText={onAmountChange}
-                        keyboardType='decimal-pad'
-                        placeholder='0.00'
-                        containerStyle={styles.inputContainer}
-                        inputContainerStyle={styles.inputInnerContainer}
-                        inputStyle={styles.inputText}
-                    />
+                    {isPay ? (
+                        <PWInput
+                            value={amount}
+                            onChangeText={props.onAmountChange}
+                            keyboardType='decimal-pad'
+                            placeholder='0.00'
+                            containerStyle={styles.inputContainer}
+                            inputContainerStyle={styles.inputInnerContainer}
+                            inputStyle={styles.inputText}
+                        />
+                    ) : (
+                        <PWText style={styles.amountText}>{amount}</PWText>
+                    )}
                 </PWView>
 
                 <SwapAssetSelector

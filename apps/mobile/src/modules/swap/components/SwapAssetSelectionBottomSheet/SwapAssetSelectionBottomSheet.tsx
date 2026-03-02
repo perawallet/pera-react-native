@@ -24,7 +24,6 @@ import {
     PWText,
     PWToolbar,
     PWTouchableOpacity,
-    PWView,
 } from '@components/core'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import { LoadingView } from '@components/LoadingView'
@@ -80,34 +79,33 @@ export const SwapAssetSelectionBottomSheet = ({
         <PWBottomSheet
             isVisible={isVisible}
             onBackdropPress={onClose}
+            innerContainerStyle={styles.container}
         >
-            <PWView style={styles.container}>
-                <PWToolbar
-                    left={
-                        <PWIcon
-                            name='cross'
-                            onPress={onClose}
-                        />
-                    }
-                    center={
-                        <PWText variant='h4'>
-                            {t('swap.asset_selection.title')}
-                        </PWText>
-                    }
-                />
-                <PWFlatList
-                    contentContainerStyle={styles.listContent}
-                    data={balanceData ?? []}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.assetId}
-                    ListEmptyComponent={
-                        <LoadingView
-                            variant='skeleton'
-                            count={3}
-                        />
-                    }
-                />
-            </PWView>
+            <PWToolbar
+                left={
+                    <PWIcon
+                        name='cross'
+                        onPress={onClose}
+                    />
+                }
+                center={
+                    <PWText variant='h4'>
+                        {t('swap.asset_selection.title')}
+                    </PWText>
+                }
+            />
+            <PWFlatList
+                contentContainerStyle={styles.listContent}
+                data={balanceData ?? []}
+                renderItem={renderItem}
+                keyExtractor={item => item.assetId}
+                ListEmptyComponent={
+                    <LoadingView
+                        variant='skeleton'
+                        count={3}
+                    />
+                }
+            />
         </PWBottomSheet>
     )
 }

@@ -13,43 +13,10 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    outerContainer: {
+    container: {},
+    receiveContainer: {
         backgroundColor: theme.colors.layerGrayLighter,
         borderRadius: theme.spacing.xl,
-        flex: 1,
-    },
-    midRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.md,
-    },
-    swapDirectionButton: {
-        width: theme.spacing['4xl'],
-        height: theme.spacing['4xl'],
-        borderRadius: theme.spacing['4xl'] / 2,
-        backgroundColor: theme.colors.white,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    maxRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-    maxButton: {
-        borderRadius: theme.spacing['3xl'],
-        borderWidth: 1,
-        borderColor: theme.colors.layerGray,
-        paddingVertical: theme.spacing.sm,
-        paddingHorizontal: theme.spacing.lg,
-    },
-    maxText: {
-        color: theme.colors.buttonSecondaryText,
-        fontWeight: '600',
-    },
-    container: {
         paddingHorizontal: theme.spacing.xl,
         paddingTop: theme.spacing.lg,
         paddingBottom: theme.spacing.xl,
@@ -75,11 +42,19 @@ export const useStyles = makeStyles(theme => ({
     amountContainer: {
         flex: 1,
     },
+    inputContainer: {
+        paddingHorizontal: 0,
+        height: theme.spacing['5xl'],
+    },
+    inputInnerContainer: {
+        borderBottomWidth: 0,
+        paddingHorizontal: 0,
+    },
+    inputText: {
+        color: theme.colors.textMain,
+        paddingLeft: 0,
+    },
     amountText: {
         color: theme.colors.textMain,
-    },
-    fiatAmount: {
-        color: theme.colors.textGray,
-        marginTop: theme.spacing.xs,
     },
 }))
