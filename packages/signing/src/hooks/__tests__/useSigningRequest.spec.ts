@@ -136,7 +136,6 @@ describe('useSigningRequest', () => {
                     result.current.addSignRequest(request)
                 })
             }).toThrow(AppError)
-
         })
 
         test('accepts transactions at exactly the limit', () => {
@@ -175,7 +174,6 @@ describe('useSigningRequest', () => {
                     result.current.addSignRequest(request)
                 })
             }).toThrow(AppError)
-
         })
     })
 

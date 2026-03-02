@@ -119,8 +119,9 @@ export const useTransactionSigner = () => {
         async (
             account: WalletAccount,
             txns: PeraTransactionGroup,
+            dontFollowRekey?: boolean,
         ): Promise<PeraSignedTransaction[]> => {
-            if (account.rekeyAddress) {
+            if (account.rekeyAddress && !dontFollowRekey) {
                 const rekeyedAccount =
                     accounts.find(a => a.address === account.rekeyAddress) ??
                     null
@@ -129,7 +130,8 @@ export const useTransactionSigner = () => {
                         `No rekeyed account found for ${account.rekeyAddress}`,
                     )
                 }
-                return signSingleAccountTransactions(rekeyedAccount, txns)
+                //rekeys don't chain, so only follow rekeys for one level
+                return signSingleAccountTransactions(rekeyedAccount, txns, true)
             }
 
             if (isHDWalletAccount(account)) {

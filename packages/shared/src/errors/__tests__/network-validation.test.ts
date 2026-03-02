@@ -36,10 +36,7 @@ describe('NetworkError', () => {
 
     test('stores original error', () => {
         const originalError = new Error('Connection failed')
-        const error = new NetworkError(
-            'Network request failed',
-            originalError,
-        )
+        const error = new NetworkError('Network request failed', originalError)
 
         expect(error.originalError).toBe(originalError)
     })

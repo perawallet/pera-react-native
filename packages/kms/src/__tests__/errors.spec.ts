@@ -45,10 +45,7 @@ describe('KMS Error Classes', () => {
 
         test('preserves original error', () => {
             const cause = new Error('original cause')
-            const error = new KeyManagementError(
-                'Key access failed',
-                cause,
-            )
+            const error = new KeyManagementError('Key access failed', cause)
             expect(error.originalError).toBe(cause)
         })
 

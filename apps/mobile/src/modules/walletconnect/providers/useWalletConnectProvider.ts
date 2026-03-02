@@ -1,7 +1,10 @@
-import { useNetwork } from "@perawallet/wallet-core-platform-integration"
-import { logger } from "@perawallet/wallet-core-shared"
-import { useWalletConnect, useWalletConnectSessionRequests, WalletConnectSessionRequest } from "@perawallet/wallet-core-walletconnect"
-import { useCallback, useEffect, useState } from "react"
+import { useNetwork } from '@perawallet/wallet-core-platform-integration'
+import {
+    useWalletConnect,
+    useWalletConnectSessionRequests,
+    WalletConnectSessionRequest,
+} from '@perawallet/wallet-core-walletconnect'
+import { useCallback, useEffect, useState } from 'react'
 
 export const useWalletConnectProvider = () => {
     const { sessionRequests, removeSessionRequest } =
@@ -47,13 +50,13 @@ export const useWalletConnectProvider = () => {
         initWalletConnect()
     }, [initWalletConnect, network])
 
-    return { 
+    return {
         nextRequest,
         successRequest,
         connectionError,
         handleConnectionError,
         handleSuccess,
         clearSuccessRequest,
-        clearConnectionError
+        clearConnectionError,
     }
 }

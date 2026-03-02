@@ -40,7 +40,10 @@ type UseWalletConnectOptions = {
     onError?: (error: Error) => void
 }
 
-export const useWalletConnect = (network: Network, options?: UseWalletConnectOptions) => {
+export const useWalletConnect = (
+    network: Network,
+    options?: UseWalletConnectOptions,
+) => {
     const connections = useWalletConnectStore(
         state => state.walletConnectConnections,
     )

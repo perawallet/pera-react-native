@@ -10,25 +10,15 @@
  limitations under the License
  */
 
-import React, {
-    PropsWithChildren,
-    useCallback,
-    useEffect,
-    useState,
-} from 'react'
+import React, { PropsWithChildren } from 'react'
 import { PWBottomSheet } from '@components/core'
 import { useWindowDimensions } from 'react-native'
 import { ConnectionView } from '@modules/walletconnect/components/ConnectionView/ConnectionView'
-import {
-    useWalletConnect,
-    useWalletConnectSessionRequests,
-    WalletConnectSessionRequest,
-} from '@perawallet/wallet-core-walletconnect'
+
 import { WalletConnectErrorBoundary } from '@modules/walletconnect/components/BaseErrorBoundary/WalletConnectErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { ConnectionSuccessBottomSheet } from '../components/ConnectionSuccessBottomSheet/ConnectionSuccessBottomSheet'
 import { WalletConnectErrorBottomSheet } from '../components/WalletConnectErrorBottomSheet/WalletConnectErrorBottomSheet'
-import { logger } from '@perawallet/wallet-core-shared'
 import { useWalletConnectProvider } from './useWalletConnectProvider'
 
 export type WalletConnectProviderProps = {} & PropsWithChildren
@@ -45,7 +35,7 @@ export function WalletConnectProvider({
         handleConnectionError,
         handleSuccess,
         clearSuccessRequest,
-        clearConnectionError
+        clearConnectionError,
     } = useWalletConnectProvider()
 
     return (
