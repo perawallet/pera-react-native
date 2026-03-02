@@ -39,7 +39,8 @@ export type SettingsWalletConnectDetailsScreenProps = NativeStackScreenProps<
 >
 
 const ConnectedNetworks = ({ chainId }: { chainId: number }) => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const { t } = useLanguage()
 
     return (

@@ -25,6 +25,7 @@ import { Dialog, Text, useTheme } from '@rneui/themed'
 import { useState } from 'react'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const renderItem = ({ item }: { item: WalletConnectConnection }) => {
     return <WalletConnectSessionItem session={item} />
@@ -36,7 +37,8 @@ export const SettingsWalletConnectScreen = () => {
     const { connections, deleteAllSessions } = useWalletConnect(network)
     const scannerState = useModalState()
     const deleteState = useModalState()
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const { theme } = useTheme()
     const [isLoading, setIsLoading] = useState(false)
 
