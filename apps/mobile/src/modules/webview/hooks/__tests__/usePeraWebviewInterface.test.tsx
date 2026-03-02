@@ -139,6 +139,14 @@ vi.mock('@modules/webview/hooks', () => ({
     }),
     useWebView: vi.fn(() => ({ pushWebView: mockPushWebView })),
 }))
+vi.mock('../useWebViewStore', () => ({
+    useWebViewStore: vi.fn((selector?: (state: unknown) => unknown) => {
+        const state = { pushWebView: mockPushWebView }
+        return selector ? selector(state) : state
+    }),
+    useWebView: vi.fn(() => ({ pushWebView: mockPushWebView })),
+    useWebViewStack: vi.fn(),
+}))
 
 describe('useWebView', () => {
     it('should provide pushWebView from store', () => {
