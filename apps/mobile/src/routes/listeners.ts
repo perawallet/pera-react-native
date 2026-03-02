@@ -10,8 +10,10 @@
  limitations under the License
  */
 
-import { getProvider } from '@perawallet/wallet-core-provider'
-import type { PeraProvider } from '@perawallet/wallet-core-platform-extension'
+import {
+    getProvider,
+    type PeraProvider,
+} from '@perawallet/wallet-core-provider'
 import { ParamListBase, RouteProp } from '@react-navigation/native'
 
 const NAVIGATION_STACK_NAMES = new Set([

@@ -10,11 +10,12 @@
  limitations under the License
  */
 
+import { Provider } from '@algorandfoundation/wallet-provider'
 import {
     resetProvider,
     initializeProvider,
-} from '@perawallet/wallet-core-provider'
-import { PeraProvider } from '../pera-provider'
+} from '@perawallet/wallet-core-shared'
+import { WithPlatformServicesExtension } from '../extension'
 import type { PlatformServices } from '../models'
 import type { AnalyticsService } from '../analytics'
 import type { KeyValueStorageService, SecureStorageService } from '../storage'
@@ -27,7 +28,7 @@ import { DevicePlatforms } from '../device'
 
 import { MemoryKeyValueStorage } from './storage'
 
-type Overrides = Partial<{
+export type TestPlatformOverrides = Partial<{
     analytics: AnalyticsService
     keyValueStorage: KeyValueStorageService
     secureStorage: SecureStorageService
@@ -43,7 +44,7 @@ type Overrides = Partial<{
  * Individual services can be overridden as needed per test.
  */
 export const buildTestPlatform = (
-    overrides: Overrides = {},
+    overrides: TestPlatformOverrides = {},
 ): PlatformServices => {
     const defaultAnalytics: AnalyticsService = {
         initializeAnalytics() {},
@@ -153,11 +154,14 @@ export const buildTestPlatform = (
  * Returns the PlatformServices used for registration for further assertions.
  */
 export const registerTestPlatform = (
-    overrides: Overrides = {},
+    overrides: TestPlatformOverrides = {},
 ): PlatformServices => {
     resetProvider()
     const platform = buildTestPlatform(overrides)
-    const provider = new PeraProvider(
+    const TestProvider = Provider.withExtensions([
+        WithPlatformServicesExtension,
+    ] as const)
+    const provider = new TestProvider(
         { id: 'test', name: 'Test Provider' },
         { platform },
     )

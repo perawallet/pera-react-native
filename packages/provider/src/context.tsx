@@ -11,9 +11,9 @@
  */
 
 import { createContext, useContext, useRef } from 'react'
-import { initializeProvider } from '@perawallet/wallet-core-provider'
+import { initializeProvider } from '@perawallet/wallet-core-shared'
 import { PeraProvider } from './pera-provider'
-import type { PlatformServices } from './models'
+import type { PlatformServices } from '@perawallet/wallet-core-platform-extension'
 
 const PeraWalletContext = createContext<PeraProvider | null>(null)
 

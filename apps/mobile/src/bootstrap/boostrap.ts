@@ -17,7 +17,7 @@ import { RNKeyValueStorageService } from '../platform/key-value-storage'
 import { RNSecureStorageService } from '../platform/secure-storage'
 import type { PlatformServices } from '@perawallet/wallet-core-platform-extension'
 import { DataStoreRegistry, logger } from '@perawallet/wallet-core-shared'
-import { registerDataStores } from '@perawallet/wallet-core-initializer'
+import { registerDataStores } from '@perawallet/wallet-core-provider'
 import { useCallback } from 'react'
 
 const firebaseService = new RNFirebaseService()

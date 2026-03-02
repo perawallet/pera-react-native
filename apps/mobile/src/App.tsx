@@ -25,7 +25,7 @@ import {
     algorandSafeQuerySerialize,
     algorandSafeQueryParse,
 } from '@perawallet/wallet-core-blockchain'
-import { PeraWalletProvider } from '@perawallet/wallet-core-platform-extension'
+import { PeraWalletProvider } from '@perawallet/wallet-core-provider'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { RootComponent } from '@components/RootComponent'
 import * as SplashScreen from 'expo-splash-screen'

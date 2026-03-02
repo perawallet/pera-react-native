@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { getProvider } from '@perawallet/wallet-core-provider'
-import type { PeraProvider } from '../../pera-provider'
+import { getProvider } from '@perawallet/wallet-core-shared'
+import type { PlatformServices } from '../../models'
 import type { SecureStorageService } from '../models'
 
 export const SecureStorageServiceContainerKey = 'SecureStorageService'
 export const useSecureStorageService = (): SecureStorageService =>
-    getProvider<PeraProvider>().secureStorage
+    getProvider<PlatformServices>().secureStorage

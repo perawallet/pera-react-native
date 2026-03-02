@@ -13,10 +13,10 @@
 import React from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { resetProvider, getProvider } from '@perawallet/wallet-core-provider'
+import { resetProvider, getProvider } from '@perawallet/wallet-core-shared'
+import { buildTestPlatform } from '@perawallet/wallet-core-platform-extension'
 import { PeraWalletProvider, usePeraProvider } from '../context'
 import type { PeraProvider } from '../pera-provider'
-import { buildTestPlatform } from '../test-utils'
 
 describe('PeraWalletProvider', () => {
     afterEach(() => {

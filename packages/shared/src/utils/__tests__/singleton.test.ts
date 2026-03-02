@@ -11,10 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { Provider } from '@algorandfoundation/wallet-provider'
 import { getProvider, initializeProvider, resetProvider } from '../singleton'
-
-const TestProvider = Provider.withExtensions([] as const)
 
 describe('Provider singleton', () => {
     beforeEach(() => {
@@ -29,20 +26,14 @@ describe('Provider singleton', () => {
         })
 
         it('should return the provider after initialization', () => {
-            const provider = new TestProvider({
-                id: 'test',
-                name: 'Test Provider',
-            })
+            const provider = { id: 'test', name: 'Test Provider' }
             initializeProvider(provider)
 
             expect(getProvider()).toBe(provider)
         })
 
         it('should return the same instance on subsequent calls', () => {
-            const provider = new TestProvider({
-                id: 'test',
-                name: 'Test Provider',
-            })
+            const provider = { id: 'test', name: 'Test Provider' }
             initializeProvider(provider)
 
             expect(getProvider()).toBe(getProvider())
@@ -51,10 +42,7 @@ describe('Provider singleton', () => {
 
     describe('initializeProvider', () => {
         it('should set the provider singleton', () => {
-            const provider = new TestProvider({
-                id: 'test',
-                name: 'Test Provider',
-            })
+            const provider = { id: 'test', name: 'Test Provider' }
 
             initializeProvider(provider)
 
@@ -62,26 +50,18 @@ describe('Provider singleton', () => {
         })
 
         it('should throw when called twice', () => {
-            const provider = new TestProvider({
-                id: 'test',
-                name: 'Test Provider',
-            })
+            const provider = { id: 'test', name: 'Test Provider' }
             initializeProvider(provider)
 
             expect(() =>
-                initializeProvider(
-                    new TestProvider({ id: 'test2', name: 'Test 2' }),
-                ),
+                initializeProvider({ id: 'test2', name: 'Test 2' }),
             ).toThrow('Provider already initialized.')
         })
     })
 
     describe('resetProvider', () => {
         it('should clear the singleton so getProvider throws again', () => {
-            const provider = new TestProvider({
-                id: 'test',
-                name: 'Test Provider',
-            })
+            const provider = { id: 'test', name: 'Test Provider' }
             initializeProvider(provider)
             expect(getProvider()).toBe(provider)
 
@@ -91,17 +71,11 @@ describe('Provider singleton', () => {
         })
 
         it('should allow re-initialization after reset', () => {
-            const provider1 = new TestProvider({
-                id: 'test1',
-                name: 'Test 1',
-            })
+            const provider1 = { id: 'test1', name: 'Test 1' }
             initializeProvider(provider1)
             resetProvider()
 
-            const provider2 = new TestProvider({
-                id: 'test2',
-                name: 'Test 2',
-            })
+            const provider2 = { id: 'test2', name: 'Test 2' }
             initializeProvider(provider2)
 
             expect(getProvider()).toBe(provider2)

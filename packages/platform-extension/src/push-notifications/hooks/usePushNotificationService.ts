@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import { getProvider } from '@perawallet/wallet-core-provider'
-import type { PeraProvider } from '../../pera-provider'
+import { getProvider } from '@perawallet/wallet-core-shared'
+import type { PlatformServices } from '../../models'
 import type { PushNotificationService } from '../models'
 
 export const PushNotificationServiceContainerKey = 'PushNotificationService'
 
 export const usePushNotificationService = (): PushNotificationService =>
-    getProvider<PeraProvider>().pushNotification
+    getProvider<PlatformServices>().pushNotification

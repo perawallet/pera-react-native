@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { getProvider } from '@perawallet/wallet-core-provider'
-import type { PeraProvider } from '../../pera-provider'
+import { getProvider } from '@perawallet/wallet-core-shared'
+import type { PlatformServices } from '../../models'
 import type { CrashReportingService } from '../models'
 
 export const CrashReportingServiceContainerKey = 'CrashReportingService'
 export const useCrashReportingService = (): CrashReportingService =>
-    getProvider<PeraProvider>().crashReporting
+    getProvider<PlatformServices>().crashReporting
