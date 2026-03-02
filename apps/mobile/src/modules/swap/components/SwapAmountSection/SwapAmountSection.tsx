@@ -13,7 +13,9 @@
 import { useCallback, useMemo } from 'react'
 import Decimal from 'decimal.js'
 import { PWInput, PWText, PWView } from '@components/core'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { useLanguage } from '@hooks/useLanguage'
+import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { SwapAssetSelector } from '../SwapAssetSelector'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed/dist/config/ThemeProvider'
@@ -21,7 +23,7 @@ import { useTheme } from '@rneui/themed/dist/config/ThemeProvider'
 type SwapAmountSectionPayProps = {
     variant: 'pay'
     assetId: string | null
-    balance: string
+    balance: Decimal | null
     amount: Decimal | null
     onAmountChange: (amount: Decimal | null) => void
     onAssetPress: () => void
@@ -30,7 +32,7 @@ type SwapAmountSectionPayProps = {
 type SwapAmountSectionReceiveProps = {
     variant: 'receive'
     assetId: string | null
-    balance: string
+    balance: Decimal | null
     amount: Decimal | null
     onAssetPress: () => void
 }
@@ -44,6 +46,12 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
     const { t } = useLanguage()
     const { theme } = useTheme()
     const styles = useStyles()
+
+    const { data: assets } = useAssetsQuery(assetId ? [assetId] : [])
+    const asset = useMemo(
+        () => (assetId ? assets?.get(assetId) : undefined),
+        [assets, assetId],
+    )
 
     const isPay = variant === 'pay'
 
@@ -86,12 +94,15 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                         ? t('swap.form.you_pay')
                         : t('swap.form.you_receive')}
                 </PWText>
-                <PWText
+                <CurrencyDisplay
+                    value={balance}
+                    currency={asset?.unitName ?? ''}
+                    precision={asset?.decimals ?? 0}
+                    prefix={t('swap.form.balance_label')}
+                    showSymbol={false}
                     variant='body'
                     style={styles.balance}
-                >
-                    {t('swap.form.balance', { amount: balance })}
-                </PWText>
+                />
             </PWView>
 
             <PWView style={styles.inputRow}>

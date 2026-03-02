@@ -954,7 +954,7 @@
         "form": {
             "you_pay": "You pay",
             "you_receive": "You receive",
-            "balance": "Balance: {{amount}}",
+            "balance_label": "Balance: ",
             "max": "MAX"
         },
         "asset_selection": {

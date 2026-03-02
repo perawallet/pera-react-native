@@ -12,7 +12,11 @@
 
 import { useState, useCallback } from 'react'
 import Decimal from 'decimal.js'
-import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import {
+    AssetWithAccountBalance,
+    useAccountAssetBalanceQuery,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
     USDC_ASSET_ID_MAINNET,
     USDC_ASSET_ID_TESTNET,
@@ -29,8 +33,8 @@ type UseSwapFormResult = {
     receiveAssetId: string
     payAmount: Decimal | null
     receiveAmount: Decimal | null
-    payBalance: string
-    receiveBalance: string
+    payBalance: Decimal | null
+    receiveBalance: Decimal | null
     payAssetModal: ModalState
     receiveAssetModal: ModalState
     handlePayAmountChange: (amount: Decimal | null) => void
@@ -49,12 +53,22 @@ export const useSwapForm = (): UseSwapFormResult => {
     const [receiveAmount, setReceiveAmount] = useState<Decimal | null>(null)
     const payAssetModal = useModalState()
     const receiveAssetModal = useModalState()
+    const selectedAccount = useSelectedAccount()
 
     // If the stored toAsset is any USDC variant, correct it to the current network's USDC.
     // Any user-selected non-USDC asset is kept as-is.
     const receiveAssetId = USDC_ASSET_IDS.includes(toAsset)
         ? getUsdcAssetId(network)
         : toAsset
+
+    const { data: payAssetBalance } = useAccountAssetBalanceQuery(
+        selectedAccount ?? undefined,
+        fromAsset,
+    )
+    const { data: receiveAssetBalance } = useAccountAssetBalanceQuery(
+        selectedAccount ?? undefined,
+        receiveAssetId,
+    )
 
     const handlePayAmountChange = useCallback((amount: Decimal | null) => {
         setPayAmount(amount)
@@ -75,8 +89,8 @@ export const useSwapForm = (): UseSwapFormResult => {
     ])
 
     const handleMaxPress = useCallback(() => {
-        // No-op until balance data is available from API
-    }, [])
+        setPayAmount(payAssetBalance?.amount ?? null)
+    }, [payAssetBalance?.amount])
 
     const handlePayAssetSelected = useCallback(
         (asset: AssetWithAccountBalance) => {
@@ -97,8 +111,8 @@ export const useSwapForm = (): UseSwapFormResult => {
         receiveAssetId,
         payAmount,
         receiveAmount,
-        payBalance: '',
-        receiveBalance: '',
+        payBalance: payAssetBalance?.amount ?? null,
+        receiveBalance: receiveAssetBalance?.amount ?? null,
         payAssetModal,
         receiveAssetModal,
         handlePayAmountChange,
