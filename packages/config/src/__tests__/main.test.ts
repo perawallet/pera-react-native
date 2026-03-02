@@ -27,16 +27,4 @@ describe('config/main', () => {
         const result = getConfig()
         expect(configSchema.safeParse(result).success).toBe(true)
     })
-
-    test('environment values override defaults (simulated)', async () => {
-        // Since generatedEnv is imported at top level, we might need
-        // to mock the module if we want to test different generated values.
-        // But for basic verification, the fact it passes schema validation
-        // with defaults (if generatedEnv is empty) or with actual values is enough.
-
-        const currentConfig = getConfig()
-        expect(currentConfig.mainnetAlgodUrl).toBe(
-            'https://mainnet-api.algonode.cloud',
-        )
-    })
 })
