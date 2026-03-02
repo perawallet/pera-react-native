@@ -237,6 +237,9 @@ importers:
       '@perawallet/wallet-core-projects':
         specifier: workspace:*
         version: link:../../packages/projects
+      '@perawallet/wallet-core-provider':
+        specifier: workspace:*
+        version: link:../../packages/provider
       '@perawallet/wallet-core-security':
         specifier: workspace:*
         version: link:../../packages/security

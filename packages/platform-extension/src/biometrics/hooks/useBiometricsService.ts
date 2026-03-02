@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { getPlatformServices } from '../../get-platform-services'
+import { getProvider } from '@perawallet/wallet-core-provider'
+import type { PeraProviderWithPlatform } from '../../extension'
 import type { BiometricsService } from '../models'
 
 export const BiometricsServiceContainerKey = 'BiometricsService'
 export const useBiometricsService = (): BiometricsService =>
-    getPlatformServices().biometrics
+    getProvider<PeraProviderWithPlatform>().biometrics

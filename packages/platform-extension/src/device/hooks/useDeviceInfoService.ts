@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-import { getPlatformServices } from '../../get-platform-services'
+import { getProvider } from '@perawallet/wallet-core-provider'
+import type { PeraProviderWithPlatform } from '../../extension'
 import type { DeviceInfoService } from '../models'
 
 export const DeviceInfoServiceContainerKey = 'DeviceInfoService'
 
 export const useDeviceInfoService = (): DeviceInfoService =>
-    getPlatformServices().deviceInfo
+    getProvider<PeraProviderWithPlatform>().deviceInfo

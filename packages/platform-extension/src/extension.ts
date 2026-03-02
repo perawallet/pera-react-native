@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { PeraProvider } from '@perawallet/wallet-core-provider'
 import type { PlatformServices } from './models'
 import { initDeviceStore } from './device/store'
 import { initRemoteConfigStore } from './remote-config/store'
@@ -19,6 +20,12 @@ export interface PlatformExtensionOptions {
 }
 
 export type PlatformServicesExtension = PlatformServices
+
+/**
+ * The provider type after the WithPlatformServices extension has been applied.
+ * Use with `getProvider<PeraProviderWithPlatform>()` to access platform services.
+ */
+export type PeraProviderWithPlatform = PeraProvider & PlatformServicesExtension
 
 /**
  * wallet-provider Extension that makes all platform services available

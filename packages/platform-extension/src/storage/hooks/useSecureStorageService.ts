@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { getPlatformServices } from '../../get-platform-services'
+import { getProvider } from '@perawallet/wallet-core-provider'
+import type { PeraProviderWithPlatform } from '../../extension'
 import type { SecureStorageService } from '../models'
 
 export const SecureStorageServiceContainerKey = 'SecureStorageService'
 export const useSecureStorageService = (): SecureStorageService =>
-    getPlatformServices().secureStorage
+    getProvider<PeraProviderWithPlatform>().secureStorage

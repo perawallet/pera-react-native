@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-import { getPlatformServices } from '../../get-platform-services'
+import { getProvider } from '@perawallet/wallet-core-provider'
+import type { PeraProviderWithPlatform } from '../../extension'
 import type { KeyValueStorageService } from '../models'
 
 export const KeyValueStorageServiceContainerKey = 'KeyValueStorageService'
 
 export const useKeyValueStorageService = (): KeyValueStorageService =>
-    getPlatformServices().keyValueStorage
+    getProvider<PeraProviderWithPlatform>().keyValueStorage

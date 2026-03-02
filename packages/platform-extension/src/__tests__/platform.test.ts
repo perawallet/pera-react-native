@@ -13,7 +13,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resetProvider, getProvider } from '@perawallet/wallet-core-provider'
 import { registerPlatformServices } from '../platform'
-import { getPlatformServices } from '../get-platform-services'
+import type { PeraProviderWithPlatform } from '../extension'
 import type { AnalyticsService } from '../analytics'
 import type { CrashReportingService } from '../reporting'
 import type { RemoteConfigService } from '../remote-config'
@@ -91,16 +91,16 @@ describe('platform', () => {
         // Provider singleton should be set
         expect(() => getProvider()).not.toThrow()
 
-        // All services should be accessible via getPlatformServices
-        const services = getPlatformServices()
-        expect(services.analytics).toBe(mockAnalytics)
-        expect(services.keyValueStorage).toBe(mockKeyValueStorage)
-        expect(services.secureStorage).toBe(mockSecureStorage)
-        expect(services.remoteConfig).toBe(mockRemoteConfig)
-        expect(services.pushNotification).toBe(mockNotification)
-        expect(services.crashReporting).toBe(mockCrashReporting)
-        expect(services.deviceInfo).toBe(mockDeviceInfo)
-        expect(services.biometrics).toBe(mockBiometrics)
+        // All services should be accessible via getProvider
+        const provider = getProvider<PeraProviderWithPlatform>()
+        expect(provider.analytics).toBe(mockAnalytics)
+        expect(provider.keyValueStorage).toBe(mockKeyValueStorage)
+        expect(provider.secureStorage).toBe(mockSecureStorage)
+        expect(provider.remoteConfig).toBe(mockRemoteConfig)
+        expect(provider.pushNotification).toBe(mockNotification)
+        expect(provider.crashReporting).toBe(mockCrashReporting)
+        expect(provider.deviceInfo).toBe(mockDeviceInfo)
+        expect(provider.biometrics).toBe(mockBiometrics)
     })
 
     it('should throw when called twice without reset', () => {

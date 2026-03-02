@@ -42,6 +42,7 @@
     "@perawallet/wallet-core-kms": "workspace:*",
     "@perawallet/wallet-core-notifications": "workspace:*",
     "@perawallet/wallet-core-platform-extension": "workspace:*",
+    "@perawallet/wallet-core-provider": "workspace:*",
     "@perawallet/wallet-core-polling": "workspace:*",
     "@perawallet/wallet-core-security": "workspace:*",
     "@perawallet/wallet-core-settings": "workspace:*",

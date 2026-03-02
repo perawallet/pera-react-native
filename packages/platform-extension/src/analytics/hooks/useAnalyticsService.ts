@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-import { getPlatformServices } from '../../get-platform-services'
+import { getProvider } from '@perawallet/wallet-core-provider'
+import type { PeraProviderWithPlatform } from '../../extension'
 import type { AnalyticsService } from '../models'
 
 export const AnalyticsServiceContainerKey = 'AnalyticsService'
 
 export const useAnalyticsService = (): AnalyticsService =>
-    getPlatformServices().analytics
+    getProvider<PeraProviderWithPlatform>().analytics

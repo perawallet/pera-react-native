@@ -15,8 +15,8 @@ import { screenListeners, resetPreviousRouteNameForTesting } from '../listeners'
 
 const logEventMock = vi.fn()
 
-vi.mock('@perawallet/wallet-core-platform-extension', () => ({
-    getPlatformServices: () => ({
+vi.mock('@perawallet/wallet-core-provider', () => ({
+    getProvider: () => ({
         analytics: {
             logEvent: logEventMock,
         },

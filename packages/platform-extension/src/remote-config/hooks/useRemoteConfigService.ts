@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { getPlatformServices } from '../../get-platform-services'
+import { getProvider } from '@perawallet/wallet-core-provider'
+import type { PeraProviderWithPlatform } from '../../extension'
 import type { RemoteConfigService } from '../models'
 import { useRemoteConfigOverrides } from './useRemoteConfigOverrides'
 
@@ -19,7 +20,8 @@ export const RemoteConfigServiceContainerKey = 'RemoteConfigService'
 export const useRemoteConfigService = (): RemoteConfigService => {
     const configOverrides = useRemoteConfigOverrides()
 
-    const remoteConfigService = getPlatformServices().remoteConfig
+    const remoteConfigService =
+        getProvider<PeraProviderWithPlatform>().remoteConfig
 
     const wrapperService: RemoteConfigService = {
         initializeRemoteConfig: () =>

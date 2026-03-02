@@ -10,10 +10,11 @@
  limitations under the License
  */
 
-import { getPlatformServices } from '../../get-platform-services'
+import { getProvider } from '@perawallet/wallet-core-provider'
+import type { PeraProviderWithPlatform } from '../../extension'
 import type { PushNotificationService } from '../models'
 
 export const PushNotificationServiceContainerKey = 'PushNotificationService'
 
 export const usePushNotificationService = (): PushNotificationService =>
-    getPlatformServices().pushNotification
+    getProvider<PeraProviderWithPlatform>().pushNotification
