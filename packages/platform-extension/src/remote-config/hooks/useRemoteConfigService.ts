@@ -20,8 +20,7 @@ export const RemoteConfigServiceContainerKey = 'RemoteConfigService'
 export const useRemoteConfigService = (): RemoteConfigService => {
     const configOverrides = useRemoteConfigOverrides()
 
-    const remoteConfigService =
-        getProvider<PeraProvider>().remoteConfig
+    const remoteConfigService = getProvider<PeraProvider>().remoteConfig
 
     const wrapperService: RemoteConfigService = {
         initializeRemoteConfig: () =>

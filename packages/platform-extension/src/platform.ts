@@ -17,7 +17,7 @@ import type { PlatformServices } from './models'
 /**
  * Creates the provider with platform services and sets the global singleton.
  * DeviceStore and RemoteConfigStore are initialized synchronously during
- * provider construction via the WithPlatformServices extension.
+ * provider construction via the WithPlatformServicesExtension extension.
  */
 export const registerPlatformServices = (platform: PlatformServices) => {
     const provider = new PeraProvider(

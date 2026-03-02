@@ -25,7 +25,7 @@ export type PlatformServicesExtension = PlatformServices
  * on the provider instance and synchronously initializes the DeviceStore
  * and RemoteConfigStore.
  */
-export const WithPlatformServices = (
+export const WithPlatformServicesExtension = (
     _provider: unknown,
     options: PlatformExtensionOptions,
 ): PlatformServicesExtension => {

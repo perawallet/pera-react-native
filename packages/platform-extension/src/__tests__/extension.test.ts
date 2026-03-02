@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it, vi } from 'vitest'
-import { WithPlatformServices } from '../extension'
+import { WithPlatformServicesExtension } from '../extension'
 import type { PlatformServices } from '../models'
 import type { AnalyticsService } from '../analytics'
 import type { CrashReportingService } from '../reporting'
@@ -22,7 +22,7 @@ import type { DeviceInfoService } from '../device'
 import type { BiometricsService } from '../biometrics'
 import { MemoryKeyValueStorage } from '../test-utils'
 
-describe('WithPlatformServices extension', () => {
+describe('WithPlatformServicesExtension extension', () => {
     const createMockPlatform = (): PlatformServices => ({
         analytics: {
             initializeAnalytics: vi.fn(),
@@ -72,7 +72,7 @@ describe('WithPlatformServices extension', () => {
 
     it('should return all platform services', () => {
         const platform = createMockPlatform()
-        const result = WithPlatformServices({}, { platform })
+        const result = WithPlatformServicesExtension({}, { platform })
 
         expect(result.analytics).toBe(platform.analytics)
         expect(result.keyValueStorage).toBe(platform.keyValueStorage)
@@ -88,6 +88,8 @@ describe('WithPlatformServices extension', () => {
         const platform = createMockPlatform()
 
         // Should not throw — stores are initialized during extension construction
-        expect(() => WithPlatformServices({}, { platform })).not.toThrow()
+        expect(() =>
+            WithPlatformServicesExtension({}, { platform }),
+        ).not.toThrow()
     })
 })

@@ -38,8 +38,7 @@ export const screenListeners = ({
             !NAVIGATION_STACK_NAMES.has(currentRouteName) &&
             previousRouteName !== currentRouteName
         ) {
-            const analyticsService =
-                getProvider<PeraProvider>().analytics
+            const analyticsService = getProvider<PeraProvider>().analytics
             analyticsService.logEvent(`scr_${currentRouteName}_view`, {
                 previous: previousRouteName,
                 path: route.path,

@@ -112,7 +112,7 @@ export const createDeviceStore = (storage: KeyValueStorageService) =>
 
 /**
  * Initialize the device store synchronously with the given storage service.
- * Called by the WithPlatformServices extension during provider construction.
+ * Called by the WithPlatformServicesExtension during provider construction.
  */
 export const initDeviceStore = (storage: KeyValueStorageService) => {
     const realStore = createDeviceStore(storage)

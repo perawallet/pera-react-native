@@ -66,7 +66,7 @@ export const createRemoteConfigStore = (storage: KeyValueStorageService) =>
 
 /**
  * Initialize the remote config store synchronously with the given storage service.
- * Called by the WithPlatformServices extension during provider construction.
+ * Called by the WithPlatformServicesExtension during provider construction.
  */
 export const initRemoteConfigStore = (storage: KeyValueStorageService) => {
     const realStore = createRemoteConfigStore(storage)

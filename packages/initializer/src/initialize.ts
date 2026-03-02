@@ -25,7 +25,7 @@ import { registerWalletConnectStore } from '@perawallet/wallet-core-walletconnec
 /**
  * Registers all data stores with DataStoreRegistry.
  * DeviceStore and RemoteConfigStore are excluded — they are initialized
- * synchronously by the WithPlatformServices extension during provider construction.
+ * synchronously by the WithPlatformServicesExtension during provider construction.
  */
 export const registerDataStores = () => {
     registerAccountsStore()
