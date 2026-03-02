@@ -33,35 +33,7 @@ class DataStoreRegistryImpl {
         logger.debug(`Store "${store.name}" registered`)
     }
 
-    async initializeAll(): Promise<void> {
-        if (this.initialized) {
-            logger.warn('DataStoreRegistry already initialized. Skipping.')
-            return
-        }
-
-        logger.debug(
-            `Initializing ${this.stores.size} stores: ${this.getRegisteredStores().join(', ')}`,
-        )
-
-        const initPromises = Array.from(this.stores.values()).map(
-            async store => {
-                try {
-                    await Promise.resolve(store.init())
-                } catch (error) {
-                    logger.error(`Failed to initialize store "${store.name}"`, {
-                        error,
-                    })
-                    throw error
-                }
-            },
-        )
-
-        await Promise.allSettled(initPromises)
-        this.initialized = true
-        logger.debug('All stores initialized')
-    }
-
-    initializeAllSync(): void {
+    initializeAll(): void {
         if (this.initialized) {
             logger.warn('DataStoreRegistry already initialized. Skipping.')
             return

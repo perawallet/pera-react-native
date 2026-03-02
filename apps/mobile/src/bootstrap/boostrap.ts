@@ -39,7 +39,7 @@ export const platformServices: PlatformServices = {
  */
 export const initializeDataStores = () => {
     registerDataStores()
-    DataStoreRegistry.initializeAllSync()
+    DataStoreRegistry.initializeAll()
 }
 
 export const useBootstrapper = () => {

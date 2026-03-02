@@ -52,58 +52,6 @@ describe('utils/store-registry', () => {
     })
 
     describe('initializeAll', () => {
-        test('calls init on all registered stores', async () => {
-            const mockStore1 = {
-                name: 'test-store-1',
-                init: vi.fn(),
-                clear: vi.fn(),
-            }
-            const mockStore2 = {
-                name: 'test-store-2',
-                init: vi.fn(),
-                clear: vi.fn(),
-            }
-
-            DataStoreRegistry.register(mockStore1)
-            DataStoreRegistry.register(mockStore2)
-
-            await DataStoreRegistry.initializeAll()
-
-            expect(mockStore1.init).toHaveBeenCalledTimes(1)
-            expect(mockStore2.init).toHaveBeenCalledTimes(1)
-        })
-
-        test('does not reinitialize if already initialized', async () => {
-            const mockStore = {
-                name: 'test-store',
-                init: vi.fn(),
-                clear: vi.fn(),
-            }
-
-            DataStoreRegistry.register(mockStore)
-
-            await DataStoreRegistry.initializeAll()
-            await DataStoreRegistry.initializeAll()
-
-            expect(mockStore.init).toHaveBeenCalledTimes(1)
-        })
-
-        test('sets initialized flag after initialization', async () => {
-            const mockStore = {
-                name: 'test-store',
-                init: vi.fn(),
-                clear: vi.fn(),
-            }
-
-            DataStoreRegistry.register(mockStore)
-
-            expect(DataStoreRegistry.isInitialized()).toBe(false)
-            await DataStoreRegistry.initializeAll()
-            expect(DataStoreRegistry.isInitialized()).toBe(true)
-        })
-    })
-
-    describe('initializeAllSync', () => {
         test('calls init on all registered stores', () => {
             const mockStore1 = {
                 name: 'test-store-1',
@@ -119,7 +67,7 @@ describe('utils/store-registry', () => {
             DataStoreRegistry.register(mockStore1)
             DataStoreRegistry.register(mockStore2)
 
-            DataStoreRegistry.initializeAllSync()
+            DataStoreRegistry.initializeAll()
 
             expect(mockStore1.init).toHaveBeenCalledTimes(1)
             expect(mockStore2.init).toHaveBeenCalledTimes(1)
@@ -134,8 +82,8 @@ describe('utils/store-registry', () => {
 
             DataStoreRegistry.register(mockStore)
 
-            DataStoreRegistry.initializeAllSync()
-            DataStoreRegistry.initializeAllSync()
+            DataStoreRegistry.initializeAll()
+            DataStoreRegistry.initializeAll()
 
             expect(mockStore.init).toHaveBeenCalledTimes(1)
         })
@@ -150,7 +98,7 @@ describe('utils/store-registry', () => {
             DataStoreRegistry.register(mockStore)
 
             expect(DataStoreRegistry.isInitialized()).toBe(false)
-            DataStoreRegistry.initializeAllSync()
+            DataStoreRegistry.initializeAll()
             expect(DataStoreRegistry.isInitialized()).toBe(true)
         })
 
@@ -171,7 +119,7 @@ describe('utils/store-registry', () => {
             DataStoreRegistry.register(mockStore1)
             DataStoreRegistry.register(mockStore2)
 
-            DataStoreRegistry.initializeAllSync()
+            DataStoreRegistry.initializeAll()
 
             expect(mockStore1.init).toHaveBeenCalledTimes(1)
             expect(mockStore2.init).toHaveBeenCalledTimes(1)
@@ -240,14 +188,14 @@ describe('utils/store-registry', () => {
             expect(DataStoreRegistry.getRegisteredStores()).toEqual([])
         })
 
-        test('resets initialized flag', async () => {
+        test('resets initialized flag', () => {
             DataStoreRegistry.register({
                 name: 'test-store',
                 init: vi.fn(),
                 clear: vi.fn(),
             })
 
-            await DataStoreRegistry.initializeAll()
+            DataStoreRegistry.initializeAll()
             expect(DataStoreRegistry.isInitialized()).toBe(true)
 
             DataStoreRegistry.reset()
