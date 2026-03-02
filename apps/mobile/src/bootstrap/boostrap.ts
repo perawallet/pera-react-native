@@ -15,16 +15,13 @@ import { RNDeviceInfoStorageService } from '../platform/device'
 import { RNFirebaseService } from '../platform/firebase'
 import { RNKeyValueStorageService } from '../platform/key-value-storage'
 import { RNSecureStorageService } from '../platform/secure-storage'
-import {
-    PlatformServices,
-    registerPlatformServices,
-} from '@perawallet/wallet-core-platform-extension'
+import type { PlatformServices } from '@perawallet/wallet-core-platform-extension'
 import { DataStoreRegistry, logger } from '@perawallet/wallet-core-shared'
 import { registerDataStores } from '@perawallet/wallet-core-initializer'
 import { useCallback } from 'react'
 
 const firebaseService = new RNFirebaseService()
-const platformServices: PlatformServices = {
+export const platformServices: PlatformServices = {
     analytics: firebaseService,
     biometrics: new RNBiometricsService(),
     crashReporting: firebaseService,
@@ -39,14 +36,11 @@ export const useBootstrapper = () => {
     return useCallback(async () => {
         logger.debug('Bootstrapping')
         // Register remaining data stores with DataStoreRegistry
-        // (DeviceStore and RemoteConfigStore are initialized by the provider)
+        // (DeviceStore and RemoteConfigStore are initialized by PeraWalletProvider)
         registerDataStores()
 
-        // Create provider with platform services extension
-        // This synchronously initializes DeviceStore and RemoteConfigStore
-        registerPlatformServices(platformServices)
-
-        // Initialize remaining stores (they resolve services via getProvider())
+        // Initialize remaining stores (they resolve services via getProvider(),
+        // which is already set by PeraWalletProvider before this effect runs)
         await DataStoreRegistry.initializeAll()
 
         const crashlyticsInit =
@@ -67,7 +61,6 @@ export const useBootstrapper = () => {
         logger.debug('Bootstrapping completed')
 
         return {
-            platformServices,
             token: notificationResults.token,
         }
     }, [])

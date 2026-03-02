@@ -14,13 +14,14 @@ import React, { useEffect, useState } from 'react'
 import './i18n'
 import { Text } from 'react-native'
 import { QueryProvider } from './providers/QueryProvider'
-import { useBootstrapper } from './bootstrap/boostrap'
+import { useBootstrapper, platformServices } from './bootstrap/boostrap'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import { Persister } from '@tanstack/react-query-persist-client'
 import {
     algorandSafeQuerySerialize,
     algorandSafeQueryParse,
 } from '@perawallet/wallet-core-blockchain'
+import { PeraWalletProvider } from '@perawallet/wallet-core-platform-extension'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { RootComponent } from '@components/RootComponent'
 import * as SplashScreen from 'expo-splash-screen'
@@ -42,11 +43,10 @@ export const App = () => {
 
     useEffect(() => {
         if (!bootstrapped) {
-            bootstrap().then(({ platformServices, token }) => {
+            bootstrap().then(({ token }) => {
                 setFcmToken(token ?? null)
-                const kvService = platformServices.keyValueStorage
                 const reactQueryPersistor = createAsyncStoragePersister({
-                    storage: kvService,
+                    storage: platformServices.keyValueStorage,
                     serialize: algorandSafeQuerySerialize,
                     deserialize: algorandSafeQueryParse,
                 })
@@ -64,17 +64,19 @@ export const App = () => {
     }, [bootstrapped, bootstrap])
 
     return (
-        <SafeAreaProvider>
-            {!bootstrapped && <Text>{t('common.loading.label')}</Text>}
-            {bootstrapped && persister && (
-                <GestureHandlerRootView>
-                    <NotifierWrapper>
-                        <QueryProvider persister={persister}>
-                            <RootComponent fcmToken={fcmToken} />
-                        </QueryProvider>
-                    </NotifierWrapper>
-                </GestureHandlerRootView>
-            )}
-        </SafeAreaProvider>
+        <PeraWalletProvider platform={platformServices}>
+            <SafeAreaProvider>
+                {!bootstrapped && <Text>{t('common.loading.label')}</Text>}
+                {bootstrapped && persister && (
+                    <GestureHandlerRootView>
+                        <NotifierWrapper>
+                            <QueryProvider persister={persister}>
+                                <RootComponent fcmToken={fcmToken} />
+                            </QueryProvider>
+                        </NotifierWrapper>
+                    </GestureHandlerRootView>
+                )}
+            </SafeAreaProvider>
+        </PeraWalletProvider>
     )
 }

@@ -10,8 +10,11 @@
  limitations under the License
  */
 
-import { resetProvider } from '@perawallet/wallet-core-provider'
-import { registerPlatformServices } from '../platform'
+import {
+    resetProvider,
+    initializeProvider,
+} from '@perawallet/wallet-core-provider'
+import { PeraProvider } from '../pera-provider'
 import type { PlatformServices } from '../models'
 import type { AnalyticsService } from '../analytics'
 import type { KeyValueStorageService, SecureStorageService } from '../storage'
@@ -154,6 +157,10 @@ export const registerTestPlatform = (
 ): PlatformServices => {
     resetProvider()
     const platform = buildTestPlatform(overrides)
-    registerPlatformServices(platform)
+    const provider = new PeraProvider(
+        { id: 'test', name: 'Test Provider' },
+        { platform },
+    )
+    initializeProvider(provider)
     return platform
 }
