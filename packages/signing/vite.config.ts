@@ -44,7 +44,7 @@ export default defineConfig({
                 '@perawallet/wallet-core-kms',
                 '@perawallet/wallet-core-blockchain',
                 '@perawallet/wallet-core-config',
-                '@perawallet/wallet-core-platform-integration',
+                '@perawallet/wallet-core-platform-extension',
                 '@perawallet/wallet-core-shared',
                 'uuid',
             ],

@@ -11,7 +11,7 @@
  */
 
 import * as Keychain from 'react-native-keychain'
-import type { SecureStorageService } from '@perawallet/wallet-core-platform-integration'
+import type { SecureStorageService } from '@perawallet/wallet-core-platform-extension'
 
 const SERVICE_PREFIX = 'com.algorand.android'
 

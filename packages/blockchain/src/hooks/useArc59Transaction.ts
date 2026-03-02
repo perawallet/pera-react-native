@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-platform-integration'
+import { useNetwork } from '@perawallet/wallet-core-platform-extension'
 import { config } from '@perawallet/wallet-core-config'
 import { useAlgorandClient } from './useAlgorandClient'
 import type { Arc59SendSummaryResponse } from '../api/arc59'

@@ -15,7 +15,7 @@ import {
     useSecureStorageService,
     useBiometricsService,
     type BiometricType,
-} from '@perawallet/wallet-core-platform-integration'
+} from '@perawallet/wallet-core-platform-extension'
 import { BIOMETRIC_STORAGE_KEY, PIN_STORAGE_KEY } from '../constants'
 
 type UseBiometricsResult = {

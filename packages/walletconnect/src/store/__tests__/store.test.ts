@@ -12,10 +12,10 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { initWalletConnectStore } from '../store'
-import { useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
+import { useKeyValueStorageService } from '@perawallet/wallet-core-platform-extension'
 
 // Mock dependencies
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+vi.mock('@perawallet/wallet-core-platform-extension', () => ({
     useKeyValueStorageService: vi.fn(),
 }))
 

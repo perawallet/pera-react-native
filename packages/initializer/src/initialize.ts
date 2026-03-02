@@ -16,24 +16,23 @@ import { registerContactsStore } from '@perawallet/wallet-core-contacts'
 import { registerSigningStore } from '@perawallet/wallet-core-signing'
 import { registerCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { registerKeyManagerStore } from '@perawallet/wallet-core-kms'
-import {
-    registerDeviceStore,
-    registerRemoteConfigStore,
-} from '@perawallet/wallet-core-platform-integration'
 import { registerPollingStore } from '@perawallet/wallet-core-polling'
 import { registerSecurityStore } from '@perawallet/wallet-core-security'
 import { registerSettingsStore } from '@perawallet/wallet-core-settings'
 import { registerSwapsStore } from '@perawallet/wallet-core-swaps'
 import { registerWalletConnectStore } from '@perawallet/wallet-core-walletconnect'
 
+/**
+ * Registers all data stores with DataStoreRegistry.
+ * DeviceStore and RemoteConfigStore are excluded — they are initialized
+ * synchronously by the WithPlatformServices extension during provider construction.
+ */
 export const registerDataStores = () => {
     registerAccountsStore()
     registerBlockchainStore()
     registerContactsStore()
     registerCurrenciesStore()
     registerKeyManagerStore()
-    registerDeviceStore()
-    registerRemoteConfigStore()
     registerPollingStore()
     registerSecurityStore()
     registerSettingsStore()

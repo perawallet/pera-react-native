@@ -26,20 +26,17 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     useToggleAssetFavoriteMutation: () => mockUseToggleAssetFavoriteMutation(),
 }))
 
-vi.mock(
-    '@perawallet/wallet-core-platform-integration',
-    async importOriginal => {
-        const actual =
-            await importOriginal<
-                typeof import('@perawallet/wallet-core-platform-integration')
-            >()
-        return {
-            ...actual,
-            useDeviceID: vi.fn().mockReturnValue('test-device-id'),
-            useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
-        }
-    },
-)
+vi.mock('@perawallet/wallet-core-platform-extension', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-platform-extension')
+        >()
+    return {
+        ...actual,
+        useDeviceID: vi.fn().mockReturnValue('test-device-id'),
+        useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
+    }
+})
 
 import { AssetFavoriteButton } from '../AssetFavoriteButton'
 
@@ -159,7 +156,7 @@ describe('AssetFavoriteButton', () => {
 
     it('is disabled when deviceId is null', async () => {
         const module = await import(
-            '@perawallet/wallet-core-platform-integration'
+            '@perawallet/wallet-core-platform-extension'
         )
         vi.mocked(module.useDeviceID).mockReturnValue(null)
 
@@ -196,7 +193,7 @@ describe('AssetFavoriteButton', () => {
 
     it('is disabled when deviceId is null', async () => {
         const module = await import(
-            '@perawallet/wallet-core-platform-integration'
+            '@perawallet/wallet-core-platform-extension'
         )
         vi.mocked(module.useDeviceID).mockReturnValue(null)
 

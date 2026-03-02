@@ -18,8 +18,8 @@ import { RNSecureStorageService } from '../platform/secure-storage'
 import {
     PlatformServices,
     registerPlatformServices,
-} from '@perawallet/wallet-core-platform-integration'
-import { logger } from '@perawallet/wallet-core-shared'
+} from '@perawallet/wallet-core-platform-extension'
+import { DataStoreRegistry, logger } from '@perawallet/wallet-core-shared'
 import { registerDataStores } from '@perawallet/wallet-core-initializer'
 import { useCallback } from 'react'
 
@@ -38,10 +38,16 @@ const platformServices: PlatformServices = {
 export const useBootstrapper = () => {
     return useCallback(async () => {
         logger.debug('Bootstrapping')
-        // Register all data stores with DataStoreRegistry
+        // Register remaining data stores with DataStoreRegistry
+        // (DeviceStore and RemoteConfigStore are initialized by the provider)
         registerDataStores()
-        // Register platform services and initialize data stores
-        await registerPlatformServices(platformServices)
+
+        // Create provider with platform services extension
+        // This synchronously initializes DeviceStore and RemoteConfigStore
+        registerPlatformServices(platformServices)
+
+        // Initialize remaining stores (they resolve services via getProvider())
+        await DataStoreRegistry.initializeAll()
 
         const crashlyticsInit =
             platformServices.crashReporting.initializeCrashReporting()

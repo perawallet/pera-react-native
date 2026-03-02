@@ -13,7 +13,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any*/
 /* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable max-lines */
-import 'reflect-metadata'
 import { vi, afterEach } from 'vitest'
 // import '@testing-library/jest-native/extend-expect'
 
@@ -1772,8 +1771,8 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     initBlockchainStore: vi.fn(),
 }))
 
-// Mock @perawallet/wallet-core-platform-integration
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+// Mock @perawallet/wallet-core-platform-extension
+vi.mock('@perawallet/wallet-core-platform-extension', () => ({
     useID: vi.fn(() => 'id'),
     useDeviceID: vi.fn(() => 'device-id'),
     useDeviceInfoService: vi.fn(() => ({

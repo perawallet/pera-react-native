@@ -11,7 +11,7 @@
  */
 
 import { PWSwitch, PWText, PWView } from '@components/core'
-import { RemoteConfigKeys } from '@perawallet/wallet-core-platform-integration'
+import { RemoteConfigKeys } from '@perawallet/wallet-core-platform-extension'
 import { useStyles } from './styles'
 import { useFeatureFlagOverrides } from './useFeatureFlagOverrides'
 import { useLanguage } from '@hooks/useLanguage'

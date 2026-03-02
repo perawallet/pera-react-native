@@ -30,7 +30,7 @@ vi.mock('../../store', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+vi.mock('@perawallet/wallet-core-platform-extension', () => ({
     useKeyValueStorageService: vi.fn().mockReturnValue({
         getItem: vi.fn(),
         setItem: vi.fn(),

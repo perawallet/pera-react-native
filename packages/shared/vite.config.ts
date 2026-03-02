@@ -54,8 +54,6 @@ export default defineConfig({
                 'decimal.js',
                 'ky',
                 'react-native-quick-base64',
-                'reflect-metadata',
-                'tsyringe',
                 'util',
                 'uuid',
                 'zod',

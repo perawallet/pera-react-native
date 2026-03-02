@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAssetTransactionList } from '../useAssetTransactionList'
-import { useNetwork } from '@perawallet/wallet-core-platform-integration'
+import { useNetwork } from '@perawallet/wallet-core-platform-extension'
 import {
     useCsvExportMutation,
     useTransactionHistoryQuery,
@@ -25,7 +25,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 
 // Mock dependencies
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+vi.mock('@perawallet/wallet-core-platform-extension', () => ({
     useNetwork: vi.fn(),
 }))
 

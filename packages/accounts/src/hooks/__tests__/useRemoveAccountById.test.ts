@@ -17,7 +17,7 @@ import { useAccountsStore } from '../../store'
 import {
     registerTestPlatform,
     MemoryKeyValueStorage,
-} from '@perawallet/wallet-core-platform-integration'
+} from '@perawallet/wallet-core-platform-extension'
 import type { WalletAccount } from '../../models'
 
 vi.mock('../../store', async () => {
@@ -41,10 +41,10 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-platform-integration', async () => {
+vi.mock('@perawallet/wallet-core-platform-extension', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-platform-integration')
-    >('@perawallet/wallet-core-platform-integration')
+        typeof import('@perawallet/wallet-core-platform-extension')
+    >('@perawallet/wallet-core-platform-extension')
     return {
         ...actual,
         useKeyValueStorageService: vi.fn().mockReturnValue({

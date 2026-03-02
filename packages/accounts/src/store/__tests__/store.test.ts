@@ -14,7 +14,7 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { act } from '@testing-library/react'
 import { createAccountsStore } from '../index'
 import type { WalletAccount } from '../../models'
-import type { KeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
+import type { KeyValueStorageService } from '@perawallet/wallet-core-platform-extension'
 
 describe('services/accounts/store', () => {
     let useAccountsStore: ReturnType<typeof createAccountsStore>

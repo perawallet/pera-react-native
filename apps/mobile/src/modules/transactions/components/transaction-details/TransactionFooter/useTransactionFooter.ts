@@ -12,7 +12,7 @@
 
 import { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { useMemo } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-platform-integration'
+import { useNetwork } from '@perawallet/wallet-core-platform-extension'
 import { useWebView } from '@modules/webview/hooks'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'

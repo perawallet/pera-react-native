@@ -9,18 +9,3 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
-
-import 'reflect-metadata'
-import { container } from 'tsyringe'
-import { afterEach } from 'vitest'
-
-afterEach(() => {
-    try {
-        if (typeof (container as any).clearInstances === 'function') {
-            ;(container as any).clearInstances()
-        }
-        if (typeof (container as any).reset === 'function') {
-            ;(container as any).reset()
-        }
-    } catch {}
-})

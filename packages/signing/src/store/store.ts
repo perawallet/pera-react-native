@@ -15,7 +15,7 @@ import { persist, createJSONStorage } from 'zustand/middleware'
 import {
     KeyValueStorageService,
     useKeyValueStorageService,
-} from '@perawallet/wallet-core-platform-integration'
+} from '@perawallet/wallet-core-platform-extension'
 import type { SigningStore, SignRequest } from '../models'
 import {
     createLazyStore,

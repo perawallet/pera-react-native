@@ -36,8 +36,6 @@
     "ky": "^1.14.0",
     "react": "catalog:",
     "react-native-quick-base64": "^2.2.2",
-    "reflect-metadata": "catalog:",
-    "tsyringe": "catalog:",
     "util": "catalog:",
     "uuid": "catalog:",
     "zod": "catalog:",

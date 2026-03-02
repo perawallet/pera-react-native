@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { createWrapper } from '@perawallet/wallet-core-platform-integration'
+import { createWrapper } from '@perawallet/wallet-core-platform-extension'
 import { useAccountNotificationEnabledMutation } from '../useAccountNotificationEnabledMutation'
 import { updateNotificationEnabled } from '../../api/notifications'
 
@@ -20,20 +20,17 @@ vi.mock('../../api/notifications', () => ({
     updateNotificationEnabled: vi.fn(),
 }))
 
-vi.mock(
-    '@perawallet/wallet-core-platform-integration',
-    async importOriginal => {
-        const actual =
-            await importOriginal<
-                typeof import('@perawallet/wallet-core-platform-integration')
-            >()
-        return {
-            ...actual,
-            useDeviceID: vi.fn().mockReturnValue('test-device-id'),
-            useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
-        }
-    },
-)
+vi.mock('@perawallet/wallet-core-platform-extension', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-platform-extension')
+        >()
+    return {
+        ...actual,
+        useDeviceID: vi.fn().mockReturnValue('test-device-id'),
+        useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
+    }
+})
 
 describe('useAccountNotificationEnabledMutation', () => {
     beforeEach(() => {

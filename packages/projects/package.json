@@ -20,7 +20,7 @@
   "dependencies": {
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-shared": "workspace:*",
-    "@perawallet/wallet-core-platform-integration": "workspace:*",
+    "@perawallet/wallet-core-platform-extension": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "react": "catalog:",
     "ky": "^1.14.0",
@@ -34,7 +34,6 @@
     "globals": "catalog:",
     "jsdom": "^27.1.0",
     "react-dom": "catalog:",
-    "reflect-metadata": "catalog:",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",
     "vite": "catalog:",

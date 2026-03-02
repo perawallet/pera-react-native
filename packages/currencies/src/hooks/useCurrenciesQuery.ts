@@ -12,7 +12,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-platform-integration'
+import { useNetwork } from '@perawallet/wallet-core-platform-extension'
 import { fetchCurrenciesList } from '../api/currencies'
 import { getCurrenciesQueryKey } from './querykeys'
 

@@ -40,7 +40,7 @@ export default defineConfig({
         alias: {
             '@test-utils': path.resolve(
                 __dirname,
-                '../platform-integration/src/test-utils',
+                '../platform-extension/src/test-utils',
             ),
         },
     },

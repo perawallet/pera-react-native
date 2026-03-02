@@ -17,7 +17,7 @@ import type { WithPersist } from '@perawallet/wallet-core-shared'
 import {
     type KeyValueStorageService,
     useKeyValueStorageService,
-} from '@perawallet/wallet-core-platform-integration'
+} from '@perawallet/wallet-core-platform-extension'
 import {
     createLazyStore,
     DataStoreRegistry,

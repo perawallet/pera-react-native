@@ -26,7 +26,7 @@ import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import {
     useDevice,
     useNetwork,
-} from '@perawallet/wallet-core-platform-integration'
+} from '@perawallet/wallet-core-platform-extension'
 import { usePolling } from '@perawallet/wallet-core-polling'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useNetworkStatus, useNetworkStatusListener } from '@modules/network'

@@ -12,7 +12,7 @@
 
 import { config, getNetworkConfig } from '@perawallet/wallet-core-config'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import { useDeviceStore } from '@perawallet/wallet-core-platform-integration'
+import { useDeviceStore } from '@perawallet/wallet-core-platform-extension'
 
 /**
  * Returns an instance of AlgorandClient based on the current network in device store.

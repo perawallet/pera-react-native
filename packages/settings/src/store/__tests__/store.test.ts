@@ -12,11 +12,13 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { registerTestPlatform } from '@perawallet/wallet-core-platform-integration'
 
 describe('services/settings/store', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         vi.resetModules()
+        const { registerTestPlatform } = await import(
+            '@perawallet/wallet-core-platform-extension'
+        )
         registerTestPlatform()
     })
 

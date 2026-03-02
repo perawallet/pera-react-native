@@ -14,7 +14,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
     useDeviceID,
     useNetwork,
-} from '@perawallet/wallet-core-platform-integration'
+} from '@perawallet/wallet-core-platform-extension'
 import {
     fetchNotificationStatus,
     type NotificationStatusResponse,

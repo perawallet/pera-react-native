@@ -88,10 +88,10 @@ export default defineConfig({
                 ),
             },
             {
-                find: '@perawallet/wallet-core-platform-integration',
+                find: '@perawallet/wallet-core-platform-extension',
                 replacement: path.resolve(
                     __dirname,
-                    '../../packages/platform-integration/src/index.ts',
+                    '../../packages/platform-extension/src/index.ts',
                 ),
             },
             {

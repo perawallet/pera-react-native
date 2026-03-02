@@ -42,7 +42,7 @@ export default defineConfig({
                 '@tanstack/react-query',
                 '@perawallet/wallet-core-config',
                 '@perawallet/wallet-core-currencies',
-                '@perawallet/wallet-core-platform-integration',
+                '@perawallet/wallet-core-platform-extension',
                 '@perawallet/wallet-core-shared',
                 'decimal.js',
             ],

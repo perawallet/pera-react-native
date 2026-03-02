@@ -7,7 +7,7 @@ Location: `packages/[domain]/src/store/store.ts`
 ```typescript
 import { createStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { KeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
+import { KeyValueStorageService } from '@perawallet/wallet-core-platform-extension'
 import { createLazyStore } from '@perawallet/wallet-core-shared'
 
 export type AccountsState = {

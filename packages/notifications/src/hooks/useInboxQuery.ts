@@ -14,7 +14,7 @@ import { useCallback, useMemo } from 'react'
 import {
     useDeviceID,
     useNetwork,
-} from '@perawallet/wallet-core-platform-integration'
+} from '@perawallet/wallet-core-platform-extension'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useQuery } from '@tanstack/react-query'
 import { fetchInbox, type InboxResponse } from '../api/inbox'

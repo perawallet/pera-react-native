@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { act } from '@testing-library/react'
 import { createKeyManagerStore } from '../store'
 import { KeyPair, KeyType } from '../../models'
-import { KeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
+import { KeyValueStorageService } from '@perawallet/wallet-core-platform-extension'
 
 describe('KeyManagerStore', () => {
     let mockStorage: KeyValueStorageService

@@ -14,7 +14,7 @@ import { useKMS } from '@perawallet/wallet-core-kms'
 import { DataStoreRegistry, logger } from '@perawallet/wallet-core-shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
-import { useDeleteDeviceMutation } from '@perawallet/wallet-core-platform-integration'
+import { useDeleteDeviceMutation } from '@perawallet/wallet-core-platform-extension'
 
 // TODO: probably want to revoke device here so we stop sending push notifications
 export const useDeleteAllData = () => {

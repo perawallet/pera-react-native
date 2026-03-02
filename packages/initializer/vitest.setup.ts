@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import 'reflect-metadata'
 import { vi, beforeEach } from 'vitest'
 
 // Create a simple in-memory key store for mocking
@@ -24,7 +23,7 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@perawallet/wallet-core-kms')>()
     const { useSecureStorageService } = await import(
-        '@perawallet/wallet-core-platform-integration'
+        '@perawallet/wallet-core-platform-extension'
     )
 
     return {

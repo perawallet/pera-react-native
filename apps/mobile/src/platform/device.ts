@@ -13,7 +13,7 @@
 import {
     type DeviceInfoService,
     type DevicePlatform,
-} from '@perawallet/wallet-core-platform-integration'
+} from '@perawallet/wallet-core-platform-extension'
 import { updateBackendHeaders } from '@perawallet/wallet-core-shared'
 import * as Application from 'expo-application'
 import * as Device from 'expo-device'

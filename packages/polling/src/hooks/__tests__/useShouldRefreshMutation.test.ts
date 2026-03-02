@@ -12,7 +12,6 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { registerTestPlatform, createWrapper } from '@test-utils'
 
 // Mock dependencies
 const mockSendShouldRefreshRequest = vi.fn()
@@ -21,9 +20,9 @@ vi.mock('../endpoints', () => ({
 }))
 
 const mockUseNetwork = vi.fn().mockReturnValue({ network: 'mainnet' })
-vi.mock('@perawallet/wallet-core-platform-integration', async () => {
+vi.mock('@perawallet/wallet-core-platform-extension', async () => {
     const actual = await vi.importActual<any>(
-        '@perawallet/wallet-core-platform-integration',
+        '@perawallet/wallet-core-platform-extension',
     )
     return {
         ...actual,
@@ -53,6 +52,9 @@ describe('services/polling/useShouldRefreshMutation', () => {
 
     test('calls sendShouldRefreshRequest with correct arguments', async () => {
         vi.resetModules()
+        const { registerTestPlatform, createWrapper } = await import(
+            '@perawallet/wallet-core-platform-extension'
+        )
         registerTestPlatform()
 
         mockUseAllAccounts.mockReturnValue([

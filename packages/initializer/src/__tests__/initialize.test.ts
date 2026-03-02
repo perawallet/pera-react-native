@@ -18,10 +18,6 @@ import { registerContactsStore } from '@perawallet/wallet-core-contacts'
 import { registerSigningStore } from '@perawallet/wallet-core-signing'
 import { registerCurrenciesStore } from '@perawallet/wallet-core-currencies'
 import { registerKeyManagerStore } from '@perawallet/wallet-core-kms'
-import {
-    registerDeviceStore,
-    registerRemoteConfigStore,
-} from '@perawallet/wallet-core-platform-integration'
 import { registerPollingStore } from '@perawallet/wallet-core-polling'
 import { registerSecurityStore } from '@perawallet/wallet-core-security'
 import { registerSettingsStore } from '@perawallet/wallet-core-settings'
@@ -46,10 +42,6 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 }))
 vi.mock('@perawallet/wallet-core-kms', () => ({
     registerKeyManagerStore: vi.fn(),
-}))
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
-    registerDeviceStore: vi.fn(),
-    registerRemoteConfigStore: vi.fn(),
 }))
 vi.mock('@perawallet/wallet-core-polling', () => ({
     registerPollingStore: vi.fn(),
@@ -80,8 +72,6 @@ describe('registerDataStores', () => {
         expect(registerContactsStore).toHaveBeenCalled()
         expect(registerCurrenciesStore).toHaveBeenCalled()
         expect(registerKeyManagerStore).toHaveBeenCalled()
-        expect(registerDeviceStore).toHaveBeenCalled()
-        expect(registerRemoteConfigStore).toHaveBeenCalled()
         expect(registerPollingStore).toHaveBeenCalled()
         expect(registerSecurityStore).toHaveBeenCalled()
         expect(registerSettingsStore).toHaveBeenCalled()

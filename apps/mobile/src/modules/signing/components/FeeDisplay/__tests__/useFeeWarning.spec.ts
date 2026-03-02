@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useFeeWarning } from '../useFeeWarning'
 import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
-import { useRemoteConfigService } from '@perawallet/wallet-core-platform-integration'
+import { useRemoteConfigService } from '@perawallet/wallet-core-platform-extension'
 import {
     useSigningRequest,
     useSigningRequestAnalysis,
@@ -26,7 +26,7 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     ALGO_ASSET_ID: '0',
 }))
 
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+vi.mock('@perawallet/wallet-core-platform-extension', () => ({
     useRemoteConfigService: vi.fn(),
     RemoteConfigKeys: {
         fee_warning_standard_fee: 'fee_warning_standard_fee',

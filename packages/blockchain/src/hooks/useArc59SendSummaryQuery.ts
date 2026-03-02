@@ -11,7 +11,7 @@
  */
 
 import { useQuery, UseQueryResult } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-core-platform-integration'
+import { useNetwork } from '@perawallet/wallet-core-platform-extension'
 import { fetchArc59SendSummary } from '../api/arc59'
 import type { Arc59SendSummaryResponse } from '../api/arc59'
 import { getArc59SendSummaryQueryKey } from './querykeys'

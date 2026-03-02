@@ -65,10 +65,10 @@ vi.mock('@perawallet/wallet-core-kms', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-platform-integration', async () => {
+vi.mock('@perawallet/wallet-core-platform-extension', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-platform-integration')
-    >('@perawallet/wallet-core-platform-integration')
+        typeof import('@perawallet/wallet-core-platform-extension')
+    >('@perawallet/wallet-core-platform-extension')
     return {
         ...actual,
         useKeyValueStorageService: vi.fn().mockReturnValue({

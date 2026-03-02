@@ -41,7 +41,7 @@
     "@perawallet/wallet-core-initializer": "workspace:*",
     "@perawallet/wallet-core-kms": "workspace:*",
     "@perawallet/wallet-core-notifications": "workspace:*",
-    "@perawallet/wallet-core-platform-integration": "workspace:*",
+    "@perawallet/wallet-core-platform-extension": "workspace:*",
     "@perawallet/wallet-core-polling": "workspace:*",
     "@perawallet/wallet-core-security": "workspace:*",
     "@perawallet/wallet-core-settings": "workspace:*",
@@ -113,9 +113,7 @@
     "react-native-webview": "^13.15.0",
     "react-native-worklets": "0.5.1",
     "readable-stream": "^4.7.0",
-    "reflect-metadata": "catalog:",
     "sharp": "^0.34.5",
-    "tsyringe": "catalog:",
     "util": "catalog:",
     "zod": "catalog:",
     "zustand": "catalog:"

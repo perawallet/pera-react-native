@@ -12,18 +12,18 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { screenListeners, resetPreviousRouteNameForTesting } from '../listeners'
-import { container } from 'tsyringe'
-import { AnalyticsServiceContainerKey } from '@perawallet/wallet-core-platform-integration'
 
-vi.mock('tsyringe', () => ({
-    container: {
-        resolve: vi.fn(),
-    },
+const logEventMock = vi.fn()
+
+vi.mock('@perawallet/wallet-core-platform-extension', () => ({
+    getPlatformServices: () => ({
+        analytics: {
+            logEvent: logEventMock,
+        },
+    }),
 }))
 
 describe('screenListeners', () => {
-    const logEventMock = vi.fn()
-
     // Helper to create a route object
     const createRoute = (name: string, path?: string) => ({
         name,
@@ -34,9 +34,6 @@ describe('screenListeners', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         resetPreviousRouteNameForTesting()
-        ;(container.resolve as any).mockReturnValue({
-            logEvent: logEventMock,
-        })
     })
 
     it('logs event on focus for tracked screens (not in ignored list)', () => {
@@ -45,9 +42,6 @@ describe('screenListeners', () => {
         const listeners = screenListeners({ route: route as any })
         listeners.focus()
 
-        expect(container.resolve).toHaveBeenCalledWith(
-            AnalyticsServiceContainerKey,
-        )
         expect(logEventMock).toHaveBeenCalledWith('scr_assetdetail_view', {
             previous: null, // Initial previous is null
             path: undefined,
@@ -97,7 +91,6 @@ describe('screenListeners', () => {
     })
 
     it('logs unknown if route name is missing', () => {
-        // Coverage for listeners.ts line 48
         const route = { name: undefined as any, path: '/test' }
         const listeners = screenListeners({ route: route as any })
         listeners.focus()

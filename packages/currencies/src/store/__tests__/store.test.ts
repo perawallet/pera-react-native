@@ -15,7 +15,7 @@ import { renderHook, act } from '@testing-library/react'
 import { useCurrenciesStore, initCurrenciesStore } from '../index'
 
 // Mock the storage service
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+vi.mock('@perawallet/wallet-core-platform-extension', () => ({
     useKeyValueStorageService: vi.fn(() => ({
         getItem: vi.fn(),
         setItem: vi.fn(),

@@ -14,7 +14,7 @@ import { useMutation } from '@tanstack/react-query'
 import {
     useDeviceID,
     useNetwork,
-} from '@perawallet/wallet-core-platform-integration'
+} from '@perawallet/wallet-core-platform-extension'
 import { updateNotificationEnabled } from '../api/notifications'
 import { useQueryClient } from '@tanstack/react-query'
 import {
