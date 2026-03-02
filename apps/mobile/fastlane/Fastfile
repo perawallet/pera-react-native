@@ -254,15 +254,28 @@ platform :android do
 
     package_name = flavor == "production" ? "com.algorand.perarn" : "com.algorand.perarn.staging"
 
-    upload_to_play_store(
-      track: "internal",
-      package_name: package_name,
-      aab: android_artifact_path(flavor, "aab"),
-      version_code: ENV["BUILD_NUMBER"],
-      skip_upload_metadata: true,
-      skip_upload_images: true,
-      skip_upload_screenshots: true,
-      json_key: "config/api-key.json"
+    # upload_to_play_store(
+    #   track: "internal",
+    #   package_name: package_name,
+    #   aab: android_artifact_path(flavor, "aab"),
+    #   version_code: ENV["BUILD_NUMBER"],
+    #   skip_upload_metadata: true,
+    #   skip_upload_images: true,
+    #   skip_upload_screenshots: true,
+    #   json_key: "config/api-key.json"
+    # )
+
+    # We are deploying production builds to Firebase for the purpose of testing also
+    # Unescape literal \n to real newlines for Firebase release notes
+    notes = unescape_changelog(ENV["RELEASE_NOTES"] || "Build #{ENV['BUILD_NUMBER'] || 'dev'}")
+
+    firebase_app_distribution(
+      app: ENV["FIREBASE_APP_ID_ANDROID"]&.strip,
+      groups: (ENV["FIREBASE_TESTER_GROUPS"] || "qa-testers").strip,
+      release_notes: notes,
+      android_artifact_type: "APK",
+      android_artifact_path: android_artifact_path(flavor, "apk"),
+      service_credentials_file: "config/firebase-service-account.json"
     )
   end
 

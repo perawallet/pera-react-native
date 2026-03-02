@@ -68,13 +68,6 @@ module.exports = {
   userInterfaceStyle: 'automatic',
   newArchEnabled: true,
 
-  // Splash screen configuration (basic - plugin config below for full control)
-  splash: {
-    image: './assets/bootsplash/logo@2x.png',
-    resizeMode: 'contain',
-    backgroundColor: bootsplashManifest.background,
-  },
-
   // iOS-specific configuration
   ios: {
     bundleIdentifier: bundleIdentifiers[variant].ios,
