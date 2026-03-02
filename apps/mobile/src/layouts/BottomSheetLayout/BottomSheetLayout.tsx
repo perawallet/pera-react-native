@@ -10,21 +10,14 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-import { getFontFamily } from '@theme/typography'
+import type { ViewProps } from "react-native";
+import { useStyles } from "./styles";
+import { PWView } from "@components/core";
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-    },
-    contentContainer: {
-        flex: 1,
-        padding: theme.spacing.md,
-    },
-    rawTransactionText: {
-        fontFamily: getFontFamily(400),
-    },
-    scrollview: {
-        paddingHorizontal: theme.spacing.xl,
-    },
-}))
+export type BottomSheetLayoutProps = ViewProps & {};
+
+export const BottomSheetLayout = (props: BottomSheetLayoutProps) => {
+	const styles = useStyles();
+
+	return <PWView style={styles.contentContainer} {...props} />;
+};

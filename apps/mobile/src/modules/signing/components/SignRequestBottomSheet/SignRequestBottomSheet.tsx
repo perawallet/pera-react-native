@@ -10,36 +10,36 @@
  limitations under the License
  */
 
-import React, { useEffect } from 'react'
-import { PWBottomSheet } from '@components/core'
-import { SignRequestView } from '@modules/signing/components/SignRequestView'
-import { useWindowDimensions } from 'react-native'
-import { useSigningRequest } from '@perawallet/wallet-core-signing'
-import { deferToNextCycle } from '@perawallet/wallet-core-shared'
+import React, { useEffect } from "react";
+import { PWBottomSheet } from "@components/core";
+import { SignRequestView } from "@modules/signing/components/SignRequestView";
+import { useWindowDimensions } from "react-native";
+import { useSigningRequest } from "@perawallet/wallet-core-signing";
+import { deferToNextCycle } from "@perawallet/wallet-core-shared";
 
 export function SignRequestBottomSheet() {
-    const { pendingSignRequests, lastCompletedRequest } = useSigningRequest()
-    const nextRequest = pendingSignRequests.at(0)
-    const { height } = useWindowDimensions()
-    const [isVisible, setIsVisible] = React.useState(false)
+	const { pendingSignRequests, lastCompletedRequest } = useSigningRequest();
+	const nextRequest = pendingSignRequests.at(0);
+	const { height } = useWindowDimensions();
+	const [isVisible, setIsVisible] = React.useState(false);
 
-    useEffect(() => {
-        setIsVisible(false)
-        if (nextRequest && !lastCompletedRequest) {
-            // we defer here to force the bottom sheet to close and reopen, as a visual cue
-            // to the user that it's a new request.
-            deferToNextCycle(() => {
-                setIsVisible(true)
-            })
-        }
-    }, [pendingSignRequests, lastCompletedRequest])
+	useEffect(() => {
+		setIsVisible(false);
+		if (nextRequest && !lastCompletedRequest) {
+			// we defer here to force the bottom sheet to close and reopen, as a visual cue
+			// to the user that it's a new request.
+			deferToNextCycle(() => {
+				setIsVisible(true);
+			});
+		}
+	}, [lastCompletedRequest, nextRequest]);
 
-    return (
-        <PWBottomSheet
-            innerContainerStyle={{ height: height - 100 }}
-            isVisible={isVisible}
-        >
-            {!!nextRequest && <SignRequestView request={nextRequest} />}
-        </PWBottomSheet>
-    )
+	return (
+		<PWBottomSheet
+			innerContainerStyle={{ height: height - 100 }}
+			isVisible={isVisible}
+		>
+			{!!nextRequest && <SignRequestView request={nextRequest} />}
+		</PWBottomSheet>
+	);
 }
