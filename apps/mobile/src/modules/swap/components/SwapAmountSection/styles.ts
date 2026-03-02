@@ -11,50 +11,61 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getTypography } from '@theme/typography'
 
-export const useStyles = makeStyles(theme => ({
-    container: {},
-    receiveContainer: {
-        backgroundColor: theme.colors.layerGrayLighter,
-        borderRadius: theme.spacing.xl,
-        paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.lg,
-        paddingBottom: theme.spacing.xl,
-    },
-    headerRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: theme.spacing.sm,
-    },
-    label: {
-        color: theme.colors.textGray,
-    },
-    balance: {
-        color: theme.colors.textGray,
-    },
-    inputRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: theme.spacing.md,
-    },
-    amountContainer: {
-        flex: 1,
-    },
-    inputContainer: {
-        paddingHorizontal: 0,
-        height: theme.spacing['5xl'],
-    },
-    inputInnerContainer: {
-        borderBottomWidth: 0,
-        paddingHorizontal: 0,
-    },
-    inputText: {
-        color: theme.colors.textMain,
-        paddingLeft: 0,
-    },
-    amountText: {
-        color: theme.colors.textMain,
-    },
-}))
+export const useStyles = makeStyles(theme => {
+    const h2Typography = getTypography(theme, 'h2')
+
+    return {
+        container: {
+            paddingHorizontal: theme.spacing.lg,
+        },
+        receiveContainer: {
+            backgroundColor: theme.colors.layerGrayLighter,
+            borderRadius: theme.spacing.xl,
+            paddingHorizontal: theme.spacing.lg,
+            paddingTop: theme.spacing.xxl,
+            paddingBottom: theme.spacing.xl,
+            marginTop: theme.spacing['3xl'],
+        },
+        headerRow: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: theme.spacing.sm,
+        },
+        label: {
+            color: theme.colors.textGray,
+        },
+        balance: {
+            color: theme.colors.textGray,
+        },
+        inputRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: theme.spacing.md,
+        },
+        amountContainer: {
+            flex: 1,
+        },
+        inputContainer: {
+            paddingHorizontal: 0,
+        },
+        inputInnerContainer: {
+            borderBottomWidth: 0,
+            paddingHorizontal: 0,
+            backgroundColor: 'transparent',
+        },
+        inputText: {
+            fontFamily: h2Typography.fontFamily,
+            fontSize: h2Typography.fontSize,
+            fontWeight: h2Typography.fontWeight,
+            color: theme.colors.textMain,
+            paddingLeft: 0,
+        },
+        amountText: {
+            color: theme.colors.textMain,
+        },
+    }
+})

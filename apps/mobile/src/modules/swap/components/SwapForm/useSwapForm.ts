@@ -11,6 +11,7 @@
  */
 
 import { useState, useCallback } from 'react'
+import Decimal from 'decimal.js'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { useModalState } from '@hooks/useModalState'
 
@@ -19,13 +20,13 @@ type ModalState = ReturnType<typeof useModalState>
 type UseSwapFormResult = {
     payAssetId: string | null
     receiveAssetId: string | null
-    payAmount: string
-    receiveAmount: string
+    payAmount: Decimal | null
+    receiveAmount: Decimal | null
     payBalance: string
     receiveBalance: string
     payAssetModal: ModalState
     receiveAssetModal: ModalState
-    handlePayAmountChange: (amount: string) => void
+    handlePayAmountChange: (amount: Decimal | null) => void
     handleSwapDirection: () => void
     handleMaxPress: () => void
     handlePayAssetSelected: (asset: AssetWithAccountBalance) => void
@@ -35,12 +36,12 @@ type UseSwapFormResult = {
 export const useSwapForm = (): UseSwapFormResult => {
     const [payAssetId, setPayAssetId] = useState<string | null>(null)
     const [receiveAssetId, setReceiveAssetId] = useState<string | null>(null)
-    const [payAmount, setPayAmount] = useState('0.00')
-    const [receiveAmount, setReceiveAmount] = useState('0.00')
+    const [payAmount, setPayAmount] = useState<Decimal | null>(null)
+    const [receiveAmount, setReceiveAmount] = useState<Decimal | null>(null)
     const payAssetModal = useModalState()
     const receiveAssetModal = useModalState()
 
-    const handlePayAmountChange = useCallback((amount: string) => {
+    const handlePayAmountChange = useCallback((amount: Decimal | null) => {
         setPayAmount(amount)
     }, [])
 

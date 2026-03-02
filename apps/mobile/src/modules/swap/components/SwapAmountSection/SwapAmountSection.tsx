@@ -10,17 +10,20 @@
  limitations under the License
  */
 
+import { useCallback, useMemo } from 'react'
+import Decimal from 'decimal.js'
 import { PWInput, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwapAssetSelector } from '../SwapAssetSelector'
 import { useStyles } from './styles'
+import { useTheme } from '@rneui/themed/dist/config/ThemeProvider'
 
 type SwapAmountSectionPayProps = {
     variant: 'pay'
     assetId: string | null
     balance: string
-    amount: string
-    onAmountChange: (amount: string) => void
+    amount: Decimal | null
+    onAmountChange: (amount: Decimal | null) => void
     onAssetPress: () => void
 }
 
@@ -28,7 +31,7 @@ type SwapAmountSectionReceiveProps = {
     variant: 'receive'
     assetId: string | null
     balance: string
-    amount: string
+    amount: Decimal | null
     onAssetPress: () => void
 }
 
@@ -39,9 +42,38 @@ export type SwapAmountSectionProps =
 export const SwapAmountSection = (props: SwapAmountSectionProps) => {
     const { variant, assetId, balance, amount, onAssetPress } = props
     const { t } = useLanguage()
+    const { theme } = useTheme()
     const styles = useStyles()
 
     const isPay = variant === 'pay'
+
+    const displayValue = useMemo(
+        () => (amount ? amount.toString() : ''),
+        [amount],
+    )
+
+    const hasPositiveAmount = amount !== null && amount.greaterThan(0)
+    const amountColor = hasPositiveAmount
+        ? theme.colors.textMain
+        : theme.colors.textGrayLighter
+
+    const handleTextChange = useCallback(
+        (text: string) => {
+            if (!isPay) return
+
+            if (text === '') {
+                props.onAmountChange(null)
+                return
+            }
+
+            try {
+                props.onAmountChange(new Decimal(text))
+            } catch {
+                // Ignore invalid decimal input
+            }
+        },
+        [isPay, props],
+    )
 
     return (
         <PWView style={isPay ? styles.container : styles.receiveContainer}>
@@ -66,16 +98,22 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                 <PWView style={styles.amountContainer}>
                     {isPay ? (
                         <PWInput
-                            value={amount}
-                            onChangeText={props.onAmountChange}
+                            value={displayValue}
+                            onChangeText={handleTextChange}
                             keyboardType='decimal-pad'
                             placeholder='0.00'
                             containerStyle={styles.inputContainer}
                             inputContainerStyle={styles.inputInnerContainer}
                             inputStyle={styles.inputText}
+                            placeholderTextColor={theme.colors.textGrayLighter}
                         />
                     ) : (
-                        <PWText style={styles.amountText}>{amount}</PWText>
+                        <PWText
+                            style={[styles.amountText, { color: amountColor }]}
+                            variant='h2'
+                        >
+                            {displayValue || '0.00'}
+                        </PWText>
                     )}
                 </PWView>
 

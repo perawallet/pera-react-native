@@ -17,7 +17,7 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
     },
     toolbar: {
-        paddingHorizontal: theme.spacing.lg,
+        paddingLeft: theme.spacing.xl,
     },
     titleSection: {
         flexDirection: 'row',

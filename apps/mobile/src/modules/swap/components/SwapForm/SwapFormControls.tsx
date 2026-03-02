@@ -32,25 +32,32 @@ export const SwapFormControls = ({
                 style={styles.swapDirectionButton}
                 onPress={onSwapPress}
             >
-                <PWIcon name='swap' />
+                <PWIcon
+                    name='swap'
+                    style={styles.swapDirectionIcon}
+                />
             </PWTouchableOpacity>
 
-            <PWView style={styles.maxRow}>
-                <PWTouchableOpacity onPress={onMaxPress}>
-                    <PWIcon name='sliders' />
-                </PWTouchableOpacity>
-                <PWTouchableOpacity
-                    style={styles.maxButton}
-                    onPress={onMaxPress}
-                >
+            <PWTouchableOpacity
+                style={styles.maxRow}
+                onPress={onMaxPress}
+            >
+                <PWView style={styles.maxIconContainer}>
+                    <PWIcon
+                        name='sliders'
+                        variant='link'
+                    />
+                </PWView>
+                <PWView style={styles.maxDivider} />
+                <PWView style={styles.maxButton}>
                     <PWText
-                        variant='body'
+                        variant='h4'
                         style={styles.maxText}
                     >
                         {t('swap.form.max')}
                     </PWText>
-                </PWTouchableOpacity>
-            </PWView>
+                </PWView>
+            </PWTouchableOpacity>
         </PWView>
     )
 }
