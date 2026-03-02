@@ -14,7 +14,6 @@ import nacl from 'tweetnacl'
 import { KeyManagementError } from '../errors'
 import {
     encodeToBase64,
-    ERROR_I18N_KEYS,
     generateOrderedUniqueId,
 } from '@perawallet/wallet-core-shared'
 import { KeyPair, KeyType, KMSAlgo25Session } from '../models'
@@ -36,10 +35,7 @@ export const useAlgo25 = () => {
             const seed = seedFromMnemonic(mnemonic)
             return seed
         }
-        throw new KeyManagementError(
-            ERROR_I18N_KEYS.KEY_ACCESS_ERROR,
-            new Error('New algo25 creation not implemented yet'),
-        )
+        throw new KeyManagementError('New algo25 creation not implemented yet')
     }
 
     const algo25Sign = (seed: Uint8Array, data: Uint8Array): Uint8Array => {

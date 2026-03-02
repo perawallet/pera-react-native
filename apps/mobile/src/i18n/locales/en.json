@@ -162,6 +162,9 @@
         "close": {
             "label": "Close"
         },
+        "ok": {
+            "label": "Ok"
+        },
         "connect": {
             "label": "Connect"
         },
@@ -290,13 +293,7 @@
         "walletconnect": {
             "title": "An error occurred processing an app request",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
-            "invalid_network": "You have received a request from an invalid network. Please switch your wallet to the correct network and try again.",
-            "sign_request": "Sign Request",
-            "sign_request_body": "You have received an invalid request to sign a transaction. Please check the app and try again.",
-            "permission": "Permission",
-            "permission_body": "You have received an unauthorized request from an app. Please check the app and try again.",
-            "invalid_session": "Invalid Session",
-            "invalid_session_body": "You have received an invalid session request from an app. Please check the app and try again."
+            "unknown": "An unknown error occurred when signing.  Check the dapp for more information."
         },
         "signing": {
             "title": "An error occurred processing the signing request",
@@ -891,7 +888,10 @@
             "success_sheet_title": "You are connected to {{name}}",
             "success_sheet_body": "Please return to {{name}} to continue and finish your operation. You can find all connected Sessions in the dedicated Settings page.",
             "networks_mainnet": "Mainnet",
-            "networks_testnet": "Testnet"
+            "networks_testnet": "Testnet",
+            "error_sheet_title": "Error",
+            "error_sheet_body": "Your WalletConnect request failed with the following error:",
+            "error_sheet_retry": "Please try again by going back to the dApp where you initiated the request."
         },
         "settings": {
             "empty_title": "No WalletConnect Sessions",

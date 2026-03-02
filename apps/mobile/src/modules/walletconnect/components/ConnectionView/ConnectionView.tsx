@@ -30,7 +30,6 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { useToast } from '@hooks/useToast'
 import { ConnectionViewHeader } from './ConnectionViewHeader'
 
 export type ConnectionViewProps = {
@@ -51,7 +50,6 @@ export const ConnectionView = ({
     const { approveSession, rejectSession } = useWalletConnect()
     const accounts = useSigningAccounts()
     const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>([])
-    const { showToast } = useToast()
 
     const handleCancel = () => {
         rejectSession(request.clientId)
@@ -61,13 +59,6 @@ export const ConnectionView = ({
     const handleConnect = () => {
         try {
             approveSession(request.clientId, request, selectedAccounts)
-            showToast({
-                title: t('walletconnect.request.success_title'),
-                body: t('walletconnect.request.success_body', {
-                    name: request.peerMeta.name,
-                }),
-                type: 'success',
-            })
             onSuccess(request)
             removeSessionRequest(request)
         } catch (error) {

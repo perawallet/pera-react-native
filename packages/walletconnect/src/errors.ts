@@ -12,9 +12,7 @@
 
 import {
     AppError,
-    ERROR_I18N_KEYS,
     ErrorCategory,
-    ErrorI18nKey,
     ErrorMetadata,
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
@@ -24,7 +22,7 @@ import {
  */
 export class WalletConnectError extends AppError {
     constructor(
-        message: ErrorI18nKey,
+        message: string,
         originalError?: Error,
         metadata?: Partial<ErrorMetadata>,
     ) {
@@ -42,25 +40,32 @@ export class WalletConnectError extends AppError {
 }
 
 export class WalletConnectInvalidSessionError extends WalletConnectError {
-    constructor(originalError?: Error) {
-        super(ERROR_I18N_KEYS.WALLETCONNECT_INVALID_SESSION, originalError)
+    constructor(message?: string, originalError?: Error) {
+        super(message ?? 'The session was missing or invalid.', originalError)
     }
 }
 
 export class WalletConnectSignRequestError extends WalletConnectError {
-    constructor(originalError?: Error) {
-        super(ERROR_I18N_KEYS.WALLETCONNECT_SIGN_REQUEST, originalError)
+    constructor(message?: string, originalError?: Error) {
+        super(
+            message ?? 'An error has occurred during the signing process.',
+            originalError,
+        )
     }
 }
 
 export class WalletConnectPermissionError extends WalletConnectError {
-    constructor(originalError?: Error) {
-        super(ERROR_I18N_KEYS.WALLETCONNECT_PERMISSION, originalError)
+    constructor(message?: string, originalError?: Error) {
+        super(message ?? 'Permission denied', originalError)
     }
 }
 
 export class WalletConnectInvalidNetworkError extends WalletConnectError {
-    constructor(originalError?: Error) {
-        super(ERROR_I18N_KEYS.WALLETCONNECT_INVALID_NETWORK, originalError)
+    constructor(message?: string, originalError?: Error) {
+        super(
+            message ??
+                "The network doesn't match with the network your app is currently connected to.",
+            originalError,
+        )
     }
 }

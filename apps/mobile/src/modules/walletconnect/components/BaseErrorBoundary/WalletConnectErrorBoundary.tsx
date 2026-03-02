@@ -64,11 +64,10 @@ export const WalletConnectErrorBoundary: React.FC<
     const { showToast } = useToast()
     const handleError = (error: Error) => {
         if (error instanceof WalletConnectError) {
-            const bodyKey = `${error.getI18nKey()}_body`
             showToast(
                 {
-                    title: t(error.getI18nKey()),
-                    body: t(bodyKey),
+                    title: t('errors.walletconnect.title'),
+                    body: t(error.message),
                     type: 'error',
                 },
                 {

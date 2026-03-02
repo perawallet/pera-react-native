@@ -28,7 +28,6 @@ import type {
 } from '../models'
 import {
     AppError,
-    ERROR_I18N_KEYS,
     ErrorCategory,
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
@@ -83,18 +82,15 @@ export const useSigningRequest = () => {
                 'txs' in request &&
                 request.txs.flat().length > MAX_TRANSACTION_SIGN_REQUESTS
             ) {
-                throw new AppError(
-                    ERROR_I18N_KEYS.SIGNING_TRANSACTION_LIMIT_EXCEEDED,
-                    {
-                        severity: ErrorSeverity.MEDIUM,
-                        category: ErrorCategory.VALIDATION,
-                        recoverable: false,
-                        params: {
-                            count: request.txs.length,
-                            max: MAX_TRANSACTION_SIGN_REQUESTS,
-                        },
+                throw new AppError('Maximum number of transactions exceeded.', {
+                    severity: ErrorSeverity.MEDIUM,
+                    category: ErrorCategory.VALIDATION,
+                    recoverable: false,
+                    params: {
+                        count: request.txs.length,
+                        max: MAX_TRANSACTION_SIGN_REQUESTS,
                     },
-                )
+                })
             }
 
             if (
@@ -102,18 +98,15 @@ export const useSigningRequest = () => {
                 'data' in request &&
                 request.data.length > MAX_DATA_SIGN_REQUESTS
             ) {
-                throw new AppError(
-                    ERROR_I18N_KEYS.SIGNING_DATA_LIMIT_EXCEEDED,
-                    {
-                        severity: ErrorSeverity.MEDIUM,
-                        category: ErrorCategory.VALIDATION,
-                        recoverable: false,
-                        params: {
-                            count: request.data.length,
-                            max: MAX_DATA_SIGN_REQUESTS,
-                        },
+                throw new AppError('Maximum number of data exceeded.', {
+                    severity: ErrorSeverity.MEDIUM,
+                    category: ErrorCategory.VALIDATION,
+                    recoverable: false,
+                    params: {
+                        count: request.data.length,
+                        max: MAX_DATA_SIGN_REQUESTS,
                     },
-                )
+                })
             }
             addSignRequestToStore(request)
         },

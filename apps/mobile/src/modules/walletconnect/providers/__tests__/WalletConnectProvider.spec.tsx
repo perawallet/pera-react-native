@@ -17,6 +17,7 @@ import type { WalletConnectSessionRequest } from '@perawallet/wallet-core-wallet
 
 const mockInitWalletConnect = vi.fn()
 const mockShowToast = vi.fn()
+const mockRemoveSessionRequest = vi.fn()
 
 const mockRequest = {
     peerMeta: {
@@ -38,6 +39,7 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     }),
     useWalletConnectSessionRequests: () => ({
         sessionRequests: mockSessionRequests,
+        removeSessionRequest: mockRemoveSessionRequest,
     }),
 }))
 
@@ -76,13 +78,18 @@ vi.mock('../../components/ConnectionView/ConnectionView', () => ({
     ConnectionView: ({
         request,
         onSuccess,
+        onError,
     }: {
         request: WalletConnectSessionRequest
         onSuccess: (req: WalletConnectSessionRequest) => void
+        onError: (error?: Error) => void
     }) => (
         <div data-testid='ConnectionView'>
             <span>{request.peerMeta.name}</span>
             <button onClick={() => onSuccess(request)}>mock-connect</button>
+            <button onClick={() => onError(new Error('Connection failed'))}>
+                mock-error
+            </button>
         </div>
     ),
 }))
@@ -101,6 +108,27 @@ vi.mock(
                 <div data-testid='SuccessSheet'>
                     <span>{request.peerMeta.name}</span>
                     <button onClick={onClose}>mock-close</button>
+                </div>
+            ) : null,
+    }),
+)
+
+vi.mock(
+    '../../components/WalletConnectErrorBottomSheet/WalletConnectErrorBottomSheet',
+    () => ({
+        WalletConnectErrorBottomSheet: ({
+            isVisible,
+            errorMessage,
+            onClose,
+        }: {
+            isVisible: boolean
+            errorMessage: string
+            onClose: () => void
+        }) =>
+            isVisible ? (
+                <div data-testid='ErrorSheet'>
+                    <span>{errorMessage}</span>
+                    <button onClick={onClose}>mock-error-close</button>
                 </div>
             ) : null,
     }),
@@ -223,5 +251,51 @@ describe('WalletConnectProvider', () => {
 
         fireEvent.click(screen.getByText('mock-close'))
         expect(screen.queryByTestId('SuccessSheet')).toBeNull()
+    })
+
+    test('shows error sheet when connection fails', () => {
+        mockSessionRequests = [mockRequest]
+
+        render(
+            <WalletConnectProvider>
+                <div />
+            </WalletConnectProvider>,
+        )
+
+        fireEvent.click(screen.getByText('mock-error'))
+
+        expect(screen.getByTestId('ErrorSheet')).toBeDefined()
+        expect(screen.getByText('Connection failed')).toBeDefined()
+    })
+
+    test('hides connection view while error sheet is shown', () => {
+        mockSessionRequests = [mockRequest]
+
+        render(
+            <WalletConnectProvider>
+                <div />
+            </WalletConnectProvider>,
+        )
+
+        fireEvent.click(screen.getByText('mock-error'))
+
+        expect(screen.queryByTestId('ConnectionView')).toBeNull()
+    })
+
+    test('clears error sheet and removes request on close', () => {
+        mockSessionRequests = [mockRequest]
+
+        render(
+            <WalletConnectProvider>
+                <div />
+            </WalletConnectProvider>,
+        )
+
+        fireEvent.click(screen.getByText('mock-error'))
+        expect(screen.getByTestId('ErrorSheet')).toBeDefined()
+
+        fireEvent.click(screen.getByText('mock-error-close'))
+        expect(screen.queryByTestId('ErrorSheet')).toBeNull()
+        expect(mockRemoveSessionRequest).toHaveBeenCalledWith(mockRequest)
     })
 })

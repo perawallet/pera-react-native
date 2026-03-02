@@ -26,38 +26,28 @@ import {
 } from '@perawallet/wallet-core-walletconnect'
 import { WalletConnectErrorBoundary } from '@modules/walletconnect/components/BaseErrorBoundary/WalletConnectErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
 import { ConnectionSuccessBottomSheet } from '../components/ConnectionSuccessBottomSheet/ConnectionSuccessBottomSheet'
-import { LONG_NOTIFICATION_DURATION } from '@constants/ui'
+import { WalletConnectErrorBottomSheet } from '../components/WalletConnectErrorBottomSheet/WalletConnectErrorBottomSheet'
+import { logger } from '@perawallet/wallet-core-shared'
 
 export type WalletConnectProviderProps = {} & PropsWithChildren
 
 export function WalletConnectProvider({
     children,
 }: WalletConnectProviderProps) {
-    const { sessionRequests } = useWalletConnectSessionRequests()
+    const { sessionRequests, removeSessionRequest } =
+        useWalletConnectSessionRequests()
     const nextRequest = sessionRequests.at(0)
     const { height } = useWindowDimensions()
-    const { showToast } = useToast()
     const { t } = useLanguage()
     const [successRequest, setSuccessRequest] =
         useState<WalletConnectSessionRequest | null>(null)
+    const [connectionError, setConnectionError] = useState<Error | null>(null)
 
-    const handleSigningError = useCallback(
-        (error: Error) => {
-            showToast(
-                {
-                    title: t('errors.signing.title'),
-                    body: t(error.message),
-                    type: 'error',
-                },
-                {
-                    duration: LONG_NOTIFICATION_DURATION,
-                },
-            )
-        },
-        [showToast, t],
-    )
+    const handleSigningError = useCallback((error: Error) => {
+        logger.debug('Handling Error')
+        setConnectionError(error)
+    }, [])
 
     const handleSuccess = (request: WalletConnectSessionRequest) => {
         setSuccessRequest(request)
@@ -65,6 +55,19 @@ export function WalletConnectProvider({
 
     const clearSuccessRequest = () => {
         setSuccessRequest(null)
+    }
+
+    const handleConnectionError = (error?: Error) => {
+        if (error) {
+            setConnectionError(error)
+        }
+    }
+
+    const clearConnectionError = () => {
+        if (nextRequest) {
+            removeSessionRequest(nextRequest)
+        }
+        setConnectionError(null)
     }
 
     const { initWalletConnect } = useWalletConnect({
@@ -80,13 +83,13 @@ export function WalletConnectProvider({
             {children}
             <PWBottomSheet
                 innerContainerStyle={{ height: height - 100 }}
-                isVisible={!!nextRequest && !successRequest}
+                isVisible={!!nextRequest && !successRequest && !connectionError}
             >
                 {!!nextRequest && (
                     <ConnectionView
                         request={nextRequest}
                         onSuccess={handleSuccess}
-                        onError={() => {}}
+                        onError={handleConnectionError}
                     />
                 )}
             </PWBottomSheet>
@@ -94,6 +97,12 @@ export function WalletConnectProvider({
             <ConnectionSuccessBottomSheet
                 onClose={clearSuccessRequest}
                 request={successRequest}
+            />
+
+            <WalletConnectErrorBottomSheet
+                isVisible={!!connectionError}
+                error={connectionError}
+                onClose={clearConnectionError}
             />
         </WalletConnectErrorBoundary>
     )

@@ -13,18 +13,16 @@
 import {
     AppError,
     ErrorCategory,
-    ErrorI18nKey,
     ErrorMetadata,
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
-import { ERROR_I18N_KEYS } from '@perawallet/wallet-core-shared'
 
 /**
  * Base account error
  */
 export class AccountError extends AppError {
     constructor(
-        message: ErrorI18nKey,
+        message: string,
         originalError?: Error,
         metadata?: Partial<ErrorMetadata>,
     ) {
@@ -46,7 +44,7 @@ export class AccountError extends AppError {
  */
 export class NoHDWalletError extends AccountError {
     constructor(address: string) {
-        super(ERROR_I18N_KEYS.ACCOUNT_NO_HD_WALLET, undefined, {
+        super('No Universal Wallet could be found', undefined, {
             params: { address },
         })
     }
