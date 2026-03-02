@@ -24,6 +24,7 @@ import { ImportInfoScreen } from '@modules/onboarding/screens/ImportInfoScreen'
 import { ImportSelectAddressesScreen } from '@modules/onboarding/screens/ImportSelectAddressesScreen'
 import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/ImportRekeyedAddressesScreen'
 import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen'
+import { SelectHDWalletScreen } from '@modules/onboarding/screens/SelectHDWalletScreen'
 import { AccountErrorBoundary } from '@modules/accounts/components/AccountErrorBoundary/AccountErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { screenListeners } from '@routes/listeners'
@@ -64,6 +65,8 @@ const ImportSelectAddressesScreenWithErrorBoundary = withAccountErrorBoundary(
 const ImportRekeyedAddressesScreenWithErrorBoundary = withAccountErrorBoundary(
     ImportRekeyedAddressesScreen,
 )
+const SelectHDWalletScreenWithErrorBoundary =
+    withAccountErrorBoundary(SelectHDWalletScreen)
 
 const AddAccountStack = createNativeStackNavigator<AddAccountStackParamList>()
 
@@ -85,6 +88,13 @@ export const AddAccountStackNavigator = () => {
                 options={{ headerShown: false }}
                 layout={fullScreenLayout}
                 component={AddAccountScreenWithErrorBoundary}
+            />
+            <AddAccountStack.Screen
+                name='SelectHDWallet'
+                options={{
+                    title: '',
+                }}
+                component={SelectHDWalletScreenWithErrorBoundary}
             />
             <AddAccountStack.Screen
                 name='WatchAccount'

@@ -432,6 +432,14 @@
             "terms_and_privacy": "By adding a wallet, you agree to Pera Wallet's <0>Terms and Conditions</0> and <1>Privacy Policy</1>",
             "see_other_options": "See other options"
         },
+        "select_hd_wallet": {
+            "title": "Select Universal Wallet",
+            "description": "Create your new account under a Universal Wallet you already have",
+            "wallet_label": "Wallet #{{number}}",
+            "account_count_one": "{{count}} account",
+            "account_count_other": "{{count}} accounts",
+            "create_new_wallet": "Create a new wallet"
+        },
         "watch_account": {
             "title": "Watch an Address",
             "description": "Enter or scan an Algorand address to add it as a watch-only account. You will be able to view its balance and transactions but cannot sign transactions.",

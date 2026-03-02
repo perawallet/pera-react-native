@@ -23,6 +23,9 @@ const {
     mockDiscoverRekeyedAccounts,
     mockExitAccountFlow,
     mockSetSelectedAccountAddress,
+    mockCreateHdWalletAccount,
+    mockAllAccounts,
+    mockRouteParams,
 } = vi.hoisted(() => ({
     mockShowToast: vi.fn(),
     mockGoBack: vi.fn(),
@@ -31,6 +34,25 @@ const {
     mockDiscoverRekeyedAccounts: vi.fn(),
     mockExitAccountFlow: vi.fn(),
     mockSetSelectedAccountAddress: vi.fn(),
+    mockCreateHdWalletAccount: vi.fn(),
+    mockAllAccounts: { current: [] as unknown[] },
+    mockRouteParams: {
+        current: {
+            account: {
+                id: '1',
+                address: 'MOCK_ADDRESS',
+                type: 'hdWallet' as const,
+                keyPairId: 'wallet-1',
+                hdWalletDetails: {
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                },
+            },
+            createIfEmpty: undefined as boolean | undefined,
+        },
+    },
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -65,6 +87,10 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => ({
     useSelectedAccountAddress: () => ({
         setSelectedAccountAddress: mockSetSelectedAccountAddress,
     }),
+    useCreateAccount: () => ({
+        createHdWalletAccount: mockCreateHdWalletAccount,
+    }),
+    useAllAccounts: () => mockAllAccounts.current,
 }))
 
 vi.mock('../../../hooks', () => ({
@@ -85,20 +111,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 vi.mock('@react-navigation/native', () => ({
     useRoute: () => ({
-        params: {
-            account: {
-                id: '1',
-                address: 'MOCK_ADDRESS',
-                type: AccountTypes.hdWallet,
-                keyPairId: 'wallet-1',
-                hdWalletDetails: {
-                    account: 0,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: 9,
-                },
-            },
-        },
+        params: mockRouteParams.current,
     }),
 }))
 
@@ -108,6 +121,22 @@ describe('useSearchAccountsScreen', () => {
         // Default success mocks
         mockDiscoverAccounts.mockResolvedValue([])
         mockDiscoverRekeyedAccounts.mockResolvedValue([])
+        mockAllAccounts.current = []
+        mockRouteParams.current = {
+            account: {
+                id: '1',
+                address: 'MOCK_ADDRESS',
+                type: 'hdWallet' as const,
+                keyPairId: 'wallet-1',
+                hdWalletDetails: {
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                },
+            },
+            createIfEmpty: undefined,
+        }
     })
 
     it('navigates back and shows toast on error', async () => {
@@ -152,6 +181,90 @@ describe('useSearchAccountsScreen', () => {
                 'MOCK_ADDRESS',
             )
             expect(mockExitAccountFlow).toHaveBeenCalled()
+        })
+    })
+
+    it('creates next derivation and navigates to NameAccount when createIfEmpty and only one account discovered', async () => {
+        mockRouteParams.current.createIfEmpty = true
+        mockAllAccounts.current = [
+            {
+                id: '1',
+                address: 'MOCK_ADDRESS',
+                type: 'hdWallet' as const,
+                keyPairId: 'wallet-1',
+                hdWalletDetails: {
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                },
+            },
+        ]
+
+        const singleAccount = {
+            id: '1',
+            address: 'MOCK_ADDRESS',
+            type: AccountTypes.hdWallet,
+        }
+        mockDiscoverAccounts.mockResolvedValue([singleAccount])
+
+        const newAccount = {
+            id: 'new-id',
+            address: 'NEW_ADDRESS',
+            type: 'hdWallet' as const,
+        }
+        mockCreateHdWalletAccount.mockResolvedValue(newAccount)
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockCreateHdWalletAccount).toHaveBeenCalledWith({
+                walletId: 'wallet-1',
+                account: 0,
+                keyIndex: 1,
+            })
+            expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
+                account: newAccount,
+            })
+        })
+
+        expect(mockExitAccountFlow).not.toHaveBeenCalled()
+    })
+
+    it('shows error toast and goes back when createIfEmpty account creation fails', async () => {
+        mockRouteParams.current.createIfEmpty = true
+        mockAllAccounts.current = [
+            {
+                id: '1',
+                address: 'MOCK_ADDRESS',
+                type: 'hdWallet' as const,
+                keyPairId: 'wallet-1',
+                hdWalletDetails: {
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                },
+            },
+        ]
+
+        const singleAccount = {
+            id: '1',
+            address: 'MOCK_ADDRESS',
+            type: AccountTypes.hdWallet,
+        }
+        mockDiscoverAccounts.mockResolvedValue([singleAccount])
+        mockCreateHdWalletAccount.mockRejectedValue(
+            new Error('Creation failed'),
+        )
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockShowToast).toHaveBeenCalledWith(
+                expect.objectContaining({ type: 'error' }),
+            )
+            expect(mockGoBack).toHaveBeenCalled()
         })
     })
 })

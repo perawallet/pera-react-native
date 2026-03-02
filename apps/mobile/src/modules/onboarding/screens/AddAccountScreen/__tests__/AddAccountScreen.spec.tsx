@@ -49,6 +49,10 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
                 (a: WalletAccount) => a.type === 'hdWallet',
             ),
         }),
+        useHDWalletGroups: () => ({
+            hdWalletGroups: [],
+            hasMultipleHDWallets: false,
+        }),
     }
 })
 
@@ -284,6 +288,14 @@ describe('AddAccountScreen', () => {
     })
 
     it('creates a new HD wallet when Create Universal Wallet is pressed (has HD wallet)', async () => {
+        const mockAccount = {
+            id: 'new-id',
+            address: 'NEW_ADDRESS',
+            type: 'hdWallet' as const,
+            canSign: true,
+        }
+        mockCreateHdWalletAccount.mockResolvedValue(mockAccount)
+
         mockUseAllAccounts.mockReturnValue([
             {
                 id: 'existing-id',
@@ -298,22 +310,6 @@ describe('AddAccountScreen', () => {
                 keyPairId: 'wallet-1',
             },
         ])
-
-        const mockAccount = {
-            id: 'new-wallet-id',
-            address: 'NEW_ADDRESS',
-            type: 'hdWallet' as const,
-            canSign: true,
-            hdWalletDetails: {
-                walletId: 'new-wallet-id',
-                account: 0,
-                change: 0,
-                keyIndex: 0,
-                derivationType: 9,
-            },
-        }
-
-        mockCreateHdWalletAccount.mockResolvedValue(mockAccount)
 
         render(<AddAccountScreen />)
 
