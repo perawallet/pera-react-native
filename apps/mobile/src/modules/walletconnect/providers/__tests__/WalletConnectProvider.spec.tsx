@@ -33,7 +33,7 @@ const mockRequest = {
 let mockSessionRequests: WalletConnectSessionRequest[] = []
 
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
-    useWalletConnect: (_?: { onError?: (error: Error) => void }) => ({
+    useWalletConnect: () => ({
         initWalletConnect: mockInitWalletConnect,
     }),
     useWalletConnectSessionRequests: () => ({
