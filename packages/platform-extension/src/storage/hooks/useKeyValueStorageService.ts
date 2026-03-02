@@ -11,10 +11,10 @@
  */
 
 import { getProvider } from '@perawallet/wallet-core-provider'
-import type { PeraProviderWithPlatform } from '../../extension'
+import type { PeraProvider } from '../../pera-provider'
 import type { KeyValueStorageService } from '../models'
 
 export const KeyValueStorageServiceContainerKey = 'KeyValueStorageService'
 
 export const useKeyValueStorageService = (): KeyValueStorageService =>
-    getProvider<PeraProviderWithPlatform>().keyValueStorage
+    getProvider<PeraProvider>().keyValueStorage

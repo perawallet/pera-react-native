@@ -11,9 +11,9 @@
  */
 
 import { getProvider } from '@perawallet/wallet-core-provider'
-import type { PeraProviderWithPlatform } from '../../extension'
+import type { PeraProvider } from '../../pera-provider'
 import type { SecureStorageService } from '../models'
 
 export const SecureStorageServiceContainerKey = 'SecureStorageService'
 export const useSecureStorageService = (): SecureStorageService =>
-    getProvider<PeraProviderWithPlatform>().secureStorage
+    getProvider<PeraProvider>().secureStorage

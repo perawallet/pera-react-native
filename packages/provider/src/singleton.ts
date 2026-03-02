@@ -10,15 +10,15 @@
  limitations under the License
  */
 
-import type { PeraProvider } from './provider'
+import type { Extension, Provider } from '@algorandfoundation/wallet-provider'
 
-let instance: PeraProvider | null = null
+let instance: Provider<Extension[]> | null = null
 
 /**
  * Returns the provider singleton. Throws if called before `initializeProvider()`.
  * Use the generic parameter to cast to a provider type with extensions applied.
  */
-export const getProvider = <T extends PeraProvider = PeraProvider>(): T => {
+export const getProvider = <T = Provider<Extension[]>>(): T => {
     if (!instance) {
         throw new Error(
             'Provider not initialized. Call initializeProvider() during bootstrap.',
@@ -30,12 +30,11 @@ export const getProvider = <T extends PeraProvider = PeraProvider>(): T => {
 /**
  * Sets the provider singleton. Must be called exactly once during app bootstrap.
  */
-export const initializeProvider = <T extends PeraProvider>(provider: T): T => {
+export const initializeProvider = (provider: Provider<Extension[]>): void => {
     if (instance) {
         throw new Error('Provider already initialized.')
     }
     instance = provider
-    return provider
 }
 
 /**

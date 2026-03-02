@@ -11,10 +11,10 @@
  */
 
 import { getProvider } from '@perawallet/wallet-core-provider'
-import type { PeraProviderWithPlatform } from '../../extension'
+import type { PeraProvider } from '../../pera-provider'
 import type { AnalyticsService } from '../models'
 
 export const AnalyticsServiceContainerKey = 'AnalyticsService'
 
 export const useAnalyticsService = (): AnalyticsService =>
-    getProvider<PeraProviderWithPlatform>().analytics
+    getProvider<PeraProvider>().analytics

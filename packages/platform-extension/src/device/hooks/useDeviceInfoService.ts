@@ -11,10 +11,10 @@
  */
 
 import { getProvider } from '@perawallet/wallet-core-provider'
-import type { PeraProviderWithPlatform } from '../../extension'
+import type { PeraProvider } from '../../pera-provider'
 import type { DeviceInfoService } from '../models'
 
 export const DeviceInfoServiceContainerKey = 'DeviceInfoService'
 
 export const useDeviceInfoService = (): DeviceInfoService =>
-    getProvider<PeraProviderWithPlatform>().deviceInfo
+    getProvider<PeraProvider>().deviceInfo

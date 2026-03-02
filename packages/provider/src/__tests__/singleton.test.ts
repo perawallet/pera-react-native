@@ -11,8 +11,10 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest'
-import { PeraProvider } from '../provider'
+import { Provider } from '@algorandfoundation/wallet-provider'
 import { getProvider, initializeProvider, resetProvider } from '../singleton'
+
+const TestProvider = Provider.withExtensions([] as const)
 
 describe('Provider singleton', () => {
     beforeEach(() => {
@@ -27,7 +29,7 @@ describe('Provider singleton', () => {
         })
 
         it('should return the provider after initialization', () => {
-            const provider = new PeraProvider({
+            const provider = new TestProvider({
                 id: 'test',
                 name: 'Test Provider',
             })
@@ -37,7 +39,7 @@ describe('Provider singleton', () => {
         })
 
         it('should return the same instance on subsequent calls', () => {
-            const provider = new PeraProvider({
+            const provider = new TestProvider({
                 id: 'test',
                 name: 'Test Provider',
             })
@@ -49,19 +51,18 @@ describe('Provider singleton', () => {
 
     describe('initializeProvider', () => {
         it('should set the provider singleton', () => {
-            const provider = new PeraProvider({
+            const provider = new TestProvider({
                 id: 'test',
                 name: 'Test Provider',
             })
 
-            const result = initializeProvider(provider)
+            initializeProvider(provider)
 
-            expect(result).toBe(provider)
             expect(getProvider()).toBe(provider)
         })
 
         it('should throw when called twice', () => {
-            const provider = new PeraProvider({
+            const provider = new TestProvider({
                 id: 'test',
                 name: 'Test Provider',
             })
@@ -69,7 +70,7 @@ describe('Provider singleton', () => {
 
             expect(() =>
                 initializeProvider(
-                    new PeraProvider({ id: 'test2', name: 'Test 2' }),
+                    new TestProvider({ id: 'test2', name: 'Test 2' }),
                 ),
             ).toThrow('Provider already initialized.')
         })
@@ -77,7 +78,7 @@ describe('Provider singleton', () => {
 
     describe('resetProvider', () => {
         it('should clear the singleton so getProvider throws again', () => {
-            const provider = new PeraProvider({
+            const provider = new TestProvider({
                 id: 'test',
                 name: 'Test Provider',
             })
@@ -90,14 +91,14 @@ describe('Provider singleton', () => {
         })
 
         it('should allow re-initialization after reset', () => {
-            const provider1 = new PeraProvider({
+            const provider1 = new TestProvider({
                 id: 'test1',
                 name: 'Test 1',
             })
             initializeProvider(provider1)
             resetProvider()
 
-            const provider2 = new PeraProvider({
+            const provider2 = new TestProvider({
                 id: 'test2',
                 name: 'Test 2',
             })

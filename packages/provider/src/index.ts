@@ -12,5 +12,9 @@
 
 export const name = '@perawallet/wallet-core-provider'
 
-export { PeraProvider } from './provider'
+export { Provider } from '@algorandfoundation/wallet-provider'
+export type {
+    ProviderOptions,
+    Extension,
+} from '@algorandfoundation/wallet-provider'
 export { getProvider, initializeProvider, resetProvider } from './singleton'

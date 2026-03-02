@@ -11,11 +11,15 @@
  */
 
 import { Provider } from '@algorandfoundation/wallet-provider'
+import { WithPlatformServices } from './extension'
 
 /**
- * Base Pera Wallet Provider. Use `PeraProvider.withExtensions([...])` to create
- * a concrete provider class with the desired extensions applied.
+ * The Pera Wallet Provider with platform services.
+ * Instances include all platform service properties (analytics, keyValueStorage, etc.)
+ * via the WithPlatformServices extension in EXTENSIONS.
  */
-export class PeraProvider extends Provider<typeof PeraProvider.EXTENSIONS> {
-    static EXTENSIONS = [] as const
-}
+export const PeraProvider = Provider.withExtensions([
+    WithPlatformServices,
+] as const)
+
+export type PeraProvider = InstanceType<typeof PeraProvider>

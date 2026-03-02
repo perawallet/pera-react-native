@@ -11,7 +11,7 @@
  */
 
 import { getProvider } from '@perawallet/wallet-core-provider'
-import type { PeraProviderWithPlatform } from '../../extension'
+import type { PeraProvider } from '../../pera-provider'
 import type { RemoteConfigService } from '../models'
 import { useRemoteConfigOverrides } from './useRemoteConfigOverrides'
 
@@ -21,7 +21,7 @@ export const useRemoteConfigService = (): RemoteConfigService => {
     const configOverrides = useRemoteConfigOverrides()
 
     const remoteConfigService =
-        getProvider<PeraProviderWithPlatform>().remoteConfig
+        getProvider<PeraProvider>().remoteConfig
 
     const wrapperService: RemoteConfigService = {
         initializeRemoteConfig: () =>

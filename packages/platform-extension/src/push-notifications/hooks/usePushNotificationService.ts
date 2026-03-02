@@ -11,10 +11,10 @@
  */
 
 import { getProvider } from '@perawallet/wallet-core-provider'
-import type { PeraProviderWithPlatform } from '../../extension'
+import type { PeraProvider } from '../../pera-provider'
 import type { PushNotificationService } from '../models'
 
 export const PushNotificationServiceContainerKey = 'PushNotificationService'
 
 export const usePushNotificationService = (): PushNotificationService =>
-    getProvider<PeraProviderWithPlatform>().pushNotification
+    getProvider<PeraProvider>().pushNotification

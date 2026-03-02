@@ -13,7 +13,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resetProvider, getProvider } from '@perawallet/wallet-core-provider'
 import { registerPlatformServices } from '../platform'
-import type { PeraProviderWithPlatform } from '../extension'
+import type { PeraProvider } from '../pera-provider'
 import type { AnalyticsService } from '../analytics'
 import type { CrashReportingService } from '../reporting'
 import type { RemoteConfigService } from '../remote-config'
@@ -92,7 +92,7 @@ describe('platform', () => {
         expect(() => getProvider()).not.toThrow()
 
         // All services should be accessible via getProvider
-        const provider = getProvider<PeraProviderWithPlatform>()
+        const provider = getProvider<PeraProvider>()
         expect(provider.analytics).toBe(mockAnalytics)
         expect(provider.keyValueStorage).toBe(mockKeyValueStorage)
         expect(provider.secureStorage).toBe(mockSecureStorage)

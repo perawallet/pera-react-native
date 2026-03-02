@@ -11,9 +11,9 @@
  */
 
 import { getProvider } from '@perawallet/wallet-core-provider'
-import type { PeraProviderWithPlatform } from '../../extension'
+import type { PeraProvider } from '../../pera-provider'
 import type { CrashReportingService } from '../models'
 
 export const CrashReportingServiceContainerKey = 'CrashReportingService'
 export const useCrashReportingService = (): CrashReportingService =>
-    getProvider<PeraProviderWithPlatform>().crashReporting
+    getProvider<PeraProvider>().crashReporting

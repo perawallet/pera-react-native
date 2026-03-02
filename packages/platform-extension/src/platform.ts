@@ -10,16 +10,9 @@
  limitations under the License
  */
 
-import {
-    PeraProvider,
-    initializeProvider,
-} from '@perawallet/wallet-core-provider'
-import { WithPlatformServices } from './extension'
+import { initializeProvider } from '@perawallet/wallet-core-provider'
+import { PeraProvider } from './pera-provider'
 import type { PlatformServices } from './models'
-
-const PeraWalletProvider = PeraProvider.withExtensions([
-    WithPlatformServices,
-] as const)
 
 /**
  * Creates the provider with platform services and sets the global singleton.
@@ -27,7 +20,7 @@ const PeraWalletProvider = PeraProvider.withExtensions([
  * provider construction via the WithPlatformServices extension.
  */
 export const registerPlatformServices = (platform: PlatformServices) => {
-    const provider = new PeraWalletProvider(
+    const provider = new PeraProvider(
         { id: 'pera-wallet', name: 'Pera Wallet' },
         { platform },
     )
