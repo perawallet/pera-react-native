@@ -955,7 +955,8 @@
             "you_pay": "You pay",
             "you_receive": "You receive",
             "balance_label": "Balance: ",
-            "max": "MAX"
+            "max": "MAX",
+            "select_asset": "Select"
         },
         "asset_selection": {
             "title": "Select asset"

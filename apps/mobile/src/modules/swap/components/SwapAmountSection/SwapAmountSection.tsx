@@ -21,7 +21,7 @@ import { useTheme } from '@rneui/themed/dist/config/ThemeProvider'
 
 type SwapAmountSectionPayProps = {
     variant: 'pay'
-    assetId: string | null
+    assetId: string
     balance: Decimal | null
     amount: Decimal | null
     onAmountChange: (amount: Decimal | null) => void
@@ -30,7 +30,7 @@ type SwapAmountSectionPayProps = {
 
 type SwapAmountSectionReceiveProps = {
     variant: 'receive'
-    assetId: string | null
+    assetId: string
     balance: Decimal | null
     amount: Decimal | null
     onAssetPress: () => void

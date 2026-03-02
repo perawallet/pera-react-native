@@ -14,11 +14,11 @@ import { useMemo } from 'react'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
+import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
-//TODO: remove nullability of assetId when swap form is implemented
 export type SwapAssetSelectorProps = {
-    assetId: string | null
+    assetId: string
     onPress: () => void
 }
 
@@ -26,14 +26,12 @@ export const SwapAssetSelector = ({
     assetId,
     onPress,
 }: SwapAssetSelectorProps) => {
+    const { t } = useLanguage()
     const styles = useStyles()
 
-    const { data: assets } = useAssetsQuery(assetId ? [assetId] : [])
+    const { data: assets } = useAssetsQuery([assetId])
 
-    const asset = useMemo(
-        () => (assetId ? assets?.get(assetId) : undefined),
-        [assets, assetId],
-    )
+    const asset = useMemo(() => assets?.get(assetId), [assets, assetId])
 
     return (
         <PWTouchableOpacity
@@ -50,7 +48,7 @@ export const SwapAssetSelector = ({
                         <PWText variant='h4'>{asset.unitName}</PWText>
                     </>
                 ) : (
-                    <PWText variant='h4'>Select</PWText>
+                    <PWText variant='h4'>{t('swap.form.select_asset')}</PWText>
                 )}
                 <PWIcon name='chevron-right' />
             </PWView>

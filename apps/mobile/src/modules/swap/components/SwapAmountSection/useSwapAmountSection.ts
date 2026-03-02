@@ -17,7 +17,7 @@ import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
 
 type UseSwapAmountSectionParams = {
     variant: 'pay' | 'receive'
-    assetId: string | null
+    assetId: string
     amount: Decimal | null
     onAmountChange?: (amount: Decimal | null) => void
 }
@@ -38,11 +38,8 @@ export const useSwapAmountSection = ({
 }: UseSwapAmountSectionParams): UseSwapAmountSectionResult => {
     const { theme } = useTheme()
 
-    const { data: assets } = useAssetsQuery(assetId ? [assetId] : [])
-    const asset = useMemo(
-        () => (assetId ? assets?.get(assetId) : undefined),
-        [assets, assetId],
-    )
+    const { data: assets } = useAssetsQuery([assetId])
+    const asset = useMemo(() => assets?.get(assetId), [assets, assetId])
 
     const isPay = variant === 'pay'
 
