@@ -19,6 +19,7 @@ const PeraWalletContext = createContext<PeraProvider | null>(null)
 
 interface PeraWalletProviderProps {
     platform: PlatformServices
+    onProviderReady?: () => void
     children: React.ReactNode
 }
 
@@ -27,9 +28,14 @@ interface PeraWalletProviderProps {
  * it with the module singleton. The provider is created synchronously on first
  * render via useRef, so both the React context and getProvider() singleton are
  * available before any useEffect runs.
+ *
+ * The optional onProviderReady callback runs synchronously after the provider
+ * singleton is set, allowing callers to initialize data stores while
+ * getProvider() is already available.
  */
 export const PeraWalletProvider = ({
     platform,
+    onProviderReady,
     children,
 }: PeraWalletProviderProps) => {
     const providerRef = useRef<PeraProvider | null>(null)
@@ -40,6 +46,7 @@ export const PeraWalletProvider = ({
             { platform },
         )
         initializeProvider(provider)
+        onProviderReady?.()
         providerRef.current = provider
     }
 

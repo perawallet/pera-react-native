@@ -14,7 +14,11 @@ import React, { useEffect, useState } from 'react'
 import './i18n'
 import { Text } from 'react-native'
 import { QueryProvider } from './providers/QueryProvider'
-import { useBootstrapper, platformServices } from './bootstrap/boostrap'
+import {
+    useBootstrapper,
+    platformServices,
+    initializeDataStores,
+} from './bootstrap/boostrap'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import { Persister } from '@tanstack/react-query-persist-client'
 import {
@@ -64,7 +68,10 @@ export const App = () => {
     }, [bootstrapped, bootstrap])
 
     return (
-        <PeraWalletProvider platform={platformServices}>
+        <PeraWalletProvider
+            platform={platformServices}
+            onProviderReady={initializeDataStores}
+        >
             <SafeAreaProvider>
                 {!bootstrapped && <Text>{t('common.loading.label')}</Text>}
                 {bootstrapped && persister && (

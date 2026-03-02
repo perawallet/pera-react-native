@@ -32,16 +32,19 @@ export const platformServices: PlatformServices = {
     deviceInfo: new RNDeviceInfoStorageService(),
 }
 
+/**
+ * Synchronously registers and initializes all data stores.
+ * Called via PeraWalletProvider's onProviderReady callback,
+ * after the provider singleton is set.
+ */
+export const initializeDataStores = () => {
+    registerDataStores()
+    DataStoreRegistry.initializeAllSync()
+}
+
 export const useBootstrapper = () => {
     return useCallback(async () => {
         logger.debug('Bootstrapping')
-        // Register remaining data stores with DataStoreRegistry
-        // (DeviceStore and RemoteConfigStore are initialized by PeraWalletProvider)
-        registerDataStores()
-
-        // Initialize remaining stores (they resolve services via getProvider(),
-        // which is already set by PeraWalletProvider before this effect runs)
-        await DataStoreRegistry.initializeAll()
 
         const crashlyticsInit =
             platformServices.crashReporting.initializeCrashReporting()

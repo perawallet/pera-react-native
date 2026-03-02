@@ -103,6 +103,82 @@ describe('utils/store-registry', () => {
         })
     })
 
+    describe('initializeAllSync', () => {
+        test('calls init on all registered stores', () => {
+            const mockStore1 = {
+                name: 'test-store-1',
+                init: vi.fn(),
+                clear: vi.fn(),
+            }
+            const mockStore2 = {
+                name: 'test-store-2',
+                init: vi.fn(),
+                clear: vi.fn(),
+            }
+
+            DataStoreRegistry.register(mockStore1)
+            DataStoreRegistry.register(mockStore2)
+
+            DataStoreRegistry.initializeAllSync()
+
+            expect(mockStore1.init).toHaveBeenCalledTimes(1)
+            expect(mockStore2.init).toHaveBeenCalledTimes(1)
+        })
+
+        test('does not reinitialize if already initialized', () => {
+            const mockStore = {
+                name: 'test-store',
+                init: vi.fn(),
+                clear: vi.fn(),
+            }
+
+            DataStoreRegistry.register(mockStore)
+
+            DataStoreRegistry.initializeAllSync()
+            DataStoreRegistry.initializeAllSync()
+
+            expect(mockStore.init).toHaveBeenCalledTimes(1)
+        })
+
+        test('sets initialized flag after initialization', () => {
+            const mockStore = {
+                name: 'test-store',
+                init: vi.fn(),
+                clear: vi.fn(),
+            }
+
+            DataStoreRegistry.register(mockStore)
+
+            expect(DataStoreRegistry.isInitialized()).toBe(false)
+            DataStoreRegistry.initializeAllSync()
+            expect(DataStoreRegistry.isInitialized()).toBe(true)
+        })
+
+        test('continues initializing remaining stores when one fails', () => {
+            const mockStore1 = {
+                name: 'test-store-1',
+                init: vi.fn().mockImplementation(() => {
+                    throw new Error('init failed')
+                }),
+                clear: vi.fn(),
+            }
+            const mockStore2 = {
+                name: 'test-store-2',
+                init: vi.fn(),
+                clear: vi.fn(),
+            }
+
+            DataStoreRegistry.register(mockStore1)
+            DataStoreRegistry.register(mockStore2)
+
+            DataStoreRegistry.initializeAllSync()
+
+            expect(mockStore1.init).toHaveBeenCalledTimes(1)
+            expect(mockStore2.init).toHaveBeenCalledTimes(1)
+            expect(DataStoreRegistry.isInitialized()).toBe(true)
+        })
+    })
+
     describe('clearAll', () => {
         test('calls clear on all registered stores', async () => {
             const mockStore1 = {

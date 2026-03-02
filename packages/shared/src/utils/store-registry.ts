@@ -61,6 +61,30 @@ class DataStoreRegistryImpl {
         logger.debug('All stores initialized')
     }
 
+    initializeAllSync(): void {
+        if (this.initialized) {
+            logger.warn('DataStoreRegistry already initialized. Skipping.')
+            return
+        }
+
+        logger.debug(
+            `Initializing ${this.stores.size} stores synchronously: ${this.getRegisteredStores().join(', ')}`,
+        )
+
+        for (const store of this.stores.values()) {
+            try {
+                store.init()
+            } catch (error) {
+                logger.error(`Failed to initialize store "${store.name}"`, {
+                    error,
+                })
+            }
+        }
+
+        this.initialized = true
+        logger.debug('All stores initialized synchronously')
+    }
+
     async clearAll(): Promise<void> {
         logger.debug(
             `Clearing ${this.stores.size} stores: ${this.getRegisteredStores().join(', ')}`,
