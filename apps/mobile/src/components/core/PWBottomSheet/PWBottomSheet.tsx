@@ -26,7 +26,7 @@ import {
     useRef,
 } from 'react'
 import { useStyles } from './styles'
-import { StyleProp, ViewStyle } from 'react-native'
+import { ScrollViewProps, StyleProp, ViewStyle } from 'react-native'
 import { NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
@@ -39,8 +39,12 @@ export type PWBottomSheetProps = {
     onBackdropPress?: () => void
     /** Custom styles for the inner content container */
     innerContainerStyle?: StyleProp<ViewStyle>
+    /** Custom styles for the modal container (applied to background) */
+    containerStyle?: StyleProp<ViewStyle>
     /** Whether the content is scrollable. Defaults to true */
     scrollEnabled?: boolean
+    /** Props to pass to the internal scroll view when scrollEnabled is true */
+    scrollViewProps?: Omit<ScrollViewProps, 'children'>
     /** Optional snap points for the bottom sheet (e.g., ['50%', '90%']) */
     snapPoints?: (string | number)[]
     /** Whether to enable dynamic sizing based on content. Defaults to true when no snapPoints provided */
@@ -51,7 +55,9 @@ export const PWBottomSheet = ({
     isVisible,
     onBackdropPress,
     innerContainerStyle,
+    containerStyle,
     scrollEnabled = true,
+    scrollViewProps,
     snapPoints,
     enableDynamicSizing,
     children,
@@ -89,10 +95,10 @@ export const PWBottomSheet = ({
         onBackdropPress?.()
     }, [onBackdropPress])
 
-    // Content wrapper - use BottomSheetScrollView for scrollable content, BottomSheetView otherwise
-    const ContentWrapper = scrollEnabled
-        ? BottomSheetScrollView
-        : BottomSheetView
+    // Merge background style with containerStyle for backward compatibility
+    const mergedBackgroundStyle = containerStyle
+        ? [styles.background, containerStyle]
+        : styles.background
 
     return (
         <BottomSheetModal
@@ -102,21 +108,36 @@ export const PWBottomSheet = ({
             backdropComponent={renderBackdrop}
             onDismiss={handleDismiss}
             handleIndicatorStyle={styles.handleIndicator}
-            backgroundStyle={styles.background}
+            backgroundStyle={mergedBackgroundStyle}
             bottomInset={insets.bottom}
             detached={false}
+            keyboardBehavior='interactive'
+            keyboardBlurBehavior='restore'
         >
             <NotifierWrapper
                 omitGlobalMethodsHookup
                 ref={bottomSheetNotifier}
             >
-                <ContentWrapper style={styles.contentWrapper}>
-                    <PWView
-                        style={[styles.innerContainer, innerContainerStyle]}
+                {scrollEnabled ? (
+                    <BottomSheetScrollView
+                        style={styles.contentWrapper}
+                        {...scrollViewProps}
                     >
-                        {children}
-                    </PWView>
-                </ContentWrapper>
+                        <PWView
+                            style={[styles.innerContainer, innerContainerStyle]}
+                        >
+                            {children}
+                        </PWView>
+                    </BottomSheetScrollView>
+                ) : (
+                    <BottomSheetView style={styles.contentWrapper}>
+                        <PWView
+                            style={[styles.innerContainer, innerContainerStyle]}
+                        >
+                            {children}
+                        </PWView>
+                    </BottomSheetView>
+                )}
             </NotifierWrapper>
         </BottomSheetModal>
     )
