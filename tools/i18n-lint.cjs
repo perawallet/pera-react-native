@@ -24,6 +24,21 @@ const EXCLUDED_KEYS = [
     'transactions.type.unknown',
 ];
 
+// Prefix patterns for keys that are excluded from unused checks.
+// Error framework keys are used dynamically at runtime via the error class hierarchy.
+const EXCLUDED_PREFIXES = [
+    'errors.account.',
+    'errors.blockchain.',
+    'errors.network.',
+    'errors.api.',
+    'errors.validation.',
+    'errors.auth.',
+    'errors.storage.',
+    'errors.kms.',
+    'errors.signing.',
+    'errors.unknown',
+];
+
 // Colors for console output
 const colors = {
     reset: '\x1b[0m',
@@ -161,8 +176,6 @@ function main() {
                 errorKeysCount++;
             }
         }
-    } else {
-        warn(`Could not find i18n-keys.ts at ${ERROR_KEYS_PATH}`);
     }
 
     if (errorKeysCount === 0) {
@@ -210,7 +223,9 @@ function main() {
             }
         }
 
-        if (!isUsed && !errorKeys.has(key) && !EXCLUDED_KEYS.includes(key)) {
+        const isExcludedByPrefix = EXCLUDED_PREFIXES.some(prefix => key === prefix || key.startsWith(prefix));
+
+        if (!isUsed && !errorKeys.has(key) && !EXCLUDED_KEYS.includes(key) && !isExcludedByPrefix) {
             // Also check if it's used as a translation call like t('key') or t("key") just in case
             // Actually the above quote check covers most simple usages.
             // Let's being conservative and just warn.

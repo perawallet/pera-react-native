@@ -109,7 +109,9 @@ describe('useWalletConnect', () => {
 
     describe('connect', () => {
         it('should initialize connector and bind events', async () => {
-            const { result } = renderHook(() => useWalletConnect(Networks.mainnet))
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
             const connection = {
                 clientId: 'test-session',
                 topic: 'abc',
@@ -155,7 +157,9 @@ describe('useWalletConnect', () => {
         })
 
         it('should handle session_request event', async () => {
-            const { result } = renderHook(() => useWalletConnect(Networks.mainnet))
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
             const connection = { clientId: 'client-request' } as any
 
             await act(async () => {
@@ -192,7 +196,9 @@ describe('useWalletConnect', () => {
         })
 
         it('should auto-approve session if autoConnect is true', async () => {
-            const { result } = renderHook(() => useWalletConnect(Networks.mainnet))
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
             const connection = {
                 clientId: 'client-auto',
                 autoConnect: true,
@@ -255,7 +261,9 @@ describe('useWalletConnect', () => {
         })
 
         it('should trigger handleSignData on algo_signData event', async () => {
-            const { result } = renderHook(() => useWalletConnect(Networks.mainnet))
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
             const connection = { clientId: 'client-signdata' } as any
 
             await act(async () => {
@@ -285,7 +293,9 @@ describe('useWalletConnect', () => {
         })
 
         it('should trigger handleSignTransaction on algo_signTxn event', async () => {
-            const { result } = renderHook(() => useWalletConnect(Networks.mainnet))
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
             const connection = { clientId: 'client-signtxn' } as any
 
             await act(async () => {
@@ -315,7 +325,9 @@ describe('useWalletConnect', () => {
         })
 
         it('should handle disconnect event', async () => {
-            const { result } = renderHook(() => useWalletConnect(Networks.mainnet))
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
             const connection = { clientId: 'client-disconnect' } as any
             mockConnections.push(connection)
             // We need mockSessions to be returned by store.
@@ -353,7 +365,9 @@ describe('useWalletConnect', () => {
 
     describe('disconnect', () => {
         it('should kill session and remove from store', async () => {
-            const { result } = renderHook(() => useWalletConnect(Networks.mainnet))
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
             const connection = { clientId: 'client-kill' } as any
             // Populate store so it can be filtered
             ;(useWalletConnectStore as any).mockImplementation(
@@ -390,7 +404,9 @@ describe('useWalletConnect', () => {
 
     describe('approveSession', () => {
         it('should approve session and update store', async () => {
-            const { result } = renderHook(() => useWalletConnect(Networks.mainnet))
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
             const connection = { clientId: 'client-approve' } as any
             ;(useWalletConnectStore as any).mockImplementation(
                 (selector: any) =>
@@ -438,7 +454,9 @@ describe('useWalletConnect', () => {
 
     describe('rejectSession', () => {
         it('should reject session and update store', async () => {
-            const { result } = renderHook(() => useWalletConnect(Networks.mainnet))
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
             const connection = { clientId: 'client-reject' } as any
             ;(useWalletConnectStore as any).mockImplementation(
                 (selector: any) =>
@@ -481,7 +499,9 @@ describe('useWalletConnect', () => {
                     }),
             )
 
-            const { result } = renderHook(() => useWalletConnect(Networks.mainnet))
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
 
             await act(async () => {
                 await result.current.connect({ connection: connection1 })
@@ -516,7 +536,9 @@ describe('useWalletConnect', () => {
                     }),
             )
 
-            const { result } = renderHook(() => useWalletConnect(Networks.mainnet))
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
 
             await act(async () => {
                 result.current.reconnectAllSessions()
@@ -536,7 +558,9 @@ describe('useWalletConnect', () => {
                     }),
             )
 
-            const { result } = renderHook(() => useWalletConnect(Networks.mainnet))
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
 
             await act(async () => {
                 result.current.reconnectAllSessions()
@@ -560,7 +584,9 @@ describe('useWalletConnect', () => {
                     }),
             )
 
-            const { result } = renderHook(() => useWalletConnect(Networks.mainnet))
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
 
             // We need connectors to be present to kill them
             // Inject connectors into the module scope map using a trick?
@@ -596,7 +622,9 @@ describe('useWalletConnect', () => {
                     }),
             )
 
-            const { result } = renderHook(() => useWalletConnect(Networks.mainnet))
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
 
             await act(async () => {
                 await result.current.deleteAllSessions()
@@ -610,7 +638,9 @@ describe('useWalletConnect', () => {
 
     describe('error handling and edge cases', () => {
         it('should handle error event', async () => {
-            const { result } = renderHook(() => useWalletConnect(Networks.mainnet))
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
             await act(async () => {
                 await result.current.connect({
                     connection: { clientId: 'test' },
@@ -627,21 +657,27 @@ describe('useWalletConnect', () => {
         })
 
         it('should throw when approving invalid session', () => {
-            const { result } = renderHook(() => useWalletConnect(Networks.mainnet))
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
             expect(() => {
                 result.current.approveSession('non-existent', {} as any, [])
             }).toThrow() // WalletConnectInvalidSessionError
         })
 
         it('should throw when rejecting invalid session', () => {
-            const { result } = renderHook(() => useWalletConnect(Networks.mainnet))
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
             expect(() => {
                 result.current.rejectSession('non-existent')
             }).toThrow() // WalletConnectInvalidSessionError
         })
 
         it('should handle session_request error', async () => {
-            const { result } = renderHook(() => useWalletConnect(Networks.mainnet))
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
             await act(async () => {
                 await result.current.connect({
                     connection: { clientId: 'client-requesterror' },

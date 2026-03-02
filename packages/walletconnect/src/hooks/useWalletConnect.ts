@@ -66,7 +66,7 @@ export const useWalletConnect = (
 
     const connect = useCallback(
         async ({ connection }: { connection: WalletConnectConnection }) => {
-            logger.debug("[WC] Reconnecting", { connection, network })
+            logger.debug('[WC] Reconnecting', { connection, network })
             const { autoConnect, ...restConnection } = connection
 
             let connector: WalletConnect | undefined = undefined
@@ -190,8 +190,10 @@ export const useWalletConnect = (
         if (!connections) {
             return
         }
-        
-        logger.debug("[WC] Reconnecting WC sessions", { count: connections.length})
+
+        logger.debug('[WC] Reconnecting WC sessions', {
+            count: connections.length,
+        })
 
         connections.forEach(connection => {
             connect({ connection })
