@@ -30,6 +30,7 @@ SplashScreen.preventAutoHideAsync()
 
 import { NotifierWrapper } from 'react-native-notifier'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { useLanguage } from '@hooks/useLanguage'
 
 export const App = () => {
@@ -68,11 +69,13 @@ export const App = () => {
             {!bootstrapped && <Text>{t('common.loading.label')}</Text>}
             {bootstrapped && persister && (
                 <GestureHandlerRootView>
-                    <NotifierWrapper>
-                        <QueryProvider persister={persister}>
-                            <RootComponent fcmToken={fcmToken} />
-                        </QueryProvider>
-                    </NotifierWrapper>
+                    <BottomSheetModalProvider>
+                        <NotifierWrapper>
+                            <QueryProvider persister={persister}>
+                                <RootComponent fcmToken={fcmToken} />
+                            </QueryProvider>
+                        </NotifierWrapper>
+                    </BottomSheetModalProvider>
                 </GestureHandlerRootView>
             )}
         </SafeAreaProvider>

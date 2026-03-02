@@ -1957,3 +1957,102 @@ vi.mock('@react-native-community/datetimepicker', () => {
             }),
     }
 })
+
+// Mock @gorhom/bottom-sheet
+vi.mock('@gorhom/bottom-sheet', () => {
+    const React = require('react')
+
+    const BottomSheetModal = React.forwardRef(
+        ({ children, ...props }: any, ref: any) => {
+            const [isOpen, setIsOpen] = React.useState(false)
+
+            React.useImperativeHandle(ref, () => ({
+                present: () => setIsOpen(true),
+                dismiss: () => setIsOpen(false),
+                snapToIndex: () => setIsOpen(true),
+                close: () => setIsOpen(false),
+                expand: () => setIsOpen(true),
+                collapse: () => {},
+                forceClose: () => setIsOpen(false),
+            }))
+
+            return isOpen
+                ? React.createElement(
+                      'div',
+                      { ...props, 'data-testid': 'BottomSheetModal' },
+                      children,
+                  )
+                : null
+        },
+    )
+
+    const BottomSheet = React.forwardRef(
+        ({ children, ...props }: any, ref: any) => {
+            React.useImperativeHandle(ref, () => ({
+                snapToIndex: vi.fn(),
+                close: vi.fn(),
+                expand: vi.fn(),
+                collapse: vi.fn(),
+                forceClose: vi.fn(),
+            }))
+
+            return React.createElement(
+                'div',
+                { ...props, 'data-testid': 'BottomSheet' },
+                children,
+            )
+        },
+    )
+
+    return {
+        default: BottomSheet,
+        BottomSheet,
+        BottomSheetModal,
+        BottomSheetModalProvider: ({ children }: any) => children,
+        BottomSheetBackdrop: (props: any) =>
+            React.createElement('div', {
+                ...props,
+                'data-testid': 'BottomSheetBackdrop',
+            }),
+        BottomSheetScrollView: ({ children, ...props }: any) =>
+            React.createElement('div', { ...props }, children),
+        BottomSheetView: ({ children, ...props }: any) =>
+            React.createElement('div', { ...props }, children),
+        BottomSheetFlatList: ({ data, renderItem, ...props }: any) =>
+            React.createElement(
+                'div',
+                props,
+                data?.map((item: any, index: number) =>
+                    renderItem({ item, index }),
+                ),
+            ),
+        BottomSheetSectionList: ({ sections, renderItem, ...props }: any) =>
+            React.createElement(
+                'div',
+                props,
+                sections?.flatMap((section: any) =>
+                    section.data?.map((item: any, index: number) =>
+                        renderItem({ item, index, section }),
+                    ),
+                ),
+            ),
+        BottomSheetTextInput: (props: any) =>
+            React.createElement('input', props),
+        useBottomSheet: () => ({
+            snapToIndex: vi.fn(),
+            close: vi.fn(),
+            expand: vi.fn(),
+            collapse: vi.fn(),
+        }),
+        useBottomSheetModal: () => ({
+            dismiss: vi.fn(),
+            dismissAll: vi.fn(),
+        }),
+        useBottomSheetDynamicSnapPoints: () => ({
+            animatedHandleHeight: { value: 0 },
+            animatedSnapPoints: { value: ['100%'] },
+            animatedContentHeight: { value: 0 },
+            handleContentLayout: vi.fn(),
+        }),
+    }
+})

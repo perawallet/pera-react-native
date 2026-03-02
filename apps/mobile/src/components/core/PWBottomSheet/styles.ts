@@ -13,9 +13,22 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    defaultStyle: {
+    background: {
         backgroundColor: theme.colors.background,
         borderTopStartRadius: theme.spacing.xl,
         borderTopEndRadius: theme.spacing.xl,
+    },
+    backdrop: {
+        backgroundColor: theme.colors.backdropModalBg,
+    },
+    handleIndicator: {
+        backgroundColor: theme.colors.layerGray,
+        width: 40,
+    },
+    contentWrapper: {
+        flex: 1,
+    },
+    innerContainer: {
+        flex: 1,
     },
 }))
