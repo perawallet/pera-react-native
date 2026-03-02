@@ -10,7 +10,13 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import {
+    PWIcon,
+    PWText,
+    PWTouchableIcon,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -28,15 +34,12 @@ export const SwapFormControls = ({
 
     return (
         <PWView style={styles.controlsRow}>
-            <PWTouchableOpacity
-                style={styles.swapDirectionButton}
+            <PWTouchableIcon
+                containerStyle={styles.swapDirectionButton}
+                name='swap'
+                style={styles.swapDirectionIcon}
                 onPress={onSwapPress}
-            >
-                <PWIcon
-                    name='swap'
-                    style={styles.swapDirectionIcon}
-                />
-            </PWTouchableOpacity>
+            />
 
             <PWTouchableOpacity
                 style={styles.maxRow}

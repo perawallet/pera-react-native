@@ -10,15 +10,24 @@
  limitations under the License
  */
 
+import { type StyleProp, type ViewStyle } from 'react-native'
 import { PWIcon, type PWIconProps } from '../PWIcon'
 import { PWTouchableOpacity } from '../PWTouchableOpacity'
 
 export type PWTouchableIconProps = {
     onPress: () => void
+    containerStyle?: StyleProp<ViewStyle>
 } & PWIconProps
 
-export const PWTouchableIcon = ({ onPress, ...rest }: PWTouchableIconProps) => (
-    <PWTouchableOpacity onPress={onPress}>
+export const PWTouchableIcon = ({
+    onPress,
+    containerStyle,
+    ...rest
+}: PWTouchableIconProps) => (
+    <PWTouchableOpacity
+        style={containerStyle}
+        onPress={onPress}
+    >
         <PWIcon {...rest} />
     </PWTouchableOpacity>
 )
