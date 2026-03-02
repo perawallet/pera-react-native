@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { WalletConnectProvider } from '../WalletConnectProvider'
 import type { WalletConnectSessionRequest } from '@perawallet/wallet-core-walletconnect'
 
@@ -21,7 +21,7 @@ const mockRequest = {
 let mockSessionRequests: WalletConnectSessionRequest[] = []
 
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
-    useWalletConnect: (opts?: { onError?: (error: Error) => void }) => ({
+    useWalletConnect: (_?: { onError?: (error: Error) => void }) => ({
         initWalletConnect: mockInitWalletConnect,
     }),
     useWalletConnectSessionRequests: () => ({
@@ -60,25 +60,20 @@ vi.mock(
     }),
 )
 
-vi.mock(
-    '../../components/ConnectionView/ConnectionView',
-    () => ({
-        ConnectionView: ({
-            request,
-            onSuccess,
-        }: {
-            request: WalletConnectSessionRequest
-            onSuccess: (req: WalletConnectSessionRequest) => void
-        }) => (
-            <div data-testid='ConnectionView'>
-                <span>{request.peerMeta.name}</span>
-                <button onClick={() => onSuccess(request)}>
-                    mock-connect
-                </button>
-            </div>
-        ),
-    }),
-)
+vi.mock('../../components/ConnectionView/ConnectionView', () => ({
+    ConnectionView: ({
+        request,
+        onSuccess,
+    }: {
+        request: WalletConnectSessionRequest
+        onSuccess: (req: WalletConnectSessionRequest) => void
+    }) => (
+        <div data-testid='ConnectionView'>
+            <span>{request.peerMeta.name}</span>
+            <button onClick={() => onSuccess(request)}>mock-connect</button>
+        </div>
+    ),
+}))
 
 vi.mock(
     '../../components/ConnectionSuccessBottomSheet/ConnectionSuccessBottomSheet',
@@ -107,9 +102,7 @@ vi.mock('@components/core', () => ({
         children: React.ReactNode
         isVisible: boolean
     }) =>
-        isVisible ? (
-            <div data-testid='PWBottomSheet'>{children}</div>
-        ) : null,
+        isVisible ? <div data-testid='PWBottomSheet'>{children}</div> : null,
 }))
 
 vi.mock('react-native', () => ({

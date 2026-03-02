@@ -24,9 +24,7 @@ vi.mock('@perawallet/wallet-core-walletconnect', async importOriginal => {
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-shared')
-        >()
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
     return {
         ...actual,
         generateOrderedUniqueId: () => 'mock-id',
@@ -48,7 +46,10 @@ vi.mock('@components/core', () => ({
     ),
     PWIcon: () => <div data-testid='PWIcon' />,
     PWImage: ({ source }: { source: { uri: string } }) => (
-        <img data-testid='PWImage' src={source.uri} />
+        <img
+            data-testid='PWImage'
+            src={source.uri}
+        />
     ),
     PWText: ({ children }: { children: React.ReactNode }) => (
         <span>{children}</span>
@@ -78,9 +79,7 @@ vi.mock('../styles', () => ({
     }),
 }))
 
-const createRequest = (
-    overrides: Partial<WalletConnectSessionRequest> = {},
-) =>
+const createRequest = (overrides: Partial<WalletConnectSessionRequest> = {}) =>
     ({
         peerMeta: {
             name: 'Test dApp',
@@ -160,7 +159,9 @@ describe('ConnectionViewHeader', () => {
     test('renders both mainnet and testnet badges for "all" chain', () => {
         render(
             <ConnectionViewHeader
-                request={createRequest({ chainId: 4160 } as Partial<WalletConnectSessionRequest>)}
+                request={createRequest({
+                    chainId: 4160,
+                } as Partial<WalletConnectSessionRequest>)}
             />,
         )
 

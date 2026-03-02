@@ -16,7 +16,6 @@ import {
     PWFlatList,
     PWTouchableOpacity,
     PWView,
-    bottomSheetNotifier,
 } from '@components/core'
 import {
     useWalletConnect,

@@ -45,14 +45,16 @@ export function WalletConnectProvider({
 
     const handleSigningError = useCallback(
         (error: Error) => {
-            showToast({
-                title: t('errors.signing.title'),
-                body: t(error.message),
-                type: 'error',
-            },
-        {
-            duration: LONG_NOTIFICATION_DURATION
-        })
+            showToast(
+                {
+                    title: t('errors.signing.title'),
+                    body: t(error.message),
+                    type: 'error',
+                },
+                {
+                    duration: LONG_NOTIFICATION_DURATION,
+                },
+            )
         },
         [showToast, t],
     )

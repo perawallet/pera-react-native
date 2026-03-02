@@ -349,9 +349,9 @@ describe('useAccountBalances', () => {
 
         expect(result.current.accountBalances.get('ADDR1')).toBeDefined()
         expect(result.current.accountBalances.get('ADDR2')).toBeDefined()
-        expect(
-            result.current.accountBalances.get('ADDR2')?.algoValue,
-        ).toEqual(Decimal(2))
+        expect(result.current.accountBalances.get('ADDR2')?.algoValue).toEqual(
+            Decimal(2),
+        )
     })
 
     it('handles assets with zero price correctly', async () => {

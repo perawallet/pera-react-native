@@ -62,7 +62,10 @@ vi.mock('@components/core', () => ({
         onPress: () => void
         isDisabled?: boolean
     }) => (
-        <button onClick={onPress} disabled={isDisabled}>
+        <button
+            onClick={onPress}
+            disabled={isDisabled}
+        >
             {title}
         </button>
     ),
@@ -103,7 +106,10 @@ vi.mock('@components/core', () => ({
         children: React.ReactNode
         onPress: () => void
     }) => (
-        <button data-testid='account-row' onClick={onPress}>
+        <button
+            data-testid='account-row'
+            onClick={onPress}
+        >
             {children}
         </button>
     ),
@@ -199,15 +205,17 @@ describe('ConnectionView', () => {
         const accountRows = screen.getAllByTestId('account-row')
         // Select
         fireEvent.click(accountRows[0])
-        expect(
-            screen.getByText('common.connect.label'),
-        ).toHaveProperty('disabled', false)
+        expect(screen.getByText('common.connect.label')).toHaveProperty(
+            'disabled',
+            false,
+        )
 
         // Deselect
         fireEvent.click(accountRows[0])
-        expect(
-            screen.getByText('common.connect.label'),
-        ).toHaveProperty('disabled', true)
+        expect(screen.getByText('common.connect.label')).toHaveProperty(
+            'disabled',
+            true,
+        )
     })
 
     test('cancel rejects session and removes request', () => {

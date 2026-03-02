@@ -27,11 +27,7 @@ vi.mock('../styles', () => ({
 
 describe('PermissionItem', () => {
     test('renders transaction permission label', () => {
-        render(
-            <PermissionItem
-                permission={AlgorandPermission.TX_PERMISSION}
-            />,
-        )
+        render(<PermissionItem permission={AlgorandPermission.TX_PERMISSION} />)
 
         expect(
             screen.getByText(
@@ -42,15 +38,11 @@ describe('PermissionItem', () => {
 
     test('renders data permission label', () => {
         render(
-            <PermissionItem
-                permission={AlgorandPermission.DATA_PERMISSION}
-            />,
+            <PermissionItem permission={AlgorandPermission.DATA_PERMISSION} />,
         )
 
         expect(
-            screen.getByText(
-                'walletconnect.request.permissions_sign_data',
-            ),
+            screen.getByText('walletconnect.request.permissions_sign_data'),
         ).toBeDefined()
     })
 
@@ -79,11 +71,7 @@ describe('PermissionItem', () => {
     })
 
     test('renders check icon for each permission', () => {
-        render(
-            <PermissionItem
-                permission={AlgorandPermission.TX_PERMISSION}
-            />,
-        )
+        render(<PermissionItem permission={AlgorandPermission.TX_PERMISSION} />)
 
         expect(screen.getByTestId('PWIcon')).toBeDefined()
     })
