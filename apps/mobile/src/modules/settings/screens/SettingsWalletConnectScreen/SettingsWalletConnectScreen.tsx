@@ -17,7 +17,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import {
     useWalletConnect,
-    WalletConnectConnection,
+    type WalletConnectConnection,
 } from '@perawallet/wallet-core-walletconnect'
 import { useStyles } from './styles'
 import { WalletConnectSessionItem } from '@modules/settings/components/WalletConnect/WalletConnectSessionItem'
