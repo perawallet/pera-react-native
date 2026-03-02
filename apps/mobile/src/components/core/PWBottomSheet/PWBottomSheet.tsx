@@ -18,7 +18,13 @@ import {
     BottomSheetView,
 } from '@gorhom/bottom-sheet'
 import { PWView } from '@components/core/PWView'
-import { createRef, PropsWithChildren, useCallback, useEffect, useRef } from 'react'
+import {
+    createRef,
+    PropsWithChildren,
+    useCallback,
+    useEffect,
+    useRef,
+} from 'react'
 import { useStyles } from './styles'
 import { StyleProp, ViewStyle } from 'react-native'
 import { NotifierRoot, NotifierWrapper } from 'react-native-notifier'
@@ -72,7 +78,7 @@ export const PWBottomSheet = ({
                 {...props}
                 disappearsOnIndex={-1}
                 appearsOnIndex={0}
-                pressBehavior="close"
+                pressBehavior='close'
                 style={styles.backdrop}
             />
         ),
@@ -84,7 +90,9 @@ export const PWBottomSheet = ({
     }, [onBackdropPress])
 
     // Content wrapper - use BottomSheetScrollView for scrollable content, BottomSheetView otherwise
-    const ContentWrapper = scrollEnabled ? BottomSheetScrollView : BottomSheetView
+    const ContentWrapper = scrollEnabled
+        ? BottomSheetScrollView
+        : BottomSheetView
 
     return (
         <BottomSheetModal
@@ -103,7 +111,9 @@ export const PWBottomSheet = ({
                 ref={bottomSheetNotifier}
             >
                 <ContentWrapper style={styles.contentWrapper}>
-                    <PWView style={[styles.innerContainer, innerContainerStyle]}>
+                    <PWView
+                        style={[styles.innerContainer, innerContainerStyle]}
+                    >
                         {children}
                     </PWView>
                 </ContentWrapper>
