@@ -11,19 +11,14 @@
  */
 
 import {
-    PWBadge,
     PWButton,
     PWCheckbox,
-    PWIcon,
-    PWImage,
-    PWText,
+    PWFlatList,
     PWTouchableOpacity,
     PWView,
     bottomSheetNotifier,
 } from '@components/core'
 import {
-    AlgorandChain,
-    AlgorandPermission,
     useWalletConnect,
     useWalletConnectSessionRequests,
     WalletConnectSessionRequest,
@@ -31,47 +26,33 @@ import {
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import React from 'react'
-import { useWebView } from '@modules/webview/hooks'
 import {
     useSigningAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { ScrollView } from 'react-native-gesture-handler'
 import { useToast } from '@hooks/useToast'
-import { PermissionItem } from '../PermissionItem'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { ConnectionViewHeader } from './ConnectionViewHeader'
 
 export type ConnectionViewProps = {
     request: WalletConnectSessionRequest
+    onSuccess: (request: WalletConnectSessionRequest) => void
+    onError: (error?: Error) => void
 }
 
 //TODO implement project validation using our backend to show a "verified" badge somewhere
-export const ConnectionView = ({ request }: ConnectionViewProps) => {
+export const ConnectionView = ({
+    request,
+    onSuccess,
+    onError,
+}: ConnectionViewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { pushWebView } = useWebView()
     const { removeSessionRequest } = useWalletConnectSessionRequests()
     const { approveSession, rejectSession } = useWalletConnect()
     const accounts = useSigningAccounts()
     const [selectedAccounts, setSelectedAccounts] = React.useState<string[]>([])
     const { showToast } = useToast()
-
-    const preferredIcon =
-        request.peerMeta.icons?.find(
-            icon =>
-                icon.endsWith('.png') ||
-                icon.endsWith('.jpg') ||
-                icon.endsWith('.jpeg'),
-        ) ?? request.peerMeta.icons?.at(0)
-
-    const handlePressUrl = () => {
-        if (!request.peerMeta.url) return
-        pushWebView({
-            id: generateOrderedUniqueId(),
-            url: request.peerMeta.url,
-        })
-    }
 
     const handleCancel = () => {
         rejectSession(request.clientId)
@@ -79,32 +60,20 @@ export const ConnectionView = ({ request }: ConnectionViewProps) => {
     }
 
     const handleConnect = () => {
-        if (!selectedAccounts.length) {
-            showToast(
-                {
-                    title: t(
-                        'walletconnect.request.accounts_select_one_account_title',
-                    ),
-                    body: t(
-                        'walletconnect.request.accounts_select_one_account_body',
-                    ),
-                    type: 'error',
-                },
-                {
-                    notifier: bottomSheetNotifier.current ?? undefined,
-                },
-            )
-            return
+        try {
+            approveSession(request.clientId, request, selectedAccounts)
+            showToast({
+                title: t('walletconnect.request.success_title'),
+                body: t('walletconnect.request.success_body', {
+                    name: request.peerMeta.name,
+                }),
+                type: 'success',
+            })
+            onSuccess(request)
+            removeSessionRequest(request)
+        } catch (error) {
+            onError(error as Error)
         }
-        approveSession(request.clientId, request, selectedAccounts)
-        showToast({
-            title: t('walletconnect.request.success_title'),
-            body: t('walletconnect.request.success_body', {
-                name: request.peerMeta.name,
-            }),
-            type: 'success',
-        })
-        removeSessionRequest(request)
     }
 
     const handleAccountPress = (account: WalletAccount) => {
@@ -117,114 +86,36 @@ export const ConnectionView = ({ request }: ConnectionViewProps) => {
         })
     }
 
+    const renderAccountRow = ({ item }: { item: WalletAccount }) => {
+        return (
+            <PWTouchableOpacity
+                key={item.address}
+                style={styles.accountItem}
+                onPress={() => handleAccountPress(item)}
+            >
+                <AccountDisplay
+                    account={item}
+                    showChevron={false}
+                />
+                <PWCheckbox
+                    onPress={() => handleAccountPress(item)}
+                    checked={selectedAccounts.includes(item.address)}
+                />
+            </PWTouchableOpacity>
+        )
+    }
+
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.headerContainer}>
-                <PWView style={styles.networksContainer}>
-                    {request.chainId !== 4160 ? (
-                        <PWBadge
-                            value={t(
-                                `walletconnect.request.networks_${AlgorandChain[request.chainId]}`,
-                            )}
-                            variant={
-                                request.chainId === 416002
-                                    ? 'testnet'
-                                    : 'primary'
-                            }
-                        />
-                    ) : (
-                        <>
-                            <PWBadge
-                                value={t(
-                                    `walletconnect.request.networks_mainnet`,
-                                )}
-                                variant='primary'
-                            />
-                            <PWBadge
-                                value={t(
-                                    `walletconnect.request.networks_testnet`,
-                                )}
-                                variant='testnet'
-                            />
-                        </>
-                    )}
-                </PWView>
-                {preferredIcon ? (
-                    <PWImage
-                        source={{ uri: preferredIcon }}
-                        style={styles.icon}
-                    />
-                ) : (
-                    <PWView style={styles.iconContainer}>
-                        <PWIcon
-                            name='wallet-connect'
-                            variant='secondary'
-                            size='xl'
-                        />
-                    </PWView>
-                )}
-                <PWView style={styles.titleContainer}>
-                    <PWText
-                        variant='h3'
-                        style={styles.title}
-                    >
-                        {t('walletconnect.request.title', {
-                            name: request.peerMeta.name,
-                        })}
-                    </PWText>
-                    {!!request.peerMeta.url && (
-                        <PWButton
-                            variant='link'
-                            onPress={handlePressUrl}
-                            title={request.peerMeta.url}
-                        />
-                    )}
-                </PWView>
-            </PWView>
-            <PWView style={styles.permissionsContainer}>
-                <PWText
-                    variant='h4'
-                    style={styles.permissionsTitle}
-                >
-                    {t('walletconnect.request.permissions_title')}
-                </PWText>
-                {request.permissions.map((permission, index) => (
-                    <PermissionItem
-                        key={index}
-                        permission={permission as AlgorandPermission}
-                    />
-                ))}
-            </PWView>
-
-            <PWView style={styles.accountSelectionContainer}>
-                <PWText
-                    variant='h4'
-                    style={styles.permissionsTitle}
-                >
-                    {t('walletconnect.request.accounts_title')}
-                </PWText>
-                <ScrollView style={styles.accountsContainer}>
-                    {accounts.map(account => (
-                        <PWTouchableOpacity
-                            key={account.address}
-                            style={styles.accountItem}
-                            onPress={() => handleAccountPress(account)}
-                        >
-                            <AccountDisplay
-                                account={account}
-                                showChevron={false}
-                            />
-                            <PWCheckbox
-                                onPress={() => handleAccountPress(account)}
-                                checked={selectedAccounts.includes(
-                                    account.address,
-                                )}
-                            />
-                        </PWTouchableOpacity>
-                    ))}
-                </ScrollView>
-            </PWView>
-
+        <>
+            <PWFlatList
+                style={styles.container}
+                contentContainerStyle={styles.contentContainer}
+                data={accounts}
+                renderItem={renderAccountRow}
+                extraData={{ selectedAccounts }}
+                ListHeaderComponent={<ConnectionViewHeader request={request} />}
+                showsVerticalScrollIndicator={false}
+            />
             <PWView style={styles.buttonContainer}>
                 <PWButton
                     variant='secondary'
@@ -237,8 +128,9 @@ export const ConnectionView = ({ request }: ConnectionViewProps) => {
                     title={t('common.connect.label')}
                     onPress={handleConnect}
                     style={styles.connectButton}
+                    isDisabled={!selectedAccounts.length}
                 />
             </PWView>
-        </PWView>
+        </>
     )
 }

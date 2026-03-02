@@ -10,17 +10,25 @@
  limitations under the License
  */
 
-import React, { PropsWithChildren, useCallback, useEffect } from 'react'
+import React, {
+    PropsWithChildren,
+    useCallback,
+    useEffect,
+    useState,
+} from 'react'
 import { PWBottomSheet } from '@components/core'
 import { useWindowDimensions } from 'react-native'
 import { ConnectionView } from '@modules/walletconnect/components/ConnectionView/ConnectionView'
 import {
     useWalletConnect,
     useWalletConnectSessionRequests,
+    WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
 import { WalletConnectErrorBoundary } from '@modules/walletconnect/components/BaseErrorBoundary/WalletConnectErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useModalState } from '@hooks/useModalState'
+import { ConnectionSuccessBottomSheet } from '../components/ConnectionSuccessBottomSheet/ConnectionSuccessBottomSheet'
 
 export type WalletConnectProviderProps = {} & PropsWithChildren
 
@@ -32,6 +40,8 @@ export function WalletConnectProvider({
     const { height } = useWindowDimensions()
     const { showToast } = useToast()
     const { t } = useLanguage()
+    const [successRequest, setSuccessRequest] =
+        useState<WalletConnectSessionRequest | null>(null)
 
     const handleSigningError = useCallback(
         (error: Error) => {
@@ -43,6 +53,14 @@ export function WalletConnectProvider({
         },
         [showToast, t],
     )
+
+    const handleSuccess = (request: WalletConnectSessionRequest) => {
+        setSuccessRequest(request)
+    }
+
+    const clearSuccessRequest = () => {
+        setSuccessRequest(null)
+    }
 
     const { initWalletConnect } = useWalletConnect({
         onError: handleSigningError,
@@ -57,10 +75,21 @@ export function WalletConnectProvider({
             {children}
             <PWBottomSheet
                 innerContainerStyle={{ height: height - 100 }}
-                isVisible={!!nextRequest}
+                isVisible={!!nextRequest && !successRequest}
             >
-                {!!nextRequest && <ConnectionView request={nextRequest} />}
+                {!!nextRequest && (
+                    <ConnectionView
+                        request={nextRequest}
+                        onSuccess={handleSuccess}
+                        onError={() => {}}
+                    />
+                )}
             </PWBottomSheet>
+
+            <ConnectionSuccessBottomSheet
+                onClose={clearSuccessRequest}
+                request={successRequest}
+            />
         </WalletConnectErrorBoundary>
     )
 }

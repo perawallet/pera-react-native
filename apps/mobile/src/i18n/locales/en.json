@@ -892,6 +892,8 @@
             "accounts_select_one_account_body": "Please select at least one account to connect with",
             "success_title": "Connection approved",
             "success_body": "You are now connected to {{name}}",
+            "success_sheet_title": "You are connected to {{name}}",
+            "success_sheet_body": "Please return to {{name}} to continue and finish your operation. You can find all connected Sessions in the dedicated Settings page.",
             "networks_mainnet": "Mainnet",
             "networks_testnet": "Testnet"
         },

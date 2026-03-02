@@ -17,16 +17,16 @@ import { getFontFamily } from '@theme/typography'
 export const useStyles = makeStyles((theme, props: PWButtonProps) => {
     const variantStyles = {
         primary: {
-            backgroundColor: theme.colors.buttonPrimaryBg,
-            color: theme.colors.buttonPrimaryText,
+            backgroundColor: !props.isDisabled ? theme.colors.buttonPrimaryBg : theme.colors.buttonPrimaryDisabledBg,
+            color: !props.isDisabled ? theme.colors.buttonPrimaryText : theme.colors.buttonPrimaryDisabledText,
         },
         secondary: {
-            backgroundColor: theme.colors.layerGrayLighter,
-            color: theme.colors.textMain,
+            backgroundColor: !props.isDisabled ? theme.colors.buttonSecondaryBg : theme.colors.buttonSecondaryDisabledBg,
+            color: !props.isDisabled ? theme.colors.buttonSecondaryText : theme.colors.buttonSecondaryDisabledText,
         },
         helper: {
-            backgroundColor: theme.colors.buttonSquareBg,
-            color: theme.colors.buttonSquareIcon,
+            backgroundColor: !props.isDisabled ? theme.colors.buttonHelperBg : theme.colors.buttonHelperDisabledBg,
+            color: theme.colors.textMain,
         },
         destructive: {
             backgroundColor: theme.colors.alertNegative,
