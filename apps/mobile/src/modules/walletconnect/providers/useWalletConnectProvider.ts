@@ -28,7 +28,6 @@ export const useWalletConnectProvider = () => {
     const { network } = useNetwork()
 
     const handleSigningError = useCallback((error: Error) => {
-        logger.debug('Handling Error')
         setConnectionError(error)
     }, [])
 

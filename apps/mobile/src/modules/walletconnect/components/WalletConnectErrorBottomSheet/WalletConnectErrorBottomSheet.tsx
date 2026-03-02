@@ -14,7 +14,6 @@ import { PWBottomSheet, PWButton, PWIcon, PWText } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
-import { logger } from '@perawallet/wallet-core-shared'
 import { config } from '@perawallet/wallet-core-config'
 
 type WalletConnectErrorBottomSheetProps = {
@@ -32,7 +31,6 @@ export const WalletConnectErrorBottomSheet = ({
     const styles = useStyles()
 
     const errorMessage = useMemo(() => {
-        logger.debug('Handling error', { error })
         let actualError = error?.message
         if (config.debugEnabled && error?.cause) {
             if (typeof error.cause === 'string') {
