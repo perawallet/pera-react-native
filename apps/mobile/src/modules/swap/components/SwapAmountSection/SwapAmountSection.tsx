@@ -10,14 +10,13 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
 import Decimal from 'decimal.js'
 import { PWInput, PWText, PWView } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { useLanguage } from '@hooks/useLanguage'
-import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { SwapAssetSelector } from '../SwapAssetSelector'
 import { useStyles } from './styles'
+import { useSwapAmountSection } from './useSwapAmountSection'
 import { useTheme } from '@rneui/themed/dist/config/ThemeProvider'
 
 type SwapAmountSectionPayProps = {
@@ -47,41 +46,9 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
     const { theme } = useTheme()
     const styles = useStyles()
 
-    const { data: assets } = useAssetsQuery(assetId ? [assetId] : [])
-    const asset = useMemo(
-        () => (assetId ? assets?.get(assetId) : undefined),
-        [assets, assetId],
-    )
-
-    const isPay = variant === 'pay'
-
-    const displayValue = useMemo(
-        () => (amount ? amount.toString() : ''),
-        [amount],
-    )
-
-    const hasPositiveAmount = amount !== null && amount.greaterThan(0)
-    const amountColor = hasPositiveAmount
-        ? theme.colors.textMain
-        : theme.colors.textGrayLighter
-
-    const handleTextChange = useCallback(
-        (text: string) => {
-            if (!isPay) return
-
-            if (text === '') {
-                props.onAmountChange(null)
-                return
-            }
-
-            try {
-                props.onAmountChange(new Decimal(text))
-            } catch {
-                // Ignore invalid decimal input
-            }
-        },
-        [isPay, props],
-    )
+    const onAmountChange = variant === 'pay' ? props.onAmountChange : undefined
+    const { asset, isPay, displayValue, amountColor, handleTextChange } =
+        useSwapAmountSection({ variant, assetId, amount, onAmountChange })
 
     return (
         <PWView style={isPay ? styles.container : styles.receiveContainer}>
