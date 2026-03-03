@@ -32,7 +32,7 @@ export function SignRequestBottomSheet() {
                 setIsVisible(true)
             })
         }
-    }, [pendingSignRequests, lastCompletedRequest])
+    }, [lastCompletedRequest, nextRequest])
 
     return (
         <PWBottomSheet

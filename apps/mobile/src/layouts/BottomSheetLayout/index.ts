@@ -10,21 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-import { getFontFamily } from '@theme/typography'
-
-export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-    },
-    contentContainer: {
-        flex: 1,
-        padding: theme.spacing.md,
-    },
-    rawTransactionText: {
-        fontFamily: getFontFamily(400),
-    },
-    scrollview: {
-        paddingHorizontal: theme.spacing.xl,
-    },
-}))
+export { BottomSheetLayout } from './BottomSheetLayout'
+export type { BottomSheetLayoutProps } from './BottomSheetLayout'

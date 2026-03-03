@@ -19,7 +19,7 @@ import {
     type StackHeaderProps,
 } from '@react-navigation/stack'
 import { useMemo } from 'react'
-import { SigningStackParamList } from './types'
+import type { SigningStackParamList } from './types'
 import {
     SingleTransactionScreen,
     TransactionDetailsScreen,
@@ -31,6 +31,7 @@ import {
 import { SettingsSecurityScreen } from '@modules/settings/screens/SettingsSecurityScreen'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { useStyles } from './styles'
+import { bottomSheetLayout } from '@layouts/index'
 
 type SigningRoutesProps = {
     request: SignRequest
@@ -77,6 +78,7 @@ export const SigningRoutes = ({ request }: SigningRoutesProps) => {
                 cardStyle: styles.screenContent,
                 detachPreviousScreen: false,
             }}
+            layout={bottomSheetLayout}
         >
             <Stack.Screen
                 name='SingleTransaction'

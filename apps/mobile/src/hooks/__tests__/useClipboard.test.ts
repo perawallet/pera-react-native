@@ -48,10 +48,15 @@ describe('useClipboard', () => {
         })
 
         expect(Clipboard.setStringAsync).toHaveBeenCalledWith('test text')
-        expect(mockShowToast).toHaveBeenCalledWith({
-            title: 'common.copied_to_clipboard.title',
-            body: 'common.copied_to_clipboard.body',
-            type: 'success',
-        })
+        expect(mockShowToast).toHaveBeenCalledWith(
+            {
+                title: 'common.copied_to_clipboard.title',
+                body: 'common.copied_to_clipboard.body',
+                type: 'success',
+            },
+            {
+                notifier: undefined,
+            },
+        )
     })
 })

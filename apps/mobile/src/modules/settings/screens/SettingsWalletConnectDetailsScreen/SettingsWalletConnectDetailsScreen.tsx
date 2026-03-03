@@ -14,34 +14,24 @@ import {
     PWBadge,
     PWButton,
     PWIcon,
+    PWScrollView,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useModalState } from '@hooks/useModalState'
-import {
-    AlgorandPermission,
-    useWalletConnect,
-} from '@perawallet/wallet-core-walletconnect'
+import type { AlgorandPermission } from '@perawallet/wallet-core-walletconnect'
 import { useStyles } from './styles'
 import { Dialog, Image, Text, useTheme } from '@rneui/themed'
-import { useMemo, useState } from 'react'
-import { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { WalletConnectSettingsStackParamsList } from '@modules/settings/routes'
-import { useWebView } from '@modules/webview/hooks'
+import type { NativeStackScreenProps } from '@react-navigation/native-stack'
+import type { WalletConnectSettingsStackParamsList } from '@modules/settings/routes'
 import { KeyValueRow } from '@components/KeyValueRow'
-import {
-    formatDatetime,
-    generateOrderedUniqueId,
-} from '@perawallet/wallet-core-shared'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { ScrollView } from 'react-native-gesture-handler'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { PermissionItem } from '@modules/walletconnect/components/PermissionItem'
-import { useNavigation } from '@react-navigation/native'
 import { InfoButton } from '@components/InfoButton'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSettingsWalletConnectDetailsScreen } from './useSettingsWalletConnectDetailsScreen'
 
 export type SettingsWalletConnectDetailsScreenProps = NativeStackScreenProps<
     WalletConnectSettingsStackParamsList,
@@ -49,19 +39,20 @@ export type SettingsWalletConnectDetailsScreenProps = NativeStackScreenProps<
 >
 
 const ConnectedNetworks = ({ chainId }: { chainId: number }) => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const { t } = useLanguage()
 
     return (
         <PWView style={styles.networkContainer}>
             {(chainId === 4160 || chainId === 416001) && (
                 <Text style={styles.mainnetText}>
-                    {t(`walletconnect.request.networks_mainnet`)}
+                    {t('walletconnect.request.networks_mainnet')}
                 </Text>
             )}
             {(chainId === 4160 || chainId === 416002) && (
                 <Text style={styles.testnetText}>
-                    {t(`walletconnect.request.networks_testnet`)}
+                    {t('walletconnect.request.networks_testnet')}
                 </Text>
             )}
         </PWView>
@@ -72,62 +63,23 @@ export const SettingsWalletConnectDetailsScreen = ({
     route,
 }: SettingsWalletConnectDetailsScreenProps) => {
     const { t } = useLanguage()
-    const { network } = useNetwork()
-    const { disconnect } = useWalletConnect(network)
-    const deleteState = useModalState()
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const { theme } = useTheme()
-    const [isLoading, setIsLoading] = useState(false)
-    const { pushWebView } = useWebView()
-    const navigation = useNavigation()
-    const accounts = useAllAccounts()
-
     const { session } = route.params
-    const connectedAccounts = useMemo(() => {
-        return session?.session?.accounts?.map(address =>
-            accounts.find(account => account.address === address),
-        )
-    }, [session, accounts])
 
-    const preferredIcon =
-        session?.session?.peerMeta?.icons?.find(
-            icon =>
-                icon.endsWith('.png') ||
-                icon.endsWith('.jpg') ||
-                icon.endsWith('.jpeg') ||
-                icon.endsWith('.gif'),
-        ) ?? session?.session?.peerMeta?.icons?.[0]
-
-    const handleDelete = () => {
-        if (!session.clientId) {
-            deleteState.close()
-            return
-        }
-        setIsLoading(true)
-        disconnect(session.clientId, true)
-            .then(() => {
-                deleteState.close()
-            })
-            .finally(() => {
-                setIsLoading(false)
-                navigation.goBack()
-            })
-    }
-
-    const handleOpenLink = () => {
-        if (!session.session?.peerMeta?.url) {
-            return
-        }
-        pushWebView({
-            id: generateOrderedUniqueId(),
-            url: session.session.peerMeta.url,
-        })
-    }
-
-    const peerMeta = session.session?.peerMeta
+    const {
+        peerMeta,
+        preferredIcon,
+        connectedAccounts,
+        isLoading,
+        deleteModalState,
+        handleDelete,
+        handleOpenLink,
+    } = useSettingsWalletConnectDetailsScreen(session)
 
     return (
-        <ScrollView contentContainerStyle={styles.container}>
+        <PWScrollView contentContainerStyle={styles.container}>
             {!!preferredIcon && (
                 <Image
                     source={{ uri: preferredIcon }}
@@ -215,9 +167,9 @@ export const SettingsWalletConnectDetailsScreen = ({
                 }
             >
                 <PWView style={styles.permissionsContainer}>
-                    {session.session?.permissions?.map((permission, index) => (
+                    {session.session?.permissions?.map(permission => (
                         <PermissionItem
-                            key={index}
+                            key={permission}
                             permission={permission as AlgorandPermission}
                         />
                     ))}
@@ -228,12 +180,12 @@ export const SettingsWalletConnectDetailsScreen = ({
                 <PWButton
                     variant='secondary'
                     title={t('walletconnect.settings.delete_title')}
-                    onPress={deleteState.open}
+                    onPress={deleteModalState.open}
                 />
             </PWView>
             <Dialog
-                isVisible={deleteState.isOpen}
-                onBackdropPress={deleteState.close}
+                isVisible={deleteModalState.isOpen}
+                onBackdropPress={deleteModalState.close}
             >
                 <Dialog.Title
                     title={t('walletconnect.settings.delete_title')}
@@ -248,11 +200,11 @@ export const SettingsWalletConnectDetailsScreen = ({
                     />
                     <Dialog.Button
                         title={t('common.cancel.label')}
-                        onPress={deleteState.close}
+                        onPress={deleteModalState.close}
                         disabled={isLoading}
                     />
                 </Dialog.Actions>
             </Dialog>
-        </ScrollView>
+        </PWScrollView>
     )
 }
