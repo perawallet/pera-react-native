@@ -10,8 +10,4 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-security'
-
-export * from './constants'
-export * from './models'
-export * from './hooks'
+export { keyValueStorage } from './resources'

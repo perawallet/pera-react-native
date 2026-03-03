@@ -13,9 +13,10 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { KeyValueStorageService } from '../../storage'
+import { keyValueStorage } from '@perawallet/wallet-extension-platform-resources'
 import type { DeviceState } from '../models'
 import {
-    createLazyStore,
+    registerStore,
     type Network,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
@@ -45,13 +46,6 @@ const rehydrateDeviceSlice = (
     }
     return persistedState
 }
-
-const lazy =
-    createLazyStore<WithPersist<StoreApi<DeviceState>, unknown>>(STORE_NAME)
-
-export const useDeviceStore: UseBoundStore<
-    WithPersist<StoreApi<DeviceState>, unknown>
-> = lazy.useStore
 
 const initialState = {
     deviceIDs: new Map<Network, string | null>(),
@@ -96,13 +90,17 @@ export const createDeviceStore = (storage: KeyValueStorageService) =>
         ),
     )
 
-/**
- * Initialize the device store synchronously with the given storage service.
- * Called by the platform extension during provider construction.
- */
-export const initDeviceStore = (storage: KeyValueStorageService) => {
-    const realStore = createDeviceStore(storage)
-    lazy.init(realStore, () => realStore.getState().resetState())
-}
+export const useDeviceStore: UseBoundStore<
+    WithPersist<StoreApi<DeviceState>, unknown>
+> = createDeviceStore(keyValueStorage)
 
-export const clearDeviceStore = () => lazy.clear()
+registerStore({
+    name: STORE_NAME,
+    clearStorage: () =>
+        (
+            useDeviceStore as unknown as {
+                persist: { clearStorage: () => void }
+            }
+        ).persist.clearStorage(),
+    resetState: () => useDeviceStore.getState().resetState(),
+})

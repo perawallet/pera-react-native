@@ -12,24 +12,16 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import {
-    KeyValueStorageService,
-    useKeyValueStorageService,
-} from '@perawallet/wallet-extension-platform'
+import { KeyValueStorageService } from '@perawallet/wallet-extension-platform'
+import { keyValueStorage } from '@perawallet/wallet-extension-platform-resources'
 import type { AccountsState, WalletAccount } from '../models'
 import {
-    createLazyStore,
     logger,
+    registerStore,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 
 const STORE_NAME = 'accounts-store'
-const lazy =
-    createLazyStore<WithPersist<StoreApi<AccountsState>, unknown>>(STORE_NAME)
-
-export const useAccountsStore: UseBoundStore<
-    WithPersist<StoreApi<AccountsState>, unknown>
-> = lazy.useStore
 
 const initialState = {
     accounts: [] as WalletAccount[],
@@ -92,10 +84,17 @@ export const createAccountsStore = (storage: KeyValueStorageService) =>
         ),
     )
 
-export const initAccountsStore = () => {
-    const storage = useKeyValueStorageService()
-    const realStore = createAccountsStore(storage)
-    lazy.init(realStore, () => realStore.getState().resetState())
-}
+export const useAccountsStore: UseBoundStore<
+    WithPersist<StoreApi<AccountsState>, unknown>
+> = createAccountsStore(keyValueStorage)
 
-export const clearAccountsStore = () => lazy.clear()
+registerStore({
+    name: STORE_NAME,
+    clearStorage: () =>
+        (
+            useAccountsStore as unknown as {
+                persist: { clearStorage: () => void }
+            }
+        ).persist.clearStorage(),
+    resetState: () => useAccountsStore.getState().resetState(),
+})

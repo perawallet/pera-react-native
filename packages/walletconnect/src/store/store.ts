@@ -12,61 +12,53 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
+import { keyValueStorage } from '@perawallet/wallet-extension-platform-resources'
 import type {
     WalletConnectConnection,
     WalletConnectSessionRequest,
     WalletConnectStore,
 } from '../models'
-import type { WithPersist } from '@perawallet/wallet-core-shared'
-import {
-    KeyValueStorageService,
-    useKeyValueStorageService,
-} from '@perawallet/wallet-extension-platform'
-import { createLazyStore } from '@perawallet/wallet-core-shared'
+import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
 
 const STORE_NAME = 'wallet-connect-store'
-const lazy =
-    createLazyStore<WithPersist<StoreApi<WalletConnectStore>, unknown>>(
-        STORE_NAME,
-    )
-
-export const useWalletConnectStore: UseBoundStore<
-    WithPersist<StoreApi<WalletConnectStore>, unknown>
-> = lazy.useStore
 
 const initialState = {
     walletConnectConnections: [] as WalletConnectConnection[],
     sessionRequests: [] as WalletConnectSessionRequest[],
 }
 
-const createWalletConnectStore = (storage: KeyValueStorageService) =>
-    create<WalletConnectStore>()(
-        persist(
-            set => ({
-                ...initialState,
-                setWalletConnectConnections: (
-                    walletConnectConnections: WalletConnectConnection[],
-                ) => set({ walletConnectConnections }),
-                setSessionRequests: (
-                    sessionRequests: WalletConnectSessionRequest[],
-                ) => set({ sessionRequests }),
-                resetState: () => set(initialState),
+export const useWalletConnectStore: UseBoundStore<
+    WithPersist<StoreApi<WalletConnectStore>, unknown>
+> = create<WalletConnectStore>()(
+    persist(
+        set => ({
+            ...initialState,
+            setWalletConnectConnections: (
+                walletConnectConnections: WalletConnectConnection[],
+            ) => set({ walletConnectConnections }),
+            setSessionRequests: (
+                sessionRequests: WalletConnectSessionRequest[],
+            ) => set({ sessionRequests }),
+            resetState: () => set(initialState),
+        }),
+        {
+            name: STORE_NAME,
+            storage: createJSONStorage(() => keyValueStorage),
+            version: 1,
+            partialize: state => ({
+                walletConnectConnections: state.walletConnectConnections,
             }),
-            {
-                name: STORE_NAME,
-                storage: createJSONStorage(() => storage),
-                version: 1,
-                partialize: state => ({
-                    walletConnectConnections: state.walletConnectConnections,
-                }),
-            },
-        ),
-    )
+        },
+    ),
+)
 
-export const initWalletConnectStore = () => {
-    const storage = useKeyValueStorageService()
-    const realStore = createWalletConnectStore(storage)
-    lazy.init(realStore, () => realStore.getState().resetState())
-}
-
-export const clearWalletConnectStore = () => lazy.clear()
+registerStore({
+    name: STORE_NAME,
+    clearStorage: () =>
+        (
+            useWalletConnectStore as unknown as {
+                persist: { clearStorage: () => void }
+            }
+        ).persist.clearStorage(),
+    resetState: () => useWalletConnectStore.getState().resetState(),
+})

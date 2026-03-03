@@ -13,22 +13,11 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { KeyValueStorageService } from '../../storage'
+import { keyValueStorage } from '@perawallet/wallet-extension-platform-resources'
 import type { RemoteConfigStore } from '../models'
-import {
-    createLazyStore,
-    type WithPersist,
-} from '@perawallet/wallet-core-shared'
+import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
 
 const STORE_NAME = 'remote-config-store'
-
-const lazy =
-    createLazyStore<WithPersist<StoreApi<RemoteConfigStore>, unknown>>(
-        STORE_NAME,
-    )
-
-export const useRemoteConfigStore: UseBoundStore<
-    WithPersist<StoreApi<RemoteConfigStore>, unknown>
-> = lazy.useStore
 
 const initialState = {
     configOverrides: {} as Record<string, string | boolean | number>,
@@ -64,13 +53,17 @@ export const createRemoteConfigStore = (storage: KeyValueStorageService) =>
         ),
     )
 
-/**
- * Initialize the remote config store synchronously with the given storage service.
- * Called by the platform extension during provider construction.
- */
-export const initRemoteConfigStore = (storage: KeyValueStorageService) => {
-    const realStore = createRemoteConfigStore(storage)
-    lazy.init(realStore, () => realStore.getState().resetState())
-}
+export const useRemoteConfigStore: UseBoundStore<
+    WithPersist<StoreApi<RemoteConfigStore>, unknown>
+> = createRemoteConfigStore(keyValueStorage)
 
-export const clearRemoteConfigStore = () => lazy.clear()
+registerStore({
+    name: STORE_NAME,
+    clearStorage: () =>
+        (
+            useRemoteConfigStore as unknown as {
+                persist: { clearStorage: () => void }
+            }
+        ).persist.clearStorage(),
+    resetState: () => useRemoteConfigStore.getState().resetState(),
+})

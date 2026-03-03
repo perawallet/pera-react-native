@@ -17,5 +17,3 @@ export * from './errors'
 export * from './hooks/useWalletConnectSessionRequests'
 export * from './hooks/useWalletConnect'
 export * from './constants'
-
-export { initWalletConnectStore, clearWalletConnectStore } from './store'

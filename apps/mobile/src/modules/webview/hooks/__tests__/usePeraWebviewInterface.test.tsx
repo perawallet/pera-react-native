@@ -42,7 +42,6 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         debug: vi.fn(),
         error: vi.fn(),
     },
-    createLazyStore: vi.fn(() => () => ({})),
     generateOrderedUniqueId: vi.fn(() => 'test-id'),
     decodeFromBase64: vi.fn(t => t),
     encodeToBase64: vi.fn(t => t),

@@ -10,9 +10,41 @@
  limitations under the License
  */
 
-import { describe, test, expect, beforeEach } from 'vitest'
+import { vi, describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { registerTestPlatform } from '../../../test-utils'
+
+vi.mock('@perawallet/wallet-core-config', () => ({
+    config: {
+        defaultNetwork: 'mainnet',
+    },
+    Networks: {
+        testnet: 'testnet',
+        mainnet: 'mainnet',
+    },
+}))
+
+vi.mock('@perawallet/wallet-extension-platform-resources', () => {
+    const store = new Map<string, string>()
+    return {
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => {
+                store.set(key, value)
+            },
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+            setJSON: (key: string, value: unknown) => {
+                store.set(key, JSON.stringify(value))
+            },
+            getJSON: (key: string) => {
+                const v = store.get(key)
+                return v ? JSON.parse(v) : null
+            },
+            getAllKeys: () => [...store.keys()],
+        },
+    }
+})
 
 describe('device/hooks/useDeviceID', () => {
     beforeEach(() => {
@@ -20,12 +52,10 @@ describe('device/hooks/useDeviceID', () => {
     })
 
     test('should return null when no device ID is set', async () => {
-        const platform = registerTestPlatform()
-
-        const { initDeviceStore } = await import('../../store')
+        const { useDeviceStore } = await import('../../store')
         const { useDeviceID } = await import('../useDevice')
 
-        initDeviceStore(platform.keyValueStorage)
+        useDeviceStore.getState().resetState()
 
         const { result } = renderHook(() => useDeviceID('mainnet'))
 
@@ -33,12 +63,10 @@ describe('device/hooks/useDeviceID', () => {
     })
 
     test('should return device ID for specific network', async () => {
-        const platform = registerTestPlatform()
-
-        const { initDeviceStore, useDeviceStore } = await import('../../store')
+        const { useDeviceStore } = await import('../../store')
         const { useDeviceID } = await import('../useDevice')
 
-        initDeviceStore(platform.keyValueStorage)
+        useDeviceStore.getState().resetState()
 
         // Set device ID using store
         const storeHook = renderHook(() => useDeviceStore())
@@ -55,12 +83,10 @@ describe('device/hooks/useDeviceID', () => {
     })
 
     test('should return null for network without device ID', async () => {
-        const platform = registerTestPlatform()
-
-        const { initDeviceStore, useDeviceStore } = await import('../../store')
+        const { useDeviceStore } = await import('../../store')
         const { useDeviceID } = await import('../useDevice')
 
-        initDeviceStore(platform.keyValueStorage)
+        useDeviceStore.getState().resetState()
 
         // Set device ID only for mainnet
         const storeHook = renderHook(() => useDeviceStore())
@@ -74,12 +100,10 @@ describe('device/hooks/useDeviceID', () => {
     })
 
     test('should update when device ID changes', async () => {
-        const platform = registerTestPlatform()
-
-        const { initDeviceStore, useDeviceStore } = await import('../../store')
+        const { useDeviceStore } = await import('../../store')
         const { useDeviceID } = await import('../useDevice')
 
-        initDeviceStore(platform.keyValueStorage)
+        useDeviceStore.getState().resetState()
 
         const storeHook = renderHook(() => useDeviceStore())
         const deviceIDHook = renderHook(() => useDeviceID('mainnet'))

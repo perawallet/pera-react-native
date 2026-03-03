@@ -12,23 +12,28 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useSigningStore, initSigningStore } from '../index'
+import { useSigningStore } from '../index'
 import { SignRequest } from '../../models'
 
-const mockStorage = {
-    getItem: vi.fn(),
-    setItem: vi.fn(),
-    removeItem: vi.fn(),
-}
+const { mockStorage } = vi.hoisted(() => ({
+    mockStorage: {
+        getItem: vi.fn(),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+        setJSON: vi.fn(),
+        getJSON: vi.fn(),
+        getAllKeys: vi.fn(() => []),
+    },
+}))
 
-vi.mock('@perawallet/wallet-extension-platform', () => ({
-    useKeyValueStorageService: vi.fn(() => mockStorage),
+vi.mock('@perawallet/wallet-extension-platform-resources', () => ({
+    keyValueStorage: mockStorage,
 }))
 
 describe('SigningStore', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        initSigningStore()
+        useSigningStore.getState().resetState()
     })
 
     test('should return true when adding a new request', () => {

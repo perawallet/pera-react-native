@@ -24,9 +24,6 @@ import type { PushNotificationService } from '../push-notifications'
 import type { CrashReportingService } from '../reporting'
 import type { DeviceInfoService } from '../device'
 import { DevicePlatforms } from '../device'
-import { initDeviceStore } from '../device/store'
-import { initRemoteConfigStore } from '../remote-config/store'
-
 import { MemoryKeyValueStorage } from './storage'
 
 export type TestPlatformOverrides = Partial<{
@@ -166,8 +163,6 @@ export const registerTestPlatform = (
         WithTestPlatformExtension,
     ] as const)
     const provider = new TestProvider({ id: 'test', name: 'Test Provider' })
-    initDeviceStore(platform.keyValueStorage)
-    initRemoteConfigStore(platform.keyValueStorage)
     initializeProvider(provider)
     return platform
 }

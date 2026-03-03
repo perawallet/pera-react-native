@@ -12,7 +12,7 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import {
-    createLazyStore,
+    registerStore,
     type Network,
     type BaseStoreState,
 } from '@perawallet/wallet-core-shared'
@@ -25,25 +25,19 @@ type NetworkState = BaseStoreState & {
     setNetwork: (network: Network) => void
 }
 
-const lazy = createLazyStore<StoreApi<NetworkState>>(STORE_NAME)
-
-export const useNetworkStore: UseBoundStore<StoreApi<NetworkState>> =
-    lazy.useStore
-
 const initialState = {
     network: config.defaultNetwork as Network,
 }
 
-const createNetworkStore = () =>
+export const useNetworkStore: UseBoundStore<StoreApi<NetworkState>> =
     create<NetworkState>(set => ({
         ...initialState,
         setNetwork: (network: Network) => set({ network }),
         resetState: () => set({ ...initialState }),
     }))
 
-export const initNetworkStore = () => {
-    const realStore = createNetworkStore()
-    lazy.init(realStore, () => realStore.getState().resetState())
-}
-
-export const clearNetworkStore = () => lazy.clear()
+registerStore({
+    name: STORE_NAME,
+    clearStorage: () => {}, // No persistence for network store
+    resetState: () => useNetworkStore.getState().resetState(),
+})

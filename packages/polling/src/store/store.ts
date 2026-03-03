@@ -12,24 +12,12 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import {
-    type KeyValueStorageService,
-    useKeyValueStorageService,
-} from '@perawallet/wallet-extension-platform'
-import {
-    createLazyStore,
-    type WithPersist,
-} from '@perawallet/wallet-core-shared'
+import { KeyValueStorageService } from '@perawallet/wallet-extension-platform'
+import { keyValueStorage } from '@perawallet/wallet-extension-platform-resources'
+import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
 import { PollingState } from '../models'
 
 const STORE_NAME = 'polling-store'
-
-const lazy =
-    createLazyStore<WithPersist<StoreApi<PollingState>, unknown>>(STORE_NAME)
-
-export const usePollingStore: UseBoundStore<
-    WithPersist<StoreApi<PollingState>, unknown>
-> = lazy.useStore
 
 const initialState = {
     lastRefreshedRound: null as number | null,
@@ -56,10 +44,17 @@ export const createPollingStore = (storage: KeyValueStorageService) =>
         ),
     )
 
-export const initPollingStore = () => {
-    const storage = useKeyValueStorageService()
-    const realStore = createPollingStore(storage)
-    lazy.init(realStore, () => realStore.getState().resetState())
-}
+export const usePollingStore: UseBoundStore<
+    WithPersist<StoreApi<PollingState>, unknown>
+> = createPollingStore(keyValueStorage)
 
-export const clearPollingStore = () => lazy.clear()
+registerStore({
+    name: STORE_NAME,
+    clearStorage: () =>
+        (
+            usePollingStore as unknown as {
+                persist: { clearStorage: () => void }
+            }
+        ).persist.clearStorage(),
+    resetState: () => usePollingStore.getState().resetState(),
+})

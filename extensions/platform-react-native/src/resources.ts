@@ -10,12 +10,16 @@
  limitations under the License
  */
 
-import { clearAllStores } from '@perawallet/wallet-core-shared'
+import type { KeyValueStorageService } from '@perawallet/wallet-extension-platform'
+import { RNKeyValueStorageService } from './services'
 
 /**
- * Clears persisted data and resets state for all registered stores.
- * Uses the self-registering store registry — no per-package imports needed.
+ * Module-level singleton for the React Native KeyValueStorageService.
+ *
+ * MMKV construction is synchronous via JSI, so this is safe to create at
+ * module scope. Metro aliases `@perawallet/wallet-extension-platform-resources`
+ * to this file at build time, allowing stores to import the real MMKV-backed
+ * storage without lazy initialization.
  */
-export const clearDataStores = () => {
-    clearAllStores()
-}
+export const keyValueStorage: KeyValueStorageService =
+    new RNKeyValueStorageService()

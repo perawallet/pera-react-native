@@ -19,11 +19,6 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     truncateAlgorandAddress: vi.fn(
         (addr: string) => `${addr.slice(0, 5)}...${addr.slice(-5)}`,
     ),
-    createLazyStore: vi.fn(() => ({
-        useStore: vi.fn(() => []),
-        init: vi.fn(),
-        clear: vi.fn(),
-    })),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({

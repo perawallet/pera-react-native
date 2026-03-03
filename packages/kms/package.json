@@ -21,6 +21,7 @@
     "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-extension-platform": "workspace:*",
+    "@perawallet/wallet-extension-platform-resources": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "bip39": "catalog:",
     "react": "catalog:",

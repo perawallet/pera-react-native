@@ -49,6 +49,39 @@ vi.mock('@perawallet/wallet-extension-network', () => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-core-config', () => ({
+    config: {
+        defaultNetwork: 'mainnet',
+    },
+    Networks: {
+        testnet: 'testnet',
+        mainnet: 'mainnet',
+    },
+}))
+
+vi.mock('@perawallet/wallet-extension-platform-resources', () => {
+    const store = new Map<string, string>()
+    return {
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => {
+                store.set(key, value)
+            },
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+            setJSON: (key: string, value: unknown) => {
+                store.set(key, JSON.stringify(value))
+            },
+            getJSON: (key: string) => {
+                const v = store.get(key)
+                return v ? JSON.parse(v) : null
+            },
+            getAllKeys: () => [...store.keys()],
+        },
+    }
+})
+
 describe('services/device/hooks', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -59,12 +92,11 @@ describe('services/device/hooks', () => {
 
     test('useFcmToken exposes fcmToken and setter', async () => {
         vi.resetModules()
-        const platform = registerTestPlatform()
 
-        const { initDeviceStore } = await import('../../store')
+        const { useDeviceStore } = await import('../../store')
         const { usePushToken } = await import('../../hooks')
 
-        initDeviceStore(platform.keyValueStorage)
+        useDeviceStore.getState().resetState()
 
         const { result } = renderHook(() => usePushToken())
 
@@ -83,12 +115,11 @@ describe('services/device/hooks', () => {
 
     test('useDeviceID returns correct device ID for network', async () => {
         vi.resetModules()
-        const platform = registerTestPlatform()
 
-        const { initDeviceStore, useDeviceStore } = await import('../../store')
+        const { useDeviceStore } = await import('../../store')
         const { useDeviceID } = await import('../../hooks')
 
-        initDeviceStore(platform.keyValueStorage)
+        useDeviceStore.getState().resetState()
 
         const { result: store } = renderHook(() => useDeviceStore())
 
@@ -111,12 +142,12 @@ describe('services/device/hooks', () => {
 
     test('useDevice registers new device if no ID exists', async () => {
         vi.resetModules()
-        const platform = registerTestPlatform()
+        registerTestPlatform()
 
-        const { initDeviceStore, useDeviceStore } = await import('../../store')
+        const { useDeviceStore } = await import('../../store')
         const { useDevice } = await import('../../hooks')
 
-        initDeviceStore(platform.keyValueStorage)
+        useDeviceStore.getState().resetState()
 
         const { result: store } = renderHook(() => useDeviceStore())
 
@@ -150,12 +181,12 @@ describe('services/device/hooks', () => {
 
     test('useDevice updates existing device if ID exists', async () => {
         vi.resetModules()
-        const platform = registerTestPlatform()
+        registerTestPlatform()
 
-        const { initDeviceStore, useDeviceStore } = await import('../../store')
+        const { useDeviceStore } = await import('../../store')
         const { useDevice } = await import('../../hooks')
 
-        initDeviceStore(platform.keyValueStorage)
+        useDeviceStore.getState().resetState()
 
         const { result: store } = renderHook(() => useDeviceStore())
 

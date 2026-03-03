@@ -130,7 +130,7 @@ export const useAccountsQuery = (): UseAccountsQueryResult => {
 ## Zustand Stores
 
 - Location: `packages/[domain]/src/store/store.ts`
-- Use `createStore` with `persist` middleware and `createLazyStore` wrapper
+- Use `create` with `persist` middleware; stores eagerly initialize at module scope via `keyValueStorage` from `@perawallet/wallet-extension-platform-resources`
 - **Granular selectors** — never destructure from `useStore()` directly
 - Every store must include `resetState()` method (implements `BaseStoreState`)
 - Separate `State` and `Actions` types, combine as `Store = State & Actions`

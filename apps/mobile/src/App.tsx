@@ -23,7 +23,6 @@ import {
 import {
     PeraWalletProvider,
     usePeraProvider,
-    initializeDataStores,
 } from '@perawallet/wallet-extension-provider'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { RootComponent } from '@components/RootComponent'
@@ -83,7 +82,7 @@ const AppContent = () => {
 
 export const App = () => {
     return (
-        <PeraWalletProvider onProviderReady={initializeDataStores}>
+        <PeraWalletProvider>
             <AppContent />
         </PeraWalletProvider>
     )

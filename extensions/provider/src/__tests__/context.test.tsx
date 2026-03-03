@@ -95,45 +95,6 @@ describe('PeraWalletProvider', () => {
         const singletonProvider = getProvider<PeraProvider>()
         expect(result.current).toBe(singletonProvider)
     })
-
-    it('should call onProviderReady once after provider initialization', () => {
-        const onProviderReady = vi.fn()
-
-        const { rerender } = renderHook(() => usePeraProvider(), {
-            wrapper: ({ children }) => (
-                <PeraWalletProvider onProviderReady={onProviderReady}>
-                    {children}
-                </PeraWalletProvider>
-            ),
-        })
-
-        expect(onProviderReady).toHaveBeenCalledTimes(1)
-
-        rerender()
-
-        expect(onProviderReady).toHaveBeenCalledTimes(1)
-    })
-
-    it('should have getProvider available when onProviderReady is called', () => {
-        let providerInCallback: PeraProvider | null = null
-
-        const onProviderReady = () => {
-            providerInCallback = getProvider<PeraProvider>()
-        }
-
-        renderHook(() => usePeraProvider(), {
-            wrapper: ({ children }) => (
-                <PeraWalletProvider onProviderReady={onProviderReady}>
-                    {children}
-                </PeraWalletProvider>
-            ),
-        })
-
-        expect(providerInCallback).not.toBeNull()
-        expect(providerInCallback!.keyValueStorage).toBe(
-            testPlatform.keyValueStorage,
-        )
-    })
 })
 
 describe('usePeraProvider', () => {

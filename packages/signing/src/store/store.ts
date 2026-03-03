@@ -12,78 +12,73 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import {
-    KeyValueStorageService,
-    useKeyValueStorageService,
-} from '@perawallet/wallet-extension-platform'
+import { keyValueStorage } from '@perawallet/wallet-extension-platform-resources'
 import type { SigningStore, SignRequest } from '../models'
 import {
-    createLazyStore,
     generateOrderedUniqueId,
+    registerStore,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 
 const STORE_NAME = 'signing-store'
-const lazy =
-    createLazyStore<WithPersist<StoreApi<SigningStore>, unknown>>(STORE_NAME)
-
-export const useSigningStore: UseBoundStore<
-    WithPersist<StoreApi<SigningStore>, unknown>
-> = lazy.useStore
 
 const initialState = {
     pendingSignRequests: [] as SignRequest[],
     lastCompletedRequest: null as SignRequest | null,
 }
 
-const createSigningStore = (storage: KeyValueStorageService) =>
-    create<SigningStore>()(
-        persist(
-            (set, get) => ({
-                ...initialState,
-                addSignRequest: (request: SignRequest) => {
-                    const existing = get().pendingSignRequests ?? []
-                    const newRequest = {
-                        ...request,
-                        id: request.id ?? generateOrderedUniqueId(),
-                    }
-                    if (!existing.find(r => r.id === newRequest.id)) {
-                        set({ pendingSignRequests: [...existing, newRequest] })
-                        return true
-                    }
-                    return false
-                },
-                removeSignRequest: (request: SignRequest) => {
-                    const existing = get().pendingSignRequests ?? []
-                    const remaining = existing.filter(r => r.id !== request.id)
-
-                    if (remaining.length != existing.length) {
-                        set({ pendingSignRequests: remaining })
-                    }
-                    return remaining.length != existing.length
-                },
-                setLastCompletedRequest: (request: SignRequest | null) => {
-                    set({ lastCompletedRequest: request })
-                },
-                resetState: () => set(initialState),
-            }),
-            {
-                name: STORE_NAME,
-                storage: createJSONStorage(() => storage),
-                version: 1,
-                partialize: state => ({
-                    pendingSignRequests: state.pendingSignRequests.filter(
-                        r => r.transport !== 'callback',
-                    ),
-                }),
+export const useSigningStore: UseBoundStore<
+    WithPersist<StoreApi<SigningStore>, unknown>
+> = create<SigningStore>()(
+    persist(
+        (set, get) => ({
+            ...initialState,
+            addSignRequest: (request: SignRequest) => {
+                const existing = get().pendingSignRequests ?? []
+                const newRequest = {
+                    ...request,
+                    id: request.id ?? generateOrderedUniqueId(),
+                }
+                if (!existing.find(r => r.id === newRequest.id)) {
+                    set({ pendingSignRequests: [...existing, newRequest] })
+                    return true
+                }
+                return false
             },
-        ),
-    )
+            removeSignRequest: (request: SignRequest) => {
+                const existing = get().pendingSignRequests ?? []
+                const remaining = existing.filter(r => r.id !== request.id)
 
-export const initSigningStore = () => {
-    const storage = useKeyValueStorageService()
-    const realStore = createSigningStore(storage)
-    lazy.init(realStore, () => realStore.getState().resetState())
-}
+                if (remaining.length != existing.length) {
+                    set({ pendingSignRequests: remaining })
+                }
+                return remaining.length != existing.length
+            },
+            setLastCompletedRequest: (request: SignRequest | null) => {
+                set({ lastCompletedRequest: request })
+            },
+            resetState: () => set(initialState),
+        }),
+        {
+            name: STORE_NAME,
+            storage: createJSONStorage(() => keyValueStorage),
+            version: 1,
+            partialize: state => ({
+                pendingSignRequests: state.pendingSignRequests.filter(
+                    r => r.transport !== 'callback',
+                ),
+            }),
+        },
+    ),
+)
 
-export const clearSigningStore = () => lazy.clear()
+registerStore({
+    name: STORE_NAME,
+    clearStorage: () =>
+        (
+            useSigningStore as unknown as {
+                persist: { clearStorage: () => void }
+            }
+        ).persist.clearStorage(),
+    resetState: () => useSigningStore.getState().resetState(),
+})

@@ -13,19 +13,36 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
+vi.mock('@perawallet/wallet-extension-platform-resources', () => {
+    const store = new Map<string, string>()
+    return {
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => {
+                store.set(key, value)
+            },
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+            setJSON: (key: string, value: unknown) => {
+                store.set(key, JSON.stringify(value))
+            },
+            getJSON: (key: string) => {
+                const v = store.get(key)
+                return v ? JSON.parse(v) : null
+            },
+            getAllKeys: () => [...store.keys()],
+        },
+    }
+})
+
 describe('services/polling/store', () => {
-    beforeEach(async () => {
+    beforeEach(() => {
         vi.resetModules()
-        const { registerTestPlatform } = await import(
-            '@perawallet/wallet-extension-platform'
-        )
-        registerTestPlatform()
     })
 
-    test('initPollingStore initializes the store', async () => {
-        const { initPollingStore, usePollingStore } = await import('../store')
-
-        initPollingStore()
+    test('store initializes with default values', async () => {
+        const { usePollingStore } = await import('../store')
 
         const { result } = renderHook(() => usePollingStore())
 
@@ -33,9 +50,7 @@ describe('services/polling/store', () => {
     })
 
     test('setLastRefreshedRound updates the state', async () => {
-        const { initPollingStore, usePollingStore } = await import('../store')
-
-        initPollingStore()
+        const { usePollingStore } = await import('../store')
 
         const { result } = renderHook(() => usePollingStore())
 

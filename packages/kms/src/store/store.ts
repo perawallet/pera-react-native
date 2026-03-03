@@ -12,23 +12,12 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import {
-    KeyValueStorageService,
-    useKeyValueStorageService,
-} from '@perawallet/wallet-extension-platform'
+import { KeyValueStorageService } from '@perawallet/wallet-extension-platform'
+import { keyValueStorage } from '@perawallet/wallet-extension-platform-resources'
 import type { KeyManagerState, KeyPair } from '../models'
-import {
-    createLazyStore,
-    type WithPersist,
-} from '@perawallet/wallet-core-shared'
+import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
 
 const STORE_NAME = 'key-manager-store'
-const lazy =
-    createLazyStore<WithPersist<StoreApi<KeyManagerState>, unknown>>(STORE_NAME)
-
-export const useKeyManagerStore: UseBoundStore<
-    WithPersist<StoreApi<KeyManagerState>, unknown>
-> = lazy.useStore
 
 const objectToKeyMap = (object: KeyPair[]): Map<string, KeyPair> => {
     const map = new Map<string, KeyPair>()
@@ -104,10 +93,17 @@ export const createKeyManagerStore = (storage: KeyValueStorageService) =>
         ),
     )
 
-export const initKeyManagerStore = () => {
-    const storage = useKeyValueStorageService()
-    const realStore = createKeyManagerStore(storage)
-    lazy.init(realStore, () => realStore.getState().resetState())
-}
+export const useKeyManagerStore: UseBoundStore<
+    WithPersist<StoreApi<KeyManagerState>, unknown>
+> = createKeyManagerStore(keyValueStorage)
 
-export const clearKeyManagerStore = () => lazy.clear()
+registerStore({
+    name: STORE_NAME,
+    clearStorage: () =>
+        (
+            useKeyManagerStore as unknown as {
+                persist: { clearStorage: () => void }
+            }
+        ).persist.clearStorage(),
+    resetState: () => useKeyManagerStore.getState().resetState(),
+})

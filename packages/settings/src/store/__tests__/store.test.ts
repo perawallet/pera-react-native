@@ -13,19 +13,36 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
+vi.mock('@perawallet/wallet-extension-platform-resources', () => {
+    const store = new Map<string, string>()
+    return {
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => {
+                store.set(key, value)
+            },
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+            setJSON: (key: string, value: unknown) => {
+                store.set(key, JSON.stringify(value))
+            },
+            getJSON: (key: string) => {
+                const v = store.get(key)
+                return v ? JSON.parse(v) : null
+            },
+            getAllKeys: () => [...store.keys()],
+        },
+    }
+})
+
 describe('services/settings/store', () => {
-    beforeEach(async () => {
+    beforeEach(() => {
         vi.resetModules()
-        const { registerTestPlatform } = await import(
-            '@perawallet/wallet-extension-platform'
-        )
-        registerTestPlatform()
     })
 
-    test('initSettingsStore initializes the store with defaults', async () => {
-        const { initSettingsStore, useSettingsStore } = await import('../store')
-
-        initSettingsStore()
+    test('store initializes with defaults', async () => {
+        const { useSettingsStore } = await import('../store')
 
         const { result } = renderHook(() => useSettingsStore())
 
@@ -35,9 +52,7 @@ describe('services/settings/store', () => {
     })
 
     test('setTheme updates theme state', async () => {
-        const { initSettingsStore, useSettingsStore } = await import('../store')
-
-        initSettingsStore()
+        const { useSettingsStore } = await import('../store')
 
         const { result } = renderHook(() => useSettingsStore())
 
@@ -55,9 +70,7 @@ describe('services/settings/store', () => {
     })
 
     test('setPrivacyMode updates privacy mode state', async () => {
-        const { initSettingsStore, useSettingsStore } = await import('../store')
-
-        initSettingsStore()
+        const { useSettingsStore } = await import('../store')
 
         const { result } = renderHook(() => useSettingsStore())
 
@@ -75,9 +88,7 @@ describe('services/settings/store', () => {
     })
 
     test('setPreference adds a preference', async () => {
-        const { initSettingsStore, useSettingsStore } = await import('../store')
-
-        initSettingsStore()
+        const { useSettingsStore } = await import('../store')
 
         const { result } = renderHook(() => useSettingsStore())
 
@@ -89,9 +100,7 @@ describe('services/settings/store', () => {
     })
 
     test('getPreference retrieves a preference', async () => {
-        const { initSettingsStore, useSettingsStore } = await import('../store')
-
-        initSettingsStore()
+        const { useSettingsStore } = await import('../store')
 
         const { result } = renderHook(() => useSettingsStore())
 
@@ -104,9 +113,7 @@ describe('services/settings/store', () => {
     })
 
     test('deletePreference removes a preference', async () => {
-        const { initSettingsStore, useSettingsStore } = await import('../store')
-
-        initSettingsStore()
+        const { useSettingsStore } = await import('../store')
 
         const { result } = renderHook(() => useSettingsStore())
 
@@ -124,9 +131,7 @@ describe('services/settings/store', () => {
     })
 
     test('resetState reverts to initial values', async () => {
-        const { initSettingsStore, useSettingsStore } = await import('../store')
-
-        initSettingsStore()
+        const { useSettingsStore } = await import('../store')
 
         const { result } = renderHook(() => useSettingsStore())
 

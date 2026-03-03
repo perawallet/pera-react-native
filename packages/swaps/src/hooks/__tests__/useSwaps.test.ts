@@ -10,36 +10,48 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
+import { useSwapsStore } from '../../store'
+import { useSwaps } from '../useSwaps'
+
+vi.mock('@perawallet/wallet-extension-platform-resources', () => {
+    const store = new Map<string, string>()
+    return {
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => {
+                store.set(key, value)
+            },
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+            setJSON: (key: string, value: unknown) => {
+                store.set(key, JSON.stringify(value))
+            },
+            getJSON: (key: string) => {
+                const v = store.get(key)
+                return v ? JSON.parse(v) : null
+            },
+            getAllKeys: () => [...store.keys()],
+        },
+    }
+})
+
 describe('swaps/useSwaps', () => {
-    beforeEach(async () => {
-        vi.resetModules()
-        const { registerTestPlatform } = await import(
-            '@perawallet/wallet-extension-platform'
-        )
-        registerTestPlatform()
+    beforeEach(() => {
+        useSwapsStore.getState().resetState()
     })
 
-    test('exposes fromAsset and toAsset', async () => {
-        const { initSwapsStore } = await import('../../store')
-        const { useSwaps } = await import('../useSwaps')
-
-        initSwapsStore()
-
+    test('exposes fromAsset and toAsset', () => {
         const { result } = renderHook(() => useSwaps())
 
         expect(result.current.fromAsset).toBe('0')
         expect(result.current.toAsset).toBe('1001')
     })
 
-    test('setFromAsset updates fromAsset', async () => {
-        const { initSwapsStore } = await import('../../store')
-        const { useSwaps } = await import('../useSwaps')
-
-        initSwapsStore()
-
+    test('setFromAsset updates fromAsset', () => {
         const { result } = renderHook(() => useSwaps())
 
         act(() => {
@@ -49,12 +61,7 @@ describe('swaps/useSwaps', () => {
         expect(result.current.fromAsset).toBe('999')
     })
 
-    test('setToAsset updates toAsset', async () => {
-        const { initSwapsStore } = await import('../../store')
-        const { useSwaps } = await import('../useSwaps')
-
-        initSwapsStore()
-
+    test('setToAsset updates toAsset', () => {
         const { result } = renderHook(() => useSwaps())
 
         act(() => {

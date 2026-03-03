@@ -12,26 +12,48 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useBlockchainStore, initBlockchainStore } from '../index'
 
-// Mock the storage service
-const mockStorage = {
-    getItem: vi.fn(),
-    setItem: vi.fn(),
-    removeItem: vi.fn(),
-}
+vi.mock('@perawallet/wallet-extension-platform-resources', () => {
+    const store = new Map<string, string>()
+    return {
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => {
+                store.set(key, value)
+            },
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+            setJSON: (key: string, value: unknown) => {
+                store.set(key, JSON.stringify(value))
+            },
+            getJSON: (key: string) => {
+                const v = store.get(key)
+                return v ? JSON.parse(v) : null
+            },
+            getAllKeys: () => [...store.keys()],
+        },
+    }
+})
 
-vi.mock('@perawallet/wallet-extension-platform', () => ({
-    useKeyValueStorageService: vi.fn(() => mockStorage),
-}))
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...original,
+        registerStore: vi.fn(),
+    }
+})
 
 describe('BlockchainStore', () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
-        initBlockchainStore()
+    beforeEach(async () => {
+        vi.resetModules()
+        const { useBlockchainStore } = await import('../index')
+        useBlockchainStore.getState().resetState()
     })
 
-    test('should reset state to initial values', () => {
+    test('should reset state to initial values', async () => {
+        const { useBlockchainStore } = await import('../index')
         const { result } = renderHook(() => useBlockchainStore())
 
         act(() => {

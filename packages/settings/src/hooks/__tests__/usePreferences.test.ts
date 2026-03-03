@@ -10,35 +10,47 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
+import { useSettingsStore } from '../../store'
+import { usePreferences } from '../usePreferences'
+
+vi.mock('@perawallet/wallet-extension-platform-resources', () => {
+    const store = new Map<string, string>()
+    return {
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => {
+                store.set(key, value)
+            },
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+            setJSON: (key: string, value: unknown) => {
+                store.set(key, JSON.stringify(value))
+            },
+            getJSON: (key: string) => {
+                const v = store.get(key)
+                return v ? JSON.parse(v) : null
+            },
+            getAllKeys: () => [...store.keys()],
+        },
+    }
+})
+
 describe('services/settings/usePreferences', () => {
-    beforeEach(async () => {
-        vi.resetModules()
-        const { registerTestPlatform } = await import(
-            '@perawallet/wallet-extension-platform'
-        )
-        registerTestPlatform()
+    beforeEach(() => {
+        useSettingsStore.getState().resetState()
     })
 
-    test('hasPreference returns false for non-existent preference', async () => {
-        const { initSettingsStore } = await import('../../store')
-        const { usePreferences } = await import('../usePreferences')
-
-        initSettingsStore()
-
+    test('hasPreference returns false for non-existent preference', () => {
         const { result } = renderHook(() => usePreferences())
 
         expect(result.current.hasPreference('nonExistent')).toBe(false)
     })
 
-    test('hasPreference returns true for existing preference', async () => {
-        const { initSettingsStore } = await import('../../store')
-        const { usePreferences } = await import('../usePreferences')
-
-        initSettingsStore()
-
+    test('hasPreference returns true for existing preference', () => {
         const { result } = renderHook(() => usePreferences())
 
         act(() => {
@@ -48,12 +60,7 @@ describe('services/settings/usePreferences', () => {
         expect(result.current.hasPreference('testKey')).toBe(true)
     })
 
-    test('getPreference retrieves preference value', async () => {
-        const { initSettingsStore } = await import('../../store')
-        const { usePreferences } = await import('../usePreferences')
-
-        initSettingsStore()
-
+    test('getPreference retrieves preference value', () => {
         const { result } = renderHook(() => usePreferences())
 
         act(() => {
@@ -63,12 +70,7 @@ describe('services/settings/usePreferences', () => {
         expect(result.current.getPreference('testKey')).toBe('testValue')
     })
 
-    test('setPreference adds a new preference', async () => {
-        const { initSettingsStore } = await import('../../store')
-        const { usePreferences } = await import('../usePreferences')
-
-        initSettingsStore()
-
+    test('setPreference adds a new preference', () => {
         const { result } = renderHook(() => usePreferences())
 
         act(() => {
@@ -78,12 +80,7 @@ describe('services/settings/usePreferences', () => {
         expect(result.current.getPreference('newKey')).toBe(123)
     })
 
-    test('deletePreference removes a preference', async () => {
-        const { initSettingsStore } = await import('../../store')
-        const { usePreferences } = await import('../usePreferences')
-
-        initSettingsStore()
-
+    test('deletePreference removes a preference', () => {
         const { result } = renderHook(() => usePreferences())
 
         act(() => {
@@ -99,12 +96,7 @@ describe('services/settings/usePreferences', () => {
         expect(result.current.hasPreference('testKey')).toBe(false)
     })
 
-    test('clearAll removes all preferences', async () => {
-        const { initSettingsStore } = await import('../../store')
-        const { usePreferences } = await import('../usePreferences')
-
-        initSettingsStore()
-
+    test('clearAll removes all preferences', () => {
         const { result } = renderHook(() => usePreferences())
 
         act(() => {

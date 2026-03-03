@@ -13,49 +13,50 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
+vi.mock('@perawallet/wallet-extension-platform-resources', () => {
+    const store = new Map<string, string>()
+    return {
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => {
+                store.set(key, value)
+            },
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+            setJSON: (key: string, value: unknown) => {
+                store.set(key, JSON.stringify(value))
+            },
+            getJSON: (key: string) => {
+                const v = store.get(key)
+                return v ? JSON.parse(v) : null
+            },
+            getAllKeys: () => [...store.keys()],
+        },
+    }
+})
+
+import { useNotificationsStore } from '../../store'
+import { useNotificationPreferences } from '../useNotificationPreferences'
+
 describe('useNotificationPreferences', () => {
-    beforeEach(async () => {
-        vi.resetModules()
-        const { registerTestPlatform } = await import(
-            '@perawallet/wallet-extension-platform'
-        )
-        registerTestPlatform()
+    beforeEach(() => {
+        useNotificationsStore.getState().resetState()
     })
 
-    test('returns empty disabled accounts by default', async () => {
-        const { initNotificationsStore } = await import('../../store')
-        const { useNotificationPreferences } = await import(
-            '../useNotificationPreferences'
-        )
-
-        initNotificationsStore()
-
+    test('returns empty disabled accounts by default', () => {
         const { result } = renderHook(() => useNotificationPreferences())
 
         expect(result.current.disabledAccounts).toEqual([])
     })
 
-    test('isAccountEnabled returns true for accounts not in disabled list', async () => {
-        const { initNotificationsStore } = await import('../../store')
-        const { useNotificationPreferences } = await import(
-            '../useNotificationPreferences'
-        )
-
-        initNotificationsStore()
-
+    test('isAccountEnabled returns true for accounts not in disabled list', () => {
         const { result } = renderHook(() => useNotificationPreferences())
 
         expect(result.current.isAccountEnabled('test-address')).toBe(true)
     })
 
-    test('setAccountEnabled disables an account when set to false', async () => {
-        const { initNotificationsStore } = await import('../../store')
-        const { useNotificationPreferences } = await import(
-            '../useNotificationPreferences'
-        )
-
-        initNotificationsStore()
-
+    test('setAccountEnabled disables an account when set to false', () => {
         const { result } = renderHook(() => useNotificationPreferences())
 
         act(() => {
@@ -66,14 +67,7 @@ describe('useNotificationPreferences', () => {
         expect(result.current.disabledAccounts).toContain('test-address')
     })
 
-    test('setAccountEnabled enables a previously disabled account', async () => {
-        const { initNotificationsStore } = await import('../../store')
-        const { useNotificationPreferences } = await import(
-            '../useNotificationPreferences'
-        )
-
-        initNotificationsStore()
-
+    test('setAccountEnabled enables a previously disabled account', () => {
         const { result } = renderHook(() => useNotificationPreferences())
 
         act(() => {
@@ -90,14 +84,7 @@ describe('useNotificationPreferences', () => {
         expect(result.current.disabledAccounts).not.toContain('test-address')
     })
 
-    test('handles multiple accounts independently', async () => {
-        const { initNotificationsStore } = await import('../../store')
-        const { useNotificationPreferences } = await import(
-            '../useNotificationPreferences'
-        )
-
-        initNotificationsStore()
-
+    test('handles multiple accounts independently', () => {
         const { result } = renderHook(() => useNotificationPreferences())
 
         act(() => {

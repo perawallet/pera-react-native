@@ -39,10 +39,10 @@ describe('hooks/useNetwork', () => {
     })
 
     test('should return current network and setter', async () => {
-        const { initNetworkStore } = await import('../../store')
+        const { useNetworkStore } = await import('../../store')
         const { useNetwork } = await import('../useNetwork')
 
-        initNetworkStore()
+        useNetworkStore.getState().resetState()
 
         const { result } = renderHook(() => useNetwork())
 
@@ -51,10 +51,10 @@ describe('hooks/useNetwork', () => {
     })
 
     test('should update network', async () => {
-        const { initNetworkStore } = await import('../../store')
+        const { useNetworkStore } = await import('../../store')
         const { useNetwork } = await import('../useNetwork')
 
-        initNetworkStore()
+        useNetworkStore.getState().resetState()
 
         const { result } = renderHook(() => useNetwork())
 

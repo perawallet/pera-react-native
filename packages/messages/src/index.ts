@@ -15,5 +15,3 @@ export const name = '@perawallet/wallet-core-messages'
 export * from './api'
 export * from './hooks'
 export * from './models'
-
-export { initNotificationsStore, clearNotificationsStore } from './store'

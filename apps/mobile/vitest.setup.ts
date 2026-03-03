@@ -1547,13 +1547,11 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         WALLETCONNECT_PERMISSION: 'walletconnect_permission',
         WALLETCONNECT_INVALID_NETWORK: 'walletconnect_invalid_network',
     },
-    createLazyStore: vi.fn(() => ({
-        useStore: vi.fn(),
-        init: vi.fn(),
-        clear: vi.fn(),
-        getStore: vi.fn(),
-    })),
     useClearAllData: vi.fn(() => vi.fn().mockResolvedValue(undefined)),
+    registerStore: vi.fn(),
+    clearAllStores: vi.fn(),
+    resetStoreRegistry: vi.fn(),
+    getStoreRegistry: vi.fn(() => []),
 }))
 
 // Mock @perawallet/wallet-core-projects
@@ -1576,7 +1574,6 @@ vi.mock('@perawallet/wallet-core-projects', () => ({
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     useWalletConnect: vi.fn(() => ({ connections: [] })),
     useWalletConnectStore: vi.fn(),
-    initWalletConnectStore: vi.fn(),
     AlgorandChainId: {
         MainNet: 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
         TestNet: 'algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe',
@@ -1597,7 +1594,6 @@ vi.mock('@perawallet/wallet-core-polling', () => ({
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: vi.fn(),
-    initKMSStore: vi.fn(),
 }))
 
 // Mock @perawallet/wallet-core-assets
@@ -1739,7 +1735,6 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
         removeContact: vi.fn(),
         updateContact: vi.fn(),
     })),
-    initContactsStore: vi.fn(),
 }))
 
 // Mock @perawallet/wallet-core-currencies
@@ -1760,7 +1755,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         return new RegExp('^[0-9a-zA-Z]{58}$').test(address)
     }),
     encodeAlgorandAddress: vi.fn(() => 'MOCKADDRESS'),
-    initBlockchainStore: vi.fn(),
 }))
 
 // Mock @perawallet/wallet-extension-platform

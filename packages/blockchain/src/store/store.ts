@@ -12,42 +12,34 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import {
-    KeyValueStorageService,
-    useKeyValueStorageService,
-} from '@perawallet/wallet-extension-platform'
+import { keyValueStorage } from '@perawallet/wallet-extension-platform-resources'
 import type { BlockchainStore } from '../models'
-import {
-    createLazyStore,
-    type WithPersist,
-} from '@perawallet/wallet-core-shared'
+import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
 
 const STORE_NAME = 'blockchain-store'
-const lazy =
-    createLazyStore<WithPersist<StoreApi<BlockchainStore>, unknown>>(STORE_NAME)
 
 export const useBlockchainStore: UseBoundStore<
     WithPersist<StoreApi<BlockchainStore>, unknown>
-> = lazy.useStore
+> = create<BlockchainStore>()(
+    persist(
+        set => ({
+            resetState: () => set({}),
+        }),
+        {
+            name: STORE_NAME,
+            storage: createJSONStorage(() => keyValueStorage),
+            version: 1,
+        },
+    ),
+)
 
-const createBlockchainStore = (storage: KeyValueStorageService) =>
-    create<BlockchainStore>()(
-        persist(
-            set => ({
-                resetState: () => set({}),
-            }),
-            {
-                name: STORE_NAME,
-                storage: createJSONStorage(() => storage),
-                version: 1,
-            },
-        ),
-    )
-
-export const initBlockchainStore = () => {
-    const storage = useKeyValueStorageService()
-    const realStore = createBlockchainStore(storage)
-    lazy.init(realStore, () => realStore.getState().resetState())
-}
-
-export const clearBlockchainStore = () => lazy.clear()
+registerStore({
+    name: STORE_NAME,
+    clearStorage: () =>
+        (
+            useBlockchainStore as unknown as {
+                persist: { clearStorage: () => void }
+            }
+        ).persist.clearStorage(),
+    resetState: () => useBlockchainStore.getState().resetState(),
+})

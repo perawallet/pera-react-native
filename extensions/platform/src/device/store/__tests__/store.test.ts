@@ -12,10 +12,7 @@
 
 import { vi, describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import {
-    registerTestPlatform,
-    MemoryKeyValueStorage,
-} from '../../../test-utils'
+import { MemoryKeyValueStorage } from '../../../test-utils'
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
@@ -27,18 +24,36 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     },
 }))
 
+vi.mock('@perawallet/wallet-extension-platform-resources', () => {
+    const store = new Map<string, string>()
+    return {
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => {
+                store.set(key, value)
+            },
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+            setJSON: (key: string, value: unknown) => {
+                store.set(key, JSON.stringify(value))
+            },
+            getJSON: (key: string) => {
+                const v = store.get(key)
+                return v ? JSON.parse(v) : null
+            },
+            getAllKeys: () => [...store.keys()],
+        },
+    }
+})
+
 describe('device/store', () => {
     beforeEach(() => {
-        // Reset modules to get fresh store instance
         vi.resetModules()
     })
 
     test('should initialize with default values', async () => {
-        const platform = registerTestPlatform()
-
-        const { initDeviceStore, useDeviceStore } = await import('../index')
-
-        initDeviceStore(platform.keyValueStorage)
+        const { useDeviceStore } = await import('../index')
 
         const { result } = renderHook(() => useDeviceStore())
 
@@ -48,11 +63,7 @@ describe('device/store', () => {
     })
 
     test('should set FCM token', async () => {
-        const platform = registerTestPlatform()
-
-        const { initDeviceStore, useDeviceStore } = await import('../index')
-
-        initDeviceStore(platform.keyValueStorage)
+        const { useDeviceStore } = await import('../index')
 
         const { result } = renderHook(() => useDeviceStore())
 
@@ -64,11 +75,7 @@ describe('device/store', () => {
     })
 
     test('should set device ID for network', async () => {
-        const platform = registerTestPlatform()
-
-        const { initDeviceStore, useDeviceStore } = await import('../index')
-
-        initDeviceStore(platform.keyValueStorage)
+        const { useDeviceStore } = await import('../index')
 
         const { result } = renderHook(() => useDeviceStore())
 
@@ -80,11 +87,7 @@ describe('device/store', () => {
     })
 
     test('should update device ID for same network', async () => {
-        const platform = registerTestPlatform()
-
-        const { initDeviceStore, useDeviceStore } = await import('../index')
-
-        initDeviceStore(platform.keyValueStorage)
+        const { useDeviceStore } = await import('../index')
 
         const { result } = renderHook(() => useDeviceStore())
 
@@ -101,7 +104,6 @@ describe('device/store', () => {
 
     test('should serialize deviceIDs as a plain object via partialize', async () => {
         const storage = new MemoryKeyValueStorage()
-        registerTestPlatform({ keyValueStorage: storage })
 
         const { createDeviceStore } = await import('../store')
 
@@ -134,8 +136,6 @@ describe('device/store', () => {
             }),
         )
 
-        registerTestPlatform({ keyValueStorage: storage })
-
         const { createDeviceStore } = await import('../store')
 
         const store = createDeviceStore(storage)
@@ -148,11 +148,7 @@ describe('device/store', () => {
     })
 
     test('should create a new Map reference when setting device ID', async () => {
-        const platform = registerTestPlatform()
-
-        const { initDeviceStore, useDeviceStore } = await import('../index')
-
-        initDeviceStore(platform.keyValueStorage)
+        const { useDeviceStore } = await import('../index')
 
         const { result } = renderHook(() => useDeviceStore())
 

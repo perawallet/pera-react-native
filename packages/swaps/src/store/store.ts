@@ -12,52 +12,46 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
+import { keyValueStorage } from '@perawallet/wallet-extension-platform-resources'
 import type { SwapsState } from '../models'
-import type { WithPersist } from '@perawallet/wallet-core-shared'
-import {
-    KeyValueStorageService,
-    useKeyValueStorageService,
-} from '@perawallet/wallet-extension-platform'
-import { createLazyStore } from '@perawallet/wallet-core-shared'
+import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
 
 const STORE_NAME = 'swaps-store'
-const lazy =
-    createLazyStore<WithPersist<StoreApi<SwapsState>, unknown>>(STORE_NAME)
-
-export const useSwapsStore: UseBoundStore<
-    WithPersist<StoreApi<SwapsState>, unknown>
-> = lazy.useStore
 
 const initialState = {
     fromAsset: '0',
     toAsset: '1001',
 }
 
-const createSwapsStore = (storage: KeyValueStorageService) =>
-    create<SwapsState>()(
-        persist(
-            set => ({
-                ...initialState,
-                setFromAsset: (fromAsset: string) => set({ fromAsset }),
-                setToAsset: (toAsset: string) => set({ toAsset }),
-                resetState: () => set(initialState),
+export const useSwapsStore: UseBoundStore<
+    WithPersist<StoreApi<SwapsState>, unknown>
+> = create<SwapsState>()(
+    persist(
+        set => ({
+            ...initialState,
+            setFromAsset: (fromAsset: string) => set({ fromAsset }),
+            setToAsset: (toAsset: string) => set({ toAsset }),
+            resetState: () => set(initialState),
+        }),
+        {
+            name: STORE_NAME,
+            storage: createJSONStorage(() => keyValueStorage),
+            version: 1,
+            partialize: state => ({
+                fromAsset: state.fromAsset,
+                toAsset: state.toAsset,
             }),
-            {
-                name: STORE_NAME,
-                storage: createJSONStorage(() => storage),
-                version: 1,
-                partialize: state => ({
-                    fromAsset: state.fromAsset,
-                    toAsset: state.toAsset,
-                }),
-            },
-        ),
-    )
+        },
+    ),
+)
 
-export const initSwapsStore = () => {
-    const storage = useKeyValueStorageService()
-    const realStore = createSwapsStore(storage)
-    lazy.init(realStore, () => realStore.getState().resetState())
-}
-
-export const clearSwapsStore = () => lazy.clear()
+registerStore({
+    name: STORE_NAME,
+    clearStorage: () =>
+        (
+            useSwapsStore as unknown as {
+                persist: { clearStorage: () => void }
+            }
+        ).persist.clearStorage(),
+    resetState: () => useSwapsStore.getState().resetState(),
+})

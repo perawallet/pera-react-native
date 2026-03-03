@@ -21,6 +21,7 @@
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-extension-network": "workspace:*",
     "@perawallet/wallet-extension-platform": "workspace:*",
+    "@perawallet/wallet-extension-platform-resources": "workspace:*",
     "decimal.js": "catalog:",
     "zod": "catalog:",
     "react": "catalog:",

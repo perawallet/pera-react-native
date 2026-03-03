@@ -24,6 +24,7 @@
     "@perawallet/wallet-core-currencies": "workspace:*",
     "@perawallet/wallet-extension-network": "workspace:*",
     "@perawallet/wallet-extension-platform": "workspace:*",
+    "@perawallet/wallet-extension-platform-resources": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-core-kms": "workspace:*",
     "@algorandfoundation/xhd-wallet-api": "catalog:",

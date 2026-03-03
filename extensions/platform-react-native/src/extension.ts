@@ -14,18 +14,13 @@ import type {
     PlatformServices,
     PushNotificationInitResult,
 } from '@perawallet/wallet-extension-platform'
-import {
-    initDeviceStore,
-    initRemoteConfigStore,
-} from '@perawallet/wallet-extension-platform'
-import { initNetworkStore } from '@perawallet/wallet-extension-network'
 import { logger } from '@perawallet/wallet-core-shared'
 
 import { RNFirebaseService } from './services/firebase'
 import { RNBiometricsService } from './services/biometrics'
 import { RNSecureStorageService } from './services/secure-storage'
-import { RNKeyValueStorageService } from './services/key-value-storage'
 import { RNDeviceInfoStorageService } from './services/device'
+import { keyValueStorage } from './resources'
 
 export type ReactNativePlatformExtension = PlatformServices & {
     initialize: () => Promise<PushNotificationInitResult>
@@ -39,12 +34,14 @@ export type ReactNativePlatformExtension = PlatformServices & {
  * The returned `initialize()` method performs async initialization
  * (Firebase, push notifications) and should be called after the provider
  * is mounted.
+ *
+ * Stores are eagerly initialized at module scope via platform resource
+ * singletons — no store init calls are needed here.
  */
 export const WithReactNativePlatformExtension = (
     _provider: unknown,
 ): ReactNativePlatformExtension => {
     const firebaseService = new RNFirebaseService()
-    const keyValueStorage = new RNKeyValueStorageService()
 
     const services: PlatformServices = {
         analytics: firebaseService,
@@ -56,11 +53,6 @@ export const WithReactNativePlatformExtension = (
         keyValueStorage,
         deviceInfo: new RNDeviceInfoStorageService(),
     }
-
-    // Initialize stores synchronously during provider construction
-    initNetworkStore()
-    initDeviceStore(keyValueStorage)
-    initRemoteConfigStore(keyValueStorage)
 
     const initialize = async (): Promise<PushNotificationInitResult> => {
         logger.debug('Initializing platform services')
