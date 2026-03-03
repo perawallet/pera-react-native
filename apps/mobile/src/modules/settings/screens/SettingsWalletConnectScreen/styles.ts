@@ -11,11 +11,13 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import type { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles(theme => {
+export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
     return {
         container: {
             flex: 1,
+            marginBottom: insets.bottom,
         },
         scannerClose: {
             marginTop: theme.spacing.xxl,
@@ -56,7 +58,6 @@ export const useStyles = makeStyles(theme => {
         listFooter: {
             flex: 1,
             justifyContent: 'flex-end',
-            paddingBottom: theme.spacing['3xl'],
         },
     }
 })

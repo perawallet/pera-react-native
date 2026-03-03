@@ -11,7 +11,7 @@
  */
 
 import {
-    IconName,
+    type IconName,
     PWButton,
     PWListItem,
     PWText,
@@ -24,7 +24,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppVersion } from '@modules/settings/components/AppVersion'
 import { useSettingsScreen } from './useSettingsScreen'
 import { useLanguage } from '@hooks/useLanguage'
-import { SettingsStackParamsList } from '@modules/settings/routes'
+import type { SettingsStackParamsList } from '@modules/settings/routes'
 import { RatingsBottomSheet } from '@modules/settings/components/RatingsBottomSheet/RatingsBottomSheet'
 import { DeleteAllConfirmBottomSheet } from '@modules/settings/components/DeleteAllConfirmBottomSheet/DeleteAllConfirmBottomSheet'
 
