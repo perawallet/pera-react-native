@@ -31,10 +31,5 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             alignItems: 'center',
             marginBottom: insets.bottom,
         },
-        loadingContainer: {
-            flex: 1,
-            justifyContent: 'flex-start',
-            alignItems: 'center',
-        },
     }
 })

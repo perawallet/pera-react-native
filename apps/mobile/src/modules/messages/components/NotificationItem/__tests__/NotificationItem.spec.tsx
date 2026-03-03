@@ -13,7 +13,7 @@
 import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { NotificationItem } from '../NotificationItem'
-import type { PeraNotification } from '@perawallet/wallet-core-notifications'
+import type { PeraNotification } from '@perawallet/wallet-core-messages'
 
 const mockHandleNotificationPress = vi.fn()
 

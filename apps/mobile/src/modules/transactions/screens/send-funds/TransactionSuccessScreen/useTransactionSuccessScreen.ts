@@ -14,7 +14,7 @@ import { useCallback, useEffect } from 'react'
 import { BackHandler } from 'react-native'
 
 import { useWebView } from '@modules/webview/hooks'
-import { useSendFunds } from '@modules/transactions/hooks'
+import { useSendFunds, useClaimAssets } from '@modules/transactions/hooks'
 import {
     useRemoveAccountById,
     useSelectedAccount,
@@ -22,22 +22,41 @@ import {
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
-import { useRoute, type RouteProp } from '@react-navigation/native'
-import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
+import { useRoute } from '@react-navigation/native'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
+
+export type SuccessVariant =
+    | 'payment'
+    | 'asset_transfer'
+    | 'close_account'
+    | 'claim'
+    | 'reject'
+
+type SuccessRouteParams = {
+    transactionId: string
+    variant?: SuccessVariant
+}
 
 type UseTransactionSuccessScreenResult = {
     handleDone: () => void
     handleViewInExplorer: () => void
-    isCloseAccount: boolean
+    variant: SuccessVariant
 }
 
 export const useTransactionSuccessScreen =
     (): UseTransactionSuccessScreenResult => {
-        const route =
-            useRoute<RouteProp<SendFundsStackParamList, 'TransactionSuccess'>>()
-        const { transactionId } = route.params
-        const { onFinished, isCloseAccount } = useSendFunds()
+        const route = useRoute<{
+            key: string
+            name: string
+            params: SuccessRouteParams
+        }>()
+        const { transactionId, variant: routeVariant } = route.params
+        const { onFinished: sendFundsOnFinished, isCloseAccount } =
+            useSendFunds()
+        const {
+            onFinished: claimOnFinished,
+            accountAddress: claimAccountAddress,
+        } = useClaimAssets()
         const { networkConfig } = useNetwork()
         const { pushWebView } = useWebView()
         const removeAccountById = useRemoveAccountById()
@@ -45,19 +64,35 @@ export const useTransactionSuccessScreen =
         const accounts = useAccountsStore(state => state.accounts)
         const { setSelectedAccountAddress } = useSelectedAccountAddress()
 
+        const isClaimFlow =
+            routeVariant === 'claim' || routeVariant === 'reject'
+
+        const variant: SuccessVariant = routeVariant
+            ? routeVariant
+            : isCloseAccount
+              ? 'close_account'
+              : 'payment'
+
         const handleDone = useCallback(() => {
-            if (isCloseAccount && selectedAccount?.id) {
-                removeAccountById(selectedAccount.id)
-                const remaining = accounts.filter(
-                    a => a.id !== selectedAccount.id,
-                )
-                setSelectedAccountAddress(
-                    remaining.length > 0 ? remaining[0].address : null,
-                )
+            if (isClaimFlow) {
+                claimOnFinished?.()
+            } else {
+                if (isCloseAccount && selectedAccount?.id) {
+                    removeAccountById(selectedAccount.id)
+                    const remaining = accounts.filter(
+                        a => a.id !== selectedAccount.id,
+                    )
+                    setSelectedAccountAddress(
+                        remaining.length > 0 ? remaining[0].address : null,
+                    )
+                }
+                sendFundsOnFinished?.()
             }
-            onFinished?.()
         }, [
-            onFinished,
+            isClaimFlow,
+            claimOnFinished,
+            claimAccountAddress,
+            sendFundsOnFinished,
             isCloseAccount,
             selectedAccount,
             removeAccountById,
@@ -86,6 +121,6 @@ export const useTransactionSuccessScreen =
         return {
             handleDone,
             handleViewInExplorer,
-            isCloseAccount,
+            variant,
         }
     }

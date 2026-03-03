@@ -21,7 +21,10 @@ export type SendFundsStackParamList = {
     ARC59SendSummary: undefined
     InsufficientBalance: { requiredBalance: string }
     TransactionProcessing: undefined
-    TransactionSuccess: { transactionId: string }
+    TransactionSuccess: {
+        transactionId: string
+        variant?: 'payment' | 'asset_transfer' | 'close_account'
+    }
 }
 
 export type SendFundsStackScreenProps<T extends keyof SendFundsStackParamList> =
