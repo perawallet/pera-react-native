@@ -62,11 +62,9 @@ describe('TransactionError', () => {
     })
 
     it('allows metadata overrides', () => {
-        const error = new TransactionError(
-            'Something went wrong',
-            undefined,
-            { retryable: true },
-        )
+        const error = new TransactionError('Something went wrong', undefined, {
+            retryable: true,
+        })
 
         expect(error.metadata.retryable).toBe(true)
         expect(error.metadata.severity).toBe(ErrorSeverity.HIGH)
@@ -97,9 +95,7 @@ describe('InvalidSendParamsError', () => {
     it('uses a descriptive error message', () => {
         const error = new InvalidSendParamsError()
 
-        expect(error.message).toBe(
-            'The transaction appears to be invalid',
-        )
+        expect(error.message).toBe('The transaction appears to be invalid')
     })
 
     it('stores error params in metadata', () => {

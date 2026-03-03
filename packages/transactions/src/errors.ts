@@ -44,7 +44,7 @@ export class TransactionError extends AppError {
  */
 export class InvalidSendParamsError extends TransactionError {
     constructor(params?: string[], originalError?: Error) {
-        super("The transaction appears to be invalid", originalError, {
+        super('The transaction appears to be invalid', originalError, {
             params: {
                 errorParams: params,
             },
