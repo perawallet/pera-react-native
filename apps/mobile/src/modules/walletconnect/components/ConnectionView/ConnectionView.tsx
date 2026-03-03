@@ -30,8 +30,8 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { useToast } from '@hooks/useToast'
 import { ConnectionViewHeader } from './ConnectionViewHeader'
+import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 
 export type ConnectionViewProps = {
     request: WalletConnectSessionRequest
