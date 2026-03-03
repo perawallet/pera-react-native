@@ -56,6 +56,8 @@ import {
 import { getAccountType } from './utils'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { useDeepLink } from '@hooks/useDeepLink'
+import { parseDeeplink } from '@hooks/deeplink/parser'
 
 type WebviewMessage = {
     id: string
@@ -85,6 +87,7 @@ export const usePeraWebviewInterface = (
     const { connect } = useWalletConnect(network)
     const { decodeTransactions, encodeSignedTransaction } =
         useTransactionEncoder()
+    const { handleDeepLink } = useDeepLink()
 
     const hadRequiredParams = useCallback(
         (requiredParams: string[], message: WebviewMessage) => {
@@ -177,25 +180,30 @@ export const usePeraWebviewInterface = (
                 if (!hadRequiredParams(['uri'], message)) {
                     return
                 }
-                Linking.canOpenURL(message.params!.uri as string).then(
-                    supported => {
-                        if (supported) {
-                            Linking.openURL(message.params?.uri as string)
-                        } else {
-                            sendErrorToWebview(
-                                message.id,
-                                JsonRpcErrorCode.InvalidParams,
-                                t('errors.webview.unsupported_url', {
-                                    url: message.params?.uri,
-                                }),
-                                webview,
-                            )
-                        }
-                    },
-                )
+                const uri = message.params!.uri as string
+
+                if (parseDeeplink(uri)) {
+                    handleDeepLink(uri, false, 'deeplink')
+                    return
+                }
+
+                Linking.canOpenURL(uri).then(supported => {
+                    if (supported) {
+                        Linking.openURL(uri)
+                    } else {
+                        sendErrorToWebview(
+                            message.id,
+                            JsonRpcErrorCode.InvalidParams,
+                            t('errors.webview.unsupported_url', {
+                                url: uri,
+                            }),
+                            webview,
+                        )
+                    }
+                })
             })
         },
-        [securedConnection, t, webview],
+        [securedConnection, handleDeepLink, t, webview],
     )
 
     const notifyUser = useCallback(

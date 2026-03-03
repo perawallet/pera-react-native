@@ -85,6 +85,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
             hdWalletDetails: { hdWalletAddress: 'addr1' },
         },
     ]),
+    useSelectedAccountAddress: vi.fn(() => ({
+        setSelectedAccountAddress: vi.fn(),
+    })),
 }))
 
 vi.mock('@perawallet/wallet-core-settings', () => ({
@@ -100,6 +103,13 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 }))
 
 const mockAddSignRequest = vi.fn()
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useTransactionEncoder: vi.fn(() => ({
+        decodeTransactions: vi.fn(txns => txns),
+        encodeSignedTransaction: vi.fn(t => t),
+    })),
+    isValidAlgorandAddress: vi.fn(() => false),
+}))
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
 }))

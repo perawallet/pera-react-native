@@ -967,6 +967,14 @@ vi.mock('@react-navigation/native', () => ({
         pop: vi.fn(),
         popToTop: vi.fn(),
     },
+    createNavigationContainerRef: () => ({
+        navigate: vi.fn(),
+        dispatch: vi.fn(),
+        reset: vi.fn(),
+        goBack: vi.fn(),
+        isReady: vi.fn(() => true),
+        current: null,
+    }),
 }))
 
 vi.mock('@react-navigation/bottom-tabs', () => ({
