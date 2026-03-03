@@ -24,9 +24,7 @@ export const toWholeUnits = (
     value: Decimal | number | bigint,
     asset: PeraAsset,
 ) => {
-    return Decimal(typeof value === 'number' ? value : value.toString()).div(
-        Decimal(10).pow(asset.decimals),
-    )
+    return Decimal(value).div(Decimal(10).pow(asset.decimals))
 }
 
 /**
@@ -40,7 +38,5 @@ export const toDecimalUnits = (
     value: Decimal | number | bigint,
     asset: PeraAsset,
 ) => {
-    return Decimal(typeof value === 'number' ? value : value.toString()).mul(
-        Decimal(10).pow(asset.decimals),
-    )
+    return Decimal(value).mul(Decimal(10).pow(asset.decimals))
 }

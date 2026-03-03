@@ -14,10 +14,12 @@ import { usePromptContainer } from './usePromptContainer'
 import { useCallback } from 'react'
 import { useStyles } from './styles'
 import { Modal } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { PWView } from '@components/core'
 
 export const PromptContainer = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const { nextPrompt, dismissPrompt, hidePrompt } = usePromptContainer()
 
     const handleDismiss = useCallback(
@@ -42,12 +44,12 @@ export const PromptContainer = () => {
             statusBarTranslucent
             style={styles.modal}
         >
-            <SafeAreaView style={styles.container}>
+            <PWView style={styles.container}>
                 <PromptComponent
                     onDismiss={handleDismiss}
                     onHide={handleHide}
                 />
-            </SafeAreaView>
+            </PWView>
         </Modal>
     )
 }

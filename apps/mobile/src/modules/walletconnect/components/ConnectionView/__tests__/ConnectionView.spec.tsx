@@ -19,7 +19,6 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 const mockApproveSession = vi.fn()
 const mockRejectSession = vi.fn()
 const mockRemoveSessionRequest = vi.fn()
-const mockShowToast = vi.fn()
 
 const mockAccounts: WalletAccount[] = [
     { address: 'ADDR1', name: 'Account 1' },
@@ -46,9 +45,9 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({
-        showToast: mockShowToast,
+vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+    useNetwork: () => ({
+        network: 'mainnet',
     }),
 }))
 

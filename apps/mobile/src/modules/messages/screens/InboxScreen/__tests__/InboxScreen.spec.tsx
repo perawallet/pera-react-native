@@ -13,7 +13,7 @@
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { InboxScreen } from '../InboxScreen'
-import { useInboxQuery } from '@perawallet/wallet-core-notifications'
+import { useInboxQuery } from '@perawallet/wallet-core-messages'
 
 vi.mock('@modules/messages/components/InboxItem/InboxItem', () => ({
     InboxItem: ({ item }: { item: { type: string } }) => (
@@ -21,7 +21,11 @@ vi.mock('@modules/messages/components/InboxItem/InboxItem', () => ({
     ),
 }))
 
-vi.mock('@perawallet/wallet-core-notifications', () => ({
+vi.mock('@modules/messages/components/ClaimAssetsBottomSheet', () => ({
+    ClaimAssetsBottomSheet: () => null,
+}))
+
+vi.mock('@perawallet/wallet-core-messages', () => ({
     useInboxQuery: vi.fn(() => ({
         inboxItems: [],
         isPending: false,
@@ -33,11 +37,12 @@ vi.mock('@perawallet/wallet-core-notifications', () => ({
 describe('InboxScreen', () => {
     it('renders loading state when pending', () => {
         vi.mocked(useInboxQuery).mockReturnValue({
-            inboxItems: [],
+            data: undefined,
             isPending: true,
+            isError: false,
             isRefetching: false,
             refetch: vi.fn(),
-        })
+        } as unknown as ReturnType<typeof useInboxQuery>)
 
         const { getAllByTestId } = render(<InboxScreen />)
         expect(getAllByTestId('RNESkeleton').length).toBeGreaterThan(0)
@@ -45,11 +50,11 @@ describe('InboxScreen', () => {
 
     it('renders empty state when no inbox items', () => {
         vi.mocked(useInboxQuery).mockReturnValue({
-            inboxItems: [],
+            data: [],
             isPending: false,
             isRefetching: false,
             refetch: vi.fn(),
-        })
+        } as unknown as ReturnType<typeof useInboxQuery>)
 
         const { getByText } = render(<InboxScreen />)
         expect(getByText('messages.inbox.empty_title')).toBeTruthy()
@@ -57,7 +62,7 @@ describe('InboxScreen', () => {
 
     it('renders inbox items when data is available', () => {
         vi.mocked(useInboxQuery).mockReturnValue({
-            inboxItems: [
+            data: [
                 {
                     type: 'asa_inbox',
                     data: {
@@ -83,7 +88,7 @@ describe('InboxScreen', () => {
             isPending: false,
             isRefetching: false,
             refetch: vi.fn(),
-        })
+        } as unknown as ReturnType<typeof useInboxQuery>)
 
         const { getByText } = render(<InboxScreen />)
         expect(getByText('asa_inbox')).toBeTruthy()

@@ -21,6 +21,7 @@ import {
 import { useStyles } from './styles'
 import {
     AlgorandChain,
+    AlgorandChainId,
     AlgorandPermission,
     WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
@@ -59,23 +60,25 @@ export const ConnectionViewHeader = ({
     return (
         <PWView style={styles.headerContainer}>
             <PWView style={styles.networksContainer}>
-                {request.chainId !== 4160 ? (
+                {request.chainId !== AlgorandChainId.all ? (
                     <PWBadge
                         value={t(
                             `walletconnect.request.networks_${AlgorandChain[request.chainId]}`,
                         )}
                         variant={
-                            request.chainId === 416002 ? 'testnet' : 'primary'
+                            request.chainId === AlgorandChainId.testnet
+                                ? 'testnet'
+                                : 'primary'
                         }
                     />
                 ) : (
                     <>
                         <PWBadge
-                            value={t(`walletconnect.request.networks_mainnet`)}
+                            value={t('walletconnect.request.networks_mainnet')}
                             variant='primary'
                         />
                         <PWBadge
-                            value={t(`walletconnect.request.networks_testnet`)}
+                            value={t('walletconnect.request.networks_testnet')}
                             variant='testnet'
                         />
                     </>

@@ -43,15 +43,15 @@ export const useCreateNextHDAccount = (): UseCreateNextHDAccountResult => {
         const sameWalletAccounts = hdWalletAccounts.filter(
             a => a.keyPairId === walletId,
         )
-        const nextKeyIndex =
+        const nextAccountIndex =
             Math.max(
-                ...sameWalletAccounts.map(a => a.hdWalletDetails.keyIndex),
+                ...sameWalletAccounts.map(a => a.hdWalletDetails.account),
             ) + 1
 
         return createHdWalletAccount({
             walletId,
-            account: 0,
-            keyIndex: nextKeyIndex,
+            account: nextAccountIndex,
+            keyIndex: 0,
         })
     }, [hdWalletAccounts, createHdWalletAccount])
 

@@ -10,10 +10,12 @@
  limitations under the License
  */
 
+import { PeraAsset } from '@perawallet/wallet-core-assets'
 import Decimal from 'decimal.js'
 
 export type AssetWithAccountBalance = {
     assetId: string
+    asset?: PeraAsset
     amount: Decimal
     algoValue: Decimal
 }

@@ -11,15 +11,19 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles(theme => ({
+export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     modal: {
         flex: 1,
         backgroundColor: theme.colors.background,
     },
     container: {
         flex: 1,
-        padding: theme.spacing.xl,
+        paddingRight: insets.right,
+        paddingLeft: insets.left,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
         backgroundColor: theme.colors.background,
     },
 }))

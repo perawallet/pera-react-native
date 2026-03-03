@@ -10,21 +10,51 @@
  limitations under the License
  */
 
+import { ReactNode } from 'react'
 import { PWIcon, IconName } from '@components/core/PWIcon'
 import { PWText } from '@components/core/PWText'
 import { PWView, PWViewProps } from '@components/core/PWView'
+import { LoadingView } from '@components/LoadingView'
 import { useStyles } from './styles'
+import { ViewStyle } from 'react-native'
 
 export type EmptyViewProps = {
     title?: string
     body: string
     icon?: IconName
     button?: React.ReactElement<unknown>
+    isLoading?: boolean
+    loadingView?: ReactNode
+    loadingStyle?: ViewStyle
 } & PWViewProps
 
 export const EmptyView = (props: EmptyViewProps) => {
     const styles = useStyles()
-    const { title, body, icon, style, button, ...rest } = props
+    const {
+        title,
+        body,
+        icon,
+        style,
+        button,
+        isLoading,
+        loadingView,
+        loadingStyle,
+        ...rest
+    } = props
+
+    if (isLoading) {
+        if (loadingView) {
+            return <>{loadingView}</>
+        }
+        return (
+            <LoadingView
+                variant='skeleton'
+                size='sm'
+                count={5}
+                style={loadingStyle}
+            />
+        )
+    }
 
     return (
         <PWView

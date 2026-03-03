@@ -34,6 +34,7 @@ export enum ErrorCategory {
     KMS = 'kms',
     WALLETCONNECT = 'walletconnect',
     STAKING = 'staking',
+    TRANSACTIONS = 'transactions',
 }
 
 /**

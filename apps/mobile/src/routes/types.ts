@@ -20,12 +20,13 @@ import { SettingsStackParamsList } from '@modules/settings/routes'
 import { ContactsStackParamsList } from '@modules/contacts/routes'
 import { AccountStackParamsList } from '@modules/accounts/routes/types'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
+import { MessagesStackParamList } from '@modules/messages/routes'
 
 export type RootStackParamList = {
     Onboarding: NavigatorScreenParams<OnboardingStackParamList>
     TabBar: NavigatorScreenParams<TabBarStackParamList>
     AddAccount: NavigatorScreenParams<AddAccountStackParamList>
-    Messages: { initialTab?: 'Inbox' | 'Notifications' } | undefined
+    Messages: NavigatorScreenParams<MessagesStackParamList>
     Settings: NavigatorScreenParams<SettingsStackParamsList>
     Contacts: NavigatorScreenParams<ContactsStackParamsList>
     Staking: undefined

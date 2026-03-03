@@ -16,7 +16,7 @@ import {
     type PeraNotification,
     useNotificationsListQuery,
     useMarkNotificationsAsReadMutation,
-} from '@perawallet/wallet-core-notifications'
+} from '@perawallet/wallet-core-messages'
 
 export type UseNotificationsScreenResult = {
     isPending: boolean

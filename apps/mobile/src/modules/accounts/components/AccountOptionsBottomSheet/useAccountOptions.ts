@@ -22,7 +22,7 @@ import {
     useUpdateAccount,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { useNotificationPreferences } from '@perawallet/wallet-core-notifications'
+import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useClipboard } from '@hooks/useClipboard'
 import { useLanguage } from '@hooks/useLanguage'

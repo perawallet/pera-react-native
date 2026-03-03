@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useNotificationStatus } from '@perawallet/wallet-core-notifications'
+import { useInboxStatus } from '@perawallet/wallet-core-messages'
 import { SvgProps } from 'react-native-svg'
 import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
@@ -21,7 +21,7 @@ export type NotificationsIconProps = {} & SvgProps
 
 export const NotificationsIcon = (props: NotificationsIconProps) => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { data } = useNotificationStatus()
+    const { hasUnreadItems } = useInboxStatus()
     const styles = useStyles()
 
     const goToNotifications = () => {
@@ -35,7 +35,7 @@ export const NotificationsIcon = (props: NotificationsIconProps) => {
                     name='inbox'
                     {...props}
                 />
-                {data?.hasNewNotification && (
+                {hasUnreadItems && (
                     <PWView
                         style={styles.badge}
                         testID='notification-badge'

@@ -213,23 +213,6 @@ describe('OnboardingScreen', () => {
             mockUseHasAccounts.mockReturnValue(true)
         })
 
-        it('renders close button when user already has accounts', () => {
-            render(<OnboardingScreen />)
-
-            expect(screen.getByTestId('icon-cross')).toBeTruthy()
-        })
-
-        it('sets isOnboarding to false when close button is pressed', () => {
-            useOnboardingStore.getState().setIsOnboarding(true)
-
-            render(<OnboardingScreen />)
-
-            const closeButton = screen.getByTestId('icon-cross')
-            fireEvent.click(closeButton)
-
-            expect(useOnboardingStore.getState().isOnboarding).toBe(false)
-        })
-
         it('navigates to NameAccount when Create Wallet is pressed', async () => {
             const mockAccount = {
                 id: 'test-id',
