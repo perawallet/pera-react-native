@@ -11,13 +11,12 @@
  */
 
 import { AppError, ErrorCategory, ErrorSeverity } from './base'
-import { ERROR_I18N_KEYS, ErrorI18nKey } from './i18n-keys'
 
 /**
  * Network-related errors (connectivity, timeouts, etc.)
  */
 export class NetworkError extends AppError {
-    constructor(message: ErrorI18nKey, originalError?: Error) {
+    constructor(message: string, originalError?: Error) {
         super(
             message,
             {
@@ -38,7 +37,7 @@ export class ApiError extends NetworkError {
     public readonly endpoint?: string
 
     constructor(
-        message: ErrorI18nKey,
+        message: string,
         statusCode?: number,
         endpoint?: string,
         originalError?: Error,
@@ -55,7 +54,7 @@ export class ApiError extends NetworkError {
  */
 export class TimeoutError extends NetworkError {
     constructor() {
-        super(ERROR_I18N_KEYS.NETWORK_TIMEOUT)
+        super('A network request has timed out.')
     }
 }
 
@@ -64,7 +63,7 @@ export class TimeoutError extends NetworkError {
  */
 export class NoConnectionError extends NetworkError {
     constructor() {
-        super(ERROR_I18N_KEYS.NETWORK_NO_CONNECTION)
+        super('No network connection found')
         this.metadata.severity = ErrorSeverity.HIGH
     }
 }
@@ -75,7 +74,7 @@ export class NoConnectionError extends NetworkError {
 export class ValidationError extends AppError {
     public readonly field?: string
 
-    constructor(message: ErrorI18nKey, field?: string, originalError?: Error) {
+    constructor(message: string, field?: string, originalError?: Error) {
         super(
             message,
             {
@@ -96,7 +95,7 @@ export class ValidationError extends AppError {
  */
 export class InvalidAddressError extends ValidationError {
     constructor(address: string) {
-        super(ERROR_I18N_KEYS.VALIDATION_INVALID_ADDRESS, 'address')
+        super(`Address ${address} is invalid`, 'address')
         this.metadata.params = { address }
     }
 }
@@ -106,7 +105,7 @@ export class InvalidAddressError extends ValidationError {
  */
 export class InvalidAmountError extends ValidationError {
     constructor(amount: string) {
-        super(ERROR_I18N_KEYS.VALIDATION_INVALID_AMOUNT, 'amount')
+        super(`Amount ${amount} is invalid`, 'amount')
         this.metadata.params = { amount }
     }
 }
@@ -116,7 +115,7 @@ export class InvalidAmountError extends ValidationError {
  */
 export class InvalidMnemonicError extends ValidationError {
     constructor() {
-        super(ERROR_I18N_KEYS.VALIDATION_INVALID_MNEMONIC, 'mnemonic')
+        super(`The Mnemonic provided is invalid`, 'mnemonic')
     }
 }
 
@@ -125,6 +124,6 @@ export class InvalidMnemonicError extends ValidationError {
  */
 export class RequiredFieldError extends ValidationError {
     constructor(field: string) {
-        super(ERROR_I18N_KEYS.VALIDATION_REQUIRED_FIELD, field)
+        super(`${field} is required`, field)
     }
 }

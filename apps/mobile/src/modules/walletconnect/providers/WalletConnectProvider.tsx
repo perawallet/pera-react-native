@@ -10,83 +10,46 @@
  limitations under the License
  */
 
-import React, {
-    PropsWithChildren,
-    useCallback,
-    useEffect,
-    useState,
-} from 'react'
+import React, { PropsWithChildren } from 'react'
 import { PWBottomSheet } from '@components/core'
 import { useWindowDimensions } from 'react-native'
 import { ConnectionView } from '@modules/walletconnect/components/ConnectionView/ConnectionView'
-import {
-    useWalletConnect,
-    useWalletConnectSessionRequests,
-    WalletConnectSessionRequest,
-} from '@perawallet/wallet-core-walletconnect'
+
 import { WalletConnectErrorBoundary } from '@modules/walletconnect/components/BaseErrorBoundary/WalletConnectErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
 import { ConnectionSuccessBottomSheet } from '../components/ConnectionSuccessBottomSheet/ConnectionSuccessBottomSheet'
-import { LONG_NOTIFICATION_DURATION } from '@constants/ui'
+import { WalletConnectErrorBottomSheet } from '../components/WalletConnectErrorBottomSheet/WalletConnectErrorBottomSheet'
+import { useWalletConnectProvider } from './useWalletConnectProvider'
 
 export type WalletConnectProviderProps = {} & PropsWithChildren
 
 export function WalletConnectProvider({
     children,
 }: WalletConnectProviderProps) {
-    const { sessionRequests } = useWalletConnectSessionRequests()
-    const nextRequest = sessionRequests.at(0)
     const { height } = useWindowDimensions()
-    const { showToast } = useToast()
     const { t } = useLanguage()
-    const [successRequest, setSuccessRequest] =
-        useState<WalletConnectSessionRequest | null>(null)
-
-    const handleSigningError = useCallback(
-        (error: Error) => {
-            showToast(
-                {
-                    title: t('errors.signing.title'),
-                    body: t(error.message),
-                    type: 'error',
-                },
-                {
-                    duration: LONG_NOTIFICATION_DURATION,
-                },
-            )
-        },
-        [showToast, t],
-    )
-
-    const handleSuccess = (request: WalletConnectSessionRequest) => {
-        setSuccessRequest(request)
-    }
-
-    const clearSuccessRequest = () => {
-        setSuccessRequest(null)
-    }
-
-    const { initWalletConnect } = useWalletConnect({
-        onError: handleSigningError,
-    })
-
-    useEffect(() => {
-        initWalletConnect()
-    }, [])
+    const {
+        nextRequest,
+        successRequest,
+        connectionError,
+        handleConnectionError,
+        handleSuccess,
+        clearSuccessRequest,
+        clearConnectionError,
+    } = useWalletConnectProvider()
 
     return (
         <WalletConnectErrorBoundary t={t}>
             {children}
             <PWBottomSheet
                 innerContainerStyle={{ height: height - 100 }}
-                isVisible={!!nextRequest && !successRequest}
+                isVisible={!!nextRequest && !successRequest && !connectionError}
             >
                 {!!nextRequest && (
                     <ConnectionView
                         request={nextRequest}
                         onSuccess={handleSuccess}
-                        onError={() => {}}
+                        onError={handleConnectionError}
                     />
                 )}
             </PWBottomSheet>
@@ -94,6 +57,12 @@ export function WalletConnectProvider({
             <ConnectionSuccessBottomSheet
                 onClose={clearSuccessRequest}
                 request={successRequest}
+            />
+
+            <WalletConnectErrorBottomSheet
+                isVisible={!!connectionError}
+                error={connectionError}
+                onClose={clearConnectionError}
             />
         </WalletConnectErrorBoundary>
     )

@@ -28,6 +28,7 @@ import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 import { ALGORAND_SCHEME } from './deeplink/arc90-parser'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from './useLanguage'
+import { useNetwork } from '@perawallet/wallet-extension-network'
 
 type LinkSource = 'qr' | 'deeplink'
 
@@ -37,7 +38,8 @@ export const useDeepLink = () => {
     const { addSignRequest } = useSigningRequest()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { pushWebView } = useWebView()
-    const { connect } = useWalletConnect()
+    const { network } = useNetwork()
+    const { connect } = useWalletConnect(network)
     const { t } = useLanguage()
 
     const isValidDeepLink = (url: string): boolean => {

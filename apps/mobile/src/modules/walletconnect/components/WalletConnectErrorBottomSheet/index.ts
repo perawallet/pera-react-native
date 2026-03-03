@@ -10,10 +10,4 @@
  limitations under the License
  */
 
-export * from './api/query-client'
-export * from './models'
-export * from './utils'
-
-// Error infrastructure
-export * from './errors/base'
-export * from './errors/network-validation'
+export { WalletConnectErrorBottomSheet } from './WalletConnectErrorBottomSheet'

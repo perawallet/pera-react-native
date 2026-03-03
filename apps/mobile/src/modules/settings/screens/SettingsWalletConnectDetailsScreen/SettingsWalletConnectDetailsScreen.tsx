@@ -41,6 +41,7 @@ import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpanda
 import { PermissionItem } from '@modules/walletconnect/components/PermissionItem'
 import { useNavigation } from '@react-navigation/native'
 import { InfoButton } from '@components/InfoButton'
+import { useNetwork } from '@perawallet/wallet-extension-network'
 
 export type SettingsWalletConnectDetailsScreenProps = NativeStackScreenProps<
     WalletConnectSettingsStackParamsList,
@@ -71,7 +72,8 @@ export const SettingsWalletConnectDetailsScreen = ({
     route,
 }: SettingsWalletConnectDetailsScreenProps) => {
     const { t } = useLanguage()
-    const { disconnect } = useWalletConnect()
+    const { network } = useNetwork()
+    const { disconnect } = useWalletConnect(network)
     const deleteState = useModalState()
     const styles = useStyles()
     const { theme } = useTheme()

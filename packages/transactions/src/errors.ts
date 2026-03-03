@@ -13,18 +13,16 @@
 import {
     AppError,
     ErrorCategory,
-    ErrorI18nKey,
     ErrorMetadata,
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
-import { ERROR_I18N_KEYS } from '@perawallet/wallet-core-shared'
 
 /**
  * Base blockchain error
  */
 export class TransactionError extends AppError {
     constructor(
-        message: ErrorI18nKey,
+        message: string,
         originalError?: Error,
         metadata?: Partial<ErrorMetadata>,
     ) {
@@ -46,7 +44,7 @@ export class TransactionError extends AppError {
  */
 export class InvalidSendParamsError extends TransactionError {
     constructor(params?: string[], originalError?: Error) {
-        super(ERROR_I18N_KEYS.TRANSACTIONS_INVALID_SEND_PARAMS, originalError, {
+        super('The transaction appears to be invalid', originalError, {
             params: {
                 errorParams: params,
             },

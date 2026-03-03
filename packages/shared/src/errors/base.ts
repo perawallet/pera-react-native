@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-import { ErrorI18nKey } from './i18n-keys'
-
 /**
  * Error severity levels
  */
@@ -60,11 +58,11 @@ export class AppError extends Error {
     public readonly originalError?: Error
 
     constructor(
-        i18nKey: ErrorI18nKey,
+        message: string,
         metadata: Partial<ErrorMetadata>,
         originalError?: Error,
     ) {
-        super(i18nKey)
+        super(message)
         this.name = this.constructor.name
         this.timestamp = new Date()
         this.originalError = originalError
@@ -105,13 +103,6 @@ export class AppError extends Error {
             this.metadata.severity === ErrorSeverity.HIGH ||
             this.metadata.severity === ErrorSeverity.CRITICAL
         )
-    }
-
-    /**
-     * Get user-facing message (if available) or default message
-     */
-    getI18nKey(): ErrorI18nKey {
-        return this.message as ErrorI18nKey
     }
 
     /**

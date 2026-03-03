@@ -37,7 +37,7 @@ const TransactionErrorFallback = ({
             title={t('errors.transaction.title')}
             body={
                 appError
-                    ? t(appError.getI18nKey(), appError.metadata.params)
+                    ? t(appError.message, appError.metadata.params)
                     : t('errors.transaction.body')
             }
             button={

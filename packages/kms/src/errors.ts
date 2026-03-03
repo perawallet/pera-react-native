@@ -12,9 +12,7 @@
 
 import {
     AppError,
-    ERROR_I18N_KEYS,
     ErrorCategory,
-    ErrorI18nKey,
     ErrorMetadata,
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
@@ -24,7 +22,7 @@ import {
  */
 export class KeyManagementError extends AppError {
     constructor(
-        message: ErrorI18nKey,
+        message: string,
         originalError?: Error,
         metadata?: Partial<ErrorMetadata>,
     ) {
@@ -46,7 +44,7 @@ export class KeyManagementError extends AppError {
  */
 export class KeyAccessError extends KeyManagementError {
     constructor(originalError?: Error) {
-        super(ERROR_I18N_KEYS.KEY_ACCESS, originalError)
+        super('Failed to access the signing key', originalError)
     }
 }
 
@@ -55,7 +53,7 @@ export class KeyAccessError extends KeyManagementError {
  */
 export class KeyNotFoundError extends KeyManagementError {
     constructor(keyId: string) {
-        super(ERROR_I18N_KEYS.KEY_NOT_FOUND, undefined, {
+        super('The specified key was not found.', undefined, {
             severity: ErrorSeverity.CRITICAL,
             params: { keyId },
         })
@@ -67,7 +65,7 @@ export class KeyNotFoundError extends KeyManagementError {
  */
 export class InvalidKeyError extends KeyManagementError {
     constructor(keyId: string) {
-        super(ERROR_I18N_KEYS.INVALID_KEY, undefined, {
+        super('The specified key is invalid.', undefined, {
             severity: ErrorSeverity.CRITICAL,
             params: { keyId },
         })

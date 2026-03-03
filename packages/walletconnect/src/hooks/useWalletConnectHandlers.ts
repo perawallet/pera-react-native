@@ -35,7 +35,6 @@ import {
     type TransactionSignRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
-import { useNetwork } from '@perawallet/wallet-extension-network'
 import WalletConnect from '@walletconnect/client'
 import { useCallback } from 'react'
 import {
@@ -58,7 +57,10 @@ const validateRequest = (
 ): WalletConnectConnection => {
     if (error) {
         logger.error(error)
-        throw new WalletConnectSignRequestError(error)
+        throw new WalletConnectSignRequestError(
+            'An error occurred while handling a wallet connect request.',
+            error,
+        )
     }
 
     const foundConnection = connections.find(
@@ -71,9 +73,7 @@ const validateRequest = (
             connections,
         })
 
-        throw new WalletConnectInvalidSessionError(
-            new Error('No session found'),
-        )
+        throw new WalletConnectInvalidSessionError('No session found')
     }
 
     const expectedChainId =
@@ -107,17 +107,15 @@ const validateDataSignRequest = (
     const foundSession = validateRequest(connector, connections, network, error)
 
     if (!data) {
-        throw new WalletConnectSignRequestError(new Error('No data found'))
+        throw new WalletConnectSignRequestError('No data found')
     }
 
     if (!Array.isArray(data) || data.length === 0) {
-        throw new WalletConnectSignRequestError(new Error('Invalid data found'))
+        throw new WalletConnectSignRequestError('Invalid data found')
     }
 
     if (data.length > MAX_DATA_SIGN_REQUESTS) {
-        throw new WalletConnectSignRequestError(
-            new Error('Too many sign requests found'),
-        )
+        throw new WalletConnectSignRequestError('Too many sign requests found')
     }
 
     const expectedChainId =
@@ -130,36 +128,28 @@ const validateDataSignRequest = (
             item.chainId !== AlgorandChainId.all &&
             item.chainId !== expectedChainId
         ) {
-            throw new WalletConnectInvalidNetworkError(
-                new Error("ChainId doesn't match"),
-            )
+            throw new WalletConnectInvalidNetworkError("ChainId doesn't match")
         }
 
         if (!foundSession.session?.accounts.includes(item.signer)) {
-            throw new WalletConnectInvalidSessionError(
-                new Error('Invalid signer'),
-            )
+            throw new WalletConnectInvalidSessionError('Invalid signer')
         }
 
         const account = accounts.find(
             account => account.address === item.signer,
         )
         if (!account) {
-            throw new WalletConnectInvalidSessionError(
-                new Error('Invalid signer'),
-            )
+            throw new WalletConnectInvalidSessionError('Invalid signer')
         }
 
         if (isLedgerAccount(account)) {
             throw new WalletConnectInvalidSessionError(
-                new Error('Ledger accounts are not supported'),
+                'Ledger accounts are not supported',
             )
         }
 
         if (!item.data) {
-            throw new WalletConnectSignRequestError(
-                new Error('Data is missing'),
-            )
+            throw new WalletConnectSignRequestError('Data is missing')
         }
     })
 }
@@ -171,17 +161,18 @@ export const useWalletConnectHandlers = () => {
     const { addSignRequest } = useSigningRequest()
     const { encodeSignedTransactions, decodeTransactions } =
         useTransactionEncoder()
-    const { network } = useNetwork()
     const accounts = useAllAccounts()
 
     //TODO handle ARC-60 sign requests
     const handleSignData = useCallback(
         (
             connector: WalletConnect,
+            network: Network,
             error: Error | null,
             //TODO type this correctly
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             payload: any | null,
+            onError: (error: Error) => void,
         ) => {
             const params = payload?.params
             validateDataSignRequest(
@@ -226,25 +217,27 @@ export const useWalletConnectHandlers = () => {
                     })
                 },
                 error: async (error: string) => {
-                    throw new WalletConnectSignRequestError(new Error(error))
+                    onError(new WalletConnectSignRequestError(error))
                 },
             } as ArbitraryDataSignRequest)
         },
-        [connections, addSignRequest, network],
+        [connections, addSignRequest],
     )
 
     const handleSignTransaction = useCallback(
         (
             connector: WalletConnect,
+            network: Network,
             error: Error | null,
             payload: WalletConnectTransactionPayload | null,
+            onError: (error: Error) => void,
         ) => {
             logger.debug('handleSignTransaction', { payload, network })
             validateRequest(connector, connections, network, error)
             const paramOne = payload?.params?.at(0)
             if (!payload || !paramOne) {
                 throw new WalletConnectSignRequestError(
-                    new Error('Invalid data found - parameter required'),
+                    'Invalid data found - parameter required',
                 )
             }
 
@@ -282,11 +275,11 @@ export const useWalletConnectHandlers = () => {
                     })
                 },
                 error: async (error: string) => {
-                    throw new WalletConnectSignRequestError(new Error(error))
+                    onError(new WalletConnectSignRequestError(error))
                 },
             } as TransactionSignRequest)
         },
-        [connections, addSignRequest, network],
+        [connections, addSignRequest],
     )
 
     return {

@@ -41,7 +41,7 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.layerGrayLighter,
     },
     name: {
-        color: theme.colors.background,
+        color: theme.colors.textWhite,
     },
     separator: {
         color: theme.colors.textGrayLighter,

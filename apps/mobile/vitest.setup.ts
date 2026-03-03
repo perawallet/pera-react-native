@@ -1541,12 +1541,6 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     },
     ErrorSeverity: { LOW: 'low', MEDIUM: 'medium', HIGH: 'high' },
     ErrorCategory: { WALLETCONNECT: 'walletconnect', UI: 'ui' },
-    ERROR_I18N_KEYS: {
-        WALLETCONNECT_INVALID_SESSION: 'walletconnect_invalid_session',
-        WALLETCONNECT_SIGN_REQUEST: 'walletconnect_sign_request',
-        WALLETCONNECT_PERMISSION: 'walletconnect_permission',
-        WALLETCONNECT_INVALID_NETWORK: 'walletconnect_invalid_network',
-    },
     useClearAllData: vi.fn(() => vi.fn().mockResolvedValue(undefined)),
     registerStore: vi.fn(),
     clearAllStores: vi.fn(),

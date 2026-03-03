@@ -12,18 +12,17 @@
 
 import { describe, it, expect } from 'vitest'
 import { WalletConnectPermissionError } from '../errors'
-import { ERROR_I18N_KEYS } from '@perawallet/wallet-core-shared'
 
 describe('WalletConnectPermissionError', () => {
     it('should be instance of WalletConnectPermissionError', () => {
         const error = new WalletConnectPermissionError()
         expect(error).toBeInstanceOf(WalletConnectPermissionError)
-        expect(error.message).toBe(ERROR_I18N_KEYS.WALLETCONNECT_PERMISSION)
+        expect(error.message).toBe('Permission denied')
     })
 
     it('should accept original error', () => {
         const originalError = new Error('Original error')
-        const error = new WalletConnectPermissionError(originalError)
+        const error = new WalletConnectPermissionError(undefined, originalError)
         expect(error.originalError).toBe(originalError)
     })
 })
