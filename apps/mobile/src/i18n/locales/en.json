@@ -12,6 +12,23 @@
         "no_accounts_body": "There are no matching accounts",
         "search_placeholder": "Account address or short name"
     },
+     "arc59": {
+        "requests": {
+            "empty_title": "No Pending Asset Transfer Requests",
+            "empty_body": "When you have an asset transfer request, you can view it here. Tap to learn more about this feature.",
+            "info_title": "Asset Transfer Requests",
+            "info_body": "This feature is an inbox for your account. Others can send you assets and NFTs, even if you have not explicitly opted in to receive them. From here, you can choose to accept or reject the asset transfer requests."
+        },
+        "processing_error": {
+            "title": "Failed to process transaction",
+            "body": "There was an error trying to process your transaction request.  Please try again."
+        },
+        "claim": {
+            "claim": "Claim",
+            "reject": "Reject",
+            "algo_gain": "You will receive {{amount}} ALGO in order to compensate the opt-in expenses."
+        }
+    },
     "asset_details": {
         "about": {
             "title": "About {{name}}",
@@ -282,7 +299,8 @@
         },
         "transaction": {
             "title": "An error occurred processing this transaction",
-            "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
+            "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
+            "invalid_send_params": "The send request appears to have invalid parameters.  Please try again."
         },
         "kms": {
             "key_not_found": "Could not find the key for wallet {{walletId}}.",
@@ -325,12 +343,31 @@
             "notifications": "Notifications"
         },
         "inbox": {
-            "empty_title": "No messages yet",
-            "empty_body": "Your inbox messages will appear here",
+            "empty_title": "No pending messages",
+            "empty_body": "You do not currently have any pending inbox messages",
             "asa_requests_one": "1 incoming asset",
             "asa_requests_other": "{{count}} incoming assets",
             "joint_account_import": "Joint Account Import Request",
             "joint_account_sign": "Joint Account Sign Request"
+        },
+        "claim": {
+            "asset_transfer_requests_title": "Asset Transfer Requests",
+            "asset_transfer_request_title": "Asset Transfer Request",
+            "senders": "Senders",
+            "amount": "Amount",
+            "copy_id": "Copy ID",
+            "account": "Account",
+            "reject": "Reject",
+            "reject_title": "Rejecting Requests",
+            "reject_body": "If you reject this request, the incoming asset will be permanently removed from circulation. It will not be returned to the sender. Instead, you will receive {{algoAmount}} ALGOs upon completion of this irreversible process. Please note that once rejected, the asset cannot be recovered.",
+            "reject_cancel": "Cancel",
+            "processing_title": "Sending the transaction",
+            "processing_subtitle": "Your transaction is being processed by the Algorand network",
+            "success_title": "Operation completed",
+            "success_subtitle": "Your transaction was successfully received by the Algorand network",
+            "sender_count_more": "+{{count}} more",
+            "insufficient_algo_claim": "You don't have enough ALGO to claim this asset. Add funds to cover the minimum balance requirement.",
+            "insufficient_algo_reject": "You don't have enough ALGO to reject this asset. Add funds to cover the transaction fees."
         }
     },
     "onboarding": {
@@ -566,7 +603,8 @@
             "subtitle": "Your transaction is being processed by the Algorand network."
         },
         "success": {
-            "title": "Asset transfer completed",
+            "title": "Transaction Processed",
+            "asset_transferred_title": "Asset Transferred",
             "subtitle": "Your transaction was successfully received by the Algorand network",
             "view_in_explorer": "View Transaction Detail in Pera Explorer",
             "done": "Done"
@@ -596,8 +634,7 @@
             "read_more": "Read more",
             "fees_label": "Protocol & minimum balance fees",
             "disclaimer": "The fee above will be used to cover the minimum balance requirements of the receiver. If the receiver rejects the asset, you will not receive anything back.",
-            "send_button": "Send to Receiver",
-            "close_button": "Close"
+            "send_button": "Send to Receiver"
         },
         "arc59_warning": {
             "title": "Warning",
@@ -812,6 +849,10 @@
             "title": "Unsupported Transaction Type",
             "body": "This transaction type is not supported."
         },
+        "processing_error": {
+            "title": "The transaction is not valid",
+            "body": "The specified transaction appears to be invalid or could not be processed"
+        },
         "asset_transfer": {
             "clawback_from": "Clawback From"
         },
@@ -883,6 +924,8 @@
             "permissions_sign_transaction": "Request transaction signing",
             "permissions_sign_data": "Request arbitrary data signing",
             "accounts_title": "SELECT ACCOUNTS",
+            "success_title": "Connection approved",
+            "success_body": "You are now connected to {{name}}",
             "success_sheet_title": "You are connected to {{name}}",
             "success_sheet_body": "Please return to {{name}} to continue and finish your operation. You can find all connected Sessions in the dedicated Settings page.",
             "networks_mainnet": "Mainnet",

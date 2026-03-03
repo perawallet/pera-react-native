@@ -10,11 +10,15 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
 import { render, screen } from '@test-utils/render'
 import { Text } from 'react-native'
 import { EmptyView } from '../EmptyView'
+
+vi.mock('@components/LoadingView', () => ({
+    LoadingView: () => <div data-testid='loading-view' />,
+}))
 
 describe('EmptyView', () => {
     it('renders title and body correctly', () => {
@@ -36,5 +40,41 @@ describe('EmptyView', () => {
             />,
         )
         expect(screen.getByText('Action')).toBeTruthy()
+    })
+
+    it('renders default loading view when isLoading is true', () => {
+        render(
+            <EmptyView
+                isLoading
+                body='Empty Body'
+            />,
+        )
+        expect(screen.getByTestId('loading-view')).toBeTruthy()
+        expect(screen.queryByText('Empty Body')).toBeNull()
+    })
+
+    it('renders custom loadingView when isLoading is true and loadingView is provided', () => {
+        render(
+            <EmptyView
+                isLoading
+                body='Empty Body'
+                loadingView={<Text>Custom Loading</Text>}
+            />,
+        )
+        expect(screen.getByText('Custom Loading')).toBeTruthy()
+        expect(screen.queryByText('Empty Body')).toBeNull()
+        expect(screen.queryByTestId('loading-view')).toBeNull()
+    })
+
+    it('renders empty content when isLoading is false', () => {
+        render(
+            <EmptyView
+                isLoading={false}
+                title='Empty Title'
+                body='Empty Body'
+            />,
+        )
+        expect(screen.getByText('Empty Title')).toBeTruthy()
+        expect(screen.getByText('Empty Body')).toBeTruthy()
     })
 })

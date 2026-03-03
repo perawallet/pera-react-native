@@ -18,7 +18,7 @@ import { useSettingsNotificationsScreen } from '../useSettingsNotificationsScree
 import {
     useNotificationPreferences,
     useAccountNotificationEnabledMutation,
-} from '@perawallet/wallet-core-notifications'
+} from '@perawallet/wallet-core-messages'
 import { useSystemNotificationPermission } from '../../../hooks/useSystemNotificationPermission'
 import { useToast } from '@hooks/useToast'
 
@@ -26,7 +26,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => []),
 }))
 
-vi.mock('@perawallet/wallet-core-notifications', () => ({
+vi.mock('@perawallet/wallet-core-messages', () => ({
     useNotificationPreferences: vi.fn(() => ({
         setAccountEnabled: vi.fn(),
         isAccountEnabled: vi.fn(() => true),

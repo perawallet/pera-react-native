@@ -10,28 +10,25 @@
  limitations under the License
  */
 
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect } from 'react'
 import { BackHandler } from 'react-native'
 
 import { bottomSheetNotifier } from '@components/core'
 import { useToast } from '@hooks/useToast'
 import { useSendFunds } from '@modules/transactions/hooks'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
-    ALGO_ASSET,
-    ALGO_ASSET_ID,
-    toDecimalUnits,
-    useAssetsQuery,
-} from '@perawallet/wallet-core-assets'
+    useAccountBalancesInvalidator,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
-    useAlgorandClient,
-    useArc59Transaction,
-    useExpressTransaction,
-} from '@perawallet/wallet-core-blockchain'
+    SendTransactionParams,
+    useTransactionSendFlow,
+} from '@perawallet/wallet-core-transactions'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
-import { useTransactionSigner } from '@perawallet/wallet-core-signing'
+import { useLanguage } from '@hooks/useLanguage'
+import { config } from '@perawallet/wallet-core-config'
 
 export const useTransactionProcessingScreen = () => {
     const navigation =
@@ -45,137 +42,47 @@ export const useTransactionProcessingScreen = () => {
         arc59Summary,
         isCloseAccount,
     } = useSendFunds()
-    const { signTransactions } = useTransactionSigner()
-    const algokit = useAlgorandClient(signTransactions)
-    const { sendViaInbox } = useArc59Transaction(signTransactions)
-    const { sendExpress } = useExpressTransaction(signTransactions)
     const selectedAccount = useSelectedAccount()
-    const assetIDs = useMemo(
-        () => (selectedAsset?.assetId ? [selectedAsset.assetId] : []),
-        [selectedAsset?.assetId],
-    )
-    const { data: assets } = useAssetsQuery(assetIDs)
     const { showToast } = useToast()
-    const hasExecuted = useRef(false)
+    const { t } = useLanguage()
+    const { invalidate: invalidateAccountBalances } =
+        useAccountBalancesInvalidator()
 
-    const asset = selectedAsset?.assetId
-        ? assets.get(selectedAsset.assetId)
-        : null
+    const { execute } = useTransactionSendFlow()
 
     useEffect(() => {
         const subscription = BackHandler.addEventListener(
             'hardwareBackPress',
             () => true,
         )
-        return () => subscription.remove()
-    }, [])
 
-    useEffect(() => {
-        if (hasExecuted.current) return
-        hasExecuted.current = true
+        const sendParams = {
+            sendMode,
+            sender: selectedAccount,
+            receiver: destination,
+            asset: selectedAsset?.asset,
+            amount,
+            note,
+            isCloseAccount,
+            arc59Summary,
+        } as SendTransactionParams
 
-        const execute = async () => {
-            if (
-                !selectedAccount ||
-                !selectedAsset ||
-                !destination ||
-                !amount ||
-                !asset
-            ) {
-                showToast(
-                    {
-                        title: 'Invalid transaction',
-                        body: 'Something appears to have gone wrong with this transaction.',
-                        type: 'error',
-                    },
-                    {
-                        notifier: bottomSheetNotifier.current ?? undefined,
-                    },
-                )
-                navigation.goBack()
-                return
-            }
-
-            try {
-                let txId: string
-
-                switch (sendMode) {
-                    case 'express': {
-                        const expressResult = await sendExpress({
-                            sender: selectedAccount.address,
-                            receiver: destination,
-                            assetId: BigInt(selectedAsset.assetId),
-                            amount: BigInt(
-                                toDecimalUnits(amount, asset).toString(),
-                            ),
-                        })
-                        txId =
-                            expressResult.txIds[expressResult.txIds.length - 1]
-                        break
-                    }
-                    case 'arc59': {
-                        if (arc59Summary) {
-                            const arc59Result = await sendViaInbox({
-                                sender: selectedAccount.address,
-                                receiver: destination,
-                                assetId: BigInt(selectedAsset.assetId),
-                                amount: BigInt(
-                                    toDecimalUnits(amount, asset).toString(),
-                                ),
-                                summary: arc59Summary,
-                            })
-                            txId =
-                                arc59Result.txIds[arc59Result.txIds.length - 1]
-                        } else {
-                            throw new Error(
-                                'Missing ARC59 summary for ARC59 transaction',
-                            )
-                        }
-                        break
-                    }
-                    case 'normal': {
-                        if (selectedAsset.assetId === ALGO_ASSET_ID) {
-                            const result = await algokit.send.payment({
-                                sender: selectedAccount.address,
-                                receiver: destination,
-                                amount: isCloseAccount
-                                    ? BigInt(0).microAlgo()
-                                    : BigInt(
-                                          toDecimalUnits(
-                                              amount,
-                                              ALGO_ASSET,
-                                          ).toString(),
-                                      ).microAlgo(),
-                                ...(isCloseAccount && {
-                                    closeRemainderTo: destination,
-                                }),
-                                note,
-                            })
-                            txId = result.txIds[0]
-                        } else {
-                            const result = await algokit.send.assetTransfer({
-                                sender: selectedAccount.address,
-                                receiver: destination,
-                                amount: BigInt(
-                                    toDecimalUnits(amount, asset).toString(),
-                                ),
-                                assetId: BigInt(selectedAsset.assetId),
-                                note,
-                            })
-                            txId = result.txIds[0]
-                        }
-                        break
-                    }
-                }
-
+        execute({
+            params: sendParams,
+        })
+            .then(txId => {
+                invalidateAccountBalances()
                 navigation.replace('TransactionSuccess', {
                     transactionId: txId,
                 })
-            } catch (error) {
+            })
+            .catch(error => {
                 showToast(
                     {
-                        title: 'Error sending transaction',
-                        body: `${error}`,
+                        title: t('transactions.processing_error.title'),
+                        body: config.debugEnabled
+                            ? `${error}`
+                            : t('transactions.processing_error.body'),
                         type: 'error',
                     },
                     {
@@ -183,9 +90,8 @@ export const useTransactionProcessingScreen = () => {
                     },
                 )
                 navigation.goBack()
-            }
-        }
+            })
 
-        execute()
+        return () => subscription.remove()
     }, [])
 }

@@ -25,7 +25,7 @@ import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/Import
 import { AccountErrorBoundary } from '@modules/accounts/components/AccountErrorBoundary/AccountErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { screenListeners } from '@routes/listeners'
-import { fullScreenLayout } from '@layouts/index'
+import { fullScreenLayout, safeAreaLayout } from '@layouts/index'
 import type React from 'react'
 
 import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen'
@@ -84,6 +84,7 @@ export const OnboardingStackNavigator = () => {
                 ),
                 ...SCREEN_ANIMATION_CONFIG,
             }}
+            layout={safeAreaLayout}
             screenListeners={screenListeners}
         >
             <OnboardingStack.Screen
@@ -101,6 +102,9 @@ export const OnboardingStackNavigator = () => {
             />
             <OnboardingStack.Screen
                 name='NameAccount'
+                options={{
+                    title: '',
+                }}
                 component={NameAccountScreenWithErrorBoundary}
             />
             <OnboardingStack.Screen

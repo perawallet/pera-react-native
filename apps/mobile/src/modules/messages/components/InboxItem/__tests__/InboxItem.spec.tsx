@@ -13,7 +13,7 @@
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { InboxItem } from '../InboxItem'
-import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-notifications'
+import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     truncateAlgorandAddress: vi.fn(

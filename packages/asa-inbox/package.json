@@ -1,0 +1,48 @@
+{
+  "name": "@perawallet/wallet-core-asa-inbox",
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "lint": "eslint src",
+    "generate:arc59": "pnpm exec algokit-client-generator generate -a src/hooks/arc59-app-spec.json -o src/clients/Arc59Client.generated.ts --preserve-names"
+  },
+  "dependencies": {
+    "@algorandfoundation/algokit-utils": "catalog:",
+    "@babel/runtime": "catalog:",
+    "@perawallet/wallet-core-assets": "workspace:*",
+    "@perawallet/wallet-core-blockchain": "workspace:*",
+    "@perawallet/wallet-core-config": "workspace:*",
+    "@perawallet/wallet-core-platform-integration": "workspace:*",
+    "@perawallet/wallet-core-shared": "workspace:*",
+    "@tanstack/react-query": "catalog:",
+    "decimal.js": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@algorandfoundation/algokit-client-generator": "7.0.0-alpha.6",
+    "@perawallet/wallet-core-devtools": "workspace:*",
+    "@testing-library/react": "catalog:",
+    "@types/node": "^20.19.28",
+    "@types/react": "catalog:",
+    "globals": "catalog:",
+    "reflect-metadata": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "catalog:"
+  }
+}
