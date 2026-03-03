@@ -13,9 +13,7 @@
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import {
-    useTransactionSuccessScreen,
-} from './useTransactionSuccessScreen'
+import { useTransactionSuccessScreen } from './useTransactionSuccessScreen'
 
 const titleKey = {
     close_account: 'send_funds.close_account.success_title',
