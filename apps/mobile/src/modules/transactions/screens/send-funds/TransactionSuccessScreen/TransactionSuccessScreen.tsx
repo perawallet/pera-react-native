@@ -15,36 +15,22 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import {
     useTransactionSuccessScreen,
-    type SuccessVariant,
 } from './useTransactionSuccessScreen'
 
-const getTitleKey = (variant: SuccessVariant): string => {
-    switch (variant) {
-        case 'close_account':
-            return 'send_funds.close_account.success_title'
-        case 'asset_transfer':
-            return 'send_funds.success.asset_transferred_title'
-        case 'claim':
-        case 'reject':
-            return 'messages.claim.success_title'
-        case 'payment':
-        default:
-            return 'send_funds.success.title'
-    }
+const titleKey = {
+    close_account: 'send_funds.close_account.success_title',
+    asset_transfer: 'send_funds.success.asset_transferred_title',
+    claim: 'messages.claim.success_title',
+    reject: 'messages.claim.success_title',
+    payment: 'send_funds.success.title',
 }
 
-const getSubtitleKey = (variant: SuccessVariant): string => {
-    switch (variant) {
-        case 'close_account':
-            return 'send_funds.close_account.success_subtitle'
-        case 'claim':
-        case 'reject':
-            return 'messages.claim.success_subtitle'
-        case 'asset_transfer':
-        case 'payment':
-        default:
-            return 'send_funds.success.subtitle'
-    }
+const subtitleKey = {
+    close_account: 'send_funds.close_account.success_subtitle',
+    asset_transfer: 'send_funds.success.subtitle',
+    claim: 'messages.claim.success_subtitle',
+    reject: 'messages.claim.success_subtitle',
+    payment: 'send_funds.success.subtitle',
 }
 
 export const TransactionSuccessScreen = () => {
@@ -66,10 +52,10 @@ export const TransactionSuccessScreen = () => {
                     variant='h3'
                     style={styles.title}
                 >
-                    {t(getTitleKey(variant))}
+                    {t(titleKey[variant] ?? titleKey['payment'])}
                 </PWText>
                 <PWText style={styles.subtitle}>
-                    {t(getSubtitleKey(variant))}
+                    {t(subtitleKey[variant] ?? subtitleKey['payment'])}
                 </PWText>
             </PWView>
             <PWView style={styles.footer}>

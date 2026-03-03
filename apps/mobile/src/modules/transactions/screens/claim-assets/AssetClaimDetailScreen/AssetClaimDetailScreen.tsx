@@ -31,6 +31,7 @@ import Decimal from 'decimal.js'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { EmptyView } from '@components/EmptyView'
 
 export const AssetClaimDetailScreen = () => {
     const insets = useSafeAreaInsets()
@@ -48,7 +49,14 @@ export const AssetClaimDetailScreen = () => {
         handleCopyAssetId,
     } = useAssetClaimDetailScreen()
 
-    if (!request) return null
+    if (!request) {
+        return (
+            <EmptyView
+                title={t('arc59.requests.empty_title')}
+                body={t('arc59.requests.empty_body')}
+            />
+        )
+    }
 
     return (
         <PWView style={styles.container}>
