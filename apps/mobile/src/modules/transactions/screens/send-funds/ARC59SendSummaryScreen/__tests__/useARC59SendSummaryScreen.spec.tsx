@@ -34,11 +34,14 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     })),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
+vi.mock('@perawallet/wallet-core-asa-inbox', () => ({
     useArc59SendSummaryQuery: vi.fn(() => ({
         data: null,
         isLoading: true,
     })),
+}))
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAccountInformationQuery: vi.fn(() => ({
         data: { amount: 10_000_000n, minBalance: 100_000n },
     })),
@@ -184,7 +187,7 @@ describe('useARC59SendSummaryScreen', () => {
 
     it('computes fee from summary', async () => {
         const { useArc59SendSummaryQuery } = await import(
-            '@perawallet/wallet-core-blockchain'
+            '@perawallet/wallet-core-asa-inbox'
         )
         ;(useArc59SendSummaryQuery as Mock).mockReturnValue({
             data: mockSummary,

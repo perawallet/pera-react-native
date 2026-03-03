@@ -13,7 +13,7 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useTransactionSuccessScreen } from '../useTransactionSuccessScreen'
-import { useSendFunds } from '@modules/transactions/hooks'
+import { useSendFunds, useClaimAssets } from '@modules/transactions/hooks'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { useWebView } from '@modules/webview/hooks'
 
@@ -22,6 +22,7 @@ const mockPushWebView = vi.fn()
 const mockRemove = vi.fn()
 const mockRemoveAccountById = vi.fn()
 const mockSetSelectedAccountAddress = vi.fn()
+const mockInvalidateQueries = vi.fn()
 
 vi.mock('react-native', () => ({
     BackHandler: {
@@ -37,6 +38,21 @@ vi.mock('@react-navigation/native', () => ({
 
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
+    useClaimAssets: vi.fn(),
+}))
+
+vi.mock('@tanstack/react-query', () => ({
+    useQueryClient: vi.fn(() => ({
+        invalidateQueries: mockInvalidateQueries,
+    })),
+}))
+
+vi.mock('@perawallet/wallet-core-asa-inbox', () => ({
+    getArc59AssetRequestsQueryKey: vi.fn((address: string) => [
+        'asa-inbox',
+        'arc59-asset-requests',
+        { address },
+    ]),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -76,6 +92,10 @@ describe('useTransactionSuccessScreen', () => {
             onFinished: mockOnFinished,
             isCloseAccount: false,
         })
+        ;(useClaimAssets as Mock).mockReturnValue({
+            onFinished: undefined,
+            accountAddress: null,
+        })
         ;(useNetwork as Mock).mockReturnValue({
             networkConfig: {
                 explorerUrl: 'https://explorer.perawallet.app',
@@ -107,5 +127,11 @@ describe('useTransactionSuccessScreen', () => {
             url: 'https://explorer.perawallet.app/tx/TX_ID_123',
             id: 'mock-uuid',
         })
+    })
+
+    it('should return payment variant by default', () => {
+        const { result } = renderHook(() => useTransactionSuccessScreen())
+
+        expect(result.current.variant).toBe('payment')
     })
 })

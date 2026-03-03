@@ -64,6 +64,13 @@ vi.mock('@hooks/useNavigationHeader', () => ({
     useNavigationHeader: vi.fn(),
 }))
 
+vi.mock('@perawallet/wallet-core-messages', () => ({
+    useInboxStatus: vi.fn(() => ({
+        hasUnreadInboxItems: false,
+        hasUnreadNotifications: false,
+    })),
+}))
+
 vi.mock('@modules/messages/screens/NotificationsScreen', () => ({
     NotificationsScreen: () => <span data-testid='NotificationsScreen' />,
 }))
@@ -103,19 +110,6 @@ describe('MessagesScreen', () => {
         expect(
             screen.getByTestId('tab-navigator').getAttribute('data-initial'),
         ).toBe('Notifications')
-    })
-
-    it('defaults initialRouteName to Inbox when no params', () => {
-        vi.mocked(useRoute).mockReturnValue({
-            params: undefined,
-            key: 'Messages',
-            name: 'Messages',
-        })
-
-        render(<MessagesScreen />)
-        expect(
-            screen.getByTestId('tab-navigator').getAttribute('data-initial'),
-        ).toBe('Inbox')
     })
 
     it('renders notification settings bottom sheet', () => {

@@ -85,7 +85,7 @@ describe('useCreateNextHDAccount', () => {
             address: 'HD_ADDRESS_2',
             hdWalletDetails: {
                 ...HD_ACCOUNT.hdWalletDetails,
-                keyIndex: 2,
+                account: 1,
             },
         }
         mockUseAllAccounts.mockReturnValue([HD_ACCOUNT, secondHDAccount])
@@ -106,8 +106,8 @@ describe('useCreateNextHDAccount', () => {
 
         expect(mockCreateAccount.createHdWalletAccount).toHaveBeenCalledWith({
             walletId: 'wallet-1',
-            account: 0,
-            keyIndex: 3,
+            account: 2,
+            keyIndex: 0,
         })
     })
 
@@ -127,8 +127,8 @@ describe('useCreateNextHDAccount', () => {
 
         expect(mockCreateAccount.createHdWalletAccount).toHaveBeenCalledWith({
             walletId: 'wallet-1',
-            account: 0,
-            keyIndex: 1,
+            account: 1,
+            keyIndex: 0,
         })
     })
 })

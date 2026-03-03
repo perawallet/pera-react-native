@@ -70,7 +70,7 @@ export const transformPublicAssetResponse = (
 ): PeraAsset => {
     return {
         assetId: `${asset.asset_id}`,
-        name: asset.name,
+        name: asset.name ?? undefined,
         peraMetadata: {
             isDeleted: asset.is_deleted === true,
             verificationTier:
@@ -80,12 +80,12 @@ export const transformPublicAssetResponse = (
                 `${asset.asset_id}` === ALGO_ASSET_ID,
             logo: asset.logo,
         },
-        unitName: asset.unit_name,
+        unitName: asset.unit_name ?? undefined,
         decimals: asset.fraction_decimals,
         totalSupply: Decimal(asset.total_supply_as_str),
         creator: {
             address: asset.creator_address ?? '',
         },
-        url: asset.url,
+        url: asset.url ?? undefined,
     }
 }

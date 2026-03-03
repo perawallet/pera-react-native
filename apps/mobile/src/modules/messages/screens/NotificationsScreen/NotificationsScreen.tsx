@@ -11,18 +11,16 @@
  */
 
 import { useTheme } from '@rneui/themed'
-import { PeraNotification } from '@perawallet/wallet-core-notifications'
+import { PeraNotification } from '@perawallet/wallet-core-messages'
 import { ActivityIndicator } from 'react-native'
 import { EmptyView } from '@components/EmptyView'
 import { useStyles } from './styles'
 import { NotificationItem } from '@modules/messages/components/NotificationItem/NotificationItem'
-import { LoadingView } from '@components/LoadingView'
 import { PWFlatList } from '@components/core'
 import { RefreshControl } from 'react-native-gesture-handler'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNotificationsScreen } from './useNotificationsScreen'
-import { useCallback } from 'react'
 
 const renderItem = ({ item }: { item: PeraNotification }) => {
     return <NotificationItem item={item} />
@@ -44,27 +42,6 @@ export const NotificationsScreen = () => {
         keyExtractor,
     } = useNotificationsScreen()
 
-    const renderEmptyComponent = useCallback(() => {
-        if (isPending) {
-            return (
-                <LoadingView
-                    variant='skeleton'
-                    size='sm'
-                    count={5}
-                    style={styles.loadingContainer}
-                />
-            )
-        }
-        return (
-            <EmptyView
-                style={styles.emptyView}
-                icon='bell'
-                title={t('notifications.empty_title')}
-                body={t('notifications.empty_body')}
-            />
-        )
-    }, [isPending, styles.emptyView, styles.loadingContainer, t])
-
     return (
         <PWFlatList
             data={notifications}
@@ -74,7 +51,15 @@ export const NotificationsScreen = () => {
             onEndReached={loadMoreItems}
             onEndReachedThreshold={0.1}
             keyExtractor={keyExtractor}
-            ListEmptyComponent={renderEmptyComponent}
+            ListEmptyComponent={
+                <EmptyView
+                    isLoading={isPending}
+                    style={styles.emptyView}
+                    icon='bell'
+                    title={t('notifications.empty_title')}
+                    body={t('notifications.empty_body')}
+                />
+            }
             ListFooterComponent={
                 isFetchingNextPage ? (
                     <ActivityIndicator color={theme.colors.linkPrimary} />

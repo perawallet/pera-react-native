@@ -15,9 +15,9 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import {
     useArc59SendSummaryQuery,
-    useAccountInformationQuery,
     type Arc59SendSummaryResponse,
-} from '@perawallet/wallet-core-blockchain'
+} from '@perawallet/wallet-core-asa-inbox'
+import { useAccountInformationQuery } from '@perawallet/wallet-core-blockchain'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
     ALGO_ASSET,

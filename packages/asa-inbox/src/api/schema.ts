@@ -1,0 +1,149 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import {
+    PeraAsset,
+    PeraAssetVerificationTier,
+} from '@perawallet/wallet-core-assets'
+import Decimal from 'decimal.js'
+import { z } from 'zod'
+
+export const arc59WarningMessageSchema = z.object({
+    title: z.string(),
+    detail: z.string(),
+    link: z.string(),
+    link_text: z.string(),
+})
+
+export const arc59SendSummaryResponseSchema = z.object({
+    is_arc59_opted_in: z.boolean(),
+    minimum_balance_requirement: z.number(),
+    inner_tx_count: z.number(),
+    total_protocol_and_mbr_fee: z.number(),
+    inbox_address: z.string().nullable(),
+    algo_fund_amount: z.number(),
+    warning_message: arc59WarningMessageSchema.nullable(),
+})
+
+export type Arc59SendSummaryResponse = z.infer<
+    typeof arc59SendSummaryResponseSchema
+>
+export type Arc59WarningMessage = z.infer<typeof arc59WarningMessageSchema>
+
+const arc59AssetCreatorSchema = z.object({
+    address: z.string(),
+})
+
+const arc59AssetCollectibleSchema = z.object({
+    title: z.string(),
+    primary_image: z.string(),
+})
+
+const arc59AssetSchema = z.object({
+    asset_id: z.number(),
+    name: z.string(),
+    logo: z.string().nullable(),
+    unit_name: z.string(),
+    fraction_decimals: z.number(),
+    usd_value: z.string().nullable(),
+    verification_tier: z.string(),
+    is_verified: z.boolean(),
+    is_deleted: z.boolean(),
+    collectible: arc59AssetCollectibleSchema.optional().nullable(),
+    creator: arc59AssetCreatorSchema,
+    type: z.enum(['standard_asset', 'collectible']),
+})
+
+const arc59SenderSchema = z.object({
+    sender: z.object({
+        address: z.string(),
+        name: z.string().nullable(),
+    }),
+    amount: z.coerce.string(),
+})
+
+const arc59SendersSchema = z.object({
+    count: z.number(),
+    results: z.array(arc59SenderSchema),
+})
+
+export const arc59AssetRequestSchema = z.object({
+    total_amount: z.coerce.string(),
+    asset: arc59AssetSchema,
+    algo_gain_on_claim: z.coerce.string(),
+    algo_gain_on_reject: z.coerce.string(),
+    senders: arc59SendersSchema,
+    insufficient_algo_for_claiming: z.boolean(),
+    insufficient_algo_for_rejecting: z.boolean(),
+    should_use_funds_before_claiming: z.boolean(),
+    should_use_funds_before_rejecting: z.boolean(),
+})
+
+export const arc59AssetRequestsResponseSchema = z.object({
+    results: z.array(arc59AssetRequestSchema),
+})
+
+export type Arc59AssetRequestResponse = z.infer<typeof arc59AssetRequestSchema>
+
+export type Arc59AssetRequest = {
+    id?: string
+    totalAmount: string
+    asset: PeraAsset
+    algoGainOnClaim: string
+    algoGainOnReject: string
+    senders: {
+        count: number
+        results: Array<{
+            sender: { address: string; name: string | null }
+            amount: string
+        }>
+    }
+    insufficientAlgoForClaiming: boolean
+    insufficientAlgoForRejecting: boolean
+    shouldUseFundsBeforeClaiming: boolean
+    shouldUseFundsBeforeRejecting: boolean
+}
+
+export const mapArc59AssetRequest = (
+    raw: Arc59AssetRequestResponse,
+): Arc59AssetRequest => ({
+    totalAmount: raw.total_amount,
+    asset: {
+        assetId: raw.asset.asset_id.toString(),
+        name: raw.asset.name,
+        unitName: raw.asset.unit_name,
+        decimals: raw.asset.fraction_decimals,
+        peraMetadata: {
+            verificationTier: raw.asset
+                .verification_tier as PeraAssetVerificationTier,
+            isVerified: raw.asset.is_verified,
+            isDeleted: raw.asset.is_deleted,
+            logo: raw.asset.logo,
+            collectible: undefined, //TODO: map collectible type
+        },
+        creator: { address: raw.asset.creator.address },
+        totalSupply: Decimal(0),
+    },
+    algoGainOnClaim: raw.algo_gain_on_claim,
+    algoGainOnReject: raw.algo_gain_on_reject,
+    senders: {
+        count: raw.senders.count,
+        results: raw.senders.results.map(s => ({
+            sender: { address: s.sender.address, name: s.sender.name },
+            amount: s.amount,
+        })),
+    },
+    insufficientAlgoForClaiming: raw.insufficient_algo_for_claiming,
+    insufficientAlgoForRejecting: raw.insufficient_algo_for_rejecting,
+    shouldUseFundsBeforeClaiming: raw.should_use_funds_before_claiming,
+    shouldUseFundsBeforeRejecting: raw.should_use_funds_before_rejecting,
+})
