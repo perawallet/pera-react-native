@@ -17,6 +17,7 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         backgroundColor: theme.colors.background,
         gap: theme.spacing.lg,
+        paddingHorizontal: theme.spacing.xl,
     },
     header: {
         flexDirection: 'row',
