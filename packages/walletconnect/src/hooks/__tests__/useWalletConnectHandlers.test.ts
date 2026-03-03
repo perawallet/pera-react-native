@@ -92,6 +92,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 
 describe('useWalletConnectHandlers', () => {
     const mockAddSignRequest = vi.fn()
+    const mockOnError = vi.fn()
     const mockSessions = [
         {
             clientId: 'test-client-id',
@@ -138,7 +139,13 @@ describe('useWalletConnectHandlers', () => {
                 id: 1,
             }
 
-            result.current.handleSignData(connector as any, null, payload)
+            result.current.handleSignData(
+                connector as any,
+                Networks.mainnet,
+                null,
+                payload,
+                mockOnError,
+            )
 
             expect(mockAddSignRequest).toHaveBeenCalledWith({
                 id: 'MOCK_UUID',
@@ -191,7 +198,13 @@ describe('useWalletConnectHandlers', () => {
                 id: 1,
             }
 
-            result.current.handleSignData(connector as any, null, payload)
+            result.current.handleSignData(
+                connector as any,
+                Networks.mainnet,
+                null,
+                payload,
+                mockOnError,
+            )
 
             const { reject } = mockAddSignRequest.mock.calls[0][0]
 
@@ -226,7 +239,13 @@ describe('useWalletConnectHandlers', () => {
                 id: 1,
             }
 
-            result.current.handleSignData(connector as any, null, payload)
+            result.current.handleSignData(
+                connector as any,
+                Networks.mainnet,
+                null,
+                payload,
+                mockOnError,
+            )
 
             const { approve } = mockAddSignRequest.mock.calls[0][0]
 
@@ -258,15 +277,23 @@ describe('useWalletConnectHandlers', () => {
                 id: 1,
             }
 
-            result.current.handleSignData(connector as any, null, payload)
+            result.current.handleSignData(
+                connector as any,
+                Networks.mainnet,
+                null,
+                payload,
+                mockOnError,
+            )
 
             const { error } =
                 mockAddSignRequest.mock.calls[
                     mockAddSignRequest.mock.calls.length - 1
                 ][0]
 
-            await expect(error('Rejected')).rejects.toThrow(
-                WalletConnectSignRequestError,
+            await error('Rejected')
+
+            expect(mockOnError).toHaveBeenCalledWith(
+                expect.any(WalletConnectSignRequestError),
             )
         })
 
@@ -276,7 +303,13 @@ describe('useWalletConnectHandlers', () => {
             const error = new Error('Some error')
 
             expect(() =>
-                result.current.handleSignData(connector as any, error, {}),
+                result.current.handleSignData(
+                    connector as any,
+                    Networks.mainnet,
+                    error,
+                    {},
+                    mockOnError,
+                ),
             ).toThrow(WalletConnectSignRequestError)
         })
 
@@ -288,7 +321,13 @@ describe('useWalletConnectHandlers', () => {
             const connector = { clientId: 'test-client-id' }
 
             expect(() =>
-                result.current.handleSignData(connector as any, null, {}),
+                result.current.handleSignData(
+                    connector as any,
+                    Networks.mainnet,
+                    null,
+                    {},
+                    mockOnError,
+                ),
             ).toThrow(WalletConnectInvalidSessionError)
         })
 
@@ -312,14 +351,17 @@ describe('useWalletConnectHandlers', () => {
             const connector = { clientId: 'test-client-id' }
 
             expect(() =>
-                result.current.handleSignData(connector as any, null, {}),
+                result.current.handleSignData(
+                    connector as any,
+                    Networks.mainnet,
+                    null,
+                    {},
+                    mockOnError,
+                ),
             ).toThrow(WalletConnectInvalidNetworkError)
         })
 
         it('should allow 416002 chainId when network is testnet', () => {
-            ;(useNetwork as any).mockReturnValue({
-                network: Networks.testnet,
-            })
             const mockSessionsTestnet = [
                 {
                     clientId: 'test-client-id',
@@ -350,14 +392,17 @@ describe('useWalletConnectHandlers', () => {
             }
 
             expect(() =>
-                result.current.handleSignData(connector as any, null, payload),
+                result.current.handleSignData(
+                    connector as any,
+                    Networks.testnet,
+                    null,
+                    payload,
+                    mockOnError,
+                ),
             ).not.toThrow()
         })
 
         it('should throw WalletConnectInvalidNetworkError if chainId is 416001 when network is testnet', () => {
-            ;(useNetwork as any).mockReturnValue({
-                network: Networks.testnet,
-            })
             const mockSessionsMismatch = [
                 {
                     clientId: 'test-client-id',
@@ -377,7 +422,13 @@ describe('useWalletConnectHandlers', () => {
             const connector = { clientId: 'test-client-id' }
 
             expect(() =>
-                result.current.handleSignData(connector as any, null, {}),
+                result.current.handleSignData(
+                    connector as any,
+                    Networks.testnet,
+                    null,
+                    {},
+                    mockOnError,
+                ),
             ).toThrow(WalletConnectInvalidNetworkError)
         })
 
@@ -387,7 +438,13 @@ describe('useWalletConnectHandlers', () => {
             const payload = { params: [] }
 
             expect(() =>
-                result.current.handleSignData(connector as any, null, payload),
+                result.current.handleSignData(
+                    connector as any,
+                    Networks.mainnet,
+                    null,
+                    payload,
+                    mockOnError,
+                ),
             ).toThrow(WalletConnectSignRequestError)
         })
 
@@ -406,7 +463,13 @@ describe('useWalletConnectHandlers', () => {
             }
 
             expect(() =>
-                result.current.handleSignData(connector as any, null, payload),
+                result.current.handleSignData(
+                    connector as any,
+                    Networks.mainnet,
+                    null,
+                    payload,
+                    mockOnError,
+                ),
             ).toThrow(WalletConnectSignRequestError)
         })
 
@@ -425,7 +488,13 @@ describe('useWalletConnectHandlers', () => {
             }
 
             expect(() =>
-                result.current.handleSignData(connector as any, null, payload),
+                result.current.handleSignData(
+                    connector as any,
+                    Networks.mainnet,
+                    null,
+                    payload,
+                    mockOnError,
+                ),
             ).toThrow(WalletConnectInvalidSessionError)
         })
 
@@ -460,7 +529,13 @@ describe('useWalletConnectHandlers', () => {
             )
 
             expect(() =>
-                result.current.handleSignData(connector as any, null, payload),
+                result.current.handleSignData(
+                    connector as any,
+                    Networks.mainnet,
+                    null,
+                    payload,
+                    mockOnError,
+                ),
             ).toThrow(WalletConnectInvalidSessionError)
         })
 
@@ -498,7 +573,13 @@ describe('useWalletConnectHandlers', () => {
             ;(isLedgerAccount as any).mockReturnValue(true)
 
             expect(() =>
-                result.current.handleSignData(connector as any, null, payload),
+                result.current.handleSignData(
+                    connector as any,
+                    Networks.mainnet,
+                    null,
+                    payload,
+                    mockOnError,
+                ),
             ).toThrow(WalletConnectInvalidSessionError)
         })
     })
@@ -529,8 +610,10 @@ describe('useWalletConnectHandlers', () => {
 
             result.current.handleSignTransaction(
                 connector as any,
+                Networks.mainnet,
                 null,
                 payload,
+                mockOnError,
             )
 
             expect(mockAddSignRequest).toHaveBeenCalledWith({
@@ -597,8 +680,10 @@ describe('useWalletConnectHandlers', () => {
 
             result.current.handleSignTransaction(
                 connector as any,
+                Networks.mainnet,
                 null,
                 payload,
+                mockOnError,
             )
 
             const { reject } =
@@ -641,8 +726,10 @@ describe('useWalletConnectHandlers', () => {
 
             result.current.handleSignTransaction(
                 connector as any,
+                Networks.mainnet,
                 null,
                 payload,
+                mockOnError,
             )
 
             const { approve } =
@@ -667,12 +754,6 @@ describe('useWalletConnectHandlers', () => {
             act(() => {
                 approve(signedTxs)
             })
-
-            // Mock encodeAlgorandAddress returns same string, but we verify it was called
-            // In a real scenario, we might want to check if encodeAlgorandAddress was called with the auth key
-            // We can verify calls to the mock or assume correctness if sendTransaction is called.
-            // Since our mock encodeAlgorandAddress always returns 'TEST_ADDRESS', verification is limited.
-            // But we can check if it didn't crash.
 
             expect(connector.approveRequest).toHaveBeenCalledWith({
                 id: 1,
@@ -705,8 +786,10 @@ describe('useWalletConnectHandlers', () => {
 
             result.current.handleSignTransaction(
                 connector as any,
+                Networks.mainnet,
                 null,
                 payload,
+                mockOnError,
             )
 
             const { approve } =
@@ -746,8 +829,10 @@ describe('useWalletConnectHandlers', () => {
 
             result.current.handleSignTransaction(
                 connector as any,
+                Networks.mainnet,
                 null,
                 payload,
+                mockOnError,
             )
 
             const { error } =
@@ -755,8 +840,10 @@ describe('useWalletConnectHandlers', () => {
                     mockAddSignRequest.mock.calls.length - 1
                 ][0]
 
-            await expect(error('addr1', 'Rejected')).rejects.toThrow(
-                WalletConnectSignRequestError,
+            await error('Rejected')
+
+            expect(mockOnError).toHaveBeenCalledWith(
+                expect.any(WalletConnectSignRequestError),
             )
         })
 
@@ -770,8 +857,10 @@ describe('useWalletConnectHandlers', () => {
             expect(() =>
                 result.current.handleSignTransaction(
                     connector as any,
+                    Networks.mainnet,
                     null,
                     {} as unknown as WalletConnectTransactionPayload,
+                    mockOnError,
                 ),
             ).toThrow(WalletConnectInvalidSessionError)
         })
@@ -804,8 +893,10 @@ describe('useWalletConnectHandlers', () => {
             expect(() =>
                 result.current.handleSignTransaction(
                     connector as any,
+                    Networks.mainnet,
                     null,
                     payload,
+                    mockOnError,
                 ),
             ).toThrow('Transaction limit exceeded')
         })

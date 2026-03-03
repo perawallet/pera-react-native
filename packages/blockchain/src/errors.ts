@@ -13,18 +13,16 @@
 import {
     AppError,
     ErrorCategory,
-    ErrorI18nKey,
     ErrorMetadata,
     ErrorSeverity,
 } from '@perawallet/wallet-core-shared'
-import { ERROR_I18N_KEYS } from '@perawallet/wallet-core-shared'
 
 /**
  * Base blockchain error
  */
 export class BlockchainError extends AppError {
     constructor(
-        message: ErrorI18nKey,
+        message: string,
         originalError?: Error,
         metadata?: Partial<ErrorMetadata>,
     ) {
@@ -48,7 +46,7 @@ export class TransactionError extends BlockchainError {
     public readonly txId?: string
 
     constructor(txId?: string, originalError?: Error) {
-        super(ERROR_I18N_KEYS.BLOCKCHAIN_TRANSACTION, originalError)
+        super('An error occurred processing the transaction', originalError)
         this.txId = txId
         if (txId) {
             this.metadata.params = { txId, cause: originalError?.message }
@@ -61,10 +59,14 @@ export class TransactionError extends BlockchainError {
  */
 export class SigningError extends BlockchainError {
     constructor(originalError?: Error) {
-        super(ERROR_I18N_KEYS.BLOCKCHAIN_SIGNING, originalError, {
-            severity: ErrorSeverity.CRITICAL,
-            params: { cause: originalError?.message },
-        })
+        super(
+            'An error occurred siging the transaction or data',
+            originalError,
+            {
+                severity: ErrorSeverity.CRITICAL,
+                params: { cause: originalError?.message },
+            },
+        )
     }
 }
 
@@ -73,7 +75,7 @@ export class SigningError extends BlockchainError {
  */
 export class InvalidTransactionError extends BlockchainError {
     constructor(originalError?: Error) {
-        super(ERROR_I18N_KEYS.BLOCKCHAIN_INVALID_TRANSACTION, originalError, {
+        super('The transaction data is invalid or corrupted', originalError, {
             severity: ErrorSeverity.CRITICAL,
             params: { cause: originalError?.message },
         })

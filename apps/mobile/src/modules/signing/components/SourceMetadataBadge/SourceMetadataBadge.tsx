@@ -49,12 +49,6 @@ export const SourceMetadataBadge = ({ metadata }: SourceMetadataBadgeProps) => {
                     {displayName}
                 </PWText>
             )}
-            {!!project?.verificationTier && (
-                <ProjectVerificationIcon
-                    tier={project.verificationTier}
-                    size='sm'
-                />
-            )}
             {!!displayName && !!metadata.url && (
                 <PWText
                     variant='caption'
@@ -62,6 +56,12 @@ export const SourceMetadataBadge = ({ metadata }: SourceMetadataBadgeProps) => {
                 >
                     &middot;
                 </PWText>
+            )}
+            {!!project?.verificationTier && (
+                <ProjectVerificationIcon
+                    tier={project.verificationTier}
+                    size='sm'
+                />
             )}
             {!!url && (
                 <PWText

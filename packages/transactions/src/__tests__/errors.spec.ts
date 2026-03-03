@@ -15,49 +15,45 @@ import {
     AppError,
     ErrorCategory,
     ErrorSeverity,
-    ERROR_I18N_KEYS,
 } from '@perawallet/wallet-core-shared'
 import { TransactionError, InvalidSendParamsError } from '../errors'
 
 describe('TransactionError', () => {
     it('is an instance of AppError and Error', () => {
-        const error = new TransactionError(ERROR_I18N_KEYS.BLOCKCHAIN_GENERIC)
+        const error = new TransactionError('Something went wrong')
 
         expect(error).toBeInstanceOf(AppError)
         expect(error).toBeInstanceOf(Error)
     })
 
     it('sets severity to HIGH by default', () => {
-        const error = new TransactionError(ERROR_I18N_KEYS.BLOCKCHAIN_GENERIC)
+        const error = new TransactionError('Something went wrong')
 
         expect(error.metadata.severity).toBe(ErrorSeverity.HIGH)
     })
 
     it('sets category to TRANSACTIONS', () => {
-        const error = new TransactionError(ERROR_I18N_KEYS.BLOCKCHAIN_GENERIC)
+        const error = new TransactionError('Something went wrong')
 
         expect(error.metadata.category).toBe(ErrorCategory.TRANSACTIONS)
     })
 
     it('sets retryable to false by default', () => {
-        const error = new TransactionError(ERROR_I18N_KEYS.BLOCKCHAIN_GENERIC)
+        const error = new TransactionError('Something went wrong')
 
         expect(error.metadata.retryable).toBe(false)
     })
 
-    it('stores the i18n key as the message', () => {
-        const error = new TransactionError(
-            ERROR_I18N_KEYS.BLOCKCHAIN_TRANSACTION,
-        )
+    it('stores the message string', () => {
+        const error = new TransactionError('Transaction failed')
 
-        expect(error.message).toBe(ERROR_I18N_KEYS.BLOCKCHAIN_TRANSACTION)
-        expect(error.getI18nKey()).toBe(ERROR_I18N_KEYS.BLOCKCHAIN_TRANSACTION)
+        expect(error.message).toBe('Transaction failed')
     })
 
     it('preserves the original error', () => {
         const originalError = new Error('network failure')
         const error = new TransactionError(
-            ERROR_I18N_KEYS.BLOCKCHAIN_GENERIC,
+            'Something went wrong',
             originalError,
         )
 
@@ -66,11 +62,9 @@ describe('TransactionError', () => {
     })
 
     it('allows metadata overrides', () => {
-        const error = new TransactionError(
-            ERROR_I18N_KEYS.BLOCKCHAIN_GENERIC,
-            undefined,
-            { retryable: true },
-        )
+        const error = new TransactionError('Something went wrong', undefined, {
+            retryable: true,
+        })
 
         expect(error.metadata.retryable).toBe(true)
         expect(error.metadata.severity).toBe(ErrorSeverity.HIGH)
@@ -78,13 +72,13 @@ describe('TransactionError', () => {
     })
 
     it('should report because severity is HIGH', () => {
-        const error = new TransactionError(ERROR_I18N_KEYS.BLOCKCHAIN_GENERIC)
+        const error = new TransactionError('Something went wrong')
 
         expect(error.shouldReport()).toBe(true)
     })
 
     it('sets the error name to the class name', () => {
-        const error = new TransactionError(ERROR_I18N_KEYS.BLOCKCHAIN_GENERIC)
+        const error = new TransactionError('Something went wrong')
 
         expect(error.name).toBe('TransactionError')
     })
@@ -98,12 +92,10 @@ describe('InvalidSendParamsError', () => {
         expect(error).toBeInstanceOf(AppError)
     })
 
-    it('uses the TRANSACTIONS_INVALID_SEND_PARAMS i18n key', () => {
+    it('uses a descriptive error message', () => {
         const error = new InvalidSendParamsError()
 
-        expect(error.message).toBe(
-            ERROR_I18N_KEYS.TRANSACTIONS_INVALID_SEND_PARAMS,
-        )
+        expect(error.message).toBe('The transaction appears to be invalid')
     })
 
     it('stores error params in metadata', () => {

@@ -18,10 +18,16 @@ import WalletConnect from '@walletconnect/client'
 import { createRef, useCallback, useEffect } from 'react'
 import { useWalletConnectSessionRequests } from './useWalletConnectSessionRequests'
 import { useWalletConnectHandlers } from './useWalletConnectHandlers'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, Network } from '@perawallet/wallet-core-shared'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 
 const connectors = new Map<string, WalletConnect>()
+
+const defaultErrorHandler = (error: Error) => {
+    logger.error('An error occurred when handling a wallet connect message', {
+        error,
+    })
+}
 
 const walletConnectRefreshCounter = createRef<number>()
 
@@ -34,7 +40,10 @@ type UseWalletConnectOptions = {
     onError?: (error: Error) => void
 }
 
-export const useWalletConnect = (options?: UseWalletConnectOptions) => {
+export const useWalletConnect = (
+    network: Network,
+    options?: UseWalletConnectOptions,
+) => {
     const connections = useWalletConnectStore(
         state => state.walletConnectConnections,
     )
@@ -46,9 +55,7 @@ export const useWalletConnect = (options?: UseWalletConnectOptions) => {
     const accounts = useAllAccounts()
 
     const initWalletConnect = useCallback(() => {
-        if (!walletConnectRefreshCounter.current) {
-            triggerWCRefresh()
-        }
+        triggerWCRefresh()
     }, [])
 
     useEffect(() => {
@@ -59,6 +66,7 @@ export const useWalletConnect = (options?: UseWalletConnectOptions) => {
 
     const connect = useCallback(
         async ({ connection }: { connection: WalletConnectConnection }) => {
+            logger.debug('[WC] Reconnecting', { connection, network })
             const { autoConnect, ...restConnection } = connection
 
             let connector: WalletConnect | undefined = undefined
@@ -89,7 +97,13 @@ export const useWalletConnect = (options?: UseWalletConnectOptions) => {
                     clientId: connector.clientId,
                 })
                 try {
-                    handleSignData(connector, error, payload)
+                    handleSignData(
+                        connector,
+                        network,
+                        error,
+                        payload,
+                        options?.onError ?? defaultErrorHandler,
+                    )
                 } catch (e) {
                     logger.error('Failed to sign data', { error: e })
                     connector.rejectRequest({
@@ -99,6 +113,7 @@ export const useWalletConnect = (options?: UseWalletConnectOptions) => {
                     options?.onError?.(e as Error)
                 }
             })
+
             connector.on('algo_signTxn', (error, payload) => {
                 logger.debug('WC algo_signTxn received', {
                     error,
@@ -106,7 +121,13 @@ export const useWalletConnect = (options?: UseWalletConnectOptions) => {
                     clientId: connector.clientId,
                 })
                 try {
-                    handleSignTransaction(connector, error, payload)
+                    handleSignTransaction(
+                        connector,
+                        network,
+                        error,
+                        payload,
+                        options?.onError ?? defaultErrorHandler,
+                    )
                 } catch (e) {
                     connector.rejectRequest({
                         id: payload?.id,
@@ -120,9 +141,11 @@ export const useWalletConnect = (options?: UseWalletConnectOptions) => {
                 logger.debug('WC disconnect received')
                 disconnect(connector.clientId, false)
             })
+
             connector.on('session_request', (error, payload) => {
                 if (error) {
                     logger.error(error)
+                    options?.onError?.(error)
                     return
                 }
                 const { peerMeta, chainId, permissions } = payload.params[0]
@@ -146,6 +169,9 @@ export const useWalletConnect = (options?: UseWalletConnectOptions) => {
 
             connector.on('error', error => {
                 logger.error('WC error received', { error })
+                if (error) {
+                    options?.onError?.(error)
+                }
             })
 
             //accessing the connected property triggers a connection
@@ -157,13 +183,17 @@ export const useWalletConnect = (options?: UseWalletConnectOptions) => {
 
             connectors.set(connector.clientId, connector)
         },
-        [addSessionRequest],
+        [addSessionRequest, options],
     )
 
     const reconnectAllSessions = useCallback(() => {
         if (!connections) {
             return
         }
+
+        logger.debug('[WC] Reconnecting WC sessions', {
+            count: connections.length,
+        })
 
         connections.forEach(connection => {
             connect({ connection })
@@ -215,7 +245,9 @@ export const useWalletConnect = (options?: UseWalletConnectOptions) => {
 
             const connector = connectors.get(clientId)
             if (!connector) {
-                throw new WalletConnectInvalidSessionError()
+                throw new WalletConnectInvalidSessionError(
+                    'No wallet connect session found.',
+                )
             }
 
             connector.approveSession({
@@ -249,7 +281,9 @@ export const useWalletConnect = (options?: UseWalletConnectOptions) => {
         (clientId: string) => {
             const connector = connectors.get(clientId)
             if (!connector) {
-                throw new WalletConnectInvalidSessionError()
+                throw new WalletConnectInvalidSessionError(
+                    'No wallet connect session found.',
+                )
             }
 
             connector.rejectSession()

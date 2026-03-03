@@ -19,7 +19,6 @@ import {
 } from '../errors'
 import {
     AppError,
-    ERROR_I18N_KEYS,
     ErrorSeverity,
     ErrorCategory,
 } from '@perawallet/wallet-core-shared'
@@ -27,36 +26,32 @@ import {
 describe('KMS Error Classes', () => {
     describe('KeyManagementError', () => {
         test('extends AppError', () => {
-            const error = new KeyManagementError(ERROR_I18N_KEYS.KEY_ACCESS)
+            const error = new KeyManagementError('Key access failed')
             expect(error).toBeInstanceOf(AppError)
             expect(error).toBeInstanceOf(Error)
         })
 
         test('has HIGH severity and KMS category by default', () => {
-            const error = new KeyManagementError(ERROR_I18N_KEYS.KEY_ACCESS)
+            const error = new KeyManagementError('Key access failed')
             expect(error.metadata.severity).toBe(ErrorSeverity.HIGH)
             expect(error.metadata.category).toBe(ErrorCategory.KMS)
             expect(error.metadata.retryable).toBe(false)
         })
 
-        test('uses i18n key as message', () => {
-            const error = new KeyManagementError(ERROR_I18N_KEYS.KEY_ACCESS)
-            expect(error.message).toBe(ERROR_I18N_KEYS.KEY_ACCESS)
-            expect(error.getI18nKey()).toBe(ERROR_I18N_KEYS.KEY_ACCESS)
+        test('uses provided message', () => {
+            const error = new KeyManagementError('Key access failed')
+            expect(error.message).toBe('Key access failed')
         })
 
         test('preserves original error', () => {
             const cause = new Error('original cause')
-            const error = new KeyManagementError(
-                ERROR_I18N_KEYS.KEY_ACCESS,
-                cause,
-            )
+            const error = new KeyManagementError('Key access failed', cause)
             expect(error.originalError).toBe(cause)
         })
 
         test('allows metadata override', () => {
             const error = new KeyManagementError(
-                ERROR_I18N_KEYS.KEY_ACCESS,
+                'Key access failed',
                 undefined,
                 { severity: ErrorSeverity.CRITICAL, retryable: true },
             )
@@ -66,7 +61,7 @@ describe('KMS Error Classes', () => {
         })
 
         test('shouldReport returns true for HIGH severity', () => {
-            const error = new KeyManagementError(ERROR_I18N_KEYS.KEY_ACCESS)
+            const error = new KeyManagementError('Key access failed')
             expect(error.shouldReport()).toBe(true)
         })
     })
@@ -78,9 +73,9 @@ describe('KMS Error Classes', () => {
             expect(error).toBeInstanceOf(AppError)
         })
 
-        test('uses KEY_ACCESS message', () => {
+        test('uses correct message', () => {
             const error = new KeyAccessError()
-            expect(error.message).toBe(ERROR_I18N_KEYS.KEY_ACCESS)
+            expect(error.message).toBe('Failed to access the signing key')
         })
 
         test('can be constructed without arguments', () => {
@@ -108,9 +103,9 @@ describe('KMS Error Classes', () => {
             expect(error).toBeInstanceOf(AppError)
         })
 
-        test('uses KEY_NOT_FOUND message', () => {
+        test('uses correct message', () => {
             const error = new KeyNotFoundError('key-123')
-            expect(error.message).toBe(ERROR_I18N_KEYS.KEY_NOT_FOUND)
+            expect(error.message).toBe('The specified key was not found.')
         })
 
         test('has CRITICAL severity', () => {
@@ -131,9 +126,9 @@ describe('KMS Error Classes', () => {
             expect(error).toBeInstanceOf(AppError)
         })
 
-        test('uses INVALID_KEY message', () => {
+        test('uses correct message', () => {
             const error = new InvalidKeyError('key-456')
-            expect(error.message).toBe(ERROR_I18N_KEYS.INVALID_KEY)
+            expect(error.message).toBe('The specified key is invalid.')
         })
 
         test('has CRITICAL severity', () => {

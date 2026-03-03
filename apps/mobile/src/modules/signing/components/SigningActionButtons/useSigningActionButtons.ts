@@ -93,7 +93,11 @@ export const useSigningActionButtons = () => {
                     },
                 )
             } else {
-                request.error?.(`${error}`)
+                request.error?.(
+                    error instanceof Error
+                        ? t(`${error.message}`)
+                        : t('errors.signing.title'),
+                )
             }
         } finally {
             setIsLoading(false)

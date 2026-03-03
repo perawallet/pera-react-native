@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    decodeFromBase64,
-    ERROR_I18N_KEYS,
-} from '@perawallet/wallet-core-shared'
+import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 import { KeyPair, StoredKeyMaterial } from './models'
 import { KeyManagementError } from './errors'
 
@@ -23,7 +20,10 @@ export const getSeedFromMasterKey = (
     try {
         return decodeFromBase64(storedKey.seed)
     } catch (e) {
-        throw new KeyManagementError(ERROR_I18N_KEYS.INVALID_KEY, e as Error)
+        throw new KeyManagementError(
+            'The key appears to be invalid or corrupted.',
+            e as Error,
+        )
     }
 }
 
@@ -33,7 +33,10 @@ export const getEntropyFromMasterKey = (
     try {
         return storedKey.entropy ? decodeFromBase64(storedKey.entropy) : null
     } catch (e) {
-        throw new KeyManagementError(ERROR_I18N_KEYS.INVALID_KEY, e as Error)
+        throw new KeyManagementError(
+            'The key appears to be invalid or corrupted.',
+            e as Error,
+        )
     }
 }
 

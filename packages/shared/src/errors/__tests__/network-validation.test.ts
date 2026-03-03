@@ -23,13 +23,12 @@ import {
     RequiredFieldError,
 } from '../network-validation'
 import { AppError, ErrorCategory, ErrorSeverity } from '../base'
-import { ERROR_I18N_KEYS } from '../i18n-keys'
 
 describe('NetworkError', () => {
     test('creates network error with correct metadata', () => {
-        const error = new NetworkError(ERROR_I18N_KEYS.NETWORK_GENERIC)
+        const error = new NetworkError('Network request failed')
 
-        expect(error.message).toBe(ERROR_I18N_KEYS.NETWORK_GENERIC)
+        expect(error.message).toBe('Network request failed')
         expect(error.metadata.severity).toBe(ErrorSeverity.MEDIUM)
         expect(error.metadata.category).toBe(ErrorCategory.NETWORK)
         expect(error.metadata.retryable).toBe(true)
@@ -37,16 +36,13 @@ describe('NetworkError', () => {
 
     test('stores original error', () => {
         const originalError = new Error('Connection failed')
-        const error = new NetworkError(
-            ERROR_I18N_KEYS.NETWORK_GENERIC,
-            originalError,
-        )
+        const error = new NetworkError('Network request failed', originalError)
 
         expect(error.originalError).toBe(originalError)
     })
 
     test('extends AppError', () => {
-        const error = new NetworkError(ERROR_I18N_KEYS.NETWORK_GENERIC)
+        const error = new NetworkError('Network request failed')
 
         expect(error instanceof AppError).toBe(true)
         expect(error instanceof NetworkError).toBe(true)
@@ -55,13 +51,9 @@ describe('NetworkError', () => {
 
 describe('ApiError', () => {
     test('creates API error with status code and endpoint', () => {
-        const error = new ApiError(
-            ERROR_I18N_KEYS.API_NOT_FOUND,
-            404,
-            '/api/accounts',
-        )
+        const error = new ApiError('Not found', 404, '/api/accounts')
 
-        expect(error.message).toBe(ERROR_I18N_KEYS.API_NOT_FOUND)
+        expect(error.message).toBe('Not found')
         expect(error.statusCode).toBe(404)
         expect(error.endpoint).toBe('/api/accounts')
         expect(error.metadata.params).toEqual({
@@ -71,7 +63,7 @@ describe('ApiError', () => {
     })
 
     test('creates API error without status code', () => {
-        const error = new ApiError(ERROR_I18N_KEYS.API_GENERIC)
+        const error = new ApiError('API request failed')
 
         expect(error.statusCode).toBeUndefined()
         expect(error.endpoint).toBeUndefined()
@@ -80,7 +72,7 @@ describe('ApiError', () => {
     test('stores original error', () => {
         const originalError = new Error('HTTP error')
         const error = new ApiError(
-            ERROR_I18N_KEYS.API_SERVER_ERROR,
+            'Server error',
             500,
             '/api/test',
             originalError,
@@ -90,7 +82,7 @@ describe('ApiError', () => {
     })
 
     test('extends NetworkError', () => {
-        const error = new ApiError(ERROR_I18N_KEYS.API_GENERIC)
+        const error = new ApiError('API request failed')
 
         expect(error instanceof NetworkError).toBe(true)
         expect(error instanceof ApiError).toBe(true)
@@ -101,7 +93,7 @@ describe('TimeoutError', () => {
     test('creates timeout error with correct message', () => {
         const error = new TimeoutError()
 
-        expect(error.message).toBe(ERROR_I18N_KEYS.NETWORK_TIMEOUT)
+        expect(error.message).toBe('A network request has timed out.')
     })
 
     test('has network category', () => {
@@ -127,7 +119,7 @@ describe('NoConnectionError', () => {
     test('creates no connection error with correct message', () => {
         const error = new NoConnectionError()
 
-        expect(error.message).toBe(ERROR_I18N_KEYS.NETWORK_NO_CONNECTION)
+        expect(error.message).toBe('No network connection found')
     })
 
     test('has HIGH severity', () => {
@@ -151,37 +143,34 @@ describe('NoConnectionError', () => {
 
 describe('ValidationError', () => {
     test('creates validation error with field name', () => {
-        const error = new ValidationError(
-            ERROR_I18N_KEYS.VALIDATION_GENERIC,
-            'email',
-        )
+        const error = new ValidationError('Validation failed', 'email')
 
-        expect(error.message).toBe(ERROR_I18N_KEYS.VALIDATION_GENERIC)
+        expect(error.message).toBe('Validation failed')
         expect(error.field).toBe('email')
         expect(error.metadata.params).toEqual({ field: 'email' })
     })
 
     test('creates validation error without field name', () => {
-        const error = new ValidationError(ERROR_I18N_KEYS.VALIDATION_GENERIC)
+        const error = new ValidationError('Validation failed')
 
         expect(error.field).toBeUndefined()
         expect(error.metadata.params).toBeUndefined()
     })
 
     test('has LOW severity', () => {
-        const error = new ValidationError(ERROR_I18N_KEYS.VALIDATION_GENERIC)
+        const error = new ValidationError('Validation failed')
 
         expect(error.metadata.severity).toBe(ErrorSeverity.LOW)
     })
 
     test('has validation category', () => {
-        const error = new ValidationError(ERROR_I18N_KEYS.VALIDATION_GENERIC)
+        const error = new ValidationError('Validation failed')
 
         expect(error.metadata.category).toBe(ErrorCategory.VALIDATION)
     })
 
     test('is recoverable but not retryable', () => {
-        const error = new ValidationError(ERROR_I18N_KEYS.VALIDATION_GENERIC)
+        const error = new ValidationError('Validation failed')
 
         expect(error.metadata.recoverable).toBe(true)
         expect(error.metadata.retryable).toBe(false)
@@ -190,7 +179,7 @@ describe('ValidationError', () => {
     test('stores original error', () => {
         const originalError = new Error('Validation failed')
         const error = new ValidationError(
-            ERROR_I18N_KEYS.VALIDATION_GENERIC,
+            'Validation failed',
             'field',
             originalError,
         )
@@ -199,7 +188,7 @@ describe('ValidationError', () => {
     })
 
     test('extends AppError', () => {
-        const error = new ValidationError(ERROR_I18N_KEYS.VALIDATION_GENERIC)
+        const error = new ValidationError('Validation failed')
 
         expect(error instanceof AppError).toBe(true)
         expect(error instanceof ValidationError).toBe(true)
@@ -211,7 +200,7 @@ describe('InvalidAddressError', () => {
         const address = 'invalid-address-123'
         const error = new InvalidAddressError(address)
 
-        expect(error.message).toBe(ERROR_I18N_KEYS.VALIDATION_INVALID_ADDRESS)
+        expect(error.message).toBe('Address invalid-address-123 is invalid')
         expect(error.field).toBe('address')
         expect(error.metadata.params).toEqual({ address })
     })
@@ -228,7 +217,7 @@ describe('InvalidAmountError', () => {
         const amount = '-100'
         const error = new InvalidAmountError(amount)
 
-        expect(error.message).toBe(ERROR_I18N_KEYS.VALIDATION_INVALID_AMOUNT)
+        expect(error.message).toBe('Amount -100 is invalid')
         expect(error.field).toBe('amount')
         expect(error.metadata.params).toEqual({ amount })
     })
@@ -244,7 +233,7 @@ describe('InvalidMnemonicError', () => {
     test('creates invalid mnemonic error', () => {
         const error = new InvalidMnemonicError()
 
-        expect(error.message).toBe(ERROR_I18N_KEYS.VALIDATION_INVALID_MNEMONIC)
+        expect(error.message).toBe('The Mnemonic provided is invalid')
         expect(error.field).toBe('mnemonic')
     })
 
@@ -259,7 +248,7 @@ describe('RequiredFieldError', () => {
     test('creates required field error with field name', () => {
         const error = new RequiredFieldError('username')
 
-        expect(error.message).toBe(ERROR_I18N_KEYS.VALIDATION_REQUIRED_FIELD)
+        expect(error.message).toBe('username is required')
         expect(error.field).toBe('username')
     })
 
