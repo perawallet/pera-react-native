@@ -308,8 +308,7 @@
         "walletconnect": {
             "title": "An error occurred processing an app request",
             "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
-            "invalid_network": "Invalid Network",
-            "invalid_network_body": "You have received a request from an invalid network. Please switch your wallet to the correct network and try again.",
+            "invalid_network": "You have received a request from an invalid network. Please switch your wallet to the correct network and try again.",
             "sign_request": "Sign Request",
             "sign_request_body": "You have received an invalid request to sign a transaction. Please check the app and try again.",
             "permission": "Permission",
@@ -928,10 +927,10 @@
             "permissions_sign_transaction": "Request transaction signing",
             "permissions_sign_data": "Request arbitrary data signing",
             "accounts_title": "SELECT ACCOUNTS",
-            "accounts_select_one_account_title": "Select at least one account",
-            "accounts_select_one_account_body": "Please select at least one account to connect with",
             "success_title": "Connection approved",
             "success_body": "You are now connected to {{name}}",
+            "success_sheet_title": "You are connected to {{name}}",
+            "success_sheet_body": "Please return to {{name}} to continue and finish your operation. You can find all connected Sessions in the dedicated Settings page.",
             "networks_mainnet": "Mainnet",
             "networks_testnet": "Testnet"
         },
