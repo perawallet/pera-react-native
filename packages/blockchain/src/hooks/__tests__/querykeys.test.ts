@@ -15,7 +15,6 @@ import {
     getAccountInformationQueryKey,
     getSuggestedParametersQueryKey,
     getTransactionDetailQueryKey,
-    getArc59SendSummaryQueryKey,
 } from '../querykeys'
 
 describe('querykeys', () => {
@@ -60,32 +59,6 @@ describe('querykeys', () => {
         test('produces different keys for different networks', () => {
             const key1 = getTransactionDetailQueryKey('TXID123', 'mainnet')
             const key2 = getTransactionDetailQueryKey('TXID123', 'testnet')
-
-            expect(key1).not.toEqual(key2)
-        })
-    })
-
-    describe('getArc59SendSummaryQueryKey', () => {
-        test('includes receiver and asset in the key', () => {
-            const key = getArc59SendSummaryQueryKey('RECEIVER', '12345')
-
-            expect(key).toEqual([
-                'blockchain',
-                'arc59-send-summary',
-                { receiverAddress: 'RECEIVER', assetId: '12345' },
-            ])
-        })
-
-        test('produces different keys for different receivers', () => {
-            const key1 = getArc59SendSummaryQueryKey('RECV1', '100')
-            const key2 = getArc59SendSummaryQueryKey('RECV2', '100')
-
-            expect(key1).not.toEqual(key2)
-        })
-
-        test('produces different keys for different asset IDs', () => {
-            const key1 = getArc59SendSummaryQueryKey('RECV', '100')
-            const key2 = getArc59SendSummaryQueryKey('RECV', '200')
 
             expect(key1).not.toEqual(key2)
         })

@@ -33,7 +33,7 @@ import {
 import {
     initNotificationsStore,
     clearNotificationsStore,
-} from '@perawallet/wallet-core-notifications'
+} from '@perawallet/wallet-core-messages'
 import {
     initPollingStore,
     clearPollingStore,

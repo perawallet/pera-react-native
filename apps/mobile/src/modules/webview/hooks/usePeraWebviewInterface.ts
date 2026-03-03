@@ -27,7 +27,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useCallback } from 'react'
-import { useWebView } from '@modules/webview/hooks'
+import { useWebView } from './useWebViewStore'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     PeraSignedTransaction,

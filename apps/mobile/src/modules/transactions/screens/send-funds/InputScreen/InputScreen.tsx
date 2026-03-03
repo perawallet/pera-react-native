@@ -73,7 +73,7 @@ export const InputScreen = () => {
     useNavigationHeader({
         left: (
             <PWIcon
-                name={!canSelectAsset ? 'chevron-left' : 'cross'}
+                name={canSelectAsset ? 'chevron-left' : 'cross'}
                 onPress={handleBack}
             />
         ),

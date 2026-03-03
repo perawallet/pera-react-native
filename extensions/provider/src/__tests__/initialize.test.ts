@@ -39,7 +39,7 @@ import {
 import {
     initNotificationsStore,
     clearNotificationsStore,
-} from '@perawallet/wallet-core-notifications'
+} from '@perawallet/wallet-core-messages'
 import {
     initPollingStore,
     clearPollingStore,
@@ -83,7 +83,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     initKeyManagerStore: vi.fn(),
     clearKeyManagerStore: vi.fn(),
 }))
-vi.mock('@perawallet/wallet-core-notifications', () => ({
+vi.mock('@perawallet/wallet-core-messages', () => ({
     initNotificationsStore: vi.fn(),
     clearNotificationsStore: vi.fn(),
 }))

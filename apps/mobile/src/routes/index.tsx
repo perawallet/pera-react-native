@@ -16,7 +16,6 @@ import {
     NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { StakingScreen } from '@modules/staking/screens/StakingScreen'
-import { MessagesScreen } from '@modules/messages/screens/MessagesScreen'
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import {
     OnboardingStackNavigator,
@@ -36,6 +35,7 @@ import { useIsOnboarding } from '@modules/onboarding/hooks'
 
 import { RootStackParamList } from './types'
 import { fullScreenLayout } from '@layouts/index'
+import { MessagesStackNavigator } from '@modules/messages/routes'
 export type { RootStackParamList } from './types'
 
 const RootStack = createNativeStackNavigator<RootStackParamList>()
@@ -73,14 +73,10 @@ export const MainRoutes = () => {
                             <RootStack.Screen
                                 name='Messages'
                                 options={{
-                                    headerShown: true,
-                                    title: 'screens.messages',
-                                    header: (props: NativeStackHeaderProps) => (
-                                        <NavigationHeader {...props} />
-                                    ),
+                                    headerShown: false,
                                 }}
                                 layout={fullScreenLayout}
-                                component={MessagesScreen}
+                                component={MessagesStackNavigator}
                             />
                             <RootStack.Screen
                                 name='Settings'

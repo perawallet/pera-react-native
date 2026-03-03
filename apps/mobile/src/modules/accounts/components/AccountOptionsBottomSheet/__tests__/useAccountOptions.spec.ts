@@ -58,7 +58,7 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-notifications', () => ({
+vi.mock('@perawallet/wallet-core-messages', () => ({
     useNotificationPreferences: () => ({
         disabledAccounts: [],
         isAccountEnabled: mockIsAccountEnabled,

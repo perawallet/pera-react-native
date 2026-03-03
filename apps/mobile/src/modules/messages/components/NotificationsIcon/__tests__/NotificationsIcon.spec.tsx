@@ -13,7 +13,7 @@
 import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { NotificationsIcon } from '../NotificationsIcon'
-import { useNotificationStatus } from '@perawallet/wallet-core-notifications'
+import { useInboxStatus } from '@perawallet/wallet-core-messages'
 
 const mockNavigate = vi.fn()
 vi.mock('@react-navigation/native', async importOriginal => {
@@ -27,9 +27,9 @@ vi.mock('@react-navigation/native', async importOriginal => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-notifications', () => ({
-    useNotificationStatus: vi.fn(() => ({
-        data: { hasNewNotification: false },
+vi.mock('@perawallet/wallet-core-messages', () => ({
+    useInboxStatus: vi.fn(() => ({
+        hasUnreadItems: false,
     })),
 }))
 
@@ -41,8 +41,8 @@ describe('NotificationsIcon', () => {
     })
 
     it('renders inbox-with-badge icon when there are new notifications', () => {
-        vi.mocked(useNotificationStatus).mockReturnValue({
-            data: { hasNewNotification: true },
+        vi.mocked(useInboxStatus).mockReturnValue({
+            hasUnreadItems: true,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any)
 

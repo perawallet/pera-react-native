@@ -16,13 +16,17 @@ export const useStyles = makeStyles(theme => {
     return {
         container: {
             flex: 1,
-            gap: theme.spacing.xl,
             padding: theme.spacing.xl,
+        },
+        contentContainer: {
+            gap: theme.spacing.md,
+            paddingBottom: theme.spacing.xl,
         },
         icon: {
             width: theme.spacing['4xl'],
             height: theme.spacing['4xl'],
             borderRadius: theme.spacing['4xl'],
+            marginVertical: theme.spacing.md,
         },
         iconContainer: {
             width: theme.spacing['4xl'],
@@ -34,7 +38,6 @@ export const useStyles = makeStyles(theme => {
         },
         headerContainer: {
             alignItems: 'center',
-            marginHorizontal: theme.spacing.xl,
             gap: theme.spacing.xl,
         },
         titleContainer: {
@@ -56,18 +59,25 @@ export const useStyles = makeStyles(theme => {
             width: '100%',
         },
         accountSelectionContainer: {
-            flexGrow: 1,
+            marginTop: theme.spacing.lg,
+            alignSelf: 'flex-start',
         },
         permissionsTitle: {
             color: theme.colors.textGray,
             marginBottom: theme.spacing.md,
         },
-        accountsContainer: {},
+        accountsContainer: {
+            gap: theme.spacing.md,
+            flexGrow: 1,
+            flexShrink: 1,
+        },
         buttonContainer: {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: theme.spacing.sm,
+            gap: theme.spacing.md,
+            marginVertical: theme.spacing.lg,
+            marginHorizontal: theme.spacing.xl,
         },
         cancelButton: {
             flexGrow: 1,

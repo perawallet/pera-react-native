@@ -15,10 +15,26 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useTransactionSuccessScreen } from './useTransactionSuccessScreen'
 
+const titleKey = {
+    close_account: 'send_funds.close_account.success_title',
+    asset_transfer: 'send_funds.success.asset_transferred_title',
+    claim: 'messages.claim.success_title',
+    reject: 'messages.claim.success_title',
+    payment: 'send_funds.success.title',
+}
+
+const subtitleKey = {
+    close_account: 'send_funds.close_account.success_subtitle',
+    asset_transfer: 'send_funds.success.subtitle',
+    claim: 'messages.claim.success_subtitle',
+    reject: 'messages.claim.success_subtitle',
+    payment: 'send_funds.success.subtitle',
+}
+
 export const TransactionSuccessScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { handleDone, handleViewInExplorer, isCloseAccount } =
+    const { handleDone, handleViewInExplorer, variant } =
         useTransactionSuccessScreen()
 
     return (
@@ -34,14 +50,10 @@ export const TransactionSuccessScreen = () => {
                     variant='h3'
                     style={styles.title}
                 >
-                    {isCloseAccount
-                        ? t('send_funds.close_account.success_title')
-                        : t('send_funds.success.title')}
+                    {t(titleKey[variant] ?? titleKey['payment'])}
                 </PWText>
                 <PWText style={styles.subtitle}>
-                    {isCloseAccount
-                        ? t('send_funds.close_account.success_subtitle')
-                        : t('send_funds.success.subtitle')}
+                    {t(subtitleKey[variant] ?? subtitleKey['payment'])}
                 </PWText>
             </PWView>
             <PWView style={styles.footer}>

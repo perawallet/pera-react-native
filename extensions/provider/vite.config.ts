@@ -50,7 +50,7 @@ export default defineConfig({
                 '@perawallet/wallet-core-contacts',
                 '@perawallet/wallet-core-currencies',
                 '@perawallet/wallet-core-kms',
-                '@perawallet/wallet-core-notifications',
+                '@perawallet/wallet-core-messages',
                 '@perawallet/wallet-core-polling',
                 '@perawallet/wallet-core-security',
                 '@perawallet/wallet-core-settings',

@@ -100,6 +100,7 @@ export const useAccountBalancesQuery = (
                 algoValue = algoValue.plus(algoAssetValue)
                 assetBalances.push({
                     assetId: `${assetHolding.assetId}`,
+                    asset: asset,
                     amount: assetAmount,
                     algoValue: algoAssetValue,
                 })
@@ -137,19 +138,10 @@ export const useAccountBalancesQuery = (
             Decimal(0),
         )
 
-        const isPending = useMemo(
-            () => results.some(r => r.isPending),
-            [results],
-        )
-        const isFetched = useMemo(
-            () => results.every(r => r.isFetched),
-            [results],
-        )
-        const isRefetching = useMemo(
-            () => results.some(r => r.isRefetching),
-            [results],
-        )
-        const isError = useMemo(() => results.some(r => r.isError), [results])
+        const isPending = results.some(r => r.isPending)
+        const isFetched = results.every(r => r.isFetched)
+        const isRefetching = results.some(r => r.isRefetching)
+        const isError = results.some(r => r.isError)
 
         return {
             accountBalances: isPending ? new Map() : accountBalances,

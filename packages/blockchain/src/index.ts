@@ -17,6 +17,6 @@ export * from './hooks'
 export * from './errors'
 export * from './utils'
 export * from './schema'
-export * from './api/arc59'
+export * from './constants'
 
 export { initBlockchainStore, clearBlockchainStore } from './store'

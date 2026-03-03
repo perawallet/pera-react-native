@@ -23,7 +23,7 @@ import {
     PWView,
 } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
-import { ImportOptionsBottomSheet } from '../OnboardingScreen/ImportOptionsBottomSheet'
+import { ImportOptionsBottomSheet } from '../../components/ImportOptionsBottomSheet'
 import { useAddAccountScreen } from './useAddAccountScreen'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'

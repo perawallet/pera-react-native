@@ -13,7 +13,7 @@
 import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { NotificationsScreen } from '../NotificationsScreen'
-import { useNotificationsListQuery } from '@perawallet/wallet-core-notifications'
+import { useNotificationsListQuery } from '@perawallet/wallet-core-messages'
 
 vi.mock('@react-navigation/native', async importOriginal => {
     const actual =
@@ -35,7 +35,7 @@ vi.mock(
     }),
 )
 
-vi.mock('@perawallet/wallet-core-notifications', () => ({
+vi.mock('@perawallet/wallet-core-messages', () => ({
     useNotificationsListQuery: vi.fn(() => ({
         data: [],
         isPending: false,

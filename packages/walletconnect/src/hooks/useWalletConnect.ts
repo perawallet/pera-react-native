@@ -108,7 +108,6 @@ export const useWalletConnect = (options?: UseWalletConnectOptions) => {
                 try {
                     handleSignTransaction(connector, error, payload)
                 } catch (e) {
-                    logger.error('Failed to sign transactions', { error: e })
                     connector.rejectRequest({
                         id: payload?.id,
                         error: e as Error,
