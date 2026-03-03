@@ -11,11 +11,17 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
-import { KeyValueStorageService } from '@perawallet/wallet-extension-platform'
-import { keyValueStorage } from '@perawallet/wallet-extension-platform-resources'
+import {
+    persist,
+    createJSONStorage,
+    type StateStorage,
+} from 'zustand/middleware'
 import type { KeyManagerState, KeyPair } from '../models'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    createPersistStorage,
+    registerStore,
+    type WithPersist,
+} from '@perawallet/wallet-core-shared'
 
 const STORE_NAME = 'key-manager-store'
 
@@ -45,7 +51,7 @@ const initialState = {
     keys: new Map<string, KeyPair>(),
 }
 
-export const createKeyManagerStore = (storage: KeyValueStorageService) =>
+export const createKeyManagerStore = (storage: StateStorage) =>
     create<KeyManagerState>()(
         persist(
             (set, get) => ({
@@ -95,7 +101,7 @@ export const createKeyManagerStore = (storage: KeyValueStorageService) =>
 
 export const useKeyManagerStore: UseBoundStore<
     WithPersist<StoreApi<KeyManagerState>, unknown>
-> = createKeyManagerStore(keyValueStorage)
+> = createKeyManagerStore(createPersistStorage())
 
 registerStore({
     name: STORE_NAME,

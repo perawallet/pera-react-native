@@ -20,15 +20,18 @@ const { mockStorage } = vi.hoisted(() => ({
         getItem: vi.fn(),
         setItem: vi.fn(),
         removeItem: vi.fn(),
-        setJSON: vi.fn(),
-        getJSON: vi.fn(),
-        getAllKeys: vi.fn(() => []),
     },
 }))
 
-vi.mock('@perawallet/wallet-extension-platform-resources', () => ({
-    keyValueStorage: mockStorage,
-}))
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...original,
+        registerStore: vi.fn(),
+        createPersistStorage: () => mockStorage,
+    }
+})
 
 describe('SigningStore', () => {
     beforeEach(() => {

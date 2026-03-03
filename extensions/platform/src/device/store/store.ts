@@ -11,11 +11,14 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
-import { KeyValueStorageService } from '../../storage'
-import { keyValueStorage } from '@perawallet/wallet-extension-platform-resources'
+import {
+    persist,
+    createJSONStorage,
+    type StateStorage,
+} from 'zustand/middleware'
 import type { DeviceState } from '../models'
 import {
+    createPersistStorage,
     registerStore,
     type Network,
     type WithPersist,
@@ -52,7 +55,7 @@ const initialState = {
     pushToken: null as string | null,
 }
 
-export const createDeviceStore = (storage: KeyValueStorageService) =>
+export const createDeviceStore = (storage: StateStorage) =>
     create<DeviceState>()(
         persist(
             (set, get) => ({
@@ -92,7 +95,7 @@ export const createDeviceStore = (storage: KeyValueStorageService) =>
 
 export const useDeviceStore: UseBoundStore<
     WithPersist<StoreApi<DeviceState>, unknown>
-> = createDeviceStore(keyValueStorage)
+> = createDeviceStore(createPersistStorage())
 
 registerStore({
     name: STORE_NAME,

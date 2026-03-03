@@ -11,11 +11,17 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
-import { KeyValueStorageService } from '../../storage'
-import { keyValueStorage } from '@perawallet/wallet-extension-platform-resources'
+import {
+    persist,
+    createJSONStorage,
+    type StateStorage,
+} from 'zustand/middleware'
 import type { RemoteConfigStore } from '../models'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    createPersistStorage,
+    registerStore,
+    type WithPersist,
+} from '@perawallet/wallet-core-shared'
 
 const STORE_NAME = 'remote-config-store'
 
@@ -23,7 +29,7 @@ const initialState = {
     configOverrides: {} as Record<string, string | boolean | number>,
 }
 
-export const createRemoteConfigStore = (storage: KeyValueStorageService) =>
+export const createRemoteConfigStore = (storage: StateStorage) =>
     create<RemoteConfigStore>()(
         persist(
             (set, get) => ({
@@ -55,7 +61,7 @@ export const createRemoteConfigStore = (storage: KeyValueStorageService) =>
 
 export const useRemoteConfigStore: UseBoundStore<
     WithPersist<StoreApi<RemoteConfigStore>, unknown>
-> = createRemoteConfigStore(keyValueStorage)
+> = createRemoteConfigStore(createPersistStorage())
 
 registerStore({
     name: STORE_NAME,

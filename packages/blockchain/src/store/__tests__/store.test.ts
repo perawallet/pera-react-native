@@ -13,35 +13,24 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
-vi.mock('@perawallet/wallet-extension-platform-resources', () => {
-    const store = new Map<string, string>()
-    return {
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => {
-                store.set(key, value)
-            },
-            removeItem: (key: string) => {
-                store.delete(key)
-            },
-            setJSON: (key: string, value: unknown) => {
-                store.set(key, JSON.stringify(value))
-            },
-            getJSON: (key: string) => {
-                const v = store.get(key)
-                return v ? JSON.parse(v) : null
-            },
-            getAllKeys: () => [...store.keys()],
-        },
-    }
-})
-
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
     return {
         ...original,
         registerStore: vi.fn(),
+        createPersistStorage: () => {
+            const store = new Map<string, string>()
+            return {
+                getItem: (key: string) => store.get(key) ?? null,
+                setItem: (key: string, value: string) => {
+                    store.set(key, value)
+                },
+                removeItem: (key: string) => {
+                    store.delete(key)
+                },
+            }
+        },
     }
 })
 

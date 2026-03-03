@@ -12,9 +12,9 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { keyValueStorage } from '@perawallet/wallet-extension-platform-resources'
 import type { SigningStore, SignRequest } from '../models'
 import {
+    createPersistStorage,
     generateOrderedUniqueId,
     registerStore,
     type WithPersist,
@@ -61,7 +61,7 @@ export const useSigningStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => keyValueStorage),
+            storage: createJSONStorage(createPersistStorage),
             version: 1,
             partialize: state => ({
                 pendingSignRequests: state.pendingSignRequests.filter(

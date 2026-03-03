@@ -13,31 +13,29 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
-vi.mock('@perawallet/wallet-extension-platform-resources', () => {
-    const store = new Map<string, string>()
+const mockStorage = new Map<string, string>()
+
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
     return {
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
+        ...original,
+        registerStore: vi.fn(),
+        createPersistStorage: () => ({
+            getItem: (key: string) => mockStorage.get(key) ?? null,
             setItem: (key: string, value: string) => {
-                store.set(key, value)
+                mockStorage.set(key, value)
             },
             removeItem: (key: string) => {
-                store.delete(key)
+                mockStorage.delete(key)
             },
-            setJSON: (key: string, value: unknown) => {
-                store.set(key, JSON.stringify(value))
-            },
-            getJSON: (key: string) => {
-                const v = store.get(key)
-                return v ? JSON.parse(v) : null
-            },
-            getAllKeys: () => [...store.keys()],
-        },
+        }),
     }
 })
 
 describe('WalletConnectStore', () => {
     beforeEach(() => {
+        mockStorage.clear()
         vi.resetModules()
     })
 
@@ -89,10 +87,7 @@ describe('WalletConnectStore', () => {
         })
 
         // Access the persisted state via the mock storage
-        const { keyValueStorage } = await import(
-            '@perawallet/wallet-extension-platform-resources'
-        )
-        const persisted = keyValueStorage.getItem('wallet-connect-store')
+        const persisted = mockStorage.get('wallet-connect-store') ?? null
         expect(persisted).not.toBeNull()
 
         const parsed = JSON.parse(persisted!)

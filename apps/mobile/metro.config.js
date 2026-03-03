@@ -82,17 +82,6 @@ const customResolveRequest = (context, moduleName, platform) => {
         };
     }
 
-    // Alias platform-resources to the React Native implementation at build time
-    if (moduleName === '@perawallet/wallet-extension-platform-resources') {
-        const sourcePath = path.resolve(monorepoRoot, 'extensions', 'platform-react-native', 'src', 'resources.ts');
-        try {
-            require.resolve(sourcePath);
-            return context.resolveRequest(context, sourcePath, platform);
-        } catch {
-            // Fall through to default resolution
-        }
-    }
-
     // Resolve @perawallet workspace packages to source files for development
     if (moduleName === '@perawallet/wallet-core') {
         const sourcePath = path.resolve(monorepoRoot, 'packages', 'core', 'src', 'index.ts');
@@ -115,12 +104,15 @@ const customResolveRequest = (context, moduleName, platform) => {
     }
     if (moduleName.startsWith('@perawallet/wallet-extension-')) {
         const packageName = moduleName.replace('@perawallet/wallet-extension-', '');
-        const sourcePath = path.resolve(monorepoRoot, 'extensions', packageName, 'src', 'index.ts');
-        try {
-            require.resolve(sourcePath);
-            return context.resolveRequest(context, sourcePath, platform);
-        } catch {
-            // Fall through to default resolution
+        // Skip subpath imports — let Metro's default resolver handle them
+        if (!packageName.includes('/')) {
+            const sourcePath = path.resolve(monorepoRoot, 'extensions', packageName, 'src', 'index.ts');
+            try {
+                require.resolve(sourcePath);
+                return context.resolveRequest(context, sourcePath, platform);
+            } catch {
+                // Fall through to default resolution
+            }
         }
     }
 

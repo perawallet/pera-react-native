@@ -1546,6 +1546,11 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     clearAllStores: vi.fn(),
     resetStoreRegistry: vi.fn(),
     getStoreRegistry: vi.fn(() => []),
+    createPersistStorage: () => ({
+        getItem: () => null,
+        setItem: () => {},
+        removeItem: () => {},
+    }),
 }))
 
 // Mock @perawallet/wallet-core-projects

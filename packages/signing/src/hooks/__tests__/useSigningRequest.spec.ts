@@ -30,16 +30,19 @@ const mockEncodeSignedTransactions = vi.fn()
 const mockSendRawTransaction = vi.fn()
 const mockSignArbitraryData = vi.fn()
 
-vi.mock('@perawallet/wallet-extension-platform-resources', () => ({
-    keyValueStorage: {
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-        setJSON: vi.fn(),
-        getJSON: vi.fn(),
-        getAllKeys: vi.fn(() => []),
-    },
-}))
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...original,
+        registerStore: vi.fn(),
+        createPersistStorage: () => ({
+            getItem: vi.fn(),
+            setItem: vi.fn(),
+            removeItem: vi.fn(),
+        }),
+    }
+})
 
 vi.mock('../useTransactionSigner', () => ({
     useTransactionSigner: vi.fn(() => ({

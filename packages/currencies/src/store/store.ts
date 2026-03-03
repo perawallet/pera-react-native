@@ -12,8 +12,11 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { keyValueStorage } from '@perawallet/wallet-extension-platform-resources'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    createPersistStorage,
+    registerStore,
+    type WithPersist,
+} from '@perawallet/wallet-core-shared'
 import { CurrenciesStore } from '../models'
 
 const STORE_NAME = 'currencies-store'
@@ -37,7 +40,7 @@ export const useCurrenciesStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => keyValueStorage),
+            storage: createJSONStorage(createPersistStorage),
             version: 1,
             partialize: state => ({
                 preferredCurrency: state.preferredCurrency,

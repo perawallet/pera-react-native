@@ -17,9 +17,9 @@ import { RNKeyValueStorageService } from './services'
  * Module-level singleton for the React Native KeyValueStorageService.
  *
  * MMKV construction is synchronous via JSI, so this is safe to create at
- * module scope. Metro aliases `@perawallet/wallet-extension-platform-resources`
- * to this file at build time, allowing stores to import the real MMKV-backed
- * storage without lazy initialization.
+ * module scope. The platform-react-native extension makes this available
+ * on the provider via `PlatformServices.keyValueStorage`, allowing stores
+ * to access it through `createPersistStorage()` from shared.
  */
 export const keyValueStorage: KeyValueStorageService =
     new RNKeyValueStorageService()
