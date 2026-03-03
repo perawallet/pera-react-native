@@ -24,7 +24,7 @@ import {
 import {
     PeraWalletProvider,
     initializeDataStores,
-} from '@perawallet/wallet-core-provider'
+} from '@perawallet/wallet-extension-provider'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { RootComponent } from '@components/RootComponent'
 import * as SplashScreen from 'expo-splash-screen'

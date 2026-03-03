@@ -12,7 +12,7 @@
 
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
-import { clearDataStores } from '@perawallet/wallet-core-provider'
+import { clearDataStores } from '@perawallet/wallet-extension-provider'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { useDeleteDeviceMutation } from '@perawallet/wallet-extension-platform'

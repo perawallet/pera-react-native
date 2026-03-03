@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-provider'
+export const name = '@perawallet/wallet-extension-provider'
 
 export { Provider } from '@algorandfoundation/wallet-provider'
 export type {

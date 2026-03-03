@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useDeleteAllData } from '../useDeleteAllData'
 import { useKMS } from '@perawallet/wallet-core-kms'
-import { clearDataStores } from '@perawallet/wallet-core-provider'
+import { clearDataStores } from '@perawallet/wallet-extension-provider'
 import { useQueryClient } from '@tanstack/react-query'
 import { useDeleteDeviceMutation } from '@perawallet/wallet-extension-platform'
 
@@ -22,7 +22,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-provider', () => ({
+vi.mock('@perawallet/wallet-extension-provider', () => ({
     clearDataStores: vi.fn(),
 }))
 

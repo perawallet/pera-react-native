@@ -1,5 +1,5 @@
 {
-  "name": "@perawallet/wallet-core-provider",
+  "name": "@perawallet/wallet-extension-provider",
   "version": "0.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

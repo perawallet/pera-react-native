@@ -13,7 +13,7 @@
 import {
     getProvider,
     type PeraProvider,
-} from '@perawallet/wallet-core-provider'
+} from '@perawallet/wallet-extension-provider'
 import { ParamListBase, RouteProp } from '@react-navigation/native'
 
 const NAVIGATION_STACK_NAMES = new Set([
