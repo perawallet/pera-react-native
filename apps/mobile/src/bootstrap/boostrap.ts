@@ -15,7 +15,7 @@ import { RNDeviceInfoStorageService } from '../platform/device'
 import { RNFirebaseService } from '../platform/firebase'
 import { RNKeyValueStorageService } from '../platform/key-value-storage'
 import { RNSecureStorageService } from '../platform/secure-storage'
-import type { PlatformServices } from '@perawallet/wallet-core-platform-extension'
+import type { PlatformServices } from '@perawallet/wallet-extension-platform'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useCallback } from 'react'
 

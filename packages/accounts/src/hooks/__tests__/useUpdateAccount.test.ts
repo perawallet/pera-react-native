@@ -50,7 +50,7 @@ const mockDeviceID = 'DEVICE_ID_123'
 const mockDevicePlatform = 'ios'
 const mockUpdateDeviceMutation = vi.fn().mockResolvedValue({})
 
-vi.mock('@perawallet/wallet-core-platform-extension', () => ({
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useNetwork: () => mockNetwork,
     useDeviceID: vi.fn(() => mockDeviceID),
     useDeviceInfoService: () => ({

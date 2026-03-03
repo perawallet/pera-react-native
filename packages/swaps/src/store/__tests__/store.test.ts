@@ -17,7 +17,7 @@ describe('swaps/store', () => {
     beforeEach(async () => {
         vi.resetModules()
         const { registerTestPlatform } = await import(
-            '@perawallet/wallet-core-platform-extension'
+            '@perawallet/wallet-extension-platform'
         )
         registerTestPlatform()
     })

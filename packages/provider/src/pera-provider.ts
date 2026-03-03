@@ -14,7 +14,7 @@ import { Provider } from '@algorandfoundation/wallet-provider'
 import {
     WithPlatformServicesExtension,
     type PlatformServicesExtension,
-} from '@perawallet/wallet-core-platform-extension'
+} from '@perawallet/wallet-extension-platform'
 
 /**
  * The Pera Wallet Provider with platform services.

@@ -48,7 +48,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     encodeToBase64: vi.fn(t => t),
 }))
 
-vi.mock('@perawallet/wallet-core-platform-extension', () => ({
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useAnalyticsService: vi.fn(() => ({
         logEvent: vi.fn(),
     })),

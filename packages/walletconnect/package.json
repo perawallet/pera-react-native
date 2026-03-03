@@ -20,7 +20,7 @@
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-accounts": "workspace:*",
     "@perawallet/wallet-core-blockchain": "workspace:*",
-    "@perawallet/wallet-core-platform-extension": "workspace:*",
+    "@perawallet/wallet-extension-platform": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-core-signing": "workspace:*",
     "@walletconnect/client": "1.8.0",

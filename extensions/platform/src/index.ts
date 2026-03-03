@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-platform-extension'
+export const name = '@perawallet/wallet-extension-platform'
 
 export * from './analytics'
 export * from './biometrics'

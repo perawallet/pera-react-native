@@ -102,6 +102,16 @@ const customResolveRequest = (context, moduleName, platform) => {
             // Fall through to default resolution
         }
     }
+    if (moduleName.startsWith('@perawallet/wallet-extension-')) {
+        const packageName = moduleName.replace('@perawallet/wallet-extension-', '');
+        const sourcePath = path.resolve(monorepoRoot, 'extensions', packageName, 'src', 'index.ts');
+        try {
+            require.resolve(sourcePath);
+            return context.resolveRequest(context, sourcePath, platform);
+        } catch {
+            // Fall through to default resolution
+        }
+    }
 
     // Force resolution of critical packages to the mobile app's node_modules
     if (

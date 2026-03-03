@@ -13,7 +13,7 @@
 import { useRef, useMemo } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import { useDeviceInfoService } from '@perawallet/wallet-core-platform-extension'
+import { useDeviceInfoService } from '@perawallet/wallet-extension-platform'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { useToast } from '@hooks/useToast'

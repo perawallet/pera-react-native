@@ -14,7 +14,7 @@ import React from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { resetProvider, getProvider } from '@perawallet/wallet-core-shared'
-import { buildTestPlatform } from '@perawallet/wallet-core-platform-extension'
+import { buildTestPlatform } from '@perawallet/wallet-extension-platform'
 import { PeraWalletProvider, usePeraProvider } from '../context'
 import type { PeraProvider } from '../pera-provider'
 

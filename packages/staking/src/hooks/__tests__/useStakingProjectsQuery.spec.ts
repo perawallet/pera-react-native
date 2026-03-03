@@ -67,10 +67,10 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-platform-extension', async importOriginal => {
+vi.mock('@perawallet/wallet-extension-platform', async importOriginal => {
     const actual =
         await importOriginal<
-            typeof import('@perawallet/wallet-core-platform-extension')
+            typeof import('@perawallet/wallet-extension-platform')
         >()
 
     return {

@@ -1,6 +1,7 @@
 packages:
   - apps/*
   - packages/*
+  - extensions/*
 
 catalog:
   '@algorandfoundation/algokit-transact': ^10.0.0-alpha.29

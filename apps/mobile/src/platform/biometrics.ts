@@ -18,7 +18,7 @@ import {
 import type {
     BiometricsService,
     BiometricType,
-} from '@perawallet/wallet-core-platform-extension'
+} from '@perawallet/wallet-extension-platform'
 
 export class RNBiometricsService implements BiometricsService {
     async getSupportedBiometricType(): Promise<BiometricType> {

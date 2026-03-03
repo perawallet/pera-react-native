@@ -20,7 +20,7 @@ import type { PeraApplication } from '../../models/types'
 
 vi.mock('../../api/applications/endpoints')
 
-vi.mock('@perawallet/wallet-core-platform-extension', () => ({
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet', setNetwork: vi.fn() })),
 }))
 

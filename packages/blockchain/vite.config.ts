@@ -41,7 +41,7 @@ export default defineConfig({
                 'zustand',
                 '@tanstack/react-query',
                 '@perawallet/wallet-core-config',
-                '@perawallet/wallet-core-platform-extension',
+                '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-core-shared',
                 '@algorandfoundation/algokit-utils',
                 'zod',

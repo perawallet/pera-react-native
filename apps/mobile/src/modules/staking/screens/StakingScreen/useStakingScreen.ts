@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useRef } from 'react'
-import { useAnalyticsService } from '@perawallet/wallet-core-platform-extension'
+import { useAnalyticsService } from '@perawallet/wallet-extension-platform'
 import { useWebView } from '@modules/webview'
 import { useModalState } from '@hooks/useModalState'
 import {

@@ -20,7 +20,7 @@ import {
     useDeviceID,
     useDeviceInfoService,
     useNetwork,
-} from '@perawallet/wallet-core-platform-extension'
+} from '@perawallet/wallet-extension-platform'
 import {
     getAccountDisplayName,
     useAllAccounts,

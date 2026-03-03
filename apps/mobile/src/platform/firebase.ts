@@ -49,7 +49,7 @@ import {
     RemoteConfigKey,
     RemoteConfigService,
     AnalyticsService,
-} from '@perawallet/wallet-core-platform-extension'
+} from '@perawallet/wallet-extension-platform'
 import { config } from '@perawallet/wallet-core-config'
 
 export class RNFirebaseService

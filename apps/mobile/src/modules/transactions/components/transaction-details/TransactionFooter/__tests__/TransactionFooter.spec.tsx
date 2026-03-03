@@ -16,7 +16,7 @@ import { TransactionFooter } from '../TransactionFooter'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { useWebView } from '@modules/webview/hooks'
 
-vi.mock('@perawallet/wallet-core-platform-extension', () => ({
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useNetwork: vi.fn(() => ({
         network: 'mainnet',
         isMainnet: true,

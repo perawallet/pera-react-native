@@ -26,7 +26,7 @@ import {
     useAssetPricesQuery,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import { useNetwork } from '@perawallet/wallet-core-platform-extension'
+import { useNetwork } from '@perawallet/wallet-extension-platform'
 import { getAccountBalancesQueryKey } from './querykeys'
 import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
 

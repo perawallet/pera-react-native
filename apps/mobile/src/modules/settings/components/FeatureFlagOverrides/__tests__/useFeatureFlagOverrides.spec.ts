@@ -29,7 +29,7 @@ import { useFeatureFlagOverrides } from '../useFeatureFlagOverrides'
 const mockSetConfigOverride = vi.fn()
 const mockConfigOverrides: Record<string, boolean | undefined> = {}
 
-vi.mock('@perawallet/wallet-core-platform-extension', () => ({
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useRemoteConfigOverrides: () => ({
         configOverrides: mockConfigOverrides,
         setConfigOverride: mockSetConfigOverride,

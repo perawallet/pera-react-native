@@ -21,7 +21,7 @@ import {
     useSelectedAccountAddress,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-platform-extension'
+import { useNetwork } from '@perawallet/wallet-extension-platform'
 import { useRoute, type RouteProp } from '@react-navigation/native'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'

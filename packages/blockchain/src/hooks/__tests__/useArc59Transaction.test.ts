@@ -15,11 +15,11 @@ import { renderHook, act } from '@testing-library/react'
 
 import { useArc59Transaction } from '../useArc59Transaction'
 import { useAlgorandClient } from '../useAlgorandClient'
-import { useNetwork } from '@perawallet/wallet-core-platform-extension'
+import { useNetwork } from '@perawallet/wallet-extension-platform'
 import { config } from '@perawallet/wallet-core-config'
 
 vi.mock('../useAlgorandClient')
-vi.mock('@perawallet/wallet-core-platform-extension', () => ({
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useNetwork: vi.fn(),
 }))
 vi.mock('@perawallet/wallet-core-config', () => ({

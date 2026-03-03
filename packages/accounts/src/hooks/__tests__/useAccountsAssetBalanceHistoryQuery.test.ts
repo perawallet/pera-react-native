@@ -29,7 +29,7 @@ vi.mock('../endpoints', () => ({
 
 // Mock platform integration
 const mockNetwork = { network: 'mainnet' }
-vi.mock('@perawallet/wallet-core-platform-extension', () => ({
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useNetwork: () => mockNetwork,
 }))
 

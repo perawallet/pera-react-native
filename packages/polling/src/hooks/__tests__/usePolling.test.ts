@@ -46,7 +46,7 @@ describe('services/polling/usePolling', () => {
     test('does not call backend when there are no accounts', async () => {
         vi.resetModules()
         const { registerTestPlatform } = await import(
-            '@perawallet/wallet-core-platform-extension'
+            '@perawallet/wallet-extension-platform'
         )
         registerTestPlatform()
 
@@ -77,7 +77,7 @@ describe('services/polling/usePolling', () => {
     test('updates lastRefreshedRound when backend indicates refresh', async () => {
         vi.resetModules()
         const { registerTestPlatform } = await import(
-            '@perawallet/wallet-core-platform-extension'
+            '@perawallet/wallet-extension-platform'
         )
         registerTestPlatform()
 
@@ -105,7 +105,7 @@ describe('services/polling/usePolling', () => {
     test('stopPolling prevents further backend calls', async () => {
         vi.resetModules()
         const { registerTestPlatform } = await import(
-            '@perawallet/wallet-core-platform-extension'
+            '@perawallet/wallet-extension-platform'
         )
         registerTestPlatform()
 
@@ -133,7 +133,7 @@ describe('services/polling/usePolling', () => {
     test('handles backend errors gracefully', async () => {
         vi.resetModules()
         const { registerTestPlatform } = await import(
-            '@perawallet/wallet-core-platform-extension'
+            '@perawallet/wallet-extension-platform'
         )
         registerTestPlatform()
 

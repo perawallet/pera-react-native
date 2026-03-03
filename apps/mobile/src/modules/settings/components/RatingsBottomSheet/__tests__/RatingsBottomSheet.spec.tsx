@@ -30,7 +30,7 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-platform-extension', () => ({
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useDeviceInfoService: () => ({
         getAppPackage: () => 'com.algorand.android',
         getAppId: () => '1459898525',

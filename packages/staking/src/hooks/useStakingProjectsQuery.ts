@@ -18,7 +18,7 @@ import {
     RemoteConfigKeys,
     useNetwork,
     useRemoteConfigService,
-} from '@perawallet/wallet-core-platform-extension'
+} from '@perawallet/wallet-extension-platform'
 import type {
     StakingProject,
     StakingProjectInfo,

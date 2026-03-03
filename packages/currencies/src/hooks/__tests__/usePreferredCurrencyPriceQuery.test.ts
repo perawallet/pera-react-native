@@ -19,7 +19,7 @@ import Decimal from 'decimal.js'
 
 // Mock the network hook
 const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-core-platform-extension', () => ({
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useNetwork: mockUseNetwork,
 }))
 

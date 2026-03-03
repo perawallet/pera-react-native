@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { createWrapper } from '@perawallet/wallet-core-platform-extension'
+import { createWrapper } from '@perawallet/wallet-extension-platform'
 import { useNotificationStatus } from '../useNotificationStatusQuery'
 import { fetchNotificationStatus } from '../../api/notifications'
 
@@ -20,10 +20,10 @@ vi.mock('../../api/notifications', () => ({
     fetchNotificationStatus: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-platform-extension', async importOriginal => {
+vi.mock('@perawallet/wallet-extension-platform', async importOriginal => {
     const actual =
         await importOriginal<
-            typeof import('@perawallet/wallet-core-platform-extension')
+            typeof import('@perawallet/wallet-extension-platform')
         >()
     return {
         ...actual,

@@ -13,7 +13,7 @@
 import { useStyles } from './styles'
 import { PWView } from '@components/core'
 import { PWRadioButton } from '@components/core/PWRadioButton'
-import { useNetwork } from '@perawallet/wallet-core-platform-extension'
+import { useNetwork } from '@perawallet/wallet-extension-platform'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 

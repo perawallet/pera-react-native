@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo, useRef } from 'react'
-import { useSecureStorageService } from '@perawallet/wallet-core-platform-extension'
+import { useSecureStorageService } from '@perawallet/wallet-extension-platform'
 import { useSecurityStore } from '../store'
 import {
     PIN_STORAGE_KEY,

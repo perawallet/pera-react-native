@@ -16,7 +16,7 @@ import { useDeleteAllData } from '../useDeleteAllData'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { clearDataStores } from '@perawallet/wallet-core-provider'
 import { useQueryClient } from '@tanstack/react-query'
-import { useDeleteDeviceMutation } from '@perawallet/wallet-core-platform-extension'
+import { useDeleteDeviceMutation } from '@perawallet/wallet-extension-platform'
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: vi.fn(),
@@ -34,7 +34,7 @@ vi.mock('@tanstack/react-query', () => ({
     useQueryClient: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-platform-extension', () => ({
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useDeleteDeviceMutation: vi.fn(),
 }))
 

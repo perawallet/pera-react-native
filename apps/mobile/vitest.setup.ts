@@ -1763,8 +1763,8 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     initBlockchainStore: vi.fn(),
 }))
 
-// Mock @perawallet/wallet-core-platform-extension
-vi.mock('@perawallet/wallet-core-platform-extension', () => ({
+// Mock @perawallet/wallet-extension-platform
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useID: vi.fn(() => 'id'),
     useDeviceID: vi.fn(() => 'device-id'),
     useDeviceInfoService: vi.fn(() => ({

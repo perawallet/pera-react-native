@@ -11,10 +11,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import {
-    useDeviceID,
-    useNetwork,
-} from '@perawallet/wallet-core-platform-extension'
+import { useDeviceID, useNetwork } from '@perawallet/wallet-extension-platform'
 import { updateLastSeenNotification } from '../api/notifications'
 import {
     getNotificationsListQueryKey,

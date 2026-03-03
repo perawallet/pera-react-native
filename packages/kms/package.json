@@ -20,7 +20,7 @@
     "@algorandfoundation/algokit-utils": "catalog:",
     "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@babel/runtime": "catalog:",
-    "@perawallet/wallet-core-platform-extension": "workspace:*",
+    "@perawallet/wallet-extension-platform": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "bip39": "catalog:",
     "react": "catalog:",

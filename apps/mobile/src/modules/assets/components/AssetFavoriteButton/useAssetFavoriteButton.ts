@@ -11,10 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import {
-    useDeviceID,
-    useNetwork,
-} from '@perawallet/wallet-core-platform-extension'
+import { useDeviceID, useNetwork } from '@perawallet/wallet-extension-platform'
 import { useToggleAssetFavoriteMutation } from '@perawallet/wallet-core-assets'
 
 export const useAssetFavoriteButton = (

@@ -20,9 +20,9 @@ vi.mock('../endpoints', () => ({
 }))
 
 const mockUseNetwork = vi.fn().mockReturnValue({ network: 'mainnet' })
-vi.mock('@perawallet/wallet-core-platform-extension', async () => {
+vi.mock('@perawallet/wallet-extension-platform', async () => {
     const actual = await vi.importActual<any>(
-        '@perawallet/wallet-core-platform-extension',
+        '@perawallet/wallet-extension-platform',
     )
     return {
         ...actual,
@@ -53,7 +53,7 @@ describe('services/polling/useShouldRefreshMutation', () => {
     test('calls sendShouldRefreshRequest with correct arguments', async () => {
         vi.resetModules()
         const { registerTestPlatform, createWrapper } = await import(
-            '@perawallet/wallet-core-platform-extension'
+            '@perawallet/wallet-extension-platform'
         )
         registerTestPlatform()
 

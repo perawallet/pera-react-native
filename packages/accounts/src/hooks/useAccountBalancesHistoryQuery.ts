@@ -21,7 +21,7 @@ import type {
 } from '../models'
 import { useCallback } from 'react'
 import Decimal from 'decimal.js'
-import { useNetwork } from '@perawallet/wallet-core-platform-extension'
+import { useNetwork } from '@perawallet/wallet-extension-platform'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { getAccountBalancesHistoryQueryKey } from './querykeys'
 

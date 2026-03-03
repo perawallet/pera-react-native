@@ -30,7 +30,7 @@ const mockEncodeSignedTransactions = vi.fn()
 const mockSendRawTransaction = vi.fn()
 const mockSignArbitraryData = vi.fn()
 
-vi.mock('@perawallet/wallet-core-platform-extension', () => ({
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useKeyValueStorageService: vi.fn(() => ({
         getItem: vi.fn(),
         setItem: vi.fn(),

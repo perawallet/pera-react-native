@@ -47,7 +47,7 @@ vi.mock('@perawallet/wallet-core-projects', () => ({
     })),
 }))
 
-vi.mock('@perawallet/wallet-core-platform-extension', () => ({
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet', setNetwork: vi.fn() })),
 }))
 

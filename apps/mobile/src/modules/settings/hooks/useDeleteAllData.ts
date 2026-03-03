@@ -15,7 +15,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { clearDataStores } from '@perawallet/wallet-core-provider'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
-import { useDeleteDeviceMutation } from '@perawallet/wallet-core-platform-extension'
+import { useDeleteDeviceMutation } from '@perawallet/wallet-extension-platform'
 
 // TODO: probably want to revoke device here so we stop sending push notifications
 export const useDeleteAllData = () => {

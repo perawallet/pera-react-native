@@ -21,7 +21,7 @@ const mockStorage = {
     removeItem: vi.fn(),
 }
 
-vi.mock('@perawallet/wallet-core-platform-extension', () => ({
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useKeyValueStorageService: vi.fn(() => mockStorage),
 }))
 

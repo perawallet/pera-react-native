@@ -32,7 +32,7 @@ import {
     getPublicAssetDetailsQueryKey,
 } from './querykeys'
 import { stripNulls } from '@perawallet/wallet-core-shared'
-import { useNetwork } from '@perawallet/wallet-core-platform-extension'
+import { useNetwork } from '@perawallet/wallet-extension-platform'
 
 //Fetches data from the indexer and Pera backend and returns the combined data
 export const useSingleAssetDetailsQuery = (assetId: string) => {

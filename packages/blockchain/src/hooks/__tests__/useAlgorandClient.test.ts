@@ -15,7 +15,7 @@ import { renderHook } from '@testing-library/react'
 
 import { useAlgorandClient } from '../../hooks'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import { useNetwork } from '@perawallet/wallet-core-platform-extension'
+import { useNetwork } from '@perawallet/wallet-extension-platform'
 
 // Mock AlgorandClient factory methods so we can assert which one is chosen
 vi.mock('@algorandfoundation/algokit-utils', () => {
@@ -33,7 +33,7 @@ vi.mock('@algorandfoundation/algokit-utils', () => {
 })
 
 // Mock useNetwork from platform-integration
-vi.mock('@perawallet/wallet-core-platform-extension', () => ({
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useNetwork: vi.fn(() => ({
         network: 'mainnet',
         networkConfig: {

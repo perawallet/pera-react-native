@@ -11,7 +11,7 @@
  */
 
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { useNetwork } from '@perawallet/wallet-core-platform-extension'
+import { useNetwork } from '@perawallet/wallet-extension-platform'
 import type { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '../models'
 import { useQuery } from '@tanstack/react-query'
