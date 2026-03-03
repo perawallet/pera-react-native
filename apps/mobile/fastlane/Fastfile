@@ -245,11 +245,12 @@ platform :android do
     flavor = options[:flavor] || "staging"
     clean = options[:clean].nil? ? true : options[:clean]
 
+    # TODO: Switch back to "aab" once Play Store deployment is enabled
     build_android(
       flavor: flavor,
       build_type: "Release",
       clean: clean,
-      artifact_type: "aab"
+      artifact_type: "apk"
     )
 
     package_name = flavor == "production" ? "com.algorand.perarn" : "com.algorand.perarn.staging"
