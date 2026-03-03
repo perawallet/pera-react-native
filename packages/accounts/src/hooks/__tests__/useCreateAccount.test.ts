@@ -29,6 +29,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     encodeAlgorandAddress: vi.fn((address: Uint8Array) =>
         Buffer.from(address).toString('base64'),
     ),
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -90,10 +91,6 @@ vi.mock('@perawallet/wallet-extension-platform', async () => {
         })),
     }
 })
-
-vi.mock('@perawallet/wallet-extension-network', () => ({
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
-}))
 
 vi.mock('../../store', async () => {
     const actual =

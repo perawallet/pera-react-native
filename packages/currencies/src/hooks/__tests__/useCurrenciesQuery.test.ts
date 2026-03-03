@@ -18,7 +18,7 @@ import React from 'react'
 
 // Mock the network hook
 const mockUseNetwork = vi.hoisted(() => vi.fn())
-vi.mock('@perawallet/wallet-extension-network', () => ({
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: mockUseNetwork,
 }))
 

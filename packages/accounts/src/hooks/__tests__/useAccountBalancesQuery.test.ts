@@ -30,6 +30,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
             getInformation: mockGetInformation,
         },
     })),
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
 const mockUsdToPreferred = vi.fn((amount: Decimal) => amount)
@@ -37,10 +38,6 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
     useCurrency: vi.fn(() => ({
         usdToPreferred: mockUsdToPreferred,
     })),
-}))
-
-vi.mock('@perawallet/wallet-extension-network', () => ({
-    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
 const mockAssets = new Map()

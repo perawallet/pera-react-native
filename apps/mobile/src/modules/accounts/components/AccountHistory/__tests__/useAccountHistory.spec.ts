@@ -14,7 +14,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useAccountHistory } from '../useAccountHistory'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-extension-network'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     useCsvExportMutation,
     useTransactionHistoryQuery,
@@ -28,7 +28,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-extension-network', () => ({
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: vi.fn(),
 }))
 

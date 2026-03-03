@@ -25,7 +25,7 @@ const mocks = vi.hoisted(() => ({
     useNetwork: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-extension-network', () => ({
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: mocks.useNetwork,
 }))
 

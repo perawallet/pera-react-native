@@ -26,9 +26,11 @@ import { useEffect, useRef } from 'react'
 import { Linking } from 'react-native'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 import { ALGORAND_SCHEME } from './deeplink/arc90-parser'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import {
+    isValidAlgorandAddress,
+    useNetwork,
+} from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from './useLanguage'
-import { useNetwork } from '@perawallet/wallet-extension-network'
 
 type LinkSource = 'qr' | 'deeplink'
 

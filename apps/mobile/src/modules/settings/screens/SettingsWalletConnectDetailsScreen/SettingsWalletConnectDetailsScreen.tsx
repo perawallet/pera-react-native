@@ -41,7 +41,7 @@ import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpanda
 import { PermissionItem } from '@modules/walletconnect/components/PermissionItem'
 import { useNavigation } from '@react-navigation/native'
 import { InfoButton } from '@components/InfoButton'
-import { useNetwork } from '@perawallet/wallet-extension-network'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 
 export type SettingsWalletConnectDetailsScreenProps = NativeStackScreenProps<
     WalletConnectSettingsStackParamsList,

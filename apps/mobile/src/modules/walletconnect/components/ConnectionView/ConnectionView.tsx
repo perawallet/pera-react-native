@@ -31,7 +31,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { ConnectionViewHeader } from './ConnectionViewHeader'
-import { useNetwork } from '@perawallet/wallet-extension-network'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 
 export type ConnectionViewProps = {
     request: WalletConnectSessionRequest

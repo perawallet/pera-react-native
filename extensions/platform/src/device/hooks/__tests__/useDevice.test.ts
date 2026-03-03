@@ -42,7 +42,7 @@ vi.mock('../useDeviceInfoService', () => ({
     useDeviceInfoService: () => mockDeviceInfoService,
 }))
 
-vi.mock('@perawallet/wallet-extension-network', () => ({
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: vi.fn().mockReturnValue({
         network: 'mainnet',
         setNetwork: vi.fn(),

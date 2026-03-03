@@ -49,7 +49,7 @@ export default defineConfig({
                 '@tanstack/react-query',
                 '@perawallet/wallet-core-blockchain',
                 '@perawallet/wallet-core-config',
-                '@perawallet/wallet-extension-network',
+                '@perawallet/wallet-core-blockchain',
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-core-assets',
                 /^@algorandfoundation\/algokit-utils/,

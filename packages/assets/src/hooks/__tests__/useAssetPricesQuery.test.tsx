@@ -34,7 +34,7 @@ vi.mock('../../api', async importOriginal => {
     }
 })
 
-vi.mock('@perawallet/wallet-extension-network', () => ({
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: mocks.useNetwork,
 }))
 

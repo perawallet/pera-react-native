@@ -24,7 +24,7 @@ import { WalletConnectSessionItem } from '@modules/settings/components/WalletCon
 import { Dialog, Text, useTheme } from '@rneui/themed'
 import { useState } from 'react'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { useNetwork } from '@perawallet/wallet-extension-network'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 
 const renderItem = ({ item }: { item: WalletConnectConnection }) => {
     return <WalletConnectSessionItem session={item} />

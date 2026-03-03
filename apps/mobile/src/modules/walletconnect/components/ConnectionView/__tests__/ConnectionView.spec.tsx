@@ -45,7 +45,7 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-extension-network', () => ({
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({
         network: 'mainnet',
     }),

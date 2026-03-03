@@ -88,13 +88,6 @@ export default defineConfig({
                 ),
             },
             {
-                find: '@perawallet/wallet-extension-network',
-                replacement: path.resolve(
-                    __dirname,
-                    '../../extensions/network/src/index.ts',
-                ),
-            },
-            {
                 find: '@perawallet/wallet-extension-platform',
                 replacement: path.resolve(
                     __dirname,

@@ -20,7 +20,7 @@ vi.mock('../endpoints', () => ({
 }))
 
 const mockUseNetwork = vi.fn().mockReturnValue({ network: 'mainnet' })
-vi.mock('@perawallet/wallet-extension-network', () => ({
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => mockUseNetwork(),
 }))
 

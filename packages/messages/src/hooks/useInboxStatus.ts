@@ -12,7 +12,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { useDeviceID } from '@perawallet/wallet-extension-platform'
-import { useNetwork } from '@perawallet/wallet-extension-network'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     fetchNotificationStatus,
     type NotificationStatusResponse,

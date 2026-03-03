@@ -55,7 +55,7 @@ export default defineConfig({
                 '@perawallet/wallet-core-config',
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-extension-platform',
-                '@perawallet/wallet-extension-network',
+                '@perawallet/wallet-core-blockchain',
             ],
         },
     },

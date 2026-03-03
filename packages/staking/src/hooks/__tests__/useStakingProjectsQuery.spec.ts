@@ -63,7 +63,7 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
         >()
     return {
         ...actual,
-        microAlgosToAlgos: actual.microAlgosToAlgos,
+        useNetwork: mocks.useNetwork,
     }
 })
 
@@ -80,10 +80,6 @@ vi.mock('@perawallet/wallet-extension-platform', async importOriginal => {
         }),
     }
 })
-
-vi.mock('@perawallet/wallet-extension-network', () => ({
-    useNetwork: mocks.useNetwork,
-}))
 
 describe('useStakingProjectsQuery', () => {
     let queryClient: QueryClient

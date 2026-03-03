@@ -21,7 +21,7 @@ import {
     useSelectedAccountAddress,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-extension-network'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useRoute } from '@react-navigation/native'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
 

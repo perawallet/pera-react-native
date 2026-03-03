@@ -258,9 +258,6 @@ importers:
       '@perawallet/wallet-core-walletconnect':
         specifier: workspace:*
         version: link:../../packages/walletconnect
-      '@perawallet/wallet-extension-network':
-        specifier: workspace:*
-        version: link:../../extensions/network
       '@perawallet/wallet-extension-platform':
         specifier: workspace:*
         version: link:../../extensions/platform
@@ -578,55 +575,6 @@ importers:
         specifier: 'catalog:'
         version: 4.0.16(@types/node@25.0.3)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.31.1)(msw@2.12.7(@types/node@25.0.3)(typescript@5.9.3))(terser@5.44.1)(yaml@2.8.2)
 
-  extensions/network:
-    dependencies:
-      '@babel/runtime':
-        specifier: 'catalog:'
-        version: 7.28.4
-      '@perawallet/wallet-core-config':
-        specifier: workspace:*
-        version: link:../../packages/config
-      '@perawallet/wallet-core-shared':
-        specifier: workspace:*
-        version: link:../../packages/shared
-      react:
-        specifier: 'catalog:'
-        version: 19.1.0
-      zustand:
-        specifier: 'catalog:'
-        version: 5.0.9(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
-    devDependencies:
-      '@perawallet/wallet-core-devtools':
-        specifier: workspace:*
-        version: link:../../packages/devtools
-      '@testing-library/react':
-        specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
-      '@types/react':
-        specifier: 'catalog:'
-        version: 19.1.17
-      globals:
-        specifier: 'catalog:'
-        version: 15.15.0
-      react-dom:
-        specifier: 'catalog:'
-        version: 19.1.0(react@19.1.0)
-      typescript:
-        specifier: 'catalog:'
-        version: 5.9.3
-      typescript-eslint:
-        specifier: 'catalog:'
-        version: 8.48.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
-      vite:
-        specifier: 'catalog:'
-        version: 7.3.0(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.44.1)(yaml@2.8.2)
-      vite-plugin-dts:
-        specifier: ^4.5.4
-        version: 4.5.4(@types/node@25.0.3)(rollup@4.54.0)(typescript@5.9.3)(vite@7.3.0(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.44.1)(yaml@2.8.2))
-      vitest:
-        specifier: 'catalog:'
-        version: 4.0.16(@types/node@25.0.3)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.31.1)(msw@2.12.7(@types/node@25.0.3)(typescript@5.9.3))(terser@5.44.1)(yaml@2.8.2)
-
   extensions/platform:
     dependencies:
       '@algorandfoundation/wallet-provider':
@@ -635,15 +583,15 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.28.4
+      '@perawallet/wallet-core-blockchain':
+        specifier: workspace:*
+        version: link:../../packages/blockchain
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../../packages/config
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@perawallet/wallet-extension-network':
-        specifier: workspace:*
-        version: link:../network
       '@perawallet/wallet-extension-platform-resources':
         specifier: workspace:*
         version: link:../platform-resources
@@ -702,15 +650,15 @@ importers:
       '@notifee/react-native':
         specifier: ^9.1.8
         version: 9.1.8(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))
+      '@perawallet/wallet-core-blockchain':
+        specifier: workspace:*
+        version: link:../../packages/blockchain
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../../packages/config
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../../packages/shared
-      '@perawallet/wallet-extension-network':
-        specifier: workspace:*
-        version: link:../network
       '@perawallet/wallet-extension-platform':
         specifier: workspace:*
         version: link:../platform
@@ -884,9 +832,6 @@ importers:
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
-      '@perawallet/wallet-extension-network':
-        specifier: workspace:*
-        version: link:../../extensions/network
       '@perawallet/wallet-extension-platform':
         specifier: workspace:*
         version: link:../../extensions/platform
@@ -957,9 +902,6 @@ importers:
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
-      '@perawallet/wallet-extension-network':
-        specifier: workspace:*
-        version: link:../../extensions/network
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.90.14(react@19.1.0)
@@ -1018,6 +960,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.28.4
+      '@perawallet/wallet-core-blockchain':
+        specifier: workspace:*
+        version: link:../blockchain
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
@@ -1027,9 +972,6 @@ importers:
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
-      '@perawallet/wallet-extension-network':
-        specifier: workspace:*
-        version: link:../../extensions/network
       '@perawallet/wallet-extension-platform':
         specifier: workspace:*
         version: link:../../extensions/platform
@@ -1088,21 +1030,12 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.28.4
-      '@perawallet/wallet-core-assets':
-        specifier: workspace:*
-        version: link:../assets
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
-      '@perawallet/wallet-extension-network':
-        specifier: workspace:*
-        version: link:../../extensions/network
-      '@perawallet/wallet-extension-platform':
-        specifier: workspace:*
-        version: link:../../extensions/platform
       '@perawallet/wallet-extension-platform-resources':
         specifier: workspace:*
         version: link:../../extensions/platform-resources
@@ -1277,12 +1210,12 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.28.4
+      '@perawallet/wallet-core-blockchain':
+        specifier: workspace:*
+        version: link:../blockchain
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
-      '@perawallet/wallet-extension-network':
-        specifier: workspace:*
-        version: link:../../extensions/network
       '@perawallet/wallet-extension-platform':
         specifier: workspace:*
         version: link:../../extensions/platform
@@ -1432,15 +1365,15 @@ importers:
       '@perawallet/wallet-core-accounts':
         specifier: workspace:*
         version: link:../accounts
+      '@perawallet/wallet-core-blockchain':
+        specifier: workspace:*
+        version: link:../blockchain
       '@perawallet/wallet-core-config':
         specifier: workspace:*
         version: link:../config
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
-      '@perawallet/wallet-extension-network':
-        specifier: workspace:*
-        version: link:../../extensions/network
       '@perawallet/wallet-extension-platform':
         specifier: workspace:*
         version: link:../../extensions/platform
@@ -1499,12 +1432,12 @@ importers:
       '@perawallet/wallet-core-accounts':
         specifier: workspace:*
         version: link:../accounts
+      '@perawallet/wallet-core-blockchain':
+        specifier: workspace:*
+        version: link:../blockchain
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
-      '@perawallet/wallet-extension-network':
-        specifier: workspace:*
-        version: link:../../extensions/network
       '@perawallet/wallet-extension-platform':
         specifier: workspace:*
         version: link:../../extensions/platform
@@ -1557,12 +1490,12 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.28.4
+      '@perawallet/wallet-core-blockchain':
+        specifier: workspace:*
+        version: link:../blockchain
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
-      '@perawallet/wallet-extension-network':
-        specifier: workspace:*
-        version: link:../../extensions/network
       '@perawallet/wallet-extension-platform':
         specifier: workspace:*
         version: link:../../extensions/platform
@@ -1922,9 +1855,6 @@ importers:
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
-      '@perawallet/wallet-extension-network':
-        specifier: workspace:*
-        version: link:../../extensions/network
       '@perawallet/wallet-extension-platform':
         specifier: workspace:*
         version: link:../../extensions/platform
@@ -2117,9 +2047,6 @@ importers:
       '@perawallet/wallet-core-signing':
         specifier: workspace:*
         version: link:../signing
-      '@perawallet/wallet-extension-network':
-        specifier: workspace:*
-        version: link:../../extensions/network
       '@perawallet/wallet-extension-platform':
         specifier: workspace:*
         version: link:../../extensions/platform

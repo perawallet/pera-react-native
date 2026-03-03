@@ -1749,6 +1749,19 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         return new RegExp('^[0-9a-zA-Z]{58}$').test(address)
     }),
     encodeAlgorandAddress: vi.fn(() => 'MOCKADDRESS'),
+    useNetwork: vi.fn(() => ({
+        network: 'mainnet',
+    })),
+    useNetworkStore: Object.assign(
+        vi.fn(() => 'mainnet'),
+        {
+            getState: vi.fn(() => ({
+                network: 'mainnet',
+                setNetwork: vi.fn(),
+                resetState: vi.fn(),
+            })),
+        },
+    ),
 }))
 
 // Mock @perawallet/wallet-extension-platform
@@ -1784,13 +1797,6 @@ vi.mock('@perawallet/wallet-extension-platform', () => ({
         isFetchingNextPage: false,
         isRefetching: false,
         refetch: vi.fn(),
-    })),
-}))
-
-// Mock @perawallet/wallet-extension-network
-vi.mock('@perawallet/wallet-extension-network', () => ({
-    useNetwork: vi.fn(() => ({
-        network: 'mainnet',
     })),
 }))
 

@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { useNetwork } from '@perawallet/wallet-extension-network'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
 import {
     useAlgorandClient,
