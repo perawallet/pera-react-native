@@ -11,20 +11,16 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getFontFamily } from '@theme/typography'
+import type { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-    },
-    contentContainer: {
-        flex: 1,
-        padding: theme.spacing.md,
-    },
-    rawTransactionText: {
-        fontFamily: getFontFamily(400),
-    },
-    scrollview: {
-        paddingHorizontal: theme.spacing.xl,
-    },
-}))
+export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
+    return {
+        contentContainer: {
+            flex: 1,
+            borderTopStartRadius: theme.spacing.xl,
+            borderTopEndRadius: theme.spacing.xl,
+            paddingBottom: insets.bottom,
+            overflow: 'hidden',
+        },
+    }
+})

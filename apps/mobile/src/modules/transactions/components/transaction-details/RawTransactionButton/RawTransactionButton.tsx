@@ -15,9 +15,11 @@ import {
     PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import {
+    bottomSheetNotifier,
     PWBottomSheet,
     PWButton,
     PWIcon,
+    PWScrollView,
     PWText,
     PWToolbar,
 } from '@components/core'
@@ -44,7 +46,7 @@ export const RawTransactionButton = ({
     }, [transaction.rawTransaction])
 
     const copyText = () => {
-        copyToClipboard(rawText)
+        copyToClipboard(rawText, bottomSheetNotifier.current ?? undefined)
     }
 
     if (!transaction.rawTransaction || !!transaction.id) {
@@ -61,7 +63,11 @@ export const RawTransactionButton = ({
                 paddingStyle='dense'
                 rounded
             />
-            <PWBottomSheet isVisible={modalState.isOpen}>
+            <PWBottomSheet
+                containerStyle={styles.contentContainer}
+                isVisible={modalState.isOpen}
+                scrollEnabled={false}
+            >
                 <PWToolbar
                     left={
                         <PWIcon
@@ -83,12 +89,17 @@ export const RawTransactionButton = ({
                         />
                     }
                 />
-                <PWText
-                    variant='body'
-                    style={styles.rawTransactionText}
+                <PWScrollView
+                    contentContainerStyle={styles.scrollview}
+                    scrollEnabled
                 >
-                    {rawText}
-                </PWText>
+                    <PWText
+                        variant='body'
+                        style={styles.rawTransactionText}
+                    >
+                        {rawText}
+                    </PWText>
+                </PWScrollView>
             </PWBottomSheet>
         </>
     )

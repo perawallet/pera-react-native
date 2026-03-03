@@ -13,6 +13,7 @@
 import { FullScreenLayout } from '@layouts/FullScreenLayout'
 import { HeaderedLayout } from '@layouts/HeaderedLayout'
 import { SafeAreaLayout } from '@layouts/SafeAreaLayout'
+import { BottomSheetLayout } from '@layouts/BottomSheetLayout'
 
 const headeredLayout = ({ children }: { children: React.ReactNode }) => {
     return <HeaderedLayout>{children}</HeaderedLayout>
@@ -20,6 +21,10 @@ const headeredLayout = ({ children }: { children: React.ReactNode }) => {
 
 const safeAreaLayout = ({ children }: { children: React.ReactNode }) => {
     return <SafeAreaLayout>{children}</SafeAreaLayout>
+}
+
+const bottomSheetLayout = ({ children }: { children: React.ReactNode }) => {
+    return <BottomSheetLayout>{children}</BottomSheetLayout>
 }
 
 const safeAreaLayoutWithTabBar = ({
@@ -37,9 +42,11 @@ const fullScreenLayout = ({ children }: { children: React.ReactNode }) => {
 export {
     headeredLayout,
     safeAreaLayout,
+    bottomSheetLayout,
     safeAreaLayoutWithTabBar,
     fullScreenLayout,
     FullScreenLayout,
     HeaderedLayout,
     SafeAreaLayout,
+    BottomSheetLayout,
 }

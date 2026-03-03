@@ -14,19 +14,25 @@ import { useToast } from './useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import * as Clipboard from 'expo-clipboard'
 import { useCallback } from 'react'
+import type { NotifierRoot } from 'react-native-notifier'
 
 export const useClipboard = () => {
     const { showToast } = useToast()
     const { t } = useLanguage()
 
     const copyToClipboard = useCallback(
-        async (text: string) => {
+        async (text: string, notifier?: NotifierRoot) => {
             await Clipboard.setStringAsync(text)
-            showToast({
-                title: t('common.copied_to_clipboard.title'),
-                body: t('common.copied_to_clipboard.body'),
-                type: 'success',
-            })
+            showToast(
+                {
+                    title: t('common.copied_to_clipboard.title'),
+                    body: t('common.copied_to_clipboard.body'),
+                    type: 'success',
+                },
+                {
+                    notifier: notifier,
+                },
+            )
         },
         [showToast, t],
     )
