@@ -10,21 +10,4 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi } from 'vitest'
-import { config, configSchema, getConfig } from '../main'
-
-describe('config/main', () => {
-    test('config object is frozen', () => {
-        expect(Object.isFrozen(config)).toBe(true)
-    })
-
-    test('config matches schema', () => {
-        const result = configSchema.safeParse(config)
-        expect(result.success).toBe(true)
-    })
-
-    test('getConfig returns a valid config', () => {
-        const result = getConfig()
-        expect(configSchema.safeParse(result).success).toBe(true)
-    })
-})
+export { SelectHDWalletScreen } from './SelectHDWalletScreen'

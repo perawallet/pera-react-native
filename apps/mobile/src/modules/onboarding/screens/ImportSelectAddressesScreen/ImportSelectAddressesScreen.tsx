@@ -140,6 +140,7 @@ export const ImportSelectAddressesScreen = () => {
                     data={accounts}
                     renderItem={renderItem}
                     keyExtractor={item => item.address}
+                    extraData={selectedAddresses}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
                 />

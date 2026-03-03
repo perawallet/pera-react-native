@@ -158,10 +158,14 @@ platform :ios do
       binary_path: "./ios/Pods/FirebaseCrashlytics/upload-symbols"
     )
 
-      upload_to_testflight(
-        skip_waiting_for_build_processing: true,
-        ipa: "./build/ios/#{scheme}.ipa"
-      )
+    # Build changelog for TestFlight (unescape literal \n to real newlines)
+    changelog = unescape_changelog(ENV["RELEASE_NOTES"] || ENV["CHANGELOG"] || "Build #{ENV['BUILD_NUMBER'] || 'dev'}")
+
+    upload_to_testflight(
+      skip_waiting_for_build_processing: true,
+      ipa: "./build/ios/#{scheme}.ipa",
+      changelog: changelog
+    )
   end
 
   desc "Increment build number"
@@ -250,15 +254,28 @@ platform :android do
 
     package_name = flavor == "production" ? "com.algorand.perarn" : "com.algorand.perarn.staging"
 
-    upload_to_play_store(
-      track: "internal",
-      package_name: package_name,
-      aab: android_artifact_path(flavor, "aab"),
-      version_code: ENV["BUILD_NUMBER"],
-      skip_upload_metadata: true,
-      skip_upload_images: true,
-      skip_upload_screenshots: true,
-      json_key: "config/api-key.json"
+    # upload_to_play_store(
+    #   track: "internal",
+    #   package_name: package_name,
+    #   aab: android_artifact_path(flavor, "aab"),
+    #   version_code: ENV["BUILD_NUMBER"],
+    #   skip_upload_metadata: true,
+    #   skip_upload_images: true,
+    #   skip_upload_screenshots: true,
+    #   json_key: "config/api-key.json"
+    # )
+
+    # We are deploying production builds to Firebase for the purpose of testing also
+    # Unescape literal \n to real newlines for Firebase release notes
+    notes = unescape_changelog(ENV["RELEASE_NOTES"] || "Build #{ENV['BUILD_NUMBER'] || 'dev'}")
+
+    firebase_app_distribution(
+      app: ENV["FIREBASE_APP_ID_ANDROID"]&.strip,
+      groups: (ENV["FIREBASE_TESTER_GROUPS"] || "qa-testers").strip,
+      release_notes: notes,
+      android_artifact_type: "APK",
+      android_artifact_path: android_artifact_path(flavor, "apk"),
+      service_credentials_file: "config/firebase-service-account.json"
     )
   end
 
@@ -274,7 +291,8 @@ platform :android do
       artifact_type: "apk"
     )
 
-    notes = (ENV["RELEASE_NOTES"] || "Build #{ENV['BUILD_NUMBER'] || 'dev'}").strip
+    # Unescape literal \n to real newlines for Firebase release notes
+    notes = unescape_changelog(ENV["RELEASE_NOTES"] || "Build #{ENV['BUILD_NUMBER'] || 'dev'}")
 
     firebase_app_distribution(
       app: ENV["FIREBASE_APP_ID_ANDROID"]&.strip,
@@ -309,4 +327,11 @@ end
 # Check if running in CI environment
 def is_ci
   ENV['CI'] == 'true' || ENV['GITHUB_ACTIONS'] == 'true'
+end
+
+# Unescape literal \n sequences to real newlines for upload changelogs.
+# The changelog is double-escaped for Slack JSON compatibility, but
+# Firebase and TestFlight need real newlines.
+def unescape_changelog(text)
+  text.strip.gsub('\\n', "\n")
 end

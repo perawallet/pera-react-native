@@ -37,11 +37,13 @@ export type OnboardingStackParamList = {
     }
     SearchAccounts: {
         account: WalletAccount
+        createIfEmpty?: boolean
     }
 }
 
 export type AddAccountStackParamList = {
     AddAccountHome: undefined
+    SelectHDWallet: undefined
     WatchAccount: undefined
     NameAccount:
         | {
@@ -62,5 +64,6 @@ export type AddAccountStackParamList = {
     }
     SearchAccounts: {
         account: WalletAccount
+        createIfEmpty?: boolean
     }
 }

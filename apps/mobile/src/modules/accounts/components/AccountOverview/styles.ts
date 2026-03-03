@@ -117,5 +117,8 @@ export const useStyles = makeStyles(theme => {
             color: theme.colors.textGray,
             textAlign: 'center',
         },
+        headerContainer: {
+            minHeight: 220, // Fixed value to prevent "bouncing" on load
+        },
     }
 })

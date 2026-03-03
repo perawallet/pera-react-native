@@ -19,6 +19,9 @@ import { RouteProp, useRoute } from '@react-navigation/native'
 import {
     useAccountDiscovery,
     useSelectedAccountAddress,
+    useCreateAccount,
+    useAllAccounts,
+    isHDWalletAccount,
     AccountTypes,
     DerivationTypes,
 } from '@perawallet/wallet-core-accounts'
@@ -38,7 +41,7 @@ const FULL_OPACITY = 1
 
 export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const {
-        params: { account },
+        params: { account, createIfEmpty },
     } = useRoute<RouteProp<OnboardingStackParamList, 'SearchAccounts'>>()
     const { t } = useLanguage()
     const { showToast } = useToast()
@@ -46,6 +49,8 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
     const { discoverAccounts, discoverRekeyedAccounts } = useAccountDiscovery()
     const { exitAccountFlow } = useExitAccountFlow()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
+    const { createHdWalletAccount } = useCreateAccount()
+    const allAccounts = useAllAccounts()
 
     const walletKeyId = account.keyPairId
 
@@ -104,8 +109,31 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
 
                 // Only the master account was found, skip the selection screen
                 if (discoveredAccounts.length === 1) {
-                    setSelectedAccountAddress(account.address)
-                    exitAccountFlow()
+                    if (createIfEmpty) {
+                        const walletAccounts = allAccounts
+                            .filter(isHDWalletAccount)
+                            .filter(a => a.keyPairId === account.keyPairId)
+                        const nextKeyIndex =
+                            walletAccounts.length > 0
+                                ? Math.max(
+                                      ...walletAccounts.map(
+                                          a => a.hdWalletDetails.keyIndex,
+                                      ),
+                                  ) + 1
+                                : 0
+
+                        const newAccount = await createHdWalletAccount({
+                            walletId: account.keyPairId,
+                            account: 0,
+                            keyIndex: nextKeyIndex,
+                        })
+                        navigation.replace('NameAccount', {
+                            account: newAccount,
+                        })
+                    } else {
+                        setSelectedAccountAddress(account.address)
+                        exitAccountFlow()
+                    }
                 } else {
                     navigation.replace('ImportSelectAddresses', {
                         accounts: discoveredAccounts,
@@ -149,6 +177,9 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
         showToast,
         exitAccountFlow,
         setSelectedAccountAddress,
+        createIfEmpty,
+        createHdWalletAccount,
+        allAccounts,
     ])
 
     useEffect(() => {

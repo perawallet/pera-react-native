@@ -121,17 +121,21 @@ describe('useImportSelectAddressesScreen', () => {
         vi.useRealTimers()
     })
 
-    it('initializes with all new accounts selected', () => {
+    it('initializes with no accounts selected', () => {
         const { result } = renderHook(() => useImportSelectAddressesScreen())
 
-        expect(result.current.selectedAddresses.size).toBe(2)
-        expect(result.current.selectedAddresses.has('ADDR1')).toBe(true)
-        expect(result.current.selectedAddresses.has('ADDR2')).toBe(true)
-        expect(result.current.canContinue).toBe(true)
+        expect(result.current.selectedAddresses.size).toBe(0)
+        expect(result.current.isAllSelected).toBe(false)
+        expect(result.current.canContinue).toBe(false)
     })
 
     it('handleContinue selects the first new account after adding', async () => {
         const { result } = renderHook(() => useImportSelectAddressesScreen())
+
+        // Select all accounts first since they start unselected
+        act(() => {
+            result.current.toggleSelectAll()
+        })
 
         act(() => {
             result.current.handleContinue()
@@ -156,7 +160,7 @@ describe('useImportSelectAddressesScreen', () => {
             result.current.toggleSelection('ADDR1')
         })
 
-        expect(result.current.selectedAddresses.has('ADDR1')).toBe(false)
-        expect(result.current.selectedAddresses.has('ADDR2')).toBe(true)
+        expect(result.current.selectedAddresses.has('ADDR1')).toBe(true)
+        expect(result.current.selectedAddresses.has('ADDR2')).toBe(false)
     })
 })
