@@ -15,7 +15,7 @@ import { useAlgorandClient } from './useAlgorandClient'
 import { getTransactionDetailQueryKey } from './querykeys'
 import { mapIndexerTxToDisplayableTransaction } from '../utils/transactions'
 import type { PeraDisplayableTransaction } from '../models'
-import { useNetwork } from '@perawallet/wallet-extension-platform'
+import { useNetwork } from '@perawallet/wallet-extension-network'
 
 type UseTransactionDetailQueryParams = {
     transactionId: string

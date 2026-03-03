@@ -75,12 +75,15 @@ vi.mock('@perawallet/wallet-extension-platform', async importOriginal => {
 
     return {
         ...actual,
-        useNetwork: mocks.useNetwork,
         useRemoteConfigService: () => ({
             getStringValue: mocks.getStringValue,
         }),
     }
 })
+
+vi.mock('@perawallet/wallet-extension-network', () => ({
+    useNetwork: mocks.useNetwork,
+}))
 
 describe('useStakingProjectsQuery', () => {
     let queryClient: QueryClient

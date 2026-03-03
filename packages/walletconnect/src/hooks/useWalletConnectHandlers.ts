@@ -35,7 +35,7 @@ import {
     type TransactionSignRequest,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
-import { useNetwork } from '@perawallet/wallet-extension-platform'
+import { useNetwork } from '@perawallet/wallet-extension-network'
 import WalletConnect from '@walletconnect/client'
 import { useCallback } from 'react'
 import {

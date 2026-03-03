@@ -11,7 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import { useDeviceID, useNetwork } from '@perawallet/wallet-extension-platform'
+import { useDeviceID } from '@perawallet/wallet-extension-platform'
+import { useNetwork } from '@perawallet/wallet-extension-network'
 import { useInfiniteQuery, type InfiniteData } from '@tanstack/react-query'
 import {
     fetchNotificationList,

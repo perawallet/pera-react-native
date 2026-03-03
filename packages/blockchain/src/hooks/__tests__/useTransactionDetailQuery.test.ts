@@ -25,16 +25,9 @@ const mocks = vi.hoisted(() => ({
     useNetwork: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-extension-platform', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-extension-platform')
-        >()
-    return {
-        ...actual,
-        useNetwork: mocks.useNetwork,
-    }
-})
+vi.mock('@perawallet/wallet-extension-network', () => ({
+    useNetwork: mocks.useNetwork,
+}))
 
 describe('useTransactionDetailQuery', () => {
     let queryClient: QueryClient

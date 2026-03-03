@@ -45,7 +45,6 @@ describe('device/store', () => {
         expect(result.current.deviceIDs).toBeInstanceOf(Map)
         expect(result.current.deviceIDs.size).toBe(0)
         expect(result.current.pushToken).toBeNull()
-        expect(result.current.network).toBe('mainnet')
     })
 
     test('should set FCM token', async () => {
@@ -100,22 +99,6 @@ describe('device/store', () => {
         expect(result.current.deviceIDs.get('mainnet')).toBe('device-2')
     })
 
-    test('should set network', async () => {
-        const platform = registerTestPlatform()
-
-        const { initDeviceStore, useDeviceStore } = await import('../index')
-
-        initDeviceStore(platform.keyValueStorage)
-
-        const { result } = renderHook(() => useDeviceStore())
-
-        act(() => {
-            result.current.setNetwork('testnet')
-        })
-
-        expect(result.current.network).toBe('testnet')
-    })
-
     test('should serialize deviceIDs as a plain object via partialize', async () => {
         const storage = new MemoryKeyValueStorage()
         registerTestPlatform({ keyValueStorage: storage })
@@ -146,7 +129,6 @@ describe('device/store', () => {
                         testnet: 'persisted-id-456',
                     },
                     pushToken: 'token-abc',
-                    network: 'mainnet',
                 },
                 version: 1,
             }),

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useNetwork } from '@perawallet/wallet-extension-platform'
+import { useNetwork } from '@perawallet/wallet-extension-network'
 import { useMemo } from 'react'
 import { config } from '@perawallet/wallet-core-config'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'

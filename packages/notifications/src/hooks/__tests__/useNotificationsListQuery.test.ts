@@ -28,9 +28,12 @@ vi.mock('@perawallet/wallet-extension-platform', async importOriginal => {
     return {
         ...actual,
         useDeviceID: vi.fn().mockReturnValue('test-device-id'),
-        useNetwork: vi.fn().mockReturnValue({ network: 'test-network' }),
     }
 })
+
+vi.mock('@perawallet/wallet-extension-network', () => ({
+    useNetwork: vi.fn().mockReturnValue({ network: 'test-network' }),
+}))
 
 describe('useNotificationsListQuery', () => {
     it('should fetch notifications list and map response', async () => {

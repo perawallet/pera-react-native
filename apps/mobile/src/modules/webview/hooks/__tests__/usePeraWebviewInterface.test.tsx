@@ -62,6 +62,9 @@ vi.mock('@perawallet/wallet-extension-platform', () => ({
         getDeviceCountry: vi.fn(() => 'US'),
         getDeviceLocale: vi.fn(() => 'en-US'),
     })),
+}))
+
+vi.mock('@perawallet/wallet-extension-network', () => ({
     useNetwork: vi.fn(() => ({
         network: 'mainnet',
     })),

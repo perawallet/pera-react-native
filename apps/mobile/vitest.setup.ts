@@ -1774,9 +1774,6 @@ vi.mock('@perawallet/wallet-extension-platform', () => ({
         getDeviceModel: vi.fn(() => 'iPhone'),
         getUserAgent: vi.fn(() => 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)'),
     })),
-    useNetwork: vi.fn(() => ({
-        network: 'mainnet',
-    })),
     useAnalyticsService: vi.fn(() => ({
         logEvent: vi.fn(),
     })),
@@ -1799,6 +1796,13 @@ vi.mock('@perawallet/wallet-extension-platform', () => ({
         isFetchingNextPage: false,
         isRefetching: false,
         refetch: vi.fn(),
+    })),
+}))
+
+// Mock @perawallet/wallet-extension-network
+vi.mock('@perawallet/wallet-extension-network', () => ({
+    useNetwork: vi.fn(() => ({
+        network: 'mainnet',
     })),
 }))
 

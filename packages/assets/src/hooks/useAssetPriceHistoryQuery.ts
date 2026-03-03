@@ -22,7 +22,7 @@ import type {
 } from '../api'
 import { useCallback } from 'react'
 import { getAssetPriceHistoryQueryKey } from './querykeys'
-import { useNetwork } from '@perawallet/wallet-extension-platform'
+import { useNetwork } from '@perawallet/wallet-extension-network'
 
 export const useAssetPriceHistoryQuery = (
     assetID: string,

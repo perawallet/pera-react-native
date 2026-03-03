@@ -35,9 +35,12 @@ vi.mock('@perawallet/wallet-extension-platform', async importOriginal => {
     return {
         ...actual,
         useDeviceID: vi.fn().mockReturnValue('test-device-id'),
-        useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
     }
 })
+
+vi.mock('@perawallet/wallet-extension-network', () => ({
+    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
+}))
 
 import { AssetNotificationButton } from '../AssetNotificationButton'
 

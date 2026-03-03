@@ -13,9 +13,9 @@
 import {
     useDeviceID,
     useDeviceInfoService,
-    useNetwork,
     useUpdateDeviceMutation,
 } from '@perawallet/wallet-extension-platform'
+import { useNetwork } from '@perawallet/wallet-extension-network'
 import { useAccountsStore } from '../store'
 import { AccountTypes, WalletAccount } from '../models'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'

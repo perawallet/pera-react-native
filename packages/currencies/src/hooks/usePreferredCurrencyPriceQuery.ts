@@ -11,7 +11,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { useNetwork } from '@perawallet/wallet-extension-platform'
+import { useNetwork } from '@perawallet/wallet-extension-network'
 import { fetchCurrency } from '../api/currencies'
 import { getPreferredCurrencyPriceQueryKey } from './querykeys'
 

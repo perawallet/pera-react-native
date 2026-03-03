@@ -16,9 +16,9 @@ import { Decimal } from 'decimal.js'
 import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import {
     RemoteConfigKeys,
-    useNetwork,
     useRemoteConfigService,
 } from '@perawallet/wallet-extension-platform'
+import { useNetwork } from '@perawallet/wallet-extension-network'
 import type {
     StakingProject,
     StakingProjectInfo,

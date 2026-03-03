@@ -21,7 +21,7 @@ vi.mock('../endpoints', () => ({
     createDevice: vi.fn(),
 }))
 
-vi.mock('../useNetwork', () => ({
+vi.mock('@perawallet/wallet-extension-network', () => ({
     useNetwork: vi.fn().mockReturnValue({ network: 'test-network' }),
 }))
 

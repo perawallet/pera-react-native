@@ -10,21 +10,7 @@
  limitations under the License
  */
 
-import { useDeviceStore } from '../store'
+export const name = '@perawallet/wallet-extension-network'
 
-import {
-    getNetworkConfig,
-    isMainnet as isMainnetHelper,
-    isTestnet as isTestnetHelper,
-} from '@perawallet/wallet-core-config'
-
-export const useNetwork = () => {
-    const network = useDeviceStore(state => state.network)
-    const setNetwork = useDeviceStore(state => state.setNetwork)
-
-    const isMainnet = isMainnetHelper(network)
-    const isTestnet = isTestnetHelper(network)
-    const networkConfig = getNetworkConfig(network)
-
-    return { network, setNetwork, isMainnet, isTestnet, networkConfig }
-}
+export * from './hooks'
+export * from './store'

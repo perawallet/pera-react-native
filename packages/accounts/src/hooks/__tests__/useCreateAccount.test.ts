@@ -84,13 +84,16 @@ vi.mock('@perawallet/wallet-extension-platform', async () => {
         useUpdateDeviceMutation: vi.fn(() => ({
             mutateAsync: vi.fn(async () => ({})),
         })),
-        useNetwork: vi.fn(() => ({ network: 'mainnet' })),
         useDeviceID: vi.fn(() => 'device-id'),
         useDeviceInfoService: vi.fn(() => ({
             getDevicePlatform: vi.fn(() => 'ios'),
         })),
     }
 })
+
+vi.mock('@perawallet/wallet-extension-network', () => ({
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
+}))
 
 vi.mock('../../store', async () => {
     const actual =

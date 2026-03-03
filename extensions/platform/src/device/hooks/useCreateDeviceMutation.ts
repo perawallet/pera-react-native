@@ -13,7 +13,7 @@
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
 import type { DeviceRequest, DeviceResponse } from '../models'
 import { createDevice } from './endpoints'
-import { useNetwork } from './useNetwork'
+import { useNetwork } from '@perawallet/wallet-extension-network'
 
 export const useCreateDeviceMutation = (
     options?: UseMutationOptions<

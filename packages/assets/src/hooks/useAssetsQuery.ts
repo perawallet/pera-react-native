@@ -22,7 +22,7 @@ import { ALGO_ASSET_ID, type PeraAsset } from '../models'
 import { DEFAULT_PAGE_SIZE, partition } from '@perawallet/wallet-core-shared'
 import { getAlgoQueryKey, getAssetsQueryKey } from './querykeys'
 import { AssetsResponse, PublicAssetResponse } from '../api/assets/schema'
-import { useNetwork } from '@perawallet/wallet-extension-platform'
+import { useNetwork } from '@perawallet/wallet-extension-network'
 
 type UseAssetsQueryResult = {
     data: Map<string, PeraAsset>

@@ -42,6 +42,13 @@ vi.mock('../useDeviceInfoService', () => ({
     useDeviceInfoService: () => mockDeviceInfoService,
 }))
 
+vi.mock('@perawallet/wallet-extension-network', () => ({
+    useNetwork: vi.fn().mockReturnValue({
+        network: 'mainnet',
+        setNetwork: vi.fn(),
+    }),
+}))
+
 describe('services/device/hooks', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -113,9 +120,8 @@ describe('services/device/hooks', () => {
 
         const { result: store } = renderHook(() => useDeviceStore())
 
-        // Ensure mainnet network and no device ID
+        // Set device state
         act(() => {
-            store.current.setNetwork('mainnet')
             store.current.setDeviceID('mainnet', null)
             store.current.setPushToken('test-fcm-token')
         })
@@ -153,9 +159,8 @@ describe('services/device/hooks', () => {
 
         const { result: store } = renderHook(() => useDeviceStore())
 
-        // Set mainnet network and existing device ID
+        // Set existing device ID
         act(() => {
-            store.current.setNetwork('mainnet')
             store.current.setDeviceID('mainnet', 'existing-id')
             store.current.setPushToken('test-fcm-token')
         })

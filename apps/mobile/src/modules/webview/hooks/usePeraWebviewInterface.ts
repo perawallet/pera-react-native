@@ -19,8 +19,8 @@ import {
     useAnalyticsService,
     useDeviceID,
     useDeviceInfoService,
-    useNetwork,
 } from '@perawallet/wallet-extension-platform'
+import { useNetwork } from '@perawallet/wallet-extension-network'
 import {
     getAccountDisplayName,
     useAllAccounts,

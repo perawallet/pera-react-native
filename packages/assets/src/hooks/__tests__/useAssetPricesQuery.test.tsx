@@ -34,16 +34,9 @@ vi.mock('../../api', async importOriginal => {
     }
 })
 
-vi.mock('@perawallet/wallet-extension-platform', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-extension-platform')
-        >()
-    return {
-        ...actual,
-        useNetwork: mocks.useNetwork,
-    }
-})
+vi.mock('@perawallet/wallet-extension-network', () => ({
+    useNetwork: mocks.useNetwork,
+}))
 
 describe('useAssetPricesQuery', () => {
     let queryClient: QueryClient

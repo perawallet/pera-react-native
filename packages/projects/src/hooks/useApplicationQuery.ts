@@ -14,7 +14,7 @@ import { useQuery, UseQueryResult } from '@tanstack/react-query'
 import { fetchApplication } from '../api/applications'
 import { projectQueryKeys } from './querykeys'
 import type { PeraApplication } from '../models/types'
-import { useNetwork } from '@perawallet/wallet-extension-platform'
+import { useNetwork } from '@perawallet/wallet-extension-network'
 
 export type UseApplicationQueryParams = {
     applicationId: string

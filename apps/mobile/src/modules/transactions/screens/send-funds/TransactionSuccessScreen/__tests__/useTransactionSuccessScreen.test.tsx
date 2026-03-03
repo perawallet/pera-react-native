@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useTransactionSuccessScreen } from '../useTransactionSuccessScreen'
 import { useSendFunds } from '@modules/transactions/hooks'
-import { useNetwork } from '@perawallet/wallet-extension-platform'
+import { useNetwork } from '@perawallet/wallet-extension-network'
 import { useWebView } from '@modules/webview/hooks'
 
 const mockOnFinished = vi.fn()
@@ -57,7 +57,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     ),
 }))
 
-vi.mock('@perawallet/wallet-extension-platform', () => ({
+vi.mock('@perawallet/wallet-extension-network', () => ({
     useNetwork: vi.fn(),
 }))
 

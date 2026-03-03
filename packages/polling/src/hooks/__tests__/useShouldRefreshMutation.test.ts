@@ -20,15 +20,9 @@ vi.mock('../endpoints', () => ({
 }))
 
 const mockUseNetwork = vi.fn().mockReturnValue({ network: 'mainnet' })
-vi.mock('@perawallet/wallet-extension-platform', async () => {
-    const actual = await vi.importActual<any>(
-        '@perawallet/wallet-extension-platform',
-    )
-    return {
-        ...actual,
-        useNetwork: () => mockUseNetwork(),
-    }
-})
+vi.mock('@perawallet/wallet-extension-network', () => ({
+    useNetwork: () => mockUseNetwork(),
+}))
 
 const mockUseAllAccounts = vi.fn().mockReturnValue([])
 vi.mock('@perawallet/wallet-core-accounts', () => ({

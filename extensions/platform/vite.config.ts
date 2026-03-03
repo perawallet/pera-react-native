@@ -43,6 +43,7 @@ export default defineConfig({
                 '@algorandfoundation/wallet-provider',
                 '@perawallet/wallet-core-config',
                 '@perawallet/wallet-core-shared',
+                '@perawallet/wallet-extension-network',
                 'zod',
             ],
         },

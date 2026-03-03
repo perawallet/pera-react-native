@@ -16,7 +16,7 @@ import { useUpdateDeviceMutation } from './useUpdateDeviceMutation'
 import { useDeviceStore } from '../store'
 import { useDeviceInfoService } from './useDeviceInfoService'
 import { type Network } from '@perawallet/wallet-core-shared'
-import { useNetwork } from './useNetwork'
+import { useNetwork } from '@perawallet/wallet-extension-network'
 
 export const useDeviceID = (network: Network) => {
     const deviceIDs = useDeviceStore(state => state.deviceIDs)

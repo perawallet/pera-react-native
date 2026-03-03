@@ -12,7 +12,6 @@
 
 import { vi, describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { registerTestPlatform } from '../../../test-utils'
 
 vi.mock('@perawallet/wallet-core-config', () => ({
     config: {
@@ -34,18 +33,16 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     })),
 }))
 
-describe('device/hooks/useNetwork', () => {
+describe('hooks/useNetwork', () => {
     beforeEach(() => {
         vi.resetModules()
     })
 
     test('should return current network and setter', async () => {
-        const platform = registerTestPlatform()
-
-        const { initDeviceStore } = await import('../../store')
+        const { initNetworkStore } = await import('../../store')
         const { useNetwork } = await import('../useNetwork')
 
-        initDeviceStore(platform.keyValueStorage)
+        initNetworkStore()
 
         const { result } = renderHook(() => useNetwork())
 
@@ -54,12 +51,10 @@ describe('device/hooks/useNetwork', () => {
     })
 
     test('should update network', async () => {
-        const platform = registerTestPlatform()
-
-        const { initDeviceStore } = await import('../../store')
+        const { initNetworkStore } = await import('../../store')
         const { useNetwork } = await import('../useNetwork')
 
-        initDeviceStore(platform.keyValueStorage)
+        initNetworkStore()
 
         const { result } = renderHook(() => useNetwork())
 

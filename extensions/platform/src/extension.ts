@@ -13,6 +13,7 @@
 import type { PlatformServices } from './models'
 import { initDeviceStore } from './device/store'
 import { initRemoteConfigStore } from './remote-config/store'
+import { initNetworkStore } from '@perawallet/wallet-extension-network'
 
 export interface PlatformExtensionOptions {
     platform: PlatformServices
@@ -32,6 +33,7 @@ export const WithPlatformServicesExtension = (
     const { platform } = options
 
     // Initialize stores synchronously during provider construction
+    initNetworkStore()
     initDeviceStore(platform.keyValueStorage)
     initRemoteConfigStore(platform.keyValueStorage)
 

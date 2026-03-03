@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useNetwork } from '@perawallet/wallet-extension-platform'
+import { useNetwork } from '@perawallet/wallet-extension-network'
 import { sendShouldRefreshRequest } from './endpoints'
 import { useMutation } from '@tanstack/react-query'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
