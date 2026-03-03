@@ -10,14 +10,16 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-extension-platform'
+export const name = '@perawallet/wallet-extension-platform-react-native'
 
-export * from './analytics'
-export * from './biometrics'
-export * from './device'
-export * from './push-notifications'
-export * from './remote-config'
-export * from './reporting'
-export * from './storage'
-export * from './models'
-export * from './test-utils'
+export {
+    WithReactNativePlatformExtension,
+    type ReactNativePlatformExtension,
+} from './extension'
+export {
+    RNFirebaseService,
+    RNBiometricsService,
+    RNSecureStorageService,
+    RNKeyValueStorageService,
+    RNDeviceInfoStorageService,
+} from './services'

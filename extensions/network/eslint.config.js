@@ -10,14 +10,23 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-extension-platform'
+import devtools from "@perawallet/wallet-core-devtools/eslint";
+import tseslint from "typescript-eslint";
+import globals from "globals";
 
-export * from './analytics'
-export * from './biometrics'
-export * from './device'
-export * from './push-notifications'
-export * from './remote-config'
-export * from './reporting'
-export * from './storage'
-export * from './models'
-export * from './test-utils'
+/** @type {import("eslint").Linter.Config} */
+export default tseslint.config(
+  ...devtools,
+  {
+    languageOptions: {
+      parserOptions: {
+        project: "./tsconfig.json",
+        tsconfigRootDir: import.meta.dirname,
+      },
+      globals: {
+        ...globals.node,
+        ...globals.browser,
+      },
+    },
+  }
+);

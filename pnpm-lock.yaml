@@ -593,15 +593,21 @@ importers:
         specifier: 'catalog:'
         version: 5.0.9(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
     devDependencies:
+      '@perawallet/wallet-core-devtools':
+        specifier: workspace:*
+        version: link:../../packages/devtools
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       '@types/react':
         specifier: 'catalog:'
         version: 19.1.17
       globals:
         specifier: 'catalog:'
         version: 15.15.0
+      react-dom:
+        specifier: 'catalog:'
+        version: 19.1.0(react@19.1.0)
       typescript:
         specifier: 'catalog:'
         version: 5.9.3
@@ -679,6 +685,97 @@ importers:
         specifier: 'catalog:'
         version: 4.0.16(@types/node@25.0.3)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.31.1)(msw@2.12.7(@types/node@25.0.3)(typescript@5.9.3))(terser@5.44.1)(yaml@2.8.2)
 
+  extensions/platform-react-native:
+    dependencies:
+      '@algorandfoundation/wallet-provider':
+        specifier: 'catalog:'
+        version: 1.0.0-canary.3
+      '@babel/runtime':
+        specifier: 'catalog:'
+        version: 7.28.4
+      '@notifee/react-native':
+        specifier: ^9.1.8
+        version: 9.1.8(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))
+      '@perawallet/wallet-core-config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@perawallet/wallet-extension-network':
+        specifier: workspace:*
+        version: link:../network
+      '@perawallet/wallet-extension-platform':
+        specifier: workspace:*
+        version: link:../platform
+      '@react-native-firebase/analytics':
+        specifier: ^23.8.6
+        version: 23.8.6(@react-native-firebase/app@23.8.6(expo@54.0.32)(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))
+      '@react-native-firebase/crashlytics':
+        specifier: ^23.8.6
+        version: 23.8.6(@react-native-firebase/app@23.8.6(expo@54.0.32)(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(expo@54.0.32)
+      '@react-native-firebase/messaging':
+        specifier: ^23.8.6
+        version: 23.8.6(@react-native-firebase/app@23.8.6(expo@54.0.32)(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(expo@54.0.32)
+      '@react-native-firebase/remote-config':
+        specifier: ^23.8.6
+        version: 23.8.6(@react-native-firebase/analytics@23.8.6(@react-native-firebase/app@23.8.6(expo@54.0.32)(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)))(@react-native-firebase/app@23.8.6(expo@54.0.32)(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))
+      '@sbaiahmed1/react-native-biometrics':
+        specifier: ^0.11.0
+        version: 0.11.0(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      expo-application:
+        specifier: ^7.0.8
+        version: 7.0.8(expo@54.0.32)
+      expo-device:
+        specifier: ^8.0.10
+        version: 8.0.10(expo@54.0.32)
+      expo-localization:
+        specifier: ^17.0.8
+        version: 17.0.8(expo@54.0.32)(react@19.1.0)
+      react:
+        specifier: 'catalog:'
+        version: 19.1.0
+      react-native:
+        specifier: 0.81.5
+        version: 0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0)
+      react-native-keychain:
+        specifier: ^10.0.0
+        version: 10.0.0
+      react-native-mmkv:
+        specifier: ^3.3.3
+        version: 3.3.3(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      zustand:
+        specifier: 'catalog:'
+        version: 5.0.9(@types/react@19.1.17)(react@19.1.0)(use-sync-external-store@1.6.0(react@19.1.0))
+    devDependencies:
+      '@perawallet/wallet-core-devtools':
+        specifier: workspace:*
+        version: link:../../packages/devtools
+      '@testing-library/react':
+        specifier: 'catalog:'
+        version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.1.17)(react-dom@19.2.0(react@19.1.0))(react@19.1.0)
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.1.17
+      globals:
+        specifier: 'catalog:'
+        version: 15.15.0
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      typescript-eslint:
+        specifier: 'catalog:'
+        version: 8.48.0(eslint@9.39.1(jiti@2.6.1))(typescript@5.9.3)
+      vite:
+        specifier: 'catalog:'
+        version: 7.3.0(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.44.1)(yaml@2.8.2)
+      vite-plugin-dts:
+        specifier: ^4.5.4
+        version: 4.5.4(@types/node@25.0.3)(rollup@4.54.0)(typescript@5.9.3)(vite@7.3.0(@types/node@25.0.3)(jiti@2.6.1)(lightningcss@1.31.1)(terser@5.44.1)(yaml@2.8.2))
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.16(@types/node@25.0.3)(jiti@2.6.1)(jsdom@27.4.0)(lightningcss@1.31.1)(msw@2.12.7(@types/node@25.0.3)(typescript@5.9.3))(terser@5.44.1)(yaml@2.8.2)
+
   extensions/provider:
     dependencies:
       '@algorandfoundation/wallet-provider':
@@ -729,6 +826,9 @@ importers:
       '@perawallet/wallet-extension-platform':
         specifier: workspace:*
         version: link:../platform
+      '@perawallet/wallet-extension-platform-react-native':
+        specifier: workspace:*
+        version: link:../platform-react-native
       react:
         specifier: 'catalog:'
         version: 19.1.0

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { RNKeyValueStorageService } from '../key-value-storage'
+import { RNKeyValueStorageService } from '../services/key-value-storage'
 vi.mock('react-native-mmkv', () => {
     class MMKV {
         private store = new Map<string, string>()

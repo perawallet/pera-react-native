@@ -26,6 +26,7 @@
     "@perawallet/wallet-core-kms": "workspace:*",
     "@perawallet/wallet-core-notifications": "workspace:*",
     "@perawallet/wallet-extension-platform": "workspace:*",
+    "@perawallet/wallet-extension-platform-react-native": "workspace:*",
     "@perawallet/wallet-core-polling": "workspace:*",
     "@perawallet/wallet-core-security": "workspace:*",
     "@perawallet/wallet-core-settings": "workspace:*",

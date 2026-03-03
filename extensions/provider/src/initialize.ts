@@ -59,7 +59,7 @@ import {
 /**
  * Initializes all data stores synchronously.
  * DeviceStore and RemoteConfigStore are excluded — they are initialized
- * by the WithPlatformServicesExtension during provider construction.
+ * by the platform extension during provider construction.
  */
 export const initializeDataStores = () => {
     initAccountsStore()

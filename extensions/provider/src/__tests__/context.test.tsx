@@ -15,6 +15,19 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { resetProvider, getProvider } from '@perawallet/wallet-core-shared'
 import { buildTestPlatform } from '@perawallet/wallet-extension-platform'
+
+const testPlatform = buildTestPlatform()
+
+vi.mock('@perawallet/wallet-extension-platform-react-native', () => ({
+    WithReactNativePlatformExtension: () => ({
+        ...testPlatform,
+        initialize: vi.fn().mockResolvedValue({
+            token: 'test-token',
+            unsubscribe: vi.fn(),
+        }),
+    }),
+}))
+
 import { PeraWalletProvider, usePeraProvider } from '../context'
 import type { PeraProvider } from '../pera-provider'
 
@@ -24,13 +37,9 @@ describe('PeraWalletProvider', () => {
     })
 
     it('should create the provider and set the module singleton', () => {
-        const platform = buildTestPlatform()
-
         renderHook(() => usePeraProvider(), {
             wrapper: ({ children }) => (
-                <PeraWalletProvider platform={platform}>
-                    {children}
-                </PeraWalletProvider>
+                <PeraWalletProvider>{children}</PeraWalletProvider>
             ),
         })
 
@@ -38,56 +47,48 @@ describe('PeraWalletProvider', () => {
     })
 
     it('should expose all platform services via usePeraProvider', () => {
-        const platform = buildTestPlatform()
-
         const { result } = renderHook(() => usePeraProvider(), {
             wrapper: ({ children }) => (
-                <PeraWalletProvider platform={platform}>
-                    {children}
-                </PeraWalletProvider>
+                <PeraWalletProvider>{children}</PeraWalletProvider>
             ),
         })
 
-        expect(result.current.analytics).toBe(platform.analytics)
-        expect(result.current.keyValueStorage).toBe(platform.keyValueStorage)
-        expect(result.current.secureStorage).toBe(platform.secureStorage)
-        expect(result.current.remoteConfig).toBe(platform.remoteConfig)
-        expect(result.current.pushNotification).toBe(platform.pushNotification)
-        expect(result.current.crashReporting).toBe(platform.crashReporting)
-        expect(result.current.deviceInfo).toBe(platform.deviceInfo)
-        expect(result.current.biometrics).toBe(platform.biometrics)
+        expect(result.current.analytics).toBe(testPlatform.analytics)
+        expect(result.current.keyValueStorage).toBe(
+            testPlatform.keyValueStorage,
+        )
+        expect(result.current.secureStorage).toBe(testPlatform.secureStorage)
+        expect(result.current.remoteConfig).toBe(testPlatform.remoteConfig)
+        expect(result.current.pushNotification).toBe(
+            testPlatform.pushNotification,
+        )
+        expect(result.current.crashReporting).toBe(testPlatform.crashReporting)
+        expect(result.current.deviceInfo).toBe(testPlatform.deviceInfo)
+        expect(result.current.biometrics).toBe(testPlatform.biometrics)
     })
 
     it('should expose all platform services via getProvider for non-React code', () => {
-        const platform = buildTestPlatform()
-
         renderHook(() => usePeraProvider(), {
             wrapper: ({ children }) => (
-                <PeraWalletProvider platform={platform}>
-                    {children}
-                </PeraWalletProvider>
+                <PeraWalletProvider>{children}</PeraWalletProvider>
             ),
         })
 
         const provider = getProvider<PeraProvider>()
-        expect(provider.analytics).toBe(platform.analytics)
-        expect(provider.keyValueStorage).toBe(platform.keyValueStorage)
-        expect(provider.secureStorage).toBe(platform.secureStorage)
-        expect(provider.remoteConfig).toBe(platform.remoteConfig)
-        expect(provider.pushNotification).toBe(platform.pushNotification)
-        expect(provider.crashReporting).toBe(platform.crashReporting)
-        expect(provider.deviceInfo).toBe(platform.deviceInfo)
-        expect(provider.biometrics).toBe(platform.biometrics)
+        expect(provider.analytics).toBe(testPlatform.analytics)
+        expect(provider.keyValueStorage).toBe(testPlatform.keyValueStorage)
+        expect(provider.secureStorage).toBe(testPlatform.secureStorage)
+        expect(provider.remoteConfig).toBe(testPlatform.remoteConfig)
+        expect(provider.pushNotification).toBe(testPlatform.pushNotification)
+        expect(provider.crashReporting).toBe(testPlatform.crashReporting)
+        expect(provider.deviceInfo).toBe(testPlatform.deviceInfo)
+        expect(provider.biometrics).toBe(testPlatform.biometrics)
     })
 
     it('should return the same instance from both usePeraProvider and getProvider', () => {
-        const platform = buildTestPlatform()
-
         const { result } = renderHook(() => usePeraProvider(), {
             wrapper: ({ children }) => (
-                <PeraWalletProvider platform={platform}>
-                    {children}
-                </PeraWalletProvider>
+                <PeraWalletProvider>{children}</PeraWalletProvider>
             ),
         })
 
@@ -96,15 +97,11 @@ describe('PeraWalletProvider', () => {
     })
 
     it('should call onProviderReady once after provider initialization', () => {
-        const platform = buildTestPlatform()
         const onProviderReady = vi.fn()
 
         const { rerender } = renderHook(() => usePeraProvider(), {
             wrapper: ({ children }) => (
-                <PeraWalletProvider
-                    platform={platform}
-                    onProviderReady={onProviderReady}
-                >
+                <PeraWalletProvider onProviderReady={onProviderReady}>
                     {children}
                 </PeraWalletProvider>
             ),
@@ -118,7 +115,6 @@ describe('PeraWalletProvider', () => {
     })
 
     it('should have getProvider available when onProviderReady is called', () => {
-        const platform = buildTestPlatform()
         let providerInCallback: PeraProvider | null = null
 
         const onProviderReady = () => {
@@ -127,10 +123,7 @@ describe('PeraWalletProvider', () => {
 
         renderHook(() => usePeraProvider(), {
             wrapper: ({ children }) => (
-                <PeraWalletProvider
-                    platform={platform}
-                    onProviderReady={onProviderReady}
-                >
+                <PeraWalletProvider onProviderReady={onProviderReady}>
                     {children}
                 </PeraWalletProvider>
             ),
@@ -138,7 +131,7 @@ describe('PeraWalletProvider', () => {
 
         expect(providerInCallback).not.toBeNull()
         expect(providerInCallback!.keyValueStorage).toBe(
-            platform.keyValueStorage,
+            testPlatform.keyValueStorage,
         )
     })
 })

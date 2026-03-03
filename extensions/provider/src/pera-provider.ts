@@ -12,20 +12,20 @@
 
 import { Provider } from '@algorandfoundation/wallet-provider'
 import {
-    WithPlatformServicesExtension,
-    type PlatformServicesExtension,
-} from '@perawallet/wallet-extension-platform'
+    WithReactNativePlatformExtension,
+    type ReactNativePlatformExtension,
+} from '@perawallet/wallet-extension-platform-react-native'
 
 /**
- * The Pera Wallet Provider with platform services.
+ * The Pera Wallet Provider with React Native platform services.
  * Instances include all platform service properties (analytics, keyValueStorage, etc.)
- * via the WithPlatformServicesExtension in EXTENSIONS.
+ * via the WithReactNativePlatformExtension.
  */
 export const PeraProvider = Provider.withExtensions([
-    WithPlatformServicesExtension,
+    WithReactNativePlatformExtension,
 ] as const)
 
 export type PeraProvider = Provider<
-    readonly [typeof WithPlatformServicesExtension]
+    readonly [typeof WithReactNativePlatformExtension]
 > &
-    PlatformServicesExtension
+    ReactNativePlatformExtension

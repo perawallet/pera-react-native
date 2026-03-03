@@ -14,7 +14,7 @@
 
 import { vi } from 'vitest'
 import { Platform } from 'react-native'
-import { RNFirebaseService } from '../firebase'
+import { RNFirebaseService } from '../services/firebase'
 
 // Mock react-native Platform
 vi.mock('react-native', () => ({

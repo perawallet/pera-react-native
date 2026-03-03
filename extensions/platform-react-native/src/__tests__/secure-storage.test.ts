@@ -11,7 +11,7 @@
  */
 
 import { vi, Mocked } from 'vitest'
-import { RNSecureStorageService } from '../secure-storage'
+import { RNSecureStorageService } from '../services/secure-storage'
 
 vi.mock('react-native-keychain', () => ({
     setGenericPassword: vi.fn(async () => true),

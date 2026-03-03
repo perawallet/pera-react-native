@@ -10,14 +10,13 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-extension-platform'
-
-export * from './analytics'
-export * from './biometrics'
-export * from './device'
-export * from './push-notifications'
-export * from './remote-config'
-export * from './reporting'
-export * from './storage'
-export * from './models'
-export * from './test-utils'
+/**
+ * Minimal react-native stub for vitest.
+ * Prevents Rollup from trying to parse the real react-native Flow source.
+ * Individual tests override what they need via vi.mock('react-native', ...).
+ */
+export const Platform = {
+    OS: 'ios' as const,
+    select: <T>(specifics: { ios?: T; android?: T; default?: T }): T =>
+        (specifics.ios ?? specifics.default) as T,
+}

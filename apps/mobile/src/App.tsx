@@ -14,7 +14,6 @@ import React, { useEffect, useState } from 'react'
 import './i18n'
 import { Text } from 'react-native'
 import { QueryProvider } from './providers/QueryProvider'
-import { useBootstrapper, platformServices } from './bootstrap/boostrap'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import { Persister } from '@tanstack/react-query-persist-client'
 import {
@@ -23,6 +22,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import {
     PeraWalletProvider,
+    usePeraProvider,
     initializeDataStores,
 } from '@perawallet/wallet-extension-provider'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
@@ -36,20 +36,19 @@ import { NotifierWrapper } from 'react-native-notifier'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useLanguage } from '@hooks/useLanguage'
 
-export const App = () => {
+const AppContent = () => {
     const [persister, setPersister] = useState<Persister>()
-
     const [bootstrapped, setBootstrapped] = useState(false)
     const [fcmToken, setFcmToken] = useState<string | null>(null)
-    const bootstrap = useBootstrapper()
     const { t } = useLanguage()
+    const provider = usePeraProvider()
 
     useEffect(() => {
         if (!bootstrapped) {
-            bootstrap().then(({ token }) => {
+            provider.initialize().then(({ token }) => {
                 setFcmToken(token ?? null)
                 const reactQueryPersistor = createAsyncStoragePersister({
-                    storage: platformServices.keyValueStorage,
+                    storage: provider.keyValueStorage,
                     serialize: algorandSafeQuerySerialize,
                     deserialize: algorandSafeQueryParse,
                 })
@@ -64,25 +63,28 @@ export const App = () => {
                 }, 200)
             })
         }
-    }, [bootstrapped, bootstrap])
+    }, [bootstrapped, provider])
 
     return (
-        <PeraWalletProvider
-            platform={platformServices}
-            onProviderReady={initializeDataStores}
-        >
-            <SafeAreaProvider>
-                {!bootstrapped && <Text>{t('common.loading.label')}</Text>}
-                {bootstrapped && persister && (
-                    <GestureHandlerRootView>
-                        <NotifierWrapper>
-                            <QueryProvider persister={persister}>
-                                <RootComponent fcmToken={fcmToken} />
-                            </QueryProvider>
-                        </NotifierWrapper>
-                    </GestureHandlerRootView>
-                )}
-            </SafeAreaProvider>
+        <SafeAreaProvider>
+            {!bootstrapped && <Text>{t('common.loading.label')}</Text>}
+            {bootstrapped && persister && (
+                <GestureHandlerRootView>
+                    <NotifierWrapper>
+                        <QueryProvider persister={persister}>
+                            <RootComponent fcmToken={fcmToken} />
+                        </QueryProvider>
+                    </NotifierWrapper>
+                </GestureHandlerRootView>
+            )}
+        </SafeAreaProvider>
+    )
+}
+
+export const App = () => {
+    return (
+        <PeraWalletProvider onProviderReady={initializeDataStores}>
+            <AppContent />
         </PeraWalletProvider>
     )
 }

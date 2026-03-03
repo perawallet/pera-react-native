@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { RNDeviceInfoStorageService } from '../device'
+import { RNDeviceInfoStorageService } from '../services/device'
 import * as RN from 'react-native'
 
 // Mock @perawallet/wallet-core-shared

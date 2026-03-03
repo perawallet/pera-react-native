@@ -15,7 +15,6 @@ import {
     resetProvider,
     initializeProvider,
 } from '@perawallet/wallet-core-shared'
-import { WithPlatformServicesExtension } from '../extension'
 import type { PlatformServices } from '../models'
 import type { AnalyticsService } from '../analytics'
 import type { KeyValueStorageService, SecureStorageService } from '../storage'
@@ -25,6 +24,8 @@ import type { PushNotificationService } from '../push-notifications'
 import type { CrashReportingService } from '../reporting'
 import type { DeviceInfoService } from '../device'
 import { DevicePlatforms } from '../device'
+import { initDeviceStore } from '../device/store'
+import { initRemoteConfigStore } from '../remote-config/store'
 
 import { MemoryKeyValueStorage } from './storage'
 
@@ -158,13 +159,15 @@ export const registerTestPlatform = (
 ): PlatformServices => {
     resetProvider()
     const platform = buildTestPlatform(overrides)
+    const WithTestPlatformExtension = (_provider: unknown) => ({
+        ...platform,
+    })
     const TestProvider = Provider.withExtensions([
-        WithPlatformServicesExtension,
+        WithTestPlatformExtension,
     ] as const)
-    const provider = new TestProvider(
-        { id: 'test', name: 'Test Provider' },
-        { platform },
-    )
+    const provider = new TestProvider({ id: 'test', name: 'Test Provider' })
+    initDeviceStore(platform.keyValueStorage)
+    initRemoteConfigStore(platform.keyValueStorage)
     initializeProvider(provider)
     return platform
 }

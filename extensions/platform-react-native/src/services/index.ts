@@ -10,14 +10,8 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-extension-platform'
-
-export * from './analytics'
-export * from './biometrics'
-export * from './device'
-export * from './push-notifications'
-export * from './remote-config'
-export * from './reporting'
-export * from './storage'
-export * from './models'
-export * from './test-utils'
+export { RNFirebaseService } from './firebase'
+export { RNBiometricsService } from './biometrics'
+export { RNSecureStorageService } from './secure-storage'
+export { RNKeyValueStorageService } from './key-value-storage'
+export { RNDeviceInfoStorageService } from './device'
