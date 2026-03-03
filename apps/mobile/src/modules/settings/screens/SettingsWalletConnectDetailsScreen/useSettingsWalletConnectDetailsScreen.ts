@@ -13,7 +13,7 @@
 import { useModalState } from '@hooks/useModalState'
 import { useWebView } from '@modules/webview'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-platform-integration'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import {
     useWalletConnect,
