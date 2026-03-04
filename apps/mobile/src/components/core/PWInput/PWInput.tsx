@@ -44,8 +44,8 @@ export type PWInputProps = {
     blurOnSubmit?: boolean
     label?: string
     labelStyle?: RNEInputProps['labelStyle']
-    placeholderTextColor?: string
     testID?: string
+    placeholderTextColor?: string
 }
 
 export const PWInput = forwardRef<PWInputRef, PWInputProps>(

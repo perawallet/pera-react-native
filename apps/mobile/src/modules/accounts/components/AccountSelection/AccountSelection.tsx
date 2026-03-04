@@ -52,6 +52,7 @@ export const AccountSelection = ({
                 {...props}
                 activeOpacity={0.8}
                 onPress={accountMenuState.open}
+                testID='account_selection_button'
             >
                 <AccountDisplay
                     account={account ?? undefined}
