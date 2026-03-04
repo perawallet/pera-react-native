@@ -135,6 +135,7 @@ export const ImportAccountScreen = () => {
                                                                         offsetIndex
                                                                     ]
                                                                 }
+                                                                testID={`import_account_word_input_${offsetIndex}`}
                                                                 containerStyle={
                                                                     styles.inputOuterContainer
                                                                 }
@@ -198,6 +199,7 @@ export const ImportAccountScreen = () => {
 
                 <PWView style={styles.footer}>
                     <PWButton
+                        testID='import_account_import_button'
                         variant='primary'
                         title={t('onboarding.import_account.button')}
                         onPress={handleImportAccount}

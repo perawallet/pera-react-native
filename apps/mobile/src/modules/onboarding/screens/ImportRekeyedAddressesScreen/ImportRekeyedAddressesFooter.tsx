@@ -32,6 +32,7 @@ export const ImportRekeyedAddressesFooter = ({
     return (
         <PWView style={styles.footer}>
             <PWButton
+                testID='import_rekeyed_addresses_continue_button'
                 title={t('onboarding.import_rekeyed_addresses.continue')}
                 onPress={onContinue}
                 variant={canContinue ? 'primary' : 'secondary'}
@@ -40,6 +41,7 @@ export const ImportRekeyedAddressesFooter = ({
             />
 
             <PWButton
+                testID='import_rekeyed_addresses_skip_button'
                 title={t('onboarding.import_rekeyed_addresses.skip')}
                 onPress={onSkip}
                 variant='secondary'

@@ -14,17 +14,20 @@ import { PWText } from '../PWText'
 import { PWTouchableOpacity } from '../PWTouchableOpacity'
 import { PWView } from '../PWView'
 
+import { getTestProps } from '@utils/test-id-helper'
 import { useStyles } from './styles'
 
 export type PWRadioButtonProps = {
     onPress: () => void
     title: string
     isSelected: boolean
+    testID?: string
 }
 export const PWRadioButton = ({
     onPress,
     title,
     isSelected,
+    testID,
 }: PWRadioButtonProps) => {
     const styles = useStyles()
 
@@ -32,6 +35,7 @@ export const PWRadioButton = ({
         <PWTouchableOpacity
             onPress={onPress}
             style={styles.row}
+            {...getTestProps(testID)}
         >
             <PWText>{title}</PWText>
             <PWView

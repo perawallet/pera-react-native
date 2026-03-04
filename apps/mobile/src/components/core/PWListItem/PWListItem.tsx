@@ -18,6 +18,7 @@ import {
 import { PWText } from '@components/core/PWText'
 import { useStyles } from './styles'
 import { PWView } from '@components/core/PWView'
+import { getTestProps } from '@utils/test-id-helper'
 
 export type PWListItemProps = PWTouchableOpacityProps & {
     icon: IconName
@@ -28,6 +29,7 @@ export const PWListItem = ({
     icon,
     title,
     style,
+    testID,
     ...props
 }: PWListItemProps) => {
     const styles = useStyles()
@@ -35,6 +37,7 @@ export const PWListItem = ({
     return (
         <PWTouchableOpacity
             style={[styles.row, style]}
+            {...getTestProps(testID)}
             {...props}
         >
             <PWView style={styles.labelContainer}>

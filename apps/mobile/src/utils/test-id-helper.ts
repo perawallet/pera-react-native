@@ -31,5 +31,6 @@ export function getTestProps(id?: string, suffix?: string) {
     return {
         testID: suffixedID,
         accessibilityLabel: Platform.OS === 'android' ? suffixedID : undefined,
+        accessible: true,
     }
 }
