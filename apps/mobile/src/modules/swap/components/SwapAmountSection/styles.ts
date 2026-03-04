@@ -48,4 +48,15 @@ export const useStyles = makeStyles(theme => ({
     amountText: {
         color: theme.colors.textMain,
     },
+    amountInputContainer: {
+        paddingHorizontal: 0,
+    },
+    amountInputInnerContainer: {
+        borderBottomWidth: 0,
+        paddingHorizontal: 0,
+        backgroundColor: 'transparent',
+    },
+    amountInput: {
+        paddingLeft: 0,
+    },
 }))

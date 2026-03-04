@@ -11,44 +11,17 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getTypography } from '@theme/typography'
+import { getTypography, TypographyVariant } from '@theme/typography'
 
 type PWInputStyleProps = {
-    variant: 'default' | 'numeric'
+    variant: TypographyVariant
 }
 
-export const useStyles = makeStyles((theme, { variant }: PWInputStyleProps) => {
-    const h2Typography = getTypography(theme, 'h2')
-
-    const variantStyles = {
-        default: {
-            container: {},
-            inputContainer: {},
-            input: { paddingHorizontal: theme.spacing.sm },
-        },
-        numeric: {
-            container: { paddingHorizontal: 0 },
-            inputContainer: {
-                borderBottomWidth: 0,
-                paddingHorizontal: 0,
-                backgroundColor: 'transparent' as const,
-            },
-            input: {
-                fontFamily: h2Typography.fontFamily,
-                fontSize: h2Typography.fontSize,
-                fontWeight: h2Typography.fontWeight,
-                color: theme.colors.textMain,
-                paddingLeft: 0,
-            },
-        },
-    }
-
-    const v = variantStyles[variant]
-
-    return {
-        container: v.container,
-        inputContainer: v.inputContainer,
-        input: v.input,
+export const useStyles = makeStyles(
+    (theme, { variant }: PWInputStyleProps) => ({
+        container: {},
+        inputContainer: {},
+        input: { ...getTypography(theme, variant) },
         label: {},
-    }
-})
+    }),
+)

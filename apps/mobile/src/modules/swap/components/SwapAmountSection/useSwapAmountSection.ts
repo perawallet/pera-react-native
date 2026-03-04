@@ -10,10 +10,12 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import Decimal from 'decimal.js'
 import { useTheme } from '@rneui/themed/dist/config/ThemeProvider'
 import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
+import { formatCurrency } from '@perawallet/wallet-core-shared'
+import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
 
 type UseSwapAmountSectionParams = {
     variant: 'pay' | 'receive'
@@ -28,6 +30,8 @@ type UseSwapAmountSectionResult = {
     displayValue: string
     amountColor: string
     handleTextChange: (text: string) => void
+    handleFocus: () => void
+    handleBlur: () => void
 }
 
 export const useSwapAmountSection = ({
@@ -37,35 +41,58 @@ export const useSwapAmountSection = ({
     onAmountChange,
 }: UseSwapAmountSectionParams): UseSwapAmountSectionResult => {
     const { theme } = useTheme()
+    const deviceInfo = useDeviceInfoService()
 
     const { data: assets } = useAssetsQuery([assetId])
     const asset = useMemo(() => assets?.get(assetId), [assets, assetId])
 
     const isPay = variant === 'pay'
 
-    const displayValue = useMemo(
-        () => (amount ? amount.toString() : ''),
-        [amount],
-    )
+    const [rawText, setRawText] = useState(amount ? amount.toString() : '')
+    const [isFocused, setIsFocused] = useState(false)
+
+    useEffect(() => {
+        if (amount === null) setRawText('')
+    }, [amount])
+
+    const displayValue = useMemo(() => {
+        if (!isPay) return amount ? amount.toString() : ''
+        if (isFocused || !amount) return rawText
+        return formatCurrency(
+            amount,
+            asset?.decimals ?? 0,
+            asset?.unitName ?? '',
+            deviceInfo.getDeviceLocale(),
+            false,
+            false,
+            0,
+        )
+    }, [isPay, isFocused, rawText, amount, asset, deviceInfo])
 
     const hasPositiveAmount = amount !== null && amount.greaterThan(0)
     const amountColor = hasPositiveAmount
         ? theme.colors.textMain
         : theme.colors.textGrayLighter
 
+    const handleFocus = useCallback(() => setIsFocused(true), [])
+    const handleBlur = useCallback(() => setIsFocused(false), [])
+
     const handleTextChange = useCallback(
         (text: string) => {
             if (!isPay || !onAmountChange) return
 
-            if (text === '') {
+            const normalized = text.replace(',', '.')
+            setRawText(normalized)
+
+            if (normalized === '' || normalized === '.') {
                 onAmountChange(null)
                 return
             }
 
             try {
-                onAmountChange(new Decimal(text))
+                onAmountChange(new Decimal(normalized))
             } catch {
-                // Ignore invalid decimal input
+                // Ignore invalid input
             }
         },
         [isPay, onAmountChange],
@@ -77,5 +104,7 @@ export const useSwapAmountSection = ({
         displayValue,
         amountColor,
         handleTextChange,
+        handleFocus,
+        handleBlur,
     }
 }

@@ -43,7 +43,9 @@ export const formatNumber = (
         style: 'decimal',
     })
     let formattedInteger = formatter.format(Number(integer))
-    let fraction = parts.length > 1 ? '.' + parts[1] : ''
+    const decimalSeparator = formatter.format(1.1).charAt(1)
+
+    let fraction = parts.length > 1 ? decimalSeparator + parts[1] : ''
 
     const truncateToPrecision = minPrecision ?? precision
     while (
@@ -125,7 +127,7 @@ export const formatCurrency = (
             : (currencySymbols[currency] ?? currency)
 
     //TODO this is pretty limited formatting - it's not very locale specific
-    return `${sign}${currencySymbol ? `${currencySymbol} ` : ''}${integer}${fraction}${unit}`
+    return `${sign}${currencySymbol ? `${currencySymbol} ` : ''}${integer}${fraction.length > 1 ? fraction : ''}${unit}`
 }
 
 export const formatDatetime = (

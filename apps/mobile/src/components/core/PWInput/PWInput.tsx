@@ -13,6 +13,7 @@
 import { forwardRef, useImperativeHandle, useRef } from 'react'
 import { TextInput } from 'react-native'
 import { Input as RNEInput, InputProps as RNEInputProps } from '@rneui/themed'
+import { TypographyVariant } from '@theme/typography'
 import { useStyles } from './styles'
 import { getTestProps } from '@utils/test-id-helper'
 
@@ -22,7 +23,7 @@ export type PWInputRef = {
 }
 
 export type PWInputProps = {
-    variant?: 'default' | 'numeric'
+    variant?: TypographyVariant
     value?: string
     onChangeText?: (text: string) => void
     placeholder?: string
@@ -52,7 +53,7 @@ export type PWInputProps = {
 export const PWInput = forwardRef<PWInputRef, PWInputProps>(
     (
         {
-            variant = 'default',
+            variant = 'body',
             containerStyle,
             inputContainerStyle,
             inputStyle,

@@ -47,8 +47,15 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
     const styles = useStyles()
 
     const onAmountChange = variant === 'pay' ? props.onAmountChange : undefined
-    const { asset, isPay, displayValue, amountColor, handleTextChange } =
-        useSwapAmountSection({ variant, assetId, amount, onAmountChange })
+    const {
+        asset,
+        isPay,
+        displayValue,
+        amountColor,
+        handleTextChange,
+        handleFocus,
+        handleBlur,
+    } = useSwapAmountSection({ variant, assetId, amount, onAmountChange })
 
     return (
         <PWView style={isPay ? styles.container : styles.receiveContainer}>
@@ -65,6 +72,7 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                     value={balance}
                     currency={asset?.unitName ?? ''}
                     precision={asset?.decimals ?? 0}
+                    minPrecision={2}
                     prefix={t('swap.form.balance_label')}
                     showSymbol={false}
                     variant='body'
@@ -76,12 +84,19 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                 <PWView style={styles.amountContainer}>
                     {isPay ? (
                         <PWInput
-                            variant='numeric'
+                            variant='h2'
                             value={displayValue}
                             onChangeText={handleTextChange}
+                            onFocus={handleFocus}
+                            onBlur={handleBlur}
                             keyboardType='decimal-pad'
                             placeholder='0.00'
                             placeholderTextColor={theme.colors.textGrayLighter}
+                            containerStyle={styles.amountInputContainer}
+                            inputContainerStyle={
+                                styles.amountInputInnerContainer
+                            }
+                            inputStyle={styles.amountInput}
                         />
                     ) : (
                         <PWText
