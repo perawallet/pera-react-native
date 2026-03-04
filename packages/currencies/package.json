@@ -18,8 +18,8 @@
   },
   "dependencies": {
     "@babel/runtime": "catalog:",
+    "@perawallet/wallet-core-blockchain": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
-    "@perawallet/wallet-core-platform-integration": "workspace:*",
     "decimal.js": "catalog:",
     "zod": "catalog:",
     "react": "catalog:",
@@ -35,7 +35,6 @@
     "@types/react": "catalog:",
     "@testing-library/react": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*",
-    "reflect-metadata": "catalog:",
     "globals": "catalog:",
     "typescript-eslint": "catalog:"
   }

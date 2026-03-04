@@ -29,15 +29,21 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     encodeAlgorandAddress: vi.fn((address: Uint8Array) =>
         Buffer.from(address).toString('base64'),
     ),
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-shared',
-    )
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared')
+    >('@perawallet/wallet-core-shared')
+    const { createMockPersistStorage } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared/test-utils')
+    >('@perawallet/wallet-core-shared/test-utils')
     return {
         ...actual,
         generateOrderedUniqueId: uuidSpies.v7,
+        registerStore: vi.fn(),
+        createPersistStorage: createMockPersistStorage,
     }
 })
 
@@ -65,10 +71,10 @@ vi.mock('@perawallet/wallet-core-kms', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-platform-integration', async () => {
+vi.mock('@perawallet/wallet-extension-platform', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-platform-integration')
-    >('@perawallet/wallet-core-platform-integration')
+        typeof import('@perawallet/wallet-extension-platform')
+    >('@perawallet/wallet-extension-platform')
     return {
         ...actual,
         useKeyValueStorageService: vi.fn().mockReturnValue({
@@ -84,25 +90,10 @@ vi.mock('@perawallet/wallet-core-platform-integration', async () => {
         useUpdateDeviceMutation: vi.fn(() => ({
             mutateAsync: vi.fn(async () => ({})),
         })),
-        useNetwork: vi.fn(() => ({ network: 'mainnet' })),
         useDeviceID: vi.fn(() => 'device-id'),
         useDeviceInfoService: vi.fn(() => ({
             getDevicePlatform: vi.fn(() => 'ios'),
         })),
-    }
-})
-
-vi.mock('../../store', async () => {
-    const actual =
-        await vi.importActual<typeof import('../../store')>('../../store')
-    const mockStorage = {
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-    }
-    return {
-        ...actual,
-        useAccountsStore: actual.createAccountsStore(mockStorage as any),
     }
 })
 

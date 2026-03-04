@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { createWrapper } from '@perawallet/wallet-core-platform-integration'
+import { createWrapper } from '@perawallet/wallet-extension-platform'
 import { useInboxStatus } from '../useInboxStatus'
 import { fetchNotificationStatus } from '../../api/notifications'
 import { useInboxQuery } from '../useInboxQuery'
@@ -25,20 +25,20 @@ vi.mock('../useInboxQuery', () => ({
     useInboxQuery: vi.fn(),
 }))
 
-vi.mock(
-    '@perawallet/wallet-core-platform-integration',
-    async importOriginal => {
-        const actual =
-            await importOriginal<
-                typeof import('@perawallet/wallet-core-platform-integration')
-            >()
-        return {
-            ...actual,
-            useDeviceID: vi.fn().mockReturnValue('test-device-id'),
-            useNetwork: vi.fn().mockReturnValue({ network: 'test-network' }),
-        }
-    },
-)
+vi.mock('@perawallet/wallet-extension-platform', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-extension-platform')
+        >()
+    return {
+        ...actual,
+        useDeviceID: vi.fn().mockReturnValue('test-device-id'),
+    }
+})
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: vi.fn().mockReturnValue({ network: 'test-network' }),
+}))
 
 describe('useInboxStatus', () => {
     it('should fetch notification status and return hasUnreadItems', async () => {

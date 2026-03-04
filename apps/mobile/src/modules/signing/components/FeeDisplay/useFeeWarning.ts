@@ -19,7 +19,7 @@ import {
 import {
     useRemoteConfigService,
     RemoteConfigKeys,
-} from '@perawallet/wallet-core-platform-integration'
+} from '@perawallet/wallet-extension-platform'
 import {
     useSigningRequest,
     useSigningRequestAnalysis,

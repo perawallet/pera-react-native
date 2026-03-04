@@ -44,6 +44,11 @@ export const mockCoreServices = () => {
                 mainnet: 'mainnet',
                 testnet: 'testnet',
             },
+            createPersistStorage: () => ({
+                getItem: () => null,
+                setItem: () => {},
+                removeItem: () => {},
+            }),
         }
     })
 }

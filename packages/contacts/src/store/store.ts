@@ -12,85 +12,72 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import {
-    KeyValueStorageService,
-    useKeyValueStorageService,
-} from '@perawallet/wallet-core-platform-integration'
 import type { Contact, ContactsState } from '../models'
 import {
-    createLazyStore,
-    DataStoreRegistry,
+    createPersistStorage,
     generateOrderedUniqueId,
+    registerStore,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 
 const STORE_NAME = 'contacts-store'
-const lazy =
-    createLazyStore<WithPersist<StoreApi<ContactsState>, unknown>>(STORE_NAME)
-
-export const useContactsStore: UseBoundStore<
-    WithPersist<StoreApi<ContactsState>, unknown>
-> = lazy.useStore
 
 const initialState = {
     contacts: [] as Contact[],
     selectedContact: null as Contact | null,
 }
 
-const createContactsStore = (storage: KeyValueStorageService) =>
-    create<ContactsState>()(
-        persist(
-            (set, get) => ({
-                ...initialState,
-                setSelectedContact: (contact: Contact | null) =>
-                    set({ selectedContact: contact }),
-                setContacts: (contacts: Contact[]) => set({ contacts }),
-                saveContact: (contact: Contact) => {
-                    const existing = get().contacts ?? []
-                    const newContact = {
-                        ...contact,
-                        id: contact.id ?? generateOrderedUniqueId(),
-                    }
-                    if (!existing.find(r => r.id === newContact.id)) {
-                        set({ contacts: [...existing, newContact] })
-                        return true
-                    }
-                    return false
-                },
-                deleteContact: (contact: Contact) => {
-                    const existing = get().contacts ?? []
-                    const remaining = existing.filter(r => r.id !== contact.id)
-
-                    if (remaining.length != existing.length) {
-                        set({ contacts: remaining })
-                    }
-
-                    return remaining.length != existing.length
-                },
-                resetState: () => set(initialState),
-            }),
-            {
-                name: STORE_NAME,
-                storage: createJSONStorage(() => storage),
-                version: 1,
-                partialize: state => ({
-                    contacts: state.contacts,
-                }),
+export const useContactsStore: UseBoundStore<
+    WithPersist<StoreApi<ContactsState>, unknown>
+> = create<ContactsState>()(
+    persist(
+        (set, get) => ({
+            ...initialState,
+            setSelectedContact: (contact: Contact | null) =>
+                set({ selectedContact: contact }),
+            setContacts: (contacts: Contact[]) => set({ contacts }),
+            saveContact: (contact: Contact) => {
+                const existing = get().contacts ?? []
+                const newContact = {
+                    ...contact,
+                    id: contact.id ?? generateOrderedUniqueId(),
+                }
+                if (!existing.find(r => r.id === newContact.id)) {
+                    set({ contacts: [...existing, newContact] })
+                    return true
+                }
+                return false
             },
-        ),
-    )
+            deleteContact: (contact: Contact) => {
+                const existing = get().contacts ?? []
+                const remaining = existing.filter(r => r.id !== contact.id)
 
-export const initContactsStore = () => {
-    const storage = useKeyValueStorageService()
-    const realStore = createContactsStore(storage)
-    lazy.init(realStore, () => realStore.getState().resetState())
-}
+                if (remaining.length != existing.length) {
+                    set({ contacts: remaining })
+                }
 
-export const clearContactsStore = () => lazy.clear()
+                return remaining.length != existing.length
+            },
+            resetState: () => set(initialState),
+        }),
+        {
+            name: STORE_NAME,
+            storage: createJSONStorage(createPersistStorage),
+            version: 1,
+            partialize: state => ({
+                contacts: state.contacts,
+            }),
+        },
+    ),
+)
 
-export const registerContactsStore = () =>
-    DataStoreRegistry.register({
-        name: STORE_NAME,
-        init: initContactsStore,
-        clear: clearContactsStore,
-    })
+registerStore({
+    name: STORE_NAME,
+    clearStorage: () =>
+        (
+            useContactsStore as unknown as {
+                persist: { clearStorage: () => void }
+            }
+        ).persist.clearStorage(),
+    resetState: () => useContactsStore.getState().resetState(),
+})

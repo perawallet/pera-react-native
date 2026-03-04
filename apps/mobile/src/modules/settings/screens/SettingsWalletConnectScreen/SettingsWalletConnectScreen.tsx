@@ -24,7 +24,7 @@ import { WalletConnectSessionItem } from '@modules/settings/components/WalletCon
 import { Dialog, Text, useTheme } from '@rneui/themed'
 import { useState } from 'react'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { useNetwork } from '@perawallet/wallet-core-platform-integration'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 const renderItem = ({ item }: { item: WalletConnectConnection }) => {

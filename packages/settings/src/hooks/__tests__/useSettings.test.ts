@@ -10,34 +10,38 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { registerTestPlatform } from '@test-utils'
+
+import { useSettingsStore } from '../../store'
+import { useSettings } from '../useSettings'
+
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    const { createMockPersistStorage } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared/test-utils')
+    >('@perawallet/wallet-core-shared/test-utils')
+    return {
+        ...original,
+        registerStore: vi.fn(),
+        createPersistStorage: createMockPersistStorage,
+    }
+})
 
 describe('services/settings/useSettings', () => {
     beforeEach(() => {
-        vi.resetModules()
-        registerTestPlatform()
+        useSettingsStore.getState().resetState()
     })
 
-    test('exposes theme and privacyMode', async () => {
-        const { initSettingsStore } = await import('../../store')
-        const { useSettings } = await import('../useSettings')
-
-        initSettingsStore()
-
+    test('exposes theme and privacyMode', () => {
         const { result } = renderHook(() => useSettings())
 
         expect(result.current.theme).toBe('system')
         expect(result.current.privacyMode).toBe(false)
     })
 
-    test('setTheme updates theme', async () => {
-        const { initSettingsStore } = await import('../../store')
-        const { useSettings } = await import('../useSettings')
-
-        initSettingsStore()
-
+    test('setTheme updates theme', () => {
         const { result } = renderHook(() => useSettings())
 
         act(() => {
@@ -47,12 +51,7 @@ describe('services/settings/useSettings', () => {
         expect(result.current.theme).toBe('dark')
     })
 
-    test('setPrivacyMode updates privacy mode', async () => {
-        const { initSettingsStore } = await import('../../store')
-        const { useSettings } = await import('../useSettings')
-
-        initSettingsStore()
-
+    test('setPrivacyMode updates privacy mode', () => {
         const { result } = renderHook(() => useSettings())
 
         act(() => {

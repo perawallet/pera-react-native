@@ -12,26 +12,29 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useBlockchainStore, initBlockchainStore } from '../index'
 
-// Mock the storage service
-const mockStorage = {
-    getItem: vi.fn(),
-    setItem: vi.fn(),
-    removeItem: vi.fn(),
-}
-
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
-    useKeyValueStorageService: vi.fn(() => mockStorage),
-}))
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    const { createMockPersistStorage } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared/test-utils')
+    >('@perawallet/wallet-core-shared/test-utils')
+    return {
+        ...original,
+        registerStore: vi.fn(),
+        createPersistStorage: createMockPersistStorage,
+    }
+})
 
 describe('BlockchainStore', () => {
-    beforeEach(() => {
-        vi.clearAllMocks()
-        initBlockchainStore()
+    beforeEach(async () => {
+        vi.resetModules()
+        const { useBlockchainStore } = await import('../index')
+        useBlockchainStore.getState().resetState()
     })
 
-    test('should reset state to initial values', () => {
+    test('should reset state to initial values', async () => {
+        const { useBlockchainStore } = await import('../index')
         const { result } = renderHook(() => useBlockchainStore())
 
         act(() => {

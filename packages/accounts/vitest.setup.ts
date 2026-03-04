@@ -10,8 +10,21 @@
  limitations under the License
  */
 
-import 'reflect-metadata'
 import { vi, beforeEach } from 'vitest'
+
+const kvStore = new Map<string, string>()
+
+vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
+    getPlatformServices: () => ({
+        keyValueStorage: {
+            getItem: (key: string) => kvStore.get(key) ?? null,
+            setItem: (key: string, value: string) => kvStore.set(key, value),
+            removeItem: (key: string) => {
+                kvStore.delete(key)
+            },
+        },
+    }),
+}))
 
 // Create a simple in-memory key store for mocking
 const mockKeyStore = new Map<string, any>()
@@ -24,7 +37,7 @@ vi.mock('@perawallet/wallet-core-kms', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@perawallet/wallet-core-kms')>()
     const { useSecureStorageService } = await import(
-        '@perawallet/wallet-core-platform-integration'
+        '@perawallet/wallet-extension-platform'
     )
 
     return {

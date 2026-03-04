@@ -11,7 +11,7 @@
  */
 
 import { useEffect } from 'react'
-import { usePushToken } from '@perawallet/wallet-core-platform-integration'
+import { usePushToken } from '@perawallet/wallet-extension-platform'
 
 /**
  * Hook that initializes the FCM token after bootstrap.

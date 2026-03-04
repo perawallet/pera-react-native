@@ -10,33 +10,37 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { registerTestPlatform } from '@perawallet/wallet-core-platform-integration'
+
+import { useSettingsStore } from '../../store'
+import { usePreferences } from '../usePreferences'
+
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    const { createMockPersistStorage } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared/test-utils')
+    >('@perawallet/wallet-core-shared/test-utils')
+    return {
+        ...original,
+        registerStore: vi.fn(),
+        createPersistStorage: createMockPersistStorage,
+    }
+})
 
 describe('services/settings/usePreferences', () => {
     beforeEach(() => {
-        vi.resetModules()
-        registerTestPlatform()
+        useSettingsStore.getState().resetState()
     })
 
-    test('hasPreference returns false for non-existent preference', async () => {
-        const { initSettingsStore } = await import('../../store')
-        const { usePreferences } = await import('../usePreferences')
-
-        initSettingsStore()
-
+    test('hasPreference returns false for non-existent preference', () => {
         const { result } = renderHook(() => usePreferences())
 
         expect(result.current.hasPreference('nonExistent')).toBe(false)
     })
 
-    test('hasPreference returns true for existing preference', async () => {
-        const { initSettingsStore } = await import('../../store')
-        const { usePreferences } = await import('../usePreferences')
-
-        initSettingsStore()
-
+    test('hasPreference returns true for existing preference', () => {
         const { result } = renderHook(() => usePreferences())
 
         act(() => {
@@ -46,12 +50,7 @@ describe('services/settings/usePreferences', () => {
         expect(result.current.hasPreference('testKey')).toBe(true)
     })
 
-    test('getPreference retrieves preference value', async () => {
-        const { initSettingsStore } = await import('../../store')
-        const { usePreferences } = await import('../usePreferences')
-
-        initSettingsStore()
-
+    test('getPreference retrieves preference value', () => {
         const { result } = renderHook(() => usePreferences())
 
         act(() => {
@@ -61,12 +60,7 @@ describe('services/settings/usePreferences', () => {
         expect(result.current.getPreference('testKey')).toBe('testValue')
     })
 
-    test('setPreference adds a new preference', async () => {
-        const { initSettingsStore } = await import('../../store')
-        const { usePreferences } = await import('../usePreferences')
-
-        initSettingsStore()
-
+    test('setPreference adds a new preference', () => {
         const { result } = renderHook(() => usePreferences())
 
         act(() => {
@@ -76,12 +70,7 @@ describe('services/settings/usePreferences', () => {
         expect(result.current.getPreference('newKey')).toBe(123)
     })
 
-    test('deletePreference removes a preference', async () => {
-        const { initSettingsStore } = await import('../../store')
-        const { usePreferences } = await import('../usePreferences')
-
-        initSettingsStore()
-
+    test('deletePreference removes a preference', () => {
         const { result } = renderHook(() => usePreferences())
 
         act(() => {
@@ -97,12 +86,7 @@ describe('services/settings/usePreferences', () => {
         expect(result.current.hasPreference('testKey')).toBe(false)
     })
 
-    test('clearAll removes all preferences', async () => {
-        const { initSettingsStore } = await import('../../store')
-        const { usePreferences } = await import('../usePreferences')
-
-        initSettingsStore()
-
+    test('clearAll removes all preferences', () => {
         const { result } = renderHook(() => usePreferences())
 
         act(() => {

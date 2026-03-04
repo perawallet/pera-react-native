@@ -23,10 +23,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
 import { useToast } from '@hooks/useToast'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
-import {
-    useDevice,
-    useNetwork,
-} from '@perawallet/wallet-core-platform-integration'
+import { useDevice } from '@perawallet/wallet-extension-platform'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { usePolling } from '@perawallet/wallet-core-polling'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useNetworkStatus, useNetworkStatusListener } from '@modules/network'

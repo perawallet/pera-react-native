@@ -12,91 +12,44 @@
 
 import { logger } from './logging'
 
-export interface RegisterableStore {
+interface RegisteredStore {
     name: string
-    init: () => void
-    clear: () => void
+    clearStorage: () => void
+    resetState: () => void
 }
 
-class DataStoreRegistryImpl {
-    private stores: Map<string, RegisterableStore> = new Map()
-    private initialized = false
+const registry: RegisteredStore[] = []
 
-    register(store: RegisterableStore): void {
-        if (this.stores.has(store.name)) {
-            logger.warn(
-                `Store "${store.name}" is already registered. Skipping.`,
-            )
-            return
-        }
-        this.stores.set(store.name, store)
-        logger.debug(`Store "${store.name}" registered`)
-    }
+/**
+ * Registers a store for global lifecycle management.
+ * Called by each store at module scope after creation.
+ */
+export const registerStore = (entry: RegisteredStore): void => {
+    registry.push(entry)
+    logger.debug(`Registered store: ${entry.name}`)
+}
 
-    async initializeAll(): Promise<void> {
-        if (this.initialized) {
-            logger.warn('DataStoreRegistry already initialized. Skipping.')
-            return
-        }
-
-        logger.debug(
-            `Initializing ${this.stores.size} stores: ${this.getRegisteredStores().join(', ')}`,
-        )
-
-        const initPromises = Array.from(this.stores.values()).map(
-            async store => {
-                try {
-                    await Promise.resolve(store.init())
-                } catch (error) {
-                    logger.error(`Failed to initialize store "${store.name}"`, {
-                        error,
-                    })
-                    throw error
-                }
-            },
-        )
-
-        await Promise.allSettled(initPromises)
-        this.initialized = true
-        logger.debug('All stores initialized')
-    }
-
-    async clearAll(): Promise<void> {
-        logger.debug(
-            `Clearing ${this.stores.size} stores: ${this.getRegisteredStores().join(', ')}`,
-        )
-
-        const clearPromises = Array.from(this.stores.values()).map(
-            async store => {
-                try {
-                    await Promise.resolve(store.clear())
-                    logger.debug(`Store "${store.name}" cleared`)
-                } catch (error) {
-                    logger.error(`Failed to clear store "${store.name}"`, {
-                        error,
-                    })
-                    throw error
-                }
-            },
-        )
-
-        await Promise.allSettled(clearPromises)
-        logger.debug('All stores cleared')
-    }
-
-    getRegisteredStores(): string[] {
-        return Array.from(this.stores.keys())
-    }
-
-    reset(): void {
-        this.stores.clear()
-        this.initialized = false
-        logger.debug('DataStoreRegistry reset')
-    }
-
-    isInitialized(): boolean {
-        return this.initialized
+/**
+ * Clears persisted data and resets in-memory state for all registered stores.
+ * Used during logout / "delete all data" flows.
+ */
+export const clearAllStores = (): void => {
+    for (const store of registry) {
+        logger.debug(`Clearing store: ${store.name}`)
+        store.clearStorage()
+        store.resetState()
+        logger.debug(`Store ${store.name} cleared`)
     }
 }
 
-export const DataStoreRegistry = new DataStoreRegistryImpl()
+/**
+ * Returns a read-only view of all registered stores.
+ */
+export const getStoreRegistry = (): ReadonlyArray<RegisteredStore> => registry
+
+/**
+ * Resets the registry. For testing only.
+ */
+export const resetStoreRegistry = (): void => {
+    registry.length = 0
+}

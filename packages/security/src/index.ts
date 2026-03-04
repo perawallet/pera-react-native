@@ -15,5 +15,3 @@ export const name = '@perawallet/wallet-core-security'
 export * from './constants'
 export * from './models'
 export * from './hooks'
-
-export { initSecurityStore, registerSecurityStore } from './store'

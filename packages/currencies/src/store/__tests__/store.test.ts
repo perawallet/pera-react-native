@@ -12,35 +12,43 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useCurrenciesStore, initCurrenciesStore } from '../index'
 
-// Mock the storage service
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
-    useKeyValueStorageService: vi.fn(() => ({
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-    })),
-}))
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    const { createMockPersistStorage } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared/test-utils')
+    >('@perawallet/wallet-core-shared/test-utils')
+    return {
+        ...original,
+        registerStore: vi.fn(),
+        createPersistStorage: createMockPersistStorage,
+    }
+})
 
 describe('CurrenciesStore', () => {
-    beforeEach(() => {
-        initCurrenciesStore()
+    beforeEach(async () => {
+        vi.resetModules()
+        const { useCurrenciesStore } = await import('../index')
+        useCurrenciesStore.getState().resetState()
     })
 
-    test('should initialize with USD as default preferred currency', () => {
+    test('should initialize with USD as default preferred currency', async () => {
+        const { useCurrenciesStore } = await import('../index')
         const { result } = renderHook(() => useCurrenciesStore())
 
         expect(result.current.preferredCurrency).toBe('USD')
     })
 
-    test('should initialize with USD as default fallback currency', () => {
+    test('should initialize with USD as default fallback currency', async () => {
+        const { useCurrenciesStore } = await import('../index')
         const { result } = renderHook(() => useCurrenciesStore())
 
         expect(result.current.fallbackCurrency).toBe('USD')
     })
 
-    test('should update preferred currency', () => {
+    test('should update preferred currency', async () => {
+        const { useCurrenciesStore } = await import('../index')
         const { result } = renderHook(() => useCurrenciesStore())
 
         act(() => {
@@ -50,7 +58,8 @@ describe('CurrenciesStore', () => {
         expect(result.current.preferredCurrency).toBe('EUR')
     })
 
-    test('should update fallback currency', () => {
+    test('should update fallback currency', async () => {
+        const { useCurrenciesStore } = await import('../index')
         const { result } = renderHook(() => useCurrenciesStore())
 
         act(() => {
@@ -60,7 +69,8 @@ describe('CurrenciesStore', () => {
         expect(result.current.fallbackCurrency).toBe('GBP')
     })
 
-    test('should update to different currencies', () => {
+    test('should update to different currencies', async () => {
+        const { useCurrenciesStore } = await import('../index')
         const { result } = renderHook(() => useCurrenciesStore())
 
         act(() => {
@@ -74,7 +84,8 @@ describe('CurrenciesStore', () => {
         expect(result.current.preferredCurrency).toBe('JPY')
     })
 
-    test('should persist preferred currency across re-renders', () => {
+    test('should persist preferred currency across re-renders', async () => {
+        const { useCurrenciesStore } = await import('../index')
         const { result, rerender } = renderHook(() => useCurrenciesStore())
 
         act(() => {
@@ -86,7 +97,8 @@ describe('CurrenciesStore', () => {
         expect(result.current.preferredCurrency).toBe('CAD')
     })
 
-    test('should reset state to defaults', () => {
+    test('should reset state to defaults', async () => {
+        const { useCurrenciesStore } = await import('../index')
         const { result } = renderHook(() => useCurrenciesStore())
 
         act(() => {

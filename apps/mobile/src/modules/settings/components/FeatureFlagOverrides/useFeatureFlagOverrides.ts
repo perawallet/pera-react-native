@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useRemoteConfigOverrides } from '@perawallet/wallet-core-platform-integration'
+import { useRemoteConfigOverrides } from '@perawallet/wallet-extension-platform'
 import { useState } from 'react'
 
 export const useFeatureFlagOverrides = () => {

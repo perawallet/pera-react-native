@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useSecureStorageService } from '@perawallet/wallet-core-platform-integration'
+import { useSecureStorageService } from '@perawallet/wallet-extension-platform'
 import { useKeyManagerStore } from '../store'
 import {
     AppError,

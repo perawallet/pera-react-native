@@ -25,7 +25,6 @@ vi.mock('@modules/messages/hooks', () => ({
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     formatRelativeTime: vi.fn(date => `formatted-${date.toISOString()}`),
-    createLazyStore: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({

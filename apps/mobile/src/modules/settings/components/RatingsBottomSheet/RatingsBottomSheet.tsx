@@ -15,7 +15,7 @@ import { useStyles } from './RatingsBottomSheet.style'
 import RateApp, { AndroidMarket } from 'react-native-rate-app'
 import { RoundButton } from '@components/RoundButton'
 import { useLanguage } from '@hooks/useLanguage'
-import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
+import { useDeviceInfoService } from '@perawallet/wallet-extension-platform'
 import { useToast } from '@hooks/useToast'
 
 type RatingsBottomSheetProps = {

@@ -13,7 +13,7 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useSigningRequest } from '../useSigningRequest'
-import { initSigningStore } from '../../store'
+import { useSigningStore } from '../../store'
 import {
     MAX_TRANSACTION_SIGN_REQUESTS,
     MAX_DATA_SIGN_REQUESTS,
@@ -30,13 +30,19 @@ const mockEncodeSignedTransactions = vi.fn()
 const mockSendRawTransaction = vi.fn()
 const mockSignArbitraryData = vi.fn()
 
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
-    useKeyValueStorageService: vi.fn(() => ({
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-    })),
-}))
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...original,
+        registerStore: vi.fn(),
+        createPersistStorage: () => ({
+            getItem: vi.fn(),
+            setItem: vi.fn(),
+            removeItem: vi.fn(),
+        }),
+    }
+})
 
 vi.mock('../useTransactionSigner', () => ({
     useTransactionSigner: vi.fn(() => ({
@@ -93,7 +99,7 @@ const makeArbRequest = (
 describe('useSigningRequest', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        initSigningStore()
+        useSigningStore.getState().resetState()
         mockSignTransactions.mockResolvedValue([
             { txn: {}, sig: new Uint8Array() },
         ])

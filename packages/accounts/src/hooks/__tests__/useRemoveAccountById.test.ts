@@ -17,20 +17,19 @@ import { useAccountsStore } from '../../store'
 import {
     registerTestPlatform,
     MemoryKeyValueStorage,
-} from '@perawallet/wallet-core-platform-integration'
+} from '@perawallet/wallet-extension-platform'
 import type { WalletAccount } from '../../models'
 
-vi.mock('../../store', async () => {
-    const actual =
-        await vi.importActual<typeof import('../../store')>('../../store')
-    const mockStorage = {
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-    }
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    const { createMockPersistStorage } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared/test-utils')
+    >('@perawallet/wallet-core-shared/test-utils')
     return {
-        ...actual,
-        useAccountsStore: actual.createAccountsStore(mockStorage as any),
+        ...original,
+        registerStore: vi.fn(),
+        createPersistStorage: createMockPersistStorage,
     }
 })
 
@@ -41,10 +40,10 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-platform-integration', async () => {
+vi.mock('@perawallet/wallet-extension-platform', async () => {
     const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-platform-integration')
-    >('@perawallet/wallet-core-platform-integration')
+        typeof import('@perawallet/wallet-extension-platform')
+    >('@perawallet/wallet-extension-platform')
     return {
         ...actual,
         useKeyValueStorageService: vi.fn().mockReturnValue({

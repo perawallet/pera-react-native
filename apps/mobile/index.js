@@ -23,9 +23,6 @@ import './shim'
 // Development tooling
 import './src/wdyr'
 
-// Dependency injection
-import 'reflect-metadata'
-
 // Text encoding polyfill
 import 'fast-text-encoding'
 

@@ -12,20 +12,27 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { registerTestPlatform } from '@perawallet/wallet-core-platform-integration'
+
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    const { createMockPersistStorage } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared/test-utils')
+    >('@perawallet/wallet-core-shared/test-utils')
+    return {
+        ...original,
+        registerStore: vi.fn(),
+        createPersistStorage: createMockPersistStorage,
+    }
+})
 
 describe('services/notifications/store', () => {
     beforeEach(() => {
         vi.resetModules()
-        registerTestPlatform()
     })
 
-    test('initNotificationsStore initializes the store with defaults', async () => {
-        const { initNotificationsStore, useNotificationsStore } = await import(
-            '../store'
-        )
-
-        initNotificationsStore()
+    test('store initializes with defaults', async () => {
+        const { useNotificationsStore } = await import('../store')
 
         const { result } = renderHook(() => useNotificationsStore())
 
@@ -33,11 +40,7 @@ describe('services/notifications/store', () => {
     })
 
     test('setAccountNotificationEnabled updates account notification state', async () => {
-        const { initNotificationsStore, useNotificationsStore } = await import(
-            '../store'
-        )
-
-        initNotificationsStore()
+        const { useNotificationsStore } = await import('../store')
 
         const { result } = renderHook(() => useNotificationsStore())
 
@@ -55,11 +58,7 @@ describe('services/notifications/store', () => {
     })
 
     test('resetState reverts to initial values', async () => {
-        const { initNotificationsStore, useNotificationsStore } = await import(
-            '../store'
-        )
-
-        initNotificationsStore()
+        const { useNotificationsStore } = await import('../store')
 
         const { result } = renderHook(() => useNotificationsStore())
 

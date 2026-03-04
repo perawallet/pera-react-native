@@ -45,7 +45,7 @@ export default defineConfig({
                 '@perawallet/wallet-core-blockchain',
                 '@perawallet/wallet-core-config',
                 '@perawallet/wallet-core-currencies',
-                '@perawallet/wallet-core-platform-integration',
+                '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-core-kms',
                 '@algorandfoundation/xhd-wallet-api',
                 'uuid',

@@ -11,10 +11,8 @@
  */
 
 import { useCallback } from 'react'
-import {
-    useDeviceID,
-    useNetwork,
-} from '@perawallet/wallet-core-platform-integration'
+import { useDeviceID } from '@perawallet/wallet-extension-platform'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useToggleAssetPriceAlertMutation } from '@perawallet/wallet-core-assets'
 
 export const useAssetNotificationButton = (

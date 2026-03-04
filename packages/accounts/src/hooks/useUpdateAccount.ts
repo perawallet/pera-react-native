@@ -13,9 +13,9 @@
 import {
     useDeviceID,
     useDeviceInfoService,
-    useNetwork,
     useUpdateDeviceMutation,
-} from '@perawallet/wallet-core-platform-integration'
+} from '@perawallet/wallet-extension-platform'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '../store'
 import { WalletAccount } from '../models'
 

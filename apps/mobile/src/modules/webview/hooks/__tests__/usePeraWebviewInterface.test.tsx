@@ -42,13 +42,12 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         debug: vi.fn(),
         error: vi.fn(),
     },
-    createLazyStore: vi.fn(() => () => ({})),
     generateOrderedUniqueId: vi.fn(() => 'test-id'),
     decodeFromBase64: vi.fn(t => t),
     encodeToBase64: vi.fn(t => t),
 }))
 
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useAnalyticsService: vi.fn(() => ({
         logEvent: vi.fn(),
     })),
@@ -62,8 +61,15 @@ vi.mock('@perawallet/wallet-core-platform-integration', () => ({
         getDeviceCountry: vi.fn(() => 'US'),
         getDeviceLocale: vi.fn(() => 'en-US'),
     })),
+}))
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: vi.fn(() => ({
         network: 'mainnet',
+    })),
+    useTransactionEncoder: vi.fn(() => ({
+        decodeTransactions: vi.fn(txns => txns),
+        encodeSignedTransaction: vi.fn(t => t),
     })),
 }))
 
@@ -94,12 +100,6 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 }))
 
 const mockAddSignRequest = vi.fn()
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useTransactionEncoder: vi.fn(() => ({
-        decodeTransactions: vi.fn(txns => txns),
-        encodeSignedTransaction: vi.fn(t => t),
-    })),
-}))
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
 }))

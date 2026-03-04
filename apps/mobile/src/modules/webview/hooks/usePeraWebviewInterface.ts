@@ -19,8 +19,12 @@ import {
     useAnalyticsService,
     useDeviceID,
     useDeviceInfoService,
+} from '@perawallet/wallet-extension-platform'
+import {
     useNetwork,
-} from '@perawallet/wallet-core-platform-integration'
+    PeraSignedTransaction,
+    useTransactionEncoder,
+} from '@perawallet/wallet-core-blockchain'
 import {
     getAccountDisplayName,
     useAllAccounts,
@@ -29,10 +33,6 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useCallback } from 'react'
 import { useWebView } from './useWebViewStore'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    PeraSignedTransaction,
-    useTransactionEncoder,
-} from '@perawallet/wallet-core-blockchain'
 import {
     type ArbitraryDataSignRequest,
     type PeraArbitraryDataMessage,

@@ -1,10 +1,12 @@
 packages:
   - apps/*
   - packages/*
+  - extensions/*
 
 catalog:
   '@algorandfoundation/algokit-transact': ^10.0.0-alpha.29
   '@algorandfoundation/algokit-utils': ^10.0.0-alpha.29
+  '@algorandfoundation/wallet-provider': 1.0.0-canary.3
   '@algorandfoundation/xhd-wallet-api': ^2.0.0-canary.1
   '@babel/runtime': ^7.28.4
   '@kubb/cli': ^4.5.8

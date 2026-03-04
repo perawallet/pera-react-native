@@ -12,98 +12,81 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import {
-    KeyValueStorageService,
-    useKeyValueStorageService,
-} from '@perawallet/wallet-core-platform-integration'
 import type { AccountsState, WalletAccount } from '../models'
 import {
-    createLazyStore,
-    DataStoreRegistry,
+    createPersistStorage,
     logger,
+    registerStore,
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 
 const STORE_NAME = 'accounts-store'
-const lazy =
-    createLazyStore<WithPersist<StoreApi<AccountsState>, unknown>>(STORE_NAME)
-
-export const useAccountsStore: UseBoundStore<
-    WithPersist<StoreApi<AccountsState>, unknown>
-> = lazy.useStore
 
 const initialState = {
     accounts: [] as WalletAccount[],
     selectedAccountAddress: null as string | null,
 }
 
-export const createAccountsStore = (storage: KeyValueStorageService) =>
-    create<AccountsState>()(
-        persist(
-            (set, get) => ({
-                ...initialState,
-                getSelectedAccount: () => {
-                    const { accounts, selectedAccountAddress } = get()
+export const useAccountsStore: UseBoundStore<
+    WithPersist<StoreApi<AccountsState>, unknown>
+> = create<AccountsState>()(
+    persist(
+        (set, get) => ({
+            ...initialState,
+            getSelectedAccount: () => {
+                const { accounts, selectedAccountAddress } = get()
 
-                    if (!selectedAccountAddress) {
-                        return null
-                    }
-                    return (
-                        accounts.find(
-                            a => a.address === selectedAccountAddress,
-                        ) ?? null
-                    )
-                },
-                setAccounts: (accounts: WalletAccount[]) => {
-                    const currentSelected = get().selectedAccountAddress
-                    set({ accounts })
-
-                    if (currentSelected == null && accounts.length) {
-                        set({ selectedAccountAddress: accounts.at(0)?.address })
-                    } else if (
-                        !accounts.find(a => a.address === currentSelected)
-                    ) {
-                        set({
-                            selectedAccountAddress:
-                                accounts.at(0)?.address ?? null,
-                        })
-                    }
-                },
-                setSelectedAccountAddress: (address: string | null) => {
-                    const accounts = get().accounts
-                    if (address && !accounts.find(a => a.address === address)) {
-                        logger.warn(
-                            `Attempted to set selected account address to ${address}, but it does not exist in accounts list.`,
-                        )
-                        return
-                    }
-                    set({ selectedAccountAddress: address })
-                },
-                resetState: () => set(initialState),
-            }),
-            {
-                name: STORE_NAME,
-                storage: createJSONStorage(() => storage),
-                version: 1,
-                partialize: state => ({
-                    accounts: state.accounts,
-                    selectedAccountAddress: state.selectedAccountAddress,
-                }),
+                if (!selectedAccountAddress) {
+                    return null
+                }
+                return (
+                    accounts.find(a => a.address === selectedAccountAddress) ??
+                    null
+                )
             },
-        ),
-    )
+            setAccounts: (accounts: WalletAccount[]) => {
+                const currentSelected = get().selectedAccountAddress
+                set({ accounts })
 
-export const initAccountsStore = () => {
-    const storage = useKeyValueStorageService()
-    const realStore = createAccountsStore(storage)
-    lazy.init(realStore, () => realStore.getState().resetState())
-}
+                if (currentSelected == null && accounts.length) {
+                    set({ selectedAccountAddress: accounts.at(0)?.address })
+                } else if (!accounts.find(a => a.address === currentSelected)) {
+                    set({
+                        selectedAccountAddress: accounts.at(0)?.address ?? null,
+                    })
+                }
+            },
+            setSelectedAccountAddress: (address: string | null) => {
+                const accounts = get().accounts
+                if (address && !accounts.find(a => a.address === address)) {
+                    logger.warn(
+                        `Attempted to set selected account address to ${address}, but it does not exist in accounts list.`,
+                    )
+                    return
+                }
+                set({ selectedAccountAddress: address })
+            },
+            resetState: () => set(initialState),
+        }),
+        {
+            name: STORE_NAME,
+            storage: createJSONStorage(createPersistStorage),
+            version: 1,
+            partialize: state => ({
+                accounts: state.accounts,
+                selectedAccountAddress: state.selectedAccountAddress,
+            }),
+        },
+    ),
+)
 
-export const clearAccountsStore = () => lazy.clear()
-
-export const registerAccountsStore = () =>
-    DataStoreRegistry.register({
-        name: STORE_NAME,
-        init: initAccountsStore,
-        clear: clearAccountsStore,
-    })
+registerStore({
+    name: STORE_NAME,
+    clearStorage: () =>
+        (
+            useAccountsStore as unknown as {
+                persist: { clearStorage: () => void }
+            }
+        ).persist.clearStorage(),
+    resetState: () => useAccountsStore.getState().resetState(),
+})

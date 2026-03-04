@@ -38,7 +38,6 @@
     "globals": "catalog:",
     "jsdom": "^27.1.0",
     "react-dom": "catalog:",
-    "reflect-metadata": "catalog:",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",
     "vite": "catalog:",

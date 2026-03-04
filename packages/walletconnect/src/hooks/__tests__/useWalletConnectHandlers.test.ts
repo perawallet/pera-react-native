@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useWalletConnectHandlers } from '../useWalletConnectHandlers'
 import { useWalletConnectStore } from '../../store'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
-import { useNetwork } from '@perawallet/wallet-core-platform-integration'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     generateOrderedUniqueId,
     Networks,
@@ -50,14 +50,11 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         ),
     })),
     encodeAlgorandAddress: vi.fn(() => 'TEST_ADDRESS'),
+    useNetwork: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: vi.fn(),
-}))
-
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
-    useNetwork: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {

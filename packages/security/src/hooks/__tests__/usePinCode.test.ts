@@ -14,7 +14,7 @@ import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { usePinCode } from '../usePinCode'
 import { useSecurityStore } from '../../store'
-import { useSecureStorageService } from '@perawallet/wallet-core-platform-integration'
+import { useSecureStorageService } from '@perawallet/wallet-extension-platform'
 import {
     PIN_STORAGE_KEY,
     MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
@@ -25,7 +25,7 @@ vi.mock('../../store', () => ({
     useSecurityStore: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useSecureStorageService: vi.fn(),
 }))
 

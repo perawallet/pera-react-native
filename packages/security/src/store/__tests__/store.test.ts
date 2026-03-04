@@ -12,18 +12,29 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { registerTestPlatform } from '@perawallet/wallet-core-platform-integration'
+
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    const { createMockPersistStorage } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared/test-utils')
+    >('@perawallet/wallet-core-shared/test-utils')
+    return {
+        ...original,
+        registerStore: vi.fn(),
+        createPersistStorage: createMockPersistStorage,
+    }
+})
 
 describe('services/security/store', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
         vi.resetModules()
-        registerTestPlatform()
     })
 
     test('initSecurityStore initializes the store with defaults', async () => {
-        const { initSecurityStore, useSecurityStore } = await import('../store')
+        const { useSecurityStore } = await import('../store')
 
-        initSecurityStore()
+        useSecurityStore.getState().resetState()
 
         const { result } = renderHook(() => useSecurityStore())
 
@@ -33,9 +44,9 @@ describe('services/security/store', () => {
     })
 
     test('setAutoLockStartedAt updates auto lock time', async () => {
-        const { initSecurityStore, useSecurityStore } = await import('../store')
+        const { useSecurityStore } = await import('../store')
 
-        initSecurityStore()
+        useSecurityStore.getState().resetState()
 
         const { result } = renderHook(() => useSecurityStore())
 
@@ -55,9 +66,9 @@ describe('services/security/store', () => {
     })
 
     test('incrementFailedAttempts increases the counter', async () => {
-        const { initSecurityStore, useSecurityStore } = await import('../store')
+        const { useSecurityStore } = await import('../store')
 
-        initSecurityStore()
+        useSecurityStore.getState().resetState()
 
         const { result } = renderHook(() => useSecurityStore())
 
@@ -77,9 +88,9 @@ describe('services/security/store', () => {
     })
 
     test('resetFailedAttempts resets the counter to zero', async () => {
-        const { initSecurityStore, useSecurityStore } = await import('../store')
+        const { useSecurityStore } = await import('../store')
 
-        initSecurityStore()
+        useSecurityStore.getState().resetState()
 
         const { result } = renderHook(() => useSecurityStore())
 
@@ -99,9 +110,9 @@ describe('services/security/store', () => {
     })
 
     test('setLockoutEndTime updates lockout end time', async () => {
-        const { initSecurityStore, useSecurityStore } = await import('../store')
+        const { useSecurityStore } = await import('../store')
 
-        initSecurityStore()
+        useSecurityStore.getState().resetState()
 
         const { result } = renderHook(() => useSecurityStore())
 
@@ -121,9 +132,9 @@ describe('services/security/store', () => {
     })
 
     test('reset restores initial state', async () => {
-        const { initSecurityStore, useSecurityStore } = await import('../store')
+        const { useSecurityStore } = await import('../store')
 
-        initSecurityStore()
+        useSecurityStore.getState().resetState()
 
         const { result } = renderHook(() => useSecurityStore())
 

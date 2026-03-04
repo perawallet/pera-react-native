@@ -13,23 +13,13 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { SettingsState, ThemeMode } from '../models'
-import type { WithPersist } from '@perawallet/wallet-core-shared'
 import {
-    KeyValueStorageService,
-    useKeyValueStorageService,
-} from '@perawallet/wallet-core-platform-integration'
-import {
-    createLazyStore,
-    DataStoreRegistry,
+    createPersistStorage,
+    registerStore,
+    type WithPersist,
 } from '@perawallet/wallet-core-shared'
 
 const STORE_NAME = 'settings-store'
-const lazy =
-    createLazyStore<WithPersist<StoreApi<SettingsState>, unknown>>(STORE_NAME)
-
-export const useSettingsStore: UseBoundStore<
-    WithPersist<StoreApi<SettingsState>, unknown>
-> = lazy.useStore
 
 const initialState = {
     theme: 'system' as ThemeMode,
@@ -37,60 +27,54 @@ const initialState = {
     preferences: {} as Record<string, string | boolean | number>,
 }
 
-const createSettingsStore = (storage: KeyValueStorageService) =>
-    create<SettingsState>()(
-        persist(
-            (set, get) => ({
-                ...initialState,
-                setTheme: (theme: ThemeMode) => set({ theme }),
-                setPrivacyMode: (privacyMode: boolean) => set({ privacyMode }),
-                setPreference: (
-                    key: string,
-                    value: string | boolean | number,
-                ) => {
-                    set({ preferences: { ...get().preferences, [key]: value } })
-                },
-                getPreference: (key: string) => {
-                    return get().preferences[key] ?? null
-                },
-                deletePreference: (key: string) => {
-                    const existing = get().preferences
-                    delete existing[key]
-                    set({
-                        preferences: {
-                            ...existing,
-                        },
-                    })
-                },
-                clearAllPreferences: () => {
-                    set({ preferences: {} })
-                },
-                resetState: () => set(initialState),
-            }),
-            {
-                name: STORE_NAME,
-                storage: createJSONStorage(() => storage),
-                version: 1,
-                partialize: state => ({
-                    theme: state.theme,
-                    privacyMode: state.privacyMode,
-                    preferences: state.preferences,
-                }),
+export const useSettingsStore: UseBoundStore<
+    WithPersist<StoreApi<SettingsState>, unknown>
+> = create<SettingsState>()(
+    persist(
+        (set, get) => ({
+            ...initialState,
+            setTheme: (theme: ThemeMode) => set({ theme }),
+            setPrivacyMode: (privacyMode: boolean) => set({ privacyMode }),
+            setPreference: (key: string, value: string | boolean | number) => {
+                set({ preferences: { ...get().preferences, [key]: value } })
             },
-        ),
-    )
+            getPreference: (key: string) => {
+                return get().preferences[key] ?? null
+            },
+            deletePreference: (key: string) => {
+                const existing = get().preferences
+                delete existing[key]
+                set({
+                    preferences: {
+                        ...existing,
+                    },
+                })
+            },
+            clearAllPreferences: () => {
+                set({ preferences: {} })
+            },
+            resetState: () => set(initialState),
+        }),
+        {
+            name: STORE_NAME,
+            storage: createJSONStorage(createPersistStorage),
+            version: 1,
+            partialize: state => ({
+                theme: state.theme,
+                privacyMode: state.privacyMode,
+                preferences: state.preferences,
+            }),
+        },
+    ),
+)
 
-export const initSettingsStore = () => {
-    const storage = useKeyValueStorageService()
-    const realStore = createSettingsStore(storage)
-    lazy.init(realStore, () => realStore.getState().resetState())
-}
-
-export const clearSettingsStore = () => lazy.clear()
-
-export const registerSettingsStore = () =>
-    DataStoreRegistry.register({
-        name: STORE_NAME,
-        init: initSettingsStore,
-        clear: clearSettingsStore,
-    })
+registerStore({
+    name: STORE_NAME,
+    clearStorage: () =>
+        (
+            useSettingsStore as unknown as {
+                persist: { clearStorage: () => void }
+            }
+        ).persist.clearStorage(),
+    resetState: () => useSettingsStore.getState().resetState(),
+})

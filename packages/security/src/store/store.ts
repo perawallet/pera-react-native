@@ -13,23 +13,13 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { SecurityState } from '../models'
-import type { WithPersist } from '@perawallet/wallet-core-shared'
 import {
-    type KeyValueStorageService,
-    useKeyValueStorageService,
-} from '@perawallet/wallet-core-platform-integration'
-import {
-    createLazyStore,
-    DataStoreRegistry,
+    createPersistStorage,
+    registerStore,
+    type WithPersist,
 } from '@perawallet/wallet-core-shared'
 
 const STORE_NAME = 'security-store'
-const lazy =
-    createLazyStore<WithPersist<StoreApi<SecurityState>, unknown>>(STORE_NAME)
-
-export const useSecurityStore: UseBoundStore<
-    WithPersist<StoreApi<SecurityState>, unknown>
-> = lazy.useStore
 
 const initialState = {
     failedAttempts: 0,
@@ -37,46 +27,43 @@ const initialState = {
     autoLockStartedAt: null,
 }
 
-const createSecurityStore = (storage: KeyValueStorageService) =>
-    create<SecurityState>()(
-        persist(
-            set => ({
-                ...initialState,
-                incrementFailedAttempts: () =>
-                    set(state => ({
-                        failedAttempts: state.failedAttempts + 1,
-                    })),
-                resetFailedAttempts: () => set({ failedAttempts: 0 }),
-                setLockoutEndTime: (time: number | null) =>
-                    set({ lockoutEndTime: time }),
-                setAutoLockStartedAt: (date: number | null) =>
-                    set({ autoLockStartedAt: date }),
-                resetState: () => set(initialState),
+export const useSecurityStore: UseBoundStore<
+    WithPersist<StoreApi<SecurityState>, unknown>
+> = create<SecurityState>()(
+    persist(
+        set => ({
+            ...initialState,
+            incrementFailedAttempts: () =>
+                set(state => ({
+                    failedAttempts: state.failedAttempts + 1,
+                })),
+            resetFailedAttempts: () => set({ failedAttempts: 0 }),
+            setLockoutEndTime: (time: number | null) =>
+                set({ lockoutEndTime: time }),
+            setAutoLockStartedAt: (date: number | null) =>
+                set({ autoLockStartedAt: date }),
+            resetState: () => set(initialState),
+        }),
+        {
+            name: STORE_NAME,
+            storage: createJSONStorage(createPersistStorage),
+            version: 1,
+            partialize: state => ({
+                failedAttempts: state.failedAttempts,
+                lockoutEndTime: state.lockoutEndTime,
+                autoLockStartedAt: state.autoLockStartedAt,
             }),
-            {
-                name: STORE_NAME,
-                storage: createJSONStorage(() => storage),
-                version: 1,
-                partialize: state => ({
-                    failedAttempts: state.failedAttempts,
-                    lockoutEndTime: state.lockoutEndTime,
-                    autoLockStartedAt: state.autoLockStartedAt,
-                }),
-            },
-        ),
-    )
+        },
+    ),
+)
 
-export const initSecurityStore = () => {
-    const storage = useKeyValueStorageService()
-    const realStore = createSecurityStore(storage)
-    lazy.init(realStore, () => realStore.getState().resetState())
-}
-
-export const clearSecurityStore = () => lazy.clear()
-
-export const registerSecurityStore = () =>
-    DataStoreRegistry.register({
-        name: STORE_NAME,
-        init: initSecurityStore,
-        clear: clearSecurityStore,
-    })
+registerStore({
+    name: STORE_NAME,
+    clearStorage: () =>
+        (
+            useSecurityStore as unknown as {
+                persist: { clearStorage: () => void }
+            }
+        ).persist.clearStorage(),
+    resetState: () => useSecurityStore.getState().resetState(),
+})

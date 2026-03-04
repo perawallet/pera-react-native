@@ -13,7 +13,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any*/
 /* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable max-lines */
-import 'reflect-metadata'
 import { vi, afterEach } from 'vitest'
 // import '@testing-library/jest-native/extend-expect'
 
@@ -1542,21 +1541,16 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     },
     ErrorSeverity: { LOW: 'low', MEDIUM: 'medium', HIGH: 'high' },
     ErrorCategory: { WALLETCONNECT: 'walletconnect', UI: 'ui' },
-    createLazyStore: vi.fn(() => ({
-        useStore: vi.fn(),
-        init: vi.fn(),
-        clear: vi.fn(),
-        getStore: vi.fn(),
-    })),
-    DataStoreRegistry: {
-        register: vi.fn(),
-        initializeAll: vi.fn().mockResolvedValue(undefined),
-        clearAll: vi.fn().mockResolvedValue(undefined),
-        getRegisteredStores: vi.fn(() => []),
-        reset: vi.fn(),
-        isInitialized: vi.fn(() => false),
-    },
     useClearAllData: vi.fn(() => vi.fn().mockResolvedValue(undefined)),
+    registerStore: vi.fn(),
+    clearAllStores: vi.fn(),
+    resetStoreRegistry: vi.fn(),
+    getStoreRegistry: vi.fn(() => []),
+    createPersistStorage: () => ({
+        getItem: () => null,
+        setItem: () => {},
+        removeItem: () => {},
+    }),
 }))
 
 // Mock @perawallet/wallet-core-projects
@@ -1579,7 +1573,6 @@ vi.mock('@perawallet/wallet-core-projects', () => ({
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     useWalletConnect: vi.fn(() => ({ connections: [] })),
     useWalletConnectStore: vi.fn(),
-    initWalletConnectStore: vi.fn(),
     AlgorandChainId: {
         MainNet: 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
         TestNet: 'algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe',
@@ -1600,7 +1593,6 @@ vi.mock('@perawallet/wallet-core-polling', () => ({
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: vi.fn(),
-    initKMSStore: vi.fn(),
 }))
 
 // Mock @perawallet/wallet-core-assets
@@ -1751,7 +1743,6 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
         removeContact: vi.fn(),
         updateContact: vi.fn(),
     })),
-    initContactsStore: vi.fn(),
 }))
 
 // Mock @perawallet/wallet-core-currencies
@@ -1772,11 +1763,23 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         return new RegExp('^[0-9a-zA-Z]{58}$').test(address)
     }),
     encodeAlgorandAddress: vi.fn(() => 'MOCKADDRESS'),
-    initBlockchainStore: vi.fn(),
+    useNetwork: vi.fn(() => ({
+        network: 'mainnet',
+    })),
+    useNetworkStore: Object.assign(
+        vi.fn(() => 'mainnet'),
+        {
+            getState: vi.fn(() => ({
+                network: 'mainnet',
+                setNetwork: vi.fn(),
+                resetState: vi.fn(),
+            })),
+        },
+    ),
 }))
 
-// Mock @perawallet/wallet-core-platform-integration
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+// Mock @perawallet/wallet-extension-platform
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useID: vi.fn(() => 'id'),
     useDeviceID: vi.fn(() => 'device-id'),
     useDeviceInfoService: vi.fn(() => ({
@@ -1785,9 +1788,6 @@ vi.mock('@perawallet/wallet-core-platform-integration', () => ({
         getDevicePlatform: vi.fn(() => 'ios'),
         getDeviceModel: vi.fn(() => 'iPhone'),
         getUserAgent: vi.fn(() => 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)'),
-    })),
-    useNetwork: vi.fn(() => ({
-        network: 'mainnet',
     })),
     useAnalyticsService: vi.fn(() => ({
         logEvent: vi.fn(),

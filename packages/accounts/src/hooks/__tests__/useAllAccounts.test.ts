@@ -16,27 +16,18 @@ import { useAllAccounts } from '../useAllAccounts'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 
-vi.mock('../../store', async () => {
-    const actual =
-        await vi.importActual<typeof import('../../store')>('../../store')
-    const mockStorage = {
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-    }
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    const { createMockPersistStorage } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared/test-utils')
+    >('@perawallet/wallet-core-shared/test-utils')
     return {
-        ...actual,
-        useAccountsStore: actual.createAccountsStore(mockStorage as any),
+        ...original,
+        registerStore: vi.fn(),
+        createPersistStorage: createMockPersistStorage,
     }
 })
-
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
-    useKeyValueStorageService: vi.fn().mockReturnValue({
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-    }),
-}))
 
 describe('useAllAccounts', () => {
     beforeEach(() => {

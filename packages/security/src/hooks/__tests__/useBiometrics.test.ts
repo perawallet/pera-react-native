@@ -16,10 +16,10 @@ import { useBiometrics } from '../useBiometrics'
 import {
     useSecureStorageService,
     useBiometricsService,
-} from '@perawallet/wallet-core-platform-integration'
+} from '@perawallet/wallet-extension-platform'
 import { PIN_STORAGE_KEY, BIOMETRIC_STORAGE_KEY } from '../../constants'
 
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useSecureStorageService: vi.fn(),
     useBiometricsService: vi.fn(),
 }))

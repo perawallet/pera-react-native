@@ -63,27 +63,23 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
         >()
     return {
         ...actual,
-        microAlgosToAlgos: actual.microAlgosToAlgos,
+        useNetwork: mocks.useNetwork,
     }
 })
 
-vi.mock(
-    '@perawallet/wallet-core-platform-integration',
-    async importOriginal => {
-        const actual =
-            await importOriginal<
-                typeof import('@perawallet/wallet-core-platform-integration')
-            >()
+vi.mock('@perawallet/wallet-extension-platform', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-extension-platform')
+        >()
 
-        return {
-            ...actual,
-            useNetwork: mocks.useNetwork,
-            useRemoteConfigService: () => ({
-                getStringValue: mocks.getStringValue,
-            }),
-        }
-    },
-)
+    return {
+        ...actual,
+        useRemoteConfigService: () => ({
+            getStringValue: mocks.getStringValue,
+        }),
+    }
+})
 
 describe('useStakingProjectsQuery', () => {
     let queryClient: QueryClient

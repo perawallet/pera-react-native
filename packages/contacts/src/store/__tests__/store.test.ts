@@ -12,24 +12,30 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useContactsStore, initContactsStore } from '../index'
-import { Contact } from '../../models'
+import type { Contact } from '../../models'
 
-// Mock the storage service
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
-    useKeyValueStorageService: vi.fn(() => ({
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-    })),
-}))
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    const { createMockPersistStorage } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared/test-utils')
+    >('@perawallet/wallet-core-shared/test-utils')
+    return {
+        ...original,
+        registerStore: vi.fn(),
+        createPersistStorage: createMockPersistStorage,
+    }
+})
 
 describe('ContactsStore', () => {
-    beforeEach(() => {
-        initContactsStore()
+    beforeEach(async () => {
+        vi.resetModules()
+        const { useContactsStore } = await import('../index')
+        useContactsStore.getState().resetState()
     })
 
-    test('should add a contact', () => {
+    test('should add a contact', async () => {
+        const { useContactsStore } = await import('../index')
         const { result } = renderHook(() => useContactsStore())
         const contact: Contact = {
             id: 'test-id',
@@ -45,7 +51,8 @@ describe('ContactsStore', () => {
         expect(result.current.contacts[0]).toEqual(contact)
     })
 
-    test('should not add duplicate contact', () => {
+    test('should not add duplicate contact', async () => {
+        const { useContactsStore } = await import('../index')
         const { result } = renderHook(() => useContactsStore())
         const contact: Contact = {
             id: 'test-id',
@@ -65,7 +72,8 @@ describe('ContactsStore', () => {
         expect(result.current.contacts).toHaveLength(1)
     })
 
-    test('should remove a contact', () => {
+    test('should remove a contact', async () => {
+        const { useContactsStore } = await import('../index')
         const { result } = renderHook(() => useContactsStore())
         const contact: Contact = {
             id: 'test-id',

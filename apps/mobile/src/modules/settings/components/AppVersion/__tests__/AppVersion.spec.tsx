@@ -29,7 +29,7 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useDeviceInfoService: () => ({
         getAppVersion: () => '1.0.0',
         getAppBuild: () => '1',

@@ -39,7 +39,7 @@ export default defineConfig({
         alias: {
             '@test-utils': path.resolve(
                 __dirname,
-                '../platform-integration/src/test-utils',
+                '../../extensions/platform/src/test-utils',
             ),
         },
     },

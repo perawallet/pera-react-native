@@ -91,7 +91,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         return 'unknown'
     }),
     isValidAlgorandAddress: vi.fn(() => true),
-    initBlockchainStore: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-currencies', () => ({

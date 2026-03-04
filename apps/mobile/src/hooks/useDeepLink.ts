@@ -22,13 +22,13 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useWebView } from '@modules/webview/hooks'
-import { useEffect, useRef } from 'react'
-import { Linking } from 'react-native'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 import { ALGORAND_SCHEME } from './deeplink/arc90-parser'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import {
+    isValidAlgorandAddress,
+    useNetwork,
+} from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from './useLanguage'
-import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 
 type LinkSource = 'qr' | 'deeplink'
 
@@ -295,47 +295,4 @@ export const useDeepLink = () => {
         parseDeeplink,
         buildAccountDeeplink,
     }
-}
-
-export const useDeeplinkListener = () => {
-    const { handleDeepLink, isValidDeepLink } = useDeepLink()
-    const hasHandledInitialUrl = useRef(false)
-
-    useEffect(() => {
-        const handleInitialUrl = async () => {
-            try {
-                const initialUrl = await Linking.getInitialURL()
-
-                if (initialUrl && !hasHandledInitialUrl.current) {
-                    hasHandledInitialUrl.current = true
-                    logger.debug('Deeplink: Initial URL (cold start)', {
-                        initialUrl,
-                    })
-
-                    if (isValidDeepLink(initialUrl)) {
-                        // Small delay to ensure navigation is ready
-                        setTimeout(() => {
-                            handleDeepLink(initialUrl, false, 'deeplink')
-                        }, 500)
-                    }
-                }
-            } catch (error) {
-                logger.debug('Deeplink: Error getting initial URL', { error })
-            }
-        }
-
-        handleInitialUrl()
-
-        const subscription = Linking.addEventListener('url', event => {
-            logger.debug('Deeplink: URL event (warm start)', { url: event.url })
-
-            if (isValidDeepLink(event.url)) {
-                handleDeepLink(event.url, false, 'deeplink')
-            }
-        })
-
-        return () => {
-            subscription.remove()
-        }
-    }, [handleDeepLink, isValidDeepLink])
 }

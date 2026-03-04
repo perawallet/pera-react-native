@@ -12,21 +12,28 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { act } from '@testing-library/react'
-import { createAccountsStore } from '../index'
 import type { WalletAccount } from '../../models'
-import type { KeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
+
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    const { createMockPersistStorage } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared/test-utils')
+    >('@perawallet/wallet-core-shared/test-utils')
+    return {
+        ...original,
+        registerStore: vi.fn(),
+        createPersistStorage: createMockPersistStorage,
+    }
+})
 
 describe('services/accounts/store', () => {
-    let useAccountsStore: ReturnType<typeof createAccountsStore>
+    let useAccountsStore: typeof import('../store').useAccountsStore
 
-    beforeEach(() => {
-        const mockStorage = {
-            getItem: vi.fn(),
-            setItem: vi.fn(),
-            removeItem: vi.fn(),
-        } as unknown as KeyValueStorageService
-
-        useAccountsStore = createAccountsStore(mockStorage)
+    beforeEach(async () => {
+        vi.resetModules()
+        const module = await import('../store')
+        useAccountsStore = module.useAccountsStore
     })
 
     test('defaults to empty list and setAccounts updates state', () => {
