@@ -13,7 +13,10 @@
 import type { AnalyticsService } from './analytics'
 import type { BiometricsService } from './biometrics'
 import type { DeviceInfoService } from './device'
-import type { PushNotificationService } from './push-notifications'
+import type {
+    PushNotificationInitResult,
+    PushNotificationService,
+} from './push-notifications'
 import type { RemoteConfigService } from './remote-config'
 import type { CrashReportingService } from './reporting'
 import type { KeyValueStorageService, SecureStorageService } from './storage'
@@ -28,3 +31,9 @@ export interface PlatformServices {
     crashReporting: CrashReportingService
     deviceInfo: DeviceInfoService
 }
+
+export type PlatformExtension = PlatformServices & {
+    initialize: () => Promise<PushNotificationInitResult>
+}
+
+export type PlatformExtensionFn = (provider: unknown) => PlatformExtension

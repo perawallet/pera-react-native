@@ -11,6 +11,7 @@
  */
 
 import type {
+    PlatformExtension,
     PlatformServices,
     PushNotificationInitResult,
 } from '@perawallet/wallet-extension-platform'
@@ -22,9 +23,7 @@ import { RNSecureStorageService } from './services/secure-storage'
 import { RNDeviceInfoStorageService } from './services/device'
 import { keyValueStorage } from './resources'
 
-export type ReactNativePlatformExtension = PlatformServices & {
-    initialize: () => Promise<PushNotificationInitResult>
-}
+export type ReactNativePlatformExtension = PlatformExtension
 
 /**
  * wallet-provider Extension that creates all React Native platform service

@@ -18,8 +18,8 @@ import { buildTestPlatform } from '@perawallet/wallet-extension-platform'
 
 const testPlatform = buildTestPlatform()
 
-vi.mock('@perawallet/wallet-extension-platform-react-native', () => ({
-    WithReactNativePlatformExtension: () => ({
+vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
+    WithPlatformExtension: () => ({
         ...testPlatform,
         initialize: vi.fn().mockResolvedValue({
             token: 'test-token',
