@@ -77,6 +77,7 @@ export const ImportSelectAddressesScreen = () => {
                         checked={isSelected}
                         onPress={() => toggleSelection(item.address)}
                         containerStyle={styles.checkboxContainer}
+                        testID={`import_select_addresses_item_checkbox_${item.address}`}
                     />
                 )}
             </PWTouchableOpacity>
@@ -131,6 +132,7 @@ export const ImportSelectAddressesScreen = () => {
                                 checked={isAllSelected}
                                 onPress={toggleSelectAll}
                                 containerStyle={styles.checkboxContainer}
+                                testID='import_select_addresses_select_all_checkbox'
                             />
                         </PWTouchableOpacity>
                     )}
@@ -148,6 +150,7 @@ export const ImportSelectAddressesScreen = () => {
 
             <PWView style={styles.footer}>
                 <PWButton
+                    testID='import_select_addresses_continue_button'
                     title={t('onboarding.import_select_addresses.continue')}
                     onPress={handleContinue}
                     variant='primary'

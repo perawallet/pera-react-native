@@ -45,6 +45,7 @@ export const ImportRekeyedAddressesItem = ({
             style={styles.itemContainer}
             onPress={() => onToggle(account.address)}
             disabled={isImported}
+            testID={`import_rekeyed_addresses_item_${account.address}`}
         >
             {!isImported && (
                 <PWView style={styles.checkboxWrapper}>
@@ -52,6 +53,7 @@ export const ImportRekeyedAddressesItem = ({
                         checked={isSelected}
                         onPress={() => onToggle(account.address)}
                         containerStyle={styles.checkboxContainer}
+                        testID={`import_rekeyed_addresses_item_checkbox_${account.address}`}
                     />
                 </PWView>
             )}

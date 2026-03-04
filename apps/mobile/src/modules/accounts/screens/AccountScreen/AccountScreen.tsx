@@ -85,7 +85,10 @@ export const AccountScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
+        <PWView
+            style={styles.container}
+            testID='account_screen'
+        >
             <ConfettiAnimation
                 play={shouldPlayConfetti}
                 onFinish={() => setShouldPlayConfetti(false)}

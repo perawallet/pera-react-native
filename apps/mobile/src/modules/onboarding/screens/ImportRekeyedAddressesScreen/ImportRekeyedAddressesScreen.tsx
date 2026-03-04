@@ -34,7 +34,10 @@ export const ImportRekeyedAddressesScreen = () => {
     } = useImportRekeyedAddressesScreen()
 
     return (
-        <PWView style={styles.container}>
+        <PWView
+            style={styles.container}
+            testID='import_rekeyed_addresses_screen'
+        >
             <PWFlatList
                 style={styles.list}
                 contentContainerStyle={styles.listContent}

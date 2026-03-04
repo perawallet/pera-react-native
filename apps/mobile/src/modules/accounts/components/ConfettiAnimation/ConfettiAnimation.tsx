@@ -52,6 +52,7 @@ export const ConfettiAnimation = ({
 
     return (
         <LottieView
+            testID='confetti_animation'
             autoPlay={true}
             loop={false}
             onAnimationFinish={handleAnimationFinish}

@@ -29,7 +29,10 @@ export const NotificationsIcon = (props: NotificationsIconProps) => {
     }
 
     return (
-        <PWTouchableOpacity onPress={goToNotifications}>
+        <PWTouchableOpacity
+            onPress={goToNotifications}
+            testID='notifications_icon'
+        >
             <PWView>
                 <PWIcon
                     name='inbox'

@@ -25,11 +25,13 @@ export const SettingsDeveloperNodeSettingsScreen = () => {
     return (
         <PWView style={styles.container}>
             <PWRadioButton
+                testID='node_settings_mainnet_radio'
                 title={t('settings.developer.node_settings.mainnet_label')}
                 onPress={() => setNetwork(Networks.mainnet)}
                 isSelected={isMainnet}
             />
             <PWRadioButton
+                testID='node_settings_testnet_radio'
                 title={t('settings.developer.node_settings.testnet_label')}
                 onPress={() => setNetwork(Networks.testnet)}
                 isSelected={isTestnet}
