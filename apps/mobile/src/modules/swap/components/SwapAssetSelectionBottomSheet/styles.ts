@@ -10,9 +10,20 @@
  limitations under the License
  */
 
-export { SwapAmountSection } from './SwapAmountSection'
-export type { SwapAmountSectionProps } from './SwapAmountSection'
-export { SwapForm } from './SwapForm'
-export { SwapIntroduction } from './SwapIntroduction'
-export { SwapAssetSelectionBottomSheet } from './SwapAssetSelectionBottomSheet'
-export { SwapAssetSelector } from './SwapAssetSelector'
+import { makeStyles } from '@rneui/themed'
+import { Dimensions } from 'react-native'
+
+const { height } = Dimensions.get('window')
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        height: height * 0.9,
+    },
+    listContent: {
+        gap: theme.spacing.md,
+    },
+    item: {
+        width: '100%',
+        paddingHorizontal: theme.spacing.md,
+    },
+}))

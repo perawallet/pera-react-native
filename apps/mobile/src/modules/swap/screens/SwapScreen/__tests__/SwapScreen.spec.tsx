@@ -16,12 +16,25 @@ import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { SwapScreen } from '../SwapScreen'
 
 const mockUseSwapIntroduction = vi.hoisted(() => vi.fn())
+const mockUseModalState = vi.hoisted(() =>
+    vi.fn((initialOpen = false) => ({
+        isOpen: initialOpen,
+        open: vi.fn(),
+        close: vi.fn(),
+        toggle: vi.fn(),
+    })),
+)
 
 vi.mock('@modules/swap/hooks', () => ({
     useSwapIntroduction: mockUseSwapIntroduction,
 }))
 
+vi.mock('@hooks/useModalState', () => ({
+    useModalState: mockUseModalState,
+}))
+
 vi.mock('@modules/swap/components', () => ({
+    SwapForm: () => <div data-testid='swap-form' />,
     SwapIntroduction: ({
         isVisible,
         onStartSwapping,
@@ -69,7 +82,7 @@ describe('SwapScreen', () => {
         expect(screen.getByTestId('account-selection')).toBeTruthy()
     })
 
-    it('shows swap content when user has already seen introduction', () => {
+    it('shows swap form when user has already seen introduction', () => {
         mockUseSwapIntroduction.mockReturnValue({
             isIntroductionSeen: true,
             markIntroductionSeen: vi.fn(),
@@ -78,6 +91,6 @@ describe('SwapScreen', () => {
         render(<SwapScreen />)
 
         expect(screen.queryByTestId('swap-introduction')).toBeNull()
-        expect(screen.getByText('common.not_implemented.title')).toBeTruthy()
+        expect(screen.getByTestId('swap-form')).toBeTruthy()
     })
 })

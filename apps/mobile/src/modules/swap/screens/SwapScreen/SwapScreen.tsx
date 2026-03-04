@@ -15,11 +15,10 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { config } from '@perawallet/wallet-core-config'
 import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
-import { EmptyView } from '@components/EmptyView'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import { useWebView } from '@modules/webview'
 import { useSwapIntroduction } from '@modules/swap/hooks'
-import { SwapIntroduction } from '@modules/swap/components'
+import { SwapForm, SwapIntroduction } from '@modules/swap/components'
 import { useStyles } from './styles'
 
 export const SwapScreen = () => {
@@ -51,12 +50,10 @@ export const SwapScreen = () => {
                     </PWView>
                 }
                 right={<AccountSelection />}
+                style={styles.toolbar}
             />
 
-            <EmptyView
-                title={t('common.not_implemented.title')}
-                body={t('common.not_implemented.body')}
-            />
+            <SwapForm />
 
             <SwapIntroduction
                 isVisible={introModal.isOpen}

@@ -997,6 +997,16 @@
             "powered_by_brand": "P.E.R.A.",
             "start_swapping": "Start Swapping",
             "terms_agreement": "By continuing, you agree to our swap partner's <0>Terms of Service</0>"
+        },
+        "form": {
+            "you_pay": "You pay",
+            "you_receive": "You receive",
+            "balance_label": "Balance: ",
+            "max": "MAX",
+            "select_asset": "Select"
+        },
+        "asset_selection": {
+            "title": "Select asset"
         }
     }
 }
