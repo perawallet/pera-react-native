@@ -62,6 +62,7 @@ export const ARC59WarningBottomSheet = ({
             isVisible={isVisible}
             onBackdropPress={onClose}
             innerContainerStyle={styles.bottomSheetContainer}
+            enablePanDownToClose
         >
             <PWIcon
                 name='info'

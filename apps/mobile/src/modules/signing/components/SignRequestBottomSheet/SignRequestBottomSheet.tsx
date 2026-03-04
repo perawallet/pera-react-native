@@ -13,14 +13,12 @@
 import React, { useEffect } from 'react'
 import { PWBottomSheet } from '@components/core'
 import { SignRequestView } from '@modules/signing/components/SignRequestView'
-import { useWindowDimensions } from 'react-native'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 
 export function SignRequestBottomSheet() {
     const { pendingSignRequests, lastCompletedRequest } = useSigningRequest()
     const nextRequest = pendingSignRequests.at(0)
-    const { height } = useWindowDimensions()
     const [isVisible, setIsVisible] = React.useState(false)
 
     useEffect(() => {
@@ -36,8 +34,8 @@ export function SignRequestBottomSheet() {
 
     return (
         <PWBottomSheet
-            innerContainerStyle={{ height: height - 100 }}
             isVisible={isVisible}
+            size='lg'
         >
             {!!nextRequest && <SignRequestView request={nextRequest} />}
         </PWBottomSheet>

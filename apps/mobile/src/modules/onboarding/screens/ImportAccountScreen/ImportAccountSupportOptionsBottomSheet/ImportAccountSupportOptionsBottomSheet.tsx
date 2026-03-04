@@ -44,6 +44,7 @@ export const ImportAccountSupportOptionsBottomSheet = ({
         <PWBottomSheet
             isVisible={isVisible}
             onBackdropPress={onClose}
+            enablePanDownToClose
         >
             <PWView style={styles.container}>
                 <PWView style={styles.header}>

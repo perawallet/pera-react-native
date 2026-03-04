@@ -23,6 +23,7 @@ import { useStyles } from './styles'
 import { AccountOption, useAccountOptions } from './useAccountOptions'
 import { RenameAccountBottomSheet } from './RenameAccountBottomSheet'
 import { RemoveAccountConfirmBottomSheet } from './RemoveAccountConfirmBottomSheet'
+import { BottomSheetView } from '@gorhom/bottom-sheet'
 
 export type AccountOptionsBottomSheetProps = {
     isVisible: boolean
@@ -114,43 +115,46 @@ export const AccountOptionsBottomSheet = ({
             <PWBottomSheet
                 isVisible={isVisible}
                 onBackdropPress={onClose}
-                innerContainerStyle={styles.container}
+                enablePanDownToClose
+                autoCreateContainer={false}
             >
-                <PWView>
-                    {generalOptions.map(option => (
-                        <OptionRow
-                            key={option.id}
-                            option={option}
-                            styles={styles}
-                        />
-                    ))}
-                </PWView>
+                <BottomSheetView style={styles.container}>
+                    <PWView>
+                        {generalOptions.map(option => (
+                            <OptionRow
+                                key={option.id}
+                                option={option}
+                                styles={styles}
+                            />
+                        ))}
+                    </PWView>
 
-                {rekeyOptions.length > 0 && (
-                    <>
-                        <PWDivider style={styles.divider} />
-                        <PWView>
-                            {rekeyOptions.map(option => (
-                                <OptionRow
-                                    key={option.id}
-                                    option={option}
-                                    styles={styles}
-                                />
-                            ))}
-                        </PWView>
-                    </>
-                )}
+                    {rekeyOptions.length > 0 && (
+                        <>
+                            <PWDivider style={styles.divider} />
+                            <PWView>
+                                {rekeyOptions.map(option => (
+                                    <OptionRow
+                                        key={option.id}
+                                        option={option}
+                                        styles={styles}
+                                    />
+                                ))}
+                            </PWView>
+                        </>
+                    )}
 
-                <PWDivider style={styles.divider} />
-                <PWView>
-                    {managementOptions.map(option => (
-                        <OptionRow
-                            key={option.id}
-                            option={option}
-                            styles={styles}
-                        />
-                    ))}
-                </PWView>
+                    <PWDivider style={styles.divider} />
+                    <PWView>
+                        {managementOptions.map(option => (
+                            <OptionRow
+                                key={option.id}
+                                option={option}
+                                styles={styles}
+                            />
+                        ))}
+                    </PWView>
+                </BottomSheetView>
             </PWBottomSheet>
 
             <RenameAccountBottomSheet

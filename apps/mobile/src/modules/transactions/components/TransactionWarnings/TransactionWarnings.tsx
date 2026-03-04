@@ -85,7 +85,11 @@ export const TransactionWarnings = ({
                     variant='error'
                 />
 
-                <PWBottomSheet isVisible={isOpen}>
+                <PWBottomSheet
+                    isVisible={isOpen}
+                    onBackdropPress={close}
+                    enablePanDownToClose
+                >
                     <PWView style={styles.sheetContainer}>
                         <PWToolbar
                             left={
@@ -102,6 +106,7 @@ export const TransactionWarnings = ({
                                     })}
                                 </PWText>
                             }
+                            paddingStyle='dense'
                         />
 
                         {!!closeAddress && (

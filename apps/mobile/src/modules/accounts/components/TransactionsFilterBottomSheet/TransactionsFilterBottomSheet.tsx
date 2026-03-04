@@ -290,6 +290,7 @@ export const TransactionsFilterBottomSheet = ({
             isVisible={isVisible}
             onBackdropPress={onClose}
             innerContainerStyle={styles.container}
+            enablePanDownToClose
         >
             {view === 'main' ? renderMainView() : renderCustomRangeView()}
         </PWBottomSheet>

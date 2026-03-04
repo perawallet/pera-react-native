@@ -193,7 +193,7 @@ importers:
         specifier: ^6.1.1
         version: 6.1.1(react-native@0.81.5(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       '@gorhom/bottom-sheet':
-        specifier: ^5.1.4
+        specifier: ^5.2.8
         version: 5.2.8(eefb15c77ca8c79c8bc537a1e23c5212)
       '@hookform/resolvers':
         specifier: ^5.2.2

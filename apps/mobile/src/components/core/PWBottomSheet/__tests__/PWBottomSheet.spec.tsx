@@ -64,31 +64,4 @@ describe('PWBottomSheet', () => {
 
         expect(screen.getByText('Sheet Content')).toBeTruthy()
     })
-
-    it('renders with dynamic sizing disabled', () => {
-        render(
-            <PWBottomSheet
-                isVisible={true}
-                enableDynamicSizing={false}
-                snapPoints={['50%']}
-            >
-                <Text>Sheet Content</Text>
-            </PWBottomSheet>,
-        )
-
-        expect(screen.getByText('Sheet Content')).toBeTruthy()
-    })
-
-    it('renders with scroll disabled', () => {
-        render(
-            <PWBottomSheet
-                isVisible={true}
-                scrollEnabled={false}
-            >
-                <Text>Sheet Content</Text>
-            </PWBottomSheet>,
-        )
-
-        expect(screen.getByText('Sheet Content')).toBeTruthy()
-    })
 })

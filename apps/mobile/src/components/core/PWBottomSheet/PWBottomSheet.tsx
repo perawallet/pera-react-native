@@ -14,7 +14,6 @@ import {
     BottomSheetModal,
     BottomSheetBackdrop,
     BottomSheetBackdropProps,
-    BottomSheetScrollView,
     BottomSheetView,
 } from '@gorhom/bottom-sheet'
 import { PWView } from '@components/core/PWView'
@@ -26,29 +25,55 @@ import {
     useRef,
 } from 'react'
 import { useStyles } from './styles'
-import { ScrollViewProps, StyleProp, ViewStyle } from 'react-native'
+import { StyleProp, ViewStyle } from 'react-native'
 import { NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export const bottomSheetNotifier = createRef<NotifierRoot | null>()
 
+type DefaultPropsReturn = {
+    snapPoints?: string[]
+    enableDynamicSizing: boolean
+}
+
+const getDefaultProps = (size: PWBottomSheetSize): DefaultPropsReturn => {
+    if (size === 'auto') {
+        return {
+            enableDynamicSizing: true,
+        }
+    }
+
+    if (size === 'lg') {
+        return {
+            enableDynamicSizing: false,
+            snapPoints: ['90%'],
+        }
+    }
+
+    if (size === 'md') {
+        return {
+            enableDynamicSizing: false,
+            snapPoints: ['50%'],
+        }
+    }
+
+    return {
+        enableDynamicSizing: false,
+        snapPoints: ['100%'],
+    }
+}
+
+export type PWBottomSheetSize = 'full' | 'lg' | 'md' | 'auto'
+
 export type PWBottomSheetProps = {
-    /** Controls whether the bottom sheet is visible */
     isVisible: boolean
-    /** Called when the backdrop is pressed or sheet is dismissed */
     onBackdropPress?: () => void
-    /** Custom styles for the inner content container */
     innerContainerStyle?: StyleProp<ViewStyle>
-    /** Custom styles for the modal container (applied to background) */
     containerStyle?: StyleProp<ViewStyle>
-    /** Whether the content is scrollable. Defaults to true */
-    scrollEnabled?: boolean
-    /** Props to pass to the internal scroll view when scrollEnabled is true */
-    scrollViewProps?: Omit<ScrollViewProps, 'children'>
-    /** Optional snap points for the bottom sheet (e.g., ['50%', '90%']) */
     snapPoints?: (string | number)[]
-    /** Whether to enable dynamic sizing based on content. Defaults to true when no snapPoints provided */
-    enableDynamicSizing?: boolean
+    enablePanDownToClose?: boolean
+    size?: PWBottomSheetSize
+    autoCreateContainer?: boolean
 } & PropsWithChildren
 
 export const PWBottomSheet = ({
@@ -56,18 +81,15 @@ export const PWBottomSheet = ({
     onBackdropPress,
     innerContainerStyle,
     containerStyle,
-    scrollEnabled = true,
-    scrollViewProps,
-    snapPoints,
-    enableDynamicSizing,
+    enablePanDownToClose = false,
+    size = 'auto',
+    autoCreateContainer = true,
     children,
 }: PWBottomSheetProps) => {
     const bottomSheetModalRef = useRef<BottomSheetModal>(null)
     const insets = useSafeAreaInsets()
-    const styles = useStyles()
-
-    // Determine if dynamic sizing should be used
-    const shouldUseDynamicSizing = enableDynamicSizing ?? !snapPoints
+    const defaults = getDefaultProps(size)
+    const styles = useStyles({ insets, isFull: size === 'full' })
 
     // Sync isVisible prop with modal state
     useEffect(() => {
@@ -82,6 +104,7 @@ export const PWBottomSheet = ({
         (props: BottomSheetBackdropProps) => (
             <BottomSheetBackdrop
                 {...props}
+                opacity={0.9}
                 disappearsOnIndex={-1}
                 appearsOnIndex={0}
                 pressBehavior='close'
@@ -103,41 +126,40 @@ export const PWBottomSheet = ({
     return (
         <BottomSheetModal
             ref={bottomSheetModalRef}
-            snapPoints={snapPoints}
-            enableDynamicSizing={shouldUseDynamicSizing}
+            snapPoints={defaults.snapPoints}
+            enableDynamicSizing={defaults.enableDynamicSizing}
             backdropComponent={renderBackdrop}
             onDismiss={handleDismiss}
-            handleIndicatorStyle={styles.handleIndicator}
+            handleIndicatorStyle={
+                enablePanDownToClose ? styles.handleIndicator : styles.hidden
+            }
             backgroundStyle={mergedBackgroundStyle}
             bottomInset={insets.bottom}
             detached={false}
             keyboardBehavior='interactive'
             keyboardBlurBehavior='restore'
+            enablePanDownToClose={enablePanDownToClose}
+            enableOverDrag={false}
         >
             <NotifierWrapper
                 omitGlobalMethodsHookup
                 ref={bottomSheetNotifier}
             >
-                {scrollEnabled ? (
-                    <BottomSheetScrollView
-                        style={styles.contentWrapper}
-                        {...scrollViewProps}
-                    >
+                <PWView style={styles.contentWrapper}>
+                    {autoCreateContainer ? (
+                        <BottomSheetView
+                            style={[styles.innerContainer, innerContainerStyle]}
+                        >
+                            {children}
+                        </BottomSheetView>
+                    ) : (
                         <PWView
                             style={[styles.innerContainer, innerContainerStyle]}
                         >
                             {children}
                         </PWView>
-                    </BottomSheetScrollView>
-                ) : (
-                    <BottomSheetView style={styles.contentWrapper}>
-                        <PWView
-                            style={[styles.innerContainer, innerContainerStyle]}
-                        >
-                            {children}
-                        </PWView>
-                    </BottomSheetView>
-                )}
+                    )}
+                </PWView>
             </NotifierWrapper>
         </BottomSheetModal>
     )

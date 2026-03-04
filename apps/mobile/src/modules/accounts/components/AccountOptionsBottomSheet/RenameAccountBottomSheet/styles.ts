@@ -36,5 +36,10 @@ export const useStyles = makeStyles(
             paddingHorizontal: theme.spacing.lg,
             paddingTop: theme.spacing.md,
         },
+        toolbar: {
+            minHeight: 0,
+            paddingTop: theme.spacing.sm,
+            paddingBottom: theme.spacing.md,
+        },
     }),
 )

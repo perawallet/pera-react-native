@@ -56,6 +56,7 @@ export const RatingsBottomSheet = (props: RatingsBottomSheetProps) => {
             isVisible={isOpen}
             onBackdropPress={onClose}
             innerContainerStyle={styles.bottomSheetContainer}
+            enablePanDownToClose
         >
             <PWView style={styles.buttonContainer}>
                 <RoundButton

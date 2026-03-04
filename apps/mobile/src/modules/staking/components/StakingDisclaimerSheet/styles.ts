@@ -24,8 +24,7 @@ export const useStyles = makeStyles(theme => {
         },
         container: {
             gap: theme.spacing.md,
-            padding: theme.spacing.lg,
-            marginTop: theme.spacing['3xl'],
+            paddingHorizontal: theme.spacing.lg,
         },
         emphasizedText: {
             color: theme.colors.textMain,

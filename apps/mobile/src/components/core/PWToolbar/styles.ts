@@ -12,26 +12,29 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        padding: theme.spacing.md,
-        minHeight: theme.spacing['4xl'],
-    },
-    leftSlotContainer: {
-        alignItems: 'flex-start',
-        flexShrink: 1,
-        minWidth: theme.spacing.xxl,
-    },
-    centerSlotContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexGrow: 1,
-    },
-    rightSlotContainer: {
-        alignItems: 'flex-end',
-        flexShrink: 1,
-        minWidth: theme.spacing.xxl,
-    },
-}))
+export const useStyles = makeStyles(
+    (theme, paddingStyle: 'dense' | 'normal' | 'none') => ({
+        container: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingHorizontal: theme.spacing.md,
+            paddingVertical: paddingStyle === 'none' ? 0 : theme.spacing.md,
+            minHeight: paddingStyle === 'normal' ? theme.spacing['4xl'] : 0,
+        },
+        leftSlotContainer: {
+            alignItems: 'flex-start',
+            flexShrink: 1,
+            minWidth: theme.spacing.xxl,
+        },
+        centerSlotContainer: {
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexGrow: 1,
+        },
+        rightSlotContainer: {
+            alignItems: 'flex-end',
+            flexShrink: 1,
+            minWidth: theme.spacing.xxl,
+        },
+    }),
+)

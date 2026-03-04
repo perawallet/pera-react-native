@@ -80,6 +80,8 @@ export const AccountMenu = (props: AccountMenuProps) => {
                     )}
                     ItemSeparatorComponent={ListSeparator}
                     showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.accountContainer}
+                    inBottomSheet
                 />
             </PWView>
         </PWView>

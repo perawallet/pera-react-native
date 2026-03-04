@@ -48,6 +48,8 @@ export const SendFundsBottomSheet = ({
         <PWBottomSheet
             isVisible={isVisible}
             innerContainerStyle={styles.container}
+            size='lg'
+            enablePanDownToClose
         >
             <TransactionErrorBoundary t={t}>
                 {selectedAccount ? (

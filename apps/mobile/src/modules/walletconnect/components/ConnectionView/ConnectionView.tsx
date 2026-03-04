@@ -107,6 +107,7 @@ export const ConnectionView = ({
                 extraData={{ selectedAccounts }}
                 ListHeaderComponent={<ConnectionViewHeader request={request} />}
                 showsVerticalScrollIndicator={false}
+                inBottomSheet
             />
             <PWView style={styles.buttonContainer}>
                 <PWButton

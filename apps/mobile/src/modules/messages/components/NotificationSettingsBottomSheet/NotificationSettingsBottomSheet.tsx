@@ -31,6 +31,7 @@ export const NotificationSettingsBottomSheet = ({
         <PWBottomSheet
             isVisible={isVisible}
             onBackdropPress={onClose}
+            enablePanDownToClose
         >
             <PWView style={styles.container}>
                 <PWHeader

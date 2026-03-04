@@ -29,7 +29,7 @@
     "@algorandfoundation/algokit-utils": "catalog:",
     "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@craftzdog/react-native-buffer": "^6.1.1",
-    "@gorhom/bottom-sheet": "^5.1.4",
+    "@gorhom/bottom-sheet": "^5.2.8",
     "@hookform/resolvers": "^5.2.2",
     "@legendapp/list": "^2.0.19",
     "@notifee/react-native": "^9.1.8",

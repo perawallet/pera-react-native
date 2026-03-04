@@ -35,6 +35,7 @@ export const DeleteAllConfirmBottomSheet = (props: {
             isVisible={isOpen}
             onBackdropPress={onClose}
             innerContainerStyle={styles.bottomSheetContainer}
+            enablePanDownToClose
         >
             <PWIcon
                 name='trash'
