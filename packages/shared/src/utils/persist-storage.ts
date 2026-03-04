@@ -12,32 +12,25 @@
 
 import type { StateStorage } from 'zustand/middleware'
 
-interface PlatformDriver {
+/**
+ * Returns the platform's keyValueStorage via the platform driver.
+ *
+ * Uses `require()` to avoid a static dependency on the driver package
+ * (which would create a turbo build cycle: shared → platform-driver →
+ * platform → shared). At runtime the bundler (Metro) aliases the driver
+ * to the concrete platform extension, so the call always succeeds.
+ */
+declare const require: (id: string) => {
     getPlatformServices: () => { keyValueStorage: StateStorage }
 }
 
-/**
- * Lazily resolves the platform driver's keyValueStorage.
- *
- * Uses a dynamic import expression to avoid declaring a static dependency on
- * `@perawallet/wallet-extension-platform-driver` (which would create a
- * turbo build cycle: shared → platform-driver → platform → shared).
- *
- * At runtime the bundler (Metro) aliases the driver to a concrete platform
- * extension (e.g. `platform-react-native`), so the real implementation is
- * always available when the storage methods are invoked.
- */
-declare const require: (id: string) => unknown
-
-let _driver: PlatformDriver | null = null
-
-const getKeyValueStorage = (): StateStorage => {
-    if (!_driver) {
-        _driver =
-            require('@perawallet/wallet-extension-platform-driver') as PlatformDriver
-    }
-    return _driver.getPlatformServices().keyValueStorage
-}
+// Uses require() instead of a static import to avoid a circular turbo build
+// dependency (shared → platform-driver → platform → shared).
+// At runtime, Metro aliases the driver to the concrete platform extension
+// (e.g. platform-react-native), so the call always resolves.
+const getKeyValueStorage = (): StateStorage =>
+    require('@perawallet/wallet-extension-platform-driver').getPlatformServices()
+        .keyValueStorage
 
 /**
  * Creates a storage adapter backed by the platform's keyValueStorage.
