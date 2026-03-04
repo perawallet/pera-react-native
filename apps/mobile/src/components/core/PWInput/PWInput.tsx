@@ -22,6 +22,7 @@ export type PWInputRef = {
 }
 
 export type PWInputProps = {
+    variant?: 'default' | 'numeric'
     value?: string
     onChangeText?: (text: string) => void
     placeholder?: string
@@ -51,6 +52,7 @@ export type PWInputProps = {
 export const PWInput = forwardRef<PWInputRef, PWInputProps>(
     (
         {
+            variant = 'default',
             containerStyle,
             inputContainerStyle,
             inputStyle,
@@ -60,7 +62,7 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
         },
         ref,
     ) => {
-        const styles = useStyles()
+        const styles = useStyles({ variant })
         const inputRef = useRef<TextInput>(null)
 
         useImperativeHandle(

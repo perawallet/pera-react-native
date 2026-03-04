@@ -76,13 +76,11 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                 <PWView style={styles.amountContainer}>
                     {isPay ? (
                         <PWInput
+                            variant='numeric'
                             value={displayValue}
                             onChangeText={handleTextChange}
                             keyboardType='decimal-pad'
                             placeholder='0.00'
-                            containerStyle={styles.inputContainer}
-                            inputContainerStyle={styles.inputInnerContainer}
-                            inputStyle={styles.inputText}
                             placeholderTextColor={theme.colors.textGrayLighter}
                         />
                     ) : (

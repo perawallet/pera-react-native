@@ -31,6 +31,7 @@ export const useSwapsStore: UseBoundStore<
     WithPersist<StoreApi<SwapsState>, unknown>
 > = lazy.useStore
 
+// TODO: Replace hardcoded asset IDs with constants from @perawallet/wallet-core-assets
 const initialState = {
     fromAsset: '0', // ALGO
     toAsset: '31566704', // USDC mainnet — network-aware correction handled at the hook level

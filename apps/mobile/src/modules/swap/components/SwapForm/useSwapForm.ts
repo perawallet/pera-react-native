@@ -24,7 +24,7 @@ type ModalState = ReturnType<typeof useModalState>
 
 type UseSwapFormResult = {
     payAssetId: string
-    toAsset: string
+    receiveAssetId: string
     payAmount: Decimal | null
     receiveAmount: Decimal | null
     payBalance: Decimal | null
@@ -86,7 +86,7 @@ export const useSwapForm = (): UseSwapFormResult => {
 
     return {
         payAssetId: fromAsset,
-        toAsset,
+        receiveAssetId: toAsset,
         payAmount,
         receiveAmount,
         payBalance: payAssetBalance?.amount ?? null,
