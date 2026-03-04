@@ -10,11 +10,108 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
 import { render, screen } from '@test-utils/render'
-import { PWBottomSheet } from '../PWBottomSheet'
+import { PWBottomSheet, PWBottomSheetSize } from '../PWBottomSheet'
 import { Text } from 'react-native'
+
+// Track what props BottomSheetModal receives
+let capturedProps: Record<string, unknown> = {}
+
+vi.mock('@gorhom/bottom-sheet', async () => {
+    const React = require('react')
+
+    const BottomSheetModal = React.forwardRef(
+        ({ children, ...props }: any, ref: any) => {
+            const [isOpen, setIsOpen] = React.useState(false)
+
+            // Capture props for assertion
+            capturedProps = props
+
+            React.useImperativeHandle(ref, () => ({
+                present: () => setIsOpen(true),
+                dismiss: () => {
+                    setIsOpen(false)
+                    props.onDismiss?.()
+                },
+                snapToIndex: () => setIsOpen(true),
+                close: () => setIsOpen(false),
+                expand: () => setIsOpen(true),
+                collapse: () => {},
+                forceClose: () => setIsOpen(false),
+            }))
+
+            return isOpen
+                ? React.createElement(
+                      'div',
+                      { 'data-testid': 'BottomSheetModal' },
+                      children,
+                  )
+                : null
+        },
+    )
+
+    return {
+        default: BottomSheetModal,
+        BottomSheet: BottomSheetModal,
+        BottomSheetModal,
+        BottomSheetModalProvider: ({ children }: any) => children,
+        BottomSheetBackdrop: (props: any) =>
+            React.createElement('div', {
+                ...props,
+                'data-testid': 'BottomSheetBackdrop',
+            }),
+        BottomSheetScrollView: ({ children, ...props }: any) =>
+            React.createElement('div', { ...props }, children),
+        BottomSheetView: ({ children, ...props }: any) =>
+            React.createElement('div', { ...props }, children),
+        BottomSheetFlatList: ({ data, renderItem, ...props }: any) =>
+            React.createElement(
+                'div',
+                props,
+                data?.map((item: any, index: number) =>
+                    renderItem({ item, index }),
+                ),
+            ),
+        BottomSheetSectionList: ({
+            sections,
+            renderItem,
+            ...props
+        }: any) =>
+            React.createElement(
+                'div',
+                props,
+                sections?.flatMap((section: any) =>
+                    section.data?.map((item: any, index: number) =>
+                        renderItem({ item, index, section }),
+                    ),
+                ),
+            ),
+        BottomSheetTextInput: (props: any) =>
+            React.createElement('input', props),
+        useBottomSheet: () => ({
+            snapToIndex: vi.fn(),
+            close: vi.fn(),
+            expand: vi.fn(),
+            collapse: vi.fn(),
+        }),
+        useBottomSheetModal: () => ({
+            dismiss: vi.fn(),
+            dismissAll: vi.fn(),
+        }),
+        useBottomSheetDynamicSnapPoints: () => ({
+            animatedHandleHeight: { value: 0 },
+            animatedSnapPoints: { value: ['100%'] },
+            animatedContentHeight: { value: 0 },
+            handleContentLayout: vi.fn(),
+        }),
+    }
+})
+
+beforeEach(() => {
+    capturedProps = {}
+})
 
 describe('PWBottomSheet', () => {
     it('shows children when visible', () => {
@@ -37,9 +134,28 @@ describe('PWBottomSheet', () => {
         expect(screen.queryByText('Sheet Content')).toBeNull()
     })
 
+    it('hides children when visibility is toggled off', () => {
+        const { rerender } = render(
+            <PWBottomSheet isVisible={true}>
+                <Text>Sheet Content</Text>
+            </PWBottomSheet>,
+        )
+
+        expect(screen.getByText('Sheet Content')).toBeTruthy()
+
+        rerender(
+            <PWBottomSheet isVisible={false}>
+                <Text>Sheet Content</Text>
+            </PWBottomSheet>,
+        )
+
+        expect(screen.queryByText('Sheet Content')).toBeNull()
+    })
+
     it('calls onBackdropPress when dismissed', () => {
         const onBackdropPress = vi.fn()
-        render(
+
+        const { rerender } = render(
             <PWBottomSheet
                 isVisible={true}
                 onBackdropPress={onBackdropPress}
@@ -48,20 +164,69 @@ describe('PWBottomSheet', () => {
             </PWBottomSheet>,
         )
 
-        // The mock BottomSheetModal should be present
-        expect(screen.getByTestId('BottomSheetModal')).toBeTruthy()
-    })
+        expect(screen.getByText('Sheet Content')).toBeTruthy()
 
-    it('renders with custom snap points', () => {
-        render(
+        // Toggle visibility off triggers dismiss(), which calls onDismiss
+        rerender(
             <PWBottomSheet
-                isVisible={true}
-                snapPoints={['25%', '50%', '90%']}
+                isVisible={false}
+                onBackdropPress={onBackdropPress}
             >
                 <Text>Sheet Content</Text>
             </PWBottomSheet>,
         )
 
-        expect(screen.getByText('Sheet Content')).toBeTruthy()
+        expect(onBackdropPress).toHaveBeenCalledOnce()
+    })
+
+    it.each([
+        ['auto', true, undefined],
+        ['lg', false, ['90%']],
+        ['md', false, ['50%']],
+        ['full', false, ['100%']],
+    ] as [PWBottomSheetSize, boolean, string[] | undefined][])(
+        'passes correct config for size=%s',
+        (size, expectedDynamic, expectedSnap) => {
+            render(
+                <PWBottomSheet isVisible={true} size={size}>
+                    <Text>Content</Text>
+                </PWBottomSheet>,
+            )
+
+            expect(capturedProps.enableDynamicSizing).toBe(expectedDynamic)
+            expect(capturedProps.snapPoints).toEqual(expectedSnap)
+        },
+    )
+
+    it('enables pan-down-to-close when specified', () => {
+        render(
+            <PWBottomSheet isVisible={true} enablePanDownToClose={true}>
+                <Text>Draggable Content</Text>
+            </PWBottomSheet>,
+        )
+
+        expect(capturedProps.enablePanDownToClose).toBe(true)
+    })
+
+    it('disables pan-down-to-close by default', () => {
+        render(
+            <PWBottomSheet isVisible={true}>
+                <Text>Content</Text>
+            </PWBottomSheet>,
+        )
+
+        expect(capturedProps.enablePanDownToClose).toBe(false)
+    })
+
+    it('renders children when autoCreateContainer is false', () => {
+        render(
+            <PWBottomSheet isVisible={true} autoCreateContainer={false}>
+                <Text>Non-scrollable Content</Text>
+            </PWBottomSheet>,
+        )
+
+        expect(
+            screen.getByText('Non-scrollable Content'),
+        ).toBeTruthy()
     })
 })
