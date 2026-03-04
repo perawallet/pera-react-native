@@ -74,11 +74,7 @@ vi.mock('@gorhom/bottom-sheet', async () => {
                     renderItem({ item, index }),
                 ),
             ),
-        BottomSheetSectionList: ({
-            sections,
-            renderItem,
-            ...props
-        }: any) =>
+        BottomSheetSectionList: ({ sections, renderItem, ...props }: any) =>
             React.createElement(
                 'div',
                 props,
@@ -188,7 +184,10 @@ describe('PWBottomSheet', () => {
         'passes correct config for size=%s',
         (size, expectedDynamic, expectedSnap) => {
             render(
-                <PWBottomSheet isVisible={true} size={size}>
+                <PWBottomSheet
+                    isVisible={true}
+                    size={size}
+                >
                     <Text>Content</Text>
                 </PWBottomSheet>,
             )
@@ -200,7 +199,10 @@ describe('PWBottomSheet', () => {
 
     it('enables pan-down-to-close when specified', () => {
         render(
-            <PWBottomSheet isVisible={true} enablePanDownToClose={true}>
+            <PWBottomSheet
+                isVisible={true}
+                enablePanDownToClose={true}
+            >
                 <Text>Draggable Content</Text>
             </PWBottomSheet>,
         )
@@ -220,13 +222,14 @@ describe('PWBottomSheet', () => {
 
     it('renders children when autoCreateContainer is false', () => {
         render(
-            <PWBottomSheet isVisible={true} autoCreateContainer={false}>
+            <PWBottomSheet
+                isVisible={true}
+                autoCreateContainer={false}
+            >
                 <Text>Non-scrollable Content</Text>
             </PWBottomSheet>,
         )
 
-        expect(
-            screen.getByText('Non-scrollable Content'),
-        ).toBeTruthy()
+        expect(screen.getByText('Non-scrollable Content')).toBeTruthy()
     })
 })
