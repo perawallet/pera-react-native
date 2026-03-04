@@ -33,25 +33,17 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-shared',
-    )
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared')
+    >('@perawallet/wallet-core-shared')
+    const { createMockPersistStorage } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared/test-utils')
+    >('@perawallet/wallet-core-shared/test-utils')
     return {
         ...actual,
         generateOrderedUniqueId: uuidSpies.v7,
         registerStore: vi.fn(),
-        createPersistStorage: () => {
-            const store = new Map<string, string>()
-            return {
-                getItem: (key: string) => store.get(key) ?? null,
-                setItem: (key: string, value: string) => {
-                    store.set(key, value)
-                },
-                removeItem: (key: string) => {
-                    store.delete(key)
-                },
-            }
-        },
+        createPersistStorage: createMockPersistStorage,
     }
 })
 

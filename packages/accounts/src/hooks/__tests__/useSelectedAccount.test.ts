@@ -19,21 +19,13 @@ import type { WalletAccount } from '../../models'
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    const { createMockPersistStorage } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared/test-utils')
+    >('@perawallet/wallet-core-shared/test-utils')
     return {
         ...original,
         registerStore: vi.fn(),
-        createPersistStorage: () => {
-            const store = new Map<string, string>()
-            return {
-                getItem: (key: string) => store.get(key) ?? null,
-                setItem: (key: string, value: string) => {
-                    store.set(key, value)
-                },
-                removeItem: (key: string) => {
-                    store.delete(key)
-                },
-            }
-        },
+        createPersistStorage: createMockPersistStorage,
     }
 })
 
