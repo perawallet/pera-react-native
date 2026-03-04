@@ -12,8 +12,14 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(() => ({
-    flexStyle: {
-        flex: 1,
+type StyleProps = { topInset: number }
+
+export const useStyles = makeStyles((_, { topInset }: StyleProps) => ({
+    overlay: {
+        position: 'absolute',
+        top: topInset,
+        left: 0,
+        right: 0,
+        bottom: 0,
     },
 }))

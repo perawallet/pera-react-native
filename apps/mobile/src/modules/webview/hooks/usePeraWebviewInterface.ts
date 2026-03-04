@@ -58,6 +58,7 @@ import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { parseDeeplink } from '@hooks/deeplink/parser'
+import { DeeplinkType } from '@hooks/deeplink/types'
 
 type WebviewMessage = {
     id: string
@@ -118,6 +119,7 @@ export const usePeraWebviewInterface = (
                     onCloseRequested,
                     onBackRequested,
                     id: message.id,
+                    enablePeraConnect: true,
                 })
             })
         },
@@ -439,9 +441,16 @@ export const usePeraWebviewInterface = (
                 return
             }
 
+            const rawUri = message.params!.uri as string
+            const parsed = parseDeeplink(rawUri)
+            const wcUri =
+                parsed?.type === DeeplinkType.WALLET_CONNECT
+                    ? parsed.uri
+                    : rawUri
+
             connect({
                 connection: {
-                    uri: message.params!.uri as string,
+                    uri: wcUri,
                     autoConnect: securedConnection,
                 },
             })
