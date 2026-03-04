@@ -19,6 +19,7 @@ import { Text } from 'react-native'
 // Track what props BottomSheetModal receives
 let capturedProps: Record<string, unknown> = {}
 
+/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports */
 vi.mock('@gorhom/bottom-sheet', async () => {
     const React = require('react')
 
@@ -104,6 +105,7 @@ vi.mock('@gorhom/bottom-sheet', async () => {
         }),
     }
 })
+/* eslint-enable @typescript-eslint/no-explicit-any, @typescript-eslint/no-require-imports */
 
 beforeEach(() => {
     capturedProps = {}
