@@ -25,7 +25,7 @@ export const useStyles = makeStyles(
         },
         handleIndicator: {
             backgroundColor: theme.colors.layerGray,
-            width: 40,
+            width: theme.spacing.xxl,
         },
         contentWrapper: {
             flex: 1,

@@ -64,7 +64,7 @@ export const RenameAccountBottomSheet = ({
                         onPress={onClose}
                     />
                 }
-                style={styles.toolbar}
+                paddingStyle='dense'
             />
             <PWText
                 variant='h3'

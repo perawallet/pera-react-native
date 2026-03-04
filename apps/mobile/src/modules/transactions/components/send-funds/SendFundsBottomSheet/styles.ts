@@ -11,13 +11,11 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { ScaledSize } from 'react-native'
 
-export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
+export const useStyles = makeStyles(() => {
     return {
         container: {
             overflow: 'hidden',
-            height: dimensions.height - 100,
         },
     }
 })

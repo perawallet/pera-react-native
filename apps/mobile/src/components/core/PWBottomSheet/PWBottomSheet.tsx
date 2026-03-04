@@ -36,31 +36,22 @@ type DefaultPropsReturn = {
     enableDynamicSizing: boolean
 }
 
-const getDefaultProps = (size: PWBottomSheetSize): DefaultPropsReturn => {
-    if (size === 'auto') {
-        return {
-            enableDynamicSizing: true,
-        }
-    }
-
-    if (size === 'lg') {
-        return {
-            enableDynamicSizing: false,
-            snapPoints: ['90%'],
-        }
-    }
-
-    if (size === 'md') {
-        return {
-            enableDynamicSizing: false,
-            snapPoints: ['50%'],
-        }
-    }
-
-    return {
+const DEFAULT_PROPS: Record<PWBottomSheetSize, DefaultPropsReturn> = {
+    auto: {
+        enableDynamicSizing: true,
+    },
+    lg: {
+        enableDynamicSizing: false,
+        snapPoints: ['90%'],
+    },
+    md: {
+        enableDynamicSizing: false,
+        snapPoints: ['50%'],
+    },
+    full: {
         enableDynamicSizing: false,
         snapPoints: ['100%'],
-    }
+    },
 }
 
 export type PWBottomSheetSize = 'full' | 'lg' | 'md' | 'auto'
@@ -88,7 +79,7 @@ export const PWBottomSheet = ({
 }: PWBottomSheetProps) => {
     const bottomSheetModalRef = useRef<BottomSheetModal>(null)
     const insets = useSafeAreaInsets()
-    const defaults = getDefaultProps(size)
+    const defaults = DEFAULT_PROPS[size]
     const styles = useStyles({ insets, isFull: size === 'full' })
 
     // Sync isVisible prop with modal state
