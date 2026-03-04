@@ -42,6 +42,7 @@ export const ImportOptionsBottomSheet = ({
         <PWBottomSheet
             isVisible={isVisible}
             onBackdropPress={onClose}
+            enablePanDownToClose
         >
             <PWView style={styles.container}>
                 <PWView style={styles.header}>

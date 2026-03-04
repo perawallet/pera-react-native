@@ -17,7 +17,7 @@ export const useStyles = makeStyles(
         return {
             container: {
                 gap: theme.spacing.md,
-                padding: theme.spacing.lg,
+                paddingHorizontal: theme.spacing.lg,
             },
             contentContainer: {
                 gap: theme.spacing.lg,

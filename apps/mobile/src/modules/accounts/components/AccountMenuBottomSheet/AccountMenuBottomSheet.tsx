@@ -35,6 +35,8 @@ export const AccountMenuBottomSheet = ({
             isVisible={isVisible}
             onBackdropPress={onClose}
             innerContainerStyle={styles.container}
+            size='lg'
+            autoCreateContainer={false}
         >
             <PWToolbar
                 right={
@@ -43,6 +45,7 @@ export const AccountMenuBottomSheet = ({
                         onPress={onClose}
                     />
                 }
+                paddingStyle='dense'
             />
             <AccountMenu
                 onSelected={onSelected}

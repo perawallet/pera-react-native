@@ -34,7 +34,12 @@ import { useToast } from '@hooks/useToast'
 import { useStyles } from './styles'
 import { usePeraWebviewInterface } from '@modules/webview/hooks'
 import { EmptyView } from '@components/EmptyView'
-import { PWView, PWButton, bottomSheetNotifier } from '@components/core'
+import {
+    PWView,
+    PWButton,
+    bottomSheetNotifier,
+    PWScrollView,
+} from '@components/core'
 import { LoadingView } from '@components/LoadingView'
 import { logger } from '@perawallet/wallet-core-shared'
 import { WebViewTitleBar } from './WebViewTitleBar'
@@ -50,6 +55,7 @@ export type PWWebViewProps = {
     showControls?: boolean
     onClose?: () => void
     onBack?: () => void
+    inBottomSheet?: boolean
 } & WebViewProps
 
 const updateTheme = (mode: 'light' | 'dark') => {
@@ -205,16 +211,8 @@ export const PWWebView = (props: PWWebViewProps) => {
         return js
     }, [enablePeraConnect, theme.mode])
 
-    return (
-        <PWView style={styles.flex}>
-            {showControls && (
-                <WebViewTitleBar
-                    onCloseRequested={onCloseRequested}
-                    onReload={reload}
-                    title={title}
-                    url={url}
-                />
-            )}
+    const renderWebView = useCallback(() => {
+        return (
             <WebView
                 ref={webview}
                 {...rest}
@@ -263,7 +261,40 @@ export const PWWebView = (props: PWWebViewProps) => {
                 dataDetectorTypes={[]}
                 textInteractionEnabled={false}
                 onNavigationStateChange={navigationStateChange}
+                nestedScrollEnabled
             />
+        )
+    }, [
+        reload,
+        handleEvent,
+        verifyLoad,
+        loadCompleted,
+        showLoadError,
+        showError,
+        navigationStateChange,
+        isDarkMode,
+        userAgent,
+        jsToLoad,
+    ])
+
+    return (
+        <PWView style={styles.flex}>
+            {showControls && (
+                <WebViewTitleBar
+                    onCloseRequested={onCloseRequested}
+                    onReload={reload}
+                    title={title}
+                    url={url}
+                />
+            )}
+
+            <PWScrollView
+                style={styles.flex}
+                contentContainerStyle={styles.flex}
+            >
+                {renderWebView()}
+            </PWScrollView>
+
             {showControls && (
                 <WebViewFooterBar
                     webview={webview}

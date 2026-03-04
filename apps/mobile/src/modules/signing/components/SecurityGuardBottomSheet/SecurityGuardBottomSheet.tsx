@@ -86,6 +86,7 @@ export const SecurityGuardBottomSheet = (
             isVisible={isOpen}
             onBackdropPress={onClose}
             innerContainerStyle={styles.bottomSheetContainer}
+            enablePanDownToClose
         >
             <PWIcon
                 name='info'

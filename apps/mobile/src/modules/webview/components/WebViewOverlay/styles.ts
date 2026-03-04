@@ -12,12 +12,8 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
-    return {
-        container: {
-            flex: 1,
-            paddingVertical: theme.spacing.md,
-            overflow: 'hidden',
-        },
-    }
-})
+export const useStyles = makeStyles(() => ({
+    flexStyle: {
+        flex: 1,
+    },
+}))

@@ -49,7 +49,7 @@ export const PinEditView = ({ mode, onSuccess, onClose }: PinEditViewProps) => {
             isVisible={!!mode}
             containerStyle={styles.container}
             innerContainerStyle={styles.innerContainer}
-            scrollEnabled={false}
+            size='full'
         >
             <PWView style={styles.closeButtonContainer}>
                 <PWTouchableOpacity

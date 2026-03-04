@@ -33,6 +33,7 @@ export const ConnectionSuccessBottomSheet = ({
             isVisible={!!request}
             onBackdropPress={onClose}
             innerContainerStyle={styles.container}
+            enablePanDownToClose
         >
             <PWIcon
                 name='check'

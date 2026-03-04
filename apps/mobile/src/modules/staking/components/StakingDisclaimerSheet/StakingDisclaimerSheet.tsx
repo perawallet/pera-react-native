@@ -24,6 +24,7 @@ import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { useStakingDisclaimerSheet } from './useStakingDisclaimerSheet'
 import { useStyles } from './styles'
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 
 export type StakingDisclaimerSheetProps = {
     isVisible: boolean
@@ -68,12 +69,8 @@ export const StakingDisclaimerSheet = ({
             isVisible={isVisible}
             onBackdropPress={onClose}
             innerContainerStyle={styles.container}
-            scrollViewProps={{
-                onScroll: handleScroll,
-                scrollEventThrottle: 16,
-                showsVerticalScrollIndicator: false,
-                contentContainerStyle: styles.scrollViewContent,
-            }}
+            enablePanDownToClose
+            size='lg'
         >
             <PWToolbar
                 left={
@@ -88,55 +85,63 @@ export const StakingDisclaimerSheet = ({
                         {t('staking.disclaimer.title')}
                     </PWText>
                 }
+                paddingStyle='dense'
             />
 
-            <PWText style={styles.emphasizedText}>
-                {t('staking.disclaimer.intro')}
-            </PWText>
+            <BottomSheetScrollView
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scrollViewContent}
+            >
+                <PWText style={styles.emphasizedText}>
+                    {t('staking.disclaimer.intro')}
+                </PWText>
 
-            <PWText style={styles.paragraph}>
-                {t('staking.disclaimer.research_warning')}
-            </PWText>
+                <PWText style={styles.paragraph}>
+                    {t('staking.disclaimer.research_warning')}
+                </PWText>
 
-            <PWText style={styles.paragraph}>
-                {t('staking.disclaimer.acknowledgment_prompt')}
-            </PWText>
+                <PWText style={styles.paragraph}>
+                    {t('staking.disclaimer.acknowledgment_prompt')}
+                </PWText>
 
-            <PWView style={styles.bulletList}>
-                {DISCLAIMER_BULLET_KEYS.map(key => (
-                    <PWText
-                        key={key}
-                        style={styles.bulletText}
-                    >
-                        {`- ${t(key)}`}
-                    </PWText>
-                ))}
-            </PWView>
-
-            <PWText style={styles.paragraph}>
-                {t('staking.disclaimer.closing')}
-            </PWText>
-
-            <PWText style={styles.paragraph}>
-                <Trans
-                    i18nKey='staking.disclaimer.terms_agreement'
-                    components={[
+                <PWView style={styles.bulletList}>
+                    {DISCLAIMER_BULLET_KEYS.map(key => (
                         <PWText
-                            key='terms'
-                            variant='link'
-                            onPress={handleTermsPress}
-                        />,
-                    ]}
-                />
-            </PWText>
+                            key={key}
+                            style={styles.bulletText}
+                        >
+                            {`- ${t(key)}`}
+                        </PWText>
+                    ))}
+                </PWView>
 
-            <PWButton
-                variant='primary'
-                title={t('staking.disclaimer.accept')}
-                onPress={onAccept}
-                isDisabled={!isScrolledToBottom}
-                style={styles.acceptButton}
-            />
+                <PWText style={styles.paragraph}>
+                    {t('staking.disclaimer.closing')}
+                </PWText>
+
+                <PWText style={styles.paragraph}>
+                    <Trans
+                        i18nKey='staking.disclaimer.terms_agreement'
+                        components={[
+                            <PWText
+                                key='terms'
+                                variant='link'
+                                onPress={handleTermsPress}
+                            />,
+                        ]}
+                    />
+                </PWText>
+
+                <PWButton
+                    variant='primary'
+                    title={t('staking.disclaimer.accept')}
+                    onPress={onAccept}
+                    isDisabled={!isScrolledToBottom}
+                    style={styles.acceptButton}
+                />
+            </BottomSheetScrollView>
         </PWBottomSheet>
     )
 }

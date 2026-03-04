@@ -12,7 +12,6 @@
 
 import React, { PropsWithChildren } from 'react'
 import { PWBottomSheet } from '@components/core'
-import { useWindowDimensions } from 'react-native'
 import { ConnectionView } from '@modules/walletconnect/components/ConnectionView/ConnectionView'
 
 import { WalletConnectErrorBoundary } from '@modules/walletconnect/components/BaseErrorBoundary/WalletConnectErrorBoundary'
@@ -26,7 +25,6 @@ export type WalletConnectProviderProps = {} & PropsWithChildren
 export function WalletConnectProvider({
     children,
 }: WalletConnectProviderProps) {
-    const { height } = useWindowDimensions()
     const { t } = useLanguage()
     const {
         nextRequest,
@@ -42,8 +40,9 @@ export function WalletConnectProvider({
         <WalletConnectErrorBoundary t={t}>
             {children}
             <PWBottomSheet
-                innerContainerStyle={{ height: height - 100 }}
+                size='lg'
                 isVisible={!!nextRequest && !successRequest && !connectionError}
+                autoCreateContainer={false}
             >
                 {!!nextRequest && (
                     <ConnectionView

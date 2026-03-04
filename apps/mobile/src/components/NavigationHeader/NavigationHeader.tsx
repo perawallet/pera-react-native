@@ -23,6 +23,7 @@ export type NavigationHeaderProps = (
     | Partial<StackHeaderProps>
 ) & {
     safeArea?: boolean
+    paddingStyle?: 'dense' | 'normal' | 'none'
 }
 
 export const NavigationHeader = (props: NavigationHeaderProps) => {
@@ -89,6 +90,7 @@ export const NavigationHeader = (props: NavigationHeaderProps) => {
                     )
                 }
                 right={props.options?.headerRight?.({})}
+                paddingStyle={props.paddingStyle}
             />
         )
     )

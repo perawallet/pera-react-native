@@ -80,6 +80,7 @@ export const SigningWarnings = ({ isGroup = false }: { isGroup?: boolean }) => {
                                     })}
                                 </PWText>
                             }
+                            paddingStyle='dense'
                         />
 
                         {distinctWarnings.map((warning, index) => (

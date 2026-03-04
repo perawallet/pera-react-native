@@ -62,6 +62,8 @@ export const ViewTextDetailsPanel = ({
         <PWBottomSheet
             {...rest}
             isVisible={isVisible}
+            onBackdropPress={onClose}
+            enablePanDownToClose
         >
             <PWView style={styles.container}>
                 <PWToolbar
@@ -80,6 +82,7 @@ export const ViewTextDetailsPanel = ({
                             onPress={copyText}
                         />
                     }
+                    paddingStyle='dense'
                 />
 
                 <PWView style={styles.buttonContainer}>

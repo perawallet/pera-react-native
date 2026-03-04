@@ -11,11 +11,31 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles(theme => ({
-    defaultStyle: {
-        backgroundColor: theme.colors.background,
-        borderTopStartRadius: theme.spacing.xl,
-        borderTopEndRadius: theme.spacing.xl,
-    },
-}))
+export const useStyles = makeStyles(
+    (theme, { insets, isFull }: { insets: EdgeInsets; isFull: boolean }) => ({
+        background: {
+            backgroundColor: theme.colors.background,
+            borderTopStartRadius: isFull ? 0 : theme.spacing.xl,
+            borderTopEndRadius: isFull ? 0 : theme.spacing.xl,
+        },
+        backdrop: {
+            backgroundColor: theme.colors.backdropModalBg,
+        },
+        handleIndicator: {
+            backgroundColor: theme.colors.layerGray,
+            width: theme.spacing.xxl,
+        },
+        contentWrapper: {
+            flex: 1,
+            paddingTop: isFull ? insets.top : 0,
+        },
+        innerContainer: {
+            flex: 1,
+        },
+        hidden: {
+            display: 'none',
+        },
+    }),
+)

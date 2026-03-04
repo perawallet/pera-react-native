@@ -41,6 +41,7 @@ export const RejectConfirmBottomSheet = ({
             isVisible={isOpen}
             onBackdropPress={onClose}
             innerContainerStyle={styles.bottomSheetContainer}
+            enablePanDownToClose
         >
             <PWIcon
                 name='info'
