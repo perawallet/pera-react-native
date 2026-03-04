@@ -58,6 +58,7 @@ export default defineConfig({
                 'uuid',
                 'zod',
                 'crypto',
+                '@perawallet/wallet-extension-platform-driver',
             ],
         },
     },

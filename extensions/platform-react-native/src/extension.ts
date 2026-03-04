@@ -12,54 +12,34 @@
 
 import type {
     PlatformExtension,
-    PlatformServices,
     PushNotificationInitResult,
 } from '@perawallet/wallet-extension-platform'
 import { logger } from '@perawallet/wallet-core-shared'
 
-import { RNFirebaseService } from './services/firebase'
-import { RNBiometricsService } from './services/biometrics'
-import { RNSecureStorageService } from './services/secure-storage'
-import { RNDeviceInfoStorageService } from './services/device'
-import { keyValueStorage } from './resources'
+import { platformServices } from './resources'
 
 export type ReactNativePlatformExtension = PlatformExtension
 
 /**
- * wallet-provider Extension that creates all React Native platform service
- * implementations and makes them available on the provider instance.
+ * wallet-provider Extension that provides all React Native platform service
+ * implementations on the provider instance.
  *
- * Services are created synchronously during provider construction.
+ * Services are module-level singletons created in `resources.ts`.
  * The returned `initialize()` method performs async initialization
  * (Firebase, push notifications) and should be called after the provider
  * is mounted.
- *
- * Stores are eagerly initialized at module scope via platform resource
- * singletons — no store init calls are needed here.
  */
 export const WithReactNativePlatformExtension = (
     _provider: unknown,
 ): ReactNativePlatformExtension => {
-    const firebaseService = new RNFirebaseService()
-
-    const services: PlatformServices = {
-        analytics: firebaseService,
-        biometrics: new RNBiometricsService(),
-        crashReporting: firebaseService,
-        pushNotification: firebaseService,
-        remoteConfig: firebaseService,
-        secureStorage: new RNSecureStorageService(),
-        keyValueStorage,
-        deviceInfo: new RNDeviceInfoStorageService(),
-    }
-
     const initialize = async (): Promise<PushNotificationInitResult> => {
         logger.debug('Initializing platform services')
 
         const crashlyticsInit =
-            services.crashReporting.initializeCrashReporting()
-        const remoteConfigInit = services.remoteConfig.initializeRemoteConfig()
-        const analyticsInit = services.analytics.initializeAnalytics()
+            platformServices.crashReporting.initializeCrashReporting()
+        const remoteConfigInit =
+            platformServices.remoteConfig.initializeRemoteConfig()
+        const analyticsInit = platformServices.analytics.initializeAnalytics()
 
         await Promise.allSettled([
             crashlyticsInit,
@@ -68,7 +48,7 @@ export const WithReactNativePlatformExtension = (
         ])
 
         const notificationResults =
-            await services.pushNotification.initializeNotifications()
+            await platformServices.pushNotification.initializeNotifications()
 
         logger.debug('Platform services initialized')
 
@@ -79,7 +59,7 @@ export const WithReactNativePlatformExtension = (
     }
 
     return {
-        ...services,
+        ...platformServices,
         initialize,
     }
 }

@@ -10,16 +10,34 @@
  limitations under the License
  */
 
-import type { KeyValueStorageService } from '@perawallet/wallet-extension-platform'
-import { RNKeyValueStorageService } from './services'
+import type { PlatformServices } from '@perawallet/wallet-extension-platform'
+import {
+    RNKeyValueStorageService,
+    RNFirebaseService,
+    RNBiometricsService,
+    RNSecureStorageService,
+    RNDeviceInfoStorageService,
+} from './services'
 
 /**
- * Module-level singleton for the React Native KeyValueStorageService.
+ * Module-level singletons for all React Native platform services.
  *
- * MMKV construction is synchronous via JSI, so this is safe to create at
- * module scope. The platform-react-native extension makes this available
- * on the provider via `PlatformServices.keyValueStorage`, allowing stores
- * to access it through `createPersistStorage()` from shared.
+ * All constructors are synchronous (MMKV via JSI, native module wrappers),
+ * so they are safe to create at module scope. Async initialization
+ * (Firebase, push notifications) happens separately via `initialize()`.
  */
-export const keyValueStorage: KeyValueStorageService =
-    new RNKeyValueStorageService()
+export const keyValueStorage = new RNKeyValueStorageService()
+const firebaseService = new RNFirebaseService()
+
+export const platformServices: PlatformServices = {
+    analytics: firebaseService,
+    biometrics: new RNBiometricsService(),
+    crashReporting: firebaseService,
+    pushNotification: firebaseService,
+    remoteConfig: firebaseService,
+    secureStorage: new RNSecureStorageService(),
+    keyValueStorage,
+    deviceInfo: new RNDeviceInfoStorageService(),
+}
+
+export const getPlatformServices = (): PlatformServices => platformServices

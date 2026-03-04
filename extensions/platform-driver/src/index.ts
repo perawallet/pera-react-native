@@ -15,9 +15,20 @@ export const name = '@perawallet/wallet-extension-platform-driver'
 export type {
     PlatformExtension,
     PlatformExtensionFn,
+    PlatformServices,
 } from '@perawallet/wallet-extension-platform'
 
-import type { PlatformExtensionFn } from '@perawallet/wallet-extension-platform'
+import type {
+    PlatformExtensionFn,
+    PlatformServices,
+} from '@perawallet/wallet-extension-platform'
+
+const stubError = (): never => {
+    throw new Error(
+        'No platform driver configured. Configure your bundler to alias ' +
+            '@perawallet/wallet-extension-platform-driver to a concrete platform extension.',
+    )
+}
 
 /**
  * Stub platform extension that is replaced at build time by each app's bundler.
@@ -27,9 +38,10 @@ import type { PlatformExtensionFn } from '@perawallet/wallet-extension-platform'
  * in its bundler configuration. If this stub is ever invoked at runtime, it means
  * the alias was not configured.
  */
-export const WithPlatformExtension: PlatformExtensionFn = () => {
-    throw new Error(
-        'No platform driver configured. Configure your bundler to alias ' +
-            '@perawallet/wallet-extension-platform-driver to a concrete platform extension.',
-    )
-}
+export const WithPlatformExtension: PlatformExtensionFn = () => stubError()
+
+/**
+ * Returns the platform services singleton from the concrete platform extension.
+ * Replaced at build time via bundler alias, just like `WithPlatformExtension`.
+ */
+export const getPlatformServices = (): PlatformServices => stubError()

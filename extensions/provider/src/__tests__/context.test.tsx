@@ -12,7 +12,7 @@
 
 import React from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { renderHook } from '@testing-library/react'
+import { renderHook, waitFor } from '@testing-library/react'
 import { resetProvider, getProvider } from '@perawallet/wallet-core-shared'
 import { buildTestPlatform } from '@perawallet/wallet-extension-platform'
 
@@ -46,11 +46,15 @@ describe('PeraWalletProvider', () => {
         expect(() => getProvider()).not.toThrow()
     })
 
-    it('should expose all platform services via usePeraProvider', () => {
+    it('should expose all platform services via usePeraProvider', async () => {
         const { result } = renderHook(() => usePeraProvider(), {
             wrapper: ({ children }) => (
                 <PeraWalletProvider>{children}</PeraWalletProvider>
             ),
+        })
+
+        await waitFor(() => {
+            expect(result.current).not.toBeNull()
         })
 
         expect(result.current.analytics).toBe(testPlatform.analytics)
@@ -67,11 +71,15 @@ describe('PeraWalletProvider', () => {
         expect(result.current.biometrics).toBe(testPlatform.biometrics)
     })
 
-    it('should expose all platform services via getProvider for non-React code', () => {
-        renderHook(() => usePeraProvider(), {
+    it('should expose all platform services via getProvider for non-React code', async () => {
+        const { result } = renderHook(() => usePeraProvider(), {
             wrapper: ({ children }) => (
                 <PeraWalletProvider>{children}</PeraWalletProvider>
             ),
+        })
+
+        await waitFor(() => {
+            expect(result.current).not.toBeNull()
         })
 
         const provider = getProvider<PeraProvider>()
@@ -85,11 +93,15 @@ describe('PeraWalletProvider', () => {
         expect(provider.biometrics).toBe(testPlatform.biometrics)
     })
 
-    it('should return the same instance from both usePeraProvider and getProvider', () => {
+    it('should return the same instance from both usePeraProvider and getProvider', async () => {
         const { result } = renderHook(() => usePeraProvider(), {
             wrapper: ({ children }) => (
                 <PeraWalletProvider>{children}</PeraWalletProvider>
             ),
+        })
+
+        await waitFor(() => {
+            expect(result.current).not.toBeNull()
         })
 
         const singletonProvider = getProvider<PeraProvider>()

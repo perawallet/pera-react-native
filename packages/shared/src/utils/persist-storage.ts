@@ -11,30 +11,44 @@
  */
 
 import type { StateStorage } from 'zustand/middleware'
-import { getProvider } from './singleton'
+
+interface PlatformDriver {
+    getPlatformServices: () => { keyValueStorage: StateStorage }
+}
 
 /**
- * Creates a lazy storage adapter backed by the provider's keyValueStorage.
+ * Lazily resolves the platform driver's keyValueStorage.
  *
- * Each method delegates to `getProvider().keyValueStorage` at call time,
- * so the returned object is safe to construct at module scope — before
- * the provider has been initialized.
+ * Uses a dynamic import expression to avoid declaring a static dependency on
+ * `@perawallet/wallet-extension-platform-driver` (which would create a
+ * turbo build cycle: shared → platform-driver → platform → shared).
  *
- * Zustand's `createJSONStorage` invokes the factory eagerly, but the
- * proxy defers the actual provider access until the first read/write,
- * which happens after bootstrap.
+ * At runtime the bundler (Metro) aliases the driver to a concrete platform
+ * extension (e.g. `platform-react-native`), so the real implementation is
+ * always available when the storage methods are invoked.
+ */
+declare const require: (id: string) => unknown
+
+let _driver: PlatformDriver | null = null
+
+const getKeyValueStorage = (): StateStorage => {
+    if (!_driver) {
+        _driver =
+            require('@perawallet/wallet-extension-platform-driver') as PlatformDriver
+    }
+    return _driver.getPlatformServices().keyValueStorage
+}
+
+/**
+ * Creates a storage adapter backed by the platform's keyValueStorage.
+ *
+ * Each method lazily resolves the storage via the platform driver, so the
+ * driver only needs to be available when `getItem`/`setItem`/`removeItem`
+ * are actually called (Zustand persist invokes them asynchronously).
  */
 export const createPersistStorage = (): StateStorage => ({
-    getItem: (key: string) =>
-        getProvider<{
-            keyValueStorage: StateStorage
-        }>().keyValueStorage.getItem(key),
+    getItem: (key: string) => getKeyValueStorage().getItem(key),
     setItem: (key: string, value: string) =>
-        getProvider<{
-            keyValueStorage: StateStorage
-        }>().keyValueStorage.setItem(key, value),
-    removeItem: (key: string) =>
-        getProvider<{
-            keyValueStorage: StateStorage
-        }>().keyValueStorage.removeItem(key),
+        getKeyValueStorage().setItem(key, value),
+    removeItem: (key: string) => getKeyValueStorage().removeItem(key),
 })

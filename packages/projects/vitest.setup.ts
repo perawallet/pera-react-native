@@ -9,3 +9,19 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+
+import { vi } from 'vitest'
+
+const store = new Map<string, string>()
+
+vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
+    getPlatformServices: () => ({
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => store.set(key, value),
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+        },
+    }),
+}))
