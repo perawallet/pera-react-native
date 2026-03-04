@@ -12,7 +12,6 @@
 
 import AlgoIcon from '@assets/icons/algo.svg'
 import AccountRekeyedIcon from '@assets/icons/account-rekeyed.svg'
-import AppLogo from '@assets/icons/app_logo.svg'
 import ArrowUpIcon from '@assets/icons/arrow-up.svg'
 import ArrowUpRightIcon from '@assets/icons/arrow-up-right.svg'
 import ArrowDownIcon from '@assets/icons/arrow-down.svg'
@@ -120,7 +119,6 @@ import DocumentDownloadIcon from '@assets/icons/document-download.svg'
 
 export const ICON_LIBRARY = {
     algo: AlgoIcon,
-    app_logo: AppLogo,
     'arrow-up': ArrowUpIcon,
     'arrow-up-right': ArrowUpRightIcon,
     'arrow-down': ArrowDownIcon,
