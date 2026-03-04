@@ -31,10 +31,11 @@ export const useSwapsStore: UseBoundStore<
     WithPersist<StoreApi<SwapsState>, unknown>
 > = lazy.useStore
 
-// TODO: Replace hardcoded asset IDs with constants from @perawallet/wallet-core-assets
+// TODO: Replace with ALGO_ASSET_ID and KNOWN_ASSET_IDS.USDC from @perawallet/wallet-core-assets
+// once the assets barrel (which re-exports hooks) no longer causes Metro evaluation order issues
 const initialState = {
     fromAsset: '0', // ALGO
-    toAsset: '31566704', // USDC mainnet — network-aware correction handled at the hook level
+    toAsset: '31566704', // USDC mainnet
 }
 
 const createSwapsStore = (storage: KeyValueStorageService) =>
