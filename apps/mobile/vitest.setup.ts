@@ -1598,6 +1598,15 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 // Mock @perawallet/wallet-core-assets
 vi.mock('@perawallet/wallet-core-assets', () => ({
     ALGO_ASSET_ID: '0',
+    KNOWN_ASSET_IDS: {
+        USDC: { mainnet: '31566704', testnet: '10458941' },
+    },
+    getKnownAssetId: vi.fn((key: string, network: string) => {
+        const ids: Record<string, Record<string, string>> = {
+            USDC: { mainnet: '31566704', testnet: '10458941' },
+        }
+        return ids[key]?.[network] ?? ''
+    }),
     ALGO_ASSET: {
         assetId: '0',
         name: 'Algo',

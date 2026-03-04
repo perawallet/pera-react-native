@@ -10,9 +10,23 @@
  limitations under the License
  */
 
-export { SwapAmountSection } from './SwapAmountSection'
-export type { SwapAmountSectionProps } from './SwapAmountSection'
-export { SwapForm } from './SwapForm'
-export { SwapIntroduction } from './SwapIntroduction'
-export { SwapAssetSelectionBottomSheet } from './SwapAssetSelectionBottomSheet'
-export { SwapAssetSelector } from './SwapAssetSelector'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        borderRadius: theme.spacing.lg,
+        backgroundColor: theme.colors.layerGrayLightest,
+    },
+    content: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.md,
+    },
+    icon: {
+        width: theme.spacing.xl,
+        height: theme.spacing.xl,
+        borderRadius: theme.spacing.xl / 2,
+    },
+}))

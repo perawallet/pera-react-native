@@ -16,6 +16,9 @@ export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
     },
+    toolbar: {
+        paddingLeft: theme.spacing.xl,
+    },
     titleSection: {
         flexDirection: 'row',
         alignItems: 'center',

@@ -46,7 +46,7 @@ describe('swaps/useSwaps', () => {
         const { result } = renderHook(() => useSwaps())
 
         expect(result.current.fromAsset).toBe('0')
-        expect(result.current.toAsset).toBe('1001')
+        expect(result.current.toAsset).toBe('31566704')
     })
 
     test('setFromAsset updates fromAsset', () => {
