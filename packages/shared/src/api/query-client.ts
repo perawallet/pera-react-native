@@ -50,7 +50,9 @@ const logError = (error: HTTPError) => {
         name: error.name,
         // safely attempt to get response info if available
         status: error.response?.status,
-        details: JSON.stringify(error),
+        details: JSON.stringify(error, (_key, value) =>
+            typeof value === 'bigint' ? value.toString() : value,
+        ),
     })
     return error
 }

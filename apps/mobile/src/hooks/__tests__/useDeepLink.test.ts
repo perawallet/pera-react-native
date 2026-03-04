@@ -20,7 +20,8 @@ import {
     type Mock,
 } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useDeepLink, useDeeplinkListener } from '../useDeepLink'
+import { useDeepLink } from '../useDeepLink'
+import { useDeeplinkListener } from '../useDeeplinkListener'
 import { useNavigation } from '@react-navigation/native'
 import { parseDeeplink } from '../deeplink/parser'
 import { DeeplinkType } from '../deeplink/types'

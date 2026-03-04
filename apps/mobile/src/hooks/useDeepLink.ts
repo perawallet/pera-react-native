@@ -296,5 +296,3 @@ export const useDeepLink = () => {
         buildAccountDeeplink,
     }
 }
-
-export { useDeeplinkListener } from './useDeeplinkListener'
