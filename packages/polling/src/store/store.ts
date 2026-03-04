@@ -11,11 +11,7 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import {
-    persist,
-    createJSONStorage,
-    type StateStorage,
-} from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import {
     createPersistStorage,
     registerStore,
@@ -29,30 +25,27 @@ const initialState = {
     lastRefreshedRound: null as number | null,
 }
 
-export const createPollingStore = (storage: StateStorage) =>
-    create<PollingState>()(
-        persist(
-            set => ({
-                ...initialState,
-                setLastRefreshedRound: (round: number | null) => {
-                    set({ lastRefreshedRound: round })
-                },
-                resetState: () => set(initialState),
-            }),
-            {
-                name: STORE_NAME,
-                storage: createJSONStorage(() => storage),
-                version: 1,
-                partialize: state => ({
-                    lastRefreshedRound: state.lastRefreshedRound,
-                }),
-            },
-        ),
-    )
-
 export const usePollingStore: UseBoundStore<
     WithPersist<StoreApi<PollingState>, unknown>
-> = createPollingStore(createPersistStorage())
+> = create<PollingState>()(
+    persist(
+        set => ({
+            ...initialState,
+            setLastRefreshedRound: (round: number | null) => {
+                set({ lastRefreshedRound: round })
+            },
+            resetState: () => set(initialState),
+        }),
+        {
+            name: STORE_NAME,
+            storage: createJSONStorage(createPersistStorage),
+            version: 1,
+            partialize: state => ({
+                lastRefreshedRound: state.lastRefreshedRound,
+            }),
+        },
+    ),
+)
 
 registerStore({
     name: STORE_NAME,

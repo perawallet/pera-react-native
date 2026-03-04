@@ -18,4 +18,4 @@ export * from './errors'
 export * from './utils'
 export * from './account-discovery'
 
-export { useAccountsStore, createAccountsStore } from './store'
+export { useAccountsStore } from './store'

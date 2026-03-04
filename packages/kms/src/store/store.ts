@@ -11,11 +11,7 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import {
-    persist,
-    createJSONStorage,
-    type StateStorage,
-} from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import type { KeyManagerState, KeyPair } from '../models'
 import {
     createPersistStorage,
@@ -51,57 +47,54 @@ const initialState = {
     keys: new Map<string, KeyPair>(),
 }
 
-export const createKeyManagerStore = (storage: StateStorage) =>
-    create<KeyManagerState>()(
-        persist(
-            (set, get) => ({
-                ...initialState,
-                getKey: (id: string) => {
-                    const key = get().keys.get(id)
-                    if (!key) {
-                        return null
-                    }
-
-                    if (key.expiresAt && Date.now() > key.expiresAt.getTime()) {
-                        get().removeKey(id)
-                        return null
-                    }
-
-                    return key
-                },
-                addKey: (key: KeyPair) => {
-                    const keys = get().keys
-                    keys.set(key.id ?? '', key)
-                    set({ keys })
-                },
-                removeKey: (id: string) => {
-                    const keys = get().keys
-                    keys.delete(id)
-                    set({ keys })
-                },
-                resetState: () => set({ keys: new Map<string, KeyPair>() }),
-            }),
-            {
-                name: STORE_NAME,
-                storage: createJSONStorage(() => storage),
-                version: 1,
-                partialize: state => ({
-                    keys: Array.from(state.keys.values()),
-                }),
-                onRehydrateStorage: () => state => {
-                    if (state) {
-                        // Rehydrate device slice to convert deviceIDs back to Map
-                        const keysState = rehydrateKeyManagerSlice(state)
-                        Object.assign(state, keysState)
-                    }
-                },
-            },
-        ),
-    )
-
 export const useKeyManagerStore: UseBoundStore<
     WithPersist<StoreApi<KeyManagerState>, unknown>
-> = createKeyManagerStore(createPersistStorage())
+> = create<KeyManagerState>()(
+    persist(
+        (set, get) => ({
+            ...initialState,
+            getKey: (id: string) => {
+                const key = get().keys.get(id)
+                if (!key) {
+                    return null
+                }
+
+                if (key.expiresAt && Date.now() > key.expiresAt.getTime()) {
+                    get().removeKey(id)
+                    return null
+                }
+
+                return key
+            },
+            addKey: (key: KeyPair) => {
+                const keys = get().keys
+                keys.set(key.id ?? '', key)
+                set({ keys })
+            },
+            removeKey: (id: string) => {
+                const keys = get().keys
+                keys.delete(id)
+                set({ keys })
+            },
+            resetState: () => set({ keys: new Map<string, KeyPair>() }),
+        }),
+        {
+            name: STORE_NAME,
+            storage: createJSONStorage(createPersistStorage),
+            version: 1,
+            partialize: state => ({
+                keys: Array.from(state.keys.values()),
+            }),
+            onRehydrateStorage: () => state => {
+                if (state) {
+                    // Rehydrate device slice to convert deviceIDs back to Map
+                    const keysState = rehydrateKeyManagerSlice(state)
+                    Object.assign(state, keysState)
+                }
+            },
+        },
+    ),
+)
 
 registerStore({
     name: STORE_NAME,

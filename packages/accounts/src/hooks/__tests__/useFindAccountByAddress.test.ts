@@ -16,27 +16,26 @@ import { useFindAccountByAddress } from '../useFindAccountByAddress'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 
-vi.mock('../../store', async () => {
-    const actual =
-        await vi.importActual<typeof import('../../store')>('../../store')
-    const mockStorage = {
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-    }
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
     return {
-        ...actual,
-        useAccountsStore: actual.createAccountsStore(mockStorage as any),
+        ...original,
+        registerStore: vi.fn(),
+        createPersistStorage: () => {
+            const store = new Map<string, string>()
+            return {
+                getItem: (key: string) => store.get(key) ?? null,
+                setItem: (key: string, value: string) => {
+                    store.set(key, value)
+                },
+                removeItem: (key: string) => {
+                    store.delete(key)
+                },
+            }
+        },
     }
 })
-
-vi.mock('@perawallet/wallet-extension-platform', () => ({
-    useKeyValueStorageService: vi.fn().mockReturnValue({
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-    }),
-}))
 
 describe('useFindAccountByAddress', () => {
     beforeEach(() => {

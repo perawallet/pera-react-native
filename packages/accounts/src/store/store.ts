@@ -11,11 +11,7 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import {
-    persist,
-    createJSONStorage,
-    type StateStorage,
-} from 'zustand/middleware'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import type { AccountsState, WalletAccount } from '../models'
 import {
     createPersistStorage,
@@ -31,65 +27,58 @@ const initialState = {
     selectedAccountAddress: null as string | null,
 }
 
-export const createAccountsStore = (storage: StateStorage) =>
-    create<AccountsState>()(
-        persist(
-            (set, get) => ({
-                ...initialState,
-                getSelectedAccount: () => {
-                    const { accounts, selectedAccountAddress } = get()
-
-                    if (!selectedAccountAddress) {
-                        return null
-                    }
-                    return (
-                        accounts.find(
-                            a => a.address === selectedAccountAddress,
-                        ) ?? null
-                    )
-                },
-                setAccounts: (accounts: WalletAccount[]) => {
-                    const currentSelected = get().selectedAccountAddress
-                    set({ accounts })
-
-                    if (currentSelected == null && accounts.length) {
-                        set({ selectedAccountAddress: accounts.at(0)?.address })
-                    } else if (
-                        !accounts.find(a => a.address === currentSelected)
-                    ) {
-                        set({
-                            selectedAccountAddress:
-                                accounts.at(0)?.address ?? null,
-                        })
-                    }
-                },
-                setSelectedAccountAddress: (address: string | null) => {
-                    const accounts = get().accounts
-                    if (address && !accounts.find(a => a.address === address)) {
-                        logger.warn(
-                            `Attempted to set selected account address to ${address}, but it does not exist in accounts list.`,
-                        )
-                        return
-                    }
-                    set({ selectedAccountAddress: address })
-                },
-                resetState: () => set(initialState),
-            }),
-            {
-                name: STORE_NAME,
-                storage: createJSONStorage(() => storage),
-                version: 1,
-                partialize: state => ({
-                    accounts: state.accounts,
-                    selectedAccountAddress: state.selectedAccountAddress,
-                }),
-            },
-        ),
-    )
-
 export const useAccountsStore: UseBoundStore<
     WithPersist<StoreApi<AccountsState>, unknown>
-> = createAccountsStore(createPersistStorage())
+> = create<AccountsState>()(
+    persist(
+        (set, get) => ({
+            ...initialState,
+            getSelectedAccount: () => {
+                const { accounts, selectedAccountAddress } = get()
+
+                if (!selectedAccountAddress) {
+                    return null
+                }
+                return (
+                    accounts.find(a => a.address === selectedAccountAddress) ??
+                    null
+                )
+            },
+            setAccounts: (accounts: WalletAccount[]) => {
+                const currentSelected = get().selectedAccountAddress
+                set({ accounts })
+
+                if (currentSelected == null && accounts.length) {
+                    set({ selectedAccountAddress: accounts.at(0)?.address })
+                } else if (!accounts.find(a => a.address === currentSelected)) {
+                    set({
+                        selectedAccountAddress: accounts.at(0)?.address ?? null,
+                    })
+                }
+            },
+            setSelectedAccountAddress: (address: string | null) => {
+                const accounts = get().accounts
+                if (address && !accounts.find(a => a.address === address)) {
+                    logger.warn(
+                        `Attempted to set selected account address to ${address}, but it does not exist in accounts list.`,
+                    )
+                    return
+                }
+                set({ selectedAccountAddress: address })
+            },
+            resetState: () => set(initialState),
+        }),
+        {
+            name: STORE_NAME,
+            storage: createJSONStorage(createPersistStorage),
+            version: 1,
+            partialize: state => ({
+                accounts: state.accounts,
+                selectedAccountAddress: state.selectedAccountAddress,
+            }),
+        },
+    ),
+)
 
 registerStore({
     name: STORE_NAME,
