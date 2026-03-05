@@ -51,9 +51,16 @@ export const SwapScreen = () => {
                 }
                 right={
                     <AccountSelection
-                        variant='select'
-                        title={t('account_menu.select_title')}
-                        description={t('account_menu.select_description')}
+                        headerContent={
+                            <PWView style={styles.selectHeader}>
+                                <PWText variant='h2'>
+                                    {t('account_menu.select_title')}
+                                </PWText>
+                                <PWText style={styles.selectDescription}>
+                                    {t('account_menu.select_description')}
+                                </PWText>
+                            </PWView>
+                        }
                     />
                 }
                 style={styles.toolbar}

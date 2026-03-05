@@ -91,12 +91,5 @@ export const useStyles = makeStyles(theme => {
             color: theme.colors.textGrayLighter,
             fontSize: 22,
         },
-        selectHeader: {
-            paddingTop: theme.spacing.md,
-            gap: theme.spacing.sm,
-        },
-        selectDescription: {
-            color: theme.colors.textGray,
-        },
     }
 })

@@ -13,6 +13,7 @@
 import { PWBottomSheet, PWIcon, PWToolbar } from '@components/core'
 import { AccountMenu } from '@modules/accounts/components/AccountMenu'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { ReactNode } from 'react'
 import { useStyles } from './styles'
 
 export type AccountMenuBottomSheetProps = {
@@ -20,9 +21,7 @@ export type AccountMenuBottomSheetProps = {
     onClose: () => void
     onSelected: (account: WalletAccount) => void
     onAddAccount: () => void
-    variant?: 'default' | 'select'
-    title?: string
-    description?: string
+    headerContent?: ReactNode
 }
 
 export const AccountMenuBottomSheet = ({
@@ -30,9 +29,7 @@ export const AccountMenuBottomSheet = ({
     onClose,
     onSelected,
     onAddAccount,
-    variant,
-    title,
-    description,
+    headerContent,
 }: AccountMenuBottomSheetProps) => {
     const styles = useStyles()
 
@@ -56,9 +53,7 @@ export const AccountMenuBottomSheet = ({
             <AccountMenu
                 onSelected={onSelected}
                 onAddAccount={onAddAccount}
-                variant={variant}
-                title={title}
-                description={description}
+                headerContent={headerContent}
             />
         </PWBottomSheet>
     )

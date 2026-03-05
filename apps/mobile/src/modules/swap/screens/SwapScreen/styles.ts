@@ -24,4 +24,11 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.sm,
     },
+    selectHeader: {
+        paddingTop: theme.spacing.lg,
+        gap: theme.spacing.md,
+    },
+    selectDescription: {
+        color: theme.colors.textGray,
+    },
 }))
