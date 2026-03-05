@@ -33,7 +33,7 @@ type useTransactionConfirmationScreenResult = {
     amount: Decimal | undefined
     destination: string | undefined
     selectedAccount: WalletAccount | null
-    selectedAsset: AssetWithAccountBalance | undefined
+    selectedAssetBalance: AssetWithAccountBalance | undefined
     params: { minFee: bigint } | undefined
     paramsPending: boolean
     currentBalance: AssetWithAccountBalance | null
@@ -51,19 +51,28 @@ export const useTransactionConfirmationScreen =
     (): useTransactionConfirmationScreenResult => {
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
-        const { selectedAsset, amount, destination, note, isCloseAccount } =
-            useSendFunds()
+        const {
+            setSelectedAsset,
+            selectedAssetBalance,
+            amount,
+            destination,
+            note,
+            isCloseAccount,
+        } = useSendFunds()
         const { t } = useLanguage()
 
         const assetIDs = useMemo(
-            () => (selectedAsset?.assetId ? [selectedAsset.assetId] : []),
-            [selectedAsset?.assetId],
+            () =>
+                selectedAssetBalance?.assetId
+                    ? [selectedAssetBalance.assetId]
+                    : [],
+            [selectedAssetBalance?.assetId],
         )
         const { data: assets } = useAssetsQuery(assetIDs)
         const asset = useMemo(() => {
-            if (!selectedAsset?.assetId) return null
-            return assets.get(selectedAsset?.assetId)
-        }, [selectedAsset, assets])
+            if (!selectedAssetBalance?.assetId) return null
+            return assets.get(selectedAssetBalance?.assetId)
+        }, [selectedAssetBalance, assets])
 
         const selectedAccount = useSelectedAccount()
         const { showToast } = useToast()
@@ -83,13 +92,13 @@ export const useTransactionConfirmationScreen =
         const { data: currentBalance, isPending: currentBalancePending } =
             useAccountAssetBalanceQuery(
                 selectedAccount ?? undefined,
-                selectedAsset?.assetId,
+                selectedAssetBalance?.assetId,
             )
 
         const handleConfirm = () => {
             if (
                 !selectedAccount ||
-                !selectedAsset ||
+                !selectedAssetBalance ||
                 !destination ||
                 !amount ||
                 !asset
@@ -107,17 +116,24 @@ export const useTransactionConfirmationScreen =
                 return
             }
 
+            setSelectedAsset(asset)
+
             navigation.navigate('TransactionProcessing')
         }
 
-        const isReady = !!(selectedAccount && selectedAsset && amount && asset)
+        const isReady = !!(
+            selectedAccount &&
+            selectedAssetBalance &&
+            amount &&
+            asset
+        )
 
         return {
             asset,
             amount,
             destination,
             selectedAccount,
-            selectedAsset,
+            selectedAssetBalance,
             params,
             paramsPending,
             currentBalance,
