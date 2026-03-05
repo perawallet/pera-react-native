@@ -12,60 +12,66 @@
 
 import nacl from 'tweetnacl'
 import { KeyManagementError } from '../errors'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import {
+    encodeToBase64,
+    decodeFromBase64,
+    generateOrderedUniqueId,
+} from '@perawallet/wallet-core-shared'
 import { KeyPair, KeyType, KMSAlgo25Session } from '../models'
-import { seedFromMnemonic } from '@algorandfoundation/algokit-utils/algo25'
+import {
+    seedFromMnemonic,
+    mnemonicFromSeed,
+} from '@algorandfoundation/algokit-utils/algo25'
 import { encodeAddress } from '@algorandfoundation/algokit-utils'
 import { useKMSService } from './useKMSServices'
 import { makeKeyPair } from '../utils'
 import { useSecureStorageService } from '@perawallet/wallet-extension-platform'
 
 const MNEMONIC_STORAGE_PREFIX = 'mnemonic-'
+const SEED_STORAGE_PREFIX = 'algo25-seed-'
 
 export const useAlgo25 = () => {
-    const { saveKey, checkAccess, keyStore } = useKMSService()
+    const { saveKey, checkAccess } = useKMSService()
     const secureStorage = useSecureStorageService()
 
-    const createAlgo25Key = async (params: {
+    const createAlgo25Key = async (params?: {
         id?: string
         mnemonic?: string
     }) => {
-        if (!params.mnemonic) {
-            throw new KeyManagementError(
-                'New algo25 creation not implemented yet',
-            )
+        const keyId = params?.id ?? generateOrderedUniqueId()
+
+        let mnemonic: string
+        let seed: Uint8Array
+
+        if (params?.mnemonic) {
+            mnemonic = params.mnemonic
+            seed = seedFromMnemonic(mnemonic)
+        } else {
+            seed = nacl.randomBytes(32)
+            mnemonic = mnemonicFromSeed(seed)
         }
 
-        const keyId = params.id ?? generateOrderedUniqueId()
-        const seed = seedFromMnemonic(params.mnemonic)
-
-        // Compute public key locally before import
+        // Compute public key locally
         const naclKeyPair = nacl.sign.keyPair.fromSeed(seed)
         const publicKey = encodeAddress(naclKeyPair.publicKey)
 
-        // Import key into keystore extension
-        const keystoreKeyId = await keyStore.import(
-            {
-                privateKey: seed,
-                type: 'ecc',
-                algorithm: 'EdDSA',
-                extractable: false,
-                keyUsages: ['sign'] as KeyUsage[],
-            },
-            'raw',
+        // Store seed in secure storage for signing
+        await secureStorage.setItem(
+            `${SEED_STORAGE_PREFIX}${keyId}`,
+            new TextEncoder().encode(encodeToBase64(seed)),
         )
 
-        // Store mnemonic separately in secure storage for recovery
+        // Store mnemonic separately for recovery
         await secureStorage.setItem(
             `${MNEMONIC_STORAGE_PREFIX}${keyId}`,
-            new TextEncoder().encode(params.mnemonic),
+            new TextEncoder().encode(mnemonic),
         )
 
         seed.fill(0)
+        naclKeyPair.secretKey.fill(0)
 
         const keyPair = makeKeyPair({
             id: keyId,
-            keystoreKeyId,
             publicKey,
             type: KeyType.Algo25Key,
         })
@@ -80,37 +86,39 @@ export const useAlgo25 = () => {
     ): Promise<T> => {
         checkAccess(key, domain)
 
-        if (!key.keystoreKeyId) {
+        const keyId = key.id ?? ''
+
+        // Load seed from secure storage
+        const seedData = await secureStorage.getItem(
+            `${SEED_STORAGE_PREFIX}${keyId}`,
+        )
+        if (!seedData) {
             throw new KeyManagementError(
-                'Key has no keystore ID. Migration may be required.',
+                'Seed not found in secure storage',
             )
         }
-
-        const keystoreKeyId = key.keystoreKeyId
-        const keyId = key.id ?? ''
+        const seed = decodeFromBase64(new TextDecoder().decode(seedData))
+        const naclKeyPair = nacl.sign.keyPair.fromSeed(seed)
 
         const session: KMSAlgo25Session = {
             signTransaction: async (encodedTx: Uint8Array) =>
-                keyStore.sign(keystoreKeyId, encodedTx),
+                nacl.sign.detached(encodedTx, naclKeyPair.secretKey),
             signData: async (data: Uint8Array) =>
-                keyStore.sign(keystoreKeyId, data),
-            getPublicKey: () => {
-                throw new KeyManagementError(
-                    'Public key is available from the KeyPair.publicKey field',
-                )
-            },
+                nacl.sign.detached(data, naclKeyPair.secretKey),
+            getPublicKey: () => naclKeyPair.publicKey,
             getMnemonic: () => {
-                // Mnemonic recovery requires async access to secure storage.
-                // This sync interface is preserved for backward compatibility
-                // but callers needing the mnemonic should read it directly
-                // from secure storage using the key `mnemonic-{keyId}`.
                 throw new KeyManagementError(
                     `Mnemonic must be read async from secure storage key: ${MNEMONIC_STORAGE_PREFIX}${keyId}`,
                 )
             },
         }
 
-        return handler(session)
+        try {
+            return await handler(session)
+        } finally {
+            seed.fill(0)
+            naclKeyPair.secretKey.fill(0)
+        }
     }
 
     return {
