@@ -10,41 +10,13 @@
  limitations under the License
  */
 
-import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
-import { KeyPair, StoredKeyMaterial } from './models'
-import { KeyManagementError } from './errors'
-
-export const getSeedFromMasterKey = (
-    storedKey: StoredKeyMaterial,
-): Uint8Array => {
-    try {
-        return decodeFromBase64(storedKey.seed)
-    } catch (e) {
-        throw new KeyManagementError(
-            'The key appears to be invalid or corrupted.',
-            e as Error,
-        )
-    }
-}
-
-export const getEntropyFromMasterKey = (
-    storedKey: StoredKeyMaterial,
-): Uint8Array | null => {
-    try {
-        return storedKey.entropy ? decodeFromBase64(storedKey.entropy) : null
-    } catch (e) {
-        throw new KeyManagementError(
-            'The key appears to be invalid or corrupted.',
-            e as Error,
-        )
-    }
-}
+import { KeyPair } from './models'
 
 export const makeKeyPair = (source: Partial<KeyPair>): KeyPair => {
     return {
         id: source.id ?? '',
+        keystoreKeyId: source.keystoreKeyId,
         publicKey: source.publicKey ?? '',
-        privateDataStorageKey: source.privateDataStorageKey ?? '',
         type: source.type ?? 'unknown',
         createdAt: source.createdAt ?? new Date(),
         expiresAt: source.expiresAt,

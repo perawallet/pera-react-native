@@ -11,19 +11,26 @@
  */
 
 import { Provider } from '@algorandfoundation/wallet-provider'
+import { WithKeyStore } from '@algorandfoundation/react-native-keystore'
+import type { KeyStoreExtension } from '@algorandfoundation/keystore'
 import {
     WithPlatformExtension,
     type PlatformExtension,
 } from '@perawallet/wallet-extension-platform-driver'
 
 /**
- * The Pera Wallet Provider with platform services.
+ * The Pera Wallet Provider with platform services and keystore.
  * Instances include all platform service properties (analytics, keyValueStorage, etc.)
- * via the build-time resolved platform driver extension.
+ * via the build-time resolved platform driver extension, plus the keystore extension
+ * for cryptographic key management.
  */
 export const PeraProvider = Provider.withExtensions([
     WithPlatformExtension,
+    WithKeyStore,
 ] as const)
 
-export type PeraProvider = Provider<readonly [typeof WithPlatformExtension]> &
-    PlatformExtension
+export type PeraProvider = Provider<
+    readonly [typeof WithPlatformExtension, typeof WithKeyStore]
+> &
+    PlatformExtension &
+    KeyStoreExtension

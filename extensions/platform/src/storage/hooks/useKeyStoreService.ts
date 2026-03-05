@@ -10,6 +10,8 @@
  limitations under the License
  */
 
-export * from './useKeyStoreService'
-export * from './useKeyValueStorageService'
-export * from './useSecureStorageService'
+import { getProvider } from '@perawallet/wallet-core-shared'
+import type { KeyStoreExtension } from '@algorandfoundation/keystore'
+
+export const useKeyStoreService = (): KeyStoreExtension['key']['store'] =>
+    getProvider<KeyStoreExtension>().key.store

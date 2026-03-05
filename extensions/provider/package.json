@@ -17,8 +17,12 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@algorandfoundation/keystore": "catalog:",
+    "@algorandfoundation/react-native-keystore": "catalog:",
     "@algorandfoundation/wallet-provider": "catalog:",
+    "@tanstack/store": "catalog:",
     "@babel/runtime": "catalog:",
+    "before-after-hook": "catalog:",
     "@perawallet/wallet-extension-platform": "workspace:*",
     "@perawallet/wallet-extension-platform-driver": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",

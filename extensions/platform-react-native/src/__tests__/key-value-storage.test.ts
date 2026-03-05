@@ -12,19 +12,24 @@
 
 import { RNKeyValueStorageService } from '../services/key-value-storage'
 vi.mock('react-native-mmkv', () => {
-    class MMKV {
-        private store = new Map<string, string>()
-        getString(key: string) {
-            return this.store.get(key) ?? null
-        }
-        set(key: string, value: string) {
-            this.store.set(key, String(value))
-        }
-        delete(key: string) {
-            this.store.delete(key)
+    function createMMKV() {
+        const store = new Map<string, string>()
+        return {
+            getString(key: string) {
+                return store.get(key) ?? undefined
+            },
+            set(key: string, value: string) {
+                store.set(key, String(value))
+            },
+            remove(key: string) {
+                return store.delete(key)
+            },
+            getAllKeys() {
+                return Array.from(store.keys())
+            },
         }
     }
-    return { MMKV }
+    return { createMMKV }
 })
 
 describe('RNKeyValueStorageService', () => {

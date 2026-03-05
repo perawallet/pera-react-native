@@ -35,16 +35,10 @@ export type AccessControl = {
 
 export type KeyPair = {
     id?: string
-    privateDataStorageKey?: string // where the private key information is stored in secure storage
+    keystoreKeyId?: string // key ID in the keystore extension
     publicKey: string
     createdAt?: Date
     expiresAt?: Date // optional key expiry. KMS will autodelete keys when accessed after this date
     acl?: AccessControl[] // who can access this key or what can be done with it
     type: KeyType
-}
-
-export type StoredKeyMaterial = {
-    seed: string
-    seedFormat: 'base64'
-    entropy?: string
 }

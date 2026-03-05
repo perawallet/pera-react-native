@@ -28,6 +28,26 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     }),
 }))
 
+vi.mock('@algorandfoundation/react-native-keystore', () => ({
+    WithKeyStore: () => ({
+        key: { store: {} },
+    }),
+}))
+
+vi.mock('@tanstack/store', () => ({
+    Store: class MockStore {
+        constructor() {}
+    },
+}))
+
+vi.mock('before-after-hook', () => ({
+    default: {
+        Collection: class MockCollection {
+            constructor() {}
+        },
+    },
+}))
+
 import { PeraWalletProvider, usePeraProvider } from '../context'
 import type { PeraProvider } from '../pera-provider'
 

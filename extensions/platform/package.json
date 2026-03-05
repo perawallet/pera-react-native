@@ -17,6 +17,7 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@algorandfoundation/keystore": "catalog:",
     "@babel/runtime": "catalog:",
     "@algorandfoundation/wallet-provider": "catalog:",
     "@perawallet/wallet-core-blockchain": "workspace:*",

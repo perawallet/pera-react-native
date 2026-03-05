@@ -50,7 +50,8 @@ const aliasMap = {
 
 // Crypto polyfill map
 const polyfillMap = {
-    // Node.js core modules
+    // Node.js core modules (including node: prefix variants)
+    'node:crypto': path.resolve(projectRoot, 'node_modules/react-native-quick-crypto'),
     'crypto': path.resolve(projectRoot, 'node_modules/react-native-quick-crypto'),
     'buffer': path.resolve(projectRoot, 'node_modules/@craftzdog/react-native-buffer'),
     'stream': path.resolve(projectRoot, 'node_modules/readable-stream'),

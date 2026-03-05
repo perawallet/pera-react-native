@@ -25,7 +25,7 @@
     "@perawallet/wallet-extension-platform": "workspace:*",
     "react": "catalog:",
     "react-native": "0.81.5",
-    "react-native-mmkv": "^3.3.3",
+    "react-native-mmkv": "^4.2.0",
     "react-native-keychain": "^10.0.0",
     "@react-native-firebase/analytics": "^23.8.6",
     "@react-native-firebase/crashlytics": "^23.8.6",
