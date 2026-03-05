@@ -29,6 +29,7 @@ import { useModalState } from '@hooks/useModalState'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import { QRScannerView } from '@components/QRScannerView'
 import { EmptyView } from '@components/EmptyView'
+import { getTestProps } from '@utils/test-id-helper'
 import { useLanguage } from '@hooks/useLanguage'
 import { ConfettiAnimation } from '@modules/accounts/components/ConfettiAnimation'
 import { PromptContainer } from '@modules/prompts'
@@ -87,7 +88,7 @@ export const AccountScreen = () => {
     return (
         <PWView
             style={styles.container}
-            testID='account_screen'
+            {...getTestProps('account_screen')}
         >
             <ConfettiAnimation
                 play={shouldPlayConfetti}
@@ -98,13 +99,15 @@ export const AccountScreen = () => {
                 left={<AccountSelection />}
                 right={
                     <PWView style={styles.iconBarSection}>
-                        <PWDropdown items={dropdownItems}>
-                            <PWIcon name='ellipsis' />
-                        </PWDropdown>
-                        <PWTouchableOpacity onPress={scannerState.open}>
+                        <PWView {...getTestProps('account_screen_dropdown')}>
+                            <PWDropdown items={dropdownItems}>
+                                <PWIcon name='ellipsis' />
+                            </PWDropdown>
+                        </PWView>
+                        <PWTouchableOpacity onPress={scannerState.open} {...getTestProps('account_screen_qr_scanner_button')}>
                             <PWIcon name='camera' />
                         </PWTouchableOpacity>
-                        <NotificationsIcon />
+                        <NotificationsIcon {...getTestProps('account_screen_notifications')} />
                     </PWView>
                 }
             />

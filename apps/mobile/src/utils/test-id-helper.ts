@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-import { Platform } from 'react-native'
-
 /**
  * Returns props for testing/automation.
  * On Android, we set both testID and accessibilityLabel for better Appium support.
@@ -30,7 +28,7 @@ export function getTestProps(id?: string, suffix?: string) {
 
     return {
         testID: suffixedID,
-        accessibilityLabel: Platform.OS === 'android' ? suffixedID : undefined,
+        accessibilityLabel: suffixedID, // Set on both platforms per Appium Pro recommendation
         accessible: true,
     }
 }

@@ -27,6 +27,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import type { SettingsStackParamsList } from '@modules/settings/routes'
 import { RatingsBottomSheet } from '@modules/settings/components/RatingsBottomSheet/RatingsBottomSheet'
 import { DeleteAllConfirmBottomSheet } from '@modules/settings/components/DeleteAllConfirmBottomSheet/DeleteAllConfirmBottomSheet'
+import { getTestProps } from '@utils/test-id-helper'
 
 export type SettingsRouteName = keyof SettingsStackParamsList
 
@@ -48,6 +49,7 @@ export const SettingsScreen = () => {
         <ScrollView
             style={styles.scrollView}
             showsVerticalScrollIndicator={false}
+            {...getTestProps('settings_screen')}
         >
             <PWView style={styles.sectionContainer}>
                 {settingsOptions.map(item => (
@@ -74,6 +76,7 @@ export const SettingsScreen = () => {
                 variant='secondary'
                 title={t('settings.main.remove_all_accounts')}
                 onPress={openDeleteModal}
+                {...getTestProps('settings_remove_all_accounts_button')}
             />
             <AppVersion enableSecretTaps />
             <DeleteAllConfirmBottomSheet
