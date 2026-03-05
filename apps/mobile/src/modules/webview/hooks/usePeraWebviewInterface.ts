@@ -189,10 +189,22 @@ export const usePeraWebviewInterface = (
                     return
                 }
 
-                Linking.canOpenURL(uri).then(supported => {
-                    if (supported) {
-                        Linking.openURL(uri)
-                    } else {
+                Linking.canOpenURL(uri)
+                    .then(supported => {
+                        if (supported) {
+                            Linking.openURL(uri)
+                        } else {
+                            sendErrorToWebview(
+                                message.id,
+                                JsonRpcErrorCode.InvalidParams,
+                                t('errors.webview.unsupported_url', {
+                                    url: uri,
+                                }),
+                                webview,
+                            )
+                        }
+                    })
+                    .catch(() => {
                         sendErrorToWebview(
                             message.id,
                             JsonRpcErrorCode.InvalidParams,
@@ -201,8 +213,7 @@ export const usePeraWebviewInterface = (
                             }),
                             webview,
                         )
-                    }
-                })
+                    })
             })
         },
         [securedConnection, handleDeepLink, t, webview],
