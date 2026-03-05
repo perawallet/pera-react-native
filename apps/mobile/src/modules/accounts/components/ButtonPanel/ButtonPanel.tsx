@@ -33,7 +33,10 @@ export const ButtonPanel = ({
     const { t } = useLanguage()
 
     return (
-        <PWView style={themeStyle.container} {...getTestProps('button_panel')}>
+        <PWView
+            style={themeStyle.container}
+            {...getTestProps('button_panel')}
+        >
             <RoundButton
                 title={t('account_details.button_panel.swap')}
                 icon='swap'

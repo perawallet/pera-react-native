@@ -104,10 +104,17 @@ export const AccountScreen = () => {
                                 <PWIcon name='ellipsis' />
                             </PWDropdown>
                         </PWView>
-                        <PWTouchableOpacity onPress={scannerState.open} {...getTestProps('account_screen_qr_scanner_button')}>
+                        <PWTouchableOpacity
+                            onPress={scannerState.open}
+                            {...getTestProps(
+                                'account_screen_qr_scanner_button',
+                            )}
+                        >
                             <PWIcon name='camera' />
                         </PWTouchableOpacity>
-                        <NotificationsIcon {...getTestProps('account_screen_notifications')} />
+                        <NotificationsIcon
+                            {...getTestProps('account_screen_notifications')}
+                        />
                     </PWView>
                 }
             />

@@ -67,7 +67,10 @@ export const SettingsWalletConnectScreen = () => {
     }
 
     return (
-        <PWView style={styles.container} {...getTestProps('wallet_connect_screen')}>
+        <PWView
+            style={styles.container}
+            {...getTestProps('wallet_connect_screen')}
+        >
             <PWFlatList
                 contentContainerStyle={styles.listContainer}
                 data={connections}
@@ -83,7 +86,9 @@ export const SettingsWalletConnectScreen = () => {
                                 title={t('walletconnect.settings.empty_button')}
                                 variant='primary'
                                 onPress={scannerState.open}
-                                {...getTestProps('wallet_connect_connect_button')}
+                                {...getTestProps(
+                                    'wallet_connect_connect_button',
+                                )}
                             />
                         }
                     />

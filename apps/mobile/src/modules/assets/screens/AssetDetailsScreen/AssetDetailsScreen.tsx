@@ -102,7 +102,10 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
     }
 
     return (
-        <PWView style={styles.contentContainer} {...getTestProps('asset_details_screen')}>
+        <PWView
+            style={styles.contentContainer}
+            {...getTestProps('asset_details_screen')}
+        >
             <Tab.Navigator screenOptions={{ swipeEnabled }}>
                 <Tab.Screen
                     name='Holdings'
