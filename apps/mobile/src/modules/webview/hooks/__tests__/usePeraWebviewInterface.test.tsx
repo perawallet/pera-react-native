@@ -71,6 +71,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         decodeTransactions: vi.fn(txns => txns),
         encodeSignedTransaction: vi.fn(t => t),
     })),
+    isValidAlgorandAddress: vi.fn(() => false),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -103,13 +104,6 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 }))
 
 const mockAddSignRequest = vi.fn()
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useTransactionEncoder: vi.fn(() => ({
-        decodeTransactions: vi.fn(txns => txns),
-        encodeSignedTransaction: vi.fn(t => t),
-    })),
-    isValidAlgorandAddress: vi.fn(() => false),
-}))
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
 }))
