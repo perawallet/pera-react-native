@@ -16,6 +16,7 @@ import {
     encodeToBase64,
     decodeFromBase64,
     generateOrderedUniqueId,
+    logger,
 } from '@perawallet/wallet-core-shared'
 import { KeyPair, KeyType, KMSAlgo25Session } from '../models'
 import {
@@ -43,12 +44,19 @@ export const useAlgo25 = () => {
         let mnemonic: string
         let seed: Uint8Array
 
-        if (params?.mnemonic) {
-            mnemonic = params.mnemonic
-            seed = seedFromMnemonic(mnemonic)
-        } else {
-            seed = nacl.randomBytes(32)
-            mnemonic = mnemonicFromSeed(seed)
+        try {
+            if (params?.mnemonic) {
+                mnemonic = params.mnemonic
+                seed = seedFromMnemonic(mnemonic)
+            } else {
+                seed = nacl.randomBytes(32)
+                mnemonic = mnemonicFromSeed(seed)
+            }
+        } catch (e) {
+            logger.error(
+                `createAlgo25Key failed: ${e instanceof Error ? e.message : String(e)}`,
+            )
+            throw e
         }
 
         // Compute public key locally

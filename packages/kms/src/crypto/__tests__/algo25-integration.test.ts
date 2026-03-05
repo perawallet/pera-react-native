@@ -17,7 +17,7 @@ import { encodeAddress } from '@algorandfoundation/algokit-utils'
 
 /**
  * Integration test for Algo25 (standard Algorand 25-word mnemonic) key derivation.
- * Uses a known test vector — mnemonic → seed → Ed25519 keypair → Algorand address.
+ * Uses a known test vector — mnemonic -> seed -> Ed25519 keypair -> Algorand address.
  */
 
 const TEST_MNEMONIC =
@@ -35,7 +35,7 @@ describe('Algo25 integration', () => {
         expect(address).toBe(EXPECTED_ADDRESS)
     })
 
-    test('round-trips: seed → address produces a deterministic result', () => {
+    test('round-trips: seed -> address produces a deterministic result', () => {
         const seed = seedFromMnemonic(TEST_MNEMONIC)
         const keyPair1 = nacl.sign.keyPair.fromSeed(seed)
         const address1 = encodeAddress(keyPair1.publicKey)

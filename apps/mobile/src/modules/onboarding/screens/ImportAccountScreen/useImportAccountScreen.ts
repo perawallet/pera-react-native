@@ -28,7 +28,7 @@ import type { UseImportAccountScreenResult } from './types'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { deferToNextCycle } from '@perawallet/wallet-core-shared'
+import { deferToNextCycle, logger } from '@perawallet/wallet-core-shared'
 import { useModalState } from '@hooks/useModalState'
 import { useKeyboardHeight } from '@hooks/useKeyboardHeight'
 import { useDeepLink } from '@hooks/useDeepLink'
@@ -251,7 +251,10 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                 navigation.push('SearchAccounts', {
                     account: importedAccount,
                 })
-            } catch {
+            } catch (e) {
+                logger.error(
+                    `Import account failed: ${e instanceof Error ? e.message : String(e)}`,
+                )
                 showToast({
                     title: t('onboarding.import_account.failed_title'),
                     body: t('onboarding.import_account.failed_body'),

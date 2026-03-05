@@ -18,6 +18,7 @@ import {
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '../store'
 import { AccountTypes, WalletAccount } from '../models'
+import { logger } from '@perawallet/wallet-core-shared'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { KeyNotFoundError, useKMS } from '@perawallet/wallet-core-kms'
@@ -40,13 +41,19 @@ export const useCreateAccount = () => {
         setAccounts([...accounts])
 
         if (deviceID) {
-            await updateDeviceOnBackend({
-                deviceId: deviceID,
-                data: {
-                    platform: deviceInfo.getDevicePlatform(),
-                    accounts: accounts.map(a => a.address),
-                },
-            })
+            try {
+                await updateDeviceOnBackend({
+                    deviceId: deviceID,
+                    data: {
+                        platform: deviceInfo.getDevicePlatform(),
+                        accounts: accounts.map(a => a.address),
+                    },
+                })
+            } catch (e) {
+                logger.warn(
+                    `Failed to sync account with backend: ${e instanceof Error ? e.message : String(e)}`,
+                )
+            }
         }
     }
 

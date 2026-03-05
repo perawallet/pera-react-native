@@ -18,13 +18,12 @@ import { KeyManagementError } from '../../errors'
 
 const mockSeedFromMnemonic = vi.fn()
 const mockMnemonicFromSeed = vi.fn()
+const mockEncodeAddress = vi.fn()
 
 vi.mock('@algorandfoundation/algokit-utils/algo25', () => ({
     seedFromMnemonic: (...args: any[]) => mockSeedFromMnemonic(...args),
     mnemonicFromSeed: (...args: any[]) => mockMnemonicFromSeed(...args),
 }))
-
-const mockEncodeAddress = vi.fn()
 
 vi.mock('@algorandfoundation/algokit-utils', () => ({
     encodeAddress: (...args: any[]) => mockEncodeAddress(...args),
