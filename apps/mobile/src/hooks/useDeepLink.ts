@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { StackActions } from '@react-navigation/native'
 import { useToast } from './useToast'
+import { navigationRef } from '@routes/navigationRef'
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import { parseDeeplink } from './deeplink/parser'
 import { DeeplinkType } from './deeplink/types'
@@ -33,7 +33,6 @@ import { useLanguage } from './useLanguage'
 type LinkSource = 'qr' | 'deeplink'
 
 export const useDeepLink = () => {
-    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { showToast, errorToast, infoToast } = useToast()
     const { addSignRequest } = useSigningRequest()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
@@ -56,10 +55,11 @@ export const useDeepLink = () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         params?: any,
     ) => {
+        if (!navigationRef.isReady()) return
         if (replaceCurrentScreen) {
-            navigation.replace(screenName, params)
+            navigationRef.dispatch(StackActions.replace(screenName, params))
         } else {
-            navigation.navigate(screenName, params)
+            navigationRef.navigate(screenName, params)
         }
     }
 
