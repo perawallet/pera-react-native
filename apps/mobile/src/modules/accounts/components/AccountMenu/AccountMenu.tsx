@@ -23,10 +23,12 @@ import { useStyles } from './styles'
 import { AccountWithBalance } from '../AccountWithBalance'
 import { PortfolioView } from '../PortfolioView'
 import { useAccountMenu } from './useAccountMenu'
+import { ReactNode } from 'react'
 
 export type AccountMenuProps = {
     onSelected: (account: WalletAccount) => void
     onAddAccount: () => void
+    headerContent?: ReactNode
 }
 
 export const AccountMenu = (props: AccountMenuProps) => {
@@ -34,11 +36,13 @@ export const AccountMenu = (props: AccountMenuProps) => {
     const { t } = useLanguage()
     const { accounts, selectedAccountAddress, handleTap } =
         useAccountMenu(props)
-    const { onAddAccount } = props
+    const { onAddAccount, headerContent } = props
 
     return (
         <PWView style={styles.container}>
-            <PortfolioView style={styles.portfolioContainer} />
+            {headerContent ?? (
+                <PortfolioView style={styles.portfolioContainer} />
+            )}
 
             <PWView style={styles.mainContent}>
                 <PWView style={styles.titleBar}>

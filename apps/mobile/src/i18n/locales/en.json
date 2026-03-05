@@ -1,7 +1,9 @@
 {
     "account_menu": {
         "title": "Accounts",
-        "sort": "Sort"
+        "sort": "Sort",
+        "select_title": "Select Account",
+        "select_description": "Select an account to make the swap"
     },
     "address_entry": {
         "scan_qr": "Scan QR Code",
