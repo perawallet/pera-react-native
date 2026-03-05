@@ -83,7 +83,6 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
 
                 <GestureHandlerRootView>
                     <MainRoutes />
-                    <WebViewOverlay />
                 </GestureHandlerRootView>
             </PWView>
         </ErrorBoundary>
@@ -140,6 +139,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
                 <AutoLockGuard>
                     <WalletConnectProvider>
                         <RootContentContainer fcmToken={fcmToken} />
+                        <WebViewOverlay />
                     </WalletConnectProvider>
                     <SigningOverlays />
                 </AutoLockGuard>

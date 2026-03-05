@@ -11,16 +11,12 @@
  */
 
 import React from 'react'
-import { PWView } from '@components/core'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { PWBottomSheet } from '@components/core'
 import { useWebViewStack, WebViewRequest } from '../../hooks'
 import { PWWebView } from '../PWWebView'
-import { useStyles } from './styles'
 
 /**
- * WebViewOverlay renders WebView overlays from the store as absolute-positioned
- * native views instead of Modals. This allows other Modals (e.g. WalletConnect
- * connection sheet) to appear on top without stacking conflicts.
+ * WebViewOverlay renders WebView bottom sheets from the store.
  * Place this component at the app root level to enable WebView overlays.
  * Use the `useWebView` hook to open webviews from anywhere in the app.
  *
@@ -31,8 +27,6 @@ import { useStyles } from './styles'
  */
 export const WebViewOverlay = () => {
     const { openWebViews, removeWebView } = useWebViewStack()
-    const insets = useSafeAreaInsets()
-    const styles = useStyles({ topInset: insets.top })
 
     const onCloseRequested = (view: WebViewRequest) => {
         if (view.onCloseRequested) {
@@ -45,9 +39,11 @@ export const WebViewOverlay = () => {
     return (
         <>
             {openWebViews.map((view: WebViewRequest) => (
-                <PWView
+                <PWBottomSheet
                     key={view.id}
-                    style={styles.overlay}
+                    isVisible={true}
+                    size='full'
+                    autoCreateContainer={false}
                 >
                     <PWWebView
                         requestId={view.id}
@@ -56,8 +52,9 @@ export const WebViewOverlay = () => {
                         showControls
                         onBack={view.onBackRequested}
                         onClose={() => onCloseRequested(view)}
+                        inBottomSheet
                     />
-                </PWView>
+                </PWBottomSheet>
             ))}
         </>
     )
