@@ -712,6 +712,16 @@ workflows:
                 fi
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          title: Get version from package.json
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                set -ex
+                VERSION=$(jq -r '.version | split("-")[0]' apps/mobile/package.json)
+                envman add --key APP_VERSION --value "$VERSION"
+                envman add --key BUILD_NUMBER --value "$BITRISE_BUILD_NUMBER"
+      - script@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Build & Deploy Android
           inputs:
             - content: |
