@@ -27,6 +27,9 @@ import { useAccountMenu } from './useAccountMenu'
 export type AccountMenuProps = {
     onSelected: (account: WalletAccount) => void
     onAddAccount: () => void
+    variant?: 'default' | 'select'
+    title?: string
+    description?: string
 }
 
 export const AccountMenu = (props: AccountMenuProps) => {
@@ -34,11 +37,22 @@ export const AccountMenu = (props: AccountMenuProps) => {
     const { t } = useLanguage()
     const { accounts, selectedAccountAddress, handleTap } =
         useAccountMenu(props)
-    const { onAddAccount } = props
+    const { onAddAccount, variant, title, description } = props
 
     return (
         <PWView style={styles.container}>
-            <PortfolioView style={styles.portfolioContainer} />
+            {variant === 'select' ? (
+                <PWView style={styles.selectHeader}>
+                    <PWText variant='h2'>{title}</PWText>
+                    {description && (
+                        <PWText style={styles.selectDescription}>
+                            {description}
+                        </PWText>
+                    )}
+                </PWView>
+            ) : (
+                <PortfolioView style={styles.portfolioContainer} />
+            )}
 
             <PWView style={styles.mainContent}>
                 <PWView style={styles.titleBar}>

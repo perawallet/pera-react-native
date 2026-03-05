@@ -20,6 +20,9 @@ export type AccountMenuBottomSheetProps = {
     onClose: () => void
     onSelected: (account: WalletAccount) => void
     onAddAccount: () => void
+    variant?: 'default' | 'select'
+    title?: string
+    description?: string
 }
 
 export const AccountMenuBottomSheet = ({
@@ -27,6 +30,9 @@ export const AccountMenuBottomSheet = ({
     onClose,
     onSelected,
     onAddAccount,
+    variant,
+    title,
+    description,
 }: AccountMenuBottomSheetProps) => {
     const styles = useStyles()
 
@@ -50,6 +56,9 @@ export const AccountMenuBottomSheet = ({
             <AccountMenu
                 onSelected={onSelected}
                 onAddAccount={onAddAccount}
+                variant={variant}
+                title={title}
+                description={description}
             />
         </PWBottomSheet>
     )

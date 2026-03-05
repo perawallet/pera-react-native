@@ -25,10 +25,16 @@ import { AccountDisplay } from '../AccountDisplay'
 
 export type AccountSelectionProps = {
     onSelected?: (account: WalletAccount) => void
+    variant?: 'default' | 'select'
+    title?: string
+    description?: string
 } & TouchableOpacityProps
 
 export const AccountSelection = ({
     onSelected,
+    variant,
+    title,
+    description,
     ...props
 }: AccountSelectionProps) => {
     const styles = useStyles()
@@ -65,6 +71,9 @@ export const AccountSelection = ({
                 onClose={accountMenuState.close}
                 onSelected={handleSelected}
                 onAddAccount={handleAddAccount}
+                variant={variant}
+                title={title}
+                description={description}
             />
         </>
     )
