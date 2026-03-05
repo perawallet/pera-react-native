@@ -11,6 +11,7 @@
  */
 
 import { useKMS } from '@perawallet/wallet-core-kms'
+import { usePinCode } from '@perawallet/wallet-core-security'
 import { logger } from '@perawallet/wallet-core-shared'
 import { clearDataStores } from '@perawallet/wallet-extension-provider'
 import { useQueryClient } from '@tanstack/react-query'
@@ -22,6 +23,7 @@ export const useDeleteAllData = () => {
     const { keys, deleteKey } = useKMS()
     const queryClient = useQueryClient()
     const { mutateAsync: deleteDevices } = useDeleteDeviceMutation()
+    const { savePin } = usePinCode()
 
     return useCallback(async () => {
         if (queryClient) {
@@ -44,6 +46,9 @@ export const useDeleteAllData = () => {
             logger.error('Failed to delete devices', { error: e })
         }
 
+        // Clear PIN and biometrics from secure storage
+        await savePin(null)
+
         clearDataStores()
-    }, [queryClient, keys, deleteKey])
+    }, [queryClient, keys, deleteKey, savePin])
 }

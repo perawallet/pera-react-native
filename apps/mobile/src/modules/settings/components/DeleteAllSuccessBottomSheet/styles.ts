@@ -10,26 +10,19 @@
  limitations under the License
  */
 
-import { useDeleteAllData } from '@modules/settings/hooks/useDeleteAllData'
+import { makeStyles } from '@rneui/themed'
 
-type UseDeleteAllConfirmProps = {
-    onClose: () => void
-    onSuccess: () => void
-}
-
-export const useDeleteAllConfirm = ({
-    onClose,
-    onSuccess,
-}: UseDeleteAllConfirmProps) => {
-    const clearAllData = useDeleteAllData()
-
-    const handleDeleteAllAccounts = async () => {
-        await clearAllData()
-        onClose()
-        onSuccess()
-    }
-
-    return {
-        handleDeleteAllAccounts,
-    }
-}
+export const useStyles = makeStyles(theme => ({
+    container: {
+        padding: theme.spacing.xl,
+        gap: theme.spacing.lg,
+        alignItems: 'center',
+    },
+    icon: {
+        marginVertical: theme.spacing.md,
+    },
+    message: {
+        textAlign: 'center',
+        marginBottom: theme.spacing.md,
+    },
+}))

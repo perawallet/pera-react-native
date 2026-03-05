@@ -14,12 +14,17 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useDeleteAllData } from '../useDeleteAllData'
 import { useKMS } from '@perawallet/wallet-core-kms'
+import { usePinCode } from '@perawallet/wallet-core-security'
 import { clearDataStores } from '@perawallet/wallet-extension-provider'
 import { useQueryClient } from '@tanstack/react-query'
 import { useDeleteDeviceMutation } from '@perawallet/wallet-extension-platform'
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-security', () => ({
+    usePinCode: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -42,6 +47,7 @@ describe('useDeleteAllData', () => {
     const mockDeleteKey = vi.fn()
     const mockRemoveQueries = vi.fn()
     const mockDeleteDevices = vi.fn()
+    const mockSavePin = vi.fn().mockResolvedValue(undefined)
 
     beforeEach(() => {
         vi.clearAllMocks()
@@ -52,6 +58,9 @@ describe('useDeleteAllData', () => {
             ]),
             deleteKey: mockDeleteKey,
         })
+        ;(usePinCode as Mock).mockReturnValue({
+            savePin: mockSavePin,
+        })
         ;(useQueryClient as Mock).mockReturnValue({
             removeQueries: mockRemoveQueries,
         })
@@ -60,7 +69,7 @@ describe('useDeleteAllData', () => {
         })
     })
 
-    it('should clear all data stores, delete keys, and delete devices', async () => {
+    it('should clear all data stores, delete keys, delete devices, and clear PIN', async () => {
         const { result } = renderHook(() => useDeleteAllData())
 
         await act(async () => {
@@ -72,6 +81,7 @@ describe('useDeleteAllData', () => {
         expect(mockDeleteKey).toHaveBeenCalledWith('key-1')
         expect(mockDeleteKey).toHaveBeenCalledWith('key-2')
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
+        expect(mockSavePin).toHaveBeenCalledWith(null)
         expect(clearDataStores).toHaveBeenCalledTimes(1)
     })
 

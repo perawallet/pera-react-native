@@ -10,26 +10,4 @@
  limitations under the License
  */
 
-import { useDeleteAllData } from '@modules/settings/hooks/useDeleteAllData'
-
-type UseDeleteAllConfirmProps = {
-    onClose: () => void
-    onSuccess: () => void
-}
-
-export const useDeleteAllConfirm = ({
-    onClose,
-    onSuccess,
-}: UseDeleteAllConfirmProps) => {
-    const clearAllData = useDeleteAllData()
-
-    const handleDeleteAllAccounts = async () => {
-        await clearAllData()
-        onClose()
-        onSuccess()
-    }
-
-    return {
-        handleDeleteAllAccounts,
-    }
-}
+export { DeleteAllSuccessBottomSheet } from './DeleteAllSuccessBottomSheet'

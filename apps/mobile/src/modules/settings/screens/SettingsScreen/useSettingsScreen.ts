@@ -16,6 +16,7 @@ import { useModalState } from '@hooks/useModalState'
 import { useSettingsOptions } from './useSettingsOptions'
 import { SettingsStackParamsList } from '@modules/settings/routes'
 import { generateUniqueId } from '@perawallet/wallet-core-shared'
+import { useCallback } from 'react'
 
 export const useSettingsScreen = () => {
     const navigation = useAppNavigation()
@@ -24,6 +25,11 @@ export const useSettingsScreen = () => {
         isOpen: isDeleteModalOpen,
         open: openDeleteModal,
         close: closeDeleteModal,
+    } = useModalState()
+    const {
+        isOpen: isSuccessModalOpen,
+        open: openSuccessModal,
+        close: closeSuccessModal,
     } = useModalState()
     const {
         isOpen: isRatingModalOpen,
@@ -59,10 +65,25 @@ export const useSettingsScreen = () => {
         }
     }
 
+    const handleDeleteSuccess = useCallback(() => {
+        openSuccessModal()
+    }, [openSuccessModal])
+
+    const handleSuccessClose = useCallback(() => {
+        closeSuccessModal()
+        // Navigate to onboarding after user acknowledges success
+        setTimeout(() => {
+            navigation.replace('Onboarding', { screen: 'OnboardingHome' })
+        }, 0)
+    }, [closeSuccessModal, navigation])
+
     return {
         isDeleteModalOpen,
         openDeleteModal,
         closeDeleteModal,
+        isSuccessModalOpen,
+        handleDeleteSuccess,
+        handleSuccessClose,
         isRatingModalOpen,
         closeRatingModal,
         settingsOptions,
