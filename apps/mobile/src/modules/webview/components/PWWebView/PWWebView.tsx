@@ -259,7 +259,6 @@ export const PWWebView = (props: PWWebViewProps) => {
                 onError={showLoadError}
                 onHttpError={showError}
                 dataDetectorTypes={[]}
-                textInteractionEnabled={false}
                 onNavigationStateChange={navigationStateChange}
                 nestedScrollEnabled
             />
