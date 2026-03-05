@@ -38,7 +38,8 @@ export const useInputScreen = () => {
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const selectedAccount = useSelectedAccount()
-    const { selectedAsset, setAmount, setIsCloseAccount } = useSendFunds()
+    const { selectedAssetBalance, setAmount, setIsCloseAccount } =
+        useSendFunds()
     const [value, setValue] = useState<string | null>()
     const { showToast } = useToast()
     const { t } = useLanguage()
@@ -47,15 +48,16 @@ export const useInputScreen = () => {
         selectedAccount ? [selectedAccount] : [],
     )
     const assetIDs = useMemo(
-        () => (selectedAsset?.assetId ? [selectedAsset.assetId] : []),
-        [selectedAsset?.assetId],
+        () =>
+            selectedAssetBalance?.assetId ? [selectedAssetBalance.assetId] : [],
+        [selectedAssetBalance?.assetId],
     )
     const { data: assets } = useAssetsQuery(assetIDs)
 
     const asset = useMemo(() => {
-        if (!selectedAsset?.assetId) return null
-        return assets.get(selectedAsset?.assetId)
-    }, [selectedAsset, assets])
+        if (!selectedAssetBalance?.assetId) return null
+        return assets.get(selectedAssetBalance?.assetId)
+    }, [selectedAssetBalance, assets])
     const { data: params } = useSuggestedParametersQuery()
     const { data: accountInformation } = useAccountInformationQuery(
         selectedAccount?.address ?? '',
@@ -67,13 +69,15 @@ export const useInputScreen = () => {
         }
         const assetToUse = accountBalances
             ?.get(selectedAccount.address)
-            ?.assetBalances?.find(b => b.assetId === selectedAsset?.assetId)
+            ?.assetBalances?.find(
+                b => b.assetId === selectedAssetBalance?.assetId,
+            )
         const assetAmount = assetToUse?.amount ?? Decimal(0)
         return assetAmount
-    }, [accountBalances, selectedAsset?.assetId, selectedAccount])
+    }, [accountBalances, selectedAssetBalance?.assetId, selectedAccount])
 
     const maxAmount = useMemo(() => {
-        if (selectedAsset?.assetId === ALGO_ASSET_ID) {
+        if (selectedAssetBalance?.assetId === ALGO_ASSET_ID) {
             const balance = toWholeUnits(
                 accountInformation?.amount ?? 0n,
                 ALGO_ASSET,
@@ -87,10 +91,15 @@ export const useInputScreen = () => {
         } else {
             return Decimal.max(tokenBalance ?? Decimal(0), Decimal(0))
         }
-    }, [selectedAsset?.assetId, params, accountInformation, tokenBalance])
+    }, [
+        selectedAssetBalance?.assetId,
+        params,
+        accountInformation,
+        tokenBalance,
+    ])
 
     const totalBalance = useMemo(() => {
-        if (selectedAsset?.assetId === ALGO_ASSET_ID) {
+        if (selectedAssetBalance?.assetId === ALGO_ASSET_ID) {
             const balance = toWholeUnits(
                 accountInformation?.amount ?? 0n,
                 ALGO_ASSET,
@@ -99,17 +108,22 @@ export const useInputScreen = () => {
         } else {
             return Decimal.max(tokenBalance ?? Decimal(0), Decimal(0))
         }
-    }, [selectedAsset?.assetId, params, accountInformation, tokenBalance])
+    }, [
+        selectedAssetBalance?.assetId,
+        params,
+        accountInformation,
+        tokenBalance,
+    ])
 
     const minBalanceDisplay = useMemo(() => {
-        if (selectedAsset?.assetId === ALGO_ASSET_ID) {
+        if (selectedAssetBalance?.assetId === ALGO_ASSET_ID) {
             return toWholeUnits(
                 accountInformation?.minBalance ?? 0n,
                 ALGO_ASSET,
             ).toString()
         }
         return '0'
-    }, [selectedAsset?.assetId, accountInformation])
+    }, [selectedAssetBalance?.assetId, accountInformation])
 
     const setMax = useCallback(() => {
         setValue(totalBalance.toString())
@@ -120,10 +134,10 @@ export const useInputScreen = () => {
 
     const hasNoOptedInAssets = useMemo(() => {
         return (
-            selectedAsset?.assetId === ALGO_ASSET_ID &&
+            selectedAssetBalance?.assetId === ALGO_ASSET_ID &&
             (accountInformation?.assets?.length ?? 0) === 0
         )
-    }, [selectedAsset?.assetId, accountInformation?.assets])
+    }, [selectedAssetBalance?.assetId, accountInformation?.assets])
 
     const handleNext = useCallback(() => {
         if (!value || Decimal(value).lte(0)) {
@@ -238,7 +252,7 @@ export const useInputScreen = () => {
 
     return {
         asset,
-        selectedAsset,
+        selectedAssetBalance,
         params,
         accountInformation,
         minBalanceDisplay,
