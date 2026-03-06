@@ -72,6 +72,9 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useSuggestedParametersQuery: vi.fn(),
+    useAccountInformationQuery: vi.fn(() => ({ data: undefined })),
+    displayUnitsToBaseUnits: (amount: Decimal, decimals: number) =>
+        amount.mul(Decimal.pow(10, decimals)),
 }))
 
 vi.mock('@perawallet/wallet-core-currencies', () => ({

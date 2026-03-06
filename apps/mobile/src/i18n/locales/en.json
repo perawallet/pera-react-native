@@ -596,7 +596,9 @@
             "fee": "Fee",
             "current_balance": "Current Balance",
             "note": "Note",
-            "confirm_button": "Confirm transfer"
+            "confirm_button": "Confirm transfer",
+            "receiver_min_balance_title": "Insufficient Amount",
+            "receiver_min_balance_body": "The amount you're sending is not enough to meet the receiver's minimum balance requirement (0.1 ALGO). Please increase the amount."
         },
         "processing": {
             "title": "Sending the transaction",
