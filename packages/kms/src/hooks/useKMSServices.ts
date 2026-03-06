@@ -13,7 +13,6 @@
 import type { KeyStoreAPI } from '@algorandfoundation/keystore'
 import { useKeyStoreService } from '@perawallet/wallet-extension-platform'
 import { useKeyManagerStore } from '../store'
-import { logger } from '@perawallet/wallet-core-shared'
 import { AccessControlPermission, KeyPair } from '../models'
 import { KeyAccessError } from '../errors'
 import { useCallback } from 'react'
@@ -64,7 +63,6 @@ export const useKMSService = (): UseKMSServiceResult => {
                 await keyStore.remove(key.keystoreKeyId)
             }
 
-            logger.debug('Deleting key', key)
             removeKey(id)
         },
         [getKey, removeKey, keyStore],

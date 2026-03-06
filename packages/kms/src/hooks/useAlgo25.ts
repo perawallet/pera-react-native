@@ -93,10 +93,6 @@ export const useAlgo25 = () => {
 
         const keystoreKeyId = key.keystoreKeyId
 
-        logger.debug(
-            `[TX_SIGN] withAlgo25Session: keyId=${key.id ?? ''}, keystoreKeyId=${keystoreKeyId}`,
-        )
-
         if (!keystoreKeyId) {
             throw new KeyManagementError('Key does not have a keystore key ID')
         }
@@ -107,10 +103,6 @@ export const useAlgo25 = () => {
         if (!keyData.privateKey) {
             throw new KeyManagementError('Key not found in keystore')
         }
-
-        logger.debug(
-            `[TX_SIGN] Algo25 key exported from keystore: hasPrivateKey=${!!keyData.privateKey}, hasPublicKey=${!!keyData.publicKey}`,
-        )
 
         // Reconstruct nacl keypair from exported key material
         const seed = keyData.privateKey.slice(0, 32)

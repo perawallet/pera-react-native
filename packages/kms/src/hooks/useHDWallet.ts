@@ -21,7 +21,7 @@ import { clearKeyData } from '@algorandfoundation/keystore'
 const xhd = new XHDWalletAPI()
 import { KeyPair, KeyType } from '../models'
 import { makeKeyPair } from '../utils'
-import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { KeyManagementError } from '../errors'
 import { useKMSService } from './useKMSServices'
 import { useKeyManagerStore } from '../store'
@@ -78,10 +78,6 @@ export const useHDWallet = () => {
     const migrateRootKeyType = async (
         keystoreKeyId: string,
     ): Promise<string> => {
-        logger.debug(
-            `[KMS] Migrating hd-seed key ${keystoreKeyId} to hd-root-key`,
-        )
-
         const keyData = await keyStore.export(keystoreKeyId)
         if (!keyData.privateKey) {
             throw new KeyManagementError(
@@ -110,10 +106,6 @@ export const useHDWallet = () => {
         }
 
         await keyStore.remove(keystoreKeyId)
-
-        logger.debug(
-            `[KMS] Migrated root key: ${keystoreKeyId} → ${newKeystoreKeyId}`,
-        )
 
         return newKeystoreKeyId
     }
@@ -173,10 +165,6 @@ export const useHDWallet = () => {
 
         const keystoreKeyId = key.keystoreKeyId
 
-        logger.debug(
-            `[TX_SIGN] withHDSession: keyId=${key.id ?? ''}, keystoreKeyId=${keystoreKeyId}`,
-        )
-
         if (!keystoreKeyId) {
             throw new KeyManagementError('Key does not have a keystore key ID')
         }
@@ -198,9 +186,9 @@ export const useHDWallet = () => {
                 return derivedKeyData.publicKey
             },
             signTransaction: async (params, encodedTx) => {
-                // keyStore.sign() routes through xhd.signData(Encoding.NONE)
-                // which rejects Algorand protocol tags ("TX", "MX", etc.).
-                // Use xhd.signAlgoTransaction directly which bypasses validation.
+                // TODO: Route through keyStore.sign() once upstream supports Algorand transaction signing.
+                // keyStore.sign() routes through xhd.signData(Encoding.NONE) which rejects
+                // Algorand protocol tags ("TX", "MX", etc.). signAlgoTransaction bypasses validation.
                 // encodedTx already includes the "TX" prefix from encodeTransaction.
                 const rootKeyData = await keyStore.export(keystoreKeyId)
                 if (!rootKeyData.privateKey) {
