@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useMemo, useRef } from 'react'
-import { useSecureStorageService } from '@perawallet/wallet-extension-platform'
 import { useSecurityStore } from '../store'
 import {
     PIN_STORAGE_KEY,
@@ -20,6 +19,7 @@ import {
     AUTO_LOCK_TIMEOUT_MS,
 } from '../constants'
 import { useBiometrics } from './useBiometrics'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 type UsePinCodeResult = {
     failedAttempts: number
@@ -41,7 +41,7 @@ const encoder = new TextEncoder()
 
 export const usePinCode = (): UsePinCodeResult => {
     const forceRefresh = useRef(0)
-    const secureStorage = useSecureStorageService()
+    const secureStorage = getProvider().secureStorage
     const failedAttempts = useSecurityStore(state => state.failedAttempts)
     const incrementFailedAttempts = useSecurityStore(
         state => state.incrementFailedAttempts,

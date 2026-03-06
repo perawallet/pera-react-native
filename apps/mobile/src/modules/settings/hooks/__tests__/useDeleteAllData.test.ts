@@ -14,9 +14,9 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useDeleteAllData } from '../useDeleteAllData'
 import { useKMS } from '@perawallet/wallet-core-kms'
-import { clearDataStores } from '@perawallet/wallet-extension-provider'
 import { useQueryClient } from '@tanstack/react-query'
-import { useDeleteDeviceMutation } from '@perawallet/wallet-extension-platform'
+import { useDeleteDeviceMutation } from '@perawallet/wallet-core-device'
+import { clearAllStores } from '@perawallet/wallet-core-shared'
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: vi.fn(),
@@ -28,13 +28,14 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { api: vi.fn(), error: vi.fn(), info: vi.fn() },
+    clearAllStores: vi.fn(),
 }))
 
 vi.mock('@tanstack/react-query', () => ({
     useQueryClient: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-extension-platform', () => ({
+vi.mock('@perawallet/wallet-core-device', () => ({
     useDeleteDeviceMutation: vi.fn(),
 }))
 
@@ -72,7 +73,7 @@ describe('useDeleteAllData', () => {
         expect(mockDeleteKey).toHaveBeenCalledWith('key-1')
         expect(mockDeleteKey).toHaveBeenCalledWith('key-2')
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
-        expect(clearDataStores).toHaveBeenCalledTimes(1)
+        expect(clearAllStores).toHaveBeenCalledTimes(1)
     })
 
     it('should not delete keys if id is missing', async () => {
@@ -104,7 +105,7 @@ describe('useDeleteAllData', () => {
         })
 
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
-        expect(clearDataStores).toHaveBeenCalledTimes(1)
+        expect(clearAllStores).toHaveBeenCalledTimes(1)
     })
 
     it('should continue if deleteKey fails', async () => {
@@ -118,7 +119,7 @@ describe('useDeleteAllData', () => {
 
         expect(mockDeleteKey).toHaveBeenCalled()
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
-        expect(clearDataStores).toHaveBeenCalledTimes(1)
+        expect(clearAllStores).toHaveBeenCalledTimes(1)
     })
 
     it('should handle missing queryClient gracefully', async () => {
@@ -132,7 +133,7 @@ describe('useDeleteAllData', () => {
 
         expect(mockRemoveQueries).not.toHaveBeenCalled()
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
-        expect(clearDataStores).toHaveBeenCalledTimes(1)
+        expect(clearAllStores).toHaveBeenCalledTimes(1)
     })
 
     it('should handle missing keys gracefully', async () => {
@@ -149,6 +150,6 @@ describe('useDeleteAllData', () => {
 
         expect(mockDeleteKey).not.toHaveBeenCalled()
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
-        expect(clearDataStores).toHaveBeenCalledTimes(1)
+        expect(clearAllStores).toHaveBeenCalledTimes(1)
     })
 })

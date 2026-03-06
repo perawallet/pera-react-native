@@ -21,7 +21,12 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     return {
         ...original,
         registerStore: vi.fn(),
-        createPersistStorage: () => ({
+    }
+})
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        keyValueStorage: {
             getItem: (key: string) => mockStorage.get(key) ?? null,
             setItem: (key: string, value: string) => {
                 mockStorage.set(key, value)
@@ -29,9 +34,9 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
             removeItem: (key: string) => {
                 mockStorage.delete(key)
             },
-        }),
-    }
-})
+        },
+    }),
+}))
 
 describe('WalletConnectStore', () => {
     beforeEach(() => {

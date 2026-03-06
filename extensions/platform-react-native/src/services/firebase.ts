@@ -43,12 +43,12 @@ import notifee, {
     NotificationAndroid,
 } from '@notifee/react-native'
 import {
-    CrashReportingService,
-    PushNotificationInitResult,
+    type CrashReportingService,
+    type PushNotificationInitResult,
+    type RemoteConfigService,
+    type AnalyticsService,
     RemoteConfigDefaults,
     RemoteConfigKey,
-    RemoteConfigService,
-    AnalyticsService,
 } from '@perawallet/wallet-extension-platform'
 import { config } from '@perawallet/wallet-core-config'
 

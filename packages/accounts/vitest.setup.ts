@@ -15,6 +15,15 @@ import { vi, beforeEach } from 'vitest'
 const kvStore = new Map<string, string>()
 
 vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
+    WithPlatformExtension: () => ({
+        keyValueStorage: {
+            getItem: (key: string) => kvStore.get(key) ?? null,
+            setItem: (key: string, value: string) => kvStore.set(key, value),
+            removeItem: (key: string) => {
+                kvStore.delete(key)
+            },
+        },
+    }),
     getPlatformServices: () => ({
         keyValueStorage: {
             getItem: (key: string) => kvStore.get(key) ?? null,

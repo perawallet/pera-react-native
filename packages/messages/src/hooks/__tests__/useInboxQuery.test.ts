@@ -20,11 +20,9 @@ vi.mock('../../api/inbox', () => ({
     fetchInbox: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-extension-platform', async importOriginal => {
+vi.mock('@perawallet/wallet-core-device', async importOriginal => {
     const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-extension-platform')
-        >()
+        await importOriginal<typeof import('@perawallet/wallet-core-device')>()
     return {
         ...actual,
         useDeviceID: vi.fn().mockReturnValue('test-device-id'),
