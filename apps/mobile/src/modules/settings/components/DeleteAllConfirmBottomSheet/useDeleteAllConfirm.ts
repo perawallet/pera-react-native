@@ -17,14 +17,18 @@ type UseDeleteAllConfirmProps = {
     onSuccess: () => void
 }
 
+type UseDeleteAllConfirmResult = {
+    handleDeleteAllAccounts: () => Promise<void>
+}
+
 export const useDeleteAllConfirm = ({
     onClose,
     onSuccess,
-}: UseDeleteAllConfirmProps) => {
-    const clearAllData = useDeleteAllData()
+}: UseDeleteAllConfirmProps): UseDeleteAllConfirmResult => {
+    const { deleteAllData } = useDeleteAllData()
 
     const handleDeleteAllAccounts = async () => {
-        await clearAllData()
+        await deleteAllData()
         onClose()
         onSuccess()
     }

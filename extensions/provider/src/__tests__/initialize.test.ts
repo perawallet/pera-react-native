@@ -27,5 +27,14 @@ describe('clearDataStores', () => {
         clearDataStores()
 
         expect(clearAllStores).toHaveBeenCalledTimes(1)
+        expect(clearAllStores).toHaveBeenCalledWith(undefined)
+    })
+
+    it('passes skip option through to clearAllStores', () => {
+        clearDataStores({ skip: ['accounts-store'] })
+
+        expect(clearAllStores).toHaveBeenCalledWith({
+            skip: ['accounts-store'],
+        })
     })
 })

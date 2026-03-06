@@ -15,14 +15,15 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         padding: theme.spacing.xl,
-        gap: theme.spacing.lg,
+        gap: theme.spacing.xxl,
         alignItems: 'center',
     },
-    icon: {
-        marginVertical: theme.spacing.md,
-    },
+    icon: {},
     message: {
         textAlign: 'center',
-        marginBottom: theme.spacing.md,
+        marginHorizontal: theme.spacing.xxl,
+    },
+    button: {
+        width: '100%',
     },
 }))

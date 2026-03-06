@@ -26,7 +26,9 @@ describe('useDeleteAllConfirm', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(useDeleteAllData as Mock).mockReturnValue(mockClearAllData)
+        ;(useDeleteAllData as Mock).mockReturnValue({
+            deleteAllData: mockClearAllData,
+        })
     })
 
     it('returns handleDeleteAllAccounts function', () => {

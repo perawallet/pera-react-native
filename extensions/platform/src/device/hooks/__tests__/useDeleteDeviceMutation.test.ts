@@ -18,7 +18,6 @@ import { deleteDevice } from '../endpoints'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { useDeviceStore } from '../../store'
 import { useDeviceID } from '../useDevice'
-import { DevicePlatforms } from '../../models'
 
 vi.mock('../endpoints', () => ({
     deleteDevice: vi.fn(),
@@ -67,8 +66,7 @@ describe('useDeleteDeviceMutation', () => {
     })
 
     it('deletes devices on both testnet and mainnet when both are registered', async () => {
-        const mockResponse = { id: 'device-id', platform: DevicePlatforms.ios }
-        vi.mocked(deleteDevice).mockResolvedValue(mockResponse)
+        vi.mocked(deleteDevice).mockResolvedValue(undefined)
 
         const { result } = renderHook(() => useDeleteDeviceMutation(), {
             wrapper: createWrapper(),
@@ -93,10 +91,9 @@ describe('useDeleteDeviceMutation', () => {
             platform: 'ios',
             accounts: [],
         })
-        expect(result.current.data).toHaveLength(2)
     })
 
-    it('returns empty array when no devices are registered', async () => {
+    it('does nothing when no devices are registered', async () => {
         vi.mocked(useDeviceID).mockReturnValue(null)
 
         const { result } = renderHook(() => useDeleteDeviceMutation(), {
@@ -110,10 +107,9 @@ describe('useDeleteDeviceMutation', () => {
         })
 
         expect(deleteDevice).not.toHaveBeenCalled()
-        expect(result.current.data).toEqual([])
     })
 
-    it('returns empty array when no push token is available', async () => {
+    it('does nothing when no push token is available', async () => {
         vi.mocked(useDeviceStore).mockImplementation(selector => {
             const state = {
                 pushToken: null,
@@ -136,7 +132,6 @@ describe('useDeleteDeviceMutation', () => {
         })
 
         expect(deleteDevice).not.toHaveBeenCalled()
-        expect(result.current.data).toEqual([])
     })
 
     it('handles API error', async () => {
@@ -162,8 +157,7 @@ describe('useDeleteDeviceMutation', () => {
             return null
         })
 
-        const mockResponse = { id: 'device-id', platform: DevicePlatforms.ios }
-        vi.mocked(deleteDevice).mockResolvedValue(mockResponse)
+        vi.mocked(deleteDevice).mockResolvedValue(undefined)
 
         const { result } = renderHook(() => useDeleteDeviceMutation(), {
             wrapper: createWrapper(),
@@ -182,7 +176,6 @@ describe('useDeleteDeviceMutation', () => {
             platform: 'ios',
             accounts: [],
         })
-        expect(result.current.data).toHaveLength(1)
     })
 
     it('deletes only mainnet device when testnet is not registered', async () => {
@@ -191,8 +184,7 @@ describe('useDeleteDeviceMutation', () => {
             return null
         })
 
-        const mockResponse = { id: 'device-id', platform: DevicePlatforms.ios }
-        vi.mocked(deleteDevice).mockResolvedValue(mockResponse)
+        vi.mocked(deleteDevice).mockResolvedValue(undefined)
 
         const { result } = renderHook(() => useDeleteDeviceMutation(), {
             wrapper: createWrapper(),
@@ -211,12 +203,10 @@ describe('useDeleteDeviceMutation', () => {
             platform: 'ios',
             accounts: [],
         })
-        expect(result.current.data).toHaveLength(1)
     })
 
     it('accepts custom mutation options', async () => {
-        const mockResponse = { id: 'device-id', platform: DevicePlatforms.ios }
-        vi.mocked(deleteDevice).mockResolvedValue(mockResponse)
+        vi.mocked(deleteDevice).mockResolvedValue(undefined)
         const onSuccess = vi.fn()
 
         const { result } = renderHook(

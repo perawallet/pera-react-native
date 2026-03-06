@@ -15,7 +15,11 @@ import { useWebView } from '@modules/webview'
 import { useModalState } from '@hooks/useModalState'
 import { useSettingsOptions } from './useSettingsOptions'
 import { SettingsStackParamsList } from '@modules/settings/routes'
-import { generateUniqueId } from '@perawallet/wallet-core-shared'
+import {
+    deferToNextCycle,
+    generateUniqueId,
+} from '@perawallet/wallet-core-shared'
+import { clearAccountsStore } from '@modules/settings/hooks/useDeleteAllData'
 import { useCallback } from 'react'
 
 export const useSettingsScreen = () => {
@@ -71,11 +75,14 @@ export const useSettingsScreen = () => {
 
     const handleSuccessClose = useCallback(() => {
         closeSuccessModal()
-        // Navigate to onboarding after user acknowledges success
-        setTimeout(() => {
-            navigation.replace('Onboarding', { screen: 'OnboardingHome' })
-        }, 0)
-    }, [closeSuccessModal, navigation])
+        clearAccountsStore()
+
+        deferToNextCycle(() => {
+            navigation.navigate('Onboarding', {
+                screen: 'OnboardingHome',
+            })
+        })
+    }, [closeSuccessModal])
 
     return {
         isDeleteModalOpen,

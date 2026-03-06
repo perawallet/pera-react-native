@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { logger } from '@perawallet/wallet-core-shared'
@@ -18,14 +19,24 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 import { useDeleteDeviceMutation } from '@perawallet/wallet-extension-platform'
 
-// TODO: probably want to revoke device here so we stop sending push notifications
-export const useDeleteAllData = () => {
+const ACCOUNTS_STORE_NAME = 'accounts-store'
+
+export const clearAccountsStore = () => {
+    useAccountsStore.getState().resetState()
+    useAccountsStore.persist.clearStorage()
+}
+
+type UseDeleteAllDataResult = {
+    deleteAllData: () => Promise<void>
+}
+
+export const useDeleteAllData = (): UseDeleteAllDataResult => {
     const { keys, deleteKey } = useKMS()
     const queryClient = useQueryClient()
     const { mutateAsync: deleteDevices } = useDeleteDeviceMutation()
     const { savePin } = usePinCode()
 
-    return useCallback(async () => {
+    const deleteAllData = useCallback(async () => {
         if (queryClient) {
             queryClient.removeQueries()
         }
@@ -49,6 +60,11 @@ export const useDeleteAllData = () => {
         // Clear PIN and biometrics from secure storage
         await savePin(null)
 
-        clearDataStores()
-    }, [queryClient, keys, deleteKey, savePin])
+        // Clear all stores except accounts — accounts store is cleared
+        // separately after the success dialog so the navigation guard
+        // doesn't redirect before the user sees the confirmation
+        clearDataStores({ skip: [ACCOUNTS_STORE_NAME] })
+    }, [queryClient, keys, deleteKey, savePin, deleteDevices])
+
+    return { deleteAllData }
 }

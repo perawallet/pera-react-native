@@ -35,17 +35,18 @@ export const DeleteAllSuccessBottomSheet = ({
         >
             <PWIcon
                 name='check'
-                variant='primary'
+                variant='positive'
                 size='xl'
                 style={styles.icon}
             />
-            <PWText variant='h3'>
+            <PWText
+                variant='h3'
+                style={styles.message}
+            >
                 {t('settings.main.remove_success_title')}
             </PWText>
-            <PWText style={styles.message}>
-                {t('settings.main.remove_success_message')}
-            </PWText>
             <PWButton
+                style={styles.button}
                 variant='secondary'
                 title={t('common.close.label')}
                 onPress={onClose}

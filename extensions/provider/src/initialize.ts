@@ -16,6 +16,6 @@ import { clearAllStores } from '@perawallet/wallet-core-shared'
  * Clears persisted data and resets state for all registered stores.
  * Uses the self-registering store registry — no per-package imports needed.
  */
-export const clearDataStores = () => {
-    clearAllStores()
+export const clearDataStores = (options?: { skip?: string[] }) => {
+    clearAllStores(options)
 }
