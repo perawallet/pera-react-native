@@ -23,7 +23,7 @@ export const swapStatusEnum = z.enum([
 
 export const swapHistoryItemSchema = z.object({
     id: z.number(),
-    id_str: z.string().optional(),
+    id_str: z.string().nullable().optional(),
     provider: z.string(),
     status: swapStatusEnum,
     completed_datetime: z.string().nullable(),
@@ -32,8 +32,8 @@ export const swapHistoryItemSchema = z.object({
     asset_out: dexSwapAssetSchema,
     amount_in: z.string(),
     amount_out: z.string(),
-    amount_in_usd_value: z.string().nullable(),
-    amount_out_usd_value: z.string().nullable(),
+    amount_in_usd_value: z.string().nullable().optional(),
+    amount_out_usd_value: z.string().nullable().optional(),
 })
 
 export const swapHistoryResponseSchema = z.object({
