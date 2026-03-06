@@ -21,7 +21,7 @@ import {
     useSelectedAccountAddress,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useWebView } from '@modules/webview/hooks'
+import { useWebView } from '@modules/webview/hooks/useWebViewStore'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 import { ALGORAND_SCHEME } from './deeplink/arc90-parser'
 import {
