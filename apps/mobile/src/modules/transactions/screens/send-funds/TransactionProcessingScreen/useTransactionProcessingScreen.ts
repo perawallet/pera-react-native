@@ -29,6 +29,7 @@ import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { useLanguage } from '@hooks/useLanguage'
 import { config } from '@perawallet/wallet-core-config'
+import { logger } from '@perawallet/wallet-core-shared'
 
 export const useTransactionProcessingScreen = () => {
     const navigation =
@@ -67,6 +68,10 @@ export const useTransactionProcessingScreen = () => {
             arc59Summary,
         } as SendTransactionParams
 
+        logger.debug(
+            `[TX_PROCESS] sendParams: sendMode=${sendMode}, sender=${selectedAccount?.address}, receiver=${destination}, assetId=${selectedAsset?.asset?.assetId}, amount=${amount}, hasNote=${!!note}`,
+        )
+
         execute({
             params: sendParams,
         })
@@ -77,6 +82,12 @@ export const useTransactionProcessingScreen = () => {
                 })
             })
             .catch(error => {
+                logger.error(
+                    `[TX_PROCESS] Transaction failed: ${error instanceof Error ? `${error.name}: ${error.message}` : String(error)}`,
+                )
+                if (error instanceof Error && error.stack) {
+                    logger.error(`[TX_PROCESS] Stack: ${error.stack}`)
+                }
                 showToast(
                     {
                         title: t('transactions.processing_error.title'),

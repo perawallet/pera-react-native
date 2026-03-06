@@ -11,17 +11,14 @@
  */
 
 import type { HDDerivationParams, KMSHDWalletSession } from '../models/session'
-import type { DeriveOptions } from '@algorandfoundation/keystore'
-import {
-    BIP32DerivationType,
-    fromSeed,
-} from '@algorandfoundation/xhd-wallet-api'
+import { fromSeed } from '@algorandfoundation/xhd-wallet-api'
 import { KeyPair, KeyType } from '../models'
 import { makeKeyPair } from '../utils'
 import {
     encodeToBase64,
     decodeFromBase64,
     generateOrderedUniqueId,
+    logger,
 } from '@perawallet/wallet-core-shared'
 import { KeyManagementError } from '../errors'
 import { useKMSService } from './useKMSServices'
@@ -30,24 +27,12 @@ import {
     deriveAddress,
     entropyToMnemonic,
     generateHDMasterKey,
+    signTransaction as hdSignTransaction,
+    signData as hdSignData,
 } from '../crypto/hdwallet-utils'
 
 const ENTROPY_STORAGE_PREFIX = 'entropy-'
 const SEED_STORAGE_PREFIX = 'hd-seed-'
-
-const toDerivationPath = (params: HDDerivationParams): string =>
-    `m/44'/283'/${params.account}'/0/${params.keyIndex}`
-
-const toDerivationMode = (derivationType: number): DeriveOptions['mode'] => {
-    switch (derivationType) {
-        case BIP32DerivationType.Peikert:
-            return 'peikert'
-        case BIP32DerivationType.Khovratovich:
-            return 'standard'
-        default:
-            return 'peikert'
-    }
-}
 
 export const useHDWallet = () => {
     const { saveKey, checkAccess, keyStore } = useKMSService()
@@ -101,68 +86,44 @@ export const useHDWallet = () => {
     ): Promise<T> => {
         checkAccess(key, domain)
 
-        if (!key.keystoreKeyId) {
-            throw new KeyManagementError(
-                'Key has no keystore ID. Migration may be required.',
-            )
-        }
-
-        const keystoreKeyId = key.keystoreKeyId
         const keyId = key.id ?? ''
+        const seedStorageKey = `${SEED_STORAGE_PREFIX}${keyId}`
+
+        logger.debug(
+            `[TX_SIGN] withHDSession: keyId=${keyId}, seedStorageKey=${seedStorageKey}, keystoreKeyId=${key.keystoreKeyId}`,
+        )
 
         // Load seed and entropy from secure storage
         const [seedData, entropyData] = await Promise.all([
-            secureStorage.getItem(`${SEED_STORAGE_PREFIX}${keyId}`),
+            secureStorage.getItem(seedStorageKey),
             secureStorage.getItem(`${ENTROPY_STORAGE_PREFIX}${keyId}`),
         ])
         if (!seedData) {
+            logger.error(
+                `[TX_SIGN] HD seed NOT FOUND at seedStorageKey=${seedStorageKey}`,
+            )
             throw new KeyManagementError('Seed not found in secure storage')
         }
+        logger.debug(
+            `[TX_SIGN] HD seed loaded: seedDataLen=${seedData.length}, hasEntropy=${!!entropyData}`,
+        )
         const seedBuffer = Buffer.from(
             decodeFromBase64(new TextDecoder().decode(seedData)),
         )
 
-        // Cache derived key IDs within this session to avoid re-deriving
-        const derivedKeyCache = new Map<string, string>()
-
-        const getDerivedKeyId = async (
-            params: HDDerivationParams,
-        ): Promise<string> => {
-            const path = toDerivationPath(params)
-            const cacheKey = `${path}:${params.derivationType}`
-
-            const cached = derivedKeyCache.get(cacheKey)
-            if (cached) {
-                return cached
-            }
-
-            const derivedKeyId = await keyStore.deriveFromSeed!(
-                keystoreKeyId,
-                path,
-                {
-                    algorithm: 'EdDSA',
-                    mode: toDerivationMode(params.derivationType),
-                },
-            )
-
-            derivedKeyCache.set(cacheKey, derivedKeyId)
-            return derivedKeyId
-        }
-
+        // Sign locally using xhd-wallet-api directly.
+        // The keystore extension's sign path has bugs: metadata property name mismatch
+        // (stores keyIndex, reads index) and uses signData instead of signAlgoTransaction
+        // (which rejects the "TX" prefix on encoded transactions).
         const session: KMSHDWalletSession = {
             getPublicKey: (params: HDDerivationParams) =>
                 deriveAddress(seedBuffer, params),
-            signTransaction: async (
+            signTransaction: (
                 params: HDDerivationParams,
                 encodedTx: Uint8Array,
-            ) => {
-                const derivedKeyId = await getDerivedKeyId(params)
-                return keyStore.sign(derivedKeyId, encodedTx)
-            },
-            signData: async (params: HDDerivationParams, data: Uint8Array) => {
-                const derivedKeyId = await getDerivedKeyId(params)
-                return keyStore.sign(derivedKeyId, data)
-            },
+            ) => hdSignTransaction(seedBuffer, params, encodedTx),
+            signData: (params: HDDerivationParams, data: Uint8Array) =>
+                hdSignData(seedBuffer, params, data),
             getMnemonic: () => {
                 if (!entropyData) {
                     throw new KeyManagementError('Entropy not found')

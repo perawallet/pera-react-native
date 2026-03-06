@@ -20,6 +20,7 @@ import {
     PeraTransactionSigner,
 } from '../models'
 import { encodeSignedTransactions } from '@algorandfoundation/algokit-utils/transact'
+import { logger } from '@perawallet/wallet-core-shared'
 
 export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
     const { networkConfig, network } = useNetwork()
@@ -39,8 +40,31 @@ export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
                 txnGroup: PeraTransactionGroup,
                 indexesToSign: number[],
             ) => {
-                const txs = await signer(txnGroup, indexesToSign)
-                return encodeSignedTransactions(txs)
+                logger.debug(
+                    `[TX_SIGN] encodingSigner called: txnGroupLen=${txnGroup.length}, indexesToSign=${JSON.stringify(indexesToSign)}`,
+                )
+                try {
+                    const txs = await signer(txnGroup, indexesToSign)
+                    logger.debug(
+                        `[TX_SIGN] signer returned ${txs.length} signed txns, encoding...`,
+                    )
+                    for (let i = 0; i < txs.length; i++) {
+                        const stx = txs[i]
+                        logger.debug(
+                            `[TX_SIGN] signedTxn[${i}]: hasSig=${!!stx.sig}, sigLen=${stx.sig?.length ?? 0}, hasAuthAddr=${!!stx.authAddress}`,
+                        )
+                    }
+                    const encoded = encodeSignedTransactions(txs)
+                    logger.debug(
+                        `[TX_SIGN] encoded ${encoded.length} transactions for submission`,
+                    )
+                    return encoded
+                } catch (e) {
+                    logger.error(
+                        `[TX_SIGN] signer/encoding error: ${e instanceof Error ? e.message : String(e)}`,
+                    )
+                    throw e
+                }
             }
             client.setDefaultSigner(encodingSigner)
         }

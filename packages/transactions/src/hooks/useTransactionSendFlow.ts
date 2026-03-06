@@ -26,6 +26,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { useTransactionSigner } from '@perawallet/wallet-core-signing'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { logger } from '@perawallet/wallet-core-shared'
 import { InvalidSendParamsError } from '../errors'
 
 type BaseSendParams = {
@@ -125,6 +126,9 @@ export const useTransactionSendFlow = () => {
                 !params.receiver ||
                 params.amount == null
             ) {
+                logger.error(
+                    `[TX_SEND] Invalid send params: asset=${!!params.asset}, assetId=${params.asset?.assetId}, sender=${!!params.sender}, receiver=${!!params.receiver}, amount=${params.amount}`,
+                )
                 throw new InvalidSendParamsError()
             }
 
@@ -137,6 +141,10 @@ export const useTransactionSendFlow = () => {
                 ).toString(),
             )
             const assetId = BigInt(params.asset.assetId)
+
+            logger.debug(
+                `[TX_SEND] executeSend: mode=${params.sendMode}, sender=${params.sender.address}, receiver=${params.receiver}, assetId=${assetId}, amount=${amountInBaseUnits}`,
+            )
 
             switch (params.sendMode) {
                 case 'express': {
@@ -163,28 +171,50 @@ export const useTransactionSendFlow = () => {
                     return result.txIds[result.txIds.length - 1]
                 }
                 case 'normal': {
-                    if (params.asset.assetId === ALGO_ASSET_ID) {
-                        const result = await algokit.send.payment({
-                            sender: params.sender.address,
-                            receiver: params.receiver,
-                            amount: params.isCloseAccount
-                                ? BigInt(0).microAlgo()
-                                : amountInBaseUnits.microAlgo(),
-                            ...(params.isCloseAccount && {
-                                closeRemainderTo: params.receiver,
-                            }),
-                            note: params.note,
-                        })
-                        return result.txIds[0]
-                    } else {
-                        const result = await algokit.send.assetTransfer({
-                            sender: params.sender.address,
-                            receiver: params.receiver,
-                            amount: amountInBaseUnits,
-                            assetId,
-                            note: params.note,
-                        })
-                        return result.txIds[0]
+                    try {
+                        if (params.asset.assetId === ALGO_ASSET_ID) {
+                            logger.debug(
+                                `[TX_SEND] sending payment: sender=${params.sender.address}, receiver=${params.receiver}`,
+                            )
+                            const result = await algokit.send.payment({
+                                sender: params.sender.address,
+                                receiver: params.receiver,
+                                amount: params.isCloseAccount
+                                    ? BigInt(0).microAlgo()
+                                    : amountInBaseUnits.microAlgo(),
+                                ...(params.isCloseAccount && {
+                                    closeRemainderTo: params.receiver,
+                                }),
+                                note: params.note,
+                            })
+                            logger.debug(
+                                `[TX_SEND] payment success: txId=${result.txIds[0]}`,
+                            )
+                            return result.txIds[0]
+                        } else {
+                            logger.debug(
+                                `[TX_SEND] sending assetTransfer: sender=${params.sender.address}, receiver=${params.receiver}, assetId=${assetId}`,
+                            )
+                            const result = await algokit.send.assetTransfer({
+                                sender: params.sender.address,
+                                receiver: params.receiver,
+                                amount: amountInBaseUnits,
+                                assetId,
+                                note: params.note,
+                            })
+                            logger.debug(
+                                `[TX_SEND] assetTransfer success: txId=${result.txIds[0]}`,
+                            )
+                            return result.txIds[0]
+                        }
+                    } catch (e) {
+                        logger.error(
+                            `[TX_SEND] send failed: ${e instanceof Error ? `${e.name}: ${e.message}` : String(e)}`,
+                        )
+                        if (e instanceof Error && e.stack) {
+                            logger.error(`[TX_SEND] stack: ${e.stack}`)
+                        }
+                        throw e
                     }
                 }
             }

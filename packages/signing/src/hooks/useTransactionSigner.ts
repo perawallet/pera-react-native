@@ -31,6 +31,7 @@ import type {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { SIGNING_KEY_DOMAIN } from '../constants'
+import { logger } from '@perawallet/wallet-core-shared'
 
 export const useTransactionSigner = () => {
     const accounts = useAccountsStore(state => state.accounts)
@@ -45,12 +46,18 @@ export const useTransactionSigner = () => {
             const hdWalletDetails = account.hdWalletDetails
 
             const key = getKeyOrThrow(account.keyPairId)
+            logger.debug(
+                `[TX_SIGN] HD wallet signing: address=${account.address}, keyPairId=${account.keyPairId}, keyId=${key.id}, keystoreKeyId=${key.keystoreKeyId}, keyType=${key.type}`,
+            )
             return await withHDSession(
                 key,
                 SIGNING_KEY_DOMAIN,
                 async session => {
                     const signedTxns = txns.map(async txn => {
                         const encodedTransaction = encodeTransaction(txn)
+                        logger.debug(
+                            `[TX_SIGN] HD signing tx: encodedLen=${encodedTransaction.length}, account=${hdWalletDetails.account}, keyIndex=${hdWalletDetails.keyIndex}, derivationType=${hdWalletDetails.derivationType}`,
+                        )
                         const signature = await session.signTransaction(
                             {
                                 account: hdWalletDetails.account,
@@ -58,6 +65,9 @@ export const useTransactionSigner = () => {
                                 derivationType: hdWalletDetails.derivationType,
                             },
                             encodedTransaction,
+                        )
+                        logger.debug(
+                            `[TX_SIGN] HD signature produced: sigLen=${signature.length}`,
                         )
 
                         const senderPublicKey = encodeAlgorandAddress(
@@ -86,14 +96,23 @@ export const useTransactionSigner = () => {
             txns: PeraTransactionGroup,
         ): Promise<PeraSignedTransaction[]> => {
             const key = getKeyOrThrow(account.keyPairId)
+            logger.debug(
+                `[TX_SIGN] Algo25 signing: address=${account.address}, keyPairId=${account.keyPairId}, keyId=${key.id}, keyType=${key.type}`,
+            )
             return await withAlgo25Session(
                 key,
                 SIGNING_KEY_DOMAIN,
                 async session => {
                     const signedTxns = txns.map(async txn => {
                         const encodedTransaction = encodeTransaction(txn)
+                        logger.debug(
+                            `[TX_SIGN] Algo25 signing tx: encodedLen=${encodedTransaction.length}`,
+                        )
                         const signature =
                             await session.signTransaction(encodedTransaction)
+                        logger.debug(
+                            `[TX_SIGN] Algo25 signature produced: sigLen=${signature.length}`,
+                        )
 
                         const senderPublicKey = encodeAlgorandAddress(
                             txn.sender.publicKey,
@@ -121,6 +140,9 @@ export const useTransactionSigner = () => {
             txns: PeraTransactionGroup,
             dontFollowRekey?: boolean,
         ): Promise<PeraSignedTransaction[]> => {
+            logger.debug(
+                `[TX_SIGN] signSingleAccountTransactions: address=${account.address}, type=${account.type}, txnCount=${txns.length}`,
+            )
             if (account.rekeyAddress && !dontFollowRekey) {
                 const rekeyedAccount =
                     accounts.find(a => a.address === account.rekeyAddress) ??
@@ -159,6 +181,9 @@ export const useTransactionSigner = () => {
             txnGroup: PeraTransaction[],
             indexesToSign: number[],
         ): Promise<PeraSignedTransaction[]> => {
+            logger.debug(
+                `[TX_SIGN] signTransactions called: txnCount=${txnGroup.length}, indexesToSign=${JSON.stringify(indexesToSign)}`,
+            )
             // we want to group the transactions by account for signing efficiency
             // but we must remember where they were originally in the array
             const originalIndexes = txnGroup.map((txn, index) => ({

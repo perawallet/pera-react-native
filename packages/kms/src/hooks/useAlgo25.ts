@@ -95,14 +95,23 @@ export const useAlgo25 = () => {
         checkAccess(key, domain)
 
         const keyId = key.id ?? ''
+        const storageKey = `${SEED_STORAGE_PREFIX}${keyId}`
+
+        logger.debug(
+            `[TX_SIGN] withAlgo25Session: keyId=${keyId}, storageKey=${storageKey}`,
+        )
 
         // Load seed from secure storage
-        const seedData = await secureStorage.getItem(
-            `${SEED_STORAGE_PREFIX}${keyId}`,
-        )
+        const seedData = await secureStorage.getItem(storageKey)
         if (!seedData) {
+            logger.error(
+                `[TX_SIGN] Algo25 seed NOT FOUND at storageKey=${storageKey}`,
+            )
             throw new KeyManagementError('Seed not found in secure storage')
         }
+        logger.debug(
+            `[TX_SIGN] Algo25 seed loaded: seedDataLen=${seedData.length}`,
+        )
         const seed = decodeFromBase64(new TextDecoder().decode(seedData))
         const naclKeyPair = nacl.sign.keyPair.fromSeed(seed)
 

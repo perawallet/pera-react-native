@@ -19,11 +19,15 @@ import { KeyManagementError } from '../../errors'
 const mockGenerateHDMasterKey = vi.fn()
 const mockDeriveAddress = vi.fn()
 const mockEntropyToMnemonic = vi.fn()
+const mockSignTransaction = vi.fn()
+const mockSignData = vi.fn()
 
 vi.mock('../../crypto/hdwallet-utils', () => ({
     generateHDMasterKey: (...args: any[]) => mockGenerateHDMasterKey(...args),
     deriveAddress: (...args: any[]) => mockDeriveAddress(...args),
     entropyToMnemonic: (...args: any[]) => mockEntropyToMnemonic(...args),
+    signTransaction: (...args: any[]) => mockSignTransaction(...args),
+    signData: (...args: any[]) => mockSignData(...args),
 }))
 
 const mockFromSeed = vi.fn()
@@ -235,10 +239,9 @@ describe('useHDWallet', () => {
             })
         })
 
-        test('session signTransaction derives key then signs via keyStore', async () => {
+        test('session signTransaction signs locally via hdwallet-utils', async () => {
             const mockSig = new Uint8Array(64).fill(1)
-            mockKeyStoreDeriveFromSeed.mockResolvedValue('derived-key-1')
-            mockKeyStoreSign.mockResolvedValue(mockSig)
+            mockSignTransaction.mockResolvedValue(mockSig)
 
             const { result } = renderHook(() => useHDWallet())
 
@@ -257,21 +260,16 @@ describe('useHDWallet', () => {
             })
 
             expect(signResult).toBe(mockSig)
-            expect(mockKeyStoreDeriveFromSeed).toHaveBeenCalledWith(
-                'ks-seed-1',
-                "m/44'/283'/0'/0/0",
-                { algorithm: 'EdDSA', mode: 'peikert' },
-            )
-            expect(mockKeyStoreSign).toHaveBeenCalledWith(
-                'derived-key-1',
+            expect(mockSignTransaction).toHaveBeenCalledWith(
+                expect.any(Buffer),
+                derivationParams,
                 new Uint8Array([1, 2, 3]),
             )
         })
 
-        test('session signData derives key then signs via keyStore', async () => {
+        test('session signData signs locally via hdwallet-utils', async () => {
             const mockSig = new Uint8Array(64).fill(2)
-            mockKeyStoreDeriveFromSeed.mockResolvedValue('derived-key-2')
-            mockKeyStoreSign.mockResolvedValue(mockSig)
+            mockSignData.mockResolvedValue(mockSig)
 
             const { result } = renderHook(() => useHDWallet())
 
@@ -290,8 +288,9 @@ describe('useHDWallet', () => {
             })
 
             expect(signResult).toBe(mockSig)
-            expect(mockKeyStoreSign).toHaveBeenCalledWith(
-                'derived-key-2',
+            expect(mockSignData).toHaveBeenCalledWith(
+                expect.any(Buffer),
+                derivationParams,
                 new Uint8Array([4, 5, 6]),
             )
         })
@@ -341,8 +340,7 @@ describe('useHDWallet', () => {
         })
 
         test('calls checkAccess with key and domain', async () => {
-            mockKeyStoreDeriveFromSeed.mockResolvedValue('derived-key-4')
-            mockKeyStoreSign.mockResolvedValue(new Uint8Array(64))
+            mockSignTransaction.mockResolvedValue(new Uint8Array(64))
 
             const { result } = renderHook(() => useHDWallet())
 
@@ -357,58 +355,9 @@ describe('useHDWallet', () => {
             expect(mockCheckAccess).toHaveBeenCalledWith(mockKey, 'my-domain')
         })
 
-        test('caches derived key IDs within a session', async () => {
+        test('passes derivation params to local signing functions', async () => {
             const mockSig = new Uint8Array(64).fill(5)
-            mockKeyStoreDeriveFromSeed.mockResolvedValue('derived-key-cached')
-            mockKeyStoreSign.mockResolvedValue(mockSig)
-
-            const { result } = renderHook(() => useHDWallet())
-
-            await act(async () => {
-                await result.current.withHDSession(
-                    mockKey,
-                    'test-domain',
-                    async session => {
-                        // Sign twice with same params — should only derive once
-                        await session.signTransaction(
-                            derivationParams,
-                            new Uint8Array([1]),
-                        )
-                        await session.signTransaction(
-                            derivationParams,
-                            new Uint8Array([2]),
-                        )
-                    },
-                )
-            })
-
-            expect(mockKeyStoreDeriveFromSeed).toHaveBeenCalledTimes(1)
-            expect(mockKeyStoreSign).toHaveBeenCalledTimes(2)
-        })
-
-        test('throws KeyManagementError when key has no keystoreKeyId', async () => {
-            const keyWithoutKeystoreId: KeyPair = {
-                id: 'hd-key-1',
-                publicKey: '',
-                type: KeyType.HDWalletRootKey,
-            }
-
-            const { result } = renderHook(() => useHDWallet())
-
-            await expect(
-                act(async () => {
-                    await result.current.withHDSession(
-                        keyWithoutKeystoreId,
-                        'test-domain',
-                        async () => 'ok',
-                    )
-                }),
-            ).rejects.toThrow(KeyManagementError)
-        })
-
-        test('uses standard mode for Khovratovich derivation type', async () => {
-            mockKeyStoreDeriveFromSeed.mockResolvedValue('derived-key-kh')
-            mockKeyStoreSign.mockResolvedValue(new Uint8Array(64))
+            mockSignTransaction.mockResolvedValue(mockSig)
 
             const khovratovichParams = {
                 account: 1,
@@ -431,10 +380,10 @@ describe('useHDWallet', () => {
                 )
             })
 
-            expect(mockKeyStoreDeriveFromSeed).toHaveBeenCalledWith(
-                'ks-seed-1',
-                "m/44'/283'/1'/0/2",
-                { algorithm: 'EdDSA', mode: 'standard' },
+            expect(mockSignTransaction).toHaveBeenCalledWith(
+                expect.any(Buffer),
+                khovratovichParams,
+                new Uint8Array([1]),
             )
         })
     })
