@@ -14,25 +14,15 @@ import { useQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { fetchDistinctPairsHistory } from '../api'
 import { swapQueryKeys } from './querykeys'
-import type { SwapDistinctPairItem } from '../models'
-
-type UseDistinctPairsHistoryQueryResult = {
-    data: SwapDistinctPairItem[]
-    isPending: boolean
-    isFetched: boolean
-    isError: boolean
-    error: Error | null
-    refetch: () => void
-}
 
 export const useDistinctPairsHistoryQuery = (
     address: string,
     statuses?: string,
     enabled: boolean = true,
-): UseDistinctPairsHistoryQueryResult => {
+) => {
     const { network } = useNetwork()
 
-    const query = useQuery({
+    return useQuery({
         queryKey: swapQueryKeys.distinctPairsHistory(
             address,
             statuses,
@@ -41,13 +31,4 @@ export const useDistinctPairsHistoryQuery = (
         queryFn: () => fetchDistinctPairsHistory(address, network, statuses),
         enabled,
     })
-
-    return {
-        data: query.data ?? [],
-        isPending: query.isPending,
-        isFetched: query.isFetched,
-        isError: query.isError,
-        error: query.error,
-        refetch: query.refetch,
-    }
 }

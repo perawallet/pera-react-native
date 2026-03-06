@@ -14,34 +14,13 @@ import { useQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { fetchProviders } from '../api'
 import { swapQueryKeys } from './querykeys'
-import type { SwapProviderItem } from '../models'
 
-type UseProvidersQueryResult = {
-    data: SwapProviderItem[]
-    isPending: boolean
-    isFetched: boolean
-    isError: boolean
-    error: Error | null
-    refetch: () => void
-}
-
-export const useProvidersQuery = (
-    enabled: boolean = true,
-): UseProvidersQueryResult => {
+export const useProvidersQuery = (enabled: boolean = true) => {
     const { network } = useNetwork()
 
-    const query = useQuery({
+    return useQuery({
         queryKey: swapQueryKeys.providers(network),
         queryFn: () => fetchProviders(network),
         enabled,
     })
-
-    return {
-        data: query.data ?? [],
-        isPending: query.isPending,
-        isFetched: query.isFetched,
-        isError: query.isError,
-        error: query.error,
-        refetch: query.refetch,
-    }
 }

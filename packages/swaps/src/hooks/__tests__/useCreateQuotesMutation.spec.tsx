@@ -63,7 +63,7 @@ describe('swaps/useCreateQuotesMutation', () => {
         })
 
         act(() => {
-            result.current.createQuotes(mockRequest)
+            result.current.mutate(mockRequest)
         })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
@@ -80,7 +80,7 @@ describe('swaps/useCreateQuotesMutation', () => {
         })
 
         act(() => {
-            result.current.createQuotes(mockRequest)
+            result.current.mutate(mockRequest)
         })
 
         await waitFor(() => expect(result.current.isError).toBe(true))

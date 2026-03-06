@@ -14,32 +14,12 @@ import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { prepareTransactions } from '../api'
 import type { PrepareTransactionsRequest } from '../api'
-import type { PrepareTransactionsResult } from '../models'
 
-type UsePrepareTransactionsMutationResult = {
-    prepareTransactions: (data: PrepareTransactionsRequest) => void
-    data: PrepareTransactionsResult | undefined
-    isLoading: boolean
-    isError: boolean
-    error: Error | null
-    isSuccess: boolean
+export const usePrepareTransactionsMutation = () => {
+    const { network } = useNetwork()
+
+    return useMutation({
+        mutationFn: (data: PrepareTransactionsRequest) =>
+            prepareTransactions(data, network),
+    })
 }
-
-export const usePrepareTransactionsMutation =
-    (): UsePrepareTransactionsMutationResult => {
-        const { network } = useNetwork()
-
-        const mutation = useMutation({
-            mutationFn: (data: PrepareTransactionsRequest) =>
-                prepareTransactions(data, network),
-        })
-
-        return {
-            prepareTransactions: mutation.mutate,
-            data: mutation.data,
-            isLoading: mutation.isPending,
-            isError: mutation.isError,
-            error: mutation.error,
-            isSuccess: mutation.isSuccess,
-        }
-    }

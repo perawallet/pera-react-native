@@ -50,7 +50,7 @@ describe('swaps/useUpdateSwapStatusMutation', () => {
         })
 
         act(() => {
-            result.current.updateSwapStatus({
+            result.current.mutate({
                 swapId: '42',
                 data: { status: 'completed' },
             })
@@ -74,7 +74,7 @@ describe('swaps/useUpdateSwapStatusMutation', () => {
         })
 
         act(() => {
-            result.current.updateSwapStatus({
+            result.current.mutate({
                 swapId: '42',
                 data: { status: 'failed' },
             })

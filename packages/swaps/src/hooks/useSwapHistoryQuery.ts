@@ -14,40 +14,22 @@ import { useQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { fetchSwapHistory } from '../api'
 import { swapQueryKeys } from './querykeys'
-import type { SwapHistoryItem } from '../models'
-
-type UseSwapHistoryQueryResult = {
-    data: SwapHistoryItem[]
-    next: string | null | undefined
-    previous: string | null | undefined
-    isPending: boolean
-    isFetched: boolean
-    isError: boolean
-    error: Error | null
-    refetch: () => void
-}
 
 export const useSwapHistoryQuery = (
     address: string,
     statuses?: string,
     enabled: boolean = true,
-): UseSwapHistoryQueryResult => {
+) => {
     const { network } = useNetwork()
 
-    const query = useQuery({
+    return useQuery({
         queryKey: swapQueryKeys.history(address, statuses, network),
         queryFn: () => fetchSwapHistory(address, network, statuses),
         enabled,
+        select: data => ({
+            results: data.results,
+            next: data.next,
+            previous: data.previous,
+        }),
     })
-
-    return {
-        data: query.data?.results ?? [],
-        next: query.data?.next,
-        previous: query.data?.previous,
-        isPending: query.isPending,
-        isFetched: query.isFetched,
-        isError: query.isError,
-        error: query.error,
-        refetch: query.refetch,
-    }
 }

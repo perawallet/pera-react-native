@@ -62,14 +62,14 @@ describe('swaps/useAvailableAssetsQuery', () => {
         expect(result.current.isError).toBe(false)
     })
 
-    test('starts with empty data while pending', () => {
+    test('data is undefined while pending', () => {
         vi.mocked(fetchAvailableAssets).mockReturnValue(new Promise(() => {}))
 
         const { result } = renderHook(() => useAvailableAssetsQuery(0), {
             wrapper: createWrapper(),
         })
 
-        expect(result.current.data).toEqual([])
+        expect(result.current.data).toBeUndefined()
         expect(result.current.isPending).toBe(true)
     })
 
@@ -94,7 +94,7 @@ describe('swaps/useAvailableAssetsQuery', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
 
-        expect(result.current.data).toEqual([])
+        expect(result.current.data).toBeUndefined()
         expect(result.current.error).toBeInstanceOf(Error)
     })
 })

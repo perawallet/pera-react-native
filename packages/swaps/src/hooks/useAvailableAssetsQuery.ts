@@ -14,36 +14,17 @@ import { useQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { fetchAvailableAssets } from '../api'
 import { swapQueryKeys } from './querykeys'
-import type { DexSwapAsset } from '../models'
-
-type UseAvailableAssetsQueryResult = {
-    data: DexSwapAsset[]
-    isPending: boolean
-    isFetched: boolean
-    isError: boolean
-    error: Error | null
-    refetch: () => void
-}
 
 export const useAvailableAssetsQuery = (
     assetInId: number,
     q?: string,
     enabled: boolean = true,
-): UseAvailableAssetsQueryResult => {
+) => {
     const { network } = useNetwork()
 
-    const query = useQuery({
+    return useQuery({
         queryKey: swapQueryKeys.availableAssets(assetInId, q, network),
         queryFn: () => fetchAvailableAssets(assetInId, network, q),
         enabled,
     })
-
-    return {
-        data: query.data ?? [],
-        isPending: query.isPending,
-        isFetched: query.isFetched,
-        isError: query.isError,
-        error: query.error,
-        refetch: query.refetch,
-    }
 }

@@ -14,32 +14,12 @@ import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { calculatePeraFee } from '../api'
 import type { CalculatePeraFeeRequest } from '../api'
-import type { CalculatePeraFeeResult } from '../models'
 
-type UseCalculatePeraFeeMutationResult = {
-    calculatePeraFee: (data: CalculatePeraFeeRequest) => void
-    data: CalculatePeraFeeResult | undefined
-    isLoading: boolean
-    isError: boolean
-    error: Error | null
-    isSuccess: boolean
+export const useCalculatePeraFeeMutation = () => {
+    const { network } = useNetwork()
+
+    return useMutation({
+        mutationFn: (data: CalculatePeraFeeRequest) =>
+            calculatePeraFee(data, network),
+    })
 }
-
-export const useCalculatePeraFeeMutation =
-    (): UseCalculatePeraFeeMutationResult => {
-        const { network } = useNetwork()
-
-        const mutation = useMutation({
-            mutationFn: (data: CalculatePeraFeeRequest) =>
-                calculatePeraFee(data, network),
-        })
-
-        return {
-            calculatePeraFee: mutation.mutate,
-            data: mutation.data,
-            isLoading: mutation.isPending,
-            isError: mutation.isError,
-            error: mutation.error,
-            isSuccess: mutation.isSuccess,
-        }
-    }

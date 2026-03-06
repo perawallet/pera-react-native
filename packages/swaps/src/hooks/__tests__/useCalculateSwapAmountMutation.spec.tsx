@@ -59,7 +59,7 @@ describe('swaps/useCalculateSwapAmountMutation', () => {
         })
 
         act(() => {
-            result.current.calculateSwapAmount(mockRequest)
+            result.current.mutate(mockRequest)
         })
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))

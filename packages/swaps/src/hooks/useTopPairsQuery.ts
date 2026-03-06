@@ -14,35 +14,13 @@ import { useQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { fetchTopPairs } from '../api'
 import { swapQueryKeys } from './querykeys'
-import type { TopPairItem } from '../models'
 
-type UseTopPairsQueryResult = {
-    data: TopPairItem[]
-    isPending: boolean
-    isFetched: boolean
-    isError: boolean
-    error: Error | null
-    refetch: () => void
-}
-
-export const useTopPairsQuery = (
-    limit?: number,
-    enabled: boolean = true,
-): UseTopPairsQueryResult => {
+export const useTopPairsQuery = (limit?: number, enabled: boolean = true) => {
     const { network } = useNetwork()
 
-    const query = useQuery({
+    return useQuery({
         queryKey: swapQueryKeys.topPairs(limit, network),
         queryFn: () => fetchTopPairs(network, limit),
         enabled,
     })
-
-    return {
-        data: query.data ?? [],
-        isPending: query.isPending,
-        isFetched: query.isFetched,
-        isError: query.isError,
-        error: query.error,
-        refetch: query.refetch,
-    }
 }

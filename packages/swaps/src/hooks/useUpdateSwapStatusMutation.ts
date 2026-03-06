@@ -14,37 +14,17 @@ import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { updateSwapStatus } from '../api'
 import type { SwapStatusUpdateRequest } from '../api'
-import type { SwapStatusUpdateResult } from '../models'
 
 type UpdateSwapStatusParams = {
     swapId: string
     data: SwapStatusUpdateRequest
 }
 
-type UseUpdateSwapStatusMutationResult = {
-    updateSwapStatus: (params: UpdateSwapStatusParams) => void
-    data: SwapStatusUpdateResult | undefined
-    isLoading: boolean
-    isError: boolean
-    error: Error | null
-    isSuccess: boolean
+export const useUpdateSwapStatusMutation = () => {
+    const { network } = useNetwork()
+
+    return useMutation({
+        mutationFn: ({ swapId, data }: UpdateSwapStatusParams) =>
+            updateSwapStatus(swapId, data, network),
+    })
 }
-
-export const useUpdateSwapStatusMutation =
-    (): UseUpdateSwapStatusMutationResult => {
-        const { network } = useNetwork()
-
-        const mutation = useMutation({
-            mutationFn: ({ swapId, data }: UpdateSwapStatusParams) =>
-                updateSwapStatus(swapId, data, network),
-        })
-
-        return {
-            updateSwapStatus: mutation.mutate,
-            data: mutation.data,
-            isLoading: mutation.isPending,
-            isError: mutation.isError,
-            error: mutation.error,
-            isSuccess: mutation.isSuccess,
-        }
-    }

@@ -62,7 +62,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
         expect(result.current.isError).toBe(false)
     })
 
-    test('starts with empty data while pending', () => {
+    test('data is undefined while pending', () => {
         vi.mocked(fetchDistinctPairsHistory).mockReturnValue(
             new Promise(() => {}),
         )
@@ -72,7 +72,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
             { wrapper: createWrapper() },
         )
 
-        expect(result.current.data).toEqual([])
+        expect(result.current.data).toBeUndefined()
         expect(result.current.isPending).toBe(true)
     })
 
@@ -88,7 +88,7 @@ describe('swaps/useDistinctPairsHistoryQuery', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
 
-        expect(result.current.data).toEqual([])
+        expect(result.current.data).toBeUndefined()
         expect(result.current.error).toBeInstanceOf(Error)
     })
 })

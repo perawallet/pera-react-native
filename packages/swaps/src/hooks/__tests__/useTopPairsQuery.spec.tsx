@@ -78,7 +78,7 @@ describe('swaps/useTopPairsQuery', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
 
-        expect(result.current.data).toEqual([])
+        expect(result.current.data).toBeUndefined()
         expect(result.current.error).toBeInstanceOf(Error)
     })
 })

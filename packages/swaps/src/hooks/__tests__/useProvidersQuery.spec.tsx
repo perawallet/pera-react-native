@@ -59,14 +59,14 @@ describe('swaps/useProvidersQuery', () => {
         expect(result.current.isError).toBe(false)
     })
 
-    test('starts with empty data while pending', () => {
+    test('data is undefined while pending', () => {
         vi.mocked(fetchProviders).mockReturnValue(new Promise(() => {}))
 
         const { result } = renderHook(() => useProvidersQuery(), {
             wrapper: createWrapper(),
         })
 
-        expect(result.current.data).toEqual([])
+        expect(result.current.data).toBeUndefined()
         expect(result.current.isPending).toBe(true)
     })
 
@@ -79,7 +79,7 @@ describe('swaps/useProvidersQuery', () => {
 
         await waitFor(() => expect(result.current.isError).toBe(true))
 
-        expect(result.current.data).toEqual([])
+        expect(result.current.data).toBeUndefined()
         expect(result.current.error).toBeInstanceOf(Error)
     })
 })

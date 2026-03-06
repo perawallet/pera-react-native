@@ -14,30 +14,11 @@ import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { createQuotes } from '../api'
 import type { CreateQuotesRequest } from '../api'
-import type { SwapQuote } from '../models'
 
-type UseCreateQuotesMutationResult = {
-    createQuotes: (data: CreateQuotesRequest) => void
-    data: SwapQuote[] | undefined
-    isLoading: boolean
-    isError: boolean
-    error: Error | null
-    isSuccess: boolean
-}
-
-export const useCreateQuotesMutation = (): UseCreateQuotesMutationResult => {
+export const useCreateQuotesMutation = () => {
     const { network } = useNetwork()
 
-    const mutation = useMutation({
+    return useMutation({
         mutationFn: (data: CreateQuotesRequest) => createQuotes(data, network),
     })
-
-    return {
-        createQuotes: mutation.mutate,
-        data: mutation.data,
-        isLoading: mutation.isPending,
-        isError: mutation.isError,
-        error: mutation.error,
-        isSuccess: mutation.isSuccess,
-    }
 }

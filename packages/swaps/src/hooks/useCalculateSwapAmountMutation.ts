@@ -14,32 +14,12 @@ import { useMutation } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { calculateSwapAmount } from '../api'
 import type { CalculateSwapAmountRequest } from '../api'
-import type { CalculateSwapAmountResult } from '../models'
 
-type UseCalculateSwapAmountMutationResult = {
-    calculateSwapAmount: (data: CalculateSwapAmountRequest) => void
-    data: CalculateSwapAmountResult | undefined
-    isLoading: boolean
-    isError: boolean
-    error: Error | null
-    isSuccess: boolean
+export const useCalculateSwapAmountMutation = () => {
+    const { network } = useNetwork()
+
+    return useMutation({
+        mutationFn: (data: CalculateSwapAmountRequest) =>
+            calculateSwapAmount(data, network),
+    })
 }
-
-export const useCalculateSwapAmountMutation =
-    (): UseCalculateSwapAmountMutationResult => {
-        const { network } = useNetwork()
-
-        const mutation = useMutation({
-            mutationFn: (data: CalculateSwapAmountRequest) =>
-                calculateSwapAmount(data, network),
-        })
-
-        return {
-            calculateSwapAmount: mutation.mutate,
-            data: mutation.data,
-            isLoading: mutation.isPending,
-            isError: mutation.isError,
-            error: mutation.error,
-            isSuccess: mutation.isSuccess,
-        }
-    }
