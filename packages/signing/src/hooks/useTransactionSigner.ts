@@ -33,9 +33,11 @@ import type {
 import { SIGNING_KEY_DOMAIN } from '../constants'
 import { logger } from '@perawallet/wallet-core-shared'
 
+const TX_PREFIX = new Uint8Array([84, 88]) // "TX"
+
 export const useTransactionSigner = () => {
     const accounts = useAccountsStore(state => state.accounts)
-    const { getKeyOrThrow, withHDSession, withAlgo25Session } = useKMS()
+    const { getKeyOrThrow, keyStore, withAlgo25Session } = useKMS()
     const { encodeTransaction } = useTransactionEncoder()
 
     const signHDWalletTransactions = useCallback(
@@ -44,50 +46,56 @@ export const useTransactionSigner = () => {
             txns: PeraTransactionGroup,
         ): Promise<PeraSignedTransaction[]> => {
             const hdWalletDetails = account.hdWalletDetails
+            const derivedKeystoreKeyId = hdWalletDetails.keystoreKeyId
 
-            const key = getKeyOrThrow(account.keyPairId)
             logger.debug(
-                `[TX_SIGN] HD wallet signing: address=${account.address}, keyPairId=${account.keyPairId}, keyId=${key.id}, keystoreKeyId=${key.keystoreKeyId}, keyType=${key.type}`,
+                `[TX_SIGN] HD wallet signing: address=${account.address}, keyPairId=${account.keyPairId}, derivedKeystoreKeyId=${derivedKeystoreKeyId}`,
             )
-            return await withHDSession(
-                key,
-                SIGNING_KEY_DOMAIN,
-                async session => {
-                    const signedTxns = txns.map(async txn => {
-                        const encodedTransaction = encodeTransaction(txn)
-                        logger.debug(
-                            `[TX_SIGN] HD signing tx: encodedLen=${encodedTransaction.length}, account=${hdWalletDetails.account}, keyIndex=${hdWalletDetails.keyIndex}, derivationType=${hdWalletDetails.derivationType}`,
-                        )
-                        const signature = await session.signTransaction(
-                            {
-                                account: hdWalletDetails.account,
-                                keyIndex: hdWalletDetails.keyIndex,
-                                derivationType: hdWalletDetails.derivationType,
-                            },
-                            encodedTransaction,
-                        )
-                        logger.debug(
-                            `[TX_SIGN] HD signature produced: sigLen=${signature.length}`,
-                        )
 
-                        const senderPublicKey = encodeAlgorandAddress(
-                            txn.sender.publicKey,
-                        )
-                        const signedTxn: PeraSignedTransaction = {
-                            txn,
-                            sig: signature,
-                            authAddress:
-                                account.address !== senderPublicKey
-                                    ? Address.fromString(account.address)
-                                    : undefined,
-                        }
-                        return signedTxn
-                    })
-                    return Promise.all(signedTxns)
-                },
-            )
+            if (!derivedKeystoreKeyId) {
+                throw new Error(
+                    `HD wallet account ${account.address} does not have a keystore key ID`,
+                )
+            }
+
+            const signedTxns = txns.map(async txn => {
+                const encodedTransaction = encodeTransaction(txn)
+                logger.debug(
+                    `[TX_SIGN] HD signing tx: encodedLen=${encodedTransaction.length}, account=${hdWalletDetails.account}, keyIndex=${hdWalletDetails.keyIndex}`,
+                )
+
+                // Prepend "TX" prefix for Algorand transaction signing
+                // The keystore uses signData(Encoding.NONE) internally
+                const prefixedTx = new Uint8Array(
+                    TX_PREFIX.length + encodedTransaction.length,
+                )
+                prefixedTx.set(TX_PREFIX)
+                prefixedTx.set(encodedTransaction, TX_PREFIX.length)
+
+                const signature = await keyStore.sign(
+                    derivedKeystoreKeyId,
+                    prefixedTx,
+                )
+                logger.debug(
+                    `[TX_SIGN] HD signature produced: sigLen=${signature.length}`,
+                )
+
+                const senderPublicKey = encodeAlgorandAddress(
+                    txn.sender.publicKey,
+                )
+                const signedTxn: PeraSignedTransaction = {
+                    txn,
+                    sig: signature,
+                    authAddress:
+                        account.address !== senderPublicKey
+                            ? Address.fromString(account.address)
+                            : undefined,
+                }
+                return signedTxn
+            })
+            return Promise.all(signedTxns)
         },
-        [encodeTransaction, withHDSession],
+        [encodeTransaction, keyStore],
     )
 
     const signAlgo25Transactions = useCallback(

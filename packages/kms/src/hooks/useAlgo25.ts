@@ -12,12 +12,7 @@
 
 import nacl from 'tweetnacl'
 import { KeyManagementError } from '../errors'
-import {
-    encodeToBase64,
-    decodeFromBase64,
-    generateOrderedUniqueId,
-    logger,
-} from '@perawallet/wallet-core-shared'
+import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import { KeyPair, KeyType, KMSAlgo25Session } from '../models'
 import {
     seedFromMnemonic,
@@ -26,14 +21,10 @@ import {
 import { encodeAddress } from '@algorandfoundation/algokit-utils'
 import { useKMSService } from './useKMSServices'
 import { makeKeyPair } from '../utils'
-import { useSecureStorageService } from '@perawallet/wallet-extension-platform'
-
-const MNEMONIC_STORAGE_PREFIX = 'mnemonic-'
-const SEED_STORAGE_PREFIX = 'algo25-seed-'
+import { clearKeyData } from '@algorandfoundation/keystore'
 
 export const useAlgo25 = () => {
-    const { saveKey, checkAccess } = useKMSService()
-    const secureStorage = useSecureStorageService()
+    const { saveKey, checkAccess, keyStore } = useKMSService()
 
     const createAlgo25Key = async (params?: {
         id?: string
@@ -59,20 +50,21 @@ export const useAlgo25 = () => {
             throw e
         }
 
-        // Compute public key locally
+        // Compute keypair for import into keystore
         const naclKeyPair = nacl.sign.keyPair.fromSeed(seed)
         const publicKey = encodeAddress(naclKeyPair.publicKey)
 
-        // Store seed in secure storage for signing
-        await secureStorage.setItem(
-            `${SEED_STORAGE_PREFIX}${keyId}`,
-            new TextEncoder().encode(encodeToBase64(seed)),
-        )
-
-        // Store mnemonic separately for recovery
-        await secureStorage.setItem(
-            `${MNEMONIC_STORAGE_PREFIX}${keyId}`,
-            new TextEncoder().encode(mnemonic),
+        // Import key into keystore with mnemonic in metadata for recovery
+        const keystoreKeyId = await keyStore.import(
+            {
+                type: 'hd-derived-ed25519',
+                algorithm: 'EdDSA',
+                extractable: true,
+                publicKey: naclKeyPair.publicKey,
+                privateKey: naclKeyPair.secretKey,
+                metadata: { mnemonic },
+            },
+            'raw',
         )
 
         seed.fill(0)
@@ -80,6 +72,7 @@ export const useAlgo25 = () => {
 
         const keyPair = makeKeyPair({
             id: keyId,
+            keystoreKeyId,
             publicKey,
             type: KeyType.Algo25Key,
         })
@@ -94,25 +87,29 @@ export const useAlgo25 = () => {
     ): Promise<T> => {
         checkAccess(key, domain)
 
-        const keyId = key.id ?? ''
-        const storageKey = `${SEED_STORAGE_PREFIX}${keyId}`
+        const keystoreKeyId = key.keystoreKeyId
 
         logger.debug(
-            `[TX_SIGN] withAlgo25Session: keyId=${keyId}, storageKey=${storageKey}`,
+            `[TX_SIGN] withAlgo25Session: keyId=${key.id ?? ''}, keystoreKeyId=${keystoreKeyId}`,
         )
 
-        // Load seed from secure storage
-        const seedData = await secureStorage.getItem(storageKey)
-        if (!seedData) {
-            logger.error(
-                `[TX_SIGN] Algo25 seed NOT FOUND at storageKey=${storageKey}`,
-            )
-            throw new KeyManagementError('Seed not found in secure storage')
+        if (!keystoreKeyId) {
+            throw new KeyManagementError('Key does not have a keystore key ID')
         }
+
+        // Export key material from keystore for local signing
+        // TODO: Route through keyStore.sign() once upstream supports standalone Ed25519 signing
+        const keyData = await keyStore.export(keystoreKeyId)
+        if (!keyData.privateKey) {
+            throw new KeyManagementError('Key not found in keystore')
+        }
+
         logger.debug(
-            `[TX_SIGN] Algo25 seed loaded: seedDataLen=${seedData.length}`,
+            `[TX_SIGN] Algo25 key exported from keystore: hasPrivateKey=${!!keyData.privateKey}, hasPublicKey=${!!keyData.publicKey}`,
         )
-        const seed = decodeFromBase64(new TextDecoder().decode(seedData))
+
+        // Reconstruct nacl keypair from exported key material
+        const seed = keyData.privateKey.slice(0, 32)
         const naclKeyPair = nacl.sign.keyPair.fromSeed(seed)
 
         const session: KMSAlgo25Session = {
@@ -121,10 +118,16 @@ export const useAlgo25 = () => {
             signData: async (data: Uint8Array) =>
                 nacl.sign.detached(data, naclKeyPair.secretKey),
             getPublicKey: () => naclKeyPair.publicKey,
-            getMnemonic: () => {
-                throw new KeyManagementError(
-                    `Mnemonic must be read async from secure storage key: ${MNEMONIC_STORAGE_PREFIX}${keyId}`,
-                )
+            getMnemonic: async () => {
+                const mnemonic = keyData.metadata?.mnemonic as
+                    | string
+                    | undefined
+                if (!mnemonic) {
+                    throw new KeyManagementError(
+                        'Mnemonic not found in keystore metadata',
+                    )
+                }
+                return mnemonic
             },
         }
 
@@ -133,6 +136,7 @@ export const useAlgo25 = () => {
         } finally {
             seed.fill(0)
             naclKeyPair.secretKey.fill(0)
+            clearKeyData(keyData)
         }
     }
 

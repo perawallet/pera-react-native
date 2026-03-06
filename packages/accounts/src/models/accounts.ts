@@ -35,6 +35,7 @@ export type HDWalletDetails = {
     change: number
     keyIndex: number
     derivationType: DerivationType
+    keystoreKeyId?: string
 }
 
 export type MultiSigDetails = {

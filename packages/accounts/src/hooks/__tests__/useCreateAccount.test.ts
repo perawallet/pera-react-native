@@ -47,18 +47,15 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
-const mockSession = vi.hoisted(() => ({
-    getPublicKey: vi.fn(),
-}))
-
 const kmsMock = vi.hoisted(() => ({
     getKey: vi.fn(),
     getKeyOrThrow: vi.fn(),
     createHDWalletKey: vi.fn(),
     createAlgo25Key: vi.fn(),
-    withHDSession: vi.fn(async (_key: any, _domain: any, handler: any) =>
-        handler(mockSession),
-    ),
+    generateDerivedKey: vi.fn(),
+    keyStore: {
+        export: vi.fn(),
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-kms', async () => {
@@ -106,7 +103,8 @@ describe('useCreateAccount', () => {
         kmsMock.getKeyOrThrow.mockReset()
         kmsMock.createHDWalletKey.mockReset()
         kmsMock.createAlgo25Key.mockReset()
-        kmsMock.withHDSession.mockReset()
+        kmsMock.generateDerivedKey.mockReset()
+        kmsMock.keyStore.export.mockReset()
 
         kmsMock.getKey.mockReturnValue(null)
         kmsMock.getKeyOrThrow.mockReturnValue(null)
@@ -114,18 +112,17 @@ describe('useCreateAccount', () => {
             id: 'WALLET1',
             type: KeyType.HDWalletRootKey,
             publicKey: '',
+            keystoreKeyId: 'ks-root-1',
         })
         kmsMock.createAlgo25Key.mockResolvedValue({
             id: 'WALLET1',
             type: KeyType.Algo25Key,
             publicKey: 'ALGO25_PUBLIC_KEY',
         })
-        kmsMock.withHDSession.mockImplementation(
-            async (_key: any, _domain: any, handler: any) =>
-                handler(mockSession),
-        )
-        mockSession.getPublicKey.mockReset()
-        mockSession.getPublicKey.mockResolvedValue(new Uint8Array(32).fill(2))
+        kmsMock.generateDerivedKey.mockResolvedValue('ks-derived-1')
+        kmsMock.keyStore.export.mockResolvedValue({
+            publicKey: new Uint8Array(32).fill(2),
+        })
     })
 
     test('creates new HD wallet account when no existing key', async () => {
@@ -146,11 +143,13 @@ describe('useCreateAccount', () => {
         expect(kmsMock.createHDWalletKey).toHaveBeenCalledWith({
             id: 'WALLET1',
         })
-        expect(mockSession.getPublicKey).toHaveBeenCalledWith({
-            account: 0,
-            keyIndex: 0,
-            derivationType: 9,
-        })
+        expect(kmsMock.generateDerivedKey).toHaveBeenCalledWith(
+            'ks-root-1',
+            0,
+            0,
+            9,
+        )
+        expect(kmsMock.keyStore.export).toHaveBeenCalledWith('ks-derived-1')
         expect(created.id).toBe('ACC1')
         expect(created.address).toBeTruthy()
         expect(created.type).toBe('hdWallet')
@@ -162,6 +161,7 @@ describe('useCreateAccount', () => {
             id: 'EXISTING_WALLET',
             type: KeyType.HDWalletRootKey,
             publicKey: '',
+            keystoreKeyId: 'ks-existing-root',
         })
 
         uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
@@ -181,13 +181,14 @@ describe('useCreateAccount', () => {
         expect(created.keyPairId).toBe('EXISTING_WALLET')
     })
 
-    test('throws error when session getPublicKey fails', async () => {
+    test('throws error when key derivation fails', async () => {
         kmsMock.getKey.mockReturnValueOnce({
             id: 'WALLET1',
             type: KeyType.HDWalletRootKey,
             publicKey: '',
+            keystoreKeyId: 'ks-root-1',
         })
-        mockSession.getPublicKey.mockRejectedValueOnce(
+        kmsMock.generateDerivedKey.mockRejectedValueOnce(
             new Error('Derivation failed'),
         )
 

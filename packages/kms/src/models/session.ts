@@ -20,7 +20,7 @@ export type KMSAlgo25Session = {
     signTransaction: (encodedTx: Uint8Array) => Promise<Uint8Array>
     signData: (data: Uint8Array) => Promise<Uint8Array>
     getPublicKey: () => Uint8Array
-    getMnemonic: () => string
+    getMnemonic: () => Promise<string>
 }
 
 export type KMSHDWalletSession = {
@@ -33,5 +33,5 @@ export type KMSHDWalletSession = {
         params: HDDerivationParams,
         data: Uint8Array,
     ) => Promise<Uint8Array>
-    getMnemonic: () => string
+    getMnemonic: () => Promise<string>
 }

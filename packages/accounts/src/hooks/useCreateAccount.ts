@@ -23,7 +23,6 @@ import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { encodeAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { KeyNotFoundError, useKMS } from '@perawallet/wallet-core-kms'
 import { NoHDWalletError } from '../errors'
-import { KEY_DOMAIN } from '../constants'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 
 export const useCreateAccount = () => {
@@ -33,8 +32,13 @@ export const useCreateAccount = () => {
     const setAccounts = useAccountsStore(state => state.setAccounts)
     const deviceInfo = useDeviceInfoService()
     const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
-    const { getKey, createHDWalletKey, createAlgo25Key, withHDSession } =
-        useKMS()
+    const {
+        getKey,
+        createHDWalletKey,
+        createAlgo25Key,
+        generateDerivedKey,
+        keyStore,
+    } = useKMS()
 
     const saveAndUpdateAccounts = async (newAccount: WalletAccount) => {
         accounts.push(newAccount)
@@ -73,35 +77,35 @@ export const useCreateAccount = () => {
             rootKey = await createHDWalletKey({ id: rootWalletId })
         }
 
-        if (!rootKey?.id) {
+        if (!rootKey?.id || !rootKey.keystoreKeyId) {
             throw new NoHDWalletError(rootWalletId)
         }
 
-        const newAccount = await withHDSession(
-            rootKey,
-            KEY_DOMAIN,
-            async session => {
-                const addressBytes = await session.getPublicKey({
-                    account,
-                    keyIndex,
-                    derivationType: BIP32DerivationType.Peikert,
-                })
-
-                const newAccount: WalletAccount = {
-                    id: generateOrderedUniqueId(),
-                    address: encodeAlgorandAddress(addressBytes),
-                    type: AccountTypes.hdWallet,
-                    hdWalletDetails: {
-                        account: account,
-                        change: 0,
-                        keyIndex: keyIndex,
-                        derivationType: BIP32DerivationType.Peikert,
-                    },
-                    keyPairId: rootWalletId,
-                }
-                return newAccount
-            },
+        const derivedKeystoreKeyId = await generateDerivedKey(
+            rootKey.keystoreKeyId,
+            account,
+            keyIndex,
+            BIP32DerivationType.Peikert,
         )
+
+        const derivedKeyData = await keyStore.export(derivedKeystoreKeyId)
+        if (!derivedKeyData.publicKey) {
+            throw new NoHDWalletError(rootWalletId)
+        }
+
+        const newAccount: WalletAccount = {
+            id: generateOrderedUniqueId(),
+            address: encodeAlgorandAddress(derivedKeyData.publicKey),
+            type: AccountTypes.hdWallet,
+            hdWalletDetails: {
+                account,
+                change: 0,
+                keyIndex,
+                derivationType: BIP32DerivationType.Peikert,
+                keystoreKeyId: derivedKeystoreKeyId,
+            },
+            keyPairId: rootWalletId,
+        }
 
         await saveAndUpdateAccounts(newAccount)
         return newAccount
