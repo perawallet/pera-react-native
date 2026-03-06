@@ -53,7 +53,7 @@ export interface DexSwapAsset {
 
 export interface SwapHistoryItem {
     id: number
-    idStr?: string
+    idStr?: string | null
     provider: SwapProvider
     status: SwapStatus
     completedDatetime: string | null
@@ -62,8 +62,8 @@ export interface SwapHistoryItem {
     assetOut: DexSwapAsset
     amountIn: string
     amountOut: string
-    amountInUsdValue: string | null
-    amountOutUsdValue: string | null
+    amountInUsdValue?: string | null
+    amountOutUsdValue?: string | null
 }
 
 export interface SwapDistinctPairItem {
