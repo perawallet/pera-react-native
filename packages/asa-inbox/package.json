@@ -37,7 +37,6 @@
     "@types/node": "^20.19.28",
     "@types/react": "catalog:",
     "globals": "catalog:",
-    "reflect-metadata": "catalog:",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",
     "vite": "catalog:",

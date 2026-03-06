@@ -60,8 +60,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         encodeToBase64: vi.fn((data: Uint8Array) =>
             Buffer.from(data).toString('base64'),
         ),
-        decodeFromBase64: vi.fn((base64: string) =>
-            new Uint8Array(Buffer.from(base64, 'base64')),
+        decodeFromBase64: vi.fn(
+            (base64: string) => new Uint8Array(Buffer.from(base64, 'base64')),
         ),
         generateOrderedUniqueId: () => 'mock-uuid-v7',
     }
@@ -115,9 +115,7 @@ describe('useAlgo25', () => {
                 'algo25-seed-my-key',
             )
             // Second call stores the mnemonic
-            expect(mockSecureSetItem.mock.calls[1][0]).toBe(
-                'mnemonic-my-key',
-            )
+            expect(mockSecureSetItem.mock.calls[1][0]).toBe('mnemonic-my-key')
             const storedMnemonic = new TextDecoder().decode(
                 mockSecureSetItem.mock.calls[1][1],
             )

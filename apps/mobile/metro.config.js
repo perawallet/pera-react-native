@@ -75,6 +75,12 @@ const customResolveRequest = (context, moduleName, platform) => {
         }
     }
 
+    // Resolve @algorandfoundation/algokit-utils/algo25 subpath to its actual directory
+    if (moduleName === '@algorandfoundation/algokit-utils/algo25') {
+        const pkgPath = path.dirname(require.resolve('@algorandfoundation/algokit-utils/package.json'));
+        return context.resolveRequest(context, path.resolve(pkgPath, 'algo25'), platform);
+    }
+
     // Handle crypto polyfills - resolve from mobile app's node_modules
     if (polyfillMap[moduleName]) {
         return {

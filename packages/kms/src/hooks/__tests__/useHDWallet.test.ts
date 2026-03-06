@@ -72,8 +72,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
         encodeToBase64: vi.fn((data: Uint8Array) =>
             Buffer.from(data).toString('base64'),
         ),
-        decodeFromBase64: vi.fn((base64: string) =>
-            new Uint8Array(Buffer.from(base64, 'base64')),
+        decodeFromBase64: vi.fn(
+            (base64: string) => new Uint8Array(Buffer.from(base64, 'base64')),
         ),
         generateOrderedUniqueId: () => 'mock-uuid-v7',
     }
@@ -127,10 +127,9 @@ describe('useHDWallet', () => {
 
             // fromSeed is called with the BIP39 seed (which gets zeroed after)
             expect(mockFromSeed).toHaveBeenCalledTimes(1)
-            expect(mockKeyStoreImportSeed).toHaveBeenCalledWith(
-                mockRootKey,
-                { name: 'hd-1' },
-            )
+            expect(mockKeyStoreImportSeed).toHaveBeenCalledWith(mockRootKey, {
+                name: 'hd-1',
+            })
         })
 
         test('stores seed and entropy in secure storage', async () => {
@@ -223,7 +222,8 @@ describe('useHDWallet', () => {
         beforeEach(() => {
             // Mock secure storage to return seed and entropy
             const fakeSeedBase64 = Buffer.from('fake-seed').toString('base64')
-            const fakeEntropyBase64 = Buffer.from('fake-entropy').toString('base64')
+            const fakeEntropyBase64 =
+                Buffer.from('fake-entropy').toString('base64')
             mockSecureGetItem.mockImplementation(async (key: string) => {
                 if (key.startsWith('hd-seed-')) {
                     return new TextEncoder().encode(fakeSeedBase64)

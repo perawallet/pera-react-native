@@ -84,7 +84,6 @@ describe('useKMSService', () => {
             expect(mockAddKey).toHaveBeenCalledWith(key)
             expect(savedKey).toBe(key)
         })
-
     })
 
     describe('deleteKey', () => {

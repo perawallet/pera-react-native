@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import 'reflect-metadata'
 import '@algorandfoundation/algokit-utils'
 import { vi } from 'vitest'
 

@@ -101,9 +101,7 @@ export const useAlgo25 = () => {
             `${SEED_STORAGE_PREFIX}${keyId}`,
         )
         if (!seedData) {
-            throw new KeyManagementError(
-                'Seed not found in secure storage',
-            )
+            throw new KeyManagementError('Seed not found in secure storage')
         }
         const seed = decodeFromBase64(new TextDecoder().decode(seedData))
         const naclKeyPair = nacl.sign.keyPair.fromSeed(seed)

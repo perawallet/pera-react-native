@@ -12,7 +12,10 @@
 
 import type { HDDerivationParams, KMSHDWalletSession } from '../models/session'
 import type { DeriveOptions } from '@algorandfoundation/keystore'
-import { BIP32DerivationType, fromSeed } from '@algorandfoundation/xhd-wallet-api'
+import {
+    BIP32DerivationType,
+    fromSeed,
+} from '@algorandfoundation/xhd-wallet-api'
 import { KeyPair, KeyType } from '../models'
 import { makeKeyPair } from '../utils'
 import {
@@ -113,9 +116,7 @@ export const useHDWallet = () => {
             secureStorage.getItem(`${ENTROPY_STORAGE_PREFIX}${keyId}`),
         ])
         if (!seedData) {
-            throw new KeyManagementError(
-                'Seed not found in secure storage',
-            )
+            throw new KeyManagementError('Seed not found in secure storage')
         }
         const seedBuffer = Buffer.from(
             decodeFromBase64(new TextDecoder().decode(seedData)),
@@ -167,9 +168,7 @@ export const useHDWallet = () => {
                     throw new KeyManagementError('Entropy not found')
                 }
                 const entropy = Buffer.from(
-                    decodeFromBase64(
-                        new TextDecoder().decode(entropyData),
-                    ),
+                    decodeFromBase64(new TextDecoder().decode(entropyData)),
                 )
                 return entropyToMnemonic(entropy)
             },
