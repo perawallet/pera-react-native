@@ -19,6 +19,9 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
+import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { useMemo } from 'react'
 
 export type RejectConfirmBottomSheetProps = {
     isOpen: boolean
@@ -36,6 +39,10 @@ export const RejectConfirmBottomSheet = ({
     const { t } = useLanguage()
     const styles = useStyles()
 
+    const algoDisplayAmount = useMemo(() => {
+        return baseUnitsToDisplayUnits(algoRefundAmount, ALGO_ASSET.decimals)
+    }, [algoRefundAmount])
+
     return (
         <PWBottomSheet
             isVisible={isOpen}
@@ -52,7 +59,7 @@ export const RejectConfirmBottomSheet = ({
             <PWText variant='h3'>{t('messages.claim.reject_title')}</PWText>
             <PWText style={styles.bottomSheetMessage}>
                 {t('messages.claim.reject_body', {
-                    algoAmount: algoRefundAmount,
+                    algoAmount: algoDisplayAmount,
                 })}
             </PWText>
             <PWView style={styles.bottomSheetActions}>
