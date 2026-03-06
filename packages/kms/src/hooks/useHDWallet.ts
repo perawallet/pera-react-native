@@ -11,12 +11,20 @@
  */
 
 import type { KMSHDWalletSession } from '../models/session'
-import { fromSeed, KeyContext } from '@algorandfoundation/xhd-wallet-api'
+import {
+    fromSeed,
+    KeyContext,
+    XHDWalletAPI,
+} from '@algorandfoundation/xhd-wallet-api'
+import { clearKeyData } from '@algorandfoundation/keystore'
+
+const xhd = new XHDWalletAPI()
 import { KeyPair, KeyType } from '../models'
 import { makeKeyPair } from '../utils'
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import { KeyManagementError } from '../errors'
 import { useKMSService } from './useKMSServices'
+import { useKeyManagerStore } from '../store'
 import {
     entropyToMnemonic,
     generateHDMasterKey,
@@ -24,6 +32,8 @@ import {
 
 export const useHDWallet = () => {
     const { saveKey, checkAccess, keyStore } = useKMSService()
+    const addKey = useKeyManagerStore(state => state.addKey)
+    const keys = useKeyManagerStore(state => state.keys)
 
     const createHDWalletKey = async (params?: {
         id?: string
@@ -60,25 +70,98 @@ export const useHDWallet = () => {
         return await saveKey(keyPair)
     }
 
+    /**
+     * Migrates a pre-existing hd-seed key to hd-root-key type.
+     * The react-native-keystore's generate function only handles hd-seed → hd-root-key
+     * conversion for P256 keys, not Ed25519. This re-imports the key as hd-root-key.
+     */
+    const migrateRootKeyType = async (
+        keystoreKeyId: string,
+    ): Promise<string> => {
+        logger.debug(
+            `[KMS] Migrating hd-seed key ${keystoreKeyId} to hd-root-key`,
+        )
+
+        const keyData = await keyStore.export(keystoreKeyId)
+        if (!keyData.privateKey) {
+            throw new KeyManagementError(
+                'Cannot migrate root key: no private key found',
+            )
+        }
+
+        const newKeystoreKeyId = await keyStore.import(
+            {
+                type: 'hd-root-key',
+                algorithm: 'raw',
+                extractable: true,
+                keyUsages: ['deriveKey', 'deriveBits'],
+                privateKey: keyData.privateKey,
+                metadata: keyData.metadata ?? {},
+            },
+            'raw',
+        )
+
+        // Update KeyPair in the store with the new keystoreKeyId
+        for (const keyPair of keys.values()) {
+            if (keyPair.keystoreKeyId === keystoreKeyId) {
+                addKey({ ...keyPair, keystoreKeyId: newKeystoreKeyId })
+                break
+            }
+        }
+
+        await keyStore.remove(keystoreKeyId)
+
+        logger.debug(
+            `[KMS] Migrated root key: ${keystoreKeyId} → ${newKeystoreKeyId}`,
+        )
+
+        return newKeystoreKeyId
+    }
+
     const generateDerivedKey = async (
         keystoreRootKeyId: string,
         account: number,
         keyIndex: number,
         derivationType: number,
     ): Promise<string> => {
-        return keyStore.generate({
-            type: 'hd-derived-ed25519',
-            algorithm: 'EdDSA',
-            extractable: false,
-            keyUsages: ['sign'],
-            params: {
-                parentKeyId: keystoreRootKeyId,
-                account,
-                index: keyIndex,
-                context: KeyContext.Address,
-                derivation: derivationType,
-            },
-        })
+        try {
+            return await keyStore.generate({
+                type: 'hd-derived-ed25519',
+                algorithm: 'EdDSA',
+                extractable: false,
+                keyUsages: ['sign'],
+                params: {
+                    parentKeyId: keystoreRootKeyId,
+                    account,
+                    index: keyIndex,
+                    context: KeyContext.Address,
+                    derivation: derivationType,
+                },
+            })
+        } catch (error) {
+            // Pre-existing accounts have root keys stored as hd-seed type
+            // which generateXHDFromParent rejects. Migrate and retry.
+            const message =
+                error instanceof Error ? error.message : String(error)
+            if (message.includes('hd-root-key')) {
+                const newKeystoreKeyId =
+                    await migrateRootKeyType(keystoreRootKeyId)
+                return keyStore.generate({
+                    type: 'hd-derived-ed25519',
+                    algorithm: 'EdDSA',
+                    extractable: false,
+                    keyUsages: ['sign'],
+                    params: {
+                        parentKeyId: newKeystoreKeyId,
+                        account,
+                        index: keyIndex,
+                        context: KeyContext.Address,
+                        derivation: derivationType,
+                    },
+                })
+            }
+            throw error
+        }
     }
 
     const withHDSession = async <T>(
@@ -115,21 +198,28 @@ export const useHDWallet = () => {
                 return derivedKeyData.publicKey
             },
             signTransaction: async (params, encodedTx) => {
-                const derivedKeyId = await generateDerivedKey(
-                    keystoreKeyId,
-                    params.account,
-                    params.keyIndex,
-                    params.derivationType,
-                )
-                // Prepend "TX" prefix for Algorand transaction signing
-                // The keystore uses signData(Encoding.NONE) internally
-                const TX_PREFIX = new Uint8Array([84, 88])
-                const prefixedTx = new Uint8Array(
-                    TX_PREFIX.length + encodedTx.length,
-                )
-                prefixedTx.set(TX_PREFIX)
-                prefixedTx.set(encodedTx, TX_PREFIX.length)
-                return keyStore.sign(derivedKeyId, prefixedTx)
+                // keyStore.sign() routes through xhd.signData(Encoding.NONE)
+                // which rejects Algorand protocol tags ("TX", "MX", etc.).
+                // Use xhd.signAlgoTransaction directly which bypasses validation.
+                // encodedTx already includes the "TX" prefix from encodeTransaction.
+                const rootKeyData = await keyStore.export(keystoreKeyId)
+                if (!rootKeyData.privateKey) {
+                    throw new KeyManagementError(
+                        'Root key not found in keystore',
+                    )
+                }
+                try {
+                    return await xhd.signAlgoTransaction(
+                        rootKeyData.privateKey,
+                        KeyContext.Address,
+                        params.account,
+                        params.keyIndex,
+                        encodedTx,
+                        params.derivationType,
+                    )
+                } finally {
+                    clearKeyData(rootKeyData)
+                }
             },
             signData: async (params, data) => {
                 const derivedKeyId = await generateDerivedKey(

@@ -22,6 +22,7 @@ import { encodeAddress } from '@algorandfoundation/algokit-utils'
 import { useKMSService } from './useKMSServices'
 import { makeKeyPair } from '../utils'
 import { clearKeyData } from '@algorandfoundation/keystore'
+import type { KeyData } from '@algorandfoundation/keystore'
 
 export const useAlgo25 = () => {
     const { saveKey, checkAccess, keyStore } = useKMSService()
@@ -55,15 +56,18 @@ export const useAlgo25 = () => {
         const publicKey = encodeAddress(naclKeyPair.publicKey)
 
         // Import key into keystore with mnemonic in metadata for recovery
+        // Note: The KeyStoreAPI type omits 'id' from import(), but the
+        // hd-derived-ed25519 path in importEd25519Key requires it (no auto-generation).
         const keystoreKeyId = await keyStore.import(
             {
+                id: keyId,
                 type: 'hd-derived-ed25519',
                 algorithm: 'EdDSA',
                 extractable: true,
                 publicKey: naclKeyPair.publicKey,
                 privateKey: naclKeyPair.secretKey,
                 metadata: { mnemonic },
-            },
+            } as unknown as Omit<KeyData, 'id'>,
             'raw',
         )
 

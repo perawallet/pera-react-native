@@ -25,11 +25,20 @@ vi.mock('../../crypto/hdwallet-utils', () => ({
 }))
 
 const mockFromSeed = vi.fn()
+const mockSignAlgoTransaction = vi.fn()
 
 vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
     BIP32DerivationType: { Peikert: 9, Khovratovich: 0 },
     KeyContext: { Address: 0, Identity: 1 },
     fromSeed: (...args: any[]) => mockFromSeed(...args),
+    XHDWalletAPI: class {
+        signAlgoTransaction = (...args: any[]) =>
+            mockSignAlgoTransaction(...args)
+    },
+}))
+
+vi.mock('@algorandfoundation/keystore', () => ({
+    clearKeyData: vi.fn(),
 }))
 
 const mockSaveKey = vi.fn()
@@ -38,6 +47,7 @@ const mockKeyStoreImport = vi.fn()
 const mockKeyStoreGenerate = vi.fn()
 const mockKeyStoreSign = vi.fn()
 const mockKeyStoreExport = vi.fn()
+const mockKeyStoreRemove = vi.fn()
 
 vi.mock('../useKMSServices', () => ({
     useKMSService: () => ({
@@ -48,8 +58,22 @@ vi.mock('../useKMSServices', () => ({
             generate: (...args: any[]) => mockKeyStoreGenerate(...args),
             sign: (...args: any[]) => mockKeyStoreSign(...args),
             export: (...args: any[]) => mockKeyStoreExport(...args),
+            remove: (...args: any[]) => mockKeyStoreRemove(...args),
         },
     }),
+}))
+
+const mockAddKey = vi.fn()
+const mockStoreKeys = new Map<string, KeyPair>()
+
+vi.mock('../../store', () => ({
+    useKeyManagerStore: (selector: any) => {
+        const state = {
+            addKey: mockAddKey,
+            keys: mockStoreKeys,
+        }
+        return selector(state)
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -65,6 +89,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 describe('useHDWallet', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockStoreKeys.clear()
     })
 
     describe('createHDWalletKey', () => {
@@ -225,6 +250,102 @@ describe('useHDWallet', () => {
         })
     })
 
+    describe('generateDerivedKey - hd-seed migration', () => {
+        beforeEach(() => {
+            mockStoreKeys.set('hd-key-1', {
+                id: 'hd-key-1',
+                publicKey: '',
+                type: KeyType.HDWalletRootKey,
+                keystoreKeyId: 'ks-old-seed',
+            })
+        })
+
+        test('migrates hd-seed parent key to hd-root-key on error and retries', async () => {
+            // First generate call fails with hd-root-key error
+            mockKeyStoreGenerate
+                .mockRejectedValueOnce(
+                    new Error(
+                        'Invalid key data: XHD derived keys require a raw hd-root-key',
+                    ),
+                )
+                .mockResolvedValueOnce('ks-derived-1')
+
+            // Export returns the old seed key data
+            mockKeyStoreExport.mockResolvedValue({
+                privateKey: new Uint8Array(96).fill(42),
+                metadata: { entropy: 'abcdef01' },
+            })
+
+            // Re-import as hd-root-key
+            mockKeyStoreImport.mockResolvedValue('ks-new-root')
+            mockKeyStoreRemove.mockResolvedValue(undefined)
+
+            const { result } = renderHook(() => useHDWallet())
+
+            let derivedKeyId: string | undefined
+            await act(async () => {
+                derivedKeyId = await result.current.generateDerivedKey(
+                    'ks-old-seed',
+                    0,
+                    0,
+                    9,
+                )
+            })
+
+            expect(derivedKeyId).toBe('ks-derived-1')
+
+            // Verify migration: export old key, import as hd-root-key, remove old
+            expect(mockKeyStoreExport).toHaveBeenCalledWith('ks-old-seed')
+            expect(mockKeyStoreImport).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: 'hd-root-key',
+                    algorithm: 'raw',
+                    extractable: true,
+                    privateKey: new Uint8Array(96).fill(42),
+                    metadata: { entropy: 'abcdef01' },
+                }),
+                'raw',
+            )
+            expect(mockKeyStoreRemove).toHaveBeenCalledWith('ks-old-seed')
+
+            // Verify KeyPair was updated in store
+            expect(mockAddKey).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    id: 'hd-key-1',
+                    keystoreKeyId: 'ks-new-root',
+                }),
+            )
+
+            // Verify retry used new keystoreKeyId
+            expect(mockKeyStoreGenerate).toHaveBeenCalledTimes(2)
+            expect(
+                mockKeyStoreGenerate.mock.calls[1][0].params.parentKeyId,
+            ).toBe('ks-new-root')
+        })
+
+        test('does not migrate on non-hd-root-key errors', async () => {
+            mockKeyStoreGenerate.mockRejectedValue(
+                new Error('Some other error'),
+            )
+
+            const { result } = renderHook(() => useHDWallet())
+
+            await expect(
+                act(async () => {
+                    await result.current.generateDerivedKey(
+                        'ks-old-seed',
+                        0,
+                        0,
+                        9,
+                    )
+                }),
+            ).rejects.toThrow('Some other error')
+
+            expect(mockKeyStoreExport).not.toHaveBeenCalled()
+            expect(mockKeyStoreImport).not.toHaveBeenCalled()
+        })
+    })
+
     describe('withHDSession', () => {
         const mockKey: KeyPair = {
             id: 'hd-key-1',
@@ -248,12 +369,18 @@ describe('useHDWallet', () => {
             })
         })
 
-        test('session signTransaction signs via keyStore.sign with TX prefix', async () => {
+        test('session signTransaction signs via xhd.signAlgoTransaction', async () => {
             const mockSig = new Uint8Array(64).fill(1)
-            mockKeyStoreSign.mockResolvedValue(mockSig)
+            mockSignAlgoTransaction.mockResolvedValue(mockSig)
+            mockKeyStoreExport.mockResolvedValue({
+                privateKey: new Uint8Array(96).fill(42),
+                metadata: { entropy: 'abcdef01' },
+            })
 
             const { result } = renderHook(() => useHDWallet())
 
+            // encodedTx already includes "TX" prefix from encodeTransaction
+            const encodedTx = new Uint8Array([84, 88, 1, 2, 3])
             let signResult: Uint8Array | undefined
             await act(async () => {
                 signResult = await result.current.withHDSession(
@@ -262,25 +389,22 @@ describe('useHDWallet', () => {
                     async session => {
                         return session.signTransaction(
                             derivationParams,
-                            new Uint8Array([1, 2, 3]),
+                            encodedTx,
                         )
                     },
                 )
             })
 
             expect(signResult).toBe(mockSig)
-            expect(mockKeyStoreGenerate).toHaveBeenCalled()
-            expect(mockKeyStoreSign).toHaveBeenCalledWith(
-                'ks-derived-1',
-                expect.any(Uint8Array),
+            // Verify xhd.signAlgoTransaction was called with root key and encoded tx as-is
+            expect(mockSignAlgoTransaction).toHaveBeenCalledWith(
+                new Uint8Array(96).fill(42), // root key private key
+                0, // KeyContext.Address
+                0, // account
+                0, // keyIndex
+                encodedTx, // passed through without modification
+                9, // derivationType (Peikert)
             )
-            // Verify TX prefix was prepended
-            const signedData = mockKeyStoreSign.mock.calls[0][1]
-            expect(signedData[0]).toBe(84) // 'T'
-            expect(signedData[1]).toBe(88) // 'X'
-            expect(signedData[2]).toBe(1)
-            expect(signedData[3]).toBe(2)
-            expect(signedData[4]).toBe(3)
         })
 
         test('session signData signs via keyStore.sign without prefix', async () => {
@@ -415,7 +539,11 @@ describe('useHDWallet', () => {
 
         test('passes derivation params correctly for different derivation types', async () => {
             const mockSig = new Uint8Array(64).fill(5)
-            mockKeyStoreSign.mockResolvedValue(mockSig)
+            mockSignAlgoTransaction.mockResolvedValue(mockSig)
+            mockKeyStoreExport.mockResolvedValue({
+                privateKey: new Uint8Array(96).fill(42),
+                metadata: { entropy: 'abcdef01' },
+            })
 
             const khovratovichParams = {
                 account: 1,
@@ -438,15 +566,14 @@ describe('useHDWallet', () => {
                 )
             })
 
-            expect(mockKeyStoreGenerate).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    params: expect.objectContaining({
-                        parentKeyId: 'ks-root-1',
-                        account: 1,
-                        index: 2,
-                        derivation: 0,
-                    }),
-                }),
+            // Verify xhd.signAlgoTransaction received correct derivation params
+            expect(mockSignAlgoTransaction).toHaveBeenCalledWith(
+                expect.any(Uint8Array), // root key
+                0, // KeyContext.Address
+                1, // account
+                2, // keyIndex
+                expect.any(Uint8Array), // prefixed tx
+                0, // derivationType (Khovratovich)
             )
         })
     })
