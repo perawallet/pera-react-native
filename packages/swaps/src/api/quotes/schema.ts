@@ -13,18 +13,6 @@
 import { z } from 'zod'
 import { dexSwapAssetSchema } from '../available-assets/schema'
 
-export const providerEnum = z.enum([
-    'tinyman',
-    'tinyman-v2',
-    'tinyman-swap-router',
-    'vestige-v3',
-    'vestige-v4',
-    'folks-router',
-    'deflex',
-    'xo',
-    'meld',
-])
-
 export const swapTypeEnum = z.enum(['fixed-input', 'fixed-output'])
 
 export const calculatePeraFeeRequestSchema = z.object({
@@ -60,14 +48,14 @@ export const createQuotesRequestSchema = z.object({
     amount: z.string(),
     slippage: z.string().optional(),
     referrer_url: z.string().nullable().optional(),
-    include_providers: z.array(providerEnum).optional(),
-    exclude_providers: z.array(providerEnum).optional(),
+    include_providers: z.array(z.string()).optional(),
+    exclude_providers: z.array(z.string()).optional(),
 })
 
 export const quoteSchema = z.object({
     id: z.number().optional(),
     quote_id_str: z.string().optional(),
-    provider: providerEnum.optional(),
+    provider: z.string().optional(),
     swap_type: swapTypeEnum.optional(),
     swapper_address: z.string().optional(),
     device: z.number().nullable().optional(),

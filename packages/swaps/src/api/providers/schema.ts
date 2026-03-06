@@ -12,10 +12,9 @@
 
 import { z } from 'zod'
 import { dexSwapAssetSchema } from '../available-assets/schema'
-import { providerEnum } from '../quotes/schema'
 
 export const providerItemSchema = z.object({
-    name: providerEnum,
+    name: z.string(),
     display_name: z.string(),
     icon_url: z.string(),
 })

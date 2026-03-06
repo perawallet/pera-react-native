@@ -12,7 +12,6 @@
 
 import { z } from 'zod'
 import { dexSwapAssetSchema } from '../available-assets/schema'
-import { providerEnum } from '../quotes/schema'
 
 export const swapStatusEnum = z.enum([
     'pending',
@@ -25,7 +24,7 @@ export const swapStatusEnum = z.enum([
 export const swapHistoryItemSchema = z.object({
     id: z.number(),
     id_str: z.string().optional(),
-    provider: providerEnum,
+    provider: z.string(),
     status: swapStatusEnum,
     completed_datetime: z.string().nullable(),
     transaction_group_id: z.string().nullable(),

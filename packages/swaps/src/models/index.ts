@@ -19,16 +19,7 @@ export type SwapsState = BaseStoreState & {
     setToAsset: (toAsset: string) => void
 }
 
-export type SwapProvider =
-    | 'tinyman'
-    | 'tinyman-v2'
-    | 'tinyman-swap-router'
-    | 'vestige-v3'
-    | 'vestige-v4'
-    | 'folks-router'
-    | 'deflex'
-    | 'xo'
-    | 'meld'
+export type SwapProvider = string
 
 export type SwapStatus =
     | 'pending'
