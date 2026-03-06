@@ -21,16 +21,8 @@ import {
     type AssetWithAccountBalance,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    ALGO_ASSET_ID,
-    useAssetsQuery,
-    type PeraAsset,
-} from '@perawallet/wallet-core-assets'
-import {
-    displayUnitsToBaseUnits,
-    useAccountInformationQuery,
-    useSuggestedParametersQuery,
-} from '@perawallet/wallet-core-blockchain'
+import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
+import { useSuggestedParametersQuery } from '@perawallet/wallet-core-blockchain'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
@@ -94,9 +86,6 @@ export const useTransactionConfirmationScreen =
                 selectedAsset?.assetId,
             )
 
-        const { data: receiverAccountInfo, isError: receiverQueryError } =
-            useAccountInformationQuery(destination ?? '')
-
         const handleConfirm = () => {
             if (
                 !selectedAccount ||
@@ -116,42 +105,6 @@ export const useTransactionConfirmationScreen =
                     },
                 )
                 return
-            }
-
-            // For ALGO payments, check receiver will meet minimum balance.
-            // Only validate when we have receiver info or the query errored
-            // (account doesn't exist on-chain yet).
-            if (
-                selectedAsset.assetId === ALGO_ASSET_ID &&
-                !isCloseAccount &&
-                (receiverAccountInfo || receiverQueryError)
-            ) {
-                const sendAmountMicroAlgos = BigInt(
-                    displayUnitsToBaseUnits(amount, asset.decimals).toString(),
-                )
-                const receiverBalance = receiverAccountInfo?.amount ?? 0n
-                const receiverMinBalance =
-                    receiverAccountInfo?.minBalance ?? 100000n
-                const receiverPostBalance =
-                    receiverBalance + sendAmountMicroAlgos
-
-                if (receiverPostBalance < receiverMinBalance) {
-                    showToast(
-                        {
-                            title: t(
-                                'send_funds.confirmation.receiver_min_balance_title',
-                            ),
-                            body: t(
-                                'send_funds.confirmation.receiver_min_balance_body',
-                            ),
-                            type: 'error',
-                        },
-                        {
-                            notifier: bottomSheetNotifier.current ?? undefined,
-                        },
-                    )
-                    return
-                }
             }
 
             navigation.navigate('TransactionProcessing')
