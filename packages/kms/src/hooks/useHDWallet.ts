@@ -11,14 +11,7 @@
  */
 
 import type { KMSHDWalletSession } from '../models/session'
-import {
-    fromSeed,
-    KeyContext,
-    XHDWalletAPI,
-} from '@algorandfoundation/xhd-wallet-api'
-import { clearKeyData } from '@algorandfoundation/keystore'
-
-const xhd = new XHDWalletAPI()
+import { fromSeed, KeyContext } from '@algorandfoundation/xhd-wallet-api'
 import { KeyPair, KeyType } from '../models'
 import { makeKeyPair } from '../utils'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
@@ -186,28 +179,13 @@ export const useHDWallet = () => {
                 return derivedKeyData.publicKey
             },
             signTransaction: async (params, encodedTx) => {
-                // TODO: Route through keyStore.sign() once upstream supports Algorand transaction signing.
-                // keyStore.sign() routes through xhd.signData(Encoding.NONE) which rejects
-                // Algorand protocol tags ("TX", "MX", etc.). signAlgoTransaction bypasses validation.
-                // encodedTx already includes the "TX" prefix from encodeTransaction.
-                const rootKeyData = await keyStore.export(keystoreKeyId)
-                if (!rootKeyData.privateKey) {
-                    throw new KeyManagementError(
-                        'Root key not found in keystore',
-                    )
-                }
-                try {
-                    return await xhd.signAlgoTransaction(
-                        rootKeyData.privateKey,
-                        KeyContext.Address,
-                        params.account,
-                        params.keyIndex,
-                        encodedTx,
-                        params.derivationType,
-                    )
-                } finally {
-                    clearKeyData(rootKeyData)
-                }
+                const derivedKeyId = await generateDerivedKey(
+                    keystoreKeyId,
+                    params.account,
+                    params.keyIndex,
+                    params.derivationType,
+                )
+                return keyStore.sign(derivedKeyId, encodedTx)
             },
             signData: async (params, data) => {
                 const derivedKeyId = await generateDerivedKey(

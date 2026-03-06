@@ -25,20 +25,11 @@ vi.mock('../../crypto/hdwallet-utils', () => ({
 }))
 
 const mockFromSeed = vi.fn()
-const mockSignAlgoTransaction = vi.fn()
 
 vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
     BIP32DerivationType: { Peikert: 9, Khovratovich: 0 },
     KeyContext: { Address: 0, Identity: 1 },
     fromSeed: (...args: any[]) => mockFromSeed(...args),
-    XHDWalletAPI: class {
-        signAlgoTransaction = (...args: any[]) =>
-            mockSignAlgoTransaction(...args)
-    },
-}))
-
-vi.mock('@algorandfoundation/keystore', () => ({
-    clearKeyData: vi.fn(),
 }))
 
 const mockSaveKey = vi.fn()
@@ -369,17 +360,12 @@ describe('useHDWallet', () => {
             })
         })
 
-        test('session signTransaction signs via xhd.signAlgoTransaction', async () => {
+        test('session signTransaction signs via keyStore.sign with derived key', async () => {
             const mockSig = new Uint8Array(64).fill(1)
-            mockSignAlgoTransaction.mockResolvedValue(mockSig)
-            mockKeyStoreExport.mockResolvedValue({
-                privateKey: new Uint8Array(96).fill(42),
-                metadata: { entropy: 'abcdef01' },
-            })
+            mockKeyStoreSign.mockResolvedValue(mockSig)
 
             const { result } = renderHook(() => useHDWallet())
 
-            // encodedTx already includes "TX" prefix from encodeTransaction
             const encodedTx = new Uint8Array([84, 88, 1, 2, 3])
             let signResult: Uint8Array | undefined
             await act(async () => {
@@ -396,14 +382,10 @@ describe('useHDWallet', () => {
             })
 
             expect(signResult).toBe(mockSig)
-            // Verify xhd.signAlgoTransaction was called with root key and encoded tx as-is
-            expect(mockSignAlgoTransaction).toHaveBeenCalledWith(
-                new Uint8Array(96).fill(42), // root key private key
-                0, // KeyContext.Address
-                0, // account
-                0, // keyIndex
-                encodedTx, // passed through without modification
-                9, // derivationType (Peikert)
+            expect(mockKeyStoreGenerate).toHaveBeenCalled()
+            expect(mockKeyStoreSign).toHaveBeenCalledWith(
+                'ks-derived-1',
+                encodedTx,
             )
         })
 
@@ -539,11 +521,8 @@ describe('useHDWallet', () => {
 
         test('passes derivation params correctly for different derivation types', async () => {
             const mockSig = new Uint8Array(64).fill(5)
-            mockSignAlgoTransaction.mockResolvedValue(mockSig)
-            mockKeyStoreExport.mockResolvedValue({
-                privateKey: new Uint8Array(96).fill(42),
-                metadata: { entropy: 'abcdef01' },
-            })
+            mockKeyStoreSign.mockResolvedValue(mockSig)
+            mockKeyStoreGenerate.mockResolvedValue('ks-derived-khov')
 
             const khovratovichParams = {
                 account: 1,
@@ -566,14 +545,21 @@ describe('useHDWallet', () => {
                 )
             })
 
-            // Verify xhd.signAlgoTransaction received correct derivation params
-            expect(mockSignAlgoTransaction).toHaveBeenCalledWith(
-                expect.any(Uint8Array), // root key
-                0, // KeyContext.Address
-                1, // account
-                2, // keyIndex
-                expect.any(Uint8Array), // prefixed tx
-                0, // derivationType (Khovratovich)
+            // Verify keyStore.generate received correct derivation params
+            expect(mockKeyStoreGenerate).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    params: expect.objectContaining({
+                        parentKeyId: 'ks-root-1',
+                        account: 1,
+                        index: 2,
+                        context: 0, // KeyContext.Address
+                        derivation: 0, // Khovratovich
+                    }),
+                }),
+            )
+            expect(mockKeyStoreSign).toHaveBeenCalledWith(
+                'ks-derived-khov',
+                new Uint8Array([1]),
             )
         })
     })
