@@ -13,8 +13,8 @@ catalogs:
       specifier: 1.0.0-canary.12
       version: 1.0.0-canary.12
     '@algorandfoundation/react-native-keystore':
-      specifier: 1.0.0-canary.3
-      version: 1.0.0-canary.3
+      specifier: 1.0.0-canary.5
+      version: 1.0.0-canary.5
     '@algorandfoundation/wallet-provider':
       specifier: 1.0.0-canary.3
       version: 1.0.0-canary.3
@@ -774,7 +774,7 @@ importers:
         version: 1.0.0-canary.12(@tanstack/store@0.8.1)(before-after-hook@4.0.0)
       '@algorandfoundation/react-native-keystore':
         specifier: 'catalog:'
-        version: 1.0.0-canary.3(@tanstack/store@0.8.1)(before-after-hook@4.0.0)(expo-build-properties@1.0.10(expo@54.0.32))(expo@54.0.32)(react-native-nitro-modules@0.33.9(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native-quick-base64@2.2.2(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+        version: 1.0.0-canary.5(@tanstack/store@0.8.1)(before-after-hook@4.0.0)(expo-build-properties@1.0.10(expo@54.0.32))(expo@54.0.32)(react-native-nitro-modules@0.33.9(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native-quick-base64@2.2.2(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
       '@algorandfoundation/wallet-provider':
         specifier: 'catalog:'
         version: 1.0.0-canary.3
@@ -2124,8 +2124,8 @@ packages:
       '@algorandfoundation/log-store':
         optional: true
 
-  '@algorandfoundation/react-native-keystore@1.0.0-canary.3':
-    resolution: {integrity: sha512-Xh7iJ8UUNOti/AsFvflPQNMJqg8F4iAF6FYfGGulu28LLsfcm1qoksL9xHv5RPpiuRX4a7j5NWH4X86Y5Cgp0w==}
+  '@algorandfoundation/react-native-keystore@1.0.0-canary.5':
+    resolution: {integrity: sha512-yDWscs9SDIY7vgr/SbGWclp6/wnyfcePDK1EpPe2KZn7rG+IHZ7Vr8BKxsPbFhPI4Ub1qgDiPHRVGZUYco9oLw==}
 
   '@algorandfoundation/wallet-provider@1.0.0-canary.3':
     resolution: {integrity: sha512-rw978gF+n2stEhy9ysppr9uUVo6YgmeoWtRo2/sXj4/7Qn5risTdsihBuqKJ2ecG1pxQ+14BmOHzwrxsOXIcRA==}
@@ -10439,7 +10439,7 @@ snapshots:
       '@tanstack/store': 0.8.1
       before-after-hook: 4.0.0
 
-  '@algorandfoundation/react-native-keystore@1.0.0-canary.3(@tanstack/store@0.8.1)(before-after-hook@4.0.0)(expo-build-properties@1.0.10(expo@54.0.32))(expo@54.0.32)(react-native-nitro-modules@0.33.9(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native-quick-base64@2.2.2(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)':
+  '@algorandfoundation/react-native-keystore@1.0.0-canary.5(@tanstack/store@0.8.1)(before-after-hook@4.0.0)(expo-build-properties@1.0.10(expo@54.0.32))(expo@54.0.32)(react-native-nitro-modules@0.33.9(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native-quick-base64@2.2.2(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)':
     dependencies:
       '@algorandfoundation/dp256': 1.1.0
       '@algorandfoundation/keystore': 1.0.0-canary.10(@tanstack/store@0.8.1)(before-after-hook@4.0.0)
