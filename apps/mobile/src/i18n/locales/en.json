@@ -140,7 +140,11 @@
     },
     "camera": {
         "no_camera_device_found": {
-            "label": "No camera device found."
+            "title": "No camera device found or missing permissions.",
+            "body": "Please double check in your system settings that you have enabled camera permissions for the app."
+        },
+        "find_qr": {
+            "title": "Find a QR Code to Scan"
         }
     },
     "chart": {
