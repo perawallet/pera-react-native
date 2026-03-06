@@ -10,14 +10,4 @@
  limitations under the License
  */
 
-export * from './useSwaps'
-export * from './useAvailableAssetsQuery'
-export * from './useSwapHistoryQuery'
-export * from './useDistinctPairsHistoryQuery'
-export * from './useProvidersQuery'
-export * from './useTopPairsQuery'
-export * from './useCreateQuotesMutation'
-export * from './useCalculatePeraFeeMutation'
-export * from './useCalculateSwapAmountMutation'
-export * from './usePrepareTransactionsMutation'
-export * from './useUpdateSwapStatusMutation'
+export { fetchProviders, fetchTopPairs } from './endpoints'
