@@ -10,21 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    walletNameContainer: {
-        backgroundColor: theme.colors.layerGrayLighter,
-        borderRadius: theme.spacing.sm,
-        paddingVertical: theme.spacing.md,
-        flexDirection: 'row',
-        flexWrap: 'nowrap',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: theme.spacing.sm,
-    },
-    nameText: {
-        color: theme.colors.textGray,
-        alignSelf: 'center',
-    },
-}))
+export { MultisigStackNavigator } from './routes'
+export type { MultisigStackParamList } from './routes'

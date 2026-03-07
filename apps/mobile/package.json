@@ -42,6 +42,7 @@
     "@perawallet/wallet-core-currencies": "workspace:*",
     "@perawallet/wallet-core-kms": "workspace:*",
     "@perawallet/wallet-core-messages": "workspace:*",
+    "@perawallet/wallet-core-multisig": "workspace:*",
     "@perawallet/wallet-extension-platform": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "@perawallet/wallet-core-polling": "workspace:*",

@@ -13,18 +13,41 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    walletNameContainer: {
-        backgroundColor: theme.colors.layerGrayLighter,
-        borderRadius: theme.spacing.sm,
-        paddingVertical: theme.spacing.md,
+    container: {
+        padding: theme.spacing.xl,
+        gap: theme.spacing.xl,
+        alignItems: 'center',
+    },
+    icon: {
+        marginVertical: theme.spacing.md,
+    },
+    warningItem: {
         flexDirection: 'row',
-        flexWrap: 'nowrap',
+        alignItems: 'flex-start',
+        gap: theme.spacing.lg,
+        width: '100%',
+        paddingHorizontal: theme.spacing.md,
+    },
+    numberBadge: {
+        width: theme.spacing.xxl,
+        height: theme.spacing.xxl,
+        borderRadius: theme.spacing.xl,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGray,
         alignItems: 'center',
         justifyContent: 'center',
-        gap: theme.spacing.sm,
     },
-    nameText: {
+    numberText: {
         color: theme.colors.textGray,
-        alignSelf: 'center',
+    },
+    warningText: {
+        flex: 1,
+    },
+    actions: {
+        gap: theme.spacing.md,
+        width: '100%',
+    },
+    linkContainer: {
+        alignSelf: 'flex-start',
     },
 }))

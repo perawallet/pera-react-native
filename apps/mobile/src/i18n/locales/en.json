@@ -376,6 +376,43 @@
             "insufficient_algo_reject": "You don't have enough ALGO to reject this asset. Add funds to cover the transaction fees."
         }
     },
+    "multisig": {
+        "create": {
+            "title": "Create a\nJoint Account",
+            "description": "Choose the accounts that will jointly manage and sign transactions for this account.",
+            "accounts_section": "Accounts",
+            "accounts_subtitle": "You need add at least two accounts",
+            "add_account": "Add Account"
+        },
+        "add_participant": {
+            "title": "Add Account",
+            "joint_account_error": "Cannot add joint account",
+            "joint_account_error_body": "Joint accounts cannot be added as participants in another joint account."
+        },
+        "threshold": {
+            "title": "Set a Threshold",
+            "description": "You need to set the minimum number of accounts required to confirm a transaction.",
+            "number_of_accounts": "Number of accounts",
+            "required_signatures": "Threshold"
+        },
+        "before_you_create": {
+            "title": "Before You Create a Joint Account",
+            "warning_participants": "Once you create a joint account, you cannot change the participants.",
+            "warning_rekey": "Once you create a joint account, rekeying any of the participating accounts may result in losing access.",
+            "learn_more": "Learn more",
+            "proceed": "Proceed",
+            "go_back": "Go Back and Edit"
+        },
+        "name": {
+            "title": "Name Your Account",
+            "description": "Name your account to easily identify it while using the Pera Wallet. These names are stored locally, and can only be seen by you.",
+            "default_name": "Joint Account",
+            "finish_button": "Finish Account Creation",
+            "creating": "Creating joint account...",
+            "error_title": "Failed to create account",
+            "error_message": "Something went wrong while creating the joint account: {{error}}"
+        }
+    },
     "onboarding": {
         "import_options": {
             "title": "Select your Mnemonic type",
@@ -468,6 +505,8 @@
             "create_algo25_option_title": "Create an Algo25 Account",
             "create_algo25_option_description": "Legacy format that is specific to Algorand",
             "terms_and_privacy": "By adding a wallet, you agree to Pera Wallet's <0>Terms and Conditions</0> and <1>Privacy Policy</1>",
+            "create_joint_account_option_title": "Create a Joint Account",
+            "create_joint_account_option_description": "Create a shared multisig account with multiple participants",
             "see_other_options": "See other options"
         },
         "select_hd_wallet": {
