@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { memo } from 'react'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useStyles } from './styles'
 
@@ -24,7 +25,7 @@ const padArrangment = [
     ['.', '0', undefined],
 ]
 
-export const NumberPad = ({ onPress }: NumberPadProps) => {
+export const NumberPad = memo(({ onPress }: NumberPadProps) => {
     const styles = useStyles()
     return (
         <PWView style={styles.container}>
@@ -49,4 +50,4 @@ export const NumberPad = ({ onPress }: NumberPadProps) => {
             ))}
         </PWView>
     )
-}
+})

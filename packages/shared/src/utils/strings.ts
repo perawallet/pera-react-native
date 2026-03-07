@@ -102,6 +102,18 @@ export const formatWithUnits = (
     return { amount: resultAmount, unit: resultUnit ?? '' }
 }
 
+export const formatRawNumberInput = (
+    rawValue: string,
+    locale: string = 'en-US',
+) => {
+    const formatter = Intl.NumberFormat(locale, { style: 'decimal' })
+    const decimalSeparator = formatter.format(1.1).charAt(1)
+    const parts = rawValue.split('.')
+    const formattedInteger = formatter.format(Number(parts[0] || '0'))
+    const fraction = parts.length > 1 ? decimalSeparator + parts[1] : ''
+    return `${formattedInteger}${fraction}`
+}
+
 export const formatCurrency = (
     value: Decimal | string | number,
     precision: number,

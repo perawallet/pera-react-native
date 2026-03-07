@@ -11,7 +11,7 @@
  */
 
 import Decimal from 'decimal.js'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import {
     useAccountBalancesQuery,
     useSelectedAccount,
@@ -40,6 +40,14 @@ export const useInputScreen = () => {
     const selectedAccount = useSelectedAccount()
     const { selectedAsset, setAmount, setIsCloseAccount } = useSendFunds()
     const [value, setValue] = useState<string | null>()
+    const valueRef = useRef<string | null | undefined>(value)
+    const setValueAndRef = useCallback(
+        (newValue: string | null | undefined) => {
+            valueRef.current = newValue
+            setValue(newValue)
+        },
+        [],
+    )
     const { showToast } = useToast()
     const { t } = useLanguage()
 
@@ -112,8 +120,8 @@ export const useInputScreen = () => {
     }, [selectedAsset?.assetId, accountInformation])
 
     const setMax = useCallback(() => {
-        setValue(totalBalance.toString())
-    }, [totalBalance])
+        setValueAndRef(totalBalance.toString())
+    }, [totalBalance, setValueAndRef])
 
     const [isMaxExceeded, setIsMaxExceeded] = useState(false)
     const [isCloseAccountEligible, setIsCloseAccountEligible] = useState(false)
@@ -191,49 +199,61 @@ export const useInputScreen = () => {
         setIsCloseAccountEligible(false)
         setIsCloseAccount(true)
         setAmount(closeAmount)
-        setValue(closeAmount.toString())
+        setValueAndRef(closeAmount.toString())
         navigation.navigate('SelectDestination')
-    }, [totalBalance, params, navigation, setAmount, setIsCloseAccount])
+    }, [
+        totalBalance,
+        params,
+        navigation,
+        setAmount,
+        setIsCloseAccount,
+        setValueAndRef,
+    ])
 
     const handleContinuePastMbr = useCallback(() => {
         setIsMaxExceeded(false)
         setAmount(maxAmount)
-        setValue(maxAmount.toString())
+        setValueAndRef(maxAmount.toString())
         navigation.navigate('SelectDestination')
-    }, [maxAmount, navigation, setAmount])
+    }, [maxAmount, navigation, setAmount, setValueAndRef])
+
+    const assetDecimalsRef = useRef(asset?.decimals)
+    assetDecimalsRef.current = asset?.decimals
 
     const handleKey = useCallback(
         (key?: string) => {
+            const current = valueRef.current ?? null
             if (key) {
-                if (key === '.' && (value ?? '').includes('.')) {
+                if (key === '.' && (current ?? '').includes('.')) {
                     return
                 }
-                if (key === '.' && !value) {
-                    setValue('0.')
+                if (key === '.' && !current) {
+                    setValueAndRef('0.')
                     return
                 }
-                const newValue = (value ?? '') + key
+                const newValue = (current ?? '') + key
                 const decimalIndex = newValue.indexOf('.')
                 if (
-                    asset &&
+                    assetDecimalsRef.current != null &&
                     decimalIndex !== -1 &&
-                    newValue.length - decimalIndex - 1 > asset.decimals
+                    newValue.length - decimalIndex - 1 >
+                        assetDecimalsRef.current
                 ) {
                     return
                 }
-                setValue(newValue)
+                setValueAndRef(newValue)
             } else {
-                if (value?.length) {
-                    const newValue = value.substring(0, value.length - 1)
+                if (current?.length) {
+                    const newValue = current.substring(0, current.length - 1)
                     if (newValue.length) {
-                        setValue(newValue)
+                        setValueAndRef(newValue)
                     } else {
-                        setValue(null)
+                        setValueAndRef(null)
                     }
                 }
             }
         },
-        [value, setValue, asset?.decimals],
+        [setValueAndRef],
     )
 
     return {
@@ -254,7 +274,7 @@ export const useInputScreen = () => {
         handleConfirmCloseAccount,
 
         //exposed for testing only
-        setCryptoValue: setValue,
+        setCryptoValue: setValueAndRef,
         totalBalance,
         maxAmount,
     }
