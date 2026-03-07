@@ -17,6 +17,7 @@ export * from './algorandClient'
 export * from './addresses'
 export * from './transactions'
 export * from './json'
+export * from './multisig'
 
 export const baseUnitsToDisplayUnits = (
     amount: number | bigint | Decimal | string,

@@ -38,12 +38,7 @@ export default defineConfig({
             external: [
                 'react',
                 'react/jsx-runtime',
-                'zustand',
                 '@tanstack/react-query',
-                '@perawallet/wallet-core-accounts',
-                '@perawallet/wallet-core-config',
-                '@perawallet/wallet-core-multisig',
-                '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-core-shared',
             ],
         },
