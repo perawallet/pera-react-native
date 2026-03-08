@@ -18,5 +18,10 @@ export type PWScrollViewProps = ScrollViewProps & {
 }
 
 export const PWScrollView = ({ testID, ...props }: PWScrollViewProps) => {
-    return <ScrollView {...getTestProps(testID)} {...props} />
+    return (
+        <ScrollView
+            {...getTestProps(testID)}
+            {...props}
+        />
+    )
 }
