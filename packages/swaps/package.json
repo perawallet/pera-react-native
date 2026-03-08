@@ -18,10 +18,12 @@
   },
   "dependencies": {
     "@babel/runtime": "catalog:",
+    "@perawallet/wallet-core-blockchain": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
     "zustand": "catalog:",
+    "zod": "catalog:",
     "@tanstack/react-query": "catalog:"
   },
   "devDependencies": {

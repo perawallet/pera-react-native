@@ -10,14 +10,21 @@
  limitations under the License
  */
 
-export * from './useSwaps'
-export * from './useAvailableAssetsQuery'
-export * from './useSwapHistoryQuery'
-export * from './useDistinctPairsHistoryQuery'
-export * from './useProvidersQuery'
-export * from './useTopPairsQuery'
-export * from './useCreateQuotesMutation'
-export * from './useCalculatePeraFeeMutation'
-export * from './useCalculateSwapAmountMutation'
-export * from './usePrepareTransactionsMutation'
-export * from './useUpdateSwapStatusMutation'
+import { useMutation } from '@tanstack/react-query'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { updateSwapStatus } from '../api'
+import type { SwapStatusUpdateRequest } from '../api'
+
+type UpdateSwapStatusParams = {
+    swapId: string
+    data: SwapStatusUpdateRequest
+}
+
+export const useUpdateSwapStatusMutation = () => {
+    const { network } = useNetwork()
+
+    return useMutation({
+        mutationFn: ({ swapId, data }: UpdateSwapStatusParams) =>
+            updateSwapStatus(swapId, data, network),
+    })
+}

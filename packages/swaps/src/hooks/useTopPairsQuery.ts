@@ -10,14 +10,17 @@
  limitations under the License
  */
 
-export * from './useSwaps'
-export * from './useAvailableAssetsQuery'
-export * from './useSwapHistoryQuery'
-export * from './useDistinctPairsHistoryQuery'
-export * from './useProvidersQuery'
-export * from './useTopPairsQuery'
-export * from './useCreateQuotesMutation'
-export * from './useCalculatePeraFeeMutation'
-export * from './useCalculateSwapAmountMutation'
-export * from './usePrepareTransactionsMutation'
-export * from './useUpdateSwapStatusMutation'
+import { useQuery } from '@tanstack/react-query'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { fetchTopPairs } from '../api'
+import { swapQueryKeys } from './querykeys'
+
+export const useTopPairsQuery = (limit?: number, enabled: boolean = true) => {
+    const { network } = useNetwork()
+
+    return useQuery({
+        queryKey: swapQueryKeys.topPairs(limit, network),
+        queryFn: () => fetchTopPairs(network, limit),
+        enabled,
+    })
+}

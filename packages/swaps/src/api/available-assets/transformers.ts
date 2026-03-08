@@ -10,14 +10,18 @@
  limitations under the License
  */
 
-export * from './useSwaps'
-export * from './useAvailableAssetsQuery'
-export * from './useSwapHistoryQuery'
-export * from './useDistinctPairsHistoryQuery'
-export * from './useProvidersQuery'
-export * from './useTopPairsQuery'
-export * from './useCreateQuotesMutation'
-export * from './useCalculatePeraFeeMutation'
-export * from './useCalculateSwapAmountMutation'
-export * from './usePrepareTransactionsMutation'
-export * from './useUpdateSwapStatusMutation'
+import type { DexSwapAsset } from '../../models'
+import type { DexSwapAssetApiResponse } from './schema'
+
+export const transformDexSwapAsset = (
+    data: DexSwapAssetApiResponse,
+): DexSwapAsset => ({
+    assetId: data.asset_id ?? 0,
+    logo: data.logo ?? undefined,
+    name: data.name,
+    unitName: data.unit_name,
+    total: data.total,
+    decimals: data.fraction_decimals,
+    verificationTier: data.verification_tier,
+    usdValue: data.usd_value,
+})
