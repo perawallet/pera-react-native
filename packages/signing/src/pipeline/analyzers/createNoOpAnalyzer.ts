@@ -10,10 +10,22 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-signing'
+import type { DataAnalyzer, SignableAnalysis } from '../types'
 
-export * from './constants'
-export * from './models'
-export * from './hooks'
-export * from './utils'
-export * from './pipeline'
+/**
+ * Creates a no-op analyzer that skips analysis.
+ * Use for internal/trusted transactions where analysis is not needed.
+ */
+export const createNoOpAnalyzer = (): DataAnalyzer => {
+    return {
+        analyze: async (): Promise<SignableAnalysis> => {
+            return {
+                totalFees: 0n,
+                transactionSummaries: [],
+                warnings: [],
+                signableAddresses: [],
+                riskLevel: 'low',
+            }
+        },
+    }
+}

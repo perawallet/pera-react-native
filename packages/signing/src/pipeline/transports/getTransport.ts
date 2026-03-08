@@ -1,0 +1,83 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { isMultisigAccount } from '@perawallet/wallet-core-accounts'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import type { DataTransport, SourceMetadata } from '../types'
+import {
+    createAlgodTransport,
+    type AlgokitClientInterface,
+} from './createAlgodTransport'
+import { createWalletConnectTransport } from './createWalletConnectTransport'
+import {
+    createMultisigProposeTransport,
+    type ProposeSignRequestFn,
+} from './createMultisigProposeTransport'
+import {
+    createMultisigCosignTransport,
+    type AddSignaturesFn,
+} from './createMultisigCosignTransport'
+
+/**
+ * Options for creating the transport selector
+ */
+export interface CreateTransportSelectorOptions {
+    /** AlgorandClient for direct submission */
+    algokit: AlgokitClientInterface
+    /** Function to encode signed transactions */
+    encodeSignedTransactions: (txns: PeraSignedTransaction[]) => Uint8Array[]
+    /** Function to propose a multisig transaction */
+    proposeSignRequest: ProposeSignRequestFn
+    /** Function to add signatures to an existing request */
+    addSignatures: AddSignaturesFn
+}
+
+/**
+ * Creates a function that selects the appropriate transport based on
+ * source type and account type.
+ */
+export const createTransportSelector = (
+    options: CreateTransportSelectorOptions,
+): ((source: SourceMetadata, account: WalletAccount) => DataTransport) => {
+    const algodTransport = createAlgodTransport(
+        options.algokit,
+        options.encodeSignedTransactions,
+    )
+    const walletConnectTransport = createWalletConnectTransport()
+    const multisigProposeTransport = createMultisigProposeTransport(
+        options.proposeSignRequest,
+    )
+    const multisigCosignTransport = createMultisigCosignTransport(
+        options.addSignatures,
+    )
+
+    return (source: SourceMetadata, account: WalletAccount): DataTransport => {
+        // WalletConnect requests always go back to dApp
+        if (source.type === 'walletconnect') {
+            return walletConnectTransport
+        }
+
+        // Multisig co-sign adds signatures to existing request
+        if (source.type === 'multisig-cosign') {
+            return multisigCosignTransport
+        }
+
+        // Multisig account with local source = propose new request
+        if (isMultisigAccount(account) && source.type === 'local') {
+            return multisigProposeTransport
+        }
+
+        // Everything else goes directly to algod
+        return algodTransport
+    }
+}

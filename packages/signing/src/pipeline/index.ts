@@ -10,10 +10,23 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-signing'
+// Core types
+export * from './types'
 
-export * from './constants'
-export * from './models'
-export * from './hooks'
-export * from './utils'
-export * from './pipeline'
+// Errors
+export * from './errors'
+
+// Pipeline factory
+export { createPipeline } from './createPipeline'
+
+// Sources
+export * from './sources'
+
+// Analyzers
+export * from './analyzers'
+
+// Signing strategies
+export * from './signing'
+
+// Transports
+export * from './transports'
