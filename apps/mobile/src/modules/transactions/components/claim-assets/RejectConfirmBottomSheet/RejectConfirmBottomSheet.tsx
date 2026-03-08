@@ -22,6 +22,11 @@ import { useStyles } from './styles'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { useMemo } from 'react'
+import {
+    DEFAULT_PRECISION,
+    formatCurrency,
+} from '@perawallet/wallet-core-shared'
+import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 export type RejectConfirmBottomSheetProps = {
     isOpen: boolean
@@ -38,10 +43,19 @@ export const RejectConfirmBottomSheet = ({
 }: RejectConfirmBottomSheetProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
+    const deviceInfo = usePeraProvider().deviceInfo
 
     const algoDisplayAmount = useMemo(() => {
-        return baseUnitsToDisplayUnits(algoRefundAmount, ALGO_ASSET.decimals)
-    }, [algoRefundAmount])
+        return formatCurrency(
+            baseUnitsToDisplayUnits(algoRefundAmount, ALGO_ASSET.decimals),
+            ALGO_ASSET.decimals,
+            'ALGO',
+            deviceInfo.getDeviceLocale(),
+            false,
+            false,
+            DEFAULT_PRECISION,
+        )
+    }, [algoRefundAmount, deviceInfo.getDeviceLocale])
 
     return (
         <PWBottomSheet
