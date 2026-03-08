@@ -11,9 +11,12 @@
  */
 
 import { ScrollView, ScrollViewProps } from 'react-native'
+import { getTestProps } from '@utils/test-id-helper'
 
-export type PWScrollViewProps = ScrollViewProps
+export type PWScrollViewProps = ScrollViewProps & {
+    testID?: string
+}
 
-export const PWScrollView = (props: PWScrollViewProps) => {
-    return <ScrollView {...props} />
+export const PWScrollView = ({ testID, ...props }: PWScrollViewProps) => {
+    return <ScrollView {...getTestProps(testID)} {...props} />
 }

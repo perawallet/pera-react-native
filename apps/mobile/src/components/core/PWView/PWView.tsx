@@ -12,15 +12,19 @@
 
 import { useStyles } from './styles'
 import { View, ViewProps } from 'react-native'
+import { getTestProps } from '@utils/test-id-helper'
 
-export type PWViewProps = ViewProps
+export type PWViewProps = ViewProps & {
+    testID?: string
+}
 
-export const PWView = ({ children, style, ...props }: PWViewProps) => {
+export const PWView = ({ children, style, testID, ...props }: PWViewProps) => {
     const styles = useStyles(props)
 
     return (
         <View
             style={[styles.defaultStyle, style]}
+            {...getTestProps(testID)}
             {...props}
         >
             {children}

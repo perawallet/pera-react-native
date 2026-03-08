@@ -30,7 +30,6 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { AccountStackParamsList } from '@modules/accounts/routes'
 import { PWView, PWText } from '@components/core'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { getTestProps } from '@utils/test-id-helper'
 
 export type AssetDetailsScreenProps = NativeStackScreenProps<
     AccountStackParamsList,
@@ -104,7 +103,7 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
     return (
         <PWView
             style={styles.contentContainer}
-            {...getTestProps('asset_details_screen')}
+            testID='asset_details_screen'
         >
             <Tab.Navigator screenOptions={{ swipeEnabled }}>
                 <Tab.Screen

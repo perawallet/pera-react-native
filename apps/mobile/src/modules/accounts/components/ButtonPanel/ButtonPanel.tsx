@@ -13,7 +13,6 @@
 import { useStyles } from './styles'
 import { PWView } from '@components/core'
 import { RoundButton } from '@components/RoundButton'
-import { getTestProps } from '@utils/test-id-helper'
 import { useLanguage } from '@hooks/useLanguage'
 
 export type ButtonPanelProps = {
@@ -35,35 +34,35 @@ export const ButtonPanel = ({
     return (
         <PWView
             style={themeStyle.container}
-            {...getTestProps('button_panel')}
+            testID='button_panel'
         >
             <RoundButton
                 title={t('account_details.button_panel.swap')}
                 icon='swap'
                 variant='primary'
                 onPress={onSwap}
-                {...getTestProps('swap_button')}
+                testID='swap_button'
             />
             <RoundButton
                 title={t('account_details.button_panel.send')}
                 icon='outflow'
                 variant='secondary'
                 onPress={onSend}
-                {...getTestProps('send_button')}
+                testID='send_button'
             />
             <RoundButton
                 title={t('account_details.button_panel.receive')}
                 icon='inflow'
                 variant='secondary'
                 onPress={onReceive}
-                {...getTestProps('receive_button')}
+                testID='receive_button'
             />
             <RoundButton
                 title={t('account_details.button_panel.more')}
                 icon='ellipsis'
                 variant='secondary'
                 onPress={onMore}
-                {...getTestProps('more_button')}
+                testID='more_button'
             />
         </PWView>
     )

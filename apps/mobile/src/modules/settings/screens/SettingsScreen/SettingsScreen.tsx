@@ -16,10 +16,10 @@ import {
     PWListItem,
     PWText,
     PWView,
+    PWScrollView,
 } from '@components/core'
 
 import { useStyles } from './styles'
-import { ScrollView } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppVersion } from '@modules/settings/components/AppVersion'
 import { useSettingsScreen } from './useSettingsScreen'
@@ -46,10 +46,10 @@ export const SettingsScreen = () => {
     } = useSettingsScreen()
 
     return (
-        <ScrollView
+        <PWScrollView
             style={styles.scrollView}
             showsVerticalScrollIndicator={false}
-            {...getTestProps('settings_screen')}
+            testID='settings_screen'
         >
             <PWView style={styles.sectionContainer}>
                 {settingsOptions.map(item => (
@@ -87,6 +87,6 @@ export const SettingsScreen = () => {
                 isOpen={isRatingModalOpen}
                 onClose={closeRatingModal}
             />
-        </ScrollView>
+        </PWScrollView>
     )
 }

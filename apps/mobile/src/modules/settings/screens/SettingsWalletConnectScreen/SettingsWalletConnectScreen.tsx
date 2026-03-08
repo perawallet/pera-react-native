@@ -26,7 +26,6 @@ import { useState } from 'react'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useNetwork } from '@perawallet/wallet-core-platform-integration'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { getTestProps } from '@utils/test-id-helper'
 
 const renderItem = ({ item }: { item: WalletConnectConnection }) => {
     return <WalletConnectSessionItem session={item} />
@@ -46,11 +45,12 @@ export const SettingsWalletConnectScreen = () => {
     useNavigationHeader({
         title: t('settings.main.wallet_connect_title'),
         right: (
-            <PWIcon
-                name='camera'
-                onPress={scannerState.open}
-                {...getTestProps('wallet_connect_qr_scanner_button')}
-            />
+            <PWView testID='wallet_connect_qr_scanner_button'>
+                <PWIcon
+                    name='camera'
+                    onPress={scannerState.open}
+                />
+            </PWView>
         ),
         enabled: connections.length > 0,
     })
@@ -69,7 +69,7 @@ export const SettingsWalletConnectScreen = () => {
     return (
         <PWView
             style={styles.container}
-            {...getTestProps('wallet_connect_screen')}
+            testID='wallet_connect_screen'
         >
             <PWFlatList
                 contentContainerStyle={styles.listContainer}
@@ -86,9 +86,7 @@ export const SettingsWalletConnectScreen = () => {
                                 title={t('walletconnect.settings.empty_button')}
                                 variant='primary'
                                 onPress={scannerState.open}
-                                {...getTestProps(
-                                    'wallet_connect_connect_button',
-                                )}
+                                testID='wallet_connect_connect_button'
                             />
                         }
                     />
@@ -100,7 +98,7 @@ export const SettingsWalletConnectScreen = () => {
                             title={t('walletconnect.settings.clear_all')}
                             variant='secondary'
                             onPress={deleteState.open}
-                            {...getTestProps('wallet_connect_clear_all_button')}
+                            testID='wallet_connect_clear_all_button'
                         />
                     ) : null
                 }
