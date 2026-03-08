@@ -10,10 +10,5 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-signing'
-
-export * from './constants'
-export * from './models'
-export * from './hooks'
-export * from './utils'
-export * from './pipeline'
+// Queue implementation will be added in Phase 4
+// For now, the pipeline executes immediately

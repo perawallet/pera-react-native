@@ -1,0 +1,68 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import type {
+    DataTransport,
+    SigningResult,
+    SourceMetadata,
+    TransportResult,
+} from '../types'
+import { TransportError } from '../errors'
+
+/**
+ * Creates a transport that sends signed data back to a WalletConnect dApp.
+ * The dApp is responsible for submitting to the network.
+ */
+export const createWalletConnectTransport = (): DataTransport => {
+    return {
+        send: async (
+            result: SigningResult,
+            source: SourceMetadata,
+            _jointAccountAddress?: string,
+        ): Promise<TransportResult> => {
+            // Verify we have callback functions
+            if (!source.callbacks?.approve) {
+                throw new TransportError(
+                    'No approve callback provided for WalletConnect transport',
+                )
+            }
+
+            if (!source.requestId) {
+                throw new TransportError(
+                    'No request ID provided for WalletConnect transport',
+                )
+            }
+
+            try {
+                // Call the approve callback with the signing result
+                await source.callbacks.approve(result)
+
+                return {
+                    type: 'callback-sent',
+                    requestId: source.requestId,
+                }
+            } catch (error) {
+                // Try to call error callback if available
+                if (source.callbacks?.error) {
+                    await source.callbacks.error(
+                        error instanceof Error ? error.message : String(error),
+                    )
+                }
+
+                throw new TransportError(
+                    error instanceof Error ? error.message : String(error),
+                    error instanceof Error ? error : undefined,
+                )
+            }
+        },
+    }
+}

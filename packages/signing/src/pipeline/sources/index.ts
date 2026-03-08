@@ -10,10 +10,17 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-signing'
+export {
+    createLocalSource,
+    createExternalSource,
+    createFetchSource,
+} from './factories'
 
-export * from './constants'
-export * from './models'
-export * from './hooks'
-export * from './utils'
-export * from './pipeline'
+export { createPaymentSource } from './createPaymentSource'
+export { createExpressSendSource } from './createExpressSendSource'
+
+export type {
+    PaymentSourceParams,
+    ExpressSendSourceParams,
+    SourceDependencies,
+} from './types'

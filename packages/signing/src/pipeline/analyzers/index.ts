@@ -10,10 +10,6 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-signing'
-
-export * from './constants'
-export * from './models'
-export * from './hooks'
-export * from './utils'
-export * from './pipeline'
+export { createStandardAnalyzer } from './createStandardAnalyzer'
+export { createNoOpAnalyzer } from './createNoOpAnalyzer'
+export { createChainedAnalyzer } from './createChainedAnalyzer'

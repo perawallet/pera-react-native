@@ -10,10 +10,14 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-signing'
+export {
+    useTransactionPipeline,
+    type UseTransactionPipelineOptions,
+    type UseTransactionPipelineResult,
+} from './useTransactionPipeline'
 
-export * from './constants'
-export * from './models'
-export * from './hooks'
-export * from './utils'
-export * from './pipeline'
+export {
+    useSendPipeline,
+    type SendSourceParams,
+    type UseSendPipelineOptions,
+} from './useSendPipeline'
