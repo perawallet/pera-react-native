@@ -61,18 +61,23 @@ export const useCreateAccount = () => {
 
     const createHdWalletAccount = async ({
         walletId,
+        entropyKeyId: providedEntropyKeyId,
         account,
         keyIndex,
     }: {
         walletId?: string
+        entropyKeyId?: string
         account: number
         keyIndex: number
     }) => {
         const rootWalletId = walletId ?? generateOrderedUniqueId()
         let rootKey = getKey(rootWalletId)
+        let entropyKeyId = providedEntropyKeyId
 
         if (!rootKey) {
-            rootKey = await createHDWalletKey({ id: rootWalletId })
+            const result = await createHDWalletKey({ id: rootWalletId })
+            rootKey = result.keyPair
+            entropyKeyId = result.entropyKeyId
         }
 
         if (!rootKey?.id || !rootKey.keystoreKeyId) {
@@ -105,6 +110,7 @@ export const useCreateAccount = () => {
                         keystoreKeyId: derivedKeystoreKeyId,
                     },
                     keyPairId: rootWalletId,
+                    entropyKeyId,
                 } satisfies WalletAccount
             },
         )

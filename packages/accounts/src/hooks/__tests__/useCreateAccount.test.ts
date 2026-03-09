@@ -109,10 +109,13 @@ describe('useCreateAccount', () => {
         kmsMock.getKey.mockReturnValue(null)
         kmsMock.getKeyOrThrow.mockReturnValue(null)
         kmsMock.createHDWalletKey.mockResolvedValue({
-            id: 'WALLET1',
-            type: KeyType.HDWalletRootKey,
-            publicKey: '',
-            keystoreKeyId: 'ks-root-1',
+            keyPair: {
+                id: 'WALLET1',
+                type: KeyType.HDWalletRootKey,
+                publicKey: '',
+                keystoreKeyId: 'ks-root-1',
+            },
+            entropyKeyId: 'ks-entropy-1',
         })
         kmsMock.createAlgo25Key.mockResolvedValue({
             keyPair: {
@@ -165,10 +168,11 @@ describe('useCreateAccount', () => {
         expect(created.id).toBe('ACC1')
         expect(created.address).toBeTruthy()
         expect(created.type).toBe('hdWallet')
+        expect(created.entropyKeyId).toBe('ks-entropy-1')
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
 
-    test('creates account with existing key', async () => {
+    test('creates account with existing key without entropyKeyId', async () => {
         kmsMock.getKey.mockReturnValueOnce({
             id: 'EXISTING_WALLET',
             type: KeyType.HDWalletRootKey,
@@ -191,6 +195,7 @@ describe('useCreateAccount', () => {
 
         expect(kmsMock.createHDWalletKey).not.toHaveBeenCalled()
         expect(created.keyPairId).toBe('EXISTING_WALLET')
+        expect(created.entropyKeyId).toBeUndefined()
     })
 
     test('throws error when key derivation fails', async () => {

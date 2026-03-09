@@ -17,6 +17,7 @@ import { InvalidKeyError, KeyNotFoundError } from '../errors'
 import { useAlgo25 } from './useAlgo25'
 export type { Algo25KeyResult } from './useAlgo25'
 import { useHDWallet } from './useHDWallet'
+export type { HDWalletKeyResult } from './useHDWallet'
 import { useKMSService } from './useKMSServices'
 
 export const useKMS = () => {

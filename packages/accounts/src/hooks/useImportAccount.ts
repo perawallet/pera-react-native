@@ -27,9 +27,12 @@ export const useImportAccount = () => {
         type: ImportAccountType
     }) => {
         if (type === 'hdWallet') {
-            const key = await createHDWalletKey({ mnemonic })
+            const { keyPair, entropyKeyId } = await createHDWalletKey({
+                mnemonic,
+            })
             return await createHdWalletAccount({
-                walletId: key.id,
+                walletId: keyPair.id,
+                entropyKeyId,
                 account: 0,
                 keyIndex: 0,
             })

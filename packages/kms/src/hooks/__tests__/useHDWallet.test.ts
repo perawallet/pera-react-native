@@ -13,6 +13,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useHDWallet } from '../useHDWallet'
+import type { HDWalletKeyResult } from '../useHDWallet'
 import { KeyType, KeyPair } from '../../models'
 import { KeyManagementError } from '../../errors'
 
@@ -110,14 +111,16 @@ describe('useHDWallet', () => {
                 entropy: 'abcdef01',
             })
             mockFromSeed.mockReturnValue(mockRootKey)
-            mockKeyStoreImport.mockResolvedValue('ks-root-1')
+            mockKeyStoreImport
+                .mockResolvedValueOnce('ks-root-1')
+                .mockResolvedValueOnce('ks-root-1-entropy')
             mockSaveKey.mockImplementation(async (key: KeyPair) => key)
         })
 
-        test('creates an HD wallet root key', async () => {
+        test('creates an HD wallet root key and returns entropyKeyId', async () => {
             const { result } = renderHook(() => useHDWallet())
 
-            let keyResult: KeyPair | undefined
+            let keyResult: HDWalletKeyResult | undefined
             await act(async () => {
                 keyResult = await result.current.createHDWalletKey({
                     id: 'hd-1',
@@ -125,13 +128,14 @@ describe('useHDWallet', () => {
                 })
             })
 
-            expect(keyResult!.id).toBe('hd-1')
-            expect(keyResult!.publicKey).toBe('')
-            expect(keyResult!.type).toBe(KeyType.HDWalletRootKey)
-            expect(keyResult!.keystoreKeyId).toBe('ks-root-1')
+            expect(keyResult!.keyPair.id).toBe('hd-1')
+            expect(keyResult!.keyPair.publicKey).toBe('')
+            expect(keyResult!.keyPair.type).toBe(KeyType.HDWalletRootKey)
+            expect(keyResult!.keyPair.keystoreKeyId).toBe('ks-root-1')
+            expect(keyResult!.entropyKeyId).toBe('ks-root-1-entropy')
         })
 
-        test('imports root key into keystore with entropy in metadata', async () => {
+        test('imports root key without entropy in metadata and entropy as separate key', async () => {
             const { result } = renderHook(() => useHDWallet())
 
             await act(async () => {
@@ -142,42 +146,47 @@ describe('useHDWallet', () => {
             })
 
             expect(mockFromSeed).toHaveBeenCalledTimes(1)
-            expect(mockKeyStoreImport).toHaveBeenCalledWith(
+            expect(mockKeyStoreImport).toHaveBeenCalledTimes(2)
+
+            // First call: root key without entropy in metadata
+            expect(mockKeyStoreImport).toHaveBeenNthCalledWith(
+                1,
                 {
                     type: 'hd-root-key',
                     algorithm: 'raw',
                     extractable: true,
                     keyUsages: ['deriveKey', 'deriveBits'],
                     privateKey: mockRootKey,
-                    metadata: { name: 'hd-1', entropy: 'abcdef01' },
+                    metadata: { name: 'hd-1' },
                 },
                 'raw',
             )
-        })
+            // Ensure no entropy in root key metadata
+            const rootKeyArg = mockKeyStoreImport.mock.calls[0][0]
+            expect(rootKeyArg.metadata?.entropy).toBeUndefined()
 
-        test('does not use secure storage', async () => {
-            const { result } = renderHook(() => useHDWallet())
-
-            await act(async () => {
-                await result.current.createHDWalletKey({
-                    id: 'hd-1',
-                    mnemonic: 'my mnemonic',
-                })
-            })
-
-            // All data stored in keystore metadata, no secure storage calls
-            expect(mockKeyStoreImport).toHaveBeenCalledTimes(1)
+            // Second call: entropy key with raw entropy bytes
+            expect(mockKeyStoreImport).toHaveBeenNthCalledWith(
+                2,
+                expect.objectContaining({
+                    id: 'hd-1-entropy',
+                    type: 'hd-derived-ed25519',
+                    extractable: true,
+                    privateKey: expect.any(Uint8Array),
+                }),
+                'raw',
+            )
         })
 
         test('generates uuid when id is not provided', async () => {
             const { result } = renderHook(() => useHDWallet())
 
-            let keyResult: KeyPair | undefined
+            let keyResult: HDWalletKeyResult | undefined
             await act(async () => {
                 keyResult = await result.current.createHDWalletKey()
             })
 
-            expect(keyResult!.id).toBe('mock-uuid-v7')
+            expect(keyResult!.keyPair.id).toBe('mock-uuid-v7')
         })
 
         test('zeros out the master seed and root key after saving', async () => {
@@ -222,6 +231,30 @@ describe('useHDWallet', () => {
             })
 
             expect(mockGenerateHDMasterKey).toHaveBeenCalledWith(undefined)
+        })
+
+        test('rolls back root key if entropy key import fails', async () => {
+            mockKeyStoreImport
+                .mockReset()
+                .mockResolvedValueOnce('ks-root-1')
+                .mockRejectedValueOnce(new Error('Entropy import failed'))
+
+            const { result } = renderHook(() => useHDWallet())
+
+            let caughtError: Error | undefined
+            await act(async () => {
+                try {
+                    await result.current.createHDWalletKey({
+                        id: 'hd-1',
+                        mnemonic: 'my mnemonic',
+                    })
+                } catch (e) {
+                    caughtError = e as Error
+                }
+            })
+
+            expect(caughtError?.message).toBe('Entropy import failed')
+            expect(mockKeyStoreRemove).toHaveBeenCalledWith('ks-root-1')
         })
     })
 
@@ -277,7 +310,6 @@ describe('useHDWallet', () => {
             mockKeyStoreSign.mockResolvedValue(new Uint8Array(64).fill(1))
             mockKeyStoreExport.mockResolvedValue({
                 publicKey: new Uint8Array(32).fill(3),
-                metadata: { entropy: 'abcdef01' },
             })
         })
 
@@ -341,7 +373,6 @@ describe('useHDWallet', () => {
             const mockPubKey = new Uint8Array(32).fill(3)
             mockKeyStoreExport.mockResolvedValue({
                 publicKey: mockPubKey,
-                metadata: { entropy: 'abcdef01' },
             })
 
             const { result } = renderHook(() => useHDWallet())
@@ -362,11 +393,12 @@ describe('useHDWallet', () => {
             expect(mockKeyStoreExport).toHaveBeenCalledWith('ks-derived-1')
         })
 
-        test('session getMnemonic returns mnemonic from keystore metadata', async () => {
-            mockEntropyToMnemonic.mockReturnValue('recovered mnemonic words')
-            mockKeyStoreExport.mockResolvedValue({
-                metadata: { entropy: 'abcdef01' },
+        test('getMnemonic retrieves mnemonic from entropy key when entropyKeyId is provided', async () => {
+            const entropyBytes = Buffer.from('abcdef01', 'hex')
+            mockKeyStoreExport.mockResolvedValueOnce({
+                privateKey: new Uint8Array(entropyBytes),
             })
+            mockEntropyToMnemonic.mockReturnValue('recovered mnemonic words')
 
             const { result } = renderHook(() => useHDWallet())
 
@@ -378,19 +410,16 @@ describe('useHDWallet', () => {
                     async session => {
                         return session.getMnemonic()
                     },
+                    'ks-entropy-1',
                 )
             })
 
             expect(mnemonic).toBe('recovered mnemonic words')
-            expect(mockKeyStoreExport).toHaveBeenCalledWith('ks-root-1')
+            expect(mockKeyStoreExport).toHaveBeenCalledWith('ks-entropy-1')
             expect(mockEntropyToMnemonic).toHaveBeenCalled()
         })
 
-        test('session getMnemonic throws when entropy not in metadata', async () => {
-            mockKeyStoreExport.mockResolvedValue({
-                metadata: {},
-            })
-
+        test('getMnemonic throws when no entropyKeyId is provided', async () => {
             const { result } = renderHook(() => useHDWallet())
 
             await expect(
@@ -410,7 +439,6 @@ describe('useHDWallet', () => {
             const mockKeyData = {
                 publicKey: new Uint8Array(32).fill(3),
                 privateKey: new Uint8Array(64).fill(9),
-                metadata: { entropy: 'abcdef01' },
             }
             mockKeyStoreExport.mockResolvedValue(mockKeyData)
 
@@ -427,12 +455,11 @@ describe('useHDWallet', () => {
             expect(mockClearKeyData).toHaveBeenCalledWith(mockKeyData)
         })
 
-        test('getMnemonic clears exported key data after use', async () => {
-            const mockKeyData = {
-                metadata: { entropy: 'abcdef01' },
-                privateKey: new Uint8Array(64).fill(9),
+        test('getMnemonic clears exported entropy key data after use', async () => {
+            const mockEntropyKeyData = {
+                privateKey: new Uint8Array(Buffer.from('abcdef01', 'hex')),
             }
-            mockKeyStoreExport.mockResolvedValue(mockKeyData)
+            mockKeyStoreExport.mockResolvedValue(mockEntropyKeyData)
             mockEntropyToMnemonic.mockReturnValue('recovered mnemonic')
 
             const { result } = renderHook(() => useHDWallet())
@@ -442,10 +469,11 @@ describe('useHDWallet', () => {
                     mockKey,
                     'test-domain',
                     async session => session.getMnemonic(),
+                    'ks-entropy-1',
                 )
             })
 
-            expect(mockClearKeyData).toHaveBeenCalledWith(mockKeyData)
+            expect(mockClearKeyData).toHaveBeenCalledWith(mockEntropyKeyData)
         })
 
         test('calls checkAccess with key and domain', async () => {

@@ -88,4 +88,59 @@ describe('useRemoveAccountById', () => {
         expect(deleteKeySpy).toHaveBeenCalledWith('1')
         expect(keyStoreRemoveSpy).toHaveBeenCalledWith('ks-seed-1')
     })
+
+    test('removeAccountById deletes HD wallet key and entropy key', async () => {
+        const a: WalletAccount = {
+            id: '1',
+            name: 'Bob',
+            type: 'hdWallet',
+            address: 'BOB',
+            keyPairId: 'hd-1',
+            hdWalletDetails: {
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: 9,
+            },
+            entropyKeyId: 'ks-entropy-1',
+        }
+        useAccountsStore.setState({ accounts: [a] })
+
+        const { result } = renderHook(() => useRemoveAccountById())
+
+        await act(async () => {
+            await result.current('1')
+        })
+
+        expect(useAccountsStore.getState().accounts).toEqual([])
+        expect(deleteKeySpy).toHaveBeenCalledWith('hd-1')
+        expect(keyStoreRemoveSpy).toHaveBeenCalledWith('ks-entropy-1')
+    })
+
+    test('removeAccountById for HD wallet without entropyKeyId does not call keyStore.remove', async () => {
+        const a: WalletAccount = {
+            id: '1',
+            name: 'Bob',
+            type: 'hdWallet',
+            address: 'BOB',
+            keyPairId: 'hd-1',
+            hdWalletDetails: {
+                account: 0,
+                change: 0,
+                keyIndex: 0,
+                derivationType: 9,
+            },
+        }
+        useAccountsStore.setState({ accounts: [a] })
+
+        const { result } = renderHook(() => useRemoveAccountById())
+
+        await act(async () => {
+            await result.current('1')
+        })
+
+        expect(useAccountsStore.getState().accounts).toEqual([])
+        expect(deleteKeySpy).toHaveBeenCalledWith('hd-1')
+        expect(keyStoreRemoveSpy).not.toHaveBeenCalled()
+    })
 })

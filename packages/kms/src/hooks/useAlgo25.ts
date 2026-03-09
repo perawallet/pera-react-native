@@ -132,9 +132,7 @@ export const useAlgo25 = () => {
                 getPublicKey: () => naclKeyPair.publicKey,
                 getMnemonic: async () => {
                     if (!seedKeyId) {
-                        throw new KeyManagementError(
-                            'Seed key ID not provided',
-                        )
+                        throw new KeyManagementError('Seed key ID not provided')
                     }
                     return withExportedKey(seedKeyId, seedKeyData => {
                         if (!seedKeyData.privateKey) {

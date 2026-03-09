@@ -74,6 +74,7 @@ export type HDWalletAccount = BaseWalletAccount & {
     type: typeof AccountTypes.hdWallet
     hdWalletDetails: HDWalletDetails
     keyPairId: string
+    entropyKeyId?: string
 }
 
 export type MultiSigAccount = BaseWalletAccount & {

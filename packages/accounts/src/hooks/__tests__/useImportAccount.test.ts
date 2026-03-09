@@ -109,10 +109,13 @@ describe('useImportAccount', () => {
         kmsMock.getKey.mockReturnValue(null)
         kmsMock.getKeyOrThrow.mockReturnValue(null)
         kmsMock.createHDWalletKey.mockResolvedValue({
-            id: 'WALLET1',
-            type: KeyType.HDWalletRootKey,
-            publicKey: '',
-            keystoreKeyId: 'ks-root-1',
+            keyPair: {
+                id: 'WALLET1',
+                type: KeyType.HDWalletRootKey,
+                publicKey: '',
+                keystoreKeyId: 'ks-root-1',
+            },
+            entropyKeyId: 'ks-entropy-1',
         })
         kmsMock.createAlgo25Key.mockResolvedValue({
             keyPair: {
@@ -163,6 +166,7 @@ describe('useImportAccount', () => {
         expect(imported.address).toBeTruthy()
         expect(imported.type).toBe('hdWallet')
         expect(imported.keyPairId).toBe('WALLET1')
+        expect(imported.entropyKeyId).toBe('ks-entropy-1')
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
 

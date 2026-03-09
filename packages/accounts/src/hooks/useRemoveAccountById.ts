@@ -12,7 +12,7 @@
 
 import { useAccountsStore } from '../store'
 import { useKMS } from '@perawallet/wallet-core-kms'
-import { isAlgo25Account } from '../utils'
+import { isAlgo25Account, isHDWalletAccount } from '../utils'
 
 export const useRemoveAccountById = () => {
     const accounts = useAccountsStore(state => state.accounts)
@@ -21,11 +21,17 @@ export const useRemoveAccountById = () => {
 
     return async (id: string) => {
         const account = accounts.find(a => a.id === id)
-        if (account && account.type === 'algo25' && account.keyPairId) {
-            await deleteKey(account.keyPairId)
+        if (account && account.keyPairId) {
+            if (account.type === 'algo25' || account.type === 'hdWallet') {
+                await deleteKey(account.keyPairId)
+            }
 
             if (isAlgo25Account(account) && account.seedKeyId) {
                 await keyStore.remove(account.seedKeyId)
+            }
+
+            if (isHDWalletAccount(account) && account.entropyKeyId) {
+                await keyStore.remove(account.entropyKeyId)
             }
         }
 
