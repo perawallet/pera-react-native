@@ -37,7 +37,7 @@ export const useCreateAccount = () => {
         createHDWalletKey,
         createAlgo25Key,
         generateDerivedKey,
-        keyStore,
+        withExportedKey,
     } = useKMS()
 
     const saveAndUpdateAccounts = async (newAccount: WalletAccount) => {
@@ -86,24 +86,28 @@ export const useCreateAccount = () => {
             BIP32DerivationType.Peikert,
         )
 
-        const derivedKeyData = await keyStore.export(derivedKeystoreKeyId)
-        if (!derivedKeyData.publicKey) {
-            throw new NoHDWalletError(rootWalletId)
-        }
+        const newAccount = await withExportedKey(
+            derivedKeystoreKeyId,
+            keyData => {
+                if (!keyData.publicKey) {
+                    throw new NoHDWalletError(rootWalletId)
+                }
 
-        const newAccount: WalletAccount = {
-            id: generateOrderedUniqueId(),
-            address: encodeAlgorandAddress(derivedKeyData.publicKey),
-            type: AccountTypes.hdWallet,
-            hdWalletDetails: {
-                account,
-                change: 0,
-                keyIndex,
-                derivationType: BIP32DerivationType.Peikert,
-                keystoreKeyId: derivedKeystoreKeyId,
+                return {
+                    id: generateOrderedUniqueId(),
+                    address: encodeAlgorandAddress(keyData.publicKey),
+                    type: AccountTypes.hdWallet,
+                    hdWalletDetails: {
+                        account,
+                        change: 0,
+                        keyIndex,
+                        derivationType: BIP32DerivationType.Peikert,
+                        keystoreKeyId: derivedKeystoreKeyId,
+                    },
+                    keyPairId: rootWalletId,
+                } satisfies WalletAccount
             },
-            keyPairId: rootWalletId,
-        }
+        )
 
         await saveAndUpdateAccounts(newAccount)
         return newAccount

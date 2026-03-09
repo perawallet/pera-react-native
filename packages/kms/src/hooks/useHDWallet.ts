@@ -21,10 +21,8 @@ import {
     entropyToMnemonic,
     generateHDMasterKey,
 } from '../crypto/hdwallet-utils'
-import { clearKeyData } from '@algorandfoundation/keystore'
-
 export const useHDWallet = () => {
-    const { saveKey, checkAccess, keyStore } = useKMSService()
+    const { saveKey, checkAccess, keyStore, withExportedKey } = useKMSService()
 
     const createHDWalletKey = async (params?: {
         id?: string
@@ -103,16 +101,14 @@ export const useHDWallet = () => {
                     params.keyIndex,
                     params.derivationType,
                 )
-                const derivedKeyData = await keyStore.export(derivedKeyId)
-                const publicKey = derivedKeyData.publicKey
-                clearKeyData(derivedKeyData)
-
-                if (!publicKey) {
-                    throw new KeyManagementError(
-                        'Derived key does not have a public key',
-                    )
-                }
-                return publicKey
+                return withExportedKey(derivedKeyId, keyData => {
+                    if (!keyData.publicKey) {
+                        throw new KeyManagementError(
+                            'Derived key does not have a public key',
+                        )
+                    }
+                    return keyData.publicKey
+                })
             },
             signTransaction: async (params, encodedTx) => {
                 const derivedKeyId = await generateDerivedKey(
@@ -133,16 +129,17 @@ export const useHDWallet = () => {
                 return keyStore.sign(derivedKeyId, data)
             },
             getMnemonic: async () => {
-                const keyData = await keyStore.export(keystoreKeyId)
-                const entropy = keyData.metadata?.entropy as string | undefined
-                if (!entropy) {
-                    throw new KeyManagementError(
-                        'Entropy not found in keystore metadata',
-                    )
-                }
-                clearKeyData(keyData)
-
-                return entropyToMnemonic(Buffer.from(entropy, 'hex'))
+                return withExportedKey(keystoreKeyId, keyData => {
+                    const entropy = keyData.metadata?.entropy as
+                        | string
+                        | undefined
+                    if (!entropy) {
+                        throw new KeyManagementError(
+                            'Entropy not found in keystore metadata',
+                        )
+                    }
+                    return entropyToMnemonic(Buffer.from(entropy, 'hex'))
+                })
             },
         }
 

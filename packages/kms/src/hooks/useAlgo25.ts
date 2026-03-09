@@ -21,11 +21,10 @@ import {
 import { encodeAddress } from '@algorandfoundation/algokit-utils'
 import { useKMSService } from './useKMSServices'
 import { makeKeyPair } from '../utils'
-import { clearKeyData } from '@algorandfoundation/keystore'
 import type { KeyData } from '@algorandfoundation/keystore'
 
 export const useAlgo25 = () => {
-    const { saveKey, checkAccess, keyStore } = useKMSService()
+    const { saveKey, checkAccess, keyStore, withExportedKey } = useKMSService()
 
     const createAlgo25Key = async (params?: {
         id?: string
@@ -97,40 +96,40 @@ export const useAlgo25 = () => {
 
         // Algo25 keys are standalone Ed25519 keys without a parent root key,
         // so we export key material and sign locally with nacl
-        const keyData = await keyStore.export(keystoreKeyId)
-        if (!keyData.privateKey) {
-            throw new KeyManagementError('Key not found in keystore')
-        }
+        return withExportedKey(keystoreKeyId, async keyData => {
+            if (!keyData.privateKey) {
+                throw new KeyManagementError('Key not found in keystore')
+            }
 
-        const seed = keyData.privateKey.slice(0, 32)
-        const naclKeyPair = nacl.sign.keyPair.fromSeed(seed)
+            const seed = keyData.privateKey.slice(0, 32)
+            const naclKeyPair = nacl.sign.keyPair.fromSeed(seed)
 
-        const session: KMSAlgo25Session = {
-            signTransaction: async (encodedTx: Uint8Array) =>
-                nacl.sign.detached(encodedTx, naclKeyPair.secretKey),
-            signData: async (data: Uint8Array) =>
-                nacl.sign.detached(data, naclKeyPair.secretKey),
-            getPublicKey: () => naclKeyPair.publicKey,
-            getMnemonic: async () => {
-                const mnemonic = keyData.metadata?.mnemonic as
-                    | string
-                    | undefined
-                if (!mnemonic) {
-                    throw new KeyManagementError(
-                        'Mnemonic not found in keystore metadata',
-                    )
-                }
-                return mnemonic
-            },
-        }
+            const session: KMSAlgo25Session = {
+                signTransaction: async (encodedTx: Uint8Array) =>
+                    nacl.sign.detached(encodedTx, naclKeyPair.secretKey),
+                signData: async (data: Uint8Array) =>
+                    nacl.sign.detached(data, naclKeyPair.secretKey),
+                getPublicKey: () => naclKeyPair.publicKey,
+                getMnemonic: async () => {
+                    const mnemonic = keyData.metadata?.mnemonic as
+                        | string
+                        | undefined
+                    if (!mnemonic) {
+                        throw new KeyManagementError(
+                            'Mnemonic not found in keystore metadata',
+                        )
+                    }
+                    return mnemonic
+                },
+            }
 
-        try {
-            return await handler(session)
-        } finally {
-            seed.fill(0)
-            naclKeyPair.secretKey.fill(0)
-            clearKeyData(keyData)
-        }
+            try {
+                return await handler(session)
+            } finally {
+                seed.fill(0)
+                naclKeyPair.secretKey.fill(0)
+            }
+        })
     }
 
     return {

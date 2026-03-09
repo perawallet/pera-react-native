@@ -24,7 +24,7 @@ export const useKMS = () => {
     const { withAlgo25Session, createAlgo25Key } = useAlgo25()
     const { withHDSession, createHDWalletKey, generateDerivedKey } =
         useHDWallet()
-    const { deleteKey, keyStore } = useKMSService()
+    const { deleteKey, keyStore, withExportedKey } = useKMSService()
 
     const getKeyOrThrow = (keyId: string): KeyPair => {
         const key = getKey(keyId)
@@ -107,6 +107,7 @@ export const useKMS = () => {
         createHDWalletKey,
         generateDerivedKey,
         keyStore,
+        withExportedKey,
         signTransactionsWithKey,
         signDataWithKey,
     }

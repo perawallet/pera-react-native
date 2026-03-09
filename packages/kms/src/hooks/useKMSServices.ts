@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import type { KeyStoreAPI } from '@algorandfoundation/keystore'
+import type { KeyStoreAPI, KeyData, KeyId } from '@algorandfoundation/keystore'
+import { clearKeyData } from '@algorandfoundation/keystore'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useKeyManagerStore } from '../store'
 import { AccessControlPermission, KeyPair } from '../models'
@@ -31,11 +32,17 @@ export const checkAccess = (key: KeyPair, domain: string): void => {
     }
 }
 
+type WithExportedKey = <T>(
+    keyId: KeyId,
+    handler: (keyData: KeyData) => T | Promise<T>,
+) => Promise<T>
+
 type UseKMSServiceResult = {
     deleteKey: (id: string) => Promise<void>
     saveKey: (key: KeyPair) => Promise<KeyPair>
     checkAccess: typeof checkAccess
     keyStore: KeyStoreAPI
+    withExportedKey: WithExportedKey
 }
 
 export const useKMSService = (): UseKMSServiceResult => {
@@ -68,10 +75,20 @@ export const useKMSService = (): UseKMSServiceResult => {
         [getKey, removeKey, keyStore],
     )
 
+    const withExportedKey: WithExportedKey = async (keyId, handler) => {
+        const keyData = await keyStore.export(keyId)
+        try {
+            return await handler(keyData)
+        } finally {
+            clearKeyData(keyData)
+        }
+    }
+
     return {
         deleteKey,
         saveKey,
         checkAccess,
         keyStore,
+        withExportedKey,
     }
 }
