@@ -131,28 +131,21 @@ export const useAlgo25 = () => {
                     nacl.sign.detached(data, naclKeyPair.secretKey),
                 getPublicKey: () => naclKeyPair.publicKey,
                 getMnemonic: async () => {
-                    if (seedKeyId) {
-                        return withExportedKey(seedKeyId, seedKeyData => {
-                            if (!seedKeyData.privateKey) {
-                                throw new KeyManagementError(
-                                    'Seed key not found in keystore',
-                                )
-                            }
-                            return mnemonicFromSeed(
-                                seedKeyData.privateKey.slice(0, 32),
-                            )
-                        })
-                    }
-                    // Legacy fallback for accounts created before seed key migration
-                    const mnemonic = keyData.metadata?.mnemonic as
-                        | string
-                        | undefined
-                    if (!mnemonic) {
+                    if (!seedKeyId) {
                         throw new KeyManagementError(
-                            'Mnemonic not found in keystore metadata',
+                            'Seed key ID not provided',
                         )
                     }
-                    return mnemonic
+                    return withExportedKey(seedKeyId, seedKeyData => {
+                        if (!seedKeyData.privateKey) {
+                            throw new KeyManagementError(
+                                'Seed key not found in keystore',
+                            )
+                        }
+                        return mnemonicFromSeed(
+                            seedKeyData.privateKey.slice(0, 32),
+                        )
+                    })
                 },
             }
 

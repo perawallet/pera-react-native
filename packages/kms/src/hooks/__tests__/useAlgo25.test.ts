@@ -344,30 +344,7 @@ describe('useAlgo25', () => {
             expect(mockMnemonicFromSeed).toHaveBeenCalled()
         })
 
-        test('getMnemonic falls back to metadata when no seedKeyId (legacy)', async () => {
-            const { result } = renderHook(() => useAlgo25())
-
-            let mnemonic: string | undefined
-            await act(async () => {
-                mnemonic = await result.current.withAlgo25Session(
-                    mockKey,
-                    'test-domain',
-                    async session => {
-                        return session.getMnemonic()
-                    },
-                )
-            })
-
-            expect(mnemonic).toBe('test mnemonic words')
-        })
-
-        test('getMnemonic throws when no seedKeyId and mnemonic not in metadata', async () => {
-            mockKeyStoreExport.mockResolvedValue({
-                privateKey: new Uint8Array(64),
-                publicKey: new Uint8Array(32),
-                metadata: {},
-            })
-
+        test('getMnemonic throws when no seedKeyId is provided', async () => {
             const { result } = renderHook(() => useAlgo25())
 
             await expect(
