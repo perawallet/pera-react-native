@@ -37,7 +37,6 @@ export const DeleteAllSuccessBottomSheet = ({
                 name='check'
                 variant='positive'
                 size='xl'
-                style={styles.icon}
             />
             <PWText
                 variant='h3'
