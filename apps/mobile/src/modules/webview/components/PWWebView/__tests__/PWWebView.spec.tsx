@@ -27,6 +27,10 @@ vi.mock('../WebViewFooterBar', () => ({
 }))
 
 vi.mock('@modules/webview/hooks', () => ({
+    useContextFingerprints: vi.fn(() => ({
+        settings: 'light-USD-mainnet-en',
+        accounts: 'addr1',
+    })),
     usePeraWebviewInterface: vi.fn(() => ({
         handleMessage: vi.fn(),
     })),

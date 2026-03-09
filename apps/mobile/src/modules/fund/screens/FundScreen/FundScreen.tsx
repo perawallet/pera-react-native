@@ -15,20 +15,17 @@ import { PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWWebView } from '@modules/webview/components/PWWebView'
-import { useContextFingerprints } from '@modules/webview/hooks'
 
 export const FundScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const url = config.onrampBaseUrl
-    const contextFingerprints = useContextFingerprints()
 
     return (
         <PWView style={styles.container}>
             <PWWebView
                 url={url}
                 enablePeraConnect={true}
-                contextFingerprints={contextFingerprints}
                 containerStyle={styles.webview}
             />
         </PWView>

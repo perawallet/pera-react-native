@@ -32,11 +32,11 @@ import {
 } from './injected-scripts'
 import { useToast } from '@hooks/useToast'
 import { useStyles } from './styles'
-import { usePeraWebviewInterface } from '@modules/webview/hooks'
 import {
-    useNotifyWebViewOnContextChange,
-    type ContextFingerprints,
-} from '@modules/webview/hooks/useNotifyWebViewOnContextChange'
+    useContextFingerprints,
+    usePeraWebviewInterface,
+} from '@modules/webview/hooks'
+import { useNotifyWebViewOnContextChange } from '@modules/webview/hooks/useNotifyWebViewOnContextChange'
 import { EmptyView } from '@components/EmptyView'
 import {
     PWView,
@@ -60,7 +60,6 @@ export type PWWebViewProps = {
     onClose?: () => void
     onBack?: () => void
     inBottomSheet?: boolean
-    contextFingerprints?: ContextFingerprints
 } & WebViewProps
 
 const updateTheme = (mode: 'light' | 'dark') => {
@@ -77,7 +76,6 @@ export const PWWebView = (props: PWWebViewProps) => {
         showControls = false,
         onClose,
         onBack,
-        contextFingerprints,
         ...rest
     } = props
     const { theme } = useTheme()
@@ -88,8 +86,11 @@ export const PWWebView = (props: PWWebViewProps) => {
     const [navigationState, setNavigationState] = useState<WebViewNativeEvent>()
     const isDarkMode = useIsDarkMode()
     const { t } = useLanguage()
-
-    useNotifyWebViewOnContextChange(webview, contextFingerprints)
+    const contextFingerprints = useContextFingerprints()
+    useNotifyWebViewOnContextChange(
+        webview,
+        enablePeraConnect ? contextFingerprints : undefined,
+    )
 
     const isSecure = useMemo(() => {
         // TODO: We ultimately want to replace this with a more SRI style security method
