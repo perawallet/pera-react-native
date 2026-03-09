@@ -21,6 +21,7 @@ import {
     algorandSafeQueryParse,
 } from '@perawallet/wallet-core-blockchain'
 import {
+    getProvider,
     PeraWalletProvider,
     usePeraProvider,
 } from '@perawallet/wallet-extension-provider'
@@ -34,6 +35,21 @@ SplashScreen.preventAutoHideAsync()
 import { NotifierWrapper } from 'react-native-notifier'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useLanguage } from '@hooks/useLanguage'
+import { updateBackendHeaders } from '@perawallet/wallet-core-shared'
+
+const updateQueryHeaders = () => {
+    const deviceInfo = getProvider().deviceInfo
+    const headers = new Map<string, string>()
+    headers.set('App-Name', deviceInfo.getAppName())
+    headers.set('App-Package-Name', deviceInfo.getAppId())
+    headers.set('App-Version', deviceInfo.getAppVersion())
+    headers.set('Client-Type', deviceInfo.getDevicePlatform())
+    headers.set('Device-Version', deviceInfo.getDeviceLocale())
+    headers.set('Device-OS-Version', deviceInfo.getDeviceOSVersion())
+    headers.set('Device-Model', deviceInfo.getDeviceModelId())
+    headers.set('User-Agent', deviceInfo.getUserAgent())
+    updateBackendHeaders(headers)
+}
 
 const AppContent = () => {
     const [persister, setPersister] = useState<Persister>()
@@ -46,6 +62,9 @@ const AppContent = () => {
         if (!bootstrapped) {
             provider.initialize().then(({ token }) => {
                 setFcmToken(token ?? null)
+
+                updateQueryHeaders()
+
                 const reactQueryPersistor = createAsyncStoragePersister({
                     storage: provider.keyValueStorage,
                     serialize: algorandSafeQuerySerialize,

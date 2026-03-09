@@ -49,7 +49,9 @@ describe('useAutoLockListener', () => {
             setAutoLockStartedAt: mockSetAutoLockStartedAt,
             checkPinEnabled: mockCheckPinEnabled,
         })
-        ;(useDeleteAllData as Mock).mockReturnValue(mockDeleteAllData)
+        ;(useDeleteAllData as Mock).mockReturnValue({
+            deleteAllData: mockDeleteAllData,
+        })
     })
 
     it('should return initial state', () => {

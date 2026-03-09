@@ -18,6 +18,7 @@ export const useStyles = makeStyles(theme => {
             paddingHorizontal: theme.spacing.md,
             gap: theme.spacing.xl,
             flex: 1,
+            paddingTop: theme.spacing.lg,
         },
         divider: {
             paddingTop: theme.spacing.md,

@@ -10,30 +10,6 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
-import type { BaseStoreState } from '@perawallet/wallet-core-shared'
-
-export type DeviceApplication = 'pera' | 'pera-beta' | 'fifa'
-
-export interface DeviceRequest {
-    id?: string
-    push_token?: string
-    platform: DevicePlatform
-    application?: DeviceApplication
-    model?: string
-    locale?: string
-    accounts: string[]
-}
-
-export interface DeviceResponse {
-    id?: string
-    push_token?: string
-    platform: DevicePlatform
-    application?: DeviceApplication
-    model?: string
-    locale?: string
-}
-
 export const DevicePlatforms = {
     ios: 'ios',
     android: 'android',
@@ -44,7 +20,6 @@ export type DevicePlatform =
     (typeof DevicePlatforms)[keyof typeof DevicePlatforms]
 
 export interface DeviceInfoService {
-    initializeDeviceInfo(): void
     getAppName(): string
     getAppId(): string
     getAppPackage(): string
@@ -53,14 +28,9 @@ export interface DeviceInfoService {
     getDeviceID(): Promise<string>
     getDeviceModel(): string
     getDevicePlatform(): DevicePlatform
+    getDeviceOSVersion(): string
     getDeviceLocale(): string
     getDeviceCountry(): string
+    getDeviceModelId(): string
     getUserAgent(): string
-}
-
-export type DeviceState = BaseStoreState & {
-    pushToken: string | null
-    deviceIDs: Map<Network, string | null>
-    setPushToken: (token: string | null) => void
-    setDeviceID: (network: Network, id: string | null) => void
 }

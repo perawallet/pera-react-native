@@ -15,11 +15,7 @@
 import WebView from 'react-native-webview'
 import { useToast } from '@hooks/useToast'
 import { Linking } from 'react-native'
-import {
-    useAnalyticsService,
-    useDeviceID,
-    useDeviceInfoService,
-} from '@perawallet/wallet-extension-platform'
+import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
     useNetwork,
     PeraSignedTransaction,
@@ -59,6 +55,7 @@ import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { parseDeeplink } from '@hooks/deeplink/parser'
 import { DeeplinkType } from '@hooks/deeplink/types'
+import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 type WebviewMessage = {
     id: string
@@ -79,9 +76,10 @@ export const usePeraWebviewInterface = (
     const deviceID = useDeviceID(network)
     const darkmode = useIsDarkMode()
     const theme = darkmode ? 'dark' : 'light'
-    const deviceInfo = useDeviceInfoService()
+    const provider = usePeraProvider()
+    const deviceInfo = provider.deviceInfo
     const { preferredCurrency } = useCurrency()
-    const analytics = useAnalyticsService()
+    const analytics = provider.analytics
     const { t } = useLanguage()
     const { pushWebView: pushWebViewContext } = useWebView()
     const { addSignRequest } = useSigningRequest()

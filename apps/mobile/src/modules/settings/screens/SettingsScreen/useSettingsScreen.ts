@@ -15,7 +15,12 @@ import { useWebView } from '@modules/webview'
 import { useModalState } from '@hooks/useModalState'
 import { useSettingsOptions } from './useSettingsOptions'
 import { SettingsStackParamsList } from '@modules/settings/routes'
-import { generateUniqueId } from '@perawallet/wallet-core-shared'
+import {
+    deferToNextCycle,
+    generateUniqueId,
+} from '@perawallet/wallet-core-shared'
+import { clearAccountsStore } from '@modules/settings/hooks/useDeleteAllData'
+import { useCallback } from 'react'
 
 export const useSettingsScreen = () => {
     const navigation = useAppNavigation()
@@ -24,6 +29,11 @@ export const useSettingsScreen = () => {
         isOpen: isDeleteModalOpen,
         open: openDeleteModal,
         close: closeDeleteModal,
+    } = useModalState()
+    const {
+        isOpen: isSuccessModalOpen,
+        open: openSuccessModal,
+        close: closeSuccessModal,
     } = useModalState()
     const {
         isOpen: isRatingModalOpen,
@@ -59,10 +69,28 @@ export const useSettingsScreen = () => {
         }
     }
 
+    const handleDeleteSuccess = useCallback(() => {
+        openSuccessModal()
+    }, [openSuccessModal])
+
+    const handleSuccessClose = useCallback(() => {
+        closeSuccessModal()
+        clearAccountsStore()
+
+        deferToNextCycle(() => {
+            navigation.navigate('Onboarding', {
+                screen: 'OnboardingHome',
+            })
+        })
+    }, [closeSuccessModal])
+
     return {
         isDeleteModalOpen,
         openDeleteModal,
         closeDeleteModal,
+        isSuccessModalOpen,
+        handleDeleteSuccess,
+        handleSuccessClose,
         isRatingModalOpen,
         closeRatingModal,
         settingsOptions,

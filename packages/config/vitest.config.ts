@@ -26,6 +26,14 @@ export default defineConfig({
             '@platform': resolve(__dirname, 'src/platform'),
             '@test-utils': resolve(__dirname, 'src/test-utils'),
             config: resolve(__dirname, 'src/config'),
+            '@perawallet/wallet-extension-provider': resolve(
+                __dirname,
+                '../../extensions/provider/src/index.ts',
+            ),
+            '@perawallet/wallet-extension-platform-driver': resolve(
+                __dirname,
+                '../../extensions/platform-driver/src/index.ts',
+            ),
         },
     },
     test: {

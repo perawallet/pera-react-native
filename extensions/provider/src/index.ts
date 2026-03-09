@@ -17,11 +17,7 @@ export type {
     ProviderOptions,
     Extension,
 } from '@algorandfoundation/wallet-provider'
-export {
-    getProvider,
-    initializeProvider,
-    resetProvider,
-} from '@perawallet/wallet-core-shared'
 export * from './pera-provider'
 export * from './context'
-export * from './initialize'
+export * from './singleton'
+export * from './test-platform'

@@ -33,8 +33,13 @@ export const registerStore = (entry: RegisteredStore): void => {
  * Clears persisted data and resets in-memory state for all registered stores.
  * Used during logout / "delete all data" flows.
  */
-export const clearAllStores = (): void => {
+export const clearAllStores = (options?: { skip?: string[] }): void => {
+    const skip = options?.skip
     for (const store of registry) {
+        if (skip?.includes(store.name)) {
+            logger.debug(`Skipping store: ${store.name}`)
+            continue
+        }
         logger.debug(`Clearing store: ${store.name}`)
         store.clearStorage()
         store.resetState()
