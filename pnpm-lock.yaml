@@ -9,9 +9,6 @@ catalogs:
     '@algorandfoundation/algokit-utils':
       specifier: ^10.0.0-alpha.29
       version: 10.0.0-alpha.29
-    '@algorandfoundation/keystore':
-      specifier: 1.0.0-canary.12
-      version: 1.0.0-canary.12
     '@algorandfoundation/react-native-keystore':
       specifier: 1.0.0-canary.5
       version: 1.0.0-canary.5
@@ -125,6 +122,7 @@ catalogs:
       version: 5.0.9
 
 overrides:
+  '@algorandfoundation/keystore': 1.0.0-canary.12
   glob@>=10.2.0 <10.5.0: '>=10.5.0'
   happy-dom@<20.0.0: '>=20.0.0'
   happy-dom@>=19.0.0 <20.0.2: '>=20.0.2'
@@ -590,7 +588,7 @@ importers:
   extensions/platform:
     dependencies:
       '@algorandfoundation/keystore':
-        specifier: 'catalog:'
+        specifier: 1.0.0-canary.12
         version: 1.0.0-canary.12(@tanstack/store@0.8.1)(before-after-hook@4.0.0)
       '@algorandfoundation/wallet-provider':
         specifier: 'catalog:'
@@ -770,7 +768,7 @@ importers:
   extensions/provider:
     dependencies:
       '@algorandfoundation/keystore':
-        specifier: 'catalog:'
+        specifier: 1.0.0-canary.12
         version: 1.0.0-canary.12(@tanstack/store@0.8.1)(before-after-hook@4.0.0)
       '@algorandfoundation/react-native-keystore':
         specifier: 'catalog:'
@@ -1306,7 +1304,7 @@ importers:
         specifier: 'catalog:'
         version: 10.0.0-alpha.29
       '@algorandfoundation/keystore':
-        specifier: 'catalog:'
+        specifier: 1.0.0-canary.12
         version: 1.0.0-canary.12(@tanstack/store@0.8.1)(before-after-hook@4.0.0)
       '@algorandfoundation/xhd-wallet-api':
         specifier: 'catalog:'
@@ -2103,16 +2101,6 @@ packages:
 
   '@algorandfoundation/dp256@1.1.0':
     resolution: {integrity: sha512-s+ZQG3WK6eWskfmjh0bbMImyO+SIR297s+7vQoercbM0hYvilzTBT/rEcvs4ZQxU6TxkTXLq4BRj1USjGFpsCA==}
-
-  '@algorandfoundation/keystore@1.0.0-canary.10':
-    resolution: {integrity: sha512-aaxD/ILdSDyIXlY2mAzrwasTOh8L+F8JDgp2l+nn1SfyuVfsNovWlQlmQRTMRRvdWa6fPuk7yiS9lUZP2Dx7fA==}
-    peerDependencies:
-      '@algorandfoundation/log-store': 1.0.0-canary.2
-      '@tanstack/store': ^0.8.0
-      before-after-hook: ^4.0.0
-    peerDependenciesMeta:
-      '@algorandfoundation/log-store':
-        optional: true
 
   '@algorandfoundation/keystore@1.0.0-canary.12':
     resolution: {integrity: sha512-U06lVT5HVmC+45+FGIXV+QpxGyiIF0l2DwxmIzJSA7igD6O/49B3+cKHQTlnh9BfD9nO6IiNF46w6OX7C1JkNw==}
@@ -10423,14 +10411,6 @@ snapshots:
       '@noble/hashes': 1.8.0
       '@scure/bip39': 1.6.0
 
-  '@algorandfoundation/keystore@1.0.0-canary.10(@tanstack/store@0.8.1)(before-after-hook@4.0.0)':
-    dependencies:
-      '@algorandfoundation/wallet-provider': 1.0.0-canary.3
-      '@noble/hashes': 2.0.1
-      '@scure/base': 2.0.0
-      '@tanstack/store': 0.8.1
-      before-after-hook: 4.0.0
-
   '@algorandfoundation/keystore@1.0.0-canary.12(@tanstack/store@0.8.1)(before-after-hook@4.0.0)':
     dependencies:
       '@algorandfoundation/wallet-provider': 1.0.0-canary.3
@@ -10442,7 +10422,7 @@ snapshots:
   '@algorandfoundation/react-native-keystore@1.0.0-canary.5(@tanstack/store@0.8.1)(before-after-hook@4.0.0)(expo-build-properties@1.0.10(expo@54.0.32))(expo@54.0.32)(react-native-nitro-modules@0.33.9(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native-quick-base64@2.2.2(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0))(react-native@0.83.1(@babel/core@7.28.5)(@react-native-community/cli@20.0.0(typescript@5.9.3))(@react-native/metro-config@0.83.0(@babel/core@7.28.5))(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)':
     dependencies:
       '@algorandfoundation/dp256': 1.1.0
-      '@algorandfoundation/keystore': 1.0.0-canary.10(@tanstack/store@0.8.1)(before-after-hook@4.0.0)
+      '@algorandfoundation/keystore': 1.0.0-canary.12(@tanstack/store@0.8.1)(before-after-hook@4.0.0)
       '@algorandfoundation/xhd-wallet-api': 2.0.0-canary.1
       '@scure/base': 2.0.0
       '@scure/bip39': 2.0.1
