@@ -32,30 +32,37 @@ export const ButtonPanel = ({
     const { t } = useLanguage()
 
     return (
-        <PWView style={themeStyle.container}>
+        <PWView
+            style={themeStyle.container}
+            testID='button_panel'
+        >
             <RoundButton
                 title={t('account_details.button_panel.swap')}
                 icon='swap'
                 variant='primary'
                 onPress={onSwap}
+                testID='swap_button'
             />
             <RoundButton
                 title={t('account_details.button_panel.send')}
                 icon='outflow'
                 variant='secondary'
                 onPress={onSend}
+                testID='send_button'
             />
             <RoundButton
                 title={t('account_details.button_panel.receive')}
                 icon='inflow'
                 variant='secondary'
                 onPress={onReceive}
+                testID='receive_button'
             />
             <RoundButton
                 title={t('account_details.button_panel.more')}
                 icon='ellipsis'
                 variant='secondary'
                 onPress={onMore}
+                testID='more_button'
             />
         </PWView>
     )

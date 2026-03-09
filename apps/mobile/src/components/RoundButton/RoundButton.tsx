@@ -19,12 +19,14 @@ import {
     PWText,
     PWRoundIcon,
 } from '@components/core'
+import { getTestProps } from '@utils/test-id-helper'
 
 export type RoundButtonProps = {
     icon: IconName
     title?: string
     size?: 'sm' | 'lg'
     variant?: 'primary' | 'secondary'
+    testID?: string
 } & PWTouchableOpacityProps
 
 export const RoundButton = (props: RoundButtonProps) => {
@@ -35,6 +37,7 @@ export const RoundButton = (props: RoundButtonProps) => {
         size = 'lg',
         variant = 'secondary',
         style: propStyle,
+        testID,
         ...rest
     } = props
 
@@ -42,6 +45,7 @@ export const RoundButton = (props: RoundButtonProps) => {
         <PWView style={propStyle}>
             <PWTouchableOpacity
                 style={styles.buttonWrapper}
+                {...getTestProps(testID)}
                 {...rest}
             >
                 <PWRoundIcon

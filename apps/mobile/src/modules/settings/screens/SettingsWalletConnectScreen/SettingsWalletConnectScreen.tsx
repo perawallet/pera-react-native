@@ -45,10 +45,12 @@ export const SettingsWalletConnectScreen = () => {
     useNavigationHeader({
         title: t('settings.main.wallet_connect_title'),
         right: (
-            <PWIcon
-                name='camera'
-                onPress={scannerState.open}
-            />
+            <PWView testID='wallet_connect_qr_scanner_button'>
+                <PWIcon
+                    name='camera'
+                    onPress={scannerState.open}
+                />
+            </PWView>
         ),
         enabled: connections.length > 0,
     })
@@ -65,7 +67,10 @@ export const SettingsWalletConnectScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
+        <PWView
+            style={styles.container}
+            testID='wallet_connect_screen'
+        >
             <PWFlatList
                 contentContainerStyle={styles.listContainer}
                 data={connections}
@@ -81,6 +86,7 @@ export const SettingsWalletConnectScreen = () => {
                                 title={t('walletconnect.settings.empty_button')}
                                 variant='primary'
                                 onPress={scannerState.open}
+                                testID='wallet_connect_connect_button'
                             />
                         }
                     />
@@ -92,6 +98,7 @@ export const SettingsWalletConnectScreen = () => {
                             title={t('walletconnect.settings.clear_all')}
                             variant='secondary'
                             onPress={deleteState.open}
+                            testID='wallet_connect_clear_all_button'
                         />
                     ) : null
                 }

@@ -41,3 +41,6 @@ packages/config/src/local-overrides.ts
 opencode.json
 .idea/
 .expo/
+
+# Documentation
+docs/ui-automation-test-ids.md

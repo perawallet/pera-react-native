@@ -20,6 +20,7 @@ import {
     PWView,
 } from '@components/core'
 import { useStyles } from './styles'
+import { getTestProps } from '@utils/test-id-helper'
 import { useTranslation } from 'react-i18next'
 
 export type ImportOptionsBottomSheetProps = {
@@ -49,7 +50,7 @@ export const ImportOptionsBottomSheet = ({
                     <PWTouchableOpacity
                         onPress={onClose}
                         style={styles.closeButton}
-                        testID='import_options_close_button'
+                        {...getTestProps('import_options_close_button')}
                     >
                         <PWIcon
                             name='cross'
@@ -66,7 +67,7 @@ export const ImportOptionsBottomSheet = ({
                     <PWTouchableOpacity
                         onPress={onHDWalletPress}
                         style={styles.optionBox}
-                        testID='import_options_hd_wallet_button'
+                        {...getTestProps('import_options_hd_wallet_button')}
                     >
                         <PWView style={styles.optionContent}>
                             <PWView style={styles.optionTopContent}>
@@ -112,7 +113,7 @@ export const ImportOptionsBottomSheet = ({
                     <PWTouchableOpacity
                         onPress={onAlgo25Press}
                         style={styles.optionBox}
-                        testID='import_options_algo25_button'
+                        {...getTestProps('import_options_algo25_button')}
                     >
                         <PWView style={styles.optionContent}>
                             <PWView style={styles.optionTopContent}>

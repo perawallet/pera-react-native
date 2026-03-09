@@ -98,13 +98,18 @@ export const AccountScreen = () => {
                 left={<AccountSelection />}
                 right={
                     <PWView style={styles.iconBarSection}>
-                        <PWDropdown items={dropdownItems}>
-                            <PWIcon name='ellipsis' />
-                        </PWDropdown>
-                        <PWTouchableOpacity onPress={scannerState.open}>
+                        <PWView testID='account_screen_dropdown'>
+                            <PWDropdown items={dropdownItems}>
+                                <PWIcon name='ellipsis' />
+                            </PWDropdown>
+                        </PWView>
+                        <PWTouchableOpacity
+                            onPress={scannerState.open}
+                            testID='account_screen_qr_scanner_button'
+                        >
                             <PWIcon name='camera' />
                         </PWTouchableOpacity>
-                        <NotificationsIcon />
+                        <NotificationsIcon testID='account_screen_notifications' />
                     </PWView>
                 }
             />

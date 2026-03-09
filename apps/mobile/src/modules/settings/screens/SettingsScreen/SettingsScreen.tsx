@@ -16,10 +16,10 @@ import {
     PWListItem,
     PWText,
     PWView,
+    PWScrollView,
 } from '@components/core'
 
 import { useStyles } from './styles'
-import { ScrollView } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AppVersion } from '@modules/settings/components/AppVersion'
 import { useSettingsScreen } from './useSettingsScreen'
@@ -28,6 +28,7 @@ import type { SettingsStackParamsList } from '@modules/settings/routes'
 import { RatingsBottomSheet } from '@modules/settings/components/RatingsBottomSheet/RatingsBottomSheet'
 import { DeleteAllConfirmBottomSheet } from '@modules/settings/components/DeleteAllConfirmBottomSheet/DeleteAllConfirmBottomSheet'
 import { DeleteAllSuccessBottomSheet } from '@modules/settings/components/DeleteAllSuccessBottomSheet'
+import { getTestProps } from '@utils/test-id-helper'
 
 export type SettingsRouteName = keyof SettingsStackParamsList
 
@@ -49,9 +50,10 @@ export const SettingsScreen = () => {
     } = useSettingsScreen()
 
     return (
-        <ScrollView
+        <PWScrollView
             style={styles.scrollView}
             showsVerticalScrollIndicator={false}
+            testID='settings_screen'
         >
             <PWView style={styles.sectionContainer}>
                 {settingsOptions.map(item => (
@@ -78,6 +80,7 @@ export const SettingsScreen = () => {
                 variant='secondary'
                 title={t('settings.main.remove_all_accounts')}
                 onPress={openDeleteModal}
+                {...getTestProps('settings_remove_all_accounts_button')}
             />
             <AppVersion enableSecretTaps />
             <DeleteAllConfirmBottomSheet
@@ -93,6 +96,6 @@ export const SettingsScreen = () => {
                 isOpen={isRatingModalOpen}
                 onClose={closeRatingModal}
             />
-        </ScrollView>
+        </PWScrollView>
     )
 }
