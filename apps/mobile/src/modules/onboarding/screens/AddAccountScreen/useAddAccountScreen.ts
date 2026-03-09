@@ -24,6 +24,7 @@ import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { type IconName } from '@components/core'
+import { useMultisigCreationStore } from '@modules/multisig/hooks/useMultisigCreation'
 
 export type AccountOption = {
     testID: string
@@ -34,23 +35,7 @@ export type AccountOption = {
     isDisabled?: boolean
 }
 
-type UseAddAccountScreenResult = {
-    isCreatingAccount: boolean
-    isImportOptionsVisible: boolean
-    isOtherOptionsVisible: boolean
-    mainOptions: AccountOption[]
-    otherOptions: AccountOption[]
-    handleClose: () => void
-    handleImportAccount: () => void
-    handleCloseImportOptions: () => void
-    handleHDWalletPress: () => void
-    handleAlgo25Press: () => void
-    handleTermsPress: () => void
-    handlePrivacyPress: () => void
-    handleToggleOtherOptions: () => void
-}
-
-export const useAddAccountScreen = (): UseAddAccountScreenResult => {
+export const useAddAccountScreen = () => {
     const navigation = useAppNavigation()
     const { createHdWalletAccount, createAlgo25WalletAccount } =
         useCreateAccount()
@@ -71,11 +56,10 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
         close: closeCreatingAccount,
     } = useModalState()
 
+    const resetMultisigCreation = useMultisigCreationStore(
+        state => state.resetState,
+    )
     const [isOtherOptionsVisible, setIsOtherOptionsVisible] = useState(false)
-
-    const handleClose = useCallback(() => {
-        navigation.goBack()
-    }, [navigation])
 
     const handleAddAccount = useCallback(() => {
         if (!hasHDWallet) return
@@ -115,14 +99,6 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
         t,
     ])
 
-    const handleImportAccount = useCallback(() => {
-        openImportOptions()
-    }, [openImportOptions])
-
-    const handleCloseImportOptions = useCallback(() => {
-        closeImportOptions()
-    }, [closeImportOptions])
-
     const handleHDWalletPress = useCallback(() => {
         closeImportOptions()
         navigation.push('ImportInfo', { accountType: 'hdWallet' })
@@ -133,27 +109,28 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
         navigation.push('ImportInfo', { accountType: 'algo25' })
     }, [closeImportOptions, navigation])
 
-    const handleToggleOtherOptions = useCallback(() => {
-        setIsOtherOptionsVisible(prev => !prev)
-    }, [])
+    const handleTermsPress = useCallback(
+        () =>
+            pushWebView({
+                url: config.termsOfServiceUrl,
+                id: 'terms-of-service',
+            }),
+        [pushWebView],
+    )
+    const handlePrivacyPress = useCallback(
+        () =>
+            pushWebView({ url: config.privacyPolicyUrl, id: 'privacy-policy' }),
+        [pushWebView],
+    )
+    const handleCreateJointAccount = useCallback(() => {
+        resetMultisigCreation()
+        navigation.navigate('Multisig', { screen: 'CreateMultisig' })
+    }, [navigation, resetMultisigCreation])
 
-    const handleTermsPress = useCallback(() => {
-        pushWebView({
-            url: config.termsOfServiceUrl,
-            id: 'terms-of-service',
-        })
-    }, [pushWebView])
-
-    const handlePrivacyPress = useCallback(() => {
-        pushWebView({
-            url: config.privacyPolicyUrl,
-            id: 'privacy-policy',
-        })
-    }, [pushWebView])
-
-    const handleWatchAddress = useCallback(() => {
-        navigation.push('WatchAccount')
-    }, [navigation])
+    const handleWatchAddress = useCallback(
+        () => navigation.push('WatchAccount'),
+        [navigation],
+    )
 
     const handleCreateUniversalWallet = useCallback(() => {
         openCreatingAccount()
@@ -241,7 +218,16 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
                     descriptionKey:
                         'onboarding.add_account.import_account_option_description',
                     leftIcon: 'fund' as IconName,
-                    onPress: handleImportAccount,
+                    onPress: openImportOptions,
+                },
+                {
+                    testID: 'add_account_create_joint_button',
+                    titleKey:
+                        'onboarding.add_account.create_joint_account_option_title',
+                    descriptionKey:
+                        'onboarding.add_account.create_joint_account_option_description',
+                    leftIcon: 'person-menu' as IconName,
+                    onPress: handleCreateJointAccount,
                 },
             ].filter(Boolean) as AccountOption[],
         [
@@ -249,7 +235,8 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
             handleAddAccount,
             handleCreateUniversalWallet,
             isCreatingAccount,
-            handleImportAccount,
+            openImportOptions,
+            handleCreateJointAccount,
         ],
     )
 
@@ -300,14 +287,14 @@ export const useAddAccountScreen = (): UseAddAccountScreenResult => {
         isImportOptionsVisible,
         mainOptions,
         otherOptions,
-        handleClose,
-        handleImportAccount,
-        handleCloseImportOptions,
+        handleClose: navigation.goBack,
+        handleImportAccount: openImportOptions,
+        handleCloseImportOptions: closeImportOptions,
         handleHDWalletPress,
         handleAlgo25Press,
         handleTermsPress,
         handlePrivacyPress,
         isOtherOptionsVisible,
-        handleToggleOtherOptions,
+        handleToggleOtherOptions: () => setIsOtherOptionsVisible(prev => !prev),
     }
 }

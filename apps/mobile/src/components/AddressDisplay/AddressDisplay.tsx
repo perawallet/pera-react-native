@@ -28,12 +28,14 @@ import { SvgProps } from 'react-native-svg'
 import { useMemo } from 'react'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
 
 export type AddressDisplayProps = {
     address: string
     addressFormat?: 'short' | 'long' | 'full'
     displayType?: 'full' | 'simple' | 'address-only'
     showCopy?: boolean
+    forceShowIcon?: boolean
     textProps?: PWTextProps
     iconProps?: SvgProps
 } & PWTouchableOpacityProps
@@ -46,12 +48,14 @@ export const AddressDisplay = ({
     addressFormat = 'short',
     displayType = 'full',
     showCopy = true,
+    forceShowIcon = false,
     textProps,
     iconProps,
     ...rest
 }: AddressDisplayProps) => {
     const styles = useStyles()
     const { copyToClipboard } = useClipboard()
+    const isDarkMode = useIsDarkMode()
 
     const copyAddress = () => {
         copyToClipboard(address)
@@ -113,7 +117,15 @@ export const AddressDisplay = ({
             )}
 
             {!contact && !account && (
-                <PWText {...textProps}>{truncatedAddress}</PWText>
+                <>
+                    {forceShowIcon && (
+                        <PWIcon
+                            name={`accounts/${isDarkMode ? 'dark' : 'light'}/watch-account`}
+                            size='md'
+                        />
+                    )}
+                    <PWText {...textProps}>{truncatedAddress}</PWText>
+                </>
             )}
 
             {showCopy && (
