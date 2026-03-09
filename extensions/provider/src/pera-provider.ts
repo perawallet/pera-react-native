@@ -35,6 +35,7 @@ type PeraExtensions = readonly [
 export const PeraProvider: {
     new (
         config: ProviderOptions,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         options?: any,
     ): Provider<PeraExtensions> & PlatformExtension & KeyStoreExtension
     EXTENSIONS: PeraExtensions
