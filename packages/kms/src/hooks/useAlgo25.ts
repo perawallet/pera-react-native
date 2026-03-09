@@ -45,9 +45,7 @@ export const useAlgo25 = () => {
                 mnemonic = mnemonicFromSeed(seed)
             }
         } catch (e) {
-            logger.error(
-                `createAlgo25Key failed: ${e instanceof Error ? e.message : String(e)}`,
-            )
+            logger.error('createAlgo25Key failed', { error: e })
             throw e
         }
 

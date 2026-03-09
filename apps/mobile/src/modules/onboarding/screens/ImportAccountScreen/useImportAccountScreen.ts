@@ -252,9 +252,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                     account: importedAccount,
                 })
             } catch (e) {
-                logger.error(
-                    `Import account failed: ${e instanceof Error ? e.message : String(e)}`,
-                )
+                logger.error('Import account failed', { error: e })
                 showToast({
                     title: t('onboarding.import_account.failed_title'),
                     body: t('onboarding.import_account.failed_body'),

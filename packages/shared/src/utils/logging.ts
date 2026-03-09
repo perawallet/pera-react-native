@@ -79,6 +79,25 @@ class Logger {
         this.log(LogLevel.CRITICAL, error, context)
     }
 
+    private formatContextValue(value: unknown): unknown {
+        if (value instanceof Error) {
+            return {
+                name: value.name,
+                message: value.message,
+                ...(value.stack ? { stack: value.stack } : {}),
+            }
+        }
+        return value
+    }
+
+    private formatContext(context: LogContext): LogContext {
+        const formatted: LogContext = {}
+        for (const [key, value] of Object.entries(context)) {
+            formatted[key] = this.formatContextValue(value)
+        }
+        return formatted
+    }
+
     private log(
         level: LogLevel,
         messageOrError: string | Error,
@@ -95,8 +114,7 @@ class Logger {
                 ? messageOrError.message
                 : messageOrError
 
-        // Pass context as second argument if present, otherwise just the message
-        const args = context ? [context] : []
+        const args = context ? [this.formatContext(context)] : []
 
         switch (level) {
             case LogLevel.DEBUG:

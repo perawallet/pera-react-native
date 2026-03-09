@@ -54,9 +54,7 @@ export const useCreateAccount = () => {
                     },
                 })
             } catch (e) {
-                logger.warn(
-                    `Failed to sync account with backend: ${e instanceof Error ? e.message : String(e)}`,
-                )
+                logger.warn('Failed to sync account with backend', { error: e })
             }
         }
     }
