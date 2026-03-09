@@ -83,7 +83,6 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => {
-    const React = require('react')
     const providerValue = {
         analytics: {
             logEvent: vi.fn(),
