@@ -11,6 +11,18 @@
  */
 
 import type { BaseStoreState } from '@perawallet/wallet-core-shared'
+import type {
+    MultiSigAccount,
+    JointAccountSignRequest,
+} from '@perawallet/wallet-core-multisig'
+
+export type {
+    MultiSigAccount,
+    JointAccountSignRequest,
+    SignRequestStatus,
+    SignerResponse,
+    TransactionList,
+} from '@perawallet/wallet-core-multisig'
 
 export type NotificationsState = BaseStoreState & {
     notificationDisabledAccounts: string[]
@@ -35,49 +47,6 @@ export type PeraNotification = {
     createdAt: Date
     isUnread?: boolean
     icon?: NotificationIcon | null
-}
-
-export interface MultiSigAccount {
-    customId: string
-    createdAt: Date
-    address: string
-    version: number
-    threshold: number
-    participantAddresses: string[]
-}
-
-export type SignRequestStatus =
-    | 'pending'
-    | 'ready'
-    | 'submitting'
-    | 'confirmed'
-    | 'failed'
-    | 'expired'
-    | 'declined'
-
-export interface SignerResponse {
-    address: string
-    response: 'signed' | 'declined'
-}
-
-export interface TransactionList {
-    id: string
-    rawTransactions: string[]
-    firstValidBlock: number
-    lastValidBlock: number
-    expectedExpireDatetime: Date
-    responses: SignerResponse[]
-}
-
-export interface JointAccountSignRequest {
-    id: string
-    status: SignRequestStatus
-    type: string
-    createdAt: Date
-    expectedExpireDatetime: Date
-    failReasonDisplay: string | null
-    jointAccount: MultiSigAccount
-    transactionLists: TransactionList[]
 }
 
 export interface ASAInbox {

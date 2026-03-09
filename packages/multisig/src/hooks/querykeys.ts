@@ -10,11 +10,20 @@
  limitations under the License
  */
 
-export * from './useNotificationPreferences'
-export * from './useInboxStatus'
-export * from './useNotificationsListQuery'
-export * from './useAccountNotificationEnabledMutation'
-export * from './useMarkNotificationsAsReadMutation'
-export * from './useInboxQuery'
-export * from './useInboxInvalidator'
-export * from './mappers'
+import type { Network } from '@perawallet/wallet-core-shared'
+
+const MODULE_PREFIX = 'multisig'
+
+export const getMultisigAccountDetailQueryKey = (
+    network: Network,
+    address: string,
+) => {
+    return [MODULE_PREFIX, 'account-detail', { network, address }]
+}
+
+export const getSignRequestDetailQueryKey = (
+    network: Network,
+    signRequestId: string,
+) => {
+    return [MODULE_PREFIX, 'sign-request-detail', { network, signRequestId }]
+}

@@ -10,11 +10,23 @@
  limitations under the License
  */
 
-export * from './useNotificationPreferences'
-export * from './useInboxStatus'
-export * from './useNotificationsListQuery'
-export * from './useAccountNotificationEnabledMutation'
-export * from './useMarkNotificationsAsReadMutation'
-export * from './useInboxQuery'
-export * from './useInboxInvalidator'
-export * from './mappers'
+import {
+    MultisigAccount,
+    type MultisigMetadata,
+} from '@algorandfoundation/algokit-utils/transact'
+import { Address } from '@algorandfoundation/algokit-utils'
+
+export const generateMultisigAddress = (
+    version: number,
+    threshold: number,
+    addresses: string[],
+): string => {
+    const params: MultisigMetadata = {
+        version,
+        threshold,
+        addrs: addresses.map(addr => Address.fromString(addr)),
+    }
+
+    const msig = new MultisigAccount(params, [])
+    return msig.addr.toString()
+}

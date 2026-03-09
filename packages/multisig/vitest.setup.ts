@@ -10,11 +10,18 @@
  limitations under the License
  */
 
-export * from './useNotificationPreferences'
-export * from './useInboxStatus'
-export * from './useNotificationsListQuery'
-export * from './useAccountNotificationEnabledMutation'
-export * from './useMarkNotificationsAsReadMutation'
-export * from './useInboxQuery'
-export * from './useInboxInvalidator'
-export * from './mappers'
+import { vi } from 'vitest'
+
+const store = new Map<string, string>()
+
+vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
+    getPlatformServices: () => ({
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => store.set(key, value),
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+        },
+    }),
+}))
