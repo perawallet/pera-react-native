@@ -82,6 +82,67 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-extension-provider', () => {
+    const React = require('react')
+    const providerValue = {
+        analytics: {
+            logEvent: vi.fn(),
+            setUserId: vi.fn(),
+            setUserProperty: vi.fn(),
+        },
+        biometrics: {
+            isSensorAvailable: vi.fn().mockResolvedValue(false),
+            simplePrompt: vi.fn().mockResolvedValue({ success: false }),
+            createKeys: vi.fn(),
+            deleteKeys: vi.fn(),
+        },
+        crashReporting: {
+            log: vi.fn(),
+            recordError: vi.fn(),
+        },
+        deviceInfo: {
+            getDevicePlatform: () => 'ios',
+            getDeviceModel: () => 'iPhone',
+            getDeviceId: () => 'test-device-id',
+            getVersion: () => '1.0.0',
+            getBuildNumber: () => '1',
+            getDeviceLocale: () => 'en-US',
+            getDeviceLanguage: () => 'en',
+        },
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => store.set(key, value),
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+        },
+        remoteConfig: {
+            initializeRemoteConfig: vi.fn(),
+            getStringValue: vi.fn().mockReturnValue(''),
+            getBooleanValue: vi.fn().mockReturnValue(false),
+            getNumberValue: vi.fn().mockReturnValue(0),
+        },
+        secureStorage: {
+            setItem: vi.fn().mockResolvedValue(undefined),
+            getItem: vi.fn().mockResolvedValue(null),
+            removeItem: vi.fn().mockResolvedValue(undefined),
+        },
+        key: {
+            store: {
+                remove: vi.fn(),
+                import: vi.fn(),
+                sign: vi.fn(),
+            },
+        },
+    }
+    return {
+        getProvider: () => providerValue,
+        PeraWalletProvider: ({ children }: { children: React.ReactNode }) =>
+            children,
+        usePeraProvider: () => providerValue,
+    }
+})
+
 // Mock react-native-reanimated
 vi.mock('react-native-reanimated', () => {
     const React = require('react')

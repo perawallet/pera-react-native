@@ -35,6 +35,18 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        keyValueStorage: {
+            getItem: (key: string) => kvStore.get(key) ?? null,
+            setItem: (key: string, value: string) => kvStore.set(key, value),
+            removeItem: (key: string) => {
+                kvStore.delete(key)
+            },
+        },
+    }),
+}))
+
 // Create a simple in-memory key store for mocking
 const mockKeyStore = new Map<string, any>()
 
