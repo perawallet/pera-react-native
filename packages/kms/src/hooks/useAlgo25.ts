@@ -75,8 +75,8 @@ export const useAlgo25 = () => {
             seedKeyId = await keyStore.import(
                 {
                     id: `${keyId}-seed`,
-                    type: 'hd-derived-ed25519',
-                    algorithm: 'EdDSA',
+                    type: 'hd-seed',
+                    algorithm: 'raw',
                     extractable: true,
                     privateKey: new Uint8Array(seed),
                 } as unknown as Omit<KeyData, 'id'>,

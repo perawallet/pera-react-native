@@ -170,7 +170,8 @@ describe('useHDWallet', () => {
                 2,
                 expect.objectContaining({
                     id: 'hd-1-entropy',
-                    type: 'hd-derived-ed25519',
+                    type: 'hd-seed',
+                    algorithm: 'raw',
                     extractable: true,
                     privateKey: expect.any(Uint8Array),
                 }),

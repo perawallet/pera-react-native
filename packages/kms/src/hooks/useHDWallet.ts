@@ -61,8 +61,8 @@ export const useHDWallet = () => {
             entropyKeyId = await keyStore.import(
                 {
                     id: `${keyId}-entropy`,
-                    type: 'hd-derived-ed25519',
-                    algorithm: 'EdDSA',
+                    type: 'hd-seed',
+                    algorithm: 'raw',
                     extractable: true,
                     privateKey: new Uint8Array(entropyBytes),
                 } as unknown as Omit<KeyData, 'id'>,

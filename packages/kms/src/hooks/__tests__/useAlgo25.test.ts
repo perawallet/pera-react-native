@@ -145,7 +145,8 @@ describe('useAlgo25', () => {
                 2,
                 expect.objectContaining({
                     id: 'my-key-seed',
-                    type: 'hd-derived-ed25519',
+                    type: 'hd-seed',
+                    algorithm: 'raw',
                     extractable: true,
                     privateKey: expect.any(Uint8Array),
                 }),
