@@ -78,12 +78,13 @@ const mockSetAmount = vi.fn()
 const mockSetNote = vi.fn()
 const mockSetIsCloseAccount = vi.fn()
 const mockSendFundsState = {
-    selectedAsset: { assetId: 0 },
+    selectedAssetBalance: { assetId: 0 },
     canSelectAsset: true,
     amount: undefined,
     note: undefined,
     destination: undefined,
     setSelectedAsset: vi.fn(),
+    setSelectedAssetBalance: vi.fn(),
     setCanSelectAsset: vi.fn(),
     setAmount: mockSetAmount,
     setNote: mockSetNote,
@@ -102,7 +103,7 @@ describe('useInputScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         // Reset the mock state
-        mockSendFundsState.selectedAsset = { assetId: 0 }
+        mockSendFundsState.selectedAssetBalance = { assetId: 0 }
         mockSendFundsState.note = undefined
         ;(useToast as Mock).mockReturnValue({ showToast: mockShowToast })
         ;(useSelectedAccount as Mock).mockReturnValue({
@@ -161,7 +162,7 @@ describe('useInputScreen', () => {
 
     it('calculates max amount for ASA correctly', () => {
         // Update mock state for ASA
-        mockSendFundsState.selectedAsset = { assetId: 1 }
+        mockSendFundsState.selectedAssetBalance = { assetId: 1 }
 
         const { result } = renderHook(() => useInputScreen())
         expect(result.current.maxAmount.toNumber()).toBe(50)
