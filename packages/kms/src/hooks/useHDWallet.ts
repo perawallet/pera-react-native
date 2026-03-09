@@ -21,6 +21,7 @@ import {
     entropyToMnemonic,
     generateHDMasterKey,
 } from '../crypto/hdwallet-utils'
+import { clearKeyData } from '@algorandfoundation/keystore'
 
 export const useHDWallet = () => {
     const { saveKey, checkAccess, keyStore } = useKMSService()
@@ -103,12 +104,15 @@ export const useHDWallet = () => {
                     params.derivationType,
                 )
                 const derivedKeyData = await keyStore.export(derivedKeyId)
-                if (!derivedKeyData.publicKey) {
+                const publicKey = derivedKeyData.publicKey
+                clearKeyData(derivedKeyData)
+
+                if (!publicKey) {
                     throw new KeyManagementError(
                         'Derived key does not have a public key',
                     )
                 }
-                return derivedKeyData.publicKey
+                return publicKey
             },
             signTransaction: async (params, encodedTx) => {
                 const derivedKeyId = await generateDerivedKey(
@@ -136,6 +140,8 @@ export const useHDWallet = () => {
                         'Entropy not found in keystore metadata',
                     )
                 }
+                clearKeyData(keyData)
+
                 return entropyToMnemonic(Buffer.from(entropy, 'hex'))
             },
         }
