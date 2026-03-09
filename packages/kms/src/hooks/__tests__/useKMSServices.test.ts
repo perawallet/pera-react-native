@@ -264,10 +264,7 @@ describe('useKMSService', () => {
             const { result } = renderHook(() => useKMSService())
 
             await act(async () => {
-                await result.current.withExportedKey(
-                    'ks-key-1',
-                    () => 'done',
-                )
+                await result.current.withExportedKey('ks-key-1', () => 'done')
             })
 
             expect(mockClearKeyData).toHaveBeenCalledWith(mockKeyData)

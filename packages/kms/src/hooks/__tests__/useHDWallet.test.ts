@@ -57,7 +57,10 @@ vi.mock('../useKMSServices', () => ({
             export: (...args: any[]) => mockKeyStoreExport(...args),
             remove: (...args: any[]) => mockKeyStoreRemove(...args),
         },
-        withExportedKey: async (keyId: string, handler: (keyData: any) => any) => {
+        withExportedKey: async (
+            keyId: string,
+            handler: (keyData: any) => any,
+        ) => {
             const keyData = await mockKeyStoreExport(keyId)
             try {
                 return await handler(keyData)
