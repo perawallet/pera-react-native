@@ -13,77 +13,80 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useDeleteAllConfirm } from '../useDeleteAllConfirm'
-import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useDeleteAllData } from '@modules/settings/hooks/useDeleteAllData'
-
-vi.mock('@hooks/useAppNavigation', () => ({
-    useAppNavigation: vi.fn(),
-}))
 
 vi.mock('@modules/settings/hooks/useDeleteAllData', () => ({
     useDeleteAllData: vi.fn(),
 }))
 
 describe('useDeleteAllConfirm', () => {
-    const mockReplace = vi.fn()
-    const mockClearAllData = vi.fn()
+    const mockClearAllData = vi.fn().mockResolvedValue(undefined)
     const mockOnClose = vi.fn()
+    const mockOnSuccess = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
-        vi.useFakeTimers()
-        ;(useAppNavigation as Mock).mockReturnValue({
-            replace: mockReplace,
+        ;(useDeleteAllData as Mock).mockReturnValue({
+            deleteAllData: mockClearAllData,
         })
-        ;(useDeleteAllData as Mock).mockReturnValue(mockClearAllData)
-    })
-
-    afterEach(() => {
-        vi.useRealTimers()
     })
 
     it('returns handleDeleteAllAccounts function', () => {
-        const { result } = renderHook(() => useDeleteAllConfirm(mockOnClose))
+        const { result } = renderHook(() =>
+            useDeleteAllConfirm({
+                onClose: mockOnClose,
+                onSuccess: mockOnSuccess,
+            }),
+        )
 
         expect(result.current).toHaveProperty('handleDeleteAllAccounts')
         expect(typeof result.current.handleDeleteAllAccounts).toBe('function')
     })
 
-    it('clears all data when handleDeleteAllAccounts is called', () => {
-        const { result } = renderHook(() => useDeleteAllConfirm(mockOnClose))
+    it('clears all data when handleDeleteAllAccounts is called', async () => {
+        const { result } = renderHook(() =>
+            useDeleteAllConfirm({
+                onClose: mockOnClose,
+                onSuccess: mockOnSuccess,
+            }),
+        )
 
-        act(() => {
-            result.current.handleDeleteAllAccounts()
+        await act(async () => {
+            await result.current.handleDeleteAllAccounts()
         })
 
         expect(mockClearAllData).toHaveBeenCalledTimes(1)
     })
 
-    it('calls onClose when handleDeleteAllAccounts is called', () => {
-        const { result } = renderHook(() => useDeleteAllConfirm(mockOnClose))
+    it('calls onClose when handleDeleteAllAccounts is called', async () => {
+        const { result } = renderHook(() =>
+            useDeleteAllConfirm({
+                onClose: mockOnClose,
+                onSuccess: mockOnSuccess,
+            }),
+        )
 
-        act(() => {
-            result.current.handleDeleteAllAccounts()
+        await act(async () => {
+            await result.current.handleDeleteAllAccounts()
         })
 
         expect(mockOnClose).toHaveBeenCalledTimes(1)
     })
 
-    it('navigates to Onboarding after a timeout', () => {
-        const { result } = renderHook(() => useDeleteAllConfirm(mockOnClose))
+    it('calls onSuccess after clearing data and closing', async () => {
+        const { result } = renderHook(() =>
+            useDeleteAllConfirm({
+                onClose: mockOnClose,
+                onSuccess: mockOnSuccess,
+            }),
+        )
 
-        act(() => {
-            result.current.handleDeleteAllAccounts()
+        await act(async () => {
+            await result.current.handleDeleteAllAccounts()
         })
 
-        expect(mockReplace).not.toHaveBeenCalled()
-
-        act(() => {
-            vi.runAllTimers()
-        })
-
-        expect(mockReplace).toHaveBeenCalledWith('Onboarding', {
-            screen: 'OnboardingHome',
-        })
+        expect(mockOnSuccess).toHaveBeenCalledTimes(1)
+        expect(mockClearAllData).toHaveBeenCalledBefore(mockOnClose)
+        expect(mockOnClose).toHaveBeenCalledBefore(mockOnSuccess)
     })
 })

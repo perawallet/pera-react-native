@@ -42,7 +42,7 @@ export const AssetActionButtons = ({
     const sendFunds = useModalState()
     const receiveFunds = useModalState()
     const account = useSelectedAccount()
-    const { setSelectedAsset, setCanSelectAsset } = useSendFunds()
+    const { setSelectedAssetBalance, setCanSelectAsset } = useSendFunds()
 
     const goToRootPage = (name: string) => {
         navigation.replace('TabBar', { screen: name })
@@ -50,12 +50,12 @@ export const AssetActionButtons = ({
 
     const handleSend = useCallback(() => {
         if (assetHolding) {
-            setSelectedAsset(assetHolding)
+            setSelectedAssetBalance(assetHolding)
             setCanSelectAsset(false)
         }
 
         sendFunds.open()
-    }, [assetHolding, setSelectedAsset, setCanSelectAsset, sendFunds])
+    }, [assetHolding, setSelectedAssetBalance, setCanSelectAsset, sendFunds])
 
     return (
         <PWView style={styles.container}>

@@ -25,7 +25,7 @@ type UseAutoLockListenerResult = {
 export const useAutoLockListener = (): UseAutoLockListenerResult => {
     const { checkAutoLock, setAutoLockStartedAt, checkPinEnabled } =
         usePinCode()
-    const deleteAllData = useDeleteAllData()
+    const { deleteAllData } = useDeleteAllData()
 
     const [isLocked, setIsLocked] = useState(false)
     const [isInitialized, setIsInitialized] = useState(false)

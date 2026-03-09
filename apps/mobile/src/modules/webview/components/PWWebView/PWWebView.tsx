@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useDeviceInfoService } from '@perawallet/wallet-extension-platform'
 import { config } from '@perawallet/wallet-core-config'
 import { useTheme } from '@rneui/themed'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
@@ -47,6 +46,7 @@ import { WebViewFooterBar } from './WebViewFooterBar'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebViewStore } from '../../hooks'
+import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 export type PWWebViewProps = {
     url: string
@@ -92,7 +92,8 @@ export const PWWebView = (props: PWWebViewProps) => {
         )
     }, [url])
 
-    const deviceInfo = useDeviceInfoService()
+    const provider = usePeraProvider()
+    const deviceInfo = provider.deviceInfo
 
     const userAgent = useMemo(() => {
         return `${deviceInfo.getUserAgent()}`

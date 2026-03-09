@@ -16,6 +16,7 @@ import { useKeyManagerStore } from '../store'
 import { AccessControlPermission, KeyPair } from '../models'
 import { KeyAccessError } from '../errors'
 import { useCallback } from 'react'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 export const checkAccess = (key: KeyPair, domain: string): void => {
     if (key.acl?.length) {

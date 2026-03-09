@@ -25,7 +25,6 @@
     "before-after-hook": "catalog:",
     "@perawallet/wallet-extension-platform": "workspace:*",
     "@perawallet/wallet-extension-platform-driver": "workspace:*",
-    "@perawallet/wallet-core-shared": "workspace:*",
     "react": "catalog:"
   },
   "devDependencies": {

@@ -68,31 +68,30 @@ vi.mock('@perawallet/wallet-core-kms', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-extension-platform', async () => {
-    const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-extension-platform')
-    >('@perawallet/wallet-extension-platform')
-    return {
-        ...actual,
-        useKeyValueStorageService: vi.fn().mockReturnValue({
+vi.mock('@perawallet/wallet-core-device', () => ({
+    useUpdateDeviceMutation: vi.fn(() => ({
+        mutateAsync: vi.fn(async () => ({})),
+    })),
+    useDeviceID: vi.fn(() => 'device-id'),
+}))
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        deviceInfo: {
+            getDevicePlatform: () => 'ios',
+        },
+        keyValueStorage: {
+            getItem: () => null,
+            setItem: () => {},
+            removeItem: () => {},
+        },
+        secureStorage: {
             getItem: vi.fn(),
             setItem: vi.fn(),
             removeItem: vi.fn(),
-        }),
-        useSecureStorageService: vi.fn().mockReturnValue({
-            getItem: vi.fn(),
-            setItem: vi.fn(),
-            removeItem: vi.fn(),
-        }),
-        useUpdateDeviceMutation: vi.fn(() => ({
-            mutateAsync: vi.fn(async () => ({})),
-        })),
-        useDeviceID: vi.fn(() => 'device-id'),
-        useDeviceInfoService: vi.fn(() => ({
-            getDevicePlatform: vi.fn(() => 'ios'),
-        })),
-    }
-})
+        },
+    }),
+}))
 
 describe('useCreateAccount', () => {
     beforeEach(() => {

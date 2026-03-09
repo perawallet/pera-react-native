@@ -11,48 +11,24 @@
  */
 
 import { z } from 'zod'
+import {
+    multiSigAccountResponseSchema,
+    signRequestResponseSchema,
+} from '@perawallet/wallet-core-multisig'
 
-export const multiSigAccountResponseSchema = z.object({
-    custom_id: z.string(),
-    creation_datetime: z.string(),
-    address: z.string(),
-    version: z.number(),
-    threshold: z.number(),
-    participant_addresses: z.array(z.string()),
-})
+export {
+    multiSigAccountResponseSchema,
+    signResponseSchema,
+    transactionListResponseSchema,
+    signRequestResponseSchema,
+} from '@perawallet/wallet-core-multisig'
 
-export const signResponseSchema = z.object({
-    address: z.string(),
-    response: z.enum(['signed', 'declined']),
-})
-
-export const transactionListResponseSchema = z.object({
-    id: z.coerce.string(),
-    raw_transactions: z.array(z.string()),
-    first_valid_block: z.number(),
-    last_valid_block: z.number(),
-    expected_expire_datetime: z.string(),
-    responses: z.array(signResponseSchema),
-})
-
-export const signRequestResponseSchema = z.object({
-    id: z.coerce.string(),
-    status: z.enum([
-        'pending',
-        'ready',
-        'submitting',
-        'confirmed',
-        'failed',
-        'expired',
-        'declined',
-    ]),
-    type: z.string(),
-    creation_datetime: z.string(),
-    expected_expire_datetime: z.string(),
-    fail_reason_display: z.string().nullable(),
-    joint_account: multiSigAccountResponseSchema,
-    transaction_lists: z.array(transactionListResponseSchema),
-})
+export type {
+    MultiSigAccountResponse,
+    SignResponse,
+    TransactionListResponse,
+    SignRequestResponse,
+} from '@perawallet/wallet-core-multisig'
 
 export const asaInboxResponseSchema = z.object({
     address: z.string(),
@@ -66,13 +42,5 @@ export const inboxResponseSchema = z.object({
     asa_inboxes: z.array(asaInboxResponseSchema),
 })
 
-export type MultiSigAccountResponse = z.infer<
-    typeof multiSigAccountResponseSchema
->
-export type SignResponse = z.infer<typeof signResponseSchema>
-export type TransactionListResponse = z.infer<
-    typeof transactionListResponseSchema
->
-export type SignRequestResponse = z.infer<typeof signRequestResponseSchema>
 export type ASAInboxResponse = z.infer<typeof asaInboxResponseSchema>
 export type InboxResponse = z.infer<typeof inboxResponseSchema>

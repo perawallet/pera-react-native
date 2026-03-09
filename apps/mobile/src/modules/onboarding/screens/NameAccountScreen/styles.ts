@@ -12,47 +12,19 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
-    return {
-        mainContainer: {
-            flex: 1,
-            backgroundColor: theme.colors.background,
-            marginBottom: theme.spacing.xl,
-        },
-        content: {
-            flex: 1,
-            paddingHorizontal: theme.spacing.xl,
-        },
-        headerContainer: {
-            gap: theme.spacing.md,
-            paddingBottom: theme.spacing['3xl'],
-        },
-        helperText: {
-            color: theme.colors.textGray,
-        },
-        walletNameContainer: {
-            backgroundColor: theme.colors.layerGrayLighter,
-            borderRadius: theme.spacing.sm,
-            paddingVertical: theme.spacing.md,
-            flexDirection: 'row',
-            flexWrap: 'nowrap',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: theme.spacing.sm,
-        },
-        nameText: {
-            color: theme.colors.textGray,
-            alignSelf: 'center',
-        },
-        finishButton: {
-            marginHorizontal: theme.spacing.xl,
-            marginBottom: theme.spacing.sm,
-        },
-        input: {
-            marginTop: theme.spacing.sm,
-        },
-        spacer: {
-            flexGrow: 1,
-        },
-    }
-})
+export const useStyles = makeStyles(theme => ({
+    walletNameContainer: {
+        backgroundColor: theme.colors.layerGrayLighter,
+        borderRadius: theme.spacing.sm,
+        paddingVertical: theme.spacing.md,
+        flexDirection: 'row',
+        flexWrap: 'nowrap',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: theme.spacing.sm,
+    },
+    nameText: {
+        color: theme.colors.textGray,
+        alignSelf: 'center',
+    },
+}))

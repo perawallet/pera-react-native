@@ -15,7 +15,7 @@ import Decimal from 'decimal.js'
 import { useTheme } from '@rneui/themed/dist/config/ThemeProvider'
 import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
 import { formatCurrency } from '@perawallet/wallet-core-shared'
-import { useDeviceInfoService } from '@perawallet/wallet-extension-platform'
+import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 type UseSwapAmountSectionParams = {
     variant: 'pay' | 'receive'
@@ -41,7 +41,8 @@ export const useSwapAmountSection = ({
     onAmountChange,
 }: UseSwapAmountSectionParams): UseSwapAmountSectionResult => {
     const { theme } = useTheme()
-    const deviceInfo = useDeviceInfoService()
+    const provider = usePeraProvider()
+    const deviceInfo = provider.deviceInfo
 
     const { data: assets } = useAssetsQuery([assetId])
     const asset = useMemo(() => assets?.get(assetId), [assets, assetId])

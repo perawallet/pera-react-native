@@ -14,10 +14,6 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useRemoveAccountById } from '../useRemoveAccountById'
 import { useAccountsStore } from '../../store'
-import {
-    registerTestPlatform,
-    MemoryKeyValueStorage,
-} from '@perawallet/wallet-extension-platform'
 import type { WalletAccount } from '../../models'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
@@ -40,38 +36,12 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-extension-platform', async () => {
-    const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-extension-platform')
-    >('@perawallet/wallet-extension-platform')
-    return {
-        ...actual,
-        useKeyValueStorageService: vi.fn().mockReturnValue({
-            getItem: vi.fn(),
-            setItem: vi.fn(),
-            removeItem: vi.fn(),
-        }),
-    }
-})
-
 describe('useRemoveAccountById', () => {
     beforeEach(() => {
         useAccountsStore.setState({ accounts: [] })
     })
 
     test('removeAccountById removes account and clears persisted PK', () => {
-        const dummySecure = {
-            setItem: vi.fn(async () => {}),
-            getItem: vi.fn(async () => null),
-            removeItem: vi.fn(async () => {}),
-            authenticate: vi.fn(async () => true),
-        }
-
-        registerTestPlatform({
-            keyValueStorage: new MemoryKeyValueStorage() as any,
-            secureStorage: dummySecure as any,
-        })
-
         const a: WalletAccount = {
             id: '1',
             name: 'Alice',

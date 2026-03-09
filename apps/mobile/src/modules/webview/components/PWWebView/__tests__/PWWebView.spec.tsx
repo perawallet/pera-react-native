@@ -36,6 +36,18 @@ vi.mock('@modules/webview/hooks', () => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-extension-provider', async importOriginal => {
+    const actual = await importOriginal()
+    return {
+        ...(actual as object),
+        usePeraProvider: vi.fn(() => ({
+            deviceInfo: {
+                getUserAgent: vi.fn(() => 'Pera Wallet/1.0.0'),
+            },
+        })),
+    }
+})
+
 describe('PWWebView', () => {
     it('renders with url', () => {
         const { container } = render(

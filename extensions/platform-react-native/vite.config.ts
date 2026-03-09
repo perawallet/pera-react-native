@@ -53,6 +53,7 @@ export default defineConfig({
                 'zustand',
                 '@algorandfoundation/wallet-provider',
                 '@perawallet/wallet-core-config',
+                '@perawallet/wallet-core-remote-config',
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-core-blockchain',

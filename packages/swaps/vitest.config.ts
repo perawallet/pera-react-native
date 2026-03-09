@@ -42,6 +42,14 @@ export default defineConfig({
                 __dirname,
                 '../../extensions/platform/src/test-utils',
             ),
+            '@perawallet/wallet-extension-provider': path.resolve(
+                __dirname,
+                '../../extensions/provider/src/index.ts',
+            ),
+            '@perawallet/wallet-extension-platform-driver': path.resolve(
+                __dirname,
+                '../../extensions/platform-driver/src/index.ts',
+            ),
         },
     },
 })

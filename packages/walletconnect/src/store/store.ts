@@ -17,11 +17,8 @@ import type {
     WalletConnectSessionRequest,
     WalletConnectStore,
 } from '../models'
-import {
-    createPersistStorage,
-    registerStore,
-    type WithPersist,
-} from '@perawallet/wallet-core-shared'
+import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'wallet-connect-store'
 
@@ -46,7 +43,7 @@ export const useWalletConnectStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(createPersistStorage),
+            storage: createJSONStorage(() => getProvider().keyValueStorage),
             version: 1,
             partialize: state => ({
                 walletConnectConnections: state.walletConnectConnections,

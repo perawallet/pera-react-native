@@ -13,12 +13,12 @@
 import { useRef, useMemo } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import { useDeviceInfoService } from '@perawallet/wallet-extension-platform'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { useToast } from '@hooks/useToast'
 import { Pressable } from 'react-native'
 import { PWText } from '@components/core'
+import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 const REQUIRED_TAPS = 10
 const NOTIFY_FROM_TAP_COUNT = 7
@@ -27,7 +27,8 @@ const TAP_TIMEOUT = 1000
 const Version = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { getAppVersion, getAppBuild } = useDeviceInfoService()
+    const provider = usePeraProvider()
+    const { getAppVersion, getAppBuild } = provider.deviceInfo
 
     const appVersion = useMemo(() => {
         return getAppVersion()

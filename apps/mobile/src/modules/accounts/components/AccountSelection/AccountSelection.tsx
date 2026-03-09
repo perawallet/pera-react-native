@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, ReactNode } from 'react'
 import {
     useSelectedAccount,
     WalletAccount,
@@ -19,16 +19,17 @@ import { useStyles } from './styles'
 import { AccountMenuBottomSheet } from '@modules/accounts/components/AccountMenuBottomSheet'
 import { useModalState } from '@hooks/useModalState'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-
 import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
 import { AccountDisplay } from '../AccountDisplay'
 
 export type AccountSelectionProps = {
     onSelected?: (account: WalletAccount) => void
+    headerContent?: ReactNode
 } & TouchableOpacityProps
 
 export const AccountSelection = ({
     onSelected,
+    headerContent,
     ...props
 }: AccountSelectionProps) => {
     const styles = useStyles()
@@ -65,6 +66,7 @@ export const AccountSelection = ({
                 onClose={accountMenuState.close}
                 onSelected={handleSelected}
                 onAddAccount={handleAddAccount}
+                headerContent={headerContent}
             />
         </>
     )

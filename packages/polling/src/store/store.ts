@@ -12,12 +12,9 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import {
-    createPersistStorage,
-    registerStore,
-    type WithPersist,
-} from '@perawallet/wallet-core-shared'
+import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
 import { PollingState } from '../models'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'polling-store'
 
@@ -38,7 +35,7 @@ export const usePollingStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(createPersistStorage),
+            storage: createJSONStorage(() => getProvider().keyValueStorage),
             version: 1,
             partialize: state => ({
                 lastRefreshedRound: state.lastRefreshedRound,

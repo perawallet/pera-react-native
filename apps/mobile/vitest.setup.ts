@@ -16,6 +16,72 @@
 import { vi, afterEach } from 'vitest'
 // import '@testing-library/jest-native/extend-expect'
 
+const store = new Map<string, string>()
+
+// Mock platform driver to prevent "No platform driver configured" errors
+vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
+    WithPlatformExtension: () => ({
+        analytics: {
+            logEvent: vi.fn(),
+            setUserId: vi.fn(),
+            setUserProperty: vi.fn(),
+        },
+        biometrics: {
+            isSensorAvailable: vi.fn().mockResolvedValue(false),
+            simplePrompt: vi.fn().mockResolvedValue({ success: false }),
+            createKeys: vi.fn(),
+            deleteKeys: vi.fn(),
+        },
+        crashReporting: {
+            log: vi.fn(),
+            recordError: vi.fn(),
+        },
+        deviceInfo: {
+            getDevicePlatform: () => 'ios',
+            getDeviceModel: () => 'iPhone',
+            getDeviceId: () => 'test-device-id',
+            getVersion: () => '1.0.0',
+            getBuildNumber: () => '1',
+            getDeviceLocale: () => 'en-US',
+            getDeviceLanguage: () => 'en',
+        },
+        firebase: {
+            getToken: vi.fn().mockResolvedValue('mock-token'),
+        },
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => store.set(key, value),
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+        },
+        pushNotifications: {
+            requestPermission: vi.fn().mockResolvedValue(true),
+            getToken: vi.fn().mockResolvedValue('mock-token'),
+        },
+        remoteConfig: {
+            fetchAndActivate: vi.fn().mockResolvedValue(true),
+            getValue: vi.fn().mockReturnValue({ asString: () => '' }),
+            getBoolean: vi.fn().mockReturnValue(false),
+            getString: vi.fn().mockReturnValue(''),
+        },
+        secureStorage: {
+            setItem: vi.fn().mockResolvedValue(undefined),
+            getItem: vi.fn().mockResolvedValue(null),
+            removeItem: vi.fn().mockResolvedValue(undefined),
+        },
+    }),
+    getPlatformServices: () => ({
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => store.set(key, value),
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+        },
+    }),
+}))
+
 // Mock react-native-reanimated
 vi.mock('react-native-reanimated', () => {
     const React = require('react')
