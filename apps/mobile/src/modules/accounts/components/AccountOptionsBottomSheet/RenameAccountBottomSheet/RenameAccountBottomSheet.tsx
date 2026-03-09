@@ -55,9 +55,7 @@ export const RenameAccountBottomSheet = ({
             onBackdropPress={onClose}
             innerContainerStyle={styles.container}
             containerStyle={styles.keyboardContainer}
-            scrollViewProps={{
-                keyboardShouldPersistTaps: 'handled',
-            }}
+            enablePanDownToClose
         >
             <PWToolbar
                 right={
@@ -66,6 +64,7 @@ export const RenameAccountBottomSheet = ({
                         onPress={onClose}
                     />
                 }
+                paddingStyle='dense'
             />
             <PWText
                 variant='h3'

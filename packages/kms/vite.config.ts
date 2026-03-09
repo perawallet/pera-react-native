@@ -39,7 +39,7 @@ export default defineConfig({
                 'react',
                 'react/jsx-runtime',
                 'zustand',
-                '@perawallet/wallet-core-platform-integration',
+                '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-core-shared',
                 '@algorandfoundation/xhd-wallet-api',
                 '@algorandfoundation/algokit-utils',

@@ -12,24 +12,11 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import {
-    KeyValueStorageService,
-    useKeyValueStorageService,
-} from '@perawallet/wallet-core-platform-integration'
 import type { KeyManagerState, KeyPair } from '../models'
-import {
-    createLazyStore,
-    DataStoreRegistry,
-    type WithPersist,
-} from '@perawallet/wallet-core-shared'
+import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'key-manager-store'
-const lazy =
-    createLazyStore<WithPersist<StoreApi<KeyManagerState>, unknown>>(STORE_NAME)
-
-export const useKeyManagerStore: UseBoundStore<
-    WithPersist<StoreApi<KeyManagerState>, unknown>
-> = lazy.useStore
 
 const objectToKeyMap = (object: KeyPair[]): Map<string, KeyPair> => {
     const map = new Map<string, KeyPair>()
@@ -57,65 +44,62 @@ const initialState = {
     keys: new Map<string, KeyPair>(),
 }
 
-export const createKeyManagerStore = (storage: KeyValueStorageService) =>
-    create<KeyManagerState>()(
-        persist(
-            (set, get) => ({
-                ...initialState,
-                getKey: (id: string) => {
-                    const key = get().keys.get(id)
-                    if (!key) {
-                        return null
-                    }
+export const useKeyManagerStore: UseBoundStore<
+    WithPersist<StoreApi<KeyManagerState>, unknown>
+> = create<KeyManagerState>()(
+    persist(
+        (set, get) => ({
+            ...initialState,
+            getKey: (id: string) => {
+                const key = get().keys.get(id)
+                if (!key) {
+                    return null
+                }
 
-                    if (key.expiresAt && Date.now() > key.expiresAt.getTime()) {
-                        get().removeKey(id)
-                        return null
-                    }
+                if (key.expiresAt && Date.now() > key.expiresAt.getTime()) {
+                    get().removeKey(id)
+                    return null
+                }
 
-                    return key
-                },
-                addKey: (key: KeyPair) => {
-                    const keys = get().keys
-                    keys.set(key.id ?? '', key)
-                    set({ keys })
-                },
-                removeKey: (id: string) => {
-                    const keys = get().keys
-                    keys.delete(id)
-                    set({ keys })
-                },
-                resetState: () => set({ keys: new Map<string, KeyPair>() }),
-            }),
-            {
-                name: STORE_NAME,
-                storage: createJSONStorage(() => storage),
-                version: 1,
-                partialize: state => ({
-                    keys: Array.from(state.keys.values()),
-                }),
-                onRehydrateStorage: () => state => {
-                    if (state) {
-                        // Rehydrate device slice to convert deviceIDs back to Map
-                        const keysState = rehydrateKeyManagerSlice(state)
-                        Object.assign(state, keysState)
-                    }
-                },
+                return key
             },
-        ),
-    )
+            addKey: (key: KeyPair) => {
+                const keys = get().keys
+                keys.set(key.id ?? '', key)
+                set({ keys })
+            },
+            removeKey: (id: string) => {
+                const keys = get().keys
+                keys.delete(id)
+                set({ keys })
+            },
+            resetState: () => set({ keys: new Map<string, KeyPair>() }),
+        }),
+        {
+            name: STORE_NAME,
+            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            version: 1,
+            partialize: state => ({
+                keys: Array.from(state.keys.values()),
+            }),
+            onRehydrateStorage: () => state => {
+                if (state) {
+                    // Rehydrate device slice to convert deviceIDs back to Map
+                    const keysState = rehydrateKeyManagerSlice(state)
+                    Object.assign(state, keysState)
+                }
+            },
+        },
+    ),
+)
 
-export const initKeyManagerStore = () => {
-    const storage = useKeyValueStorageService()
-    const realStore = createKeyManagerStore(storage)
-    lazy.init(realStore, () => realStore.getState().resetState())
-}
-
-export const clearKeyManagerStore = () => lazy.clear()
-
-export const registerKeyManagerStore = () =>
-    DataStoreRegistry.register({
-        name: STORE_NAME,
-        init: initKeyManagerStore,
-        clear: clearKeyManagerStore,
-    })
+registerStore({
+    name: STORE_NAME,
+    clearStorage: () =>
+        (
+            useKeyManagerStore as unknown as {
+                persist: { clearStorage: () => void }
+            }
+        ).persist.clearStorage(),
+    resetState: () => useKeyManagerStore.getState().resetState(),
+})

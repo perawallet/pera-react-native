@@ -43,6 +43,7 @@ export const RekeyGuardBottomSheet = (props: RekeyGuardBottomSheetProps) => {
             isVisible={isOpen}
             onBackdropPress={onClose}
             innerContainerStyle={styles.bottomSheetContainer}
+            enablePanDownToClose
         >
             <PWIcon
                 name='info'

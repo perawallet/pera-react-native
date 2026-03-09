@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useWalletConnectHandlers } from '../useWalletConnectHandlers'
 import { useWalletConnectStore } from '../../store'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
-import { useNetwork } from '@perawallet/wallet-core-platform-integration'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     generateOrderedUniqueId,
     Networks,
@@ -50,30 +50,20 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         ),
     })),
     encodeAlgorandAddress: vi.fn(() => 'TEST_ADDRESS'),
+    useNetwork: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
-    useNetwork: vi.fn(),
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAllAccounts: vi.fn(() => [
+        { address: 'addr1', name: 'Account 1', type: 'standard' },
+    ]),
+    getAccountDisplayName: vi.fn((a: any) => a.name || a.address),
+    isLedgerAccount: vi.fn(() => false),
 }))
-
-vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-accounts')
-        >()
-    return {
-        ...actual,
-        useAllAccounts: vi.fn(() => [
-            { address: 'addr1', name: 'Account 1', type: 'standard' },
-        ]),
-        getAccountDisplayName: vi.fn(a => a.name || a.address),
-        isLedgerAccount: vi.fn(() => false),
-    }
-})
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual('@perawallet/wallet-core-shared')

@@ -12,7 +12,6 @@
 
 import AlgoIcon from '@assets/icons/algo.svg'
 import AccountRekeyedIcon from '@assets/icons/account-rekeyed.svg'
-import AppLogo from '@assets/icons/app_logo.svg'
 import ArrowUpIcon from '@assets/icons/arrow-up.svg'
 import ArrowUpRightIcon from '@assets/icons/arrow-up-right.svg'
 import ArrowDownIcon from '@assets/icons/arrow-down.svg'
@@ -53,8 +52,10 @@ import KeyIcon from '@assets/icons/key.svg'
 import ListArrowDownIcon from '@assets/icons/list-arrow-down.svg'
 import LockedIcon from '@assets/icons/locked.svg'
 import MagnifyingGlassIcon from '@assets/icons/magnifying-glass.svg'
+import MinusIcon from '@assets/icons/minus.svg'
 import MoonIcon from '@assets/icons/moon.svg'
 import OutflowIcon from '@assets/icons/outflow.svg'
+import PeopleIcon from '@assets/icons/people.svg'
 import PersonKeyIcon from '@assets/icons/person-key.svg'
 import PersonMenuIcon from '@assets/icons/person-menu.svg'
 import PersonIcon from '@assets/icons/person.svg'
@@ -90,12 +91,14 @@ import UndoIcon from '@assets/icons/undo.svg'
 import DarkAlgo25AccountIcon from '@assets/icons/accounts/dark/algo25-account.svg'
 import DarkHdWalletAccountIcon from '@assets/icons/accounts/dark/hdwallet-account.svg'
 import DarkLedgerAccountIcon from '@assets/icons/accounts/dark/ledger-account.svg'
+import DarkMultisigAccountIcon from '@assets/icons/accounts/dark/multisig-account.svg'
 import DarkRekeyedAccountIcon from '@assets/icons/accounts/dark/rekeyed-account.svg'
 import DarkUnknownAccountIcon from '@assets/icons/accounts/dark/unknown-account.svg'
 import DarkWatchAccountIcon from '@assets/icons/accounts/dark/watch-account.svg'
 import LightAlgo25AccountIcon from '@assets/icons/accounts/light/algo25-account.svg'
 import LightHdWalletAccountIcon from '@assets/icons/accounts/light/hdwallet-account.svg'
 import LightLedgerAccountIcon from '@assets/icons/accounts/light/ledger-account.svg'
+import LightMultisigAccountIcon from '@assets/icons/accounts/light/multisig-account.svg'
 import LightRekeyedAccountIcon from '@assets/icons/accounts/light/rekeyed-account.svg'
 import LightUnknownAccountIcon from '@assets/icons/accounts/light/unknown-account.svg'
 import LightWatchAccountIcon from '@assets/icons/accounts/light/watch-account.svg'
@@ -120,7 +123,6 @@ import DocumentDownloadIcon from '@assets/icons/document-download.svg'
 
 export const ICON_LIBRARY = {
     algo: AlgoIcon,
-    app_logo: AppLogo,
     'arrow-up': ArrowUpIcon,
     'arrow-up-right': ArrowUpRightIcon,
     'arrow-down': ArrowDownIcon,
@@ -163,8 +165,10 @@ export const ICON_LIBRARY = {
     'list-arrow-down': ListArrowDownIcon,
     locked: LockedIcon,
     'magnifying-glass': MagnifyingGlassIcon,
+    minus: MinusIcon,
     moon: MoonIcon,
     outflow: OutflowIcon,
+    people: PeopleIcon,
     'person-menu': PersonMenuIcon,
     person: PersonIcon,
     'person-key': PersonKeyIcon,
@@ -197,12 +201,14 @@ export const ICON_LIBRARY = {
     'accounts/dark/algo25-account': DarkAlgo25AccountIcon,
     'accounts/dark/hdwallet-account': DarkHdWalletAccountIcon,
     'accounts/dark/ledger-account': DarkLedgerAccountIcon,
+    'accounts/dark/multisig-account': DarkMultisigAccountIcon,
     'accounts/dark/rekeyed-account': DarkRekeyedAccountIcon,
     'accounts/dark/unknown-account': DarkUnknownAccountIcon,
     'accounts/dark/watch-account': DarkWatchAccountIcon,
     'accounts/light/algo25-account': LightAlgo25AccountIcon,
     'accounts/light/hdwallet-account': LightHdWalletAccountIcon,
     'accounts/light/ledger-account': LightLedgerAccountIcon,
+    'accounts/light/multisig-account': LightMultisigAccountIcon,
     'accounts/light/rekeyed-account': LightRekeyedAccountIcon,
     'accounts/light/unknown-account': LightUnknownAccountIcon,
     'accounts/light/watch-account': LightWatchAccountIcon,

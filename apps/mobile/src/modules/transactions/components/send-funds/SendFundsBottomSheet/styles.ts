@@ -11,16 +11,10 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { ScaledSize } from 'react-native'
 
-export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
-    const height = dimensions.height - 100
+export const useStyles = makeStyles(() => {
     return {
         container: {
-            height,
-            paddingVertical: theme.spacing.md,
-            borderTopStartRadius: theme.spacing.sm,
-            borderTopEndRadius: theme.spacing.sm,
             overflow: 'hidden',
         },
     }

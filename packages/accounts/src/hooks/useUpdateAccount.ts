@@ -12,19 +12,19 @@
 
 import {
     useDeviceID,
-    useDeviceInfoService,
-    useNetwork,
     useUpdateDeviceMutation,
-} from '@perawallet/wallet-core-platform-integration'
+} from '@perawallet/wallet-core-device'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '../store'
 import { WalletAccount } from '../models'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 export const useUpdateAccount = () => {
     const accounts = useAccountsStore(state => state.accounts)
     const setAccounts = useAccountsStore(state => state.setAccounts)
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
-    const deviceInfo = useDeviceInfoService()
+    const deviceInfo = getProvider().deviceInfo
     const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
 
     return (account: WalletAccount) => {

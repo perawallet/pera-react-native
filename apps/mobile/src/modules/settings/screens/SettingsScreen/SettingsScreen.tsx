@@ -27,6 +27,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import type { SettingsStackParamsList } from '@modules/settings/routes'
 import { RatingsBottomSheet } from '@modules/settings/components/RatingsBottomSheet/RatingsBottomSheet'
 import { DeleteAllConfirmBottomSheet } from '@modules/settings/components/DeleteAllConfirmBottomSheet/DeleteAllConfirmBottomSheet'
+import { DeleteAllSuccessBottomSheet } from '@modules/settings/components/DeleteAllSuccessBottomSheet'
 import { getTestProps } from '@utils/test-id-helper'
 
 export type SettingsRouteName = keyof SettingsStackParamsList
@@ -41,6 +42,9 @@ export const SettingsScreen = () => {
         isDeleteModalOpen,
         openDeleteModal,
         closeDeleteModal,
+        isSuccessModalOpen,
+        handleDeleteSuccess,
+        handleSuccessClose,
         isRatingModalOpen,
         closeRatingModal,
     } = useSettingsScreen()
@@ -82,6 +86,11 @@ export const SettingsScreen = () => {
             <DeleteAllConfirmBottomSheet
                 isOpen={isDeleteModalOpen}
                 onClose={closeDeleteModal}
+                onSuccess={handleDeleteSuccess}
+            />
+            <DeleteAllSuccessBottomSheet
+                isVisible={isSuccessModalOpen}
+                onClose={handleSuccessClose}
             />
             <RatingsBottomSheet
                 isOpen={isRatingModalOpen}

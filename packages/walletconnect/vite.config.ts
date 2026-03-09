@@ -41,7 +41,7 @@ export default defineConfig({
                 'zustand',
                 '@perawallet/wallet-core-accounts',
                 '@perawallet/wallet-core-blockchain',
-                '@perawallet/wallet-core-platform-integration',
+                '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-core-signing',
                 '@walletconnect/client',

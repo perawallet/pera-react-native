@@ -31,7 +31,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { ConnectionViewHeader } from './ConnectionViewHeader'
-import { useNetwork } from '@perawallet/wallet-core-platform-integration'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 
 export type ConnectionViewProps = {
     request: WalletConnectSessionRequest
@@ -107,6 +107,7 @@ export const ConnectionView = ({
                 extraData={{ selectedAccounts }}
                 ListHeaderComponent={<ConnectionViewHeader request={request} />}
                 showsVerticalScrollIndicator={false}
+                inBottomSheet
             />
             <PWView style={styles.buttonContainer}>
                 <PWButton

@@ -12,7 +12,7 @@
 
 import { config, getNetworkConfig } from '@perawallet/wallet-core-config'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
-import { useDeviceStore } from '@perawallet/wallet-core-platform-integration'
+import { useNetworkStore } from '../store'
 
 /**
  * Returns an instance of AlgorandClient based on the current network in device store.
@@ -20,7 +20,7 @@ import { useDeviceStore } from '@perawallet/wallet-core-platform-integration'
  * @returns {AlgorandClient}
  */
 export const getAlgorandClient = () => {
-    const network = useDeviceStore.getState().network
+    const network = useNetworkStore.getState().network
     const networkConfig = getNetworkConfig(network)
 
     const algodConfig = {

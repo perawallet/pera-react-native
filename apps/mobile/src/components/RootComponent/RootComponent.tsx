@@ -14,6 +14,7 @@ import { config } from '@perawallet/wallet-core-config'
 import { useEffect, useRef } from 'react'
 import { AppState, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { MainRoutes } from '@routes/index'
 import { getTheme } from '@theme/theme'
 import { ThemeProvider } from '@rneui/themed'
@@ -23,10 +24,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
 import { useToast } from '@hooks/useToast'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
-import {
-    useDevice,
-    useNetwork,
-} from '@perawallet/wallet-core-platform-integration'
+import { useDevice } from '@perawallet/wallet-core-device'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { usePolling } from '@perawallet/wallet-core-polling'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useNetworkStatus, useNetworkStatusListener } from '@modules/network'
@@ -136,13 +135,15 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
 
     return (
         <ThemeProvider theme={theme}>
-            <AutoLockGuard>
-                <WalletConnectProvider>
-                    <RootContentContainer fcmToken={fcmToken} />
-                    <WebViewOverlay />
-                </WalletConnectProvider>
-                <SigningOverlays />
-            </AutoLockGuard>
+            <BottomSheetModalProvider>
+                <AutoLockGuard>
+                    <WalletConnectProvider>
+                        <RootContentContainer fcmToken={fcmToken} />
+                        <WebViewOverlay />
+                    </WalletConnectProvider>
+                    <SigningOverlays />
+                </AutoLockGuard>
+            </BottomSheetModalProvider>
         </ThemeProvider>
     )
 }

@@ -12,7 +12,6 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { registerTestPlatform } from '@test-utils'
 
 // Mock useShouldRefreshMutation
 const mockMutateAsync = vi.fn()
@@ -46,7 +45,6 @@ describe('services/polling/usePolling', () => {
 
     test('does not call backend when there are no accounts', async () => {
         vi.resetModules()
-        registerTestPlatform()
 
         mockMutateAsync.mockResolvedValue({ refresh: false })
 
@@ -74,7 +72,6 @@ describe('services/polling/usePolling', () => {
 
     test('updates lastRefreshedRound when backend indicates refresh', async () => {
         vi.resetModules()
-        registerTestPlatform()
 
         mockMutateAsync.mockResolvedValue({
             refresh: true,
@@ -99,7 +96,6 @@ describe('services/polling/usePolling', () => {
 
     test('stopPolling prevents further backend calls', async () => {
         vi.resetModules()
-        registerTestPlatform()
 
         mockMutateAsync.mockResolvedValue({ refresh: false })
 
@@ -124,7 +120,6 @@ describe('services/polling/usePolling', () => {
 
     test('handles backend errors gracefully', async () => {
         vi.resetModules()
-        registerTestPlatform()
 
         mockMutateAsync.mockRejectedValueOnce(new Error('Network error'))
 

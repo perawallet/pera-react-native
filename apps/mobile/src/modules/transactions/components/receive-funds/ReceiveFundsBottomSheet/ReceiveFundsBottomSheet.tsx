@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useWindowDimensions } from 'react-native'
 import {
     NavigationContainer,
     NavigationIndependentTree,
@@ -35,8 +34,7 @@ export const ReceiveFundsBottomSheet = ({
     onClose,
     isVisible,
 }: ReceiveFundsBottomSheetProps) => {
-    const dimensions = useWindowDimensions()
-    const styles = useStyles(dimensions)
+    const styles = useStyles()
     const { t } = useLanguage()
     useReceiveFundsBottomSheet(isVisible, account, onClose)
 
@@ -44,6 +42,10 @@ export const ReceiveFundsBottomSheet = ({
         <PWBottomSheet
             isVisible={isVisible}
             innerContainerStyle={styles.container}
+            size='lg'
+            onBackdropPress={onClose}
+            enablePanDownToClose
+            autoCreateContainer={false}
         >
             <TransactionErrorBoundary t={t}>
                 <NavigationIndependentTree>

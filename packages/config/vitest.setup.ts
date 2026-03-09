@@ -10,17 +10,27 @@
  limitations under the License
  */
 
-import 'reflect-metadata'
-import { container } from 'tsyringe'
-import { afterEach } from 'vitest'
+import { vi } from 'vitest'
 
-afterEach(() => {
-    try {
-        if (typeof (container as any).clearInstances === 'function') {
-            ;(container as any).clearInstances()
-        }
-        if (typeof (container as any).reset === 'function') {
-            ;(container as any).reset()
-        }
-    } catch {}
-})
+const store = new Map<string, string>()
+
+vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
+    WithPlatformExtension: () => ({
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => store.set(key, value),
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+        },
+    }),
+    getPlatformServices: () => ({
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => store.set(key, value),
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+        },
+    }),
+}))

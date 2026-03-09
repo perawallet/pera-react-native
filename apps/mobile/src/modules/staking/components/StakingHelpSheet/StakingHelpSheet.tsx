@@ -41,6 +41,7 @@ export const StakingHelpSheet = ({
             isVisible={isVisible}
             onBackdropPress={onClose}
             innerContainerStyle={styles.container}
+            enablePanDownToClose
         >
             <PWToolbar
                 left={
@@ -51,6 +52,7 @@ export const StakingHelpSheet = ({
                     />
                 }
                 center={<PWText variant='h4'>{t('staking.help.title')}</PWText>}
+                paddingStyle='dense'
             />
 
             <PWView style={styles.contentContainer}>

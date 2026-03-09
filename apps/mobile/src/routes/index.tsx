@@ -36,6 +36,8 @@ import { useIsOnboarding } from '@modules/onboarding/hooks'
 import { RootStackParamList } from './types'
 import { fullScreenLayout } from '@layouts/index'
 import { MessagesStackNavigator } from '@modules/messages/routes'
+import { MultisigStackNavigator } from '@modules/multisig'
+import { navigationRef } from './navigationRef'
 export type { RootStackParamList } from './types'
 
 const RootStack = createNativeStackNavigator<RootStackParamList>()
@@ -48,7 +50,10 @@ export const MainRoutes = () => {
     const { isOnboarding } = useIsOnboarding()
 
     return (
-        <NavigationContainer theme={navTheme}>
+        <NavigationContainer
+            ref={navigationRef}
+            theme={navTheme}
+        >
             {
                 <RootStack.Navigator
                     screenOptions={{
@@ -89,6 +94,10 @@ export const MainRoutes = () => {
                             <RootStack.Screen
                                 name='AddAccount'
                                 component={AddAccountStackNavigator}
+                            />
+                            <RootStack.Screen
+                                name='Multisig'
+                                component={MultisigStackNavigator}
                             />
                             <RootStack.Screen
                                 name='Staking'

@@ -11,143 +11,112 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { initWalletConnectStore } from '../store'
-import { useKeyValueStorageService } from '@perawallet/wallet-core-platform-integration'
+import { renderHook, act } from '@testing-library/react'
 
-// Mock dependencies
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
-    useKeyValueStorageService: vi.fn(),
-}))
+const mockStorage = new Map<string, string>()
 
-const mockSet = vi.fn()
-const mockGet = vi.fn()
-const mockStore = {
-    setState: mockSet,
-    getState: mockGet,
-    subscribe: vi.fn(),
-    destroy: vi.fn(),
-}
-
-// We capture the state creator function passed to `create`
-let stateCreator: any
-
-vi.mock('zustand', async () => {
-    const actual = await vi.importActual('zustand')
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
     return {
-        ...actual,
-        create: () => (creator: any) => {
-            // This handling is for the curried create()(...) pattern
-            if (typeof creator === 'function') {
-                // If persist middleware wraps it, it might be complex.
-                // But let's try to capture what we can.
-                stateCreator = creator
-                return () => mockStore
-            }
-            // Handle the case where middleware is applied
-            return (creatorFn: any) => {
-                stateCreator = creatorFn
-                return () => mockStore
-            }
-        },
+        ...original,
+        registerStore: vi.fn(),
     }
 })
 
-vi.mock('zustand/middleware', () => ({
-    persist: (config: any, options: any) => {
-        // Return the config executor so create can use it?
-        // Or just return the config which is the state creator.
-        // We also want to check options (partialize)
-        ;(global as any).mockPersistOptions = options
-        return config
-    },
-    createJSONStorage: vi.fn().mockReturnValue('mock-storage-impl'),
-}))
-
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    createLazyStore: vi.fn().mockReturnValue({
-        useStore: vi.fn(),
-        init: vi.fn(),
-        clear: vi.fn(),
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        keyValueStorage: {
+            getItem: (key: string) => mockStorage.get(key) ?? null,
+            setItem: (key: string, value: string) => {
+                mockStorage.set(key, value)
+            },
+            removeItem: (key: string) => {
+                mockStorage.delete(key)
+            },
+        },
     }),
-    DataStoreRegistry: {
-        register: vi.fn(),
-    },
-    logger: {
-        debug: vi.fn(),
-        error: vi.fn(),
-    },
 }))
 
 describe('WalletConnectStore', () => {
     beforeEach(() => {
-        vi.clearAllMocks()
+        mockStorage.clear()
+        vi.resetModules()
     })
 
-    it('should initialize store with storage service', () => {
-        const mockStorage = {}
-        ;(useKeyValueStorageService as any).mockReturnValue(mockStorage)
+    it('should initialize with default values', async () => {
+        const { useWalletConnectStore } = await import('../store')
 
-        initWalletConnectStore()
+        const { result } = renderHook(() => useWalletConnectStore())
 
-        expect(useKeyValueStorageService).toHaveBeenCalled()
+        expect(result.current.walletConnectConnections).toEqual([])
+        expect(result.current.sessionRequests).toEqual([])
     })
 
-    it('should define actions correctly', () => {
-        // Trigger init to run `createWalletConnectStore`
-        initWalletConnectStore()
+    it('should update walletConnectConnections', async () => {
+        const { useWalletConnectStore } = await import('../store')
 
-        const set = vi.fn()
-        const get = vi.fn()
-        const storeState = stateCreator(set, get, {
-            getState: get,
-            setState: set,
-        })
+        const { result } = renderHook(() => useWalletConnectStore())
 
-        expect(storeState.walletConnectConnections).toEqual([])
-        expect(storeState.sessionRequests).toEqual([])
-
-        // Test setWalletConnectConnections
         const sessions = [{ session: { clientId: '1' } }]
-        storeState.setWalletConnectConnections(sessions)
-        expect(set).toHaveBeenCalledWith({ walletConnectConnections: sessions })
+        act(() => {
+            result.current.setWalletConnectConnections(sessions as any)
+        })
 
-        // Test setSessionRequests
+        expect(result.current.walletConnectConnections).toEqual(sessions)
+    })
+
+    it('should update sessionRequests', async () => {
+        const { useWalletConnectStore } = await import('../store')
+
+        const { result } = renderHook(() => useWalletConnectStore())
+
         const requests = [{ id: 1 }]
-        storeState.setSessionRequests(requests)
-        expect(set).toHaveBeenCalledWith({ sessionRequests: requests })
-    })
-
-    it('should configure persistence correctly', () => {
-        initWalletConnectStore()
-        const options = (global as any).mockPersistOptions
-        expect(options.name).toBe('wallet-connect-store')
-        expect(options.version).toBe(1)
-
-        // Test partialize
-        const fullState = {
-            walletConnectConnections: ['s1'],
-            sessionRequests: ['r1'],
-            setWalletConnectConnections: () => {},
-        }
-        const persisted = options.partialize(fullState)
-        expect(persisted).toEqual({ walletConnectConnections: ['s1'] })
-    })
-
-    it('should define resetState action correctly', () => {
-        initWalletConnectStore()
-
-        const set = vi.fn()
-        const get = vi.fn()
-        const storeState = stateCreator(set, get, {
-            getState: get,
-            setState: set,
+        act(() => {
+            result.current.setSessionRequests(requests as any)
         })
 
-        storeState.resetState()
+        expect(result.current.sessionRequests).toEqual(requests)
+    })
 
-        expect(set).toHaveBeenCalledWith({
-            walletConnectConnections: [],
-            sessionRequests: [],
+    it('should only persist walletConnectConnections', async () => {
+        const { useWalletConnectStore } = await import('../store')
+
+        const { result } = renderHook(() => useWalletConnectStore())
+
+        const sessions = [{ session: { clientId: '1' } }]
+        const requests = [{ id: 1 }]
+        act(() => {
+            result.current.setWalletConnectConnections(sessions as any)
+            result.current.setSessionRequests(requests as any)
         })
+
+        // Access the persisted state via the mock storage
+        const persisted = mockStorage.get('wallet-connect-store') ?? null
+        expect(persisted).not.toBeNull()
+
+        const parsed = JSON.parse(persisted!)
+        expect(parsed.state.walletConnectConnections).toEqual(sessions)
+        expect(parsed.state.sessionRequests).toBeUndefined()
+    })
+
+    it('should reset state to initial values', async () => {
+        const { useWalletConnectStore } = await import('../store')
+
+        const { result } = renderHook(() => useWalletConnectStore())
+
+        act(() => {
+            result.current.setWalletConnectConnections([
+                { session: { clientId: '1' } },
+            ] as any)
+            result.current.setSessionRequests([{ id: 1 }] as any)
+        })
+
+        act(() => {
+            result.current.resetState()
+        })
+
+        expect(result.current.walletConnectConnections).toEqual([])
+        expect(result.current.sessionRequests).toEqual([])
     })
 })

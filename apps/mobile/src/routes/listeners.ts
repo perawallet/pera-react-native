@@ -10,12 +10,8 @@
  limitations under the License
  */
 
-import {
-    AnalyticsService,
-    AnalyticsServiceContainerKey,
-} from '@perawallet/wallet-core-platform-integration'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { ParamListBase, RouteProp } from '@react-navigation/native'
-import { container } from 'tsyringe'
 
 const NAVIGATION_STACK_NAMES = new Set([
     'tabbar',
@@ -41,9 +37,7 @@ export const screenListeners = ({
             !NAVIGATION_STACK_NAMES.has(currentRouteName) &&
             previousRouteName !== currentRouteName
         ) {
-            const analyticsService = container.resolve<AnalyticsService>(
-                AnalyticsServiceContainerKey,
-            )
+            const analyticsService = getProvider().analytics
             analyticsService.logEvent(`scr_${currentRouteName}_view`, {
                 previous: previousRouteName,
                 path: route.path,

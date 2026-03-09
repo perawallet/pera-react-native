@@ -16,9 +16,19 @@ export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
     },
+    toolbar: {
+        paddingLeft: theme.spacing.xl,
+    },
     titleSection: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.sm,
+    },
+    selectHeader: {
+        paddingTop: theme.spacing.lg,
+        gap: theme.spacing.md,
+    },
+    selectDescription: {
+        color: theme.colors.textGray,
     },
 }))

@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./test-utils": {
+      "types": "./dist/test-utils/index.d.ts",
+      "default": "./dist/test-utils/index.js"
     }
   },
   "scripts": {
@@ -36,8 +40,6 @@
     "ky": "^1.14.0",
     "react": "catalog:",
     "react-native-quick-base64": "^2.2.2",
-    "reflect-metadata": "catalog:",
-    "tsyringe": "catalog:",
     "util": "catalog:",
     "uuid": "catalog:",
     "zod": "catalog:",

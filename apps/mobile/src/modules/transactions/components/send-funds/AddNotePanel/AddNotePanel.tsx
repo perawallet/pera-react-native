@@ -91,6 +91,7 @@ export const AddNotePanel = ({
                             {t('send_funds.add_note.done')}
                         </PWText>
                     }
+                    paddingStyle='dense'
                 />
                 <PWView style={styles.container}>
                     <Controller

@@ -10,24 +10,17 @@
  limitations under the License
  */
 
-import { useStyles } from './styles'
-import {
-    PWButton,
-    PWInput,
-    PWLoadingOverlay,
-    PWText,
-    PWView,
-} from '@components/core'
+import { PWText, PWView } from '@components/core'
+import { NameAccountForm } from '@components/NameAccountForm'
 import { AccountIcon } from '@modules/accounts/components/AccountIcon'
-import { KeyboardAvoidingView, Platform } from 'react-native'
 import { useLanguage } from '@hooks/useLanguage'
-import { useNameAccountScreen } from './useNameAccountScreen'
 import { getAccountDisplayName } from '@perawallet/wallet-core-accounts'
+import { useNameAccountScreen } from './useNameAccountScreen'
+import { useStyles } from './styles'
 
 export const NameAccountScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-
     const {
         walletDisplay,
         isCreating,
@@ -38,59 +31,29 @@ export const NameAccountScreen = () => {
     } = useNameAccountScreen()
 
     return (
-        <KeyboardAvoidingView
-            style={styles.mainContainer}
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        <NameAccountForm
+            title={t('onboarding.name_account.title')}
+            description={t('onboarding.name_account.description')}
+            finishButtonTitle={t('onboarding.name_account.finish_button')}
+            loadingTitle={t('onboarding.create_account.processing')}
+            value={walletDisplay}
+            onChangeText={handleNameChange}
+            onFinish={handleFinish}
+            isLoading={isCreating}
         >
-            <PWView style={styles.content}>
-                <PWView style={styles.headerContainer}>
-                    <PWText variant='h1'>
-                        {t('onboarding.name_account.title')}
-                    </PWText>
-                    <PWText
-                        variant='h4'
-                        style={styles.helperText}
-                    >
-                        {t('onboarding.name_account.description')}
-                    </PWText>
-                </PWView>
-                <PWView style={styles.walletNameContainer}>
-                    <AccountIcon account={account} />
-                    <PWText
-                        variant='h4'
-                        style={styles.nameText}
-                    >
-                        {account
-                            ? getAccountDisplayName(account)
-                            : t('onboarding.name_account.wallet_label', {
-                                  count: numWallets + 1,
-                              })}
-                    </PWText>
-                </PWView>
-                <PWInput
-                    label={t('onboarding.name_account.input_label')}
-                    containerStyle={styles.input}
-                    value={walletDisplay}
-                    onChangeText={handleNameChange}
-                    autoFocus
-                    testID='name_account_name_input'
-                />
-                <PWView style={styles.spacer} />
-                <PWButton
-                    style={styles.finishButton}
-                    variant='primary'
-                    title={t('onboarding.name_account.finish_button')}
-                    onPress={handleFinish}
-                    isLoading={isCreating}
-                    isDisabled={isCreating}
-                    testID='name_account_finish_button'
-                />
+            <PWView style={styles.walletNameContainer}>
+                <AccountIcon account={account} />
+                <PWText
+                    variant='h4'
+                    style={styles.nameText}
+                >
+                    {account
+                        ? getAccountDisplayName(account)
+                        : t('onboarding.name_account.wallet_label', {
+                              count: numWallets + 1,
+                          })}
+                </PWText>
             </PWView>
-
-            <PWLoadingOverlay
-                isVisible={isCreating}
-                title={t('onboarding.create_account.processing')}
-            />
-        </KeyboardAvoidingView>
+        </NameAccountForm>
     )
 }

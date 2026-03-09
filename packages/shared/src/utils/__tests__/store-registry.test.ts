@@ -10,172 +10,78 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest'
-import { DataStoreRegistry } from '../store-registry'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import {
+    registerStore,
+    clearAllStores,
+    getStoreRegistry,
+    resetStoreRegistry,
+} from '../store-registry'
 
-describe('utils/store-registry', () => {
+vi.mock('../logging', () => ({
+    logger: { debug: vi.fn() },
+}))
+
+describe('store-registry', () => {
     beforeEach(() => {
-        DataStoreRegistry.reset()
+        resetStoreRegistry()
     })
 
-    describe('register', () => {
-        test('registers a store successfully', () => {
-            const mockStore = {
-                name: 'test-store',
-                init: vi.fn(),
-                clear: vi.fn(),
-            }
+    it('registers and clears all stores', () => {
+        const store1 = {
+            name: 'store-1',
+            clearStorage: vi.fn(),
+            resetState: vi.fn(),
+        }
+        const store2 = {
+            name: 'store-2',
+            clearStorage: vi.fn(),
+            resetState: vi.fn(),
+        }
+        registerStore(store1)
+        registerStore(store2)
 
-            DataStoreRegistry.register(mockStore)
+        clearAllStores()
 
-            expect(DataStoreRegistry.getRegisteredStores()).toContain(
-                'test-store',
-            )
-        })
-
-        test('does not register duplicate stores', () => {
-            const mockStore = {
-                name: 'test-store',
-                init: vi.fn(),
-                clear: vi.fn(),
-            }
-
-            DataStoreRegistry.register(mockStore)
-            DataStoreRegistry.register(mockStore)
-
-            expect(
-                DataStoreRegistry.getRegisteredStores().filter(
-                    name => name === 'test-store',
-                ),
-            ).toHaveLength(1)
-        })
+        expect(store1.clearStorage).toHaveBeenCalledTimes(1)
+        expect(store1.resetState).toHaveBeenCalledTimes(1)
+        expect(store2.clearStorage).toHaveBeenCalledTimes(1)
+        expect(store2.resetState).toHaveBeenCalledTimes(1)
     })
 
-    describe('initializeAll', () => {
-        test('calls init on all registered stores', async () => {
-            const mockStore1 = {
-                name: 'test-store-1',
-                init: vi.fn(),
-                clear: vi.fn(),
-            }
-            const mockStore2 = {
-                name: 'test-store-2',
-                init: vi.fn(),
-                clear: vi.fn(),
-            }
+    it('skips stores listed in options.skip', () => {
+        const store1 = {
+            name: 'accounts-store',
+            clearStorage: vi.fn(),
+            resetState: vi.fn(),
+        }
+        const store2 = {
+            name: 'settings-store',
+            clearStorage: vi.fn(),
+            resetState: vi.fn(),
+        }
+        registerStore(store1)
+        registerStore(store2)
 
-            DataStoreRegistry.register(mockStore1)
-            DataStoreRegistry.register(mockStore2)
+        clearAllStores({ skip: ['accounts-store'] })
 
-            await DataStoreRegistry.initializeAll()
-
-            expect(mockStore1.init).toHaveBeenCalledTimes(1)
-            expect(mockStore2.init).toHaveBeenCalledTimes(1)
-        })
-
-        test('does not reinitialize if already initialized', async () => {
-            const mockStore = {
-                name: 'test-store',
-                init: vi.fn(),
-                clear: vi.fn(),
-            }
-
-            DataStoreRegistry.register(mockStore)
-
-            await DataStoreRegistry.initializeAll()
-            await DataStoreRegistry.initializeAll()
-
-            expect(mockStore.init).toHaveBeenCalledTimes(1)
-        })
-
-        test('sets initialized flag after initialization', async () => {
-            const mockStore = {
-                name: 'test-store',
-                init: vi.fn(),
-                clear: vi.fn(),
-            }
-
-            DataStoreRegistry.register(mockStore)
-
-            expect(DataStoreRegistry.isInitialized()).toBe(false)
-            await DataStoreRegistry.initializeAll()
-            expect(DataStoreRegistry.isInitialized()).toBe(true)
-        })
+        expect(store1.clearStorage).not.toHaveBeenCalled()
+        expect(store1.resetState).not.toHaveBeenCalled()
+        expect(store2.clearStorage).toHaveBeenCalledTimes(1)
+        expect(store2.resetState).toHaveBeenCalledTimes(1)
     })
 
-    describe('clearAll', () => {
-        test('calls clear on all registered stores', async () => {
-            const mockStore1 = {
-                name: 'test-store-1',
-                init: vi.fn(),
-                clear: vi.fn(),
-            }
-            const mockStore2 = {
-                name: 'test-store-2',
-                init: vi.fn(),
-                clear: vi.fn(),
-            }
+    it('returns registered stores via getStoreRegistry', () => {
+        const store = {
+            name: 'test-store',
+            clearStorage: vi.fn(),
+            resetState: vi.fn(),
+        }
+        registerStore(store)
 
-            DataStoreRegistry.register(mockStore1)
-            DataStoreRegistry.register(mockStore2)
+        const registry = getStoreRegistry()
 
-            await DataStoreRegistry.clearAll()
-
-            expect(mockStore1.clear).toHaveBeenCalledTimes(1)
-            expect(mockStore2.clear).toHaveBeenCalledTimes(1)
-        })
-    })
-
-    describe('getRegisteredStores', () => {
-        test('returns empty array when no stores registered', () => {
-            expect(DataStoreRegistry.getRegisteredStores()).toEqual([])
-        })
-
-        test('returns all registered store names', () => {
-            DataStoreRegistry.register({
-                name: 'store-a',
-                init: vi.fn(),
-                clear: vi.fn(),
-            })
-            DataStoreRegistry.register({
-                name: 'store-b',
-                init: vi.fn(),
-                clear: vi.fn(),
-            })
-
-            const stores = DataStoreRegistry.getRegisteredStores()
-
-            expect(stores).toContain('store-a')
-            expect(stores).toContain('store-b')
-            expect(stores).toHaveLength(2)
-        })
-    })
-
-    describe('reset', () => {
-        test('clears all registered stores', () => {
-            DataStoreRegistry.register({
-                name: 'test-store',
-                init: vi.fn(),
-                clear: vi.fn(),
-            })
-
-            DataStoreRegistry.reset()
-
-            expect(DataStoreRegistry.getRegisteredStores()).toEqual([])
-        })
-
-        test('resets initialized flag', async () => {
-            DataStoreRegistry.register({
-                name: 'test-store',
-                init: vi.fn(),
-                clear: vi.fn(),
-            })
-
-            await DataStoreRegistry.initializeAll()
-            expect(DataStoreRegistry.isInitialized()).toBe(true)
-
-            DataStoreRegistry.reset()
-            expect(DataStoreRegistry.isInitialized()).toBe(false)
-        })
+        expect(registry).toHaveLength(1)
+        expect(registry[0].name).toBe('test-store')
     })
 })

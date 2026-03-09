@@ -14,13 +14,17 @@ import React, { useEffect, useState } from 'react'
 import './i18n'
 import { Text } from 'react-native'
 import { QueryProvider } from './providers/QueryProvider'
-import { useBootstrapper } from './bootstrap/boostrap'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import { Persister } from '@tanstack/react-query-persist-client'
 import {
     algorandSafeQuerySerialize,
     algorandSafeQueryParse,
 } from '@perawallet/wallet-core-blockchain'
+import {
+    getProvider,
+    PeraWalletProvider,
+    usePeraProvider,
+} from '@perawallet/wallet-extension-provider'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { RootComponent } from '@components/RootComponent'
 import * as SplashScreen from 'expo-splash-screen'
@@ -31,22 +35,38 @@ SplashScreen.preventAutoHideAsync()
 import { NotifierWrapper } from 'react-native-notifier'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useLanguage } from '@hooks/useLanguage'
+import { updateBackendHeaders } from '@perawallet/wallet-core-shared'
 
-export const App = () => {
+const updateQueryHeaders = () => {
+    const deviceInfo = getProvider().deviceInfo
+    const headers = new Map<string, string>()
+    headers.set('App-Name', deviceInfo.getAppName())
+    headers.set('App-Package-Name', deviceInfo.getAppId())
+    headers.set('App-Version', deviceInfo.getAppVersion())
+    headers.set('Client-Type', deviceInfo.getDevicePlatform())
+    headers.set('Device-Version', deviceInfo.getDeviceLocale())
+    headers.set('Device-OS-Version', deviceInfo.getDeviceOSVersion())
+    headers.set('Device-Model', deviceInfo.getDeviceModelId())
+    headers.set('User-Agent', deviceInfo.getUserAgent())
+    updateBackendHeaders(headers)
+}
+
+const AppContent = () => {
     const [persister, setPersister] = useState<Persister>()
-
     const [bootstrapped, setBootstrapped] = useState(false)
     const [fcmToken, setFcmToken] = useState<string | null>(null)
-    const bootstrap = useBootstrapper()
     const { t } = useLanguage()
+    const provider = usePeraProvider()
 
     useEffect(() => {
         if (!bootstrapped) {
-            bootstrap().then(({ platformServices, token }) => {
+            provider.initialize().then(({ token }) => {
                 setFcmToken(token ?? null)
-                const kvService = platformServices.keyValueStorage
+
+                updateQueryHeaders()
+
                 const reactQueryPersistor = createAsyncStoragePersister({
-                    storage: kvService,
+                    storage: provider.keyValueStorage,
                     serialize: algorandSafeQuerySerialize,
                     deserialize: algorandSafeQueryParse,
                 })
@@ -61,7 +81,7 @@ export const App = () => {
                 }, 200)
             })
         }
-    }, [bootstrapped, bootstrap])
+    }, [bootstrapped, provider])
 
     return (
         <SafeAreaProvider>
@@ -76,5 +96,13 @@ export const App = () => {
                 </GestureHandlerRootView>
             )}
         </SafeAreaProvider>
+    )
+}
+
+export const App = () => {
+    return (
+        <PeraWalletProvider>
+            <AppContent />
+        </PeraWalletProvider>
     )
 }

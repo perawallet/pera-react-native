@@ -57,6 +57,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     isAlgo25Account: () => false,
     isLedgerAccount: () => false,
     isWatchAccount: (account: { type: string }) => account?.type === 'watch',
+    isMultisigAccount: () => false,
     isRekeyedAccount: () => false,
     WalletAccount: {} as unknown,
 }))

@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
 import { config } from '@perawallet/wallet-core-config'
 import { useTheme } from '@rneui/themed'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
@@ -34,7 +33,12 @@ import { useToast } from '@hooks/useToast'
 import { useStyles } from './styles'
 import { usePeraWebviewInterface } from '@modules/webview/hooks'
 import { EmptyView } from '@components/EmptyView'
-import { PWView, PWButton, bottomSheetNotifier } from '@components/core'
+import {
+    PWView,
+    PWButton,
+    bottomSheetNotifier,
+    PWScrollView,
+} from '@components/core'
 import { LoadingView } from '@components/LoadingView'
 import { logger } from '@perawallet/wallet-core-shared'
 import { WebViewTitleBar } from './WebViewTitleBar'
@@ -42,6 +46,7 @@ import { WebViewFooterBar } from './WebViewFooterBar'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebViewStore } from '../../hooks'
+import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 export type PWWebViewProps = {
     url: string
@@ -50,6 +55,7 @@ export type PWWebViewProps = {
     showControls?: boolean
     onClose?: () => void
     onBack?: () => void
+    inBottomSheet?: boolean
 } & WebViewProps
 
 const updateTheme = (mode: 'light' | 'dark') => {
@@ -86,7 +92,8 @@ export const PWWebView = (props: PWWebViewProps) => {
         )
     }, [url])
 
-    const deviceInfo = useDeviceInfoService()
+    const provider = usePeraProvider()
+    const deviceInfo = provider.deviceInfo
 
     const userAgent = useMemo(() => {
         return `${deviceInfo.getUserAgent()}`
@@ -205,16 +212,8 @@ export const PWWebView = (props: PWWebViewProps) => {
         return js
     }, [enablePeraConnect, theme.mode])
 
-    return (
-        <PWView style={styles.flex}>
-            {showControls && (
-                <WebViewTitleBar
-                    onCloseRequested={onCloseRequested}
-                    onReload={reload}
-                    title={title}
-                    url={url}
-                />
-            )}
+    const renderWebView = useCallback(() => {
+        return (
             <WebView
                 ref={webview}
                 {...rest}
@@ -261,9 +260,41 @@ export const PWWebView = (props: PWWebViewProps) => {
                 onError={showLoadError}
                 onHttpError={showError}
                 dataDetectorTypes={[]}
-                textInteractionEnabled={false}
                 onNavigationStateChange={navigationStateChange}
+                nestedScrollEnabled
             />
+        )
+    }, [
+        reload,
+        handleEvent,
+        verifyLoad,
+        loadCompleted,
+        showLoadError,
+        showError,
+        navigationStateChange,
+        isDarkMode,
+        userAgent,
+        jsToLoad,
+    ])
+
+    return (
+        <PWView style={styles.flex}>
+            {showControls && (
+                <WebViewTitleBar
+                    onCloseRequested={onCloseRequested}
+                    onReload={reload}
+                    title={title}
+                    url={url}
+                />
+            )}
+
+            <PWScrollView
+                style={styles.flex}
+                contentContainerStyle={styles.flex}
+            >
+                {renderWebView()}
+            </PWScrollView>
+
             {showControls && (
                 <WebViewFooterBar
                     webview={webview}

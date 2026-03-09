@@ -29,9 +29,14 @@ export const parseWalletConnectUri = (
         return null
     }
 
-    // Normalize perawallet-wc:// to wc://
     let wcUri = normalizedUrl
-    if (normalizedUrl.startsWith('perawallet-wc:')) {
+    // Wrapper format: wc://wc?uri=wc%3A... or perawallet-wc://wc?uri=wc%3A...
+    // The actual WC URI is URL-encoded in the 'uri' query param
+    const uriMatch = normalizedUrl.match(/[?&]uri=([^&]+)/)
+    if (uriMatch) {
+        wcUri = decodeURIComponent(uriMatch[1])
+    } else if (normalizedUrl.startsWith('perawallet-wc:')) {
+        // Legacy format: perawallet-wc:topic@1?...  →  wc:topic@1?...
         wcUri = normalizedUrl.replace('perawallet-wc:', 'wc:')
     }
 

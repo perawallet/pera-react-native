@@ -14,6 +14,7 @@ import React from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import Decimal from 'decimal.js'
 import { useStakingProjectsQuery } from '../useStakingProjectsQuery'
 
 const VALID_PROJECTS_CONFIG = JSON.stringify([
@@ -56,34 +57,18 @@ vi.mock('../endpoints', () => ({
     fetchStakingProjectsInfo: mocks.fetchStakingProjectsInfo,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-core-blockchain')
-        >()
-    return {
-        ...actual,
-        microAlgosToAlgos: actual.microAlgosToAlgos,
-    }
-})
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: mocks.useNetwork,
+    microAlgosToAlgos: (v: unknown) =>
+        new Decimal(v?.toString() ?? '0').div(1_000_000),
+}))
 
-vi.mock(
-    '@perawallet/wallet-core-platform-integration',
-    async importOriginal => {
-        const actual =
-            await importOriginal<
-                typeof import('@perawallet/wallet-core-platform-integration')
-            >()
-
-        return {
-            ...actual,
-            useNetwork: mocks.useNetwork,
-            useRemoteConfigService: () => ({
-                getStringValue: mocks.getStringValue,
-            }),
-        }
-    },
-)
+vi.mock('@perawallet/wallet-core-remote-config', () => ({
+    RemoteConfigKeys: { staking_projects: 'staking_projects' },
+    useRemoteConfig: () => ({
+        getStringValue: mocks.getStringValue,
+    }),
+}))
 
 describe('useStakingProjectsQuery', () => {
     let queryClient: QueryClient

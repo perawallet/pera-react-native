@@ -13,84 +13,64 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { NotificationsState } from '../models'
-import type { WithPersist } from '@perawallet/wallet-core-shared'
-import {
-    KeyValueStorageService,
-    useKeyValueStorageService,
-} from '@perawallet/wallet-core-platform-integration'
-import {
-    createLazyStore,
-    DataStoreRegistry,
-} from '@perawallet/wallet-core-shared'
+import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'notifications-store'
-const lazy =
-    createLazyStore<WithPersist<StoreApi<NotificationsState>, unknown>>(
-        STORE_NAME,
-    )
-
-export const useNotificationsStore: UseBoundStore<
-    WithPersist<StoreApi<NotificationsState>, unknown>
-> = lazy.useStore
 
 const initialState = {
     notificationDisabledAccounts: [] as string[],
 }
 
-const createNotificationsStore = (storage: KeyValueStorageService) =>
-    create<NotificationsState>()(
-        persist(
-            (set, get) => ({
-                ...initialState,
-                setAccountNotificationEnabled: (
-                    address: string,
-                    enabled: boolean,
-                ) => {
-                    const current = get().notificationDisabledAccounts
-                    if (enabled) {
+export const useNotificationsStore: UseBoundStore<
+    WithPersist<StoreApi<NotificationsState>, unknown>
+> = create<NotificationsState>()(
+    persist(
+        (set, get) => ({
+            ...initialState,
+            setAccountNotificationEnabled: (
+                address: string,
+                enabled: boolean,
+            ) => {
+                const current = get().notificationDisabledAccounts
+                if (enabled) {
+                    set({
+                        notificationDisabledAccounts: current.filter(
+                            a => a !== address,
+                        ),
+                    })
+                } else {
+                    if (!current.includes(address)) {
                         set({
-                            notificationDisabledAccounts: current.filter(
-                                a => a !== address,
-                            ),
+                            notificationDisabledAccounts: [...current, address],
                         })
-                    } else {
-                        if (!current.includes(address)) {
-                            set({
-                                notificationDisabledAccounts: [
-                                    ...current,
-                                    address,
-                                ],
-                            })
-                        }
                     }
-                },
-                isAccountNotificationEnabled: (address: string) => {
-                    return !get().notificationDisabledAccounts.includes(address)
-                },
-                resetState: () => set(initialState),
-            }),
-            {
-                name: STORE_NAME,
-                storage: createJSONStorage(() => storage),
-                version: 1,
-                partialize: state => ({
-                    notificationDisabledAccounts:
-                        state.notificationDisabledAccounts,
-                }),
+                }
             },
-        ),
-    )
+            isAccountNotificationEnabled: (address: string) => {
+                return !get().notificationDisabledAccounts.includes(address)
+            },
+            resetState: () => set(initialState),
+        }),
+        {
+            name: STORE_NAME,
+            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            version: 1,
+            partialize: state => ({
+                notificationDisabledAccounts:
+                    state.notificationDisabledAccounts,
+            }),
+        },
+    ),
+)
 
-export const initNotificationsStore = () => {
-    const storage = useKeyValueStorageService()
-    const realStore = createNotificationsStore(storage)
-    lazy.init(realStore, () => realStore.getState().resetState())
-}
-
-export const clearNotificationsStore = () => lazy.clear()
-
-DataStoreRegistry.register({
+registerStore({
     name: STORE_NAME,
-    init: initNotificationsStore,
-    clear: clearNotificationsStore,
+    clearStorage: () =>
+        (
+            useNotificationsStore as unknown as {
+                persist: { clearStorage: () => void }
+            }
+        ).persist.clearStorage(),
+    resetState: () => useNotificationsStore.getState().resetState(),
 })

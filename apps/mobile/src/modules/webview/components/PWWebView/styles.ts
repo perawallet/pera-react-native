@@ -20,6 +20,7 @@ export const useStyles = makeStyles(theme => {
         webview: {
             alignItems: 'flex-start',
             justifyContent: 'flex-start',
+            flex: 1,
             flexGrow: 1,
             backgroundColor: theme.colors.background,
         },
@@ -31,13 +32,12 @@ export const useStyles = makeStyles(theme => {
         },
         container: {
             backgroundColor: theme.colors.background,
-            flexGrow: 1,
+            flex: 1,
         },
         titleBar: {
             flexDirection: 'row',
             alignItems: 'center',
             justifyContent: 'space-between',
-            paddingVertical: theme.spacing.md,
             paddingHorizontal: theme.spacing.lg,
             backgroundColor: theme.colors.background,
         },

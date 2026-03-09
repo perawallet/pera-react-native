@@ -12,62 +12,45 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import {
-    type KeyValueStorageService,
-    useKeyValueStorageService,
-} from '@perawallet/wallet-core-platform-integration'
-import {
-    createLazyStore,
-    DataStoreRegistry,
-    type WithPersist,
-} from '@perawallet/wallet-core-shared'
+import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
 import { PollingState } from '../models'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'polling-store'
-
-const lazy =
-    createLazyStore<WithPersist<StoreApi<PollingState>, unknown>>(STORE_NAME)
-
-export const usePollingStore: UseBoundStore<
-    WithPersist<StoreApi<PollingState>, unknown>
-> = lazy.useStore
 
 const initialState = {
     lastRefreshedRound: null as number | null,
 }
 
-export const createPollingStore = (storage: KeyValueStorageService) =>
-    create<PollingState>()(
-        persist(
-            set => ({
-                ...initialState,
-                setLastRefreshedRound: (round: number | null) => {
-                    set({ lastRefreshedRound: round })
-                },
-                resetState: () => set(initialState),
-            }),
-            {
-                name: STORE_NAME,
-                storage: createJSONStorage(() => storage),
-                version: 1,
-                partialize: state => ({
-                    lastRefreshedRound: state.lastRefreshedRound,
-                }),
+export const usePollingStore: UseBoundStore<
+    WithPersist<StoreApi<PollingState>, unknown>
+> = create<PollingState>()(
+    persist(
+        set => ({
+            ...initialState,
+            setLastRefreshedRound: (round: number | null) => {
+                set({ lastRefreshedRound: round })
             },
-        ),
-    )
+            resetState: () => set(initialState),
+        }),
+        {
+            name: STORE_NAME,
+            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            version: 1,
+            partialize: state => ({
+                lastRefreshedRound: state.lastRefreshedRound,
+            }),
+        },
+    ),
+)
 
-export const initPollingStore = () => {
-    const storage = useKeyValueStorageService()
-    const realStore = createPollingStore(storage)
-    lazy.init(realStore, () => realStore.getState().resetState())
-}
-
-export const clearPollingStore = () => lazy.clear()
-
-export const registerPollingStore = () =>
-    DataStoreRegistry.register({
-        name: STORE_NAME,
-        init: initPollingStore,
-        clear: clearPollingStore,
-    })
+registerStore({
+    name: STORE_NAME,
+    clearStorage: () =>
+        (
+            usePollingStore as unknown as {
+                persist: { clearStorage: () => void }
+            }
+        ).persist.clearStorage(),
+    resetState: () => usePollingStore.getState().resetState(),
+})

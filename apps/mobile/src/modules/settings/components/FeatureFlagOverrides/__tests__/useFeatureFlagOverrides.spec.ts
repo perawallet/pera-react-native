@@ -29,7 +29,7 @@ import { useFeatureFlagOverrides } from '../useFeatureFlagOverrides'
 const mockSetConfigOverride = vi.fn()
 const mockConfigOverrides: Record<string, boolean | undefined> = {}
 
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+vi.mock('@perawallet/wallet-core-remote-config', () => ({
     useRemoteConfigOverrides: () => ({
         configOverrides: mockConfigOverrides,
         setConfigOverride: mockSetConfigOverride,
@@ -45,34 +45,39 @@ describe('useFeatureFlagOverrides', () => {
     })
 
     describe('toggleExpand', () => {
-        it('adds key to expanded array when not already expanded', () => {
+        it('sets override to false when key is not expanded', () => {
             const { result } = renderHook(() => useFeatureFlagOverrides())
 
             act(() => {
                 result.current.toggleExpand('test_flag')
             })
 
-            expect(result.current.expanded).toContain('test_flag')
+            expect(mockSetConfigOverride).toHaveBeenCalledWith(
+                'test_flag',
+                false,
+            )
         })
 
-        it('removes key from expanded array and clears override when already expanded', () => {
+        it('clears override when key is already expanded', () => {
+            mockConfigOverrides['test_flag'] = false
             const { result } = renderHook(() => useFeatureFlagOverrides())
 
-            // First expand
             act(() => {
                 result.current.toggleExpand('test_flag')
             })
 
-            // Then collapse
-            act(() => {
-                result.current.toggleExpand('test_flag')
-            })
-
-            expect(result.current.expanded).not.toContain('test_flag')
             expect(mockSetConfigOverride).toHaveBeenCalledWith(
                 'test_flag',
                 null,
             )
+        })
+
+        it('derives expanded from configOverrides keys', () => {
+            mockConfigOverrides['flag_a'] = true
+            mockConfigOverrides['flag_b'] = false
+            const { result } = renderHook(() => useFeatureFlagOverrides())
+
+            expect(result.current.expanded).toEqual(['flag_a', 'flag_b'])
         })
     })
 

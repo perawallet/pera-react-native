@@ -16,9 +16,9 @@ import { Decimal } from 'decimal.js'
 import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import {
     RemoteConfigKeys,
-    useNetwork,
-    useRemoteConfigService,
-} from '@perawallet/wallet-core-platform-integration'
+    useRemoteConfig,
+} from '@perawallet/wallet-core-remote-config'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import type {
     StakingProject,
     StakingProjectInfo,
@@ -64,7 +64,7 @@ const mapProjects = (
 
 export const useStakingProjectsQuery = (): UseStakingProjectsQueryResult => {
     const { network } = useNetwork()
-    const remoteConfigService = useRemoteConfigService()
+    const remoteConfigService = useRemoteConfig()
     const query = useQuery({
         queryKey: getStakingProjectsQueryKey(network),
         queryFn: () => fetchStakingProjectsInfo(network),

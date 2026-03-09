@@ -11,11 +11,8 @@
  */
 
 import { useCallback, useRef } from 'react'
-import {
-    useSecureStorageService,
-    useBiometricsService,
-    type BiometricType,
-} from '@perawallet/wallet-core-platform-integration'
+import { type BiometricType } from '@perawallet/wallet-extension-platform'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { BIOMETRIC_STORAGE_KEY, PIN_STORAGE_KEY } from '../constants'
 
 type UseBiometricsResult = {
@@ -29,8 +26,8 @@ type UseBiometricsResult = {
 
 export const useBiometrics = (): UseBiometricsResult => {
     const forceRefresh = useRef(0)
-    const secureStorage = useSecureStorageService()
-    const biometricsService = useBiometricsService()
+    const secureStorage = getProvider().secureStorage
+    const biometricsService = getProvider().biometrics
 
     const checkBiometricsEnabled = useCallback(async (): Promise<boolean> => {
         const biometricPinData = await secureStorage.getItem(

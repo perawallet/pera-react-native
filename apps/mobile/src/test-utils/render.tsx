@@ -18,6 +18,7 @@ import { ThemeProvider, createTheme } from '@rneui/themed'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { NavigationContainer } from '@react-navigation/native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { PeraWalletProvider } from '@perawallet/wallet-extension-provider'
 
 // Create a test theme based on RNE theme structure
 const testTheme = createTheme({
@@ -95,13 +96,15 @@ const TestProviders = ({
                 insets: { top: 44, left: 0, right: 0, bottom: 34 },
             }}
         >
-            <ThemeProvider theme={theme}>
-                <QueryClientProvider client={client}>
-                    <NavigationContainer {...navigationProps}>
-                        {children}
-                    </NavigationContainer>
-                </QueryClientProvider>
-            </ThemeProvider>
+            <PeraWalletProvider>
+                <ThemeProvider theme={theme}>
+                    <QueryClientProvider client={client}>
+                        <NavigationContainer {...navigationProps}>
+                            {children}
+                        </NavigationContainer>
+                    </QueryClientProvider>
+                </ThemeProvider>
+            </PeraWalletProvider>
         </SafeAreaProvider>
     )
 }

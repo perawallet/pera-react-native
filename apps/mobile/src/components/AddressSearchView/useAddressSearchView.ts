@@ -15,6 +15,7 @@ import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
 import {
     AccountTypes,
     useAllAccounts,
+    type AccountType,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
@@ -26,6 +27,7 @@ export type AddressSearchItem =
 
 type UseAddressSearchViewProps = {
     excludeAddress?: string
+    excludeTypes?: AccountType[]
 }
 
 type UseAddressSearchViewResult = {
@@ -39,6 +41,7 @@ export const useAddressSearchView = (
     props?: UseAddressSearchViewProps,
 ): UseAddressSearchViewResult => {
     const excludeAddress = props?.excludeAddress
+    const excludeTypes = props?.excludeTypes
     const [value, setValue] = useState('')
     const { findContacts } = useContacts()
     const accounts = useAllAccounts()
@@ -52,9 +55,10 @@ export const useAddressSearchView = (
                 : accounts.filter(
                       a =>
                           a.address !== excludeAddress &&
+                          (!excludeTypes || !excludeTypes.includes(a.type)) &&
                           a.address.includes(value),
                   ),
-        [value, accounts, excludeAddress, addressIsValid],
+        [value, accounts, excludeAddress, excludeTypes, addressIsValid],
     )
 
     const matchingContacts = useMemo(

@@ -25,11 +25,13 @@ const mockSetItem = vi.fn()
 const mockGetItem = vi.fn()
 const mockRemoveItem = vi.fn()
 
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
-    useSecureStorageService: () => ({
-        setItem: mockSetItem,
-        getItem: mockGetItem,
-        removeItem: mockRemoveItem,
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        secureStorage: {
+            setItem: mockSetItem,
+            getItem: mockGetItem,
+            removeItem: mockRemoveItem,
+        },
     }),
 }))
 

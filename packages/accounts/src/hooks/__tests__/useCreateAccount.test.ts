@@ -29,15 +29,21 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     encodeAlgorandAddress: vi.fn((address: Uint8Array) =>
         Buffer.from(address).toString('base64'),
     ),
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
-    const actual = await vi.importActual<object>(
-        '@perawallet/wallet-core-shared',
-    )
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared')
+    >('@perawallet/wallet-core-shared')
+    const { createMockPersistStorage } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared/test-utils')
+    >('@perawallet/wallet-core-shared/test-utils')
     return {
         ...actual,
         generateOrderedUniqueId: uuidSpies.v7,
+        registerStore: vi.fn(),
+        createPersistStorage: createMockPersistStorage,
     }
 })
 
@@ -65,46 +71,30 @@ vi.mock('@perawallet/wallet-core-kms', async () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-platform-integration', async () => {
-    const actual = await vi.importActual<
-        typeof import('@perawallet/wallet-core-platform-integration')
-    >('@perawallet/wallet-core-platform-integration')
-    return {
-        ...actual,
-        useKeyValueStorageService: vi.fn().mockReturnValue({
-            getItem: vi.fn(),
-            setItem: vi.fn(),
-            removeItem: vi.fn(),
-        }),
-        useSecureStorageService: vi.fn().mockReturnValue({
-            getItem: vi.fn(),
-            setItem: vi.fn(),
-            removeItem: vi.fn(),
-        }),
-        useUpdateDeviceMutation: vi.fn(() => ({
-            mutateAsync: vi.fn(async () => ({})),
-        })),
-        useNetwork: vi.fn(() => ({ network: 'mainnet' })),
-        useDeviceID: vi.fn(() => 'device-id'),
-        useDeviceInfoService: vi.fn(() => ({
-            getDevicePlatform: vi.fn(() => 'ios'),
-        })),
-    }
-})
+vi.mock('@perawallet/wallet-core-device', () => ({
+    useUpdateDeviceMutation: vi.fn(() => ({
+        mutateAsync: vi.fn(async () => ({})),
+    })),
+    useDeviceID: vi.fn(() => 'device-id'),
+}))
 
-vi.mock('../../store', async () => {
-    const actual =
-        await vi.importActual<typeof import('../../store')>('../../store')
-    const mockStorage = {
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-    }
-    return {
-        ...actual,
-        useAccountsStore: actual.createAccountsStore(mockStorage as any),
-    }
-})
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        deviceInfo: {
+            getDevicePlatform: () => 'ios',
+        },
+        keyValueStorage: {
+            getItem: () => null,
+            setItem: () => {},
+            removeItem: () => {},
+        },
+        secureStorage: {
+            getItem: vi.fn(),
+            setItem: vi.fn(),
+            removeItem: vi.fn(),
+        },
+    }),
+}))
 
 describe('useCreateAccount', () => {
     beforeEach(() => {

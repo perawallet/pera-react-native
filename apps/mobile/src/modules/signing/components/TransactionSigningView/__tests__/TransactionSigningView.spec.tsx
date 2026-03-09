@@ -38,6 +38,18 @@ vi.mock('@react-navigation/native', () => ({
     }: {
         children: React.ReactNode
     }) => <div>{children}</div>,
+    createNavigationContainerRef: () => ({
+        navigate: vi.fn(),
+        dispatch: vi.fn(),
+        reset: vi.fn(),
+        goBack: vi.fn(),
+        isReady: vi.fn(() => true),
+        current: null,
+    }),
+    StackActions: {
+        replace: vi.fn(),
+        push: vi.fn(),
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
@@ -91,7 +103,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         return 'unknown'
     }),
     isValidAlgorandAddress: vi.fn(() => true),
-    initBlockchainStore: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-currencies', () => ({

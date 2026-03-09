@@ -14,19 +14,28 @@ import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { usePinCode } from '../usePinCode'
 import { useSecurityStore } from '../../store'
-import { useSecureStorageService } from '@perawallet/wallet-core-platform-integration'
 import {
     PIN_STORAGE_KEY,
     MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
     INITIAL_LOCKOUT_SECONDS,
 } from '../../constants'
 
+const mockGetItem = vi.fn()
+const mockSetItem = vi.fn()
+const mockRemoveItem = vi.fn()
+
 vi.mock('../../store', () => ({
     useSecurityStore: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
-    useSecureStorageService: vi.fn(),
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        secureStorage: {
+            getItem: mockGetItem,
+            setItem: mockSetItem,
+            removeItem: mockRemoveItem,
+        },
+    }),
 }))
 
 vi.mock('../useBiometrics', () => ({
@@ -42,19 +51,10 @@ describe('usePinCode', () => {
     const mockResetFailedAttempts = vi.fn()
     const mockSetLockoutEndTime = vi.fn()
     const mockSetAutoLockStartedAt = vi.fn()
-    const mockGetItem = vi.fn()
-    const mockSetItem = vi.fn()
-    const mockRemoveItem = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
         vi.useFakeTimers()
-
-        vi.mocked(useSecureStorageService).mockReturnValue({
-            getItem: mockGetItem,
-            setItem: mockSetItem,
-            removeItem: mockRemoveItem,
-        } as unknown as ReturnType<typeof useSecureStorageService>)
     })
 
     afterEach(() => {

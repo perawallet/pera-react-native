@@ -13,9 +13,74 @@
 /* eslint-disable @typescript-eslint/no-explicit-any*/
 /* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable max-lines */
-import 'reflect-metadata'
 import { vi, afterEach } from 'vitest'
 // import '@testing-library/jest-native/extend-expect'
+
+const store = new Map<string, string>()
+
+// Mock platform driver to prevent "No platform driver configured" errors
+vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
+    WithPlatformExtension: () => ({
+        analytics: {
+            logEvent: vi.fn(),
+            setUserId: vi.fn(),
+            setUserProperty: vi.fn(),
+        },
+        biometrics: {
+            isSensorAvailable: vi.fn().mockResolvedValue(false),
+            simplePrompt: vi.fn().mockResolvedValue({ success: false }),
+            createKeys: vi.fn(),
+            deleteKeys: vi.fn(),
+        },
+        crashReporting: {
+            log: vi.fn(),
+            recordError: vi.fn(),
+        },
+        deviceInfo: {
+            getDevicePlatform: () => 'ios',
+            getDeviceModel: () => 'iPhone',
+            getDeviceId: () => 'test-device-id',
+            getVersion: () => '1.0.0',
+            getBuildNumber: () => '1',
+            getDeviceLocale: () => 'en-US',
+            getDeviceLanguage: () => 'en',
+        },
+        firebase: {
+            getToken: vi.fn().mockResolvedValue('mock-token'),
+        },
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => store.set(key, value),
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+        },
+        pushNotifications: {
+            requestPermission: vi.fn().mockResolvedValue(true),
+            getToken: vi.fn().mockResolvedValue('mock-token'),
+        },
+        remoteConfig: {
+            fetchAndActivate: vi.fn().mockResolvedValue(true),
+            getValue: vi.fn().mockReturnValue({ asString: () => '' }),
+            getBoolean: vi.fn().mockReturnValue(false),
+            getString: vi.fn().mockReturnValue(''),
+        },
+        secureStorage: {
+            setItem: vi.fn().mockResolvedValue(undefined),
+            getItem: vi.fn().mockResolvedValue(null),
+            removeItem: vi.fn().mockResolvedValue(undefined),
+        },
+    }),
+    getPlatformServices: () => ({
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => store.set(key, value),
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+        },
+    }),
+}))
 
 // Mock react-native-reanimated
 vi.mock('react-native-reanimated', () => {
@@ -968,6 +1033,14 @@ vi.mock('@react-navigation/native', () => ({
         pop: vi.fn(),
         popToTop: vi.fn(),
     },
+    createNavigationContainerRef: () => ({
+        navigate: vi.fn(),
+        dispatch: vi.fn(),
+        reset: vi.fn(),
+        goBack: vi.fn(),
+        isReady: vi.fn(() => true),
+        current: null,
+    }),
 }))
 
 vi.mock('@react-navigation/bottom-tabs', () => ({
@@ -1542,21 +1615,16 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     },
     ErrorSeverity: { LOW: 'low', MEDIUM: 'medium', HIGH: 'high' },
     ErrorCategory: { WALLETCONNECT: 'walletconnect', UI: 'ui' },
-    createLazyStore: vi.fn(() => ({
-        useStore: vi.fn(),
-        init: vi.fn(),
-        clear: vi.fn(),
-        getStore: vi.fn(),
-    })),
-    DataStoreRegistry: {
-        register: vi.fn(),
-        initializeAll: vi.fn().mockResolvedValue(undefined),
-        clearAll: vi.fn().mockResolvedValue(undefined),
-        getRegisteredStores: vi.fn(() => []),
-        reset: vi.fn(),
-        isInitialized: vi.fn(() => false),
-    },
     useClearAllData: vi.fn(() => vi.fn().mockResolvedValue(undefined)),
+    registerStore: vi.fn(),
+    clearAllStores: vi.fn(),
+    resetStoreRegistry: vi.fn(),
+    getStoreRegistry: vi.fn(() => []),
+    createPersistStorage: () => ({
+        getItem: () => null,
+        setItem: () => {},
+        removeItem: () => {},
+    }),
 }))
 
 // Mock @perawallet/wallet-core-projects
@@ -1579,7 +1647,6 @@ vi.mock('@perawallet/wallet-core-projects', () => ({
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     useWalletConnect: vi.fn(() => ({ connections: [] })),
     useWalletConnectStore: vi.fn(),
-    initWalletConnectStore: vi.fn(),
     AlgorandChainId: {
         MainNet: 'algorand:wGHE2Pwdvd7S12BL5FaOP20EGYesN73k',
         TestNet: 'algorand:SGO1GKSzyE7IEPItTxCByw9x8FmnrCDe',
@@ -1600,12 +1667,20 @@ vi.mock('@perawallet/wallet-core-polling', () => ({
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: vi.fn(),
-    initKMSStore: vi.fn(),
 }))
 
 // Mock @perawallet/wallet-core-assets
 vi.mock('@perawallet/wallet-core-assets', () => ({
     ALGO_ASSET_ID: '0',
+    KNOWN_ASSET_IDS: {
+        USDC: { mainnet: '31566704', testnet: '10458941' },
+    },
+    getKnownAssetId: vi.fn((key: string, network: string) => {
+        const ids: Record<string, Record<string, string>> = {
+            USDC: { mainnet: '31566704', testnet: '10458941' },
+        }
+        return ids[key]?.[network] ?? ''
+    }),
     ALGO_ASSET: {
         assetId: '0',
         name: 'Algo',
@@ -1742,7 +1817,6 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
         removeContact: vi.fn(),
         updateContact: vi.fn(),
     })),
-    initContactsStore: vi.fn(),
 }))
 
 // Mock @perawallet/wallet-core-currencies
@@ -1763,11 +1837,23 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         return new RegExp('^[0-9a-zA-Z]{58}$').test(address)
     }),
     encodeAlgorandAddress: vi.fn(() => 'MOCKADDRESS'),
-    initBlockchainStore: vi.fn(),
+    useNetwork: vi.fn(() => ({
+        network: 'mainnet',
+    })),
+    useNetworkStore: Object.assign(
+        vi.fn(() => 'mainnet'),
+        {
+            getState: vi.fn(() => ({
+                network: 'mainnet',
+                setNetwork: vi.fn(),
+                resetState: vi.fn(),
+            })),
+        },
+    ),
 }))
 
-// Mock @perawallet/wallet-core-platform-integration
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+// Mock @perawallet/wallet-extension-platform
+vi.mock('@perawallet/wallet-extension-platform', () => ({
     useID: vi.fn(() => 'id'),
     useDeviceID: vi.fn(() => 'device-id'),
     useDeviceInfoService: vi.fn(() => ({
@@ -1776,9 +1862,6 @@ vi.mock('@perawallet/wallet-core-platform-integration', () => ({
         getDevicePlatform: vi.fn(() => 'ios'),
         getDeviceModel: vi.fn(() => 'iPhone'),
         getUserAgent: vi.fn(() => 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0)'),
-    })),
-    useNetwork: vi.fn(() => ({
-        network: 'mainnet',
     })),
     useAnalyticsService: vi.fn(() => ({
         logEvent: vi.fn(),
@@ -1946,5 +2029,104 @@ vi.mock('@react-native-community/datetimepicker', () => {
                 ...props,
                 'data-testid': props.testID || 'datetimepicker',
             }),
+    }
+})
+
+// Mock @gorhom/bottom-sheet
+vi.mock('@gorhom/bottom-sheet', () => {
+    const React = require('react')
+
+    const BottomSheetModal = React.forwardRef(
+        ({ children, ...props }: any, ref: any) => {
+            const [isOpen, setIsOpen] = React.useState(false)
+
+            React.useImperativeHandle(ref, () => ({
+                present: () => setIsOpen(true),
+                dismiss: () => setIsOpen(false),
+                snapToIndex: () => setIsOpen(true),
+                close: () => setIsOpen(false),
+                expand: () => setIsOpen(true),
+                collapse: () => {},
+                forceClose: () => setIsOpen(false),
+            }))
+
+            return isOpen
+                ? React.createElement(
+                      'div',
+                      { ...props, 'data-testid': 'BottomSheetModal' },
+                      children,
+                  )
+                : null
+        },
+    )
+
+    const BottomSheet = React.forwardRef(
+        ({ children, ...props }: any, ref: any) => {
+            React.useImperativeHandle(ref, () => ({
+                snapToIndex: vi.fn(),
+                close: vi.fn(),
+                expand: vi.fn(),
+                collapse: vi.fn(),
+                forceClose: vi.fn(),
+            }))
+
+            return React.createElement(
+                'div',
+                { ...props, 'data-testid': 'BottomSheet' },
+                children,
+            )
+        },
+    )
+
+    return {
+        default: BottomSheet,
+        BottomSheet,
+        BottomSheetModal,
+        BottomSheetModalProvider: ({ children }: any) => children,
+        BottomSheetBackdrop: (props: any) =>
+            React.createElement('div', {
+                ...props,
+                'data-testid': 'BottomSheetBackdrop',
+            }),
+        BottomSheetScrollView: ({ children, ...props }: any) =>
+            React.createElement('div', { ...props }, children),
+        BottomSheetView: ({ children, ...props }: any) =>
+            React.createElement('div', { ...props }, children),
+        BottomSheetFlatList: ({ data, renderItem, ...props }: any) =>
+            React.createElement(
+                'div',
+                props,
+                data?.map((item: any, index: number) =>
+                    renderItem({ item, index }),
+                ),
+            ),
+        BottomSheetSectionList: ({ sections, renderItem, ...props }: any) =>
+            React.createElement(
+                'div',
+                props,
+                sections?.flatMap((section: any) =>
+                    section.data?.map((item: any, index: number) =>
+                        renderItem({ item, index, section }),
+                    ),
+                ),
+            ),
+        BottomSheetTextInput: (props: any) =>
+            React.createElement('input', props),
+        useBottomSheet: () => ({
+            snapToIndex: vi.fn(),
+            close: vi.fn(),
+            expand: vi.fn(),
+            collapse: vi.fn(),
+        }),
+        useBottomSheetModal: () => ({
+            dismiss: vi.fn(),
+            dismissAll: vi.fn(),
+        }),
+        useBottomSheetDynamicSnapPoints: () => ({
+            animatedHandleHeight: { value: 0 },
+            animatedSnapPoints: { value: ['100%'] },
+            animatedContentHeight: { value: 0 },
+            handleContentLayout: vi.fn(),
+        }),
     }
 })

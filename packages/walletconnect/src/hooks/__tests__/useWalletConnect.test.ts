@@ -37,12 +37,24 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => []),
 }))
 
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
-    useKeyValueStorageService: vi.fn(() => ({
-        getItem: vi.fn(),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-    })),
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        keyValueStorage: {
+            getItem: () => null,
+            setItem: () => {},
+            removeItem: () => {},
+        },
+    }),
+}))
+
+vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
+    WithPlatformExtension: () => ({
+        keyValueStorage: {
+            getItem: () => null,
+            setItem: () => {},
+            removeItem: () => {},
+        },
+    }),
 }))
 
 vi.mock('@walletconnect/client', () => {
@@ -62,17 +74,31 @@ vi.mock('@walletconnect/client', () => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-shared', async () => {
-    const actual = await vi.importActual('@perawallet/wallet-core-shared')
-    return {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ...(actual as any),
-        logger: {
-            debug: vi.fn(),
-            error: vi.fn(),
-        },
-    }
-})
+vi.mock('@perawallet/wallet-core-shared', () => ({
+    Networks: {
+        mainnet: 'mainnet',
+        testnet: 'testnet',
+    },
+    Network: String,
+    logger: {
+        debug: vi.fn(),
+        error: vi.fn(),
+    },
+    registerStore: vi.fn(),
+    AppError: class AppError extends Error {},
+    ErrorCategory: { WALLETCONNECT: 'WALLETCONNECT' },
+    ErrorSeverity: { HIGH: 'HIGH' },
+    BaseStoreState: class {},
+    generateOrderedUniqueId: vi.fn(() => 'mock-id'),
+    decodeFromBase64: vi.fn(),
+    encodeToBase64: vi.fn(),
+    createRef: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-signing', () => ({
+    MAX_DATA_SIGN_REQUESTS: 10,
+    MAX_TRANSACTION_SIGN_REQUESTS: 64,
+}))
 
 describe('useWalletConnect', () => {
     const mockSetConnections = vi.fn()

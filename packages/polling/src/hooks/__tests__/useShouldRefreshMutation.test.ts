@@ -10,9 +10,10 @@
  limitations under the License
  */
 
+import React from 'react'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
-import { registerTestPlatform, createWrapper } from '@test-utils'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 // Mock dependencies
 const mockSendShouldRefreshRequest = vi.fn()
@@ -21,15 +22,9 @@ vi.mock('../endpoints', () => ({
 }))
 
 const mockUseNetwork = vi.fn().mockReturnValue({ network: 'mainnet' })
-vi.mock('@perawallet/wallet-core-platform-integration', async () => {
-    const actual = await vi.importActual<any>(
-        '@perawallet/wallet-core-platform-integration',
-    )
-    return {
-        ...actual,
-        useNetwork: () => mockUseNetwork(),
-    }
-})
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: () => mockUseNetwork(),
+}))
 
 const mockUseAllAccounts = vi.fn().mockReturnValue([])
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -53,7 +48,6 @@ describe('services/polling/useShouldRefreshMutation', () => {
 
     test('calls sendShouldRefreshRequest with correct arguments', async () => {
         vi.resetModules()
-        registerTestPlatform()
 
         mockUseAllAccounts.mockReturnValue([
             { address: 'ADDR1' },
@@ -63,8 +57,17 @@ describe('services/polling/useShouldRefreshMutation', () => {
         const { useShouldRefreshMutation } = await import(
             '../useShouldRefreshMutation'
         )
+        const queryClient = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        })
+        const wrapper = ({ children }: { children: React.ReactNode }) =>
+            React.createElement(
+                QueryClientProvider,
+                { client: queryClient },
+                children,
+            )
         const { result } = renderHook(() => useShouldRefreshMutation(), {
-            wrapper: createWrapper(),
+            wrapper,
         })
 
         await result.current.mutateAsync()

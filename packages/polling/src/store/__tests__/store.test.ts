@@ -12,18 +12,27 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { registerTestPlatform } from '@test-utils'
+
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    const { createMockPersistStorage } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared/test-utils')
+    >('@perawallet/wallet-core-shared/test-utils')
+    return {
+        ...original,
+        registerStore: vi.fn(),
+        createPersistStorage: createMockPersistStorage,
+    }
+})
 
 describe('services/polling/store', () => {
     beforeEach(() => {
         vi.resetModules()
-        registerTestPlatform()
     })
 
-    test('initPollingStore initializes the store', async () => {
-        const { initPollingStore, usePollingStore } = await import('../store')
-
-        initPollingStore()
+    test('store initializes with default values', async () => {
+        const { usePollingStore } = await import('../store')
 
         const { result } = renderHook(() => usePollingStore())
 
@@ -31,9 +40,7 @@ describe('services/polling/store', () => {
     })
 
     test('setLastRefreshedRound updates the state', async () => {
-        const { initPollingStore, usePollingStore } = await import('../store')
-
-        initPollingStore()
+        const { usePollingStore } = await import('../store')
 
         const { result } = renderHook(() => usePollingStore())
 

@@ -38,13 +38,7 @@ export default defineConfig({
             fileName: 'index',
         },
         rollupOptions: {
-            external: [
-                'react',
-                'react/jsx-runtime',
-                'reflect-metadata',
-                'tsyringe',
-                'zod',
-            ],
+            external: ['react', 'react/jsx-runtime', 'zod'],
         },
     },
 })

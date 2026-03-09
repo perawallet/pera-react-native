@@ -20,6 +20,7 @@ export type PWToolbarProps = {
     center?: React.ReactNode
     right?: React.ReactNode
     style?: StyleProp<ViewStyle>
+    paddingStyle?: 'normal' | 'dense' | 'none'
     testID?: string
 }
 
@@ -28,9 +29,10 @@ export const PWToolbar = ({
     center,
     right,
     style,
+    paddingStyle,
     testID,
 }: PWToolbarProps) => {
-    const styles = useStyles()
+    const styles = useStyles(paddingStyle)
 
     return (
         <PWView

@@ -23,8 +23,6 @@
   },
   "dependencies": {
     "@babel/runtime": "catalog:",
-    "reflect-metadata": "catalog:",
-    "tsyringe": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

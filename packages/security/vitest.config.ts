@@ -39,7 +39,15 @@ export default defineConfig({
         alias: {
             '@test-utils': path.resolve(
                 __dirname,
-                '../platform-integration/src/test-utils',
+                '../../extensions/platform/src/test-utils',
+            ),
+            '@perawallet/wallet-extension-provider': path.resolve(
+                __dirname,
+                '../../extensions/provider/src/index.ts',
+            ),
+            '@perawallet/wallet-extension-platform-driver': path.resolve(
+                __dirname,
+                '../../extensions/platform-driver/src/index.ts',
             ),
         },
     },

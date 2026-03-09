@@ -27,9 +27,9 @@ vi.mock('../endpoints', () => ({
     fetchAccountsBalanceHistory: mocks.fetchAccountsBalanceHistory,
 }))
 
-// Mock platform integration
+// Mock network extension
 const mockNetwork = { network: 'mainnet' }
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => mockNetwork,
 }))
 

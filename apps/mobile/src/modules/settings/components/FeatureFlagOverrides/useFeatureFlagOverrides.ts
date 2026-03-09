@@ -10,26 +10,28 @@
  limitations under the License
  */
 
-import { useRemoteConfigOverrides } from '@perawallet/wallet-core-platform-integration'
-import { useState } from 'react'
+import { useRemoteConfigOverrides } from '@perawallet/wallet-core-remote-config'
+import { useMemo } from 'react'
 
 export const useFeatureFlagOverrides = () => {
     const { configOverrides, setConfigOverride } = useRemoteConfigOverrides()
 
-    const [expanded, setExpanded] = useState<string[]>([])
+    const expanded = useMemo(
+        () => Object.keys(configOverrides),
+        [configOverrides],
+    )
 
     const toggleExpand = (key: string) => {
         if (expanded.includes(key)) {
-            setExpanded(expanded.filter(k => k !== key))
             setConfigOverride(key, null)
         } else {
-            setExpanded([...expanded, key])
+            setConfigOverride(key, false)
         }
     }
 
     const toggleOverride = (key: string) => {
         const value = configOverrides[key]
-        if (value === undefined) {
+        if (!value) {
             setConfigOverride(key, true)
         } else {
             setConfigOverride(key, false)

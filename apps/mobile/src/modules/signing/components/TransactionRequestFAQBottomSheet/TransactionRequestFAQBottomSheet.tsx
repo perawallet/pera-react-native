@@ -50,6 +50,7 @@ export const TransactionRequestFAQBottomSheet = () => {
             isVisible={isVisible}
             onBackdropPress={handleClose}
             innerContainerStyle={styles.container}
+            enablePanDownToClose
         >
             <PWIcon
                 name='info'

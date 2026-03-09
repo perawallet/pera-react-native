@@ -12,10 +12,9 @@
 
 import {
     useDeviceID,
-    useDeviceInfoService,
-    useNetwork,
     useUpdateDeviceMutation,
-} from '@perawallet/wallet-core-platform-integration'
+} from '@perawallet/wallet-core-device'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useAccountsStore } from '../store'
 import { AccountTypes, WalletAccount } from '../models'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
@@ -24,13 +23,14 @@ import { KeyNotFoundError, useKMS } from '@perawallet/wallet-core-kms'
 import { NoHDWalletError } from '../errors'
 import { KEY_DOMAIN } from '../constants'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 export const useCreateAccount = () => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
     const accounts = useAccountsStore(state => state.accounts)
     const setAccounts = useAccountsStore(state => state.setAccounts)
-    const deviceInfo = useDeviceInfoService()
+    const deviceInfo = getProvider().deviceInfo
     const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
     const { getKey, createHDWalletKey, createAlgo25Key, withHDSession } =
         useKMS()

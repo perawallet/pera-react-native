@@ -18,7 +18,7 @@ import React from 'react'
 import { useArc59SendSummaryQuery } from '../useArc59SendSummaryQuery'
 import { fetchArc59SendSummary } from '../../api'
 
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: vi.fn(() => ({
         network: 'testnet',
         networkConfig: {

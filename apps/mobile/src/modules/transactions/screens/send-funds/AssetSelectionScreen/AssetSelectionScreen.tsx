@@ -28,7 +28,7 @@ import { LoadingView } from '@components/LoadingView'
 export const AssetSelectionScreen = () => {
     const styles = useStyles()
     const selectedAccount = useSelectedAccount()
-    const { setSelectedAsset } = useSendFunds()
+    const { setSelectedAssetBalance } = useSendFunds()
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const { accountBalances } = useAccountBalancesQuery(
@@ -37,10 +37,10 @@ export const AssetSelectionScreen = () => {
 
     const handleSelected = useCallback(
         (item: AssetWithAccountBalance) => {
-            setSelectedAsset(item)
+            setSelectedAssetBalance(item)
             navigation.navigate('InputAmount')
         },
-        [navigation, setSelectedAsset],
+        [navigation, setSelectedAssetBalance],
     )
 
     const balanceData = useMemo(

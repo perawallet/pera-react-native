@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useNetwork } from '@perawallet/wallet-core-platform-integration'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     useWalletConnect,
     useWalletConnectSessionRequests,

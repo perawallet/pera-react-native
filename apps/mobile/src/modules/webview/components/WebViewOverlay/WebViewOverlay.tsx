@@ -11,13 +11,9 @@
  */
 
 import React from 'react'
-import { PWBottomSheet, PWView } from '@components/core'
-import { useWindowDimensions } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { PWBottomSheet } from '@components/core'
 import { useWebViewStack, WebViewRequest } from '../../hooks'
 import { PWWebView } from '../PWWebView'
-
-const flexStyle = { flex: 1 }
 
 /**
  * WebViewOverlay renders WebView bottom sheets from the store.
@@ -31,8 +27,6 @@ const flexStyle = { flex: 1 }
  */
 export const WebViewOverlay = () => {
     const { openWebViews, removeWebView } = useWebViewStack()
-    const { height } = useWindowDimensions()
-    const insets = useSafeAreaInsets()
 
     const onCloseRequested = (view: WebViewRequest) => {
         if (view.onCloseRequested) {
@@ -47,22 +41,19 @@ export const WebViewOverlay = () => {
             {openWebViews.map((view: WebViewRequest) => (
                 <PWBottomSheet
                     key={view.id}
-                    innerContainerStyle={{
-                        height: height - insets.top,
-                    }}
                     isVisible={true}
-                    scrollEnabled={false}
+                    size='full'
+                    autoCreateContainer={false}
                 >
-                    <PWView style={flexStyle}>
-                        <PWWebView
-                            requestId={view.id}
-                            url={view.url}
-                            enablePeraConnect={view.enablePeraConnect ?? false}
-                            showControls
-                            onBack={view.onBackRequested}
-                            onClose={() => onCloseRequested(view)}
-                        />
-                    </PWView>
+                    <PWWebView
+                        requestId={view.id}
+                        url={view.url}
+                        enablePeraConnect={view.enablePeraConnect ?? false}
+                        showControls
+                        onBack={view.onBackRequested}
+                        onClose={() => onCloseRequested(view)}
+                        inBottomSheet
+                    />
                 </PWBottomSheet>
             ))}
         </>

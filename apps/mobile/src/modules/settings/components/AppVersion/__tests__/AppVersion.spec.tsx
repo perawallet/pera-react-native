@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import React from 'react'
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { render, fireEvent, screen } from '@test-utils/render'
 import { AppVersion } from '../AppVersion'
@@ -29,11 +30,15 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
-    useDeviceInfoService: () => ({
-        getAppVersion: () => '1.0.0',
-        getAppBuild: () => '1',
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    usePeraProvider: () => ({
+        deviceInfo: {
+            getAppVersion: () => '1.0.0',
+            getAppBuild: () => '1',
+        },
     }),
+    PeraWalletProvider: ({ children }: { children: React.ReactNode }) =>
+        children,
 }))
 
 vi.mock('@perawallet/wallet-core-settings', () => ({

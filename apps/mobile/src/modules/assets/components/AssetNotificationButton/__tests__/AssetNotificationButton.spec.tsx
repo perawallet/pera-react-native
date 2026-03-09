@@ -27,20 +27,18 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         mockUseToggleAssetPriceAlertMutation(),
 }))
 
-vi.mock(
-    '@perawallet/wallet-core-platform-integration',
-    async importOriginal => {
-        const actual =
-            await importOriginal<
-                typeof import('@perawallet/wallet-core-platform-integration')
-            >()
-        return {
-            ...actual,
-            useDeviceID: vi.fn().mockReturnValue('test-device-id'),
-            useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
-        }
-    },
-)
+vi.mock('@perawallet/wallet-core-device', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-device')>()
+    return {
+        ...actual,
+        useDeviceID: vi.fn().mockReturnValue('test-device-id'),
+    }
+})
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: vi.fn().mockReturnValue({ network: 'mainnet' }),
+}))
 
 import { AssetNotificationButton } from '../AssetNotificationButton'
 
@@ -159,9 +157,7 @@ describe('AssetNotificationButton', () => {
     })
 
     it('is disabled when deviceId is null', async () => {
-        const module = await import(
-            '@perawallet/wallet-core-platform-integration'
-        )
+        const module = await import('@perawallet/wallet-core-device')
         vi.mocked(module.useDeviceID).mockReturnValue(null)
 
         const { container } = render(
@@ -196,9 +192,7 @@ describe('AssetNotificationButton', () => {
     })
 
     it('is disabled when deviceId is null', async () => {
-        const module = await import(
-            '@perawallet/wallet-core-platform-integration'
-        )
+        const module = await import('@perawallet/wallet-core-device')
         vi.mocked(module.useDeviceID).mockReturnValue(null)
 
         const { container } = render(

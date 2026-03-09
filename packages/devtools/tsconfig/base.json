@@ -18,10 +18,10 @@
         "baseUrl": "../..",
         "paths": {
             "@perawallet/test-utils": [
-                "packages/platform-integration/src/test-utils"
+                "extensions/platform/src/test-utils"
             ],
             "@perawallet/test-utils/*": [
-                "packages/platform-integration/src/test-utils/*"
+                "extensions/platform/src/test-utils/*"
             ]
         },
         "outDir": "dist"

@@ -16,5 +16,3 @@ export * from './hooks/useKMS'
 export * from './models'
 export * from './errors'
 export { WORDLIST as MNEMONIC_WORDLIST } from './crypto/wordlist'
-
-export { registerKeyManagerStore } from './store'

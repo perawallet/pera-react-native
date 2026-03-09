@@ -86,7 +86,6 @@ describe('useTransactionProcessingScreen', () => {
     }
 
     const mockAsset = { id: '123', name: 'Test Asset' }
-    const mockSelectedAsset = { asset: mockAsset }
 
     const mockSendFundsState = {
         selectedAsset: undefined,
@@ -126,7 +125,7 @@ describe('useTransactionProcessingScreen', () => {
         ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
         ;(useSendFunds as Mock).mockReturnValue({
             ...mockSendFundsState,
-            selectedAsset: mockSelectedAsset,
+            selectedAsset: mockAsset,
             amount: new Decimal(5),
             destination: 'DEST_ADDRESS',
             note: 'Test note',
@@ -182,7 +181,7 @@ describe('useTransactionProcessingScreen', () => {
         ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
         ;(useSendFunds as Mock).mockReturnValue({
             ...mockSendFundsState,
-            selectedAsset: mockSelectedAsset,
+            selectedAsset: mockAsset,
             amount: new Decimal(5),
             destination: 'DEST_ADDRESS',
         })
@@ -207,7 +206,7 @@ describe('useTransactionProcessingScreen', () => {
         ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
         ;(useSendFunds as Mock).mockReturnValue({
             ...mockSendFundsState,
-            selectedAsset: mockSelectedAsset,
+            selectedAsset: mockAsset,
             amount: new Decimal(5),
             destination: 'DEST_ADDRESS',
         })
@@ -235,7 +234,7 @@ describe('useTransactionProcessingScreen', () => {
         ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
         ;(useSendFunds as Mock).mockReturnValue({
             ...mockSendFundsState,
-            selectedAsset: mockSelectedAsset,
+            selectedAsset: mockAsset,
             amount: new Decimal(5),
             destination: 'DEST_ADDRESS',
             sendMode: 'sendArc59',
@@ -260,7 +259,7 @@ describe('useTransactionProcessingScreen', () => {
         ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
         ;(useSendFunds as Mock).mockReturnValue({
             ...mockSendFundsState,
-            selectedAsset: mockSelectedAsset,
+            selectedAsset: mockAsset,
             amount: new Decimal(5),
             destination: 'DEST_ADDRESS',
         })

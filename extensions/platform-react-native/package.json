@@ -1,0 +1,50 @@
+{
+  "name": "@perawallet/wallet-extension-platform-react-native",
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@babel/runtime": "catalog:",
+    "@algorandfoundation/wallet-provider": "catalog:",
+    "@perawallet/wallet-extension-platform": "workspace:*",
+    "@perawallet/wallet-core-config": "workspace:*",
+    "react": "catalog:",
+    "react-native": "0.81.5",
+    "react-native-mmkv": "^3.3.3",
+    "react-native-keychain": "^10.0.0",
+    "@react-native-firebase/analytics": "^23.8.6",
+    "@react-native-firebase/crashlytics": "^23.8.6",
+    "@react-native-firebase/messaging": "^23.8.6",
+    "@react-native-firebase/remote-config": "^23.8.6",
+    "@notifee/react-native": "^9.1.8",
+    "@sbaiahmed1/react-native-biometrics": "^0.11.0",
+    "expo-application": "^7.0.8",
+    "expo-device": "^8.0.10",
+    "expo-localization": "^17.0.8",
+    "zustand": "catalog:"
+  },
+  "devDependencies": {
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "catalog:",
+    "@types/react": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@perawallet/wallet-core-devtools": "workspace:*",
+    "globals": "catalog:",
+    "typescript-eslint": "catalog:"
+  }
+}

@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook } from '@testing-library/react'
 import { useFeeWarning } from '../useFeeWarning'
 import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
-import { useRemoteConfigService } from '@perawallet/wallet-core-platform-integration'
+import { useRemoteConfig } from '@perawallet/wallet-core-remote-config'
 import {
     useSigningRequest,
     useSigningRequestAnalysis,
@@ -26,8 +26,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     ALGO_ASSET_ID: '0',
 }))
 
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
-    useRemoteConfigService: vi.fn(),
+vi.mock('@perawallet/wallet-core-remote-config', () => ({
+    useRemoteConfig: vi.fn(),
     RemoteConfigKeys: {
         fee_warning_standard_fee: 'fee_warning_standard_fee',
         fee_warning_usd_threshold: 'fee_warning_usd_threshold',
@@ -45,13 +45,13 @@ describe('useFeeWarning', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(useRemoteConfigService as Mock).mockReturnValue({
-            getNumberValue: mockGetNumberValue,
-        })
         mockGetNumberValue.mockImplementation((key: string) => {
             if (key === 'fee_warning_standard_fee') return 0.001
             if (key === 'fee_warning_usd_threshold') return 0.01
             return 0
+        })
+        ;(useRemoteConfig as Mock).mockReturnValue({
+            getNumberValue: mockGetNumberValue,
         })
         ;(useSigningRequest as Mock).mockReturnValue({
             currentRequest: mockRequest,

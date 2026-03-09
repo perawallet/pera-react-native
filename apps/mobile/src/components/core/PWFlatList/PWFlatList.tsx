@@ -12,9 +12,25 @@
 
 import React from 'react'
 import { LegendList, LegendListProps } from '@legendapp/list'
+import { useBottomSheetScrollableCreator } from '@gorhom/bottom-sheet'
 
-export type PWFlatListProps<T> = LegendListProps<T>
+export type PWFlatListProps<T> = LegendListProps<T> & {
+    inBottomSheet?: boolean
+}
 
-export const PWFlatList = <T,>(props: PWFlatListProps<T>) => {
-    return <LegendList {...props} />
+export const PWFlatList = <T,>({
+    inBottomSheet,
+    ...props
+}: PWFlatListProps<T>) => {
+    const BottomSheetScrollable = useBottomSheetScrollableCreator()
+    if (inBottomSheet) {
+        return (
+            <LegendList
+                {...(props ?? {})}
+                renderScrollComponent={BottomSheetScrollable}
+            />
+        )
+    } else {
+        return <LegendList {...(props ?? {})} />
+    }
 }

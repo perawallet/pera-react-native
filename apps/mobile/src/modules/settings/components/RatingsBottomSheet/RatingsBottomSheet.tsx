@@ -15,8 +15,8 @@ import { useStyles } from './RatingsBottomSheet.style'
 import RateApp, { AndroidMarket } from 'react-native-rate-app'
 import { RoundButton } from '@components/RoundButton'
 import { useLanguage } from '@hooks/useLanguage'
-import { useDeviceInfoService } from '@perawallet/wallet-core-platform-integration'
 import { useToast } from '@hooks/useToast'
+import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 type RatingsBottomSheetProps = {
     isOpen: boolean
@@ -27,7 +27,8 @@ export const RatingsBottomSheet = (props: RatingsBottomSheetProps) => {
     const { isOpen, onClose } = props
     const styles = useStyles()
     const { t } = useLanguage()
-    const deviceInfoService = useDeviceInfoService()
+    const provider = usePeraProvider()
+    const deviceInfoService = provider.deviceInfo
     const { showToast } = useToast()
 
     const handleRatingClick = async () => {
@@ -56,6 +57,7 @@ export const RatingsBottomSheet = (props: RatingsBottomSheetProps) => {
             isVisible={isOpen}
             onBackdropPress={onClose}
             innerContainerStyle={styles.bottomSheetContainer}
+            enablePanDownToClose
         >
             <PWView style={styles.buttonContainer}>
                 <RoundButton

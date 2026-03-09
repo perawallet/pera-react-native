@@ -17,9 +17,9 @@ import {
     ALGO_ASSET_ID,
 } from '@perawallet/wallet-core-assets'
 import {
-    useRemoteConfigService,
+    useRemoteConfig,
     RemoteConfigKeys,
-} from '@perawallet/wallet-core-platform-integration'
+} from '@perawallet/wallet-core-remote-config'
 import {
     useSigningRequest,
     useSigningRequestAnalysis,
@@ -48,7 +48,7 @@ export const useFeeWarning = (): UseFeeWarningResult => {
         [allTransactions, signableAddresses],
     )
 
-    const remoteConfigService = useRemoteConfigService()
+    const remoteConfigService = useRemoteConfig()
     const { data: assetPrices } = useAssetPricesQuery(ALGO_PRICE_IDS, true)
 
     const algoPrice = assetPrices?.get(ALGO_ASSET_ID)?.usdPrice

@@ -11,10 +11,8 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import {
-    useDeviceID,
-    useNetwork,
-} from '@perawallet/wallet-core-platform-integration'
+import { useDeviceID } from '@perawallet/wallet-core-device'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { updateLastSeenNotification } from '../api/notifications'
 import { useInboxInvalidator } from './useInboxInvalidator'
 

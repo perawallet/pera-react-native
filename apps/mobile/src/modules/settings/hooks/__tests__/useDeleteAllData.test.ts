@@ -12,35 +12,54 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useDeleteAllData } from '../useDeleteAllData'
+import { useDeleteAllData, clearAccountsStore } from '../useDeleteAllData'
 import { useKMS } from '@perawallet/wallet-core-kms'
-import { DataStoreRegistry } from '@perawallet/wallet-core-shared'
+import { usePinCode } from '@perawallet/wallet-core-security'
 import { useQueryClient } from '@tanstack/react-query'
-import { useDeleteDeviceMutation } from '@perawallet/wallet-core-platform-integration'
+import { useDeleteDeviceMutation } from '@perawallet/wallet-core-device'
+import { clearAllStores } from '@perawallet/wallet-core-shared'
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: vi.fn(),
 }))
 
+vi.mock('@perawallet/wallet-core-security', () => ({
+    usePinCode: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    clearDataStores: vi.fn(),
+}))
+
 vi.mock('@perawallet/wallet-core-shared', () => ({
-    DataStoreRegistry: {
-        clearAll: vi.fn().mockResolvedValue(undefined),
-    },
     logger: { api: vi.fn(), error: vi.fn(), info: vi.fn() },
+    clearAllStores: vi.fn(),
 }))
 
 vi.mock('@tanstack/react-query', () => ({
     useQueryClient: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
+vi.mock('@perawallet/wallet-core-device', () => ({
     useDeleteDeviceMutation: vi.fn(),
+}))
+
+const { mockAccountsResetState, mockAccountsClearStorage } = vi.hoisted(() => ({
+    mockAccountsResetState: vi.fn(),
+    mockAccountsClearStorage: vi.fn(),
+}))
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAccountsStore: Object.assign(vi.fn(), {
+        getState: () => ({ resetState: mockAccountsResetState }),
+        persist: { clearStorage: mockAccountsClearStorage },
+    }),
 }))
 
 describe('useDeleteAllData', () => {
     const mockDeleteKey = vi.fn()
     const mockRemoveQueries = vi.fn()
     const mockDeleteDevices = vi.fn()
+    const mockSavePin = vi.fn().mockResolvedValue(undefined)
 
     beforeEach(() => {
         vi.clearAllMocks()
@@ -51,6 +70,9 @@ describe('useDeleteAllData', () => {
             ]),
             deleteKey: mockDeleteKey,
         })
+        ;(usePinCode as Mock).mockReturnValue({
+            savePin: mockSavePin,
+        })
         ;(useQueryClient as Mock).mockReturnValue({
             removeQueries: mockRemoveQueries,
         })
@@ -59,11 +81,11 @@ describe('useDeleteAllData', () => {
         })
     })
 
-    it('should clear all data stores, delete keys, and delete devices', async () => {
+    it('should delete keys, delete devices, clear PIN, and clear stores except accounts', async () => {
         const { result } = renderHook(() => useDeleteAllData())
 
         await act(async () => {
-            await result.current()
+            await result.current.deleteAllData()
         })
 
         expect(mockRemoveQueries).toHaveBeenCalledTimes(1)
@@ -71,7 +93,17 @@ describe('useDeleteAllData', () => {
         expect(mockDeleteKey).toHaveBeenCalledWith('key-1')
         expect(mockDeleteKey).toHaveBeenCalledWith('key-2')
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
-        expect(DataStoreRegistry.clearAll).toHaveBeenCalledTimes(1)
+        expect(mockSavePin).toHaveBeenCalledWith(null)
+        expect(clearAllStores).toHaveBeenCalledWith({
+            skip: ['accounts-store'],
+        })
+    })
+
+    it('should clear accounts store when clearAccountsStore is called', () => {
+        clearAccountsStore()
+
+        expect(mockAccountsResetState).toHaveBeenCalledTimes(1)
+        expect(mockAccountsClearStorage).toHaveBeenCalledTimes(1)
     })
 
     it('should not delete keys if id is missing', async () => {
@@ -86,7 +118,7 @@ describe('useDeleteAllData', () => {
         const { result } = renderHook(() => useDeleteAllData())
 
         await act(async () => {
-            await result.current()
+            await result.current.deleteAllData()
         })
 
         expect(mockDeleteKey).toHaveBeenCalledTimes(1)
@@ -99,11 +131,10 @@ describe('useDeleteAllData', () => {
         const { result } = renderHook(() => useDeleteAllData())
 
         await act(async () => {
-            await result.current()
+            await result.current.deleteAllData()
         })
 
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
-        expect(DataStoreRegistry.clearAll).toHaveBeenCalledTimes(1)
     })
 
     it('should continue if deleteKey fails', async () => {
@@ -112,12 +143,11 @@ describe('useDeleteAllData', () => {
         const { result } = renderHook(() => useDeleteAllData())
 
         await act(async () => {
-            await result.current()
+            await result.current.deleteAllData()
         })
 
         expect(mockDeleteKey).toHaveBeenCalled()
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
-        expect(DataStoreRegistry.clearAll).toHaveBeenCalledTimes(1)
     })
 
     it('should handle missing queryClient gracefully', async () => {
@@ -126,12 +156,11 @@ describe('useDeleteAllData', () => {
         const { result } = renderHook(() => useDeleteAllData())
 
         await act(async () => {
-            await result.current()
+            await result.current.deleteAllData()
         })
 
         expect(mockRemoveQueries).not.toHaveBeenCalled()
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
-        expect(DataStoreRegistry.clearAll).toHaveBeenCalledTimes(1)
     })
 
     it('should handle missing keys gracefully', async () => {
@@ -143,11 +172,10 @@ describe('useDeleteAllData', () => {
         const { result } = renderHook(() => useDeleteAllData())
 
         await act(async () => {
-            await result.current()
+            await result.current.deleteAllData()
         })
 
         expect(mockDeleteKey).not.toHaveBeenCalled()
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
-        expect(DataStoreRegistry.clearAll).toHaveBeenCalledTimes(1)
     })
 })

@@ -19,7 +19,6 @@ import {
     PWBottomSheet,
     PWButton,
     PWIcon,
-    PWScrollView,
     PWText,
     PWToolbar,
 } from '@components/core'
@@ -28,6 +27,7 @@ import { useModalState } from '@hooks/useModalState'
 import { useStyles } from './styles'
 import { useClipboard } from '@hooks/useClipboard'
 import { useMemo } from 'react'
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 
 type RawTransactionButtonProps = {
     transaction: PeraDisplayableTransaction
@@ -66,7 +66,8 @@ export const RawTransactionButton = ({
             <PWBottomSheet
                 containerStyle={styles.contentContainer}
                 isVisible={modalState.isOpen}
-                scrollEnabled={false}
+                size='lg'
+                autoCreateContainer={false}
             >
                 <PWToolbar
                     left={
@@ -88,8 +89,9 @@ export const RawTransactionButton = ({
                             onPress={copyText}
                         />
                     }
+                    paddingStyle='dense'
                 />
-                <PWScrollView
+                <BottomSheetScrollView
                     contentContainerStyle={styles.scrollview}
                     scrollEnabled
                 >
@@ -99,7 +101,7 @@ export const RawTransactionButton = ({
                     >
                         {rawText}
                     </PWText>
-                </PWScrollView>
+                </BottomSheetScrollView>
             </PWBottomSheet>
         </>
     )

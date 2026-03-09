@@ -88,10 +88,24 @@ export default defineConfig({
                 ),
             },
             {
-                find: '@perawallet/wallet-core-platform-integration',
+                find: '@perawallet/wallet-extension-platform-driver',
                 replacement: path.resolve(
                     __dirname,
-                    '../../packages/platform-integration/src/index.ts',
+                    '../../extensions/platform-driver/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-extension-provider',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../extensions/provider/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-extension-platform',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../extensions/platform/src/index.ts',
                 ),
             },
             {
@@ -183,6 +197,55 @@ export default defineConfig({
                 replacement: path.resolve(
                     __dirname,
                     '../../packages/devtools/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-signing',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/signing/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-security',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/security/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-messages',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/messages/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-device',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/device/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-remote-config',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/remote-config/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-staking',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/staking/src/index.ts',
+                ),
+            },
+            {
+                find: '@perawallet/wallet-core-notifications',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/notifications/src/index.ts',
                 ),
             },
             {

@@ -48,6 +48,7 @@ export const WalletConnectErrorBottomSheet = ({
             isVisible={isVisible}
             onBackdropPress={onClose}
             innerContainerStyle={styles.container}
+            enablePanDownToClose
         >
             <PWIcon
                 name='info'

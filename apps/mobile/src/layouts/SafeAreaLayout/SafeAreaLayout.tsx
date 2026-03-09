@@ -13,7 +13,7 @@
 import { ViewProps } from 'react-native'
 import { useStyles } from './styles'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { useDeeplinkListener } from '@hooks/useDeepLink'
+import { useDeeplinkListener } from '@hooks/useDeeplinkListener'
 
 export type SafeAreaLayoutProps = ViewProps & {
     isTabBarVisible?: boolean

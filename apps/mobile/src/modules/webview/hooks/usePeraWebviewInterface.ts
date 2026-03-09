@@ -15,12 +15,12 @@
 import WebView from 'react-native-webview'
 import { useToast } from '@hooks/useToast'
 import { Linking } from 'react-native'
+import { useDeviceID } from '@perawallet/wallet-core-device'
 import {
-    useAnalyticsService,
-    useDeviceID,
-    useDeviceInfoService,
     useNetwork,
-} from '@perawallet/wallet-core-platform-integration'
+    PeraSignedTransaction,
+    useTransactionEncoder,
+} from '@perawallet/wallet-core-blockchain'
 import {
     getAccountDisplayName,
     useAllAccounts,
@@ -29,10 +29,6 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useCallback } from 'react'
 import { useWebView } from './useWebViewStore'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    PeraSignedTransaction,
-    useTransactionEncoder,
-} from '@perawallet/wallet-core-blockchain'
 import {
     type ArbitraryDataSignRequest,
     type PeraArbitraryDataMessage,
@@ -56,6 +52,10 @@ import {
 import { getAccountType } from './utils'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { useDeepLink } from '@hooks/useDeepLink'
+import { parseDeeplink } from '@hooks/deeplink/parser'
+import { DeeplinkType } from '@hooks/deeplink/types'
+import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 type WebviewMessage = {
     id: string
@@ -76,15 +76,17 @@ export const usePeraWebviewInterface = (
     const deviceID = useDeviceID(network)
     const darkmode = useIsDarkMode()
     const theme = darkmode ? 'dark' : 'light'
-    const deviceInfo = useDeviceInfoService()
+    const provider = usePeraProvider()
+    const deviceInfo = provider.deviceInfo
     const { preferredCurrency } = useCurrency()
-    const analytics = useAnalyticsService()
+    const analytics = provider.analytics
     const { t } = useLanguage()
     const { pushWebView: pushWebViewContext } = useWebView()
     const { addSignRequest } = useSigningRequest()
     const { connect } = useWalletConnect(network)
     const { decodeTransactions, encodeSignedTransaction } =
         useTransactionEncoder()
+    const { handleDeepLink } = useDeepLink()
 
     const hadRequiredParams = useCallback(
         (requiredParams: string[], message: WebviewMessage) => {
@@ -115,6 +117,7 @@ export const usePeraWebviewInterface = (
                     onCloseRequested,
                     onBackRequested,
                     id: message.id,
+                    enablePeraConnect: true,
                 })
             })
         },
@@ -177,25 +180,41 @@ export const usePeraWebviewInterface = (
                 if (!hadRequiredParams(['uri'], message)) {
                     return
                 }
-                Linking.canOpenURL(message.params!.uri as string).then(
-                    supported => {
+                const uri = message.params!.uri as string
+
+                if (parseDeeplink(uri)) {
+                    handleDeepLink(uri, false, 'deeplink')
+                    return
+                }
+
+                Linking.canOpenURL(uri)
+                    .then(supported => {
                         if (supported) {
-                            Linking.openURL(message.params?.uri as string)
+                            Linking.openURL(uri)
                         } else {
                             sendErrorToWebview(
                                 message.id,
                                 JsonRpcErrorCode.InvalidParams,
                                 t('errors.webview.unsupported_url', {
-                                    url: message.params?.uri,
+                                    url: uri,
                                 }),
                                 webview,
                             )
                         }
-                    },
-                )
+                    })
+                    .catch(() => {
+                        sendErrorToWebview(
+                            message.id,
+                            JsonRpcErrorCode.InvalidParams,
+                            t('errors.webview.unsupported_url', {
+                                url: uri,
+                            }),
+                            webview,
+                        )
+                    })
             })
         },
-        [securedConnection, t, webview],
+        [securedConnection, handleDeepLink, t, webview],
     )
 
     const notifyUser = useCallback(
@@ -431,9 +450,16 @@ export const usePeraWebviewInterface = (
                 return
             }
 
+            const rawUri = message.params!.uri as string
+            const parsed = parseDeeplink(rawUri)
+            const wcUri =
+                parsed?.type === DeeplinkType.WALLET_CONNECT
+                    ? parsed.uri
+                    : rawUri
+
             connect({
                 connection: {
-                    uri: message.params!.uri as string,
+                    uri: wcUri,
                     autoConnect: securedConnection,
                 },
             })

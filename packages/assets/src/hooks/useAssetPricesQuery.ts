@@ -22,7 +22,7 @@ import type { AssetPriceResponse } from '../api'
 import { DEFAULT_PAGE_SIZE, partition } from '@perawallet/wallet-core-shared'
 import { getAssetPricesQueryKey } from './querykeys'
 import { PublicAssetResponse } from '../api/assets/schema'
-import { useNetwork } from '@perawallet/wallet-core-platform-integration'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 
 type UseAssetPricesQueryResult = {
     data: AssetPrices

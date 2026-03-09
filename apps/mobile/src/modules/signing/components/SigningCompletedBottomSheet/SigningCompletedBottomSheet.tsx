@@ -44,6 +44,7 @@ export const SigningCompletedBottomSheet = () => {
             isVisible={isVisible}
             onBackdropPress={handleDismiss}
             innerContainerStyle={styles.container}
+            enablePanDownToClose
         >
             <PWIcon
                 name={isTransaction ? 'info' : 'check'}

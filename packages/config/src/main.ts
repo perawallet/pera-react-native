@@ -57,6 +57,7 @@ export const configSchema = z.object({
 
     sendFundsFaqUrl: z.url(),
     swapSupportUrl: z.url(),
+    multisigSupportUrl: z.url(),
     algorandDefiUrl: z.url(),
 
     debugEnabled: z.boolean(),
@@ -110,6 +111,8 @@ const productionConfig = {
         'https://support.perawallet.app/en/category/transactions-1tq8s9h/',
     swapSupportUrl:
         'https://support.perawallet.app/en/article/pera-swap-swapping-with-pera-1ep84ky/',
+    multisigSupportUrl:
+        'https://support.perawallet.app/en/article/introduction-to-joint-accounts-1j0dt2g/',
     dispenserUrl: 'https://lora.algokit.io/testnet/fund/',
     algorandDefiUrl: 'https://algorand.co/ecosystem/defi',
 
@@ -168,6 +171,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     peraDemoDappUrl: 'PERA_DEMO_DAPP_URL',
     sendFundsFaqUrl: 'SEND_FUNDS_FAQ_URL',
     swapSupportUrl: 'SWAP_SUPPORT_URL',
+    multisigSupportUrl: 'MULTISIG_SUPPORT_URL',
     algorandDefiUrl: 'ALGORAND_DEFI_URL',
     dispenserUrl: 'DISPENSER_URL',
 

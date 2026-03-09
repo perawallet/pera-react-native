@@ -10,23 +10,29 @@
  limitations under the License
  */
 
-import { PWText, PWView, PWViewProps } from '@components/core'
+import { PWText, PWTextProps, PWView, PWViewProps } from '@components/core'
 import { useStyles } from './styles'
 
 export type KeyValueRowProps = {
     title: string
+    titleProps?: PWTextProps
     verticalAlignment?: 'center' | 'top'
 } & PWViewProps
 
 export const KeyValueRow = (props: KeyValueRowProps) => {
-    const { title, children, ...rest } = props
+    const { title, titleProps, children, ...rest } = props
     const styles = useStyles(props)
     return (
         <PWView
             {...rest}
             style={[rest.style, styles.container]}
         >
-            <PWText style={styles.label}>{title}</PWText>
+            <PWText
+                style={styles.label}
+                {...titleProps}
+            >
+                {title}
+            </PWText>
             <PWView style={styles.childContainer}>{children}</PWView>
         </PWView>
     )

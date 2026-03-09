@@ -11,7 +11,7 @@
  */
 
 import { PWSwitch, PWText, PWView } from '@components/core'
-import { RemoteConfigKeys } from '@perawallet/wallet-core-platform-integration'
+import { RemoteConfigKeys } from '@perawallet/wallet-core-remote-config'
 import { useStyles } from './styles'
 import { useFeatureFlagOverrides } from './useFeatureFlagOverrides'
 import { useLanguage } from '@hooks/useLanguage'
@@ -53,12 +53,12 @@ export const FeatureFlagOverrides = () => {
                             </PWText>
                         </PWView>
                         <PWSwitch
-                            value={expanded.includes(key)}
+                            value={expanded?.includes(key) ?? false}
                             onValueChange={() => toggleExpand(key)}
                         />
                     </PWView>
 
-                    {expanded.includes(key) && (
+                    {expanded?.includes(key) && (
                         <PWView style={styles.row}>
                             <PWText>
                                 {t('settings.developer.overridden')}:{' '}

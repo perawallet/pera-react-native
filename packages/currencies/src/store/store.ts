@@ -12,64 +12,48 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import {
-    KeyValueStorageService,
-    useKeyValueStorageService,
-} from '@perawallet/wallet-core-platform-integration'
-import {
-    createLazyStore,
-    DataStoreRegistry,
-    type WithPersist,
-} from '@perawallet/wallet-core-shared'
+import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
 import { CurrenciesStore } from '../models'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'currencies-store'
-const lazy =
-    createLazyStore<WithPersist<StoreApi<CurrenciesStore>, unknown>>(STORE_NAME)
-
-export const useCurrenciesStore: UseBoundStore<
-    WithPersist<StoreApi<CurrenciesStore>, unknown>
-> = lazy.useStore
 
 const initialState = {
     preferredCurrency: 'USD',
     fallbackCurrency: 'USD',
 }
 
-const createCurrenciesStore = (storage: KeyValueStorageService) =>
-    create<CurrenciesStore>()(
-        persist(
-            set => ({
-                ...initialState,
-                setPreferredCurrency: (currency: string) =>
-                    set({ preferredCurrency: currency }),
-                setFallbackCurrency: (currency: string) =>
-                    set({ fallbackCurrency: currency }),
-                resetState: () => set(initialState),
+export const useCurrenciesStore: UseBoundStore<
+    WithPersist<StoreApi<CurrenciesStore>, unknown>
+> = create<CurrenciesStore>()(
+    persist(
+        set => ({
+            ...initialState,
+            setPreferredCurrency: (currency: string) =>
+                set({ preferredCurrency: currency }),
+            setFallbackCurrency: (currency: string) =>
+                set({ fallbackCurrency: currency }),
+            resetState: () => set(initialState),
+        }),
+        {
+            name: STORE_NAME,
+            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            version: 1,
+            partialize: state => ({
+                preferredCurrency: state.preferredCurrency,
+                fallbackCurrency: state.fallbackCurrency,
             }),
-            {
-                name: STORE_NAME,
-                storage: createJSONStorage(() => storage),
-                version: 1,
-                partialize: state => ({
-                    preferredCurrency: state.preferredCurrency,
-                    fallbackCurrency: state.fallbackCurrency,
-                }),
-            },
-        ),
-    )
+        },
+    ),
+)
 
-export const initCurrenciesStore = () => {
-    const storage = useKeyValueStorageService()
-    const realStore = createCurrenciesStore(storage)
-    lazy.init(realStore, () => realStore.getState().resetState())
-}
-
-export const clearCurrenciesStore = () => lazy.clear()
-
-export const registerCurrenciesStore = () =>
-    DataStoreRegistry.register({
-        name: STORE_NAME,
-        init: initCurrenciesStore,
-        clear: clearCurrenciesStore,
-    })
+registerStore({
+    name: STORE_NAME,
+    clearStorage: () =>
+        (
+            useCurrenciesStore as unknown as {
+                persist: { clearStorage: () => void }
+            }
+        ).persist.clearStorage(),
+    resetState: () => useCurrenciesStore.getState().resetState(),
+})

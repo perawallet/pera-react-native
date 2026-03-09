@@ -52,6 +52,7 @@ export const SwapIntroduction = ({
             isVisible={isVisible}
             onBackdropPress={onClose}
             innerContainerStyle={styles.sheetContainer}
+            enablePanDownToClose
         >
             <PWView style={styles.heroSection}>
                 <PWImage

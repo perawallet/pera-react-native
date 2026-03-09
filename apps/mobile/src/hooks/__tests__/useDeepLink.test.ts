@@ -20,14 +20,39 @@ import {
     type Mock,
 } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useDeepLink, useDeeplinkListener } from '../useDeepLink'
-import { useNavigation } from '@react-navigation/native'
+import { useDeepLink } from '../useDeepLink'
+import { useDeeplinkListener } from '../useDeeplinkListener'
+import { StackActions } from '@react-navigation/native'
 import { parseDeeplink } from '../deeplink/parser'
 import { DeeplinkType } from '../deeplink/types'
 import { Linking } from 'react-native'
 
+const { mockNavigate, mockDispatch } = vi.hoisted(() => ({
+    mockNavigate: vi.fn(),
+    mockDispatch: vi.fn(),
+}))
+
+vi.mock('@routes/navigationRef', () => ({
+    navigationRef: {
+        navigate: mockNavigate,
+        dispatch: mockDispatch,
+        isReady: vi.fn(() => true),
+    },
+}))
+
 vi.mock('@react-navigation/native', () => ({
-    useNavigation: vi.fn(),
+    createNavigationContainerRef: () => ({
+        navigate: vi.fn(),
+        dispatch: vi.fn(),
+        reset: vi.fn(),
+        goBack: vi.fn(),
+        isReady: vi.fn(() => true),
+        current: null,
+    }),
+    StackActions: {
+        replace: vi.fn(),
+        push: vi.fn(),
+    },
 }))
 
 vi.mock('../deeplink/parser', () => ({
@@ -70,15 +95,8 @@ vi.mock('react-native', () => ({
 }))
 
 describe('useDeepLink', () => {
-    const mockReplace = vi.fn()
-    const mockNavigate = vi.fn()
-
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(useNavigation as Mock).mockReturnValue({
-            replace: mockReplace,
-            navigate: mockNavigate,
-        })
     })
 
     it('should validate deeplink', () => {
@@ -162,10 +180,15 @@ describe('useDeepLink', () => {
             )
         })
 
-        expect(mockReplace).toHaveBeenCalledWith('AddContact', {
-            address: 'addr1',
-            label: 'Label1',
-        })
+        expect(vi.mocked(StackActions.replace)).toHaveBeenCalledWith(
+            'AddContact',
+            {
+                address: 'addr1',
+                label: 'Label1',
+            },
+        )
+        expect(mockDispatch).toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
     })
 
     it('should handle WALLET_CONNECT deeplink', async () => {
@@ -612,10 +635,8 @@ describe('useDeepLink', () => {
         ;(parseDeeplink as Mock).mockImplementation(() => {
             return { type: DeeplinkType.HOME }
         })
-        ;(useNavigation as Mock).mockReturnValue({
-            navigate: vi.fn(() => {
-                throw new Error('Test error')
-            }),
+        mockNavigate.mockImplementationOnce(() => {
+            throw new Error('Test error')
         })
         const { result } = renderHook(() => useDeepLink())
 
@@ -712,10 +733,8 @@ describe('useDeepLink', () => {
         ;(parseDeeplink as Mock).mockImplementation(() => {
             return { type: DeeplinkType.HOME }
         })
-        ;(useNavigation as Mock).mockReturnValue({
-            navigate: vi.fn(() => {
-                throw new Error('Test error')
-            }),
+        mockNavigate.mockImplementationOnce(() => {
+            throw new Error('Test error')
         })
         const mockOnError = vi.fn()
         const { result } = renderHook(() => useDeepLink())

@@ -50,15 +50,28 @@ const mockDeviceID = 'DEVICE_ID_123'
 const mockDevicePlatform = 'ios'
 const mockUpdateDeviceMutation = vi.fn().mockResolvedValue({})
 
-vi.mock('@perawallet/wallet-core-platform-integration', () => ({
-    useNetwork: () => mockNetwork,
+vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: vi.fn(() => mockDeviceID),
-    useDeviceInfoService: () => ({
-        getDevicePlatform: () => mockDevicePlatform,
-    }),
     useUpdateDeviceMutation: () => ({
         mutateAsync: mockUpdateDeviceMutation,
     }),
+}))
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        deviceInfo: {
+            getDevicePlatform: () => mockDevicePlatform,
+        },
+        keyValueStorage: {
+            getItem: () => null,
+            setItem: () => {},
+            removeItem: () => {},
+        },
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: () => mockNetwork,
 }))
 
 describe('useUpdateAccount', () => {
