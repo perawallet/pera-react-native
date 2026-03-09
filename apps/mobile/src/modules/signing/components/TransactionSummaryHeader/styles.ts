@@ -15,9 +15,9 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         alignItems: 'center',
+        justifyContent: 'center',
         gap: theme.spacing.md,
         flexGrow: 1,
-        flexShrink: 1,
         marginTop: theme.spacing.md,
     },
     title: {

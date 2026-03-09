@@ -27,15 +27,17 @@ import {
     createTransactionListItems,
 } from '../utils/classification'
 
-export const useSigningRequestAnalysis = (request: TransactionSignRequest) => {
+export const useSigningRequestAnalysis = (
+    request: TransactionSignRequest | undefined,
+) => {
     const accounts = useAllAccounts()
 
     const allTransactions = useMemo(
         () =>
-            request.txs
+            (request?.txs ?? [])
                 .map(tx => mapToDisplayableTransaction(tx))
                 .filter((tx): tx is PeraDisplayableTransaction => !!tx),
-        [request.txs],
+        [request?.txs],
     )
 
     const listItems = useMemo(
