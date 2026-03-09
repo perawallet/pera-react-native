@@ -99,7 +99,7 @@ const productionConfig = {
 
     mainnetExplorerUrl: 'https://explorer.perawallet.app',
     testnetExplorerUrl: 'https://testnet.explorer.perawallet.app',
-    discoverBaseUrl: 'https://discover-mobile-staging.perawallet.app/',
+    discoverBaseUrl: 'http://192.168.1.215:5173/',
     stakingBaseUrl: 'https://staking-mobile-staging.perawallet.app/',
     onrampBaseUrl: 'https://onramp-mobile-staging.perawallet.app/',
     supportBaseUrl: 'https://support.perawallet.app/',
