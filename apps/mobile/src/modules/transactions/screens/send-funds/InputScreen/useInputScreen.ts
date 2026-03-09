@@ -40,6 +40,8 @@ export const useInputScreen = () => {
     const selectedAccount = useSelectedAccount()
     const { selectedAssetBalance, setAmount, setIsCloseAccount } =
         useSendFunds()
+    
+    // we maintain state and a ref to improve performance while retaining reactivity
     const [value, setValue] = useState<string | null>()
     const valueRef = useRef<string | null | undefined>(value)
     const setValueAndRef = useCallback(
