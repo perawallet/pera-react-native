@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import type { KeyId } from '@algorandfoundation/keystore'
+
 export const KeyType = {
     HDWalletRootKey: 'hdwallet-root-key',
     DeterministicP256Key: 'deterministic-p256-key',
@@ -35,7 +37,7 @@ export type AccessControl = {
 
 export type KeyPair = {
     id?: string
-    keystoreKeyId?: string // key ID in the keystore extension
+    keystoreKeyId?: KeyId
     publicKey: string
     createdAt?: Date
     expiresAt?: Date // optional key expiry. KMS will autodelete keys when accessed after this date
