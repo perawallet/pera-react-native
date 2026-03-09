@@ -46,7 +46,7 @@ export const SendFundsRoutes = () => {
                     <NavigationHeader
                         {...props}
                         safeArea={false}
-                        paddingStyle='none'
+                        paddingStyle='dense'
                     />
                 ),
                 cardStyle: [styles.screenContent, styles.tabItem],

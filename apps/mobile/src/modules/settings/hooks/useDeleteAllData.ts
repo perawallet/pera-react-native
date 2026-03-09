@@ -11,13 +11,12 @@
  */
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { useDeleteDeviceMutation } from '@perawallet/wallet-core-device'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { usePinCode } from '@perawallet/wallet-core-security'
-import { logger } from '@perawallet/wallet-core-shared'
-import { clearDataStores } from '@perawallet/wallet-extension-provider'
+import { clearAllStores, logger } from '@perawallet/wallet-core-shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
-import { useDeleteDeviceMutation } from '@perawallet/wallet-extension-platform'
 
 const ACCOUNTS_STORE_NAME = 'accounts-store'
 
@@ -63,7 +62,7 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
         // Clear all stores except accounts — accounts store is cleared
         // separately after the success dialog so the navigation guard
         // doesn't redirect before the user sees the confirmation
-        clearDataStores({ skip: [ACCOUNTS_STORE_NAME] })
+        clearAllStores({ skip: [ACCOUNTS_STORE_NAME] })
     }, [queryClient, keys, deleteKey, savePin, deleteDevices])
 
     return { deleteAllData }

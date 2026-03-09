@@ -145,7 +145,7 @@ const mockHandleConfirmCloseAccount = vi.fn()
 
 const defaultInputViewReturn = {
     asset: { name: 'Algorand', unitName: 'ALGO', decimals: 6 },
-    selectedAsset: { assetId: 0 },
+    selectedAssetBalance: { assetId: 0 },
     params: { minFee: 1000 },
     accountInformation: { amount: 1000000n, minBalance: 100000n },
     cryptoValue: null,
@@ -181,7 +181,7 @@ describe('InputScreen', () => {
     it('shows LoadingView when selectedAsset is missing', () => {
         ;(useInputScreen as Mock).mockReturnValue({
             ...defaultInputViewReturn,
-            selectedAsset: null,
+            selectedAssetBalance: null,
         })
 
         render(<InputScreen />)

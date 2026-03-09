@@ -15,9 +15,9 @@ import { renderHook, act } from '@testing-library/react'
 import { useDeleteAllData, clearAccountsStore } from '../useDeleteAllData'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { usePinCode } from '@perawallet/wallet-core-security'
-import { clearDataStores } from '@perawallet/wallet-extension-provider'
 import { useQueryClient } from '@tanstack/react-query'
-import { useDeleteDeviceMutation } from '@perawallet/wallet-extension-platform'
+import { useDeleteDeviceMutation } from '@perawallet/wallet-core-device'
+import { clearAllStores } from '@perawallet/wallet-core-shared'
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: vi.fn(),
@@ -33,13 +33,14 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { api: vi.fn(), error: vi.fn(), info: vi.fn() },
+    clearAllStores: vi.fn(),
 }))
 
 vi.mock('@tanstack/react-query', () => ({
     useQueryClient: vi.fn(),
 }))
 
-vi.mock('@perawallet/wallet-extension-platform', () => ({
+vi.mock('@perawallet/wallet-core-device', () => ({
     useDeleteDeviceMutation: vi.fn(),
 }))
 
@@ -93,7 +94,7 @@ describe('useDeleteAllData', () => {
         expect(mockDeleteKey).toHaveBeenCalledWith('key-2')
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
         expect(mockSavePin).toHaveBeenCalledWith(null)
-        expect(clearDataStores).toHaveBeenCalledWith({
+        expect(clearAllStores).toHaveBeenCalledWith({
             skip: ['accounts-store'],
         })
     })

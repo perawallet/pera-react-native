@@ -30,18 +30,9 @@ export const RemoteConfigDefaults: Record<
     staking_projects: '',
 }
 
-export type RemoteConfigStore = {
-    configOverrides: Record<string, string | boolean | number>
-    setConfigOverride: (
-        key: string,
-        value: string | boolean | number | null,
-    ) => void
-    resetState: () => void
-}
-
 export interface RemoteConfigService {
     initializeRemoteConfig(): void
-    getStringValue(key: RemoteConfigKey, fallback?: string): string
-    getBooleanValue(key: RemoteConfigKey, fallback?: boolean): boolean
-    getNumberValue(key: RemoteConfigKey, fallback?: number): number
+    getStringValue(key: string, fallback?: string): string
+    getBooleanValue(key: string, fallback?: boolean): boolean
+    getNumberValue(key: string, fallback?: number): number
 }

@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useDeviceID } from '@perawallet/wallet-extension-platform'
+import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useSigningAccounts } from '@perawallet/wallet-core-accounts'
 import { useQuery, UseQueryResult } from '@tanstack/react-query'

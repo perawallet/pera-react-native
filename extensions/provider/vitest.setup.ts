@@ -14,14 +14,110 @@ import { vi } from 'vitest'
 
 const store = new Map<string, string>()
 
-vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
-    getPlatformServices: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
-            },
+const mockPlatformServices = {
+    keyValueStorage: {
+        getItem: (key: string) => store.get(key) ?? null,
+        setItem: (key: string, value: string) => store.set(key, value),
+        removeItem: (key: string) => {
+            store.delete(key)
         },
+    },
+    analytics: {
+        initializeAnalytics() {},
+        logEvent() {},
+    },
+    secureStorage: {
+        async setItem() {},
+        async getItem() {
+            return null
+        },
+        async removeItem() {},
+        async authenticate() {
+            return true
+        },
+    },
+    biometrics: {
+        async getSupportedBiometricType() {
+            return 'fingerprint'
+        },
+        async checkBiometricsAvailable() {
+            return true
+        },
+        async authenticate() {
+            return true
+        },
+    },
+    remoteConfig: {
+        initializeRemoteConfig() {},
+        getStringValue(_: string, f?: string) {
+            return f ?? ''
+        },
+        getBooleanValue(_: string, f?: boolean) {
+            return f ?? false
+        },
+        getNumberValue(_: string, f?: number) {
+            return f ?? 0
+        },
+    },
+    pushNotification: {
+        async initializeNotifications() {
+            return { unsubscribe: () => {} }
+        },
+    },
+    crashReporting: {
+        initializeCrashReporting() {},
+        recordNonFatalError() {},
+    },
+    deviceInfo: {
+        getDeviceID() {
+            return Promise.resolve('testID')
+        },
+        getDeviceModel() {
+            return 'testModel'
+        },
+        getDevicePlatform() {
+            return 'web'
+        },
+        getDeviceLocale() {
+            return 'testLocale'
+        },
+        getAppVersion() {
+            return 'testVersion'
+        },
+        getUserAgent() {
+            return 'testUserAgent'
+        },
+        getAppId() {
+            return 'testAppId'
+        },
+        getAppPackage() {
+            return 'testPackage'
+        },
+        getAppBuild() {
+            return 'testBuild'
+        },
+        getAppName() {
+            return 'testAppName'
+        },
+        getDeviceCountry() {
+            return 'testCountry'
+        },
+        getDeviceModelId() {
+            return 'testModelId'
+        },
+        getDeviceOSVersion() {
+            return 'testOsVersion'
+        },
+    },
+}
+
+vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
+    WithPlatformExtension: () => ({
+        ...mockPlatformServices,
+        initialize: vi.fn().mockResolvedValue({
+            token: 'test-token',
+            unsubscribe: vi.fn(),
+        }),
     }),
+    getPlatformServices: () => mockPlatformServices,
 }))

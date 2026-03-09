@@ -12,19 +12,13 @@
 
 import { useStyles } from './styles'
 import CameraOverlay from '@assets/images/camera-overlay.svg'
-import {
-    useCameraPermission,
-    useCameraDevice,
-    Camera,
-    useCodeScanner,
-} from 'react-native-vision-camera'
-import { useEffect, useState } from 'react'
+import { Camera } from 'react-native-vision-camera'
 import { Modal } from 'react-native'
 import { useLanguage } from '@hooks/useLanguage'
-import { useDeepLink } from '@hooks/useDeepLink'
 import { EmptyView } from '@components/EmptyView'
-import { logger } from '@perawallet/wallet-core-shared'
-import { PWButton, PWIcon, PWText, PWTouchableOpacity } from '@components/core'
+import { PWButton, PWText, PWTouchableIcon } from '@components/core'
+import { useQRScannerView } from './useQRScannerView'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export type QRScannerViewProps = {
     title?: string
@@ -35,56 +29,15 @@ export type QRScannerViewProps = {
 }
 
 export const QRScannerView = (props: QRScannerViewProps) => {
-    const styles = useStyles()
-    const device = useCameraDevice('back')
-    const { hasPermission, requestPermission } = useCameraPermission()
-    const [scanningEnabled, setScanningEnabled] = useState(true)
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const { t } = useLanguage()
 
-    const { handleDeepLink, isValidDeepLink } = useDeepLink()
-
-    useEffect(() => {
-        if (!props.isVisible) {
-            setScanningEnabled(false)
-        } else {
-            setScanningEnabled(true)
-        }
-    }, [props.isVisible])
-
-    const codeScanner = useCodeScanner({
-        codeTypes: ['qr', 'ean-13'],
-        onCodeScanned: codes => {
-            try {
-                const url = codes.at(0)?.value
-                setScanningEnabled(false)
-                if (url) {
-                    if (isValidDeepLink(url)) {
-                        handleDeepLink(
-                            url,
-                            true,
-                            'qr',
-                            () => setScanningEnabled(true),
-                            () => {
-                                logger.debug(
-                                    'QRScannerView: Deep link handled successfully',
-                                    { url },
-                                )
-                                props.onSuccess(url, () =>
-                                    setScanningEnabled(true),
-                                )
-                            },
-                        )
-                    }
-                }
-            } catch (error) {
-                logger.error('QRScannerView: QR scanner error:', { error })
-            }
-        },
-    })
-
-    if (!hasPermission) {
-        requestPermission()
-    }
+    const { device, codeScanner, scanningEnabled, permissionDenied } =
+        useQRScannerView({
+            isVisible: props.isVisible,
+            onSuccess: props.onSuccess,
+        })
 
     return (
         <Modal
@@ -92,16 +45,16 @@ export const QRScannerView = (props: QRScannerViewProps) => {
             visible={props.isVisible}
             animationType={props.animationType}
         >
-            {device == null ? (
+            {device == null || permissionDenied ? (
                 <>
                     <EmptyView
                         style={styles.emptyView}
-                        title={t('camera.no_camera_device_found.label')}
-                        body={''}
+                        title={t('camera.no_camera_device_found.title')}
+                        body={t('camera.no_camera_device_found.body')}
                         button={
                             <PWButton
                                 variant='primary'
-                                title={t('common.go_back.label')}
+                                title={t('common.close.label')}
                                 onPress={props.onClose}
                             />
                         }
@@ -109,15 +62,12 @@ export const QRScannerView = (props: QRScannerViewProps) => {
                 </>
             ) : (
                 <>
-                    <PWTouchableOpacity
+                    <PWTouchableIcon
+                        name='cross'
+                        variant='white'
                         onPress={props.onClose}
-                        style={styles.icon}
-                    >
-                        <PWIcon
-                            name='cross'
-                            variant='white'
-                        />
-                    </PWTouchableOpacity>
+                        containerStyle={styles.icon}
+                    />
                     <Camera
                         style={styles.camera}
                         codeScanner={codeScanner}
@@ -129,7 +79,7 @@ export const QRScannerView = (props: QRScannerViewProps) => {
                         variant='h2'
                         style={styles.title}
                     >
-                        {props.title ?? 'Find a code to scan'}
+                        {props.title ?? t('camera.find_qr.title')}
                     </PWText>
                 </>
             )}

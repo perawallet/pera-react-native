@@ -104,7 +104,7 @@ describe('useTransactionConfirmationScreen', () => {
         name: 'Test Account',
     }
 
-    const mockSelectedAsset = {
+    const mockSelectedAssetBalance = {
         assetId: '123',
     }
 
@@ -116,13 +116,14 @@ describe('useTransactionConfirmationScreen', () => {
     }
 
     const mockSendFundsState = {
-        selectedAsset: undefined,
+        selectedAssetBalance: undefined,
         canSelectAsset: true,
         amount: undefined,
         note: undefined,
         destination: undefined,
         onFinished: mockOnNext,
         setSelectedAsset: vi.fn(),
+        setSelectedAssetBalance: vi.fn(),
         setCanSelectAsset: vi.fn(),
         setAmount: vi.fn(),
         setNote: vi.fn(),
@@ -164,7 +165,7 @@ describe('useTransactionConfirmationScreen', () => {
             ;(useSelectedAccount as Mock).mockReturnValue(null)
             ;(useSendFunds as Mock).mockReturnValue({
                 ...mockSendFundsState,
-                selectedAsset: mockSelectedAsset,
+                selectedAssetBalance: mockSelectedAssetBalance,
                 amount: new Decimal(10),
                 destination: 'DEST_ADDRESS',
             })
@@ -183,7 +184,7 @@ describe('useTransactionConfirmationScreen', () => {
             ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
             ;(useSendFunds as Mock).mockReturnValue({
                 ...mockSendFundsState,
-                selectedAsset: undefined,
+                selectedAssetBalance: undefined,
                 amount: new Decimal(10),
                 destination: 'DEST_ADDRESS',
             })
@@ -199,7 +200,7 @@ describe('useTransactionConfirmationScreen', () => {
             ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
             ;(useSendFunds as Mock).mockReturnValue({
                 ...mockSendFundsState,
-                selectedAsset: mockSelectedAsset,
+                selectedAssetBalance: mockSelectedAssetBalance,
                 amount: undefined,
                 destination: 'DEST_ADDRESS',
             })
@@ -218,7 +219,7 @@ describe('useTransactionConfirmationScreen', () => {
             ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
             ;(useSendFunds as Mock).mockReturnValue({
                 ...mockSendFundsState,
-                selectedAsset: mockSelectedAsset,
+                selectedAssetBalance: mockSelectedAssetBalance,
                 amount: new Decimal(10),
                 destination: 'DEST_ADDRESS',
             })
@@ -237,7 +238,7 @@ describe('useTransactionConfirmationScreen', () => {
             ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
             ;(useSendFunds as Mock).mockReturnValue({
                 ...mockSendFundsState,
-                selectedAsset: mockSelectedAsset,
+                selectedAssetBalance: mockSelectedAssetBalance,
                 amount: new Decimal(10),
                 destination: 'DEST_ADDRESS',
             })
@@ -258,7 +259,7 @@ describe('useTransactionConfirmationScreen', () => {
             ;(useSelectedAccount as Mock).mockReturnValue(null)
             ;(useSendFunds as Mock).mockReturnValue({
                 ...mockSendFundsState,
-                selectedAsset: undefined,
+                selectedAssetBalance: undefined,
                 amount: undefined,
                 destination: undefined,
             })
@@ -286,7 +287,7 @@ describe('useTransactionConfirmationScreen', () => {
             ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
             ;(useSendFunds as Mock).mockReturnValue({
                 ...mockSendFundsState,
-                selectedAsset: mockSelectedAsset,
+                selectedAssetBalance: mockSelectedAssetBalance,
                 amount: new Decimal(10),
                 destination: 'DEST_ADDRESS',
             })
@@ -333,7 +334,7 @@ describe('useTransactionConfirmationScreen', () => {
         it('should resolve asset from assets map', () => {
             ;(useSendFunds as Mock).mockReturnValue({
                 ...mockSendFundsState,
-                selectedAsset: mockSelectedAsset,
+                selectedAssetBalance: mockSelectedAssetBalance,
             })
             ;(useAssetsQuery as Mock).mockReturnValue({
                 data: new Map([['123', mockAsset]]),
@@ -349,7 +350,7 @@ describe('useTransactionConfirmationScreen', () => {
         it('should return null for asset when selectedAsset has no assetId', () => {
             ;(useSendFunds as Mock).mockReturnValue({
                 ...mockSendFundsState,
-                selectedAsset: { assetId: undefined },
+                selectedAssetBalance: { assetId: undefined },
             })
 
             const { result } = renderHook(() =>
@@ -362,7 +363,7 @@ describe('useTransactionConfirmationScreen', () => {
         it('should return undefined for asset when not in assets map', () => {
             ;(useSendFunds as Mock).mockReturnValue({
                 ...mockSendFundsState,
-                selectedAsset: mockSelectedAsset,
+                selectedAssetBalance: mockSelectedAssetBalance,
             })
             ;(useAssetsQuery as Mock).mockReturnValue({
                 data: new Map(),
@@ -389,7 +390,7 @@ describe('useTransactionConfirmationScreen', () => {
             ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
             ;(useSendFunds as Mock).mockReturnValue({
                 ...mockSendFundsState,
-                selectedAsset: mockSelectedAsset,
+                selectedAssetBalance: mockSelectedAssetBalance,
                 amount: mockAmount,
                 destination: mockDestination,
                 note: mockNote,
@@ -414,7 +415,9 @@ describe('useTransactionConfirmationScreen', () => {
             )
 
             expect(result.current.selectedAccount).toEqual(mockAccount)
-            expect(result.current.selectedAsset).toEqual(mockSelectedAsset)
+            expect(result.current.selectedAssetBalance).toEqual(
+                mockSelectedAssetBalance,
+            )
             expect(result.current.amount).toEqual(mockAmount)
             expect(result.current.destination).toEqual(mockDestination)
             expect(result.current.note).toEqual(mockNote)

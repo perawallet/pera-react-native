@@ -42,7 +42,7 @@ export const TransactionConfirmationScreen = () => {
         amount,
         destination,
         selectedAccount,
-        selectedAsset,
+        selectedAssetBalance,
         params,
         paramsPending,
         currentBalance,
@@ -74,7 +74,7 @@ export const TransactionConfirmationScreen = () => {
                 <PreferredCurrencyDisplay
                     style={styles.secondaryAmount}
                     sourceAmount={amount}
-                    sourceAssetId={selectedAsset?.assetId ?? ''}
+                    sourceAssetId={selectedAssetBalance?.assetId ?? ''}
                     precision={asset?.decimals ?? DEFAULT_PRECISION}
                     minPrecision={DEFAULT_PRECISION}
                     showSymbol
@@ -126,7 +126,7 @@ export const TransactionConfirmationScreen = () => {
                     />
                     <PreferredCurrencyDisplay
                         sourceAmount={currentBalance.amount}
-                        sourceAssetId={selectedAsset?.assetId ?? ''}
+                        sourceAssetId={selectedAssetBalance?.assetId ?? ''}
                         precision={asset?.decimals ?? DEFAULT_PRECISION}
                         minPrecision={DEFAULT_PRECISION}
                         showSymbol

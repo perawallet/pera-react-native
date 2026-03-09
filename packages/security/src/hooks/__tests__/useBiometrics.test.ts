@@ -13,37 +13,32 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useBiometrics } from '../useBiometrics'
-import {
-    useSecureStorageService,
-    useBiometricsService,
-} from '@perawallet/wallet-extension-platform'
 import { PIN_STORAGE_KEY, BIOMETRIC_STORAGE_KEY } from '../../constants'
 
-vi.mock('@perawallet/wallet-extension-platform', () => ({
-    useSecureStorageService: vi.fn(),
-    useBiometricsService: vi.fn(),
-}))
+const mockGetItem = vi.fn()
+const mockSetItem = vi.fn()
+const mockRemoveItem = vi.fn()
+const mockCheckBiometricsAvailable = vi.fn()
+const mockAuthenticate = vi.fn()
 
-describe('useBiometrics', () => {
-    const mockGetItem = vi.fn()
-    const mockSetItem = vi.fn()
-    const mockRemoveItem = vi.fn()
-    const mockCheckBiometricsAvailable = vi.fn()
-    const mockAuthenticate = vi.fn()
-
-    beforeEach(() => {
-        vi.clearAllMocks()
-
-        vi.mocked(useSecureStorageService).mockReturnValue({
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        secureStorage: {
             getItem: mockGetItem,
             setItem: mockSetItem,
             removeItem: mockRemoveItem,
-        } as unknown as ReturnType<typeof useSecureStorageService>)
-
-        vi.mocked(useBiometricsService).mockReturnValue({
+        },
+        biometrics: {
             checkBiometricsAvailable: mockCheckBiometricsAvailable,
             authenticate: mockAuthenticate,
-        } as unknown as ReturnType<typeof useBiometricsService>)
+            getSupportedBiometricType: vi.fn(),
+        },
+    }),
+}))
+
+describe('useBiometrics', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
     })
 
     test('checkBiometricsEnabled returns true when biometric data exists', async () => {
