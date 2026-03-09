@@ -10,7 +10,15 @@
  limitations under the License
  */
 
-import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
+import {
+    describe,
+    it,
+    expect,
+    beforeEach,
+    afterEach,
+    vi,
+    type Mock,
+} from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { usePeraWebviewInterface } from '../usePeraWebviewInterface'
 import { useWebView } from '..'
@@ -47,20 +55,25 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     encodeToBase64: vi.fn(t => t),
 }))
 
-vi.mock('@perawallet/wallet-extension-platform', () => ({
-    useAnalyticsService: vi.fn(() => ({
-        logEvent: vi.fn(),
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    usePeraProvider: vi.fn(() => ({
+        deviceInfo: {
+            getAppName: vi.fn(() => 'Pera Wallet'),
+            getAppPackage: vi.fn(() => 'com.algorand.perarn'),
+            getAppVersion: vi.fn(() => '1.0.0'),
+            getDevicePlatform: vi.fn(() => 'ios'),
+            getDeviceModel: vi.fn(() => 'iPhone'),
+            getDeviceCountry: vi.fn(() => 'US'),
+            getDeviceLocale: vi.fn(() => 'en-US'),
+        },
+        analytics: {
+            logEvent: vi.fn(),
+        },
     })),
+}))
+
+vi.mock('@perawallet/wallet-core-device', () => ({
     useDeviceID: vi.fn(() => 'device-id'),
-    useDeviceInfoService: vi.fn(() => ({
-        getAppName: vi.fn(() => 'Pera Wallet'),
-        getAppPackage: vi.fn(() => 'com.algorand.perarn'),
-        getAppVersion: vi.fn(() => '1.0.0'),
-        getDevicePlatform: vi.fn(() => 'ios'),
-        getDeviceModel: vi.fn(() => 'iPhone'),
-        getDeviceCountry: vi.fn(() => 'US'),
-        getDeviceLocale: vi.fn(() => 'en-US'),
-    })),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -122,6 +135,28 @@ vi.mock('@rneui/themed', () => ({
 
 vi.mock('@hooks/useIsDarkMode', () => ({
     useIsDarkMode: vi.fn(() => false),
+}))
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: vi.fn(() => ({
+        showToast: vi.fn(),
+    })),
+}))
+
+vi.mock('@hooks/useDeepLink', () => ({
+    useDeepLink: vi.fn(() => ({
+        handleDeepLink: vi.fn(),
+    })),
+}))
+
+vi.mock('@hooks/deeplink/parser', () => ({
+    parseDeeplink: vi.fn(() => null),
+}))
+
+vi.mock('@hooks/deeplink/types', () => ({
+    DeeplinkType: {
+        WALLET_CONNECT: 'WALLET_CONNECT',
+    },
 }))
 
 vi.mock('@hooks/useLanguage', () => ({

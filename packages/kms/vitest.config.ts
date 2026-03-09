@@ -11,6 +11,10 @@
  */
 
 import { defineConfig } from 'vitest/config'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
     test: {
@@ -34,5 +38,15 @@ export default defineConfig({
     },
     resolve: {
         conditions: ['default'],
+        alias: {
+            '@perawallet/wallet-extension-provider': path.resolve(
+                __dirname,
+                '../../extensions/provider/src/index.ts',
+            ),
+            '@perawallet/wallet-extension-platform-driver': path.resolve(
+                __dirname,
+                '../../extensions/platform-driver/src/index.ts',
+            ),
+        },
     },
 })

@@ -11,11 +11,10 @@
  */
 
 import { useKMS } from '@perawallet/wallet-core-kms'
-import { logger } from '@perawallet/wallet-core-shared'
-import { clearDataStores } from '@perawallet/wallet-extension-provider'
+import { logger, clearAllStores } from '@perawallet/wallet-core-shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
-import { useDeleteDeviceMutation } from '@perawallet/wallet-extension-platform'
+import { useDeleteDeviceMutation } from '@perawallet/wallet-core-device'
 
 // TODO: probably want to revoke device here so we stop sending push notifications
 export const useDeleteAllData = () => {
@@ -44,6 +43,6 @@ export const useDeleteAllData = () => {
             logger.error('Failed to delete devices', { error: e })
         }
 
-        clearDataStores()
+        clearAllStores()
     }, [queryClient, keys, deleteKey])
 }

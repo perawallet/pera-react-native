@@ -11,6 +11,10 @@
  */
 
 import { defineConfig } from 'vitest/config'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
     test: {
@@ -32,5 +36,35 @@ export default defineConfig({
     },
     resolve: {
         conditions: ['default'],
+        alias: {
+            '@perawallet/wallet-extension-provider': path.resolve(
+                __dirname,
+                '../../extensions/provider/src/index.ts',
+            ),
+            '@perawallet/wallet-extension-platform-driver': path.resolve(
+                __dirname,
+                '../../extensions/platform-driver/src/index.ts',
+            ),
+            '@perawallet/wallet-extension-platform': path.resolve(
+                __dirname,
+                '../../extensions/platform/src/index.ts',
+            ),
+            '@perawallet/wallet-core-signing': path.resolve(
+                __dirname,
+                '../signing/src/index.ts',
+            ),
+            '@perawallet/wallet-core-kms': path.resolve(
+                __dirname,
+                '../kms/src/index.ts',
+            ),
+            '@perawallet/wallet-core-accounts': path.resolve(
+                __dirname,
+                '../accounts/src/index.ts',
+            ),
+            '@perawallet/wallet-core-blockchain': path.resolve(
+                __dirname,
+                '../blockchain/src/index.ts',
+            ),
+        },
     },
 })

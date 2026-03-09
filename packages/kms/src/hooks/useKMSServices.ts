@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useSecureStorageService } from '@perawallet/wallet-extension-platform'
 import { useKeyManagerStore } from '../store'
 import {
     AppError,
@@ -20,9 +19,10 @@ import {
 import { AccessControlPermission, KeyPair, StoredKeyMaterial } from '../models'
 import { KeyAccessError } from '../errors'
 import { useCallback } from 'react'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 export const useKMSService = () => {
-    const secureStorage = useSecureStorageService()
+    const secureStorage = getProvider().secureStorage
     const addKey = useKeyManagerStore(state => state.addKey)
     const getKey = useKeyManagerStore(state => state.getKey)
     const removeKey = useKeyManagerStore(state => state.removeKey)

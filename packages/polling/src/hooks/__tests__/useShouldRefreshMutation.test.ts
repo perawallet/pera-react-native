@@ -10,8 +10,10 @@
  limitations under the License
  */
 
+import React from 'react'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 // Mock dependencies
 const mockSendShouldRefreshRequest = vi.fn()
@@ -46,10 +48,6 @@ describe('services/polling/useShouldRefreshMutation', () => {
 
     test('calls sendShouldRefreshRequest with correct arguments', async () => {
         vi.resetModules()
-        const { registerTestPlatform, createWrapper } = await import(
-            '@perawallet/wallet-extension-platform'
-        )
-        registerTestPlatform()
 
         mockUseAllAccounts.mockReturnValue([
             { address: 'ADDR1' },
@@ -59,8 +57,17 @@ describe('services/polling/useShouldRefreshMutation', () => {
         const { useShouldRefreshMutation } = await import(
             '../useShouldRefreshMutation'
         )
+        const queryClient = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
+        })
+        const wrapper = ({ children }: { children: React.ReactNode }) =>
+            React.createElement(
+                QueryClientProvider,
+                { client: queryClient },
+                children,
+            )
         const { result } = renderHook(() => useShouldRefreshMutation(), {
-            wrapper: createWrapper(),
+            wrapper,
         })
 
         await result.current.mutateAsync()

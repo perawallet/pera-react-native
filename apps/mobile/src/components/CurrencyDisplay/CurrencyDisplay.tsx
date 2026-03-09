@@ -17,9 +17,9 @@ import { useMemo } from 'react'
 import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 import AlgoIcon from '@assets/icons/algo.svg'
-import { useDeviceInfoService } from '@perawallet/wallet-extension-platform'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { StyleProp, TextStyle } from 'react-native'
+import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 export type CurrencyDisplayProps = {
     currency: string
@@ -38,7 +38,8 @@ export type CurrencyDisplayProps = {
 export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
     const themeStyle = useStyles(props)
     const { theme } = useTheme()
-    const deviceInfo = useDeviceInfoService()
+    const provider = usePeraProvider()
+    const deviceInfo = provider.deviceInfo
     const {
         currency,
         value,
