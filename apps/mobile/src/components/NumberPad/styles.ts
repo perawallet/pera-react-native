@@ -28,7 +28,6 @@ export const useStyles = makeStyles(theme => {
             height: theme.spacing.xl * 2.5,
             alignItems: 'center',
             justifyContent: 'center',
-            backgroundColor: theme.colors.error,
         },
         keyText: {
             fontSize: theme.spacing.xl,
