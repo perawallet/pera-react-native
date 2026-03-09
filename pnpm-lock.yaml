@@ -1280,7 +1280,7 @@ importers:
         specifier: 'catalog:'
         version: 19.1.0
       react-dom:
-        specifier: 'catalog:'
+        specifier: 19.1.0
         version: 19.1.0(react@19.1.0)
       zustand:
         specifier: 'catalog:'
@@ -1612,7 +1612,7 @@ importers:
         specifier: 'catalog:'
         version: 19.1.0
       react-dom:
-        specifier: 'catalog:'
+        specifier: 19.1.0
         version: 19.1.0(react@19.1.0)
       zustand:
         specifier: 'catalog:'

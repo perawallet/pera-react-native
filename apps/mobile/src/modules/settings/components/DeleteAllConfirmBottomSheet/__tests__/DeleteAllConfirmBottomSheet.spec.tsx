@@ -30,6 +30,7 @@ vi.mock('@hooks/useLanguage', () => ({
 
 describe('DeleteAllConfirmBottomSheet', () => {
     const mockOnClose = vi.fn()
+    const mockOnSuccess = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
@@ -40,6 +41,7 @@ describe('DeleteAllConfirmBottomSheet', () => {
             <DeleteAllConfirmBottomSheet
                 isOpen={true}
                 onClose={mockOnClose}
+                onSuccess={mockOnSuccess}
             />,
         )
 
@@ -52,6 +54,7 @@ describe('DeleteAllConfirmBottomSheet', () => {
             <DeleteAllConfirmBottomSheet
                 isOpen={true}
                 onClose={mockOnClose}
+                onSuccess={mockOnSuccess}
             />,
         )
 
@@ -64,6 +67,7 @@ describe('DeleteAllConfirmBottomSheet', () => {
             <DeleteAllConfirmBottomSheet
                 isOpen={true}
                 onClose={mockOnClose}
+                onSuccess={mockOnSuccess}
             />,
         )
 
@@ -77,6 +81,7 @@ describe('DeleteAllConfirmBottomSheet', () => {
             <DeleteAllConfirmBottomSheet
                 isOpen={true}
                 onClose={mockOnClose}
+                onSuccess={mockOnSuccess}
             />,
         )
 

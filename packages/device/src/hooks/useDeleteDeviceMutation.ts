@@ -11,7 +11,6 @@
  */
 
 import { useMutation, type UseMutationOptions } from '@tanstack/react-query'
-import type { DeviceResponse } from '../models'
 import { deleteDevice } from './endpoints'
 import { useDeviceID } from './useDeviceID'
 import { useDeviceStore } from '../store'
@@ -19,7 +18,7 @@ import { Networks } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 export const useDeleteDeviceMutation = (
-    options?: UseMutationOptions<DeviceResponse[], Error, void>,
+    options?: UseMutationOptions<void, Error, void>,
 ) => {
     const pushToken = useDeviceStore(state => state.pushToken)
     const testNetDeviceID = useDeviceID(Networks.testnet)
@@ -27,26 +26,22 @@ export const useDeleteDeviceMutation = (
     const deviceInfoService = getProvider().deviceInfo
     return useMutation({
         mutationFn: async () => {
-            const results: DeviceResponse[] = []
             if (testNetDeviceID && pushToken) {
-                const testnet = await deleteDevice(Networks.testnet, {
+                await deleteDevice(Networks.testnet, {
                     id: testNetDeviceID,
                     push_token: pushToken,
                     platform: deviceInfoService.getDevicePlatform(),
                     accounts: [],
                 })
-                results.push(testnet)
             }
             if (mainNetDeviceID && pushToken) {
-                const mainnet = await deleteDevice(Networks.mainnet, {
+                await deleteDevice(Networks.mainnet, {
                     id: mainNetDeviceID,
                     push_token: pushToken,
                     platform: deviceInfoService.getDevicePlatform(),
                     accounts: [],
                 })
-                results.push(mainnet)
             }
-            return results
         },
         ...options,
     })

@@ -116,10 +116,10 @@ describe('useDeleteDeviceMutation', () => {
             platform: 'ios',
             accounts: [],
         })
-        expect(result.current.data).toHaveLength(2)
+        expect(result.current.data).toBeUndefined()
     })
 
-    it('returns empty array when no devices are registered', async () => {
+    it('returns undefined when no devices are registered', async () => {
         vi.mocked(useDeviceID).mockReturnValue(null)
 
         const { result } = renderHook(() => useDeleteDeviceMutation(), {
@@ -133,10 +133,10 @@ describe('useDeleteDeviceMutation', () => {
         })
 
         expect(deleteDevice).not.toHaveBeenCalled()
-        expect(result.current.data).toEqual([])
+        expect(result.current.data).toBeUndefined()
     })
 
-    it('returns empty array when no push token is available', async () => {
+    it('returns undefined when no push token is available', async () => {
         vi.mocked(useDeviceStore).mockImplementation(selector => {
             const state = {
                 pushToken: null,
@@ -159,7 +159,7 @@ describe('useDeleteDeviceMutation', () => {
         })
 
         expect(deleteDevice).not.toHaveBeenCalled()
-        expect(result.current.data).toEqual([])
+        expect(result.current.data).toBeUndefined()
     })
 
     it('handles API error', async () => {
@@ -205,7 +205,7 @@ describe('useDeleteDeviceMutation', () => {
             platform: 'ios',
             accounts: [],
         })
-        expect(result.current.data).toHaveLength(1)
+        expect(result.current.data).toBeUndefined()
     })
 
     it('deletes only mainnet device when testnet is not registered', async () => {
@@ -234,7 +234,7 @@ describe('useDeleteDeviceMutation', () => {
             platform: 'ios',
             accounts: [],
         })
-        expect(result.current.data).toHaveLength(1)
+        expect(result.current.data).toBeUndefined()
     })
 
     it('accepts custom mutation options', async () => {

@@ -10,16 +10,19 @@
  limitations under the License
  */
 
-import { useMutation } from '@tanstack/react-query'
-import { calculatePeraFee } from '../api'
-import type { CalculatePeraFeeRequest } from '../api'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { makeStyles } from '@rneui/themed'
 
-export const useCalculatePeraFeeMutation = () => {
-    const { network } = useNetwork()
-
-    return useMutation({
-        mutationFn: (data: CalculatePeraFeeRequest) =>
-            calculatePeraFee(data, network),
-    })
-}
+export const useStyles = makeStyles(theme => ({
+    container: {
+        padding: theme.spacing.xl,
+        gap: theme.spacing.xxl,
+        alignItems: 'center',
+    },
+    message: {
+        textAlign: 'center',
+        marginHorizontal: theme.spacing.xxl,
+    },
+    button: {
+        width: '100%',
+    },
+}))
