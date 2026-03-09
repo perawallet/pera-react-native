@@ -13,7 +13,8 @@
 import nacl from 'tweetnacl'
 import { KeyManagementError } from '../errors'
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
-import { KeyPair, KeyType, KMSAlgo25Session } from '../models'
+import { KeyType, KMSAlgo25Session } from '../models'
+import type { KeyPair } from '../models'
 import {
     seedFromMnemonic,
     mnemonicFromSeed,
@@ -21,7 +22,12 @@ import {
 import { encodeAddress } from '@algorandfoundation/algokit-utils'
 import { useKMSService } from './useKMSServices'
 import { makeKeyPair } from '../utils'
-import type { KeyData } from '@algorandfoundation/keystore'
+import type { KeyData, KeyId } from '@algorandfoundation/keystore'
+
+export type Algo25KeyResult = {
+    keyPair: KeyPair
+    seedKeyId: KeyId
+}
 
 export const useAlgo25 = () => {
     const { saveKey, checkAccess, keyStore, withExportedKey } = useKMSService()
@@ -29,19 +35,16 @@ export const useAlgo25 = () => {
     const createAlgo25Key = async (params?: {
         id?: string
         mnemonic?: string
-    }) => {
+    }): Promise<Algo25KeyResult> => {
         const keyId = params?.id ?? generateOrderedUniqueId()
 
-        let mnemonic: string
         let seed: Uint8Array
 
         try {
             if (params?.mnemonic) {
-                mnemonic = params.mnemonic
-                seed = seedFromMnemonic(mnemonic)
+                seed = seedFromMnemonic(params.mnemonic)
             } else {
                 seed = nacl.randomBytes(32)
-                mnemonic = mnemonicFromSeed(seed)
             }
         } catch (e) {
             logger.error('createAlgo25Key failed', { error: e })
@@ -52,7 +55,6 @@ export const useAlgo25 = () => {
         const naclKeyPair = nacl.sign.keyPair.fromSeed(seed)
         const publicKey = encodeAddress(naclKeyPair.publicKey)
 
-        // Import key into keystore with mnemonic in metadata for recovery
         // Note: The KeyStoreAPI type omits 'id' from import(), but the
         // hd-derived-ed25519 path in importEd25519Key requires it (no auto-generation).
         const keystoreKeyId = await keyStore.import(
@@ -63,10 +65,27 @@ export const useAlgo25 = () => {
                 extractable: true,
                 publicKey: naclKeyPair.publicKey,
                 privateKey: naclKeyPair.secretKey,
-                metadata: { mnemonic },
             } as unknown as Omit<KeyData, 'id'>,
             'raw',
         )
+
+        // Import raw seed as a separate keystore key for mnemonic recovery
+        let seedKeyId: KeyId
+        try {
+            seedKeyId = await keyStore.import(
+                {
+                    id: `${keyId}-seed`,
+                    type: 'hd-derived-ed25519',
+                    algorithm: 'EdDSA',
+                    extractable: true,
+                    privateKey: new Uint8Array(seed),
+                } as unknown as Omit<KeyData, 'id'>,
+                'raw',
+            )
+        } catch (e) {
+            await keyStore.remove(keystoreKeyId)
+            throw e
+        }
 
         seed.fill(0)
         naclKeyPair.secretKey.fill(0)
@@ -78,13 +97,14 @@ export const useAlgo25 = () => {
             type: KeyType.Algo25Key,
         })
 
-        return await saveKey(keyPair)
+        return { keyPair: await saveKey(keyPair), seedKeyId }
     }
 
     const withAlgo25Session = async <T>(
         key: KeyPair,
         domain: string,
         handler: (session: KMSAlgo25Session) => Promise<T>,
+        seedKeyId?: string,
     ): Promise<T> => {
         checkAccess(key, domain)
 
@@ -111,6 +131,19 @@ export const useAlgo25 = () => {
                     nacl.sign.detached(data, naclKeyPair.secretKey),
                 getPublicKey: () => naclKeyPair.publicKey,
                 getMnemonic: async () => {
+                    if (seedKeyId) {
+                        return withExportedKey(seedKeyId, seedKeyData => {
+                            if (!seedKeyData.privateKey) {
+                                throw new KeyManagementError(
+                                    'Seed key not found in keystore',
+                                )
+                            }
+                            return mnemonicFromSeed(
+                                seedKeyData.privateKey.slice(0, 32),
+                            )
+                        })
+                    }
+                    // Legacy fallback for accounts created before seed key migration
                     const mnemonic = keyData.metadata?.mnemonic as
                         | string
                         | undefined

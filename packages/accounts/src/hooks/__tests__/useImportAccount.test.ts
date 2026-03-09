@@ -115,9 +115,12 @@ describe('useImportAccount', () => {
             keystoreKeyId: 'ks-root-1',
         })
         kmsMock.createAlgo25Key.mockResolvedValue({
-            id: 'WALLET1',
-            type: KeyType.Algo25Key,
-            publicKey: 'ALGO25_PUBLIC_KEY',
+            keyPair: {
+                id: 'WALLET1',
+                type: KeyType.Algo25Key,
+                publicKey: 'ALGO25_PUBLIC_KEY',
+            },
+            seedKeyId: 'ks-seed-1',
         })
         kmsMock.generateDerivedKey.mockResolvedValue('ks-derived-1')
         mockKeyStoreExport.mockResolvedValue({
@@ -208,25 +211,24 @@ describe('useImportAccount', () => {
     })
 
     test('imports algo25 account with mnemonic', async () => {
-        // createAlgo25Key called twice:
-        // 1st: in useImportAccount with mnemonic
-        // 2nd: in createAlgo25WalletAccount without mnemonic
-        kmsMock.createAlgo25Key
-            .mockResolvedValueOnce({
+        // createAlgo25Key returns { keyPair, seedKeyId }
+        // Then createAlgo25WalletAccount is called with id + seedKeyId
+        // getKey returns the existing key so createAlgo25Key isn't called again
+        kmsMock.createAlgo25Key.mockResolvedValueOnce({
+            keyPair: {
                 id: 'WALLET1',
                 type: KeyType.Algo25Key,
-                publicKey: '',
-            })
-            .mockResolvedValueOnce({
-                id: 'KEY2',
-                type: KeyType.Algo25Key,
                 publicKey: 'ALGO25_PUBLIC_KEY',
-            })
+            },
+            seedKeyId: 'ks-seed-1',
+        })
+        kmsMock.getKey.mockReturnValueOnce({
+            id: 'WALLET1',
+            type: KeyType.Algo25Key,
+            publicKey: 'ALGO25_PUBLIC_KEY',
+        })
 
-        uuidSpies.v7
-            .mockImplementationOnce(() => 'WALLET1')
-            .mockImplementationOnce(() => 'KEY2')
-            .mockImplementationOnce(() => 'ACC1')
+        uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
 
         const { result } = renderHook(() => useImportAccount())
 
@@ -238,12 +240,13 @@ describe('useImportAccount', () => {
             })
         })
 
-        expect(kmsMock.createAlgo25Key).toHaveBeenNthCalledWith(1, {
+        expect(kmsMock.createAlgo25Key).toHaveBeenCalledWith({
             mnemonic: 'test mnemonic',
         })
         expect(imported.address).toBe('ALGO25_PUBLIC_KEY')
         expect(imported.type).toBe('algo25')
-        expect(imported.keyPairId).toBe('KEY2')
+        expect(imported.keyPairId).toBe('WALLET1')
+        expect(imported.seedKeyId).toBe('ks-seed-1')
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
 

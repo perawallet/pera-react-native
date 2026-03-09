@@ -115,9 +115,12 @@ describe('useCreateAccount', () => {
             keystoreKeyId: 'ks-root-1',
         })
         kmsMock.createAlgo25Key.mockResolvedValue({
-            id: 'WALLET1',
-            type: KeyType.Algo25Key,
-            publicKey: 'ALGO25_PUBLIC_KEY',
+            keyPair: {
+                id: 'WALLET1',
+                type: KeyType.Algo25Key,
+                publicKey: 'ALGO25_PUBLIC_KEY',
+            },
+            seedKeyId: 'ks-seed-1',
         })
         kmsMock.generateDerivedKey.mockResolvedValue('ks-derived-1')
         mockKeyStoreExport.mockResolvedValue({
@@ -249,7 +252,25 @@ describe('useCreateAccount', () => {
         })
     })
 
-    test('creates algo25 account from existing key', async () => {
+    test('creates algo25 account with seedKeyId', async () => {
+        uuidSpies.v7
+            .mockImplementationOnce(() => 'WALLET1')
+            .mockImplementationOnce(() => 'ACC1')
+
+        const { result } = renderHook(() => useCreateAccount())
+
+        let created: any
+        await act(async () => {
+            created = await result.current.createAlgo25WalletAccount({})
+        })
+
+        expect(created.type).toBe('algo25')
+        expect(created.address).toBe('ALGO25_PUBLIC_KEY')
+        expect(created.keyPairId).toBe('WALLET1')
+        expect(created.seedKeyId).toBe('ks-seed-1')
+    })
+
+    test('creates algo25 account from existing key without seedKeyId', async () => {
         kmsMock.getKey.mockReturnValueOnce({
             id: 'WALLET1',
             type: KeyType.Algo25Key,
@@ -270,5 +291,6 @@ describe('useCreateAccount', () => {
         expect(created.type).toBe('algo25')
         expect(created.address).toBe('ALGO25_PUBLIC_KEY')
         expect(created.keyPairId).toBe('WALLET1')
+        expect(created.seedKeyId).toBeUndefined()
     })
 })

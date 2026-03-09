@@ -15,6 +15,7 @@ import { KeyPair, KeyType } from '../models'
 import type { HDDerivationParams } from '../models/session'
 import { InvalidKeyError, KeyNotFoundError } from '../errors'
 import { useAlgo25 } from './useAlgo25'
+export type { Algo25KeyResult } from './useAlgo25'
 import { useHDWallet } from './useHDWallet'
 import { useKMSService } from './useKMSServices'
 

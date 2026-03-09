@@ -30,36 +30,62 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 })
 
 const deleteKeySpy = vi.fn()
+const keyStoreRemoveSpy = vi.fn()
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: () => ({
         deleteKey: deleteKeySpy,
+        keyStore: {
+            remove: keyStoreRemoveSpy,
+        },
     }),
 }))
 
 describe('useRemoveAccountById', () => {
     beforeEach(() => {
         useAccountsStore.setState({ accounts: [] })
+        vi.clearAllMocks()
     })
 
-    test('removeAccountById removes account and clears persisted PK', () => {
+    test('removeAccountById removes account and deletes signing key', async () => {
         const a: WalletAccount = {
             id: '1',
             name: 'Alice',
             type: 'algo25',
             address: 'ALICE',
-            canSign: true,
             keyPairId: '1',
         }
         useAccountsStore.setState({ accounts: [a] })
 
         const { result } = renderHook(() => useRemoveAccountById())
 
-        act(() => {
-            result.current('1')
+        await act(async () => {
+            await result.current('1')
         })
 
         expect(useAccountsStore.getState().accounts).toEqual([])
+        expect(deleteKeySpy).toHaveBeenCalledWith('1')
+        expect(keyStoreRemoveSpy).not.toHaveBeenCalled()
+    })
+
+    test('removeAccountById also deletes seed key when seedKeyId is present', async () => {
+        const a: WalletAccount = {
+            id: '1',
+            name: 'Alice',
+            type: 'algo25',
+            address: 'ALICE',
+            keyPairId: '1',
+            seedKeyId: 'ks-seed-1',
+        }
+        useAccountsStore.setState({ accounts: [a] })
+
+        const { result } = renderHook(() => useRemoveAccountById())
+
+        await act(async () => {
+            await result.current('1')
+        })
+
         expect(useAccountsStore.getState().accounts).toEqual([])
-        expect(deleteKeySpy).toHaveBeenCalledWith('1') // id of the account
+        expect(deleteKeySpy).toHaveBeenCalledWith('1')
+        expect(keyStoreRemoveSpy).toHaveBeenCalledWith('ks-seed-1')
     })
 })

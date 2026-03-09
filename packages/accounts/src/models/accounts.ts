@@ -67,6 +67,7 @@ export type BaseWalletAccount = {
 export type Algo25Account = BaseWalletAccount & {
     type: typeof AccountTypes.algo25
     keyPairId: string
+    seedKeyId?: string
 }
 
 export type HDWalletAccount = BaseWalletAccount & {

@@ -34,8 +34,11 @@ export const useImportAccount = () => {
                 keyIndex: 0,
             })
         } else {
-            const key = await createAlgo25Key({ mnemonic })
-            return await createAlgo25WalletAccount({ id: key.id })
+            const { keyPair, seedKeyId } = await createAlgo25Key({ mnemonic })
+            return await createAlgo25WalletAccount({
+                id: keyPair.id,
+                seedKeyId,
+            })
         }
     }
 }
