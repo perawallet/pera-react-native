@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    getProvider,
-    type PeraProvider,
-} from '@perawallet/wallet-extension-provider'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { ParamListBase, RouteProp } from '@react-navigation/native'
 
 const NAVIGATION_STACK_NAMES = new Set([
@@ -40,7 +37,7 @@ export const screenListeners = ({
             !NAVIGATION_STACK_NAMES.has(currentRouteName) &&
             previousRouteName !== currentRouteName
         ) {
-            const analyticsService = getProvider<PeraProvider>().analytics
+            const analyticsService = getProvider().analytics
             analyticsService.logEvent(`scr_${currentRouteName}_view`, {
                 previous: previousRouteName,
                 path: route.path,

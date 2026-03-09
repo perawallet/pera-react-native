@@ -21,14 +21,23 @@ import { useDeleteAllConfirm } from './useDeleteAllConfirm'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './DeleteAllConfirmBottomSheet.style'
 
-export const DeleteAllConfirmBottomSheet = (props: {
+type DeleteAllConfirmBottomSheetProps = {
     isOpen: boolean
     onClose: () => void
-}) => {
-    const { isOpen, onClose } = props
+    onSuccess: () => void
+}
+
+export const DeleteAllConfirmBottomSheet = ({
+    isOpen,
+    onClose,
+    onSuccess,
+}: DeleteAllConfirmBottomSheetProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const { handleDeleteAllAccounts } = useDeleteAllConfirm(onClose)
+    const { handleDeleteAllAccounts } = useDeleteAllConfirm({
+        onClose,
+        onSuccess,
+    })
 
     return (
         <PWBottomSheet

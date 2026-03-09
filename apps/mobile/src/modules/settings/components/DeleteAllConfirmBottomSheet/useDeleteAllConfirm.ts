@@ -10,22 +10,27 @@
  limitations under the License
  */
 
-import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useDeleteAllData } from '@modules/settings/hooks/useDeleteAllData'
 
-export const useDeleteAllConfirm = (onClose: () => void) => {
-    const navigation = useAppNavigation()
-    const clearAllData = useDeleteAllData()
+type UseDeleteAllConfirmProps = {
+    onClose: () => void
+    onSuccess: () => void
+}
 
-    const handleDeleteAllAccounts = () => {
-        clearAllData()
+type UseDeleteAllConfirmResult = {
+    handleDeleteAllAccounts: () => Promise<void>
+}
+
+export const useDeleteAllConfirm = ({
+    onClose,
+    onSuccess,
+}: UseDeleteAllConfirmProps): UseDeleteAllConfirmResult => {
+    const { deleteAllData } = useDeleteAllData()
+
+    const handleDeleteAllAccounts = async () => {
+        await deleteAllData()
         onClose()
-
-        //we need to defer this so that the navigation stack has time to
-        //update it's conditions on the next render
-        setTimeout(() => {
-            navigation.replace('Onboarding', { screen: 'OnboardingHome' })
-        }, 0)
+        onSuccess()
     }
 
     return {

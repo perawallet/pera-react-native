@@ -29,11 +29,11 @@ export const useSendFundsBottomSheet = (
     const selectedAccount = useSelectedAccount()
     const {
         canSelectAsset,
-        setSelectedAsset,
+        setSelectedAssetBalance,
         setCanSelectAsset,
         setOnFinished,
         reset,
-        selectedAsset,
+        selectedAssetBalance,
     } = useSendFunds()
     const { data: assetBalance } = useAccountAssetBalanceQuery(
         selectedAccount ?? undefined,
@@ -46,8 +46,8 @@ export const useSendFundsBottomSheet = (
                 setCanSelectAsset(false)
             }
 
-            if (assetBalance && selectedAsset?.assetId !== assetId) {
-                setSelectedAsset(assetBalance)
+            if (assetBalance && selectedAssetBalance?.assetId !== assetId) {
+                setSelectedAssetBalance(selectedAssetBalance)
             }
         }
     }, [
@@ -55,9 +55,9 @@ export const useSendFundsBottomSheet = (
         assetId,
         assetBalance,
         setCanSelectAsset,
-        setSelectedAsset,
+        setSelectedAssetBalance,
         canSelectAsset,
-        selectedAsset?.assetId,
+        selectedAssetBalance?.assetId,
     ])
 
     const handleFinished = useCallback(() => {

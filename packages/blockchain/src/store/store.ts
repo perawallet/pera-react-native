@@ -13,11 +13,8 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { BlockchainStore } from '../models'
-import {
-    createPersistStorage,
-    registerStore,
-    type WithPersist,
-} from '@perawallet/wallet-core-shared'
+import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'blockchain-store'
 
@@ -30,7 +27,7 @@ export const useBlockchainStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(createPersistStorage),
+            storage: createJSONStorage(() => getProvider().keyValueStorage),
             version: 1,
         },
     ),

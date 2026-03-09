@@ -305,8 +305,7 @@
         },
         "transaction": {
             "title": "An error occurred processing this transaction",
-            "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists.",
-            "invalid_send_params": "The send request appears to have invalid parameters.  Please try again."
+            "body": "Something appears to have gone wrong. Please try again and contact support if the issue persists."
         },
         "kms": {
             "key_not_found": "Could not find the key for wallet {{walletId}}.",
@@ -685,6 +684,7 @@
             "remove_message": "You are about to delete all data in the wallet, including your stored accounts.  Make sure to have your account passphrases stored elsewhere before confirming.  You will not be able to restore your accounts otherwise.  Are you sure you would like to proceed?",
             "remove_confirm": "Yes, Remove All Accounts and Logout",
             "remove_cancel": "Keep it",
+            "remove_success_title": "Your data has been deleted successfully",
             "version_footer": "Pera Wallet Version {{version}} ({{build}})"
         },
         "theme": {
@@ -930,8 +930,6 @@
             "permissions_sign_transaction": "Request transaction signing",
             "permissions_sign_data": "Request arbitrary data signing",
             "accounts_title": "SELECT ACCOUNTS",
-            "success_title": "Connection approved",
-            "success_body": "You are now connected to {{name}}",
             "success_sheet_title": "You are connected to {{name}}",
             "success_sheet_body": "Please return to {{name}} to continue and finish your operation. You can find all connected Sessions in the dedicated Settings page.",
             "networks_mainnet": "Mainnet",

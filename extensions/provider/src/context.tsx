@@ -11,8 +11,8 @@
  */
 
 import { createContext, useContext, useRef } from 'react'
-import { initializeProvider } from '@perawallet/wallet-core-shared'
 import { PeraProvider } from './pera-provider'
+import { getProvider } from './singleton'
 
 const PeraWalletContext = createContext<PeraProvider | null>(null)
 
@@ -33,12 +33,7 @@ export const PeraWalletProvider = ({ children }: PeraWalletProviderProps) => {
     const providerRef = useRef<PeraProvider | null>(null)
 
     if (providerRef.current === null) {
-        const provider = new PeraProvider({
-            id: 'pera-wallet',
-            name: 'Pera Wallet',
-        })
-        initializeProvider(provider)
-        providerRef.current = provider
+        providerRef.current = getProvider()
     }
 
     return (

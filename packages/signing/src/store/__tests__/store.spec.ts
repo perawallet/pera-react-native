@@ -29,9 +29,14 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     return {
         ...original,
         registerStore: vi.fn(),
-        createPersistStorage: () => mockStorage,
     }
 })
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        keyValueStorage: mockStorage,
+    }),
+}))
 
 describe('SigningStore', () => {
     beforeEach(() => {
