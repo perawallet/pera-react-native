@@ -40,6 +40,12 @@ const mockKeyStoreSign = vi.fn()
 const mockKeyStoreExport = vi.fn()
 const mockKeyStoreRemove = vi.fn()
 
+const mockClearKeyData = vi.fn()
+
+vi.mock('@algorandfoundation/keystore', () => ({
+    clearKeyData: (...args: any[]) => mockClearKeyData(...args),
+}))
+
 vi.mock('../useKMSServices', () => ({
     useKMSService: () => ({
         saveKey: (...args: any[]) => mockSaveKey(...args),
@@ -50,6 +56,14 @@ vi.mock('../useKMSServices', () => ({
             sign: (...args: any[]) => mockKeyStoreSign(...args),
             export: (...args: any[]) => mockKeyStoreExport(...args),
             remove: (...args: any[]) => mockKeyStoreRemove(...args),
+        },
+        withExportedKey: async (keyId: string, handler: (keyData: any) => any) => {
+            const keyData = await mockKeyStoreExport(keyId)
+            try {
+                return await handler(keyData)
+            } finally {
+                mockClearKeyData(keyData)
+            }
         },
     }),
 }))
@@ -387,6 +401,48 @@ describe('useHDWallet', () => {
                     )
                 }),
             ).rejects.toThrow(KeyManagementError)
+        })
+
+        test('getPublicKey clears exported key data after use', async () => {
+            const mockKeyData = {
+                publicKey: new Uint8Array(32).fill(3),
+                privateKey: new Uint8Array(64).fill(9),
+                metadata: { entropy: 'abcdef01' },
+            }
+            mockKeyStoreExport.mockResolvedValue(mockKeyData)
+
+            const { result } = renderHook(() => useHDWallet())
+
+            await act(async () => {
+                await result.current.withHDSession(
+                    mockKey,
+                    'test-domain',
+                    async session => session.getPublicKey(derivationParams),
+                )
+            })
+
+            expect(mockClearKeyData).toHaveBeenCalledWith(mockKeyData)
+        })
+
+        test('getMnemonic clears exported key data after use', async () => {
+            const mockKeyData = {
+                metadata: { entropy: 'abcdef01' },
+                privateKey: new Uint8Array(64).fill(9),
+            }
+            mockKeyStoreExport.mockResolvedValue(mockKeyData)
+            mockEntropyToMnemonic.mockReturnValue('recovered mnemonic')
+
+            const { result } = renderHook(() => useHDWallet())
+
+            await act(async () => {
+                await result.current.withHDSession(
+                    mockKey,
+                    'test-domain',
+                    async session => session.getMnemonic(),
+                )
+            })
+
+            expect(mockClearKeyData).toHaveBeenCalledWith(mockKeyData)
         })
 
         test('calls checkAccess with key and domain', async () => {

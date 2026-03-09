@@ -19,6 +19,7 @@ import { KeyAccessError } from '../../errors'
 const mockKeyStoreRemove = vi.fn()
 const mockKeyStoreImport = vi.fn()
 const mockKeyStoreSign = vi.fn()
+const mockKeyStoreExport = vi.fn()
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
@@ -27,9 +28,16 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
                 remove: mockKeyStoreRemove,
                 import: mockKeyStoreImport,
                 sign: mockKeyStoreSign,
+                export: mockKeyStoreExport,
             },
         },
     }),
+}))
+
+const mockClearKeyData = vi.fn()
+
+vi.mock('@algorandfoundation/keystore', () => ({
+    clearKeyData: (...args: any[]) => mockClearKeyData(...args),
 }))
 
 const mockAddKey = vi.fn()
@@ -221,6 +229,91 @@ describe('useKMSService', () => {
             expect(result.current.keyStore.remove).toBe(mockKeyStoreRemove)
             expect(result.current.keyStore.import).toBe(mockKeyStoreImport)
             expect(result.current.keyStore.sign).toBe(mockKeyStoreSign)
+        })
+    })
+
+    describe('withExportedKey', () => {
+        test('exports key, passes it to handler, and returns result', async () => {
+            const mockKeyData = {
+                publicKey: new Uint8Array(32).fill(1),
+                privateKey: new Uint8Array(64).fill(2),
+            }
+            mockKeyStoreExport.mockResolvedValue(mockKeyData)
+
+            const { result } = renderHook(() => useKMSService())
+
+            let handlerResult: Uint8Array | undefined
+            await act(async () => {
+                handlerResult = await result.current.withExportedKey(
+                    'ks-key-1',
+                    keyData => keyData.publicKey!,
+                )
+            })
+
+            expect(mockKeyStoreExport).toHaveBeenCalledWith('ks-key-1')
+            expect(handlerResult).toBe(mockKeyData.publicKey)
+        })
+
+        test('calls clearKeyData after handler completes', async () => {
+            const mockKeyData = {
+                publicKey: new Uint8Array(32).fill(1),
+                privateKey: new Uint8Array(64).fill(2),
+            }
+            mockKeyStoreExport.mockResolvedValue(mockKeyData)
+
+            const { result } = renderHook(() => useKMSService())
+
+            await act(async () => {
+                await result.current.withExportedKey(
+                    'ks-key-1',
+                    () => 'done',
+                )
+            })
+
+            expect(mockClearKeyData).toHaveBeenCalledWith(mockKeyData)
+        })
+
+        test('calls clearKeyData even when handler throws', async () => {
+            const mockKeyData = {
+                publicKey: new Uint8Array(32).fill(1),
+                privateKey: new Uint8Array(64).fill(2),
+            }
+            mockKeyStoreExport.mockResolvedValue(mockKeyData)
+
+            const { result } = renderHook(() => useKMSService())
+
+            await expect(
+                act(async () => {
+                    await result.current.withExportedKey('ks-key-1', () => {
+                        throw new Error('handler failed')
+                    })
+                }),
+            ).rejects.toThrow('handler failed')
+
+            expect(mockClearKeyData).toHaveBeenCalledWith(mockKeyData)
+        })
+
+        test('works with async handlers', async () => {
+            const mockKeyData = {
+                privateKey: new Uint8Array(64).fill(3),
+                metadata: { mnemonic: 'test words' },
+            }
+            mockKeyStoreExport.mockResolvedValue(mockKeyData)
+
+            const { result } = renderHook(() => useKMSService())
+
+            let mnemonic: string | undefined
+            await act(async () => {
+                mnemonic = await result.current.withExportedKey(
+                    'ks-key-1',
+                    async keyData => {
+                        return keyData.metadata?.mnemonic as string
+                    },
+                )
+            })
+
+            expect(mnemonic).toBe('test words')
+            expect(mockClearKeyData).toHaveBeenCalledWith(mockKeyData)
         })
     })
 })

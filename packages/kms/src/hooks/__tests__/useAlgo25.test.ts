@@ -35,6 +35,12 @@ const mockKeyStoreImport = vi.fn()
 const mockKeyStoreExport = vi.fn()
 const mockKeyStoreSign = vi.fn()
 
+const mockClearKeyData = vi.fn()
+
+vi.mock('@algorandfoundation/keystore', () => ({
+    clearKeyData: (...args: any[]) => mockClearKeyData(...args),
+}))
+
 vi.mock('../useKMSServices', () => ({
     useKMSService: () => ({
         saveKey: (...args: any[]) => mockSaveKey(...args),
@@ -44,11 +50,15 @@ vi.mock('../useKMSServices', () => ({
             export: (...args: any[]) => mockKeyStoreExport(...args),
             sign: (...args: any[]) => mockKeyStoreSign(...args),
         },
+        withExportedKey: async (keyId: string, handler: (keyData: any) => any) => {
+            const keyData = await mockKeyStoreExport(keyId)
+            try {
+                return await handler(keyData)
+            } finally {
+                mockClearKeyData(keyData)
+            }
+        },
     }),
-}))
-
-vi.mock('@algorandfoundation/keystore', () => ({
-    clearKeyData: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -323,6 +333,56 @@ describe('useAlgo25', () => {
                     )
                 }),
             ).rejects.toThrow(KeyManagementError)
+        })
+
+        test('clears exported key data after session completes', async () => {
+            const mockKeyData = {
+                privateKey: new Uint8Array(64).fill(1),
+                publicKey: new Uint8Array(32).fill(2),
+                metadata: { mnemonic: 'test mnemonic words' },
+            }
+            mockKeyStoreExport.mockResolvedValue(mockKeyData)
+
+            const { result } = renderHook(() => useAlgo25())
+
+            await act(async () => {
+                await result.current.withAlgo25Session(
+                    mockKey,
+                    'test-domain',
+                    async session => session.getPublicKey(),
+                )
+            })
+
+            expect(mockClearKeyData).toHaveBeenCalledWith(mockKeyData)
+        })
+
+        test('clears exported key data even when handler throws', async () => {
+            const mockKeyData = {
+                privateKey: new Uint8Array(64).fill(1),
+                publicKey: new Uint8Array(32).fill(2),
+                metadata: { mnemonic: 'test mnemonic words' },
+            }
+            mockKeyStoreExport.mockResolvedValue(mockKeyData)
+
+            const { result } = renderHook(() => useAlgo25())
+
+            let caughtError: Error | undefined
+            await act(async () => {
+                try {
+                    await result.current.withAlgo25Session(
+                        mockKey,
+                        'test-domain',
+                        async () => {
+                            throw new Error('handler error')
+                        },
+                    )
+                } catch (e) {
+                    caughtError = e as Error
+                }
+            })
+
+            expect(caughtError?.message).toBe('handler error')
+            expect(mockClearKeyData).toHaveBeenCalledWith(mockKeyData)
         })
 
         test('throws KeyManagementError when exported key has no privateKey', async () => {

@@ -47,15 +47,15 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
+const mockKeyStoreExport = vi.fn()
+
 const kmsMock = vi.hoisted(() => ({
     getKey: vi.fn(),
     getKeyOrThrow: vi.fn(),
     createHDWalletKey: vi.fn(),
     createAlgo25Key: vi.fn(),
     generateDerivedKey: vi.fn(),
-    keyStore: {
-        export: vi.fn(),
-    },
+    withExportedKey: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-kms', async () => {
@@ -103,7 +103,8 @@ describe('useImportAccount', () => {
         kmsMock.createHDWalletKey.mockReset()
         kmsMock.createAlgo25Key.mockReset()
         kmsMock.generateDerivedKey.mockReset()
-        kmsMock.keyStore.export.mockReset()
+        kmsMock.withExportedKey.mockReset()
+        mockKeyStoreExport.mockReset()
 
         kmsMock.getKey.mockReturnValue(null)
         kmsMock.getKeyOrThrow.mockReturnValue(null)
@@ -119,9 +120,15 @@ describe('useImportAccount', () => {
             publicKey: 'ALGO25_PUBLIC_KEY',
         })
         kmsMock.generateDerivedKey.mockResolvedValue('ks-derived-1')
-        kmsMock.keyStore.export.mockResolvedValue({
+        mockKeyStoreExport.mockResolvedValue({
             publicKey: new Uint8Array(32).fill(2),
         })
+        kmsMock.withExportedKey.mockImplementation(
+            async (keyId: string, handler: (keyData: any) => any) => {
+                const keyData = await mockKeyStoreExport(keyId)
+                return handler(keyData)
+            },
+        )
     })
 
     test('imports HD wallet account with mnemonic', async () => {
