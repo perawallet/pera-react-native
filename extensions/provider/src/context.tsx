@@ -16,7 +16,6 @@ import Hook from 'before-after-hook'
 import type { KeyStoreState } from '@algorandfoundation/keystore'
 import { initializeProvider } from '@perawallet/wallet-core-shared'
 import { PeraProvider } from './pera-provider'
-import { getProvider } from './singleton'
 
 const PeraWalletContext = createContext<PeraProvider | null>(null)
 
