@@ -36,6 +36,7 @@ export function SignRequestBottomSheet() {
         <PWBottomSheet
             isVisible={isVisible}
             size='lg'
+            autoCreateContainer={false}
         >
             {!!nextRequest && <SignRequestView request={nextRequest} />}
         </PWBottomSheet>

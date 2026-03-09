@@ -15,7 +15,8 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
-        gap: theme.spacing.sm,
+        gap: theme.spacing.lg,
+        justifyContent: 'space-between',
     },
     contentContainer: {
         flex: 1,

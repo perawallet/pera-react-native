@@ -17,7 +17,6 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.md,
         flexGrow: 1,
-        flexShrink: 1,
         marginTop: theme.spacing.md,
     },
     title: {
