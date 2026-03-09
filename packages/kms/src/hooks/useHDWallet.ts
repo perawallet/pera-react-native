@@ -17,7 +17,6 @@ import { makeKeyPair } from '../utils'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { KeyManagementError } from '../errors'
 import { useKMSService } from './useKMSServices'
-import { useKeyManagerStore } from '../store'
 import {
     entropyToMnemonic,
     generateHDMasterKey,
@@ -25,8 +24,6 @@ import {
 
 export const useHDWallet = () => {
     const { saveKey, checkAccess, keyStore } = useKMSService()
-    const addKey = useKeyManagerStore(state => state.addKey)
-    const keys = useKeyManagerStore(state => state.keys)
 
     const createHDWalletKey = async (params?: {
         id?: string
@@ -63,90 +60,25 @@ export const useHDWallet = () => {
         return await saveKey(keyPair)
     }
 
-    /**
-     * Migrates a pre-existing hd-seed key to hd-root-key type.
-     * The react-native-keystore's generate function only handles hd-seed → hd-root-key
-     * conversion for P256 keys, not Ed25519. This re-imports the key as hd-root-key.
-     */
-    const migrateRootKeyType = async (
-        keystoreKeyId: string,
-    ): Promise<string> => {
-        const keyData = await keyStore.export(keystoreKeyId)
-        if (!keyData.privateKey) {
-            throw new KeyManagementError(
-                'Cannot migrate root key: no private key found',
-            )
-        }
-
-        const newKeystoreKeyId = await keyStore.import(
-            {
-                type: 'hd-root-key',
-                algorithm: 'raw',
-                extractable: true,
-                keyUsages: ['deriveKey', 'deriveBits'],
-                privateKey: keyData.privateKey,
-                metadata: keyData.metadata ?? {},
-            },
-            'raw',
-        )
-
-        // Update KeyPair in the store with the new keystoreKeyId
-        for (const keyPair of keys.values()) {
-            if (keyPair.keystoreKeyId === keystoreKeyId) {
-                addKey({ ...keyPair, keystoreKeyId: newKeystoreKeyId })
-                break
-            }
-        }
-
-        await keyStore.remove(keystoreKeyId)
-
-        return newKeystoreKeyId
-    }
-
     const generateDerivedKey = async (
         keystoreRootKeyId: string,
         account: number,
         keyIndex: number,
         derivationType: number,
     ): Promise<string> => {
-        try {
-            return await keyStore.generate({
-                type: 'hd-derived-ed25519',
-                algorithm: 'EdDSA',
-                extractable: false,
-                keyUsages: ['sign'],
-                params: {
-                    parentKeyId: keystoreRootKeyId,
-                    account,
-                    index: keyIndex,
-                    context: KeyContext.Address,
-                    derivation: derivationType,
-                },
-            })
-        } catch (error) {
-            // Pre-existing accounts have root keys stored as hd-seed type
-            // which generateXHDFromParent rejects. Migrate and retry.
-            const message =
-                error instanceof Error ? error.message : String(error)
-            if (message.includes('hd-root-key')) {
-                const newKeystoreKeyId =
-                    await migrateRootKeyType(keystoreRootKeyId)
-                return keyStore.generate({
-                    type: 'hd-derived-ed25519',
-                    algorithm: 'EdDSA',
-                    extractable: false,
-                    keyUsages: ['sign'],
-                    params: {
-                        parentKeyId: newKeystoreKeyId,
-                        account,
-                        index: keyIndex,
-                        context: KeyContext.Address,
-                        derivation: derivationType,
-                    },
-                })
-            }
-            throw error
-        }
+        return keyStore.generate({
+            type: 'hd-derived-ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            keyUsages: ['sign'],
+            params: {
+                parentKeyId: keystoreRootKeyId,
+                account,
+                index: keyIndex,
+                context: KeyContext.Address,
+                derivation: derivationType,
+            },
+        })
     }
 
     const withHDSession = async <T>(
