@@ -12,7 +12,10 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useNotifyWebViewOnContextChange } from '../useNotifyWebViewOnContextChange'
+import {
+    useNotifyWebViewOnContextChange,
+    type ContextFingerprints,
+} from '../useNotifyWebViewOnContextChange'
 
 let focusCallback: (() => void) | null = null
 
@@ -254,7 +257,7 @@ describe('useNotifyWebViewOnContextChange', () => {
                 useNotifyWebViewOnContextChange(webviewRef, fingerprints),
             {
                 initialProps: {
-                    fingerprints: { accounts: 'addr1' },
+                    fingerprints: { accounts: 'addr1' } as ContextFingerprints,
                 },
             },
         )
