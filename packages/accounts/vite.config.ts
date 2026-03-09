@@ -52,6 +52,7 @@ export default defineConfig({
                 'uuid',
                 'bip39',
                 'decimal.js',
+                '@perawallet/wallet-extension-provider',
             ],
         },
     },

@@ -11,7 +11,7 @@
  */
 
 import type { KeyStoreAPI } from '@algorandfoundation/keystore'
-import { useKeyStoreService } from '@perawallet/wallet-extension-platform'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useKeyManagerStore } from '../store'
 import { AccessControlPermission, KeyPair } from '../models'
 import { KeyAccessError } from '../errors'
@@ -39,7 +39,7 @@ type UseKMSServiceResult = {
 }
 
 export const useKMSService = (): UseKMSServiceResult => {
-    const keyStore = useKeyStoreService()
+    const keyStore = getProvider().key.store
     const addKey = useKeyManagerStore(state => state.addKey)
     const getKey = useKeyManagerStore(state => state.getKey)
     const removeKey = useKeyManagerStore(state => state.removeKey)

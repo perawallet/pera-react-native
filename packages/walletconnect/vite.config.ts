@@ -48,6 +48,7 @@ export default defineConfig({
                 '@walletconnect/types',
                 '@walletconnect/utils',
                 'uuid',
+                '@perawallet/wallet-extension-provider',
             ],
         },
     },

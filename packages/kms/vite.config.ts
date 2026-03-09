@@ -48,6 +48,7 @@ export default defineConfig({
                 'bip39',
                 'tweetnacl',
                 'uuid',
+                '@perawallet/wallet-extension-provider',
             ],
         },
     },

@@ -20,11 +20,15 @@ const mockKeyStoreRemove = vi.fn()
 const mockKeyStoreImport = vi.fn()
 const mockKeyStoreSign = vi.fn()
 
-vi.mock('@perawallet/wallet-extension-platform', () => ({
-    useKeyStoreService: () => ({
-        remove: mockKeyStoreRemove,
-        import: mockKeyStoreImport,
-        sign: mockKeyStoreSign,
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        key: {
+            store: {
+                remove: mockKeyStoreRemove,
+                import: mockKeyStoreImport,
+                sign: mockKeyStoreSign,
+            },
+        },
     }),
 }))
 

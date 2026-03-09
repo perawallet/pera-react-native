@@ -11,11 +11,8 @@
  */
 
 import { createContext, useContext, useRef } from 'react'
-import { Store } from '@tanstack/store'
-import Hook from 'before-after-hook'
-import type { KeyStoreState } from '@algorandfoundation/keystore'
-import { initializeProvider } from '@perawallet/wallet-core-shared'
 import { PeraProvider } from './pera-provider'
+import { getProvider } from './singleton'
 
 const PeraWalletContext = createContext<PeraProvider | null>(null)
 
@@ -36,26 +33,7 @@ export const PeraWalletProvider = ({ children }: PeraWalletProviderProps) => {
     const providerRef = useRef<PeraProvider | null>(null)
 
     if (providerRef.current === null) {
-        const keystoreStore = new Store<KeyStoreState>({
-            keys: [],
-            status: 'idle',
-        })
-        const keystoreHooks = new Hook.Collection()
-
-        const provider = new PeraProvider(
-            {
-                id: 'pera-wallet',
-                name: 'Pera Wallet',
-            },
-            {
-                keystore: {
-                    store: keystoreStore,
-                    hooks: keystoreHooks,
-                },
-            },
-        )
-        initializeProvider(provider)
-        providerRef.current = provider
+        providerRef.current = getProvider()
     }
 
     return (

@@ -42,6 +42,7 @@ export default defineConfig({
                 'zustand/middleware',
                 '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-core-shared',
+                '@perawallet/wallet-extension-provider',
             ],
         },
     },

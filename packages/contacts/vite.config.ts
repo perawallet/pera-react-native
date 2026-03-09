@@ -44,6 +44,7 @@ export default defineConfig({
                 '@perawallet/wallet-core-shared',
                 'uuid',
                 'zod',
+                '@perawallet/wallet-extension-provider',
             ],
         },
     },

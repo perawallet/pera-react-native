@@ -47,6 +47,7 @@ export default defineConfig({
                 '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-core-shared',
                 'uuid',
+                '@perawallet/wallet-extension-provider',
             ],
         },
     },
