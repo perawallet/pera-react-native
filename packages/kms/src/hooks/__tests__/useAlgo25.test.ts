@@ -33,6 +33,7 @@ const mockSaveKey = vi.fn()
 const mockCheckAccess = vi.fn()
 const mockKeyStoreImport = vi.fn()
 const mockKeyStoreExport = vi.fn()
+const mockKeyStoreSign = vi.fn()
 
 vi.mock('../useKMSServices', () => ({
     useKMSService: () => ({
@@ -41,6 +42,7 @@ vi.mock('../useKMSServices', () => ({
         keyStore: {
             import: (...args: any[]) => mockKeyStoreImport(...args),
             export: (...args: any[]) => mockKeyStoreExport(...args),
+            sign: (...args: any[]) => mockKeyStoreSign(...args),
         },
     }),
 }))
@@ -183,7 +185,6 @@ describe('useAlgo25', () => {
         }
 
         beforeEach(() => {
-            // Mock keyStore.export to return key material with metadata
             const fakeSeed = new Uint8Array(32).fill(1)
             const fakeSecretKey = new Uint8Array(64)
             fakeSecretKey.set(fakeSeed)
@@ -328,6 +329,7 @@ describe('useAlgo25', () => {
             mockKeyStoreExport.mockResolvedValue({
                 privateKey: undefined,
                 publicKey: new Uint8Array(32),
+                metadata: {},
             })
 
             const { result } = renderHook(() => useAlgo25())

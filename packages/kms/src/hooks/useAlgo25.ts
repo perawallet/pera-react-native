@@ -97,14 +97,13 @@ export const useAlgo25 = () => {
             throw new KeyManagementError('Key does not have a keystore key ID')
         }
 
-        // Export key material from keystore for local signing
-        // TODO: Route through keyStore.sign() once upstream supports standalone Ed25519 signing
+        // Algo25 keys are standalone Ed25519 keys without a parent root key,
+        // so we export key material and sign locally with nacl
         const keyData = await keyStore.export(keystoreKeyId)
         if (!keyData.privateKey) {
             throw new KeyManagementError('Key not found in keystore')
         }
 
-        // Reconstruct nacl keypair from exported key material
         const seed = keyData.privateKey.slice(0, 32)
         const naclKeyPair = nacl.sign.keyPair.fromSeed(seed)
 
