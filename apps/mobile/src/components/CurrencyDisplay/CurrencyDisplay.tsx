@@ -14,7 +14,10 @@ import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
 import { PWSkeleton, PWText, PWTextProps, PWView } from '@components/core'
 import { useMemo } from 'react'
-import { formatCurrency } from '@perawallet/wallet-core-shared'
+import {
+    formatCurrency,
+    formatRawNumberInput,
+} from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 import AlgoIcon from '@assets/icons/algo.svg'
 import { useSettings } from '@perawallet/wallet-core-settings'
@@ -31,6 +34,8 @@ export type CurrencyDisplayProps = {
     showSymbol?: boolean
     isLoading?: boolean
     truncateToUnits?: boolean
+    rawValue?: string | null
+    ignorePrivacyMode?: boolean
     variant?: 'body' | 'h1' | 'h2' | 'h3' | 'h4' | 'caption'
     style?: StyleProp<TextStyle>
 } & Omit<PWTextProps, 'children' | 'variant'>
@@ -49,14 +54,23 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         showSymbol = true,
         isLoading = false,
         minPrecision,
+        rawValue,
+        ignorePrivacyMode = false,
         variant = 'body',
         ...rest
     } = props
 
     const isAlgo = useMemo(() => currency === 'ALGO', [currency])
-    const { privacyMode } = useSettings()
+    const { privacyMode: privacyModeSetting } = useSettings()
+    const privacyMode = privacyModeSetting && !ignorePrivacyMode
 
     const displayValue = useMemo(() => {
+        if (rawValue != null) {
+            return privacyMode
+                ? '****'
+                : formatRawNumberInput(rawValue, deviceInfo.getDeviceLocale())
+        }
+
         if (value == null) {
             return '---'
         }
@@ -81,6 +95,7 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         truncateToUnits,
         minPrecision,
         privacyMode,
+        rawValue,
     ])
 
     if (isLoading) {

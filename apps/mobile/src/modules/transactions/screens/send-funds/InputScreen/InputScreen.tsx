@@ -115,6 +115,8 @@ export const InputScreen = () => {
                     currency={asset.unitName ?? ''}
                     precision={asset.decimals}
                     value={cryptoValue ? Decimal(cryptoValue) : Decimal(0)}
+                    rawValue={cryptoValue ?? undefined}
+                    ignorePrivacyMode
                     style={[
                         cryptoValue ? styles.amount : styles.amountPlaceholder,
                         styles.h1,
@@ -124,6 +126,7 @@ export const InputScreen = () => {
                 />
                 <PreferredCurrencyDisplay
                     sourceAmount={cryptoValue ? Decimal(cryptoValue) : null}
+                    ignorePrivacyMode
                     sourceAssetId={selectedAssetBalance?.assetId ?? ''}
                     precision={6}
                     showSymbol
