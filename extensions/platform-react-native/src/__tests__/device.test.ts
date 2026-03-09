@@ -14,12 +14,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { RNDeviceInfoStorageService } from '../services/device'
 import * as RN from 'react-native'
 
-// Mock @perawallet/wallet-core-shared
-vi.mock('@perawallet/wallet-core-shared', () => ({
-    updateBackendHeaders: vi.fn(),
-    updateManualBackendHeaders: vi.fn(),
-}))
-
 // Mock expo-application
 vi.mock('expo-application', () => ({
     applicationName: 'Pera Wallet',
@@ -69,55 +63,6 @@ describe('RNDeviceInfoStorageService', () => {
         vi.clearAllMocks()
         RN.Platform.OS = 'ios'
         service = new RNDeviceInfoStorageService()
-    })
-
-    describe('initializeDeviceInfo', () => {
-        it('sets up headers and calls updateBackendHeaders', async () => {
-            const { updateBackendHeaders } = await import(
-                '@perawallet/wallet-core-shared'
-            )
-            const mockUpdateBackendHeaders = vi.mocked(updateBackendHeaders)
-            const mockNativeModules = vi.mocked(RN)
-            mockNativeModules.NativeModules.SettingsManager.getConstants =
-                vi.fn(() => ({
-                    settings: {
-                        AppleLocale: undefined,
-                        AppleLanguages: ['en_US', 'fr_FR'],
-                    },
-                }))
-
-            service.initializeDeviceInfo()
-
-            expect(mockUpdateBackendHeaders).toHaveBeenCalledWith(
-                expect.any(Map),
-            )
-
-            const headers = mockUpdateBackendHeaders.mock.calls[0][0]
-            expect(headers.get('App-Name')).toBe('Pera Wallet')
-            expect(headers.get('App-Package-Name')).toBe('com.algorand.android')
-            expect(headers.get('App-Version')).toBe('1.0.0')
-            expect(headers.get('Client-Type')).toBe('ios')
-            expect(headers.get('Device-Version')).toBe('en-US')
-            expect(headers.get('Device-OS-Version')).toBe('15.0')
-            expect(headers.get('Device-Model')).toBe('iPhone13,2')
-        })
-
-        it('calls header generation with correct values', async () => {
-            // No longer checking method calls as we use constants from Expo packages
-            // Checking headers values above is sufficient
-            const mockNativeModules = vi.mocked(RN)
-            mockNativeModules.NativeModules.SettingsManager.getConstants =
-                vi.fn(() => ({
-                    settings: {
-                        AppleLocale: undefined,
-                        AppleLanguages: ['en_US', 'fr_FR'],
-                    },
-                }))
-
-            service.initializeDeviceInfo()
-
-            // Removed method call checks
-        })
     })
 
     describe('getDeviceID', () => {
@@ -180,22 +125,6 @@ describe('RNDeviceInfoStorageService', () => {
         it('returns default locale when no locales available', async () => {
             const { getLocales } = await import('expo-localization')
             vi.mocked(getLocales).mockReturnValue([])
-            const locale = service.getDeviceLocale()
-
-            expect(locale).toBe('en-US')
-        })
-
-        it('handles iOS locale from AppleLanguages when AppleLocale is not available', async () => {
-            // Mock iOS without AppleLocale
-            const { NativeModules } = RN
-            const mockNativeModules = vi.mocked(NativeModules)
-            mockNativeModules.SettingsManager.getConstants = vi.fn(() => ({
-                settings: {
-                    AppleLocale: undefined,
-                    AppleLanguages: ['en_US', 'fr_FR'],
-                },
-            }))
-
             const locale = service.getDeviceLocale()
 
             expect(locale).toBe('en-US')

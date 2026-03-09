@@ -21,6 +21,7 @@ import { ContactsStackParamsList } from '@modules/contacts/routes'
 import { AccountStackParamsList } from '@modules/accounts/routes/types'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { MessagesStackParamList } from '@modules/messages/routes'
+import { MultisigStackParamList } from '@modules/multisig'
 
 export type RootStackParamList = {
     Onboarding: NavigatorScreenParams<OnboardingStackParamList>
@@ -29,6 +30,7 @@ export type RootStackParamList = {
     Messages: NavigatorScreenParams<MessagesStackParamList>
     Settings: NavigatorScreenParams<SettingsStackParamsList>
     Contacts: NavigatorScreenParams<ContactsStackParamsList>
+    Multisig: NavigatorScreenParams<MultisigStackParamList>
     Staking: undefined
     TransactionDetails: {
         transactionId?: string
@@ -42,4 +44,5 @@ export type AppStackParamList = RootStackParamList &
     TabBarStackParamList &
     SettingsStackParamsList &
     ContactsStackParamsList &
-    AccountStackParamsList
+    AccountStackParamsList &
+    MultisigStackParamList

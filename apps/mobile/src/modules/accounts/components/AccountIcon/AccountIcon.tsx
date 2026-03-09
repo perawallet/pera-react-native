@@ -17,6 +17,7 @@ import {
     isAlgo25Account,
     isHDWalletAccount,
     isLedgerAccount,
+    isMultisigAccount,
     isRekeyedAccount,
     isWatchAccount,
     WalletAccount,
@@ -46,6 +47,8 @@ export const AccountIcon = (props: AccountIconProps) => {
             iconName = `accounts/${theme}/ledger-account`
         } else if (isWatchAccount(account)) {
             iconName = `accounts/${theme}/watch-account`
+        } else if (isMultisigAccount(account)) {
+            iconName = `accounts/${theme}/multisig-account`
         } else if (isRekeyedAccount(account)) {
             iconName = `accounts/${theme}/rekeyed-account`
         }

@@ -14,7 +14,6 @@ import type {
     PlatformExtension,
     PushNotificationInitResult,
 } from '@perawallet/wallet-extension-platform'
-import { logger } from '@perawallet/wallet-core-shared'
 
 import { platformServices } from './resources'
 
@@ -33,8 +32,6 @@ export const WithReactNativePlatformExtension = (
     _provider: unknown,
 ): ReactNativePlatformExtension => {
     const initialize = async (): Promise<PushNotificationInitResult> => {
-        logger.debug('Initializing platform services')
-
         const crashlyticsInit =
             platformServices.crashReporting.initializeCrashReporting()
         const remoteConfigInit =
@@ -49,8 +46,6 @@ export const WithReactNativePlatformExtension = (
 
         const notificationResults =
             await platformServices.pushNotification.initializeNotifications()
-
-        logger.debug('Platform services initialized')
 
         return {
             token: notificationResults.token,

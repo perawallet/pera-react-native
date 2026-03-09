@@ -10,55 +10,18 @@
  limitations under the License
  */
 
-import type {
-    MultiSigAccountResponse,
-    SignRequestResponse,
-    TransactionListResponse,
-    ASAInboxResponse,
-    InboxResponse,
-} from '../api/inbox'
-import type {
-    ASAInbox,
-    InboxItem,
-    JointAccountSignRequest,
-    MultiSigAccount,
-    TransactionList,
-} from '../models'
+import {
+    mapMultiSigAccount,
+    mapSignRequest,
+} from '@perawallet/wallet-core-multisig'
+import type { ASAInboxResponse, InboxResponse } from '../api/inbox'
+import type { ASAInbox, InboxItem } from '../models'
 
-export const mapMultiSigAccount = (
-    response: MultiSigAccountResponse,
-): MultiSigAccount => ({
-    customId: response.custom_id,
-    createdAt: new Date(response.creation_datetime),
-    address: response.address,
-    version: response.version,
-    threshold: response.threshold,
-    participantAddresses: response.participant_addresses,
-})
-
-export const mapTransactionList = (
-    response: TransactionListResponse,
-): TransactionList => ({
-    id: response.id,
-    rawTransactions: response.raw_transactions,
-    firstValidBlock: response.first_valid_block,
-    lastValidBlock: response.last_valid_block,
-    expectedExpireDatetime: new Date(response.expected_expire_datetime),
-    responses: response.responses,
-})
-
-export const mapSignRequest = (
-    response: SignRequestResponse,
-): JointAccountSignRequest => ({
-    id: response.id,
-    status: response.status,
-    type: response.type,
-    createdAt: new Date(response.creation_datetime),
-    expectedExpireDatetime: new Date(response.expected_expire_datetime),
-    failReasonDisplay: response.fail_reason_display,
-    jointAccount: mapMultiSigAccount(response.joint_account),
-    transactionLists: response.transaction_lists.map(mapTransactionList),
-})
+export {
+    mapMultiSigAccount,
+    mapTransactionList,
+    mapSignRequest,
+} from '@perawallet/wallet-core-multisig'
 
 export const mapASAInbox = (response: ASAInboxResponse): ASAInbox => ({
     address: response.address,

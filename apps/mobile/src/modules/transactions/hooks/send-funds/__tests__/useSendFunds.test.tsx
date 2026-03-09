@@ -32,15 +32,15 @@ describe('useSendFundsStore', () => {
         expect(result.current.destination).toBeUndefined()
     })
 
-    it('sets selectedAsset', () => {
+    it('sets selectedAssetBalance', () => {
         const { result } = renderHook(() => useSendFundsStore())
         const mockAsset = { assetId: '123' } as AssetWithAccountBalance
 
         act(() => {
-            result.current.setSelectedAsset(mockAsset)
+            result.current.setSelectedAssetBalance(mockAsset)
         })
 
-        expect(result.current.selectedAsset).toBe(mockAsset)
+        expect(result.current.selectedAssetBalance).toBe(mockAsset)
     })
 
     it('sets canSelectAsset', () => {
@@ -88,7 +88,7 @@ describe('useSendFundsStore', () => {
         const { result } = renderHook(() => useSendFundsStore())
 
         act(() => {
-            result.current.setSelectedAsset({
+            result.current.setSelectedAssetBalance({
                 assetId: '123',
             } as AssetWithAccountBalance)
             result.current.setCanSelectAsset(false)
@@ -130,14 +130,14 @@ describe('useSendFunds', () => {
         const amount = new Decimal('5')
 
         act(() => {
-            result.current.setSelectedAsset(mockAsset)
+            result.current.setSelectedAssetBalance(mockAsset)
             result.current.setCanSelectAsset(false)
             result.current.setAmount(amount)
             result.current.setNote('hello')
             result.current.setDestination('DEST_ADDR')
         })
 
-        expect(result.current.selectedAsset).toBe(mockAsset)
+        expect(result.current.selectedAssetBalance).toBe(mockAsset)
         expect(result.current.canSelectAsset).toBe(false)
         expect(result.current.amount).toBe(amount)
         expect(result.current.note).toBe('hello')
@@ -148,7 +148,7 @@ describe('useSendFunds', () => {
         const { result } = renderHook(() => useSendFunds())
 
         act(() => {
-            result.current.setSelectedAsset({
+            result.current.setSelectedAssetBalance({
                 assetId: '1',
             } as AssetWithAccountBalance)
             result.current.setAmount(new Decimal('99'))

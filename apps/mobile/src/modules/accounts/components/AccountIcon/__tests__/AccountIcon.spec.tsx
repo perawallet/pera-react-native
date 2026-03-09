@@ -25,6 +25,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     isAlgo25Account: vi.fn(),
     isLedgerAccount: vi.fn(),
     isWatchAccount: vi.fn(),
+    isMultisigAccount: vi.fn(),
     isRekeyedAccount: vi.fn(),
 }))
 
@@ -75,12 +76,14 @@ describe('AccountIcon', () => {
             isAlgo25Account,
             isLedgerAccount,
             isWatchAccount,
+            isMultisigAccount,
             isRekeyedAccount,
         } = await import('@perawallet/wallet-core-accounts')
         vi.mocked(isHDWalletAccount).mockReturnValue(false)
         vi.mocked(isAlgo25Account).mockReturnValue(false)
         vi.mocked(isLedgerAccount).mockReturnValue(false)
         vi.mocked(isWatchAccount).mockReturnValue(false)
+        vi.mocked(isMultisigAccount).mockReturnValue(false)
         vi.mocked(isRekeyedAccount).mockReturnValue(false)
 
         const account = { address: 'addr' } as WalletAccount

@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useRef } from 'react'
-import { useAnalyticsService } from '@perawallet/wallet-extension-platform'
 import { useWebView } from '@modules/webview'
 import { useModalState } from '@hooks/useModalState'
 import {
@@ -19,6 +18,7 @@ import {
     useStakingProjectsQuery,
 } from '@modules/staking/hooks'
 import type { StakingProject } from '@modules/staking/models'
+import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 type UseStakingScreenResult = {
     projects: StakingProject[]
@@ -35,7 +35,8 @@ type UseStakingScreenResult = {
 }
 
 export const useStakingScreen = (): UseStakingScreenResult => {
-    const analyticsService = useAnalyticsService()
+    const provider = usePeraProvider()
+    const analyticsService = provider.analytics
     const { pushWebView } = useWebView()
     const {
         data: projects,

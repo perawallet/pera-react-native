@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { KeyValueStorageService } from '@perawallet/wallet-extension-platform'
+import type { KeyValueStorageService } from '@perawallet/wallet-extension-platform'
 import { MMKV } from 'react-native-mmkv'
 
 export class RNKeyValueStorageService implements KeyValueStorageService {

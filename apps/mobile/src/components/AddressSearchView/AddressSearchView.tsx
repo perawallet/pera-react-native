@@ -25,6 +25,7 @@ import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { EmptyView } from '@components/EmptyView'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useLanguage } from '@hooks/useLanguage'
+import type { AccountType } from '@perawallet/wallet-core-accounts'
 import {
     useAddressSearchView,
     type AddressSearchItem,
@@ -33,16 +34,18 @@ import {
 export type AddressSearchViewProps = {
     onSelected: (address: string) => void
     excludeAddress?: string
+    excludeTypes?: AccountType[]
 }
 
 export const AddressSearchView = ({
     onSelected,
     excludeAddress,
+    excludeTypes,
 }: AddressSearchViewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { value, setValue, matchingItems, hasResults } = useAddressSearchView(
-        { excludeAddress },
+        { excludeAddress, excludeTypes },
     )
 
     const renderItem = useCallback(

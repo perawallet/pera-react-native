@@ -266,6 +266,7 @@ describe('env-loader', () => {
             peraDemoDappUrl: 'https://demo.example.com',
             sendFundsFaqUrl: 'https://faq.example.com',
             swapSupportUrl: 'https://swap-support.example.com',
+            multisigSupportUrl: 'https://multisig-support.example.com',
             dispenserUrl: 'https://dispenser.example.com',
             algorandDefiUrl: 'https://defi.example.com',
             debugEnabled: false,
