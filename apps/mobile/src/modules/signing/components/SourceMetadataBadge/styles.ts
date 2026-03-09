@@ -25,7 +25,6 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.xs,
         paddingHorizontal: theme.spacing.md,
         gap: theme.spacing.sm,
-        marginBottom: theme.spacing['4xl'],
     },
     icon: {
         width: ICON_SIZE,
