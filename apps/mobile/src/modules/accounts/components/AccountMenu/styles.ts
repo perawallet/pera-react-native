@@ -46,24 +46,6 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.md,
             alignItems: 'center',
         },
-        sortButton: {
-            flexDirection: 'row',
-            gap: theme.spacing.sm,
-            alignItems: 'center',
-        },
-        sortButtonTitle: {
-            color: theme.colors.positive,
-        },
-        addButtonContainer: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            paddingEnd: theme.spacing.md,
-            borderRadius: theme.spacing.sm,
-            gap: theme.spacing.sm,
-        },
-        addButtonTitle: {
-            color: theme.colors.buttonSquareIcon,
-        },
         fullWidth: {
             width: '100%',
         },
