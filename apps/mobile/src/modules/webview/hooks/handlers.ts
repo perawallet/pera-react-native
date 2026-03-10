@@ -51,6 +51,20 @@ export const sendMessageToWebview = (
     webview?.injectJavaScript(message)
 }
 
+export const sendNotificationToWebview = (
+    method: string,
+    params: unknown,
+    webview: WebView | null,
+) => {
+    const message = `window.postMessage(${JSON.stringify({
+        jsonrpc: '2.0',
+        method,
+        params,
+    })});`
+    logger.debug('Sending webview notification', { message })
+    webview?.injectJavaScript(message)
+}
+
 export const sendErrorToWebview = (
     id: string,
     code: JsonRpcErrorCode,
