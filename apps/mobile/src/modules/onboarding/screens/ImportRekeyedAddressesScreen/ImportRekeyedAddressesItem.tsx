@@ -22,6 +22,7 @@ import {
 } from '@components/core'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 import { useStyles } from './styles'
 
 type ImportRekeyedAddressesItemProps = {
@@ -39,26 +40,32 @@ export const ImportRekeyedAddressesItem = ({
 }: ImportRekeyedAddressesItemProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const { infoToast } = useToast()
 
     return (
-        <PWTouchableOpacity
+        <PWView
             style={styles.itemContainer}
-            onPress={() => onToggle(account.address)}
-            disabled={isImported}
             testID={`import_rekeyed_addresses_item_${account.address}`}
         >
             {!isImported && (
-                <PWView style={styles.checkboxWrapper}>
+                <PWTouchableOpacity
+                    style={styles.checkboxWrapper}
+                    onPress={() => onToggle(account.address)}
+                >
                     <PWCheckbox
                         checked={isSelected}
                         onPress={() => onToggle(account.address)}
                         containerStyle={styles.checkboxContainer}
                         testID={`import_rekeyed_addresses_item_checkbox_${account.address}`}
                     />
-                </PWView>
+                </PWTouchableOpacity>
             )}
 
-            <PWView style={styles.itemContent}>
+            <PWTouchableOpacity
+                style={styles.itemContent}
+                onPress={() => onToggle(account.address)}
+                disabled={isImported}
+            >
                 <PWView style={styles.iconContainer}>
                     <PWRoundIcon
                         icon='account-rekeyed'
@@ -85,15 +92,23 @@ export const ImportRekeyedAddressesItem = ({
                         )}
                     </PWText>
                 </PWView>
+            </PWTouchableOpacity>
 
-                <PWView style={styles.infoIconContainer}>
-                    <PWIcon
-                        name='info'
-                        size='md'
-                        variant='secondary'
-                    />
-                </PWView>
-            </PWView>
+            <PWTouchableOpacity
+                style={styles.infoIconContainer}
+                onPress={() =>
+                    infoToast(
+                        t('common.not_implemented.title'),
+                        t('common.not_implemented.body'),
+                    )
+                }
+            >
+                <PWIcon
+                    name='info'
+                    size='md'
+                    variant='secondary'
+                />
+            </PWTouchableOpacity>
 
             {isImported && (
                 <PWChip
@@ -103,6 +118,6 @@ export const ImportRekeyedAddressesItem = ({
                     variant='secondary'
                 />
             )}
-        </PWTouchableOpacity>
+        </PWView>
     )
 }

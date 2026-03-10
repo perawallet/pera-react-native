@@ -69,7 +69,7 @@ export const useStyles = makeStyles(
                 paddingHorizontal: theme.spacing.xl,
                 paddingTop: theme.spacing.md,
                 paddingBottom: isKeyboardVisible
-                    ? keyboardHeight + theme.spacing.lg - insets.bottom
+                    ? keyboardHeight + theme.spacing.md
                     : theme.spacing.lg,
             },
             inputContainerRow: {

@@ -48,6 +48,7 @@ export const ImportRekeyedAddressesScreen = () => {
                     />
                 )}
                 data={accounts}
+                extraData={selectedAddresses}
                 keyExtractor={item => item.address}
                 renderItem={({ item }) => (
                     <ImportRekeyedAddressesItem
