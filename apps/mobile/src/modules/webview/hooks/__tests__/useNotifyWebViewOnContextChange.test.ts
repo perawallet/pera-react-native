@@ -11,19 +11,11 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook } from '@testing-library/react'
 import {
     useNotifyWebViewOnContextChange,
     type ContextFingerprints,
 } from '../useNotifyWebViewOnContextChange'
-
-let focusCallback: (() => void) | null = null
-
-vi.mock('@react-navigation/native', () => ({
-    useFocusEffect: vi.fn((cb: () => void) => {
-        focusCallback = cb
-    }),
-}))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { debug: vi.fn() },
@@ -39,18 +31,11 @@ describe('useNotifyWebViewOnContextChange', () => {
         current: { injectJavaScript: mockInjectJavaScript } as any,
     }
 
-    const simulateFocus = () => {
-        act(() => {
-            focusCallback?.()
-        })
-    }
-
     beforeEach(() => {
         vi.clearAllMocks()
-        focusCallback = null
     })
 
-    it('does not send notification on first focus (no previous fingerprints)', () => {
+    it('does not send notification on first render (no previous fingerprints)', () => {
         renderHook(() =>
             useNotifyWebViewOnContextChange(webviewRef, {
                 settings: 'light-USD-mainnet-en',
@@ -58,15 +43,11 @@ describe('useNotifyWebViewOnContextChange', () => {
             }),
         )
 
-        simulateFocus()
-
         expect(mockInjectJavaScript).not.toHaveBeenCalled()
     })
 
     it('does nothing when contextFingerprints is undefined', () => {
         renderHook(() => useNotifyWebViewOnContextChange(webviewRef, undefined))
-
-        simulateFocus()
 
         expect(mockInjectJavaScript).not.toHaveBeenCalled()
     })
@@ -85,15 +66,12 @@ describe('useNotifyWebViewOnContextChange', () => {
             },
         )
 
-        simulateFocus() // first focus — stores fingerprints, no notification
-
         rerender({
             fingerprints: {
                 settings: 'dark-USD-mainnet-en',
                 accounts: 'addr1',
             },
         })
-        simulateFocus() // second focus — settings changed
 
         expect(mockInjectJavaScript).toHaveBeenCalledTimes(1)
         expect(mockInjectJavaScript).toHaveBeenCalledWith(
@@ -115,15 +93,12 @@ describe('useNotifyWebViewOnContextChange', () => {
             },
         )
 
-        simulateFocus()
-
         rerender({
             fingerprints: {
                 settings: 'light-USD-mainnet-en',
                 accounts: 'addr1,addr2',
             },
         })
-        simulateFocus()
 
         expect(mockInjectJavaScript).toHaveBeenCalledTimes(1)
         expect(mockInjectJavaScript).toHaveBeenCalledWith(
@@ -145,15 +120,12 @@ describe('useNotifyWebViewOnContextChange', () => {
             },
         )
 
-        simulateFocus()
-
         rerender({
             fingerprints: {
                 settings: 'dark-EUR-testnet-de',
                 accounts: 'addr2',
             },
         })
-        simulateFocus()
 
         expect(mockInjectJavaScript).toHaveBeenCalledTimes(1)
         expect(mockInjectJavaScript).toHaveBeenCalledWith(
@@ -175,15 +147,12 @@ describe('useNotifyWebViewOnContextChange', () => {
             },
         )
 
-        simulateFocus()
-
         rerender({
             fingerprints: {
                 settings: 'light-USD-mainnet-en',
                 accounts: 'addr1',
             },
         })
-        simulateFocus()
 
         expect(mockInjectJavaScript).not.toHaveBeenCalled()
     })
@@ -202,15 +171,12 @@ describe('useNotifyWebViewOnContextChange', () => {
             },
         )
 
-        simulateFocus()
-
         rerender({
             fingerprints: {
                 settings: 'dark-USD-mainnet-en',
                 accounts: 'addr1',
             },
         })
-        simulateFocus()
 
         expect(mockInjectJavaScript).toHaveBeenCalledWith(
             expect.stringContaining('"jsonrpc":"2.0"'),
@@ -237,15 +203,12 @@ describe('useNotifyWebViewOnContextChange', () => {
             },
         )
 
-        simulateFocus()
-
         rerender({
             fingerprints: {
                 settings: 'dark-USD-mainnet-en',
                 accounts: 'addr1',
             },
         })
-        simulateFocus()
 
         expect(mockInjectJavaScript).not.toHaveBeenCalled()
     })
@@ -262,8 +225,6 @@ describe('useNotifyWebViewOnContextChange', () => {
             },
         )
 
-        simulateFocus()
-
         // Now settings is introduced for the first time
         rerender({
             fingerprints: {
@@ -271,7 +232,6 @@ describe('useNotifyWebViewOnContextChange', () => {
                 accounts: 'addr1',
             },
         })
-        simulateFocus()
 
         // settings had no prior value, so it should not trigger a notification
         expect(mockInjectJavaScript).not.toHaveBeenCalled()

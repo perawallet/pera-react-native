@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useRef } from 'react'
-import { useFocusEffect } from '@react-navigation/native'
+import { useEffect, useRef } from 'react'
 import WebView from 'react-native-webview'
 
 import { sendNotificationToWebview } from './handlers'
@@ -23,8 +22,7 @@ export type ContextFingerprints = {
 
 /**
  * Sends an `onHostContextChanged` notification to the webview
- * when the screen regains focus and the provided context fingerprints
- * have changed since the last focus.
+ * when the provided context fingerprints change.
  */
 export function useNotifyWebViewOnContextChange(
     webviewRef: React.RefObject<WebView | null>,
@@ -32,39 +30,35 @@ export function useNotifyWebViewOnContextChange(
 ) {
     const prevFingerprints = useRef<ContextFingerprints>({})
 
-    useFocusEffect(
-        useCallback(() => {
-            if (!contextFingerprints) return
+    useEffect(() => {
+        if (!contextFingerprints) return
 
-            const changedContexts: string[] = []
+        const changedContexts: string[] = []
 
-            if (
-                contextFingerprints.settings !== undefined &&
-                prevFingerprints.current.settings !== undefined &&
-                contextFingerprints.settings !==
-                    prevFingerprints.current.settings
-            ) {
-                changedContexts.push('settings')
-            }
+        if (
+            contextFingerprints.settings !== undefined &&
+            prevFingerprints.current.settings !== undefined &&
+            contextFingerprints.settings !== prevFingerprints.current.settings
+        ) {
+            changedContexts.push('settings')
+        }
 
-            if (
-                contextFingerprints.accounts !== undefined &&
-                prevFingerprints.current.accounts !== undefined &&
-                contextFingerprints.accounts !==
-                    prevFingerprints.current.accounts
-            ) {
-                changedContexts.push('accounts')
-            }
+        if (
+            contextFingerprints.accounts !== undefined &&
+            prevFingerprints.current.accounts !== undefined &&
+            contextFingerprints.accounts !== prevFingerprints.current.accounts
+        ) {
+            changedContexts.push('accounts')
+        }
 
-            prevFingerprints.current = { ...contextFingerprints }
+        prevFingerprints.current = { ...contextFingerprints }
 
-            if (changedContexts.length > 0) {
-                sendNotificationToWebview(
-                    'onHostContextChanged',
-                    { contexts: changedContexts },
-                    webviewRef.current,
-                )
-            }
-        }, [contextFingerprints, webviewRef]),
-    )
+        if (changedContexts.length > 0) {
+            sendNotificationToWebview(
+                'onHostContextChanged',
+                { contexts: changedContexts },
+                webviewRef.current,
+            )
+        }
+    }, [contextFingerprints, webviewRef])
 }
