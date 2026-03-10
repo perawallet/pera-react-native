@@ -48,17 +48,14 @@ export const ImportRekeyedAddressesItem = ({
             testID={`import_rekeyed_addresses_item_${account.address}`}
         >
             {!isImported && (
-                <PWTouchableOpacity
-                    style={styles.checkboxWrapper}
-                    onPress={() => onToggle(account.address)}
-                >
+                <PWView style={styles.checkboxWrapper}>
                     <PWCheckbox
                         checked={isSelected}
                         onPress={() => onToggle(account.address)}
                         containerStyle={styles.checkboxContainer}
                         testID={`import_rekeyed_addresses_item_checkbox_${account.address}`}
                     />
-                </PWTouchableOpacity>
+                </PWView>
             )}
 
             <PWTouchableOpacity
