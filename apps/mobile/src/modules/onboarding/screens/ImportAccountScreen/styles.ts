@@ -20,7 +20,7 @@ type StyleProps = {
 }
 
 export const useStyles = makeStyles(
-    (theme, { insets, isKeyboardVisible, keyboardHeight }: StyleProps) => {
+    (theme, { isKeyboardVisible, keyboardHeight }: StyleProps) => {
         return {
             mainContainer: {
                 flex: 1,
