@@ -22,6 +22,7 @@ import { getAccountDisplayName } from '@perawallet/wallet-core-accounts'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 import { useQRViewScreen } from './useQRViewScreen'
 import { useStyles } from './styles'
+import { getTestProps } from '@utils/test-id-helper'
 
 export const QRViewScreen = () => {
     const { t } = useLanguage()
@@ -68,6 +69,7 @@ export const QRViewScreen = () => {
             <PWView style={styles.contentContainer}>
                 <PWView style={styles.qrContainer}>
                     <QRCode
+                        {...getTestProps('receive_qr_code')}
                         value={deeplink}
                         size={width - theme.spacing['5xl'] * 2}
                     />
@@ -84,12 +86,14 @@ export const QRViewScreen = () => {
                     title={t('receive_funds.qrview.copy_address')}
                     variant='primary'
                     icon='copy'
+                    testID='receive_copy_address_button'
                     onPress={handleCopyAddress}
                 />
                 <PWButton
                     title={t('receive_funds.qrview.share')}
                     variant='secondary'
                     icon='share'
+                    testID='receive_share_address_button'
                     onPress={handleShareAddress}
                 />
             </PWView>
