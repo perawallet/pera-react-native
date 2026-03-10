@@ -131,6 +131,7 @@ const customResolveRequest = (context, moduleName, platform) => {
     if (
         moduleName === 'react' ||
         moduleName === 'react-native' ||
+        moduleName === 'react-native-nitro-modules' ||
         moduleName === '@tanstack/react-query' ||
         moduleName === 'react-dom' ||
         moduleName === '@react-native-community/datetimepicker'
