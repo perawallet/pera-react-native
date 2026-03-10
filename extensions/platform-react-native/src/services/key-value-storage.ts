@@ -10,11 +10,11 @@
  limitations under the License
  */
 
-import type { KeyValueStorageService } from '@perawallet/wallet-extension-platform'
-import { MMKV } from 'react-native-mmkv'
+import { KeyValueStorageService } from '@perawallet/wallet-extension-platform'
+import { createMMKV, type MMKV } from 'react-native-mmkv'
 
 export class RNKeyValueStorageService implements KeyValueStorageService {
-    mmkv = new MMKV()
+    mmkv: MMKV = createMMKV()
 
     getItem(key: string): string | null {
         return this.mmkv.getString(key) ?? null
@@ -25,7 +25,7 @@ export class RNKeyValueStorageService implements KeyValueStorageService {
     }
 
     removeItem(key: string) {
-        this.mmkv.delete(key)
+        this.mmkv.remove(key)
     }
 
     setJSON<T>(key: string, value: T) {

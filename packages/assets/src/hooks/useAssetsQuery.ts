@@ -69,8 +69,14 @@ export const useAssetsQuery = (ids: string[]): UseAssetsQueryResult => {
         ]
     }, [stableIds, network])
 
+    // notifyOnChangeProps: 'all' disables Proxy-based property tracking in TanStack Query.
+    // This works around a race condition in QueriesObserver where _observerMatches and _result
+    // can get out of sync during synchronous notifications, causing "new Proxy target must be an Object".
     const queries = useQueries({
-        queries: queryDefinitions,
+        queries: queryDefinitions.map(q => ({
+            ...q,
+            notifyOnChangeProps: 'all' as const,
+        })),
     })
 
     return useMemo(() => {

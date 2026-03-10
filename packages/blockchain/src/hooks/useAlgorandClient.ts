@@ -20,6 +20,7 @@ import {
     PeraTransactionSigner,
 } from '../models'
 import { encodeSignedTransactions } from '@algorandfoundation/algokit-utils/transact'
+import { logger } from '@perawallet/wallet-core-shared'
 
 export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
     const { networkConfig, network } = useNetwork()
@@ -39,8 +40,15 @@ export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
                 txnGroup: PeraTransactionGroup,
                 indexesToSign: number[],
             ) => {
-                const txs = await signer(txnGroup, indexesToSign)
-                return encodeSignedTransactions(txs)
+                try {
+                    const txs = await signer(txnGroup, indexesToSign)
+                    return encodeSignedTransactions(txs)
+                } catch (e) {
+                    logger.error('Transaction signing/encoding failed', {
+                        error: e,
+                    })
+                    throw e
+                }
             }
             client.setDefaultSigner(encodingSigner)
         }

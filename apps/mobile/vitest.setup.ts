@@ -82,6 +82,66 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-extension-provider', () => {
+    const providerValue = {
+        analytics: {
+            logEvent: vi.fn(),
+            setUserId: vi.fn(),
+            setUserProperty: vi.fn(),
+        },
+        biometrics: {
+            isSensorAvailable: vi.fn().mockResolvedValue(false),
+            simplePrompt: vi.fn().mockResolvedValue({ success: false }),
+            createKeys: vi.fn(),
+            deleteKeys: vi.fn(),
+        },
+        crashReporting: {
+            log: vi.fn(),
+            recordError: vi.fn(),
+        },
+        deviceInfo: {
+            getDevicePlatform: () => 'ios',
+            getDeviceModel: () => 'iPhone',
+            getDeviceId: () => 'test-device-id',
+            getVersion: () => '1.0.0',
+            getBuildNumber: () => '1',
+            getDeviceLocale: () => 'en-US',
+            getDeviceLanguage: () => 'en',
+        },
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => store.set(key, value),
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+        },
+        remoteConfig: {
+            initializeRemoteConfig: vi.fn(),
+            getStringValue: vi.fn().mockReturnValue(''),
+            getBooleanValue: vi.fn().mockReturnValue(false),
+            getNumberValue: vi.fn().mockReturnValue(0),
+        },
+        secureStorage: {
+            setItem: vi.fn().mockResolvedValue(undefined),
+            getItem: vi.fn().mockResolvedValue(null),
+            removeItem: vi.fn().mockResolvedValue(undefined),
+        },
+        key: {
+            store: {
+                remove: vi.fn(),
+                import: vi.fn(),
+                sign: vi.fn(),
+            },
+        },
+    }
+    return {
+        getProvider: () => providerValue,
+        PeraWalletProvider: ({ children }: { children: React.ReactNode }) =>
+            children,
+        usePeraProvider: () => providerValue,
+    }
+})
+
 // Mock react-native-reanimated
 vi.mock('react-native-reanimated', () => {
     const React = require('react')
@@ -1193,19 +1253,24 @@ vi.mock('@notifee/react-native', () => ({
 }))
 
 vi.mock('react-native-mmkv', () => {
-    class MMKV {
-        private store = new Map<string, string>()
-        getString(key: string) {
-            return this.store.get(key) ?? null
-        }
-        set(key: string, value: string) {
-            this.store.set(key, String(value))
-        }
-        delete(key: string) {
-            this.store.delete(key)
+    function createMMKV() {
+        const store = new Map<string, string>()
+        return {
+            getString(key: string) {
+                return store.get(key) ?? undefined
+            },
+            set(key: string, value: string) {
+                store.set(key, String(value))
+            },
+            remove(key: string) {
+                return store.delete(key)
+            },
+            getAllKeys() {
+                return Array.from(store.keys())
+            },
         }
     }
-    return { MMKV }
+    return { createMMKV }
 })
 
 vi.mock('react-native-webview', () => {

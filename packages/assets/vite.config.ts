@@ -44,6 +44,7 @@ export default defineConfig({
                 '@perawallet/wallet-core-currencies',
                 '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-core-shared',
+                '@perawallet/wallet-extension-provider',
                 'decimal.js',
             ],
         },

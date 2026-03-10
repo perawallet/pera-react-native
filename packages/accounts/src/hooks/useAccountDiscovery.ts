@@ -48,6 +48,15 @@ export const useAccountDiscovery = () => {
             keyIndexGapLimit?: number
             accountAddresses?: string[]
         }) => {
+            // When account addresses are provided (e.g. Algo25 imports),
+            // no HD session is needed — just check rekeyed accounts by address.
+            if (params.accountAddresses && params.accountAddresses.length > 0) {
+                return baseDiscoverRekeyedAccounts({
+                    ...params,
+                    session: null as never,
+                })
+            }
+
             const key = getKeyOrThrow(params.walletKeyId)
             return withHDSession(key, KEY_DOMAIN, async session => {
                 return baseDiscoverRekeyedAccounts({
@@ -56,7 +65,7 @@ export const useAccountDiscovery = () => {
                 })
             })
         },
-        [withHDSession],
+        [withHDSession, getKeyOrThrow],
     )
 
     return {

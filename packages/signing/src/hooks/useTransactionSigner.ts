@@ -43,14 +43,15 @@ export const useTransactionSigner = () => {
             txns: PeraTransactionGroup,
         ): Promise<PeraSignedTransaction[]> => {
             const hdWalletDetails = account.hdWalletDetails
-
             const key = getKeyOrThrow(account.keyPairId)
+
             return await withHDSession(
                 key,
                 SIGNING_KEY_DOMAIN,
                 async session => {
                     const signedTxns = txns.map(async txn => {
                         const encodedTransaction = encodeTransaction(txn)
+
                         const signature = await session.signTransaction(
                             {
                                 account: hdWalletDetails.account,
@@ -77,7 +78,7 @@ export const useTransactionSigner = () => {
                 },
             )
         },
-        [encodeTransaction, withHDSession],
+        [getKeyOrThrow, encodeTransaction, withHDSession],
     )
 
     const signAlgo25Transactions = useCallback(

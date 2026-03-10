@@ -30,21 +30,22 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-extension-provider', async importOriginal => {
-    const actual =
-        await importOriginal<
-            typeof import('@perawallet/wallet-extension-provider')
-        >()
-    return {
-        ...actual,
-        usePeraProvider: () => ({
-            deviceInfo: {
-                getAppPackage: () => 'com.algorand.android',
-                getAppId: () => '1459898525',
-            },
-        }),
-    }
-})
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        deviceInfo: {
+            getAppPackage: () => 'com.algorand.android',
+            getAppId: () => '1459898525',
+        },
+    }),
+    usePeraProvider: () => ({
+        deviceInfo: {
+            getAppPackage: () => 'com.algorand.android',
+            getAppId: () => '1459898525',
+        },
+    }),
+    PeraWalletProvider: ({ children }: { children: React.ReactNode }) =>
+        children,
+}))
 
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({

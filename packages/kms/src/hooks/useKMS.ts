@@ -15,15 +15,18 @@ import { KeyPair, KeyType } from '../models'
 import type { HDDerivationParams } from '../models/session'
 import { InvalidKeyError, KeyNotFoundError } from '../errors'
 import { useAlgo25 } from './useAlgo25'
+export type { Algo25KeyResult } from './useAlgo25'
 import { useHDWallet } from './useHDWallet'
+export type { HDWalletKeyResult } from './useHDWallet'
 import { useKMSService } from './useKMSServices'
 
 export const useKMS = () => {
     const keys = useKeyManagerStore(state => state.keys)
     const getKey = useKeyManagerStore(state => state.getKey)
     const { withAlgo25Session, createAlgo25Key } = useAlgo25()
-    const { withHDSession, createHDWalletKey } = useHDWallet()
-    const { deleteKey } = useKMSService()
+    const { withHDSession, createHDWalletKey, generateDerivedKey } =
+        useHDWallet()
+    const { deleteKey, keyStore, withExportedKey } = useKMSService()
 
     const getKeyOrThrow = (keyId: string): KeyPair => {
         const key = getKey(keyId)
@@ -104,6 +107,9 @@ export const useKMS = () => {
         createAlgo25Key,
         withHDSession,
         createHDWalletKey,
+        generateDerivedKey,
+        keyStore,
+        withExportedKey,
         signTransactionsWithKey,
         signDataWithKey,
     }

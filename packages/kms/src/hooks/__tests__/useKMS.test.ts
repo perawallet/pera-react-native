@@ -76,12 +76,15 @@ describe('useKMS', () => {
     })
 
     it('should expose createHDWalletKey from useHDWallet', async () => {
-        const mockKey: KeyPair = {
-            id: 'wallet-1',
-            publicKey: '',
-            type: KeyType.HDWalletRootKey,
+        const mockResult = {
+            keyPair: {
+                id: 'wallet-1',
+                publicKey: '',
+                type: KeyType.HDWalletRootKey,
+            },
+            entropyKeyId: 'ks-entropy-1',
         }
-        mockCreateHDWalletKey.mockResolvedValue(mockKey)
+        mockCreateHDWalletKey.mockResolvedValue(mockResult)
 
         const { result } = renderHook(() => useKMS())
 
@@ -93,7 +96,7 @@ describe('useKMS', () => {
         })
 
         expect(mockCreateHDWalletKey).toHaveBeenCalledWith({ id: 'wallet-1' })
-        expect(keyResult).toEqual(mockKey)
+        expect(keyResult).toEqual(mockResult)
     })
 
     it('should expose createAlgo25Key from useAlgo25', async () => {

@@ -37,18 +37,12 @@ export const useAccountBalancesQuery = (
 ): AccountBalancesWithTotals => {
     const { network } = useNetwork()
     const algokit = useAlgorandClient()
-    if (!accounts?.length) {
-        return {
-            accountBalances: new Map(),
-            portfolioAlgoValue: Decimal(0),
-            isPending: false,
-            isFetched: false,
-            isRefetching: false,
-            isError: false,
-        }
-    }
+    const hasAccounts = !!accounts?.length
 
     const queries = useMemo(() => {
+        if (!hasAccounts) {
+            return []
+        }
         return accounts.map(acc => {
             const address = acc.address
             return {
@@ -57,10 +51,16 @@ export const useAccountBalancesQuery = (
                 queryFn: () => algokit.account.getInformation(address),
             }
         })
-    }, [accounts, enabled, network])
+    }, [accounts, hasAccounts, enabled, network])
 
+    // notifyOnChangeProps: 'all' disables Proxy-based property tracking in TanStack Query.
+    // This works around a race condition in QueriesObserver where _observerMatches and _result
+    // can get out of sync during synchronous notifications, causing "new Proxy target must be an Object".
     const results = useQueries({
-        queries: queries,
+        queries: queries.map(q => ({
+            ...q,
+            notifyOnChangeProps: 'all' as const,
+        })),
     })
 
     const assetIDs = results.flatMap(
@@ -81,6 +81,17 @@ export const useAccountBalancesQuery = (
         isRefetching,
         isError,
     } = useMemo(() => {
+        if (!hasAccounts) {
+            return {
+                accountBalances: new Map() as AccountBalances,
+                portfolioAlgoValue: Decimal(0),
+                isPending: false,
+                isFetched: false,
+                isRefetching: false,
+                isError: false,
+            }
+        }
+
         const accountBalanceList = results.map(r => {
             let algoValue = Decimal(0)
 
@@ -115,6 +126,7 @@ export const useAccountBalancesQuery = (
 
             assetBalances.push({
                 assetId: ALGO_ASSET_ID,
+                asset: ALGO_ASSET,
                 amount: algoAmount,
                 algoValue: algoAmount,
             })
@@ -151,7 +163,7 @@ export const useAccountBalancesQuery = (
             isRefetching,
             isError,
         }
-    }, [results, accounts, assets, assetPrices])
+    }, [results, accounts, hasAccounts, assets, assetPrices])
 
     return {
         accountBalances,

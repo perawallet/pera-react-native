@@ -54,6 +54,28 @@ describe('logging', () => {
             )
         })
 
+        test('formats Error objects in context', () => {
+            const error = new Error('something broke')
+            logger.error('operation failed', { error })
+            expect(console.error).toHaveBeenCalledWith(
+                '[ERROR] operation failed',
+                expect.objectContaining({
+                    error: expect.objectContaining({
+                        name: 'Error',
+                        message: 'something broke',
+                    }),
+                }),
+            )
+        })
+
+        test('passes non-Error context values through as-is', () => {
+            logger.warn('something happened', { error: 'a string error' })
+            expect(console.warn).toHaveBeenCalledWith(
+                '[WARN] something happened',
+                { error: 'a string error' },
+            )
+        })
+
         test('does not log debug when level is INFO', () => {
             logger.setLevel(LogLevel.INFO)
             logger.debug('should not show')

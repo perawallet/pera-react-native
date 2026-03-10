@@ -43,6 +43,7 @@ export default defineConfig({
                 '@perawallet/wallet-core-accounts',
                 '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-core-shared',
+                '@perawallet/wallet-extension-provider',
             ],
         },
     },

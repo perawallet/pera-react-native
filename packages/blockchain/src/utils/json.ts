@@ -13,6 +13,7 @@
 import { encodeAlgorandAddress } from './addresses'
 
 const BIGINT_TAG = '__bigint__'
+const MAP_TAG = '__map__'
 
 export const algorandSafeJsonStringify = (value: unknown) => {
     return JSON.stringify(
@@ -45,6 +46,9 @@ export const algorandSafeQuerySerialize = (value: unknown): string => {
         if (typeof value === 'bigint') {
             return `${BIGINT_TAG}${value.toString()}`
         }
+        if (value instanceof Map) {
+            return { [MAP_TAG]: Array.from(value.entries()) }
+        }
         return value
     })
 }
@@ -57,6 +61,14 @@ export const algorandSafeQueryParse = <T = unknown>(data: string): T => {
     return JSON.parse(data, (_key, value) => {
         if (typeof value === 'string' && value.startsWith(BIGINT_TAG)) {
             return BigInt(value.slice(BIGINT_TAG.length))
+        }
+        if (
+            value !== null &&
+            typeof value === 'object' &&
+            MAP_TAG in value &&
+            Array.isArray(value[MAP_TAG])
+        ) {
+            return new Map(value[MAP_TAG])
         }
         return value
     })

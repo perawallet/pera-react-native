@@ -44,7 +44,7 @@ describe('KeyManagerStore', () => {
     it('should get a key', () => {
         const key: KeyPair = {
             id: '123',
-            privateDataStorageKey: 'path/to/key',
+            keystoreKeyId: 'ks-key-123',
             publicKey: 'public-key',
             createdAt: new Date(),
             type: KeyType.HDWalletDerivedKey,
@@ -62,7 +62,7 @@ describe('KeyManagerStore', () => {
     it('should remove an expired key', () => {
         const key: KeyPair = {
             id: '123',
-            privateDataStorageKey: 'path/to/key',
+            keystoreKeyId: 'ks-key-123',
             publicKey: 'public-key',
             createdAt: new Date(),
             expiresAt: new Date(Date.now() - 1000),
@@ -83,7 +83,7 @@ describe('KeyManagerStore', () => {
     it('should add a key', () => {
         const key: KeyPair = {
             id: '123',
-            privateDataStorageKey: 'path/to/key',
+            keystoreKeyId: 'ks-key-123',
             publicKey: 'public-key',
             createdAt: new Date(),
             type: KeyType.HDWalletDerivedKey,
@@ -102,7 +102,7 @@ describe('KeyManagerStore', () => {
     it('should remove a key', () => {
         const key: KeyPair = {
             id: '123',
-            privateDataStorageKey: 'path/to/key',
+            keystoreKeyId: 'ks-key-123',
             publicKey: 'public-key',
             createdAt: new Date(),
             type: KeyType.HDWalletDerivedKey,
@@ -125,7 +125,7 @@ describe('KeyManagerStore', () => {
     it('should persist and rehydrate correctly', () => {
         const key: KeyPair = {
             id: '123',
-            privateDataStorageKey: 'path/to/key',
+            keystoreKeyId: 'ks-key-123',
             publicKey: 'public-key',
             createdAt: new Date(),
             type: KeyType.HDWalletDerivedKey,

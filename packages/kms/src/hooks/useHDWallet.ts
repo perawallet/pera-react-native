@@ -10,87 +10,175 @@
  limitations under the License
  */
 
-import type { HDDerivationParams, KMSHDWalletSession } from '../models/session'
+import type { KMSHDWalletSession } from '../models/session'
+import { fromSeed, KeyContext } from '@algorandfoundation/xhd-wallet-api'
 import { KeyPair, KeyType } from '../models'
-import {
-    getEntropyFromMasterKey,
-    getSeedFromMasterKey,
-    makeKeyPair,
-} from '../utils'
-import {
-    encodeToBase64,
-    generateOrderedUniqueId,
-} from '@perawallet/wallet-core-shared'
-import { InvalidKeyError } from '../errors'
+import { makeKeyPair } from '../utils'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { KeyManagementError } from '../errors'
 import { useKMSService } from './useKMSServices'
 import {
-    deriveAddress,
     entropyToMnemonic,
     generateHDMasterKey,
-    signData,
-    signTransaction,
 } from '../crypto/hdwallet-utils'
+import type { KeyData, KeyId } from '@algorandfoundation/keystore'
+
+export type HDWalletKeyResult = {
+    keyPair: KeyPair
+    entropyKeyId: KeyId
+}
 
 export const useHDWallet = () => {
-    const { saveKey, executeWithKey } = useKMSService()
+    const { saveKey, checkAccess, keyStore, withExportedKey } = useKMSService()
 
     const createHDWalletKey = async (params?: {
         id?: string
         mnemonic?: string
-    }) => {
+    }): Promise<HDWalletKeyResult> => {
         const keyId = params?.id ?? generateOrderedUniqueId()
         const masterKey = await generateHDMasterKey(params?.mnemonic)
 
+        // Convert BIP39 seed to XHD root key (96 bytes: kL || kR || chainCode)
+        const rootKey = fromSeed(masterKey.seed)
+
+        // Import root key into keystore without entropy in metadata
+        const keystoreKeyId = await keyStore.import(
+            {
+                type: 'hd-root-key',
+                algorithm: 'raw',
+                extractable: true,
+                keyUsages: ['deriveKey', 'deriveBits'],
+                privateKey: rootKey,
+                metadata: { name: keyId },
+            },
+            'raw',
+        )
+
+        // Import entropy as a separate keystore key for mnemonic recovery
+        const entropyBytes = Buffer.from(masterKey.entropy, 'hex')
+        let entropyKeyId: KeyId
+        try {
+            entropyKeyId = await keyStore.import(
+                {
+                    id: `${keyId}-entropy`,
+                    type: 'hd-seed',
+                    algorithm: 'raw',
+                    extractable: true,
+                    privateKey: new Uint8Array(entropyBytes),
+                } as unknown as Omit<KeyData, 'id'>,
+                'raw',
+            )
+        } catch (e) {
+            await keyStore.remove(keystoreKeyId)
+            throw e
+        }
+
+        masterKey.seed.fill(0)
+        rootKey.fill(0)
+        entropyBytes.fill(0)
+
         const keyPair = makeKeyPair({
             id: keyId,
+            keystoreKeyId,
             type: KeyType.HDWalletRootKey,
         })
 
-        const savedKey = await saveKey(keyPair, {
-            seed: encodeToBase64(masterKey.seed),
-            seedFormat: 'base64',
-            entropy: masterKey.entropy,
-        })
-        masterKey.seed.fill(0)
+        return { keyPair: await saveKey(keyPair), entropyKeyId }
+    }
 
-        return savedKey
+    const generateDerivedKey = async (
+        keystoreRootKeyId: string,
+        account: number,
+        keyIndex: number,
+        derivationType: number,
+    ): Promise<string> => {
+        return keyStore.generate({
+            type: 'hd-derived-ed25519',
+            algorithm: 'EdDSA',
+            extractable: false,
+            keyUsages: ['sign'],
+            params: {
+                parentKeyId: keystoreRootKeyId,
+                account,
+                index: keyIndex,
+                context: KeyContext.Address,
+                derivation: derivationType,
+            },
+        })
     }
 
     const withHDSession = async <T>(
         key: KeyPair,
         domain: string,
         handler: (session: KMSHDWalletSession) => Promise<T>,
+        entropyKeyId?: string,
     ): Promise<T> => {
-        return executeWithKey(key, domain, async privateData => {
-            const seedBuffer = Buffer.from(getSeedFromMasterKey(privateData))
-            const session: KMSHDWalletSession = {
-                signTransaction: (
-                    params: HDDerivationParams,
-                    encodedTx: Uint8Array,
-                ) => signTransaction(seedBuffer, params, encodedTx),
-                signData: (params: HDDerivationParams, data: Uint8Array) =>
-                    signData(seedBuffer, params, data),
-                getPublicKey: (params: HDDerivationParams) =>
-                    deriveAddress(seedBuffer, params),
-                getMnemonic: () => {
-                    const entropy = getEntropyFromMasterKey(privateData)
-                    if (!entropy) {
-                        throw new InvalidKeyError(key.id ?? 'unknown')
-                    }
-                    return entropyToMnemonic(Buffer.from(entropy))
-                },
-            }
+        checkAccess(key, domain)
 
-            try {
-                return await handler(session)
-            } finally {
-                seedBuffer.fill(0)
-            }
-        })
+        const keystoreKeyId = key.keystoreKeyId
+
+        if (!keystoreKeyId) {
+            throw new KeyManagementError('Key does not have a keystore key ID')
+        }
+
+        const session: KMSHDWalletSession = {
+            getPublicKey: async params => {
+                const derivedKeyId = await generateDerivedKey(
+                    keystoreKeyId,
+                    params.account,
+                    params.keyIndex,
+                    params.derivationType,
+                )
+                return withExportedKey(derivedKeyId, keyData => {
+                    if (!keyData.publicKey) {
+                        throw new KeyManagementError(
+                            'Derived key does not have a public key',
+                        )
+                    }
+                    return keyData.publicKey
+                })
+            },
+            signTransaction: async (params, encodedTx) => {
+                const derivedKeyId = await generateDerivedKey(
+                    keystoreKeyId,
+                    params.account,
+                    params.keyIndex,
+                    params.derivationType,
+                )
+                return keyStore.sign(derivedKeyId, encodedTx)
+            },
+            signData: async (params, data) => {
+                const derivedKeyId = await generateDerivedKey(
+                    keystoreKeyId,
+                    params.account,
+                    params.keyIndex,
+                    params.derivationType,
+                )
+                return keyStore.sign(derivedKeyId, data)
+            },
+            getMnemonic: async () => {
+                if (!entropyKeyId) {
+                    throw new KeyManagementError('Entropy key ID not provided')
+                }
+                return withExportedKey(entropyKeyId, entropyKeyData => {
+                    if (!entropyKeyData.privateKey) {
+                        throw new KeyManagementError(
+                            'Entropy key not found in keystore',
+                        )
+                    }
+                    return entropyToMnemonic(
+                        Buffer.from(entropyKeyData.privateKey),
+                    )
+                })
+            },
+        }
+
+        return handler(session)
     }
 
     return {
         createHDWalletKey,
+        generateDerivedKey,
         withHDSession,
     }
 }

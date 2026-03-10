@@ -47,18 +47,15 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
-const mockSession = vi.hoisted(() => ({
-    getPublicKey: vi.fn(),
-}))
+const mockKeyStoreExport = vi.fn()
 
 const kmsMock = vi.hoisted(() => ({
     getKey: vi.fn(),
     getKeyOrThrow: vi.fn(),
     createHDWalletKey: vi.fn(),
     createAlgo25Key: vi.fn(),
-    withHDSession: vi.fn(async (_key: any, _domain: any, handler: any) =>
-        handler(mockSession),
-    ),
+    generateDerivedKey: vi.fn(),
+    withExportedKey: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-kms', async () => {
@@ -105,26 +102,39 @@ describe('useImportAccount', () => {
         kmsMock.getKeyOrThrow.mockReset()
         kmsMock.createHDWalletKey.mockReset()
         kmsMock.createAlgo25Key.mockReset()
-        kmsMock.withHDSession.mockReset()
+        kmsMock.generateDerivedKey.mockReset()
+        kmsMock.withExportedKey.mockReset()
+        mockKeyStoreExport.mockReset()
 
         kmsMock.getKey.mockReturnValue(null)
         kmsMock.getKeyOrThrow.mockReturnValue(null)
         kmsMock.createHDWalletKey.mockResolvedValue({
-            id: 'WALLET1',
-            type: KeyType.HDWalletRootKey,
-            publicKey: '',
+            keyPair: {
+                id: 'WALLET1',
+                type: KeyType.HDWalletRootKey,
+                publicKey: '',
+                keystoreKeyId: 'ks-root-1',
+            },
+            entropyKeyId: 'ks-entropy-1',
         })
         kmsMock.createAlgo25Key.mockResolvedValue({
-            id: 'WALLET1',
-            type: KeyType.Algo25Key,
-            publicKey: 'ALGO25_PUBLIC_KEY',
+            keyPair: {
+                id: 'WALLET1',
+                type: KeyType.Algo25Key,
+                publicKey: 'ALGO25_PUBLIC_KEY',
+            },
+            seedKeyId: 'ks-seed-1',
         })
-        kmsMock.withHDSession.mockImplementation(
-            async (_key: any, _domain: any, handler: any) =>
-                handler(mockSession),
+        kmsMock.generateDerivedKey.mockResolvedValue('ks-derived-1')
+        mockKeyStoreExport.mockResolvedValue({
+            publicKey: new Uint8Array(32).fill(2),
+        })
+        kmsMock.withExportedKey.mockImplementation(
+            async (keyId: string, handler: (keyData: any) => any) => {
+                const keyData = await mockKeyStoreExport(keyId)
+                return handler(keyData)
+            },
         )
-        mockSession.getPublicKey.mockReset()
-        mockSession.getPublicKey.mockResolvedValue(new Uint8Array(32).fill(2))
     })
 
     test('imports HD wallet account with mnemonic', async () => {
@@ -133,6 +143,7 @@ describe('useImportAccount', () => {
             id: 'WALLET1',
             type: KeyType.HDWalletRootKey,
             publicKey: '',
+            keystoreKeyId: 'ks-root-1',
         })
 
         uuidSpies.v7
@@ -155,6 +166,7 @@ describe('useImportAccount', () => {
         expect(imported.address).toBeTruthy()
         expect(imported.type).toBe('hdWallet')
         expect(imported.keyPairId).toBe('WALLET1')
+        expect(imported.entropyKeyId).toBe('ks-entropy-1')
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
 
@@ -182,8 +194,9 @@ describe('useImportAccount', () => {
             id: 'WALLET1',
             type: KeyType.HDWalletRootKey,
             publicKey: '',
+            keystoreKeyId: 'ks-root-1',
         })
-        mockSession.getPublicKey.mockRejectedValueOnce(
+        kmsMock.generateDerivedKey.mockRejectedValueOnce(
             new Error('Address generation failed'),
         )
 
@@ -202,25 +215,24 @@ describe('useImportAccount', () => {
     })
 
     test('imports algo25 account with mnemonic', async () => {
-        // createAlgo25Key called twice:
-        // 1st: in useImportAccount with mnemonic
-        // 2nd: in createAlgo25WalletAccount without mnemonic
-        kmsMock.createAlgo25Key
-            .mockResolvedValueOnce({
+        // createAlgo25Key returns { keyPair, seedKeyId }
+        // Then createAlgo25WalletAccount is called with id + seedKeyId
+        // getKey returns the existing key so createAlgo25Key isn't called again
+        kmsMock.createAlgo25Key.mockResolvedValueOnce({
+            keyPair: {
                 id: 'WALLET1',
                 type: KeyType.Algo25Key,
-                publicKey: '',
-            })
-            .mockResolvedValueOnce({
-                id: 'KEY2',
-                type: KeyType.Algo25Key,
                 publicKey: 'ALGO25_PUBLIC_KEY',
-            })
+            },
+            seedKeyId: 'ks-seed-1',
+        })
+        kmsMock.getKey.mockReturnValueOnce({
+            id: 'WALLET1',
+            type: KeyType.Algo25Key,
+            publicKey: 'ALGO25_PUBLIC_KEY',
+        })
 
-        uuidSpies.v7
-            .mockImplementationOnce(() => 'WALLET1')
-            .mockImplementationOnce(() => 'KEY2')
-            .mockImplementationOnce(() => 'ACC1')
+        uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
 
         const { result } = renderHook(() => useImportAccount())
 
@@ -232,12 +244,13 @@ describe('useImportAccount', () => {
             })
         })
 
-        expect(kmsMock.createAlgo25Key).toHaveBeenNthCalledWith(1, {
+        expect(kmsMock.createAlgo25Key).toHaveBeenCalledWith({
             mnemonic: 'test mnemonic',
         })
         expect(imported.address).toBe('ALGO25_PUBLIC_KEY')
         expect(imported.type).toBe('algo25')
-        expect(imported.keyPairId).toBe('KEY2')
+        expect(imported.keyPairId).toBe('WALLET1')
+        expect(imported.seedKeyId).toBe('ks-seed-1')
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
 

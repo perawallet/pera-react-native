@@ -50,7 +50,8 @@ const aliasMap = {
 
 // Crypto polyfill map
 const polyfillMap = {
-    // Node.js core modules
+    // Node.js core modules (including node: prefix variants)
+    'node:crypto': path.resolve(projectRoot, 'node_modules/react-native-quick-crypto'),
     'crypto': path.resolve(projectRoot, 'node_modules/react-native-quick-crypto'),
     'buffer': path.resolve(projectRoot, 'node_modules/@craftzdog/react-native-buffer'),
     'stream': path.resolve(projectRoot, 'node_modules/readable-stream'),
@@ -72,6 +73,12 @@ const customResolveRequest = (context, moduleName, platform) => {
             const fullPath = path.join(aliasPath, modulePath);
             return context.resolveRequest(context, fullPath, platform);
         }
+    }
+
+    // Resolve @algorandfoundation/algokit-utils/algo25 subpath to its actual directory
+    if (moduleName === '@algorandfoundation/algokit-utils/algo25') {
+        const pkgPath = path.dirname(require.resolve('@algorandfoundation/algokit-utils/package.json'));
+        return context.resolveRequest(context, path.resolve(pkgPath, 'algo25'), platform);
     }
 
     // Handle crypto polyfills - resolve from mobile app's node_modules

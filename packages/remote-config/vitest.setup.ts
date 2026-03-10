@@ -34,3 +34,15 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
         },
     }),
 }))
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: vi.fn(() => ({
+        keyValueStorage: {
+            getItem: (key: string) => store.get(key) ?? null,
+            setItem: (key: string, value: string) => store.set(key, value),
+            removeItem: (key: string) => {
+                store.delete(key)
+            },
+        },
+    })),
+}))

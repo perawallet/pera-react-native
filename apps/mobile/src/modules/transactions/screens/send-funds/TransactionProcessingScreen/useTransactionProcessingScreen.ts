@@ -29,6 +29,7 @@ import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import { useLanguage } from '@hooks/useLanguage'
 import { config } from '@perawallet/wallet-core-config'
+import { logger } from '@perawallet/wallet-core-shared'
 
 export const useTransactionProcessingScreen = () => {
     const navigation =
@@ -77,6 +78,7 @@ export const useTransactionProcessingScreen = () => {
                 })
             })
             .catch(error => {
+                logger.error('Transaction failed', { error })
                 showToast(
                     {
                         title: t('transactions.processing_error.title'),

@@ -17,23 +17,16 @@
  * requires: @algorandfoundation/algokit-utils: ^10
  */
 import { type AlgorandClient } from '@algorandfoundation/algokit-utils/types/algorand-client'
-import {
-    ABIReturn,
-    ABIStructType,
-    Arc56Contract,
-    getStructValueFromTupleValue,
-} from '@algorandfoundation/algokit-utils/abi'
+import { Arc56Contract } from '@algorandfoundation/algokit-utils/abi'
 import {
     OnApplicationComplete,
     TransactionSigner,
     Transaction,
 } from '@algorandfoundation/algokit-utils/transact'
-import { SimulateResponse } from '@algorandfoundation/algokit-utils/algod-client'
-import { Address, encodeAddress } from '@algorandfoundation/algokit-utils'
+import { type SimulateResponse } from '@algorandfoundation/algokit-utils/algod-client'
 import {
     AppClientMethodCallParams,
     AppClientCompilationParams,
-    AppClientDeployParams,
     CallOnComplete,
     AppClient as _AppClient,
     AppClientParams,
@@ -47,7 +40,6 @@ import {
     SendTransactionComposerResults,
 } from '@algorandfoundation/algokit-utils/types/transaction'
 import {
-    AppFactoryCreateMethodCallParams,
     AppFactoryAppClientParams,
     AppFactoryDeployParams,
     AppFactoryParams,
@@ -211,6 +203,7 @@ export interface BinaryState {
     asString(): string | undefined
 }
 
+// @ts-expect-error Generated code - class is available for use by generated methods
 class BinaryStateValue implements BinaryState {
     constructor(private value: Uint8Array | undefined) {}
 

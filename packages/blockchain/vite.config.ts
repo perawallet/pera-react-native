@@ -44,6 +44,7 @@ export default defineConfig({
                 '@perawallet/wallet-core-shared',
                 '@algorandfoundation/algokit-utils',
                 'zod',
+                '@perawallet/wallet-extension-provider',
             ],
         },
     },

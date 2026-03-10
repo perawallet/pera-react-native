@@ -12,27 +12,32 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { useKMSService } from '../useKMSServices'
-import {
-    AccessControlPermission,
-    KeyPair,
-    KeyType,
-    StoredKeyMaterial,
-} from '../../models'
+import { useKMSService, checkAccess } from '../useKMSServices'
+import { AccessControlPermission, KeyPair, KeyType } from '../../models'
 import { KeyAccessError } from '../../errors'
 
-const mockSetItem = vi.fn()
-const mockGetItem = vi.fn()
-const mockRemoveItem = vi.fn()
+const mockKeyStoreRemove = vi.fn()
+const mockKeyStoreImport = vi.fn()
+const mockKeyStoreSign = vi.fn()
+const mockKeyStoreExport = vi.fn()
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
-        secureStorage: {
-            setItem: mockSetItem,
-            getItem: mockGetItem,
-            removeItem: mockRemoveItem,
+        key: {
+            store: {
+                remove: mockKeyStoreRemove,
+                import: mockKeyStoreImport,
+                sign: mockKeyStoreSign,
+                export: mockKeyStoreExport,
+            },
         },
     }),
+}))
+
+const mockClearKeyData = vi.fn()
+
+vi.mock('@algorandfoundation/keystore', () => ({
+    clearKeyData: (...args: any[]) => mockClearKeyData(...args),
 }))
 
 const mockAddKey = vi.fn()
@@ -72,115 +77,34 @@ describe('useKMSService', () => {
     })
 
     describe('saveKey', () => {
-        test('stores key data in secure storage and adds to store', async () => {
+        test('adds key to store and returns it', async () => {
             const key: KeyPair = {
                 id: 'key-1',
                 publicKey: 'TESTADDR',
                 type: KeyType.Algo25Key,
-                privateDataStorageKey: '',
+                keystoreKeyId: 'ks-key-1',
                 createdAt: new Date(),
             }
-            const keyData: StoredKeyMaterial = {
-                seed: btoa('secret'),
-                seedFormat: 'base64',
-            }
 
             const { result } = renderHook(() => useKMSService())
 
             let savedKey: KeyPair | undefined
             await act(async () => {
-                savedKey = await result.current.saveKey(key, keyData)
+                savedKey = await result.current.saveKey(key)
             })
 
-            expect(mockSetItem).toHaveBeenCalledTimes(1)
-            expect(mockSetItem.mock.calls[0][0]).toBe(
-                `${KeyType.Algo25Key}-TESTADDR`,
-            )
-            const storedValue = mockSetItem.mock.calls[0][1]
-            expect(storedValue.constructor.name).toBe('Uint8Array')
-            expect(mockAddKey).toHaveBeenCalledWith(savedKey)
-            expect(savedKey!.id).toBe('key-1')
-            expect(savedKey!.privateDataStorageKey).toBe(
-                `${KeyType.Algo25Key}-TESTADDR`,
-            )
-        })
-
-        test('generates uuid for id when not provided', async () => {
-            const key: KeyPair = {
-                publicKey: '',
-                type: KeyType.HDWalletRootKey,
-                privateDataStorageKey: '',
-            }
-            const keyData: StoredKeyMaterial = {
-                seed: btoa('secret'),
-                seedFormat: 'base64',
-            }
-
-            const { result } = renderHook(() => useKMSService())
-
-            let savedKey: KeyPair | undefined
-            await act(async () => {
-                savedKey = await result.current.saveKey(key, keyData)
-            })
-
-            expect(savedKey!.id).toBe('mock-uuid-v7')
-        })
-
-        test('uses storageKey with id when publicKey is empty', async () => {
-            const key: KeyPair = {
-                id: 'hd-key-1',
-                publicKey: '',
-                type: KeyType.HDWalletRootKey,
-                privateDataStorageKey: '',
-            }
-            const keyData: StoredKeyMaterial = {
-                seed: btoa('secret'),
-                seedFormat: 'base64',
-            }
-
-            const { result } = renderHook(() => useKMSService())
-
-            let savedKey: KeyPair | undefined
-            await act(async () => {
-                savedKey = await result.current.saveKey(key, keyData)
-            })
-
-            expect(savedKey!.privateDataStorageKey).toBe(
-                `${KeyType.HDWalletRootKey}-hd-key-1`,
-            )
-        })
-
-        test('stores serialized key data as encoded bytes', async () => {
-            const key: KeyPair = {
-                id: 'key-1',
-                publicKey: 'ADDR',
-                type: KeyType.Algo25Key,
-                privateDataStorageKey: '',
-            }
-            const keyData: StoredKeyMaterial = {
-                seed: 'dGVzdA==',
-                seedFormat: 'base64',
-            }
-
-            const { result } = renderHook(() => useKMSService())
-
-            await act(async () => {
-                await result.current.saveKey(key, keyData)
-            })
-
-            const storedBytes = mockSetItem.mock.calls[0][1] as Uint8Array
-            const decoded = JSON.parse(new TextDecoder().decode(storedBytes))
-            expect(decoded).toEqual(keyData)
+            expect(mockAddKey).toHaveBeenCalledWith(key)
+            expect(savedKey).toBe(key)
         })
     })
 
     describe('deleteKey', () => {
-        test('removes key from secure storage and store', async () => {
+        test('removes key from keystore extension and store', async () => {
             const key: KeyPair = {
                 id: 'key-1',
                 publicKey: 'ADDR',
                 type: KeyType.Algo25Key,
-                privateDataStorageKey: 'algo25-key-ADDR',
+                keystoreKeyId: 'ks-key-1',
             }
             mockGetKey.mockReturnValue(key)
 
@@ -190,7 +114,7 @@ describe('useKMSService', () => {
                 await result.current.deleteKey('key-1')
             })
 
-            expect(mockRemoveItem).toHaveBeenCalledWith('algo25-key-ADDR')
+            expect(mockKeyStoreRemove).toHaveBeenCalledWith('ks-key-1')
             expect(mockRemoveKey).toHaveBeenCalledWith('key-1')
         })
 
@@ -203,11 +127,11 @@ describe('useKMSService', () => {
                 await result.current.deleteKey('nonexistent')
             })
 
-            expect(mockRemoveItem).not.toHaveBeenCalled()
+            expect(mockKeyStoreRemove).not.toHaveBeenCalled()
             expect(mockRemoveKey).not.toHaveBeenCalled()
         })
 
-        test('skips secure storage removal when no privateDataStorageKey', async () => {
+        test('skips keystore removal when no keystoreKeyId', async () => {
             const key: KeyPair = {
                 id: 'key-1',
                 publicKey: 'ADDR',
@@ -221,84 +145,21 @@ describe('useKMSService', () => {
                 await result.current.deleteKey('key-1')
             })
 
-            expect(mockRemoveItem).not.toHaveBeenCalled()
+            expect(mockKeyStoreRemove).not.toHaveBeenCalled()
             expect(mockRemoveKey).toHaveBeenCalledWith('key-1')
         })
     })
 
-    describe('executeWithKey', () => {
+    describe('checkAccess', () => {
         const makeKey = (overrides?: Partial<KeyPair>): KeyPair => ({
             id: 'key-1',
             publicKey: 'ADDR',
             type: KeyType.Algo25Key,
-            privateDataStorageKey: 'algo25-key-ADDR',
+            keystoreKeyId: 'ks-key-1',
             ...overrides,
         })
 
-        const mockStoredData: StoredKeyMaterial = {
-            seed: btoa('test-seed'),
-            seedFormat: 'base64',
-        }
-
-        test('retrieves private key and calls handler', async () => {
-            const key = makeKey()
-            const encoded = new TextEncoder().encode(
-                JSON.stringify(mockStoredData),
-            )
-            mockGetItem.mockResolvedValue(encoded)
-
-            const handler = vi.fn().mockResolvedValue('result')
-
-            const { result } = renderHook(() => useKMSService())
-
-            let execResult: any
-            await act(async () => {
-                execResult = await result.current.executeWithKey(
-                    key,
-                    'test-domain',
-                    handler,
-                )
-            })
-
-            expect(mockGetItem).toHaveBeenCalledWith('algo25-key-ADDR')
-            expect(handler).toHaveBeenCalledWith(mockStoredData)
-            expect(execResult).toBe('result')
-        })
-
-        test('throws KeyAccessError when privateDataStorageKey is missing', async () => {
-            const key = makeKey({ privateDataStorageKey: undefined })
-
-            const { result } = renderHook(() => useKMSService())
-
-            await expect(
-                act(async () => {
-                    await result.current.executeWithKey(
-                        key,
-                        'test-domain',
-                        vi.fn(),
-                    )
-                }),
-            ).rejects.toThrow(KeyAccessError)
-        })
-
-        test('throws KeyAccessError when no private key found in storage', async () => {
-            const key = makeKey()
-            mockGetItem.mockResolvedValue(null)
-
-            const { result } = renderHook(() => useKMSService())
-
-            await expect(
-                act(async () => {
-                    await result.current.executeWithKey(
-                        key,
-                        'test-domain',
-                        vi.fn(),
-                    )
-                }),
-            ).rejects.toThrow(KeyAccessError)
-        })
-
-        test('allows access when ACL grants ReadPrivate for domain', async () => {
+        test('allows access when ACL grants ReadPrivate for domain', () => {
             const key = makeKey({
                 acl: [
                     {
@@ -307,28 +168,11 @@ describe('useKMSService', () => {
                     },
                 ],
             })
-            const encoded = new TextEncoder().encode(
-                JSON.stringify(mockStoredData),
-            )
-            mockGetItem.mockResolvedValue(encoded)
 
-            const handler = vi.fn().mockResolvedValue('ok')
-
-            const { result } = renderHook(() => useKMSService())
-
-            let execResult: any
-            await act(async () => {
-                execResult = await result.current.executeWithKey(
-                    key,
-                    'test-domain',
-                    handler,
-                )
-            })
-
-            expect(execResult).toBe('ok')
+            expect(() => checkAccess(key, 'test-domain')).not.toThrow()
         })
 
-        test('throws KeyAccessError when ACL denies access for domain', async () => {
+        test('throws KeyAccessError when ACL denies access for domain', () => {
             const key = makeKey({
                 acl: [
                     {
@@ -338,20 +182,12 @@ describe('useKMSService', () => {
                 ],
             })
 
-            const { result } = renderHook(() => useKMSService())
-
-            await expect(
-                act(async () => {
-                    await result.current.executeWithKey(
-                        key,
-                        'test-domain',
-                        vi.fn(),
-                    )
-                }),
-            ).rejects.toThrow(KeyAccessError)
+            expect(() => checkAccess(key, 'test-domain')).toThrow(
+                KeyAccessError,
+            )
         })
 
-        test('throws KeyAccessError when ACL lacks ReadPrivate permission', async () => {
+        test('throws KeyAccessError when ACL lacks ReadPrivate permission', () => {
             const key = makeKey({
                 acl: [
                     {
@@ -361,131 +197,120 @@ describe('useKMSService', () => {
                 ],
             })
 
-            const { result } = renderHook(() => useKMSService())
-
-            await expect(
-                act(async () => {
-                    await result.current.executeWithKey(
-                        key,
-                        'test-domain',
-                        vi.fn(),
-                    )
-                }),
-            ).rejects.toThrow(KeyAccessError)
+            expect(() => checkAccess(key, 'test-domain')).toThrow(
+                KeyAccessError,
+            )
         })
 
-        test('skips ACL check when key has no ACL', async () => {
+        test('allows access when key has no ACL', () => {
             const key = makeKey({ acl: undefined })
-            const encoded = new TextEncoder().encode(
-                JSON.stringify(mockStoredData),
-            )
-            mockGetItem.mockResolvedValue(encoded)
 
-            const handler = vi.fn().mockResolvedValue('ok')
+            expect(() => checkAccess(key, 'test-domain')).not.toThrow()
+        })
+
+        test('allows access when key has empty ACL', () => {
+            const key = makeKey({ acl: [] })
+
+            expect(() => checkAccess(key, 'test-domain')).not.toThrow()
+        })
+
+        test('is returned from useKMSService hook', () => {
+            const { result } = renderHook(() => useKMSService())
+
+            expect(result.current.checkAccess).toBe(checkAccess)
+        })
+    })
+
+    describe('keyStore', () => {
+        test('exposes the keystore API', () => {
+            const { result } = renderHook(() => useKMSService())
+
+            expect(result.current.keyStore).toBeDefined()
+            expect(result.current.keyStore.remove).toBe(mockKeyStoreRemove)
+            expect(result.current.keyStore.import).toBe(mockKeyStoreImport)
+            expect(result.current.keyStore.sign).toBe(mockKeyStoreSign)
+        })
+    })
+
+    describe('withExportedKey', () => {
+        test('exports key, passes it to handler, and returns result', async () => {
+            const mockKeyData = {
+                publicKey: new Uint8Array(32).fill(1),
+                privateKey: new Uint8Array(64).fill(2),
+            }
+            mockKeyStoreExport.mockResolvedValue(mockKeyData)
 
             const { result } = renderHook(() => useKMSService())
 
-            let execResult: any
+            let handlerResult: Uint8Array | undefined
             await act(async () => {
-                execResult = await result.current.executeWithKey(
-                    key,
-                    'test-domain',
-                    handler,
+                handlerResult = await result.current.withExportedKey(
+                    'ks-key-1',
+                    keyData => keyData.publicKey!,
                 )
             })
 
-            expect(execResult).toBe('ok')
+            expect(mockKeyStoreExport).toHaveBeenCalledWith('ks-key-1')
+            expect(handlerResult).toBe(mockKeyData.publicKey)
         })
 
-        test('re-throws AppError from handler without wrapping', async () => {
-            const key = makeKey()
-            const encoded = new TextEncoder().encode(
-                JSON.stringify(mockStoredData),
-            )
-            mockGetItem.mockResolvedValue(encoded)
-
-            const appError = new KeyAccessError()
-            const handler = vi.fn().mockRejectedValue(appError)
-
-            const { result } = renderHook(() => useKMSService())
-
-            await expect(
-                act(async () => {
-                    await result.current.executeWithKey(
-                        key,
-                        'test-domain',
-                        handler,
-                    )
-                }),
-            ).rejects.toBe(appError)
-        })
-
-        test('wraps non-AppError from handler in KeyAccessError', async () => {
-            const key = makeKey()
-            const encoded = new TextEncoder().encode(
-                JSON.stringify(mockStoredData),
-            )
-            mockGetItem.mockResolvedValue(encoded)
-
-            const genericError = new Error('something broke')
-            const handler = vi.fn().mockRejectedValue(genericError)
-
-            const { result } = renderHook(() => useKMSService())
-
-            await expect(
-                act(async () => {
-                    await result.current.executeWithKey(
-                        key,
-                        'test-domain',
-                        handler,
-                    )
-                }),
-            ).rejects.toThrow(KeyAccessError)
-        })
-
-        test('zeros out private key memory after successful execution', async () => {
-            const key = makeKey()
-            const encoded = new TextEncoder().encode(
-                JSON.stringify(mockStoredData),
-            )
-            mockGetItem.mockResolvedValue(encoded)
-
-            const handler = vi.fn().mockResolvedValue('ok')
+        test('calls clearKeyData after handler completes', async () => {
+            const mockKeyData = {
+                publicKey: new Uint8Array(32).fill(1),
+                privateKey: new Uint8Array(64).fill(2),
+            }
+            mockKeyStoreExport.mockResolvedValue(mockKeyData)
 
             const { result } = renderHook(() => useKMSService())
 
             await act(async () => {
-                await result.current.executeWithKey(key, 'test-domain', handler)
+                await result.current.withExportedKey('ks-key-1', () => 'done')
             })
 
-            expect(encoded.every(byte => byte === 0)).toBe(true)
+            expect(mockClearKeyData).toHaveBeenCalledWith(mockKeyData)
         })
 
-        test('zeros out private key memory even when handler throws', async () => {
-            const key = makeKey()
-            const encoded = new TextEncoder().encode(
-                JSON.stringify(mockStoredData),
-            )
-            mockGetItem.mockResolvedValue(encoded)
-
-            const handler = vi.fn().mockRejectedValue(new Error('fail'))
+        test('calls clearKeyData even when handler throws', async () => {
+            const mockKeyData = {
+                publicKey: new Uint8Array(32).fill(1),
+                privateKey: new Uint8Array(64).fill(2),
+            }
+            mockKeyStoreExport.mockResolvedValue(mockKeyData)
 
             const { result } = renderHook(() => useKMSService())
 
-            try {
-                await act(async () => {
-                    await result.current.executeWithKey(
-                        key,
-                        'test-domain',
-                        handler,
-                    )
-                })
-            } catch {
-                // expected to throw
-            }
+            await expect(
+                act(async () => {
+                    await result.current.withExportedKey('ks-key-1', () => {
+                        throw new Error('handler failed')
+                    })
+                }),
+            ).rejects.toThrow('handler failed')
 
-            // Memory should still be zeroed despite the error
-            expect(encoded.every(byte => byte === 0)).toBe(true)
+            expect(mockClearKeyData).toHaveBeenCalledWith(mockKeyData)
+        })
+
+        test('works with async handlers', async () => {
+            const mockKeyData = {
+                privateKey: new Uint8Array(64).fill(3),
+                metadata: { mnemonic: 'test words' },
+            }
+            mockKeyStoreExport.mockResolvedValue(mockKeyData)
+
+            const { result } = renderHook(() => useKMSService())
+
+            let mnemonic: string | undefined
+            await act(async () => {
+                mnemonic = await result.current.withExportedKey(
+                    'ks-key-1',
+                    async keyData => {
+                        return keyData.metadata?.mnemonic as string
+                    },
+                )
+            })
+
+            expect(mnemonic).toBe('test words')
+            expect(mockClearKeyData).toHaveBeenCalledWith(mockKeyData)
         })
     })
 })

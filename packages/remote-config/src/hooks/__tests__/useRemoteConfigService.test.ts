@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
-import { registerTestPlatform } from '@perawallet/wallet-extension-provider'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { type RemoteConfigService } from '@perawallet/wallet-extension-platform'
 import { useRemoteConfig } from '../index'
 import type { RemoteConfigKey } from '../../models'
@@ -37,7 +37,9 @@ describe('services/remote-config/platform-service', () => {
             getNumberValue: vi.fn(() => 42),
         }
 
-        registerTestPlatform({ remoteConfig: dummy })
+        vi.mocked(getProvider).mockReturnValue({
+            remoteConfig: dummy,
+        } as ReturnType<typeof getProvider>)
 
         const svc = useRemoteConfig()
 
@@ -60,7 +62,9 @@ describe('services/remote-config/platform-service', () => {
             getNumberValue: vi.fn(() => 0),
         }
 
-        registerTestPlatform({ remoteConfig: dummy })
+        vi.mocked(getProvider).mockReturnValue({
+            remoteConfig: dummy,
+        } as ReturnType<typeof getProvider>)
 
         const mockOverrides = {
             string_key: 'overridden',

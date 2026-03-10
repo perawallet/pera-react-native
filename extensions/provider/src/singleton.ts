@@ -10,12 +10,29 @@
  limitations under the License
  */
 
+import { Store } from '@tanstack/store'
+import Hook from 'before-after-hook'
+import type { KeyStoreState } from '@algorandfoundation/keystore'
 import { PeraProvider } from './pera-provider'
 
-let instance: PeraProvider | null = new PeraProvider({
-    id: 'pera-wallet',
-    name: 'Pera Wallet',
+const keystoreStore = new Store<KeyStoreState>({
+    keys: [],
+    status: 'idle',
 })
+const keystoreHooks = new Hook.Collection()
+
+let instance: PeraProvider | null = new PeraProvider(
+    {
+        id: 'pera-wallet',
+        name: 'Pera Wallet',
+    },
+    {
+        keystore: {
+            store: keystoreStore,
+            hooks: keystoreHooks,
+        },
+    },
+)
 
 /**
  * Returns the provider singleton. Throws if called before `initializeProvider()`.

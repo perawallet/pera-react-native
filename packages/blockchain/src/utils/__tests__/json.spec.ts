@@ -182,4 +182,54 @@ describe('algorandSafeQuerySerialize / algorandSafeQueryParse', () => {
         expect(parsed.assets[0].assetId).toBe(123n)
         expect(parsed.assets[0].amount).toBe(1000n)
     })
+
+    it('round-trips Map objects', () => {
+        const input = {
+            balances: new Map([
+                ['ADDR1', { amount: 100n }],
+                ['ADDR2', { amount: 200n }],
+            ]),
+        }
+        const parsed = algorandSafeQueryParse(
+            algorandSafeQuerySerialize(input),
+        ) as typeof input
+
+        expect(parsed.balances).toBeInstanceOf(Map)
+        expect(parsed.balances.size).toBe(2)
+        expect(parsed.balances.get('ADDR1')).toEqual({ amount: 100n })
+        expect(parsed.balances.get('ADDR2')).toEqual({ amount: 200n })
+    })
+
+    it('round-trips empty Map', () => {
+        const input = { data: new Map() }
+        const parsed = algorandSafeQueryParse(
+            algorandSafeQuerySerialize(input),
+        ) as typeof input
+
+        expect(parsed.data).toBeInstanceOf(Map)
+        expect(parsed.data.size).toBe(0)
+    })
+
+    it('round-trips nested Maps with bigint values', () => {
+        const input = {
+            accounts: new Map([
+                [
+                    'ADDR1',
+                    {
+                        balance: 5_000_000n,
+                        assets: new Map([['123', { amount: 1000n }]]),
+                    },
+                ],
+            ]),
+        }
+        const parsed = algorandSafeQueryParse(
+            algorandSafeQuerySerialize(input),
+        ) as typeof input
+
+        expect(parsed.accounts).toBeInstanceOf(Map)
+        const account = parsed.accounts.get('ADDR1')
+        expect(account?.balance).toBe(5_000_000n)
+        expect(account?.assets).toBeInstanceOf(Map)
+        expect(account?.assets.get('123')).toEqual({ amount: 1000n })
+    })
 })

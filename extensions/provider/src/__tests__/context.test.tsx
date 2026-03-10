@@ -15,6 +15,26 @@ import { describe, expect, it } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { getProvider } from '../singleton'
 
+vi.mock('@algorandfoundation/react-native-keystore', () => ({
+    WithKeyStore: () => ({
+        key: { store: {} },
+    }),
+}))
+
+vi.mock('@tanstack/store', () => ({
+    Store: class MockStore {
+        constructor() {}
+    },
+}))
+
+vi.mock('before-after-hook', () => ({
+    default: {
+        Collection: class MockCollection {
+            constructor() {}
+        },
+    },
+}))
+
 import { PeraWalletProvider, usePeraProvider } from '../context'
 
 describe('PeraWalletProvider', () => {

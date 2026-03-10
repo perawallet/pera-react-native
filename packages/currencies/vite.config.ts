@@ -43,6 +43,7 @@ export default defineConfig({
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-extension-platform',
                 'decimal.js',
+                '@perawallet/wallet-extension-provider',
             ],
         },
     },

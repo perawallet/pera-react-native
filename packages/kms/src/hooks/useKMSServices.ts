@@ -10,48 +10,53 @@
  limitations under the License
  */
 
+import type { KeyStoreAPI, KeyData, KeyId } from '@algorandfoundation/keystore'
+import { clearKeyData } from '@algorandfoundation/keystore'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useKeyManagerStore } from '../store'
-import {
-    AppError,
-    generateOrderedUniqueId,
-    logger,
-} from '@perawallet/wallet-core-shared'
-import { AccessControlPermission, KeyPair, StoredKeyMaterial } from '../models'
+import { AccessControlPermission, KeyPair } from '../models'
 import { KeyAccessError } from '../errors'
 import { useCallback } from 'react'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 
-export const useKMSService = () => {
-    const secureStorage = getProvider().secureStorage
+export const checkAccess = (key: KeyPair, domain: string): void => {
+    if (key.acl?.length) {
+        const hasAccess = key.acl.some(
+            acl =>
+                acl.domains.includes(domain) &&
+                acl.permissions.includes(AccessControlPermission.ReadPrivate),
+        )
+
+        if (!hasAccess) {
+            throw new KeyAccessError()
+        }
+    }
+}
+
+type WithExportedKey = <T>(
+    keyId: KeyId,
+    handler: (keyData: KeyData) => T | Promise<T>,
+) => Promise<T>
+
+type UseKMSServiceResult = {
+    deleteKey: (id: string) => Promise<void>
+    saveKey: (key: KeyPair) => Promise<KeyPair>
+    checkAccess: typeof checkAccess
+    keyStore: KeyStoreAPI
+    withExportedKey: WithExportedKey
+}
+
+export const useKMSService = (): UseKMSServiceResult => {
+    const keyStore = getProvider().key.store
     const addKey = useKeyManagerStore(state => state.addKey)
     const getKey = useKeyManagerStore(state => state.getKey)
     const removeKey = useKeyManagerStore(state => state.removeKey)
 
     const saveKey = useCallback(
-        async (key: KeyPair, keyData: StoredKeyMaterial) => {
-            const storageKey = key.id ?? generateOrderedUniqueId()
-
-            const stringifiedObj = JSON.stringify(keyData)
-
-            const storageLocation = key.publicKey.length
-                ? `${key.type}-${key.publicKey}`
-                : `${key.type}-${storageKey}`
-            const modifiedKey: KeyPair = {
-                ...key,
-                id: storageKey,
-                privateDataStorageKey: storageLocation,
-                createdAt: new Date(),
-            }
-
-            await secureStorage.setItem(
-                storageLocation,
-                new TextEncoder().encode(stringifiedObj),
-            )
-            addKey(modifiedKey)
-
-            return modifiedKey
+        async (key: KeyPair) => {
+            addKey(key)
+            return key
         },
-        [addKey, secureStorage],
+        [addKey],
     )
 
     const deleteKey = useCallback(
@@ -61,72 +66,29 @@ export const useKMSService = () => {
                 return
             }
 
-            if (key.privateDataStorageKey) {
-                await secureStorage.removeItem(key.privateDataStorageKey)
+            if (key.keystoreKeyId) {
+                await keyStore.remove(key.keystoreKeyId)
             }
-            logger.debug('Deleting key', key)
+
             removeKey(id)
         },
-        [getKey, removeKey, secureStorage],
+        [getKey, removeKey, keyStore],
     )
 
-    const executeWithKey = useCallback(
-        async <T>(
-            key: KeyPair,
-            domain: string,
-            handler: (privateKey: StoredKeyMaterial) => Promise<T>,
-        ) => {
-            if (key.acl?.length) {
-                const hasAccess = key.acl.some(
-                    acl =>
-                        acl.domains.includes(domain) &&
-                        acl.permissions.includes(
-                            AccessControlPermission.ReadPrivate,
-                        ),
-                )
-
-                if (!hasAccess) {
-                    throw new KeyAccessError()
-                }
-            }
-
-            if (!key.privateDataStorageKey) {
-                throw new KeyAccessError()
-            }
-
-            const privateKey = await secureStorage.getItem(
-                key.privateDataStorageKey,
-            )
-
-            if (!privateKey) {
-                throw new KeyAccessError()
-            }
-
-            try {
-                const storedKey: StoredKeyMaterial = JSON.parse(
-                    new TextDecoder().decode(privateKey),
-                )
-                const result = await handler(storedKey)
-
-                return result
-            } catch (error) {
-                if (error instanceof AppError) {
-                    throw error
-                }
-                throw new KeyAccessError(error as Error)
-            } finally {
-                //blank out the memory again after using
-                if (privateKey) {
-                    privateKey.fill(0)
-                }
-            }
-        },
-        [secureStorage],
-    )
+    const withExportedKey: WithExportedKey = async (keyId, handler) => {
+        const keyData = await keyStore.export(keyId)
+        try {
+            return await handler(keyData)
+        } finally {
+            clearKeyData(keyData)
+        }
+    }
 
     return {
         deleteKey,
         saveKey,
-        executeWithKey,
+        checkAccess,
+        keyStore,
+        withExportedKey,
     }
 }
