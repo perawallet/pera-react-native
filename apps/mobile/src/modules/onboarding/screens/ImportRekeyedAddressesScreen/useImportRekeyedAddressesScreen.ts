@@ -20,7 +20,7 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
-import { useIsOnboarding } from '@modules/onboarding/hooks'
+import { useExitAccountFlow } from '@modules/onboarding/hooks'
 import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 
 type ImportRekeyedAddressesRouteProp = RouteProp<
@@ -50,7 +50,7 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
     const { t } = useLanguage()
     const allAccounts = useAllAccounts()
 
-    const { setIsOnboarding } = useIsOnboarding()
+    const { exitAccountFlow } = useExitAccountFlow()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { setAccounts } = useSetAccounts()
 
@@ -104,7 +104,7 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
         )
 
         if (accountsToAdd.length === 0) {
-            setIsOnboarding(false)
+            exitAccountFlow()
             return
         }
 
@@ -112,21 +112,21 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
         deferToNextCycle(() => {
             setAccounts([...allAccounts, ...accountsToAdd])
             setSelectedAccountAddress(accountsToAdd[0].address)
-            setIsOnboarding(false)
+            exitAccountFlow()
             setIsImporting(false)
         })
     }, [
         accounts,
         selectedAddresses,
         allAccounts,
-        setIsOnboarding,
+        exitAccountFlow,
         setSelectedAccountAddress,
         setAccounts,
     ])
 
     const handleSkip = useCallback(() => {
-        setIsOnboarding(false)
-    }, [setIsOnboarding])
+        exitAccountFlow()
+    }, [exitAccountFlow])
 
     const areAllImported = newAccounts.length === 0
     const canContinue = areAllImported || selectedAddresses.size > 0

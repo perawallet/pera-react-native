@@ -13,6 +13,7 @@
 import React from 'react'
 import { PWView, PWButton } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useStyles } from './styles'
 
 type ImportRekeyedAddressesFooterProps = {
@@ -26,7 +27,8 @@ export const ImportRekeyedAddressesFooter = ({
     onSkip,
     canContinue,
 }: ImportRekeyedAddressesFooterProps) => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const { t } = useLanguage()
 
     return (

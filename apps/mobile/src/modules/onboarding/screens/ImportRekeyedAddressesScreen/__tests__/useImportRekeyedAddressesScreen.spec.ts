@@ -20,7 +20,7 @@ import {
     useSelectedAccountAddress,
     AccountTypes,
 } from '@perawallet/wallet-core-accounts'
-import { useIsOnboarding } from '@modules/onboarding/hooks'
+import { useExitAccountFlow } from '@modules/onboarding/hooks'
 
 const MOCK_ACCOUNTS = [
     {
@@ -57,7 +57,7 @@ vi.mock('@hooks/useLanguage', () => ({
 }))
 
 vi.mock('@modules/onboarding/hooks', () => ({
-    useIsOnboarding: vi.fn(),
+    useExitAccountFlow: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -65,7 +65,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 }))
 
 describe('useImportRekeyedAddressesScreen', () => {
-    const mockSetIsOnboarding = vi.fn()
+    const mockExitAccountFlow = vi.fn()
     const mockSetAccounts = vi.fn()
     const mockSetSelectedAccountAddress = vi.fn()
 
@@ -88,9 +88,9 @@ describe('useImportRekeyedAddressesScreen', () => {
             setSelectedAccountAddress: mockSetSelectedAccountAddress,
         })
 
-        vi.mocked(useIsOnboarding).mockReturnValue({
-            setIsOnboarding: mockSetIsOnboarding,
-        } as unknown as ReturnType<typeof useIsOnboarding>)
+        vi.mocked(useExitAccountFlow).mockReturnValue({
+            exitAccountFlow: mockExitAccountFlow,
+        })
     })
 
     afterEach(() => {
@@ -157,10 +157,10 @@ describe('useImportRekeyedAddressesScreen', () => {
 
         expect(mockSetAccounts).toHaveBeenCalledWith(MOCK_ACCOUNTS)
         expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith('ACC1')
-        expect(mockSetIsOnboarding).toHaveBeenCalledWith(false)
+        expect(mockExitAccountFlow).toHaveBeenCalled()
     })
 
-    it('handleContinue exits onboarding without importing if no accounts selected', () => {
+    it('handleContinue exits flow without importing if no accounts selected', () => {
         const { result } = renderHook(() => useImportRekeyedAddressesScreen())
 
         expect(result.current.selectedAddresses.size).toBe(0)
@@ -169,17 +169,17 @@ describe('useImportRekeyedAddressesScreen', () => {
             result.current.handleContinue()
         })
 
-        expect(mockSetIsOnboarding).toHaveBeenCalledWith(false)
+        expect(mockExitAccountFlow).toHaveBeenCalled()
         expect(mockSetAccounts).not.toHaveBeenCalled()
         expect(mockSetSelectedAccountAddress).not.toHaveBeenCalled()
         expect(result.current.isImporting).toBe(false)
     })
 
-    it('handleSkip finishes onboarding', () => {
+    it('handleSkip exits the account flow', () => {
         const { result } = renderHook(() => useImportRekeyedAddressesScreen())
         act(() => {
             result.current.handleSkip()
         })
-        expect(mockSetIsOnboarding).toHaveBeenCalledWith(false)
+        expect(mockExitAccountFlow).toHaveBeenCalled()
     })
 })
