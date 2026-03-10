@@ -19,6 +19,7 @@ import {
     PWView,
 } from '@components/core'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
+import { getTestProps } from '@utils/test-id-helper'
 
 import { KeyValueRow } from '@components/KeyValueRow'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
@@ -168,6 +169,7 @@ export const TransactionConfirmationScreen = () => {
                 <PWButton
                     title={t('send_funds.confirmation.confirm_button')}
                     variant='primary'
+                    testID='send_confirm_button'
                     onPress={handleConfirm}
                 />
             </PWView>
