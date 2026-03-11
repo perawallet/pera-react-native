@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { forwardRef, useImperativeHandle, useRef } from 'react'
-import { TextInput } from 'react-native'
+import { ComponentType, forwardRef, useImperativeHandle, useRef } from 'react'
+import { TextInput, TextInputProps } from 'react-native'
 import { Input as RNEInput, InputProps as RNEInputProps } from '@rneui/themed'
 import { TypographyVariant } from '@theme/typography'
 import { useStyles } from './styles'
@@ -48,6 +48,7 @@ export type PWInputProps = {
     labelStyle?: RNEInputProps['labelStyle']
     testID?: string
     placeholderTextColor?: string
+    InputComponent?: ComponentType<TextInputProps>
 }
 
 export const PWInput = forwardRef<PWInputRef, PWInputProps>(
