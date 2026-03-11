@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { WalletAccount } from './accounts'
+import type { WalletAccount, AccountSortMode } from './accounts'
 import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 
 export * from './accounts'
@@ -19,7 +19,11 @@ export * from './balances'
 export type AccountsState = BaseStoreState & {
     accounts: WalletAccount[]
     selectedAccountAddress: string | null
+    sortMode: AccountSortMode
+    manualAccountOrder: string[]
     getSelectedAccount: () => WalletAccount | null
     setAccounts: (accounts: WalletAccount[]) => void
     setSelectedAccountAddress: (address: string | null) => void
+    setSortMode: (mode: AccountSortMode) => void
+    setManualAccountOrder: (order: string[]) => void
 }

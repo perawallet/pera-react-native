@@ -14,14 +14,35 @@ import { useCallback } from 'react'
 import {
     useAllAccounts,
     useSelectedAccountAddress,
+    useAccountBalancesQuery,
+    useSortedAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useModalState } from '@hooks/useModalState'
 import { AccountMenuProps } from './AccountMenu'
 
-export const useAccountMenu = (props: AccountMenuProps) => {
+type UseAccountMenuResult = {
+    sortedAccounts: WalletAccount[]
+    selectedAccountAddress: string | null
+    handleTap: (acct: WalletAccount) => void
+    isSortSheetVisible: boolean
+    handleOpenSort: () => void
+    handleCloseSort: () => void
+}
+
+export const useAccountMenu = (
+    props: AccountMenuProps,
+): UseAccountMenuResult => {
     const accounts = useAllAccounts()
     const { selectedAccountAddress, setSelectedAccountAddress } =
         useSelectedAccountAddress()
+    const { accountBalances } = useAccountBalancesQuery(accounts, true)
+    const { sortedAccounts } = useSortedAccounts(accounts, accountBalances)
+    const {
+        isOpen: isSortSheetVisible,
+        open: handleOpenSort,
+        close: handleCloseSort,
+    } = useModalState()
 
     const handleTap = useCallback(
         (acct: WalletAccount) => {
@@ -32,8 +53,11 @@ export const useAccountMenu = (props: AccountMenuProps) => {
     )
 
     return {
-        accounts,
+        sortedAccounts,
         selectedAccountAddress,
         handleTap,
+        isSortSheetVisible,
+        handleOpenSort,
+        handleCloseSort,
     }
 }

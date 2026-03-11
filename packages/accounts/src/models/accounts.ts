@@ -92,3 +92,14 @@ export type WatchAccount = BaseWalletAccount & {
 }
 
 export type AccountAddress = string
+
+export const AccountSortModes = {
+    alphabeticalAsc: 'alphabeticalAsc',
+    alphabeticalDesc: 'alphabeticalDesc',
+    balanceAsc: 'balanceAsc',
+    balanceDesc: 'balanceDesc',
+    manual: 'manual',
+} as const
+
+export type AccountSortMode =
+    (typeof AccountSortModes)[keyof typeof AccountSortModes]
