@@ -48,6 +48,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: ".tool-versions"
+          cache: "pnpm"
 
       - name: Restore node_modules
         uses: actions/cache/restore@v4
@@ -58,6 +59,9 @@ jobs:
             packages/*/node_modules
             extensions/*/node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install dependencies on cache miss
+        run: test -d node_modules || pnpm install --frozen-lockfile
 
       - name: ESLint
         run: pnpm run lint
@@ -86,6 +90,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: ".tool-versions"
+          cache: "pnpm"
 
       - name: Restore node_modules
         uses: actions/cache/restore@v4
@@ -96,6 +101,9 @@ jobs:
             packages/*/node_modules
             extensions/*/node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install dependencies on cache miss
+        run: test -d node_modules || pnpm install --frozen-lockfile
 
       - name: Build packages
         run: pnpm run build
@@ -126,6 +134,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: ".tool-versions"
+          cache: "pnpm"
 
       - name: Restore node_modules
         uses: actions/cache/restore@v4
@@ -136,6 +145,9 @@ jobs:
             packages/*/node_modules
             extensions/*/node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install dependencies on cache miss
+        run: test -d node_modules || pnpm install --frozen-lockfile
 
       - name: Restore build artifacts
         uses: actions/cache/restore@v4
