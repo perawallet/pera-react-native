@@ -19,7 +19,11 @@ import {
 import type { PeraTransactionType } from '@perawallet/wallet-core-blockchain'
 import { useStyles } from './styles'
 
-export type TransactionIconType = PeraTransactionType | 'group'
+export type TransactionIconType =
+    | PeraTransactionType
+    | 'group'
+    | 'send'
+    | 'receive'
 
 export type TransactionIconProps = {
     type: TransactionIconType
@@ -36,6 +40,8 @@ const iconNameMap: Record<TransactionIconType, IconName> = {
     'asset-opt-in': 'transactions/opt-in',
     'asset-opt-out': 'transactions/opt-out',
     group: 'transactions/group',
+    send: 'transactions/send',
+    receive: 'transactions/receive',
     'asset-clawback': 'transactions/generic',
     'state-proof': 'transactions/generic',
     heartbeat: 'transactions/generic',

@@ -97,21 +97,23 @@ const createAssetAmount = (
 /**
  * Gets the display title for a transaction.
  */
-const getTitle = (tx: TransactionHistoryItem): string => {
+const getTitle = (tx: TransactionHistoryItem, userAddress: string): string => {
     if (tx.interpretedMeaning?.title) {
         return tx.interpretedMeaning.title
     }
 
     if (tx.swapGroupDetail) return 'Swap'
 
+    const isOutgoing = tx.sender === userAddress
+
     switch (tx.txType) {
         case 'pay':
-            return 'Payment'
+            return isOutgoing ? 'Send' : 'Receive'
         case 'axfer':
             if (tx.sender === tx.receiver && tx.amount === '0') {
                 return 'Opt-in'
             }
-            return 'Asset Transfer'
+            return isOutgoing ? 'Send' : 'Receive'
         case 'acfg':
             return 'Add Asset Fee'
         case 'afrz':
@@ -135,15 +137,34 @@ export const useTransactionListItem = ({
     const account = useSelectedAccount()
     const userAddress = account?.address ?? ''
 
-    const iconType = useMemo(() => {
+    const isOutgoing = useMemo(
+        () => transaction.sender === userAddress,
+        [transaction.sender, userAddress],
+    )
+
+    const iconType = useMemo((): TransactionIconType => {
         if (transaction.swapGroupDetail) return 'asset-transfer'
+
+        if (
+            transaction.txType === 'pay' ||
+            (transaction.txType === 'axfer' &&
+                !(
+                    transaction.sender === transaction.receiver &&
+                    transaction.amount === '0'
+                ))
+        ) {
+            return isOutgoing ? 'send' : 'receive'
+        }
 
         return getTransactionType(
             transaction as unknown as PeraDisplayableTransaction,
         )
-    }, [transaction])
+    }, [transaction, isOutgoing])
 
-    const title = useMemo(() => getTitle(transaction), [transaction])
+    const title = useMemo(
+        () => getTitle(transaction, userAddress),
+        [transaction, userAddress],
+    )
 
     const subtitle = useMemo(() => {
         // For swaps, show the exchange details
@@ -173,7 +194,6 @@ export const useTransactionListItem = ({
 
         // For payments and transfers, show the counterparty
         if (transaction.txType === 'pay' || transaction.txType === 'axfer') {
-            const isOutgoing = transaction.sender === userAddress
             const counterparty = isOutgoing
                 ? transaction.receiver
                 : transaction.sender
@@ -185,11 +205,10 @@ export const useTransactionListItem = ({
         }
 
         return null
-    }, [transaction, userAddress])
+    }, [transaction, userAddress, isOutgoing])
 
     const amounts = useMemo((): AmountDisplay[] => {
         const result: AmountDisplay[] = []
-        const isOutgoing = transaction.sender === userAddress
 
         // Handle swap transactions
         if (transaction.swapGroupDetail) {
@@ -244,7 +263,7 @@ export const useTransactionListItem = ({
         }
 
         return result
-    }, [transaction, userAddress])
+    }, [transaction, isOutgoing])
 
     const handlePress = useCallback(() => {
         onPress?.(transaction)

@@ -118,6 +118,8 @@ import TxOptInIcon from '@assets/icons/transactions/opt-in.svg'
 import TxOptOutIcon from '@assets/icons/transactions/opt-out.svg'
 import TxGroupIcon from '@assets/icons/transactions/group.svg'
 import TxPaymentIcon from '@assets/icons/transactions/payment.svg'
+import TxReceiveIcon from '@assets/icons/transactions/receive.svg'
+import TxSendIcon from '@assets/icons/transactions/send.svg'
 import TxSwapIcon from '@assets/icons/transactions/swap.svg'
 import DocumentDownloadIcon from '@assets/icons/document-download.svg'
 
@@ -228,6 +230,8 @@ export const ICON_LIBRARY = {
     'transactions/opt-out': TxOptOutIcon,
     'transactions/group': TxGroupIcon,
     'transactions/payment': TxPaymentIcon,
+    'transactions/receive': TxReceiveIcon,
+    'transactions/send': TxSendIcon,
     'transactions/swap': TxSwapIcon,
     'socials/discord': DiscordIcon,
     'socials/telegram': TelegramIcon,

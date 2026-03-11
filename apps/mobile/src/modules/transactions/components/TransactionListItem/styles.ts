@@ -26,15 +26,6 @@ export const useStyles = makeStyles(theme => ({
     contentContainer: {
         flex: 1,
     },
-    mainRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-    },
-    titleContainer: {
-        flex: 1,
-        marginRight: theme.spacing.sm,
-    },
     title: {
         color: theme.colors.textMain,
     },
@@ -42,22 +33,17 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
         marginTop: theme.spacing.xs,
     },
-    amountContainer: {
-        alignItems: 'flex-end',
-    },
-    amountRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
-    },
     amount: {
         color: theme.colors.textMain,
         fontWeight: '500',
+        marginTop: theme.spacing.xs,
     },
     amountPositive: {
         color: theme.colors.positive,
+        marginTop: theme.spacing.xs,
     },
     amountNegative: {
         color: theme.colors.negative,
+        marginTop: theme.spacing.xs,
     },
 }))
