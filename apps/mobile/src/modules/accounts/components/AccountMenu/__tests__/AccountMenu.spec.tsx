@@ -37,6 +37,13 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             accountPreferredValues: new Map(),
             isPending: false,
         })),
+        useSortedAccounts: vi.fn(() => ({
+            sortedAccounts: [],
+            sortMode: 'manual',
+            setSortMode: vi.fn(),
+            manualAccountOrder: [],
+            setManualAccountOrder: vi.fn(),
+        })),
     }
 })
 

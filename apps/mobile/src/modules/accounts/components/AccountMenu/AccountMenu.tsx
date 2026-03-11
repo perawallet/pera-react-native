@@ -22,6 +22,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { AccountWithBalance } from '../AccountWithBalance'
 import { PortfolioView } from '../PortfolioView'
+import { AccountSortBottomSheet } from '../AccountSortBottomSheet'
 import { useAccountMenu } from './useAccountMenu'
 import { ReactNode } from 'react'
 
@@ -34,8 +35,14 @@ export type AccountMenuProps = {
 export const AccountMenu = (props: AccountMenuProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { accounts, selectedAccountAddress, handleTap } =
-        useAccountMenu(props)
+    const {
+        sortedAccounts,
+        selectedAccountAddress,
+        handleTap,
+        isSortSheetVisible,
+        handleOpenSort,
+        handleCloseSort,
+    } = useAccountMenu(props)
     const { onAddAccount, headerContent } = props
 
     return (
@@ -58,6 +65,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
                             icon='list-arrow-down'
                             title={t('account_menu.sort')}
                             paddingStyle='dense'
+                            onPress={handleOpenSort}
                         />
                         <PWButton
                             testID='account_menu_add_account_button'
@@ -70,7 +78,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
                 </PWView>
 
                 <PWFlatList<WalletAccount>
-                    data={accounts}
+                    data={sortedAccounts}
                     keyExtractor={item => item.address}
                     renderItem={({ item: acct }) => (
                         <PWTouchableOpacity onPress={() => handleTap(acct)}>
@@ -89,6 +97,11 @@ export const AccountMenu = (props: AccountMenuProps) => {
                     inBottomSheet
                 />
             </PWView>
+
+            <AccountSortBottomSheet
+                isVisible={isSortSheetVisible}
+                onClose={handleCloseSort}
+            />
         </PWView>
     )
 }
