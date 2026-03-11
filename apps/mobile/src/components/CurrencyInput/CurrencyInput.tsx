@@ -15,14 +15,16 @@ import {
     MaskedTextInput,
     MaskedTextInputProps,
 } from 'react-native-advanced-input-mask'
+import { getTestProps } from '@utils/test-id-helper'
 
 export type CurrencyInputProps = {
     minPrecision: number
     maxPrecision: number
+    testID?: string
 } & Omit<MaskedTextInputProps, 'mask' | 'autocomplete' | 'allowedKeys'>
 
 export const CurrencyInput = (props: CurrencyInputProps) => {
-    const { minPrecision, maxPrecision, ...rest } = props
+    const { minPrecision, maxPrecision, testID, ...rest } = props
 
     //TODO: the mask doesn't appear to work correctly
     const inputMask = useMemo(() => {
@@ -38,6 +40,7 @@ export const CurrencyInput = (props: CurrencyInputProps) => {
 
     return (
         <MaskedTextInput
+            {...getTestProps(testID)}
             {...rest}
             allowedKeys='0123456789,.'
             inputMode='numeric'

@@ -5,6 +5,16 @@
         "select_title": "Select Account",
         "select_description": "Select an account to make the swap"
     },
+    "account_sort": {
+        "title": "Sort",
+        "done": "Done",
+        "alphabetical_asc": "Alphabetically A to Z",
+        "alphabetical_desc": "Alphabetically Z to A",
+        "balance_asc": "Lowest Value to Highest",
+        "balance_desc": "Highest Value to Lowest",
+        "manual": "Manually",
+        "reorganize_manually": "Reorganize Accounts Manually"
+    },
     "address_entry": {
         "scan_qr": "Scan QR Code",
         "address": "Address",

@@ -10,18 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-import { getTypography, TypographyVariant } from '@theme/typography'
-
-type PWInputStyleProps = {
-    variant: TypographyVariant
-}
-
-export const useStyles = makeStyles(
-    (theme, { variant }: PWInputStyleProps) => ({
-        container: {},
-        inputContainer: {},
-        input: { ...getTypography(theme, variant), lineHeight: undefined },
-        label: {},
-    }),
-)
+export { AccountSortBottomSheet } from './AccountSortBottomSheet'
+export type { AccountSortBottomSheetProps } from './AccountSortBottomSheet'

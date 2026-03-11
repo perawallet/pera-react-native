@@ -1030,6 +1030,41 @@ vi.mock('react-native-safe-area-context', () => {
     }
 })
 
+vi.mock('react-native-draggable-flatlist', () => {
+    const { forwardRef } = require('react')
+    return {
+        __esModule: true,
+        default: forwardRef(({ data, renderItem, keyExtractor }: any) => {
+            return (data ?? []).map((item: any, index: number) => {
+                const key = keyExtractor ? keyExtractor(item, index) : index
+                return renderItem({
+                    item,
+                    getIndex: () => index,
+                    drag: vi.fn(),
+                    isActive: false,
+                    key,
+                })
+            })
+        }),
+        ScaleDecorator: ({ children }: any) => children,
+        NestableScrollContainer: ({ children }: any) => children,
+        NestableDraggableFlatList: forwardRef(
+            ({ data, renderItem, keyExtractor }: any) => {
+                return (data ?? []).map((item: any, index: number) => {
+                    const key = keyExtractor ? keyExtractor(item, index) : index
+                    return renderItem({
+                        item,
+                        getIndex: () => index,
+                        drag: vi.fn(),
+                        isActive: false,
+                        key,
+                    })
+                })
+            },
+        ),
+    }
+})
+
 vi.mock('react-native-quick-base64', () => ({
     toByteArray: vi.fn(),
     fromByteArray: vi.fn(),

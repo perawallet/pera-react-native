@@ -12,7 +12,7 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import type { AccountsState, WalletAccount } from '../models'
+import type { AccountsState, AccountSortMode, WalletAccount } from '../models'
 import {
     logger,
     registerStore,
@@ -25,6 +25,8 @@ const STORE_NAME = 'accounts-store'
 const initialState = {
     accounts: [] as WalletAccount[],
     selectedAccountAddress: null as string | null,
+    sortMode: 'manual' as AccountSortMode,
+    manualAccountOrder: [] as string[],
 }
 
 export const useAccountsStore: UseBoundStore<
@@ -46,6 +48,7 @@ export const useAccountsStore: UseBoundStore<
             },
             setAccounts: (accounts: WalletAccount[]) => {
                 const currentSelected = get().selectedAccountAddress
+                const currentManualOrder = get().manualAccountOrder
                 set({ accounts })
 
                 if (currentSelected == null && accounts.length) {
@@ -55,6 +58,15 @@ export const useAccountsStore: UseBoundStore<
                         selectedAccountAddress: accounts.at(0)?.address ?? null,
                     })
                 }
+
+                const accountAddresses = new Set(accounts.map(a => a.address))
+                const prunedOrder = currentManualOrder.filter(addr =>
+                    accountAddresses.has(addr),
+                )
+                const newAddresses = accounts
+                    .map(a => a.address)
+                    .filter(addr => !prunedOrder.includes(addr))
+                set({ manualAccountOrder: [...prunedOrder, ...newAddresses] })
             },
             setSelectedAccountAddress: (address: string | null) => {
                 const accounts = get().accounts
@@ -66,16 +78,33 @@ export const useAccountsStore: UseBoundStore<
                 }
                 set({ selectedAccountAddress: address })
             },
+            setSortMode: (mode: AccountSortMode) => {
+                set({ sortMode: mode })
+            },
+            setManualAccountOrder: (order: string[]) => {
+                set({ manualAccountOrder: order })
+            },
             resetState: () => set(initialState),
         }),
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 1,
+            version: 2,
             partialize: state => ({
                 accounts: state.accounts,
                 selectedAccountAddress: state.selectedAccountAddress,
+                sortMode: state.sortMode,
+                manualAccountOrder: state.manualAccountOrder,
             }),
+            migrate: (persistedState: unknown, version: number) => {
+                const state = persistedState as Record<string, unknown>
+                if (version < 2) {
+                    const accounts = (state.accounts ?? []) as WalletAccount[]
+                    state.sortMode = 'manual'
+                    state.manualAccountOrder = accounts.map(a => a.address)
+                }
+                return state as AccountsState
+            },
         },
     ),
 )

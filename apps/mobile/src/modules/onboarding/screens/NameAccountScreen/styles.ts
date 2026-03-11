@@ -16,7 +16,7 @@ export const useStyles = makeStyles(theme => ({
     walletNameContainer: {
         backgroundColor: theme.colors.layerGrayLighter,
         borderRadius: theme.spacing.sm,
-        paddingVertical: theme.spacing.md,
+        paddingVertical: theme.spacing.sm,
         flexDirection: 'row',
         flexWrap: 'nowrap',
         alignItems: 'center',

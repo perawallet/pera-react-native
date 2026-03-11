@@ -11,17 +11,28 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getTypography, TypographyVariant } from '@theme/typography'
 
-type PWInputStyleProps = {
-    variant: TypographyVariant
-}
-
-export const useStyles = makeStyles(
-    (theme, { variant }: PWInputStyleProps) => ({
-        container: {},
-        inputContainer: {},
-        input: { ...getTypography(theme, variant), lineHeight: undefined },
-        label: {},
-    }),
-)
+export const useStyles = makeStyles(theme => ({
+    container: {
+        flex: 1,
+    },
+    contentContainer: {
+        paddingHorizontal: theme.spacing.lg,
+    },
+    subtitle: {
+        color: theme.colors.textGrayLighter,
+        marginTop: theme.spacing.lg,
+        marginBottom: theme.spacing.sm,
+    },
+    draggableRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: theme.spacing.sm,
+    },
+    accountDisplayContainer: {
+        flex: 1,
+    },
+    dragHandle: {
+        paddingLeft: theme.spacing.md,
+    },
+}))
