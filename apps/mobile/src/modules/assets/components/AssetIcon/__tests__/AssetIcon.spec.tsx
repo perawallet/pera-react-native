@@ -12,7 +12,7 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import React from 'react'
-import { render, screen } from '@test-utils/render'
+import { render, screen, fireEvent } from '@test-utils/render'
 import { AssetIcon } from '../AssetIcon'
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 
@@ -30,22 +30,44 @@ describe('AssetIcon', () => {
         expect(screen.getByTestId('ALGO_ICON')).toBeTruthy()
     })
 
-    it('renders Image for asset with logo', () => {
+    it('renders Image with Prism-optimized URL for asset with logo', () => {
         const asset = {
-            assetId: 123,
-            peraMetadata: { logo: 'https://logo.url' },
+            assetId: '123',
+            peraMetadata: { logo: 'https://cdn.example.com/logo.png' },
         } as unknown as PeraAsset
         render(<AssetIcon asset={asset} />)
-        // Check that component renders without error (PWImage is rendered)
         expect(screen.getByTestId('PWImage')).toBeTruthy()
     })
 
-    it('renders first letter for asset without logo', () => {
+    it('renders uppercase initials for asset without logo', () => {
         const asset = {
-            assetId: 123,
-            unitName: 'TEST',
+            assetId: '123',
+            unitName: 'test',
         } as unknown as PeraAsset
         render(<AssetIcon asset={asset} />)
-        expect(screen.getByText('T')).toBeTruthy()
+        expect(screen.getByText('TE')).toBeTruthy()
+    })
+
+    it('uses asset name when unitName is not available', () => {
+        const asset = {
+            assetId: '123',
+            name: 'myToken',
+        } as unknown as PeraAsset
+        render(<AssetIcon asset={asset} />)
+        expect(screen.getByText('MY')).toBeTruthy()
+    })
+
+    it('falls back to letter avatar on image load error', () => {
+        const asset = {
+            assetId: '123',
+            unitName: 'FAIL',
+            peraMetadata: { logo: 'https://cdn.example.com/broken.png' },
+        } as unknown as PeraAsset
+        render(<AssetIcon asset={asset} />)
+
+        const image = screen.getByTestId('PWImage')
+        fireEvent.error(image)
+
+        expect(screen.getByText('FA')).toBeTruthy()
     })
 })

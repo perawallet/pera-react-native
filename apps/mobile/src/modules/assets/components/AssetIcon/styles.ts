@@ -39,6 +39,13 @@ export const useStyles = makeStyles((theme, resolvedSize: number) => {
             justifyContent: 'center',
             width: resolvedSize,
             height: resolvedSize,
+            borderRadius: resolvedSize / 2,
+            borderWidth: theme.borders.sm,
+            borderColor: theme.colors.layerGrayLighter,
+        },
+        initialsText: {
+            color: theme.colors.textGray,
+            fontSize: resolvedSize * 0.35,
         },
     }
 })

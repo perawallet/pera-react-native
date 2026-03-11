@@ -9,6 +9,7 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+import { DEFAULT_PRISM_IMAGE_QUALITY } from '../models/constants'
 
 export const stripUrlScheme = (url?: string) => {
     if (!url) {
@@ -21,4 +22,17 @@ export const stripUrlScheme = (url?: string) => {
         return url.substring(index + 2)
     }
     return url
+}
+
+export const buildPrismUrl = (
+    url: string | null | undefined,
+    width: number,
+    quality: number = DEFAULT_PRISM_IMAGE_QUALITY,
+): string | undefined => {
+    if (!url) {
+        return undefined
+    }
+
+    const separator = url.includes('?') ? '&' : '?'
+    return `${url}${separator}width=${Math.round(width)}&quality=${quality}`
 }

@@ -1725,6 +1725,9 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         setItem: () => {},
         removeItem: () => {},
     }),
+    buildPrismUrl: vi.fn((url: string, width: number) =>
+        url ? `${url}?width=${width}&quality=70` : undefined,
+    ),
 }))
 
 // Mock @perawallet/wallet-core-projects
