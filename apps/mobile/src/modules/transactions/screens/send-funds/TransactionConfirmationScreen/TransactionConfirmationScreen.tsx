@@ -19,7 +19,6 @@ import {
     PWView,
 } from '@components/core'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
-import { getTestProps } from '@utils/test-id-helper'
 
 import { KeyValueRow } from '@components/KeyValueRow'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
