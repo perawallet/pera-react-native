@@ -23,7 +23,10 @@ import {
 import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
 import { Decimal } from 'decimal.js'
 
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import {
+    ALGO_ASSET,
+    useSingleAssetDetailsQuery,
+} from '@perawallet/wallet-core-assets'
 
 export type AmountDisplay = {
     /** Raw amount value for CurrencyDisplay */
@@ -136,6 +139,8 @@ export const useTransactionListItem = ({
 }: UseTransactionListItemParams): UseTransactionListItemResult => {
     const account = useSelectedAccount()
     const userAddress = account?.address ?? ''
+    const assetId = transaction.asset?.assetId?.toString() ?? ''
+    const { data: assetDetails } = useSingleAssetDetailsQuery(assetId)
 
     const isOutgoing = useMemo(
         () => transaction.sender === userAddress,
@@ -232,7 +237,10 @@ export const useTransactionListItem = ({
 
         // Handle asset transfers
         if (transaction.txType === 'axfer' && transaction.asset) {
-            const { decimals, unitName } = transaction.asset
+            const decimals =
+                assetDetails?.decimals ?? transaction.asset.decimals
+            const unitName =
+                assetDetails?.unitName ?? transaction.asset.unitName
             if (transaction.amount) {
                 result.push(
                     createAssetAmount(
@@ -251,7 +259,10 @@ export const useTransactionListItem = ({
             transaction.asset &&
             transaction.amount
         ) {
-            const { decimals, unitName } = transaction.asset
+            const decimals =
+                assetDetails?.decimals ?? transaction.asset.decimals
+            const unitName =
+                assetDetails?.unitName ?? transaction.asset.unitName
             result.push(
                 createAssetAmount(
                     transaction.amount,
@@ -263,7 +274,7 @@ export const useTransactionListItem = ({
         }
 
         return result
-    }, [transaction, isOutgoing])
+    }, [transaction, isOutgoing, assetDetails])
 
     const handlePress = useCallback(() => {
         onPress?.(transaction)

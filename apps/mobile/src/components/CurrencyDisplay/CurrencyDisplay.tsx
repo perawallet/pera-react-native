@@ -32,6 +32,7 @@ export type CurrencyDisplayProps = {
     prefix?: string
     alignRight?: boolean
     showSymbol?: boolean
+    symbolPosition?: 'start' | 'end'
     isLoading?: boolean
     truncateToUnits?: boolean
     rawValue?: string | null
@@ -52,6 +53,7 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         prefix,
         truncateToUnits,
         showSymbol = true,
+        symbolPosition = 'start',
         isLoading = false,
         minPrecision,
         rawValue,
@@ -63,6 +65,8 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
     const isAlgo = useMemo(() => currency === 'ALGO', [currency])
     const { privacyMode: privacyModeSetting } = useSettings()
     const privacyMode = privacyModeSetting && !ignorePrivacyMode
+
+    const shouldShowSymbolInFormat = showSymbol && symbolPosition === 'start'
 
     const displayValue = useMemo(() => {
         if (rawValue != null) {
@@ -82,7 +86,7 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
                   precision,
                   currency,
                   deviceInfo.getDeviceLocale(),
-                  showSymbol,
+                  shouldShowSymbolInFormat,
                   truncateToUnits,
                   minPrecision,
               )
@@ -91,12 +95,19 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
         precision,
         currency,
         deviceInfo,
-        showSymbol,
+        shouldShowSymbolInFormat,
         truncateToUnits,
         minPrecision,
         privacyMode,
         rawValue,
     ])
+
+    const trailingSymbol = useMemo(() => {
+        if (!showSymbol || symbolPosition !== 'end' || privacyMode) {
+            return null
+        }
+        return isAlgo ? '' : ` ${currency}`
+    }, [showSymbol, symbolPosition, privacyMode, isAlgo, currency])
 
     if (isLoading) {
         return (
@@ -105,9 +116,13 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
             </PWView>
         )
     }
+    const showAlgoIcon = isAlgo && showSymbol && !privacyMode
+    const showAlgoIconStart = showAlgoIcon && symbolPosition === 'start'
+    const showAlgoIconEnd = showAlgoIcon && symbolPosition === 'end'
+
     return (
         <PWView style={themeStyle.container}>
-            {isAlgo && showSymbol && !privacyMode && (
+            {showAlgoIconStart && (
                 <AlgoIcon
                     color={theme.colors.textMain}
                     style={[themeStyle.algoIcon, props.style]}
@@ -120,8 +135,15 @@ export const CurrencyDisplay = (props: CurrencyDisplayProps) => {
                 >
                     {prefix ? prefix : ''}
                     {displayValue}
+                    {trailingSymbol}
                 </PWText>
             </PWView>
+            {showAlgoIconEnd && (
+                <AlgoIcon
+                    color={theme.colors.textMain}
+                    style={[themeStyle.algoIcon, props.style]}
+                />
+            )}
         </PWView>
     )
 }

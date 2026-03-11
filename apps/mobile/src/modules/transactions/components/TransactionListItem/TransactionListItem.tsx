@@ -75,8 +75,10 @@ export const TransactionListItem = ({
                         value={amount.value}
                         currency={amount.currency}
                         precision={amount.precision}
+                        minPrecision={0}
                         prefix={amount.prefix}
                         showSymbol
+                        symbolPosition='end'
                         style={getAmountStyle(amount)}
                         variant='h4'
                     />
