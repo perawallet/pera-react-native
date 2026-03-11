@@ -11,8 +11,9 @@
  */
 
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
+import { buildPrismUrl } from '@perawallet/wallet-core-shared'
 import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
-import { useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { SvgProps } from 'react-native-svg'
 import { PWIconSize, PWImage, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
@@ -27,6 +28,7 @@ export type AssetIconProps = {
 export const AssetIcon = (props: AssetIconProps) => {
     const { asset, size, style, ...rest } = props
     const { theme } = useTheme()
+    const [loadFailed, setLoadFailed] = useState(false)
 
     const sizeMap: Record<PWIconSize, number> = useMemo(
         () => ({
@@ -46,6 +48,21 @@ export const AssetIcon = (props: AssetIconProps) => {
 
     const styles = useStyles(iconSize)
 
+    useEffect(() => {
+        setLoadFailed(false)
+    }, [asset.assetId])
+
+    const handleImageError = useCallback(() => {
+        setLoadFailed(true)
+    }, [])
+
+    const logoUrl = asset.peraMetadata?.logo
+    const hasLogo = Boolean(logoUrl) && !loadFailed
+
+    const initials = useMemo(() => {
+        return (asset?.unitName ?? asset?.name ?? '?').slice(0, 2).toUpperCase()
+    }, [asset?.unitName, asset?.name])
+
     const icon = useMemo(() => {
         if (!asset) return <></>
         if (asset.assetId === ALGO_ASSET_ID)
@@ -58,21 +75,35 @@ export const AssetIcon = (props: AssetIconProps) => {
                 />
             )
 
-        if (asset.peraMetadata?.logo) {
+        if (hasLogo) {
+            const prismUrl = buildPrismUrl(logoUrl, iconSize)
             return (
                 <PWImage
                     resizeMode='contain'
-                    source={{ uri: asset.peraMetadata?.logo }}
+                    source={{ uri: prismUrl }}
                     style={styles.imageIcon}
+                    onError={handleImageError}
                 />
             )
         }
         return (
             <PWView style={styles.defaultAsset}>
-                <PWText>{asset?.unitName?.slice(0, 1)}</PWText>
+                <PWText style={styles.initialsText}>{initials}</PWText>
             </PWView>
         )
-    }, [asset, rest, iconSize, styles.icon, styles.defaultAsset])
+    }, [
+        asset,
+        rest,
+        iconSize,
+        styles.icon,
+        styles.defaultAsset,
+        styles.imageIcon,
+        styles.initialsText,
+        hasLogo,
+        logoUrl,
+        handleImageError,
+        initials,
+    ])
 
     return <PWView style={[style, styles.container]}>{icon}</PWView>
 }

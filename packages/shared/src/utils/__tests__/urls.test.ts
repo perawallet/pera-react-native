@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { stripUrlScheme } from '../urls'
+import { stripUrlScheme, buildPrismUrl } from '../urls'
 
 describe('utils/urls - stripUrlScheme', () => {
     test('strips https:// prefix', () => {
@@ -46,5 +46,43 @@ describe('utils/urls - stripUrlScheme', () => {
 
     test('returns empty string when given empty string', () => {
         expect(stripUrlScheme('')).toBe('')
+    })
+})
+
+describe('utils/urls - buildPrismUrl', () => {
+    test('appends width and default quality to URL without query params', () => {
+        expect(buildPrismUrl('https://cdn.example.com/logo.png', 40)).toBe(
+            'https://cdn.example.com/logo.png?width=40&quality=70',
+        )
+    })
+
+    test('appends with & when URL already has query params', () => {
+        expect(buildPrismUrl('https://cdn.example.com/logo.png?v=2', 80)).toBe(
+            'https://cdn.example.com/logo.png?v=2&width=80&quality=70',
+        )
+    })
+
+    test('uses custom quality when provided', () => {
+        expect(buildPrismUrl('https://cdn.example.com/logo.png', 100, 90)).toBe(
+            'https://cdn.example.com/logo.png?width=100&quality=90',
+        )
+    })
+
+    test('rounds fractional width values', () => {
+        expect(buildPrismUrl('https://cdn.example.com/logo.png', 40.7)).toBe(
+            'https://cdn.example.com/logo.png?width=41&quality=70',
+        )
+    })
+
+    test('returns undefined for null input', () => {
+        expect(buildPrismUrl(null, 40)).toBeUndefined()
+    })
+
+    test('returns undefined for undefined input', () => {
+        expect(buildPrismUrl(undefined, 40)).toBeUndefined()
+    })
+
+    test('returns undefined for empty string', () => {
+        expect(buildPrismUrl('', 40)).toBeUndefined()
     })
 })
