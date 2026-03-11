@@ -11,6 +11,7 @@
  */
 
 import { useState } from 'react'
+import { BottomSheetTextInput } from '@gorhom/bottom-sheet'
 import {
     PWBottomSheet,
     PWButton,
@@ -21,7 +22,6 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useKeyboardHeight } from '@hooks/useKeyboardHeight'
 import { useStyles } from './styles'
 
 export type RenameAccountBottomSheetProps = {
@@ -39,8 +39,7 @@ export const RenameAccountBottomSheet = ({
 }: RenameAccountBottomSheetProps) => {
     const { t } = useLanguage()
     const [name, setName] = useState(currentName)
-    const { keyboardHeight } = useKeyboardHeight()
-    const styles = useStyles({ keyboardHeight })
+    const styles = useStyles()
 
     const handleSave = () => {
         const trimmed = name.trim()
@@ -54,7 +53,6 @@ export const RenameAccountBottomSheet = ({
             isVisible={isVisible}
             onBackdropPress={onClose}
             innerContainerStyle={styles.container}
-            containerStyle={styles.keyboardContainer}
             enablePanDownToClose
         >
             <PWToolbar
@@ -78,6 +76,8 @@ export const RenameAccountBottomSheet = ({
                     onChangeText={setName}
                     placeholder={t('account_options.rename_placeholder')}
                     autoFocus
+                    inputStyle={styles.input}
+                    InputComponent={BottomSheetTextInput}
                 />
             </PWView>
             <PWView style={styles.buttonContainer}>
