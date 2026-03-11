@@ -54,7 +54,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
                     </PWText>
                     <PWView style={styles.titleBarButtonContainer}>
                         <PWButton
-                            variant='link'
+                            variant='helper'
                             icon='list-arrow-down'
                             title={t('account_menu.sort')}
                             paddingStyle='dense'
@@ -83,6 +83,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
                         </PWTouchableOpacity>
                     )}
                     ItemSeparatorComponent={ListSeparator}
+                    estimatedItemSize={64}
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.accountContainer}
                     inBottomSheet
