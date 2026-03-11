@@ -16,11 +16,13 @@ import {
     PWInput,
     PWLoadingOverlay,
     PWText,
+    PWTouchableIcon,
     PWView,
 } from '@components/core'
 import { KeyboardAvoidingView, Platform } from 'react-native'
 import { useStyles } from './styles'
 
+const HEADER_HEIGHT = 50
 export type NameAccountFormProps = {
     title: string
     description: string
@@ -52,6 +54,7 @@ export const NameAccountForm = ({
         <KeyboardAvoidingView
             style={styles.mainContainer}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={HEADER_HEIGHT}
         >
             <PWView style={styles.content}>
                 <PWView style={styles.headerContainer}>
@@ -68,24 +71,35 @@ export const NameAccountForm = ({
 
                 <PWInput
                     containerStyle={styles.input}
+                    inputContainerStyle={styles.inputContainer}
                     value={value}
                     onChangeText={onChangeText}
                     autoFocus
+                    autoCorrect={false}
                     testID='name_account_name_input'
-                />
-
-                <PWView style={styles.spacer} />
-
-                <PWButton
-                    variant='primary'
-                    title={finishButtonTitle}
-                    onPress={onFinish}
-                    isLoading={isLoading}
-                    isDisabled={isDisabled ?? isLoading}
-                    style={styles.finishButton}
-                    testID='name_account_finish_button'
+                    rightIcon={
+                        value ? (
+                            <PWTouchableIcon
+                                name='cross'
+                                variant='secondary'
+                                size='sm'
+                                onPress={() => onChangeText('')}
+                                containerStyle={styles.clearButton}
+                            />
+                        ) : undefined
+                    }
                 />
             </PWView>
+
+            <PWButton
+                variant='primary'
+                title={finishButtonTitle}
+                onPress={onFinish}
+                isLoading={isLoading}
+                isDisabled={isDisabled ?? isLoading}
+                style={styles.finishButton}
+                testID='name_account_finish_button'
+            />
 
             <PWLoadingOverlay
                 isVisible={isLoading}

@@ -16,7 +16,6 @@ export const useStyles = makeStyles(theme => ({
     mainContainer: {
         flex: 1,
         backgroundColor: theme.colors.background,
-        marginBottom: theme.spacing.xl,
     },
     content: {
         flex: 1,
@@ -32,11 +31,14 @@ export const useStyles = makeStyles(theme => ({
     input: {
         marginTop: theme.spacing.sm,
     },
-    spacer: {
-        flexGrow: 1,
+    inputContainer: {
+        paddingLeft: theme.spacing.md,
+    },
+    clearButton: {
+        paddingRight: theme.spacing.sm,
     },
     finishButton: {
         marginHorizontal: theme.spacing.xl,
-        marginBottom: theme.spacing.sm,
+        marginBottom: theme.spacing.lg,
     },
 }))

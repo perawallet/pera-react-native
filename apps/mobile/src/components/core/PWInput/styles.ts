@@ -21,7 +21,7 @@ export const useStyles = makeStyles(
     (theme, { variant }: PWInputStyleProps) => ({
         container: {},
         inputContainer: {},
-        input: { ...getTypography(theme, variant) },
+        input: { ...getTypography(theme, variant), lineHeight: undefined },
         label: {},
     }),
 )
