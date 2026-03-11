@@ -21,6 +21,7 @@ import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 export type AddressEntryFieldProps = {
     allowQRCode?: boolean
     onScanned?: (address: string) => void
+    testID?: string
 } & PWInputProps
 
 export const extractAddressFromScannedUrl = (url: string): string | null => {
@@ -42,6 +43,7 @@ export const extractAddressFromScannedUrl = (url: string): string | null => {
 export const AddressEntryField = ({
     allowQRCode,
     onScanned,
+    testID,
     ...rest
 }: AddressEntryFieldProps) => {
     const [scannerVisible, setScannerVisible] = useState(false)
@@ -69,6 +71,7 @@ export const AddressEntryField = ({
     return (
         <PWView>
             <PWInput
+                testID={testID}
                 {...rest}
                 rightIcon={
                     allowQRCode ? (
@@ -81,11 +84,11 @@ export const AddressEntryField = ({
             />
             {scannerVisible && (
                 <QRScannerView
-                    onSuccess={addressScanned}
-                    animationType='slide'
-                    onClose={hideScanner}
-                    title={t('address_entry.scan_qr')}
                     isVisible={scannerVisible}
+                    onSuccess={addressScanned}
+                    onClose={hideScanner}
+                    animationType='slide'
+                    title={t('address_entry.scan_qr')}
                 />
             )}
         </PWView>

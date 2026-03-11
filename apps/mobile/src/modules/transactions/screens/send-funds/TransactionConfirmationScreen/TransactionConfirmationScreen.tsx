@@ -168,6 +168,7 @@ export const TransactionConfirmationScreen = () => {
                 <PWButton
                     title={t('send_funds.confirmation.confirm_button')}
                     variant='primary'
+                    testID='send_confirm_button'
                     onPress={handleConfirm}
                 />
             </PWView>
