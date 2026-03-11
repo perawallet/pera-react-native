@@ -15,7 +15,7 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         paddingVertical: theme.spacing.md,
         gap: theme.spacing.md,
     },
@@ -35,20 +35,15 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         marginRight: theme.spacing.sm,
     },
+    amountContainer: {
+        alignItems: 'flex-end',
+    },
     title: {
         color: theme.colors.textMain,
     },
     subtitle: {
         color: theme.colors.textGray,
-        marginTop: theme.spacing.xs,
-    },
-    amountContainer: {
-        alignItems: 'flex-end',
-    },
-    amountRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
+        marginTop: 2,
     },
     amount: {
         color: theme.colors.textMain,

@@ -15,15 +15,17 @@ import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import {
-    getTransactionType,
     microAlgosToAlgos,
     baseUnitsToDisplayUnits,
-    type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
 import { Decimal } from 'decimal.js'
 
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import {
+    ALGO_ASSET,
+    useSingleAssetDetailsQuery,
+} from '@perawallet/wallet-core-assets'
+import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
+import { getTransactionIconType } from './utils'
 
 export type AmountDisplay = {
     /** Raw amount value for CurrencyDisplay */
@@ -97,21 +99,23 @@ const createAssetAmount = (
 /**
  * Gets the display title for a transaction.
  */
-const getTitle = (tx: TransactionHistoryItem): string => {
+const getTitle = (tx: TransactionHistoryItem, userAddress: string): string => {
     if (tx.interpretedMeaning?.title) {
         return tx.interpretedMeaning.title
     }
 
     if (tx.swapGroupDetail) return 'Swap'
 
+    const isOutgoing = tx.sender === userAddress
+
     switch (tx.txType) {
         case 'pay':
-            return 'Payment'
+            return isOutgoing ? 'Send' : 'Receive'
         case 'axfer':
             if (tx.sender === tx.receiver && tx.amount === '0') {
                 return 'Opt-in'
             }
-            return 'Asset Transfer'
+            return isOutgoing ? 'Send' : 'Receive'
         case 'acfg':
             return 'Add Asset Fee'
         case 'afrz':
@@ -134,16 +138,24 @@ export const useTransactionListItem = ({
 }: UseTransactionListItemParams): UseTransactionListItemResult => {
     const account = useSelectedAccount()
     const userAddress = account?.address ?? ''
+    const assetId = transaction.asset?.assetId?.toString() ?? ''
+    const { data: assetDetails } = useSingleAssetDetailsQuery(assetId)
 
-    const iconType = useMemo(() => {
-        if (transaction.swapGroupDetail) return 'asset-transfer'
+    const isOutgoing = useMemo(
+        () => transaction.sender === userAddress,
+        [transaction.sender, userAddress],
+    )
 
-        return getTransactionType(
-            transaction as unknown as PeraDisplayableTransaction,
-        )
-    }, [transaction])
+    const iconType = useMemo(
+        (): TransactionIconType =>
+            getTransactionIconType(transaction, isOutgoing),
+        [transaction, isOutgoing],
+    )
 
-    const title = useMemo(() => getTitle(transaction), [transaction])
+    const title = useMemo(
+        () => getTitle(transaction, userAddress),
+        [transaction, userAddress],
+    )
 
     const subtitle = useMemo(() => {
         // For swaps, show the exchange details
@@ -173,7 +185,6 @@ export const useTransactionListItem = ({
 
         // For payments and transfers, show the counterparty
         if (transaction.txType === 'pay' || transaction.txType === 'axfer') {
-            const isOutgoing = transaction.sender === userAddress
             const counterparty = isOutgoing
                 ? transaction.receiver
                 : transaction.sender
@@ -185,11 +196,10 @@ export const useTransactionListItem = ({
         }
 
         return null
-    }, [transaction, userAddress])
+    }, [transaction, userAddress, isOutgoing])
 
     const amounts = useMemo((): AmountDisplay[] => {
         const result: AmountDisplay[] = []
-        const isOutgoing = transaction.sender === userAddress
 
         // Handle swap transactions
         if (transaction.swapGroupDetail) {
@@ -213,7 +223,10 @@ export const useTransactionListItem = ({
 
         // Handle asset transfers
         if (transaction.txType === 'axfer' && transaction.asset) {
-            const { decimals, unitName } = transaction.asset
+            const decimals =
+                assetDetails?.decimals ?? transaction.asset.decimals
+            const unitName =
+                assetDetails?.unitName ?? transaction.asset.unitName
             if (transaction.amount) {
                 result.push(
                     createAssetAmount(
@@ -232,7 +245,10 @@ export const useTransactionListItem = ({
             transaction.asset &&
             transaction.amount
         ) {
-            const { decimals, unitName } = transaction.asset
+            const decimals =
+                assetDetails?.decimals ?? transaction.asset.decimals
+            const unitName =
+                assetDetails?.unitName ?? transaction.asset.unitName
             result.push(
                 createAssetAmount(
                     transaction.amount,
@@ -244,7 +260,7 @@ export const useTransactionListItem = ({
         }
 
         return result
-    }, [transaction, userAddress])
+    }, [transaction, isOutgoing, assetDetails])
 
     const handlePress = useCallback(() => {
         onPress?.(transaction)

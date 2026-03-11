@@ -49,7 +49,7 @@ export const TransactionListItem = ({
             <PWView style={styles.iconContainer}>
                 <TransactionIcon
                     type={iconType}
-                    size='md'
+                    size='sm'
                 />
             </PWView>
 
@@ -75,21 +75,18 @@ export const TransactionListItem = ({
 
                     <PWView style={styles.amountContainer}>
                         {amounts.map((amount, index) => (
-                            <PWView
+                            <CurrencyDisplay
                                 key={index}
-                                style={styles.amountRow}
-                            >
-                                <CurrencyDisplay
-                                    value={amount.value}
-                                    currency={amount.currency}
-                                    precision={amount.precision}
-                                    prefix={amount.prefix}
-                                    showSymbol
-                                    alignRight
-                                    style={getAmountStyle(amount)}
-                                    variant='h4'
-                                />
-                            </PWView>
+                                value={amount.value}
+                                currency={amount.currency}
+                                precision={amount.precision}
+                                minPrecision={0}
+                                prefix={amount.prefix}
+                                showSymbol
+                                symbolPosition='end'
+                                style={getAmountStyle(amount)}
+                                variant='h4'
+                            />
                         ))}
                     </PWView>
                 </PWView>

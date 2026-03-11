@@ -24,15 +24,15 @@ const mockTransaction = {
 } as unknown as TransactionHistoryItem
 
 const mockResult = {
-    iconType: 'payment',
-    title: 'Payment',
+    iconType: 'send',
+    title: 'Send',
     subtitle: 'RECEIVER',
     amounts: [
         {
             value: new Decimal(1),
             currency: 'ALGO',
             precision: 6,
-            prefix: '+' as const,
+            prefix: '-' as const,
         },
     ],
     handlePress: vi.fn(),
@@ -62,9 +62,9 @@ describe('TransactionListItem', () => {
     it('renders title, subtitle and amount', () => {
         render(<TransactionListItem transaction={mockTransaction} />)
 
-        expect(screen.getByText('Payment')).toBeTruthy()
+        expect(screen.getByText('Send')).toBeTruthy()
         expect(screen.getByText('RECEIVER')).toBeTruthy()
-        expect(screen.getByText('+1 ALGO')).toBeTruthy()
+        expect(screen.getByText('-1 ALGO')).toBeTruthy()
     })
 
     it('calls handlePress when pressed', () => {
