@@ -158,13 +158,9 @@ platform :ios do
       binary_path: "./ios/Pods/FirebaseCrashlytics/upload-symbols"
     )
 
-    # Build changelog for TestFlight (unescape literal \n to real newlines)
-    changelog = unescape_changelog(ENV["RELEASE_NOTES"] || ENV["CHANGELOG"] || "Build #{ENV['BUILD_NUMBER'] || 'dev'}")
-
     upload_to_testflight(
       skip_waiting_for_build_processing: true,
-      ipa: "./build/ios/#{scheme}.ipa",
-      changelog: changelog
+      ipa: "./build/ios/#{scheme}.ipa"
     )
   end
 
