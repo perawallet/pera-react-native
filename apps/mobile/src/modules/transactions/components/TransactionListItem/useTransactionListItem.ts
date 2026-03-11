@@ -15,18 +15,17 @@ import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import {
-    getTransactionType,
     microAlgosToAlgos,
     baseUnitsToDisplayUnits,
-    type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
 import { Decimal } from 'decimal.js'
 
 import {
     ALGO_ASSET,
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
+import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
+import { getTransactionIconType } from './utils'
 
 export type AmountDisplay = {
     /** Raw amount value for CurrencyDisplay */
@@ -147,24 +146,11 @@ export const useTransactionListItem = ({
         [transaction.sender, userAddress],
     )
 
-    const iconType = useMemo((): TransactionIconType => {
-        if (transaction.swapGroupDetail) return 'asset-transfer'
-
-        if (
-            transaction.txType === 'pay' ||
-            (transaction.txType === 'axfer' &&
-                !(
-                    transaction.sender === transaction.receiver &&
-                    transaction.amount === '0'
-                ))
-        ) {
-            return isOutgoing ? 'send' : 'receive'
-        }
-
-        return getTransactionType(
-            transaction as unknown as PeraDisplayableTransaction,
-        )
-    }, [transaction, isOutgoing])
+    const iconType = useMemo(
+        (): TransactionIconType =>
+            getTransactionIconType(transaction, isOutgoing),
+        [transaction, isOutgoing],
+    )
 
     const title = useMemo(
         () => getTitle(transaction, userAddress),
