@@ -15,7 +15,7 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         flexDirection: 'row',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         paddingVertical: theme.spacing.md,
         gap: theme.spacing.md,
     },
@@ -31,19 +31,19 @@ export const useStyles = makeStyles(theme => ({
     },
     subtitle: {
         color: theme.colors.textGray,
-        marginTop: theme.spacing.xs,
+        marginTop: 2,
     },
     amount: {
         color: theme.colors.textMain,
         fontWeight: '500',
-        marginTop: theme.spacing.xs,
+        marginTop: 2,
     },
     amountPositive: {
         color: theme.colors.positive,
-        marginTop: theme.spacing.xs,
+        marginTop: 2,
     },
     amountNegative: {
         color: theme.colors.negative,
-        marginTop: theme.spacing.xs,
+        marginTop: 2,
     },
 }))
