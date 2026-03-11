@@ -54,35 +54,42 @@ export const TransactionListItem = ({
             </PWView>
 
             <PWView style={styles.contentContainer}>
-                <PWText
-                    variant='h4'
-                    style={styles.title}
-                    numberOfLines={1}
-                >
-                    {title}
-                </PWText>
-                {subtitle && (
-                    <PWText
-                        style={styles.subtitle}
-                        numberOfLines={1}
-                    >
-                        {subtitle}
-                    </PWText>
-                )}
-                {amounts.map((amount, index) => (
-                    <CurrencyDisplay
-                        key={index}
-                        value={amount.value}
-                        currency={amount.currency}
-                        precision={amount.precision}
-                        minPrecision={0}
-                        prefix={amount.prefix}
-                        showSymbol
-                        symbolPosition='end'
-                        style={getAmountStyle(amount)}
-                        variant='h4'
-                    />
-                ))}
+                <PWView style={styles.mainRow}>
+                    <PWView style={styles.titleContainer}>
+                        <PWText
+                            variant='h4'
+                            style={styles.title}
+                            numberOfLines={1}
+                        >
+                            {title}
+                        </PWText>
+                        {subtitle && (
+                            <PWText
+                                style={styles.subtitle}
+                                numberOfLines={1}
+                            >
+                                {subtitle}
+                            </PWText>
+                        )}
+                    </PWView>
+
+                    <PWView style={styles.amountContainer}>
+                        {amounts.map((amount, index) => (
+                            <CurrencyDisplay
+                                key={index}
+                                value={amount.value}
+                                currency={amount.currency}
+                                precision={amount.precision}
+                                minPrecision={0}
+                                prefix={amount.prefix}
+                                showSymbol
+                                symbolPosition='end'
+                                style={getAmountStyle(amount)}
+                                variant='h4'
+                            />
+                        ))}
+                    </PWView>
+                </PWView>
             </PWView>
         </PWTouchableOpacity>
     )
