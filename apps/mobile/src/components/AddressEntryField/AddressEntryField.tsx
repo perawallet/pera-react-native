@@ -17,7 +17,6 @@ import { useState } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { parseDeeplink } from '@hooks/deeplink/parser'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { getTestProps } from '@utils/test-id-helper'
 
 export type AddressEntryFieldProps = {
     allowQRCode?: boolean
@@ -72,7 +71,7 @@ export const AddressEntryField = ({
     return (
         <PWView>
             <PWInput
-                {...getTestProps(testID)}
+                testID={testID}
                 {...rest}
                 rightIcon={
                     allowQRCode ? (
