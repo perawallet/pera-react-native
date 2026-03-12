@@ -57,6 +57,10 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
     useTokenListener(fcmToken)
 
     const showError = (error: string | Error) => {
+        logger.critical(error, {
+            source: 'RootComponentErrorBoundary',
+        })
+
         showToast({
             title: 'Error',
             body: config.debugEnabled
