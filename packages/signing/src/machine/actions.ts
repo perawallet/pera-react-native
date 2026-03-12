@@ -16,7 +16,11 @@ import {
     isLedgerAccount,
     isMultisigAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { SignableGroup, SourceMetadata } from '../pipeline/types'
+import type {
+    SignableGroup,
+    SigningResult,
+    SourceMetadata,
+} from '../pipeline/types'
 import { resolveRekeyChain } from '../pipeline/signing/getSigningStrategy'
 import { CannotSignError } from '../pipeline/errors'
 import type {
@@ -101,12 +105,22 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
     }
 
     // callback transport → WalletConnect
-    // Note: callback shape mismatch (SigningResult vs PeraSignedTransaction[]) is
-    // reconciled in Phase 6 when useSigningRequest is rewired.
+    const txApprove =
+        request.type === 'transactions' && 'approve' in request
+            ? (request as TransactionSignRequest).approve
+            : undefined
+
     return {
         type: 'walletconnect',
         requestId: request.transportId ?? request.id,
         callbacks: {
+            approve: txApprove
+                ? async (result: SigningResult) => {
+                      if (result.signedData.type === 'transactions') {
+                          await txApprove(result.signedData.signed)
+                      }
+                  }
+                : undefined,
             reject: 'reject' in request ? request.reject : undefined,
             error: 'error' in request ? request.error : undefined,
         },
@@ -134,10 +148,7 @@ const buildSignableGroup = (request: SignRequest): SignableGroup => {
         return {
             data: {
                 type: 'arbitrary-data',
-                data: dataRequest.data.map(d =>
-                    new TextEncoder().encode(d.data),
-                ),
-                messages: dataRequest.data.map(d => d.message ?? d.data),
+                data: dataRequest.data,
             },
             source,
         }
