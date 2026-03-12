@@ -1,0 +1,75 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, test, expect, vi } from 'vitest'
+import { createCrashReportingErrorReporter } from '../utils'
+
+describe('createCrashReportingErrorReporter', () => {
+    test('reports when severity is error', () => {
+        const recordNonFatalError = vi.fn()
+        const reporter = createCrashReportingErrorReporter({
+            recordNonFatalError,
+        })
+        const error = new Error('boom')
+
+        reporter({ severity: 'error', error })
+
+        expect(recordNonFatalError).toHaveBeenCalledWith(error)
+    })
+
+    test('reports when severity is critical', () => {
+        const recordNonFatalError = vi.fn()
+        const reporter = createCrashReportingErrorReporter({
+            recordNonFatalError,
+        })
+        const error = new Error('critical')
+
+        reporter({ severity: 'critical', error })
+
+        expect(recordNonFatalError).toHaveBeenCalledWith(error)
+    })
+
+    test('does not report when severity is non-error', () => {
+        const recordNonFatalError = vi.fn()
+        const reporter = createCrashReportingErrorReporter({
+            recordNonFatalError,
+        })
+
+        reporter({ severity: 'warn', error: new Error('warn') })
+
+        expect(recordNonFatalError).not.toHaveBeenCalled()
+    })
+
+    test('falls back to recordError for compatibility', () => {
+        const recordError = vi.fn()
+        const reporter = createCrashReportingErrorReporter({
+            recordError,
+        })
+        const error = new Error('fallback')
+
+        reporter({ severity: 'error', error })
+
+        expect(recordError).toHaveBeenCalledWith(error)
+    })
+
+    test('swallows crash reporting exceptions', () => {
+        const reporter = createCrashReportingErrorReporter({
+            recordNonFatalError: () => {
+                throw new Error('reporting failed')
+            },
+        })
+
+        expect(() => {
+            reporter({ severity: 'error', error: new Error('boom') })
+        }).not.toThrow()
+    })
+})
