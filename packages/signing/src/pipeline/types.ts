@@ -17,6 +17,7 @@ import type {
     PeraSignedTransaction,
     PeraTransactionType,
 } from '@perawallet/wallet-core-blockchain'
+import type { PeraArbitraryDataMessage } from '../models'
 
 // =============================================================================
 // Stage 1: Signable Data Types
@@ -37,9 +38,7 @@ export interface TransactionSignableData {
  */
 export interface ArbitraryDataSignableData {
     type: 'arbitrary-data'
-    data: Uint8Array[]
-    /** Human-readable message for display */
-    messages?: string[]
+    data: PeraArbitraryDataMessage[]
 }
 
 /**
@@ -79,7 +78,7 @@ export interface SourceMetadata {
     type: 'local' | 'walletconnect' | 'multisig-cosign' | 'arc60'
 
     /** For WalletConnect: the dApp info */
-    peerMetadata?: { name: string; url: string; icons: string[] }
+    peerMetadata?: { name?: string; url?: string; icons?: string[] }
 
     /** For multisig co-sign: the sign request ID */
     signRequestId?: string

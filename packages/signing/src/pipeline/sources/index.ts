@@ -19,6 +19,28 @@ export {
 export { createPaymentSource } from './createPaymentSource'
 export { createExpressSendSource } from './createExpressSendSource'
 
+export {
+    createWalletConnectTransactionSource,
+    createWalletConnectDataSource,
+} from './createWalletConnectSource'
+export type {
+    WalletConnectTransactionRequest,
+    WalletConnectDataRequest,
+    WalletConnectRequest,
+} from './createWalletConnectSource'
+
+export {
+    createArc59SendSource,
+    createArc59ClaimSource,
+    createArc59RejectSource,
+} from './createArc59Sources'
+export type {
+    Arc59SendSourceParams,
+    Arc59ClaimSourceParams,
+    Arc59RejectSourceParams,
+    Arc59SourceDependencies,
+} from './createArc59Sources'
+
 export type {
     PaymentSourceParams,
     ExpressSendSourceParams,
