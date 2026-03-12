@@ -14,6 +14,10 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { useDeleteAllData } from '@modules/settings/hooks/useDeleteAllData'
 import { AppState, AppStateStatus } from 'react-native'
+import {
+    getAppStatePlatform,
+    getAppStateTransition,
+} from '@utils/app-state'
 
 type UseAutoLockListenerResult = {
     isLocked: boolean
@@ -31,24 +35,36 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     const [isInitialized, setIsInitialized] = useState(false)
     const [isChecking, setIsChecking] = useState(false)
     const appState = useRef(AppState.currentState)
+    const appStatePlatform = useRef(getAppStatePlatform()).current
+    const isForegroundCheckInFlight = useRef(false)
 
     const recordBackground = useCallback(() => {
         setAutoLockStartedAt(Date.now())
     }, [setAutoLockStartedAt])
 
-    const recordForeground = useCallback(async (): Promise<boolean> => {
+    const recordForeground = useCallback(async (): Promise<void> => {
+        if (isForegroundCheckInFlight.current) {
+            return
+        }
+
+        isForegroundCheckInFlight.current = true
         setIsChecking(true)
-        const expired = await checkAutoLock()
-        setIsLocked(expired)
-        setIsChecking(false)
-        return expired
-    }, [checkAutoLock, setAutoLockStartedAt])
+        try {
+            const expired = await checkAutoLock()
+            setIsLocked(expired)
+        } catch {
+            // Keep current lock state on errors.
+        } finally {
+            setIsChecking(false)
+            isForegroundCheckInFlight.current = false
+        }
+    }, [checkAutoLock])
 
     const unlock = useCallback(() => {
         setIsChecking(false)
         setIsLocked(false)
         setAutoLockStartedAt(null)
-    }, [])
+    }, [setAutoLockStartedAt])
 
     const handleResetData = useCallback(async () => {
         await deleteAllData()
@@ -58,26 +74,43 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     }, [deleteAllData])
 
     useEffect(() => {
-        if (!isInitialized) {
-            checkPinEnabled().then(enabled => {
-                setIsLocked(enabled)
-                setIsInitialized(true)
-            })
+        let isCancelled = false
+
+        const initialize = async () => {
+            try {
+                const enabled = await checkPinEnabled()
+                if (!isCancelled) {
+                    setIsLocked(enabled)
+                }
+            } catch {
+                // Keep current lock state on errors.
+            } finally {
+                if (!isCancelled) {
+                    setIsInitialized(true)
+                }
+            }
+        }
+
+        void initialize()
+
+        return () => {
+            isCancelled = true
         }
     }, [checkPinEnabled])
 
     useEffect(() => {
         const handleAppStateChange = (nextAppState: AppStateStatus) => {
-            if (
-                appState.current === 'active' &&
-                nextAppState.match(/inactive|background/)
-            ) {
+            const { didLeaveForeground, didEnterForeground } =
+                getAppStateTransition(
+                    appState.current,
+                    nextAppState,
+                    appStatePlatform,
+                )
+
+            if (didLeaveForeground) {
                 recordBackground()
-            } else if (
-                appState.current.match(/inactive|background/) &&
-                nextAppState === 'active'
-            ) {
-                recordForeground()
+            } else if (didEnterForeground) {
+                void recordForeground()
             }
 
             appState.current = nextAppState
@@ -91,7 +124,7 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
         return () => {
             subscription.remove()
         }
-    }, [recordBackground, recordForeground])
+    }, [appStatePlatform, recordBackground, recordForeground])
 
     return {
         isLocked,
