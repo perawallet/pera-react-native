@@ -52,9 +52,7 @@ describe('app-state utils', () => {
 
     it('detects background transitions by platform', () => {
         expect(isBackgroundTransition('active', 'inactive', 'ios')).toBe(true)
-        expect(isBackgroundTransition('active', 'background', 'ios')).toBe(
-            true,
-        )
+        expect(isBackgroundTransition('active', 'background', 'ios')).toBe(true)
         expect(isBackgroundTransition('active', 'background', 'android')).toBe(
             true,
         )
@@ -67,15 +65,15 @@ describe('app-state utils', () => {
     })
 
     it('returns expected polling transition action', () => {
-        expect(
-            getPollingTransitionAction('inactive', 'active', 'ios'),
-        ).toBe('start')
+        expect(getPollingTransitionAction('inactive', 'active', 'ios')).toBe(
+            'start',
+        )
         expect(
             getPollingTransitionAction('background', 'active', 'android'),
         ).toBe('start')
-        expect(
-            getPollingTransitionAction('active', 'inactive', 'ios'),
-        ).toBe('stop')
+        expect(getPollingTransitionAction('active', 'inactive', 'ios')).toBe(
+            'stop',
+        )
         expect(
             getPollingTransitionAction('active', 'background', 'android'),
         ).toBe('stop')

@@ -15,13 +15,12 @@
         "preserveWatchOutput": true,
         "skipLibCheck": true,
         "strict": true,
-        "baseUrl": "../..",
         "paths": {
             "@perawallet/test-utils": [
-                "extensions/platform/src/test-utils"
+                "./../../../extensions/platform/src/test-utils"
             ],
             "@perawallet/test-utils/*": [
-                "extensions/platform/src/test-utils/*"
+                "./../../../extensions/platform/src/test-utils/*"
             ]
         },
         "outDir": "dist"

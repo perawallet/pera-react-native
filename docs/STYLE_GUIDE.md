@@ -105,7 +105,7 @@ pnpm test       # Run tests
 If checks fail:
 
 ```sh
-pnpm lint:fix   # Auto-fix lint issues
+pnpm lint:fix   # Auto-fix lint/type-aware issues
 pnpm format     # Auto-fix formatting
 ```
 

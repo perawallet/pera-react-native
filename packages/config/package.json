@@ -18,8 +18,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest --watch",
-    "lint": "eslint src",
-    "lint:fix": "eslint src --fix"
+    "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\"",
+    "lint:fix": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\" --fix"
   },
   "dependencies": {
     "@babel/runtime": "catalog:",
@@ -31,16 +31,12 @@
     "@types/node": "^20.19.0",
     "@vitejs/plugin-react": "catalog:",
     "@vitest/coverage-v8": "catalog:",
-    "eslint": "catalog:",
-    "eslint-plugin-erasable-syntax-only": "^0.3.1",
     "jsdom": "^27.1.0",
     "prettier": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "^4.5.4",
-    "vitest": "catalog:",
-    "globals": "catalog:",
-    "typescript-eslint": "catalog:"
+    "vitest": "catalog:"
   },
   "packageManager": "pnpm@10.26.1"
 }

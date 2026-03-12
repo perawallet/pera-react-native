@@ -14,7 +14,7 @@
     "build": "vite build",
     "dev": "vite build --watch",
     "test": "vitest run",
-    "lint": "eslint src"
+    "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
     "@algorandfoundation/algokit-utils": "catalog:",
@@ -34,9 +34,7 @@
     "@testing-library/react": "catalog:",
     "@types/node": "^20.19.28",
     "@types/react": "catalog:",
-    "globals": "catalog:",
     "typescript": "catalog:",
-    "typescript-eslint": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "^4.5.4",
     "vitest": "catalog:"

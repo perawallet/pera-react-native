@@ -14,7 +14,7 @@
     "build": "vite build",
     "dev": "vite build --watch",
     "test": "vitest run",
-    "lint": "eslint src",
+    "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\" --ignore-pattern \"**/*.generated.ts\"",
     "generate:arc59": "pnpm exec algokit-client-generator generate -a src/hooks/arc59-app-spec.json -o src/clients/Arc59Client.generated.ts --preserve-names"
   },
   "dependencies": {
@@ -36,9 +36,7 @@
     "@testing-library/react": "catalog:",
     "@types/node": "^20.19.28",
     "@types/react": "catalog:",
-    "globals": "catalog:",
     "typescript": "catalog:",
-    "typescript-eslint": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "^4.5.4",
     "vitest": "catalog:"

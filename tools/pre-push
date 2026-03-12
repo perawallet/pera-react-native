@@ -1,5 +1,5 @@
 #!/bin/sh
-# Pre-push hook for linting, formatting, copyright checking, and testing
+# Pre-push hook for code checks, formatting, copyright checking, and testing
 
 echo "Running pre-push checks..."
 
@@ -42,14 +42,14 @@ record_failure() {
     EXIT_STATUS=1
 }
 
-# Run ESLint
-echo "\n${YELLOW}Running ESLint...${NC}"
+# Run Oxlint checks
+echo "\n${YELLOW}Running code checks...${NC}"
 LINT_LOG=$(mktemp)
 if pnpm run lint > "$LINT_LOG" 2>&1; then
-    echo "${GREEN}✓ ESLint passed${NC}"
+    echo "${GREEN}✓ Code checks passed${NC}"
 else
-    echo "${RED}ESLint failed.${NC}"
-    record_failure "ESLint" "$LINT_LOG" "${YELLOW}You can run 'pnpm lint:fix' to auto-fix some issues.${NC}"
+    echo "${RED}Code checks failed.${NC}"
+    record_failure "Lint" "$LINT_LOG" "${YELLOW}You can run 'pnpm lint:fix' to auto-fix some issues.${NC}"
 fi
 rm "$LINT_LOG"
 
