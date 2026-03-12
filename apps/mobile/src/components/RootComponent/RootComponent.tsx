@@ -114,11 +114,14 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
                 }
             } catch (error) {
                 // Prevent polling failures from bubbling to top-level handlers.
-                logger.error('Polling action failed in RootComponent listener', {
-                    source: 'RootComponent',
-                    action,
-                    error,
-                })
+                logger.error(
+                    'Polling action failed in RootComponent listener',
+                    {
+                        source: 'RootComponent',
+                        action,
+                        error,
+                    },
+                )
             }
         }
 
