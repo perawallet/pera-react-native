@@ -18,10 +18,17 @@ import Decimal from 'decimal.js'
 
 const mockMapToDisplayableTransaction = vi.fn()
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    mapToDisplayableTransaction: (...args: unknown[]) =>
-        mockMapToDisplayableTransaction(...args),
-}))
+vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
+    const original =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-blockchain')
+        >()
+    return {
+        ...original,
+        mapToDisplayableTransaction: (...args: unknown[]) =>
+            mockMapToDisplayableTransaction(...args),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => [
