@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useToast } from '@hooks/useToast'
 import { config } from '@perawallet/wallet-core-config'
 import { useLanguage } from '@hooks/useLanguage'
@@ -44,9 +44,48 @@ export const useSigningActionButtons = () => {
         useNavigation<StackNavigationProp<SigningStackParamList>>()
     const { getPreference } = usePreferences()
 
-    const { currentRequest, signAndSendRequest, rejectRequest } =
-        useSigningRequest()
+    const {
+        currentRequest,
+        currentActorRef,
+        signAndSendRequest,
+        rejectRequest,
+    } = useSigningRequest()
     const request = currentRequest as TransactionSignRequest
+
+    useEffect(() => {
+        if (!currentActorRef) {
+            setIsLoading(false)
+            return
+        }
+        const subscription = currentActorRef.subscribe(snapshot => {
+            setIsLoading(
+                snapshot.matches('signing') || snapshot.matches('transporting'),
+            )
+            if (snapshot.matches('failed') && snapshot.context.error) {
+                const req = snapshot.context.request
+                if (req.transport === 'algod') {
+                    showToast(
+                        {
+                            type: 'error',
+                            title: t(
+                                'signing.transaction_view.transaction_failed_title',
+                            ),
+                            body: config.debugEnabled
+                                ? `${snapshot.context.error}`
+                                : t(
+                                      'signing.transaction_view.transaction_failed_body',
+                                  ),
+                        },
+                        {
+                            notifier: bottomSheetNotifier.current ?? undefined,
+                        },
+                    )
+                }
+            }
+        })
+        return () => subscription.unsubscribe()
+    }, [currentActorRef, showToast, t])
+
     const { allTransactions, warnings } = useSigningRequestAnalysis(request)
 
     const guardedWarningType = useMemo(() => {
@@ -67,42 +106,10 @@ export const useSigningActionButtons = () => {
         return presentTypes[0]
     }, [warnings, getPreference])
 
-    const performSign = useCallback(async () => {
-        if (!request) {
-            return
-        }
-        setIsLoading(true)
-        try {
-            await signAndSendRequest(request)
-        } catch (error) {
-            if (request.transport === 'algod') {
-                showToast(
-                    {
-                        type: 'error',
-                        title: t(
-                            'signing.transaction_view.transaction_failed_title',
-                        ),
-                        body: config.debugEnabled
-                            ? `${error}`
-                            : t(
-                                  'signing.transaction_view.transaction_failed_body',
-                              ),
-                    },
-                    {
-                        notifier: bottomSheetNotifier.current ?? undefined,
-                    },
-                )
-            } else {
-                request.error?.(
-                    error instanceof Error
-                        ? t(`${error.message}`)
-                        : t('errors.signing.title'),
-                )
-            }
-        } finally {
-            setIsLoading(false)
-        }
-    }, [request, signAndSendRequest, showToast, t])
+    const performSign = useCallback(() => {
+        if (!request) return
+        signAndSendRequest(request)
+    }, [request, signAndSendRequest])
 
     const handleSignAndSend = useCallback(() => {
         if (guardedWarningType !== null) {

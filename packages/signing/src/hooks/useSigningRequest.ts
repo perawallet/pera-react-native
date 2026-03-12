@@ -104,6 +104,15 @@ export const useSigningRequest = () => {
 
                 if (snapshot.matches('completed')) {
                     setLastCompletedRequestRef.current(snapshot.context.request)
+                } else if (snapshot.matches('failed')) {
+                    const { request: req, error } = snapshot.context
+                    if (req.transport === 'callback') {
+                        ;(req as { error?: (msg: string) => void }).error?.(
+                            error instanceof Error
+                                ? error.message
+                                : 'Signing failed',
+                        )
+                    }
                 }
                 removeActorRefRef.current(actor.id)
                 removeSignRequestFromStoreRef.current(snapshot.context.request)
@@ -237,10 +246,16 @@ export const useSigningRequest = () => {
         [actorRefs, removeSignRequestFromStore],
     )
 
+    const currentRequest = pendingSignRequests?.at(0)
+    const currentActorRef =
+        actorRefs.find((ref: AnyActorRef) => ref.id === currentRequest?.id) ??
+        null
+
     return {
         pendingSignRequests,
         lastCompletedRequest,
-        currentRequest: pendingSignRequests?.at(0),
+        currentRequest,
+        currentActorRef,
         addSignRequest,
         removeSignRequest,
         clearLastCompletedRequest,

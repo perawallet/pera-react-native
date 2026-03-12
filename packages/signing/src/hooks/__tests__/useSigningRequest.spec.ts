@@ -300,14 +300,12 @@ describe('useSigningRequest', () => {
             const { result } = renderHook(() => useSigningRequest())
 
             // Directly put the request in the store without an actor
-            useSigningStore
-                .getState()
-                .addSignRequest(
-                    makeTxRequest({
-                        transport: 'callback',
-                        reject: mockReject,
-                    }),
-                )
+            useSigningStore.getState().addSignRequest(
+                makeTxRequest({
+                    transport: 'callback',
+                    reject: mockReject,
+                }),
+            )
 
             // Force re-render to pick up store change
             act(() => {
