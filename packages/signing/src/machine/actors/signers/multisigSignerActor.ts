@@ -12,7 +12,10 @@
 
 import { fromPromise } from 'xstate'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { AnalyzedSignableGroup, SigningResult } from '../../../pipeline/types'
+import type {
+    AnalyzedSignableGroup,
+    SigningResult,
+} from '../../../pipeline/types'
 import { CannotSignError } from '../../../pipeline/errors'
 
 export type MultisigSignerActorInput = {
@@ -27,11 +30,12 @@ export type MultisigSignerActorInput = {
  *
  * Phase 9 will replace this stub with a full implementation.
  */
-export const multisigSignerActor = fromPromise<SigningResult, MultisigSignerActorInput>(
-    async ({ input }) => {
-        throw new CannotSignError(
-            input.signerAccount.address,
-            'Multisig signing is not yet implemented',
-        )
-    },
-)
+export const multisigSignerActor = fromPromise<
+    SigningResult,
+    MultisigSignerActorInput
+>(async ({ input }) => {
+    throw new CannotSignError(
+        input.signerAccount.address,
+        'Multisig signing is not yet implemented',
+    )
+})

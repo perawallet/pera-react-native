@@ -34,12 +34,16 @@ const mockSigningResult: SigningResult = {
 const mockAlgokit = {
     client: {
         algod: {
-            sendRawTransaction: vi.fn().mockResolvedValue({ txid: 'mock-tx-id' }),
+            sendRawTransaction: vi
+                .fn()
+                .mockResolvedValue({ txid: 'mock-tx-id' }),
         },
     },
 }
 
-const mockEncodeSignedTransactions = vi.fn().mockReturnValue([new Uint8Array([1, 2, 3])])
+const mockEncodeSignedTransactions = vi
+    .fn()
+    .mockReturnValue([new Uint8Array([1, 2, 3])])
 const mockProposeSignRequest = vi.fn()
 const mockAddSignatures = vi.fn()
 
@@ -56,7 +60,9 @@ const makeInput = (source: SourceMetadata): TransportActorInput => ({
 describe('transportActor', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockAlgokit.client.algod.sendRawTransaction.mockResolvedValue({ txid: 'mock-tx-id' })
+        mockAlgokit.client.algod.sendRawTransaction.mockResolvedValue({
+            txid: 'mock-tx-id',
+        })
     })
 
     it('routes to algod transport for local source', async () => {
@@ -66,7 +72,9 @@ describe('transportActor', () => {
         const result = await toPromise(actor)
 
         expect(result.type).toBe('submitted')
-        expect(mockAlgokit.client.algod.sendRawTransaction).toHaveBeenCalledOnce()
+        expect(
+            mockAlgokit.client.algod.sendRawTransaction,
+        ).toHaveBeenCalledOnce()
     })
 
     it('routes to WalletConnect transport for walletconnect source', async () => {

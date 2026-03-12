@@ -13,7 +13,11 @@
 import { fromPromise } from 'xstate'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
-import type { SigningResult, SourceMetadata, TransportResult } from '../../../pipeline/types'
+import type {
+    SigningResult,
+    SourceMetadata,
+    TransportResult,
+} from '../../../pipeline/types'
 import { createTransportSelector } from '../../../pipeline/transports/getTransport'
 import type { AlgokitClientInterface } from '../../../pipeline/transports/createAlgodTransport'
 import type { ProposeSignRequestFn } from '../../../pipeline/transports/createMultisigProposeTransport'

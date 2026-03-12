@@ -15,6 +15,7 @@ import type {
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { BaseStoreState } from '@perawallet/wallet-core-shared'
+import type { AnyActorRef } from 'xstate'
 
 export type SignRequestSource = {
     name?: string
@@ -70,9 +71,12 @@ export type SignRequest =
 
 export type SigningStore = BaseStoreState & {
     pendingSignRequests: SignRequest[]
+    actorRefs: AnyActorRef[]
     lastCompletedRequest: SignRequest | null
     addSignRequest: (request: SignRequest) => boolean
     removeSignRequest: (request: SignRequest) => boolean
+    addActorRef: (ref: AnyActorRef) => void
+    removeActorRef: (actorId: string) => void
     setLastCompletedRequest: (request: SignRequest | null) => void
 }
 

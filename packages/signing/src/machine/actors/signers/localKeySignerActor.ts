@@ -12,7 +12,10 @@
 
 import { fromPromise } from 'xstate'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { AnalyzedSignableGroup, SigningResult } from '../../../pipeline/types'
+import type {
+    AnalyzedSignableGroup,
+    SigningResult,
+} from '../../../pipeline/types'
 import {
     createLocalKeyStrategy,
     type LocalSigningFunction,
@@ -28,10 +31,11 @@ export type LocalKeySignerActorInput = {
  * XState actor that signs a transaction group using local keys (Algo25 / HDWallet).
  * Wraps createLocalKeyStrategy from the pipeline as a fromPromise actor.
  */
-export const localKeySignerActor = fromPromise<SigningResult, LocalKeySignerActorInput>(
-    async ({ input }) => {
-        const { group, signerAccount, signTransactions } = input
-        const strategy = createLocalKeyStrategy(signTransactions)
-        return strategy.sign(group, signerAccount)
-    },
-)
+export const localKeySignerActor = fromPromise<
+    SigningResult,
+    LocalKeySignerActorInput
+>(async ({ input }) => {
+    const { group, signerAccount, signTransactions } = input
+    const strategy = createLocalKeyStrategy(signTransactions)
+    return strategy.sign(group, signerAccount)
+})

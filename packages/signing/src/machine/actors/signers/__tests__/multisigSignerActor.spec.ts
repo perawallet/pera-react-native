@@ -59,6 +59,8 @@ describe('multisigSignerActor', () => {
         const actor = createActor(multisigSignerActor, { input })
         actor.start()
 
-        await expect(toPromise(actor)).rejects.toThrow(mockMultisigAccount.address)
+        await expect(toPromise(actor)).rejects.toThrow(
+            mockMultisigAccount.address,
+        )
     })
 })

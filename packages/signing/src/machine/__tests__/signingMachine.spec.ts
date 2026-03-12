@@ -15,14 +15,19 @@ import { createActor, fromPromise, waitFor } from 'xstate'
 import { signingMachine } from '../signingMachine'
 import type { SigningMachineInput } from '../context'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { SignableAnalysis, SigningResult, TransportResult } from '../../pipeline/types'
+import type {
+    SignableAnalysis,
+    SigningResult,
+    TransportResult,
+} from '../../pipeline/types'
 import type { TransactionSignRequest } from '../../models'
 
 // =============================================================================
 // Fixtures
 // =============================================================================
 
-const MOCK_ADDRESS = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+const MOCK_ADDRESS =
+    'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
 const mockAlgo25Account: WalletAccount = {
     type: 'algo25',
@@ -63,11 +68,15 @@ const mockTransportResult: TransportResult = {
 
 const mockDeps = {
     signTransactions: vi.fn(),
-    encodeSignedTransactions: vi.fn().mockReturnValue([new Uint8Array([1, 2, 3])]),
+    encodeSignedTransactions: vi
+        .fn()
+        .mockReturnValue([new Uint8Array([1, 2, 3])]),
     algokit: {
         client: {
             algod: {
-                sendRawTransaction: vi.fn().mockResolvedValue({ txid: 'mock-tx-id' }),
+                sendRawTransaction: vi
+                    .fn()
+                    .mockResolvedValue({ txid: 'mock-tx-id' }),
             },
         },
     },
@@ -76,7 +85,9 @@ const mockDeps = {
     network: 'mainnet' as never,
 }
 
-const makeInput = (overrides?: Partial<SigningMachineInput>): SigningMachineInput => ({
+const makeInput = (
+    overrides?: Partial<SigningMachineInput>,
+): SigningMachineInput => ({
     request: mockRequest,
     allAccounts: [mockAlgo25Account],
     ...mockDeps,
@@ -126,7 +137,9 @@ describe('signingMachine', () => {
         const actor = createActor(mockedMachine, { input: makeInput() })
         actor.start()
 
-        const awaitingState = await waitFor(actor, s => s.matches('awaiting_user'))
+        const awaitingState = await waitFor(actor, s =>
+            s.matches('awaiting_user'),
+        )
         expect(awaitingState.matches('awaiting_user')).toBe(true)
     })
 
@@ -169,9 +182,11 @@ describe('signingMachine', () => {
                     throw new Error('analyzer failure')
                 }),
                 localKeySignerActor: fromPromise(async () => mockSigningResult),
-                multisigSignerActor: fromPromise(async (): Promise<SigningResult> => {
-                    throw new Error('multisig not implemented')
-                }),
+                multisigSignerActor: fromPromise(
+                    async (): Promise<SigningResult> => {
+                        throw new Error('multisig not implemented')
+                    },
+                ),
                 transportActor: fromPromise(async () => mockTransportResult),
             },
         })
@@ -187,12 +202,16 @@ describe('signingMachine', () => {
         const failingMachine = signingMachine.provide({
             actors: {
                 analyzerActor: fromPromise(async () => mockAnalysis),
-                localKeySignerActor: fromPromise(async (): Promise<SigningResult> => {
-                    throw new Error('signing failure')
-                }),
-                multisigSignerActor: fromPromise(async (): Promise<SigningResult> => {
-                    throw new Error('multisig not implemented')
-                }),
+                localKeySignerActor: fromPromise(
+                    async (): Promise<SigningResult> => {
+                        throw new Error('signing failure')
+                    },
+                ),
+                multisigSignerActor: fromPromise(
+                    async (): Promise<SigningResult> => {
+                        throw new Error('multisig not implemented')
+                    },
+                ),
                 transportActor: fromPromise(async () => mockTransportResult),
             },
         })
@@ -212,12 +231,16 @@ describe('signingMachine', () => {
             actors: {
                 analyzerActor: fromPromise(async () => mockAnalysis),
                 localKeySignerActor: fromPromise(async () => mockSigningResult),
-                multisigSignerActor: fromPromise(async (): Promise<SigningResult> => {
-                    throw new Error('multisig not implemented')
-                }),
-                transportActor: fromPromise(async (): Promise<TransportResult> => {
-                    throw new Error('network error')
-                }),
+                multisigSignerActor: fromPromise(
+                    async (): Promise<SigningResult> => {
+                        throw new Error('multisig not implemented')
+                    },
+                ),
+                transportActor: fromPromise(
+                    async (): Promise<TransportResult> => {
+                        throw new Error('network error')
+                    },
+                ),
             },
         })
 

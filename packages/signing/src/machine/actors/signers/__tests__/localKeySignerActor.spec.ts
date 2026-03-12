@@ -65,7 +65,9 @@ describe('localKeySignerActor', () => {
     })
 
     it('rejects when signTransactions throws', async () => {
-        const signTransactions = vi.fn().mockRejectedValue(new Error('KMS error'))
+        const signTransactions = vi
+            .fn()
+            .mockRejectedValue(new Error('KMS error'))
         const input: LocalKeySignerActorInput = {
             group: mockGroup,
             signerAccount: mockAlgo25Account,
@@ -81,7 +83,8 @@ describe('localKeySignerActor', () => {
     it('rejects when account has no signing keys', async () => {
         const accountWithoutKeys: WalletAccount = {
             type: 'multisig',
-            address: 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+            address:
+                'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
         } as unknown as WalletAccount
 
         const signTransactions = vi.fn()

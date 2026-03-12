@@ -24,11 +24,11 @@ import type {
     TransactionSignRequest,
     ArbitraryDataSignRequest,
 } from '../../models'
+import { createSigningMachine } from '../../machine/createSigningMachine'
 
-const mockSignTransactions = vi.fn()
-const mockEncodeSignedTransactions = vi.fn()
-const mockSendRawTransaction = vi.fn()
-const mockSignArbitraryData = vi.fn()
+// =============================================================================
+// Module mocks
+// =============================================================================
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
@@ -46,35 +46,58 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 
 vi.mock('../useTransactionSigner', () => ({
     useTransactionSigner: vi.fn(() => ({
-        signTransactions: mockSignTransactions,
-    })),
-}))
-
-vi.mock('../useArbitraryDataSigner', () => ({
-    useArbitraryDataSigner: vi.fn(() => ({
-        signArbitraryData: mockSignArbitraryData,
+        signTransactions: vi.fn(),
     })),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => [
-        { address: 'ADDR1', canSign: true, type: 'algo25' },
-        { address: 'ADDR2', canSign: true, type: 'algo25' },
+        { address: 'ADDR1', type: 'algo25' },
+        { address: 'ADDR2', type: 'algo25' },
     ]),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useTransactionEncoder: vi.fn(() => ({
-        encodeSignedTransactions: mockEncodeSignedTransactions,
+        encodeSignedTransactions: vi.fn(),
     })),
     useAlgorandClient: vi.fn(() => ({
-        client: {
-            algod: {
-                sendRawTransaction: mockSendRawTransaction,
-            },
-        },
+        client: { algod: { sendRawTransaction: vi.fn() } },
     })),
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
 }))
+
+vi.mock('../../machine/createSigningMachine')
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+/**
+ * Builds a mock actor whose subscriber callback can be triggered manually.
+ */
+const makeMockActor = (requestId: string) => {
+    let subscriberCb: ((snapshot: unknown) => void) | null = null
+
+    const actor = {
+        id: requestId,
+        subscribe: vi.fn((cb: (snapshot: unknown) => void) => {
+            subscriberCb = cb
+        }),
+        start: vi.fn(),
+        stop: vi.fn(),
+        send: vi.fn(),
+        // Test helper: simulate actor reaching a terminal state
+        simulateDone: (matchedState: string, request: SignRequest) => {
+            subscriberCb?.({
+                status: 'done',
+                matches: (s: string) => s === matchedState,
+                context: { request },
+            })
+        },
+    }
+    return actor
+}
 
 const makeTxRequest = (
     overrides: Partial<TransactionSignRequest> = {},
@@ -82,7 +105,7 @@ const makeTxRequest = (
     id: 'tx-1',
     type: 'transactions',
     transport: 'algod',
-    txs: [{ sender: 'ADDR1' } as any],
+    txs: [{ sender: { toString: () => 'ADDR1' } } as any],
     ...overrides,
 })
 
@@ -96,17 +119,14 @@ const makeArbRequest = (
     ...overrides,
 })
 
+// =============================================================================
+// Tests
+// =============================================================================
+
 describe('useSigningRequest', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         useSigningStore.getState().resetState()
-        mockSignTransactions.mockResolvedValue([
-            { txn: {}, sig: new Uint8Array() },
-        ])
-        mockEncodeSignedTransactions.mockReturnValue([
-            new Uint8Array([1, 2, 3]),
-        ])
-        mockSignArbitraryData.mockResolvedValue([new Uint8Array([1, 2, 3])])
     })
 
     describe('queue management', () => {
@@ -115,9 +135,12 @@ describe('useSigningRequest', () => {
             expect(result.current.pendingSignRequests).toEqual([])
         })
 
-        test('adds a sign request', () => {
+        test('addSignRequest adds to pendingSignRequests and creates an actor', () => {
+            const actor = makeMockActor('tx-1')
+            vi.mocked(createSigningMachine).mockReturnValue(actor as any)
+
             const { result } = renderHook(() => useSigningRequest())
-            const request: SignRequest = makeTxRequest()
+            const request = makeTxRequest()
 
             act(() => {
                 result.current.addSignRequest(request)
@@ -125,6 +148,7 @@ describe('useSigningRequest', () => {
 
             expect(result.current.pendingSignRequests).toHaveLength(1)
             expect(result.current.pendingSignRequests[0].id).toBe('tx-1')
+            expect(actor.start).toHaveBeenCalled()
         })
 
         test('throws when transaction count exceeds limit', () => {
@@ -133,9 +157,7 @@ describe('useSigningRequest', () => {
                 { length: MAX_TRANSACTION_SIGN_REQUESTS + 1 },
                 () => ({}),
             )
-            const request = makeTxRequest({
-                txs: txs as any,
-            })
+            const request = makeTxRequest({ txs: txs as any })
 
             expect(() => {
                 act(() => {
@@ -145,14 +167,15 @@ describe('useSigningRequest', () => {
         })
 
         test('accepts transactions at exactly the limit', () => {
+            const actor = makeMockActor('tx-1')
+            vi.mocked(createSigningMachine).mockReturnValue(actor as any)
+
             const { result } = renderHook(() => useSigningRequest())
             const txs = Array.from(
                 { length: MAX_TRANSACTION_SIGN_REQUESTS },
                 () => ({}),
             )
-            const request = makeTxRequest({
-                txs: txs as any,
-            })
+            const request = makeTxRequest({ txs: txs as any })
 
             act(() => {
                 result.current.addSignRequest(request)
@@ -165,15 +188,9 @@ describe('useSigningRequest', () => {
             const { result } = renderHook(() => useSigningRequest())
             const data = Array.from(
                 { length: MAX_DATA_SIGN_REQUESTS + 1 },
-                () => ({
-                    signer: 'ADDR1',
-                    data: 'test',
-                    chainId: 4160,
-                }),
+                () => ({ signer: 'ADDR1', data: 'test', chainId: 4160 }),
             )
-            const request = makeArbRequest({
-                data: data as any,
-            })
+            const request = makeArbRequest({ data: data as any })
 
             expect(() => {
                 act(() => {
@@ -181,229 +198,185 @@ describe('useSigningRequest', () => {
                 })
             }).toThrow(AppError)
         })
-    })
 
-    describe('signRequest', () => {
-        test('signs transaction request and returns result', async () => {
+        test('does not add duplicate requests', () => {
+            const actor = makeMockActor('tx-1')
+            vi.mocked(createSigningMachine).mockReturnValue(actor as any)
+
+            const { result } = renderHook(() => useSigningRequest())
             const request = makeTxRequest()
-            const { result } = renderHook(() => useSigningRequest())
 
-            let signResult: unknown
-            await act(async () => {
-                signResult = await result.current.signRequest(request)
+            act(() => {
+                result.current.addSignRequest(request)
+                result.current.addSignRequest(request)
             })
 
-            expect(mockSignTransactions).toHaveBeenCalledWith(request.txs, [0])
-            expect(signResult).toEqual({
-                type: 'transactions',
-                signedTransactions: [{ txn: {}, sig: new Uint8Array() }],
-            })
+            expect(result.current.pendingSignRequests).toHaveLength(1)
+            expect(createSigningMachine).toHaveBeenCalledTimes(1)
         })
 
-        test('signs arbitrary data request and returns result', async () => {
-            const request = makeArbRequest()
-            const { result } = renderHook(() => useSigningRequest())
+        test('removes request and stops actor on removeSignRequest', () => {
+            const actor = makeMockActor('tx-1')
+            vi.mocked(createSigningMachine).mockReturnValue(actor as any)
 
-            let signResult: unknown
-            await act(async () => {
-                signResult = await result.current.signRequest(request)
+            const { result } = renderHook(() => useSigningRequest())
+            const request = makeTxRequest()
+
+            act(() => {
+                result.current.addSignRequest(request)
+            })
+            act(() => {
+                result.current.removeSignRequest(request)
             })
 
-            expect(mockSignArbitraryData).toHaveBeenCalledWith(
-                { address: 'ADDR1', canSign: true, type: 'algo25' },
-                'hello',
-            )
-            expect(signResult).toEqual({
-                type: 'arbitrary-data',
-                signatures: [
-                    { signer: 'ADDR1', signature: new Uint8Array([1, 2, 3]) },
-                ],
-            })
-        })
-
-        test('throws for unsupported request type', async () => {
-            const request = {
-                id: '1',
-                type: 'arc60',
-                transport: 'callback',
-            } as SignRequest
-            const { result } = renderHook(() => useSigningRequest())
-
-            await expect(
-                act(async () => {
-                    await result.current.signRequest(request)
-                }),
-            ).rejects.toThrow('Unsupported sign request type: arc60')
+            expect(actor.stop).toHaveBeenCalled()
+            expect(result.current.pendingSignRequests).toHaveLength(0)
         })
     })
 
     describe('signAndSendRequest', () => {
-        test('signs and sends transactions via algod', async () => {
-            const request = makeTxRequest({ transport: 'algod' })
+        test('sends USER_APPROVED to the matching actor', () => {
+            const actor = makeMockActor('tx-1')
+            vi.mocked(createSigningMachine).mockReturnValue(actor as any)
+
             const { result } = renderHook(() => useSigningRequest())
+            const request = makeTxRequest()
 
             act(() => {
                 result.current.addSignRequest(request)
             })
-
-            await act(async () => {
-                await result.current.signAndSendRequest(request)
+            act(() => {
+                result.current.signAndSendRequest(request)
             })
 
-            expect(mockSignTransactions).toHaveBeenCalled()
-            expect(mockEncodeSignedTransactions).toHaveBeenCalled()
-            expect(mockSendRawTransaction).toHaveBeenCalled()
-            expect(result.current.pendingSignRequests).toHaveLength(0)
+            expect(actor.send).toHaveBeenCalledWith({ type: 'USER_APPROVED' })
         })
 
-        test('signs transactions and calls approve for callback', async () => {
-            const mockApprove = vi.fn().mockResolvedValue(undefined)
-            const request = makeTxRequest({
-                transport: 'callback',
-                approve: mockApprove,
-            })
+        test('currentRequest is the first pending request', () => {
+            const actor1 = makeMockActor('tx-1')
+            const actor2 = makeMockActor('tx-2')
+            vi.mocked(createSigningMachine)
+                .mockReturnValueOnce(actor1 as any)
+                .mockReturnValueOnce(actor2 as any)
+
             const { result } = renderHook(() => useSigningRequest())
+            const req1 = makeTxRequest({ id: 'tx-1' })
+            const req2 = makeTxRequest({ id: 'tx-2' })
 
             act(() => {
-                result.current.addSignRequest(request)
+                result.current.addSignRequest(req1)
+                result.current.addSignRequest(req2)
             })
 
-            await act(async () => {
-                await result.current.signAndSendRequest(request)
-            })
-
-            expect(mockApprove).toHaveBeenCalled()
-            expect(mockSendRawTransaction).not.toHaveBeenCalled()
-            expect(result.current.pendingSignRequests).toHaveLength(0)
-        })
-
-        test('signs arbitrary data and calls approve', async () => {
-            const mockApprove = vi.fn().mockResolvedValue(undefined)
-            const request = makeArbRequest({ approve: mockApprove })
-            const { result } = renderHook(() => useSigningRequest())
-
-            act(() => {
-                result.current.addSignRequest(request)
-            })
-
-            await act(async () => {
-                await result.current.signAndSendRequest(request)
-            })
-
-            expect(mockSignArbitraryData).toHaveBeenCalled()
-            expect(mockApprove).toHaveBeenCalledWith([
-                { signer: 'ADDR1', signature: new Uint8Array([1, 2, 3]) },
-            ])
-            expect(result.current.pendingSignRequests).toHaveLength(0)
-        })
-
-        test('throws for arbitrary data via algod transport', async () => {
-            const request = makeArbRequest({ transport: 'algod' })
-            const { result } = renderHook(() => useSigningRequest())
-
-            act(() => {
-                result.current.addSignRequest(request)
-            })
-
-            await expect(
-                act(async () => {
-                    await result.current.signAndSendRequest(request)
-                }),
-            ).rejects.toThrow(
-                'Arbitrary data signing is not supported via algod transport',
-            )
-        })
-
-        test('throws for account not found', async () => {
-            const request = makeArbRequest({
-                data: [{ signer: 'UNKNOWN', data: 'hello', chainId: 4160 }],
-            })
-            const { result } = renderHook(() => useSigningRequest())
-
-            act(() => {
-                result.current.addSignRequest(request)
-            })
-
-            await expect(
-                act(async () => {
-                    await result.current.signAndSendRequest(request)
-                }),
-            ).rejects.toThrow('Account not found for signer: UNKNOWN')
-        })
-
-        test('throws when signature generation fails', async () => {
-            mockSignArbitraryData.mockResolvedValue([])
-            const request = makeArbRequest()
-            const { result } = renderHook(() => useSigningRequest())
-
-            act(() => {
-                result.current.addSignRequest(request)
-            })
-
-            await expect(
-                act(async () => {
-                    await result.current.signAndSendRequest(request)
-                }),
-            ).rejects.toThrow('Failed to generate signature for signer: ADDR1')
+            expect(result.current.currentRequest?.id).toBe('tx-1')
         })
     })
 
     describe('rejectRequest', () => {
-        test('calls reject and removes for callback transport', () => {
-            const mockReject = vi.fn()
-            const request = makeTxRequest({
-                transport: 'callback',
-                reject: mockReject,
-            })
+        test('sends USER_REJECTED to the matching actor', () => {
+            const actor = makeMockActor('tx-1')
+            vi.mocked(createSigningMachine).mockReturnValue(actor as any)
+
             const { result } = renderHook(() => useSigningRequest())
+            const request = makeTxRequest({ transport: 'callback' })
 
             act(() => {
                 result.current.addSignRequest(request)
             })
-
             act(() => {
                 result.current.rejectRequest(request)
+            })
+
+            expect(actor.send).toHaveBeenCalledWith({ type: 'USER_REJECTED' })
+        })
+
+        test('when no actor, calls reject callback and removes request for callback transport', () => {
+            const mockReject = vi.fn()
+            // Do NOT create an actor — simulate missing actor scenario
+            vi.mocked(createSigningMachine).mockReturnValue(
+                makeMockActor('tx-1') as any,
+            )
+
+            const { result } = renderHook(() => useSigningRequest())
+
+            // Directly put the request in the store without an actor
+            useSigningStore
+                .getState()
+                .addSignRequest(
+                    makeTxRequest({
+                        transport: 'callback',
+                        reject: mockReject,
+                    }),
+                )
+
+            // Force re-render to pick up store change
+            act(() => {
+                result.current.rejectRequest(
+                    makeTxRequest({
+                        transport: 'callback',
+                        reject: mockReject,
+                    }),
+                )
             })
 
             expect(mockReject).toHaveBeenCalled()
+        })
+    })
+
+    describe('actor lifecycle', () => {
+        test('removes request from queue when actor reaches completed state', () => {
+            const actor = makeMockActor('tx-1')
+            vi.mocked(createSigningMachine).mockReturnValue(actor as any)
+
+            const { result } = renderHook(() => useSigningRequest())
+            const request = makeTxRequest()
+
+            act(() => {
+                result.current.addSignRequest(request)
+            })
+
+            expect(result.current.pendingSignRequests).toHaveLength(1)
+
+            act(() => {
+                actor.simulateDone('completed', request)
+            })
+
             expect(result.current.pendingSignRequests).toHaveLength(0)
         })
 
-        test('does not call reject for algod transport', () => {
-            const mockReject = vi.fn()
-            const request = makeTxRequest({
-                transport: 'algod',
-                reject: mockReject,
-            })
+        test('removes request from queue when actor reaches rejected state', () => {
+            const actor = makeMockActor('tx-1')
+            vi.mocked(createSigningMachine).mockReturnValue(actor as any)
+
             const { result } = renderHook(() => useSigningRequest())
+            const request = makeTxRequest()
 
             act(() => {
                 result.current.addSignRequest(request)
             })
 
             act(() => {
-                result.current.rejectRequest(request)
+                actor.simulateDone('rejected', request)
             })
 
-            expect(mockReject).not.toHaveBeenCalled()
             expect(result.current.pendingSignRequests).toHaveLength(0)
         })
 
-        test('works for arbitrary data requests', () => {
-            const mockReject = vi.fn()
-            const request = makeArbRequest({ reject: mockReject })
+        test('sets lastCompletedRequest when actor reaches completed state', () => {
+            const actor = makeMockActor('tx-1')
+            vi.mocked(createSigningMachine).mockReturnValue(actor as any)
+
             const { result } = renderHook(() => useSigningRequest())
+            const request = makeTxRequest()
 
             act(() => {
                 result.current.addSignRequest(request)
             })
-
             act(() => {
-                result.current.rejectRequest(request)
+                actor.simulateDone('completed', request)
             })
 
-            expect(mockReject).toHaveBeenCalled()
-            expect(result.current.pendingSignRequests).toHaveLength(0)
+            expect(result.current.lastCompletedRequest?.id).toBe('tx-1')
         })
     })
 })

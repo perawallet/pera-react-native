@@ -32,5 +32,6 @@ export const createSigningMachine = (
     deps: SigningMachineDeps,
 ) =>
     createActor(signingMachine, {
+        id: request.id,
         input: { request, allAccounts, ...deps },
     })

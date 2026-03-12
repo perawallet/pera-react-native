@@ -11,7 +11,11 @@
  */
 
 import { setup, assign } from 'xstate'
-import type { SigningMachineContext, SigningMachineEvent, SigningMachineInput } from './context'
+import type {
+    SigningMachineContext,
+    SigningMachineEvent,
+    SigningMachineInput,
+} from './context'
 import type { AnalyzedSignableGroup } from '../pipeline/types'
 import { analyzerActor } from './actors/analyzerActor'
 import { localKeySignerActor } from './actors/signers/localKeySignerActor'
@@ -46,8 +50,10 @@ export const signingMachine = setup({
     },
     guards: {
         hasError: ({ context }) => context.error !== null,
-        isLocalKeyType: ({ context }) => context.resolvedSignerType === 'localKey',
-        isMultisigType: ({ context }) => context.resolvedSignerType === 'multisig',
+        isLocalKeyType: ({ context }) =>
+            context.resolvedSignerType === 'localKey',
+        isMultisigType: ({ context }) =>
+            context.resolvedSignerType === 'multisig',
     },
 }).createMachine({
     id: 'signingMachine',
@@ -144,7 +150,8 @@ export const signingMachine = setup({
                                 ...context.signableGroup!,
                                 analysis: context.analysis!,
                             } as AnalyzedSignableGroup,
-                            signerAccount: context.authAccount ?? context.signerAccount!,
+                            signerAccount:
+                                context.authAccount ?? context.signerAccount!,
                             signTransactions: context.deps.signTransactions,
                         }),
                         onDone: {
@@ -158,7 +165,9 @@ export const signingMachine = setup({
                             actions: assign({
                                 error: ({ event }) => {
                                     const e = event.error
-                                    return e instanceof Error ? e : new Error(String(e))
+                                    return e instanceof Error
+                                        ? e
+                                        : new Error(String(e))
                                 },
                             }),
                         },
@@ -186,7 +195,9 @@ export const signingMachine = setup({
                             actions: assign({
                                 error: ({ event }) => {
                                     const e = event.error
-                                    return e instanceof Error ? e : new Error(String(e))
+                                    return e instanceof Error
+                                        ? e
+                                        : new Error(String(e))
                                 },
                             }),
                         },
@@ -205,10 +216,12 @@ export const signingMachine = setup({
                 input: ({ context }) => ({
                     signingResult: context.signingResult!,
                     source: context.signableGroup!.source,
-                    signerAccount: context.authAccount ?? context.signerAccount!,
+                    signerAccount:
+                        context.authAccount ?? context.signerAccount!,
                     jointAccountAddress: context.signerAccount?.address,
                     algokit: context.deps.algokit,
-                    encodeSignedTransactions: context.deps.encodeSignedTransactions,
+                    encodeSignedTransactions:
+                        context.deps.encodeSignedTransactions,
                     proposeSignRequest: context.deps.proposeSignRequest,
                     addSignatures: context.deps.addSignatures,
                 }),

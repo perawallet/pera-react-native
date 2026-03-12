@@ -11,7 +11,11 @@
  */
 
 import { fromPromise } from 'xstate'
-import type { SignableGroup, SignableAnalysis, AnalysisContext } from '../../pipeline/types'
+import type {
+    SignableGroup,
+    SignableAnalysis,
+    AnalysisContext,
+} from '../../pipeline/types'
 import { createStandardAnalyzer } from '../../pipeline/analyzers/createStandardAnalyzer'
 
 export type AnalyzerActorInput = {

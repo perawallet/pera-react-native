@@ -134,7 +134,9 @@ const buildSignableGroup = (request: SignRequest): SignableGroup => {
         return {
             data: {
                 type: 'arbitrary-data',
-                data: dataRequest.data.map(d => new TextEncoder().encode(d.data)),
+                data: dataRequest.data.map(d =>
+                    new TextEncoder().encode(d.data),
+                ),
                 messages: dataRequest.data.map(d => d.message ?? d.data),
             },
             source,
@@ -161,11 +163,14 @@ const extractDeps = (input: SigningMachineInput): SigningMachineDeps => ({
  * Resolves the initial machine context from the input.
  * Throws if the signer account cannot be found or signing is not possible.
  */
-export const resolveInitialContext = (input: SigningMachineInput): SigningMachineContext => {
+export const resolveInitialContext = (
+    input: SigningMachineInput,
+): SigningMachineContext => {
     const { request, allAccounts } = input
 
     const signerAddress = extractSignerAddress(request)
-    const signerAccount = allAccounts.find(a => a.address === signerAddress) ?? null
+    const signerAccount =
+        allAccounts.find(a => a.address === signerAddress) ?? null
 
     if (!signerAccount) {
         throw new Error(`Signer account not found: ${signerAddress}`)
