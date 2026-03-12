@@ -28,6 +28,7 @@ import { useDevice } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { usePolling } from '@perawallet/wallet-core-polling'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { logger } from '@perawallet/wallet-core-shared'
 import { useNetworkStatus, useNetworkStatusListener } from '@modules/network'
 import { WebViewOverlay } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
@@ -35,6 +36,7 @@ import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletCo
 import { useTokenListener } from '@modules/token'
 import { AutoLockGuard } from '@modules/security/components/AutoLockGuard/AutoLockGuard'
 import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
+import { getPollingTransitionAction } from '@utils/app-state'
 
 export type RootComponentProps = {
     fcmToken: string | null
@@ -106,21 +108,51 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
         registerDevice(addresses)
 
         if (!addresses.length) {
-            stopPolling()
+            void stopPolling().catch(error => {
+                logger.error(
+                    'Failed to stop polling when there are no addresses',
+                    {
+                        source: 'RootComponent',
+                        error,
+                    },
+                )
+            })
         } else if (config.pollingEnabled) {
             const subscription = AppState.addEventListener(
                 'change',
                 nextAppState => {
-                    if (
-                        appState.current.match(/inactive|background/) &&
-                        nextAppState === 'active'
-                    ) {
-                        startPolling()
-                    } else if (
-                        appState.current === 'active' &&
-                        nextAppState.match(/inactive|background/)
-                    ) {
-                        stopPolling()
+                    const previousState = appState.current
+                    const action = getPollingTransitionAction(
+                        previousState,
+                        nextAppState,
+                    )
+
+                    if (action === 'start') {
+                        void startPolling().catch(error => {
+                            logger.error(
+                                'Failed to start polling on app foreground',
+                                {
+                                    source: 'RootComponent',
+                                    previousState,
+                                    nextAppState,
+                                    action,
+                                    error,
+                                },
+                            )
+                        })
+                    } else if (action === 'stop') {
+                        void stopPolling().catch(error => {
+                            logger.error(
+                                'Failed to stop polling on app background',
+                                {
+                                    source: 'RootComponent',
+                                    previousState,
+                                    nextAppState,
+                                    action,
+                                    error,
+                                },
+                            )
+                        })
                     }
 
                     appState.current = nextAppState
@@ -128,7 +160,15 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
             )
 
             return () => {
-                stopPolling()
+                void stopPolling().catch(error => {
+                    logger.error(
+                        'Failed to stop polling during RootComponent cleanup',
+                        {
+                            source: 'RootComponent',
+                            error,
+                        },
+                    )
+                })
                 subscription.remove()
             }
         }
