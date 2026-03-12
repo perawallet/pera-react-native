@@ -105,18 +105,27 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     useEffect(() => {
         //TODO we should move the registerDevice stuff into the wallet-core somewhere somehow - maybe in setAccounts or something
         const addresses = accounts?.map(account => account.address) ?? []
+        const runPollingAction = async (action: 'start' | 'stop') => {
+            try {
+                if (action === 'start') {
+                    await startPolling()
+                } else {
+                    await stopPolling()
+                }
+            } catch (error) {
+                // Prevent polling failures from bubbling to top-level handlers.
+                logger.error('Polling action failed in RootComponent listener', {
+                    source: 'RootComponent',
+                    action,
+                    error,
+                })
+            }
+        }
+
         registerDevice(addresses)
 
         if (!addresses.length) {
-            void stopPolling().catch(error => {
-                logger.error(
-                    'Failed to stop polling when there are no addresses',
-                    {
-                        source: 'RootComponent',
-                        error,
-                    },
-                )
-            })
+            void runPollingAction('stop')
         } else if (config.pollingEnabled) {
             const subscription = AppState.addEventListener(
                 'change',
@@ -128,31 +137,9 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
                     )
 
                     if (action === 'start') {
-                        void startPolling().catch(error => {
-                            logger.error(
-                                'Failed to start polling on app foreground',
-                                {
-                                    source: 'RootComponent',
-                                    previousState,
-                                    nextAppState,
-                                    action,
-                                    error,
-                                },
-                            )
-                        })
+                        void runPollingAction('start')
                     } else if (action === 'stop') {
-                        void stopPolling().catch(error => {
-                            logger.error(
-                                'Failed to stop polling on app background',
-                                {
-                                    source: 'RootComponent',
-                                    previousState,
-                                    nextAppState,
-                                    action,
-                                    error,
-                                },
-                            )
-                        })
+                        void runPollingAction('stop')
                     }
 
                     appState.current = nextAppState
@@ -160,15 +147,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
             )
 
             return () => {
-                void stopPolling().catch(error => {
-                    logger.error(
-                        'Failed to stop polling during RootComponent cleanup',
-                        {
-                            source: 'RootComponent',
-                            error,
-                        },
-                    )
-                })
+                void runPollingAction('stop')
                 subscription.remove()
             }
         }
