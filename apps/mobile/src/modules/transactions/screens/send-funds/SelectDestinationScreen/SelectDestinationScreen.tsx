@@ -23,22 +23,21 @@ export const SelectDestinationScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
 
-    const { asset, selectedAsset, selectedAccount, handleSelected } =
-        useSelectDestinationScreen()
+    const { selectedAsset, handleSelected } = useSelectDestinationScreen()
 
     useNavigationHeader({
-        title: asset ? (
+        title: selectedAsset ? (
             <PWView style={styles.assetTitleContainer}>
                 <AssetIcon
-                    asset={asset}
+                    asset={selectedAsset}
                     size='md'
                 />
-                <PWText>{asset.name}</PWText>
+                <PWText>{selectedAsset.name}</PWText>
             </PWView>
         ) : undefined,
     })
 
-    if (!selectedAsset || !asset) {
+    if (!selectedAsset) {
         return (
             <EmptyView
                 title={t('send_funds.destination.error_title')}
@@ -49,10 +48,7 @@ export const SelectDestinationScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <AddressSearchView
-                onSelected={handleSelected}
-                excludeAddress={selectedAccount?.address}
-            />
+            <AddressSearchView onSelected={handleSelected} />
         </PWView>
     )
 }

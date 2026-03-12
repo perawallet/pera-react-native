@@ -25,6 +25,7 @@ export const useStyles = makeStyles(theme => {
             marginTop: theme.spacing.lg,
         },
         contentContainer: {
+            flex: 1,
             gap: theme.spacing.lg,
         },
         title: {},
