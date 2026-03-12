@@ -11,12 +11,18 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import type { Network } from '@perawallet/wallet-core-shared'
 import type {
     SignableGroup,
     SignableAnalysis,
     SigningResult,
     TransportResult,
 } from '../pipeline/types'
+import type { AlgokitClientInterface } from '../pipeline/transports/createAlgodTransport'
+import type { ProposeSignRequestFn } from '../pipeline/transports/createMultisigProposeTransport'
+import type { AddSignaturesFn } from '../pipeline/transports/createMultisigCosignTransport'
+import type { LocalSigningFunction } from '../pipeline/signing/createLocalKeyStrategy'
 import type { SignRequest } from '../models'
 
 // =============================================================================
@@ -32,6 +38,29 @@ import type { SignRequest } from '../models'
 export type ResolvedSignerType = 'localKey' | 'ledger' | 'multisig'
 
 // =============================================================================
+// Machine Deps
+// =============================================================================
+
+/**
+ * Runtime dependencies injected when creating a signingMachine actor.
+ * These are functions and clients that cannot be known at machine definition time.
+ */
+export type SigningMachineDeps = {
+    /** KMS signing function from useTransactionSigner */
+    signTransactions: LocalSigningFunction
+    /** Encodes signed transactions to raw bytes for algod submission */
+    encodeSignedTransactions: (txns: PeraSignedTransaction[]) => Uint8Array[]
+    /** AlgorandClient for direct algod submission */
+    algokit: AlgokitClientInterface
+    /** Backend API: propose new multisig sign request */
+    proposeSignRequest: ProposeSignRequestFn
+    /** Backend API: add signatures to existing multisig request */
+    addSignatures: AddSignaturesFn
+    /** Current network (mainnet / testnet) */
+    network: Network
+}
+
+// =============================================================================
 // Machine Context
 // =============================================================================
 
@@ -45,6 +74,11 @@ export type SigningMachineContext = {
      * that reads `currentRequest` from useSigningRequest().
      */
     request: SignRequest
+
+    /**
+     * All user accounts, needed by the analyzer and for account resolution.
+     */
+    allAccounts: WalletAccount[]
 
     /**
      * The account that will sign (or the multisig account to sign for).
@@ -91,6 +125,12 @@ export type SigningMachineContext = {
 
     /** Error captured when the machine enters the `failed` state. */
     error: Error | null
+
+    /**
+     * Runtime dependencies (KMS functions, AlgoKit client, etc).
+     * Stored in context so actor `input` functions can pass them to invoked actors.
+     */
+    deps: SigningMachineDeps
 }
 
 // =============================================================================
@@ -112,9 +152,9 @@ export type SigningMachineEvent = UserApprovedEvent | UserRejectedEvent
 
 /**
  * Input provided when creating a signingMachine actor.
- * allAccounts is needed to resolve the signer and any rekey chain.
+ * Combines the sign request, all accounts, and runtime deps.
  */
 export type SigningMachineInput = {
     request: SignRequest
     allAccounts: WalletAccount[]
-}
+} & SigningMachineDeps
