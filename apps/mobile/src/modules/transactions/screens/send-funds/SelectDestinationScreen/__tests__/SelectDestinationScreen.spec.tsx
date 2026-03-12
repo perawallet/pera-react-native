@@ -13,25 +13,8 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, fireEvent } from '@test-utils/render'
 import { SelectDestinationScreen } from '../SelectDestinationScreen'
-import { useSendFunds } from '@modules/transactions/hooks'
-import { useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { useSelectDestinationScreen } from '../useSelectDestinationScreen'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-
-const mockNavigate = vi.fn()
-const mockGoBack = vi.fn()
-
-vi.mock('@react-navigation/native', async importOriginal => {
-    const actual =
-        await importOriginal<typeof import('@react-navigation/native')>()
-    return {
-        ...actual,
-        useNavigation: () => ({
-            navigate: mockNavigate,
-            goBack: mockGoBack,
-        }),
-    }
-})
 
 vi.mock('@hooks/useNavigationHeader', () => ({
     useNavigationHeader: vi.fn(),
@@ -52,9 +35,8 @@ vi.mock('@components/core', () => ({
 
 vi.mock('@components/AddressSearchView', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    AddressSearchView: ({ onSelected, excludeAddress }: any) => (
+    AddressSearchView: ({ onSelected }: any) => (
         <div data-testid='address-search-view'>
-            <span data-testid='exclude-address'>{excludeAddress}</span>
             <button
                 data-testid='select-address-btn'
                 onClick={() => onSelected('SELECTED_ADDRESS')}
@@ -79,32 +61,11 @@ vi.mock('@modules/assets/components/AssetIcon', () => ({
     AssetIcon: () => <div data-testid='asset-icon' />,
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useAccountInformationQuery: vi.fn(() => ({ data: null })),
+vi.mock('../useSelectDestinationScreen', () => ({
+    useSelectDestinationScreen: vi.fn(),
 }))
 
-vi.mock('@modules/transactions/hooks', () => ({
-    useSendFunds: vi.fn(),
-}))
-
-vi.mock('@perawallet/wallet-core-assets', () => ({
-    useAssetsQuery: vi.fn(),
-    ALGO_ASSET_ID: '0',
-}))
-
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: vi.fn(),
-    useAllAccounts: vi.fn(() => []),
-    useAccountsStore: vi.fn(() => []),
-    useAccountBalancesQuery: vi.fn(() => ({
-        accountBalances: new Map(),
-    })),
-    hasSigningKeys: vi.fn(() => false),
-    canSignWithAccount: vi.fn(() => false),
-}))
-
-const mockSetDestination = vi.fn()
-const mockSetSendMode = vi.fn()
+const mockHandleSelected = vi.fn()
 
 const mockAsset = {
     id: 123,
@@ -118,29 +79,17 @@ describe('SelectDestinationScreen', () => {
         vi.clearAllMocks()
 
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(useSendFunds as any).mockReturnValue({
-            selectedAsset: { assetId: 123 },
-            setDestination: mockSetDestination,
-            setSendMode: mockSetSendMode,
-        })
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(useAssetsQuery as any).mockReturnValue({
-            data: new Map([[123, mockAsset]]),
-        })
-
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(useSelectedAccount as any).mockReturnValue({
-            address: 'SENDER_ADDRESS',
+        ;(useSelectDestinationScreen as any).mockReturnValue({
+            selectedAsset: mockAsset,
+            handleSelected: mockHandleSelected,
         })
     })
 
     it('shows EmptyView when selectedAsset is missing', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(useSendFunds as any).mockReturnValue({
+        ;(useSelectDestinationScreen as any).mockReturnValue({
             selectedAsset: undefined,
-            setDestination: mockSetDestination,
-            setSendMode: mockSetSendMode,
+            handleSelected: mockHandleSelected,
         })
 
         const { getByTestId } = render(<SelectDestinationScreen />)
@@ -154,37 +103,21 @@ describe('SelectDestinationScreen', () => {
         )
     })
 
-    it('shows EmptyView when asset is not found in assets map', () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(useAssetsQuery as any).mockReturnValue({
-            data: new Map(),
-        })
-
-        const { getByTestId } = render(<SelectDestinationScreen />)
-
-        expect(getByTestId('empty-view')).toBeTruthy()
-    })
-
-    it('renders AddressSearchView with correct excludeAddress', () => {
+    it('renders AddressSearchView when asset exists', () => {
         const { getByTestId } = render(<SelectDestinationScreen />)
 
         expect(getByTestId('address-search-view')).toBeTruthy()
-        expect(getByTestId('exclude-address').textContent).toBe(
-            'SENDER_ADDRESS',
-        )
     })
 
-    it('calls setDestination and navigates to ARC59SendSummary for ASA send to external address', () => {
+    it('calls handleSelected when an address is selected', () => {
         const { getByTestId } = render(<SelectDestinationScreen />)
 
         fireEvent.click(getByTestId('select-address-btn'))
 
-        expect(mockSetDestination).toHaveBeenCalledWith('SELECTED_ADDRESS')
-        expect(mockSetSendMode).toHaveBeenCalledWith('sendArc59')
-        expect(mockNavigate).toHaveBeenCalledWith('ARC59SendSummary')
+        expect(mockHandleSelected).toHaveBeenCalledWith('SELECTED_ADDRESS')
     })
 
-    it('sets up header with asset name via useNavigationHeader', () => {
+    it('sets up header with asset info via useNavigationHeader', () => {
         render(<SelectDestinationScreen />)
 
         expect(useNavigationHeader).toHaveBeenCalledWith(

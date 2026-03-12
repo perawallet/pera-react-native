@@ -11,7 +11,7 @@
  */
 
 import Decimal from 'decimal.js'
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
     useAccountBalancesQuery,
     useSelectedAccount,
@@ -38,8 +38,12 @@ export const useInputScreen = () => {
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const selectedAccount = useSelectedAccount()
-    const { selectedAssetBalance, setAmount, setIsCloseAccount } =
-        useSendFunds()
+    const {
+        selectedAssetBalance,
+        setSelectedAsset,
+        setAmount,
+        setIsCloseAccount,
+    } = useSendFunds()
 
     // we maintain state and a ref to improve performance while retaining reactivity
     const [value, setValue] = useState<string | null>()
@@ -148,6 +152,12 @@ export const useInputScreen = () => {
             (accountInformation?.assets?.length ?? 0) === 0
         )
     }, [selectedAssetBalance?.assetId, accountInformation?.assets])
+
+    useEffect(() => {
+        if (asset) {
+            setSelectedAsset(asset)
+        }
+    }, [asset])
 
     const handleNext = useCallback(() => {
         if (!value || Decimal(value).lte(0)) {

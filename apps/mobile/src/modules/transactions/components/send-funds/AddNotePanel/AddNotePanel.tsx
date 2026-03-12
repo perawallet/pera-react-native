@@ -19,6 +19,7 @@ import {
     PWToolbar,
     PWView,
 } from '@components/core'
+import { BottomSheetTextInput } from '@gorhom/bottom-sheet'
 import { useEffect, useState } from 'react'
 import { useForm, Controller } from 'react-hook-form'
 import { useStyles } from './styles'
@@ -104,6 +105,8 @@ export const AddNotePanel = ({
                                 value={value}
                                 label={t('send_funds.add_note.placeholder')}
                                 errorMessage={errors.note?.message}
+                                autoFocus
+                                InputComponent={BottomSheetTextInput}
                             />
                         )}
                     />
