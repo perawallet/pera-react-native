@@ -14,6 +14,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { useDeleteAllData } from '@modules/settings/hooks/useDeleteAllData'
 import { AppState, AppStateStatus } from 'react-native'
+import { logger } from '@perawallet/wallet-core-shared'
+import {
+    AppStateValue,
+    isBackgroundTransition,
+    isForegroundTransition,
+} from '@utils/app-state'
 
 type UseAutoLockListenerResult = {
     isLocked: boolean
@@ -36,48 +42,94 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
         setAutoLockStartedAt(Date.now())
     }, [setAutoLockStartedAt])
 
-    const recordForeground = useCallback(async (): Promise<boolean> => {
-        setIsChecking(true)
-        const expired = await checkAutoLock()
-        setIsLocked(expired)
-        setIsChecking(false)
-        return expired
-    }, [checkAutoLock, setAutoLockStartedAt])
+    const recordForeground = useCallback(
+        async (transitionContext?: {
+            previousState: AppStateValue
+            nextState: AppStateValue
+        }): Promise<boolean> => {
+            setIsChecking(true)
+            try {
+                const expired = await checkAutoLock()
+                setIsLocked(expired)
+                return expired
+            } catch (error) {
+                logger.error('Auto-lock foreground check failed', {
+                    source: 'AutoLockGuard.useAutoLockListener',
+                    phase: 'foreground',
+                    previousState: transitionContext?.previousState ?? null,
+                    nextState: transitionContext?.nextState ?? null,
+                    lockEnabled: isLocked,
+                    error,
+                })
+                return isLocked
+            } finally {
+                setIsChecking(false)
+            }
+        },
+        [checkAutoLock, isLocked],
+    )
 
     const unlock = useCallback(() => {
         setIsChecking(false)
         setIsLocked(false)
         setAutoLockStartedAt(null)
-    }, [])
+    }, [setAutoLockStartedAt])
 
     const handleResetData = useCallback(async () => {
         await deleteAllData()
         setIsChecking(false)
         setIsLocked(false)
         setAutoLockStartedAt(null)
-    }, [deleteAllData])
+    }, [deleteAllData, setAutoLockStartedAt])
 
     useEffect(() => {
         if (!isInitialized) {
-            checkPinEnabled().then(enabled => {
-                setIsLocked(enabled)
-                setIsInitialized(true)
-            })
+            let isMounted = true
+            setIsChecking(true)
+
+            void checkPinEnabled()
+                .then(enabled => {
+                    if (!isMounted) {
+                        return
+                    }
+                    setIsLocked(enabled)
+                })
+                .catch(error => {
+                    if (!isMounted) {
+                        return
+                    }
+                    logger.error('Auto-lock initialization check failed', {
+                        source: 'AutoLockGuard.useAutoLockListener',
+                        phase: 'initialization',
+                        lockEnabled: null,
+                        error,
+                    })
+                })
+                .finally(() => {
+                    if (!isMounted) {
+                        return
+                    }
+                    setIsInitialized(true)
+                    setIsChecking(false)
+                })
+
+            return () => {
+                isMounted = false
+            }
         }
-    }, [checkPinEnabled])
+    }, [checkPinEnabled, isInitialized])
 
     useEffect(() => {
         const handleAppStateChange = (nextAppState: AppStateStatus) => {
-            if (
-                appState.current === 'active' &&
-                nextAppState.match(/inactive|background/)
-            ) {
+            const previousState = appState.current
+
+            if (isBackgroundTransition(previousState, nextAppState)) {
                 recordBackground()
-            } else if (
-                appState.current.match(/inactive|background/) &&
-                nextAppState === 'active'
-            ) {
-                recordForeground()
+            } else if (isForegroundTransition(previousState, nextAppState)) {
+                void recordForeground({
+                    previousState,
+                    nextState: nextAppState,
+                })
             }
 
             appState.current = nextAppState

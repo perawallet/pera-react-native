@@ -20,6 +20,7 @@ import {
     algorandSafeQuerySerialize,
     algorandSafeQueryParse,
 } from '@perawallet/wallet-core-blockchain'
+import { createCrashReportingErrorReporter } from '@perawallet/wallet-extension-platform'
 import {
     getProvider,
     PeraWalletProvider,
@@ -35,7 +36,7 @@ SplashScreen.preventAutoHideAsync()
 import { NotifierWrapper } from 'react-native-notifier'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useLanguage } from '@hooks/useLanguage'
-import { updateBackendHeaders } from '@perawallet/wallet-core-shared'
+import { logger, updateBackendHeaders } from '@perawallet/wallet-core-shared'
 
 const updateQueryHeaders = () => {
     const deviceInfo = getProvider().deviceInfo
@@ -57,6 +58,16 @@ const AppContent = () => {
     const [fcmToken, setFcmToken] = useState<string | null>(null)
     const { t } = useLanguage()
     const provider = usePeraProvider()
+
+    useEffect(() => {
+        logger.setErrorReporter(
+            createCrashReportingErrorReporter(provider.crashReporting),
+        )
+
+        return () => {
+            logger.setErrorReporter(undefined)
+        }
+    }, [provider])
 
     useEffect(() => {
         if (!bootstrapped) {

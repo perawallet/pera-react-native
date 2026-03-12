@@ -1957,6 +1957,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 // Mock @perawallet/wallet-extension-platform
 vi.mock('@perawallet/wallet-extension-platform', () => ({
+    createCrashReportingErrorReporter: vi.fn(() => vi.fn()),
     useID: vi.fn(() => 'id'),
     useDeviceID: vi.fn(() => 'device-id'),
     useDeviceInfoService: vi.fn(() => ({

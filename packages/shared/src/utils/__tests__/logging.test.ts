@@ -28,6 +28,7 @@ describe('logging', () => {
         beforeEach(() => {
             // Reset level to DEBUG for tests to ensure all logs are captured
             logger.setLevel(LogLevel.DEBUG)
+            logger.setErrorReporter(undefined)
         })
 
         test('debug logs when level is DEBUG', () => {
@@ -86,6 +87,69 @@ describe('logging', () => {
             logger.setLevel(LogLevel.ERROR)
             logger.error('critical')
             expect(console.error).toHaveBeenCalledWith('[ERROR] critical')
+        })
+
+        test('forwards errors to configured error reporter', () => {
+            const errorReporter = vi.fn()
+            logger.setErrorReporter(errorReporter)
+
+            logger.error('error message', { source: 'test' })
+
+            expect(errorReporter).toHaveBeenCalledTimes(1)
+            expect(errorReporter).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    severity: 'error',
+                    error: expect.any(Error),
+                }),
+            )
+            expect(
+                (
+                    errorReporter.mock.calls[0]?.[0] as {
+                        error: Error
+                    }
+                ).error.message,
+            ).toContain('error message')
+        })
+
+        test('forwards critical logs to configured error reporter', () => {
+            const errorReporter = vi.fn()
+            logger.setErrorReporter(errorReporter)
+
+            logger.critical('critical message')
+
+            expect(errorReporter).toHaveBeenCalledTimes(1)
+            expect(errorReporter).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    severity: 'critical',
+                    error: expect.any(Error),
+                }),
+            )
+            expect(
+                (
+                    errorReporter.mock.calls[0]?.[0] as {
+                        error: Error
+                    }
+                ).error.message,
+            ).toContain('critical message')
+        })
+
+        test('does not forward warn logs to configured error reporter', () => {
+            const errorReporter = vi.fn()
+            logger.setErrorReporter(errorReporter)
+
+            logger.warn('warn message')
+
+            expect(errorReporter).not.toHaveBeenCalled()
+        })
+
+        test('does not throw when error reporter throws', () => {
+            logger.setErrorReporter(() => {
+                throw new Error('reporting failed')
+            })
+
+            expect(() => {
+                logger.error('will still be logged')
+            }).not.toThrow()
         })
     })
 })
