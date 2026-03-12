@@ -14,10 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { useDeleteAllData } from '@modules/settings/hooks/useDeleteAllData'
 import { AppState, AppStateStatus } from 'react-native'
-import {
-    getAppStatePlatform,
-    getAppStateTransition,
-} from '@utils/app-state'
+import { getAppStatePlatform, getAppStateTransition } from '@utils/app-state'
 
 type UseAutoLockListenerResult = {
     isLocked: boolean

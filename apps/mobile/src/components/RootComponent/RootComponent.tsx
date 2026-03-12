@@ -35,10 +35,7 @@ import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletCo
 import { useTokenListener } from '@modules/token'
 import { AutoLockGuard } from '@modules/security/components/AutoLockGuard/AutoLockGuard'
 import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
-import {
-    getAppStatePlatform,
-    getAppStateTransition,
-} from '@utils/app-state'
+import { getAppStatePlatform, getAppStateTransition } from '@utils/app-state'
 
 export type RootComponentProps = {
     fcmToken: string | null
@@ -138,7 +135,14 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
                 subscription.remove()
             }
         }
-    }, [appStatePlatform, network, accounts, registerDevice, startPolling, stopPolling])
+    }, [
+        appStatePlatform,
+        network,
+        accounts,
+        registerDevice,
+        startPolling,
+        stopPolling,
+    ])
 
     return (
         <ThemeProvider theme={theme}>

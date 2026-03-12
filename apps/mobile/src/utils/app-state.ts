@@ -22,17 +22,10 @@ export type AppStateTransition = {
     didEnterForeground: boolean
 }
 
-const IOS_BACKGROUND_STATES = new Set<KnownAppState>([
-    'inactive',
-    'background',
-])
+const IOS_BACKGROUND_STATES = new Set<KnownAppState>(['inactive', 'background'])
 
 const normalizeAppState = (state: AppStateValue): KnownAppState | null => {
-    if (
-        state === 'active' ||
-        state === 'inactive' ||
-        state === 'background'
-    ) {
+    if (state === 'active' || state === 'inactive' || state === 'background') {
         return state
     }
 

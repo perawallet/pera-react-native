@@ -27,16 +27,12 @@ describe('getAppStateTransition', () => {
     })
 
     it('ignores inactive to active noise on Android', () => {
-        expect(
-            getAppStateTransition('active', 'inactive', 'android'),
-        ).toEqual({
+        expect(getAppStateTransition('active', 'inactive', 'android')).toEqual({
             didLeaveForeground: false,
             didEnterForeground: false,
         })
 
-        expect(
-            getAppStateTransition('inactive', 'active', 'android'),
-        ).toEqual({
+        expect(getAppStateTransition('inactive', 'active', 'android')).toEqual({
             didLeaveForeground: false,
             didEnterForeground: false,
         })
