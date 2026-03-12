@@ -19,6 +19,7 @@ import type {
 import type { AnalyzedSignableGroup } from '../pipeline/types'
 import { analyzerActor } from './actors/analyzerActor'
 import { localKeySignerActor } from './actors/signers/localKeySignerActor'
+import { ledgerSignerActor } from './actors/signers/ledgerSignerActor'
 import { multisigSignerActor } from './actors/signers/multisigSignerActor'
 import { transportActor } from './actors/transports/transportActor'
 import { resolveInitialContext, makeFailedContext } from './actions'
@@ -45,6 +46,7 @@ export const signingMachine = setup({
     actors: {
         analyzerActor,
         localKeySignerActor,
+        ledgerSignerActor,
         multisigSignerActor,
         transportActor,
     },
@@ -52,6 +54,7 @@ export const signingMachine = setup({
         hasError: ({ context }) => context.error !== null,
         isLocalKeyType: ({ context }) =>
             context.resolvedSignerType === 'localKey',
+        isLedgerType: ({ context }) => context.resolvedSignerType === 'ledger',
         isMultisigType: ({ context }) =>
             context.resolvedSignerType === 'multisig',
     },
@@ -128,7 +131,6 @@ export const signingMachine = setup({
 
         /**
          * Routes to the appropriate signer actor based on resolvedSignerType.
-         * Ledger is handled by a sub-machine added in Phase 8.
          */
         signing: {
             initial: 'routing',
@@ -136,6 +138,7 @@ export const signingMachine = setup({
                 routing: {
                     always: [
                         { guard: 'isLocalKeyType', target: 'localKey' },
+                        { guard: 'isLedgerType', target: 'ledger' },
                         { guard: 'isMultisigType', target: 'multisig' },
                         // No valid signer type — should not happen if idle resolved correctly
                         { target: '#signingMachine.failed' },
@@ -153,6 +156,37 @@ export const signingMachine = setup({
                             signerAccount:
                                 context.authAccount ?? context.signerAccount!,
                             signTransactions: context.deps.signTransactions,
+                        }),
+                        onDone: {
+                            target: '#signingMachine.transporting',
+                            actions: assign({
+                                signingResult: ({ event }) => event.output,
+                            }),
+                        },
+                        onError: {
+                            target: '#signingMachine.failed',
+                            actions: assign({
+                                error: ({ event }) => {
+                                    const e = event.error
+                                    return e instanceof Error
+                                        ? e
+                                        : new Error(String(e))
+                                },
+                            }),
+                        },
+                    },
+                },
+
+                ledger: {
+                    invoke: {
+                        src: 'ledgerSignerActor',
+                        input: ({ context }) => ({
+                            group: {
+                                ...context.signableGroup!,
+                                analysis: context.analysis!,
+                            } as AnalyzedSignableGroup,
+                            signerAccount:
+                                context.authAccount ?? context.signerAccount!,
                         }),
                         onDone: {
                             target: '#signingMachine.transporting',
