@@ -10,60 +10,99 @@
  limitations under the License
  */
 
-import { Platform, type AppStateStatus } from 'react-native'
+import { Platform } from 'react-native'
 
-type KnownAppState = 'active' | 'inactive' | 'background'
+const ACTIVE_STATE = 'active'
+const IOS_BACKGROUND_LIKE_STATES = new Set(['inactive', 'background'])
 
 export type AppStatePlatform = 'ios' | 'android'
-export type AppStateValue = AppStateStatus | string | null | undefined
+export type AppStateValue = string | null | undefined
 
 export type AppStateTransition = {
     didLeaveForeground: boolean
     didEnterForeground: boolean
 }
 
-const IOS_BACKGROUND_STATES = new Set<KnownAppState>(['inactive', 'background'])
+export const getAppStatePlatform = (): AppStatePlatform =>
+    Platform.OS === 'ios' ? 'ios' : 'android'
 
-const normalizeAppState = (state: AppStateValue): KnownAppState | null => {
-    if (state === 'active' || state === 'inactive' || state === 'background') {
-        return state
+export const isActiveAppState = (state: AppStateValue): boolean =>
+    state === ACTIVE_STATE
+
+export const isBackgroundLikeAppState = (
+    state: AppStateValue,
+    platform: AppStatePlatform = getAppStatePlatform(),
+): boolean => {
+    if (typeof state !== 'string') {
+        return false
+    }
+
+    if (platform === 'ios') {
+        return IOS_BACKGROUND_LIKE_STATES.has(state)
+    }
+
+    // On Android, treat only real background as background-like
+    // to ignore noisy inactive -> active transitions.
+    return state === 'background'
+}
+
+export const isForegroundTransition = (
+    previousState: AppStateValue,
+    nextState: AppStateValue,
+    platform: AppStatePlatform = getAppStatePlatform(),
+): boolean => {
+    if (platform === 'ios') {
+        return (
+            isBackgroundLikeAppState(previousState, platform) &&
+            isActiveAppState(nextState)
+        )
+    }
+
+    return previousState === 'background' && nextState === 'active'
+}
+
+export const isBackgroundTransition = (
+    previousState: AppStateValue,
+    nextState: AppStateValue,
+    platform: AppStatePlatform = getAppStatePlatform(),
+): boolean => {
+    if (platform === 'ios') {
+        return (
+            isActiveAppState(previousState) &&
+            isBackgroundLikeAppState(nextState, platform)
+        )
+    }
+
+    return previousState !== 'background' && nextState === 'background'
+}
+
+export type PollingTransitionAction = 'start' | 'stop' | null
+
+export const getPollingTransitionAction = (
+    previousState: AppStateValue,
+    nextState: AppStateValue,
+    platform: AppStatePlatform = getAppStatePlatform(),
+): PollingTransitionAction => {
+    if (isForegroundTransition(previousState, nextState, platform)) {
+        return 'start'
+    }
+
+    if (isBackgroundTransition(previousState, nextState, platform)) {
+        return 'stop'
     }
 
     return null
-}
-
-export const getAppStatePlatform = (): AppStatePlatform => {
-    return Platform.OS === 'ios' ? 'ios' : 'android'
 }
 
 export const getAppStateTransition = (
     previousState: AppStateValue,
     nextState: AppStateValue,
     platform: AppStatePlatform = getAppStatePlatform(),
-): AppStateTransition => {
-    const previous = normalizeAppState(previousState)
-    const next = normalizeAppState(nextState)
-
-    if (!previous || !next || previous === next) {
-        return {
-            didLeaveForeground: false,
-            didEnterForeground: false,
-        }
-    }
-
-    if (platform === 'ios') {
-        return {
-            didLeaveForeground:
-                previous === 'active' && IOS_BACKGROUND_STATES.has(next),
-            didEnterForeground:
-                IOS_BACKGROUND_STATES.has(previous) && next === 'active',
-        }
-    }
-
-    return {
-        // On Android, we only treat a real background transition as leaving
-        // foreground to ignore noisy inactive->active transitions.
-        didLeaveForeground: previous !== 'background' && next === 'background',
-        didEnterForeground: previous === 'background' && next === 'active',
-    }
-}
+): AppStateTransition => ({
+    didLeaveForeground: isBackgroundTransition(
+        previousState,
+        nextState,
+        platform,
+    ),
+    didEnterForeground: isForegroundTransition(previousState, nextState, platform),
+})

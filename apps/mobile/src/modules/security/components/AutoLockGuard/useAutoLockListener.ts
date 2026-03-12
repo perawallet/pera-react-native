@@ -14,7 +14,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { useDeleteAllData } from '@modules/settings/hooks/useDeleteAllData'
 import { AppState, AppStateStatus } from 'react-native'
-import { getAppStatePlatform, getAppStateTransition } from '@utils/app-state'
+import { logger } from '@perawallet/wallet-core-shared'
+import {
+    AppStateValue,
+    getAppStatePlatform,
+    getAppStateTransition,
+} from '@utils/app-state'
 
 type UseAutoLockListenerResult = {
     isLocked: boolean
@@ -31,7 +36,7 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     const [isLocked, setIsLocked] = useState(false)
     const [isInitialized, setIsInitialized] = useState(false)
     const [isChecking, setIsChecking] = useState(false)
-    const appState = useRef(AppState.currentState)
+    const appState = useRef<AppStateValue>(AppState.currentState)
     const appStatePlatform = useRef(getAppStatePlatform()).current
     const isForegroundCheckInFlight = useRef(false)
 
@@ -39,23 +44,37 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
         setAutoLockStartedAt(Date.now())
     }, [setAutoLockStartedAt])
 
-    const recordForeground = useCallback(async (): Promise<void> => {
-        if (isForegroundCheckInFlight.current) {
-            return
-        }
+    const recordForeground = useCallback(
+        async (transitionContext?: {
+            previousState: AppStateValue
+            nextState: AppStateValue
+        }): Promise<void> => {
+            if (isForegroundCheckInFlight.current) {
+                return
+            }
 
-        isForegroundCheckInFlight.current = true
-        setIsChecking(true)
-        try {
-            const expired = await checkAutoLock()
-            setIsLocked(expired)
-        } catch {
-            // Keep current lock state on errors.
-        } finally {
-            setIsChecking(false)
-            isForegroundCheckInFlight.current = false
-        }
-    }, [checkAutoLock])
+            isForegroundCheckInFlight.current = true
+            setIsChecking(true)
+            try {
+                const expired = await checkAutoLock()
+                setIsLocked(expired)
+            } catch (error) {
+                logger.error('Auto-lock foreground check failed', {
+                    source: 'AutoLockGuard.useAutoLockListener',
+                    phase: 'foreground',
+                    previousState: transitionContext?.previousState ?? null,
+                    nextState: transitionContext?.nextState ?? null,
+                    lockEnabled: isLocked,
+                    error,
+                })
+                // Keep current lock state on errors.
+            } finally {
+                setIsChecking(false)
+                isForegroundCheckInFlight.current = false
+            }
+        },
+        [checkAutoLock, isLocked],
+    )
 
     const unlock = useCallback(() => {
         setIsChecking(false)
@@ -68,38 +87,55 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
         setIsChecking(false)
         setIsLocked(false)
         setAutoLockStartedAt(null)
-    }, [deleteAllData])
+    }, [deleteAllData, setAutoLockStartedAt])
 
     useEffect(() => {
-        let isCancelled = false
+        if (!isInitialized) {
+            let isMounted = true
+            setIsChecking(true)
 
-        const initialize = async () => {
-            try {
-                const enabled = await checkPinEnabled()
-                if (!isCancelled) {
+            void checkPinEnabled()
+                .then(enabled => {
+                    if (!isMounted) {
+                        return
+                    }
+
                     setIsLocked(enabled)
-                }
-            } catch {
-                // Keep current lock state on errors.
-            } finally {
-                if (!isCancelled) {
+                })
+                .catch(error => {
+                    if (!isMounted) {
+                        return
+                    }
+
+                    logger.error('Auto-lock initialization check failed', {
+                        source: 'AutoLockGuard.useAutoLockListener',
+                        phase: 'initialization',
+                        lockEnabled: null,
+                        error,
+                    })
+                    // Keep current lock state on errors.
+                })
+                .finally(() => {
+                    if (!isMounted) {
+                        return
+                    }
+
                     setIsInitialized(true)
-                }
+                    setIsChecking(false)
+                })
+
+            return () => {
+                isMounted = false
             }
         }
-
-        void initialize()
-
-        return () => {
-            isCancelled = true
-        }
-    }, [checkPinEnabled])
+    }, [checkPinEnabled, isInitialized])
 
     useEffect(() => {
         const handleAppStateChange = (nextAppState: AppStateStatus) => {
+            const previousState = appState.current
             const { didLeaveForeground, didEnterForeground } =
                 getAppStateTransition(
-                    appState.current,
+                    previousState,
                     nextAppState,
                     appStatePlatform,
                 )
@@ -107,7 +143,10 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
             if (didLeaveForeground) {
                 recordBackground()
             } else if (didEnterForeground) {
-                void recordForeground()
+                void recordForeground({
+                    previousState,
+                    nextState: nextAppState,
+                })
             }
 
             appState.current = nextAppState

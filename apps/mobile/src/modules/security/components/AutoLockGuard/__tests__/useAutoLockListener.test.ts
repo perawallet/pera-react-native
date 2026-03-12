@@ -66,6 +66,11 @@ describe('useAutoLockListener', () => {
         )
     })
 
+    const getAppStateChangeHandler = () =>
+        (AppState.addEventListener as Mock).mock.calls.at(-1)?.[1] as (
+            nextState: string | null | undefined,
+        ) => void
+
     it('should return initial state', () => {
         const { result } = renderHook(() => useAutoLockListener())
 
@@ -114,6 +119,20 @@ describe('useAutoLockListener', () => {
             expect(result.current.isLocked).toBe(false)
             expect(result.current.isChecking).toBe(false)
         })
+    })
+
+    it('should not crash when initial PIN check fails', async () => {
+        mockCheckPinEnabled.mockRejectedValueOnce(
+            new Error('checkPinEnabled failed'),
+        )
+
+        const { result } = renderHook(() => useAutoLockListener())
+
+        await waitFor(() => {
+            expect(result.current.isChecking).toBe(false)
+        })
+
+        expect(result.current.isLocked).toBe(false)
     })
 
     it('should unlock and reset state when unlock is called', async () => {
@@ -255,5 +274,44 @@ describe('useAutoLockListener', () => {
         unmount()
 
         expect(mockRemove).toHaveBeenCalled()
+    })
+
+    it('should not crash when foreground auto-lock check fails', async () => {
+        mockCheckAutoLock.mockRejectedValueOnce(
+            new Error('checkAutoLock failed'),
+        )
+        const { result } = renderHook(() => useAutoLockListener())
+
+        await waitFor(() => {
+            expect(result.current.isChecking).toBe(false)
+        })
+
+        const handleAppStateChange = getAppStateChangeHandler()
+
+        act(() => {
+            handleAppStateChange('background')
+            handleAppStateChange('active')
+        })
+
+        await waitFor(() => {
+            expect(mockCheckAutoLock).toHaveBeenCalledTimes(1)
+            expect(result.current.isChecking).toBe(false)
+        })
+
+        expect(result.current.isLocked).toBe(false)
+    })
+
+    it('should ignore malformed app state transitions', async () => {
+        renderHook(() => useAutoLockListener())
+        const handleAppStateChange = getAppStateChangeHandler()
+
+        act(() => {
+            handleAppStateChange('unknown')
+            handleAppStateChange(undefined)
+            handleAppStateChange(null)
+        })
+
+        expect(mockCheckAutoLock).not.toHaveBeenCalled()
+        expect(mockSetAutoLockStartedAt).not.toHaveBeenCalled()
     })
 })

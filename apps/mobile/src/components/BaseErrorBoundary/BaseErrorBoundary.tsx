@@ -12,7 +12,6 @@
 
 import { Component, ErrorInfo, ReactNode } from 'react'
 import { AppError, ErrorCategory, logger } from '@perawallet/wallet-core-shared'
-import crashlytics from '@react-native-firebase/crashlytics'
 import { EmptyView } from '@components/EmptyView'
 
 export interface BaseErrorBoundaryProps {
@@ -67,15 +66,6 @@ export class BaseErrorBoundary extends Component<
                 category: this.props.category,
                 componentStack: errorInfo.componentStack,
             })
-        }
-
-        // Report to Crashlytics if it's a reportable error
-        if (appError?.shouldReport() || !appError) {
-            try {
-                crashlytics().recordError(error)
-            } catch {
-                // Crashlytics failed, but we already logged to console
-            }
         }
 
         // Call custom error handler

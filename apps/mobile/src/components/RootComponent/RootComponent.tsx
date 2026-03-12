@@ -28,6 +28,7 @@ import { useDevice } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { usePolling } from '@perawallet/wallet-core-polling'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { logger } from '@perawallet/wallet-core-shared'
 import { useNetworkStatus, useNetworkStatusListener } from '@modules/network'
 import { WebViewOverlay } from '@modules/webview'
 import { useLanguage } from '@hooks/useLanguage'
@@ -35,7 +36,10 @@ import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletCo
 import { useTokenListener } from '@modules/token'
 import { AutoLockGuard } from '@modules/security/components/AutoLockGuard/AutoLockGuard'
 import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
-import { getAppStatePlatform, getAppStateTransition } from '@utils/app-state'
+import {
+    getAppStatePlatform,
+    getPollingTransitionAction,
+} from '@utils/app-state'
 
 export type RootComponentProps = {
     fcmToken: string | null
@@ -56,6 +60,10 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
     useTokenListener(fcmToken)
 
     const showError = (error: string | Error) => {
+        logger.critical(error, {
+            source: 'RootComponentErrorBoundary',
+        })
+
         showToast({
             title: 'Error',
             body: config.debugEnabled
@@ -105,25 +113,45 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     useEffect(() => {
         //TODO we should move the registerDevice stuff into the wallet-core somewhere somehow - maybe in setAccounts or something
         const addresses = accounts?.map(account => account.address) ?? []
+        const runPollingAction = async (action: 'start' | 'stop') => {
+            try {
+                if (action === 'start') {
+                    await startPolling()
+                } else {
+                    await stopPolling()
+                }
+            } catch (error) {
+                // Prevent polling failures from bubbling to top-level handlers.
+                logger.error(
+                    'Polling action failed in RootComponent listener',
+                    {
+                        source: 'RootComponent',
+                        action,
+                        error,
+                    },
+                )
+            }
+        }
+
         registerDevice(addresses)
 
         if (!addresses.length) {
-            stopPolling()
+            void runPollingAction('stop')
         } else if (config.pollingEnabled) {
             const subscription = AppState.addEventListener(
                 'change',
                 nextAppState => {
-                    const { didLeaveForeground, didEnterForeground } =
-                        getAppStateTransition(
-                            appState.current,
-                            nextAppState,
-                            appStatePlatform,
-                        )
+                    const previousState = appState.current
+                    const action = getPollingTransitionAction(
+                        previousState,
+                        nextAppState,
+                        appStatePlatform,
+                    )
 
-                    if (didEnterForeground) {
-                        startPolling()
-                    } else if (didLeaveForeground) {
-                        stopPolling()
+                    if (action === 'start') {
+                        void runPollingAction('start')
+                    } else if (action === 'stop') {
+                        void runPollingAction('stop')
                     }
 
                     appState.current = nextAppState
@@ -131,7 +159,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
             )
 
             return () => {
-                stopPolling()
+                void runPollingAction('stop')
                 subscription.remove()
             }
         }

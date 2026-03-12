@@ -41,8 +41,18 @@ export interface LogContext {
     [key: string]: unknown
 }
 
+export type LogErrorSeverity = 'error' | 'critical'
+
+export type ErrorReportPayload = {
+    severity: LogErrorSeverity
+    error: unknown
+}
+
+export type ErrorReporter = (payload: ErrorReportPayload) => void
+
 class Logger {
     private level: LogLevel = LogLevel.INFO // Default safe level
+    private errorReporter: ErrorReporter | null = null
 
     constructor() {
         // Initialize level based on config
@@ -57,6 +67,10 @@ class Logger {
      */
     public setLevel(level: LogLevel) {
         this.level = level
+    }
+
+    public setErrorReporter(reporter?: ErrorReporter | null) {
+        this.errorReporter = reporter ?? null
     }
 
     public debug(message: string, context?: LogContext) {
@@ -98,6 +112,61 @@ class Logger {
         return formatted
     }
 
+    private stringifyContext(context?: LogContext): string {
+        if (!context) {
+            return ''
+        }
+
+        try {
+            return JSON.stringify(this.formatContext(context))
+        } catch {
+            return '[unserializable context]'
+        }
+    }
+
+    private reportError(
+        severity: LogErrorSeverity,
+        messageOrError: string | Error,
+        context?: LogContext,
+    ) {
+        if (!this.errorReporter) {
+            return
+        }
+
+        try {
+            if (messageOrError instanceof Error && !context) {
+                this.errorReporter({
+                    severity,
+                    error: messageOrError,
+                })
+                return
+            }
+
+            const message =
+                messageOrError instanceof Error
+                    ? messageOrError.message
+                    : messageOrError
+            const contextText = this.stringifyContext(context)
+            const combinedMessage = contextText
+                ? `${message} | context: ${contextText}`
+                : message
+
+            const reportableError = new Error(combinedMessage)
+
+            if (messageOrError instanceof Error) {
+                reportableError.name = messageOrError.name
+                reportableError.stack = messageOrError.stack
+            }
+
+            this.errorReporter({
+                severity,
+                error: reportableError,
+            })
+        } catch {
+            // Never allow error reporting to crash the app.
+        }
+    }
+
     private log(
         level: LogLevel,
         messageOrError: string | Error,
@@ -125,8 +194,12 @@ class Logger {
                 console.warn(`${prefix} ${message}`, ...args)
                 break
             case LogLevel.ERROR:
+                console.error(`${prefix} ${message}`, ...args)
+                this.reportError('error', messageOrError, context)
+                break
             case LogLevel.CRITICAL:
                 console.error(`${prefix} ${message}`, ...args)
+                this.reportError('critical', messageOrError, context)
                 break
         }
     }
