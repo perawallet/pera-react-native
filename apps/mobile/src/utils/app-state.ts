@@ -104,5 +104,9 @@ export const getAppStateTransition = (
         nextState,
         platform,
     ),
-    didEnterForeground: isForegroundTransition(previousState, nextState, platform),
+    didEnterForeground: isForegroundTransition(
+        previousState,
+        nextState,
+        platform,
+    ),
 })

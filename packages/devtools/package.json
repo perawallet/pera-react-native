@@ -1,29 +1,16 @@
 {
-    "name": "@perawallet/wallet-core-devtools",
-    "version": "0.0.0",
-    "license": "MIT",
-    "exports": {
-        "./eslint": {
-            "import": "./eslint/index.js",
-            "require": "./eslint/index.js"
-        },
-        "./tsconfig": "./tsconfig/vite.json",
-        "./tsconfig/vite.json": "./tsconfig/vite.json"
-    },
-    "files": [
-        "eslint",
-        "tsconfig"
-    ],
-    "dependencies": {
-        "@eslint/js": "^9.17.0",
-        "eslint-config-prettier": "^10.1.8",
-        "eslint-plugin-erasable-syntax-only": "^0.4.0",
-        "eslint-plugin-package-json": "^0.65.3",
-        "eslint-plugin-unused-imports": "catalog:",
-        "globals": "catalog:",
-        "typescript-eslint": "catalog:"
-    },
-    "publishConfig": {
-        "access": "public"
-    }
+  "name": "@perawallet/wallet-core-devtools",
+  "version": "0.0.0",
+  "license": "MIT",
+  "exports": {
+    "./tsconfig": "./tsconfig/vite.json",
+    "./tsconfig/vite.json": "./tsconfig/vite.json"
+  },
+  "files": [
+    "tsconfig"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {}
 }

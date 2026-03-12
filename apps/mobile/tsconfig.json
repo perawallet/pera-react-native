@@ -5,40 +5,39 @@
       "vitest",
       "vitest/globals"
     ],
-    "baseUrl": "src",
     "paths": {
       "@components/*": [
-        "components/*"
+        "./src/components/*"
       ],
       "@providers/*": [
-        "providers/*"
+        "./src/providers/*"
       ],
       "@routes/*": [
-        "routes/*"
+        "./src/routes/*"
       ],
       "@hooks/*": [
-        "hooks/*"
+        "./src/hooks/*"
       ],
       "@constants/*": [
-        "constants/*"
+        "./src/constants/*"
       ],
       "@modules/*": [
-        "modules/*"
+        "./src/modules/*"
       ],
       "@assets/*": [
-        "../assets/*"
+        "./assets/*"
       ],
       "@theme/*": [
-        "theme/*"
+        "./src/theme/*"
       ],
       "@layouts/*": [
-        "layouts/*"
+        "./src/layouts/*"
       ],
       "@test-utils/*": [
-        "test-utils/*"
+        "./src/test-utils/*"
       ],
       "@utils/*": [
-        "utils/*"
+        "./src/utils/*"
       ]
     },
     "lib": [

@@ -14,7 +14,7 @@
     "build": "vite build",
     "dev": "vite build --watch",
     "test": "vitest run",
-    "lint": "eslint src"
+    "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
     "@babel/runtime": "catalog:",
@@ -31,8 +31,6 @@
     "vitest": "catalog:",
     "@types/react": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*",
-    "globals": "catalog:",
-    "typescript-eslint": "catalog:",
     "@testing-library/react": "catalog:"
   }
 }

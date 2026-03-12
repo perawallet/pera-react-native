@@ -97,7 +97,6 @@ pera-react-native/
 │   ├── contacts/            # Contact management
 │   ├── currencies/          # Currency formatting and preferences
 │   ├── devtools/            # Development tools
-│   │   ├── eslint/          # Shared ESLint configuration
 │   │   └── tsconfig/        # Shared TypeScript configuration
 │   ├── kms/                 # Key Management System integration
 │   ├── platform-integration/# Platform abstraction layer
@@ -118,7 +117,7 @@ See workspace definition in [`pnpm-workspace.yaml`](pnpm-workspace.yaml).
 
 - Task runner/cache: Turborepo (scripts in [`package.json`](package.json))
 - Formatting: Prettier
-- Linting: ESLint with shared config from [`packages/devtools/eslint`](packages/devtools/eslint)
+- Linting: Oxlint via root config [`.oxlintrc.json`](.oxlintrc.json)
 - TypeScript project references via [`packages/devtools/tsconfig`](packages/devtools/tsconfig)
 
 Generate all API clients (using Kubb):
@@ -136,8 +135,8 @@ pnpm build          # build all packages
 pnpm build:packages # build only workspace packages
 pnpm dev:packages   # watch mode for package development
 pnpm test           # run tests with coverage
-pnpm lint           # report linting errors
-pnpm lint:fix       # fix linting errors
+pnpm lint           # report lint/type-aware issues
+pnpm lint:fix       # auto-fix lint/type-aware issues
 pnpm lint:copyright # add/update necessary copyright headers
 pnpm lint:i18n      # report i18n errors
 pnpm format         # format files
