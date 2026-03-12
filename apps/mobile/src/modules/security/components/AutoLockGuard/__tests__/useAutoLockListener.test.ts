@@ -15,7 +15,7 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { useAutoLockListener } from '../useAutoLockListener'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { useDeleteAllData } from '@modules/settings/hooks/useDeleteAllData'
-import { AppState } from 'react-native'
+import { AppState, type AppStateStatus } from 'react-native'
 
 vi.mock('@perawallet/wallet-core-security', () => ({
     usePinCode: vi.fn(),
@@ -32,6 +32,9 @@ vi.mock('react-native', () => ({
             remove: vi.fn(),
         })),
     },
+    Platform: {
+        OS: 'android',
+    },
 }))
 
 describe('useAutoLockListener', () => {
@@ -39,9 +42,12 @@ describe('useAutoLockListener', () => {
     const mockSetAutoLockStartedAt = vi.fn()
     const mockCheckPinEnabled = vi.fn()
     const mockDeleteAllData = vi.fn()
+    let appStateChangeHandler: ((nextAppState: AppStateStatus) => void) | null =
+        null
 
     beforeEach(() => {
         vi.clearAllMocks()
+        appStateChangeHandler = null
         mockCheckPinEnabled.mockResolvedValue(false)
         mockCheckAutoLock.mockResolvedValue(false)
         ;(usePinCode as Mock).mockReturnValue({
@@ -52,6 +58,12 @@ describe('useAutoLockListener', () => {
         ;(useDeleteAllData as Mock).mockReturnValue({
             deleteAllData: mockDeleteAllData,
         })
+        ;(AppState.addEventListener as Mock).mockImplementation(
+            (_event, handler: (nextAppState: AppStateStatus) => void) => {
+                appStateChangeHandler = handler
+                return { remove: vi.fn() }
+            },
+        )
     })
 
     const getAppStateChangeHandler = () =>
@@ -74,6 +86,18 @@ describe('useAutoLockListener', () => {
         await waitFor(() => {
             expect(mockCheckPinEnabled).toHaveBeenCalled()
         })
+    })
+
+    it('should stop checking when checkPinEnabled fails', async () => {
+        mockCheckPinEnabled.mockRejectedValue(new Error('Secure storage error'))
+
+        const { result } = renderHook(() => useAutoLockListener())
+
+        await waitFor(() => {
+            expect(result.current.isChecking).toBe(false)
+        })
+
+        expect(result.current.isLocked).toBe(false)
     })
 
     it('should set isLocked to true when PIN is enabled on initialization', async () => {
@@ -156,6 +180,87 @@ describe('useAutoLockListener', () => {
             'change',
             expect.any(Function),
         )
+    })
+
+    it('should keep lock state and stop checking when foreground check fails', async () => {
+        mockCheckPinEnabled.mockResolvedValue(true)
+        mockCheckAutoLock.mockRejectedValue(new Error('Auto lock check failed'))
+
+        const { result } = renderHook(() => useAutoLockListener())
+
+        await waitFor(() => {
+            expect(result.current.isLocked).toBe(true)
+            expect(result.current.isChecking).toBe(false)
+        })
+
+        act(() => {
+            appStateChangeHandler?.('background')
+            appStateChangeHandler?.('active')
+        })
+
+        await waitFor(() => {
+            expect(result.current.isChecking).toBe(false)
+        })
+
+        expect(result.current.isLocked).toBe(true)
+        expect(mockCheckAutoLock).toHaveBeenCalledTimes(1)
+    })
+
+    it('should ignore inactive to active transition noise on Android', async () => {
+        const { result } = renderHook(() => useAutoLockListener())
+
+        await waitFor(() => {
+            expect(result.current.isChecking).toBe(false)
+        })
+
+        act(() => {
+            appStateChangeHandler?.('inactive')
+            appStateChangeHandler?.('active')
+        })
+
+        expect(mockCheckAutoLock).not.toHaveBeenCalled()
+
+        act(() => {
+            appStateChangeHandler?.('background')
+            appStateChangeHandler?.('active')
+        })
+
+        await waitFor(() => {
+            expect(mockCheckAutoLock).toHaveBeenCalledTimes(1)
+        })
+    })
+
+    it('should avoid overlapping foreground checks', async () => {
+        let resolveForegroundCheck: ((value: boolean) => void) | null = null
+        mockCheckAutoLock.mockImplementation(
+            () =>
+                new Promise<boolean>(resolve => {
+                    resolveForegroundCheck = resolve
+                }),
+        )
+
+        const { result } = renderHook(() => useAutoLockListener())
+
+        await waitFor(() => {
+            expect(result.current.isChecking).toBe(false)
+        })
+
+        act(() => {
+            appStateChangeHandler?.('background')
+            appStateChangeHandler?.('active')
+            appStateChangeHandler?.('background')
+            appStateChangeHandler?.('active')
+        })
+
+        expect(mockCheckAutoLock).toHaveBeenCalledTimes(1)
+
+        act(() => {
+            resolveForegroundCheck?.(false)
+        })
+
+        await waitFor(() => {
+            expect(result.current.isChecking).toBe(false)
+        })
     })
 
     it('should remove AppState listener on unmount', () => {

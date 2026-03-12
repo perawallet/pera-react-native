@@ -12,6 +12,7 @@
 
 import { describe, expect, it } from 'vitest'
 import {
+    getAppStateTransition,
     getPollingTransitionAction,
     isActiveAppState,
     isBackgroundLikeAppState,
@@ -29,48 +30,84 @@ describe('app-state utils', () => {
         expect(isActiveAppState(null)).toBe(false)
     })
 
-    it('detects background-like app state', () => {
-        expect(isBackgroundLikeAppState('inactive')).toBe(true)
-        expect(isBackgroundLikeAppState('background')).toBe(true)
-        expect(isBackgroundLikeAppState('active')).toBe(false)
-        expect(isBackgroundLikeAppState('unknown')).toBe(false)
-        expect(isBackgroundLikeAppState(undefined)).toBe(false)
-        expect(isBackgroundLikeAppState(null)).toBe(false)
+    it('detects background-like app state by platform', () => {
+        expect(isBackgroundLikeAppState('inactive', 'ios')).toBe(true)
+        expect(isBackgroundLikeAppState('background', 'ios')).toBe(true)
+        expect(isBackgroundLikeAppState('inactive', 'android')).toBe(false)
+        expect(isBackgroundLikeAppState('background', 'android')).toBe(true)
+        expect(isBackgroundLikeAppState('active', 'ios')).toBe(false)
+        expect(isBackgroundLikeAppState('unknown', 'android')).toBe(false)
     })
 
-    it('detects foreground transitions', () => {
-        expect(isForegroundTransition('inactive', 'active')).toBe(true)
-        expect(isForegroundTransition('background', 'active')).toBe(true)
-        expect(isForegroundTransition('active', 'active')).toBe(false)
-        expect(isForegroundTransition('active', 'inactive')).toBe(false)
-        expect(isForegroundTransition(undefined, 'active')).toBe(false)
-        expect(isForegroundTransition('background', undefined)).toBe(false)
-        expect(isForegroundTransition(null, 'active')).toBe(false)
-        expect(isForegroundTransition('background', null)).toBe(false)
-        expect(isForegroundTransition('unknown', 'active')).toBe(false)
+    it('detects foreground transitions by platform', () => {
+        expect(isForegroundTransition('inactive', 'active', 'ios')).toBe(true)
+        expect(isForegroundTransition('background', 'active', 'ios')).toBe(true)
+        expect(isForegroundTransition('background', 'active', 'android')).toBe(
+            true,
+        )
+        expect(isForegroundTransition('inactive', 'active', 'android')).toBe(
+            false,
+        )
     })
 
-    it('detects background transitions', () => {
-        expect(isBackgroundTransition('active', 'inactive')).toBe(true)
-        expect(isBackgroundTransition('active', 'background')).toBe(true)
-        expect(isBackgroundTransition('inactive', 'background')).toBe(false)
-        expect(isBackgroundTransition('background', 'active')).toBe(false)
-        expect(isBackgroundTransition(undefined, 'inactive')).toBe(false)
-        expect(isBackgroundTransition('active', undefined)).toBe(false)
-        expect(isBackgroundTransition(null, 'inactive')).toBe(false)
-        expect(isBackgroundTransition('active', null)).toBe(false)
-        expect(isBackgroundTransition('active', 'unknown')).toBe(false)
+    it('detects background transitions by platform', () => {
+        expect(isBackgroundTransition('active', 'inactive', 'ios')).toBe(true)
+        expect(isBackgroundTransition('active', 'background', 'ios')).toBe(
+            true,
+        )
+        expect(isBackgroundTransition('active', 'background', 'android')).toBe(
+            true,
+        )
+        expect(
+            isBackgroundTransition('inactive', 'background', 'android'),
+        ).toBe(true)
+        expect(isBackgroundTransition('active', 'inactive', 'android')).toBe(
+            false,
+        )
     })
 
     it('returns expected polling transition action', () => {
-        expect(getPollingTransitionAction('inactive', 'active')).toBe('start')
-        expect(getPollingTransitionAction('background', 'active')).toBe('start')
-        expect(getPollingTransitionAction('active', 'inactive')).toBe('stop')
-        expect(getPollingTransitionAction('active', 'background')).toBe('stop')
-        expect(getPollingTransitionAction('active', 'active')).toBe(null)
-        expect(getPollingTransitionAction('unknown', 'active')).toBe(null)
-        expect(getPollingTransitionAction('active', 'unknown')).toBe(null)
-        expect(getPollingTransitionAction(undefined, 'active')).toBe(null)
-        expect(getPollingTransitionAction('active', undefined)).toBe(null)
+        expect(
+            getPollingTransitionAction('inactive', 'active', 'ios'),
+        ).toBe('start')
+        expect(
+            getPollingTransitionAction('background', 'active', 'android'),
+        ).toBe('start')
+        expect(
+            getPollingTransitionAction('active', 'inactive', 'ios'),
+        ).toBe('stop')
+        expect(
+            getPollingTransitionAction('active', 'background', 'android'),
+        ).toBe('stop')
+        expect(
+            getPollingTransitionAction('active', 'inactive', 'android'),
+        ).toBe(null)
+    })
+
+    it('returns expected app state transition flags', () => {
+        expect(getAppStateTransition('active', 'inactive', 'ios')).toEqual({
+            didLeaveForeground: true,
+            didEnterForeground: false,
+        })
+        expect(getAppStateTransition('inactive', 'active', 'ios')).toEqual({
+            didLeaveForeground: false,
+            didEnterForeground: true,
+        })
+        expect(getAppStateTransition('active', 'inactive', 'android')).toEqual({
+            didLeaveForeground: false,
+            didEnterForeground: false,
+        })
+        expect(
+            getAppStateTransition('inactive', 'background', 'android'),
+        ).toEqual({
+            didLeaveForeground: true,
+            didEnterForeground: false,
+        })
+        expect(
+            getAppStateTransition('background', 'active', 'android'),
+        ).toEqual({
+            didLeaveForeground: false,
+            didEnterForeground: true,
+        })
     })
 })

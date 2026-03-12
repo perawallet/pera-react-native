@@ -17,8 +17,8 @@ import { AppState, AppStateStatus } from 'react-native'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
     AppStateValue,
-    isBackgroundTransition,
-    isForegroundTransition,
+    getAppStatePlatform,
+    getAppStateTransition,
 } from '@utils/app-state'
 
 type UseAutoLockListenerResult = {
@@ -36,7 +36,9 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     const [isLocked, setIsLocked] = useState(false)
     const [isInitialized, setIsInitialized] = useState(false)
     const [isChecking, setIsChecking] = useState(false)
-    const appState = useRef(AppState.currentState)
+    const appState = useRef<AppStateValue>(AppState.currentState)
+    const appStatePlatform = useRef(getAppStatePlatform()).current
+    const isForegroundCheckInFlight = useRef(false)
 
     const recordBackground = useCallback(() => {
         setAutoLockStartedAt(Date.now())
@@ -46,12 +48,16 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
         async (transitionContext?: {
             previousState: AppStateValue
             nextState: AppStateValue
-        }): Promise<boolean> => {
+        }): Promise<void> => {
+            if (isForegroundCheckInFlight.current) {
+                return
+            }
+
+            isForegroundCheckInFlight.current = true
             setIsChecking(true)
             try {
                 const expired = await checkAutoLock()
                 setIsLocked(expired)
-                return expired
             } catch (error) {
                 logger.error('Auto-lock foreground check failed', {
                     source: 'AutoLockGuard.useAutoLockListener',
@@ -61,9 +67,10 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
                     lockEnabled: isLocked,
                     error,
                 })
-                return isLocked
+                // Keep current lock state on errors.
             } finally {
                 setIsChecking(false)
+                isForegroundCheckInFlight.current = false
             }
         },
         [checkAutoLock, isLocked],
@@ -92,23 +99,27 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
                     if (!isMounted) {
                         return
                     }
+
                     setIsLocked(enabled)
                 })
                 .catch(error => {
                     if (!isMounted) {
                         return
                     }
+
                     logger.error('Auto-lock initialization check failed', {
                         source: 'AutoLockGuard.useAutoLockListener',
                         phase: 'initialization',
                         lockEnabled: null,
                         error,
                     })
+                    // Keep current lock state on errors.
                 })
                 .finally(() => {
                     if (!isMounted) {
                         return
                     }
+
                     setIsInitialized(true)
                     setIsChecking(false)
                 })
@@ -122,10 +133,16 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
     useEffect(() => {
         const handleAppStateChange = (nextAppState: AppStateStatus) => {
             const previousState = appState.current
+            const { didLeaveForeground, didEnterForeground } =
+                getAppStateTransition(
+                    previousState,
+                    nextAppState,
+                    appStatePlatform,
+                )
 
-            if (isBackgroundTransition(previousState, nextAppState)) {
+            if (didLeaveForeground) {
                 recordBackground()
-            } else if (isForegroundTransition(previousState, nextAppState)) {
+            } else if (didEnterForeground) {
                 void recordForeground({
                     previousState,
                     nextState: nextAppState,
@@ -143,7 +160,7 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
         return () => {
             subscription.remove()
         }
-    }, [recordBackground, recordForeground])
+    }, [appStatePlatform, recordBackground, recordForeground])
 
     return {
         isLocked,

@@ -36,7 +36,10 @@ import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletCo
 import { useTokenListener } from '@modules/token'
 import { AutoLockGuard } from '@modules/security/components/AutoLockGuard/AutoLockGuard'
 import { SigningOverlays } from '@modules/signing/components/SigningOverlays'
-import { getPollingTransitionAction } from '@utils/app-state'
+import {
+    getAppStatePlatform,
+    getPollingTransitionAction,
+} from '@utils/app-state'
 
 export type RootComponentProps = {
     fcmToken: string | null
@@ -105,6 +108,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     const accounts = useAllAccounts()
 
     const appState = useRef(AppState.currentState)
+    const appStatePlatform = useRef(getAppStatePlatform()).current
 
     useEffect(() => {
         //TODO we should move the registerDevice stuff into the wallet-core somewhere somehow - maybe in setAccounts or something
@@ -141,6 +145,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
                     const action = getPollingTransitionAction(
                         previousState,
                         nextAppState,
+                        appStatePlatform,
                     )
 
                     if (action === 'start') {
@@ -158,7 +163,14 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
                 subscription.remove()
             }
         }
-    }, [network, accounts])
+    }, [
+        appStatePlatform,
+        network,
+        accounts,
+        registerDevice,
+        startPolling,
+        stopPolling,
+    ])
 
     return (
         <ThemeProvider theme={theme}>
