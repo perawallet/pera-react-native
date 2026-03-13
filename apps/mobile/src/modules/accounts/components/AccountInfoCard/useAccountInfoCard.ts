@@ -17,16 +17,16 @@ import {
     isHDWalletAccount,
     isWatchAccount,
     useHDWalletGroups,
-    useAccountDiscovery,
 } from '@perawallet/wallet-core-accounts'
 import { useAccountInformationQuery } from '@perawallet/wallet-core-blockchain'
 import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
+import { navigationRef } from '@routes/navigationRef'
 import { Decimal } from 'decimal.js'
 
 type UseAccountInfoCardParams = {
     account: WalletAccount
+    onClose: () => void
 }
 
 type UseAccountInfoCardResult = {
@@ -40,22 +40,19 @@ type UseAccountInfoCardResult = {
     walletLabel: string
     walletAccounts: HDWalletAccount[]
     handleScanAddresses: () => void
-    isScanning: boolean
 }
 
 export const useAccountInfoCard = ({
     account,
+    onClose,
 }: UseAccountInfoCardParams): UseAccountInfoCardResult => {
     const { t } = useLanguage()
-    const { showToast } = useToast()
     const [isExpanded, setIsExpanded] = useState(false)
-    const [isScanning, setIsScanning] = useState(false)
 
     const { data: accountInfo, isLoading: isMinBalanceLoading } =
         useAccountInformationQuery(account.address)
 
     const { hdWalletGroups } = useHDWalletGroups()
-    const { discoverAccounts } = useAccountDiscovery()
 
     const isHDWallet = isHDWalletAccount(account)
     const showMinBalance = !isWatchAccount(account)
@@ -104,30 +101,18 @@ export const useAccountInfoCard = ({
         return hdWalletGroups[walletGroupIndex].accounts
     }, [isHDWallet, walletGroupIndex, hdWalletGroups])
 
-    const handleScanAddresses = useCallback(async () => {
+    const handleScanAddresses = useCallback(() => {
         if (!isHDWalletAccount(account)) return
 
-        setIsScanning(true)
-        try {
-            await discoverAccounts({
-                walletKeyId: account.keyPairId,
-                derivationType: account.hdWalletDetails.derivationType,
-            })
-            showToast({
-                title: t('account_info.scan_new_addresses'),
-                body: '',
-                type: 'success',
-            })
-        } catch {
-            showToast({
-                title: t('common.not_implemented.title'),
-                body: '',
-                type: 'error',
-            })
-        } finally {
-            setIsScanning(false)
-        }
-    }, [account, discoverAccounts, showToast, t])
+        onClose()
+        navigationRef.navigate('AddAccount', {
+            screen: 'SearchAccounts',
+            params: {
+                account,
+                createIfEmpty: true,
+            },
+        })
+    }, [account, onClose])
 
     return {
         isExpanded,
@@ -140,6 +125,5 @@ export const useAccountInfoCard = ({
         walletLabel,
         walletAccounts,
         handleScanAddresses,
-        isScanning,
     }
 }

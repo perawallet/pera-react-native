@@ -22,20 +22,16 @@ import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { AccountIcon } from '../AccountIcon'
-import { ActivityIndicator } from 'react-native'
-
 type WalletStructureTreeProps = {
     walletLabel: string
     accounts: HDWalletAccount[]
     onScanAddresses: () => void
-    isScanning: boolean
 }
 
 export const WalletStructureTree = ({
     walletLabel,
     accounts,
     onScanAddresses,
-    isScanning,
 }: WalletStructureTreeProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -83,17 +79,12 @@ export const WalletStructureTree = ({
             <PWTouchableOpacity
                 style={styles.scanButton}
                 onPress={onScanAddresses}
-                disabled={isScanning}
             >
-                {isScanning ? (
-                    <ActivityIndicator size='small' />
-                ) : (
-                    <PWIcon
-                        name='magnifying-glass'
-                        size='sm'
-                        variant='helper'
-                    />
-                )}
+                <PWIcon
+                    name='magnifying-glass'
+                    size='sm'
+                    variant='helper'
+                />
                 <PWText
                     variant='link'
                     style={styles.scanButtonText}

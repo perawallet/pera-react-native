@@ -31,9 +31,10 @@ import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
 
 export type AccountInfoCardProps = {
     account: WalletAccount
+    onClose: () => void
 }
 
-export const AccountInfoCard = ({ account }: AccountInfoCardProps) => {
+export const AccountInfoCard = ({ account, onClose }: AccountInfoCardProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
@@ -47,8 +48,7 @@ export const AccountInfoCard = ({ account }: AccountInfoCardProps) => {
         walletLabel,
         walletAccounts,
         handleScanAddresses,
-        isScanning,
-    } = useAccountInfoCard({ account })
+    } = useAccountInfoCard({ account, onClose })
 
     const chevronStyle = useAnimatedStyle(() => {
         return {
@@ -127,7 +127,6 @@ export const AccountInfoCard = ({ account }: AccountInfoCardProps) => {
                             walletLabel={walletLabel}
                             accounts={walletAccounts}
                             onScanAddresses={handleScanAddresses}
-                            isScanning={isScanning}
                         />
                     </ExpandablePanel>
 

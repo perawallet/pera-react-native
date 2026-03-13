@@ -29,10 +29,10 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({
-        showToast: vi.fn(),
-    }),
+vi.mock('@routes/navigationRef', () => ({
+    navigationRef: {
+        navigate: vi.fn(),
+    },
 }))
 
 vi.mock('@hooks/useIsDarkMode', () => ({
@@ -105,7 +105,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 const mockUseHDWalletGroups = vi.fn()
-const mockDiscoverAccounts = vi.fn()
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<
@@ -114,9 +113,6 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useHDWalletGroups: () => mockUseHDWalletGroups(),
-        useAccountDiscovery: () => ({
-            discoverAccounts: mockDiscoverAccounts,
-        }),
     }
 })
 
@@ -168,38 +164,68 @@ describe('AccountInfoCard', () => {
     })
 
     it('renders account type label for HD wallet account', () => {
-        render(<AccountInfoCard account={hdAccount} />)
+        render(
+            <AccountInfoCard
+                account={hdAccount}
+                onClose={vi.fn()}
+            />,
+        )
         expect(
             screen.getByText('account_info.type_universal_wallet'),
         ).toBeTruthy()
     })
 
     it('renders account type label for watch account', () => {
-        render(<AccountInfoCard account={watchAccount} />)
+        render(
+            <AccountInfoCard
+                account={watchAccount}
+                onClose={vi.fn()}
+            />,
+        )
         expect(screen.getByText('account_info.type_watch')).toBeTruthy()
     })
 
     it('renders min balance', () => {
-        render(<AccountInfoCard account={hdAccount} />)
+        render(
+            <AccountInfoCard
+                account={hdAccount}
+                onClose={vi.fn()}
+            />,
+        )
         expect(screen.getByTestId('currency-display')).toBeTruthy()
     })
 
     it('shows wallet structure toggle for HD wallet accounts', () => {
-        render(<AccountInfoCard account={hdAccount} />)
+        render(
+            <AccountInfoCard
+                account={hdAccount}
+                onClose={vi.fn()}
+            />,
+        )
         expect(
             screen.getByText('account_info.see_wallet_structure'),
         ).toBeTruthy()
     })
 
     it('does not show wallet structure toggle for non-HD accounts', () => {
-        render(<AccountInfoCard account={watchAccount} />)
+        render(
+            <AccountInfoCard
+                account={watchAccount}
+                onClose={vi.fn()}
+            />,
+        )
         expect(
             screen.queryByText('account_info.see_wallet_structure'),
         ).toBeNull()
     })
 
     it('shows wallet structure tree when expanded', () => {
-        render(<AccountInfoCard account={hdAccount} />)
+        render(
+            <AccountInfoCard
+                account={hdAccount}
+                onClose={vi.fn()}
+            />,
+        )
         fireEvent.click(screen.getByText('account_info.see_wallet_structure'))
         expect(screen.getByTestId('expandable-panel')).toBeTruthy()
         expect(screen.getByText('account_info.wallet_label')).toBeTruthy()
@@ -210,7 +236,12 @@ describe('AccountInfoCard', () => {
             data: undefined,
             isLoading: true,
         })
-        render(<AccountInfoCard account={hdAccount} />)
+        render(
+            <AccountInfoCard
+                account={hdAccount}
+                onClose={vi.fn()}
+            />,
+        )
         expect(screen.getByText('loading')).toBeTruthy()
     })
 })

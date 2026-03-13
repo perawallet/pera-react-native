@@ -121,7 +121,10 @@ export const AccountOptionsBottomSheet = ({
             >
                 <BottomSheetView style={styles.container}>
                     <PWView style={styles.accountInfoContainer}>
-                        <AccountInfoCard account={account} />
+                        <AccountInfoCard
+                            account={account}
+                            onClose={onClose}
+                        />
                     </PWView>
 
                     <PWView>
