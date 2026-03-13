@@ -25,6 +25,10 @@ import {
     encodeAlgorandAddress,
     PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
+import {
+    useAllAccounts,
+    canSignWithAccount,
+} from '@perawallet/wallet-core-accounts'
 import { useModalState } from '@hooks/useModalState'
 import { useMemo } from 'react'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
@@ -43,7 +47,18 @@ export const TransactionWarnings = ({
     const { t } = useLanguage()
     const { theme } = useTheme()
 
+    const accounts = useAllAccounts()
     const { isOpen, open, close } = useModalState()
+
+    const isSenderUserControlled = useMemo(() => {
+        if (!transaction.sender) return false
+        const senderAccount = accounts.find(
+            a => a.address === transaction.sender,
+        )
+        return senderAccount
+            ? canSignWithAccount(senderAccount, accounts)
+            : false
+    }, [transaction.sender, accounts])
 
     const closeAddress = useMemo(() => {
         return (
@@ -52,6 +67,8 @@ export const TransactionWarnings = ({
         )
     }, [transaction])
 
+    const showCloseWarning = !!closeAddress && isSenderUserControlled
+
     const rekeyAddress = useMemo(() => {
         return transaction.rekeyTo?.publicKey
             ? encodeAlgorandAddress(transaction.rekeyTo.publicKey)
@@ -59,8 +76,8 @@ export const TransactionWarnings = ({
     }, [transaction])
 
     const warningCount = useMemo(() => {
-        return (closeAddress ? 1 : 0) + (rekeyAddress ? 1 : 0)
-    }, [transaction])
+        return (showCloseWarning ? 1 : 0) + (rekeyAddress ? 1 : 0)
+    }, [showCloseWarning, rekeyAddress])
 
     if (!warningCount) {
         return null
@@ -109,7 +126,7 @@ export const TransactionWarnings = ({
                             paddingStyle='dense'
                         />
 
-                        {!!closeAddress && (
+                        {showCloseWarning && (
                             <PWView style={styles.warningSection}>
                                 <PWView
                                     style={styles.warningSectionIconContainer}
@@ -134,7 +151,7 @@ export const TransactionWarnings = ({
                                 </PWView>
                             </PWView>
                         )}
-                        {!!rekeyAddress && (
+                        {showCloseWarning && !!rekeyAddress && (
                             <PWDivider
                                 style={styles.divider}
                                 color={theme.colors.layerGray}
