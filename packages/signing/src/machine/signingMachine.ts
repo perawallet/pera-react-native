@@ -11,6 +11,7 @@
  */
 
 import { setup, assign } from 'xstate'
+import { AppError } from '@perawallet/wallet-core-shared'
 import type {
     SigningMachineContext,
     SigningMachineEvent,
@@ -23,6 +24,26 @@ import { ledgerSignerActor } from './actors/signers/ledgerSignerActor'
 import { multisigSignerActor } from './actors/signers/multisigSignerActor'
 import { transportActor } from './actors/transports/transportActor'
 import { resolveInitialContext, makeFailedContext } from './actions'
+
+/** Normalizes an unknown error to an Error instance. */
+const toError = (e: unknown): Error =>
+    e instanceof Error ? e : new Error(String(e))
+
+/** Checks if an error has the retryable flag set by pipeline error types. */
+const isRetryableError = (error: Error | null): boolean => {
+    if (!error || !(error instanceof AppError)) return false
+    return error.metadata.retryable === true
+}
+
+/** Asserts a value is non-null, throwing a descriptive error for debugging. */
+function assertDefined<T>(value: T | null | undefined, name: string): T {
+    if (value == null) {
+        throw new Error(
+            `signingMachine: expected ${name} to be defined at this state`,
+        )
+    }
+    return value
+}
 
 /**
  * Core signing state machine.
@@ -57,6 +78,16 @@ export const signingMachine = setup({
         isLedgerType: ({ context }) => context.resolvedSignerType === 'ledger',
         isMultisigType: ({ context }) =>
             context.resolvedSignerType === 'multisig',
+        isRetryable: ({ context }) => isRetryableError(context.error),
+        canRetryValidating: ({ context }) =>
+            isRetryableError(context.error) &&
+            context.failedDuringState === 'validating',
+        canRetrySigning: ({ context }) =>
+            isRetryableError(context.error) &&
+            context.failedDuringState === 'signing',
+        canRetryTransporting: ({ context }) =>
+            isRetryableError(context.error) &&
+            context.failedDuringState === 'transporting',
     },
 }).createMachine({
     id: 'signingMachine',
@@ -65,10 +96,7 @@ export const signingMachine = setup({
         try {
             return resolveInitialContext(input)
         } catch (error) {
-            return makeFailedContext(
-                input,
-                error instanceof Error ? error : new Error(String(error)),
-            )
+            return makeFailedContext(input, toError(error))
         }
     },
 
@@ -94,7 +122,10 @@ export const signingMachine = setup({
             invoke: {
                 src: 'analyzerActor',
                 input: ({ context }) => ({
-                    group: context.signableGroup!,
+                    group: assertDefined(
+                        context.signableGroup,
+                        'signableGroup',
+                    ),
                     context: {
                         network: context.deps.network,
                         accounts: context.allAccounts,
@@ -109,10 +140,8 @@ export const signingMachine = setup({
                 onError: {
                     target: 'failed',
                     actions: assign({
-                        error: ({ event }) => {
-                            const e = event.error
-                            return e instanceof Error ? e : new Error(String(e))
-                        },
+                        error: ({ event }) => toError(event.error),
+                        failedDuringState: () => 'validating' as const,
                     }),
                 },
             },
@@ -150,11 +179,21 @@ export const signingMachine = setup({
                         src: 'localKeySignerActor',
                         input: ({ context }) => ({
                             group: {
-                                ...context.signableGroup!,
-                                analysis: context.analysis!,
+                                ...assertDefined(
+                                    context.signableGroup,
+                                    'signableGroup',
+                                ),
+                                analysis: assertDefined(
+                                    context.analysis,
+                                    'analysis',
+                                ),
                             } as AnalyzedSignableGroup,
                             signerAccount:
-                                context.authAccount ?? context.signerAccount!,
+                                context.authAccount ??
+                                assertDefined(
+                                    context.signerAccount,
+                                    'signerAccount',
+                                ),
                             signTransactions: context.deps.signTransactions,
                         }),
                         onDone: {
@@ -166,12 +205,8 @@ export const signingMachine = setup({
                         onError: {
                             target: '#signingMachine.failed',
                             actions: assign({
-                                error: ({ event }) => {
-                                    const e = event.error
-                                    return e instanceof Error
-                                        ? e
-                                        : new Error(String(e))
-                                },
+                                error: ({ event }) => toError(event.error),
+                                failedDuringState: () => 'signing' as const,
                             }),
                         },
                     },
@@ -182,11 +217,21 @@ export const signingMachine = setup({
                         src: 'ledgerSignerActor',
                         input: ({ context }) => ({
                             group: {
-                                ...context.signableGroup!,
-                                analysis: context.analysis!,
+                                ...assertDefined(
+                                    context.signableGroup,
+                                    'signableGroup',
+                                ),
+                                analysis: assertDefined(
+                                    context.analysis,
+                                    'analysis',
+                                ),
                             } as AnalyzedSignableGroup,
                             signerAccount:
-                                context.authAccount ?? context.signerAccount!,
+                                context.authAccount ??
+                                assertDefined(
+                                    context.signerAccount,
+                                    'signerAccount',
+                                ),
                         }),
                         onDone: {
                             target: '#signingMachine.transporting',
@@ -197,12 +242,8 @@ export const signingMachine = setup({
                         onError: {
                             target: '#signingMachine.failed',
                             actions: assign({
-                                error: ({ event }) => {
-                                    const e = event.error
-                                    return e instanceof Error
-                                        ? e
-                                        : new Error(String(e))
-                                },
+                                error: ({ event }) => toError(event.error),
+                                failedDuringState: () => 'signing' as const,
                             }),
                         },
                     },
@@ -213,10 +254,19 @@ export const signingMachine = setup({
                         src: 'multisigSignerActor',
                         input: ({ context }) => ({
                             group: {
-                                ...context.signableGroup!,
-                                analysis: context.analysis!,
+                                ...assertDefined(
+                                    context.signableGroup,
+                                    'signableGroup',
+                                ),
+                                analysis: assertDefined(
+                                    context.analysis,
+                                    'analysis',
+                                ),
                             } as AnalyzedSignableGroup,
-                            signerAccount: context.signerAccount!,
+                            signerAccount: assertDefined(
+                                context.signerAccount,
+                                'signerAccount',
+                            ),
                         }),
                         onDone: {
                             target: '#signingMachine.transporting',
@@ -227,12 +277,8 @@ export const signingMachine = setup({
                         onError: {
                             target: '#signingMachine.failed',
                             actions: assign({
-                                error: ({ event }) => {
-                                    const e = event.error
-                                    return e instanceof Error
-                                        ? e
-                                        : new Error(String(e))
-                                },
+                                error: ({ event }) => toError(event.error),
+                                failedDuringState: () => 'signing' as const,
                             }),
                         },
                     },
@@ -248,10 +294,17 @@ export const signingMachine = setup({
             invoke: {
                 src: 'transportActor',
                 input: ({ context }) => ({
-                    signingResult: context.signingResult!,
-                    source: context.signableGroup!.source,
+                    signingResult: assertDefined(
+                        context.signingResult,
+                        'signingResult',
+                    ),
+                    source: assertDefined(
+                        context.signableGroup,
+                        'signableGroup',
+                    ).source,
                     signerAccount:
-                        context.authAccount ?? context.signerAccount!,
+                        context.authAccount ??
+                        assertDefined(context.signerAccount, 'signerAccount'),
                     jointAccountAddress: context.signerAccount?.address,
                     algokit: context.deps.algokit,
                     encodeSignedTransactions:
@@ -268,10 +321,8 @@ export const signingMachine = setup({
                 onError: {
                     target: 'failed',
                     actions: assign({
-                        error: ({ event }) => {
-                            const e = event.error
-                            return e instanceof Error ? e : new Error(String(e))
-                        },
+                        error: ({ event }) => toError(event.error),
+                        failedDuringState: () => 'transporting' as const,
                     }),
                 },
             },
@@ -283,7 +334,39 @@ export const signingMachine = setup({
         /** User cancelled the request. */
         rejected: { type: 'final' },
 
-        /** An unrecoverable error occurred. */
-        failed: { type: 'final' },
+        /**
+         * An error occurred. If the error is retryable, the user can send
+         * RETRY to re-enter the stage that failed. Otherwise this is terminal.
+         */
+        failed: {
+            on: {
+                RETRY: [
+                    {
+                        guard: 'canRetryValidating',
+                        target: 'validating',
+                        actions: assign({
+                            error: () => null,
+                            failedDuringState: () => null,
+                        }),
+                    },
+                    {
+                        guard: 'canRetrySigning',
+                        target: 'signing',
+                        actions: assign({
+                            error: () => null,
+                            failedDuringState: () => null,
+                        }),
+                    },
+                    {
+                        guard: 'canRetryTransporting',
+                        target: 'transporting',
+                        actions: assign({
+                            error: () => null,
+                            failedDuringState: () => null,
+                        }),
+                    },
+                ],
+            },
+        },
     },
 })

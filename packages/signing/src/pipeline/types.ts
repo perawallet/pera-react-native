@@ -29,7 +29,8 @@ import type { PeraArbitraryDataMessage } from '../models'
 export interface TransactionSignableData {
     type: 'transactions'
     transactions: PeraTransaction[]
-    rawTransactionsBase64: string[]
+    /** Base64-encoded raw transactions. Optional — populated when decoding external requests. */
+    rawTransactionsBase64?: string[]
     indicesToSign: number[]
 }
 
@@ -72,10 +73,22 @@ export type SignableData =
 // =============================================================================
 
 /**
+ * All possible origins for signable data.
+ * Used by both SourceMetadata (pipeline) and SignRequest (models).
+ */
+export type SourceType =
+    | 'local'
+    | 'walletconnect'
+    | 'webview'
+    | 'deeplink'
+    | 'multisig-cosign'
+    | 'arc60'
+
+/**
  * Metadata about where signable data came from
  */
 export interface SourceMetadata {
-    type: 'local' | 'walletconnect' | 'multisig-cosign' | 'arc60'
+    type: SourceType
 
     /** For WalletConnect: the dApp info */
     peerMetadata?: { name?: string; url?: string; icons?: string[] }

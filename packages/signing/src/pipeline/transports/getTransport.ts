@@ -62,8 +62,12 @@ export const createTransportSelector = (
     )
 
     return (source: SourceMetadata, account: WalletAccount): DataTransport => {
-        // WalletConnect requests always go back to dApp
-        if (source.type === 'walletconnect') {
+        // External callback sources (WalletConnect, webview, deeplink) go back via callback
+        if (
+            source.type === 'walletconnect' ||
+            source.type === 'webview' ||
+            source.type === 'deeplink'
+        ) {
             return walletConnectTransport
         }
 

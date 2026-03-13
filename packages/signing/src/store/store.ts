@@ -13,7 +13,6 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { PersistStorage } from 'zustand/middleware'
-import type { AnyActorRef } from 'xstate'
 import type { SigningStore, SignRequest } from '../models'
 import {
     generateOrderedUniqueId,
@@ -55,7 +54,6 @@ const STORE_NAME = 'signing-store'
 
 const initialState = {
     pendingSignRequests: [] as SignRequest[],
-    actorRefs: [] as AnyActorRef[],
     lastCompletedRequest: null as SignRequest | null,
 }
 
@@ -85,16 +83,6 @@ export const useSigningStore: UseBoundStore<
                     set({ pendingSignRequests: remaining })
                 }
                 return remaining.length != existing.length
-            },
-            addActorRef: (ref: AnyActorRef) => {
-                set(state => ({ actorRefs: [...state.actorRefs, ref] }))
-            },
-            removeActorRef: (actorId: string) => {
-                set(state => ({
-                    actorRefs: state.actorRefs.filter(
-                        ref => ref.id !== actorId,
-                    ),
-                }))
             },
             setLastCompletedRequest: (request: SignRequest | null) => {
                 set({ lastCompletedRequest: request })

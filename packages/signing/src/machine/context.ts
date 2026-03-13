@@ -127,6 +127,12 @@ export type SigningMachineContext = {
     error: Error | null
 
     /**
+     * Which state the machine was in when the error occurred.
+     * Used to determine the retry target when the user taps "Retry".
+     */
+    failedDuringState: 'validating' | 'signing' | 'transporting' | null
+
+    /**
      * Runtime dependencies (KMS functions, AlgoKit client, etc).
      * Stored in context so actor `input` functions can pass them to invoked actors.
      */
@@ -143,8 +149,14 @@ export type UserApprovedEvent = { type: 'USER_APPROVED' }
 /** User tapped the cancel/reject button in the signing UI */
 export type UserRejectedEvent = { type: 'USER_REJECTED' }
 
+/** User tapped retry after a retryable failure */
+export type RetryEvent = { type: 'RETRY' }
+
 /** All events the signing machine accepts */
-export type SigningMachineEvent = UserApprovedEvent | UserRejectedEvent
+export type SigningMachineEvent =
+    | UserApprovedEvent
+    | UserRejectedEvent
+    | RetryEvent
 
 // =============================================================================
 // Machine Input

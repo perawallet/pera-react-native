@@ -10,18 +10,10 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback } from 'react'
 import type { AnyActorRef } from 'xstate'
-import {
-    useAlgorandClient,
-    useTransactionEncoder,
-    useNetwork,
-} from '@perawallet/wallet-core-blockchain'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useTransactionSigner } from './useTransactionSigner'
 import { useSigningStore } from '../store'
-import { createSigningMachine } from '../machine/createSigningMachine'
-import type { SigningMachineDeps } from '../machine/context'
+import { useSigningActorLifecycle } from './useSigningActorLifecycle'
 import type { SignRequest } from '../models'
 import {
     AppError,
@@ -35,20 +27,35 @@ import {
 } from '../constants'
 
 // =============================================================================
+// Types
+// =============================================================================
+
+type UseSigningRequestResult = {
+    pendingSignRequests: SignRequest[]
+    lastCompletedRequest: SignRequest | null
+    currentRequest: SignRequest | undefined
+    currentActorRef: AnyActorRef | null
+    addSignRequest: (request: SignRequest) => void
+    removeSignRequest: (request: SignRequest) => void
+    clearLastCompletedRequest: () => void
+    signAndSendRequest: (request: SignRequest) => void
+    rejectRequest: (request: SignRequest) => void
+    /** Retries a failed request if its error is retryable. */
+    retryRequest: (request: SignRequest) => void
+}
+
+// =============================================================================
 // Hook
 // =============================================================================
 
-export const useSigningRequest = () => {
+export const useSigningRequest = (): UseSigningRequestResult => {
     const pendingSignRequests = useSigningStore(
         state => state.pendingSignRequests,
     )
-    const actorRefs = useSigningStore(state => state.actorRefs)
     const addSignRequestToStore = useSigningStore(state => state.addSignRequest)
     const removeSignRequestFromStore = useSigningStore(
         state => state.removeSignRequest,
     )
-    const addActorRef = useSigningStore(state => state.addActorRef)
-    const removeActorRef = useSigningStore(state => state.removeActorRef)
     const lastCompletedRequest = useSigningStore(
         state => state.lastCompletedRequest,
     )
@@ -56,90 +63,7 @@ export const useSigningRequest = () => {
         state => state.setLastCompletedRequest,
     )
 
-    const { signTransactions } = useTransactionSigner()
-    const { encodeSignedTransactions } = useTransactionEncoder()
-    const algokit = useAlgorandClient()
-    const { network } = useNetwork()
-    const allAccounts = useAllAccounts()
-
-    // Stable refs so the actor subscription callback never becomes stale
-    const removeActorRefRef = useRef(removeActorRef)
-    const removeSignRequestFromStoreRef = useRef(removeSignRequestFromStore)
-    const setLastCompletedRequestRef = useRef(setLastCompletedRequest)
-    removeActorRefRef.current = removeActorRef
-    removeSignRequestFromStoreRef.current = removeSignRequestFromStore
-    setLastCompletedRequestRef.current = setLastCompletedRequest
-
-    const buildDeps = useCallback(
-        (): SigningMachineDeps => ({
-            signTransactions,
-            encodeSignedTransactions,
-            algokit,
-            network,
-            // Multisig transports are stubbed until Phase 9
-            proposeSignRequest: async () => {
-                throw new Error('Multisig signing not yet supported')
-            },
-            addSignatures: async () => {
-                throw new Error('Multisig signing not yet supported')
-            },
-        }),
-        [signTransactions, encodeSignedTransactions, algokit, network],
-    )
-
-    /**
-     * Creates, subscribes to, and starts an actor for the given request.
-     * Cleans up the store when the actor reaches a terminal state.
-     */
-    const createAndStartActor = useCallback(
-        (request: SignRequest) => {
-            const actor = createSigningMachine(
-                request,
-                allAccounts,
-                buildDeps(),
-            )
-
-            actor.subscribe(snapshot => {
-                if (snapshot.status !== 'done') return
-
-                if (snapshot.matches('completed')) {
-                    setLastCompletedRequestRef.current(snapshot.context.request)
-                } else if (snapshot.matches('failed')) {
-                    const { request: req, error } = snapshot.context
-                    if (req.transport === 'callback') {
-                        ;(req as { error?: (msg: string) => void }).error?.(
-                            error instanceof Error
-                                ? error.message
-                                : 'Signing failed',
-                        )
-                    }
-                }
-                removeActorRefRef.current(actor.id)
-                removeSignRequestFromStoreRef.current(snapshot.context.request)
-            })
-
-            actor.start()
-            addActorRef(actor)
-        },
-        [allAccounts, buildDeps, addActorRef],
-    )
-
-    // On mount, create actors for any requests that were rehydrated from storage
-    // (i.e. requests that survived an app restart and don't yet have a live actor)
-    const hasRehydrated = useRef(false)
-    useEffect(() => {
-        if (hasRehydrated.current) return
-        hasRehydrated.current = true
-
-        const existingActorIds = new Set(
-            actorRefs.map((ref: AnyActorRef) => ref.id),
-        )
-        for (const request of pendingSignRequests) {
-            if (!existingActorIds.has(request.id)) {
-                createAndStartActor(request)
-            }
-        }
-    }, [])
+    const { getActorRef, startActor, stopActor } = useSigningActorLifecycle()
 
     // -------------------------------------------------------------------------
     // Public API
@@ -187,23 +111,17 @@ export const useSigningRequest = () => {
             const added = addSignRequestToStore(newRequest)
             if (!added) return
 
-            createAndStartActor(newRequest)
+            startActor(newRequest)
         },
-        [addSignRequestToStore, createAndStartActor],
+        [addSignRequestToStore, startActor],
     )
 
     const removeSignRequest = useCallback(
         (request: SignRequest) => {
-            const actor = actorRefs.find(
-                (ref: AnyActorRef) => ref.id === request.id,
-            )
-            if (actor) {
-                actor.stop()
-                removeActorRef(actor.id)
-            }
+            stopActor(request.id)
             removeSignRequestFromStore(request)
         },
-        [actorRefs, removeActorRef, removeSignRequestFromStore],
+        [stopActor, removeSignRequestFromStore],
     )
 
     const clearLastCompletedRequest = useCallback(() => {
@@ -216,12 +134,9 @@ export const useSigningRequest = () => {
      */
     const signAndSendRequest = useCallback(
         (request: SignRequest) => {
-            const actor = actorRefs.find(
-                (ref: AnyActorRef) => ref.id === request.id,
-            )
-            actor?.send({ type: 'USER_APPROVED' })
+            getActorRef(request.id)?.send({ type: 'USER_APPROVED' })
         },
-        [actorRefs],
+        [getActorRef],
     )
 
     /**
@@ -230,9 +145,7 @@ export const useSigningRequest = () => {
      */
     const rejectRequest = useCallback(
         (request: SignRequest) => {
-            const actor = actorRefs.find(
-                (ref: AnyActorRef) => ref.id === request.id,
-            )
+            const actor = getActorRef(request.id)
             if (actor) {
                 actor.send({ type: 'USER_REJECTED' })
             } else {
@@ -243,13 +156,24 @@ export const useSigningRequest = () => {
                 removeSignRequestFromStore(request)
             }
         },
-        [actorRefs, removeSignRequestFromStore],
+        [getActorRef, removeSignRequestFromStore],
+    )
+
+    /**
+     * Retries a failed request — sends RETRY to its actor.
+     * Only works if the error is retryable (transient network/signing failures).
+     */
+    const retryRequest = useCallback(
+        (request: SignRequest) => {
+            getActorRef(request.id)?.send({ type: 'RETRY' })
+        },
+        [getActorRef],
     )
 
     const currentRequest = pendingSignRequests?.at(0)
-    const currentActorRef =
-        actorRefs.find((ref: AnyActorRef) => ref.id === currentRequest?.id) ??
-        null
+    const currentActorRef = currentRequest
+        ? (getActorRef(currentRequest.id) ?? null)
+        : null
 
     return {
         pendingSignRequests,
@@ -261,5 +185,6 @@ export const useSigningRequest = () => {
         clearLastCompletedRequest,
         signAndSendRequest,
         rejectRequest,
+        retryRequest,
     }
 }

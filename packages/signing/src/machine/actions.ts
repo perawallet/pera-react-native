@@ -36,6 +36,20 @@ import type {
 } from '../models'
 
 // =============================================================================
+// Type guards
+// =============================================================================
+
+const isTransactionRequest = (
+    request: SignRequest,
+): request is TransactionSignRequest =>
+    request.type === 'transactions' && 'txs' in request
+
+const isArbitraryDataRequest = (
+    request: SignRequest,
+): request is ArbitraryDataSignRequest =>
+    request.type === 'arbitrary-data' && 'data' in request
+
+// =============================================================================
 // Signer address extraction
 // =============================================================================
 
@@ -45,18 +59,16 @@ import type {
  * For arbitrary data: uses the first data item's signer.
  */
 const extractSignerAddress = (request: SignRequest): string => {
-    if (request.type === 'transactions' && 'txs' in request) {
-        const txRequest = request as TransactionSignRequest
-        const firstTx = txRequest.txs[0]
+    if (isTransactionRequest(request)) {
+        const firstTx = request.txs[0]
         if (!firstTx) {
             throw new Error('No transactions in request')
         }
         return firstTx.sender.toString()
     }
 
-    if (request.type === 'arbitrary-data' && 'data' in request) {
-        const dataRequest = request as ArbitraryDataSignRequest
-        const firstData = dataRequest.data[0]
+    if (isArbitraryDataRequest(request)) {
+        const firstData = request.data[0]
         if (!firstData) {
             throw new Error('No data in request')
         }
@@ -100,18 +112,19 @@ const determineSignerType = (
 // =============================================================================
 
 const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
-    if (request.transport === 'algod') {
+    const sourceType = request.sourceType ?? 'local'
+
+    if (sourceType === 'local') {
         return { type: 'local' }
     }
 
-    // callback transport → WalletConnect
-    const txApprove =
-        request.type === 'transactions' && 'approve' in request
-            ? (request as TransactionSignRequest).approve
-            : undefined
+    // External sources (walletconnect, webview, deeplink) use callbacks
+    const txApprove = isTransactionRequest(request)
+        ? request.approve
+        : undefined
 
     return {
-        type: 'walletconnect',
+        type: sourceType,
         requestId: request.transportId ?? request.id,
         callbacks: {
             approve: txApprove
@@ -130,25 +143,22 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
 const buildSignableGroup = (request: SignRequest): SignableGroup => {
     const source = buildSourceMetadata(request)
 
-    if (request.type === 'transactions' && 'txs' in request) {
-        const txRequest = request as TransactionSignRequest
+    if (isTransactionRequest(request)) {
         return {
             data: {
                 type: 'transactions',
-                transactions: txRequest.txs,
-                rawTransactionsBase64: [], // populated in Phase 6
-                indicesToSign: txRequest.txs.map((_, i) => i),
+                transactions: request.txs,
+                indicesToSign: request.txs.map((_, i) => i),
             },
             source,
         }
     }
 
-    if (request.type === 'arbitrary-data' && 'data' in request) {
-        const dataRequest = request as ArbitraryDataSignRequest
+    if (isArbitraryDataRequest(request)) {
         return {
             data: {
                 type: 'arbitrary-data',
-                data: dataRequest.data,
+                data: request.data,
             },
             source,
         }
@@ -202,6 +212,7 @@ export const resolveInitialContext = (
         signingResult: null,
         transportResult: null,
         error: null,
+        failedDuringState: null,
         deps: extractDeps(input),
     }
 }
@@ -224,5 +235,6 @@ export const makeFailedContext = (
     signingResult: null,
     transportResult: null,
     error,
+    failedDuringState: null,
     deps: extractDeps(input),
 })
