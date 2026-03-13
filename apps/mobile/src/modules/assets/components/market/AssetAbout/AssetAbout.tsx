@@ -10,13 +10,12 @@
  limitations under the License
  */
 
-import { View } from 'react-native'
 import { useStyles } from './styles'
 import {
     generateOrderedUniqueId,
     truncateAlgorandAddress,
 } from '@perawallet/wallet-core-shared'
-import { PWButton, PWText } from '@components/core'
+import { PWButton, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
@@ -52,19 +51,12 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
     }
 
     return (
-        <View style={styles.container}>
-            {!!assetDetails.peraMetadata?.description && (
-                <KeyValueRow
-                    title={t('asset_details.about.title', {
-                        name: assetDetails.name,
-                    })}
-                    verticalAlignment='top'
-                >
-                    <PWText style={styles.description}>
-                        {assetDetails.peraMetadata.description}
-                    </PWText>
-                </KeyValueRow>
-            )}
+        <PWView style={styles.container}>
+            <PWText style={styles.sectionTitle}>
+                {t('asset_details.about.title', {
+                    name: assetDetails.name,
+                })}
+            </PWText>
 
             {!!assetDetails.assetId &&
                 assetDetails.assetId !== ALGO_ASSET_ID && (
@@ -156,6 +148,6 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                     />
                 </KeyValueRow>
             )}
-        </View>
+        </PWView>
     )
 }

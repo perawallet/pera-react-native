@@ -16,14 +16,16 @@ import { AssetAbout } from '../AssetAbout'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 
 const mockDetails = {
+    name: 'Algo',
+    url: 'https://algorand.foundation',
     peraMetadata: {
         description: 'Test Description',
     },
-} as PeraAsset
+} as unknown as PeraAsset
 
 describe('AssetAbout', () => {
-    it('renders correctly', () => {
+    it('renders section title', () => {
         render(<AssetAbout assetDetails={mockDetails} />)
-        expect(screen.getByText('Test Description')).toBeDefined()
+        expect(screen.getByText('asset_details.about.title')).toBeDefined()
     })
 })

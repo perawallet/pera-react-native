@@ -94,7 +94,7 @@ export const AssetVerificationCard = ({
     }
 
     return (
-        <PWView>
+        <PWView style={styles.wrapper}>
             <PWView style={[styles.container, containerStyle]}>
                 <PWIcon
                     name={cardConfig.icon}
