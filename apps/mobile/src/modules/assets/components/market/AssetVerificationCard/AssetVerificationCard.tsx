@@ -17,6 +17,7 @@ import { IconName, PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useMemo, useCallback } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
+import { config } from '@perawallet/wallet-core-config'
 
 export type AssetVerificationCardProps = {
     assetDetails: PeraAsset
@@ -31,7 +32,7 @@ export const AssetVerificationCard = ({
     const { pushWebView } = useWebView()
 
     const handleLearnMore = useCallback(() => {
-        pushWebView({ url: 'https://explorer.perawallet.app/asa-verification/' })
+        pushWebView({ url: config.asaVerificationUrl })
     }, [pushWebView])
     const isTrusted = assetDetails.assetId === ALGO_ASSET_ID
     const isVerified =

@@ -14,6 +14,7 @@ import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { AssetVerificationCard } from '../AssetVerificationCard'
 import { PeraAsset, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
+import { config } from '@perawallet/wallet-core-config'
 
 const mockPushWebView = vi.fn()
 
@@ -96,7 +97,7 @@ describe('AssetVerificationCard', () => {
             screen.getByText('asset_details.verification_card.learn_more'),
         )
         expect(mockPushWebView).toHaveBeenCalledWith({
-            url: 'https://explorer.perawallet.app/asa-verification/',
+            url: config.asaVerificationUrl,
         })
     })
 })
