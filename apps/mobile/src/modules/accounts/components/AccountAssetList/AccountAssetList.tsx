@@ -127,8 +127,8 @@ export const AccountAssetList = ({
                     contentContainerStyle={styles.rootContainer}
                     ListHeaderComponent={
                         <PWView style={styles.headerContainer}>
-                            {header}
                             <ExpandablePanel isExpanded={headerState.isOpen}>
+                                {header}
                                 <PWView style={styles.titleBar}>
                                     <PWText
                                         style={styles.title}
@@ -161,6 +161,7 @@ export const AccountAssetList = ({
                             </ExpandablePanel>
                             <SearchInput
                                 onFocus={headerState.close}
+                                onBlur={headerState.open}
                                 placeholder={t(
                                     'account_details.assets.search_placeholder',
                                 )}
