@@ -24,7 +24,7 @@
         "no_accounts_body": "There are no matching accounts",
         "search_placeholder": "Account address or short name"
     },
-     "arc59": {
+    "arc59": {
         "requests": {
             "empty_title": "No Pending Asset Transfer Requests",
             "empty_body": "When you have an asset transfer request, you can view it here. Tap to learn more about this feature.",
@@ -86,8 +86,8 @@
             "csv": "CSV"
         },
         "verification_card": {
-            "trusted_title": "Trusted Asset",
-            "trusted_description": "The ALGO asset is a core part of the Algorand blockchain.",
+            "trusted_title": "Trusted ASA",
+            "trusted_description": "This is a well-known and established project in the Algorand ecosystem.",
             "verified_title": "Verified ASA",
             "verified_description": "This ASA was automatically verified through the Pera ASA Verification program.",
             "suspicious_title": "Suspicious ASA",
