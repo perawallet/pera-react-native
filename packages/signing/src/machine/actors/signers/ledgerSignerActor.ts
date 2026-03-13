@@ -20,7 +20,7 @@ import { HardwareWalletError } from '../../../pipeline/errors'
 
 export type LedgerSignerActorInput = {
     groups: AnalyzedSignableGroup[]
-    signerAccount: WalletAccount
+    allAccounts: WalletAccount[]
 }
 
 /**
@@ -38,7 +38,8 @@ export const ledgerSignerActor = fromPromise<
     SigningResult[],
     LedgerSignerActorInput
 >(async ({ input }) => {
+    const firstGroup = input.groups[0]
     throw new HardwareWalletError(
-        `Ledger signing is not yet implemented for account ${input.signerAccount.address}`,
+        `Ledger signing is not yet implemented for account ${firstGroup?.signerAddress ?? 'unknown'}`,
     )
 })

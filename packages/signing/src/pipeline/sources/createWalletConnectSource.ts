@@ -129,7 +129,10 @@ export const createWalletConnectTransactionSource =
                     },
                 }
 
-                return { data: signableData, metadata }
+                const signerAddress =
+                    request.transactions[0]?.sender.toString() ?? ''
+
+                return { data: signableData, signerAddress, metadata }
             },
         )
     }
@@ -165,6 +168,8 @@ export const createWalletConnectDataSource =
                 },
             }
 
-            return { data: signableData, metadata }
+            const signerAddress = request.data[0]?.signer ?? ''
+
+            return { data: signableData, signerAddress, metadata }
         })
     }

@@ -12,7 +12,7 @@
 
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
-import type { DataSource, TransactionSignableData } from '../types'
+import type { DataSource } from '../types'
 import { createLocalSource } from './factories'
 
 /**
@@ -118,27 +118,26 @@ export const createArc59SendSource = (
 ): DataSource<Arc59SendSourceParams> => {
     const { buildSendViaInboxTransactions, encodeTransaction } = deps
 
-    return createLocalSource<Arc59SendSourceParams>(
-        async (
-            params: Arc59SendSourceParams,
-        ): Promise<TransactionSignableData> => {
-            const transactions = await buildSendViaInboxTransactions(params)
+    return createLocalSource<Arc59SendSourceParams>(async params => {
+        const transactions = await buildSendViaInboxTransactions(params)
 
-            const rawTransactionsBase64 = transactions.map(tx =>
-                encodeToBase64(encodeTransaction(tx)),
-            )
+        const rawTransactionsBase64 = transactions.map(tx =>
+            encodeToBase64(encodeTransaction(tx)),
+        )
 
-            // All transactions in the group are signed by the sender
-            const indicesToSign = transactions.map((_, index) => index)
+        // All transactions in the group are signed by the sender
+        const indicesToSign = transactions.map((_, index) => index)
 
-            return {
+        return {
+            data: {
                 type: 'transactions',
                 transactions,
                 rawTransactionsBase64,
                 indicesToSign,
-            }
-        },
-    )
+            },
+            signerAddress: params.sender,
+        }
+    })
 }
 
 /**
@@ -161,27 +160,26 @@ export const createArc59ClaimSource = (
 ): DataSource<Arc59ClaimSourceParams> => {
     const { buildClaimTransactions, encodeTransaction } = deps
 
-    return createLocalSource<Arc59ClaimSourceParams>(
-        async (
-            params: Arc59ClaimSourceParams,
-        ): Promise<TransactionSignableData> => {
-            const transactions = await buildClaimTransactions(params)
+    return createLocalSource<Arc59ClaimSourceParams>(async params => {
+        const transactions = await buildClaimTransactions(params)
 
-            const rawTransactionsBase64 = transactions.map(tx =>
-                encodeToBase64(encodeTransaction(tx)),
-            )
+        const rawTransactionsBase64 = transactions.map(tx =>
+            encodeToBase64(encodeTransaction(tx)),
+        )
 
-            // All transactions in the group are signed by the sender
-            const indicesToSign = transactions.map((_, index) => index)
+        // All transactions in the group are signed by the sender
+        const indicesToSign = transactions.map((_, index) => index)
 
-            return {
+        return {
+            data: {
                 type: 'transactions',
                 transactions,
                 rawTransactionsBase64,
                 indicesToSign,
-            }
-        },
-    )
+            },
+            signerAddress: params.sender,
+        }
+    })
 }
 
 /**
@@ -203,25 +201,24 @@ export const createArc59RejectSource = (
 ): DataSource<Arc59RejectSourceParams> => {
     const { buildRejectTransactions, encodeTransaction } = deps
 
-    return createLocalSource<Arc59RejectSourceParams>(
-        async (
-            params: Arc59RejectSourceParams,
-        ): Promise<TransactionSignableData> => {
-            const transactions = await buildRejectTransactions(params)
+    return createLocalSource<Arc59RejectSourceParams>(async params => {
+        const transactions = await buildRejectTransactions(params)
 
-            const rawTransactionsBase64 = transactions.map(tx =>
-                encodeToBase64(encodeTransaction(tx)),
-            )
+        const rawTransactionsBase64 = transactions.map(tx =>
+            encodeToBase64(encodeTransaction(tx)),
+        )
 
-            // All transactions in the group are signed by the sender
-            const indicesToSign = transactions.map((_, index) => index)
+        // All transactions in the group are signed by the sender
+        const indicesToSign = transactions.map((_, index) => index)
 
-            return {
+        return {
+            data: {
                 type: 'transactions',
                 transactions,
                 rawTransactionsBase64,
                 indicesToSign,
-            }
-        },
-    )
+            },
+            signerAddress: params.sender,
+        }
+    })
 }

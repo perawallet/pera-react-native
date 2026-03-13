@@ -121,6 +121,12 @@ export interface SignableGroup {
 
     /** Metadata about where this came from */
     source: SourceMetadata
+
+    /**
+     * The address of the account that should sign this group.
+     * Resolved from transaction senders or the data signer field.
+     */
+    signerAddress: string
 }
 
 /**
@@ -305,6 +311,13 @@ export interface SigningResult {
 
     /** The signers that participated */
     signers: SignerInfo[]
+
+    /**
+     * Original positions of these signed transactions in the full request array.
+     * Required when a request is split across multiple groups (multi-signer).
+     * Used by transportActor to reassemble signed txs in correct order.
+     */
+    originalIndices?: number[]
 }
 
 /**

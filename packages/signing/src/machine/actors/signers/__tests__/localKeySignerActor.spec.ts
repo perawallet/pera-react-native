@@ -17,9 +17,12 @@ import type { LocalKeySignerActorInput } from '../localKeySignerActor'
 import type { AnalyzedSignableGroup } from '../../../../pipeline/types'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
+const MOCK_ADDRESS =
+    'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+
 const mockAlgo25Account: WalletAccount = {
     type: 'algo25',
-    address: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    address: MOCK_ADDRESS,
     keyPairId: 'key-1',
 } as unknown as WalletAccount
 
@@ -32,6 +35,7 @@ const mockGroup: AnalyzedSignableGroup = {
         indicesToSign: [0],
     },
     source: { type: 'local' },
+    signerAddress: MOCK_ADDRESS,
     analysis: {
         totalFees: 0n,
         transactionSummaries: [],
@@ -48,7 +52,7 @@ describe('localKeySignerActor', () => {
         const signTransactions = vi.fn().mockResolvedValue([mockSignedTxn])
         const input: LocalKeySignerActorInput = {
             groups: [mockGroup],
-            signerAccount: mockAlgo25Account,
+            allAccounts: [mockAlgo25Account],
             signTransactions,
         }
 
@@ -63,7 +67,7 @@ describe('localKeySignerActor', () => {
             expect(result.signedData.signed).toEqual([mockSignedTxn])
         }
         expect(result.signers).toHaveLength(1)
-        expect(result.signers[0].address).toBe(mockAlgo25Account.address)
+        expect(result.signers[0].address).toBe(MOCK_ADDRESS)
         if (mockGroup.data.type === 'transactions') {
             expect(signTransactions).toHaveBeenCalledWith(
                 mockGroup.data.transactions,
@@ -78,7 +82,7 @@ describe('localKeySignerActor', () => {
             .mockRejectedValue(new Error('KMS error'))
         const input: LocalKeySignerActorInput = {
             groups: [mockGroup],
-            signerAccount: mockAlgo25Account,
+            allAccounts: [mockAlgo25Account],
             signTransactions,
         }
 
@@ -89,16 +93,37 @@ describe('localKeySignerActor', () => {
     })
 
     it('rejects when account has no signing keys', async () => {
+        const multisigAddress =
+            'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'
         const accountWithoutKeys: WalletAccount = {
             type: 'multisig',
-            address:
-                'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+            address: multisigAddress,
         } as unknown as WalletAccount
+
+        const groupForMultisig: AnalyzedSignableGroup = {
+            ...mockGroup,
+            signerAddress: multisigAddress,
+        }
 
         const signTransactions = vi.fn()
         const input: LocalKeySignerActorInput = {
+            groups: [groupForMultisig],
+            allAccounts: [accountWithoutKeys],
+            signTransactions,
+        }
+
+        const actor = createActor(localKeySignerActor, { input })
+        actor.start()
+
+        await expect(toPromise(actor)).rejects.toThrow()
+        expect(signTransactions).not.toHaveBeenCalled()
+    })
+
+    it('rejects when group signerAddress is not in allAccounts', async () => {
+        const signTransactions = vi.fn()
+        const input: LocalKeySignerActorInput = {
             groups: [mockGroup],
-            signerAccount: accountWithoutKeys,
+            allAccounts: [], // no matching account
             signTransactions,
         }
 

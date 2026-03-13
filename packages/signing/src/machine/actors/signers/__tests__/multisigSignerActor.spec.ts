@@ -18,9 +18,12 @@ import type { AnalyzedSignableGroup } from '../../../../pipeline/types'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { CannotSignError } from '../../../../pipeline/errors'
 
+const MULTISIG_ADDRESS =
+    'MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM'
+
 const mockMultisigAccount: WalletAccount = {
     type: 'multisig',
-    address: 'MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM',
+    address: MULTISIG_ADDRESS,
 } as unknown as WalletAccount
 
 const mockGroup: AnalyzedSignableGroup = {
@@ -30,6 +33,7 @@ const mockGroup: AnalyzedSignableGroup = {
         indicesToSign: [],
     },
     source: { type: 'local' },
+    signerAddress: MULTISIG_ADDRESS,
     analysis: {
         totalFees: 0n,
         transactionSummaries: [],
@@ -43,7 +47,7 @@ describe('multisigSignerActor', () => {
     it('throws CannotSignError (stub — not yet implemented)', async () => {
         const input: MultisigSignerActorInput = {
             groups: [mockGroup],
-            signerAccount: mockMultisigAccount,
+            allAccounts: [mockMultisigAccount],
         }
 
         const actor = createActor(multisigSignerActor, { input })
@@ -52,17 +56,15 @@ describe('multisigSignerActor', () => {
         await expect(toPromise(actor)).rejects.toBeInstanceOf(CannotSignError)
     })
 
-    it('error message includes the account address', async () => {
+    it('error message includes the group signer address', async () => {
         const input: MultisigSignerActorInput = {
             groups: [mockGroup],
-            signerAccount: mockMultisigAccount,
+            allAccounts: [mockMultisigAccount],
         }
 
         const actor = createActor(multisigSignerActor, { input })
         actor.start()
 
-        await expect(toPromise(actor)).rejects.toThrow(
-            mockMultisigAccount.address,
-        )
+        await expect(toPromise(actor)).rejects.toThrow(MULTISIG_ADDRESS)
     })
 })

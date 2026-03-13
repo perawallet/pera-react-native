@@ -142,27 +142,51 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
 
 /**
  * Builds an array of signable groups from a sign request.
- * Currently produces a single group for the entire request.
- * Future: split `transactions` requests into per-atomic-group entries
- * by inspecting the Algorand group ID bytes on each transaction.
+ *
+ * For transaction requests, transactions are grouped by sender address so that
+ * each group can be signed independently by the correct account. Original
+ * positions are preserved in `originalIndices` to allow correct reassembly
+ * after signing (see transportActor.mergeSigningResults).
+ *
+ * For arbitrary-data requests, a single group is produced using the first
+ * item's signer as the group's signerAddress.
  */
 const buildSignableGroups = (request: SignRequest): SignableGroup[] => {
     const source = buildSourceMetadata(request)
 
     if (isTransactionRequest(request)) {
-        return [
-            {
-                data: {
-                    type: 'transactions',
-                    transactions: request.txs,
-                    indicesToSign: request.txs.map((_, i) => i),
-                },
-                source,
+        // Group transactions by sender, preserving original position
+        const bySender = new Map<
+            string,
+            { txs: typeof request.txs; indices: number[] }
+        >()
+        for (const [i, tx] of request.txs.entries()) {
+            const addr = tx.sender.toString()
+            if (!bySender.has(addr)) {
+                bySender.set(addr, { txs: [], indices: [] })
+            }
+            const entry = bySender.get(addr)!
+            entry.txs.push(tx)
+            entry.indices.push(i)
+        }
+
+        return [...bySender.entries()].map(([addr, { txs, indices }]) => ({
+            data: {
+                type: 'transactions' as const,
+                transactions: txs,
+                indicesToSign: txs.map((_, i) => i),
             },
-        ]
+            source,
+            signerAddress: addr,
+            originalIndices: indices,
+        }))
     }
 
     if (isArbitraryDataRequest(request)) {
+        const firstData = request.data[0]
+        if (!firstData) {
+            throw new Error('No data in request')
+        }
         return [
             {
                 data: {
@@ -170,6 +194,7 @@ const buildSignableGroups = (request: SignRequest): SignableGroup[] => {
                     data: request.data,
                 },
                 source,
+                signerAddress: firstData.signer,
             },
         ]
     }
@@ -193,6 +218,10 @@ const extractDeps = (input: SigningMachineInput): SigningMachineDeps => ({
 /**
  * Resolves the initial machine context from the input.
  * Throws if the signer account cannot be found or signing is not possible.
+ *
+ * Only the primary signerAddress is stored in context. Signing actors resolve
+ * the full WalletAccount from allAccounts at signing time, enabling per-group
+ * account lookup for multi-signer requests.
  */
 export const resolveInitialContext = (
     input: SigningMachineInput,
@@ -200,8 +229,7 @@ export const resolveInitialContext = (
     const { request, allAccounts } = input
 
     const signerAddress = extractSignerAddress(request)
-    const signerAccount =
-        allAccounts.find(a => a.address === signerAddress) ?? null
+    const signerAccount = allAccounts.find(a => a.address === signerAddress)
 
     if (!signerAccount) {
         throw new Error(`Signer account not found: ${signerAddress}`)
@@ -214,8 +242,7 @@ export const resolveInitialContext = (
     return {
         request,
         allAccounts,
-        signerAccount,
-        authAccount,
+        signerAddress,
         resolvedSignerType,
         signableGroups,
         analyses: null,
@@ -237,8 +264,7 @@ export const makeFailedContext = (
 ): SigningMachineContext => ({
     request: input.request,
     allAccounts: input.allAccounts,
-    signerAccount: null,
-    authAccount: null,
+    signerAddress: null,
     resolvedSignerType: null,
     signableGroups: null,
     analyses: null,

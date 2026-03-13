@@ -20,22 +20,41 @@ import {
     createLocalKeyStrategy,
     type LocalSigningFunction,
 } from '../../../pipeline/signing/createLocalKeyStrategy'
+import { resolveRekeyChain } from '../../../pipeline/signing/getSigningStrategy'
+import { CannotSignError } from '../../../pipeline/errors'
 
 export type LocalKeySignerActorInput = {
     groups: AnalyzedSignableGroup[]
-    signerAccount: WalletAccount
+    allAccounts: WalletAccount[]
     signTransactions: LocalSigningFunction
 }
 
 /**
  * XState actor that signs all groups using local keys (Algo25 / HDWallet).
- * Returns one SigningResult per group, in the same order.
+ * Each group carries its own signerAddress, so multi-signer requests are
+ * handled correctly: the auth account is resolved per group, then signed.
+ * Returns one SigningResult per group, preserving originalIndices for reassembly.
  */
 export const localKeySignerActor = fromPromise<
     SigningResult[],
     LocalKeySignerActorInput
 >(async ({ input }) => {
-    const { groups, signerAccount, signTransactions } = input
+    const { groups, allAccounts, signTransactions } = input
     const strategy = createLocalKeyStrategy(signTransactions)
-    return Promise.all(groups.map(group => strategy.sign(group, signerAccount)))
+
+    return Promise.all(
+        groups.map(group => {
+            const signerAccount = allAccounts.find(
+                a => a.address === group.signerAddress,
+            )
+            if (!signerAccount) {
+                throw new CannotSignError(
+                    group.signerAddress,
+                    'Account not found in allAccounts',
+                )
+            }
+            const authAccount = resolveRekeyChain(signerAccount, allAccounts)
+            return strategy.sign(group, authAccount)
+        }),
+    )
 })

@@ -172,12 +172,7 @@ export const signingMachine = setup({
                                     'analyses',
                                 )[i],
                             })) as AnalyzedSignableGroup[],
-                            signerAccount:
-                                context.authAccount ??
-                                assertDefined(
-                                    context.signerAccount,
-                                    'signerAccount',
-                                ),
+                            allAccounts: context.allAccounts,
                             signTransactions: context.deps.signTransactions,
                         }),
                         onDone: {
@@ -210,12 +205,7 @@ export const signingMachine = setup({
                                     'analyses',
                                 )[i],
                             })) as AnalyzedSignableGroup[],
-                            signerAccount:
-                                context.authAccount ??
-                                assertDefined(
-                                    context.signerAccount,
-                                    'signerAccount',
-                                ),
+                            allAccounts: context.allAccounts,
                         }),
                         onDone: {
                             target: '#signingMachine.transporting',
@@ -247,10 +237,7 @@ export const signingMachine = setup({
                                     'analyses',
                                 )[i],
                             })) as AnalyzedSignableGroup[],
-                            signerAccount: assertDefined(
-                                context.signerAccount,
-                                'signerAccount',
-                            ),
+                            allAccounts: context.allAccounts,
                         }),
                         onDone: {
                             target: '#signingMachine.transporting',
@@ -286,10 +273,11 @@ export const signingMachine = setup({
                         context.signableGroups,
                         'signableGroups',
                     )[0].source,
-                    signerAccount:
-                        context.authAccount ??
-                        assertDefined(context.signerAccount, 'signerAccount'),
-                    jointAccountAddress: context.signerAccount?.address,
+                    signerAddress: assertDefined(
+                        context.signerAddress,
+                        'signerAddress',
+                    ),
+                    allAccounts: context.allAccounts,
                     algokit: context.deps.algokit,
                     encodeSignedTransactions:
                         context.deps.encodeSignedTransactions,

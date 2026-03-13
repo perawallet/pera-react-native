@@ -12,7 +12,7 @@
 
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
-import type { DataSource, TransactionSignableData } from '../types'
+import type { DataSource } from '../types'
 import { createLocalSource } from './factories'
 import type { ExpressSendSourceParams, SourceDependencies } from './types'
 
@@ -56,73 +56,70 @@ export const createExpressSendSource = (
         assetMbr,
     } = deps
 
-    return createLocalSource<ExpressSendSourceParams>(
-        async (
-            params: ExpressSendSourceParams,
-        ): Promise<TransactionSignableData> => {
-            const { sender, receiver, amount, assetId } = params
+    return createLocalSource<ExpressSendSourceParams>(async params => {
+        const { sender, receiver, amount, assetId } = params
 
-            // Look up receiver's current balance to determine funding needed
-            const { amount: currentBalance, minBalance: currentMbr } =
-                await getAccountInfo(receiver)
+        // Look up receiver's current balance to determine funding needed
+        const { amount: currentBalance, minBalance: currentMbr } =
+            await getAccountInfo(receiver)
 
-            // Get suggested params for fee calculation
-            const suggestedParams = await getSuggestedParams()
+        // Get suggested params for fee calculation
+        const suggestedParams = await getSuggestedParams()
 
-            // After opt-in the receiver's MBR increases by ASSET_MBR
-            // The opt-in tx fee is also paid from the receiver's balance
-            const mbrAfterOptIn = currentMbr + assetMbr
-            const balanceNeeded = mbrAfterOptIn + suggestedParams.minFee
-            const fundingNeeded =
-                balanceNeeded > currentBalance
-                    ? balanceNeeded - currentBalance
-                    : 0n
+        // After opt-in the receiver's MBR increases by ASSET_MBR
+        // The opt-in tx fee is also paid from the receiver's balance
+        const mbrAfterOptIn = currentMbr + assetMbr
+        const balanceNeeded = mbrAfterOptIn + suggestedParams.minFee
+        const fundingNeeded =
+            balanceNeeded > currentBalance ? balanceNeeded - currentBalance : 0n
 
-            const transactions: PeraTransaction[] = []
-            // Track which transactions the sender signs
-            // The opt-in is signed by the receiver, not the sender
-            const senderIndicesToSign: number[] = []
+        const transactions: PeraTransaction[] = []
+        // Track which transactions the sender signs
+        // The opt-in is signed by the receiver, not the sender
+        const senderIndicesToSign: number[] = []
 
-            // Add funding payment if needed
-            if (fundingNeeded > 0n) {
-                const fundingTx = await createPaymentTransaction({
-                    sender,
-                    receiver,
-                    amount: fundingNeeded,
-                })
-                senderIndicesToSign.push(transactions.length)
-                transactions.push(fundingTx)
-            }
-
-            // Add opt-in transaction (signed by receiver)
-            const optInTx = await createAssetOptInTransaction({
-                sender: receiver,
-                assetId,
-            })
-            // Note: opt-in is NOT in senderIndicesToSign - it's signed by receiver
-            transactions.push(optInTx)
-
-            // Add transfer transaction
-            const transferTx = await createAssetTransferTransaction({
+        // Add funding payment if needed
+        if (fundingNeeded > 0n) {
+            const fundingTx = await createPaymentTransaction({
                 sender,
                 receiver,
-                amount,
-                assetId,
+                amount: fundingNeeded,
             })
             senderIndicesToSign.push(transactions.length)
-            transactions.push(transferTx)
+            transactions.push(fundingTx)
+        }
 
-            // Encode all transactions
-            const rawTransactionsBase64 = transactions.map(tx =>
-                encodeToBase64(encodeTransaction(tx)),
-            )
+        // Add opt-in transaction (signed by receiver)
+        const optInTx = await createAssetOptInTransaction({
+            sender: receiver,
+            assetId,
+        })
+        // Note: opt-in is NOT in senderIndicesToSign - it's signed by receiver
+        transactions.push(optInTx)
 
-            return {
+        // Add transfer transaction
+        const transferTx = await createAssetTransferTransaction({
+            sender,
+            receiver,
+            amount,
+            assetId,
+        })
+        senderIndicesToSign.push(transactions.length)
+        transactions.push(transferTx)
+
+        // Encode all transactions
+        const rawTransactionsBase64 = transactions.map(tx =>
+            encodeToBase64(encodeTransaction(tx)),
+        )
+
+        return {
+            data: {
                 type: 'transactions',
                 transactions,
                 rawTransactionsBase64,
                 indicesToSign: senderIndicesToSign,
-            }
-        },
-    )
+            },
+            signerAddress: sender,
+        }
+    })
 }

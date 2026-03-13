@@ -77,21 +77,17 @@ export type SigningMachineContext = {
 
     /**
      * All user accounts, needed by the analyzer and for account resolution.
+     * This is the source of truth — actors look up accounts here rather than
+     * storing copies in context.
      */
     allAccounts: WalletAccount[]
 
     /**
-     * The account that will sign (or the multisig account to sign for).
-     * Resolved from the request's signer address against allAccounts.
+     * The primary signer address for this request (from the first group's sender).
+     * Used for transport routing (e.g. detecting multisig propose vs algod).
+     * Actors resolve the full WalletAccount from allAccounts when needed.
      */
-    signerAccount: WalletAccount | null
-
-    /**
-     * The account that will actually provide the cryptographic signature.
-     * Differs from signerAccount when the account is rekeyed:
-     * authAccount is the rekey target that holds the private key.
-     */
-    authAccount: WalletAccount | null
+    signerAddress: string | null
 
     /**
      * Signer type resolved in idle state.

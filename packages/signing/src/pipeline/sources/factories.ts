@@ -20,25 +20,32 @@ import { SourceError } from '../errors'
 
 /**
  * Create a source for locally-constructed data.
- * The builder function constructs the signable data from params.
+ * The builder function constructs the signable data from params and returns
+ * the address of the account that should sign it.
  *
  * @example
  * const paymentSource = createLocalSource(async (params) => ({
- *   type: 'transactions',
- *   transactions: [paymentTxn],
- *   rawTransactionsBase64: [encoded],
- *   indicesToSign: [0],
+ *   data: {
+ *     type: 'transactions',
+ *     transactions: [paymentTxn],
+ *     rawTransactionsBase64: [encoded],
+ *     indicesToSign: [0],
+ *   },
+ *   signerAddress: params.senderAddress,
  * }))
  */
 export const createLocalSource = <TParams>(
-    builder: (params: TParams) => Promise<SignableData>,
+    builder: (
+        params: TParams,
+    ) => Promise<{ data: SignableData; signerAddress: string }>,
 ): DataSource<TParams> => ({
     getSignableData: async (params: TParams): Promise<SignableGroup> => {
         try {
-            const data = await builder(params)
+            const { data, signerAddress } = await builder(params)
             return {
                 data,
                 source: { type: 'local' },
+                signerAddress,
             }
         } catch (error) {
             throw new SourceError(
@@ -51,7 +58,7 @@ export const createLocalSource = <TParams>(
 
 /**
  * Create a source for externally-received data (WalletConnect, etc.).
- * The decoder extracts signable data from the external request.
+ * The decoder extracts signable data and the signer address from the external request.
  *
  * @example
  * const walletConnectSource = createExternalSource(async (request) => ({
@@ -61,6 +68,7 @@ export const createLocalSource = <TParams>(
  *     rawTransactionsBase64: request.params.txns,
  *     indicesToSign: [0, 1, 2],
  *   },
+ *   signerAddress: decodedTxns[0].sender.toString(),
  *   metadata: {
  *     peerMetadata: request.peerMeta,
  *     requestId: request.id,
@@ -68,16 +76,19 @@ export const createLocalSource = <TParams>(
  * }))
  */
 export const createExternalSource = <TRequest>(
-    decoder: (
-        request: TRequest,
-    ) => Promise<{ data: SignableData; metadata: Partial<SourceMetadata> }>,
+    decoder: (request: TRequest) => Promise<{
+        data: SignableData
+        signerAddress: string
+        metadata: Partial<SourceMetadata>
+    }>,
 ): DataSource<TRequest> => ({
     getSignableData: async (request: TRequest): Promise<SignableGroup> => {
         try {
-            const { data, metadata } = await decoder(request)
+            const { data, signerAddress, metadata } = await decoder(request)
             return {
                 data,
                 source: { type: 'walletconnect', ...metadata },
+                signerAddress,
             }
         } catch (error) {
             throw new SourceError(
@@ -101,21 +112,25 @@ export const createExternalSource = <TRequest>(
  *       rawTransactionsBase64: request.transactions,
  *       indicesToSign: request.indicesToSign,
  *     },
+ *     signerAddress: request.signerAddress,
  *     signRequestId,
  *   }
  * })
  */
 export const createFetchSource = <TParams>(
-    fetcher: (
-        params: TParams,
-    ) => Promise<{ data: SignableData; signRequestId: string }>,
+    fetcher: (params: TParams) => Promise<{
+        data: SignableData
+        signerAddress: string
+        signRequestId: string
+    }>,
 ): DataSource<TParams> => ({
     getSignableData: async (params: TParams): Promise<SignableGroup> => {
         try {
-            const { data, signRequestId } = await fetcher(params)
+            const { data, signerAddress, signRequestId } = await fetcher(params)
             return {
                 data,
                 source: { type: 'multisig-cosign', signRequestId },
+                signerAddress,
             }
         } catch (error) {
             throw new SourceError(

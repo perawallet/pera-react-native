@@ -20,22 +20,21 @@ import { CannotSignError } from '../../../pipeline/errors'
 
 export type MultisigSignerActorInput = {
     groups: AnalyzedSignableGroup[]
-    signerAccount: WalletAccount
+    allAccounts: WalletAccount[]
 }
 
 /**
  * XState actor stub for multisig signing.
  * Full implementation will collect partial signatures from local multisig participants
  * and route to the appropriate transport (propose or cosign).
- *
- * Phase 9 will replace this stub with a full implementation.
  */
 export const multisigSignerActor = fromPromise<
     SigningResult[],
     MultisigSignerActorInput
 >(async ({ input }) => {
+    const firstGroup = input.groups[0]
     throw new CannotSignError(
-        input.signerAccount.address,
+        firstGroup?.signerAddress ?? 'unknown',
         'Multisig signing is not yet implemented',
     )
 })

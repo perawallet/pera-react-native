@@ -11,7 +11,7 @@
  */
 
 import { encodeToBase64 } from '@perawallet/wallet-core-shared'
-import type { DataSource, TransactionSignableData } from '../types'
+import type { DataSource } from '../types'
 import { createLocalSource } from './factories'
 import type { PaymentSourceParams, SourceDependencies } from './types'
 
@@ -43,46 +43,45 @@ export const createPaymentSource = (
         encodeTransaction,
     } = deps
 
-    return createLocalSource<PaymentSourceParams>(
-        async (
-            params: PaymentSourceParams,
-        ): Promise<TransactionSignableData> => {
-            const { sender, receiver, amount, assetId, note, isCloseAccount } =
-                params
+    return createLocalSource<PaymentSourceParams>(async params => {
+        const { sender, receiver, amount, assetId, note, isCloseAccount } =
+            params
 
-            // Determine if this is an ALGO payment or ASA transfer
-            const isAlgoPayment = !assetId || assetId === 0n
+        // Determine if this is an ALGO payment or ASA transfer
+        const isAlgoPayment = !assetId || assetId === 0n
 
-            let transaction
+        let transaction
 
-            if (isAlgoPayment) {
-                transaction = await createPaymentTransaction({
-                    sender,
-                    receiver,
-                    // If closing account, amount is 0 and closeRemainderTo sends the rest
-                    amount: isCloseAccount ? 0n : amount,
-                    closeRemainderTo: isCloseAccount ? receiver : undefined,
-                    note,
-                })
-            } else {
-                transaction = await createAssetTransferTransaction({
-                    sender,
-                    receiver,
-                    amount,
-                    assetId,
-                    note,
-                })
-            }
+        if (isAlgoPayment) {
+            transaction = await createPaymentTransaction({
+                sender,
+                receiver,
+                // If closing account, amount is 0 and closeRemainderTo sends the rest
+                amount: isCloseAccount ? 0n : amount,
+                closeRemainderTo: isCloseAccount ? receiver : undefined,
+                note,
+            })
+        } else {
+            transaction = await createAssetTransferTransaction({
+                sender,
+                receiver,
+                amount,
+                assetId,
+                note,
+            })
+        }
 
-            const encoded = encodeTransaction(transaction)
-            const base64 = encodeToBase64(encoded)
+        const encoded = encodeTransaction(transaction)
+        const base64 = encodeToBase64(encoded)
 
-            return {
+        return {
+            data: {
                 type: 'transactions',
                 transactions: [transaction],
                 rawTransactionsBase64: [base64],
                 indicesToSign: [0],
-            }
-        },
-    )
+            },
+            signerAddress: sender,
+        }
+    })
 }

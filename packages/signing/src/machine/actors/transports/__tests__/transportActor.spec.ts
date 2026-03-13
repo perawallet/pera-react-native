@@ -16,10 +16,13 @@ import { transportActor, type TransportActorInput } from '../transportActor'
 import type { SigningResult, SourceMetadata } from '../../../../pipeline/types'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
+const MOCK_ADDRESS =
+    'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+
 // Minimal mock account (algo25, local signing keys)
 const mockAlgo25Account: WalletAccount = {
     type: 'algo25',
-    address: 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    address: MOCK_ADDRESS,
     keyPairId: 'key-1',
 } as unknown as WalletAccount
 
@@ -28,7 +31,7 @@ const mockSigningResult: SigningResult = {
         type: 'transactions',
         signed: [],
     },
-    signers: [{ address: mockAlgo25Account.address }],
+    signers: [{ address: MOCK_ADDRESS }],
 }
 
 const mockAlgokit = {
@@ -50,7 +53,8 @@ const mockAddSignatures = vi.fn()
 const makeInput = (source: SourceMetadata): TransportActorInput => ({
     signingResults: [mockSigningResult],
     source,
-    signerAccount: mockAlgo25Account,
+    signerAddress: MOCK_ADDRESS,
+    allAccounts: [mockAlgo25Account],
     algokit: mockAlgokit,
     encodeSignedTransactions: mockEncodeSignedTransactions,
     proposeSignRequest: mockProposeSignRequest,
@@ -130,5 +134,15 @@ describe('transportActor', () => {
         actor.start()
 
         await expect(toPromise(actor)).rejects.toThrow()
+    })
+
+    it('throws when signerAddress is not found in allAccounts', async () => {
+        const source: SourceMetadata = { type: 'local' }
+        const actor = createActor(transportActor, {
+            input: { ...makeInput(source), allAccounts: [] },
+        })
+        actor.start()
+
+        await expect(toPromise(actor)).rejects.toThrow(/not found/)
     })
 })

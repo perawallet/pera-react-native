@@ -26,10 +26,13 @@ import type { AddSignaturesFn } from '../../../pipeline/transports/createMultisi
 export type TransportActorInput = {
     signingResults: SigningResult[]
     source: SourceMetadata
-    /** The account that initiated the transaction (used for multisig detection) */
-    signerAccount: WalletAccount
-    /** For multisig: the joint (multisig) account address */
-    jointAccountAddress?: string
+    /**
+     * Primary signer address (from first group).
+     * Looked up in allAccounts to determine multisig vs algod routing.
+     */
+    signerAddress: string
+    /** All user accounts — used to resolve the signer WalletAccount */
+    allAccounts: WalletAccount[]
     /** AlgorandClient for direct algod submission */
     algokit: AlgokitClientInterface
     /** Encodes signed transactions to raw bytes */
@@ -43,19 +46,34 @@ export type TransportActorInput = {
 /**
  * Merges multiple signing results (one per group) into a single SigningResult
  * so the downstream transport interface stays unchanged.
- * For transactions: concatenates all signed arrays across groups.
+ *
+ * For multi-signer requests, each group carries originalIndices indicating
+ * where its signed transactions belong in the full request array. The signed
+ * transactions are placed back at their original positions rather than
+ * concatenated, preserving the correct submission order.
  */
 const mergeSigningResults = (results: SigningResult[]): SigningResult => {
     if (results.length === 1) {
         return results[0]
     }
 
-    const allSigned = results.flatMap(r =>
-        r.signedData.type === 'transactions' ? r.signedData.signed : [],
-    )
+    const allIndices = results.flatMap(r => r.originalIndices ?? [])
+    const totalCount = allIndices.length > 0 ? Math.max(...allIndices) + 1 : 0
+    const reordered = new Array<PeraSignedTransaction>(totalCount)
+
+    for (const result of results) {
+        if (result.signedData.type !== 'transactions') continue
+        const { signed } = result.signedData
+        const indices = result.originalIndices
+        if (indices) {
+            indices.forEach((origIdx, i) => {
+                reordered[origIdx] = signed[i]
+            })
+        }
+    }
 
     return {
-        signedData: { type: 'transactions', signed: allSigned },
+        signedData: { type: 'transactions', signed: reordered },
         signers: results.flatMap(r => r.signers),
     }
 }
@@ -70,13 +88,20 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
         const {
             signingResults,
             source,
-            signerAccount,
-            jointAccountAddress,
+            signerAddress,
+            allAccounts,
             algokit,
             encodeSignedTransactions,
             proposeSignRequest,
             addSignatures,
         } = input
+
+        const signerAccount = allAccounts.find(a => a.address === signerAddress)
+        if (!signerAccount) {
+            throw new Error(
+                `Signer account not found for transport: ${signerAddress}`,
+            )
+        }
 
         const selectTransport = createTransportSelector({
             algokit,
@@ -88,6 +113,7 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
         const transport = selectTransport(source, signerAccount)
         const merged = mergeSigningResults(signingResults)
 
-        return transport.send(merged, source, jointAccountAddress)
+        // For multisig: the joint account address is the signer itself
+        return transport.send(merged, source, signerAddress)
     },
 )

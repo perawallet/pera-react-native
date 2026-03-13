@@ -274,13 +274,12 @@ describe('signingMachine', () => {
         expect(state.context.error?.message).toMatch(/network error/)
     })
 
-    it('resolves signerAccount and authAccount in context', async () => {
+    it('resolves signerAddress in context', async () => {
         const actor = createActor(mockedMachine, { input: makeInput() })
         actor.start()
 
         const state = await waitFor(actor, s => s.matches('awaiting_user'))
-        expect(state.context.signerAccount?.address).toBe(MOCK_ADDRESS)
-        expect(state.context.authAccount?.address).toBe(MOCK_ADDRESS)
+        expect(state.context.signerAddress).toBe(MOCK_ADDRESS)
         expect(state.context.resolvedSignerType).toBe('localKey')
     })
 
