@@ -21,20 +21,32 @@ export const aggregateTransactionWarnings = (
     const warnings: TransactionWarning[] = []
 
     for (const tx of transactions) {
-        if (!tx.sender || !signableAddresses.has(tx.sender)) {
+        if (!tx.sender) {
             continue
         }
 
-        const closeAddress =
-            tx.paymentTransaction?.closeRemainderTo ??
-            tx.assetTransferTransaction?.closeTo
+        const isSenderSignable = signableAddresses.has(tx.sender)
 
-        if (closeAddress) {
-            warnings.push({
-                type: 'close',
-                senderAddress: tx.sender,
-                targetAddress: closeAddress,
-            })
+        if (isSenderSignable) {
+            const closeAddress =
+                tx.paymentTransaction?.closeRemainderTo ??
+                tx.assetTransferTransaction?.closeTo
+
+            if (closeAddress) {
+                warnings.push({
+                    type: 'close',
+                    senderAddress: tx.sender,
+                    targetAddress: closeAddress,
+                })
+            }
+
+            if (tx.assetFreezeTransaction) {
+                warnings.push({
+                    type: 'asset-freeze',
+                    senderAddress: tx.sender,
+                    targetAddress: tx.assetFreezeTransaction.address,
+                })
+            }
         }
 
         if (tx.rekeyTo?.publicKey) {
@@ -43,14 +55,6 @@ export const aggregateTransactionWarnings = (
                 type: 'rekey',
                 senderAddress: tx.sender,
                 targetAddress: rekeyAddress,
-            })
-        }
-
-        if (tx.assetFreezeTransaction) {
-            warnings.push({
-                type: 'asset-freeze',
-                senderAddress: tx.sender,
-                targetAddress: tx.assetFreezeTransaction.address,
             })
         }
     }

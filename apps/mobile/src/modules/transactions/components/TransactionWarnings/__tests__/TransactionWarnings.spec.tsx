@@ -11,10 +11,14 @@
  */
 
 import { render, fireEvent } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { TransactionWarnings } from '../TransactionWarnings'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { useModalState } from '@hooks/useModalState'
+import {
+    useAllAccounts,
+    canSignWithAccount,
+} from '@perawallet/wallet-core-accounts'
 
 vi.mock('@hooks/useModalState', () => ({
     useModalState: vi.fn(() => ({
@@ -34,8 +38,33 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useAllAccounts: vi.fn(() => []),
+    canSignWithAccount: vi.fn(() => false),
+}))
+
+const mockUserAccount = {
+    address: 'USER_ADDR',
+    type: 'algo25',
+    keyPairId: 'key-1',
+}
+
 describe('TransactionWarnings', () => {
+    beforeEach(() => {
+        vi.mocked(useAllAccounts).mockReturnValue([
+            mockUserAccount,
+        ] as unknown as ReturnType<typeof useAllAccounts>)
+        vi.mocked(canSignWithAccount).mockReturnValue(true)
+        vi.mocked(useModalState).mockReturnValue({
+            isOpen: false,
+            open: vi.fn(),
+            close: vi.fn(),
+            toggle: vi.fn(),
+        })
+    })
+
     const mockTransaction = {
+        sender: 'USER_ADDR',
         paymentTransaction: {
             closeRemainderTo: 'CLOSE_ADDRESS',
         },
@@ -72,6 +101,7 @@ describe('TransactionWarnings', () => {
 
     it('renders null when no warnings exist', () => {
         const noWarningsTx = {
+            sender: 'USER_ADDR',
             id: 'TX_ID',
         } as unknown as PeraDisplayableTransaction
 
@@ -82,7 +112,7 @@ describe('TransactionWarnings', () => {
         expect(container.firstChild).toBeNull()
     })
 
-    it('shows close account warning in bottom sheet when open', () => {
+    it('shows close account warning in bottom sheet when sender is user-controlled', () => {
         vi.mocked(useModalState).mockReturnValue({
             isOpen: true,
             open: vi.fn(),
@@ -95,5 +125,71 @@ describe('TransactionWarnings', () => {
         )
 
         expect(getByText('transactions.warning.close_warning')).toBeTruthy()
+    })
+
+    it('hides close warning when sender is not user-controlled', () => {
+        vi.mocked(canSignWithAccount).mockReturnValue(false)
+        vi.mocked(useModalState).mockReturnValue({
+            isOpen: true,
+            open: vi.fn(),
+            close: vi.fn(),
+            toggle: vi.fn(),
+        })
+
+        const closeTx = {
+            sender: 'EXTERNAL_ADDR',
+            paymentTransaction: {
+                closeRemainderTo: 'CLOSE_ADDRESS',
+            },
+            id: 'TX_ID',
+        } as unknown as PeraDisplayableTransaction
+
+        const { queryByText } = render(
+            <TransactionWarnings transaction={closeTx} />,
+        )
+
+        expect(queryByText('transactions.warning.close_warning')).toBeNull()
+    })
+
+    it('shows rekey warning regardless of sender control', () => {
+        vi.mocked(canSignWithAccount).mockReturnValue(false)
+        vi.mocked(useModalState).mockReturnValue({
+            isOpen: true,
+            open: vi.fn(),
+            close: vi.fn(),
+            toggle: vi.fn(),
+        })
+
+        const rekeyTx = {
+            sender: 'EXTERNAL_ADDR',
+            rekeyTo: {
+                publicKey: new Uint8Array([1, 2, 3]),
+            },
+            id: 'TX_ID',
+        } as unknown as PeraDisplayableTransaction
+
+        const { getByText } = render(
+            <TransactionWarnings transaction={rekeyTx} />,
+        )
+
+        expect(getByText('transactions.warning.rekey_warning')).toBeTruthy()
+    })
+
+    it('renders null for close-only transaction when sender is not user-controlled', () => {
+        vi.mocked(canSignWithAccount).mockReturnValue(false)
+
+        const closeTx = {
+            sender: 'EXTERNAL_ADDR',
+            paymentTransaction: {
+                closeRemainderTo: 'CLOSE_ADDRESS',
+            },
+            id: 'TX_ID',
+        } as unknown as PeraDisplayableTransaction
+
+        const { container } = render(
+            <TransactionWarnings transaction={closeTx} />,
+        )
+
+        expect(container.firstChild).toBeNull()
     })
 })

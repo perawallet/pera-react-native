@@ -104,7 +104,7 @@ describe('aggregateTransactionWarnings', () => {
         ])
     })
 
-    test('skips transactions from non-signable addresses', () => {
+    test('skips close warnings from non-signable addresses', () => {
         const txs = [
             makeTx({
                 sender: 'UNKNOWN_ADDR',
@@ -116,6 +116,26 @@ describe('aggregateTransactionWarnings', () => {
 
         const warnings = aggregateTransactionWarnings(txs, signableAddresses)
         expect(warnings).toEqual([])
+    })
+
+    test('generates rekey warning even for non-signable addresses', () => {
+        const txs = [
+            makeTx({
+                sender: 'UNKNOWN_ADDR',
+                rekeyTo: {
+                    publicKey: new TextEncoder().encode('REKEY_TARGET'),
+                } as any,
+            }),
+        ]
+
+        const warnings = aggregateTransactionWarnings(txs, signableAddresses)
+        expect(warnings).toEqual([
+            {
+                type: 'rekey',
+                senderAddress: 'UNKNOWN_ADDR',
+                targetAddress: 'ENCODED_REKEY_TARGET',
+            },
+        ])
     })
 
     test('skips transactions with no sender', () => {
@@ -208,7 +228,7 @@ describe('aggregateTransactionWarnings', () => {
 
         const warnings = aggregateTransactionWarnings(txs, signableAddresses)
         expect(warnings).toHaveLength(2)
-        expect(warnings[0].type).toBe('rekey')
-        expect(warnings[1].type).toBe('asset-freeze')
+        expect(warnings[0].type).toBe('asset-freeze')
+        expect(warnings[1].type).toBe('rekey')
     })
 })
