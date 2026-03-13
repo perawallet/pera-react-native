@@ -100,22 +100,25 @@ export type SigningMachineContext = {
     resolvedSignerType: ResolvedSignerType | null
 
     /**
-     * The signable group built from the request, populated after idle resolution.
-     * Contains the raw data to sign + source metadata.
+     * The signable groups built from the request, populated after idle resolution.
+     * Each group contains the raw data to sign + source metadata.
+     * Multiple groups can exist when a single request spans several atomic transaction groups
+     * (e.g. a Multisig request with transactions from multiple groups).
      */
-    signableGroup: SignableGroup | null
+    signableGroups: SignableGroup[] | null
 
     /**
-     * Analysis result from the `validating` state.
-     * Contains fees, warnings, risk level, and signable addresses.
+     * Analysis results from the `validating` state, one per signable group.
+     * Each entry contains fees, warnings, risk level, and signable addresses
+     * for the corresponding group in `signableGroups`.
      */
-    analysis: SignableAnalysis | null
+    analyses: SignableAnalysis[] | null
 
     /**
-     * Signing result from the `signing` state.
-     * Contains signed data and signer info.
+     * Signing results from the `signing` state, one per signable group.
+     * Each entry contains signed data and signer info for the corresponding group.
      */
-    signingResult: SigningResult | null
+    signingResults: SigningResult[] | null
 
     /**
      * Transport result from the `transporting` state.

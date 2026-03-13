@@ -48,7 +48,7 @@ const mockProposeSignRequest = vi.fn()
 const mockAddSignatures = vi.fn()
 
 const makeInput = (source: SourceMetadata): TransportActorInput => ({
-    signingResult: mockSigningResult,
+    signingResults: [mockSigningResult],
     source,
     signerAccount: mockAlgo25Account,
     algokit: mockAlgokit,

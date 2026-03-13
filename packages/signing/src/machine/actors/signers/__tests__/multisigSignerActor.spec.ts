@@ -31,16 +31,18 @@ const mockGroup: AnalyzedSignableGroup = {
     },
     source: { type: 'local' },
     analysis: {
-        summaries: [],
+        totalFees: 0n,
+        transactionSummaries: [],
         warnings: [],
-        requiresUserConfirmation: false,
+        signableAddresses: [],
+        riskLevel: 'low',
     },
 }
 
 describe('multisigSignerActor', () => {
     it('throws CannotSignError (stub — not yet implemented)', async () => {
         const input: MultisigSignerActorInput = {
-            group: mockGroup,
+            groups: [mockGroup],
             signerAccount: mockMultisigAccount,
         }
 
@@ -52,7 +54,7 @@ describe('multisigSignerActor', () => {
 
     it('error message includes the account address', async () => {
         const input: MultisigSignerActorInput = {
-            group: mockGroup,
+            groups: [mockGroup],
             signerAccount: mockMultisigAccount,
         }
 

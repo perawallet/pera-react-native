@@ -140,28 +140,38 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
     }
 }
 
-const buildSignableGroup = (request: SignRequest): SignableGroup => {
+/**
+ * Builds an array of signable groups from a sign request.
+ * Currently produces a single group for the entire request.
+ * Future: split `transactions` requests into per-atomic-group entries
+ * by inspecting the Algorand group ID bytes on each transaction.
+ */
+const buildSignableGroups = (request: SignRequest): SignableGroup[] => {
     const source = buildSourceMetadata(request)
 
     if (isTransactionRequest(request)) {
-        return {
-            data: {
-                type: 'transactions',
-                transactions: request.txs,
-                indicesToSign: request.txs.map((_, i) => i),
+        return [
+            {
+                data: {
+                    type: 'transactions',
+                    transactions: request.txs,
+                    indicesToSign: request.txs.map((_, i) => i),
+                },
+                source,
             },
-            source,
-        }
+        ]
     }
 
     if (isArbitraryDataRequest(request)) {
-        return {
-            data: {
-                type: 'arbitrary-data',
-                data: request.data,
+        return [
+            {
+                data: {
+                    type: 'arbitrary-data',
+                    data: request.data,
+                },
+                source,
             },
-            source,
-        }
+        ]
     }
 
     throw new Error(`Unsupported request type: ${request.type}`)
@@ -199,7 +209,7 @@ export const resolveInitialContext = (
 
     const authAccount = resolveRekeyChain(signerAccount, allAccounts)
     const resolvedSignerType = determineSignerType(signerAccount, authAccount)
-    const signableGroup = buildSignableGroup(request)
+    const signableGroups = buildSignableGroups(request)
 
     return {
         request,
@@ -207,9 +217,9 @@ export const resolveInitialContext = (
         signerAccount,
         authAccount,
         resolvedSignerType,
-        signableGroup,
-        analysis: null,
-        signingResult: null,
+        signableGroups,
+        analyses: null,
+        signingResults: null,
         transportResult: null,
         error: null,
         failedDuringState: null,
@@ -230,9 +240,9 @@ export const makeFailedContext = (
     signerAccount: null,
     authAccount: null,
     resolvedSignerType: null,
-    signableGroup: null,
-    analysis: null,
-    signingResult: null,
+    signableGroups: null,
+    analyses: null,
+    signingResults: null,
     transportResult: null,
     error,
     failedDuringState: null,

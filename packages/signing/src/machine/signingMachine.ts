@@ -29,7 +29,6 @@ import { multisigSignerActor } from './actors/signers/multisigSignerActor'
 import { transportActor } from './actors/transports/transportActor'
 import { resolveInitialContext, makeFailedContext } from './actions'
 
-
 /**
  * Core signing state machine.
  *
@@ -107,9 +106,9 @@ export const signingMachine = setup({
             invoke: {
                 src: 'analyzerActor',
                 input: ({ context }) => ({
-                    group: assertDefined(
-                        context.signableGroup,
-                        'signableGroup',
+                    groups: assertDefined(
+                        context.signableGroups,
+                        'signableGroups',
                     ),
                     context: {
                         network: context.deps.network,
@@ -119,7 +118,7 @@ export const signingMachine = setup({
                 onDone: {
                     target: 'awaiting_user',
                     actions: assign({
-                        analysis: ({ event }) => event.output,
+                        analyses: ({ event }) => event.output,
                     }),
                 },
                 onError: {
@@ -163,16 +162,16 @@ export const signingMachine = setup({
                     invoke: {
                         src: 'localKeySignerActor',
                         input: ({ context }) => ({
-                            group: {
-                                ...assertDefined(
-                                    context.signableGroup,
-                                    'signableGroup',
-                                ),
+                            groups: assertDefined(
+                                context.signableGroups,
+                                'signableGroups',
+                            ).map((g, i) => ({
+                                ...g,
                                 analysis: assertDefined(
-                                    context.analysis,
-                                    'analysis',
-                                ),
-                            } as AnalyzedSignableGroup,
+                                    context.analyses,
+                                    'analyses',
+                                )[i],
+                            })) as AnalyzedSignableGroup[],
                             signerAccount:
                                 context.authAccount ??
                                 assertDefined(
@@ -184,7 +183,7 @@ export const signingMachine = setup({
                         onDone: {
                             target: '#signingMachine.transporting',
                             actions: assign({
-                                signingResult: ({ event }) => event.output,
+                                signingResults: ({ event }) => event.output,
                             }),
                         },
                         onError: {
@@ -201,16 +200,16 @@ export const signingMachine = setup({
                     invoke: {
                         src: 'ledgerSignerActor',
                         input: ({ context }) => ({
-                            group: {
-                                ...assertDefined(
-                                    context.signableGroup,
-                                    'signableGroup',
-                                ),
+                            groups: assertDefined(
+                                context.signableGroups,
+                                'signableGroups',
+                            ).map((g, i) => ({
+                                ...g,
                                 analysis: assertDefined(
-                                    context.analysis,
-                                    'analysis',
-                                ),
-                            } as AnalyzedSignableGroup,
+                                    context.analyses,
+                                    'analyses',
+                                )[i],
+                            })) as AnalyzedSignableGroup[],
                             signerAccount:
                                 context.authAccount ??
                                 assertDefined(
@@ -221,7 +220,7 @@ export const signingMachine = setup({
                         onDone: {
                             target: '#signingMachine.transporting',
                             actions: assign({
-                                signingResult: ({ event }) => event.output,
+                                signingResults: ({ event }) => event.output,
                             }),
                         },
                         onError: {
@@ -238,16 +237,16 @@ export const signingMachine = setup({
                     invoke: {
                         src: 'multisigSignerActor',
                         input: ({ context }) => ({
-                            group: {
-                                ...assertDefined(
-                                    context.signableGroup,
-                                    'signableGroup',
-                                ),
+                            groups: assertDefined(
+                                context.signableGroups,
+                                'signableGroups',
+                            ).map((g, i) => ({
+                                ...g,
                                 analysis: assertDefined(
-                                    context.analysis,
-                                    'analysis',
-                                ),
-                            } as AnalyzedSignableGroup,
+                                    context.analyses,
+                                    'analyses',
+                                )[i],
+                            })) as AnalyzedSignableGroup[],
                             signerAccount: assertDefined(
                                 context.signerAccount,
                                 'signerAccount',
@@ -256,7 +255,7 @@ export const signingMachine = setup({
                         onDone: {
                             target: '#signingMachine.transporting',
                             actions: assign({
-                                signingResult: ({ event }) => event.output,
+                                signingResults: ({ event }) => event.output,
                             }),
                         },
                         onError: {
@@ -279,14 +278,14 @@ export const signingMachine = setup({
             invoke: {
                 src: 'transportActor',
                 input: ({ context }) => ({
-                    signingResult: assertDefined(
-                        context.signingResult,
-                        'signingResult',
+                    signingResults: assertDefined(
+                        context.signingResults,
+                        'signingResults',
                     ),
                     source: assertDefined(
-                        context.signableGroup,
-                        'signableGroup',
-                    ).source,
+                        context.signableGroups,
+                        'signableGroups',
+                    )[0].source,
                     signerAccount:
                         context.authAccount ??
                         assertDefined(context.signerAccount, 'signerAccount'),

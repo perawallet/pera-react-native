@@ -100,12 +100,18 @@ const makeInput = (
 
 const mockedMachine = signingMachine.provide({
     actors: {
-        analyzerActor: fromPromise(async () => mockAnalysis),
-        localKeySignerActor: fromPromise(async () => mockSigningResult),
-        multisigSignerActor: fromPromise(async (): Promise<SigningResult> => {
+        analyzerActor: fromPromise(
+            async (): Promise<SignableAnalysis[]> => [mockAnalysis],
+        ),
+        localKeySignerActor: fromPromise(
+            async (): Promise<SigningResult[]> => [mockSigningResult],
+        ),
+        multisigSignerActor: fromPromise(async (): Promise<SigningResult[]> => {
             throw new Error('multisig not implemented')
         }),
-        transportActor: fromPromise(async () => mockTransportResult),
+        transportActor: fromPromise(
+            async (): Promise<TransportResult> => mockTransportResult,
+        ),
     },
 })
 
@@ -128,8 +134,8 @@ describe('signingMachine', () => {
         const state = await waitFor(actor, s => s.matches('completed'))
 
         expect(state.context.transportResult).toEqual(mockTransportResult)
-        expect(state.context.signingResult).toEqual(mockSigningResult)
-        expect(state.context.analysis).toEqual(mockAnalysis)
+        expect(state.context.signingResults).toEqual([mockSigningResult])
+        expect(state.context.analyses).toEqual([mockAnalysis])
         expect(state.context.error).toBeNull()
     })
 
@@ -178,16 +184,22 @@ describe('signingMachine', () => {
     it('goes to failed when analyzer throws', async () => {
         const failingMachine = signingMachine.provide({
             actors: {
-                analyzerActor: fromPromise(async () => {
-                    throw new Error('analyzer failure')
-                }),
-                localKeySignerActor: fromPromise(async () => mockSigningResult),
+                analyzerActor: fromPromise(
+                    async (): Promise<SignableAnalysis[]> => {
+                        throw new Error('analyzer failure')
+                    },
+                ),
+                localKeySignerActor: fromPromise(
+                    async (): Promise<SigningResult[]> => [mockSigningResult],
+                ),
                 multisigSignerActor: fromPromise(
-                    async (): Promise<SigningResult> => {
+                    async (): Promise<SigningResult[]> => {
                         throw new Error('multisig not implemented')
                     },
                 ),
-                transportActor: fromPromise(async () => mockTransportResult),
+                transportActor: fromPromise(
+                    async (): Promise<TransportResult> => mockTransportResult,
+                ),
             },
         })
 
@@ -201,18 +213,22 @@ describe('signingMachine', () => {
     it('goes to failed when signer throws', async () => {
         const failingMachine = signingMachine.provide({
             actors: {
-                analyzerActor: fromPromise(async () => mockAnalysis),
+                analyzerActor: fromPromise(
+                    async (): Promise<SignableAnalysis[]> => [mockAnalysis],
+                ),
                 localKeySignerActor: fromPromise(
-                    async (): Promise<SigningResult> => {
+                    async (): Promise<SigningResult[]> => {
                         throw new Error('signing failure')
                     },
                 ),
                 multisigSignerActor: fromPromise(
-                    async (): Promise<SigningResult> => {
+                    async (): Promise<SigningResult[]> => {
                         throw new Error('multisig not implemented')
                     },
                 ),
-                transportActor: fromPromise(async () => mockTransportResult),
+                transportActor: fromPromise(
+                    async (): Promise<TransportResult> => mockTransportResult,
+                ),
             },
         })
 
@@ -229,10 +245,14 @@ describe('signingMachine', () => {
     it('goes to failed when transport throws', async () => {
         const failingMachine = signingMachine.provide({
             actors: {
-                analyzerActor: fromPromise(async () => mockAnalysis),
-                localKeySignerActor: fromPromise(async () => mockSigningResult),
+                analyzerActor: fromPromise(
+                    async (): Promise<SignableAnalysis[]> => [mockAnalysis],
+                ),
+                localKeySignerActor: fromPromise(
+                    async (): Promise<SigningResult[]> => [mockSigningResult],
+                ),
                 multisigSignerActor: fromPromise(
-                    async (): Promise<SigningResult> => {
+                    async (): Promise<SigningResult[]> => {
                         throw new Error('multisig not implemented')
                     },
                 ),
@@ -264,11 +284,11 @@ describe('signingMachine', () => {
         expect(state.context.resolvedSignerType).toBe('localKey')
     })
 
-    it('stores analysis in context after validating', async () => {
+    it('stores analyses in context after validating', async () => {
         const actor = createActor(mockedMachine, { input: makeInput() })
         actor.start()
 
         const state = await waitFor(actor, s => s.matches('awaiting_user'))
-        expect(state.context.analysis).toEqual(mockAnalysis)
+        expect(state.context.analyses).toEqual([mockAnalysis])
     })
 })

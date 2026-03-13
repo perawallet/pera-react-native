@@ -24,7 +24,7 @@ import type { ProposeSignRequestFn } from '../../../pipeline/transports/createMu
 import type { AddSignaturesFn } from '../../../pipeline/transports/createMultisigCosignTransport'
 
 export type TransportActorInput = {
-    signingResult: SigningResult
+    signingResults: SigningResult[]
     source: SourceMetadata
     /** The account that initiated the transaction (used for multisig detection) */
     signerAccount: WalletAccount
@@ -41,6 +41,26 @@ export type TransportActorInput = {
 }
 
 /**
+ * Merges multiple signing results (one per group) into a single SigningResult
+ * so the downstream transport interface stays unchanged.
+ * For transactions: concatenates all signed arrays across groups.
+ */
+const mergeSigningResults = (results: SigningResult[]): SigningResult => {
+    if (results.length === 1) {
+        return results[0]
+    }
+
+    const allSigned = results.flatMap(r =>
+        r.signedData.type === 'transactions' ? r.signedData.signed : [],
+    )
+
+    return {
+        signedData: { type: 'transactions', signed: allSigned },
+        signers: results.flatMap(r => r.signers),
+    }
+}
+
+/**
  * XState actor that delivers signed data to the appropriate destination.
  * Uses createTransportSelector to route between algod, WalletConnect,
  * multisig-propose, and multisig-cosign transports.
@@ -48,7 +68,7 @@ export type TransportActorInput = {
 export const transportActor = fromPromise<TransportResult, TransportActorInput>(
     async ({ input }) => {
         const {
-            signingResult,
+            signingResults,
             source,
             signerAccount,
             jointAccountAddress,
@@ -66,7 +86,8 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
         })
 
         const transport = selectTransport(source, signerAccount)
+        const merged = mergeSigningResults(signingResults)
 
-        return transport.send(signingResult, source, jointAccountAddress)
+        return transport.send(merged, source, jointAccountAddress)
     },
 )

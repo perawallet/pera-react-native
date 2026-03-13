@@ -184,7 +184,8 @@ const deriveEvent = (
 ): SigningPipelineEvent | null => {
     switch (stage) {
         case 'awaiting_user': {
-            const { analysis, resolvedSignerType } = snapshot.context
+            const { analyses, resolvedSignerType } = snapshot.context
+            const analysis = analyses?.[0]
             if (!analysis) return null
             return {
                 type: 'analysis_ready',

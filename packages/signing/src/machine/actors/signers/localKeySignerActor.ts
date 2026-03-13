@@ -22,20 +22,20 @@ import {
 } from '../../../pipeline/signing/createLocalKeyStrategy'
 
 export type LocalKeySignerActorInput = {
-    group: AnalyzedSignableGroup
+    groups: AnalyzedSignableGroup[]
     signerAccount: WalletAccount
     signTransactions: LocalSigningFunction
 }
 
 /**
- * XState actor that signs a transaction group using local keys (Algo25 / HDWallet).
- * Wraps createLocalKeyStrategy from the pipeline as a fromPromise actor.
+ * XState actor that signs all groups using local keys (Algo25 / HDWallet).
+ * Returns one SigningResult per group, in the same order.
  */
 export const localKeySignerActor = fromPromise<
-    SigningResult,
+    SigningResult[],
     LocalKeySignerActorInput
 >(async ({ input }) => {
-    const { group, signerAccount, signTransactions } = input
+    const { groups, signerAccount, signTransactions } = input
     const strategy = createLocalKeyStrategy(signTransactions)
-    return strategy.sign(group, signerAccount)
+    return Promise.all(groups.map(group => strategy.sign(group, signerAccount)))
 })

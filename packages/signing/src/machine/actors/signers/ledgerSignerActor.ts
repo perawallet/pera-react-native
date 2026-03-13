@@ -19,7 +19,7 @@ import type {
 import { HardwareWalletError } from '../../../pipeline/errors'
 
 export type LedgerSignerActorInput = {
-    group: AnalyzedSignableGroup
+    groups: AnalyzedSignableGroup[]
     signerAccount: WalletAccount
 }
 
@@ -29,13 +29,13 @@ export type LedgerSignerActorInput = {
  * Full implementation (Phase 8) will:
  *   1. Create an actor from `ledgerSigningMachine`
  *   2. Start the BLE connection + device confirmation flow
- *   3. Resolve with the SigningResult once the user confirms on device
+ *   3. Resolve with one SigningResult per group once the user confirms on device
  *   4. Reject with HardwareWalletError on BLE failure or timeout
  *
  * See ledgerSigningMachine.ts for the full state machine skeleton.
  */
 export const ledgerSignerActor = fromPromise<
-    SigningResult,
+    SigningResult[],
     LedgerSignerActorInput
 >(async ({ input }) => {
     throw new HardwareWalletError(

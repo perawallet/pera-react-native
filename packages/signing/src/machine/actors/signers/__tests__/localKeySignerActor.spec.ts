@@ -33,35 +33,43 @@ const mockGroup: AnalyzedSignableGroup = {
     },
     source: { type: 'local' },
     analysis: {
-        summaries: [],
+        totalFees: 0n,
+        transactionSummaries: [],
         warnings: [],
-        requiresUserConfirmation: false,
+        signableAddresses: [],
+        riskLevel: 'low',
     },
 }
 
 const mockSignedTxn = { txn: {}, sig: new Uint8Array([1, 2, 3]) } as never
 
 describe('localKeySignerActor', () => {
-    it('returns a SigningResult with signed transactions', async () => {
+    it('returns a SigningResult per group with signed transactions', async () => {
         const signTransactions = vi.fn().mockResolvedValue([mockSignedTxn])
         const input: LocalKeySignerActorInput = {
-            group: mockGroup,
+            groups: [mockGroup],
             signerAccount: mockAlgo25Account,
             signTransactions,
         }
 
         const actor = createActor(localKeySignerActor, { input })
         actor.start()
-        const result = await toPromise(actor)
+        const results = await toPromise(actor)
 
+        expect(results).toHaveLength(1)
+        const result = results[0]
         expect(result.signedData.type).toBe('transactions')
-        expect(result.signedData.signed).toEqual([mockSignedTxn])
+        if (result.signedData.type === 'transactions') {
+            expect(result.signedData.signed).toEqual([mockSignedTxn])
+        }
         expect(result.signers).toHaveLength(1)
         expect(result.signers[0].address).toBe(mockAlgo25Account.address)
-        expect(signTransactions).toHaveBeenCalledWith(
-            mockGroup.data.transactions,
-            mockGroup.data.indicesToSign,
-        )
+        if (mockGroup.data.type === 'transactions') {
+            expect(signTransactions).toHaveBeenCalledWith(
+                mockGroup.data.transactions,
+                mockGroup.data.indicesToSign,
+            )
+        }
     })
 
     it('rejects when signTransactions throws', async () => {
@@ -69,7 +77,7 @@ describe('localKeySignerActor', () => {
             .fn()
             .mockRejectedValue(new Error('KMS error'))
         const input: LocalKeySignerActorInput = {
-            group: mockGroup,
+            groups: [mockGroup],
             signerAccount: mockAlgo25Account,
             signTransactions,
         }
@@ -89,7 +97,7 @@ describe('localKeySignerActor', () => {
 
         const signTransactions = vi.fn()
         const input: LocalKeySignerActorInput = {
-            group: mockGroup,
+            groups: [mockGroup],
             signerAccount: accountWithoutKeys,
             signTransactions,
         }

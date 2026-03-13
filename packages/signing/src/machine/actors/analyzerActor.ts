@@ -19,17 +19,20 @@ import type {
 import { createStandardAnalyzer } from '../../pipeline/analyzers/createStandardAnalyzer'
 
 export type AnalyzerActorInput = {
-    group: SignableGroup
+    groups: SignableGroup[]
     context: AnalysisContext
 }
 
 /**
- * XState actor that analyzes a signable group.
- * Wraps createStandardAnalyzer from the pipeline as a fromPromise actor.
+ * XState actor that analyzes all signable groups in a request.
+ * Returns one SignableAnalysis per group, in the same order.
  */
-export const analyzerActor = fromPromise<SignableAnalysis, AnalyzerActorInput>(
-    async ({ input }) => {
-        const analyzer = createStandardAnalyzer()
-        return analyzer.analyze(input.group, input.context)
-    },
-)
+export const analyzerActor = fromPromise<
+    SignableAnalysis[],
+    AnalyzerActorInput
+>(async ({ input }) => {
+    const analyzer = createStandardAnalyzer()
+    return Promise.all(
+        input.groups.map(group => analyzer.analyze(group, input.context)),
+    )
+})

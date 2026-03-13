@@ -19,7 +19,7 @@ import type {
 import { CannotSignError } from '../../../pipeline/errors'
 
 export type MultisigSignerActorInput = {
-    group: AnalyzedSignableGroup
+    groups: AnalyzedSignableGroup[]
     signerAccount: WalletAccount
 }
 
@@ -31,7 +31,7 @@ export type MultisigSignerActorInput = {
  * Phase 9 will replace this stub with a full implementation.
  */
 export const multisigSignerActor = fromPromise<
-    SigningResult,
+    SigningResult[],
     MultisigSignerActorInput
 >(async ({ input }) => {
     throw new CannotSignError(
