@@ -11,6 +11,7 @@
  */
 
 export * from './addresses'
+export * from './errors'
 export * from './arrays'
 export * from './dates'
 export * from './store-registry'
@@ -20,4 +21,3 @@ export * from './objects'
 export * from './async'
 export * from './urls'
 export * from './uuid'
-export * from './errors'

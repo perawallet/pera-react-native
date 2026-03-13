@@ -11,7 +11,11 @@
  */
 
 import { setup, assign } from 'xstate'
-import { AppError } from '@perawallet/wallet-core-shared'
+import {
+    toError,
+    assertDefined,
+    isRetryableError,
+} from '@perawallet/wallet-core-shared'
 import type {
     SigningMachineContext,
     SigningMachineEvent,
@@ -25,25 +29,6 @@ import { multisigSignerActor } from './actors/signers/multisigSignerActor'
 import { transportActor } from './actors/transports/transportActor'
 import { resolveInitialContext, makeFailedContext } from './actions'
 
-/** Normalizes an unknown error to an Error instance. */
-const toError = (e: unknown): Error =>
-    e instanceof Error ? e : new Error(String(e))
-
-/** Checks if an error has the retryable flag set by pipeline error types. */
-const isRetryableError = (error: Error | null): boolean => {
-    if (!error || !(error instanceof AppError)) return false
-    return error.metadata.retryable === true
-}
-
-/** Asserts a value is non-null, throwing a descriptive error for debugging. */
-function assertDefined<T>(value: T | null | undefined, name: string): T {
-    if (value == null) {
-        throw new Error(
-            `signingMachine: expected ${name} to be defined at this state`,
-        )
-    }
-    return value
-}
 
 /**
  * Core signing state machine.
