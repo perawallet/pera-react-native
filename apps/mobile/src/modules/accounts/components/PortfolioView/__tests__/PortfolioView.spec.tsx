@@ -11,9 +11,10 @@
  */
 
 import { render, screen } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import Decimal from 'decimal.js'
 import { PortfolioView } from '../PortfolioView'
+import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 vi.mock('@perawallet/wallet-core-currencies', () => ({
     useCurrency: vi.fn(() => ({
@@ -71,8 +72,97 @@ vi.mock('@components/ChartPeriodSelection', () => ({
 }))
 
 describe('PortfolioView', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
     it('renders correctly', () => {
         render(<PortfolioView />)
         expect(screen.getByText('portfolio.title')).toBeTruthy()
+    })
+
+    it('excludes watch accounts from portfolio balance queries', async () => {
+        const {
+            useAllAccounts,
+            useAccountBalancesQuery,
+        } = await import('@perawallet/wallet-core-accounts')
+
+        const standardAccount = {
+            address: 'standard-addr',
+            type: 'algo25',
+        } as WalletAccount
+
+        const watchAccount = {
+            address: 'watch-addr',
+            type: 'watch',
+        } as WalletAccount
+
+        vi.mocked(useAllAccounts).mockReturnValue([
+            standardAccount,
+            watchAccount,
+        ])
+
+        render(<PortfolioView />)
+
+        expect(vi.mocked(useAccountBalancesQuery)).toHaveBeenCalledWith(
+            [standardAccount],
+        )
+    })
+
+    it('passes only non-watch account addresses for history queries', async () => {
+        const { useAllAccounts } = await import(
+            '@perawallet/wallet-core-accounts'
+        )
+
+        const standardAccount1 = {
+            address: 'standard-addr-1',
+            type: 'algo25',
+        } as WalletAccount
+
+        const standardAccount2 = {
+            address: 'standard-addr-2',
+            type: 'hdWallet',
+        } as WalletAccount
+
+        const watchAccount = {
+            address: 'watch-addr',
+            type: 'watch',
+        } as WalletAccount
+
+        vi.mocked(useAllAccounts).mockReturnValue([
+            standardAccount1,
+            watchAccount,
+            standardAccount2,
+        ])
+
+        render(<PortfolioView />)
+
+        expect(screen.getByText('portfolio.title')).toBeTruthy()
+    })
+
+    it('handles all accounts being watch accounts', async () => {
+        const {
+            useAllAccounts,
+            useAccountBalancesQuery,
+        } = await import('@perawallet/wallet-core-accounts')
+
+        const watchAccount1 = {
+            address: 'watch-addr-1',
+            type: 'watch',
+        } as WalletAccount
+
+        const watchAccount2 = {
+            address: 'watch-addr-2',
+            type: 'watch',
+        } as WalletAccount
+
+        vi.mocked(useAllAccounts).mockReturnValue([
+            watchAccount1,
+            watchAccount2,
+        ])
+
+        render(<PortfolioView />)
+
+        expect(vi.mocked(useAccountBalancesQuery)).toHaveBeenCalledWith([])
     })
 })

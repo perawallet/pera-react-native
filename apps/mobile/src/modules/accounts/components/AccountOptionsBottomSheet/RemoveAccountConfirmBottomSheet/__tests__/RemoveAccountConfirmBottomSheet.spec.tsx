@@ -68,4 +68,80 @@ describe('RemoveAccountConfirmBottomSheet', () => {
 
         expect(defaultProps.onClose).toHaveBeenCalled()
     })
+
+    describe('when isWatchAccount is true', () => {
+        it('renders watch-specific removal message', () => {
+            render(
+                <RemoveAccountConfirmBottomSheet
+                    {...defaultProps}
+                    isWatchAccount={true}
+                />,
+            )
+
+            expect(
+                screen.getByText('account_options.remove_watch_message'),
+            ).toBeTruthy()
+            expect(
+                screen.queryByText('account_options.remove_message'),
+            ).toBeNull()
+        })
+
+        it('still renders title and action buttons', () => {
+            render(
+                <RemoveAccountConfirmBottomSheet
+                    {...defaultProps}
+                    isWatchAccount={true}
+                />,
+            )
+
+            expect(
+                screen.getByText('account_options.remove_title'),
+            ).toBeTruthy()
+            expect(
+                screen.getByText('account_options.remove_confirm'),
+            ).toBeTruthy()
+            expect(
+                screen.getByText('account_options.remove_cancel'),
+            ).toBeTruthy()
+        })
+
+        it('calls onConfirm when confirm button is pressed', () => {
+            render(
+                <RemoveAccountConfirmBottomSheet
+                    {...defaultProps}
+                    isWatchAccount={true}
+                />,
+            )
+
+            fireEvent.click(
+                screen.getByText('account_options.remove_confirm'),
+            )
+
+            expect(defaultProps.onConfirm).toHaveBeenCalled()
+        })
+    })
+
+    it('renders standard message when isWatchAccount is false', () => {
+        render(
+            <RemoveAccountConfirmBottomSheet
+                {...defaultProps}
+                isWatchAccount={false}
+            />,
+        )
+
+        expect(
+            screen.getByText('account_options.remove_message'),
+        ).toBeTruthy()
+        expect(
+            screen.queryByText('account_options.remove_watch_message'),
+        ).toBeNull()
+    })
+
+    it('renders standard message when isWatchAccount is not provided', () => {
+        render(<RemoveAccountConfirmBottomSheet {...defaultProps} />)
+
+        expect(
+            screen.getByText('account_options.remove_message'),
+        ).toBeTruthy()
+    })
 })

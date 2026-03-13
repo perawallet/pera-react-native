@@ -30,6 +30,7 @@ import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import {
     AccountBalanceHistoryItem,
+    isWatchAccount,
     useAccountBalancesQuery,
     useAccountBalancesHistoryQuery,
     useAllAccounts,
@@ -50,7 +51,11 @@ export const PortfolioView = (props: PortfolioViewProps) => {
     const { preferredCurrency, usdToPreferred } = useCurrency()
     const { t } = useLanguage()
 
-    const accounts = useAllAccounts()
+    const allAccounts = useAllAccounts()
+    const accounts = useMemo(
+        () => allAccounts.filter(a => !isWatchAccount(a)),
+        [allAccounts],
+    )
     const { portfolioAlgoValue, accountBalances, isPending } =
         useAccountBalancesQuery(accounts)
     const { portfolioUsdValue } = usePortfolioTotals(accountBalances)

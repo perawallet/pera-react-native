@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { render } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { render, screen } from '@test-utils/render'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AccountAssetList } from '../AccountAssetList'
 import {
     WalletAccount,
@@ -35,6 +35,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             accountBalances: new Map(),
             isPending: false,
         })),
+        isWatchAccount: vi.fn(() => false),
     }
 })
 
@@ -147,5 +148,44 @@ describe('AccountAssetList', () => {
             />,
         )
         expect(getByText('Header Content')).toBeTruthy()
+    })
+
+    it('renders Add Asset button for non-watch accounts', () => {
+        const { container } = render(
+            <AccountAssetList account={mockAccount} />,
+        )
+        const text = container.textContent || ''
+        expect(text).toContain('account_details.assets.add_asset')
+    })
+
+    describe('when account is a watch account', () => {
+        beforeEach(async () => {
+            const { isWatchAccount } = await import(
+                '@perawallet/wallet-core-accounts'
+            )
+            vi.mocked(isWatchAccount).mockReturnValue(true)
+        })
+
+        it('hides Add Asset button for watch accounts', () => {
+            const { container } = render(
+                <AccountAssetList account={mockAccount} />,
+            )
+            const text = container.textContent || ''
+            expect(text).not.toContain('account_details.assets.add_asset')
+        })
+
+        it('still renders asset title for watch accounts', () => {
+            render(<AccountAssetList account={mockAccount} />)
+            expect(
+                screen.getByText('account_details.assets.title'),
+            ).toBeTruthy()
+        })
+
+        it('still renders search input for watch accounts', () => {
+            const { container } = render(
+                <AccountAssetList account={mockAccount} />,
+            )
+            expect(container).toBeTruthy()
+        })
     })
 })

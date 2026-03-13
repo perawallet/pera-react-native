@@ -25,11 +25,13 @@ import { WealthTrend } from '@components/WealthTrend'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import {
     AccountBalanceHistoryItem,
+    isWatchAccount,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
 import { useLanguage } from '@hooks/useLanguage'
 import { NoFundsButtonPanel } from '../NoFundsButtonPanel'
+import { WatchAccountButtonPanel } from '../WatchAccountButtonPanel'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { ExpandablePanel } from '@components/ExpandablePanel'
@@ -52,6 +54,8 @@ export type AccountOverviewHeaderProps = {
     handleMore: () => void
     handleBuyAlgo: () => void
     handleReceive: () => void
+    handleCopyAddress: () => void
+    handleShowQR: () => void
     chartVisible: boolean
 }
 
@@ -70,6 +74,8 @@ export const AccountOverviewHeader = ({
     handleMore,
     handleBuyAlgo,
     handleReceive,
+    handleCopyAddress,
+    handleShowQR,
     chartVisible,
 }: AccountOverviewHeaderProps) => {
     const styles = useStyles()
@@ -144,35 +150,53 @@ export const AccountOverviewHeader = ({
             </ExpandablePanel>
 
             <ExpandablePanel isExpanded={!isPending}>
-                <ButtonPanel
-                    onSwap={handleSwap}
-                    onSend={handleOpenSendFunds}
-                    onReceive={handleReceive}
-                    onMore={handleMore}
-                />
+                {isWatchAccount(account) ? (
+                    <WatchAccountButtonPanel
+                        onCopyAddress={handleCopyAddress}
+                        onShowQR={handleShowQR}
+                        onMore={handleMore}
+                    />
+                ) : (
+                    <ButtonPanel
+                        onSwap={handleSwap}
+                        onSend={handleOpenSendFunds}
+                        onReceive={handleReceive}
+                        onMore={handleMore}
+                    />
+                )}
             </ExpandablePanel>
         </PWView>
     ) : (
         <PWView style={styles.headerContainer}>
-            <PWView style={styles.noBalanceContainer}>
-                <PWText
-                    variant='body'
-                    style={styles.noBalanceWelcomeText}
-                >
-                    {t('account_details.no_balance.welcome')}
-                </PWText>
-                <PWText
-                    variant='h1'
-                    style={styles.centeredText}
-                >
-                    {t('account_details.no_balance.get_started')}
-                </PWText>
-            </PWView>
-            <NoFundsButtonPanel
-                onBuyAlgo={handleBuyAlgo}
-                onReceive={handleReceive}
-                onMore={handleMore}
-            />
+            {isWatchAccount(account) ? (
+                <WatchAccountButtonPanel
+                    onCopyAddress={handleCopyAddress}
+                    onShowQR={handleShowQR}
+                    onMore={handleMore}
+                />
+            ) : (
+                <>
+                    <PWView style={styles.noBalanceContainer}>
+                        <PWText
+                            variant='body'
+                            style={styles.noBalanceWelcomeText}
+                        >
+                            {t('account_details.no_balance.welcome')}
+                        </PWText>
+                        <PWText
+                            variant='h1'
+                            style={styles.centeredText}
+                        >
+                            {t('account_details.no_balance.get_started')}
+                        </PWText>
+                    </PWView>
+                    <NoFundsButtonPanel
+                        onBuyAlgo={handleBuyAlgo}
+                        onReceive={handleReceive}
+                        onMore={handleMore}
+                    />
+                </>
+            )}
         </PWView>
     )
 }

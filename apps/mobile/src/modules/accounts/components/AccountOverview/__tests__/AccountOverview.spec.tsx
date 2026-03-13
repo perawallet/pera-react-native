@@ -37,6 +37,12 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
+vi.mock('@hooks/useClipboard', () => ({
+    useClipboard: () => ({
+        copyToClipboard: vi.fn(),
+    }),
+}))
+
 vi.mock('react-native-tab-view', () => ({
     TabView: () => null,
     TabBar: () => null,
@@ -58,6 +64,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         isPending: false,
     })),
     useSelectedAccount: vi.fn(() => undefined),
+    isWatchAccount: vi.fn(() => false),
 }))
 
 vi.mock('@modules/transactions/hooks', () => ({
@@ -171,6 +178,16 @@ vi.mock('../../NoFundsButtonPanel', () => ({
         <div>
             <button onClick={props.onBuyAlgo}>Buy Algo</button>
             <button onClick={props.onReceive}>Receive</button>
+            <button onClick={props.onMore}>More</button>
+        </div>
+    ),
+}))
+vi.mock('../../WatchAccountButtonPanel', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    WatchAccountButtonPanel: (props: any) => (
+        <div>
+            <button onClick={props.onCopyAddress}>Copy Address</button>
+            <button onClick={props.onShowQR}>Show QR</button>
             <button onClick={props.onMore}>More</button>
         </div>
     ),
@@ -331,5 +348,99 @@ describe('AccountOverview', () => {
                 />,
             ),
         ).not.toThrow()
+    })
+
+    describe('when account is a watch account', () => {
+        beforeEach(async () => {
+            const { isWatchAccount } = await import(
+                '@perawallet/wallet-core-accounts'
+            )
+            vi.mocked(isWatchAccount).mockReturnValue(true)
+        })
+
+        it('renders WatchAccountButtonPanel instead of ButtonPanel when has balance', () => {
+            render(
+                <AccountOverview
+                    account={mockAccount}
+                    chartVisible={true}
+                />,
+            )
+            expect(screen.getByText('Copy Address')).toBeTruthy()
+            expect(screen.getByText('Show QR')).toBeTruthy()
+            expect(screen.queryByText('Receive')).toBeNull()
+        })
+
+        it('renders WatchAccountButtonPanel instead of NoFundsButtonPanel when no balance', async () => {
+            const { useAccountBalancesQuery } = await import(
+                '@perawallet/wallet-core-accounts'
+            )
+            vi.mocked(useAccountBalancesQuery).mockReturnValue({
+                portfolioAlgoValue: new Decimal('0'),
+                isPending: false,
+                accountBalances: new Map(),
+                isFetched: true,
+                isRefetching: false,
+                isError: false,
+            })
+
+            render(
+                <AccountOverview
+                    account={mockAccount}
+                    chartVisible={true}
+                />,
+            )
+            expect(screen.getByText('Copy Address')).toBeTruthy()
+            expect(screen.getByText('Show QR')).toBeTruthy()
+            expect(
+                screen.queryByText('account_details.no_balance.welcome'),
+            ).toBeNull()
+            expect(screen.queryByText('Buy Algo')).toBeNull()
+        })
+
+        it('does not show welcome text for watch accounts with no balance', async () => {
+            const { useAccountBalancesQuery } = await import(
+                '@perawallet/wallet-core-accounts'
+            )
+            vi.mocked(useAccountBalancesQuery).mockReturnValue({
+                portfolioAlgoValue: new Decimal('0'),
+                isPending: false,
+                accountBalances: new Map(),
+                isFetched: true,
+                isRefetching: false,
+                isError: false,
+            })
+
+            render(
+                <AccountOverview
+                    account={mockAccount}
+                    chartVisible={true}
+                />,
+            )
+            expect(
+                screen.queryByText('account_details.no_balance.get_started'),
+            ).toBeNull()
+        })
+
+        it('opens account options sheet when More is pressed', () => {
+            render(
+                <AccountOverview
+                    account={mockAccount}
+                    chartVisible={true}
+                />,
+            )
+            fireEvent.click(screen.getByText('More'))
+            expect(screen.getByTestId('account-options-sheet')).toBeTruthy()
+        })
+
+        it('opens receive funds sheet when Show QR is pressed', () => {
+            render(
+                <AccountOverview
+                    account={mockAccount}
+                    chartVisible={true}
+                />,
+            )
+            fireEvent.click(screen.getByText('Show QR'))
+            expect(screen.getByTestId('receive-funds-sheet')).toBeTruthy()
+        })
     })
 })

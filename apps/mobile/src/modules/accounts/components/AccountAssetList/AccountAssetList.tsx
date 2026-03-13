@@ -25,6 +25,7 @@ import { SearchInput } from '@components/SearchInput'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
+    isWatchAccount,
     useAccountBalancesQuery,
     WalletAccount,
     AssetWithAccountBalance,
@@ -135,23 +136,27 @@ export const AccountAssetList = ({
                                     >
                                         {t('account_details.assets.title')}
                                     </PWText>
-                                    <PWView
-                                        style={styles.titleBarButtonContainer}
-                                    >
-                                        <PWButton
-                                            icon='sliders'
-                                            variant='helper'
-                                            paddingStyle='dense'
-                                        />
-                                        <PWButton
-                                            icon='plus'
-                                            title={t(
-                                                'account_details.assets.add_asset',
-                                            )}
-                                            variant='helper'
-                                            paddingStyle='dense'
-                                        />
-                                    </PWView>
+                                    {!isWatchAccount(account) && (
+                                        <PWView
+                                            style={
+                                                styles.titleBarButtonContainer
+                                            }
+                                        >
+                                            <PWButton
+                                                icon='sliders'
+                                                variant='helper'
+                                                paddingStyle='dense'
+                                            />
+                                            <PWButton
+                                                icon='plus'
+                                                title={t(
+                                                    'account_details.assets.add_asset',
+                                                )}
+                                                variant='helper'
+                                                paddingStyle='dense'
+                                            />
+                                        </PWView>
+                                    )}
                                 </PWView>
                             </ExpandablePanel>
                             <SearchInput

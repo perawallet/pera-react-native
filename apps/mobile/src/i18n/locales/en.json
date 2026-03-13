@@ -111,6 +111,11 @@
             "receive": "Receive",
             "more": "More"
         },
+        "watch_button_panel": {
+            "copy_address": "Copy Address",
+            "show_qr": "Show QR",
+            "more": "More"
+        },
         "main_screen": {
             "no_account_title": "No Account Selected",
             "no_account_body": "There is currently no account selected",
@@ -143,6 +148,7 @@
         "rename_save": "Save",
         "remove_title": "Remove Account",
         "remove_message": "Are you sure you want to remove this account? You can always re-add it later.",
+        "remove_watch_message": "You are about to remove this watch account. This only removes it from your wallet view — the account itself is not affected.",
         "remove_confirm": "Remove",
         "remove_cancel": "Cancel",
         "notifications_muted": "Notifications muted",
