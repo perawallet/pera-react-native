@@ -23,6 +23,7 @@ import { useStyles } from './styles'
 import { AccountOption, useAccountOptions } from './useAccountOptions'
 import { RenameAccountBottomSheet } from './RenameAccountBottomSheet'
 import { RemoveAccountConfirmBottomSheet } from './RemoveAccountConfirmBottomSheet'
+import { AccountInfoCard } from '../AccountInfoCard'
 import { BottomSheetView } from '@gorhom/bottom-sheet'
 
 export type AccountOptionsBottomSheetProps = {
@@ -119,6 +120,10 @@ export const AccountOptionsBottomSheet = ({
                 autoCreateContainer={false}
             >
                 <BottomSheetView style={styles.container}>
+                    <PWView style={styles.accountInfoContainer}>
+                        <AccountInfoCard account={account} />
+                    </PWView>
+
                     <PWView>
                         {generalOptions.map(option => (
                             <OptionRow
