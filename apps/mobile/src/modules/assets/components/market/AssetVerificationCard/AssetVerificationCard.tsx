@@ -14,8 +14,9 @@ import { useStyles } from './styles'
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 import { useTheme } from '@rneui/themed'
 import { IconName, PWButton, PWIcon, PWText, PWView } from '@components/core'
-import { useMemo } from 'react'
+import { useMemo, useCallback } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
+import { useWebView } from '@modules/webview'
 
 export type AssetVerificationCardProps = {
     assetDetails: PeraAsset
@@ -27,6 +28,11 @@ export const AssetVerificationCard = ({
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
+    const { pushWebView } = useWebView()
+
+    const handleLearnMore = useCallback(() => {
+        pushWebView({ url: 'https://explorer.perawallet.app/asa-verification/' })
+    }, [pushWebView])
     const isTrusted = assetDetails.assetId === ALGO_ASSET_ID
     const isVerified =
         !isTrusted && assetDetails.peraMetadata?.verificationTier === 'verified'
@@ -115,6 +121,7 @@ export const AssetVerificationCard = ({
                 variant='link'
                 icon='info'
                 title={t('asset_details.verification_card.learn_more')}
+                onPress={handleLearnMore}
             />
         </PWView>
     )

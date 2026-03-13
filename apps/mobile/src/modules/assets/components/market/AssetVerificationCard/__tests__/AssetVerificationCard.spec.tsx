@@ -10,10 +10,18 @@
  limitations under the License
  */
 
-import { render } from '@test-utils/render'
-import { describe, it, expect } from 'vitest'
+import { render, fireEvent, screen } from '@test-utils/render'
+import { describe, it, expect, vi } from 'vitest'
 import { AssetVerificationCard } from '../AssetVerificationCard'
 import { PeraAsset, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
+
+const mockPushWebView = vi.fn()
+
+vi.mock('@modules/webview', () => ({
+    useWebView: () => ({
+        pushWebView: mockPushWebView,
+    }),
+}))
 
 describe('AssetVerificationCard', () => {
     it('renders trusted card for ALGO asset', () => {
@@ -76,15 +84,19 @@ describe('AssetVerificationCard', () => {
         expect(container.innerHTML).toBe('')
     })
 
-    it('displays learn more button for verified assets', () => {
+    it('opens ASA verification webview when learn more is pressed', () => {
+        mockPushWebView.mockClear()
         const algoAsset = {
             assetId: ALGO_ASSET_ID,
             name: 'Algorand',
         } as PeraAsset
 
-        const { container } = render(
-            <AssetVerificationCard assetDetails={algoAsset} />,
+        render(<AssetVerificationCard assetDetails={algoAsset} />)
+        fireEvent.click(
+            screen.getByText('asset_details.verification_card.learn_more'),
         )
-        expect(container).toBeTruthy()
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: 'https://explorer.perawallet.app/asa-verification/',
+        })
     })
 })
