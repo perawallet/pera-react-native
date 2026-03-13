@@ -51,6 +51,8 @@ export const AccountOverview = ({
         handleMore,
         handleBuyAlgo,
         handleReceive,
+        handleCopyAddress,
+        handleShowQR,
         isReceiveFundsVisible,
         handleCloseReceiveFunds,
         isAccountOptionsVisible,
@@ -83,6 +85,8 @@ export const AccountOverview = ({
                         handleMore={handleMore}
                         handleBuyAlgo={handleBuyAlgo}
                         handleReceive={handleReceive}
+                        handleCopyAddress={handleCopyAddress}
+                        handleShowQR={handleShowQR}
                         chartVisible={chartVisible}
                     />
                 }

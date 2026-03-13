@@ -23,9 +23,12 @@ import { SendFundsBottomSheet } from '@modules/transactions/components/send-fund
 import { ReceiveFundsBottomSheet } from '@modules/transactions/components/receive-funds/ReceiveFundsBottomSheet'
 import {
     useSelectedAccount,
+    isWatchAccount,
     AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
 import { useSendFunds } from '@modules/transactions/hooks'
+import { useClipboard } from '@hooks/useClipboard'
+import { useToast } from '@hooks/useToast'
 
 export type AssetActionButtonsProps = {
     asset: PeraAsset
@@ -43,6 +46,9 @@ export const AssetActionButtons = ({
     const receiveFunds = useModalState()
     const account = useSelectedAccount()
     const { setSelectedAssetBalance, setCanSelectAsset } = useSendFunds()
+    const { copyToClipboard } = useClipboard()
+    const { showToast } = useToast()
+    const isWatch = account ? isWatchAccount(account) : false
 
     const goToRootPage = (name: string) => {
         navigation.replace('TabBar', { screen: name })
@@ -56,6 +62,41 @@ export const AssetActionButtons = ({
 
         sendFunds.open()
     }, [assetHolding, setSelectedAssetBalance, setCanSelectAsset, sendFunds])
+
+    const handleCopyAddress = useCallback(() => {
+        if (account) {
+            copyToClipboard(account.address)
+            showToast({
+                title: t('account_options.copy_address'),
+                body: '',
+                type: 'success',
+            })
+        }
+    }, [account, copyToClipboard, showToast, t])
+
+    if (isWatch) {
+        return (
+            <PWView style={styles.container}>
+                <RoundButton
+                    title={t('account_details.watch_button_panel.copy_address')}
+                    icon='copy'
+                    variant='primary'
+                    onPress={handleCopyAddress}
+                />
+                <RoundButton
+                    title={t('asset_details.action_buttons.receive')}
+                    icon='inflow'
+                    variant='secondary'
+                    onPress={receiveFunds.open}
+                />
+                <ReceiveFundsBottomSheet
+                    account={account ?? undefined}
+                    onClose={receiveFunds.close}
+                    isVisible={receiveFunds.isOpen}
+                />
+            </PWView>
+        )
+    }
 
     return (
         <PWView style={styles.container}>

@@ -26,6 +26,9 @@ import { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useModalState } from '@hooks/useModalState'
 import { useReceiveFunds } from '@modules/transactions/hooks'
+import { useClipboard } from '@hooks/useClipboard'
+import { useToast } from '@hooks/useToast'
+import { useLanguage } from '@hooks/useLanguage'
 
 export type UseAccountOverviewResult = {
     portfolioAlgoValue: Decimal
@@ -48,6 +51,8 @@ export type UseAccountOverviewResult = {
     handleMore: () => void
     handleBuyAlgo: () => void
     handleReceive: () => void
+    handleCopyAddress: () => void
+    handleShowQR: () => void
     isReceiveFundsVisible: boolean
     handleCloseReceiveFunds: () => void
     isAccountOptionsVisible: boolean
@@ -128,6 +133,32 @@ export const useAccountOverview = (
         handleOpenAccountOptions()
     }, [handleOpenAccountOptions])
 
+    const { copyToClipboard } = useClipboard()
+    const { showToast } = useToast()
+    const { t } = useLanguage()
+
+    const handleCopyAddress = useCallback(() => {
+        copyToClipboard(account.address)
+        showToast({
+            title: t('account_options.copy_address'),
+            body: '',
+            type: 'success',
+        })
+    }, [copyToClipboard, account.address, showToast, t])
+
+    const handleShowQR = useCallback(() => {
+        if (selectedAccount) {
+            setCanSelectAccount(false)
+            setSelectedAccount(selectedAccount)
+        }
+        handleOpenReceiveFunds()
+    }, [
+        selectedAccount,
+        handleOpenReceiveFunds,
+        setCanSelectAccount,
+        setSelectedAccount,
+    ])
+
     return {
         portfolioAlgoValue,
         portfolioPreferredValue,
@@ -147,6 +178,8 @@ export const useAccountOverview = (
         handleMore,
         handleBuyAlgo,
         handleReceive,
+        handleCopyAddress,
+        handleShowQR,
         isReceiveFundsVisible,
         handleCloseReceiveFunds,
         isAccountOptionsVisible,

@@ -54,6 +54,20 @@ vi.mock('@modules/transactions/hooks', () => ({
     }),
 }))
 
+const mockCopyToClipboard = vi.fn()
+vi.mock('@hooks/useClipboard', () => ({
+    useClipboard: () => ({
+        copyToClipboard: mockCopyToClipboard,
+    }),
+}))
+
+const mockShowToast = vi.fn()
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({
+        showToast: mockShowToast,
+    }),
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<
@@ -62,6 +76,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useSelectedAccount: vi.fn(() => ({ address: 'test-address' })),
+        isWatchAccount: vi.fn(() => false),
     }
 })
 
@@ -147,5 +162,69 @@ describe('AssetActionButtons', () => {
     it('renders the component without crashing', () => {
         const { container } = render(<AssetActionButtons asset={mockAsset} />)
         expect(container).toBeTruthy()
+    })
+
+    describe('when account is a watch account', () => {
+        beforeEach(async () => {
+            const { isWatchAccount } = await import(
+                '@perawallet/wallet-core-accounts'
+            )
+            vi.mocked(isWatchAccount).mockReturnValue(true)
+        })
+
+        it('renders only Copy Address and Receive buttons', () => {
+            const { container } = render(
+                <AssetActionButtons asset={mockAsset} />,
+            )
+
+            const text = container.textContent?.toLowerCase() || ''
+            expect(text).toContain('copy_address')
+            expect(text).toContain('receive')
+        })
+
+        it('does not render Swap, Buy, or Send buttons', () => {
+            const { container } = render(
+                <AssetActionButtons asset={mockAsset} />,
+            )
+
+            const text = container.textContent?.toLowerCase() || ''
+            expect(text).not.toContain('swap')
+            expect(text).not.toContain('buy')
+            expect(text).not.toContain('send')
+        })
+
+        it('copies address and shows toast when Copy Address is pressed', () => {
+            const { container } = render(
+                <AssetActionButtons asset={mockAsset} />,
+            )
+
+            const buttons = container.querySelectorAll('button')
+            const copyButton = Array.from(buttons).find(btn =>
+                btn.textContent?.toLowerCase().includes('copy_address'),
+            )
+            if (copyButton) {
+                fireEvent.click(copyButton)
+                expect(mockCopyToClipboard).toHaveBeenCalledWith('test-address')
+                expect(mockShowToast).toHaveBeenCalledWith(
+                    expect.objectContaining({ type: 'success' }),
+                )
+            }
+        })
+
+        it('does not navigate to Swap or Fund when watch account', () => {
+            const { container } = render(
+                <AssetActionButtons asset={mockAsset} />,
+            )
+
+            const buttons = container.querySelectorAll('button')
+            buttons.forEach(btn => fireEvent.click(btn))
+
+            expect(mockReplace).not.toHaveBeenCalledWith('TabBar', {
+                screen: 'Swap',
+            })
+            expect(mockReplace).not.toHaveBeenCalledWith('TabBar', {
+                screen: 'Fund',
+            })
+        })
     })
 })

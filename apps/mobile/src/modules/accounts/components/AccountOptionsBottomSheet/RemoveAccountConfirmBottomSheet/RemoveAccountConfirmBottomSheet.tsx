@@ -22,12 +22,14 @@ import { useStyles } from './styles'
 
 export type RemoveAccountConfirmBottomSheetProps = {
     isVisible: boolean
+    isWatchAccount?: boolean
     onClose: () => void
     onConfirm: () => void
 }
 
 export const RemoveAccountConfirmBottomSheet = ({
     isVisible,
+    isWatchAccount: isWatch = false,
     onClose,
     onConfirm,
 }: RemoveAccountConfirmBottomSheetProps) => {
@@ -48,7 +50,11 @@ export const RemoveAccountConfirmBottomSheet = ({
             />
             <PWText variant='h3'>{t('account_options.remove_title')}</PWText>
             <PWText style={styles.message}>
-                {t('account_options.remove_message')}
+                {t(
+                    isWatch
+                        ? 'account_options.remove_watch_message'
+                        : 'account_options.remove_message',
+                )}
             </PWText>
             <PWView style={styles.actions}>
                 <PWButton

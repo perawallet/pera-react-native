@@ -18,7 +18,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { WalletAccount, isWatchAccount } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
 import { AccountOption, useAccountOptions } from './useAccountOptions'
 import { RenameAccountBottomSheet } from './RenameAccountBottomSheet'
@@ -166,6 +166,7 @@ export const AccountOptionsBottomSheet = ({
 
             <RemoveAccountConfirmBottomSheet
                 isVisible={isRemoveConfirmVisible}
+                isWatchAccount={isWatchAccount(account)}
                 onClose={handleCloseRemoveConfirm}
                 onConfirm={handleConfirmRemove}
             />
