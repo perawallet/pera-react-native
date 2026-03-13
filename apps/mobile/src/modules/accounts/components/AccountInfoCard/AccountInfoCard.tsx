@@ -18,6 +18,7 @@ import {
     PWView,
 } from '@components/core'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAccountInfoCard } from './useAccountInfoCard'
@@ -98,7 +99,8 @@ export const AccountInfoCard = ({ account }: AccountInfoCardProps) => {
                     <CurrencyDisplay
                         currency='ALGO'
                         value={minBalanceAlgos}
-                        precision={0}
+                        precision={ALGO_ASSET.decimals}
+                        minPrecision={2}
                         showSymbol
                         symbolPosition='start'
                         isLoading={isMinBalanceLoading}
