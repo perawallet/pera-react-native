@@ -178,25 +178,37 @@ const isRetryableError = (error: Error | null): boolean => {
     return error.metadata.retryable === true
 }
 
+const derivePrimarySignerType = (
+    context: SigningMachineContext,
+): ResolvedSignerType | null => {
+    const { groupSignerTypes } = context
+    if (!groupSignerTypes) return null
+    const types = [...groupSignerTypes.values()]
+    if (types.includes('ledger')) return 'ledger'
+    if (types.includes('multisig')) return 'multisig'
+    if (types.includes('localKey')) return 'localKey'
+    return null
+}
+
 const deriveEvent = (
     snapshot: MachineSnapshot,
     stage: PipelineStage,
 ): SigningPipelineEvent | null => {
     switch (stage) {
         case 'awaiting_user': {
-            const { analyses, resolvedSignerType } = snapshot.context
+            const { analyses } = snapshot.context
             const analysis = analyses?.[0]
             if (!analysis) return null
             return {
                 type: 'analysis_ready',
                 analysis,
-                signerType: resolvedSignerType,
+                signerType: derivePrimarySignerType(snapshot.context),
             }
         }
         case 'signing': {
-            const { resolvedSignerType } = snapshot.context
-            if (!resolvedSignerType) return null
-            return { type: 'signing_started', signerType: resolvedSignerType }
+            const signerType = derivePrimarySignerType(snapshot.context)
+            if (!signerType) return null
+            return { type: 'signing_started', signerType }
         }
         case 'transporting':
             return { type: 'transport_started' }

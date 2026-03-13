@@ -57,11 +57,35 @@ export const signingMachine = setup({
     },
     guards: {
         hasError: ({ context }) => context.error !== null,
-        isLocalKeyType: ({ context }) =>
-            context.resolvedSignerType === 'localKey',
-        isLedgerType: ({ context }) => context.resolvedSignerType === 'ledger',
-        isMultisigType: ({ context }) =>
-            context.resolvedSignerType === 'multisig',
+        allGroupsSigned: ({ context }) => {
+            if (!context.groupSignerTypes) return false
+            const uniqueTypes = new Set(context.groupSignerTypes.values())
+            return uniqueTypes.size === context.completedSignerTypes.length
+        },
+        isNextSignerLocalKey: ({ context }) => {
+            if (!context.groupSignerTypes) return false
+            const uniqueTypes = [...new Set(context.groupSignerTypes.values())]
+            const pending = uniqueTypes.filter(
+                t => !context.completedSignerTypes.includes(t),
+            )
+            return pending[0] === 'localKey'
+        },
+        isNextSignerLedger: ({ context }) => {
+            if (!context.groupSignerTypes) return false
+            const uniqueTypes = [...new Set(context.groupSignerTypes.values())]
+            const pending = uniqueTypes.filter(
+                t => !context.completedSignerTypes.includes(t),
+            )
+            return pending[0] === 'ledger'
+        },
+        isNextSignerMultisig: ({ context }) => {
+            if (!context.groupSignerTypes) return false
+            const uniqueTypes = [...new Set(context.groupSignerTypes.values())]
+            const pending = uniqueTypes.filter(
+                t => !context.completedSignerTypes.includes(t),
+            )
+            return pending[0] === 'multisig'
+        },
         isRetryable: ({ context }) => isRetryableError(context.error),
         canRetryValidating: ({ context }) =>
             isRetryableError(context.error) &&
@@ -143,17 +167,24 @@ export const signingMachine = setup({
         },
 
         /**
-         * Routes to the appropriate signer actor based on resolvedSignerType.
+         * Sequentially dispatches each signer type's groups to the appropriate actor.
+         * `dispatching` picks the next pending type; each actor appends its results
+         * and marks its type complete before returning to `dispatching`.
+         * When all types are complete, transitions to `transporting`.
          */
         signing: {
-            initial: 'routing',
+            initial: 'dispatching',
             states: {
-                routing: {
+                dispatching: {
                     always: [
-                        { guard: 'isLocalKeyType', target: 'localKey' },
-                        { guard: 'isLedgerType', target: 'ledger' },
-                        { guard: 'isMultisigType', target: 'multisig' },
-                        // No valid signer type — should not happen if idle resolved correctly
+                        {
+                            guard: 'allGroupsSigned',
+                            target: '#signingMachine.transporting',
+                        },
+                        { guard: 'isNextSignerLocalKey', target: 'localKey' },
+                        { guard: 'isNextSignerLedger', target: 'ledger' },
+                        { guard: 'isNextSignerMultisig', target: 'multisig' },
+                        // No pending signer type — should not happen
                         { target: '#signingMachine.failed' },
                     ],
                 },
@@ -161,24 +192,45 @@ export const signingMachine = setup({
                 localKey: {
                     invoke: {
                         src: 'localKeySignerActor',
-                        input: ({ context }) => ({
-                            groups: assertDefined(
+                        input: ({ context }) => {
+                            const allGroups = assertDefined(
                                 context.signableGroups,
                                 'signableGroups',
-                            ).map((g, i) => ({
-                                ...g,
-                                analysis: assertDefined(
-                                    context.analyses,
-                                    'analyses',
-                                )[i],
-                            })) as AnalyzedSignableGroup[],
-                            allAccounts: context.allAccounts,
-                            signTransactions: context.deps.signTransactions,
-                        }),
+                            )
+                            const allAnalyses = assertDefined(
+                                context.analyses,
+                                'analyses',
+                            )
+                            const types = assertDefined(
+                                context.groupSignerTypes,
+                                'groupSignerTypes',
+                            )
+                            return {
+                                groups: allGroups
+                                    .map((g, i) => ({
+                                        ...g,
+                                        analysis: allAnalyses[i],
+                                    }))
+                                    .filter(
+                                        g =>
+                                            types.get(g.signerAddress) ===
+                                            'localKey',
+                                    ) as AnalyzedSignableGroup[],
+                                allAccounts: context.allAccounts,
+                                signTransactions: context.deps.signTransactions,
+                            }
+                        },
                         onDone: {
-                            target: '#signingMachine.transporting',
+                            target: 'dispatching',
                             actions: assign({
-                                signingResults: ({ event }) => event.output,
+                                signingResults: ({ context, event }) => [
+                                    ...(context.signingResults ?? []),
+                                    ...event.output,
+                                ],
+                                completedSignerTypes: ({ context }) => [
+                                    ...context.completedSignerTypes,
+                                    'localKey' as const,
+                                ],
                             }),
                         },
                         onError: {
@@ -194,23 +246,44 @@ export const signingMachine = setup({
                 ledger: {
                     invoke: {
                         src: 'ledgerSignerActor',
-                        input: ({ context }) => ({
-                            groups: assertDefined(
+                        input: ({ context }) => {
+                            const allGroups = assertDefined(
                                 context.signableGroups,
                                 'signableGroups',
-                            ).map((g, i) => ({
-                                ...g,
-                                analysis: assertDefined(
-                                    context.analyses,
-                                    'analyses',
-                                )[i],
-                            })) as AnalyzedSignableGroup[],
-                            allAccounts: context.allAccounts,
-                        }),
+                            )
+                            const allAnalyses = assertDefined(
+                                context.analyses,
+                                'analyses',
+                            )
+                            const types = assertDefined(
+                                context.groupSignerTypes,
+                                'groupSignerTypes',
+                            )
+                            return {
+                                groups: allGroups
+                                    .map((g, i) => ({
+                                        ...g,
+                                        analysis: allAnalyses[i],
+                                    }))
+                                    .filter(
+                                        g =>
+                                            types.get(g.signerAddress) ===
+                                            'ledger',
+                                    ) as AnalyzedSignableGroup[],
+                                allAccounts: context.allAccounts,
+                            }
+                        },
                         onDone: {
-                            target: '#signingMachine.transporting',
+                            target: 'dispatching',
                             actions: assign({
-                                signingResults: ({ event }) => event.output,
+                                signingResults: ({ context, event }) => [
+                                    ...(context.signingResults ?? []),
+                                    ...event.output,
+                                ],
+                                completedSignerTypes: ({ context }) => [
+                                    ...context.completedSignerTypes,
+                                    'ledger' as const,
+                                ],
                             }),
                         },
                         onError: {
@@ -226,23 +299,44 @@ export const signingMachine = setup({
                 multisig: {
                     invoke: {
                         src: 'multisigSignerActor',
-                        input: ({ context }) => ({
-                            groups: assertDefined(
+                        input: ({ context }) => {
+                            const allGroups = assertDefined(
                                 context.signableGroups,
                                 'signableGroups',
-                            ).map((g, i) => ({
-                                ...g,
-                                analysis: assertDefined(
-                                    context.analyses,
-                                    'analyses',
-                                )[i],
-                            })) as AnalyzedSignableGroup[],
-                            allAccounts: context.allAccounts,
-                        }),
+                            )
+                            const allAnalyses = assertDefined(
+                                context.analyses,
+                                'analyses',
+                            )
+                            const types = assertDefined(
+                                context.groupSignerTypes,
+                                'groupSignerTypes',
+                            )
+                            return {
+                                groups: allGroups
+                                    .map((g, i) => ({
+                                        ...g,
+                                        analysis: allAnalyses[i],
+                                    }))
+                                    .filter(
+                                        g =>
+                                            types.get(g.signerAddress) ===
+                                            'multisig',
+                                    ) as AnalyzedSignableGroup[],
+                                allAccounts: context.allAccounts,
+                            }
+                        },
                         onDone: {
-                            target: '#signingMachine.transporting',
+                            target: 'dispatching',
                             actions: assign({
-                                signingResults: ({ event }) => event.output,
+                                signingResults: ({ context, event }) => [
+                                    ...(context.signingResults ?? []),
+                                    ...event.output,
+                                ],
+                                completedSignerTypes: ({ context }) => [
+                                    ...context.completedSignerTypes,
+                                    'multisig' as const,
+                                ],
                             }),
                         },
                         onError: {
@@ -327,6 +421,8 @@ export const signingMachine = setup({
                         actions: assign({
                             error: () => null,
                             failedDuringState: () => null,
+                            completedSignerTypes: () => [],
+                            signingResults: () => null,
                         }),
                     },
                     {

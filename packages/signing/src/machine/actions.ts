@@ -24,6 +24,7 @@ import type {
 import { resolveRekeyChain } from '../pipeline/signing/getSigningStrategy'
 import { CannotSignError } from '../pipeline/errors'
 import type {
+    GroupSignerTypeMap,
     ResolvedSignerType,
     SigningMachineContext,
     SigningMachineDeps,
@@ -105,6 +106,37 @@ const determineSignerType = (
         signerAccount.address,
         `No signing capability found for account type: ${authAccount.type}`,
     )
+}
+
+// =============================================================================
+// Group signer type map
+// =============================================================================
+
+/**
+ * Resolves the signing type for every unique signer address in the request.
+ * Iterates all signable groups and determines the signer type per address,
+ * enabling the machine to dispatch each group to the correct actor.
+ */
+const buildGroupSignerTypeMap = (
+    groups: SignableGroup[],
+    allAccounts: WalletAccount[],
+): GroupSignerTypeMap => {
+    const map: GroupSignerTypeMap = new Map()
+    for (const group of groups) {
+        if (map.has(group.signerAddress)) continue
+        const signerAccount = allAccounts.find(
+            a => a.address === group.signerAddress,
+        )
+        if (!signerAccount) {
+            throw new Error(`Signer account not found: ${group.signerAddress}`)
+        }
+        const authAccount = resolveRekeyChain(signerAccount, allAccounts)
+        map.set(
+            group.signerAddress,
+            determineSignerType(signerAccount, authAccount),
+        )
+    }
+    return map
 }
 
 // =============================================================================
@@ -229,21 +261,18 @@ export const resolveInitialContext = (
     const { request, allAccounts } = input
 
     const signerAddress = extractSignerAddress(request)
-    const signerAccount = allAccounts.find(a => a.address === signerAddress)
-
-    if (!signerAccount) {
-        throw new Error(`Signer account not found: ${signerAddress}`)
-    }
-
-    const authAccount = resolveRekeyChain(signerAccount, allAccounts)
-    const resolvedSignerType = determineSignerType(signerAccount, authAccount)
     const signableGroups = buildSignableGroups(request)
+    const groupSignerTypes = buildGroupSignerTypeMap(
+        signableGroups,
+        allAccounts,
+    )
 
     return {
         request,
         allAccounts,
         signerAddress,
-        resolvedSignerType,
+        groupSignerTypes,
+        completedSignerTypes: [],
         signableGroups,
         analyses: null,
         signingResults: null,
@@ -265,7 +294,8 @@ export const makeFailedContext = (
     request: input.request,
     allAccounts: input.allAccounts,
     signerAddress: null,
-    resolvedSignerType: null,
+    groupSignerTypes: null,
+    completedSignerTypes: [],
     signableGroups: null,
     analyses: null,
     signingResults: null,

@@ -30,12 +30,18 @@ import type { SignRequest } from '../models'
 // =============================================================================
 
 /**
- * The type of signing actor to invoke, resolved at machine creation time.
+ * The type of signing actor to invoke for a given signer address.
  * - localKey: HD wallet or Algo25 account (signing keys available on device)
  * - ledger: Hardware wallet requiring BLE connection and physical confirmation
  * - multisig: Multi-signature account requiring partial signature collection
  */
 export type ResolvedSignerType = 'localKey' | 'ledger' | 'multisig'
+
+/**
+ * Maps each unique signer address in the request to its resolved signing type.
+ * Used to dispatch signable groups to the correct actor sequentially.
+ */
+export type GroupSignerTypeMap = Map<string, ResolvedSignerType>
 
 // =============================================================================
 // Machine Deps
@@ -90,10 +96,19 @@ export type SigningMachineContext = {
     signerAddress: string | null
 
     /**
-     * Signer type resolved in idle state.
-     * Determines which signing actor is invoked in the `signing` state.
+     * Maps each unique signer address to its resolved signing type.
+     * Populated in idle state. Used by the `signing` state to dispatch
+     * each group to the correct actor sequentially.
      */
-    resolvedSignerType: ResolvedSignerType | null
+    groupSignerTypes: GroupSignerTypeMap | null
+
+    /**
+     * Tracks which signer types have already completed during sequential dispatch.
+     * Each completed type is appended after its actor finishes. When the set of
+     * completed types equals the unique types in groupSignerTypes, all groups
+     * are signed and the machine can advance to transporting.
+     */
+    completedSignerTypes: ResolvedSignerType[]
 
     /**
      * The signable groups built from the request, populated after idle resolution.

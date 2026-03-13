@@ -127,6 +127,13 @@ export interface SignableGroup {
      * Resolved from transaction senders or the data signer field.
      */
     signerAddress: string
+
+    /**
+     * Original positions of these transactions in the full request array.
+     * Set when a request is split into multiple groups (multi-signer requests).
+     * Used by transportActor to reassemble signed txs in correct order.
+     */
+    originalIndices?: number[]
 }
 
 /**

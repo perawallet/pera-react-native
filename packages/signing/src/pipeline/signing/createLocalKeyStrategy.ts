@@ -104,6 +104,7 @@ export const createLocalKeyStrategy = (
                         signed: signedTransactions,
                     },
                     signers: [signerInfo],
+                    originalIndices: group.originalIndices,
                 }
             } catch (error) {
                 const signingError = new SigningError(

@@ -274,13 +274,15 @@ describe('signingMachine', () => {
         expect(state.context.error?.message).toMatch(/network error/)
     })
 
-    it('resolves signerAddress in context', async () => {
+    it('resolves signerAddress and groupSignerTypes in context', async () => {
         const actor = createActor(mockedMachine, { input: makeInput() })
         actor.start()
 
         const state = await waitFor(actor, s => s.matches('awaiting_user'))
         expect(state.context.signerAddress).toBe(MOCK_ADDRESS)
-        expect(state.context.resolvedSignerType).toBe('localKey')
+        expect(state.context.groupSignerTypes?.get(MOCK_ADDRESS)).toBe(
+            'localKey',
+        )
     })
 
     it('stores analyses in context after validating', async () => {
@@ -289,5 +291,102 @@ describe('signingMachine', () => {
 
         const state = await waitFor(actor, s => s.matches('awaiting_user'))
         expect(state.context.analyses).toEqual([mockAnalysis])
+    })
+
+    it('signs groups sequentially for a mixed localKey + multisig request', async () => {
+        const MULTISIG_ADDRESS =
+            'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'
+
+        const mockMultisigAccount: WalletAccount = {
+            type: 'multisig',
+            address: MULTISIG_ADDRESS,
+        } as unknown as WalletAccount
+
+        const mockTxFromMultisig = {
+            sender: { toString: () => MULTISIG_ADDRESS },
+            fee: 1000n,
+            type: 'pay',
+        } as never
+
+        const mixedRequest: TransactionSignRequest = {
+            id: 'req-mixed',
+            type: 'transactions',
+            transport: 'algod',
+            txs: [mockTx, mockTxFromMultisig],
+        }
+
+        const localKeyResult: SigningResult = {
+            signedData: { type: 'transactions', signed: [] },
+            signers: [{ address: MOCK_ADDRESS }],
+            originalIndices: [0],
+        }
+        const multisigResult: SigningResult = {
+            signedData: { type: 'transactions', signed: [] },
+            signers: [{ address: MULTISIG_ADDRESS }],
+            originalIndices: [1],
+        }
+
+        let capturedLocalKeyGroups: { signerAddress: string }[] = []
+        let capturedMultisigGroups: { signerAddress: string }[] = []
+
+        const mixedMachine = signingMachine.provide({
+            actors: {
+                analyzerActor: fromPromise(
+                    async (): Promise<SignableAnalysis[]> => [
+                        mockAnalysis,
+                        mockAnalysis,
+                    ],
+                ),
+                localKeySignerActor: fromPromise(
+                    async ({ input }): Promise<SigningResult[]> => {
+                        capturedLocalKeyGroups = (
+                            input as { groups: { signerAddress: string }[] }
+                        ).groups
+                        return [localKeyResult]
+                    },
+                ),
+                multisigSignerActor: fromPromise(
+                    async ({ input }): Promise<SigningResult[]> => {
+                        capturedMultisigGroups = (
+                            input as { groups: { signerAddress: string }[] }
+                        ).groups
+                        return [multisigResult]
+                    },
+                ),
+                transportActor: fromPromise(
+                    async (): Promise<TransportResult> => mockTransportResult,
+                ),
+            },
+        })
+
+        const actor = createActor(mixedMachine, {
+            input: makeInput({
+                request: mixedRequest,
+                allAccounts: [mockAlgo25Account, mockMultisigAccount],
+            }),
+        })
+        actor.start()
+
+        await waitFor(actor, s => s.matches('awaiting_user'))
+        actor.send({ type: 'USER_APPROVED' })
+
+        const state = await waitFor(actor, s => s.matches('completed'))
+
+        // localKeySignerActor received only the localKey group
+        expect(capturedLocalKeyGroups).toHaveLength(1)
+        expect(capturedLocalKeyGroups[0]?.signerAddress).toBe(MOCK_ADDRESS)
+
+        // multisigSignerActor received only the multisig group
+        expect(capturedMultisigGroups).toHaveLength(1)
+        expect(capturedMultisigGroups[0]?.signerAddress).toBe(MULTISIG_ADDRESS)
+
+        // Both results accumulated
+        expect(state.context.signingResults).toHaveLength(2)
+        expect(state.context.signingResults).toEqual(
+            expect.arrayContaining([localKeyResult, multisigResult]),
+        )
+        expect(state.context.completedSignerTypes).toEqual(
+            expect.arrayContaining(['localKey', 'multisig']),
+        )
     })
 })
