@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import {
     type ArbitraryDataSignRequest,
     type PeraArbitraryDataMessage,
-    useSigningRequest,
+    useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
 import type { SigningStackParamList } from '@modules/signing/routes'
 
@@ -37,32 +37,19 @@ type UseArbitraryDataSigningScreenResult = {
 export const useArbitraryDataSigningScreen =
     (): UseArbitraryDataSigningScreenResult => {
         const navigation = useNavigation<NavigationProp>()
-        const {
-            currentRequest,
-            signAndSendRequest,
-            rejectRequest: coreRejectRequest,
-        } = useSigningRequest()
-        const request = (currentRequest as ArbitraryDataSignRequest) ?? null
-        const [isPending, setIsPending] = useState(false)
+        const pipeline = useSigningPipeline()
+        const request =
+            (pipeline.currentRequest as ArbitraryDataSignRequest) ?? null
 
         const isSingleSignRequest = request?.data.length === 1
 
-        const handleApprove = useCallback(async () => {
-            if (!request) return
-            setIsPending(true)
-            try {
-                await signAndSendRequest(request)
-            } catch (error) {
-                await request.error?.(`${error}`)
-            } finally {
-                setIsPending(false)
-            }
-        }, [request, signAndSendRequest])
+        const handleApprove = useCallback(() => {
+            pipeline.next()
+        }, [pipeline])
 
         const handleReject = useCallback(() => {
-            if (!request) return
-            coreRejectRequest(request)
-        }, [request, coreRejectRequest])
+            pipeline.fail()
+        }, [pipeline])
 
         const handleDetailsPress = useCallback(
             (message: PeraArbitraryDataMessage) => {
@@ -74,7 +61,7 @@ export const useArbitraryDataSigningScreen =
         return {
             request,
             isSingleSignRequest,
-            isPending,
+            isPending: pipeline.isLoading,
             handleApprove,
             handleReject,
             handleDetailsPress,

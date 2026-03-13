@@ -10,14 +10,13 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useToast } from '@hooks/useToast'
 import { config } from '@perawallet/wallet-core-config'
 import { useLanguage } from '@hooks/useLanguage'
 import {
-    TransactionSignRequest,
-    useSigningRequest,
-    useSigningRequestAnalysis,
+    type SigningPipelineEvent,
+    useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
 import { bottomSheetNotifier } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
@@ -37,56 +36,41 @@ const preferenceKeyMap: Record<GuardedWarningType, string> = {
 export const useSigningActionButtons = () => {
     const { showToast } = useToast()
     const { t } = useLanguage()
-    const [isLoading, setIsLoading] = useState(false)
 
     const securityGuardModal = useModalState()
     const navigation =
         useNavigation<StackNavigationProp<SigningStackParamList>>()
     const { getPreference } = usePreferences()
 
-    const {
-        currentRequest,
-        currentActorRef,
-        signAndSendRequest,
-        rejectRequest,
-    } = useSigningRequest()
-    const request = currentRequest as TransactionSignRequest
-
-    useEffect(() => {
-        if (!currentActorRef) {
-            setIsLoading(false)
-            return
-        }
-        const subscription = currentActorRef.subscribe(snapshot => {
-            setIsLoading(
-                snapshot.matches('signing') || snapshot.matches('transporting'),
-            )
-            if (snapshot.matches('failed') && snapshot.context.error) {
-                const req = snapshot.context.request
-                if (req.transport === 'algod') {
-                    showToast(
-                        {
-                            type: 'error',
-                            title: t(
-                                'signing.transaction_view.transaction_failed_title',
-                            ),
-                            body: config.debugEnabled
-                                ? `${snapshot.context.error}`
-                                : t(
-                                      'signing.transaction_view.transaction_failed_body',
-                                  ),
-                        },
-                        {
-                            notifier: bottomSheetNotifier.current ?? undefined,
-                        },
-                    )
-                }
+    const handleEvent = useCallback(
+        (event: SigningPipelineEvent) => {
+            if (event.type !== 'signing_failed') return
+            const req = pipeline.currentRequest
+            if (req?.transport === 'algod') {
+                showToast(
+                    {
+                        type: 'error',
+                        title: t(
+                            'signing.transaction_view.transaction_failed_title',
+                        ),
+                        body: config.debugEnabled
+                            ? `${event.error}`
+                            : t(
+                                  'signing.transaction_view.transaction_failed_body',
+                              ),
+                    },
+                    {
+                        notifier: bottomSheetNotifier.current ?? undefined,
+                    },
+                )
             }
-        })
-        return () => subscription.unsubscribe()
-    }, [currentActorRef, showToast, t])
+        },
+        [showToast, t],
+    )
 
-    const { allTransactions, warnings } = useSigningRequestAnalysis(request)
+    const pipeline = useSigningPipeline({ onEvent: handleEvent })
+
+    const { allTransactions, warnings, isLoading } = pipeline
 
     const guardedWarningType = useMemo(() => {
         const presentTypes: GuardedWarningType[] = []
@@ -106,23 +90,18 @@ export const useSigningActionButtons = () => {
         return presentTypes[0]
     }, [warnings, getPreference])
 
-    const performSign = useCallback(() => {
-        if (!request) return
-        signAndSendRequest(request)
-    }, [request, signAndSendRequest])
-
     const handleSignAndSend = useCallback(() => {
         if (guardedWarningType !== null) {
             securityGuardModal.open()
             return
         }
-        performSign()
-    }, [guardedWarningType, performSign])
+        pipeline.next()
+    }, [guardedWarningType, pipeline])
 
     const handleSecurityGuardConfirm = useCallback(() => {
         securityGuardModal.close()
-        performSign()
-    }, [performSign])
+        pipeline.next()
+    }, [pipeline])
 
     const handleSecurityGuardGoToSettings = useCallback(() => {
         securityGuardModal.close()
@@ -134,11 +113,8 @@ export const useSigningActionButtons = () => {
     }, [])
 
     const handleReject = useCallback(() => {
-        if (!request) {
-            return
-        }
-        rejectRequest(request)
-    }, [request, rejectRequest])
+        pipeline.fail()
+    }, [pipeline])
 
     return {
         handleSignAndSend,

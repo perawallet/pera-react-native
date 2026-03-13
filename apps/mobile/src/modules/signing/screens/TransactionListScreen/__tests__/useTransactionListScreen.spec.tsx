@@ -25,10 +25,8 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    useSigningRequest: vi.fn(() => ({
-        pendingSignRequests: [{ id: 'req-1', type: 'transactions' }],
-    })),
-    useSigningRequestAnalysis: vi.fn(() => ({
+    useSigningPipeline: vi.fn(() => ({
+        currentRequest: { id: 'req-1', type: 'transactions' },
         listItems: [
             { type: 'transaction', transaction: { id: 'tx-1' } },
             {

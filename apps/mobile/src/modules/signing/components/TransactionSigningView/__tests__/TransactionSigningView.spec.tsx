@@ -15,13 +15,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { TransactionSigningView } from '../TransactionSigningView'
 import {
     type TransactionSignRequest,
-    useSigningRequest,
-    useSigningRequestAnalysis,
+    useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
 import Decimal from 'decimal.js'
 
-const mockSignAndSendRequest = vi.fn()
-const mockRejectRequest = vi.fn()
+const mockNext = vi.fn()
+const mockFail = vi.fn()
 
 vi.mock('@react-navigation/native', () => ({
     useNavigation: vi.fn(() => ({
@@ -53,20 +52,22 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    useSigningRequest: vi.fn(() => ({
-        pendingSignRequests: [],
+    useSigningPipeline: vi.fn(() => ({
         currentRequest: null,
-        signAndSendRequest: mockSignAndSendRequest,
-        rejectRequest: mockRejectRequest,
-    })),
-    useSigningRequestAnalysis: vi.fn(() => ({
-        groups: [],
+        stage: 'idle',
+        isLoading: false,
+        isRetryable: false,
+        error: null,
         allTransactions: [],
         listItems: [],
         signableAddresses: new Set(),
-        totalFee: 0n,
+        totalFee: new Decimal(0),
         warnings: [],
+        distinctWarnings: [],
         requestStructure: 'single',
+        next: mockNext,
+        fail: mockFail,
+        retry: vi.fn(),
     })),
 }))
 
@@ -199,25 +200,26 @@ describe('TransactionSigningView', () => {
 
     const setupMocks = (
         request: TransactionSignRequest,
-        analysisOverrides: Record<string, unknown> = {},
+        pipelineOverrides: Record<string, unknown> = {},
     ) => {
-        vi.mocked(useSigningRequest).mockReturnValue({
-            pendingSignRequests: [request],
+        vi.mocked(useSigningPipeline).mockReturnValue({
             currentRequest: request,
-            signAndSendRequest: mockSignAndSendRequest,
-            rejectRequest: mockRejectRequest,
-        } as unknown as ReturnType<typeof useSigningRequest>)
-        vi.mocked(useSigningRequestAnalysis).mockReturnValue({
-            groups: [],
+            stage: 'idle',
+            isLoading: false,
+            isRetryable: false,
+            error: null,
             allTransactions: [],
             listItems: [],
             signableAddresses: new Set(),
-            totalFee: Decimal(0),
+            totalFee: new Decimal(0),
             warnings: [],
             distinctWarnings: [],
             requestStructure: 'single',
-            ...analysisOverrides,
-        } as ReturnType<typeof useSigningRequestAnalysis>)
+            next: mockNext,
+            fail: mockFail,
+            retry: vi.fn(),
+            ...pipelineOverrides,
+        } as ReturnType<typeof useSigningPipeline>)
     }
 
     beforeEach(() => {
@@ -323,7 +325,7 @@ describe('TransactionSigningView', () => {
         )
         if (cancelButton) {
             fireEvent.click(cancelButton)
-            expect(mockRejectRequest).toHaveBeenCalledWith(mockSingleTxRequest)
+            expect(mockFail).toHaveBeenCalled()
         }
     })
 })
