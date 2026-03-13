@@ -16,6 +16,10 @@ export const useStyles = makeStyles(theme => ({
     container: {
         paddingVertical: theme.spacing.xxl,
     },
+    accountInfoContainer: {
+        paddingHorizontal: theme.spacing.xl,
+        marginBottom: theme.spacing.sm,
+    },
     divider: {
         marginVertical: theme.spacing.sm,
     },

@@ -154,6 +154,21 @@
         "notifications_muted": "Notifications muted",
         "notifications_unmuted": "Notifications unmuted"
     },
+    "account_info": {
+        "account_type": "Account type",
+        "min_balance": "Min Balance",
+        "see_wallet_structure": "See wallet structure",
+        "hide_wallet_structure": "Hide wallet structure",
+        "scan_new_addresses": "Scan new addresses",
+        "wallet_label": "Wallet #{{number}}",
+        "main_address": "Main Address",
+        "type_universal_wallet": "Universal Wallet",
+        "type_algo25": "Algo25 Account",
+        "type_watch": "Watch Account",
+        "type_ledger": "Ledger Account",
+        "type_multisig": "Multisig Account",
+        "type_unknown": "Unknown Account"
+    },
     "camera": {
         "no_camera_device_found": {
             "title": "No camera device found or missing permissions.",

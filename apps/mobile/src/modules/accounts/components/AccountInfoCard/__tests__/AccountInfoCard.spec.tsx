@@ -1,0 +1,247 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent } from '@test-utils/render'
+import { AccountInfoCard } from '../AccountInfoCard'
+import {
+    HDWalletAccount,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import { Decimal } from 'decimal.js'
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string, params?: Record<string, unknown>) => {
+            if (params?.number != null)
+                return key.replace('{{number}}', String(params.number))
+            return key
+        },
+    }),
+}))
+
+vi.mock('@routes/navigationRef', () => ({
+    navigationRef: {
+        navigate: vi.fn(),
+    },
+}))
+
+vi.mock('@hooks/useIsDarkMode', () => ({
+    useIsDarkMode: () => false,
+}))
+
+vi.mock('@components/core', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWView: ({ children, style }: any) => <div style={style}>{children}</div>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWText: ({ children, style }: any) => <span style={style}>{children}</span>,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWTouchableOpacity: ({ children, onPress, style }: any) => (
+        <button
+            onClick={onPress}
+            style={style}
+        >
+            {children}
+        </button>
+    ),
+    PWDivider: () => <hr />,
+    PWIcon: () => null,
+    PWRoundIcon: () => null,
+}))
+
+vi.mock('@components/CurrencyDisplay', () => ({
+    CurrencyDisplay: ({
+        value,
+        isLoading,
+    }: {
+        value: Decimal | null
+        isLoading: boolean
+    }) => (
+        <span data-testid='currency-display'>
+            {isLoading ? 'loading' : (value?.toString() ?? '---')}
+        </span>
+    ),
+}))
+
+vi.mock('@components/ExpandablePanel', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ExpandablePanel: ({ children, isExpanded }: any) =>
+        isExpanded ? (
+            <div data-testid='expandable-panel'>{children}</div>
+        ) : null,
+}))
+
+vi.mock('react-native-reanimated', () => ({
+    default: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        View: ({ children, style }: any) => <div style={style}>{children}</div>,
+    },
+    useAnimatedStyle: (fn: () => unknown) => fn(),
+    withTiming: (value: unknown) => value,
+}))
+
+vi.mock('@constants/ui', () => ({
+    EXPANDABLE_PANEL_ANIMATION_DURATION: 300,
+}))
+
+vi.mock('../AccountIcon', () => ({
+    AccountIcon: () => <span data-testid='account-icon' />,
+}))
+
+const mockUseAccountInformationQuery = vi.fn()
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useAccountInformationQuery: (...args: unknown[]) =>
+        mockUseAccountInformationQuery(...args),
+    microAlgosToAlgos: (v: bigint) => new Decimal(Number(v) / 1_000_000),
+}))
+
+const mockUseHDWalletGroups = vi.fn()
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
+    return {
+        ...actual,
+        useHDWalletGroups: () => mockUseHDWalletGroups(),
+    }
+})
+
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...actual,
+        truncateAlgorandAddress: (addr: string) =>
+            addr.length > 8 ? `${addr.slice(0, 4)}...${addr.slice(-4)}` : addr,
+    }
+})
+
+const hdAccount: HDWalletAccount = {
+    type: 'hdWallet',
+    address: 'CJR5ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890NZNS',
+    keyPairId: 'key-1',
+    hdWalletDetails: {
+        account: 0,
+        change: 0,
+        keyIndex: 0,
+        derivationType: 9,
+    },
+    name: 'Main Address',
+}
+
+const watchAccount: WalletAccount = {
+    type: 'watch',
+    address: 'WATCHADDR1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+}
+
+describe('AccountInfoCard', () => {
+    beforeEach(() => {
+        mockUseAccountInformationQuery.mockReturnValue({
+            data: { minBalance: BigInt(6_095_000) },
+            isLoading: false,
+        })
+        mockUseHDWalletGroups.mockReturnValue({
+            hdWalletGroups: [
+                {
+                    keyPairId: 'key-1',
+                    accounts: [hdAccount],
+                    firstAccount: hdAccount,
+                    accountCount: 1,
+                },
+            ],
+            hasMultipleHDWallets: false,
+        })
+    })
+
+    it('renders account type label for HD wallet account', () => {
+        render(
+            <AccountInfoCard
+                account={hdAccount}
+                onClose={vi.fn()}
+            />,
+        )
+        expect(
+            screen.getByText('account_info.type_universal_wallet'),
+        ).toBeTruthy()
+    })
+
+    it('renders account type label for watch account', () => {
+        render(
+            <AccountInfoCard
+                account={watchAccount}
+                onClose={vi.fn()}
+            />,
+        )
+        expect(screen.getByText('account_info.type_watch')).toBeTruthy()
+    })
+
+    it('renders min balance', () => {
+        render(
+            <AccountInfoCard
+                account={hdAccount}
+                onClose={vi.fn()}
+            />,
+        )
+        expect(screen.getByTestId('currency-display')).toBeTruthy()
+    })
+
+    it('shows wallet structure toggle for HD wallet accounts', () => {
+        render(
+            <AccountInfoCard
+                account={hdAccount}
+                onClose={vi.fn()}
+            />,
+        )
+        expect(
+            screen.getByText('account_info.see_wallet_structure'),
+        ).toBeTruthy()
+    })
+
+    it('does not show wallet structure toggle for non-HD accounts', () => {
+        render(
+            <AccountInfoCard
+                account={watchAccount}
+                onClose={vi.fn()}
+            />,
+        )
+        expect(
+            screen.queryByText('account_info.see_wallet_structure'),
+        ).toBeNull()
+    })
+
+    it('shows wallet structure tree when expanded', () => {
+        render(
+            <AccountInfoCard
+                account={hdAccount}
+                onClose={vi.fn()}
+            />,
+        )
+        fireEvent.click(screen.getByText('account_info.see_wallet_structure'))
+        expect(screen.getByTestId('expandable-panel')).toBeTruthy()
+        expect(screen.getByText('account_info.wallet_label')).toBeTruthy()
+    })
+
+    it('shows loading state for min balance', () => {
+        mockUseAccountInformationQuery.mockReturnValue({
+            data: undefined,
+            isLoading: true,
+        })
+        render(
+            <AccountInfoCard
+                account={hdAccount}
+                onClose={vi.fn()}
+            />,
+        )
+        expect(screen.getByText('loading')).toBeTruthy()
+    })
+})

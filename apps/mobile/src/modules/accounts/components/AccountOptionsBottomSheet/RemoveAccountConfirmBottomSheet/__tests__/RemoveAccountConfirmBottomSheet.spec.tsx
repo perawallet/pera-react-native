@@ -113,9 +113,7 @@ describe('RemoveAccountConfirmBottomSheet', () => {
                 />,
             )
 
-            fireEvent.click(
-                screen.getByText('account_options.remove_confirm'),
-            )
+            fireEvent.click(screen.getByText('account_options.remove_confirm'))
 
             expect(defaultProps.onConfirm).toHaveBeenCalled()
         })
@@ -129,9 +127,7 @@ describe('RemoveAccountConfirmBottomSheet', () => {
             />,
         )
 
-        expect(
-            screen.getByText('account_options.remove_message'),
-        ).toBeTruthy()
+        expect(screen.getByText('account_options.remove_message')).toBeTruthy()
         expect(
             screen.queryByText('account_options.remove_watch_message'),
         ).toBeNull()
@@ -140,8 +136,6 @@ describe('RemoveAccountConfirmBottomSheet', () => {
     it('renders standard message when isWatchAccount is not provided', () => {
         render(<RemoveAccountConfirmBottomSheet {...defaultProps} />)
 
-        expect(
-            screen.getByText('account_options.remove_message'),
-        ).toBeTruthy()
+        expect(screen.getByText('account_options.remove_message')).toBeTruthy()
     })
 })

@@ -151,9 +151,7 @@ describe('AccountAssetList', () => {
     })
 
     it('renders Add Asset button for non-watch accounts', () => {
-        const { container } = render(
-            <AccountAssetList account={mockAccount} />,
-        )
+        const { container } = render(<AccountAssetList account={mockAccount} />)
         const text = container.textContent || ''
         expect(text).toContain('account_details.assets.add_asset')
     })
