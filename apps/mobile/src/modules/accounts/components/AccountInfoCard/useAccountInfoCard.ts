@@ -15,6 +15,7 @@ import {
     WalletAccount,
     HDWalletAccount,
     isHDWalletAccount,
+    isWatchAccount,
     useHDWalletGroups,
     useAccountDiscovery,
 } from '@perawallet/wallet-core-accounts'
@@ -35,6 +36,7 @@ type UseAccountInfoCardResult = {
     minBalanceAlgos: Decimal | null
     isMinBalanceLoading: boolean
     isHDWallet: boolean
+    showMinBalance: boolean
     walletLabel: string
     walletAccounts: HDWalletAccount[]
     handleScanAddresses: () => void
@@ -56,6 +58,7 @@ export const useAccountInfoCard = ({
     const { discoverAccounts } = useAccountDiscovery()
 
     const isHDWallet = isHDWalletAccount(account)
+    const showMinBalance = !isWatchAccount(account)
 
     const handleToggleExpanded = useCallback(() => {
         setIsExpanded(prev => !prev)
@@ -133,6 +136,7 @@ export const useAccountInfoCard = ({
         minBalanceAlgos,
         isMinBalanceLoading,
         isHDWallet,
+        showMinBalance,
         walletLabel,
         walletAccounts,
         handleScanAddresses,

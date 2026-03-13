@@ -43,6 +43,7 @@ export const AccountInfoCard = ({ account }: AccountInfoCardProps) => {
         minBalanceAlgos,
         isMinBalanceLoading,
         isHDWallet,
+        showMinBalance,
         walletLabel,
         walletAccounts,
         handleScanAddresses,
@@ -88,33 +89,35 @@ export const AccountInfoCard = ({ account }: AccountInfoCardProps) => {
             </PWView>
 
             {/* Min balance row */}
-            <PWView style={styles.infoRow}>
-                <PWText
-                    variant='body'
-                    style={styles.labelText}
-                >
-                    {t('account_info.min_balance')}
-                </PWText>
-                <PWView style={styles.infoRowValue}>
-                    <CurrencyDisplay
-                        currency='ALGO'
-                        value={minBalanceAlgos}
-                        precision={ALGO_ASSET.decimals}
-                        minPrecision={2}
-                        showSymbol
-                        symbolPosition='start'
-                        isLoading={isMinBalanceLoading}
-                        variant='h4'
-                    />
-                    <PWTouchableOpacity>
-                        <PWIcon
-                            name='info'
-                            size='sm'
-                            variant='secondary'
+            {showMinBalance && (
+                <PWView style={styles.infoRow}>
+                    <PWText
+                        variant='body'
+                        style={styles.labelText}
+                    >
+                        {t('account_info.min_balance')}
+                    </PWText>
+                    <PWView style={styles.infoRowValue}>
+                        <CurrencyDisplay
+                            currency='ALGO'
+                            value={minBalanceAlgos}
+                            precision={ALGO_ASSET.decimals}
+                            minPrecision={2}
+                            showSymbol
+                            symbolPosition='start'
+                            isLoading={isMinBalanceLoading}
+                            variant='h4'
                         />
-                    </PWTouchableOpacity>
+                        <PWTouchableOpacity>
+                            <PWIcon
+                                name='info'
+                                size='sm'
+                                variant='secondary'
+                            />
+                        </PWTouchableOpacity>
+                    </PWView>
                 </PWView>
-            </PWView>
+            )}
 
             {/* Wallet structure (HD wallets only) */}
             {isHDWallet && (
