@@ -22,8 +22,9 @@ import { AppError } from '@perawallet/wallet-core-shared'
 import Decimal from 'decimal.js'
 import type { SigningMachineContext } from '../machine/context'
 import type { ResolvedSignerType } from '../machine/context'
-import type { SignableAnalysis, TransportResult } from '../pipeline/types'
 import type {
+    PipelineStage,
+    SigningPipelineEvent,
     SignRequest,
     TransactionSignRequest,
     TransactionWarning,
@@ -51,52 +52,6 @@ import { useSigningRequest } from './useSigningRequest'
 export type SigningConfiguration = {
     onEvent?: (event: SigningPipelineEvent) => void
 }
-
-/**
- * Flat representation of the signing machine's current state.
- * The 'signing' stage collapses all signing substates (localKey, ledger, multisig).
- */
-export type PipelineStage =
-    | 'idle' // no request or actor initializing
-    | 'validating' // analyzerActor running
-    | 'awaiting_user' // waiting for next() or fail()
-    | 'signing' // localKey | ledger | multisig actor running
-    | 'transporting' // transportActor delivering signed data
-    | 'completed' // terminal: signing and delivery succeeded
-    | 'rejected' // terminal: user cancelled
-    | 'failed' // terminal or retryable: error occurred
-
-/**
- * Events emitted by the pipeline when notable state transitions occur.
- * Fired once per transition via onEvent — not on every context update.
- */
-export type SigningPipelineEvent =
-    | {
-          type: 'analysis_ready'
-          /** The machine's analysis result (fees, warnings, risk level) */
-          analysis: SignableAnalysis
-          /** The signer type that will be used once approved */
-          signerType: ResolvedSignerType | null
-      }
-    | {
-          type: 'signing_started'
-          signerType: ResolvedSignerType
-      }
-    | { type: 'transport_started' }
-    | {
-          type: 'signing_completed'
-          transportResult: TransportResult
-      }
-    | { type: 'signing_rejected' }
-    | {
-          type: 'signing_failed'
-          error: Error
-          /** Which pipeline stage the failure occurred in */
-          failedDuringState: 'validating' | 'signing' | 'transporting' | null
-          isRetryable: boolean
-      }
-    /** Reserved for Ledger hardware wallet confirmation (Phase 8) */
-    | { type: 'ledger_confirmation_requested' }
 
 /**
  * The pipeline object returned by useSigningPipeline.
