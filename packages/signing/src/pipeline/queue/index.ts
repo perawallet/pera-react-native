@@ -10,5 +10,19 @@
  limitations under the License
  */
 
-// Queue implementation will be added in Phase 4
-// For now, the pipeline executes immediately
+import type { SignRequest } from '../../models'
+
+/**
+ * Returns the next request to process, or undefined if the queue
+ * is blocked (an actor is already running) or empty.
+ *
+ * Only one signing actor runs at a time to prevent UI collisions
+ * (overlapping bottom sheets, concurrent biometric prompts).
+ */
+export const getNextQueuedRequest = (
+    pendingRequests: SignRequest[],
+    runningActorCount: number,
+): SignRequest | undefined => {
+    if (runningActorCount > 0) return undefined
+    return pendingRequests.at(0)
+}

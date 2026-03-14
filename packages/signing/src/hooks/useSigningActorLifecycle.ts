@@ -24,6 +24,7 @@ import { useSigningStore } from '../store'
 import { createSigningMachine } from '../machine/createSigningMachine'
 import { signingMachine } from '../machine/signingMachine'
 import { createTransportSelector } from '../pipeline/transports/getTransport'
+import { getNextQueuedRequest } from '../pipeline/queue'
 import type { SigningMachineDeps } from '../machine/context'
 import type { SignRequest } from '../models'
 
@@ -46,10 +47,8 @@ const isNonRetryableFailure = (
 // =============================================================================
 
 type UseSigningActorLifecycleResult = {
-    /** Map of request ID → running actor ref */
+    /** Returns the running actor ref for a request ID, if any */
     getActorRef: (requestId: string) => AnyActorRef | undefined
-    /** Creates, subscribes to, and starts an actor for the given request */
-    startActor: (request: SignRequest) => void
     /** Stops and removes the actor for the given request */
     stopActor: (requestId: string) => void
 }
@@ -62,6 +61,10 @@ type UseSigningActorLifecycleResult = {
  * Manages XState actor lifecycle: creation, subscription, cleanup.
  * Actor refs are stored in a ref (not Zustand) since they are ephemeral
  * and non-serializable.
+ *
+ * A reactive effect watches `pendingSignRequests` and starts the next
+ * actor when the queue is empty. This handles rehydration, new requests,
+ * and queue advancement after completion — all from a single mechanism.
  */
 export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     const pendingSignRequests = useSigningStore(
@@ -101,7 +104,8 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
         [signTransactions, encodeSignedTransactions, algokit, network],
     )
 
-    const startActor = useCallback(
+    // Creates, subscribes to, and starts an actor for the given request.
+    const createActorForRequest = useCallback(
         (request: SignRequest) => {
             if (actorRefsMap.current.has(request.id)) return
 
@@ -132,6 +136,8 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 }
 
                 actorRefsMap.current.delete(actor.id)
+                // Removing from the store triggers pendingSignRequests to change,
+                // which fires the reactive effect below to start the next actor.
                 removeSignRequestFromStoreRef.current(snapshot.context.request)
             })
 
@@ -140,6 +146,10 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
         },
         [allAccounts, buildDeps],
     )
+
+    // Ref so the effect always has the latest createActorForRequest
+    const createActorRef = useRef(createActorForRequest)
+    createActorRef.current = createActorForRequest
 
     const stopActor = useCallback((requestId: string) => {
         const actor = actorRefsMap.current.get(requestId)
@@ -153,18 +163,18 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
         return actorRefsMap.current.get(requestId)
     }, [])
 
-    // On mount, create actors for any requests that were rehydrated from storage
-    const hasRehydrated = useRef(false)
+    // Reactive queue effect: starts the next actor whenever
+    // pendingSignRequests changes and no actor is currently running.
+    // Handles rehydration (mount), new requests, and queue advancement.
     useEffect(() => {
-        if (hasRehydrated.current) return
-        hasRehydrated.current = true
-
-        for (const request of pendingSignRequests) {
-            if (!actorRefsMap.current.has(request.id)) {
-                startActor(request)
-            }
+        const next = getNextQueuedRequest(
+            pendingSignRequests,
+            actorRefsMap.current.size,
+        )
+        if (next) {
+            createActorRef.current(next)
         }
-    }, [])
+    }, [pendingSignRequests])
 
-    return { getActorRef, startActor, stopActor }
+    return { getActorRef, stopActor }
 }

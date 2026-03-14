@@ -63,7 +63,7 @@ export const useSigningRequest = (): UseSigningRequestResult => {
         state => state.setLastCompletedRequest,
     )
 
-    const { getActorRef, startActor, stopActor } = useSigningActorLifecycle()
+    const { getActorRef, stopActor } = useSigningActorLifecycle()
 
     // -------------------------------------------------------------------------
     // Public API
@@ -108,12 +108,9 @@ export const useSigningRequest = (): UseSigningRequestResult => {
                 id: request.id ?? generateOrderedUniqueId(),
             }
 
-            const added = addSignRequestToStore(newRequest)
-            if (!added) return
-
-            startActor(newRequest)
+            addSignRequestToStore(newRequest)
         },
-        [addSignRequestToStore, startActor],
+        [addSignRequestToStore],
     )
 
     const removeSignRequest = useCallback(

@@ -260,11 +260,10 @@ describe('useSigningRequest', () => {
         })
 
         test('currentRequest is the first pending request', () => {
+            // Only the first actor is created — the queue gate prevents
+            // the second from starting until the first completes.
             const actor1 = makeMockActor('tx-1')
-            const actor2 = makeMockActor('tx-2')
-            vi.mocked(createSigningMachine)
-                .mockReturnValueOnce(actor1 as any)
-                .mockReturnValueOnce(actor2 as any)
+            vi.mocked(createSigningMachine).mockReturnValue(actor1 as any)
 
             const { result } = renderHook(() => useSigningRequest())
             const req1 = makeTxRequest({ id: 'tx-1' })
@@ -299,22 +298,12 @@ describe('useSigningRequest', () => {
 
         test('when no actor, calls reject callback and removes request for callback transport', () => {
             const mockReject = vi.fn()
-            // Do NOT create an actor — simulate missing actor scenario
-            vi.mocked(createSigningMachine).mockReturnValue(
-                makeMockActor('tx-1') as any,
-            )
 
             const { result } = renderHook(() => useSigningRequest())
 
-            // Directly put the request in the store without an actor
-            useSigningStore.getState().addSignRequest(
-                makeTxRequest({
-                    transport: 'callback',
-                    reject: mockReject,
-                }),
-            )
-
-            // Force re-render to pick up store change
+            // Call rejectRequest for a request that was never added to the
+            // store (so no actor was created by the reactive effect).
+            // This tests the defensive fallback path.
             act(() => {
                 result.current.rejectRequest(
                     makeTxRequest({
