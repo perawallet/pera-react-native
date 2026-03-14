@@ -251,10 +251,7 @@ const buildSignableGroups = (request: SignRequest): SignableGroup[] => {
 
 const extractDeps = (input: SigningMachineInput): SigningMachineDeps => ({
     signTransactions: input.signTransactions,
-    encodeSignedTransactions: input.encodeSignedTransactions,
-    algokit: input.algokit,
-    proposeSignRequest: input.proposeSignRequest,
-    addSignatures: input.addSignatures,
+    createTransport: input.createTransport,
     network: input.network,
 })
 

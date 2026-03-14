@@ -11,17 +11,15 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import type { Network } from '@perawallet/wallet-core-shared'
 import type {
+    DataTransport,
     SignableGroup,
     SignableAnalysis,
     SigningResult,
+    SourceMetadata,
     TransportResult,
 } from '../pipeline/types'
-import type { AlgokitClientInterface } from '../pipeline/transports/createAlgodTransport'
-import type { ProposeSignRequestFn } from '../pipeline/transports/createMultisigProposeTransport'
-import type { AddSignaturesFn } from '../pipeline/transports/createMultisigCosignTransport'
 import type { LocalSigningFunction } from '../pipeline/signing/createLocalKeyStrategy'
 import type { SignRequest } from '../models'
 
@@ -48,20 +46,27 @@ export type GroupSignerTypeMap = Map<string, ResolvedSignerType>
 // =============================================================================
 
 /**
+ * Selects and returns the appropriate {@link DataTransport} for a given
+ * source type and signer account (e.g. algod, WalletConnect, multisig).
+ *
+ * Created via {@link createTransportSelector} in the React hook layer
+ * where all runtime clients are available, then threaded through context
+ * so the transport actor can call it without knowing implementation details.
+ */
+export type TransportFactory = (
+    source: SourceMetadata,
+    account: WalletAccount,
+) => DataTransport
+
+/**
  * Runtime dependencies injected when creating a signingMachine actor.
  * These are functions and clients that cannot be known at machine definition time.
  */
 export type SigningMachineDeps = {
     /** KMS signing function from useTransactionSigner */
     signTransactions: LocalSigningFunction
-    /** Encodes signed transactions to raw bytes for algod submission */
-    encodeSignedTransactions: (txns: PeraSignedTransaction[]) => Uint8Array[]
-    /** AlgorandClient for direct algod submission */
-    algokit: AlgokitClientInterface
-    /** Backend API: propose new multisig sign request */
-    proposeSignRequest: ProposeSignRequestFn
-    /** Backend API: add signatures to existing multisig request */
-    addSignatures: AddSignaturesFn
+    /** Selects the correct transport (algod, callback, multisig, etc.) */
+    createTransport: TransportFactory
     /** Current network (mainnet / testnet) */
     network: Network
 }

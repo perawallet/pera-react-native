@@ -29,22 +29,29 @@ import {
 } from './createMultisigCosignTransport'
 
 /**
- * Options for creating the transport selector
+ * Options for creating the transport selector.
+ *
+ * `algokit` and `encodeSignedTransactions` are always required (algod submission).
+ * Multisig functions are optional — when omitted, selecting a multisig route
+ * throws at transport-selection time rather than requiring callers to provide stubs.
  */
 export interface CreateTransportSelectorOptions {
     /** AlgorandClient for direct submission */
     algokit: AlgokitClientInterface
     /** Function to encode signed transactions */
     encodeSignedTransactions: (txns: PeraSignedTransaction[]) => Uint8Array[]
-    /** Function to propose a multisig transaction */
-    proposeSignRequest: ProposeSignRequestFn
-    /** Function to add signatures to an existing request */
-    addSignatures: AddSignaturesFn
+    /** Function to propose a multisig transaction (required only for multisig flows) */
+    proposeSignRequest?: ProposeSignRequestFn
+    /** Function to add signatures to an existing request (required only for multisig flows) */
+    addSignatures?: AddSignaturesFn
 }
 
 /**
  * Creates a function that selects the appropriate transport based on
  * source type and account type.
+ *
+ * Algod and WalletConnect transports are created eagerly.
+ * Multisig transports are created lazily — only when a multisig route is matched.
  */
 export const createTransportSelector = (
     options: CreateTransportSelectorOptions,
@@ -54,12 +61,6 @@ export const createTransportSelector = (
         options.encodeSignedTransactions,
     )
     const walletConnectTransport = createWalletConnectTransport()
-    const multisigProposeTransport = createMultisigProposeTransport(
-        options.proposeSignRequest,
-    )
-    const multisigCosignTransport = createMultisigCosignTransport(
-        options.addSignatures,
-    )
 
     return (source: SourceMetadata, account: WalletAccount): DataTransport => {
         // External callback sources (WalletConnect, webview, deeplink) go back via callback
@@ -73,12 +74,22 @@ export const createTransportSelector = (
 
         // Multisig co-sign adds signatures to existing request
         if (source.type === 'multisig-cosign') {
-            return multisigCosignTransport
+            if (!options.addSignatures) {
+                throw new Error(
+                    'Multisig co-sign transport requires addSignatures',
+                )
+            }
+            return createMultisigCosignTransport(options.addSignatures)
         }
 
         // Multisig account with local source = propose new request
         if (isMultisigAccount(account) && source.type === 'local') {
-            return multisigProposeTransport
+            if (!options.proposeSignRequest) {
+                throw new Error(
+                    'Multisig propose transport requires proposeSignRequest',
+                )
+            }
+            return createMultisigProposeTransport(options.proposeSignRequest)
         }
 
         // Everything else goes directly to algod

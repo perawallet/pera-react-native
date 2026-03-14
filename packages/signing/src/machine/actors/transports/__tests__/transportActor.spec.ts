@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createActor, toPromise } from 'xstate'
 import { transportActor, type TransportActorInput } from '../transportActor'
+import { createTransportSelector } from '../../../../pipeline/transports/getTransport'
 import type { SigningResult, SourceMetadata } from '../../../../pipeline/types'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
@@ -47,18 +48,21 @@ const mockAlgokit = {
 const mockEncodeSignedTransactions = vi
     .fn()
     .mockReturnValue([new Uint8Array([1, 2, 3])])
-const mockProposeSignRequest = vi.fn()
 const mockAddSignatures = vi.fn()
 
-const makeInput = (source: SourceMetadata): TransportActorInput => ({
+const makeInput = (
+    source: SourceMetadata,
+    overrides?: Partial<TransportActorInput>,
+): TransportActorInput => ({
     signingResults: [mockSigningResult],
     source,
     signerAddress: MOCK_ADDRESS,
     allAccounts: [mockAlgo25Account],
-    algokit: mockAlgokit,
-    encodeSignedTransactions: mockEncodeSignedTransactions,
-    proposeSignRequest: mockProposeSignRequest,
-    addSignatures: mockAddSignatures,
+    createTransport: createTransportSelector({
+        algokit: mockAlgokit,
+        encodeSignedTransactions: mockEncodeSignedTransactions,
+    }),
+    ...overrides,
 })
 
 describe('transportActor', () => {
@@ -102,7 +106,14 @@ describe('transportActor', () => {
             type: 'multisig-cosign',
             signRequestId: 'sign-req-1',
         }
-        const actor = createActor(transportActor, { input: makeInput(source) })
+        const input = makeInput(source, {
+            createTransport: createTransportSelector({
+                algokit: mockAlgokit,
+                encodeSignedTransactions: mockEncodeSignedTransactions,
+                addSignatures: mockAddSignatures,
+            }),
+        })
+        const actor = createActor(transportActor, { input })
         actor.start()
         const result = await toPromise(actor)
 

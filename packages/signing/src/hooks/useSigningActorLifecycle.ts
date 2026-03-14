@@ -23,6 +23,7 @@ import { useTransactionSigner } from './useTransactionSigner'
 import { useSigningStore } from '../store'
 import { createSigningMachine } from '../machine/createSigningMachine'
 import { signingMachine } from '../machine/signingMachine'
+import { createTransportSelector } from '../pipeline/transports/getTransport'
 import type { SigningMachineDeps } from '../machine/context'
 import type { SignRequest } from '../models'
 
@@ -91,16 +92,11 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     const buildDeps = useCallback(
         (): SigningMachineDeps => ({
             signTransactions,
-            encodeSignedTransactions,
-            algokit,
+            createTransport: createTransportSelector({
+                algokit,
+                encodeSignedTransactions,
+            }),
             network,
-            // Multisig transports are stubbed until Phase 9
-            proposeSignRequest: async () => {
-                throw new Error('Multisig signing not yet supported')
-            },
-            addSignatures: async () => {
-                throw new Error('Multisig signing not yet supported')
-            },
         }),
         [signTransactions, encodeSignedTransactions, algokit, network],
     )

@@ -18,29 +18,20 @@ import type {
     SourceMetadata,
     TransportResult,
 } from '../../../pipeline/types'
-import { createTransportSelector } from '../../../pipeline/transports/getTransport'
-import type { AlgokitClientInterface } from '../../../pipeline/transports/createAlgodTransport'
-import type { ProposeSignRequestFn } from '../../../pipeline/transports/createMultisigProposeTransport'
-import type { AddSignaturesFn } from '../../../pipeline/transports/createMultisigCosignTransport'
+import type { TransportFactory } from '../../context'
 
 export type TransportActorInput = {
     signingResults: SigningResult[]
     source: SourceMetadata
     /**
      * Primary signer address (from first group).
-     * Looked up in allAccounts to determine multisig vs algod routing.
+     * Looked up in allAccounts to determine transport routing.
      */
     signerAddress: string
     /** All user accounts — used to resolve the signer WalletAccount */
     allAccounts: WalletAccount[]
-    /** AlgorandClient for direct algod submission */
-    algokit: AlgokitClientInterface
-    /** Encodes signed transactions to raw bytes */
-    encodeSignedTransactions: (txns: PeraSignedTransaction[]) => Uint8Array[]
-    /** Backend API: propose new multisig request */
-    proposeSignRequest: ProposeSignRequestFn
-    /** Backend API: add signatures to existing multisig request */
-    addSignatures: AddSignaturesFn
+    /** Selects the correct transport (algod, callback, multisig, etc.) */
+    createTransport: TransportFactory
 }
 
 /**
@@ -90,10 +81,7 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
             source,
             signerAddress,
             allAccounts,
-            algokit,
-            encodeSignedTransactions,
-            proposeSignRequest,
-            addSignatures,
+            createTransport,
         } = input
 
         const signerAccount = allAccounts.find(a => a.address === signerAddress)
@@ -103,17 +91,9 @@ export const transportActor = fromPromise<TransportResult, TransportActorInput>(
             )
         }
 
-        const selectTransport = createTransportSelector({
-            algokit,
-            encodeSignedTransactions,
-            proposeSignRequest,
-            addSignatures,
-        })
-
-        const transport = selectTransport(source, signerAccount)
+        const transport = createTransport(source, signerAccount)
         const merged = mergeSigningResults(signingResults)
 
-        // For multisig: the joint account address is the signer itself
         return transport.send(merged, source, signerAddress)
     },
 )

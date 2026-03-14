@@ -372,11 +372,7 @@ export const signingMachine = setup({
                         'signerAddress',
                     ),
                     allAccounts: context.allAccounts,
-                    algokit: context.deps.algokit,
-                    encodeSignedTransactions:
-                        context.deps.encodeSignedTransactions,
-                    proposeSignRequest: context.deps.proposeSignRequest,
-                    addSignatures: context.deps.addSignatures,
+                    createTransport: context.deps.createTransport,
                 }),
                 onDone: {
                     target: 'completed',
