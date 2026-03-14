@@ -15,7 +15,7 @@ import type {
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { BaseStoreState } from '@perawallet/wallet-core-shared'
-import type { SourceType } from '../pipeline/types'
+import type { Arc60Data, SourceType } from '../pipeline/types'
 
 export type SignRequestSource = {
     name?: string
@@ -61,6 +61,8 @@ export type ArbitraryDataSignRequest = {
 } & BaseSignRequest
 
 export type Arc60SignRequest = {
+    signer: string
+    structuredData: Arc60Data
     approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
     reject?: () => Promise<void>
     error?: (error: string) => Promise<void>
@@ -84,3 +86,9 @@ export type TransactionWarning = {
     senderAddress: string
     targetAddress: string
 }
+
+export {
+    isTransactionRequest,
+    isArbitraryDataRequest,
+    isArc60Request,
+} from './guards'

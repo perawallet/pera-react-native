@@ -19,6 +19,7 @@ import {
 import type {
     SignableGroup,
     SigningResult,
+    SourceCallbacks,
     SourceMetadata,
 } from '../pipeline/types'
 import { resolveRekeyChain } from '../pipeline/signing/getSigningStrategy'
@@ -30,25 +31,12 @@ import type {
     SigningMachineDeps,
     SigningMachineInput,
 } from './context'
-import type {
-    SignRequest,
-    TransactionSignRequest,
-    ArbitraryDataSignRequest,
+import type { SignRequest } from '../models'
+import {
+    isTransactionRequest,
+    isArbitraryDataRequest,
+    isArc60Request,
 } from '../models'
-
-// =============================================================================
-// Type guards
-// =============================================================================
-
-const isTransactionRequest = (
-    request: SignRequest,
-): request is TransactionSignRequest =>
-    request.type === 'transactions' && 'txs' in request
-
-const isArbitraryDataRequest = (
-    request: SignRequest,
-): request is ArbitraryDataSignRequest =>
-    request.type === 'arbitrary-data' && 'data' in request
 
 // =============================================================================
 // Signer address extraction
@@ -76,7 +64,14 @@ const extractSignerAddress = (request: SignRequest): string => {
         return firstData.signer
     }
 
-    throw new Error(`Cannot determine signer for request type: ${request.type}`)
+    if (isArc60Request(request)) {
+        return request.signer
+    }
+
+    const _exhaustive: never = request
+    throw new Error(
+        `Cannot determine signer for request type: ${(_exhaustive as SignRequest).type}`,
+    )
 }
 
 // =============================================================================
@@ -151,21 +146,37 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
     }
 
     // External sources (walletconnect, webview, deeplink) use callbacks
-    const txApprove = isTransactionRequest(request)
-        ? request.approve
-        : undefined
+    let approveCallback: SourceCallbacks['approve']
+
+    if (isTransactionRequest(request) && request.approve) {
+        const txApprove = request.approve
+        approveCallback = async (result: SigningResult) => {
+            if (result.signedData.type === 'transactions') {
+                await txApprove(result.signedData.signed)
+            }
+        }
+    } else if (
+        (isArbitraryDataRequest(request) || isArc60Request(request)) &&
+        request.approve
+    ) {
+        const dataApprove = request.approve
+        approveCallback = async (result: SigningResult) => {
+            if (result.signedData.type === 'arbitrary-data') {
+                await dataApprove(
+                    result.signedData.signatures.map((signature, i) => ({
+                        signature,
+                        signer: result.signers[i]?.address ?? '',
+                    })),
+                )
+            }
+        }
+    }
 
     return {
         type: sourceType,
         requestId: request.transportId ?? request.id,
         callbacks: {
-            approve: txApprove
-                ? async (result: SigningResult) => {
-                      if (result.signedData.type === 'transactions') {
-                          await txApprove(result.signedData.signed)
-                      }
-                  }
-                : undefined,
+            approve: approveCallback,
             reject: 'reject' in request ? request.reject : undefined,
             error: 'error' in request ? request.error : undefined,
         },
