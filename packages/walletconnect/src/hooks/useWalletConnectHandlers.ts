@@ -217,8 +217,8 @@ export const useWalletConnectHandlers = () => {
                         error: new Error('User rejected'),
                     })
                 },
-                error: async (error: string) => {
-                    onError(new WalletConnectSignRequestError(error))
+                error: async (error: Error) => {
+                    onError(new WalletConnectSignRequestError(error.message))
                 },
             } as ArbitraryDataSignRequest)
         },
@@ -276,8 +276,8 @@ export const useWalletConnectHandlers = () => {
                         error: new Error('User rejected'),
                     })
                 },
-                error: async (error: string) => {
-                    onError(new WalletConnectSignRequestError(error))
+                error: async (error: Error) => {
+                    onError(new WalletConnectSignRequestError(error.message))
                 },
             } as TransactionSignRequest)
         },

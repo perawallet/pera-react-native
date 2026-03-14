@@ -123,10 +123,10 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 } else if (snapshot.matches('failed')) {
                     const { request: req, error } = snapshot.context
                     if (req.transport === 'callback') {
-                        ;(req as { error?: (msg: string) => void }).error?.(
+                        ;(req as { error?: (err: Error) => void }).error?.(
                             error instanceof Error
-                                ? error.message
-                                : 'Signing failed',
+                                ? error
+                                : new Error('Signing failed'),
                         )
                     }
                 }

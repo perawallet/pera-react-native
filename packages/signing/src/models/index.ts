@@ -38,7 +38,7 @@ export type TransactionSignRequest = {
     txs: PeraTransaction[]
     approve?: (signedTxs: PeraSignedTransaction[]) => Promise<void>
     reject?: () => Promise<void>
-    error?: (error: string) => Promise<void>
+    error?: (error: Error) => Promise<void>
 } & BaseSignRequest
 
 export type PeraArbitraryDataMessage = {
@@ -57,7 +57,7 @@ export type ArbitraryDataSignRequest = {
     data: PeraArbitraryDataMessage[]
     approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
     reject?: () => Promise<void>
-    error?: (error: string) => Promise<void>
+    error?: (error: Error) => Promise<void>
 } & BaseSignRequest
 
 export type Arc60SignRequest = {
@@ -65,7 +65,7 @@ export type Arc60SignRequest = {
     structuredData: Arc60Data
     approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
     reject?: () => Promise<void>
-    error?: (error: string) => Promise<void>
+    error?: (error: Error) => Promise<void>
 } & BaseSignRequest
 
 export type SignRequest =

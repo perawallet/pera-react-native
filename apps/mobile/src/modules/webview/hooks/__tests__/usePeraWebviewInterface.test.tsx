@@ -531,7 +531,7 @@ describe('usePeraWebviewInterface', () => {
             ][0]
 
         await act(async () => {
-            await signRequest.error('User rejected')
+            await signRequest.error(new Error('User rejected'))
         })
 
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
@@ -613,7 +613,7 @@ describe('usePeraWebviewInterface', () => {
             ][0]
 
         await act(async () => {
-            await signRequest.error('Unauthorized')
+            await signRequest.error(new Error('Unauthorized'))
         })
 
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(

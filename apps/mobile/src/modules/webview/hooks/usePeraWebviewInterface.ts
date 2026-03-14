@@ -328,11 +328,11 @@ export const usePeraWebviewInterface = (
                                 webview,
                             )
                         },
-                        error: async (err: string) =>
+                        error: async (err: Error) =>
                             sendErrorToWebview(
                                 message.id,
                                 JsonRpcErrorCode.InternalError,
-                                err,
+                                err.message,
                                 webview,
                             ),
                     } as TransactionSignRequest)
@@ -405,11 +405,11 @@ export const usePeraWebviewInterface = (
                                 webview,
                             )
                         },
-                        error: async (err: string) =>
+                        error: async (err: Error) =>
                             sendErrorToWebview(
                                 message.id,
                                 JsonRpcErrorCode.InternalError,
-                                err,
+                                err.message,
                                 webview,
                             ),
                     } as ArbitraryDataSignRequest)

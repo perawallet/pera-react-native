@@ -54,7 +54,7 @@ export interface WalletConnectTransactionRequest {
     reject: () => Promise<void>
 
     /** Callback to report an error */
-    error?: (error: string) => Promise<void>
+    error?: (error: Error) => Promise<void>
 }
 
 /**
@@ -90,7 +90,7 @@ export interface WalletConnectDataRequest {
     reject: () => Promise<void>
 
     /** Callback to report an error */
-    error?: (error: string) => Promise<void>
+    error?: (error: Error) => Promise<void>
 }
 
 /**

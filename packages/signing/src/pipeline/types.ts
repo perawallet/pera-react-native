@@ -109,7 +109,7 @@ export interface SourceMetadata {
 export interface SourceCallbacks {
     approve?: (result: SigningResult) => Promise<void>
     reject?: () => Promise<void>
-    error?: (error: string) => Promise<void>
+    error?: (error: Error) => Promise<void>
 }
 
 /**

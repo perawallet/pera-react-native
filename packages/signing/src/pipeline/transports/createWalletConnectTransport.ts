@@ -54,7 +54,9 @@ export const createWalletConnectTransport = (): DataTransport => {
                 // Try to call error callback if available
                 if (source.callbacks?.error) {
                     await source.callbacks.error(
-                        error instanceof Error ? error.message : String(error),
+                        error instanceof Error
+                            ? error
+                            : new Error(String(error)),
                     )
                 }
 
