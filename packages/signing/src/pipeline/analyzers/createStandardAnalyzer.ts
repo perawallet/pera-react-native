@@ -21,7 +21,6 @@ import type {
 import { AnalysisError } from '../errors'
 import {
     type PeraTransaction,
-    type PeraTransactionType,
     encodeAlgorandAddress,
     classifyPeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
@@ -155,7 +154,6 @@ const summarizeTransaction = (tx: PeraTransaction): TransactionSummary => {
     const summary: TransactionSummary = {
         type,
         sender: senderAddress,
-        description: createDescription(tx, type),
     }
 
     // Add optional fields based on transaction type
@@ -180,41 +178,6 @@ const summarizeTransaction = (tx: PeraTransaction): TransactionSummary => {
     }
 
     return summary
-}
-
-/**
- * Create a human-readable description of the transaction
- */
-const createDescription = (
-    _tx: PeraTransaction,
-    type: PeraTransactionType,
-): string => {
-    switch (type) {
-        case 'payment':
-            return 'Send ALGO'
-        case 'asset-transfer':
-            return 'Send asset'
-        case 'asset-opt-in':
-            return 'Opt-in to asset'
-        case 'asset-opt-out':
-            return 'Opt-out of asset'
-        case 'asset-clawback':
-            return 'Clawback asset'
-        case 'asset-config':
-            return 'Configure asset'
-        case 'asset-freeze':
-            return 'Freeze/unfreeze asset'
-        case 'key-registration':
-            return 'Register participation key'
-        case 'app-call':
-            return 'Application call'
-        case 'state-proof':
-            return 'State proof'
-        case 'heartbeat':
-            return 'Heartbeat'
-        default:
-            return 'Unknown transaction'
-    }
 }
 
 /**

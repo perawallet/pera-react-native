@@ -157,8 +157,6 @@ export interface TransactionSummary {
     amount?: bigint
     assetId?: bigint
     note?: string
-    /** Human-readable description */
-    description: string
 }
 
 /**
