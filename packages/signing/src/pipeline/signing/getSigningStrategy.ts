@@ -14,6 +14,7 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     hasSigningKeys,
     isLedgerAccount,
+    isMultisigAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { SigningStrategy } from '../types'
 import { CannotSignError, RekeyTargetNotFoundError } from '../errors'
@@ -22,6 +23,7 @@ import {
     type LocalSigningFunction,
 } from './createLocalKeyStrategy'
 import { createHardwareStrategy } from './createHardwareStrategy'
+import { createMultisigStrategy } from './createMultisigStrategy'
 
 /**
  * Options for creating the signing strategy selector
@@ -29,11 +31,20 @@ import { createHardwareStrategy } from './createHardwareStrategy'
 export interface GetSigningStrategyOptions {
     /** The signing function from useTransactionSigner */
     signTransactions: LocalSigningFunction
+
+    /** Get local participants for a multisig account */
+    getLocalParticipants: (
+        account: WalletAccount,
+        allAccounts: WalletAccount[],
+    ) => WalletAccount[]
+
+    /** Get all user accounts */
+    getAllAccounts: () => WalletAccount[]
 }
 
 /**
  * Creates a function that selects the appropriate signing strategy for an account.
- * This handles rekey resolution and strategy selection.
+ * This handles multisig detection, rekey resolution, and strategy selection.
  */
 export const createSigningStrategySelector = (
     options: GetSigningStrategyOptions,
@@ -44,10 +55,24 @@ export const createSigningStrategySelector = (
     const localStrategy = createLocalKeyStrategy(options.signTransactions)
     const hardwareStrategy = createHardwareStrategy()
 
-    return (
+    // The multisig strategy delegates back to selectStrategy for each
+    // participant via a lazy callback, avoiding circular init issues.
+    const multisigStrategy = createMultisigStrategy({
+        getLocalParticipants: options.getLocalParticipants,
+        getStrategyForParticipant: (participant, allAccounts) =>
+            selectStrategy(participant, allAccounts),
+        getAllAccounts: options.getAllAccounts,
+    })
+
+    const selectStrategy = (
         account: WalletAccount,
         allAccounts: WalletAccount[],
     ): SigningStrategy => {
+        // Multisig accounts are handled by the multisig strategy
+        if (isMultisigAccount(account)) {
+            return multisigStrategy
+        }
+
         // Follow rekey chain to find actual signer
         const actualSigner = resolveRekeyChain(account, allAccounts)
 
@@ -65,6 +90,8 @@ export const createSigningStrategySelector = (
             `No signing capability found for account type: ${actualSigner.type}`,
         )
     }
+
+    return selectStrategy
 }
 
 /**

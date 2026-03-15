@@ -12,6 +12,7 @@
 
 export { createLocalKeyStrategy } from './createLocalKeyStrategy'
 export { createHardwareStrategy } from './createHardwareStrategy'
+export { createMultisigStrategy } from './createMultisigStrategy'
 export {
     createSigningStrategySelector,
     resolveRekeyChain,

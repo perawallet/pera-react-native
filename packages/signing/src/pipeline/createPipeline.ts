@@ -21,10 +21,8 @@ import type {
     PipelineCallbacks,
     AnalyzedSignableGroup,
     TransportResult,
-    SigningResult,
-    SignerInfo,
 } from './types'
-import { UserCancelledError, NoLocalParticipantsError } from './errors'
+import { UserCancelledError } from './errors'
 import { isMultisigAccount } from '@perawallet/wallet-core-accounts'
 
 /**
@@ -58,12 +56,6 @@ export interface CreatePipelineOptions<TSourceParams> {
     /** Get current network */
     getNetwork: () => Network
 
-    /** Get local participants for a multisig account */
-    getLocalParticipants: (
-        account: WalletAccount,
-        allAccounts: WalletAccount[],
-    ) => WalletAccount[]
-
     /** UI callbacks */
     callbacks?: PipelineCallbacks
 }
@@ -83,7 +75,6 @@ export const createPipeline = <TSourceParams>(
         getTransport,
         getAllAccounts,
         getNetwork,
-        getLocalParticipants,
         callbacks,
     } = options
 
@@ -143,46 +134,12 @@ export const createPipeline = <TSourceParams>(
                 }
 
                 // Stage 3: SIGN - Authorize the data
-                let signingResult: SigningResult
-
-                if (isMultisigAccount(account)) {
-                    // For multisig: sign with all local participants
-                    const localParticipants = getLocalParticipants(
-                        account,
-                        allAccounts,
-                    )
-
-                    if (localParticipants.length === 0) {
-                        throw new NoLocalParticipantsError(account.address)
-                    }
-
-                    // Sign with each local participant
-                    const participantResults = await Promise.all(
-                        localParticipants.map(async participant => {
-                            const strategy = getSigningStrategy(
-                                participant,
-                                allAccounts,
-                            )
-                            return strategy.sign(
-                                analyzedGroup,
-                                participant,
-                                callbacks,
-                            )
-                        }),
-                    )
-
-                    // Combine participant signatures
-                    signingResult =
-                        combineParticipantSignatures(participantResults)
-                } else {
-                    // For regular accounts: sign directly
-                    const strategy = getSigningStrategy(account, allAccounts)
-                    signingResult = await strategy.sign(
-                        analyzedGroup,
-                        account,
-                        callbacks,
-                    )
-                }
+                const strategy = getSigningStrategy(account, allAccounts)
+                const signingResult = await strategy.sign(
+                    analyzedGroup,
+                    account,
+                    callbacks,
+                )
 
                 // Stage 4: TRANSPORT - Deliver the signed data
                 const transport =
@@ -204,27 +161,5 @@ export const createPipeline = <TSourceParams>(
                 throw error
             }
         },
-    }
-}
-
-/**
- * Combines signatures from multiple participants into a single result
- */
-const combineParticipantSignatures = (
-    results: SigningResult[],
-): SigningResult => {
-    if (results.length === 0) {
-        throw new Error('No participant results to combine')
-    }
-
-    // Use the first result as the base
-    const firstResult = results[0]
-
-    // Combine signer info from all participants
-    const allSigners: SignerInfo[] = results.flatMap(r => r.signers)
-
-    return {
-        signedData: firstResult.signedData,
-        signers: allSigners,
     }
 }
