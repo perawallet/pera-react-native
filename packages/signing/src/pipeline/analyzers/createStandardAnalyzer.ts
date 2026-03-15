@@ -23,6 +23,7 @@ import {
     type PeraTransaction,
     type PeraTransactionType,
     encodeAlgorandAddress,
+    classifyPeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 
 /**
@@ -148,7 +149,7 @@ const calculateTotalFees = (
  * Create a human-readable summary of a transaction
  */
 const summarizeTransaction = (tx: PeraTransaction): TransactionSummary => {
-    const type = classifyTransaction(tx)
+    const type = classifyPeraTransaction(tx)
     const senderAddress = tx.sender.toString()
 
     const summary: TransactionSummary = {
@@ -179,54 +180,6 @@ const summarizeTransaction = (tx: PeraTransaction): TransactionSummary => {
     }
 
     return summary
-}
-
-/**
- * Classify the transaction type
- */
-const classifyTransaction = (tx: PeraTransaction): PeraTransactionType => {
-    const txType = tx.type
-
-    switch (txType) {
-        case 'pay':
-            return 'payment'
-        case 'axfer': {
-            // Check if it's an opt-in (sender === receiver, amount === 0)
-            const sender = tx.sender.toString()
-            const receiver = 'receiver' in tx ? tx.receiver?.toString() : null
-            const amount = 'amount' in tx ? tx.amount : 0n
-
-            if (sender === receiver && amount === 0n) {
-                return 'asset-opt-in'
-            }
-
-            // Check if it's a close/opt-out
-            if ('closeTo' in tx && tx.closeTo) {
-                return 'asset-opt-out'
-            }
-
-            // Check if it's a clawback
-            if ('clawbackFrom' in tx && tx.clawbackFrom) {
-                return 'asset-clawback'
-            }
-
-            return 'asset-transfer'
-        }
-        case 'acfg':
-            return 'asset-config'
-        case 'afrz':
-            return 'asset-freeze'
-        case 'keyreg':
-            return 'key-registration'
-        case 'appl':
-            return 'app-call'
-        case 'stpf':
-            return 'state-proof'
-        case 'hb':
-            return 'heartbeat'
-        default:
-            return 'unknown'
-    }
 }
 
 /**
