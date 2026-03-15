@@ -20,7 +20,7 @@ import {
     createLocalKeyStrategy,
     type LocalSigningFunction,
 } from '../../../pipeline/signing/createLocalKeyStrategy'
-import { resolveRekeyChain } from '../../../pipeline/signing/getSigningStrategy'
+import { resolveAuthAccount } from '@perawallet/wallet-core-accounts'
 import { CannotSignError } from '../../../pipeline/errors'
 
 export type LocalKeySignerActorInput = {
@@ -53,7 +53,7 @@ export const localKeySignerActor = fromPromise<
                     'Account not found in allAccounts',
                 )
             }
-            const authAccount = resolveRekeyChain(signerAccount, allAccounts)
+            const authAccount = resolveAuthAccount(signerAccount, allAccounts)
             return strategy.sign(group, authAccount)
         }),
     )

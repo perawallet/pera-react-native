@@ -15,9 +15,10 @@ import {
     hasSigningKeys,
     isLedgerAccount,
     isMultisigAccount,
+    resolveAuthAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { SigningStrategy } from '../types'
-import { CannotSignError, RekeyTargetNotFoundError } from '../errors'
+import { CannotSignError } from '../errors'
 import {
     createLocalKeyStrategy,
     type LocalSigningFunction,
@@ -74,7 +75,7 @@ export const createSigningStrategySelector = (
         }
 
         // Follow rekey chain to find actual signer
-        const actualSigner = resolveRekeyChain(account, allAccounts)
+        const actualSigner = resolveAuthAccount(account, allAccounts)
 
         // Select strategy based on actual signer type
         if (isLedgerAccount(actualSigner)) {
@@ -92,30 +93,6 @@ export const createSigningStrategySelector = (
     }
 
     return selectStrategy
-}
-
-/**
- * Resolve rekey chain to find the account that actually signs.
- * Only follows one level to prevent circular references.
- */
-export const resolveRekeyChain = (
-    account: WalletAccount,
-    allAccounts: WalletAccount[],
-): WalletAccount => {
-    if (!account.rekeyAddress) {
-        return account
-    }
-
-    const rekeyTarget = allAccounts.find(
-        a => a.address === account.rekeyAddress,
-    )
-
-    if (!rekeyTarget) {
-        throw new RekeyTargetNotFoundError(account.rekeyAddress)
-    }
-
-    // Only follow one level to prevent circular refs
-    return rekeyTarget
 }
 
 /**

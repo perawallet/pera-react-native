@@ -13,8 +13,5 @@
 export { createLocalKeyStrategy } from './createLocalKeyStrategy'
 export { createHardwareStrategy } from './createHardwareStrategy'
 export { createMultisigStrategy } from './createMultisigStrategy'
-export {
-    createSigningStrategySelector,
-    resolveRekeyChain,
-} from './getSigningStrategy'
+export { createSigningStrategySelector } from './getSigningStrategy'
 export { getLocalParticipants, canMeetThresholdLocally } from './utils'

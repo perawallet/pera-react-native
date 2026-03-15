@@ -15,6 +15,7 @@ import {
     hasSigningKeys,
     isLedgerAccount,
     isMultisigAccount,
+    resolveAuthAccount,
 } from '@perawallet/wallet-core-accounts'
 import type {
     SignableGroup,
@@ -22,7 +23,6 @@ import type {
     SourceCallbacks,
     SourceMetadata,
 } from '../pipeline/types'
-import { resolveRekeyChain } from '../pipeline/signing/getSigningStrategy'
 import { CannotSignError } from '../pipeline/errors'
 import type {
     GroupSignerTypeMap,
@@ -125,7 +125,7 @@ const buildGroupSignerTypeMap = (
         if (!signerAccount) {
             throw new Error(`Signer account not found: ${group.signerAddress}`)
         }
-        const authAccount = resolveRekeyChain(signerAccount, allAccounts)
+        const authAccount = resolveAuthAccount(signerAccount, allAccounts)
         map.set(
             group.signerAddress,
             determineSignerType(signerAccount, authAccount),
