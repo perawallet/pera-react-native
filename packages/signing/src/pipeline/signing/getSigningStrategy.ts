@@ -94,9 +94,3 @@ export const createSigningStrategySelector = (
 
     return selectStrategy
 }
-
-/**
- * Legacy export for backwards compatibility
- * @deprecated Use createSigningStrategySelector instead
- */
-export const getSigningStrategy = createSigningStrategySelector

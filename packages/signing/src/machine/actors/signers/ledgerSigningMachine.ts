@@ -44,7 +44,7 @@ const LEDGER_CONFIRMATION_TIMEOUT_MS = 30_000
  *                 ↘             ↘                        ↘ failed
  *                                                        ↘ timed_out
  *
- * TODO (Phase 8 full implementation): wire BLE transport into the stub actors.
+ * TODO: Wire BLE transport into the stub actors.
  * Suggested libraries: react-native-ble-plx + @ledgerhq/hw-app-algorand
  *
  * To add a new hardware wallet brand:

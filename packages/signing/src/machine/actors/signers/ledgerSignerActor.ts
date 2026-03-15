@@ -26,7 +26,7 @@ export type LedgerSignerActorInput = {
 /**
  * XState actor stub for Ledger hardware wallet signing.
  *
- * Full implementation (Phase 8) will:
+ * TODO: Implement Ledger BLE signing flow:
  *   1. Create an actor from `ledgerSigningMachine`
  *   2. Start the BLE connection + device confirmation flow
  *   3. Resolve with one SigningResult per group once the user confirms on device

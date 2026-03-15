@@ -20,6 +20,7 @@ import type {
     SigningMachineContext,
     SigningMachineEvent,
     SigningMachineInput,
+    ResolvedSignerType,
 } from './context'
 import type { AnalyzedSignableGroup } from '../pipeline/types'
 import { analyzerActor } from './actors/analyzerActor'
@@ -28,6 +29,18 @@ import { ledgerSignerActor } from './actors/signers/ledgerSignerActor'
 import { multisigSignerActor } from './actors/signers/multisigSignerActor'
 import { transportActor } from './actors/transports/transportActor'
 import { resolveInitialContext, makeFailedContext } from './actions'
+
+/**
+ * Returns the next signer type that hasn't been completed yet,
+ * or undefined if all types are done (or groupSignerTypes is null).
+ */
+const getNextPendingSignerType = (
+    context: SigningMachineContext,
+): ResolvedSignerType | undefined => {
+    if (!context.groupSignerTypes) return undefined
+    const uniqueTypes = [...new Set(context.groupSignerTypes.values())]
+    return uniqueTypes.find(t => !context.completedSignerTypes.includes(t))
+}
 
 /**
  * Core signing state machine.
@@ -57,35 +70,15 @@ export const signingMachine = setup({
     },
     guards: {
         hasError: ({ context }) => context.error !== null,
-        allGroupsSigned: ({ context }) => {
-            if (!context.groupSignerTypes) return false
-            const uniqueTypes = new Set(context.groupSignerTypes.values())
-            return uniqueTypes.size === context.completedSignerTypes.length
-        },
-        isNextSignerLocalKey: ({ context }) => {
-            if (!context.groupSignerTypes) return false
-            const uniqueTypes = [...new Set(context.groupSignerTypes.values())]
-            const pending = uniqueTypes.filter(
-                t => !context.completedSignerTypes.includes(t),
-            )
-            return pending[0] === 'localKey'
-        },
-        isNextSignerLedger: ({ context }) => {
-            if (!context.groupSignerTypes) return false
-            const uniqueTypes = [...new Set(context.groupSignerTypes.values())]
-            const pending = uniqueTypes.filter(
-                t => !context.completedSignerTypes.includes(t),
-            )
-            return pending[0] === 'ledger'
-        },
-        isNextSignerMultisig: ({ context }) => {
-            if (!context.groupSignerTypes) return false
-            const uniqueTypes = [...new Set(context.groupSignerTypes.values())]
-            const pending = uniqueTypes.filter(
-                t => !context.completedSignerTypes.includes(t),
-            )
-            return pending[0] === 'multisig'
-        },
+        allGroupsSigned: ({ context }) =>
+            getNextPendingSignerType(context) === undefined &&
+            context.groupSignerTypes !== null,
+        isNextSignerLocalKey: ({ context }) =>
+            getNextPendingSignerType(context) === 'localKey',
+        isNextSignerLedger: ({ context }) =>
+            getNextPendingSignerType(context) === 'ledger',
+        isNextSignerMultisig: ({ context }) =>
+            getNextPendingSignerType(context) === 'multisig',
         isRetryable: ({ context }) => isRetryableError(context.error),
         canRetryValidating: ({ context }) =>
             isRetryableError(context.error) &&

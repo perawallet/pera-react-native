@@ -131,7 +131,13 @@ export interface SignableGroup {
     /**
      * Original positions of these transactions in the full request array.
      * Set when a request is split into multiple groups (multi-signer requests).
-     * Used by transportActor to reassemble signed txs in correct order.
+     * Used by {@link mergeSigningResults} to reassemble signed transactions
+     * in the correct submission order.
+     *
+     * @example
+     * // A request with 5 txs from 2 senders:
+     * // Group A (sender A): originalIndices = [0, 2, 4]
+     * // Group B (sender B): originalIndices = [1, 3]
      */
     originalIndices?: number[]
 }
@@ -319,8 +325,9 @@ export interface SigningResult {
 
     /**
      * Original positions of these signed transactions in the full request array.
-     * Required when a request is split across multiple groups (multi-signer).
-     * Used by transportActor to reassemble signed txs in correct order.
+     * Carried over from the corresponding {@link SignableGroup.originalIndices}.
+     * Used by {@link mergeSigningResults} to reassemble signed transactions
+     * in the correct submission order.
      */
     originalIndices?: number[]
 }

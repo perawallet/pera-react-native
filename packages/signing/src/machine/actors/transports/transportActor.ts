@@ -12,13 +12,13 @@
 
 import { fromPromise } from 'xstate'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import type {
     SigningResult,
     SourceMetadata,
     TransportResult,
 } from '../../../pipeline/types'
 import type { TransportFactory } from '../../context'
+import { mergeSigningResults } from '../../../utils/mergeSigningResults'
 
 export type TransportActorInput = {
     signingResults: SigningResult[]
@@ -32,41 +32,6 @@ export type TransportActorInput = {
     allAccounts: WalletAccount[]
     /** Selects the correct transport (algod, callback, multisig, etc.) */
     createTransport: TransportFactory
-}
-
-/**
- * Merges multiple signing results (one per group) into a single SigningResult
- * so the downstream transport interface stays unchanged.
- *
- * For multi-signer requests, each group carries originalIndices indicating
- * where its signed transactions belong in the full request array. The signed
- * transactions are placed back at their original positions rather than
- * concatenated, preserving the correct submission order.
- */
-const mergeSigningResults = (results: SigningResult[]): SigningResult => {
-    if (results.length === 1) {
-        return results[0]
-    }
-
-    const allIndices = results.flatMap(r => r.originalIndices ?? [])
-    const totalCount = allIndices.length > 0 ? Math.max(...allIndices) + 1 : 0
-    const reordered = new Array<PeraSignedTransaction>(totalCount)
-
-    for (const result of results) {
-        if (result.signedData.type !== 'transactions') continue
-        const { signed } = result.signedData
-        const indices = result.originalIndices
-        if (indices) {
-            indices.forEach((origIdx, i) => {
-                reordered[origIdx] = signed[i]
-            })
-        }
-    }
-
-    return {
-        signedData: { type: 'transactions', signed: reordered },
-        signers: results.flatMap(r => r.signers),
-    }
 }
 
 /**

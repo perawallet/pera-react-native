@@ -16,9 +16,6 @@ export * from './types'
 // Errors
 export * from './errors'
 
-// Pipeline factory
-export { createPipeline } from './createPipeline'
-
 // Sources
 export * from './sources'
 

@@ -54,7 +54,7 @@ export const useSigningActionButtons = () => {
                             'signing.transaction_view.transaction_failed_title',
                         ),
                         body: config.debugEnabled
-                            ? `${event.error}`
+                            ? event.error.message
                             : t(
                                   'signing.transaction_view.transaction_failed_body',
                               ),
