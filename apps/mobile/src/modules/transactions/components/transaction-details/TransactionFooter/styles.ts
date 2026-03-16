@@ -15,10 +15,15 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => ({
     container: {
         flexDirection: 'row',
+        flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'flex-start',
         marginTop: theme.spacing.md,
         gap: theme.spacing.xs,
         width: '100%',
+    },
+    actionButton: {
+        flexGrow: 1,
+        flexBasis: '48%',
     },
 }))
