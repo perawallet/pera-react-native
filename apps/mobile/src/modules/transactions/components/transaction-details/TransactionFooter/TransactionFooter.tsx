@@ -37,6 +37,7 @@ export const TransactionFooter = ({
                     iconRight='arrow-up-right'
                     onPress={showAssetUrl}
                     paddingStyle='dense'
+                    style={styles.actionButton}
                 />
             )}
             {!!transaction.id && (
@@ -46,6 +47,7 @@ export const TransactionFooter = ({
                     iconRight='arrow-up-right'
                     onPress={showInExplorer}
                     paddingStyle='dense'
+                    style={styles.actionButton}
                 />
             )}
         </PWView>
