@@ -152,7 +152,13 @@
         "remove_confirm": "Remove",
         "remove_cancel": "Cancel",
         "notifications_muted": "Notifications muted",
-        "notifications_unmuted": "Notifications unmuted"
+        "notifications_unmuted": "Notifications unmuted",
+        "backup_warning_title": "Have you backed up your account?",
+        "backup_warning_message": "If you don't have a copy of this account's passphrase or the account is not backed up with a Ledger device or managed by an Auth Account, access to this account and its funds will be lost forever.",
+        "backup_warning_continue": "Yes, continue",
+        "backup_warning_cancel": "No, keep account",
+        "remove_rekey_error_title": "Cannot remove account",
+        "remove_rekey_error_message": "You can't remove this account before removing its {{count}} rekeyed account(s)"
     },
     "account_info": {
         "account_type": "Account type",
