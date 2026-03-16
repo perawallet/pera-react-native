@@ -22,6 +22,7 @@ import { WalletAccount, isWatchAccount } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
 import { AccountOption, useAccountOptions } from './useAccountOptions'
 import { RenameAccountBottomSheet } from './RenameAccountBottomSheet'
+import { BackupWarningBottomSheet } from './BackupWarningBottomSheet'
 import { RemoveAccountConfirmBottomSheet } from './RemoveAccountConfirmBottomSheet'
 import { AccountInfoCard } from '../AccountInfoCard'
 import { BottomSheetView } from '@gorhom/bottom-sheet'
@@ -84,6 +85,9 @@ export const AccountOptionsBottomSheet = ({
         isRenameVisible,
         handleCloseRename,
         handleRename,
+        isBackupWarningVisible,
+        handleCloseBackupWarning,
+        handleBackupWarningContinue,
         isRemoveConfirmVisible,
         handleCloseRemoveConfirm,
         handleConfirmRemove,
@@ -170,6 +174,12 @@ export const AccountOptionsBottomSheet = ({
                 onClose={handleCloseRename}
                 onRename={handleRename}
                 currentName={account.name ?? ''}
+            />
+
+            <BackupWarningBottomSheet
+                isVisible={isBackupWarningVisible}
+                onClose={handleCloseBackupWarning}
+                onContinue={handleBackupWarningContinue}
             />
 
             <RemoveAccountConfirmBottomSheet

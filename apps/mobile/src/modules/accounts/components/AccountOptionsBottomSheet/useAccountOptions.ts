@@ -16,6 +16,7 @@ import {
     isAlgo25Account,
     isHDWalletAccount,
     isRekeyedAccount,
+    isWatchAccount,
     canSignWithAccount,
     hasSigningKeys,
     useRemoveAccountById,
@@ -51,6 +52,9 @@ export type UseAccountOptionsResult = {
     isRenameVisible: boolean
     handleCloseRename: () => void
     handleRename: (newName: string) => void
+    isBackupWarningVisible: boolean
+    handleCloseBackupWarning: () => void
+    handleBackupWarningContinue: () => void
     isRemoveConfirmVisible: boolean
     handleCloseRemoveConfirm: () => void
     handleConfirmRemove: () => void
@@ -74,6 +78,12 @@ export const useAccountOptions = ({
         isOpen: isRenameVisible,
         open: openRename,
         close: handleCloseRename,
+    } = useModalState()
+
+    const {
+        isOpen: isBackupWarningVisible,
+        open: openBackupWarning,
+        close: handleCloseBackupWarning,
     } = useModalState()
 
     const {
@@ -149,10 +159,19 @@ export const useAccountOptions = ({
         onClose,
     ])
 
+    const handleBackupWarningContinue = useCallback(() => {
+        handleCloseBackupWarning()
+        openRemoveConfirm()
+    }, [handleCloseBackupWarning, openRemoveConfirm])
+
     const handleOpenRemoveConfirm = useCallback(() => {
         onClose()
-        openRemoveConfirm()
-    }, [onClose, openRemoveConfirm])
+        if (isWatchAccount(account)) {
+            openRemoveConfirm()
+        } else {
+            openBackupWarning()
+        }
+    }, [onClose, account, openRemoveConfirm, openBackupWarning])
 
     const handleRename = useCallback(
         (newName: string) => {
@@ -168,6 +187,22 @@ export const useAccountOptions = ({
     )
 
     const handleConfirmRemove = useCallback(() => {
+        const rekeyedToThisAccount = accounts.filter(
+            a => a.rekeyAddress === account.address && a.id !== account.id,
+        )
+
+        if (rekeyedToThisAccount.length > 0) {
+            handleCloseRemoveConfirm()
+            showToast({
+                title: t('account_options.remove_rekey_error_title'),
+                body: t('account_options.remove_rekey_error_message', {
+                    count: rekeyedToThisAccount.length,
+                }),
+                type: 'error',
+            })
+            return
+        }
+
         const hasOtherAccounts = accounts.length > 1
         if (account.id) {
             removeAccountById(account.id)
@@ -177,11 +212,14 @@ export const useAccountOptions = ({
             navigation.navigate('TabBar', { screen: 'Home' })
         }
     }, [
-        accounts.length,
+        accounts,
+        account.address,
         account.id,
         removeAccountById,
         handleCloseRemoveConfirm,
         navigation,
+        showToast,
+        t,
     ])
 
     const notificationsEnabled = isAccountEnabled(account.address)
@@ -293,6 +331,9 @@ export const useAccountOptions = ({
         isRenameVisible,
         handleCloseRename,
         handleRename,
+        isBackupWarningVisible,
+        handleCloseBackupWarning,
+        handleBackupWarningContinue,
         isRemoveConfirmVisible,
         handleCloseRemoveConfirm,
         handleConfirmRemove,

@@ -376,7 +376,7 @@ describe('useAccountOptions', () => {
             expect(result.current.isRenameVisible).toBe(false)
         })
 
-        it('closes options sheet and opens remove confirm when remove is pressed', () => {
+        it('opens backup warning when remove is pressed for non-watch account', () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: algo25Account,
@@ -385,6 +385,7 @@ describe('useAccountOptions', () => {
                 }),
             )
 
+            expect(result.current.isBackupWarningVisible).toBe(false)
             expect(result.current.isRemoveConfirmVisible).toBe(false)
 
             const removeOption = result.current.options.find(
@@ -396,6 +397,56 @@ describe('useAccountOptions', () => {
             })
 
             expect(mockOnClose).toHaveBeenCalled()
+            expect(result.current.isBackupWarningVisible).toBe(true)
+            expect(result.current.isRemoveConfirmVisible).toBe(false)
+        })
+
+        it('skips backup warning and opens remove confirm directly for watch account', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: watchAccount,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const removeOption = result.current.options.find(
+                o => o.id === 'remove-account',
+            )
+
+            act(() => {
+                removeOption?.onPress()
+            })
+
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(result.current.isBackupWarningVisible).toBe(false)
+            expect(result.current.isRemoveConfirmVisible).toBe(true)
+        })
+
+        it('opens remove confirm when backup warning continue is called', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            const removeOption = result.current.options.find(
+                o => o.id === 'remove-account',
+            )
+
+            act(() => {
+                removeOption?.onPress()
+            })
+
+            expect(result.current.isBackupWarningVisible).toBe(true)
+
+            act(() => {
+                result.current.handleBackupWarningContinue()
+            })
+
+            expect(result.current.isBackupWarningVisible).toBe(false)
             expect(result.current.isRemoveConfirmVisible).toBe(true)
         })
 
@@ -616,6 +667,54 @@ describe('useAccountOptions', () => {
 
             expect(mockRemoveAccountById).toHaveBeenCalledWith('acc-1')
             expect(mockNavigate).not.toHaveBeenCalled()
+        })
+
+        it('shows error toast and prevents removal when account has rekeyed dependents', () => {
+            const rekeyedToAlgo25: WalletAccount = {
+                id: 'acc-rekeyed',
+                address: 'SOMEOTHERADDRESS',
+                type: AccountTypes.algo25,
+                keyPairId: 'key-rekeyed',
+                rekeyAddress: 'ALGO25ADDRESS',
+            }
+            mockAllAccounts.mockReturnValue([algo25Account, rekeyedToAlgo25])
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            act(() => {
+                result.current.handleConfirmRemove()
+            })
+
+            expect(mockRemoveAccountById).not.toHaveBeenCalled()
+            expect(mockShowToast).toHaveBeenCalledWith({
+                title: 'account_options.remove_rekey_error_title',
+                body: 'account_options.remove_rekey_error_message',
+                type: 'error',
+            })
+        })
+
+        it('allows removal when no other accounts are rekeyed to it', () => {
+            mockAllAccounts.mockReturnValue([algo25Account, rekeyedAccount])
+
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            act(() => {
+                result.current.handleConfirmRemove()
+            })
+
+            expect(mockRemoveAccountById).toHaveBeenCalledWith('acc-1')
         })
     })
 })
