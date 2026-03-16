@@ -84,7 +84,9 @@ export const AssetConfigDisplay = ({
                             <KeyValueRow
                                 title={t('transactions.asset_config.name')}
                             >
-                                <PWText>{assetConfig.params.name}</PWText>
+                                <PWText numberOfLines={1}>
+                                    {assetConfig.params.name}
+                                </PWText>
                             </KeyValueRow>
                         )}
 
@@ -92,7 +94,9 @@ export const AssetConfigDisplay = ({
                             <KeyValueRow
                                 title={t('transactions.asset_config.unit')}
                             >
-                                <PWText>{assetConfig.params.unitName}</PWText>
+                                <PWText numberOfLines={1}>
+                                    {assetConfig.params.unitName}
+                                </PWText>
                             </KeyValueRow>
                         )}
 
@@ -100,7 +104,9 @@ export const AssetConfigDisplay = ({
                             <KeyValueRow
                                 title={t('transactions.asset_config.url')}
                             >
-                                <PWText>{assetConfig.params.url}</PWText>
+                                <PWText numberOfLines={1}>
+                                    {assetConfig.params.url}
+                                </PWText>
                             </KeyValueRow>
                         )}
 

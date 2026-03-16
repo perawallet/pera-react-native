@@ -92,12 +92,18 @@ export const AccountAssetItemView = ({
             <PWView style={styles.dataContainer}>
                 <PWView style={styles.unitContainer}>
                     <PWView style={styles.row}>
-                        <PWText style={styles.primaryUnit}>
+                        <PWText
+                            style={styles.primaryUnit}
+                            numberOfLines={1}
+                        >
                             {isAlgo ? 'Algo' : asset.name}
                         </PWText>
                         {verificationIcon}
                     </PWView>
-                    <PWText style={styles.secondaryUnit}>
+                    <PWText
+                        style={styles.secondaryUnit}
+                        numberOfLines={1}
+                    >
                         {asset.unitName}
                         {asset.assetId !== ALGO_ASSET_ID &&
                             ` - ${asset.assetId}`}

@@ -59,7 +59,15 @@ export const AssetTransferRequestItem = ({
             </PWView>
             <PWView style={styles.contentContainer}>
                 <PWView style={styles.topRow}>
-                    <PWText variant='h4'>{asset.name}</PWText>
+                    <PWView style={styles.nameRow}>
+                        <PWText
+                            variant='h4'
+                            style={styles.nameText}
+                            numberOfLines={1}
+                        >
+                            {asset.name}
+                        </PWText>
+                    </PWView>
                     <CurrencyDisplay
                         value={Decimal(amount)}
                         currency={asset?.unitName ?? ''}
