@@ -27,12 +27,15 @@ export const useStyles = makeStyles(theme => {
         },
         unitContainer: {
             gap: theme.spacing.xs / 2,
+            flexShrink: 1,
         },
         amountContainer: {
             gap: theme.spacing.xs / 2,
             alignItems: 'flex-end',
         },
-        primaryUnit: {},
+        primaryUnit: {
+            flexShrink: 1,
+        },
         secondaryUnit: {
             color: theme.colors.textGrayLighter,
             lineHeight: theme.spacing.md,
@@ -50,6 +53,7 @@ export const useStyles = makeStyles(theme => {
             flexDirection: 'row',
             gap: theme.spacing.xs,
             alignItems: 'center',
+            flexShrink: 1,
         },
     }
 })

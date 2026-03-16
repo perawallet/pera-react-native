@@ -46,6 +46,7 @@ export const AssetTitle = ({
                     <PWText
                         variant={nameVariant}
                         style={styles.name}
+                        numberOfLines={1}
                     >
                         {isAlgo ? 'Algo' : asset.name}
                     </PWText>
