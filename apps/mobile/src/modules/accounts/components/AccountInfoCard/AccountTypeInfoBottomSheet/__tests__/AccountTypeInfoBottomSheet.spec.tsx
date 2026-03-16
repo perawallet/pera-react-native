@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
 import { render, screen, fireEvent } from '@test-utils/render'
-import { AccountTypeInfoBottomSheet } from '../AccountTypeInfoBottomSheet'
+import { AccountTypeInfoContent } from '../AccountTypeInfoBottomSheet'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -70,9 +70,8 @@ const watchAccount: WalletAccount = {
     address: 'WATCHADDR1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ',
 }
 
-describe('AccountTypeInfoBottomSheet', () => {
+describe('AccountTypeInfoContent', () => {
     const defaultProps = {
-        isVisible: true,
         onClose: vi.fn(),
         account: algo25Account,
     }
@@ -82,19 +81,8 @@ describe('AccountTypeInfoBottomSheet', () => {
         mockUseAllAccounts.mockReturnValue([algo25Account, watchAccount])
     })
 
-    it('does not render content when isVisible is false', () => {
-        render(
-            <AccountTypeInfoBottomSheet
-                {...defaultProps}
-                isVisible={false}
-            />,
-        )
-
-        expect(screen.queryByTestId('PWBottomSheet')).toBeNull()
-    })
-
     it('renders title and description for standard account', () => {
-        render(<AccountTypeInfoBottomSheet {...defaultProps} />)
+        render(<AccountTypeInfoContent {...defaultProps} />)
 
         expect(
             screen.getByText('account_type_info.standard_title'),
@@ -106,7 +94,7 @@ describe('AccountTypeInfoBottomSheet', () => {
 
     it('renders title and description for watch account', () => {
         render(
-            <AccountTypeInfoBottomSheet
+            <AccountTypeInfoContent
                 {...defaultProps}
                 account={watchAccount}
             />,
@@ -119,13 +107,13 @@ describe('AccountTypeInfoBottomSheet', () => {
     })
 
     it('renders learn more button', () => {
-        render(<AccountTypeInfoBottomSheet {...defaultProps} />)
+        render(<AccountTypeInfoContent {...defaultProps} />)
 
         expect(screen.getByText('account_type_info.learn_more')).toBeTruthy()
     })
 
     it('calls pushWebView when learn more is pressed', () => {
-        render(<AccountTypeInfoBottomSheet {...defaultProps} />)
+        render(<AccountTypeInfoContent {...defaultProps} />)
 
         fireEvent.click(screen.getByText('account_type_info.learn_more'))
 
@@ -135,7 +123,7 @@ describe('AccountTypeInfoBottomSheet', () => {
     })
 
     it('renders rekey actions for signable accounts', () => {
-        render(<AccountTypeInfoBottomSheet {...defaultProps} />)
+        render(<AccountTypeInfoContent {...defaultProps} />)
 
         expect(
             screen.getByTestId('account-type-action-rekey-to-ledger'),
@@ -147,7 +135,7 @@ describe('AccountTypeInfoBottomSheet', () => {
 
     it('does not render rekey actions for watch accounts', () => {
         render(
-            <AccountTypeInfoBottomSheet
+            <AccountTypeInfoContent
                 {...defaultProps}
                 account={watchAccount}
             />,
@@ -162,7 +150,7 @@ describe('AccountTypeInfoBottomSheet', () => {
     })
 
     it('shows not implemented toast when rekey action is pressed', () => {
-        render(<AccountTypeInfoBottomSheet {...defaultProps} />)
+        render(<AccountTypeInfoContent {...defaultProps} />)
 
         fireEvent.click(
             screen.getByTestId('account-type-action-rekey-to-ledger'),

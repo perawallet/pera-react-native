@@ -21,7 +21,6 @@ import {
 import { useAccountInformationQuery } from '@perawallet/wallet-core-blockchain'
 import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
-import { useModalState } from '@hooks/useModalState'
 import { navigationRef } from '@routes/navigationRef'
 import { Decimal } from 'decimal.js'
 
@@ -41,12 +40,6 @@ type UseAccountInfoCardResult = {
     walletLabel: string
     walletAccounts: HDWalletAccount[]
     handleScanAddresses: () => void
-    isAccountTypeInfoVisible: boolean
-    handleOpenAccountTypeInfo: () => void
-    handleCloseAccountTypeInfo: () => void
-    isMinBalanceInfoVisible: boolean
-    handleOpenMinBalanceInfo: () => void
-    handleCloseMinBalanceInfo: () => void
 }
 
 export const useAccountInfoCard = ({
@@ -55,18 +48,6 @@ export const useAccountInfoCard = ({
 }: UseAccountInfoCardParams): UseAccountInfoCardResult => {
     const { t } = useLanguage()
     const [isExpanded, setIsExpanded] = useState(false)
-
-    const {
-        isOpen: isAccountTypeInfoVisible,
-        open: handleOpenAccountTypeInfo,
-        close: handleCloseAccountTypeInfo,
-    } = useModalState()
-
-    const {
-        isOpen: isMinBalanceInfoVisible,
-        open: handleOpenMinBalanceInfo,
-        close: handleCloseMinBalanceInfo,
-    } = useModalState()
 
     const { data: accountInfo, isLoading: isMinBalanceLoading } =
         useAccountInformationQuery(account.address)
@@ -144,11 +125,5 @@ export const useAccountInfoCard = ({
         walletLabel,
         walletAccounts,
         handleScanAddresses,
-        isAccountTypeInfoVisible,
-        handleOpenAccountTypeInfo,
-        handleCloseAccountTypeInfo,
-        isMinBalanceInfoVisible,
-        handleOpenMinBalanceInfo,
-        handleCloseMinBalanceInfo,
     }
 }

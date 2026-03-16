@@ -13,31 +13,18 @@
 import { useCallback, useMemo } from 'react'
 import {
     WalletAccount,
-    isAlgo25Account,
-    isHDWalletAccount,
-    isLedgerAccount,
-    isWatchAccount,
-    isMultisigAccount,
     isRekeyedAccount,
     canSignWithAccount,
     hasSigningKeys,
     useAllAccounts,
+    resolveAccountStatus,
+    type AccountStatus,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { IconName } from '@components/core'
-
-type AccountStatus =
-    | 'standard'
-    | 'ledger'
-    | 'watch'
-    | 'noAuth'
-    | 'rekeyedStandard'
-    | 'rekeyedLedger'
-    | 'hdWallet'
-    | 'multisig'
 
 export type AccountTypeAction = {
     id: string
@@ -56,26 +43,6 @@ type UseAccountTypeInfoResult = {
     description: string
     actions: AccountTypeAction[]
     handleLearnMore: () => void
-}
-
-const resolveAccountStatus = (
-    account: WalletAccount,
-    accounts: WalletAccount[],
-): AccountStatus => {
-    if (isRekeyedAccount(account)) {
-        const authAccount = accounts.find(
-            a => a.address === account.rekeyAddress,
-        )
-        if (!authAccount) return 'noAuth'
-        if (isLedgerAccount(authAccount)) return 'rekeyedLedger'
-        return 'rekeyedStandard'
-    }
-    if (isHDWalletAccount(account)) return 'hdWallet'
-    if (isMultisigAccount(account)) return 'multisig'
-    if (isWatchAccount(account)) return 'watch'
-    if (isLedgerAccount(account)) return 'ledger'
-    if (isAlgo25Account(account)) return 'standard'
-    return 'standard'
 }
 
 const STATUS_I18N_MAP: Record<

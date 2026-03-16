@@ -99,28 +99,21 @@ vi.mock('../AccountIcon', () => ({
     AccountIcon: () => <span data-testid='account-icon' />,
 }))
 
+vi.mock('@components/InfoButton', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    InfoButton: ({ children, title }: any) => (
+        <div data-testid='info-button'>
+            {title && <span>{title}</span>}
+            {children}
+        </div>
+    ),
+}))
+
 vi.mock('../AccountTypeInfoBottomSheet', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    AccountTypeInfoBottomSheet: ({ isVisible }: any) =>
-        isVisible ? <div data-testid='account-type-info-bottom-sheet' /> : null,
-}))
-
-vi.mock('../MinBalanceInfoBottomSheet', () => ({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    MinBalanceInfoBottomSheet: ({ isVisible }: any) =>
-        isVisible ? <div data-testid='min-balance-info-bottom-sheet' /> : null,
-}))
-
-vi.mock('@hooks/useModalState', () => ({
-    useModalState: () => {
-        const [isOpen, setIsOpen] = React.useState(false)
-        return {
-            isOpen,
-            open: () => setIsOpen(true),
-            close: () => setIsOpen(false),
-            toggle: () => setIsOpen(prev => !prev),
-        }
-    },
+    AccountTypeInfoContent: ({ account }: any) => (
+        <div data-testid='account-type-info-content'>{account.type}</div>
+    ),
 }))
 
 const mockUseAccountInformationQuery = vi.fn()
@@ -271,7 +264,7 @@ describe('AccountInfoCard', () => {
         expect(screen.getByText('loading')).toBeTruthy()
     })
 
-    it('opens account type info bottom sheet when info icon is pressed', () => {
+    it('renders account type info content via InfoButton', () => {
         render(
             <AccountInfoCard
                 account={hdAccount}
@@ -279,18 +272,10 @@ describe('AccountInfoCard', () => {
             />,
         )
 
-        expect(
-            screen.queryByTestId('account-type-info-bottom-sheet'),
-        ).toBeNull()
-
-        fireEvent.click(screen.getByTestId('account-type-info-button'))
-
-        expect(
-            screen.getByTestId('account-type-info-bottom-sheet'),
-        ).toBeTruthy()
+        expect(screen.getByTestId('account-type-info-content')).toBeTruthy()
     })
 
-    it('opens min balance info bottom sheet when info icon is pressed', () => {
+    it('renders min balance info via InfoButton with title', () => {
         render(
             <AccountInfoCard
                 account={hdAccount}
@@ -298,14 +283,11 @@ describe('AccountInfoCard', () => {
             />,
         )
 
-        expect(screen.queryByTestId('min-balance-info-bottom-sheet')).toBeNull()
-
-        fireEvent.click(screen.getByTestId('min-balance-info-button'))
-
-        expect(screen.getByTestId('min-balance-info-bottom-sheet')).toBeTruthy()
+        expect(screen.getByText('min_balance_info.title')).toBeTruthy()
+        expect(screen.getByText('min_balance_info.description')).toBeTruthy()
     })
 
-    it('does not show min balance info button for watch accounts', () => {
+    it('does not show min balance InfoButton for watch accounts', () => {
         render(
             <AccountInfoCard
                 account={watchAccount}
@@ -313,6 +295,6 @@ describe('AccountInfoCard', () => {
             />,
         )
 
-        expect(screen.queryByTestId('min-balance-info-button')).toBeNull()
+        expect(screen.queryByText('min_balance_info.description')).toBeNull()
     })
 })

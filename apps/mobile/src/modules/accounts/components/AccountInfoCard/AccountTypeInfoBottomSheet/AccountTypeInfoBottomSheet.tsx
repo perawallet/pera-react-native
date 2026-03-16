@@ -11,7 +11,6 @@
  */
 
 import {
-    PWBottomSheet,
     PWButton,
     PWDivider,
     PWIcon,
@@ -25,17 +24,15 @@ import { useStyles } from './styles'
 import { useAccountTypeInfo } from './useAccountTypeInfo'
 import { AccountIcon } from '../../AccountIcon'
 
-export type AccountTypeInfoBottomSheetProps = {
-    isVisible: boolean
-    onClose: () => void
+export type AccountTypeInfoContentProps = {
     account: WalletAccount
+    onClose: () => void
 }
 
-export const AccountTypeInfoBottomSheet = ({
-    isVisible,
-    onClose,
+export const AccountTypeInfoContent = ({
     account,
-}: AccountTypeInfoBottomSheetProps) => {
+    onClose,
+}: AccountTypeInfoContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { title, description, actions, handleLearnMore } = useAccountTypeInfo(
@@ -43,12 +40,7 @@ export const AccountTypeInfoBottomSheet = ({
     )
 
     return (
-        <PWBottomSheet
-            isVisible={isVisible}
-            onBackdropPress={onClose}
-            innerContainerStyle={styles.container}
-            enablePanDownToClose
-        >
+        <PWView style={styles.container}>
             <PWView style={styles.header}>
                 <AccountIcon
                     account={account}
@@ -92,6 +84,6 @@ export const AccountTypeInfoBottomSheet = ({
                     </PWView>
                 </>
             )}
-        </PWBottomSheet>
+        </PWView>
     )
 }

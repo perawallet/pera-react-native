@@ -21,6 +21,7 @@ import {
     isMultisigAccount,
     isRekeyedAccount,
     isWatchAccount,
+    resolveAccountStatus,
 } from '../utils'
 
 vi.mock('bip39', () => ({
@@ -288,5 +289,88 @@ describe('services/accounts/utils - account type checks', () => {
 
         const accounts = [rootAccount, middleAccount, leafAccount]
         expect(canSignWithAccount(leafAccount, accounts)).toBe(true)
+    })
+})
+
+describe('services/accounts/utils - resolveAccountStatus', () => {
+    test('returns standard for algo25 account', () => {
+        const account = {
+            type: 'algo25',
+            address: 'ADDR',
+            keyPairId: 'pk1',
+        } as any
+        expect(resolveAccountStatus(account, [])).toBe('standard')
+    })
+
+    test('returns ledger for hardware account with ledger manufacturer', () => {
+        const account = {
+            type: 'hardware',
+            address: 'ADDR',
+            hardwareDetails: { manufacturer: 'ledger' },
+        } as any
+        expect(resolveAccountStatus(account, [])).toBe('ledger')
+    })
+
+    test('returns watch for watch account', () => {
+        const account = { type: 'watch', address: 'ADDR' } as any
+        expect(resolveAccountStatus(account, [])).toBe('watch')
+    })
+
+    test('returns hdWallet for hdWallet account', () => {
+        const account = {
+            type: 'hdWallet',
+            address: 'ADDR',
+            keyPairId: 'pk1',
+        } as any
+        expect(resolveAccountStatus(account, [])).toBe('hdWallet')
+    })
+
+    test('returns multisig for multisig account', () => {
+        const account = { type: 'multisig', address: 'ADDR' } as any
+        expect(resolveAccountStatus(account, [])).toBe('multisig')
+    })
+
+    test('returns noAuth for rekeyed account when auth account is not in wallet', () => {
+        const account = {
+            type: 'algo25',
+            address: 'ADDR',
+            rekeyAddress: 'UNKNOWN',
+            keyPairId: 'pk1',
+        } as any
+        expect(resolveAccountStatus(account, [])).toBe('noAuth')
+    })
+
+    test('returns rekeyedStandard for rekeyed account when auth is algo25', () => {
+        const authAccount = {
+            type: 'algo25',
+            address: 'AUTH',
+            keyPairId: 'pk2',
+        } as any
+        const account = {
+            type: 'algo25',
+            address: 'ADDR',
+            rekeyAddress: 'AUTH',
+            keyPairId: 'pk1',
+        } as any
+        expect(resolveAccountStatus(account, [authAccount])).toBe(
+            'rekeyedStandard',
+        )
+    })
+
+    test('returns rekeyedLedger for rekeyed account when auth is ledger', () => {
+        const authAccount = {
+            type: 'hardware',
+            address: 'AUTH',
+            hardwareDetails: { manufacturer: 'ledger' },
+        } as any
+        const account = {
+            type: 'algo25',
+            address: 'ADDR',
+            rekeyAddress: 'AUTH',
+            keyPairId: 'pk1',
+        } as any
+        expect(resolveAccountStatus(account, [authAccount])).toBe(
+            'rekeyedLedger',
+        )
     })
 })

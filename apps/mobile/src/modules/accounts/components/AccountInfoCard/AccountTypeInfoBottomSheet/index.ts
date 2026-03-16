@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { AccountTypeInfoBottomSheet } from './AccountTypeInfoBottomSheet'
-export type { AccountTypeInfoBottomSheetProps } from './AccountTypeInfoBottomSheet'
+export { AccountTypeInfoContent } from './AccountTypeInfoBottomSheet'
+export type { AccountTypeInfoContentProps } from './AccountTypeInfoBottomSheet'
