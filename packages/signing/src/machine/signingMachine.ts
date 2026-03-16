@@ -22,7 +22,12 @@ import type {
     SigningMachineInput,
     ResolvedSignerType,
 } from './context'
-import type { AnalyzedSignableGroup } from '../pipeline/types'
+import type {
+    AnalyzedSignableGroup,
+    SignableAnalysis,
+    SigningResult,
+    TransportResult,
+} from '../pipeline/types'
 import { analyzerActor } from './actors/analyzerActor'
 import { localKeySignerActor } from './actors/signers/localKeySignerActor'
 import { ledgerSignerActor } from './actors/signers/ledgerSignerActor'
@@ -109,6 +114,88 @@ export const signingMachine = setup({
             isRetryableError(context.error) &&
             context.failedDuringState === 'transporting',
     },
+    /**
+     * Named actions keep the machine body readable (states describe *what* to do,
+     * actions describe *how* to update context). Each `event.output` access below
+     * is the XState v5 way of reading an invoked actor's resolved Promise value.
+     */
+    actions: {
+        // validating
+        storeAnalyses: assign({
+            // event.output is the resolved value of the analyzerActor Promise
+            analyses: ({ event }) =>
+                (event as unknown as { output: SignableAnalysis[] }).output,
+        }),
+        setValidatingError: assign({
+            error: ({ event }) =>
+                toError((event as unknown as { error: unknown }).error),
+            failedDuringState: () => 'validating' as const,
+        }),
+
+        // signing — one pair per signer type (onDone appends results, onError stores failure)
+        appendLocalKeyResults: assign({
+            // event.output is the resolved value of the localKeySignerActor Promise
+            signingResults: ({ context, event }) => [
+                ...(context.signingResults ?? []),
+                ...(event as unknown as { output: SigningResult[] }).output,
+            ],
+            completedSignerTypes: ({ context }) => [
+                ...context.completedSignerTypes,
+                'localKey' as const,
+            ],
+        }),
+        appendLedgerResults: assign({
+            // event.output is the resolved value of the ledgerSignerActor Promise
+            signingResults: ({ context, event }) => [
+                ...(context.signingResults ?? []),
+                ...(event as unknown as { output: SigningResult[] }).output,
+            ],
+            completedSignerTypes: ({ context }) => [
+                ...context.completedSignerTypes,
+                'ledger' as const,
+            ],
+        }),
+        appendMultisigResults: assign({
+            // event.output is the resolved value of the multisigSignerActor Promise
+            signingResults: ({ context, event }) => [
+                ...(context.signingResults ?? []),
+                ...(event as unknown as { output: SigningResult[] }).output,
+            ],
+            completedSignerTypes: ({ context }) => [
+                ...context.completedSignerTypes,
+                'multisig' as const,
+            ],
+        }),
+        setSigningError: assign({
+            error: ({ event }) =>
+                toError((event as unknown as { error: unknown }).error),
+            failedDuringState: () => 'signing' as const,
+        }),
+
+        // transporting
+        storeTransportResult: assign({
+            // event.output is the resolved value of the transportActor Promise
+            transportResult: ({ event }) =>
+                (event as unknown as { output: TransportResult }).output,
+        }),
+        setTransportingError: assign({
+            error: ({ event }) =>
+                toError((event as unknown as { error: unknown }).error),
+            failedDuringState: () => 'transporting' as const,
+        }),
+
+        // retry
+        clearError: assign({
+            error: () => null,
+            failedDuringState: () => null,
+        }),
+        resetSigningState: assign({
+            error: () => null,
+            failedDuringState: () => null,
+            completedSignerTypes: () => [],
+            signingResults: () => null,
+        }),
+    },
 }).createMachine({
     id: 'signingMachine',
 
@@ -153,16 +240,11 @@ export const signingMachine = setup({
                 }),
                 onDone: {
                     target: 'awaiting_user',
-                    actions: assign({
-                        analyses: ({ event }) => event.output,
-                    }),
+                    actions: 'storeAnalyses',
                 },
                 onError: {
                     target: 'failed',
-                    actions: assign({
-                        error: ({ event }) => toError(event.error),
-                        failedDuringState: () => 'validating' as const,
-                    }),
+                    actions: 'setValidatingError',
                 },
             },
         },
@@ -214,23 +296,11 @@ export const signingMachine = setup({
                         }),
                         onDone: {
                             target: 'dispatching',
-                            actions: assign({
-                                signingResults: ({ context, event }) => [
-                                    ...(context.signingResults ?? []),
-                                    ...event.output,
-                                ],
-                                completedSignerTypes: ({ context }) => [
-                                    ...context.completedSignerTypes,
-                                    'localKey' as const,
-                                ],
-                            }),
+                            actions: 'appendLocalKeyResults',
                         },
                         onError: {
                             target: '#signingMachine.failed',
-                            actions: assign({
-                                error: ({ event }) => toError(event.error),
-                                failedDuringState: () => 'signing' as const,
-                            }),
+                            actions: 'setSigningError',
                         },
                     },
                 },
@@ -247,23 +317,11 @@ export const signingMachine = setup({
                         }),
                         onDone: {
                             target: 'dispatching',
-                            actions: assign({
-                                signingResults: ({ context, event }) => [
-                                    ...(context.signingResults ?? []),
-                                    ...event.output,
-                                ],
-                                completedSignerTypes: ({ context }) => [
-                                    ...context.completedSignerTypes,
-                                    'ledger' as const,
-                                ],
-                            }),
+                            actions: 'appendLedgerResults',
                         },
                         onError: {
                             target: '#signingMachine.failed',
-                            actions: assign({
-                                error: ({ event }) => toError(event.error),
-                                failedDuringState: () => 'signing' as const,
-                            }),
+                            actions: 'setSigningError',
                         },
                     },
                 },
@@ -280,23 +338,11 @@ export const signingMachine = setup({
                         }),
                         onDone: {
                             target: 'dispatching',
-                            actions: assign({
-                                signingResults: ({ context, event }) => [
-                                    ...(context.signingResults ?? []),
-                                    ...event.output,
-                                ],
-                                completedSignerTypes: ({ context }) => [
-                                    ...context.completedSignerTypes,
-                                    'multisig' as const,
-                                ],
-                            }),
+                            actions: 'appendMultisigResults',
                         },
                         onError: {
                             target: '#signingMachine.failed',
-                            actions: assign({
-                                error: ({ event }) => toError(event.error),
-                                failedDuringState: () => 'signing' as const,
-                            }),
+                            actions: 'setSigningError',
                         },
                     },
                 },
@@ -328,16 +374,11 @@ export const signingMachine = setup({
                 }),
                 onDone: {
                     target: 'completed',
-                    actions: assign({
-                        transportResult: ({ event }) => event.output,
-                    }),
+                    actions: 'storeTransportResult',
                 },
                 onError: {
                     target: 'failed',
-                    actions: assign({
-                        error: ({ event }) => toError(event.error),
-                        failedDuringState: () => 'transporting' as const,
-                    }),
+                    actions: 'setTransportingError',
                 },
             },
         },
@@ -358,28 +399,17 @@ export const signingMachine = setup({
                     {
                         guard: 'canRetryValidating',
                         target: 'validating',
-                        actions: assign({
-                            error: () => null,
-                            failedDuringState: () => null,
-                        }),
+                        actions: 'clearError',
                     },
                     {
                         guard: 'canRetrySigning',
                         target: 'signing',
-                        actions: assign({
-                            error: () => null,
-                            failedDuringState: () => null,
-                            completedSignerTypes: () => [],
-                            signingResults: () => null,
-                        }),
+                        actions: 'resetSigningState',
                     },
                     {
                         guard: 'canRetryTransporting',
                         target: 'transporting',
-                        actions: assign({
-                            error: () => null,
-                            failedDuringState: () => null,
-                        }),
+                        actions: 'clearError',
                     },
                 ],
             },
