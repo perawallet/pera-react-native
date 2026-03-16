@@ -60,6 +60,7 @@ export const configSchema = z.object({
     multisigSupportUrl: z.url(),
     algorandDefiUrl: z.url(),
     asaVerificationUrl: z.url(),
+    accountTypeSupportUrl: z.url(),
 
     debugEnabled: z.boolean(),
     profilingEnabled: z.boolean(),
@@ -117,6 +118,8 @@ const productionConfig = {
     dispenserUrl: 'https://lora.algokit.io/testnet/fund/',
     algorandDefiUrl: 'https://algorand.co/ecosystem/defi',
     asaVerificationUrl: 'https://explorer.perawallet.app/asa-verification/',
+    accountTypeSupportUrl:
+        'https://support.perawallet.app/en/category/accounts/',
 
     notificationRefreshTime: THIRTY_SECONDS,
     remoteConfigRefreshTime: ONE_HOUR,
@@ -176,6 +179,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     multisigSupportUrl: 'MULTISIG_SUPPORT_URL',
     algorandDefiUrl: 'ALGORAND_DEFI_URL',
     asaVerificationUrl: 'ASA_VERIFICATION_URL',
+    accountTypeSupportUrl: 'ACCOUNT_TYPE_SUPPORT_URL',
     dispenserUrl: 'DISPENSER_URL',
 
     debugEnabled: 'DEBUG_ENABLED',
