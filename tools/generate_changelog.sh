@@ -1,5 +1,7 @@
 #!/bin/bash
 
+MAX_COUNT=7
+
 if [ -z "$1" ]; then
   # No SHA provided, try to find initial commit or just use HEAD~1
   LAST_SHA=""
@@ -14,6 +16,10 @@ else
   echo "No previous successful build found (or invalid SHA), using initial commit" >&2
   # Fallback to the first commit if possible, or just log from the beginning
   LAST_REF=$(git rev-list --max-parents=0 HEAD | head -n 1)
+fi
+
+if [ ! -z "$2" ]; then
+  MAX_COUNT=$2
 fi
 
 echo "Generating changelog from $LAST_REF to HEAD" >&2
@@ -37,9 +43,9 @@ format_section() {
 
   printf "%s\n" "$title"
   local count=$(echo "$content" | grep -c "^")
-  if [ "$count" -gt 7 ]; then
+  if [ "$count" -gt $MAX_COUNT ]; then
     echo "$linked_content" | head -n 7 | while IFS= read -r line; do echo "- $line"; done
-    local more=$((count - 7))
+    local more=$((count - $MAX_COUNT))
     echo "- ...and $more more"
   else
     echo "$linked_content" | while IFS= read -r line; do echo "- $line"; done
