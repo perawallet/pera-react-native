@@ -138,6 +138,13 @@ const buildGroupSignerTypeMap = (
 // SignableGroup construction
 // =============================================================================
 
+/**
+ * Constructs {@link SourceMetadata} from a {@link SignRequest}.
+ * For local requests, returns a minimal metadata object.
+ * For external sources (WalletConnect, webview, deeplink), wires the request's
+ * approve/reject/error callbacks into the {@link SourceCallbacks} shape so
+ * the transport layer can notify the originator of the signing outcome.
+ */
 const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
     const sourceType = request.sourceType ?? 'local'
 
@@ -249,6 +256,12 @@ const buildSignableGroups = (request: SignRequest): SignableGroup[] => {
 // Context factories
 // =============================================================================
 
+/**
+ * Extracts the external dependencies from {@link SigningMachineInput} into
+ * a {@link SigningMachineDeps} object stored in the machine context.
+ * Keeps dependency wiring in one place so context factories stay focused on
+ * domain logic.
+ */
 const extractDeps = (input: SigningMachineInput): SigningMachineDeps => ({
     signTransactions: input.signTransactions,
     createTransport: input.createTransport,

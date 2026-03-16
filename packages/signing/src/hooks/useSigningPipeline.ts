@@ -145,6 +145,15 @@ const derivePrimarySignerType = (
     return null
 }
 
+/**
+ * Maps a machine snapshot + derived stage to a {@link SigningPipelineEvent}.
+ *
+ * Each branch accesses nullable context fields (analyses, transportResult, etc.)
+ * that the machine guarantees are populated by the time the corresponding state
+ * is reached. The null guards are intentionally defensive rather than asserting,
+ * because this function runs inside a React effect subscription — a hard crash
+ * here would unmount the signing UI instead of surfacing a recoverable error.
+ */
 const deriveEvent = (
     snapshot: MachineSnapshot,
     stage: PipelineStage,
@@ -227,52 +236,43 @@ export const useSigningPipeline = (
             ? (currentRequest as TransactionSignRequest)
             : undefined
 
-    const allTransactions = useMemo(
-        () =>
-            (txRequest?.txs ?? [])
-                .map(tx => mapToDisplayableTransaction(tx))
-                .filter((tx): tx is PeraDisplayableTransaction => !!tx),
-        [txRequest?.txs],
-    )
+    const displayData = useMemo(() => {
+        const allTransactions = (txRequest?.txs ?? [])
+            .map(tx => mapToDisplayableTransaction(tx))
+            .filter((tx): tx is PeraDisplayableTransaction => !!tx)
 
-    const listItems = useMemo(
-        () => createTransactionListItems(allTransactions),
-        [allTransactions],
-    )
+        const listItems = createTransactionListItems(allTransactions)
 
-    const signableAddresses = useMemo(
-        () =>
-            new Set(
-                accounts
-                    .filter(a => canSignWithAccount(a, accounts))
-                    .map(a => a.address),
-            ),
-        [accounts],
-    )
+        const signableAddresses = new Set(
+            accounts
+                .filter(a => canSignWithAccount(a, accounts))
+                .map(a => a.address),
+        )
 
-    const totalFee = useMemo(
-        () => calculateTotalFee(allTransactions, signableAddresses),
-        [allTransactions, signableAddresses],
-    )
+        const totalFee = calculateTotalFee(allTransactions, signableAddresses)
 
-    const warnings = useMemo(
-        () => aggregateTransactionWarnings(allTransactions, signableAddresses),
-        [allTransactions, signableAddresses],
-    )
+        const warnings = aggregateTransactionWarnings(
+            allTransactions,
+            signableAddresses,
+        )
 
-    const distinctWarnings = useMemo(
-        () =>
-            warnings.filter(
-                (warning, index) =>
-                    warnings.findIndex(w => w.type === warning.type) === index,
-            ),
-        [warnings],
-    )
+        const distinctWarnings = warnings.filter(
+            (warning, index) =>
+                warnings.findIndex(w => w.type === warning.type) === index,
+        )
 
-    const requestStructure = useMemo(
-        () => classifyRequestStructure(listItems),
-        [listItems],
-    )
+        const requestStructure = classifyRequestStructure(listItems)
+
+        return {
+            allTransactions,
+            listItems,
+            signableAddresses,
+            totalFee,
+            warnings,
+            distinctWarnings,
+            requestStructure,
+        }
+    }, [txRequest?.txs, accounts])
 
     // -------------------------------------------------------------------------
     // Machine state — derived from actor subscription
@@ -352,15 +352,19 @@ export const useSigningPipeline = (
         isLoading,
         isRetryable,
         error,
-        allTransactions: txRequest ? allTransactions : EMPTY_TRANSACTIONS,
-        listItems: txRequest ? listItems : EMPTY_LIST_ITEMS,
+        allTransactions: txRequest
+            ? displayData.allTransactions
+            : EMPTY_TRANSACTIONS,
+        listItems: txRequest ? displayData.listItems : EMPTY_LIST_ITEMS,
         signableAddresses: txRequest
-            ? signableAddresses
+            ? displayData.signableAddresses
             : EMPTY_SIGNABLE_ADDRESSES,
-        totalFee: txRequest ? totalFee : ZERO_FEE,
-        warnings: txRequest ? warnings : EMPTY_WARNINGS,
-        distinctWarnings: txRequest ? distinctWarnings : EMPTY_WARNINGS,
-        requestStructure: txRequest ? requestStructure : 'single',
+        totalFee: txRequest ? displayData.totalFee : ZERO_FEE,
+        warnings: txRequest ? displayData.warnings : EMPTY_WARNINGS,
+        distinctWarnings: txRequest
+            ? displayData.distinctWarnings
+            : EMPTY_WARNINGS,
+        requestStructure: txRequest ? displayData.requestStructure : 'single',
         next,
         fail,
         retry,

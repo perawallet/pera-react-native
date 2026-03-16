@@ -43,6 +43,25 @@ const getNextPendingSignerType = (
 }
 
 /**
+ * Builds the analyzed groups for a specific signer type by zipping
+ * signableGroups with their analyses and filtering by the type map.
+ * Used by each signer state's `input` to avoid duplicating this logic.
+ */
+const getAnalyzedGroupsForSignerType = (
+    context: SigningMachineContext,
+    signerType: ResolvedSignerType,
+): AnalyzedSignableGroup[] => {
+    const allGroups = assertDefined(context.signableGroups, 'signableGroups')
+    const allAnalyses = assertDefined(context.analyses, 'analyses')
+    const types = assertDefined(context.groupSignerTypes, 'groupSignerTypes')
+    return allGroups
+        .map((g, i) => ({ ...g, analysis: allAnalyses[i] }))
+        .filter(
+            g => types.get(g.signerAddress) === signerType,
+        ) as AnalyzedSignableGroup[]
+}
+
+/**
  * Core signing state machine.
  *
  * States:
@@ -185,34 +204,14 @@ export const signingMachine = setup({
                 localKey: {
                     invoke: {
                         src: 'localKeySignerActor',
-                        input: ({ context }) => {
-                            const allGroups = assertDefined(
-                                context.signableGroups,
-                                'signableGroups',
-                            )
-                            const allAnalyses = assertDefined(
-                                context.analyses,
-                                'analyses',
-                            )
-                            const types = assertDefined(
-                                context.groupSignerTypes,
-                                'groupSignerTypes',
-                            )
-                            return {
-                                groups: allGroups
-                                    .map((g, i) => ({
-                                        ...g,
-                                        analysis: allAnalyses[i],
-                                    }))
-                                    .filter(
-                                        g =>
-                                            types.get(g.signerAddress) ===
-                                            'localKey',
-                                    ) as AnalyzedSignableGroup[],
-                                allAccounts: context.allAccounts,
-                                signTransactions: context.deps.signTransactions,
-                            }
-                        },
+                        input: ({ context }) => ({
+                            groups: getAnalyzedGroupsForSignerType(
+                                context,
+                                'localKey',
+                            ),
+                            allAccounts: context.allAccounts,
+                            signTransactions: context.deps.signTransactions,
+                        }),
                         onDone: {
                             target: 'dispatching',
                             actions: assign({
@@ -239,33 +238,13 @@ export const signingMachine = setup({
                 ledger: {
                     invoke: {
                         src: 'ledgerSignerActor',
-                        input: ({ context }) => {
-                            const allGroups = assertDefined(
-                                context.signableGroups,
-                                'signableGroups',
-                            )
-                            const allAnalyses = assertDefined(
-                                context.analyses,
-                                'analyses',
-                            )
-                            const types = assertDefined(
-                                context.groupSignerTypes,
-                                'groupSignerTypes',
-                            )
-                            return {
-                                groups: allGroups
-                                    .map((g, i) => ({
-                                        ...g,
-                                        analysis: allAnalyses[i],
-                                    }))
-                                    .filter(
-                                        g =>
-                                            types.get(g.signerAddress) ===
-                                            'ledger',
-                                    ) as AnalyzedSignableGroup[],
-                                allAccounts: context.allAccounts,
-                            }
-                        },
+                        input: ({ context }) => ({
+                            groups: getAnalyzedGroupsForSignerType(
+                                context,
+                                'ledger',
+                            ),
+                            allAccounts: context.allAccounts,
+                        }),
                         onDone: {
                             target: 'dispatching',
                             actions: assign({
@@ -292,33 +271,13 @@ export const signingMachine = setup({
                 multisig: {
                     invoke: {
                         src: 'multisigSignerActor',
-                        input: ({ context }) => {
-                            const allGroups = assertDefined(
-                                context.signableGroups,
-                                'signableGroups',
-                            )
-                            const allAnalyses = assertDefined(
-                                context.analyses,
-                                'analyses',
-                            )
-                            const types = assertDefined(
-                                context.groupSignerTypes,
-                                'groupSignerTypes',
-                            )
-                            return {
-                                groups: allGroups
-                                    .map((g, i) => ({
-                                        ...g,
-                                        analysis: allAnalyses[i],
-                                    }))
-                                    .filter(
-                                        g =>
-                                            types.get(g.signerAddress) ===
-                                            'multisig',
-                                    ) as AnalyzedSignableGroup[],
-                                allAccounts: context.allAccounts,
-                            }
-                        },
+                        input: ({ context }) => ({
+                            groups: getAnalyzedGroupsForSignerType(
+                                context,
+                                'multisig',
+                            ),
+                            allAccounts: context.allAccounts,
+                        }),
                         onDone: {
                             target: 'dispatching',
                             actions: assign({
