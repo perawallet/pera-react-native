@@ -92,14 +92,18 @@ import DarkAlgo25AccountIcon from '@assets/icons/accounts/dark/algo25-account.sv
 import DarkHdWalletAccountIcon from '@assets/icons/accounts/dark/hdwallet-account.svg'
 import DarkLedgerAccountIcon from '@assets/icons/accounts/dark/ledger-account.svg'
 import DarkMultisigAccountIcon from '@assets/icons/accounts/dark/multisig-account.svg'
-import DarkRekeyedAccountIcon from '@assets/icons/accounts/dark/rekeyed-account.svg'
+import DarkRekeyedStandardIcon from '@assets/icons/accounts/dark/rekeyed-standard.svg'
+import DarkRekeyedLedgerIcon from '@assets/icons/accounts/dark/rekeyed-ledger.svg'
+import DarkNoAuthIcon from '@assets/icons/accounts/dark/noauth-account.svg'
 import DarkUnknownAccountIcon from '@assets/icons/accounts/dark/unknown-account.svg'
 import DarkWatchAccountIcon from '@assets/icons/accounts/dark/watch-account.svg'
 import LightAlgo25AccountIcon from '@assets/icons/accounts/light/algo25-account.svg'
 import LightHdWalletAccountIcon from '@assets/icons/accounts/light/hdwallet-account.svg'
 import LightLedgerAccountIcon from '@assets/icons/accounts/light/ledger-account.svg'
 import LightMultisigAccountIcon from '@assets/icons/accounts/light/multisig-account.svg'
-import LightRekeyedAccountIcon from '@assets/icons/accounts/light/rekeyed-account.svg'
+import LightRekeyedStandardIcon from '@assets/icons/accounts/light/rekeyed-standard.svg'
+import LightRekeyedLedgerIcon from '@assets/icons/accounts/light/rekeyed-ledger.svg'
+import LightNoAuthIcon from '@assets/icons/accounts/light/noauth-account.svg'
 import LightUnknownAccountIcon from '@assets/icons/accounts/light/unknown-account.svg'
 import LightWatchAccountIcon from '@assets/icons/accounts/light/watch-account.svg'
 import USDCAssetIcon from '@assets/icons/assets/usdc.svg'
@@ -204,14 +208,18 @@ export const ICON_LIBRARY = {
     'accounts/dark/hdwallet-account': DarkHdWalletAccountIcon,
     'accounts/dark/ledger-account': DarkLedgerAccountIcon,
     'accounts/dark/multisig-account': DarkMultisigAccountIcon,
-    'accounts/dark/rekeyed-account': DarkRekeyedAccountIcon,
+    'accounts/dark/rekeyed-standard': DarkRekeyedStandardIcon,
+    'accounts/dark/rekeyed-ledger': DarkRekeyedLedgerIcon,
+    'accounts/dark/noauth-account': DarkNoAuthIcon,
     'accounts/dark/unknown-account': DarkUnknownAccountIcon,
     'accounts/dark/watch-account': DarkWatchAccountIcon,
     'accounts/light/algo25-account': LightAlgo25AccountIcon,
     'accounts/light/hdwallet-account': LightHdWalletAccountIcon,
     'accounts/light/ledger-account': LightLedgerAccountIcon,
     'accounts/light/multisig-account': LightMultisigAccountIcon,
-    'accounts/light/rekeyed-account': LightRekeyedAccountIcon,
+    'accounts/light/rekeyed-standard': LightRekeyedStandardIcon,
+    'accounts/light/rekeyed-ledger': LightRekeyedLedgerIcon,
+    'accounts/light/noauth-account': LightNoAuthIcon,
     'accounts/light/unknown-account': LightUnknownAccountIcon,
     'accounts/light/watch-account': LightWatchAccountIcon,
     'assets/algo': AlgoAssetIcon,
