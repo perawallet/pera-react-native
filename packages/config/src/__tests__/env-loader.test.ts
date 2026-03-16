@@ -269,6 +269,7 @@ describe('env-loader', () => {
             multisigSupportUrl: 'https://multisig-support.example.com',
             dispenserUrl: 'https://dispenser.example.com',
             algorandDefiUrl: 'https://defi.example.com',
+            asaVerificationUrl: 'https://asa-verification.example.com',
             debugEnabled: false,
             profilingEnabled: false,
             pollingEnabled: true,

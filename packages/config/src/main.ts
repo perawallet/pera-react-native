@@ -59,6 +59,7 @@ export const configSchema = z.object({
     swapSupportUrl: z.url(),
     multisigSupportUrl: z.url(),
     algorandDefiUrl: z.url(),
+    asaVerificationUrl: z.url(),
 
     debugEnabled: z.boolean(),
     profilingEnabled: z.boolean(),
@@ -115,6 +116,7 @@ const productionConfig = {
         'https://support.perawallet.app/en/article/introduction-to-joint-accounts-1j0dt2g/',
     dispenserUrl: 'https://lora.algokit.io/testnet/fund/',
     algorandDefiUrl: 'https://algorand.co/ecosystem/defi',
+    asaVerificationUrl: 'https://explorer.perawallet.app/asa-verification/',
 
     notificationRefreshTime: THIRTY_SECONDS,
     remoteConfigRefreshTime: ONE_HOUR,
@@ -173,6 +175,7 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     swapSupportUrl: 'SWAP_SUPPORT_URL',
     multisigSupportUrl: 'MULTISIG_SUPPORT_URL',
     algorandDefiUrl: 'ALGORAND_DEFI_URL',
+    asaVerificationUrl: 'ASA_VERIFICATION_URL',
     dispenserUrl: 'DISPENSER_URL',
 
     debugEnabled: 'DEBUG_ENABLED',
