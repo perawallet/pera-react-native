@@ -234,7 +234,7 @@ export const AssetMarkets = ({
             <AssetVerificationCard assetDetails={assetDetails} />
 
             <AssetDescription
-                description={assetDetails.peraMetadata?.description ?? ''}
+                description={assetDetails.peraMetadata?.description}
             />
 
             <AssetSocialMedia assetDetails={assetDetails} />

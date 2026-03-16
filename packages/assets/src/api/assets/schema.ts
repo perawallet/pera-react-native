@@ -33,6 +33,13 @@ export const assetResponseSchema = z.object({
     labels: z.array(z.any()).nullable().optional(),
     is_favorited: z.boolean().optional(),
     is_price_alert_enabled: z.boolean().optional(),
+    description: z.string().nullable().optional(),
+    url: z.string().nullable().optional(),
+    project_url: z.string().nullable().optional(),
+    project_name: z.string().nullable().optional(),
+    discord_url: z.string().nullable().optional(),
+    telegram_url: z.string().nullable().optional(),
+    twitter_username: z.string().nullable().optional(),
 })
 
 export const assetsResponseSchema = z.object({

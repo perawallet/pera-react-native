@@ -40,11 +40,18 @@ export const transformAssetResponse = (data: AssetResponse): PeraAsset => {
             logo: data.logo,
             isFavorited: data.is_favorited ?? false,
             isPriceAlertEnabled: data.is_price_alert_enabled ?? false,
+            description: data.description ?? undefined,
+            projectUrl: data.project_url ?? undefined,
+            projectName: data.project_name ?? undefined,
+            discordUrl: data.discord_url ?? undefined,
+            telegramUrl: data.telegram_url ?? undefined,
+            twitterUsername: data.twitter_username ?? undefined,
         },
         unitName: data.unit_name,
         decimals: data.fraction_decimals,
         totalSupply: Decimal(data.total ?? '0'),
         creator: data.creator,
+        url: data.url ?? undefined,
     }
 }
 
