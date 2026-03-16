@@ -270,6 +270,7 @@ describe('env-loader', () => {
             dispenserUrl: 'https://dispenser.example.com',
             algorandDefiUrl: 'https://defi.example.com',
             asaVerificationUrl: 'https://asa-verification.example.com',
+            accountTypeSupportUrl: 'https://account-type-support.example.com',
             debugEnabled: false,
             profilingEnabled: false,
             pollingEnabled: true,

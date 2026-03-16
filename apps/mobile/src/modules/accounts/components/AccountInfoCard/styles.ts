@@ -103,4 +103,7 @@ export const useStyles = makeStyles(theme => ({
     scanButtonText: {
         color: theme.colors.buttonSquareIcon,
     },
+    minBalanceDescription: {
+        color: theme.colors.textGray,
+    },
 }))

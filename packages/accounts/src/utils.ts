@@ -82,3 +82,33 @@ export const canSignWithAccount = (
     }
     return false
 }
+
+export type AccountStatus =
+    | 'standard'
+    | 'ledger'
+    | 'watch'
+    | 'noAuth'
+    | 'rekeyedStandard'
+    | 'rekeyedLedger'
+    | 'hdWallet'
+    | 'multisig'
+
+export const resolveAccountStatus = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+): AccountStatus => {
+    if (isRekeyedAccount(account)) {
+        const authAccount = accounts.find(
+            a => a.address === account.rekeyAddress,
+        )
+        if (!authAccount) return 'noAuth'
+        if (isLedgerAccount(authAccount)) return 'rekeyedLedger'
+        return 'rekeyedStandard'
+    }
+    if (isHDWalletAccount(account)) return 'hdWallet'
+    if (isMultisigAccount(account)) return 'multisig'
+    if (isWatchAccount(account)) return 'watch'
+    if (isLedgerAccount(account)) return 'ledger'
+    if (isAlgo25Account(account)) return 'standard'
+    return 'standard'
+}

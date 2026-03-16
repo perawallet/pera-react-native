@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@test-utils/render'
 import { AccountInfoCard } from '../AccountInfoCard'
@@ -45,10 +46,11 @@ vi.mock('@components/core', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWText: ({ children, style }: any) => <span style={style}>{children}</span>,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWTouchableOpacity: ({ children, onPress, style }: any) => (
+    PWTouchableOpacity: ({ children, onPress, style, testID }: any) => (
         <button
             onClick={onPress}
             style={style}
+            data-testid={testID}
         >
             {children}
         </button>
@@ -95,6 +97,23 @@ vi.mock('@constants/ui', () => ({
 
 vi.mock('../AccountIcon', () => ({
     AccountIcon: () => <span data-testid='account-icon' />,
+}))
+
+vi.mock('@components/InfoButton', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    InfoButton: ({ children, title }: any) => (
+        <div data-testid='info-button'>
+            {title && <span>{title}</span>}
+            {children}
+        </div>
+    ),
+}))
+
+vi.mock('../AccountTypeInfoBottomSheet', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    AccountTypeInfoContent: ({ account }: any) => (
+        <div data-testid='account-type-info-content'>{account.type}</div>
+    ),
 }))
 
 const mockUseAccountInformationQuery = vi.fn()
@@ -243,5 +262,39 @@ describe('AccountInfoCard', () => {
             />,
         )
         expect(screen.getByText('loading')).toBeTruthy()
+    })
+
+    it('renders account type info content via InfoButton', () => {
+        render(
+            <AccountInfoCard
+                account={hdAccount}
+                onClose={vi.fn()}
+            />,
+        )
+
+        expect(screen.getByTestId('account-type-info-content')).toBeTruthy()
+    })
+
+    it('renders min balance info via InfoButton with title', () => {
+        render(
+            <AccountInfoCard
+                account={hdAccount}
+                onClose={vi.fn()}
+            />,
+        )
+
+        expect(screen.getByText('min_balance_info.title')).toBeTruthy()
+        expect(screen.getByText('min_balance_info.description')).toBeTruthy()
+    })
+
+    it('does not show min balance InfoButton for watch accounts', () => {
+        render(
+            <AccountInfoCard
+                account={watchAccount}
+                onClose={vi.fn()}
+            />,
+        )
+
+        expect(screen.queryByText('min_balance_info.description')).toBeNull()
     })
 })

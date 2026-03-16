@@ -169,6 +169,34 @@
         "type_multisig": "Multisig Account",
         "type_unknown": "Unknown Account"
     },
+    "account_type_info": {
+        "standard_title": "Standard account",
+        "standard_description": "Your account is a standard Algorand account. It has not been rekeyed and it is not associated with a Ledger device. It was added to your wallet with its keys.",
+        "ledger_title": "Ledger account",
+        "ledger_description": "Your account is a Ledger account. It was added to your wallet directly from the hardware device. All transactions for this account must be confirmed on your Ledger.",
+        "watch_title": "Watch account",
+        "watch_description": "This account was not added to your wallet with its keys. It is read-only and cannot interact with other accounts or authorize transactions.",
+        "no_auth_title": "No auth account",
+        "no_auth_description": "Your account is rekeyed to an Algorand account that is not in your wallet. You can't send assets or sign transactions.",
+        "rekeyed_standard_title": "Rekeyed account",
+        "rekeyed_standard_description": "Your account is rekeyed to another standard Algorand account. Transactions for this account will be authorized by the other account.",
+        "rekeyed_ledger_title": "Rekeyed account",
+        "rekeyed_ledger_description": "Your account is rekeyed to an account on a Ledger hardware device. Transactions for this account must be authorized on the Ledger device.",
+        "hd_wallet_title": "Wallet address",
+        "hd_wallet_description": "Wallet that lets you derive new accounts, all using same key.",
+        "multisig_title": "Joint Account",
+        "multisig_description": "Create a new multi-sig account with enhanced security that requires multiple signers.",
+        "learn_more": "Learn More",
+        "rekey_to_ledger": "Rekey to Ledger",
+        "rekey_to_standard": "Rekey to Standard",
+        "undo_rekey": "Undo Rekey",
+        "rescan_rekeyed": "Rescan Rekeyed Accounts"
+    },
+    "min_balance_info": {
+        "title": "Minimum Balance",
+        "description": "Minimum balance is the minimum amount of Algo you have to keep in an account. It increases every time the account is opted in to a smart contract, ASA or NFT.",
+        "close": "Close"
+    },
     "camera": {
         "no_camera_device_found": {
             "title": "No camera device found or missing permissions.",

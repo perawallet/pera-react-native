@@ -26,6 +26,8 @@ import { AccountIcon } from '../AccountIcon'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { WalletStructureTree } from './WalletStructureTree'
+import { InfoButton } from '@components/InfoButton'
+import { AccountTypeInfoContent } from './AccountTypeInfoBottomSheet'
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
 
@@ -78,13 +80,12 @@ export const AccountInfoCard = ({ account, onClose }: AccountInfoCardProps) => {
                         size='sm'
                     />
                     <PWText variant='h4'>{accountTypeLabel}</PWText>
-                    <PWTouchableOpacity>
-                        <PWIcon
-                            name='info'
-                            size='sm'
-                            variant='secondary'
+                    <InfoButton>
+                        <AccountTypeInfoContent
+                            account={account}
+                            onClose={onClose}
                         />
-                    </PWTouchableOpacity>
+                    </InfoButton>
                 </PWView>
             </PWView>
 
@@ -108,13 +109,11 @@ export const AccountInfoCard = ({ account, onClose }: AccountInfoCardProps) => {
                             isLoading={isMinBalanceLoading}
                             variant='h4'
                         />
-                        <PWTouchableOpacity>
-                            <PWIcon
-                                name='info'
-                                size='sm'
-                                variant='secondary'
-                            />
-                        </PWTouchableOpacity>
+                        <InfoButton title={t('min_balance_info.title')}>
+                            <PWText style={styles.minBalanceDescription}>
+                                {t('min_balance_info.description')}
+                            </PWText>
+                        </InfoButton>
                     </PWView>
                 </PWView>
             )}
