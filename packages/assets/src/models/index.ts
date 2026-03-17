@@ -11,4 +11,5 @@
  */
 
 export * from './assets'
+export * from './asset-preferences'
 export * from './price-history'

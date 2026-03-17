@@ -10,9 +10,20 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-assets'
+import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 
-export * from './models'
-export * from './hooks'
-export * from './store'
-export * from './utils'
+export const AssetSortModes = {
+    balanceDesc: 'balanceDesc',
+    balanceAsc: 'balanceAsc',
+    alphabeticalAsc: 'alphabeticalAsc',
+    alphabeticalDesc: 'alphabeticalDesc',
+} as const
+
+export type AssetSortMode = (typeof AssetSortModes)[keyof typeof AssetSortModes]
+
+export type AssetPreferencesState = BaseStoreState & {
+    assetSortMode: AssetSortMode
+    hideZeroBalance: boolean
+    setAssetSortMode: (mode: AssetSortMode) => void
+    setHideZeroBalance: (hide: boolean) => void
+}

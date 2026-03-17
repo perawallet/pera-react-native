@@ -18,6 +18,7 @@ import {
     useAccountBalancesQuery,
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
+import Decimal from 'decimal.js'
 
 const mockAccount = {
     address: 'test-address',
@@ -58,6 +59,20 @@ vi.mock('@perawallet/wallet-core-assets', async () => ({
     useAssetsQuery: vi.fn(() => ({ data: new Map() })),
     ALGO_ASSET: { decimals: 6, unitName: 'ALGO' },
     ALGO_ASSET_ID: '0',
+    AssetSortModes: {
+        balanceDesc: 'balanceDesc',
+        balanceAsc: 'balanceAsc',
+        alphabeticalAsc: 'alphabeticalAsc',
+        alphabeticalDesc: 'alphabeticalDesc',
+    },
+    useAssetPreferencesStore: vi.fn((selector: (state: unknown) => unknown) =>
+        selector({
+            assetSortMode: 'balanceDesc',
+            hideZeroBalance: false,
+            setAssetSortMode: vi.fn(),
+            setHideZeroBalance: vi.fn(),
+        }),
+    ),
     useAssetPricesQuery: vi.fn(() => ({
         data: new Map(),
         isPending: false,
@@ -68,7 +83,8 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
     useCurrency: vi.fn(() => ({
         preferredCurrency: 'USD',
         fallbackCurrency: 'USD',
-        algoUsdPrice: { isZero: () => true },
+        algoUsdPrice: new Decimal(0),
+        usdToPreferred: vi.fn(() => new Decimal(0)),
     })),
     usePreferredCurrencyPriceQuery: vi.fn(() => ({
         data: undefined,
@@ -118,8 +134,16 @@ describe('AccountAssetList', () => {
                 'test-address',
                 {
                     assetBalances: [
-                        { assetId: '0', balance: '1000000' },
-                        { assetId: '123', balance: '500' },
+                        {
+                            assetId: '0',
+                            amount: new Decimal('1000000'),
+                            algoValue: new Decimal('1000000'),
+                        },
+                        {
+                            assetId: '123',
+                            amount: new Decimal('500'),
+                            algoValue: new Decimal('500'),
+                        },
                     ],
                 },
             ],
