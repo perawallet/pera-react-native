@@ -45,7 +45,7 @@ export const AssetActionButtons = ({
     const sendFunds = useModalState()
     const receiveFunds = useModalState()
     const account = useSelectedAccount()
-    const { setSelectedAssetBalance, setCanSelectAsset } = useSendFunds()
+    const { setSelectedAssetId, setCanSelectAsset } = useSendFunds()
     const { copyToClipboard } = useClipboard()
     const { showToast } = useToast()
     const isWatch = account ? isWatchAccount(account) : false
@@ -56,12 +56,12 @@ export const AssetActionButtons = ({
 
     const handleSend = useCallback(() => {
         if (assetHolding) {
-            setSelectedAssetBalance(assetHolding)
+            setSelectedAssetId(assetHolding.assetId)
             setCanSelectAsset(false)
         }
 
         sendFunds.open()
-    }, [assetHolding, setSelectedAssetBalance, setCanSelectAsset, sendFunds])
+    }, [assetHolding, setSelectedAssetId, setCanSelectAsset, sendFunds])
 
     const handleCopyAddress = useCallback(() => {
         if (account) {

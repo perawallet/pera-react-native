@@ -18,17 +18,26 @@ import {
     useAllAccounts,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useNavigation } from '@react-navigation/native'
 import { StackNavigationProp } from '@react-navigation/stack'
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 
 export const useSelectDestinationScreen = () => {
-    const { selectedAssetBalance, setDestination, setSendMode } = useSendFunds()
-    const selectedAsset = selectedAssetBalance?.asset
+    const { selectedAssetId, setDestination, setSendMode } = useSendFunds()
     const selectedAccount = useSelectedAccount()
     const accounts = useAllAccounts()
     const { accountBalances } = useAccountBalancesQuery(accounts)
+
+    const assetIDs = useMemo(
+        () => (selectedAssetId ? [selectedAssetId] : []),
+        [selectedAssetId],
+    )
+    const { data: assets } = useAssetsQuery(assetIDs)
+    const selectedAsset = useMemo(() => {
+        if (!selectedAssetId) return undefined
+        return assets.get(selectedAssetId)
+    }, [selectedAssetId, assets])
 
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()

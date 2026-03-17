@@ -55,13 +55,13 @@ export const useARC59SendSummaryScreen =
     (): UseARC59SendSummaryScreenResult => {
         const navigation =
             useNavigation<StackNavigationProp<SendFundsStackParamList>>()
-        const { selectedAsset, destination, amount, setArc59Summary } =
+        const { selectedAssetId, destination, amount, setArc59Summary } =
             useSendFunds()
         const selectedAccount = useSelectedAccount()
         const warningModal = useModalState()
         const { mode } = useThemeMode()
 
-        const assetId = selectedAsset?.assetId ?? ''
+        const assetId = selectedAssetId ?? ''
         const receiverAddress = destination ?? ''
 
         const { data: summary, isLoading: summaryLoading } =

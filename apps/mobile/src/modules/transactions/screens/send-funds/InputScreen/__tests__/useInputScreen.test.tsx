@@ -47,13 +47,16 @@ vi.mock('@components/core', () => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
     useAccountBalancesQuery: vi.fn(),
+    useAccountAssetBalanceQuery: vi.fn(() => ({
+        data: { assetId: '0', amount: Decimal(100), algoValue: Decimal(100) },
+    })),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetsQuery: vi.fn(),
     useAssetPricesQuery: vi.fn(),
-    ALGO_ASSET_ID: 0,
-    ALGO_ASSET: { id: 0, decimals: 6 },
+    ALGO_ASSET_ID: '0',
+    ALGO_ASSET: { id: '0', decimals: 6 },
     toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>
         Decimal(typeof value === 'bigint' ? value.toString() : value).div(
             Decimal(10).pow(asset.decimals),
@@ -78,13 +81,12 @@ const mockSetAmount = vi.fn()
 const mockSetNote = vi.fn()
 const mockSetIsCloseAccount = vi.fn()
 const mockSendFundsState = {
-    selectedAssetBalance: { assetId: 0 },
+    selectedAssetId: '0',
     canSelectAsset: true,
     amount: undefined,
     note: undefined,
     destination: undefined,
-    setSelectedAsset: vi.fn(),
-    setSelectedAssetBalance: vi.fn(),
+    setSelectedAssetId: vi.fn(),
     setCanSelectAsset: vi.fn(),
     setAmount: mockSetAmount,
     setNote: mockSetNote,
@@ -103,7 +105,7 @@ describe('useInputScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         // Reset the mock state
-        mockSendFundsState.selectedAssetBalance = { assetId: 0 }
+        mockSendFundsState.selectedAssetId = '0'
         mockSendFundsState.note = undefined
         ;(useToast as Mock).mockReturnValue({ showToast: mockShowToast })
         ;(useSelectedAccount as Mock).mockReturnValue({
@@ -111,12 +113,12 @@ describe('useInputScreen', () => {
         })
         ;(useAssetsQuery as Mock).mockReturnValue({
             data: new Map([
-                [0, { id: 0, decimals: 6 }],
-                [1, { id: 1, decimals: 0 }],
+                ['0', { id: '0', decimals: 6 }],
+                ['1', { id: '1', decimals: 0 }],
             ]),
         })
         ;(useAssetPricesQuery as Mock).mockReturnValue({
-            data: new Map([[0, { usdPrice: Decimal(1.5) }]]),
+            data: new Map([['0', { usdPrice: Decimal(1.5) }]]),
         })
         ;(useAccountBalancesQuery as Mock).mockReturnValue({
             accountBalances: new Map([
@@ -124,8 +126,8 @@ describe('useInputScreen', () => {
                     'test-addr',
                     {
                         assetBalances: [
-                            { assetId: 0, amount: Decimal(100) },
-                            { assetId: 1, amount: Decimal(50) },
+                            { assetId: '0', amount: Decimal(100) },
+                            { assetId: '1', amount: Decimal(50) },
                         ],
                     },
                 ],
@@ -162,7 +164,7 @@ describe('useInputScreen', () => {
 
     it('calculates max amount for ASA correctly', () => {
         // Update mock state for ASA
-        mockSendFundsState.selectedAssetBalance = { assetId: 1 }
+        mockSendFundsState.selectedAssetId = '1'
 
         const { result } = renderHook(() => useInputScreen())
         expect(result.current.maxAmount.toNumber()).toBe(50)
