@@ -12,7 +12,6 @@
 
 import { type ReactNode } from 'react'
 import { KeyboardAvoidingView } from 'react-native'
-import { ScrollView } from 'react-native-gesture-handler'
 import { type Control, Controller } from 'react-hook-form'
 import { PWInput, PWScrollView, PWText, PWView } from '@components/core'
 import { ContactAvatar } from '@components/ContactAvatar'
