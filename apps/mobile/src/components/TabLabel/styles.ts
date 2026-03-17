@@ -16,13 +16,15 @@ export const useStyles = makeStyles(theme => {
     return {
         active: {
             color: theme.colors.textMain,
-            fontWeight: 'bold',
-            fontSize: 12,
+            fontWeight: 'medium',
+            fontSize: 11,
+            lineHeight: 14,
         },
         inactive: {
             color: theme.colors.textGray,
             fontWeight: 'normal',
-            fontSize: 12,
+            fontSize: 11,
+            lineHeight: 14,
         },
     }
 })
