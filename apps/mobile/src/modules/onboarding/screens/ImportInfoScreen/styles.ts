@@ -11,11 +11,13 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles(theme => ({
+export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     root: {
         flex: 1,
         backgroundColor: theme.colors.background,
+        marginBottom: insets.bottom,
     },
     content: {
         flex: 1,
