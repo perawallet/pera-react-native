@@ -95,12 +95,10 @@ export const AddressSearchView = ({
 
     const emptyComponent = useCallback(
         () => (
-            <PWView style={{ flex: 1 }}>
-                <EmptyView
-                    title={t('address_entry.no_accounts_found')}
-                    body={t('address_entry.no_accounts_body')}
-                />
-            </PWView>
+            <EmptyView
+                title={t('address_entry.no_accounts_found')}
+                body={t('address_entry.no_accounts_body')}
+            />
         ),
         [t],
     )
