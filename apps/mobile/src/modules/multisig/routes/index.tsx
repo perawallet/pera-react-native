@@ -18,6 +18,7 @@ import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { screenListeners } from '@routes/listeners'
 import { CreateMultisigScreen } from '../screens/CreateMultisigScreen'
+import { EditParticipantScreen } from '../screens/EditParticipantScreen'
 import { SetThresholdScreen } from '../screens/SetThresholdScreen'
 import { NameMultisigScreen } from '../screens/NameMultisigScreen'
 import { MultisigStackParamList } from './types'
@@ -43,6 +44,11 @@ export const MultisigStackNavigator = () => {
                 name='CreateMultisig'
                 options={{ title: '' }}
                 component={CreateMultisigScreen}
+            />
+            <MultisigStack.Screen
+                name='EditParticipant'
+                options={{ title: '' }}
+                component={EditParticipantScreen}
             />
             <MultisigStack.Screen
                 name='SetThreshold'

@@ -10,9 +10,4 @@
  limitations under the License
  */
 
-export type MultisigStackParamList = {
-    CreateMultisig: undefined
-    EditParticipant: { address: string }
-    SetThreshold: undefined
-    NameMultisig: undefined
-}
+export { ContactForm } from './ContactForm'

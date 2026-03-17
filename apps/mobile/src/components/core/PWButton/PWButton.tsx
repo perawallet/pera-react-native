@@ -24,6 +24,7 @@ export type PWButtonProps = {
         | 'helper'
         | 'link'
         | 'destructive'
+        | 'destructiveLight'
         | 'errorLink'
     title?: string
     icon?: IconName
@@ -44,6 +45,7 @@ const ICON_VARIANT_MAP: Record<string, PWIconVariant> = {
     helper: 'helper',
     link: 'link',
     destructive: 'white',
+    destructiveLight: 'error',
     errorLink: 'error',
 }
 
