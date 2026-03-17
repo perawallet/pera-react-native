@@ -22,6 +22,7 @@ import {
     generateMultisigAddress,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
+import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import {
@@ -46,10 +47,11 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
     const setAccounts = useAccountsStore(state => state.setAccounts)
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { errorToast } = useToast()
     const { setShouldPlayConfetti } = useShouldPlayConfetti()
     const { exitAccountFlow } = useExitAccountFlow()
     const { network } = useNetwork()
+    const deviceId = useDeviceID(network)
     const createMultisigMutation = useCreateMultisigAccountMutation({
         network,
     })
@@ -78,10 +80,16 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
                 addresses,
             )
 
+            if (!deviceId) {
+                errorToast(t('errors.general.title'), t('errors.general.body'))
+                return
+            }
+
             await createMultisigMutation.mutateAsync({
                 version: 1,
                 threshold,
                 participant_addresses: addresses,
+                device_id: deviceId,
             })
 
             const newAccount: MultiSigAccount = {
@@ -100,18 +108,18 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
             resetState()
             exitAccountFlow()
         } catch (error) {
-            showToast({
-                title: t('multisig.name.error_title'),
-                body: t('multisig.name.error_message', {
+            errorToast(
+                t('multisig.name.error_title'),
+                t('multisig.name.error_message', {
                     error: `${error}`,
                 }),
-                type: 'error',
-            })
+            )
         } finally {
             setIsCreating(false)
         }
     }, [
         isCreating,
+        deviceId,
         participants,
         threshold,
         accountName,
@@ -122,7 +130,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
         setShouldPlayConfetti,
         resetState,
         exitAccountFlow,
-        showToast,
+        errorToast,
         t,
     ])
 
