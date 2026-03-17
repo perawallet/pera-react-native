@@ -119,7 +119,7 @@ const productionConfig = {
     algorandDefiUrl: 'https://algorand.co/ecosystem/defi',
     asaVerificationUrl: 'https://explorer.perawallet.app/asa-verification/',
     accountTypeSupportUrl:
-        'https://support.perawallet.app/en/category/accounts/',
+        'https://support.perawallet.app/en/article/create-a-new-algorand-account-on-pera-wallet-1ehbj11/',
 
     notificationRefreshTime: THIRTY_SECONDS,
     remoteConfigRefreshTime: ONE_HOUR,

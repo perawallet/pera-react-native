@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
 import { render, screen, fireEvent } from '@test-utils/render'
-import { AccountTypeInfoContent } from '../AccountTypeInfoBottomSheet'
+import { AccountTypeInfoContent } from '../AccountTypeInfoContent'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 vi.mock('@hooks/useLanguage', () => ({

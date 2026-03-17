@@ -27,7 +27,7 @@ import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { WalletStructureTree } from './WalletStructureTree'
 import { InfoButton } from '@components/InfoButton'
-import { AccountTypeInfoContent } from './AccountTypeInfoBottomSheet'
+import { AccountTypeInfoContent } from './AccountTypeInfoContent'
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
 

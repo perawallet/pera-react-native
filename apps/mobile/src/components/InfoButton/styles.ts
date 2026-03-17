@@ -23,7 +23,7 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'space-between',
     },
     contentContainer: {
-        marginVertical: theme.spacing.xl,
+        marginBottom: theme.spacing.xl,
     },
     icon: {
         marginRight: theme.spacing.sm,
