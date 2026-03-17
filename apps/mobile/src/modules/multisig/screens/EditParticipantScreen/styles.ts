@@ -10,9 +10,12 @@
  limitations under the License
  */
 
-export type MultisigStackParamList = {
-    CreateMultisig: undefined
-    EditParticipant: { address: string }
-    SetThreshold: undefined
-    NameMultisig: undefined
-}
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => {
+    return {
+        removeButton: {
+            marginTop: theme.spacing.xl,
+        },
+    }
+})
