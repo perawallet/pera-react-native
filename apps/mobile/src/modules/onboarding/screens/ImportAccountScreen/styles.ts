@@ -20,9 +20,13 @@ type StyleProps = {
 }
 
 export const useStyles = makeStyles(
-    (theme, { isKeyboardVisible, keyboardHeight }: StyleProps) => {
+    (theme, { insets, isKeyboardVisible, keyboardHeight }: StyleProps) => {
         return {
             mainContainer: {
+                flex: 1,
+                backgroundColor: theme.colors.background,
+            },
+            keyboardAvoidingView: {
                 flex: 1,
                 backgroundColor: theme.colors.background,
             },
@@ -68,9 +72,10 @@ export const useStyles = makeStyles(
                 backgroundColor: theme.colors.background,
                 paddingHorizontal: theme.spacing.xl,
                 paddingTop: theme.spacing.md,
-                paddingBottom: isKeyboardVisible
-                    ? keyboardHeight + theme.spacing.md
-                    : theme.spacing.lg,
+                paddingBottom:
+                    insets.bottom +
+                    theme.spacing.md +
+                    (isKeyboardVisible ? keyboardHeight : 0),
             },
             inputContainerRow: {
                 marginTop: theme.spacing.sm,
