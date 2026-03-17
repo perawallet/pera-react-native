@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { BOTTOM_TAB_LABEL_FONT_SIZE, BOTTOM_TAB_LABEL_LINE_HEIGHT } from '@constants/ui'
+import {
+    BOTTOM_TAB_LABEL_FONT_SIZE,
+    BOTTOM_TAB_LABEL_LINE_HEIGHT,
+} from '@constants/ui'
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
