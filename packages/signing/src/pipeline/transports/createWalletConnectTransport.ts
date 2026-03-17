@@ -51,19 +51,15 @@ export const createWalletConnectTransport = (): DataTransport => {
                     requestId: source.requestId,
                 }
             } catch (error) {
+                const err =
+                    error instanceof Error ? error : new Error(String(error))
+
                 // Try to call error callback if available
                 if (source.callbacks?.error) {
-                    await source.callbacks.error(
-                        error instanceof Error
-                            ? error
-                            : new Error(String(error)),
-                    )
+                    await source.callbacks.error(err)
                 }
 
-                throw new TransportError(
-                    error instanceof Error ? error.message : String(error),
-                    error instanceof Error ? error : undefined,
-                )
+                throw new TransportError(err.message, err)
             }
         },
     }

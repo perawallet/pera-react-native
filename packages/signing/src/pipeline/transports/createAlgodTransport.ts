@@ -11,6 +11,7 @@
  */
 
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import { concatBytes } from '@perawallet/wallet-core-shared'
 import type {
     DataTransport,
     SigningResult,
@@ -72,16 +73,7 @@ export const createAlgodTransport = (
                 const encodedTxns = encodeSignedTransactions(signed)
 
                 // Concatenate encoded transactions for raw submission
-                const totalLength = encodedTxns.reduce(
-                    (sum, arr) => sum + arr.length,
-                    0,
-                )
-                const concatenated = new Uint8Array(totalLength)
-                let offset = 0
-                for (const arr of encodedTxns) {
-                    concatenated.set(arr, offset)
-                    offset += arr.length
-                }
+                const concatenated = concatBytes(...encodedTxns)
 
                 // Submit to algod
                 const response = (await algokit.client.algod.sendRawTransaction(
@@ -111,10 +103,9 @@ export const createAlgodTransport = (
                     txIds,
                 }
             } catch (error) {
-                throw new TransportError(
-                    error instanceof Error ? error.message : String(error),
-                    error instanceof Error ? error : undefined,
-                )
+                const err =
+                    error instanceof Error ? error : new Error(String(error))
+                throw new TransportError(err.message, err)
             }
         },
     }

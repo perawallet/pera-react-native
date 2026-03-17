@@ -62,10 +62,9 @@ export const createMultisigProposeTransport = (
                     status: response.status,
                 }
             } catch (error) {
-                throw new TransportError(
-                    error instanceof Error ? error.message : String(error),
-                    error instanceof Error ? error : undefined,
-                )
+                const err =
+                    error instanceof Error ? error : new Error(String(error))
+                throw new TransportError(err.message, err)
             }
         },
     }

@@ -50,18 +50,11 @@ export interface CreateTransportSelectorOptions {
  * Creates a function that selects the appropriate transport based on
  * source type and account type.
  *
- * Algod and WalletConnect transports are created eagerly.
- * Multisig transports are created lazily — only when a multisig route is matched.
+ * All transports are created lazily — only when their route is matched.
  */
 export const createTransportSelector = (
     options: CreateTransportSelectorOptions,
 ): ((source: SourceMetadata, account: WalletAccount) => DataTransport) => {
-    const algodTransport = createAlgodTransport(
-        options.algokit,
-        options.encodeSignedTransactions,
-    )
-    const walletConnectTransport = createWalletConnectTransport()
-
     return (source: SourceMetadata, account: WalletAccount): DataTransport => {
         // External callback sources (WalletConnect, webview, deeplink) go back via callback
         if (
@@ -69,7 +62,7 @@ export const createTransportSelector = (
             source.type === 'webview' ||
             source.type === 'deeplink'
         ) {
-            return walletConnectTransport
+            return createWalletConnectTransport()
         }
 
         // Multisig co-sign adds signatures to existing request
@@ -93,6 +86,9 @@ export const createTransportSelector = (
         }
 
         // Everything else goes directly to algod
-        return algodTransport
+        return createAlgodTransport(
+            options.algokit,
+            options.encodeSignedTransactions,
+        )
     }
 }
