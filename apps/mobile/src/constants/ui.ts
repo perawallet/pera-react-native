@@ -22,6 +22,9 @@ export const TAB_ANIMATION_CONFIG = {
     useNativeDriver: true,
 }
 
+export const BOTTOM_TAB_LABEL_FONT_SIZE = 11
+export const BOTTOM_TAB_LABEL_LINE_HEIGHT = 14
+
 export const SLIDE_ANIMATION_DURATION = 250
 
 export const SCREEN_ANIMATION_TYPE = 'default'
