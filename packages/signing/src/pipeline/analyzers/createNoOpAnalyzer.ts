@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import type { DataAnalyzer, SignableAnalysis } from '../types'
+import type { DataAnalyzer } from '../types'
+import { EMPTY_SIGNABLE_ANALYSIS } from './constants'
 
 /**
  * Creates a no-op analyzer that skips analysis.
@@ -18,14 +19,6 @@ import type { DataAnalyzer, SignableAnalysis } from '../types'
  */
 export const createNoOpAnalyzer = (): DataAnalyzer => {
     return {
-        analyze: async (): Promise<SignableAnalysis> => {
-            return {
-                totalFees: 0n,
-                transactionSummaries: [],
-                warnings: [],
-                signableAddresses: [],
-                riskLevel: 'low',
-            }
-        },
+        analyze: async () => EMPTY_SIGNABLE_ANALYSIS,
     }
 }

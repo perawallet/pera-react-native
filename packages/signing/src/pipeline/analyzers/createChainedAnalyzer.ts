@@ -16,6 +16,7 @@ import type {
     SignableAnalysis,
     AnalysisContext,
 } from '../types'
+import { EMPTY_SIGNABLE_ANALYSIS } from './constants'
 
 /**
  * Creates an analyzer that chains multiple analyzers together.
@@ -30,13 +31,7 @@ export const createChainedAnalyzer = (
             context: AnalysisContext,
         ): Promise<SignableAnalysis> => {
             if (analyzers.length === 0) {
-                return {
-                    totalFees: 0n,
-                    transactionSummaries: [],
-                    warnings: [],
-                    signableAddresses: [],
-                    riskLevel: 'low',
-                }
+                return EMPTY_SIGNABLE_ANALYSIS
             }
 
             let result: SignableAnalysis | undefined

@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-export { createStandardAnalyzer } from './createStandardAnalyzer'
-export { createNoOpAnalyzer } from './createNoOpAnalyzer'
-export { createChainedAnalyzer } from './createChainedAnalyzer'
-export { EMPTY_SIGNABLE_ANALYSIS } from './constants'
+import type { SignableAnalysis } from '../types'
+
+export const EMPTY_SIGNABLE_ANALYSIS: SignableAnalysis = {
+    totalFees: 0n,
+    transactionSummaries: [],
+    warnings: [],
+    signableAddresses: [],
+    riskLevel: 'low',
+}

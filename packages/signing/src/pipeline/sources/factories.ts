@@ -48,10 +48,9 @@ export const createLocalSource = <TParams>(
                 signerAddress,
             }
         } catch (error) {
-            throw new SourceError(
-                error instanceof Error ? error.message : String(error),
-                error instanceof Error ? error : undefined,
-            )
+            const err =
+                error instanceof Error ? error : new Error(String(error))
+            throw new SourceError(err.message, err)
         }
     },
 })
@@ -91,10 +90,9 @@ export const createExternalSource = <TRequest>(
                 signerAddress,
             }
         } catch (error) {
-            throw new SourceError(
-                error instanceof Error ? error.message : String(error),
-                error instanceof Error ? error : undefined,
-            )
+            const err =
+                error instanceof Error ? error : new Error(String(error))
+            throw new SourceError(err.message, err)
         }
     },
 })
@@ -133,10 +131,9 @@ export const createFetchSource = <TParams>(
                 signerAddress,
             }
         } catch (error) {
-            throw new SourceError(
-                error instanceof Error ? error.message : String(error),
-                error instanceof Error ? error : undefined,
-            )
+            const err =
+                error instanceof Error ? error : new Error(String(error))
+            throw new SourceError(err.message, err)
         }
     },
 })

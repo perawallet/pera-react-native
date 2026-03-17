@@ -40,7 +40,6 @@ import {
 import {
     JsonRpcErrorCode,
     requireSecure,
-    sanitizeErrorForWebview,
     sendErrorToWebview,
     sendMessageToWebview,
 } from './handlers'
@@ -333,7 +332,7 @@ export const usePeraWebviewInterface = (
                             sendErrorToWebview(
                                 message.id,
                                 JsonRpcErrorCode.InternalError,
-                                sanitizeErrorForWebview(err),
+                                err,
                                 webview,
                             ),
                     } as TransactionSignRequest)
@@ -341,7 +340,7 @@ export const usePeraWebviewInterface = (
                     sendErrorToWebview(
                         message.id,
                         JsonRpcErrorCode.InternalError,
-                        sanitizeErrorForWebview(e as Error),
+                        e as Error,
                         webview,
                     )
                     showToast({
@@ -410,7 +409,7 @@ export const usePeraWebviewInterface = (
                             sendErrorToWebview(
                                 message.id,
                                 JsonRpcErrorCode.InternalError,
-                                sanitizeErrorForWebview(err),
+                                err,
                                 webview,
                             ),
                     } as ArbitraryDataSignRequest)
@@ -418,7 +417,7 @@ export const usePeraWebviewInterface = (
                     sendErrorToWebview(
                         message.id,
                         JsonRpcErrorCode.InternalError,
-                        sanitizeErrorForWebview(e as Error),
+                        e as Error,
                         webview,
                     )
                     showToast({

@@ -22,7 +22,7 @@ const GENERIC_ERROR_MESSAGE = 'An error occurred during signing'
  * generic Error instances may contain internal details (stack traces, paths)
  * that should not be exposed to untrusted web content.
  */
-export const sanitizeErrorForWebview = (error: Error): string => {
+const sanitizeErrorForWebview = (error: Error): string => {
     const message =
         error instanceof AppError ? error.message : GENERIC_ERROR_MESSAGE
     return message.length > MAX_ERROR_LENGTH
@@ -85,7 +85,7 @@ export const sendNotificationToWebview = (
 export const sendErrorToWebview = (
     id: string,
     code: JsonRpcErrorCode,
-    error: string,
+    error: Error | string,
     webview: WebView | null,
 ) => {
     const message = `window.postMessage(${JSON.stringify({
@@ -93,7 +93,10 @@ export const sendErrorToWebview = (
         jsonrpc: '2.0',
         error: {
             code,
-            message: error,
+            message:
+                typeof error === 'string'
+                    ? error
+                    : sanitizeErrorForWebview(error),
         },
     })});`
     logger.debug('Sending webview interface error', { message, webview })

@@ -18,198 +18,35 @@ import {
     canSignWithAccount,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
-import { AppError } from '@perawallet/wallet-core-shared'
-import Decimal from 'decimal.js'
-import type { SigningMachineContext } from '../machine/context'
-import type { ResolvedSignerType } from '../machine/context'
-import type {
-    PipelineStage,
-    SigningPipelineEvent,
-    SignRequest,
-    TransactionSignRequest,
-    TransactionWarning,
-} from '../models'
-import type {
-    TransactionListItem,
-    RequestStructure,
-} from '../utils/classification'
+import type { PipelineStage, TransactionSignRequest } from '../models'
 import {
     createTransactionListItems,
     classifyRequestStructure,
 } from '../utils/classification'
 import { calculateTotalFee } from '../utils/fees'
 import { aggregateTransactionWarnings } from '../utils/warnings'
+import type {
+    SigningConfiguration,
+    SigningPipeline,
+    MachineSnapshot,
+} from './types'
+import {
+    EMPTY_TRANSACTIONS,
+    EMPTY_LIST_ITEMS,
+    EMPTY_WARNINGS,
+    EMPTY_SIGNABLE_ADDRESSES,
+    ZERO_FEE,
+    deriveStage,
+    isRetryableError,
+    deriveEvent,
+} from './utils'
 import { useSigningRequest } from './useSigningRequest'
-
-// =============================================================================
-// Types
-// =============================================================================
-
-/**
- * Configuration passed to useSigningPipeline.
- * The onEvent callback is called once per state transition.
- */
-export type SigningConfiguration = {
-    onEvent?: (event: SigningPipelineEvent) => void
-}
-
-/**
- * The pipeline object returned by useSigningPipeline.
- * Combines display data, machine state, and controls in one place.
- */
-export type SigningPipeline = {
-    /** The current signing request, or undefined if the queue is empty. */
-    currentRequest: SignRequest | undefined
-
-    /** Current machine stage. */
-    stage: PipelineStage
-
-    /** True while the machine is in 'signing' or 'transporting'. */
-    isLoading: boolean
-
-    /** True when the machine is in 'failed' with a retryable error. */
-    isRetryable: boolean
-
-    /** The error if stage === 'failed', otherwise null. */
-    error: Error | null
-
-    // -------------------------------------------------------------------------
-    // Display data — equivalent to useSigningRequestAnalysis output.
-    // Populated from request.txs for transaction requests; empty for others.
-    // -------------------------------------------------------------------------
-    allTransactions: PeraDisplayableTransaction[]
-    listItems: TransactionListItem[]
-    signableAddresses: Set<string>
-    totalFee: Decimal
-    warnings: TransactionWarning[]
-    distinctWarnings: TransactionWarning[]
-    requestStructure: RequestStructure
-
-    // -------------------------------------------------------------------------
-    // Controls
-    // -------------------------------------------------------------------------
-
-    /** Approve the current request (sends USER_APPROVED). No-op when idle. */
-    next: () => void
-
-    /** Reject the current request (sends USER_REJECTED). No-op when idle. */
-    fail: () => void
-
-    /** Retry after a retryable failure (sends RETRY). No-op when not retryable. */
-    retry: () => void
-}
 
 // =============================================================================
 // Result type alias
 // =============================================================================
 
 export type UseSigningPipelineResult = SigningPipeline
-
-// =============================================================================
-// Snapshot helpers — typed against machine context shape
-// =============================================================================
-
-type MachineSnapshot = {
-    value: unknown
-    context: SigningMachineContext
-    matches: (stateValue: string) => boolean
-}
-
-const deriveStage = (snapshot: MachineSnapshot): PipelineStage => {
-    if (snapshot.matches('completed')) return 'completed'
-    if (snapshot.matches('rejected')) return 'rejected'
-    if (snapshot.matches('failed')) return 'failed'
-    if (snapshot.matches('transporting')) return 'transporting'
-    // 'signing' parent state covers routing, localKey, ledger, multisig substates
-    if (snapshot.matches('signing')) return 'signing'
-    if (snapshot.matches('awaiting_user')) return 'awaiting_user'
-    if (snapshot.matches('validating')) return 'validating'
-    if (snapshot.matches('idle')) return 'idle'
-    return 'idle'
-}
-
-const isRetryableError = (error: Error | null): boolean => {
-    if (!error || !(error instanceof AppError)) return false
-    return error.metadata.retryable === true
-}
-
-const derivePrimarySignerType = (
-    context: SigningMachineContext,
-): ResolvedSignerType | null => {
-    const { groupSignerTypes } = context
-    if (!groupSignerTypes) return null
-    const types = [...groupSignerTypes.values()]
-    if (types.includes('ledger')) return 'ledger'
-    if (types.includes('multisig')) return 'multisig'
-    if (types.includes('localKey')) return 'localKey'
-    return null
-}
-
-/**
- * Maps a machine snapshot + derived stage to a {@link SigningPipelineEvent}.
- *
- * Each branch accesses nullable context fields (analyses, transportResult, etc.)
- * that the machine guarantees are populated by the time the corresponding state
- * is reached. The null guards are intentionally defensive rather than asserting,
- * because this function runs inside a React effect subscription — a hard crash
- * here would unmount the signing UI instead of surfacing a recoverable error.
- */
-const deriveEvent = (
-    snapshot: MachineSnapshot,
-    stage: PipelineStage,
-): SigningPipelineEvent | null => {
-    switch (stage) {
-        case 'awaiting_user': {
-            const { analyses } = snapshot.context
-            const analysis = analyses?.[0]
-            if (!analysis) return null
-            return {
-                type: 'analysis_ready',
-                analysis,
-                signerType: derivePrimarySignerType(snapshot.context),
-            }
-        }
-        case 'signing': {
-            const signerType = derivePrimarySignerType(snapshot.context)
-            if (!signerType) return null
-            return { type: 'signing_started', signerType }
-        }
-        case 'transporting':
-            return { type: 'transport_started' }
-        case 'completed': {
-            const { transportResult } = snapshot.context
-            if (!transportResult) return null
-            return { type: 'signing_completed', transportResult }
-        }
-        case 'rejected':
-            return { type: 'signing_rejected' }
-        case 'failed': {
-            const { error, failedDuringState } = snapshot.context
-            return {
-                type: 'signing_failed',
-                error: error ?? new Error('Unknown signing error'),
-                failedDuringState,
-                isRetryable: isRetryableError(error),
-            }
-        }
-        default:
-            return null
-    }
-}
-
-// =============================================================================
-// Empty defaults
-// =============================================================================
-
-const EMPTY_TRANSACTIONS: PeraDisplayableTransaction[] = []
-const EMPTY_LIST_ITEMS: TransactionListItem[] = []
-const EMPTY_WARNINGS: TransactionWarning[] = []
-const EMPTY_SIGNABLE_ADDRESSES = new Set<string>()
-const ZERO_FEE = new Decimal(0)
-
-// =============================================================================
-// Hook
-// =============================================================================
 
 export const useSigningPipeline = (
     config: SigningConfiguration = {},
