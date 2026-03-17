@@ -14,7 +14,7 @@ import { type ReactNode } from 'react'
 import { KeyboardAvoidingView } from 'react-native'
 import { ScrollView } from 'react-native-gesture-handler'
 import { type Control, Controller } from 'react-hook-form'
-import { PWInput, PWText, PWView } from '@components/core'
+import { PWInput, PWScrollView, PWText, PWView } from '@components/core'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { AddressEntryField } from '@components/AddressEntryField'
 import { AddressDisplay } from '@components/AddressDisplay'
@@ -48,7 +48,7 @@ export const ContactForm = ({
 
     return (
         <KeyboardAvoidingView behavior='height'>
-            <ScrollView style={styles.container}>
+            <PWScrollView style={styles.container}>
                 <PWView style={styles.avatar}>
                     <ContactAvatar
                         size='xl'
@@ -101,7 +101,7 @@ export const ContactForm = ({
                     )}
                     {children}
                 </PWView>
-            </ScrollView>
+            </PWScrollView>
         </KeyboardAvoidingView>
     )
 }
