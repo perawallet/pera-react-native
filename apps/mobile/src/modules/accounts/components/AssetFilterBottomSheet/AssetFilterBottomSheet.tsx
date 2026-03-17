@@ -13,27 +13,40 @@
 import {
     PWBottomSheet,
     PWButton,
+    PWCheckbox,
     PWIcon,
-    PWRadioButton,
     PWText,
     PWToolbar,
+    PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { useAssetSortBottomSheet } from './useAssetSortBottomSheet'
+import { useAssetPreferencesStore } from '@perawallet/wallet-core-assets'
+import { useLanguage } from '@hooks/useLanguage'
+import { useCallback } from 'react'
 import { useStyles } from './styles'
 
-export type AssetSortBottomSheetProps = {
+export type AssetFilterBottomSheetProps = {
     isVisible: boolean
     onClose: () => void
 }
 
-export const AssetSortBottomSheet = ({
+export const AssetFilterBottomSheet = ({
     isVisible,
     onClose,
-}: AssetSortBottomSheetProps) => {
+}: AssetFilterBottomSheetProps) => {
     const styles = useStyles()
-    const { sortOptions, assetSortMode, handleSortModeChange, handleDone, t } =
-        useAssetSortBottomSheet({ onClose })
+    const { t } = useLanguage()
+
+    const hideZeroBalance = useAssetPreferencesStore(
+        state => state.hideZeroBalance,
+    )
+    const setHideZeroBalance = useAssetPreferencesStore(
+        state => state.setHideZeroBalance,
+    )
+
+    const handleToggle = useCallback(() => {
+        setHideZeroBalance(!hideZeroBalance)
+    }, [hideZeroBalance, setHideZeroBalance])
 
     return (
         <PWBottomSheet
@@ -48,27 +61,32 @@ export const AssetSortBottomSheet = ({
                         onPress={onClose}
                     />
                 }
-                center={<PWText variant='h4'>{t('asset_sort.title')}</PWText>}
+                center={<PWText variant='h4'>{t('asset_filter.title')}</PWText>}
                 right={
                     <PWButton
                         variant='link'
-                        title={t('asset_sort.done')}
-                        onPress={handleDone}
+                        title={t('asset_filter.done')}
+                        onPress={onClose}
                     />
                 }
                 paddingStyle='dense'
             />
 
             <PWView style={styles.contentContainer}>
-                {sortOptions.map(option => (
-                    <PWRadioButton
-                        key={option.mode}
-                        title={t(option.labelKey)}
-                        isSelected={assetSortMode === option.mode}
-                        onPress={() => handleSortModeChange(option.mode)}
-                        testID={`asset_sort_option_${option.mode}`}
+                <PWTouchableOpacity
+                    style={styles.filterRow}
+                    onPress={handleToggle}
+                    testID='asset_filter_hide_zero_balance'
+                >
+                    <PWText style={styles.filterLabel}>
+                        {t('asset_filter.hide_zero_balance')}
+                    </PWText>
+                    <PWCheckbox
+                        checked={hideZeroBalance}
+                        onPress={handleToggle}
+                        containerStyle={styles.checkboxContainer}
                     />
-                ))}
+                </PWTouchableOpacity>
             </PWView>
         </PWBottomSheet>
     )

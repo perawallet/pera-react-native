@@ -15,14 +15,24 @@
         "manual": "Manually",
         "reorganize_manually": "Reorganize Accounts Manually"
     },
+    "manage_assets": {
+        "title": "Manage Assets",
+        "sort": "Sort",
+        "filter": "Filter",
+        "remove_assets": "Remove Assets"
+    },
     "asset_sort": {
-        "title": "Sort & Filter",
+        "title": "Sort",
         "done": "Done",
         "balance_desc": "Highest Value to Lowest",
         "balance_asc": "Lowest Value to Highest",
         "alphabetical_asc": "Alphabetically A to Z",
-        "alphabetical_desc": "Alphabetically Z to A",
-        "hide_zero_balance": "Hide Zero Balance Assets"
+        "alphabetical_desc": "Alphabetically Z to A"
+    },
+    "asset_filter": {
+        "title": "Filter",
+        "done": "Done",
+        "hide_zero_balance": "Hide Assets with No Balance"
     },
     "asset_opt_out": {
         "title": "Remove Asset",
@@ -34,6 +44,7 @@
     "remove_assets": {
         "title": "Remove Assets",
         "select_all": "Select All",
+        "deselect_all": "Deselect All",
         "remove_selected": "Remove Selected ({{count}})",
         "empty_title": "No Removable Assets",
         "empty_body": "All your assets have a non-zero balance",

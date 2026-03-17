@@ -17,4 +17,21 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.lg,
         paddingBottom: theme.spacing.xl,
     },
+    filterRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.md,
+    },
+    filterLabel: {
+        flex: 1,
+    },
+    checkboxContainer: {
+        padding: 0,
+        margin: 0,
+        marginLeft: 0,
+        marginRight: 0,
+        backgroundColor: 'transparent',
+    },
 }))

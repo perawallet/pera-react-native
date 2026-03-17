@@ -10,11 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    contentContainer: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.xl,
-    },
-}))
+export { ManageAssetsBottomSheet } from './ManageAssetsBottomSheet'
+export type { ManageAssetsBottomSheetProps } from './ManageAssetsBottomSheet'

@@ -67,7 +67,11 @@ export const RemoveAssetsScreen = () => {
             <PWView style={styles.headerContainer}>
                 <PWText variant='h4'>{t('remove_assets.title')}</PWText>
                 <PWTouchableOpacity onPress={handleToggleSelectAll}>
-                    <PWText>{t('remove_assets.select_all')}</PWText>
+                    <PWText>
+                        {isAllSelected
+                            ? t('remove_assets.deselect_all')
+                            : t('remove_assets.select_all')}
+                    </PWText>
                 </PWTouchableOpacity>
             </PWView>
 

@@ -49,9 +49,7 @@ type UseAssetSortBottomSheetProps = {
 type UseAssetSortBottomSheetResult = {
     sortOptions: SortOption[]
     assetSortMode: AssetSortMode
-    hideZeroBalance: boolean
     handleSortModeChange: (mode: AssetSortMode) => void
-    handleHideZeroBalanceToggle: () => void
     handleDone: () => void
     t: (key: string) => string
 }
@@ -61,14 +59,8 @@ export const useAssetSortBottomSheet = ({
 }: UseAssetSortBottomSheetProps): UseAssetSortBottomSheetResult => {
     const { t } = useLanguage()
     const assetSortMode = useAssetPreferencesStore(state => state.assetSortMode)
-    const hideZeroBalance = useAssetPreferencesStore(
-        state => state.hideZeroBalance,
-    )
     const setAssetSortMode = useAssetPreferencesStore(
         state => state.setAssetSortMode,
-    )
-    const setHideZeroBalance = useAssetPreferencesStore(
-        state => state.setHideZeroBalance,
     )
 
     const handleSortModeChange = useCallback(
@@ -78,10 +70,6 @@ export const useAssetSortBottomSheet = ({
         [setAssetSortMode],
     )
 
-    const handleHideZeroBalanceToggle = useCallback(() => {
-        setHideZeroBalance(!hideZeroBalance)
-    }, [hideZeroBalance, setHideZeroBalance])
-
     const handleDone = useCallback(() => {
         onClose()
     }, [onClose])
@@ -89,9 +77,7 @@ export const useAssetSortBottomSheet = ({
     return {
         sortOptions: SORT_OPTIONS,
         assetSortMode,
-        hideZeroBalance,
         handleSortModeChange,
-        handleHideZeroBalanceToggle,
         handleDone,
         t,
     }

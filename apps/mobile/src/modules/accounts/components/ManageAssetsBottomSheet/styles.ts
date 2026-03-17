@@ -13,8 +13,22 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    contentContainer: {
+    container: {
         paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.sm,
         paddingBottom: theme.spacing.xl,
+    },
+    menuRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: theme.spacing.lg,
+        gap: theme.spacing.md,
+    },
+    menuLabel: {
+        flex: 1,
+    },
+    menuLabelDestructive: {
+        flex: 1,
+        color: theme.colors.alertNegative,
     },
 }))

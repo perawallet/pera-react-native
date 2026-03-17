@@ -17,7 +17,6 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import React, { useCallback, useMemo, useState } from 'react'
 import { useStyles } from './styles'
 
@@ -37,7 +36,9 @@ import { useLanguage } from '@hooks/useLanguage'
 import { GestureResponderEvent, KeyboardAvoidingView } from 'react-native'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { useModalState } from '@hooks/useModalState'
+import { ManageAssetsBottomSheet } from '../ManageAssetsBottomSheet'
 import { AssetSortBottomSheet } from '../AssetSortBottomSheet'
+import { AssetFilterBottomSheet } from '../AssetFilterBottomSheet'
 import { useSortedAssetBalances } from './useSortedAssetBalances'
 import { SwipeableAssetItem } from './SwipeableAssetItem'
 import { OptOutConfirmationBottomSheet } from './OptOutConfirmationBottomSheet'
@@ -57,7 +58,9 @@ export const AccountAssetList = ({
     const styles = useStyles()
     const { t } = useLanguage()
     const headerState = useModalState(true)
-    const sortBottomSheetState = useModalState(false)
+    const manageSheetState = useModalState(false)
+    const sortSheetState = useModalState(false)
+    const filterSheetState = useModalState(false)
     const optOutConfirmationState = useModalState(false)
     const [searchFilter, setSearchFilter] = useState('')
     const [assetForOptOut, setAssetForOptOut] =
@@ -129,6 +132,21 @@ export const AccountAssetList = ({
         optOutConfirmationState.close()
         setAssetForOptOut(null)
     }, [optOutConfirmationState])
+
+    const handleOpenSort = useCallback(() => {
+        manageSheetState.close()
+        sortSheetState.open()
+    }, [manageSheetState, sortSheetState])
+
+    const handleOpenFilter = useCallback(() => {
+        manageSheetState.close()
+        filterSheetState.open()
+    }, [manageSheetState, filterSheetState])
+
+    const handleRemoveAssets = useCallback(() => {
+        manageSheetState.close()
+        navigation.navigate('RemoveAssets')
+    }, [manageSheetState, navigation])
 
     const renderItem = useCallback(
         ({ item }: { item: AssetWithAccountBalance }) => {
@@ -209,9 +227,7 @@ export const AccountAssetList = ({
                                                 icon='sliders'
                                                 variant='helper'
                                                 paddingStyle='dense'
-                                                onPress={
-                                                    sortBottomSheetState.open
-                                                }
+                                                onPress={manageSheetState.open}
                                             />
                                             <PWButton
                                                 icon='plus'
@@ -259,9 +275,23 @@ export const AccountAssetList = ({
                 />
             </PWTouchableOpacity>
 
+            <ManageAssetsBottomSheet
+                isVisible={manageSheetState.isOpen}
+                onClose={manageSheetState.close}
+                onOpenSort={handleOpenSort}
+                onOpenFilter={handleOpenFilter}
+                onRemoveAssets={handleRemoveAssets}
+                isWatchAccount={isWatch}
+            />
+
             <AssetSortBottomSheet
-                isVisible={sortBottomSheetState.isOpen}
-                onClose={sortBottomSheetState.close}
+                isVisible={sortSheetState.isOpen}
+                onClose={sortSheetState.close}
+            />
+
+            <AssetFilterBottomSheet
+                isVisible={filterSheetState.isOpen}
+                onClose={filterSheetState.close}
             />
 
             <OptOutConfirmationBottomSheet
