@@ -24,7 +24,8 @@ import { StackNavigationProp } from '@react-navigation/stack'
 import { useCallback } from 'react'
 
 export const useSelectDestinationScreen = () => {
-    const { selectedAsset, setDestination, setSendMode } = useSendFunds()
+    const { selectedAssetBalance, setDestination, setSendMode } = useSendFunds()
+    const selectedAsset = selectedAssetBalance?.asset
     const selectedAccount = useSelectedAccount()
     const accounts = useAllAccounts()
     const { accountBalances } = useAccountBalancesQuery(accounts)

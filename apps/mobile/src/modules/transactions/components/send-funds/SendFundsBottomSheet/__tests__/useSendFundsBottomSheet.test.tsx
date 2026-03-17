@@ -66,7 +66,9 @@ describe('useSendFundsBottomSheet', () => {
         renderHook(() => useSendFundsBottomSheet(true, '123', mockOnClose))
 
         expect(mockSetCanSelectAsset).toHaveBeenCalledWith(false)
-        expect(mockSetSelectedAssetBalance).toHaveBeenCalledWith(undefined)
+        expect(mockSetSelectedAssetBalance).toHaveBeenCalledWith({
+            assetId: '123',
+        })
     })
 
     it('does not update store when not visible', () => {

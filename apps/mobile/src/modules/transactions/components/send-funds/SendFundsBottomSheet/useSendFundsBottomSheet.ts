@@ -47,7 +47,7 @@ export const useSendFundsBottomSheet = (
             }
 
             if (assetBalance && selectedAssetBalance?.assetId !== assetId) {
-                setSelectedAssetBalance(selectedAssetBalance)
+                setSelectedAssetBalance(assetBalance)
             }
         }
     }, [
