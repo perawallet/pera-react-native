@@ -15,6 +15,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SettingsNotificationsScreen } from '../SettingsNotificationsScreen'
 import { useSettingsNotificationsScreen } from '../useSettingsNotificationsScreen'
 
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    resolveAccountStatus: () => 'standard',
+    useAllAccounts: () => [],
+    getAccountDisplayName: (account: { name?: string }) =>
+        account?.name ?? 'Account',
+}))
+
 vi.mock(
     '@modules/settings/screens/SettingsNotificationsScreen/useSettingsNotificationsScreen',
     () => ({

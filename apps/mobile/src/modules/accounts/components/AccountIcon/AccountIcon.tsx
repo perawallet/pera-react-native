@@ -14,44 +14,48 @@ import { IconName, PWIcon } from '@components/core'
 
 import { useMemo } from 'react'
 import {
-    isAlgo25Account,
-    isHDWalletAccount,
-    isLedgerAccount,
-    isMultisigAccount,
-    isRekeyedAccount,
-    isWatchAccount,
+    AccountStatus,
+    resolveAccountStatus,
+    useAllAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { SvgProps } from 'react-native-svg'
+
+const THEME_TOKEN = '__theme__'
+const FALLBACK_ASSET = `accounts/${THEME_TOKEN}/unknown-account`
 
 export type AccountIconProps = {
     account?: WalletAccount
     size?: 'sm' | 'md' | 'lg' | 'xl'
 } & SvgProps
 
+const iconNames: Record<AccountStatus, string> = {
+    hdWallet: `accounts/${THEME_TOKEN}/hdwallet-account`,
+    ledger: `accounts/${THEME_TOKEN}/ledger-account`,
+    multisig: `accounts/${THEME_TOKEN}/multisig-account`,
+    noAuth: `accounts/${THEME_TOKEN}/noauth-account`,
+    rekeyedLedger: `accounts/${THEME_TOKEN}/rekeyed-ledger`,
+    rekeyedStandard: `accounts/${THEME_TOKEN}/rekeyed-standard`,
+    standard: `accounts/${THEME_TOKEN}/algo25-account`,
+    watch: `accounts/${THEME_TOKEN}/watch-account`,
+}
+
 export const AccountIcon = (props: AccountIconProps) => {
     const { account, size = 'md', ...rest } = props
     const darkmode = useIsDarkMode()
+    const accounts = useAllAccounts()
 
     const icon = useMemo(() => {
         if (!account) return <></>
 
         const theme = darkmode ? 'dark' : 'light'
-        let iconName: IconName = `accounts/${theme}/unknown-account`
-        if (isHDWalletAccount(account)) {
-            iconName = `accounts/${theme}/hdwallet-account`
-        } else if (isAlgo25Account(account)) {
-            iconName = `accounts/${theme}/algo25-account`
-        } else if (isLedgerAccount(account)) {
-            iconName = `accounts/${theme}/ledger-account`
-        } else if (isWatchAccount(account)) {
-            iconName = `accounts/${theme}/watch-account`
-        } else if (isMultisigAccount(account)) {
-            iconName = `accounts/${theme}/multisig-account`
-        } else if (isRekeyedAccount(account)) {
-            iconName = `accounts/${theme}/rekeyed-account`
-        }
+        const accountStatus = resolveAccountStatus(account, accounts)
+        const icon = iconNames[accountStatus] ?? FALLBACK_ASSET
+        const iconName: IconName = icon.replaceAll(
+            THEME_TOKEN,
+            theme,
+        ) as IconName
         return (
             <PWIcon
                 {...rest}
