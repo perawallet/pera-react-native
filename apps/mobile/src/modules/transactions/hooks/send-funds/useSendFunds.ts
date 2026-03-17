@@ -11,16 +11,13 @@
  */
 
 import { create } from 'zustand'
-import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-asa-inbox'
 import Decimal from 'decimal.js'
-import { PeraAsset } from '@perawallet/wallet-core-assets'
 
 type SendMode = 'normal' | 'express' | 'sendArc59'
 
 type SendFundsState = {
-    selectedAsset?: PeraAsset
-    selectedAssetBalance?: AssetWithAccountBalance
+    selectedAssetId?: string
     canSelectAsset: boolean
     amount?: Decimal
     note?: string
@@ -32,8 +29,7 @@ type SendFundsState = {
 }
 
 type SendFundsActions = {
-    setSelectedAsset: (asset?: PeraAsset) => void
-    setSelectedAssetBalance: (asset?: AssetWithAccountBalance) => void
+    setSelectedAssetId: (id?: string) => void
     setCanSelectAsset: (canSelect: boolean) => void
     setAmount: (amount?: Decimal) => void
     setNote: (note?: string) => void
@@ -48,8 +44,7 @@ type SendFundsActions = {
 type SendFundsStore = SendFundsState & SendFundsActions
 
 const initialState: SendFundsState = {
-    selectedAsset: undefined,
-    selectedAssetBalance: undefined,
+    selectedAssetId: undefined,
     canSelectAsset: true,
     amount: undefined,
     note: undefined,
@@ -62,8 +57,7 @@ const initialState: SendFundsState = {
 
 export const useSendFundsStore = create<SendFundsStore>()(set => ({
     ...initialState,
-    setSelectedAsset: asset => set({ selectedAsset: asset }),
-    setSelectedAssetBalance: asset => set({ selectedAssetBalance: asset }),
+    setSelectedAssetId: id => set({ selectedAssetId: id }),
     setCanSelectAsset: canSelect => set({ canSelectAsset: canSelect }),
     setAmount: amount => set({ amount }),
     setNote: note => set({ note }),
@@ -78,8 +72,7 @@ export const useSendFundsStore = create<SendFundsStore>()(set => ({
 // Explicit return types for decoupled access
 
 type UseSendFundsResult = {
-    selectedAsset?: PeraAsset
-    selectedAssetBalance?: AssetWithAccountBalance
+    selectedAssetId?: string
     canSelectAsset: boolean
     amount?: Decimal
     note?: string
@@ -88,8 +81,7 @@ type UseSendFundsResult = {
     sendMode: SendMode
     arc59Summary?: Arc59SendSummaryResponse
     isCloseAccount: boolean
-    setSelectedAsset: (asset?: PeraAsset) => void
-    setSelectedAssetBalance: (asset?: AssetWithAccountBalance) => void
+    setSelectedAssetId: (id?: string) => void
     setCanSelectAsset: (canSelect: boolean) => void
     setAmount: (amount?: Decimal) => void
     setNote: (note?: string) => void
@@ -102,10 +94,7 @@ type UseSendFundsResult = {
 }
 
 export const useSendFunds = (): UseSendFundsResult => {
-    const selectedAsset = useSendFundsStore(state => state.selectedAsset)
-    const selectedAssetBalance = useSendFundsStore(
-        state => state.selectedAssetBalance,
-    )
+    const selectedAssetId = useSendFundsStore(state => state.selectedAssetId)
     const canSelectAsset = useSendFundsStore(state => state.canSelectAsset)
     const amount = useSendFundsStore(state => state.amount)
     const note = useSendFundsStore(state => state.note)
@@ -113,9 +102,8 @@ export const useSendFunds = (): UseSendFundsResult => {
     const onFinished = useSendFundsStore(state => state.onFinished)
     const sendMode = useSendFundsStore(state => state.sendMode)
     const arc59Summary = useSendFundsStore(state => state.arc59Summary)
-    const setSelectedAsset = useSendFundsStore(state => state.setSelectedAsset)
-    const setSelectedAssetBalance = useSendFundsStore(
-        state => state.setSelectedAssetBalance,
+    const setSelectedAssetId = useSendFundsStore(
+        state => state.setSelectedAssetId,
     )
     const setCanSelectAsset = useSendFundsStore(
         state => state.setCanSelectAsset,
@@ -133,8 +121,7 @@ export const useSendFunds = (): UseSendFundsResult => {
     const reset = useSendFundsStore(state => state.reset)
 
     return {
-        selectedAsset,
-        selectedAssetBalance,
+        selectedAssetId,
         canSelectAsset,
         amount,
         note,
@@ -143,8 +130,7 @@ export const useSendFunds = (): UseSendFundsResult => {
         sendMode,
         arc59Summary,
         isCloseAccount,
-        setSelectedAsset,
-        setSelectedAssetBalance,
+        setSelectedAssetId,
         setCanSelectAsset,
         setAmount,
         setNote,

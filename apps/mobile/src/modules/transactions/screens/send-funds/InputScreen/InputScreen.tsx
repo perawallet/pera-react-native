@@ -41,7 +41,7 @@ export const InputScreen = () => {
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const {
         asset,
-        selectedAssetBalance,
+        accountAssetBalance,
         params,
         accountInformation,
         cryptoValue,
@@ -104,7 +104,7 @@ export const InputScreen = () => {
         ),
     })
 
-    if (!asset || !selectedAssetBalance || !params || !accountInformation) {
+    if (!asset || !accountAssetBalance || !params || !accountInformation) {
         return <LoadingView variant='circle' />
     }
 
@@ -127,7 +127,7 @@ export const InputScreen = () => {
                 <PreferredCurrencyDisplay
                     sourceAmount={cryptoValue ? Decimal(cryptoValue) : null}
                     ignorePrivacyMode
-                    sourceAssetId={selectedAssetBalance?.assetId ?? ''}
+                    sourceAssetId={accountAssetBalance?.assetId ?? ''}
                     precision={6}
                     showSymbol
                     minPrecision={2}
@@ -159,7 +159,7 @@ export const InputScreen = () => {
             </PWView>
 
             <AccountAssetItemView
-                accountBalance={selectedAssetBalance}
+                accountBalance={accountAssetBalance}
                 style={styles.assetDisplay}
             />
 

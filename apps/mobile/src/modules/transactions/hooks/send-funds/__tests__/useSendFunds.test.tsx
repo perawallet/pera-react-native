@@ -13,7 +13,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import Decimal from 'decimal.js'
-import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 
 import { useSendFundsStore, useSendFunds } from '../useSendFunds'
 
@@ -25,22 +24,21 @@ describe('useSendFundsStore', () => {
     it('has correct initial state', () => {
         const { result } = renderHook(() => useSendFundsStore())
 
-        expect(result.current.selectedAsset).toBeUndefined()
+        expect(result.current.selectedAssetId).toBeUndefined()
         expect(result.current.canSelectAsset).toBe(true)
         expect(result.current.amount).toBeUndefined()
         expect(result.current.note).toBeUndefined()
         expect(result.current.destination).toBeUndefined()
     })
 
-    it('sets selectedAssetBalance', () => {
+    it('sets selectedAssetId', () => {
         const { result } = renderHook(() => useSendFundsStore())
-        const mockAsset = { assetId: '123' } as AssetWithAccountBalance
 
         act(() => {
-            result.current.setSelectedAssetBalance(mockAsset)
+            result.current.setSelectedAssetId('123')
         })
 
-        expect(result.current.selectedAssetBalance).toBe(mockAsset)
+        expect(result.current.selectedAssetId).toBe('123')
     })
 
     it('sets canSelectAsset', () => {
@@ -88,9 +86,7 @@ describe('useSendFundsStore', () => {
         const { result } = renderHook(() => useSendFundsStore())
 
         act(() => {
-            result.current.setSelectedAssetBalance({
-                assetId: '123',
-            } as AssetWithAccountBalance)
+            result.current.setSelectedAssetId('123')
             result.current.setCanSelectAsset(false)
             result.current.setAmount(new Decimal('10.5'))
             result.current.setNote('Test note')
@@ -101,7 +97,7 @@ describe('useSendFundsStore', () => {
             result.current.reset()
         })
 
-        expect(result.current.selectedAsset).toBeUndefined()
+        expect(result.current.selectedAssetId).toBeUndefined()
         expect(result.current.canSelectAsset).toBe(true)
         expect(result.current.amount).toBeUndefined()
         expect(result.current.note).toBeUndefined()
@@ -117,7 +113,7 @@ describe('useSendFunds', () => {
     it('returns initial state via granular selectors', () => {
         const { result } = renderHook(() => useSendFunds())
 
-        expect(result.current.selectedAsset).toBeUndefined()
+        expect(result.current.selectedAssetId).toBeUndefined()
         expect(result.current.canSelectAsset).toBe(true)
         expect(result.current.amount).toBeUndefined()
         expect(result.current.note).toBeUndefined()
@@ -126,18 +122,17 @@ describe('useSendFunds', () => {
 
     it('exposes setters that update the store', () => {
         const { result } = renderHook(() => useSendFunds())
-        const mockAsset = { assetId: '123' } as AssetWithAccountBalance
         const amount = new Decimal('5')
 
         act(() => {
-            result.current.setSelectedAssetBalance(mockAsset)
+            result.current.setSelectedAssetId('123')
             result.current.setCanSelectAsset(false)
             result.current.setAmount(amount)
             result.current.setNote('hello')
             result.current.setDestination('DEST_ADDR')
         })
 
-        expect(result.current.selectedAssetBalance).toBe(mockAsset)
+        expect(result.current.selectedAssetId).toBe('123')
         expect(result.current.canSelectAsset).toBe(false)
         expect(result.current.amount).toBe(amount)
         expect(result.current.note).toBe('hello')
@@ -148,9 +143,7 @@ describe('useSendFunds', () => {
         const { result } = renderHook(() => useSendFunds())
 
         act(() => {
-            result.current.setSelectedAssetBalance({
-                assetId: '1',
-            } as AssetWithAccountBalance)
+            result.current.setSelectedAssetId('1')
             result.current.setAmount(new Decimal('99'))
         })
 
@@ -158,7 +151,7 @@ describe('useSendFunds', () => {
             result.current.reset()
         })
 
-        expect(result.current.selectedAsset).toBeUndefined()
+        expect(result.current.selectedAssetId).toBeUndefined()
         expect(result.current.amount).toBeUndefined()
         expect(result.current.canSelectAsset).toBe(true)
     })

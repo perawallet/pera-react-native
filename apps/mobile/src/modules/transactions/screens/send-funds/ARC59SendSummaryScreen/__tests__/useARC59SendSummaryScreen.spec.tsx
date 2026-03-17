@@ -109,7 +109,7 @@ describe('useARC59SendSummaryScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         ;(useSendFunds as Mock).mockReturnValue({
-            selectedAsset: { assetId: 123 },
+            selectedAssetId: '123',
             destination: 'RECEIVERADDR',
             amount: '50',
             setArc59Summary: mockSetArc59Summary,

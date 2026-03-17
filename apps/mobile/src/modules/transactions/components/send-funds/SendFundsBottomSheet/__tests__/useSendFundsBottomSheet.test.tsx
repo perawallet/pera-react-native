@@ -16,16 +16,13 @@ import { useSendFundsBottomSheet } from '../useSendFundsBottomSheet'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useSendFunds } from '@modules/transactions/hooks'
 
-const mockSetSelectedAssetBalance = vi.fn()
+const mockSetSelectedAssetId = vi.fn()
 const mockSetCanSelectAsset = vi.fn()
 const mockSetOnFinished = vi.fn()
 const mockReset = vi.fn()
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
-    useAccountAssetBalanceQuery: vi.fn(() => ({
-        data: { assetId: '123' },
-    })),
 }))
 
 vi.mock('@modules/transactions/hooks', () => ({
@@ -44,11 +41,11 @@ describe('useSendFundsBottomSheet', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ;(useSendFunds as any).mockReturnValue({
             canSelectAsset: true,
-            setSelectedAssetBalance: mockSetSelectedAssetBalance,
+            selectedAssetId: undefined,
+            setSelectedAssetId: mockSetSelectedAssetId,
             setCanSelectAsset: mockSetCanSelectAsset,
             setOnFinished: mockSetOnFinished,
             reset: mockReset,
-            selectedAssetBalance: undefined,
         })
     })
 
@@ -66,30 +63,30 @@ describe('useSendFundsBottomSheet', () => {
         renderHook(() => useSendFundsBottomSheet(true, '123', mockOnClose))
 
         expect(mockSetCanSelectAsset).toHaveBeenCalledWith(false)
-        expect(mockSetSelectedAssetBalance).toHaveBeenCalledWith(undefined)
+        expect(mockSetSelectedAssetId).toHaveBeenCalledWith('123')
     })
 
     it('does not update store when not visible', () => {
         renderHook(() => useSendFundsBottomSheet(false, '123', mockOnClose))
 
-        expect(mockSetSelectedAssetBalance).not.toHaveBeenCalled()
+        expect(mockSetSelectedAssetId).not.toHaveBeenCalled()
         expect(mockSetCanSelectAsset).not.toHaveBeenCalled()
     })
 
-    it('does not call setSelectedAssetBalance if asset is already selected', () => {
+    it('does not call setSelectedAssetId if asset is already selected', () => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ;(useSendFunds as any).mockReturnValue({
             canSelectAsset: false,
-            setSelectedAssetBalance: mockSetSelectedAssetBalance,
+            selectedAssetId: '123',
+            setSelectedAssetId: mockSetSelectedAssetId,
             setCanSelectAsset: mockSetCanSelectAsset,
             setOnFinished: mockSetOnFinished,
             reset: mockReset,
-            selectedAssetBalance: { assetId: '123' },
         })
 
         renderHook(() => useSendFundsBottomSheet(true, '123', mockOnClose))
 
-        expect(mockSetSelectedAssetBalance).not.toHaveBeenCalled()
+        expect(mockSetSelectedAssetId).not.toHaveBeenCalled()
         expect(mockSetCanSelectAsset).not.toHaveBeenCalled()
     })
 

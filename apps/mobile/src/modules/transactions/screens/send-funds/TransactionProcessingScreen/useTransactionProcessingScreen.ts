@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { BackHandler } from 'react-native'
 
 import { bottomSheetNotifier } from '@components/core'
@@ -20,6 +20,7 @@ import {
     useAccountBalancesInvalidator,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
+import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import {
     SendTransactionParams,
     useTransactionSendFlow,
@@ -35,7 +36,7 @@ export const useTransactionProcessingScreen = () => {
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
     const {
-        selectedAsset,
+        selectedAssetId,
         amount,
         destination,
         note,
@@ -43,6 +44,16 @@ export const useTransactionProcessingScreen = () => {
         arc59Summary,
         isCloseAccount,
     } = useSendFunds()
+
+    const assetIDs = useMemo(
+        () => (selectedAssetId ? [selectedAssetId] : []),
+        [selectedAssetId],
+    )
+    const { data: assets } = useAssetsQuery(assetIDs)
+    const selectedAsset = useMemo(() => {
+        if (!selectedAssetId) return undefined
+        return assets.get(selectedAssetId)
+    }, [selectedAssetId, assets])
     const selectedAccount = useSelectedAccount()
     const { showToast } = useToast()
     const { t } = useLanguage()

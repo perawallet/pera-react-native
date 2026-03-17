@@ -11,10 +11,7 @@
  */
 
 import { useCallback, useLayoutEffect } from 'react'
-import {
-    useAccountAssetBalanceQuery,
-    useSelectedAccount,
-} from '@perawallet/wallet-core-accounts'
+import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useSendFunds } from '@modules/transactions/hooks'
 
 type UseSendFundsBottomSheetResult = {
@@ -29,16 +26,12 @@ export const useSendFundsBottomSheet = (
     const selectedAccount = useSelectedAccount()
     const {
         canSelectAsset,
-        setSelectedAssetBalance,
+        selectedAssetId,
+        setSelectedAssetId,
         setCanSelectAsset,
         setOnFinished,
         reset,
-        selectedAssetBalance,
     } = useSendFunds()
-    const { data: assetBalance } = useAccountAssetBalanceQuery(
-        selectedAccount ?? undefined,
-        assetId,
-    )
 
     useLayoutEffect(() => {
         if (isVisible && assetId != null) {
@@ -46,18 +39,17 @@ export const useSendFundsBottomSheet = (
                 setCanSelectAsset(false)
             }
 
-            if (assetBalance && selectedAssetBalance?.assetId !== assetId) {
-                setSelectedAssetBalance(selectedAssetBalance)
+            if (selectedAssetId !== assetId) {
+                setSelectedAssetId(assetId)
             }
         }
     }, [
         isVisible,
         assetId,
-        assetBalance,
         setCanSelectAsset,
-        setSelectedAssetBalance,
+        setSelectedAssetId,
         canSelectAsset,
-        selectedAssetBalance?.assetId,
+        selectedAssetId,
     ])
 
     const handleFinished = useCallback(() => {

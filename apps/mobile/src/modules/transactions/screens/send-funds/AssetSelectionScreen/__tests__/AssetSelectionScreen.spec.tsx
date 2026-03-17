@@ -90,7 +90,7 @@ vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
 }))
 
-const mockSetSelectedAssetBalance = vi.fn()
+const mockSetSelectedAssetId = vi.fn()
 
 const mockAssets = [
     { assetId: '0', amount: '1000000', algoValue: '1' },
@@ -102,7 +102,7 @@ describe('AssetSelectionScreen', () => {
         vi.clearAllMocks()
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ;(useSendFunds as any).mockReturnValue({
-            setSelectedAssetBalance: mockSetSelectedAssetBalance,
+            setSelectedAssetId: mockSetSelectedAssetId,
         })
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ;(useSelectedAccount as any).mockReturnValue({
@@ -147,7 +147,9 @@ describe('AssetSelectionScreen', () => {
 
         fireEvent.click(screen.getByTestId('asset-item-0'))
 
-        expect(mockSetSelectedAssetBalance).toHaveBeenCalledWith(mockAssets[0])
+        expect(mockSetSelectedAssetId).toHaveBeenCalledWith(
+            mockAssets[0].assetId,
+        )
         expect(mockNavigate).toHaveBeenCalledWith('InputAmount')
     })
 

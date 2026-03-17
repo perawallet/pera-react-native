@@ -15,6 +15,7 @@ import { renderHook, act } from '@testing-library/react'
 import { useTransactionProcessingScreen } from '../useTransactionProcessingScreen'
 import Decimal from 'decimal.js'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useToast } from '@hooks/useToast'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useTransactionSendFlow } from '@perawallet/wallet-core-transactions'
@@ -45,6 +46,10 @@ vi.mock('@components/core', () => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
     useAccountBalancesInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
+}))
+
+vi.mock('@perawallet/wallet-core-assets', () => ({
+    useAssetsQuery: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
@@ -88,7 +93,7 @@ describe('useTransactionProcessingScreen', () => {
     const mockAsset = { id: '123', name: 'Test Asset' }
 
     const mockSendFundsState = {
-        selectedAsset: undefined,
+        selectedAssetId: undefined as string | undefined,
         amount: undefined,
         destination: undefined,
         note: undefined,
@@ -97,7 +102,6 @@ describe('useTransactionProcessingScreen', () => {
         isCloseAccount: false,
         onFinished: vi.fn(),
         canSelectAsset: true,
-        setSelectedAsset: vi.fn(),
         setCanSelectAsset: vi.fn(),
         setAmount: vi.fn(),
         setNote: vi.fn(),
@@ -115,6 +119,9 @@ describe('useTransactionProcessingScreen', () => {
             showToast: mockShowToast,
         })
         ;(useSelectedAccount as Mock).mockReturnValue(null)
+        ;(useAssetsQuery as Mock).mockReturnValue({
+            data: new Map([['123', mockAsset]]),
+        })
         ;(useTransactionSendFlow as Mock).mockReturnValue({
             execute: mockExecute,
         })
@@ -125,7 +132,7 @@ describe('useTransactionProcessingScreen', () => {
         ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
         ;(useSendFunds as Mock).mockReturnValue({
             ...mockSendFundsState,
-            selectedAsset: mockAsset,
+            selectedAssetId: '123',
             amount: new Decimal(5),
             destination: 'DEST_ADDRESS',
             note: 'Test note',
@@ -155,7 +162,7 @@ describe('useTransactionProcessingScreen', () => {
         ;(useSelectedAccount as Mock).mockReturnValue(null)
         ;(useSendFunds as Mock).mockReturnValue({
             ...mockSendFundsState,
-            selectedAsset: undefined,
+            selectedAssetId: undefined,
             amount: undefined,
             destination: undefined,
         })
@@ -181,7 +188,7 @@ describe('useTransactionProcessingScreen', () => {
         ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
         ;(useSendFunds as Mock).mockReturnValue({
             ...mockSendFundsState,
-            selectedAsset: mockAsset,
+            selectedAssetId: '123',
             amount: new Decimal(5),
             destination: 'DEST_ADDRESS',
         })
@@ -206,7 +213,7 @@ describe('useTransactionProcessingScreen', () => {
         ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
         ;(useSendFunds as Mock).mockReturnValue({
             ...mockSendFundsState,
-            selectedAsset: mockAsset,
+            selectedAssetId: '123',
             amount: new Decimal(5),
             destination: 'DEST_ADDRESS',
         })
@@ -234,7 +241,7 @@ describe('useTransactionProcessingScreen', () => {
         ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
         ;(useSendFunds as Mock).mockReturnValue({
             ...mockSendFundsState,
-            selectedAsset: mockAsset,
+            selectedAssetId: '123',
             amount: new Decimal(5),
             destination: 'DEST_ADDRESS',
             sendMode: 'sendArc59',
@@ -259,7 +266,7 @@ describe('useTransactionProcessingScreen', () => {
         ;(useSelectedAccount as Mock).mockReturnValue(mockAccount)
         ;(useSendFunds as Mock).mockReturnValue({
             ...mockSendFundsState,
-            selectedAsset: mockAsset,
+            selectedAssetId: '123',
             amount: new Decimal(5),
             destination: 'DEST_ADDRESS',
         })
