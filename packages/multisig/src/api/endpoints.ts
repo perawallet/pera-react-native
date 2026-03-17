@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import {
+    queryClient,
+    getHttpStatus,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import {
     createMultisigAccountResponseSchema,
     signRequestDetailResponseSchema,
@@ -49,6 +53,21 @@ export const getMultisigAccountDetail = async (
     })
 
     return createMultisigAccountResponseSchema.parse(response.data)
+}
+
+export const checkIsMultisigAddress = async (
+    network: Network,
+    address: string,
+): Promise<boolean> => {
+    try {
+        await getMultisigAccountDetail(network, address)
+        return true
+    } catch (error: unknown) {
+        if (getHttpStatus(error) === 404) {
+            return false
+        }
+        throw error
+    }
 }
 
 export const proposeSignRequest = async (

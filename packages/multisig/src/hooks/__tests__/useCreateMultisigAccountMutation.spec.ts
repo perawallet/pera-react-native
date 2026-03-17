@@ -70,6 +70,7 @@ describe('useCreateMultisigAccountMutation', () => {
                 version: 1,
                 threshold: 2,
                 participant_addresses: ['ADDR1', 'ADDR2', 'ADDR3'],
+                device_id: 'device-123',
             })
         })
 
@@ -121,6 +122,7 @@ describe('useCreateMultisigAccountMutation', () => {
                 version: 1,
                 threshold: 2,
                 participant_addresses: ['ADDR1', 'ADDR2'],
+                device_id: 'device-123',
             })
         })
 
@@ -156,6 +158,7 @@ describe('useCreateMultisigAccountMutation', () => {
                 version: 1,
                 threshold: 2,
                 participant_addresses: ['ADDR1', 'ADDR2'],
+                device_id: 'device-123',
             })
         })
 
@@ -182,6 +185,7 @@ describe('useCreateMultisigAccountMutation', () => {
                 version: 1,
                 threshold: 2,
                 participant_addresses: ['ADDR1', 'ADDR2'],
+                device_id: 'device-123',
             })
         })
 

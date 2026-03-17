@@ -55,16 +55,16 @@ export const AddParticipantBottomSheet = ({
         [accounts, selectedAddress],
     )
 
-    const { isMultisig, isChecking } = useIsMultisigAddressQuery({
+    const multisigCheck = useIsMultisigAddressQuery({
         network,
         address: selectedAddress,
         enabled: !!selectedAddress && !isLocalAddress,
     })
 
     useEffect(() => {
-        if (!selectedAddress || isChecking) return
+        if (!selectedAddress || multisigCheck.isFetching) return
 
-        if (isMultisig) {
+        if (multisigCheck.data?.isMultisig) {
             showToast({
                 title: t('multisig.add_participant.joint_account_error'),
                 body: t('multisig.add_participant.joint_account_error_body'),
@@ -79,8 +79,8 @@ export const AddParticipantBottomSheet = ({
         setSelectedAddress('')
     }, [
         selectedAddress,
-        isMultisig,
-        isChecking,
+        multisigCheck.data?.isMultisig,
+        multisigCheck.isFetching,
         onAddAddress,
         onClose,
         showToast,
@@ -105,6 +105,7 @@ export const AddParticipantBottomSheet = ({
             onBackdropPress={onClose}
             size='lg'
             enablePanDownToClose
+            autoCreateContainer={false}
         >
             <PWView style={styles.container}>
                 <PWToolbar

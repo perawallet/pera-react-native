@@ -10,19 +10,12 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => {
-    return {
-        addressValueContainer: {
-            flexDirection: 'row',
-            gap: theme.spacing.xl,
-            alignItems: 'center',
-        },
-        contactContainer: {
-            flexDirection: 'row',
-            gap: theme.spacing.md,
-            alignItems: 'center',
-        },
-    }
-})
+/**
+ * Extracts the HTTP status code from an error thrown by the ky HTTP client.
+ * Returns undefined if the error is not an HTTP error or has no status.
+ */
+export const getHttpStatus = (error: unknown): number | undefined => {
+    if (typeof error !== 'object' || error === null) return undefined
+    const response = (error as { response?: { status?: unknown } }).response
+    return typeof response?.status === 'number' ? response.status : undefined
+}
