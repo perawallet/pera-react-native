@@ -98,7 +98,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
         titleStyle: {
             fontFamily: getFontFamily(500),
             fontSize: 15,
-            lineHeight: 24,
+            lineHeight: 15,
             flexWrap: 'nowrap',
             textAlign: 'center',
             verticalAlign: 'middle',
