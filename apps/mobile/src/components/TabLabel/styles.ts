@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { BOTTOM_TAB_LABEL_FONT_SIZE, BOTTOM_TAB_LABEL_LINE_HEIGHT } from '@constants/ui'
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
@@ -17,14 +18,14 @@ export const useStyles = makeStyles(theme => {
         active: {
             color: theme.colors.textMain,
             fontWeight: 'medium',
-            fontSize: 11,
-            lineHeight: 14,
+            fontSize: BOTTOM_TAB_LABEL_FONT_SIZE,
+            lineHeight: BOTTOM_TAB_LABEL_LINE_HEIGHT,
         },
         inactive: {
             color: theme.colors.textGray,
             fontWeight: 'normal',
-            fontSize: 11,
-            lineHeight: 14,
+            fontSize: BOTTOM_TAB_LABEL_FONT_SIZE,
+            lineHeight: BOTTOM_TAB_LABEL_LINE_HEIGHT,
         },
     }
 })
