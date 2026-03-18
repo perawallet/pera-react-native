@@ -22,28 +22,22 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { AccountWithBalance } from '../AccountWithBalance'
 import { PortfolioView } from '../PortfolioView'
-import { AccountSortBottomSheet } from '../AccountSortBottomSheet'
 import { useAccountMenu } from './useAccountMenu'
 import { ReactNode } from 'react'
 
 export type AccountMenuProps = {
     onSelected: (account: WalletAccount) => void
     onAddAccount: () => void
+    onOpenSort: () => void
     headerContent?: ReactNode
 }
 
 export const AccountMenu = (props: AccountMenuProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const {
-        sortedAccounts,
-        selectedAccountAddress,
-        handleTap,
-        isSortSheetVisible,
-        handleOpenSort,
-        handleCloseSort,
-    } = useAccountMenu(props)
-    const { onAddAccount, headerContent } = props
+    const { sortedAccounts, selectedAccountAddress, sortMode, handleTap } =
+        useAccountMenu(props)
+    const { onAddAccount, onOpenSort, headerContent } = props
 
     return (
         <PWView style={styles.container}>
@@ -61,11 +55,11 @@ export const AccountMenu = (props: AccountMenuProps) => {
                     </PWText>
                     <PWView style={styles.titleBarButtonContainer}>
                         <PWButton
-                            variant='helper'
+                            variant='link'
                             icon='list-arrow-down'
                             title={t('account_menu.sort')}
                             paddingStyle='dense'
-                            onPress={handleOpenSort}
+                            onPress={onOpenSort}
                         />
                         <PWButton
                             testID='account_menu_add_account_button'
@@ -79,6 +73,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
 
                 <PWFlatList<WalletAccount>
                     data={sortedAccounts}
+                    extraData={sortMode}
                     keyExtractor={item => item.address}
                     renderItem={({ item: acct }) => (
                         <PWTouchableOpacity onPress={() => handleTap(acct)}>
@@ -97,11 +92,6 @@ export const AccountMenu = (props: AccountMenuProps) => {
                     inBottomSheet
                 />
             </PWView>
-
-            <AccountSortBottomSheet
-                isVisible={isSortSheetVisible}
-                onClose={handleCloseSort}
-            />
         </PWView>
     )
 }

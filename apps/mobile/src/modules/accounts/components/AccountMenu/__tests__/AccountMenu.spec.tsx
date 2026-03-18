@@ -60,6 +60,7 @@ describe('AccountMenu', () => {
             <AccountMenu
                 onSelected={onSelected}
                 onAddAccount={onAddAccount}
+                onOpenSort={vi.fn()}
             />,
         )
 
@@ -74,6 +75,7 @@ describe('AccountMenu', () => {
             <AccountMenu
                 onSelected={onSelected}
                 onAddAccount={onAddAccount}
+                onOpenSort={vi.fn()}
             />,
         )
 

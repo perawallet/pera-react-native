@@ -16,6 +16,9 @@ export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
     },
+    toolbar: {
+        paddingHorizontal: theme.spacing.lg,
+    },
     contentContainer: {
         paddingHorizontal: theme.spacing.lg,
     },

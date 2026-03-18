@@ -16,7 +16,7 @@ import DraggableFlatList, {
     ScaleDecorator,
 } from 'react-native-draggable-flatlist'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { PWIcon, PWView } from '@components/core'
+import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 import { AccountDisplay } from '../AccountDisplay'
 import { useStyles } from './styles'
 
@@ -44,14 +44,16 @@ export const DraggableAccountList = ({
                             showChevron={false}
                         />
                     </PWView>
-                    <PWView style={styles.dragHandle}>
+                    <PWTouchableOpacity
+                        onLongPress={drag}
+                        disabled={isActive}
+                        style={styles.dragHandle}
+                    >
                         <PWIcon
                             name='horizontal-line-stack'
                             variant='secondary'
-                            onLongPress={drag}
-                            disabled={isActive}
                         />
-                    </PWView>
+                    </PWTouchableOpacity>
                 </PWView>
             </ScaleDecorator>
         ),

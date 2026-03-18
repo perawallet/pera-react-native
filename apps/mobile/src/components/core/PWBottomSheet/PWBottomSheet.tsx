@@ -59,10 +59,12 @@ export type PWBottomSheetSize = 'full' | 'lg' | 'md' | 'auto'
 export type PWBottomSheetProps = {
     isVisible: boolean
     onBackdropPress?: () => void
+    onDismiss?: () => void
     innerContainerStyle?: StyleProp<ViewStyle>
     containerStyle?: StyleProp<ViewStyle>
     snapPoints?: (string | number)[]
     enablePanDownToClose?: boolean
+    enableContentPanningGesture?: boolean
     size?: PWBottomSheetSize
     autoCreateContainer?: boolean
 } & PropsWithChildren
@@ -70,9 +72,11 @@ export type PWBottomSheetProps = {
 export const PWBottomSheet = ({
     isVisible,
     onBackdropPress,
+    onDismiss,
     innerContainerStyle,
     containerStyle,
     enablePanDownToClose = false,
+    enableContentPanningGesture,
     size = 'auto',
     autoCreateContainer = true,
     children,
@@ -107,7 +111,8 @@ export const PWBottomSheet = ({
 
     const handleDismiss = useCallback(() => {
         onBackdropPress?.()
-    }, [onBackdropPress])
+        onDismiss?.()
+    }, [onBackdropPress, onDismiss])
 
     // Merge background style with containerStyle for backward compatibility
     const mergedBackgroundStyle = containerStyle
@@ -130,6 +135,7 @@ export const PWBottomSheet = ({
             keyboardBehavior='interactive'
             keyboardBlurBehavior='restore'
             enablePanDownToClose={enablePanDownToClose}
+            enableContentPanningGesture={enableContentPanningGesture}
             enableOverDrag={false}
         >
             <NotifierWrapper

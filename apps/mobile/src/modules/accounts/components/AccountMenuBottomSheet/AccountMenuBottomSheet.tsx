@@ -19,6 +19,8 @@ import { useStyles } from './styles'
 export type AccountMenuBottomSheetProps = {
     isVisible: boolean
     onClose: () => void
+    onDismiss?: () => void
+    onOpenSort: () => void
     onSelected: (account: WalletAccount) => void
     onAddAccount: () => void
     headerContent?: ReactNode
@@ -27,6 +29,8 @@ export type AccountMenuBottomSheetProps = {
 export const AccountMenuBottomSheet = ({
     isVisible,
     onClose,
+    onDismiss,
+    onOpenSort,
     onSelected,
     onAddAccount,
     headerContent,
@@ -37,6 +41,7 @@ export const AccountMenuBottomSheet = ({
         <PWBottomSheet
             isVisible={isVisible}
             onBackdropPress={onClose}
+            onDismiss={onDismiss}
             innerContainerStyle={styles.container}
             size='lg'
             autoCreateContainer={false}
@@ -53,6 +58,7 @@ export const AccountMenuBottomSheet = ({
             <AccountMenu
                 onSelected={onSelected}
                 onAddAccount={onAddAccount}
+                onOpenSort={onOpenSort}
                 headerContent={headerContent}
             />
         </PWBottomSheet>
