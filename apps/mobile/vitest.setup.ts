@@ -549,6 +549,8 @@ vi.mock('@components/core', () => {
                 children,
             ),
         PWDropdownItem: createMockComponent('PWDropdownItem'),
+        PWSwipeable: createMockComponent('PWSwipeable'),
+        DEFAULT_SWIPE_ACTION_WIDTH: 80,
     }
 })
 
