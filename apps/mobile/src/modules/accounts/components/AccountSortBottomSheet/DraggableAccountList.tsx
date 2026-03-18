@@ -33,7 +33,7 @@ export const DraggableAccountList = ({
 
     const renderItem = useCallback(
         ({ item, drag, isActive }: RenderItemParams<WalletAccount>) => (
-            <ScaleDecorator>
+            <ScaleDecorator activeScale={0.97}>
                 <PWView
                     style={styles.draggableRow}
                     testID={`draggable_account_${item.address}`}
@@ -45,7 +45,7 @@ export const DraggableAccountList = ({
                         />
                     </PWView>
                     <PWTouchableOpacity
-                        onLongPress={drag}
+                        onPressIn={drag}
                         disabled={isActive}
                         style={styles.dragHandle}
                     >
