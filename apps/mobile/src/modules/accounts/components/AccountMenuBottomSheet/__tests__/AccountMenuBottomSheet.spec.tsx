@@ -41,6 +41,7 @@ describe('AccountMenuBottomSheet', () => {
         const props = {
             isVisible: true,
             onClose: vi.fn(),
+            onOpenSort: vi.fn(),
             onSelected: vi.fn(),
             onAddAccount: vi.fn(),
         }
@@ -55,6 +56,7 @@ describe('AccountMenuBottomSheet', () => {
         const props = {
             isVisible: false,
             onClose: vi.fn(),
+            onOpenSort: vi.fn(),
             onSelected: vi.fn(),
             onAddAccount: vi.fn(),
         }

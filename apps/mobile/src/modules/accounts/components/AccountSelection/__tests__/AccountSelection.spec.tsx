@@ -30,16 +30,23 @@ vi.mock('@perawallet/wallet-core-accounts', async () => ({
     useAllAccounts: vi.fn(() => []),
 }))
 
+const defaultModalState = {
+    isOpen: false,
+    open: vi.fn(),
+    close: vi.fn(),
+    toggle: vi.fn(),
+}
+
 vi.mock('@hooks/useModalState', () => ({
-    useModalState: vi.fn(() => ({
-        isOpen: false,
-        open: vi.fn(),
-        close: vi.fn(),
-    })),
+    useModalState: vi.fn(() => ({ ...defaultModalState })),
 }))
 
 vi.mock('@modules/accounts/components/AccountMenuBottomSheet', () => ({
     AccountMenuBottomSheet: vi.fn(() => null),
+}))
+
+vi.mock('@modules/accounts/components/AccountSortBottomSheet', () => ({
+    AccountSortBottomSheet: vi.fn(() => null),
 }))
 
 vi.mock('../../AccountDisplay', () => ({

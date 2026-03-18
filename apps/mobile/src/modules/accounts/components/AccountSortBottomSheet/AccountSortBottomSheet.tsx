@@ -49,6 +49,7 @@ export const AccountSortBottomSheet = ({
             isVisible={isVisible}
             onBackdropPress={onClose}
             size='lg'
+            enableContentPanningGesture={false}
         >
             <PWToolbar
                 left={
@@ -63,9 +64,11 @@ export const AccountSortBottomSheet = ({
                         variant='link'
                         title={t('account_sort.done')}
                         onPress={handleDone}
+                        paddingStyle='none'
                     />
                 }
                 paddingStyle='dense'
+                style={styles.toolbar}
             />
 
             <PWView style={styles.contentContainer}>
