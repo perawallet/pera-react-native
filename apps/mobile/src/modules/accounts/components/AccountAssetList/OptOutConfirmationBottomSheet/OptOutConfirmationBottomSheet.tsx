@@ -13,9 +13,32 @@
 import { PWBottomSheet, PWButton, PWText, PWView } from '@components/core'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import { useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { MIN_TXN_FEE } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
+
+const MAX_ASSET_NAME_LENGTH = 40
+const MICRO_ALGO_DIVISOR = 1_000_000
+
+const formatFee = (): string => {
+    const fee = Number(MIN_TXN_FEE) / MICRO_ALGO_DIVISOR
+    return `${fee} ${ALGO_ASSET.unitName}`
+}
+
+const sanitizeAssetName = (
+    name: string | undefined,
+    assetId: string,
+): string => {
+    if (!name) {
+        return assetId
+    }
+    const truncated =
+        name.length > MAX_ASSET_NAME_LENGTH
+            ? `${name.slice(0, MAX_ASSET_NAME_LENGTH)}...`
+            : name
+    return `${truncated} (ID: ${assetId})`
+}
 
 export type OptOutConfirmationBottomSheetProps = {
     isVisible: boolean
@@ -68,7 +91,10 @@ export const OptOutConfirmationBottomSheet = ({
                     </PWText>
                     <PWText style={styles.description}>
                         {t('asset_opt_out.description', {
-                            assetName: asset?.name ?? accountBalance.assetId,
+                            assetName: sanitizeAssetName(
+                                asset?.name,
+                                accountBalance.assetId,
+                            ),
                             accountName,
                         })}
                     </PWText>
@@ -78,7 +104,7 @@ export const OptOutConfirmationBottomSheet = ({
                     <PWText style={styles.feeLabel}>
                         {t('asset_opt_out.fee_label')}
                     </PWText>
-                    <PWText style={styles.feeValue}>0.001 ALGO</PWText>
+                    <PWText style={styles.feeValue}>{formatFee()}</PWText>
                 </PWView>
 
                 <PWView style={styles.buttonContainer}>

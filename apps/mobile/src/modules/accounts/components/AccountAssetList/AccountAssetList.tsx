@@ -26,6 +26,7 @@ import {
     AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
+
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -84,9 +85,7 @@ export const AccountAssetList = ({
                 <SwipeableAssetItem
                     item={item}
                     isSwipeEnabled={isSwipeable}
-                    onPress={event =>
-                        renderItemProps.goToAssetScreen(event, item)
-                    }
+                    onPress={renderItemProps.goToAssetScreen}
                     onOptOut={renderItemProps.handleOptOut}
                 />
             )

@@ -42,19 +42,22 @@ const sortByMode = (
             sorted.sort((a, b) => a.algoValue.minus(b.algoValue).toNumber())
             break
         case 'alphabeticalAsc':
+        case 'alphabeticalDesc': {
+            const nameMap = new Map(
+                sorted.map(item => [
+                    item.assetId,
+                    assets?.get(item.assetId)?.name?.toLowerCase() ?? '',
+                ]),
+            )
             sorted.sort((a, b) => {
-                const nameA = assets?.get(a.assetId)?.name?.toLowerCase() ?? ''
-                const nameB = assets?.get(b.assetId)?.name?.toLowerCase() ?? ''
-                return nameA.localeCompare(nameB)
+                const nameA = nameMap.get(a.assetId) ?? ''
+                const nameB = nameMap.get(b.assetId) ?? ''
+                return mode === 'alphabeticalAsc'
+                    ? nameA.localeCompare(nameB)
+                    : nameB.localeCompare(nameA)
             })
             break
-        case 'alphabeticalDesc':
-            sorted.sort((a, b) => {
-                const nameA = assets?.get(a.assetId)?.name?.toLowerCase() ?? ''
-                const nameB = assets?.get(b.assetId)?.name?.toLowerCase() ?? ''
-                return nameB.localeCompare(nameA)
-            })
-            break
+        }
     }
 
     return sorted

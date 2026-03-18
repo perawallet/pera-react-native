@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { DEFAULT_SWIPE_ACTION_WIDTH } from '@components/core'
 
 export const useStyles = makeStyles(theme => ({
     itemContainer: {
@@ -23,7 +24,7 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.negative,
         justifyContent: 'center',
         alignItems: 'center',
-        width: 80,
+        width: DEFAULT_SWIPE_ACTION_WIDTH,
         borderRadius: theme.spacing.sm,
         marginVertical: theme.spacing.md,
     },

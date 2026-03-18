@@ -11,7 +11,6 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import { GestureResponderEvent } from 'react-native'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
@@ -22,6 +21,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { useModalState } from '@hooks/useModalState'
+import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { useSortedAssetBalances } from './useSortedAssetBalances'
 
 type UseAccountAssetListResult = {
@@ -37,10 +37,7 @@ type UseAccountAssetListResult = {
     optOutConfirmationState: ReturnType<typeof useModalState>
     assetForOptOut: AssetWithAccountBalance | null
     setSearchFilter: (value: string) => void
-    goToAssetScreen: (
-        event: GestureResponderEvent,
-        asset: AssetWithAccountBalance,
-    ) => void
+    goToAssetScreen: (asset: AssetWithAccountBalance) => void
     handleOptOut: (item: AssetWithAccountBalance) => void
     handleConfirmOptOut: () => void
     handleCloseOptOut: () => void
@@ -51,10 +48,7 @@ type UseAccountAssetListResult = {
     getEmptyBody: () => string
     renderItemProps: {
         isWatch: boolean
-        goToAssetScreen: (
-            event: GestureResponderEvent,
-            asset: AssetWithAccountBalance,
-        ) => void
+        goToAssetScreen: (asset: AssetWithAccountBalance) => void
         handleOptOut: (item: AssetWithAccountBalance) => void
     }
 }
@@ -93,11 +87,13 @@ export const useAccountAssetList = ({
         assets,
     )
 
+    const debouncedSearchFilter = useDebouncedValue(searchFilter)
+
     const balances = useMemo(() => {
         if (!sortedBalances.length) {
             return []
         }
-        const searchTerm = searchFilter.toLowerCase()
+        const searchTerm = debouncedSearchFilter.toLowerCase()
         if (!searchTerm) {
             return sortedBalances
         }
@@ -110,13 +106,12 @@ export const useAccountAssetList = ({
                 false
             )
         })
-    }, [sortedBalances, searchFilter, assets])
+    }, [sortedBalances, debouncedSearchFilter, assets])
 
     const isWatch = isWatchAccount(account)
 
     const goToAssetScreen = useCallback(
-        (event: GestureResponderEvent, asset: AssetWithAccountBalance) => {
-            event.stopPropagation()
+        (asset: AssetWithAccountBalance) => {
             headerState.open()
             navigation.navigate('AssetDetails', {
                 assetId: asset.assetId,

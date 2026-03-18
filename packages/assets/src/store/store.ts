@@ -51,6 +51,8 @@ export const useAssetPreferencesStore: UseBoundStore<
 
 registerStore({
     name: STORE_NAME,
+    // Zustand's persist middleware exposes `.persist` at runtime, but the TypeScript
+    // types don't include it on the bound store. Cast through `unknown` to access it.
     clearStorage: () =>
         (
             useAssetPreferencesStore as unknown as {

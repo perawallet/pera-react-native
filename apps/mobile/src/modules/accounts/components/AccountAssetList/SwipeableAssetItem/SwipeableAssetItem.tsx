@@ -26,11 +26,11 @@ import { useStyles } from './styles'
 export type SwipeableAssetItemProps = {
     item: AssetWithAccountBalance
     isSwipeEnabled: boolean
-    onPress: (event: GestureResponderEvent) => void
+    onPress: (item: AssetWithAccountBalance) => void
     onOptOut: (item: AssetWithAccountBalance) => void
 }
 
-export const SwipeableAssetItem = ({
+const SwipeableAssetItemInner = ({
     item,
     isSwipeEnabled,
     onPress,
@@ -43,6 +43,14 @@ export const SwipeableAssetItem = ({
         swipeableRef.current?.close()
         onOptOut(item)
     }, [item, onOptOut])
+
+    const handlePress = useCallback(
+        (event: GestureResponderEvent) => {
+            event.stopPropagation()
+            onPress(item)
+        },
+        [item, onPress],
+    )
 
     const renderRightActions = useCallback(() => {
         return (
@@ -59,7 +67,7 @@ export const SwipeableAssetItem = ({
         return (
             <PWTouchableOpacity
                 style={styles.itemContainer}
-                onPress={onPress}
+                onPress={handlePress}
             >
                 <AccountAssetItemView accountBalance={item} />
             </PWTouchableOpacity>
@@ -71,13 +79,12 @@ export const SwipeableAssetItem = ({
             ref={swipeableRef}
             renderRightActions={renderRightActions}
             onSwipeableOpen={handleSwipeOpen}
-            rightThreshold={80}
             overshootRight={false}
         >
             <PWView style={styles.swipeableContent}>
                 <PWTouchableOpacity
                     style={styles.itemContainer}
-                    onPress={onPress}
+                    onPress={handlePress}
                 >
                     <AccountAssetItemView accountBalance={item} />
                 </PWTouchableOpacity>
@@ -85,3 +92,5 @@ export const SwipeableAssetItem = ({
         </PWSwipeable>
     )
 }
+
+export const SwipeableAssetItem = React.memo(SwipeableAssetItemInner)

@@ -10,6 +10,22 @@
  limitations under the License
  */
 
-export const BASE_ACCOUNT_MBR = 100_000n // 0.1 ALGO — minimum balance for any account
-export const ASSET_MBR = 100_000n // 0.1 ALGO — additional MBR per opted-in asset
-export const MIN_TXN_FEE = 1_000n // 0.001 ALGO — minimum transaction fee
+import { useEffect, useState } from 'react'
+
+const DEFAULT_DELAY = 300
+
+export const useDebouncedValue = <T>(value: T, delay = DEFAULT_DELAY): T => {
+    const [debouncedValue, setDebouncedValue] = useState(value)
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedValue(value)
+        }, delay)
+
+        return () => {
+            clearTimeout(timer)
+        }
+    }, [value, delay])
+
+    return debouncedValue
+}

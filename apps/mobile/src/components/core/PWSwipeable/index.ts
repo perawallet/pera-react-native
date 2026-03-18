@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { PWSwipeable } from './PWSwipeable'
+export { PWSwipeable, DEFAULT_SWIPE_ACTION_WIDTH } from './PWSwipeable'
 export type { PWSwipeableProps, PWSwipeableRef } from './PWSwipeable'

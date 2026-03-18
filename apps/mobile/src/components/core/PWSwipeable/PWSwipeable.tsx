@@ -16,10 +16,23 @@ import ReanimatedSwipeable, {
     type SwipeableMethods,
 } from 'react-native-gesture-handler/ReanimatedSwipeable'
 
+export const DEFAULT_SWIPE_ACTION_WIDTH = 80
+
 export type PWSwipeableProps = SwipeableProps
 
-export const PWSwipeable = ({ children, ...props }: PWSwipeableProps) => {
-    return <ReanimatedSwipeable {...props}>{children}</ReanimatedSwipeable>
+export const PWSwipeable = ({
+    children,
+    rightThreshold = DEFAULT_SWIPE_ACTION_WIDTH,
+    ...props
+}: PWSwipeableProps) => {
+    return (
+        <ReanimatedSwipeable
+            rightThreshold={rightThreshold}
+            {...props}
+        >
+            {children}
+        </ReanimatedSwipeable>
+    )
 }
 
 export type PWSwipeableRef = SwipeableMethods
