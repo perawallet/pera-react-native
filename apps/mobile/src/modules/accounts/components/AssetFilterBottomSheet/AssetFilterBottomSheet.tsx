@@ -20,10 +20,9 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { useAssetPreferencesStore } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
-import { useCallback } from 'react'
 import { useStyles } from './styles'
+import { useAssetFilterBottomSheet } from './useAssetFilterBottomSheet'
 
 export type AssetFilterBottomSheetProps = {
     isVisible: boolean
@@ -36,17 +35,7 @@ export const AssetFilterBottomSheet = ({
 }: AssetFilterBottomSheetProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-
-    const hideZeroBalance = useAssetPreferencesStore(
-        state => state.hideZeroBalance,
-    )
-    const setHideZeroBalance = useAssetPreferencesStore(
-        state => state.setHideZeroBalance,
-    )
-
-    const handleToggle = useCallback(() => {
-        setHideZeroBalance(!hideZeroBalance)
-    }, [hideZeroBalance, setHideZeroBalance])
+    const { hideZeroBalance, handleToggle } = useAssetFilterBottomSheet()
 
     return (
         <PWBottomSheet
