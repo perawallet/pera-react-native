@@ -16,10 +16,6 @@ export const useStyles = makeStyles(theme => ({
     container: {
         paddingBottom: theme.spacing.xxl,
     },
-    title: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingBottom: theme.spacing.md,
-    },
     inputContainer: {
         paddingHorizontal: theme.spacing.lg,
         paddingVertical: theme.spacing.md,
