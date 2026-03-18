@@ -188,6 +188,7 @@ export const useWalletConnectHandlers = () => {
                 id: generateOrderedUniqueId(),
                 type: 'arbitrary-data',
                 transport: 'callback',
+                sourceType: 'walletconnect',
                 transportId: connector.clientId,
                 sourceMetadata: connector.session?.peerMeta,
                 data: params,
@@ -216,8 +217,8 @@ export const useWalletConnectHandlers = () => {
                         error: new Error('User rejected'),
                     })
                 },
-                error: async (error: string) => {
-                    onError(new WalletConnectSignRequestError(error))
+                error: async (error: Error) => {
+                    onError(new WalletConnectSignRequestError(error.message))
                 },
             } as ArbitraryDataSignRequest)
         },
@@ -249,6 +250,7 @@ export const useWalletConnectHandlers = () => {
                 id: generateOrderedUniqueId(),
                 type: 'transactions',
                 transport: 'callback',
+                sourceType: 'walletconnect',
                 transportId: connector.clientId,
                 txs: txnObjects,
                 sourceMetadata: connector.session?.peerMeta,
@@ -274,8 +276,8 @@ export const useWalletConnectHandlers = () => {
                         error: new Error('User rejected'),
                     })
                 },
-                error: async (error: string) => {
-                    onError(new WalletConnectSignRequestError(error))
+                error: async (error: Error) => {
+                    onError(new WalletConnectSignRequestError(error.message))
                 },
             } as TransactionSignRequest)
         },

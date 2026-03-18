@@ -15,6 +15,13 @@ import type {
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { BaseStoreState } from '@perawallet/wallet-core-shared'
+import type {
+    Arc60Data,
+    SignableAnalysis,
+    SourceType,
+    TransportResult,
+} from '../pipeline/types'
+import type { ResolvedSignerType } from '../machine/context'
 
 export type SignRequestSource = {
     name?: string
@@ -28,6 +35,8 @@ type BaseSignRequest = {
     type: 'transactions' | 'arbitrary-data' | 'arc60'
     transport: 'algod' | 'callback'
     transportId?: string
+    /** Origin of the request. Defaults to 'local' when not specified. */
+    sourceType?: SourceType
     sourceMetadata?: SignRequestSource
 }
 
@@ -35,7 +44,7 @@ export type TransactionSignRequest = {
     txs: PeraTransaction[]
     approve?: (signedTxs: PeraSignedTransaction[]) => Promise<void>
     reject?: () => Promise<void>
-    error?: (error: string) => Promise<void>
+    error?: (error: Error) => Promise<void>
 } & BaseSignRequest
 
 export type PeraArbitraryDataMessage = {
@@ -54,13 +63,15 @@ export type ArbitraryDataSignRequest = {
     data: PeraArbitraryDataMessage[]
     approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
     reject?: () => Promise<void>
-    error?: (error: string) => Promise<void>
+    error?: (error: Error) => Promise<void>
 } & BaseSignRequest
 
 export type Arc60SignRequest = {
+    signer: string
+    structuredData: Arc60Data
     approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
     reject?: () => Promise<void>
-    error?: (error: string) => Promise<void>
+    error?: (error: Error) => Promise<void>
 } & BaseSignRequest
 
 export type SignRequest =
@@ -81,3 +92,55 @@ export type TransactionWarning = {
     senderAddress: string
     targetAddress: string
 }
+
+/**
+ * Flat representation of the signing machine's current state.
+ * The 'signing' stage collapses all signing substates (localKey, ledger, multisig).
+ */
+export type PipelineStage =
+    | 'idle' // no request or actor initializing
+    | 'validating' // analyzerActor running
+    | 'awaiting_user' // waiting for next() or fail()
+    | 'signing' // localKey | ledger | multisig actor running
+    | 'transporting' // transportActor delivering signed data
+    | 'completed' // terminal: signing and delivery succeeded
+    | 'rejected' // terminal: user cancelled
+    | 'failed' // terminal or retryable: error occurred
+
+/**
+ * Events emitted by the pipeline when notable state transitions occur.
+ * Fired once per transition via onEvent — not on every context update.
+ */
+export type SigningPipelineEvent =
+    | {
+          type: 'analysis_ready'
+          /** The machine's analysis result (fees, warnings, risk level) */
+          analysis: SignableAnalysis
+          /** The signer type that will be used once approved */
+          signerType: ResolvedSignerType | null
+      }
+    | {
+          type: 'signing_started'
+          signerType: ResolvedSignerType
+      }
+    | { type: 'transport_started' }
+    | {
+          type: 'signing_completed'
+          transportResult: TransportResult
+      }
+    | { type: 'signing_rejected' }
+    | {
+          type: 'signing_failed'
+          error: Error
+          /** Which pipeline stage the failure occurred in */
+          failedDuringState: 'validating' | 'signing' | 'transporting' | null
+          isRetryable: boolean
+      }
+    /** Reserved for Ledger hardware wallet confirmation (Phase 8) */
+    | { type: 'ledger_confirmation_requested' }
+
+export {
+    isTransactionRequest,
+    isArbitraryDataRequest,
+    isArc60Request,
+} from './guards'

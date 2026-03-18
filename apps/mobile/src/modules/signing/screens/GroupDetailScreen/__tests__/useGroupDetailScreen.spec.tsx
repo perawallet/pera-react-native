@@ -31,10 +31,7 @@ const mockTx1 = { id: 'tx-1', sender: 'ADDR1' } as PeraDisplayableTransaction
 const mockTx2 = { id: 'tx-2', sender: 'ADDR1' } as PeraDisplayableTransaction
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    useSigningRequest: vi.fn(() => ({
-        pendingSignRequests: [{ id: 'req-1', type: 'transactions' }],
-    })),
-    useSigningRequestAnalysis: vi.fn(() => ({
+    useSigningPipeline: vi.fn(() => ({
         listItems: [
             { type: 'transaction', transaction: { id: 'tx-0' } },
             {

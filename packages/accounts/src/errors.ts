@@ -49,3 +49,18 @@ export class NoHDWalletError extends AccountError {
         })
     }
 }
+
+/**
+ * Rekey target account not found in local accounts
+ */
+export class RekeyTargetNotFoundError extends AccountError {
+    constructor(rekeyAddress: string) {
+        super(
+            `Rekey target account ${rekeyAddress} not found in local accounts`,
+            undefined,
+            {
+                params: { rekeyAddress },
+            },
+        )
+    }
+}

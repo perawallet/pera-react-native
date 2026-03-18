@@ -53,6 +53,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     generateOrderedUniqueId: vi.fn(() => 'test-id'),
     decodeFromBase64: vi.fn(t => t),
     encodeToBase64: vi.fn(t => t),
+    AppError: class AppError extends Error {},
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -531,7 +532,7 @@ describe('usePeraWebviewInterface', () => {
             ][0]
 
         await act(async () => {
-            await signRequest.error('User rejected')
+            await signRequest.error(new Error('User rejected'))
         })
 
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
@@ -539,7 +540,7 @@ describe('usePeraWebviewInterface', () => {
         )
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
             expect.stringContaining(
-                '"error":{"code":-32603,"message":"User rejected"}',
+                '"error":{"code":-32603,"message":"An error occurred during signing"}',
             ),
         )
     })
@@ -613,7 +614,7 @@ describe('usePeraWebviewInterface', () => {
             ][0]
 
         await act(async () => {
-            await signRequest.error('Unauthorized')
+            await signRequest.error(new Error('Unauthorized'))
         })
 
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
@@ -621,7 +622,7 @@ describe('usePeraWebviewInterface', () => {
         )
         expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
             expect.stringContaining(
-                '"error":{"code":-32603,"message":"Unauthorized"}',
+                '"error":{"code":-32603,"message":"An error occurred during signing"}',
             ),
         )
     })
@@ -861,7 +862,7 @@ describe('usePeraWebviewInterface', () => {
                 expect.stringContaining('"id":"30"'),
             )
             expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
-                expect.stringContaining('Transaction limit exceeded'),
+                expect.stringContaining('An error occurred during signing'),
             )
         })
 
@@ -894,7 +895,7 @@ describe('usePeraWebviewInterface', () => {
                 expect.stringContaining('"id":"31"'),
             )
             expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
-                expect.stringContaining('Data sign limit exceeded'),
+                expect.stringContaining('An error occurred during signing'),
             )
         })
     })

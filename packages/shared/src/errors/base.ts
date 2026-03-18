@@ -119,3 +119,9 @@ export class AppError extends Error {
         }
     }
 }
+
+/** Checks if an error has the retryable flag set. */
+export const isRetryableError = (error: Error | null): boolean => {
+    if (!error || !(error instanceof AppError)) return false
+    return error.metadata.retryable === true
+}

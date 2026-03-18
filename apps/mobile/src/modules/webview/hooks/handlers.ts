@@ -10,8 +10,25 @@
  limitations under the License
  */
 
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, AppError } from '@perawallet/wallet-core-shared'
 import WebView from 'react-native-webview'
+
+const MAX_ERROR_LENGTH = 200
+const GENERIC_ERROR_MESSAGE = 'An error occurred during signing'
+
+/**
+ * Returns a message safe to send to a webview.
+ * {@link AppError} subclasses carry curated messages designed for display;
+ * generic Error instances may contain internal details (stack traces, paths)
+ * that should not be exposed to untrusted web content.
+ */
+const sanitizeErrorForWebview = (error: Error): string => {
+    const message =
+        error instanceof AppError ? error.message : GENERIC_ERROR_MESSAGE
+    return message.length > MAX_ERROR_LENGTH
+        ? message.slice(0, MAX_ERROR_LENGTH)
+        : message
+}
 
 export const JsonRpcErrorCode = {
     ParseError: -32700,
@@ -68,7 +85,7 @@ export const sendNotificationToWebview = (
 export const sendErrorToWebview = (
     id: string,
     code: JsonRpcErrorCode,
-    error: string,
+    error: Error | string,
     webview: WebView | null,
 ) => {
     const message = `window.postMessage(${JSON.stringify({
@@ -76,7 +93,10 @@ export const sendErrorToWebview = (
         jsonrpc: '2.0',
         error: {
             code,
-            message: error,
+            message:
+                typeof error === 'string'
+                    ? error
+                    : sanitizeErrorForWebview(error),
         },
     })});`
     logger.debug('Sending webview interface error', { message, webview })

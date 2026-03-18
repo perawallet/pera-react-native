@@ -306,6 +306,40 @@ export const getTransactionType = (
     return txTypeToPeraTypeMap[tx.txType] ?? 'unknown'
 }
 
+/**
+ * Classify a raw PeraTransaction into a detailed PeraTransactionType,
+ * including asset transfer sub-types (opt-in, opt-out, clawback).
+ */
+const ASSET_TRANSFER_TYPE_MAP = {
+    'opt-in': 'asset-opt-in',
+    'opt-out': 'asset-opt-out',
+    clawback: 'asset-clawback',
+    transfer: 'asset-transfer',
+    unknown: 'asset-transfer',
+} as const satisfies Record<AssetTransferType, PeraTransactionType>
+
+export const classifyPeraTransaction = (
+    tx: PeraTransaction,
+): PeraTransactionType => {
+    const displayTx = mapToDisplayableTransaction(tx)
+    if (!displayTx) {
+        return 'unknown'
+    }
+
+    const baseType = getTransactionType(displayTx)
+
+    if (baseType === 'asset-transfer') {
+        const subType = getAssetTransferType(displayTx)
+        return (
+            ASSET_TRANSFER_TYPE_MAP[
+                subType as keyof typeof ASSET_TRANSFER_TYPE_MAP
+            ] ?? 'asset-transfer'
+        )
+    }
+
+    return baseType
+}
+
 export const isPaymentTransaction = (
     tx: PeraDisplayableTransaction,
 ): boolean => {

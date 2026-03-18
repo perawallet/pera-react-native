@@ -11,69 +11,63 @@
  */
 
 import { useCallback } from 'react'
-import {
-    PeraSignedTransaction,
-    useAlgorandClient,
-    useTransactionEncoder,
-} from '@perawallet/wallet-core-blockchain'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useTransactionSigner } from './useTransactionSigner'
-import { useArbitraryDataSigner } from './useArbitraryDataSigner'
+import type { AnyActorRef } from 'xstate'
 import { useSigningStore } from '../store'
-import type {
-    SignRequest,
-    TransactionSignRequest,
-    ArbitraryDataSignRequest,
-    PeraArbitraryDataSignResult,
-} from '../models'
+import { useSigningActorLifecycle } from './useSigningActorLifecycle'
+import type { SignRequest } from '../models'
 import {
     AppError,
     ErrorCategory,
     ErrorSeverity,
+    generateOrderedUniqueId,
 } from '@perawallet/wallet-core-shared'
 import {
     MAX_DATA_SIGN_REQUESTS,
     MAX_TRANSACTION_SIGN_REQUESTS,
 } from '../constants'
 
-export type SignResult =
-    | {
-          type: 'transactions'
-          signedTransactions: PeraSignedTransaction[]
-      }
-    | {
-          type: 'arbitrary-data'
-          signatures: PeraArbitraryDataSignResult[]
-      }
+// =============================================================================
+// Types
+// =============================================================================
 
-const isTransactionRequest = (
-    request: SignRequest,
-): request is TransactionSignRequest => request.type === 'transactions'
+type UseSigningRequestResult = {
+    pendingSignRequests: SignRequest[]
+    lastCompletedRequest: SignRequest | null
+    currentRequest: SignRequest | undefined
+    currentActorRef: AnyActorRef | null
+    addSignRequest: (request: SignRequest) => void
+    removeSignRequest: (request: SignRequest) => void
+    clearLastCompletedRequest: () => void
+    signAndSendRequest: (request: SignRequest) => void
+    rejectRequest: (request: SignRequest) => void
+    /** Retries a failed request if its error is retryable. */
+    retryRequest: (request: SignRequest) => void
+}
 
-const isArbitraryDataRequest = (
-    request: SignRequest,
-): request is ArbitraryDataSignRequest => request.type === 'arbitrary-data'
+// =============================================================================
+// Hook
+// =============================================================================
 
-export const useSigningRequest = () => {
+export const useSigningRequest = (): UseSigningRequestResult => {
     const pendingSignRequests = useSigningStore(
         state => state.pendingSignRequests,
-    )
-    const lastCompletedRequest = useSigningStore(
-        state => state.lastCompletedRequest,
     )
     const addSignRequestToStore = useSigningStore(state => state.addSignRequest)
     const removeSignRequestFromStore = useSigningStore(
         state => state.removeSignRequest,
     )
-    const setLastCompletedRequestInStore = useSigningStore(
+    const lastCompletedRequest = useSigningStore(
+        state => state.lastCompletedRequest,
+    )
+    const setLastCompletedRequest = useSigningStore(
         state => state.setLastCompletedRequest,
     )
 
-    const { signTransactions } = useTransactionSigner()
-    const { encodeSignedTransactions } = useTransactionEncoder()
-    const algokit = useAlgorandClient()
-    const { signArbitraryData } = useArbitraryDataSigner()
-    const allAccounts = useAllAccounts()
+    const { getActorRef, stopActor } = useSigningActorLifecycle()
+
+    // -------------------------------------------------------------------------
+    // Public API
+    // -------------------------------------------------------------------------
 
     const addSignRequest = useCallback(
         (request: SignRequest) => {
@@ -108,139 +102,86 @@ export const useSigningRequest = () => {
                     },
                 })
             }
-            addSignRequestToStore(request)
+
+            const newRequest: SignRequest = {
+                ...request,
+                id: request.id ?? generateOrderedUniqueId(),
+            }
+
+            addSignRequestToStore(newRequest)
         },
         [addSignRequestToStore],
     )
 
     const removeSignRequest = useCallback(
         (request: SignRequest) => {
+            stopActor(request.id)
             removeSignRequestFromStore(request)
         },
-        [removeSignRequestFromStore],
+        [stopActor, removeSignRequestFromStore],
     )
 
     const clearLastCompletedRequest = useCallback(() => {
-        setLastCompletedRequestInStore(null)
-    }, [setLastCompletedRequestInStore])
+        setLastCompletedRequest(null)
+    }, [setLastCompletedRequest])
 
-    const signTransactionRequest = useCallback(
-        async (
-            request: TransactionSignRequest,
-        ): Promise<PeraSignedTransaction[]> => {
-            return signTransactions(
-                request.txs,
-                request.txs.map((_, idx) => idx),
-            )
-        },
-        [signTransactions],
-    )
-
-    const signArbitraryDataRequest = useCallback(
-        async (
-            request: ArbitraryDataSignRequest,
-        ): Promise<PeraArbitraryDataSignResult[]> => {
-            const signedData = request.data.map(async data => {
-                const account = allAccounts.find(a => a.address === data.signer)
-                if (!account) {
-                    throw new Error(
-                        `Account not found for signer: ${data.signer}`,
-                    )
-                }
-                const signature = await signArbitraryData(account, data.data)
-                if (!signature?.length) {
-                    throw new Error(
-                        `Failed to generate signature for signer: ${data.signer}`,
-                    )
-                }
-                return {
-                    signer: account.address,
-                    signature: signature[0],
-                }
-            })
-            return Promise.all(signedData)
-        },
-        [signArbitraryData, allAccounts],
-    )
-
-    const signRequest = useCallback(
-        async (request: SignRequest): Promise<SignResult> => {
-            if (isTransactionRequest(request)) {
-                return {
-                    type: 'transactions',
-                    signedTransactions: await signTransactionRequest(request),
-                }
-            }
-            if (isArbitraryDataRequest(request)) {
-                return {
-                    type: 'arbitrary-data',
-                    signatures: await signArbitraryDataRequest(request),
-                }
-            }
-            throw new Error(`Unsupported sign request type: ${request.type}`)
-        },
-        [signTransactionRequest, signArbitraryDataRequest],
-    )
-
+    /**
+     * Approves the current signing request — sends USER_APPROVED to its actor.
+     * The actor handles signing and transport internally.
+     */
     const signAndSendRequest = useCallback(
-        async (request: SignRequest) => {
-            if (isTransactionRequest(request)) {
-                const signedTxs = await signTransactionRequest(request)
-                if (request.transport === 'algod') {
-                    const encodedSignedTransactions =
-                        encodeSignedTransactions(signedTxs)
-                    algokit.client.algod.sendRawTransaction(
-                        encodedSignedTransactions,
-                    )
-                } else {
-                    await request.approve?.(signedTxs)
-                }
-            } else if (isArbitraryDataRequest(request)) {
-                if (request.transport === 'algod') {
-                    removeSignRequest(request)
-                    throw new Error(
-                        'Arbitrary data signing is not supported via algod transport',
-                    )
-                }
-                const signatures = await signArbitraryDataRequest(request)
-                await request.approve?.(signatures)
-            } else {
-                throw new Error(
-                    `Unsupported sign request type: ${request.type}`,
-                )
-            }
-            setLastCompletedRequestInStore(request)
-            removeSignRequest(request)
+        (request: SignRequest) => {
+            getActorRef(request.id)?.send({ type: 'USER_APPROVED' })
         },
-        [
-            signTransactionRequest,
-            signArbitraryDataRequest,
-            algokit,
-            encodeSignedTransactions,
-            removeSignRequest,
-            setLastCompletedRequestInStore,
-        ],
+        [getActorRef],
     )
 
+    /**
+     * Rejects the current signing request — sends USER_REJECTED to its actor.
+     * For callback transport requests, also fires the reject callback.
+     */
     const rejectRequest = useCallback(
         (request: SignRequest) => {
-            if (request.transport === 'callback') {
-                request.reject?.()
+            const actor = getActorRef(request.id)
+            if (actor) {
+                actor.send({ type: 'USER_REJECTED' })
+            } else {
+                // Fallback: no actor found (shouldn't happen in normal flow)
+                if (request.transport === 'callback') {
+                    ;(request as { reject?: () => void }).reject?.()
+                }
+                removeSignRequestFromStore(request)
             }
-            removeSignRequest(request)
         },
-        [removeSignRequest],
+        [getActorRef, removeSignRequestFromStore],
     )
+
+    /**
+     * Retries a failed request — sends RETRY to its actor.
+     * Only works if the error is retryable (transient network/signing failures).
+     */
+    const retryRequest = useCallback(
+        (request: SignRequest) => {
+            getActorRef(request.id)?.send({ type: 'RETRY' })
+        },
+        [getActorRef],
+    )
+
+    const currentRequest = pendingSignRequests?.at(0)
+    const currentActorRef = currentRequest
+        ? (getActorRef(currentRequest.id) ?? null)
+        : null
 
     return {
         pendingSignRequests,
         lastCompletedRequest,
-        currentRequest: pendingSignRequests?.at(0),
+        currentRequest,
+        currentActorRef,
         addSignRequest,
         removeSignRequest,
         clearLastCompletedRequest,
-        signRequest,
         signAndSendRequest,
         rejectRequest,
+        retryRequest,
     }
 }

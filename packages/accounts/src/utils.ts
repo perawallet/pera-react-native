@@ -20,6 +20,7 @@ import {
     WatchAccount,
     type WalletAccount,
 } from './models'
+import { RekeyTargetNotFoundError } from './errors'
 
 export const getAccountDisplayName = (account: WalletAccount | null) => {
     if (!account) return 'No Account'
@@ -111,4 +112,28 @@ export const resolveAccountStatus = (
     if (isLedgerAccount(account)) return 'ledger'
     if (isAlgo25Account(account)) return 'standard'
     return 'standard'
+}
+
+/**
+ * Resolve the auth account for a given account.
+ * If the account is rekeyed, returns the rekey target.
+ * Only follows one level to prevent circular references.
+ */
+export const resolveAuthAccount = (
+    account: WalletAccount,
+    allAccounts: WalletAccount[],
+): WalletAccount => {
+    if (!account.rekeyAddress) {
+        return account
+    }
+
+    const rekeyTarget = allAccounts.find(
+        a => a.address === account.rekeyAddress,
+    )
+
+    if (!rekeyTarget) {
+        throw new RekeyTargetNotFoundError(account.rekeyAddress)
+    }
+
+    return rekeyTarget
 }

@@ -19,8 +19,7 @@ import { TransactionSummaryHeader } from '@modules/signing/components/Transactio
 import { FeeDisplay } from '@modules/signing/components/FeeDisplay'
 import { SigningWarnings } from '@modules/signing/components/SigningWarnings'
 import {
-    useSigningRequest,
-    useSigningRequestAnalysis,
+    useSigningPipeline,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
 import { useStyles } from './styles'
@@ -31,9 +30,11 @@ export const SingleTransactionScreen = () => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
-    const { currentRequest } = useSigningRequest()
-    const request = currentRequest as TransactionSignRequest
-    const { allTransactions } = useSigningRequestAnalysis(request)
+    const pipeline = useSigningPipeline()
+    const request = pipeline.currentRequest as
+        | TransactionSignRequest
+        | undefined
+    const { allTransactions } = pipeline
 
     const transaction = allTransactions[0]
 
@@ -51,7 +52,7 @@ export const SingleTransactionScreen = () => {
             <PWView style={styles.container}>
                 <TransactionSummaryHeader
                     transaction={transaction}
-                    metadata={request.sourceMetadata}
+                    metadata={request?.sourceMetadata}
                 />
 
                 <SigningWarnings />

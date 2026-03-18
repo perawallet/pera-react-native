@@ -141,6 +141,7 @@ describe('useWalletConnectHandlers', () => {
                 id: 'MOCK_UUID',
                 type: 'arbitrary-data',
                 transport: 'callback',
+                sourceType: 'walletconnect',
                 transportId: 'test-client-id',
                 data: [
                     {
@@ -610,6 +611,7 @@ describe('useWalletConnectHandlers', () => {
                 id: 'MOCK_UUID',
                 type: 'transactions',
                 transport: 'callback',
+                sourceType: 'walletconnect',
                 transportId: 'test-client-id',
                 txs: [
                     {
@@ -617,6 +619,7 @@ describe('useWalletConnectHandlers', () => {
                         fee: 1000n,
                     },
                 ],
+                sourceMetadata: undefined,
                 approve: expect.any(Function),
                 reject: expect.any(Function),
                 error: expect.any(Function),

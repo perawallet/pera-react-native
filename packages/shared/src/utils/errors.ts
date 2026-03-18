@@ -19,3 +19,15 @@ export const getHttpStatus = (error: unknown): number | undefined => {
     const response = (error as { response?: { status?: unknown } }).response
     return typeof response?.status === 'number' ? response.status : undefined
 }
+
+/** Normalizes an unknown value to an Error instance. */
+export const toError = (e: unknown): Error =>
+    e instanceof Error ? e : new Error(String(e))
+
+/** Asserts a value is non-null, throwing a descriptive error if it is. */
+export function assertDefined<T>(value: T | null | undefined, name: string): T {
+    if (value == null) {
+        throw new Error(`expected ${name} to be defined`)
+    }
+    return value
+}

@@ -20,11 +20,7 @@ import {
     useRemoteConfig,
     RemoteConfigKeys,
 } from '@perawallet/wallet-core-remote-config'
-import {
-    useSigningRequest,
-    useSigningRequestAnalysis,
-    type TransactionSignRequest,
-} from '@perawallet/wallet-core-signing'
+import { useSigningPipeline } from '@perawallet/wallet-core-signing'
 
 const ALGO_PRICE_IDS = [ALGO_ASSET_ID]
 
@@ -34,12 +30,11 @@ type UseFeeWarningResult = {
 }
 
 export const useFeeWarning = (): UseFeeWarningResult => {
-    const { currentRequest } = useSigningRequest()
-    const request = currentRequest as TransactionSignRequest
-    const { totalFee, allTransactions, signableAddresses } =
-        useSigningRequestAnalysis(request)
-
-    const fee = useMemo(() => new Decimal(totalFee), [totalFee])
+    const {
+        totalFee: fee,
+        allTransactions,
+        signableAddresses,
+    } = useSigningPipeline()
 
     const signableTransactionCount = useMemo(
         () =>

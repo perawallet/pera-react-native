@@ -14,6 +14,7 @@ import { describe, it, expect } from 'vitest'
 import {
     mapToDisplayableTransaction,
     getTransactionType,
+    classifyPeraTransaction,
     isPaymentTransaction,
     isAssetTransferTransaction,
     isAssetConfigTransaction,
@@ -499,6 +500,155 @@ describe('transactions utils', () => {
                 },
             } as PeraDisplayableTransaction
             expect(getAssetConfigType(tx)).toBe('update')
+        })
+    })
+
+    describe('classifyPeraTransaction', () => {
+        it('should classify payment transaction', () => {
+            const tx = {
+                type: TransactionType.Payment,
+                fee: 1000n,
+                firstValid: 1n,
+                lastValid: 2n,
+                sender: mockAddress(1),
+                payment: {
+                    amount: 5000n,
+                    receiver: mockAddress(2),
+                },
+            } as any
+            expect(classifyPeraTransaction(tx)).toBe('payment')
+        })
+
+        it('should classify app call transaction', () => {
+            const tx = {
+                type: TransactionType.AppCall,
+                fee: 1000n,
+                firstValid: 1n,
+                lastValid: 2n,
+                sender: mockAddress(1),
+                appCall: {
+                    appId: 1n,
+                },
+            } as any
+            expect(classifyPeraTransaction(tx)).toBe('app-call')
+        })
+
+        it('should classify asset config transaction', () => {
+            const tx = {
+                type: TransactionType.AssetConfig,
+                fee: 1000n,
+                firstValid: 1n,
+                lastValid: 2n,
+                sender: mockAddress(1),
+                assetConfig: {
+                    assetId: 100n,
+                    params: { manager: mockAddress(2) },
+                },
+            } as any
+            expect(classifyPeraTransaction(tx)).toBe('asset-config')
+        })
+
+        it('should classify asset freeze transaction', () => {
+            const tx = {
+                type: TransactionType.AssetFreeze,
+                fee: 1000n,
+                firstValid: 1n,
+                lastValid: 2n,
+                sender: mockAddress(1),
+                assetFreeze: {
+                    assetId: 100n,
+                    freezeAddress: mockAddress(2),
+                    frozen: true,
+                },
+            } as any
+            expect(classifyPeraTransaction(tx)).toBe('asset-freeze')
+        })
+
+        it('should classify key registration transaction', () => {
+            const tx = {
+                type: TransactionType.KeyRegistration,
+                fee: 1000n,
+                firstValid: 1n,
+                lastValid: 2n,
+                sender: mockAddress(1),
+                keyRegistration: {
+                    voteFirst: 1n,
+                    voteLast: 1000n,
+                    voteKeyDilution: 10n,
+                },
+            } as any
+            expect(classifyPeraTransaction(tx)).toBe('key-registration')
+        })
+
+        it('should classify regular asset transfer', () => {
+            const tx = {
+                type: TransactionType.AssetTransfer,
+                fee: 1000n,
+                firstValid: 1n,
+                lastValid: 2n,
+                sender: mockAddress(1),
+                assetTransfer: {
+                    assetId: 123n,
+                    amount: 50n,
+                    receiver: mockAddress(2),
+                },
+            } as any
+            expect(classifyPeraTransaction(tx)).toBe('asset-transfer')
+        })
+
+        it('should classify asset opt-in (sender === receiver, amount 0)', () => {
+            const tx = {
+                type: TransactionType.AssetTransfer,
+                fee: 1000n,
+                firstValid: 1n,
+                lastValid: 2n,
+                sender: mockAddress(1),
+                assetTransfer: {
+                    assetId: 123n,
+                    amount: 0n,
+                    receiver: mockAddress(1), // same as sender
+                },
+            } as any
+            expect(classifyPeraTransaction(tx)).toBe('asset-opt-in')
+        })
+
+        it('should classify asset opt-out (has closeRemainderTo)', () => {
+            const tx = {
+                type: TransactionType.AssetTransfer,
+                fee: 1000n,
+                firstValid: 1n,
+                lastValid: 2n,
+                sender: mockAddress(1),
+                assetTransfer: {
+                    assetId: 123n,
+                    amount: 0n,
+                    receiver: mockAddress(2),
+                    closeRemainderTo: mockAddress(3),
+                },
+            } as any
+            expect(classifyPeraTransaction(tx)).toBe('asset-opt-out')
+        })
+
+        it('should classify asset clawback (has assetSender)', () => {
+            const tx = {
+                type: TransactionType.AssetTransfer,
+                fee: 1000n,
+                firstValid: 1n,
+                lastValid: 2n,
+                sender: mockAddress(1),
+                assetTransfer: {
+                    assetId: 123n,
+                    amount: 50n,
+                    receiver: mockAddress(2),
+                    assetSender: mockAddress(3),
+                },
+            } as any
+            expect(classifyPeraTransaction(tx)).toBe('asset-clawback')
+        })
+
+        it('should return unknown for unknown transaction type', () => {
+            const tx = { type: TransactionType.Unknown } as any
+            expect(classifyPeraTransaction(tx)).toBe('unknown')
         })
     })
 
