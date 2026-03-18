@@ -20,20 +20,14 @@ import {
 import { PanelButton } from '@components/PanelButton'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
-import {
-    useSigningRequest,
-    useSigningRequestAnalysis,
-    type TransactionSignRequest,
-} from '@perawallet/wallet-core-signing'
+import { useSigningPipeline } from '@perawallet/wallet-core-signing'
 import { useStyles } from './styles'
 import { WarningItem } from './WarningItem'
 
 export const SigningWarnings = ({ isGroup = false }: { isGroup?: boolean }) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { pendingSignRequests } = useSigningRequest()
-    const request = pendingSignRequests[0] as TransactionSignRequest
-    const { distinctWarnings, warnings } = useSigningRequestAnalysis(request)
+    const { distinctWarnings, warnings } = useSigningPipeline()
     const { isOpen, open, close } = useModalState()
 
     if (distinctWarnings.length === 0) {

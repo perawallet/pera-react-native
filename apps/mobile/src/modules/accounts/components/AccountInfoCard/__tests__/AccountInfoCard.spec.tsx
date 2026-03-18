@@ -109,7 +109,7 @@ vi.mock('@components/InfoButton', () => ({
     ),
 }))
 
-vi.mock('../AccountTypeInfoBottomSheet', () => ({
+vi.mock('../AccountTypeInfoContent', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     AccountTypeInfoContent: ({ account }: any) => (
         <div data-testid='account-type-info-content'>{account.type}</div>

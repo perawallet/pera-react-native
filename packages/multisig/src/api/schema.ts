@@ -58,7 +58,7 @@ export const createMultisigAccountRequestSchema = z.object({
     version: z.number(),
     threshold: z.number(),
     participant_addresses: z.array(z.string()),
-    device_id: z.string().optional(),
+    device_id: z.string(),
 })
 
 export const createMultisigAccountResponseSchema = multiSigAccountResponseSchema

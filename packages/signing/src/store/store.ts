@@ -11,7 +11,8 @@
  */
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { persist } from 'zustand/middleware'
+import type { PersistStorage } from 'zustand/middleware'
 import type { SigningStore, SignRequest } from '../models'
 import {
     generateOrderedUniqueId,
@@ -19,6 +20,35 @@ import {
     type WithPersist,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    algorandSafeQuerySerialize,
+    algorandSafeQueryParse,
+} from '@perawallet/wallet-core-blockchain'
+
+// =============================================================================
+// Custom storage: round-trip safe serialization for bigint and Map
+// Uses algorandSafeQuerySerialize/Parse to handle PeraTransaction bigint fields
+// (fee, amount, assetId, etc.)
+// =============================================================================
+
+type PartializedState = { pendingSignRequests: SignRequest[] }
+
+const signingStoreStorage = (): PersistStorage<PartializedState> => ({
+    getItem: name => {
+        const str = getProvider().keyValueStorage.getItem(name)
+        if (!str) return null
+        return algorandSafeQueryParse(str as string)
+    },
+    setItem: (name, value) => {
+        getProvider().keyValueStorage.setItem(
+            name,
+            algorandSafeQuerySerialize(value),
+        )
+    },
+    removeItem: name => {
+        getProvider().keyValueStorage.removeItem(name)
+    },
+})
 
 const STORE_NAME = 'signing-store'
 
@@ -28,7 +58,7 @@ const initialState = {
 }
 
 export const useSigningStore: UseBoundStore<
-    WithPersist<StoreApi<SigningStore>, unknown>
+    WithPersist<StoreApi<SigningStore>, PartializedState>
 > = create<SigningStore>()(
     persist(
         (set, get) => ({
@@ -61,9 +91,11 @@ export const useSigningStore: UseBoundStore<
         }),
         {
             name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            storage: signingStoreStorage(),
             version: 1,
             partialize: state => ({
+                // Persist only non-callback requests (actors are not serializable,
+                // callback/WalletConnect requests are ephemeral)
                 pendingSignRequests: state.pendingSignRequests.filter(
                     r => r.transport !== 'callback',
                 ),

@@ -21,7 +21,7 @@ export const useStyles = makeStyles(theme => {
         },
         contactContainer: {
             flexDirection: 'row',
-            gap: theme.spacing.sm,
+            gap: theme.spacing.md,
             alignItems: 'center',
         },
     }

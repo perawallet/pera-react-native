@@ -56,6 +56,11 @@ export const RenameAccountBottomSheet = ({
             enablePanDownToClose
         >
             <PWToolbar
+                left={
+                    <PWText variant='h3'>
+                        {t('account_options.rename_title')}
+                    </PWText>
+                }
                 right={
                     <PWIcon
                         name='cross'
@@ -64,12 +69,6 @@ export const RenameAccountBottomSheet = ({
                 }
                 paddingStyle='dense'
             />
-            <PWText
-                variant='h3'
-                style={styles.title}
-            >
-                {t('account_options.rename_title')}
-            </PWText>
             <PWView style={styles.inputContainer}>
                 <PWInput
                     value={name}

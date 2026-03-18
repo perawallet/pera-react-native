@@ -513,6 +513,14 @@
             "creating": "Creating joint account...",
             "error_title": "Failed to create account",
             "error_message": "Something went wrong while creating the joint account: {{error}}"
+        },
+        "edit_participant": {
+            "title": "Edit address",
+            "nickname_label": "Nickname",
+            "nickname_placeholder": "Add a nickname",
+            "address_label": "Account Address",
+            "remove": "Remove Address",
+            "done": "Done"
         }
     },
     "onboarding": {

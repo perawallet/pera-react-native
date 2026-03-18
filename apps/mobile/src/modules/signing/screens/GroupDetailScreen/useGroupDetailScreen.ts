@@ -19,9 +19,7 @@ import {
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import {
-    useSigningRequest,
-    useSigningRequestAnalysis,
-    type TransactionSignRequest,
+    useSigningPipeline,
     type GroupTransactionItem,
 } from '@perawallet/wallet-core-signing'
 import type { SigningStackParamList } from '@modules/signing/routes'
@@ -32,9 +30,7 @@ type GroupDetailRouteProp = RouteProp<SigningStackParamList, 'GroupDetail'>
 export const useGroupDetailScreen = () => {
     const navigation = useNavigation<NavigationProp>()
     const route = useRoute<GroupDetailRouteProp>()
-    const { pendingSignRequests } = useSigningRequest()
-    const request = pendingSignRequests[0] as TransactionSignRequest
-    const { listItems } = useSigningRequestAnalysis(request)
+    const { listItems } = useSigningPipeline()
 
     const { groupIndex } = route.params
     const groupItem = listItems.find(

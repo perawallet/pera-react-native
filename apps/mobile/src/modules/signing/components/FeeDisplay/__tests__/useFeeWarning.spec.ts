@@ -15,10 +15,7 @@ import { renderHook } from '@testing-library/react'
 import { useFeeWarning } from '../useFeeWarning'
 import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
 import { useRemoteConfig } from '@perawallet/wallet-core-remote-config'
-import {
-    useSigningRequest,
-    useSigningRequestAnalysis,
-} from '@perawallet/wallet-core-signing'
+import { useSigningPipeline } from '@perawallet/wallet-core-signing'
 import Decimal from 'decimal.js'
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -35,13 +32,11 @@ vi.mock('@perawallet/wallet-core-remote-config', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    useSigningRequest: vi.fn(),
-    useSigningRequestAnalysis: vi.fn(),
+    useSigningPipeline: vi.fn(),
 }))
 
 describe('useFeeWarning', () => {
     const mockGetNumberValue = vi.fn()
-    const mockRequest = { id: 'req-1', type: 'transactions' }
 
     beforeEach(() => {
         vi.clearAllMocks()
@@ -52,9 +47,6 @@ describe('useFeeWarning', () => {
         })
         ;(useRemoteConfig as Mock).mockReturnValue({
             getNumberValue: mockGetNumberValue,
-        })
-        ;(useSigningRequest as Mock).mockReturnValue({
-            currentRequest: mockRequest,
         })
     })
 
@@ -73,7 +65,7 @@ describe('useFeeWarning', () => {
         transactions: { sender: string }[],
         signableAddresses: Set<string>,
     ) => {
-        ;(useSigningRequestAnalysis as Mock).mockReturnValue({
+        ;(useSigningPipeline as Mock).mockReturnValue({
             totalFee,
             allTransactions: transactions,
             signableAddresses,

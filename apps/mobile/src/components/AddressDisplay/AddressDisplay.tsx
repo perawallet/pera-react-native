@@ -117,15 +117,15 @@ export const AddressDisplay = ({
             )}
 
             {!contact && !account && (
-                <>
+                <PWView style={styles.contactContainer}>
                     {forceShowIcon && (
                         <PWIcon
                             name={`accounts/${isDarkMode ? 'dark' : 'light'}/watch-account`}
-                            size='md'
+                            size='lg'
                         />
                     )}
                     <PWText {...textProps}>{truncatedAddress}</PWText>
-                </>
+                </PWView>
             )}
 
             {showCopy && (

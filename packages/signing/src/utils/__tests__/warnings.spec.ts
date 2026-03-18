@@ -14,11 +14,18 @@ import { describe, test, expect, vi } from 'vitest'
 import { aggregateTransactionWarnings } from '../warnings'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    encodeAlgorandAddress: vi.fn(
-        (bytes: Uint8Array) => `ENCODED_${new TextDecoder().decode(bytes)}`,
-    ),
-}))
+vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
+    const original =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-blockchain')
+        >()
+    return {
+        ...original,
+        encodeAlgorandAddress: vi.fn(
+            (bytes: Uint8Array) => `ENCODED_${new TextDecoder().decode(bytes)}`,
+        ),
+    }
+})
 
 const makeTx = (
     overrides: Partial<PeraDisplayableTransaction> = {},

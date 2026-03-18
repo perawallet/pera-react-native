@@ -29,6 +29,8 @@
     "decimal.js": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
+    "xstate": "catalog:",
+    "@xstate/react": "catalog:",
     "zustand": "catalog:"
   },
   "devDependencies": {

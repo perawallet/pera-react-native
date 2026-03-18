@@ -11,6 +11,7 @@
  */
 
 export * from './addresses'
+export * from './errors'
 export * from './arrays'
 export * from './dates'
 export * from './store-registry'

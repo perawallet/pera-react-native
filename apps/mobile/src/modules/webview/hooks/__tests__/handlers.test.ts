@@ -15,6 +15,7 @@ import { sendNotificationToWebview } from '../handlers'
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { debug: vi.fn() },
+    AppError: class AppError extends Error {},
 }))
 
 vi.mock('react-native-webview', () => ({ default: {} }))

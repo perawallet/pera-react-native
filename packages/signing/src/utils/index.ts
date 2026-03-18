@@ -13,4 +13,5 @@
 export * from './balance-validation'
 export * from './classification'
 export * from './fees'
+export * from './mergeSigningResults'
 export * from './warnings'

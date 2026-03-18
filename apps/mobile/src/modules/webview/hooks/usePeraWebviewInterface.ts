@@ -328,7 +328,7 @@ export const usePeraWebviewInterface = (
                                 webview,
                             )
                         },
-                        error: async (err: string) =>
+                        error: async (err: Error) =>
                             sendErrorToWebview(
                                 message.id,
                                 JsonRpcErrorCode.InternalError,
@@ -340,7 +340,7 @@ export const usePeraWebviewInterface = (
                     sendErrorToWebview(
                         message.id,
                         JsonRpcErrorCode.InternalError,
-                        (e as Error).message,
+                        e as Error,
                         webview,
                     )
                     showToast({
@@ -405,7 +405,7 @@ export const usePeraWebviewInterface = (
                                 webview,
                             )
                         },
-                        error: async (err: string) =>
+                        error: async (err: Error) =>
                             sendErrorToWebview(
                                 message.id,
                                 JsonRpcErrorCode.InternalError,
@@ -417,7 +417,7 @@ export const usePeraWebviewInterface = (
                     sendErrorToWebview(
                         message.id,
                         JsonRpcErrorCode.InternalError,
-                        (e as Error).message,
+                        e as Error,
                         webview,
                     )
                     showToast({

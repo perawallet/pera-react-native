@@ -17,12 +17,12 @@ import { useStyles } from './styles'
 
 type ParticipantListItemProps = {
     participant: Participant
-    onRemove: (address: string) => void
+    onEdit: (address: string) => void
 }
 
 export const ParticipantListItem = ({
     participant,
-    onRemove,
+    onEdit,
 }: ParticipantListItemProps) => {
     const styles = useStyles()
 
@@ -41,8 +41,8 @@ export const ParticipantListItem = ({
                 name='edit-pen'
                 size='md'
                 variant='link'
-                onPress={() => onRemove(participant.address)}
-                testID={`participant_remove_${participant.address}`}
+                onPress={() => onEdit(participant.address)}
+                testID={`participant_edit_${participant.address}`}
             />
         </PWView>
     )

@@ -16,9 +16,11 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { useImportInfoScreen } from './useImportInfoScreen'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 export const ImportInfoScreen = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const { t } = useLanguage()
     const { handleRecoverPress, handleInfoPress, KeyImageComponent } =
         useImportInfoScreen()

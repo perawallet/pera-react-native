@@ -45,6 +45,14 @@ const logResponse = (_: KyRequest, __: Options, response: KyResponse) => {
 }
 
 const logError = (error: HTTPError) => {
+    if (error.response?.status === 404) {
+        logger.info('Resource not found', {
+            url: error.request?.url,
+            status: 404,
+        })
+        return error
+    }
+
     logger.error('Request error encountered', {
         message: error.message,
         name: error.name,

@@ -25,7 +25,7 @@ type UseCreateMultisigScreenResult = {
     handleOpenAddParticipant: () => void
     handleCloseAddParticipant: () => void
     handleAddAddress: (address: string) => void
-    handleRemoveParticipant: (address: string) => void
+    handleEditParticipant: (address: string) => void
     handleContinue: () => void
 }
 
@@ -34,9 +34,6 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
     const participants = useMultisigCreationStore(state => state.participants)
     const addParticipant = useMultisigCreationStore(
         state => state.addParticipant,
-    )
-    const removeParticipant = useMultisigCreationStore(
-        state => state.removeParticipant,
     )
 
     const {
@@ -63,11 +60,11 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
         [addParticipant, participants],
     )
 
-    const handleRemoveParticipant = useCallback(
+    const handleEditParticipant = useCallback(
         (address: string) => {
-            removeParticipant(address)
+            navigation.push('EditParticipant', { address })
         },
-        [removeParticipant],
+        [navigation],
     )
 
     const handleContinue = useCallback(() => {
@@ -81,7 +78,7 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
         handleOpenAddParticipant,
         handleCloseAddParticipant,
         handleAddAddress,
-        handleRemoveParticipant,
+        handleEditParticipant,
         handleContinue,
     }
 }

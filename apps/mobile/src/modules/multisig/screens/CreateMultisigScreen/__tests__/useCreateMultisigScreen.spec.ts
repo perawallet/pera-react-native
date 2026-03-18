@@ -86,20 +86,16 @@ describe('useCreateMultisigScreen', () => {
         expect(result.current.participants).toHaveLength(1)
     })
 
-    it('removes a participant', () => {
+    it('navigates to EditParticipant on edit', () => {
         const { result } = renderHook(() => useCreateMultisigScreen())
 
         act(() => {
-            result.current.handleAddAddress('ADDR1')
-            result.current.handleAddAddress('ADDR2')
+            result.current.handleEditParticipant('ADDR1')
         })
 
-        act(() => {
-            result.current.handleRemoveParticipant('ADDR1')
+        expect(mockPush).toHaveBeenCalledWith('EditParticipant', {
+            address: 'ADDR1',
         })
-
-        expect(result.current.participants).toHaveLength(1)
-        expect(result.current.participants[0].address).toBe('ADDR2')
     })
 
     it('navigates to SetThreshold on continue', () => {

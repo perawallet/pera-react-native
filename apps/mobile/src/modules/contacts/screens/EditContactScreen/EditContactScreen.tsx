@@ -11,22 +11,18 @@
  */
 
 import { useTheme } from '@rneui/themed'
-import { PWButton, PWDialog, PWInput, PWText, PWView } from '@components/core'
-import { ContactAvatar } from '@components/ContactAvatar'
-import { AddressEntryField } from '@components/AddressEntryField'
+import { PWButton, PWDialog, PWText, PWView } from '@components/core'
+import { ContactForm } from '@components/ContactForm'
 import {
     Contact,
     useContacts,
     contactSchema,
 } from '@perawallet/wallet-core-contacts'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { KeyboardAvoidingView } from 'react-native'
 import { useStyles } from './styles'
-import { ScrollView } from 'react-native-gesture-handler'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm, Controller } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { AddressDisplay } from '@components/AddressDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 
@@ -90,78 +86,33 @@ export const EditContactScreen = () => {
     }
 
     return (
-        <KeyboardAvoidingView behavior='height'>
-            <ScrollView style={styles.container}>
-                <PWView style={styles.avatar}>
-                    <ContactAvatar
-                        size='lg'
-                        contact={selectedContact ?? { name: '', address: '' }}
-                    />
-                </PWView>
-                <PWView style={styles.formContainer}>
-                    <Controller
-                        control={control}
-                        name='name'
-                        render={({ field: { onChange, onBlur, value } }) => (
-                            <PWInput
-                                onBlur={onBlur}
-                                onChangeText={onChange}
-                                value={value}
-                                label={t('contacts.edit_contact.name_label')}
-                                errorMessage={errors.name?.message}
-                            />
-                        )}
-                    />
-                    {!isEditMode && (
-                        <Controller
-                            control={control}
-                            name='address'
-                            render={({
-                                field: { onChange, onBlur, value },
-                            }) => (
-                                <AddressEntryField
-                                    allowQRCode
-                                    label={t(
-                                        'contacts.edit_contact.address_label',
-                                    )}
-                                    onBlur={onBlur}
-                                    onChangeText={onChange}
-                                    value={value}
-                                    errorMessage={errors.address?.message}
-                                />
-                            )}
-                        />
-                    )}
+        <>
+            <ContactForm
+                control={control}
+                address={selectedContact?.address ?? ''}
+                nameLabel={t('contacts.edit_contact.name_label')}
+                addressLabel={t('contacts.edit_contact.address_label')}
+                nameError={errors.name?.message}
+                isAddressEditable={!isEditMode}
+                addressError={errors.address?.message}
+            >
+                <PWView style={styles.buttonContainer}>
                     {isEditMode && (
-                        <PWView>
-                            <PWText style={styles.label}>
-                                {t('contacts.edit_contact.address_label')}
-                            </PWText>
-                            <AddressDisplay
-                                address={selectedContact.address}
-                                showCopy
-                                displayType='address-only'
-                            />
-                        </PWView>
-                    )}
-                    <PWView style={styles.buttonContainer}>
-                        {isEditMode && (
-                            <PWButton
-                                onPress={open}
-                                title={t('contacts.edit_contact.delete')}
-                                variant='destructive'
-                                minWidth={100}
-                            />
-                        )}
                         <PWButton
-                            onPress={handleSubmit(save)}
-                            title={t('contacts.edit_contact.save')}
-                            variant='primary'
+                            onPress={open}
+                            title={t('contacts.edit_contact.delete')}
+                            variant='destructive'
                             minWidth={100}
                         />
-                    </PWView>
+                    )}
+                    <PWButton
+                        onPress={handleSubmit(save)}
+                        title={t('contacts.edit_contact.save')}
+                        variant='primary'
+                        minWidth={100}
+                    />
                 </PWView>
-            </ScrollView>
+            </ContactForm>
             <PWDialog
                 isVisible={isOpen}
                 onBackdropPress={close}
@@ -182,6 +133,6 @@ export const EditContactScreen = () => {
                     />
                 </PWDialog.Actions>
             </PWDialog>
-        </KeyboardAvoidingView>
+        </>
     )
 }

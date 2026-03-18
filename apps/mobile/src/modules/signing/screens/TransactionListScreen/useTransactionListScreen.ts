@@ -15,8 +15,7 @@ import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import {
-    useSigningRequest,
-    useSigningRequestAnalysis,
+    useSigningPipeline,
     type TransactionSignRequest,
     type TransactionListItem,
 } from '@perawallet/wallet-core-signing'
@@ -29,9 +28,9 @@ type NavigationProp = StackNavigationProp<
 
 export const useTransactionListScreen = () => {
     const navigation = useNavigation<NavigationProp>()
-    const { pendingSignRequests } = useSigningRequest()
-    const request = pendingSignRequests[0] as TransactionSignRequest
-    const { listItems, allTransactions } = useSigningRequestAnalysis(request)
+    const pipeline = useSigningPipeline()
+    const { listItems, allTransactions, currentRequest } = pipeline
+    const request = currentRequest as TransactionSignRequest | undefined
 
     const handleTransactionPress = useCallback(
         (tx: PeraDisplayableTransaction) => {

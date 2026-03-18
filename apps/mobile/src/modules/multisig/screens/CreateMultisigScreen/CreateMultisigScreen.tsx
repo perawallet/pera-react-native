@@ -27,7 +27,7 @@ export const CreateMultisigScreen = () => {
         handleOpenAddParticipant,
         handleCloseAddParticipant,
         handleAddAddress,
-        handleRemoveParticipant,
+        handleEditParticipant,
         handleContinue,
     } = useCreateMultisigScreen()
 
@@ -56,7 +56,7 @@ export const CreateMultisigScreen = () => {
                             <ParticipantListItem
                                 key={participant.address}
                                 participant={participant}
-                                onRemove={handleRemoveParticipant}
+                                onEdit={handleEditParticipant}
                             />
                         ))}
                         <PWButton

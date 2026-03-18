@@ -42,6 +42,10 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
             backgroundColor: theme.colors.alertNegative,
             color: theme.colors.textWhite,
         },
+        destructiveLight: {
+            backgroundColor: theme.colors.negativeLighter,
+            color: theme.colors.negative,
+        },
         link: {
             backgroundColor: theme.colors.background,
             color: theme.colors.linkPrimary,
@@ -94,7 +98,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
         titleStyle: {
             fontFamily: getFontFamily(500),
             fontSize: 15,
-            lineHeight: 24,
+            lineHeight: 15,
             flexWrap: 'nowrap',
             textAlign: 'center',
             verticalAlign: 'middle',
