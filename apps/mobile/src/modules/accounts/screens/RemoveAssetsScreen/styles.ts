@@ -20,7 +20,7 @@ export const useStyles = makeStyles(theme => ({
     listContent: {
         paddingHorizontal: theme.spacing.md,
     },
-itemContainer: {
+    itemContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: theme.spacing.md,

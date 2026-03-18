@@ -1,11 +1,19 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import Decimal from 'decimal.js'
 import { useRemoveAssetsScreen } from '../useRemoveAssetsScreen'
-import {
-    useAccountsStore,
-    useAccountBalancesQuery,
-} from '@perawallet/wallet-core-accounts'
 
 const mockAccount = { address: 'test-address', name: 'Test' }
 
@@ -24,6 +32,12 @@ const mockAssetBalances = [
     },
 ]
 
+const { mockGetSelectedAccount } = vi.hoisted(() => ({
+    mockGetSelectedAccount: vi.fn(
+        () => mockAccount as typeof mockAccount | null,
+    ),
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<
@@ -31,8 +45,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useAccountsStore: vi.fn((selector: Function) =>
-            selector({ getSelectedAccount: () => mockAccount }),
+        useAccountsStore: vi.fn((selector: (state: unknown) => unknown) =>
+            selector({ getSelectedAccount: mockGetSelectedAccount }),
         ),
         useAccountBalancesQuery: vi.fn(() => ({
             accountBalances: new Map([
@@ -54,66 +68,43 @@ vi.mock('@hooks/useLanguage', () => ({
 describe('useRemoveAssetsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-
-        vi.mocked(useAccountsStore).mockImplementation((selector: Function) =>
-            selector({ getSelectedAccount: () => mockAccount }),
-        )
-
-        vi.mocked(useAccountBalancesQuery).mockReturnValue({
-            accountBalances: new Map([
-                [
-                    'test-address',
-                    { assetBalances: mockAssetBalances },
-                ],
-            ]),
-        } as ReturnType<typeof useAccountBalancesQuery>)
+        mockGetSelectedAccount.mockReturnValue(mockAccount)
     })
 
     it('filters out ALGO and non-zero balance assets', () => {
-        // Arrange & Act
         const { result } = renderHook(() => useRemoveAssetsScreen())
 
-        // Assert
         expect(result.current.removableAssets).toHaveLength(2)
         expect(result.current.removableAssets[0].assetId).toBe('123')
         expect(result.current.removableAssets[1].assetId).toBe('456')
     })
 
     it('initially has no assets selected', () => {
-        // Arrange & Act
         const { result } = renderHook(() => useRemoveAssetsScreen())
 
-        // Assert
         expect(result.current.selectedAssetIds.size).toBe(0)
     })
 
     it('has isAllSelected as false initially', () => {
-        // Arrange & Act
         const { result } = renderHook(() => useRemoveAssetsScreen())
 
-        // Assert
         expect(result.current.isAllSelected).toBe(false)
     })
 
     it('adds an asset to selection via handleToggleSelect', () => {
-        // Arrange
         const { result } = renderHook(() => useRemoveAssetsScreen())
 
-        // Act
         act(() => {
             result.current.handleToggleSelect('123')
         })
 
-        // Assert
         expect(result.current.selectedAssetIds.has('123')).toBe(true)
         expect(result.current.selectedAssetIds.size).toBe(1)
     })
 
     it('removes an already-selected asset via handleToggleSelect', () => {
-        // Arrange
         const { result } = renderHook(() => useRemoveAssetsScreen())
 
-        // Act
         act(() => {
             result.current.handleToggleSelect('123')
         })
@@ -121,21 +112,17 @@ describe('useRemoveAssetsScreen', () => {
             result.current.handleToggleSelect('123')
         })
 
-        // Assert
         expect(result.current.selectedAssetIds.has('123')).toBe(false)
         expect(result.current.selectedAssetIds.size).toBe(0)
     })
 
     it('selects all removable assets via handleToggleSelectAll', () => {
-        // Arrange
         const { result } = renderHook(() => useRemoveAssetsScreen())
 
-        // Act
         act(() => {
             result.current.handleToggleSelectAll()
         })
 
-        // Assert
         expect(result.current.selectedAssetIds.size).toBe(2)
         expect(result.current.selectedAssetIds.has('123')).toBe(true)
         expect(result.current.selectedAssetIds.has('456')).toBe(true)
@@ -143,7 +130,6 @@ describe('useRemoveAssetsScreen', () => {
     })
 
     it('deselects all when all are selected via handleToggleSelectAll', () => {
-        // Arrange
         const { result } = renderHook(() => useRemoveAssetsScreen())
 
         act(() => {
@@ -151,26 +137,19 @@ describe('useRemoveAssetsScreen', () => {
         })
         expect(result.current.isAllSelected).toBe(true)
 
-        // Act
         act(() => {
             result.current.handleToggleSelectAll()
         })
 
-        // Assert
         expect(result.current.selectedAssetIds.size).toBe(0)
         expect(result.current.isAllSelected).toBe(false)
     })
 
     it('returns empty removableAssets when no account is selected', () => {
-        // Arrange
-        vi.mocked(useAccountsStore).mockImplementation((selector: Function) =>
-            selector({ getSelectedAccount: () => null }),
-        )
+        mockGetSelectedAccount.mockReturnValue(null)
 
-        // Act
         const { result } = renderHook(() => useRemoveAssetsScreen())
 
-        // Assert
         expect(result.current.removableAssets).toHaveLength(0)
     })
 })

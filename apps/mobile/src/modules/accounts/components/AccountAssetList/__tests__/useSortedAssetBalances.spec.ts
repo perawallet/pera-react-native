@@ -1,3 +1,15 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import Decimal from 'decimal.js'
@@ -28,7 +40,11 @@ const mockAssets = new Map([
 ])
 
 const mockBalances = [
-    { assetId: '0', amount: new Decimal('1000'), algoValue: new Decimal('1000') },
+    {
+        assetId: '0',
+        amount: new Decimal('1000'),
+        algoValue: new Decimal('1000'),
+    },
     { assetId: '1', amount: new Decimal('500'), algoValue: new Decimal('500') },
     { assetId: '2', amount: new Decimal('200'), algoValue: new Decimal('200') },
     { assetId: '3', amount: new Decimal(0), algoValue: new Decimal(0) },
