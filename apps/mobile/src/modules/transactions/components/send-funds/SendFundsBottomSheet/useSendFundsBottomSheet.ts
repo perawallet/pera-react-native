@@ -16,6 +16,7 @@ import { useSendFunds } from '@modules/transactions/hooks'
 
 type UseSendFundsBottomSheetResult = {
     selectedAccount: ReturnType<typeof useSelectedAccount>
+    handleFinished: () => void
 }
 
 export const useSendFundsBottomSheet = (
@@ -65,5 +66,6 @@ export const useSendFundsBottomSheet = (
 
     return {
         selectedAccount,
+        handleFinished,
     }
 }

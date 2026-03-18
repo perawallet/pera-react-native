@@ -15,7 +15,7 @@ import { makeStyles } from '@rneui/themed'
 export const useStyles = makeStyles(theme => {
     return {
         container: {
-            flex: 1,
+            flexGrow: 1,
             gap: theme.spacing.md,
         },
         loadingContainer: {

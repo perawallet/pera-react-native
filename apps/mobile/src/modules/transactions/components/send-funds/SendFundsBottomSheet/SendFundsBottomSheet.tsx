@@ -38,7 +38,7 @@ export const SendFundsBottomSheet = ({
     const dimensions = useWindowDimensions()
     const styles = useStyles(dimensions)
     const { t } = useLanguage()
-    const { selectedAccount } = useSendFundsBottomSheet(
+    const { selectedAccount, handleFinished } = useSendFundsBottomSheet(
         isVisible,
         assetId,
         onClose,
@@ -47,6 +47,7 @@ export const SendFundsBottomSheet = ({
     return (
         <PWBottomSheet
             isVisible={isVisible}
+            onBackdropPress={handleFinished}
             innerContainerStyle={styles.container}
             size='lg'
             enablePanDownToClose
