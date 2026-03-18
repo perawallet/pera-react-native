@@ -25,20 +25,20 @@ type SortOption = {
 
 const SORT_OPTIONS: SortOption[] = [
     {
-        mode: AssetSortModes.balanceDesc,
-        labelKey: 'asset_sort.balance_desc',
-    },
-    {
-        mode: AssetSortModes.balanceAsc,
-        labelKey: 'asset_sort.balance_asc',
-    },
-    {
         mode: AssetSortModes.alphabeticalAsc,
         labelKey: 'asset_sort.alphabetical_asc',
     },
     {
         mode: AssetSortModes.alphabeticalDesc,
         labelKey: 'asset_sort.alphabetical_desc',
+    },
+    {
+        mode: AssetSortModes.balanceDesc,
+        labelKey: 'asset_sort.balance_desc',
+    },
+    {
+        mode: AssetSortModes.balanceAsc,
+        labelKey: 'asset_sort.balance_asc',
     },
 ]
 

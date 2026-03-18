@@ -54,9 +54,11 @@ export const AssetSortBottomSheet = ({
                         variant='link'
                         title={t('asset_sort.done')}
                         onPress={handleDone}
+                        paddingStyle='none'
                     />
                 }
                 paddingStyle='dense'
+                style={styles.toolbar}
             />
 
             <PWView style={styles.contentContainer}>

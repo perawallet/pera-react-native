@@ -22,6 +22,7 @@ import {
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useRemoveAssetsScreen } from './useRemoveAssetsScreen'
 import { useStyles } from './styles'
 
@@ -36,6 +37,18 @@ export const RemoveAssetsScreen = () => {
         handleRemoveSelected,
         t,
     } = useRemoveAssetsScreen()
+
+    useNavigationHeader({
+        right: (
+            <PWTouchableOpacity onPress={handleToggleSelectAll}>
+                <PWText>
+                    {isAllSelected
+                        ? t('remove_assets.deselect_all')
+                        : t('remove_assets.select_all')}
+                </PWText>
+            </PWTouchableOpacity>
+        ),
+    })
 
     const renderItem = useCallback(
         ({ item }: { item: AssetWithAccountBalance }) => {
@@ -64,17 +77,6 @@ export const RemoveAssetsScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <PWView style={styles.headerContainer}>
-                <PWText variant='h4'>{t('remove_assets.title')}</PWText>
-                <PWTouchableOpacity onPress={handleToggleSelectAll}>
-                    <PWText>
-                        {isAllSelected
-                            ? t('remove_assets.deselect_all')
-                            : t('remove_assets.select_all')}
-                    </PWText>
-                </PWTouchableOpacity>
-            </PWView>
-
             <PWFlatList
                 data={removableAssets}
                 renderItem={renderItem}

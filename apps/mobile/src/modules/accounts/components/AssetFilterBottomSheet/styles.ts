@@ -13,6 +13,9 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
+    toolbar: {
+        paddingHorizontal: theme.spacing.xl,
+    },
     contentContainer: {
         paddingHorizontal: theme.spacing.lg,
         paddingBottom: theme.spacing.xl,

@@ -54,6 +54,7 @@ export const AccountStackNavigator = () => {
             <AccountStack.Screen
                 name='RemoveAssets'
                 component={RemoveAssetsScreen}
+                options={{ title: 'remove_assets.title' }}
             />
         </AccountStack.Navigator>
     )

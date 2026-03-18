@@ -67,9 +67,11 @@ export const AssetFilterBottomSheet = ({
                         variant='link'
                         title={t('asset_filter.done')}
                         onPress={onClose}
+                        paddingStyle='none'
                     />
                 }
                 paddingStyle='dense'
+                style={styles.toolbar}
             />
 
             <PWView style={styles.contentContainer}>
