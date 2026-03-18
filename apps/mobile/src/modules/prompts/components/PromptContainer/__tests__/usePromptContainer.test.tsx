@@ -14,6 +14,7 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { usePromptContainer } from '../usePromptContainer'
 import { usePreferences } from '@perawallet/wallet-core-settings'
+import { usePinCode } from '@perawallet/wallet-core-security'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import { UserPreferences } from '@constants/user-preferences'
 import { LONG_PROMPT_DISPLAY_DELAY } from '@constants/ui'
@@ -26,6 +27,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useHasAccounts: vi.fn(),
 }))
 
+vi.mock('@perawallet/wallet-core-security', () => ({
+    usePinCode: vi.fn(),
+}))
+
 vi.mock('../PinSecurityPrompt/PinSecurityPrompt', () => ({
     PinSecurityPrompt: () => null,
 }))
@@ -33,6 +38,7 @@ vi.mock('../PinSecurityPrompt/PinSecurityPrompt', () => ({
 describe('usePromptContainer', () => {
     const mockGetPreference = vi.fn()
     const mockSetPreference = vi.fn()
+    const mockCheckPinEnabled = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
@@ -42,6 +48,10 @@ describe('usePromptContainer', () => {
             setPreference: mockSetPreference,
         })
         ;(useHasAccounts as Mock).mockReturnValue(true)
+        mockCheckPinEnabled.mockResolvedValue(false)
+        ;(usePinCode as Mock).mockReturnValue({
+            checkPinEnabled: mockCheckPinEnabled,
+        })
     })
 
     afterEach(() => {
@@ -68,13 +78,16 @@ describe('usePromptContainer', () => {
         expect(result.current.nextPrompt).toBeUndefined()
     })
 
-    it('should show prompt after delay when user has accounts and prompt not dismissed', () => {
+    it('should show prompt after delay when user has accounts and prompt not dismissed', async () => {
         mockGetPreference.mockReturnValue(false)
 
         const { result } = renderHook(() => usePromptContainer())
 
         expect(result.current.nextPrompt).toBeUndefined()
 
+        // Flush the async checkPinEnabled call
+        await act(async () => {})
+        // Then advance past the display delay
         act(() => {
             vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
         })
@@ -97,11 +110,12 @@ describe('usePromptContainer', () => {
         expect(result.current.nextPrompt).toBeUndefined()
     })
 
-    it('should hide prompt when hidePrompt is called', () => {
+    it('should hide prompt when hidePrompt is called', async () => {
         mockGetPreference.mockReturnValue(false)
 
         const { result } = renderHook(() => usePromptContainer())
 
+        await act(async () => {})
         act(() => {
             vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
         })
@@ -113,6 +127,7 @@ describe('usePromptContainer', () => {
         })
 
         // After hiding, need to wait for the effect to clear the prompt
+        await act(async () => {})
         act(() => {
             vi.advanceTimersByTime(0)
         })
@@ -120,11 +135,12 @@ describe('usePromptContainer', () => {
         expect(result.current.nextPrompt).toBeUndefined()
     })
 
-    it('should dismiss prompt and save preference when dismissPrompt is called', () => {
+    it('should dismiss prompt and save preference when dismissPrompt is called', async () => {
         mockGetPreference.mockReturnValue(false)
 
         const { result } = renderHook(() => usePromptContainer())
 
+        await act(async () => {})
         act(() => {
             vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
         })
@@ -143,6 +159,7 @@ describe('usePromptContainer', () => {
         )
 
         // After dismissing, need to wait for the effect to clear the prompt
+        await act(async () => {})
         act(() => {
             vi.advanceTimersByTime(0)
         })
@@ -157,12 +174,14 @@ describe('usePromptContainer', () => {
         expect(typeof result.current.dismissPrompt).toBe('function')
     })
 
-    it('should clear timeout when prompt changes to undefined', () => {
+    it('should clear timeout when prompt changes to undefined', async () => {
         mockGetPreference.mockReturnValue(false)
 
         const { result, rerender } = renderHook(() => usePromptContainer())
 
-        // Start with prompt available
+        // Flush the async checkPinEnabled call
+        await act(async () => {})
+        // Start with prompt available - advance partway through the delay
         act(() => {
             vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY / 2)
         })
@@ -176,5 +195,33 @@ describe('usePromptContainer', () => {
         })
 
         expect(result.current.nextPrompt).toBeUndefined()
+    })
+
+    it('should not show PIN prompt when PIN is already enabled', async () => {
+        mockGetPreference.mockReturnValue(false)
+        mockCheckPinEnabled.mockResolvedValue(true)
+
+        const { result } = renderHook(() => usePromptContainer())
+
+        await act(async () => {
+            vi.advanceTimersByTime(LONG_PROMPT_DISPLAY_DELAY)
+        })
+
+        expect(result.current.nextPrompt).toBeUndefined()
+    })
+
+    it('should self-heal preference when PIN is already enabled', async () => {
+        mockGetPreference.mockReturnValue(false)
+        mockCheckPinEnabled.mockResolvedValue(true)
+
+        renderHook(() => usePromptContainer())
+
+        // Flush the async checkPinEnabled call
+        await act(async () => {})
+
+        expect(mockSetPreference).toHaveBeenCalledWith(
+            UserPreferences._securityPinSetupPrompt,
+            true,
+        )
     })
 })
