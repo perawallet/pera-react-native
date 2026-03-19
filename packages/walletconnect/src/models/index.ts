@@ -79,4 +79,6 @@ export type WalletConnectTransactionPayload = {
 export type WalletConnectTransactionParam = {
     message?: string
     txn: string
+    /** ARC-0001: addresses that must sign. Empty array = do not sign. Absent = sign with sender/auth. */
+    signers?: string[]
 }

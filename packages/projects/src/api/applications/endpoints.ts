@@ -10,8 +10,13 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import {
+    queryClient,
+    logger,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import { HTTPError } from 'ky'
+import { ZodError } from 'zod'
 import {
     applicationResponseSchema,
     type ApplicationApiResponse,
@@ -43,6 +48,13 @@ export const fetchApplication = async (
         return transformApplication(validated)
     } catch (error) {
         if (error instanceof HTTPError && error.response.status === 404) {
+            return null
+        }
+        if (error instanceof ZodError) {
+            logger.warn('Application response validation failed', {
+                applicationId,
+                issues: error.issues,
+            })
             return null
         }
         throw error
