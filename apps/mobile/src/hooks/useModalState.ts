@@ -12,7 +12,14 @@
 
 import { useState, useCallback } from 'react'
 
-export function useModalState(initialOpen = false) {
+export type ModalState = {
+    isOpen: boolean
+    open: () => void
+    close: () => void
+    toggle: () => void
+}
+
+export function useModalState(initialOpen = false): ModalState {
     const [isOpen, setIsOpen] = useState(initialOpen)
 
     const open = useCallback(() => {

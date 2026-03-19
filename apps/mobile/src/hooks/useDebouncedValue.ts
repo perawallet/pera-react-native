@@ -10,9 +10,22 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-assets'
+import { useEffect, useState } from 'react'
 
-export * from './models'
-export * from './hooks'
-export * from './store'
-export * from './utils'
+const DEFAULT_DELAY = 300
+
+export const useDebouncedValue = <T>(value: T, delay = DEFAULT_DELAY): T => {
+    const [debouncedValue, setDebouncedValue] = useState(value)
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedValue(value)
+        }, delay)
+
+        return () => {
+            clearTimeout(timer)
+        }
+    }, [value, delay])
+
+    return debouncedValue
+}

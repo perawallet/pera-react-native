@@ -17,26 +17,27 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
-import React, { useMemo, useState } from 'react'
+import React, { useCallback } from 'react'
 import { useStyles } from './styles'
 
 import { SearchInput } from '@components/SearchInput'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
-    isWatchAccount,
-    useAccountBalancesQuery,
     WalletAccount,
     AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
+
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
-import { GestureResponderEvent, KeyboardAvoidingView } from 'react-native'
+import { KeyboardAvoidingView } from 'react-native'
 import { ExpandablePanel } from '@components/ExpandablePanel'
-import { useModalState } from '@hooks/useModalState'
-import { useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { ManageAssetsBottomSheet } from '../ManageAssetsBottomSheet'
+import { AssetSortBottomSheet } from '../AssetSortBottomSheet'
+import { AssetFilterBottomSheet } from '../AssetFilterBottomSheet'
+import { SwipeableAssetItem } from './SwipeableAssetItem'
+import { OptOutConfirmationBottomSheet } from './OptOutConfirmationBottomSheet'
+import { useAccountAssetList } from './useAccountAssetList'
 
 const TAB_AND_HEADER_HEIGHT = 100
 export type AccountAssetListProps = {
@@ -45,7 +46,6 @@ export type AccountAssetListProps = {
     header?: React.ReactNode
 }
 
-//TODO implement links and buttons
 export const AccountAssetList = ({
     account,
     scrollEnabled,
@@ -53,58 +53,45 @@ export const AccountAssetList = ({
 }: AccountAssetListProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const headerState = useModalState(true)
-    const [searchFilter, setSearchFilter] = useState('')
-    const { accountBalances, isPending } = useAccountBalancesQuery([account])
-    const balanceData = useMemo(
-        () => accountBalances.get(account.address),
-        [accountBalances, account.address],
-    )
-    const assetIDs = useMemo(
-        () => balanceData?.assetBalances.map(b => b.assetId) ?? [],
-        [balanceData],
-    )
-    const { data: assets } = useAssetsQuery(assetIDs)
-    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
+    const {
+        balances,
+        isPending,
+        isWatch,
+        headerState,
+        manageSheetState,
+        sortSheetState,
+        filterSheetState,
+        optOutConfirmationState,
+        assetForOptOut,
+        setSearchFilter,
+        handleConfirmOptOut,
+        handleCloseOptOut,
+        handleOpenSort,
+        handleOpenFilter,
+        handleRemoveAssets,
+        getEmptyTitle,
+        getEmptyBody,
+        renderItemProps,
+    } = useAccountAssetList({ account, t })
 
-    const balances = useMemo(() => {
-        if (!balanceData) {
-            return []
-        }
-        const searchTerm = searchFilter.toLowerCase()
+    const renderItem = useCallback(
+        ({ item }: { item: AssetWithAccountBalance }) => {
+            const isSwipeable =
+                !renderItemProps.isWatch &&
+                item.assetId !== ALGO_ASSET_ID &&
+                item.amount.isZero()
 
-        return balanceData.assetBalances.filter(asset => {
-            const assetInfo = assets?.get(asset.assetId)
             return (
-                (assetInfo?.unitName?.toLowerCase().includes(searchTerm) ||
-                    assetInfo?.name?.toLowerCase().includes(searchTerm)) ??
-                false
+                <SwipeableAssetItem
+                    item={item}
+                    isSwipeEnabled={isSwipeable}
+                    onPress={renderItemProps.goToAssetScreen}
+                    onOptOut={renderItemProps.handleOptOut}
+                />
             )
-        })
-    }, [balanceData, searchFilter, assets])
-
-    const goToAssetScreen = (
-        event: GestureResponderEvent,
-        asset: AssetWithAccountBalance,
-    ) => {
-        event.stopPropagation()
-        headerState.open()
-        navigation.navigate('AssetDetails', {
-            assetId: asset.assetId,
-        })
-    }
-
-    const renderItem = ({ item }: { item: AssetWithAccountBalance }) => {
-        return (
-            <PWTouchableOpacity
-                style={styles.itemContainer}
-                onPress={event => goToAssetScreen(event, item)}
-                key={`asset-key-${item.assetId}`}
-            >
-                <AccountAssetItemView accountBalance={item} />
-            </PWTouchableOpacity>
-        )
-    }
+        },
+        [renderItemProps],
+    )
 
     return (
         <KeyboardAvoidingView
@@ -136,7 +123,7 @@ export const AccountAssetList = ({
                                     >
                                         {t('account_details.assets.title')}
                                     </PWText>
-                                    {!isWatchAccount(account) && (
+                                    {!isWatch && (
                                         <PWView
                                             style={
                                                 styles.titleBarButtonContainer
@@ -146,6 +133,7 @@ export const AccountAssetList = ({
                                                 icon='sliders'
                                                 variant='helper'
                                                 paddingStyle='dense'
+                                                onPress={manageSheetState.open}
                                             />
                                             <PWButton
                                                 icon='plus'
@@ -172,22 +160,8 @@ export const AccountAssetList = ({
                     ListEmptyComponent={
                         isPending ? null : (
                             <EmptyView
-                                title={
-                                    searchFilter?.length
-                                        ? t(
-                                              'account_details.assets.nomatch_title',
-                                          )
-                                        : t(
-                                              'account_details.assets.empty_title',
-                                          )
-                                }
-                                body={
-                                    searchFilter?.length
-                                        ? t(
-                                              'account_details.assets.nomatch_body',
-                                          )
-                                        : t('account_details.assets.empty_body')
-                                }
+                                title={getEmptyTitle()}
+                                body={getEmptyBody()}
                             />
                         )
                     }
@@ -206,6 +180,33 @@ export const AccountAssetList = ({
                     }
                 />
             </PWTouchableOpacity>
+
+            <ManageAssetsBottomSheet
+                isVisible={manageSheetState.isOpen}
+                onClose={manageSheetState.close}
+                onOpenSort={handleOpenSort}
+                onOpenFilter={handleOpenFilter}
+                onRemoveAssets={handleRemoveAssets}
+                isWatchAccount={isWatch}
+            />
+
+            <AssetSortBottomSheet
+                isVisible={sortSheetState.isOpen}
+                onClose={sortSheetState.close}
+            />
+
+            <AssetFilterBottomSheet
+                isVisible={filterSheetState.isOpen}
+                onClose={filterSheetState.close}
+            />
+
+            <OptOutConfirmationBottomSheet
+                isVisible={optOutConfirmationState.isOpen}
+                onClose={handleCloseOptOut}
+                accountBalance={assetForOptOut}
+                accountName={account.name ?? account.address}
+                onConfirmOptOut={handleConfirmOptOut}
+            />
         </KeyboardAvoidingView>
     )
 }

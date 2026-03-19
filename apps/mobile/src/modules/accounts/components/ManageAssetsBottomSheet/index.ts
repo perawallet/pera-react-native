@@ -10,9 +10,5 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-assets'
-
-export * from './models'
-export * from './hooks'
-export * from './store'
-export * from './utils'
+export { ManageAssetsBottomSheet } from './ManageAssetsBottomSheet'
+export type { ManageAssetsBottomSheetProps } from './ManageAssetsBottomSheet'

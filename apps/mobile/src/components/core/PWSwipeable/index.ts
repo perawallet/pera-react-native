@@ -10,9 +10,5 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-assets'
-
-export * from './models'
-export * from './hooks'
-export * from './store'
-export * from './utils'
+export { PWSwipeable, DEFAULT_SWIPE_ACTION_WIDTH } from './PWSwipeable'
+export type { PWSwipeableProps, PWSwipeableRef } from './PWSwipeable'

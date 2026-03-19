@@ -10,9 +10,14 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-assets'
+import { makeStyles } from '@rneui/themed'
 
-export * from './models'
-export * from './hooks'
-export * from './store'
-export * from './utils'
+export const useStyles = makeStyles(theme => ({
+    toolbar: {
+        paddingHorizontal: theme.spacing.xl,
+    },
+    contentContainer: {
+        paddingHorizontal: theme.spacing.lg,
+        paddingBottom: theme.spacing.xl,
+    },
+}))
