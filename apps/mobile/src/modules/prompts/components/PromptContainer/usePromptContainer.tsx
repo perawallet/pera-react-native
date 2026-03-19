@@ -11,6 +11,7 @@
  */
 
 import { usePreferences } from '@perawallet/wallet-core-settings'
+import { usePinCode } from '@perawallet/wallet-core-security'
 import { ReactElement, useEffect, useMemo, useState } from 'react'
 import { PinSecurityPrompt } from '../PinSecurityPrompt/PinSecurityPrompt'
 import { PromptViewProps } from '@modules/prompts/models'
@@ -35,6 +36,7 @@ type UsePromptContainerResult = {
 
 export const usePromptContainer = (): UsePromptContainerResult => {
     const { getPreference, setPreference } = usePreferences()
+    const { checkPinEnabled } = usePinCode()
     const hasAccounts = useHasAccounts()
     const [hiddenPrompts, setHiddenPrompts] = useState<Set<string>>(new Set())
     const [nextPrompt, setNextPrompt] = useState<Prompt | undefined>(undefined)
@@ -64,13 +66,42 @@ export const usePromptContainer = (): UsePromptContainerResult => {
             return
         }
 
-        //it's too jarring if the prompt appears immediately after the user opens the app
-        const timeout = setTimeout(() => {
-            setNextPrompt(prompt)
-        }, LONG_PROMPT_DISPLAY_DELAY)
+        let cancelled = false
+        let timeoutId: ReturnType<typeof setTimeout> | undefined
 
-        return () => clearTimeout(timeout)
-    }, [prompt])
+        const showPromptAfterChecks = async () => {
+            // For the PIN security prompt, check if PIN is already enabled
+            if (prompt.id === UserPreferences._securityPinSetupPrompt) {
+                const pinEnabled = await checkPinEnabled()
+                if (pinEnabled) {
+                    // Self-heal: persist the preference so future checks are synchronous
+                    setPreference(prompt.id, true)
+                    if (!cancelled) {
+                        setHiddenPrompts(new Set(Object.keys(PROMPT_SEQUENCE)))
+                    }
+                    return
+                }
+            }
+
+            if (cancelled) return
+
+            //it's too jarring if the prompt appears immediately after the user opens the app
+            timeoutId = setTimeout(() => {
+                if (!cancelled) {
+                    setNextPrompt(prompt)
+                }
+            }, LONG_PROMPT_DISPLAY_DELAY)
+        }
+
+        void showPromptAfterChecks()
+
+        return () => {
+            cancelled = true
+            if (timeoutId) {
+                clearTimeout(timeoutId)
+            }
+        }
+    }, [prompt, checkPinEnabled, setPreference])
 
     const hidePrompt = () => {
         //we only want to show one prompt at a time so hide all prompts at this point
