@@ -15,10 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { TransactionWarnings } from '../TransactionWarnings'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { useModalState } from '@hooks/useModalState'
-import {
-    useAllAccounts,
-    canSignWithAccount,
-} from '@perawallet/wallet-core-accounts'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 
 vi.mock('@hooks/useModalState', () => ({
     useModalState: vi.fn(() => ({
@@ -40,8 +37,28 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => []),
-    canSignWithAccount: vi.fn(() => false),
 }))
+
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-signing')>()
+    return {
+        ...actual,
+    }
+})
+
+vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-blockchain')
+        >()
+    return {
+        ...actual,
+        encodeAlgorandAddress: vi.fn(
+            (bytes: Uint8Array) => `ENCODED_${new TextDecoder().decode(bytes)}`,
+        ),
+    }
+})
 
 const mockUserAccount = {
     address: 'USER_ADDR',
@@ -54,7 +71,6 @@ describe('TransactionWarnings', () => {
         vi.mocked(useAllAccounts).mockReturnValue([
             mockUserAccount,
         ] as unknown as ReturnType<typeof useAllAccounts>)
-        vi.mocked(canSignWithAccount).mockReturnValue(true)
         vi.mocked(useModalState).mockReturnValue({
             isOpen: false,
             open: vi.fn(),
@@ -112,7 +128,7 @@ describe('TransactionWarnings', () => {
         expect(container.firstChild).toBeNull()
     })
 
-    it('shows close account warning in bottom sheet when sender is user-controlled', () => {
+    it('shows close account warning in bottom sheet when sender is a user account', () => {
         vi.mocked(useModalState).mockReturnValue({
             isOpen: true,
             open: vi.fn(),
@@ -127,8 +143,7 @@ describe('TransactionWarnings', () => {
         expect(getByText('transactions.warning.close_warning')).toBeTruthy()
     })
 
-    it('hides close warning when sender is not user-controlled', () => {
-        vi.mocked(canSignWithAccount).mockReturnValue(false)
+    it('hides close warning when sender is not a user account', () => {
         vi.mocked(useModalState).mockReturnValue({
             isOpen: true,
             open: vi.fn(),
@@ -151,8 +166,7 @@ describe('TransactionWarnings', () => {
         expect(queryByText('transactions.warning.close_warning')).toBeNull()
     })
 
-    it('shows rekey warning regardless of sender control', () => {
-        vi.mocked(canSignWithAccount).mockReturnValue(false)
+    it('shows rekey warning when sender is a user account', () => {
         vi.mocked(useModalState).mockReturnValue({
             isOpen: true,
             open: vi.fn(),
@@ -161,7 +175,7 @@ describe('TransactionWarnings', () => {
         })
 
         const rekeyTx = {
-            sender: 'EXTERNAL_ADDR',
+            sender: 'USER_ADDR',
             rekeyTo: {
                 publicKey: new Uint8Array([1, 2, 3]),
             },
@@ -175,9 +189,23 @@ describe('TransactionWarnings', () => {
         expect(getByText('transactions.warning.rekey_warning')).toBeTruthy()
     })
 
-    it('renders null for close-only transaction when sender is not user-controlled', () => {
-        vi.mocked(canSignWithAccount).mockReturnValue(false)
+    it('hides rekey warning when sender is not a user account', () => {
+        const rekeyTx = {
+            sender: 'EXTERNAL_ADDR',
+            rekeyTo: {
+                publicKey: new Uint8Array([1, 2, 3]),
+            },
+            id: 'TX_ID',
+        } as unknown as PeraDisplayableTransaction
 
+        const { container } = render(
+            <TransactionWarnings transaction={rekeyTx} />,
+        )
+
+        expect(container.firstChild).toBeNull()
+    })
+
+    it('renders null for close-only transaction when sender is not a user account', () => {
         const closeTx = {
             sender: 'EXTERNAL_ADDR',
             paymentTransaction: {

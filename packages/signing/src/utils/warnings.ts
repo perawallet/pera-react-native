@@ -16,37 +16,33 @@ import type { TransactionWarning } from '../models'
 
 export const aggregateTransactionWarnings = (
     transactions: PeraDisplayableTransaction[],
-    signableAddresses: Set<string>,
+    userAccountAddresses: Set<string>,
 ): TransactionWarning[] => {
     const warnings: TransactionWarning[] = []
 
     for (const tx of transactions) {
-        if (!tx.sender) {
+        if (!tx.sender || !userAccountAddresses.has(tx.sender)) {
             continue
         }
 
-        const isSenderSignable = signableAddresses.has(tx.sender)
+        const closeAddress =
+            tx.paymentTransaction?.closeRemainderTo ??
+            tx.assetTransferTransaction?.closeTo
 
-        if (isSenderSignable) {
-            const closeAddress =
-                tx.paymentTransaction?.closeRemainderTo ??
-                tx.assetTransferTransaction?.closeTo
+        if (closeAddress) {
+            warnings.push({
+                type: 'close',
+                senderAddress: tx.sender,
+                targetAddress: closeAddress,
+            })
+        }
 
-            if (closeAddress) {
-                warnings.push({
-                    type: 'close',
-                    senderAddress: tx.sender,
-                    targetAddress: closeAddress,
-                })
-            }
-
-            if (tx.assetFreezeTransaction) {
-                warnings.push({
-                    type: 'asset-freeze',
-                    senderAddress: tx.sender,
-                    targetAddress: tx.assetFreezeTransaction.address,
-                })
-            }
+        if (tx.assetFreezeTransaction) {
+            warnings.push({
+                type: 'asset-freeze',
+                senderAddress: tx.sender,
+                targetAddress: tx.assetFreezeTransaction.address,
+            })
         }
 
         if (tx.rekeyTo?.publicKey) {

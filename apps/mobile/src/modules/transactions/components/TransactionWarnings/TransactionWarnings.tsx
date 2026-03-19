@@ -21,20 +21,12 @@ import {
 } from '@components/core'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    encodeAlgorandAddress,
-    PeraDisplayableTransaction,
-} from '@perawallet/wallet-core-blockchain'
-import {
-    useAllAccounts,
-    canSignWithAccount,
-} from '@perawallet/wallet-core-accounts'
-import { useModalState } from '@hooks/useModalState'
-import { useMemo } from 'react'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useTheme } from '@rneui/themed'
 import { LONG_ADDRESS_FORMAT } from '@constants/ui'
 import { PanelButton } from '@components/PanelButton'
+import { useTransactionWarnings } from './useTransactionWarnings'
 
 export type TransactionWarningsProps = {
     transaction: PeraDisplayableTransaction
@@ -47,39 +39,16 @@ export const TransactionWarnings = ({
     const { t } = useLanguage()
     const { theme } = useTheme()
 
-    const accounts = useAllAccounts()
-    const { isOpen, open, close } = useModalState()
+    const {
+        warnings,
+        closeWarning,
+        rekeyWarning,
+        isModalOpen,
+        openModal,
+        closeModal,
+    } = useTransactionWarnings(transaction)
 
-    const isSenderUserControlled = useMemo(() => {
-        if (!transaction.sender) return false
-        const senderAccount = accounts.find(
-            a => a.address === transaction.sender,
-        )
-        return senderAccount
-            ? canSignWithAccount(senderAccount, accounts)
-            : false
-    }, [transaction.sender, accounts])
-
-    const closeAddress = useMemo(() => {
-        return (
-            transaction.paymentTransaction?.closeRemainderTo ??
-            transaction.assetTransferTransaction?.closeTo
-        )
-    }, [transaction])
-
-    const showCloseWarning = !!closeAddress && isSenderUserControlled
-
-    const rekeyAddress = useMemo(() => {
-        return transaction.rekeyTo?.publicKey
-            ? encodeAlgorandAddress(transaction.rekeyTo.publicKey)
-            : undefined
-    }, [transaction])
-
-    const warningCount = useMemo(() => {
-        return (showCloseWarning ? 1 : 0) + (rekeyAddress ? 1 : 0)
-    }, [showCloseWarning, rekeyAddress])
-
-    if (!warningCount) {
+    if (warnings.length === 0) {
         return null
     }
 
@@ -91,11 +60,11 @@ export const TransactionWarnings = ({
             />
             <PWView style={styles.warningContainer}>
                 <PanelButton
-                    onPress={open}
+                    onPress={openModal}
                     title={t('transactions.warning.title')}
                     titleWeight='h4'
                     description={t('transactions.warning.title_cta', {
-                        count: warningCount,
+                        count: warnings.length,
                     })}
                     leftIcon='info'
                     rightIcon='chevron-right'
@@ -103,8 +72,8 @@ export const TransactionWarnings = ({
                 />
 
                 <PWBottomSheet
-                    isVisible={isOpen}
-                    onBackdropPress={close}
+                    isVisible={isModalOpen}
+                    onBackdropPress={closeModal}
                     enablePanDownToClose
                 >
                     <PWView style={styles.sheetContainer}>
@@ -113,20 +82,20 @@ export const TransactionWarnings = ({
                                 <PWIcon
                                     name='cross'
                                     variant='secondary'
-                                    onPress={close}
+                                    onPress={closeModal}
                                 />
                             }
                             center={
                                 <PWText variant='h4'>
                                     {t('transactions.warning.title', {
-                                        count: warningCount,
+                                        count: warnings.length,
                                     })}
                                 </PWText>
                             }
                             paddingStyle='dense'
                         />
 
-                        {showCloseWarning && (
+                        {closeWarning && (
                             <PWView style={styles.warningSection}>
                                 <PWView
                                     style={styles.warningSectionIconContainer}
@@ -142,7 +111,7 @@ export const TransactionWarnings = ({
                                             {
                                                 address:
                                                     truncateAlgorandAddress(
-                                                        closeAddress,
+                                                        closeWarning.targetAddress,
                                                         LONG_ADDRESS_FORMAT,
                                                     ),
                                             },
@@ -151,14 +120,14 @@ export const TransactionWarnings = ({
                                 </PWView>
                             </PWView>
                         )}
-                        {showCloseWarning && !!rekeyAddress && (
+                        {closeWarning && rekeyWarning && (
                             <PWDivider
                                 style={styles.divider}
                                 color={theme.colors.layerGray}
                             />
                         )}
 
-                        {!!rekeyAddress && (
+                        {rekeyWarning && (
                             <PWView style={styles.warningSection}>
                                 <PWView
                                     style={styles.warningSectionIconContainer}
@@ -177,7 +146,7 @@ export const TransactionWarnings = ({
                                                 {
                                                     address:
                                                         truncateAlgorandAddress(
-                                                            rekeyAddress,
+                                                            rekeyWarning.targetAddress,
                                                             LONG_ADDRESS_FORMAT,
                                                         ),
                                                 },
