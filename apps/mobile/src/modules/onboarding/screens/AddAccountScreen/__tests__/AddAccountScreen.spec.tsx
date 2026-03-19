@@ -232,7 +232,7 @@ describe('AddAccountScreen', () => {
         })
     })
 
-    it('navigates to WatchAccount when Watch an Address is pressed', () => {
+    it('navigates to WatchInfo when Watch an Address is pressed', () => {
         mockUseAllAccounts.mockReturnValue([])
 
         render(<AddAccountScreen />)
@@ -247,7 +247,7 @@ describe('AddAccountScreen', () => {
         )
         fireEvent.click(watchButton)
 
-        expect(mockPush).toHaveBeenCalledWith('WatchAccount')
+        expect(mockPush).toHaveBeenCalledWith('WatchInfo')
     })
 
     it('creates a new HD wallet when Create Universal Wallet is pressed (no HD wallet)', async () => {

@@ -297,7 +297,7 @@ describe('useAddAccountScreen', () => {
         })
     })
 
-    it('watch address option navigates to WatchAccount', () => {
+    it('watch address option navigates to WatchInfo', () => {
         const { result } = renderHook(() => useAddAccountScreen())
 
         const watchOption = result.current.otherOptions.find(
@@ -308,7 +308,7 @@ describe('useAddAccountScreen', () => {
             watchOption.onPress()
         })
 
-        expect(mockPush).toHaveBeenCalledWith('WatchAccount')
+        expect(mockPush).toHaveBeenCalledWith('WatchInfo')
     })
 
     it('universal wallet option creates account and navigates to NameAccount', async () => {

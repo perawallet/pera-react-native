@@ -13,6 +13,7 @@
 import React from 'react'
 import { PWButton, PWText, PWView } from '@components/core'
 import { AddressEntryField } from '@components/AddressEntryField'
+import { PasteAddressButton } from './PasteAddressButton'
 import { useWatchAccountScreen } from './useWatchAccountScreen'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
@@ -24,7 +25,9 @@ export const WatchAccountScreen = () => {
         address,
         isValidAddress,
         isDuplicateAddress,
+        clipboardAddress,
         handleAddressChange,
+        handlePasteAddress,
         handleWatchAccount,
     } = useWatchAccountScreen()
 
@@ -48,7 +51,6 @@ export const WatchAccountScreen = () => {
 
                 <AddressEntryField
                     testID='watch_account_address_input'
-                    label={t('onboarding.watch_account.address_label')}
                     placeholder={t(
                         'onboarding.watch_account.address_placeholder',
                     )}
@@ -57,6 +59,11 @@ export const WatchAccountScreen = () => {
                     allowQRCode
                     onScanned={handleAddressChange}
                     errorMessage={errorMessage}
+                />
+
+                <PasteAddressButton
+                    address={clipboardAddress}
+                    onPress={handlePasteAddress}
                 />
             </PWView>
 

@@ -128,7 +128,7 @@ export const useAddAccountScreen = () => {
     }, [navigation, resetMultisigCreation])
 
     const handleWatchAddress = useCallback(
-        () => navigation.push('WatchAccount'),
+        () => navigation.push('WatchInfo'),
         [navigation],
     )
 

@@ -17,6 +17,7 @@ import {
     NativeStackHeaderProps,
 } from '@react-navigation/native-stack'
 import { AddAccountScreen } from '@modules/onboarding/screens/AddAccountScreen'
+import { WatchInfoScreen } from '@modules/onboarding/screens/WatchInfoScreen'
 import { WatchAccountScreen } from '@modules/onboarding/screens/WatchAccountScreen'
 import { NameAccountScreen } from '@modules/onboarding/screens/NameAccountScreen'
 import { ImportAccountScreen } from '@modules/onboarding/screens/ImportAccountScreen'
@@ -49,6 +50,8 @@ const withAccountErrorBoundary = <P extends object>(
 
 const AddAccountScreenWithErrorBoundary =
     withAccountErrorBoundary(AddAccountScreen)
+const WatchInfoScreenWithErrorBoundary =
+    withAccountErrorBoundary(WatchInfoScreen)
 const WatchAccountScreenWithErrorBoundary =
     withAccountErrorBoundary(WatchAccountScreen)
 const NameAccountScreenWithErrorBoundary =
@@ -95,6 +98,13 @@ export const AddAccountStackNavigator = () => {
                     title: '',
                 }}
                 component={SelectHDWalletScreenWithErrorBoundary}
+            />
+            <AddAccountStack.Screen
+                name='WatchInfo'
+                options={{
+                    title: '',
+                }}
+                component={WatchInfoScreenWithErrorBoundary}
             />
             <AddAccountStack.Screen
                 name='WatchAccount'

@@ -44,6 +44,7 @@ export type OnboardingStackParamList = {
 export type AddAccountStackParamList = {
     AddAccountHome: undefined
     SelectHDWallet: undefined
+    WatchInfo: undefined
     WatchAccount: undefined
     NameAccount:
         | {

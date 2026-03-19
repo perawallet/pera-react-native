@@ -20,12 +20,15 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { useClipboardAddress } from './useClipboardAddress'
 
 type UseWatchAccountScreenResult = {
     address: string
     isValidAddress: boolean
     isDuplicateAddress: boolean
+    clipboardAddress: string | null
     handleAddressChange: (text: string) => void
+    handlePasteAddress: (pastedAddress: string) => void
     handleWatchAccount: () => void
 }
 
@@ -34,6 +37,7 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
     const accounts = useAllAccounts()
     const setAccounts = useAccountsStore(state => state.setAccounts)
     const [address, setAddress] = useState('')
+    const { clipboardAddress } = useClipboardAddress()
 
     const isValidAddress = isValidAlgorandAddress(address)
     const isDuplicateAddress =
@@ -41,6 +45,10 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
 
     const handleAddressChange = useCallback((text: string) => {
         setAddress(text)
+    }, [])
+
+    const handlePasteAddress = useCallback((pastedAddress: string) => {
+        setAddress(pastedAddress)
     }, [])
 
     const handleWatchAccount = useCallback(() => {
@@ -64,7 +72,9 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
         address,
         isValidAddress,
         isDuplicateAddress,
+        clipboardAddress,
         handleAddressChange,
+        handlePasteAddress,
         handleWatchAccount,
     }
 }

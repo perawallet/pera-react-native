@@ -27,6 +27,14 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 
+const mockRefreshClipboard = vi.fn()
+vi.mock('../useClipboardAddress', () => ({
+    useClipboardAddress: () => ({
+        clipboardAddress: null,
+        refreshClipboard: mockRefreshClipboard,
+    }),
+}))
+
 const mockSetAccounts = vi.fn()
 const mockUseAllAccounts = vi.fn((): WalletAccount[] => [])
 
@@ -79,6 +87,7 @@ describe('useWatchAccountScreen', () => {
         expect(result.current.address).toBe('')
         expect(result.current.isValidAddress).toBe(false)
         expect(result.current.isDuplicateAddress).toBe(false)
+        expect(result.current.clipboardAddress).toBeNull()
     })
 
     it('handleAddressChange updates address', () => {
@@ -200,6 +209,17 @@ describe('useWatchAccountScreen', () => {
         expect(mockPush).toHaveBeenCalledWith('NameAccount', {
             account: expectedAccount,
         })
+    })
+
+    it('handlePasteAddress updates address', () => {
+        const { result } = renderHook(() => useWatchAccountScreen())
+
+        act(() => {
+            result.current.handlePasteAddress('VALID_ALGORAND_ADDRESS')
+        })
+
+        expect(result.current.address).toBe('VALID_ALGORAND_ADDRESS')
+        expect(result.current.isValidAddress).toBe(true)
     })
 
     it('handleWatchAccount appends to existing accounts', () => {
