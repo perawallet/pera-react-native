@@ -72,11 +72,12 @@ export const AssetFilterBottomSheet = ({
                     <PWText style={styles.filterLabel}>
                         {t('asset_filter.hide_zero_balance')}
                     </PWText>
-                    <PWCheckbox
-                        checked={hideZeroBalance}
-                        onPress={handleToggle}
-                        containerStyle={styles.checkboxContainer}
-                    />
+                    <PWView pointerEvents='none'>
+                        <PWCheckbox
+                            checked={hideZeroBalance}
+                            containerStyle={styles.checkboxContainer}
+                        />
+                    </PWView>
                 </PWTouchableOpacity>
             </PWView>
         </PWBottomSheet>

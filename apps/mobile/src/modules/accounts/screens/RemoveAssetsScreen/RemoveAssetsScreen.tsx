@@ -65,10 +65,9 @@ export const RemoveAssetsScreen = () => {
                             iconSize='md'
                         />
                     </PWView>
-                    <PWCheckbox
-                        checked={isSelected}
-                        onPress={() => handleToggleSelect(item.assetId)}
-                    />
+                    <PWView pointerEvents='none'>
+                        <PWCheckbox checked={isSelected} />
+                    </PWView>
                 </PWTouchableOpacity>
             )
         },

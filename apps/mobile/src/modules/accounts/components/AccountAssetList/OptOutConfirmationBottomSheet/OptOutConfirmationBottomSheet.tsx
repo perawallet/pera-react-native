@@ -11,20 +11,17 @@
  */
 
 import { PWBottomSheet, PWButton, PWText, PWView } from '@components/core'
+import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET, toWholeUnits, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { MIN_TXN_FEE } from '@perawallet/wallet-core-blockchain'
+import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
 const MAX_ASSET_NAME_LENGTH = 40
-const MICRO_ALGO_DIVISOR = 1_000_000
-
-const formatFee = (): string => {
-    const fee = Number(MIN_TXN_FEE) / MICRO_ALGO_DIVISOR
-    return `${fee} ${ALGO_ASSET.unitName}`
-}
+const MIN_FEE_WHOLE_UNITS = toWholeUnits(Number(MIN_TXN_FEE), ALGO_ASSET)
 
 const sanitizeAssetName = (
     name: string | undefined,
@@ -104,7 +101,14 @@ export const OptOutConfirmationBottomSheet = ({
                     <PWText style={styles.feeLabel}>
                         {t('asset_opt_out.fee_label')}
                     </PWText>
-                    <PWText style={styles.feeValue}>{formatFee()}</PWText>
+                    <CurrencyDisplay
+                        currency='ALGO'
+                        precision={ALGO_ASSET.decimals}
+                        minPrecision={DEFAULT_PRECISION}
+                        value={MIN_FEE_WHOLE_UNITS}
+                        showSymbol
+                        style={styles.feeValue}
+                    />
                 </PWView>
 
                 <PWView style={styles.buttonContainer}>

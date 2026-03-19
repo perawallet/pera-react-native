@@ -1776,6 +1776,8 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 
 // Mock @perawallet/wallet-core-assets
 vi.mock('@perawallet/wallet-core-assets', () => ({
+    toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>
+        Number(value) / Math.pow(10, asset.decimals),
     ALGO_ASSET_ID: '0',
     KNOWN_ASSET_IDS: {
         USDC: { mainnet: '31566704', testnet: '10458941' },
@@ -1934,6 +1936,7 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 
 // Mock @perawallet/wallet-core-blockchain
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    MIN_TXN_FEE: 1_000n,
     useAlgorandClient: vi.fn(),
     useSigningRequest: vi.fn(() => ({ addSignRequest: vi.fn() })),
     useTransactionEncoder: vi.fn(() => ({ encodeSignedTransaction: vi.fn() })),

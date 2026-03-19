@@ -57,6 +57,8 @@ vi.mock('@shopify/flash-list', () => ({
 
 vi.mock('@perawallet/wallet-core-assets', async () => ({
     useAssetsQuery: vi.fn(() => ({ data: new Map() })),
+    toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>
+        Number(value) / Math.pow(10, asset.decimals),
     ALGO_ASSET: { decimals: 6, unitName: 'ALGO' },
     ALGO_ASSET_ID: '0',
     AssetSortModes: {

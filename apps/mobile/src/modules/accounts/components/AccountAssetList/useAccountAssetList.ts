@@ -20,7 +20,7 @@ import {
     AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { useModalState } from '@hooks/useModalState'
+import { useModalState, ModalState } from '@hooks/useModalState'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { useSortedAssetBalances } from './useSortedAssetBalances'
 
@@ -30,11 +30,11 @@ type UseAccountAssetListResult = {
     isWatch: boolean
     hideZeroBalance: boolean
     searchFilter: string
-    headerState: ReturnType<typeof useModalState>
-    manageSheetState: ReturnType<typeof useModalState>
-    sortSheetState: ReturnType<typeof useModalState>
-    filterSheetState: ReturnType<typeof useModalState>
-    optOutConfirmationState: ReturnType<typeof useModalState>
+    headerState: ModalState
+    manageSheetState: ModalState
+    sortSheetState: ModalState
+    filterSheetState: ModalState
+    optOutConfirmationState: ModalState
     assetForOptOut: AssetWithAccountBalance | null
     setSearchFilter: (value: string) => void
     goToAssetScreen: (asset: AssetWithAccountBalance) => void
