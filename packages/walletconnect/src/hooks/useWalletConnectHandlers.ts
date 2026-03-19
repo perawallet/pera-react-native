@@ -242,8 +242,28 @@ export const useWalletConnectHandlers = () => {
                 )
             }
 
+            // ARC-0001: determine which transactions this wallet should sign
+            // signers absent or non-empty → sign; signers: [] → do not sign
+            const indicesToSign: number[] = []
+            for (let i = 0; i < paramOne.length; i++) {
+                const param = paramOne[i]
+                if (!param.signers || param.signers.length > 0) {
+                    indicesToSign.push(i)
+                }
+            }
+
+            // If no transactions need signing, approve with all-null array
+            if (indicesToSign.length === 0) {
+                connector.approveRequest({
+                    id: payload.id,
+                    result: new Array(paramOne.length).fill(null),
+                })
+                return
+            }
+
+            const signableParams = indicesToSign.map(i => paramOne[i])
             const txnObjects = decodeTransactions(
-                paramOne.map(p => decodeFromBase64(p.txn)),
+                signableParams.map(p => decodeFromBase64(p.txn)),
             )
 
             addSignRequest({
@@ -255,20 +275,21 @@ export const useWalletConnectHandlers = () => {
                 txs: txnObjects,
                 sourceMetadata: connector.session?.peerMeta,
                 approve: async (signed: (PeraSignedTransaction | null)[]) => {
-                    const toSign = signed.filter(
-                        Boolean,
-                    ) as PeraSignedTransaction[]
-                    const encodedSignedTransactions =
-                        encodeSignedTransactions(toSign)
+                    // Reconstruct full-length response with null at skipped positions
+                    const result: (string | null)[] = new Array(
+                        paramOne.length,
+                    ).fill(null)
+                    signed.forEach((tx, i) => {
+                        if (tx) {
+                            const [encoded] = encodeSignedTransactions([tx])
+                            result[indicesToSign[i]] = encodeToBase64(encoded)
+                        }
+                    })
 
-                    if (encodedSignedTransactions) {
-                        connector.approveRequest({
-                            id: payload.id,
-                            result: encodedSignedTransactions.map(t =>
-                                encodeToBase64(t),
-                            ),
-                        })
-                    }
+                    connector.approveRequest({
+                        id: payload.id,
+                        result,
+                    })
                 },
                 reject: async () => {
                     connector.rejectRequest({

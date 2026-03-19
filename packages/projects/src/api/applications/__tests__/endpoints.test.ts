@@ -18,6 +18,7 @@ const mockQueryClient = vi.fn()
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     queryClient: (...args: unknown[]) => mockQueryClient(...args),
+    logger: { warn: vi.fn() },
 }))
 
 describe('fetchApplication', () => {
@@ -77,6 +78,19 @@ describe('fetchApplication', () => {
 
         const result = await fetchApplication({
             applicationId: '999',
+            network: 'mainnet',
+        })
+
+        expect(result).toBeNull()
+    })
+
+    test('returns null on schema validation failure', async () => {
+        mockQueryClient.mockResolvedValue({
+            data: { unexpected: 'shape' },
+        })
+
+        const result = await fetchApplication({
+            applicationId: '123',
             network: 'mainnet',
         })
 

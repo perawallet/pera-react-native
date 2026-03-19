@@ -796,7 +796,7 @@ describe('useWalletConnectHandlers', () => {
 
             expect(connector.approveRequest).toHaveBeenCalledWith({
                 id: 1,
-                result: [],
+                result: [null],
             })
         })
 
@@ -856,6 +856,156 @@ describe('useWalletConnectHandlers', () => {
                     mockOnError,
                 ),
             ).toThrow(WalletConnectInvalidSessionError)
+        })
+
+        it('should exclude transactions with signers: [] from sign request', () => {
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = {
+                clientId: 'test-client-id',
+                accounts: ['addr1'],
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
+            }
+            const payload = {
+                params: [
+                    [
+                        { txn: 'signable-txn', message: 'Sign this' },
+                        { txn: 'skip-txn', signers: [] },
+                        { txn: 'signable-txn-2' },
+                    ],
+                ],
+                method: 'algo_signTxn' as const,
+                jsonrpc: '2.0',
+                id: 1,
+            }
+
+            result.current.handleSignTransaction(
+                connector as any,
+                Networks.mainnet,
+                null,
+                payload,
+                mockOnError,
+            )
+
+            // Only 2 transactions should be in the sign request (indices 0 and 2)
+            const signRequest = mockAddSignRequest.mock.calls[0][0]
+            expect(signRequest.txs).toHaveLength(2)
+        })
+
+        it('should return full-length result array with null at skipped positions', () => {
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = {
+                clientId: 'test-client-id',
+                accounts: ['addr1'],
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
+            }
+            const payload = {
+                params: [
+                    [
+                        { txn: 'signable-txn' },
+                        { txn: 'skip-txn', signers: [] },
+                        { txn: 'skip-txn-2', signers: [] },
+                    ],
+                ],
+                method: 'algo_signTxn' as const,
+                jsonrpc: '2.0',
+                id: 1,
+            }
+
+            result.current.handleSignTransaction(
+                connector as any,
+                Networks.mainnet,
+                null,
+                payload,
+                mockOnError,
+            )
+
+            const { approve } = mockAddSignRequest.mock.calls[0][0]
+            const signedTxs = [
+                { txn: { sender: {} }, sig: new Uint8Array([1]) },
+            ]
+
+            act(() => {
+                approve(signedTxs)
+            })
+
+            // Result should be length 3: signed at index 0, null at indices 1 and 2
+            expect(connector.approveRequest).toHaveBeenCalledWith({
+                id: 1,
+                result: ['AQIDBA==', null, null],
+            })
+        })
+
+        it('should approve with all-null array when all transactions have signers: []', () => {
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = {
+                clientId: 'test-client-id',
+                accounts: ['addr1'],
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
+            }
+            const payload = {
+                params: [
+                    [
+                        { txn: 'skip-txn-1', signers: [] },
+                        { txn: 'skip-txn-2', signers: [] },
+                    ],
+                ],
+                method: 'algo_signTxn' as const,
+                jsonrpc: '2.0',
+                id: 1,
+            }
+
+            result.current.handleSignTransaction(
+                connector as any,
+                Networks.mainnet,
+                null,
+                payload,
+                mockOnError,
+            )
+
+            // Should not call addSignRequest
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+
+            // Should approve directly with all nulls
+            expect(connector.approveRequest).toHaveBeenCalledWith({
+                id: 1,
+                result: [null, null],
+            })
+        })
+
+        it('should include transactions with non-empty signers array for signing', () => {
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = {
+                clientId: 'test-client-id',
+                accounts: ['addr1'],
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
+            }
+            const payload = {
+                params: [
+                    [
+                        { txn: 'txn-with-signer', signers: ['SOME_ADDR'] },
+                        { txn: 'txn-no-signers' },
+                    ],
+                ],
+                method: 'algo_signTxn' as const,
+                jsonrpc: '2.0',
+                id: 1,
+            }
+
+            result.current.handleSignTransaction(
+                connector as any,
+                Networks.mainnet,
+                null,
+                payload,
+                mockOnError,
+            )
+
+            // Both transactions should be included
+            const signRequest = mockAddSignRequest.mock.calls[0][0]
+            expect(signRequest.txs).toHaveLength(2)
         })
 
         it('should propagate error when addSignRequest throws for over-limit transactions', () => {
