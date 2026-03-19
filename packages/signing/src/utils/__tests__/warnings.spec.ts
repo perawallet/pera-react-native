@@ -125,6 +125,26 @@ describe('aggregateTransactionWarnings', () => {
         expect(warnings).toEqual([])
     })
 
+    test('generates rekey warning even for non-signable addresses', () => {
+        const txs = [
+            makeTx({
+                sender: 'UNKNOWN_ADDR',
+                rekeyTo: {
+                    publicKey: new TextEncoder().encode('REKEY_TARGET'),
+                } as any,
+            }),
+        ]
+
+        const warnings = aggregateTransactionWarnings(txs, signableAddresses)
+        expect(warnings).toEqual([
+            {
+                type: 'rekey',
+                senderAddress: 'UNKNOWN_ADDR',
+                targetAddress: 'ENCODED_REKEY_TARGET',
+            },
+        ])
+    })
+
     test('skips transactions with no sender', () => {
         const txs = [
             makeTx({
