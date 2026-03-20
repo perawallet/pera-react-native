@@ -266,9 +266,8 @@ describe('AccountOverview', () => {
 
     describe('when account has no balance', () => {
         beforeEach(async () => {
-            const { useAccountBalancesQuery } = await import(
-                '@perawallet/wallet-core-accounts'
-            )
+            const { useAccountBalancesQuery } =
+                await import('@perawallet/wallet-core-accounts')
             vi.mocked(useAccountBalancesQuery).mockReturnValue({
                 portfolioAlgoValue: new Decimal('0'),
                 isPending: false,
@@ -352,9 +351,8 @@ describe('AccountOverview', () => {
 
     describe('when account is a watch account', () => {
         beforeEach(async () => {
-            const { isWatchAccount } = await import(
-                '@perawallet/wallet-core-accounts'
-            )
+            const { isWatchAccount } =
+                await import('@perawallet/wallet-core-accounts')
             vi.mocked(isWatchAccount).mockReturnValue(true)
         })
 
@@ -371,9 +369,8 @@ describe('AccountOverview', () => {
         })
 
         it('renders WatchAccountButtonPanel instead of NoFundsButtonPanel when no balance', async () => {
-            const { useAccountBalancesQuery } = await import(
-                '@perawallet/wallet-core-accounts'
-            )
+            const { useAccountBalancesQuery } =
+                await import('@perawallet/wallet-core-accounts')
             vi.mocked(useAccountBalancesQuery).mockReturnValue({
                 portfolioAlgoValue: new Decimal('0'),
                 isPending: false,
@@ -398,9 +395,8 @@ describe('AccountOverview', () => {
         })
 
         it('does not show welcome text for watch accounts with no balance', async () => {
-            const { useAccountBalancesQuery } = await import(
-                '@perawallet/wallet-core-accounts'
-            )
+            const { useAccountBalancesQuery } =
+                await import('@perawallet/wallet-core-accounts')
             vi.mocked(useAccountBalancesQuery).mockReturnValue({
                 portfolioAlgoValue: new Decimal('0'),
                 isPending: false,

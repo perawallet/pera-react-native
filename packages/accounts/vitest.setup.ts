@@ -57,9 +57,8 @@ beforeEach(() => {
 vi.mock('@perawallet/wallet-core-kms', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@perawallet/wallet-core-kms')>()
-    const { useSecureStorageService } = await import(
-        '@perawallet/wallet-extension-platform'
-    )
+    const { useSecureStorageService } =
+        await import('@perawallet/wallet-extension-platform')
 
     return {
         ...actual,

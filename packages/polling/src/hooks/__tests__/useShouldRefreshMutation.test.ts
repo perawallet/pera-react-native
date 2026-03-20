@@ -54,9 +54,8 @@ describe('services/polling/useShouldRefreshMutation', () => {
             { address: 'ADDR2' },
         ])
 
-        const { useShouldRefreshMutation } = await import(
-            '../useShouldRefreshMutation'
-        )
+        const { useShouldRefreshMutation } =
+            await import('../useShouldRefreshMutation')
         const queryClient = new QueryClient({
             defaultOptions: { queries: { retry: false } },
         })

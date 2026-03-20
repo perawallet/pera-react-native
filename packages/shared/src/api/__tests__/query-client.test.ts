@@ -297,9 +297,8 @@ describe('queryClient', () => {
     })
 
     it('should call updateBackendHeaders to extend clients', async () => {
-        const { updateBackendHeaders, queryClient } = await import(
-            '../query-client'
-        )
+        const { updateBackendHeaders, queryClient } =
+            await import('../query-client')
         mockJson.mockResolvedValue({ success: true })
 
         const customHeaders = new Map<string, string>()

@@ -27,9 +27,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 })
 
 // Import after mocks are set up
-const { fetchTransactionHistory, fetchMoreTransactions } = await import(
-    '../endpoints'
-)
+const { fetchTransactionHistory, fetchMoreTransactions } =
+    await import('../endpoints')
 
 // Mock the schema parser
 vi.mock('../schema', () => ({

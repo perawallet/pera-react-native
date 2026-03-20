@@ -67,9 +67,8 @@ describe('TransactionDisplay', () => {
     })
 
     it('renders PaymentTransactionDisplay for payment transactions', async () => {
-        const { getTransactionType } = await import(
-            '@perawallet/wallet-core-blockchain'
-        )
+        const { getTransactionType } =
+            await import('@perawallet/wallet-core-blockchain')
         vi.mocked(getTransactionType).mockReturnValue('payment')
 
         const { getByTestId } = render(
@@ -80,9 +79,8 @@ describe('TransactionDisplay', () => {
     })
 
     it('renders AssetTransferDisplay for asset-transfer transactions', async () => {
-        const { getTransactionType } = await import(
-            '@perawallet/wallet-core-blockchain'
-        )
+        const { getTransactionType } =
+            await import('@perawallet/wallet-core-blockchain')
         vi.mocked(getTransactionType).mockReturnValue('asset-transfer')
 
         const { getByTestId } = render(
@@ -93,9 +91,8 @@ describe('TransactionDisplay', () => {
     })
 
     it('renders AssetConfigDisplay for asset-config transactions', async () => {
-        const { getTransactionType } = await import(
-            '@perawallet/wallet-core-blockchain'
-        )
+        const { getTransactionType } =
+            await import('@perawallet/wallet-core-blockchain')
         vi.mocked(getTransactionType).mockReturnValue('asset-config')
 
         const { getByTestId } = render(
@@ -106,9 +103,8 @@ describe('TransactionDisplay', () => {
     })
 
     it('renders AssetFreezeDisplay for asset-freeze transactions', async () => {
-        const { getTransactionType } = await import(
-            '@perawallet/wallet-core-blockchain'
-        )
+        const { getTransactionType } =
+            await import('@perawallet/wallet-core-blockchain')
         vi.mocked(getTransactionType).mockReturnValue('asset-freeze')
 
         const { getByTestId } = render(
@@ -119,9 +115,8 @@ describe('TransactionDisplay', () => {
     })
 
     it('renders KeyRegistrationDisplay for key-registration transactions', async () => {
-        const { getTransactionType } = await import(
-            '@perawallet/wallet-core-blockchain'
-        )
+        const { getTransactionType } =
+            await import('@perawallet/wallet-core-blockchain')
         vi.mocked(getTransactionType).mockReturnValue('key-registration')
 
         const { getByTestId } = render(
@@ -132,9 +127,8 @@ describe('TransactionDisplay', () => {
     })
 
     it('renders AppCallTransactionDisplay for app-call transactions', async () => {
-        const { getTransactionType } = await import(
-            '@perawallet/wallet-core-blockchain'
-        )
+        const { getTransactionType } =
+            await import('@perawallet/wallet-core-blockchain')
         vi.mocked(getTransactionType).mockReturnValue('app-call')
 
         const { getByTestId } = render(
@@ -145,9 +139,8 @@ describe('TransactionDisplay', () => {
     })
 
     it('renders EmptyView for unknown transaction types', async () => {
-        const { getTransactionType } = await import(
-            '@perawallet/wallet-core-blockchain'
-        )
+        const { getTransactionType } =
+            await import('@perawallet/wallet-core-blockchain')
         vi.mocked(getTransactionType).mockReturnValue('unknown')
 
         const { getByTestId } = render(
@@ -158,9 +151,8 @@ describe('TransactionDisplay', () => {
     })
 
     it('renders EmptyView for state-proof transaction types', async () => {
-        const { getTransactionType } = await import(
-            '@perawallet/wallet-core-blockchain'
-        )
+        const { getTransactionType } =
+            await import('@perawallet/wallet-core-blockchain')
         vi.mocked(getTransactionType).mockReturnValue('state-proof')
 
         const { getByTestId } = render(
@@ -171,9 +163,8 @@ describe('TransactionDisplay', () => {
     })
 
     it('renders EmptyView for heartbeat transaction types', async () => {
-        const { getTransactionType } = await import(
-            '@perawallet/wallet-core-blockchain'
-        )
+        const { getTransactionType } =
+            await import('@perawallet/wallet-core-blockchain')
         vi.mocked(getTransactionType).mockReturnValue('heartbeat')
 
         const { getByTestId } = render(
@@ -184,9 +175,8 @@ describe('TransactionDisplay', () => {
     })
 
     it('renders payment display with isInnerTransaction prop', async () => {
-        const { getTransactionType } = await import(
-            '@perawallet/wallet-core-blockchain'
-        )
+        const { getTransactionType } =
+            await import('@perawallet/wallet-core-blockchain')
         vi.mocked(getTransactionType).mockReturnValue('payment')
 
         const { getByTestId } = render(
@@ -200,9 +190,8 @@ describe('TransactionDisplay', () => {
     })
 
     it('renders app call display with onInnerTransactionsPress callback', async () => {
-        const { getTransactionType } = await import(
-            '@perawallet/wallet-core-blockchain'
-        )
+        const { getTransactionType } =
+            await import('@perawallet/wallet-core-blockchain')
         vi.mocked(getTransactionType).mockReturnValue('app-call')
 
         const mockOnPress = vi.fn()
