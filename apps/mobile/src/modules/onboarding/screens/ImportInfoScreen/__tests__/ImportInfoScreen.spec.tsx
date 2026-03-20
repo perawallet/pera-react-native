@@ -14,7 +14,7 @@ import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ImportInfoScreen } from '../ImportInfoScreen'
-import { RECOVERY_PASSPHRASE_SUPPORT_URL } from '@perawallet/wallet-core-config'
+import { config } from '@perawallet/wallet-core-config'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 
 // Mock navigation
@@ -135,7 +135,7 @@ describe('ImportInfoScreen', () => {
         fireEvent.click(getByTestId('info-button'))
 
         expect(mockPushWebView).toHaveBeenCalledWith({
-            url: RECOVERY_PASSPHRASE_SUPPORT_URL,
+            url: config.recoveryPassphraseSupportUrl,
         })
     })
 })

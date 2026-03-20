@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useTheme } from '@rneui/themed'
 import { useWebView } from '@modules/webview'
-import { WATCH_ACCOUNT_SUPPORT_URL } from '@perawallet/wallet-core-config'
+import { config } from '@perawallet/wallet-core-config'
 
 import EyeImage from '@assets/images/eye.svg'
 import EyeInvertedImage from '@assets/images/eye-inverted.svg'
@@ -35,7 +35,7 @@ export const useWatchInfoScreen = (): UseWatchInfoScreenResult => {
     }, [navigation])
 
     const handleInfoPress = useCallback(() => {
-        pushWebView({ url: WATCH_ACCOUNT_SUPPORT_URL })
+        pushWebView({ url: config.watchAccountSupportUrl })
     }, [pushWebView])
 
     const EyeImageComponent =

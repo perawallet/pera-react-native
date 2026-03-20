@@ -14,7 +14,7 @@ import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { WatchInfoScreen } from '../WatchInfoScreen'
-import { WATCH_ACCOUNT_SUPPORT_URL } from '@perawallet/wallet-core-config'
+import { config } from '@perawallet/wallet-core-config'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 
 const mockGoBack = vi.fn()
@@ -124,7 +124,7 @@ describe('WatchInfoScreen', () => {
         fireEvent.click(getByTestId('info-button'))
 
         expect(mockPushWebView).toHaveBeenCalledWith({
-            url: WATCH_ACCOUNT_SUPPORT_URL,
+            url: config.watchAccountSupportUrl,
         })
     })
 })
