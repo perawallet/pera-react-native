@@ -100,6 +100,7 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
             fontSize: 15,
             lineHeight: 15,
             flexWrap: 'nowrap',
+            flexShrink: 1,
             textAlign: 'center',
             verticalAlign: 'middle',
             justifyContent: 'center',
