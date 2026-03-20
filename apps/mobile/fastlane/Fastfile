@@ -268,7 +268,7 @@ platform :android do
 
     firebase_app_distribution(
       app: ENV["FIREBASE_APP_ID_ANDROID"]&.strip,
-      groups: (ENV["FIREBASE_TESTER_GROUPS"] || "qa-testers").strip,
+      groups: "pera,pera-alpha",
       release_notes: notes,
       android_artifact_type: "APK",
       android_artifact_path: android_artifact_path(flavor, "apk"),

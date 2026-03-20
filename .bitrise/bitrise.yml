@@ -502,7 +502,7 @@ workflows:
       - NOTIFICATION_TITLE_PREFIX: Release Candidate
       - USE_CACHE: "false"
       - PARENT_WORKFLOW: release
-      - DISTRIBUTION: playstore
+      - DISTRIBUTION: firebase
       - SKIP_BUILD: "false"
     after_run:
       - _android-build
@@ -636,6 +636,16 @@ workflows:
                 echo "$ANDROID_GOOGLE_SERVICES_BASE64" | base64 --decode > apps/mobile/config/google-services.json
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
+          title: Get version from package.json
+          inputs:
+            - content: |
+                #!/usr/bin/env bash
+                set -ex
+                VERSION=$(jq -r '.version | split("-")[0]' apps/mobile/package.json)
+                envman add --key APP_VERSION --value "$VERSION"
+                envman add --key BUILD_NUMBER --value "$BITRISE_BUILD_NUMBER"
+      - script@1:
+          run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Expo Prebuild
           inputs:
             - content: |
@@ -710,16 +720,6 @@ workflows:
                 else
                   echo "$ANDROID_JSON_KEY_FILE" > apps/mobile/config/api-key.json
                 fi
-      - script@1:
-          run_if: '{{enveq "SKIP_BUILD" "false"}}'
-          title: Get version from package.json
-          inputs:
-            - content: |
-                #!/usr/bin/env bash
-                set -ex
-                VERSION=$(jq -r '.version | split("-")[0]' apps/mobile/package.json)
-                envman add --key APP_VERSION --value "$VERSION"
-                envman add --key BUILD_NUMBER --value "$BITRISE_BUILD_NUMBER"
       - script@1:
           run_if: '{{enveq "SKIP_BUILD" "false"}}'
           title: Build & Deploy Android

@@ -66,7 +66,6 @@ module.exports = {
   icon: './assets/icon-beta.png',
   scheme: ['perawallet', 'algorand', 'wc', 'perawallet-wc'],
   userInterfaceStyle: 'automatic',
-  newArchEnabled: true,
 
   // iOS-specific configuration
   ios: {
@@ -247,6 +246,9 @@ module.exports = {
 
     // Custom plugin for Podfile modifications (RCT-Folly fix for webassembly)
     './plugins/withPodfileModifications.js',
+
+    // Custom plugin for Xcode 26+ Swift 6.2 import access levels (SE-0409)
+    './plugins/withPublicSwiftImports.js',
   ],
 
   // Experiments (for bleeding edge features)

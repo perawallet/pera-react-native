@@ -82,7 +82,8 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
 
         return (
             <RNEInput
-                ref={inputRef}
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                ref={inputRef as any}
                 {...props}
                 {...getTestProps(testID)}
                 containerStyle={[styles.container, containerStyle]}

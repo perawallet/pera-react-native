@@ -14,7 +14,11 @@ import { PWBottomSheet, PWButton, PWText, PWView } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET, toWholeUnits, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import {
+    ALGO_ASSET,
+    toWholeUnits,
+    useAssetsQuery,
+} from '@perawallet/wallet-core-assets'
 import { MIN_TXN_FEE } from '@perawallet/wallet-core-blockchain'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
