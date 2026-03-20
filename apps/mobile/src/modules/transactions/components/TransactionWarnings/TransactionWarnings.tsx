@@ -21,16 +21,12 @@ import {
 } from '@components/core'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    encodeAlgorandAddress,
-    PeraDisplayableTransaction,
-} from '@perawallet/wallet-core-blockchain'
-import { useModalState } from '@hooks/useModalState'
-import { useMemo } from 'react'
+import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useTheme } from '@rneui/themed'
 import { LONG_ADDRESS_FORMAT } from '@constants/ui'
 import { PanelButton } from '@components/PanelButton'
+import { useTransactionWarnings } from './useTransactionWarnings'
 
 export type TransactionWarningsProps = {
     transaction: PeraDisplayableTransaction
@@ -43,26 +39,10 @@ export const TransactionWarnings = ({
     const { t } = useLanguage()
     const { theme } = useTheme()
 
-    const { isOpen, open, close } = useModalState()
+    const { warningCount, warningsByType, isModalOpen, openModal, closeModal } =
+        useTransactionWarnings(transaction)
 
-    const closeAddress = useMemo(() => {
-        return (
-            transaction.paymentTransaction?.closeRemainderTo ??
-            transaction.assetTransferTransaction?.closeTo
-        )
-    }, [transaction])
-
-    const rekeyAddress = useMemo(() => {
-        return transaction.rekeyTo?.publicKey
-            ? encodeAlgorandAddress(transaction.rekeyTo.publicKey)
-            : undefined
-    }, [transaction])
-
-    const warningCount = useMemo(() => {
-        return (closeAddress ? 1 : 0) + (rekeyAddress ? 1 : 0)
-    }, [transaction])
-
-    if (!warningCount) {
+    if (warningCount === 0) {
         return null
     }
 
@@ -74,7 +54,7 @@ export const TransactionWarnings = ({
             />
             <PWView style={styles.warningContainer}>
                 <PanelButton
-                    onPress={open}
+                    onPress={openModal}
                     title={t('transactions.warning.title')}
                     titleWeight='h4'
                     description={t('transactions.warning.title_cta', {
@@ -86,8 +66,8 @@ export const TransactionWarnings = ({
                 />
 
                 <PWBottomSheet
-                    isVisible={isOpen}
-                    onBackdropPress={close}
+                    isVisible={isModalOpen}
+                    onBackdropPress={closeModal}
                     enablePanDownToClose
                 >
                     <PWView style={styles.sheetContainer}>
@@ -96,7 +76,7 @@ export const TransactionWarnings = ({
                                 <PWIcon
                                     name='cross'
                                     variant='secondary'
-                                    onPress={close}
+                                    onPress={closeModal}
                                 />
                             }
                             center={
@@ -109,8 +89,17 @@ export const TransactionWarnings = ({
                             paddingStyle='dense'
                         />
 
-                        {!!closeAddress && (
-                            <PWView style={styles.warningSection}>
+                        {warningsByType.close.map((warning, index) => (
+                            <PWView
+                                key={`close-${warning.senderAddress}`}
+                                style={styles.warningSection}
+                            >
+                                {index > 0 && (
+                                    <PWDivider
+                                        style={styles.divider}
+                                        color={theme.colors.layerGray}
+                                    />
+                                )}
                                 <PWView
                                     style={styles.warningSectionIconContainer}
                                 >
@@ -125,7 +114,7 @@ export const TransactionWarnings = ({
                                             {
                                                 address:
                                                     truncateAlgorandAddress(
-                                                        closeAddress,
+                                                        warning.targetAddress,
                                                         LONG_ADDRESS_FORMAT,
                                                     ),
                                             },
@@ -133,16 +122,25 @@ export const TransactionWarnings = ({
                                     </PWText>
                                 </PWView>
                             </PWView>
-                        )}
-                        {!!rekeyAddress && (
-                            <PWDivider
-                                style={styles.divider}
-                                color={theme.colors.layerGray}
-                            />
-                        )}
-
-                        {!!rekeyAddress && (
-                            <PWView style={styles.warningSection}>
+                        ))}
+                        {warningsByType.close.length > 0 &&
+                            warningsByType.rekey.length > 0 && (
+                                <PWDivider
+                                    style={styles.divider}
+                                    color={theme.colors.layerGray}
+                                />
+                            )}
+                        {warningsByType.rekey.map((warning, index) => (
+                            <PWView
+                                key={`rekey-${warning.senderAddress}`}
+                                style={styles.warningSection}
+                            >
+                                {index > 0 && (
+                                    <PWDivider
+                                        style={styles.divider}
+                                        color={theme.colors.layerGray}
+                                    />
+                                )}
                                 <PWView
                                     style={styles.warningSectionIconContainer}
                                 >
@@ -160,7 +158,7 @@ export const TransactionWarnings = ({
                                                 {
                                                     address:
                                                         truncateAlgorandAddress(
-                                                            rekeyAddress,
+                                                            warning.targetAddress,
                                                             LONG_ADDRESS_FORMAT,
                                                         ),
                                                 },
@@ -174,7 +172,7 @@ export const TransactionWarnings = ({
                                     </PWView>
                                 </PWView>
                             </PWView>
-                        )}
+                        ))}
                     </PWView>
                 </PWBottomSheet>
             </PWView>

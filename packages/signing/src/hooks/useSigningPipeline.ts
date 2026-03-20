@@ -86,11 +86,13 @@ export const useSigningPipeline = (
                 .map(a => a.address),
         )
 
+        const userAccountAddresses = new Set(accounts.map(a => a.address))
+
         const totalFee = calculateTotalFee(allTransactions, signableAddresses)
 
         const warnings = aggregateTransactionWarnings(
             allTransactions,
-            signableAddresses,
+            userAccountAddresses,
         )
 
         const distinctWarnings = warnings.filter(
