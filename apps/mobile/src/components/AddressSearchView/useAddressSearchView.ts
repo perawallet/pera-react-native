@@ -85,7 +85,7 @@ export const useAddressSearchView = (
                 account: {
                     type: AccountTypes.algo25,
                     address: value,
-                    keyPairId: ''
+                    keyPairId: '',
                 },
                 key: `address-${value}`,
             })
