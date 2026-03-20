@@ -13,6 +13,7 @@
 import { config } from '@perawallet/wallet-core-config'
 import { useTheme } from '@rneui/themed'
 import React, { useCallback, useMemo, useRef, useState } from 'react'
+import { Platform } from 'react-native'
 import {
     WebView,
     WebViewMessageEvent,
@@ -28,6 +29,7 @@ import {
     baseJS,
     peraConnectJS,
     peraMobileInterfaceJS,
+    getFontInjectionJS,
 } from './injected-scripts'
 import { useToast } from '@hooks/useToast'
 import { useStyles } from './styles'
@@ -86,6 +88,9 @@ export const PWWebView = (props: PWWebViewProps) => {
     const [navigationState, setNavigationState] = useState<WebViewNativeEvent>()
     const isDarkMode = useIsDarkMode()
     const { t } = useLanguage()
+    const beforeContentJS = useMemo(() => {
+        return getFontInjectionJS(Platform.OS === 'ios' ? 'ios' : 'android')
+    }, [])
     const contextFingerprints = useContextFingerprints()
     useNotifyWebViewOnContextChange(
         webview,
@@ -260,7 +265,9 @@ export const PWWebView = (props: PWWebViewProps) => {
                 onMessage={handleEvent}
                 webviewDebuggingEnabled={config.debugEnabled}
                 pullToRefreshEnabled={true}
+                injectedJavaScriptBeforeContentLoaded={beforeContentJS}
                 injectedJavaScript={jsToLoad}
+                allowFileAccess={Platform.OS !== 'ios'}
                 setSupportMultipleWindows={false}
                 userAgent={userAgent}
                 forceDarkOn={isDarkMode}
@@ -284,6 +291,7 @@ export const PWWebView = (props: PWWebViewProps) => {
         isDarkMode,
         userAgent,
         jsToLoad,
+        beforeContentJS,
     ])
 
     return (

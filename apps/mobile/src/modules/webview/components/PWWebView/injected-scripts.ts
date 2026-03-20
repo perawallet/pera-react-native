@@ -84,3 +84,71 @@ export const navigationJS = `
 function n(n){return function(){return e("other"),n.apply(t,arguments)}}t.pushState=n(t.pushState),t.replaceState=\
 n(t.replaceState),window.addEventListener("popstate",(function(){e("backforward")}))}(window.history);
 `
+
+type FontFace = {
+    family: string
+    weight: number
+    iosSrc: string
+    androidFile: string
+}
+
+const fontFaces: FontFace[] = [
+    {
+        family: 'DM Sans',
+        weight: 400,
+        iosSrc: "local('DMSans-Regular'), local('DM Sans Regular')",
+        androidFile: 'DMSansRegular.ttf',
+    },
+    {
+        family: 'DM Sans',
+        weight: 500,
+        iosSrc: "local('DMSans-Medium'), local('DM Sans Medium')",
+        androidFile: 'DMSansMedium.ttf',
+    },
+    {
+        family: 'DM Sans',
+        weight: 600,
+        iosSrc: "local('DMSans-SemiBold'), local('DM Sans SemiBold')",
+        androidFile: 'DMSansSemiBold.ttf',
+    },
+    {
+        family: 'DM Sans',
+        weight: 700,
+        iosSrc: "local('DMSans-Bold'), local('DM Sans Bold')",
+        androidFile: 'DMSansBold.ttf',
+    },
+    {
+        family: 'DM Mono',
+        weight: 400,
+        iosSrc: "local('DMMono-Regular'), local('DM Mono Regular')",
+        androidFile: 'DMMonoRegular.ttf',
+    },
+    {
+        family: 'DM Mono',
+        weight: 500,
+        iosSrc: "local('DMMono-Medium'), local('DM Mono Medium')",
+        androidFile: 'DMMonoMedium.ttf',
+    },
+]
+
+const buildFontFaceCSS = (platform: 'ios' | 'android'): string => {
+    const faces = fontFaces.map(f => {
+        const src =
+            platform === 'ios'
+                ? f.iosSrc
+                : `url('file:///android_asset/fonts/${f.androidFile}') format('truetype')`
+        return `@font-face{font-family:'${f.family}';font-weight:${f.weight};font-style:normal;font-display:swap;src:${src};}`
+    })
+
+    const overrides = [
+        "body{font-family:'DM Sans',-apple-system,BlinkMacSystemFont,sans-serif!important;}",
+        "code,pre,kbd,samp{font-family:'DM Mono','DM Sans',monospace!important;}",
+    ]
+
+    return [...faces, ...overrides].join('')
+}
+
+export const getFontInjectionJS = (platform: 'ios' | 'android'): string => {
+    const css = buildFontFaceCSS(platform)
+    return `var head=document.head||document.getElementsByTagName('head')[0];if(!head){head=document.createElement('head');document.documentElement.prepend(head);}var fontStyle=document.createElement('style');fontStyle.type='text/css';fontStyle.appendChild(document.createTextNode("${css}"));head.appendChild(fontStyle);`
+}
