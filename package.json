@@ -16,7 +16,7 @@
     "lint:i18n": "node tools/i18n-lint.cjs",
     "lint:copyright": "node tools/copyright-header.mjs --fix",
     "lint:copyright:check": "node tools/copyright-header.mjs --check",
-    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "format": "oxfmt \"**/*.{ts,tsx,md}\"",
     "generate:all-apis": "kubb generate --config backend-kubb.config.ts && kubb generate --config algod-kubb.config.ts && kubb generate --config indexer-kubb.config.ts",
     "test": "bash tools/generate-config.sh && turbo run test -- --coverage",
     "generate:config": "bash tools/generate-config.sh",
@@ -38,7 +38,7 @@
     "eslint-plugin-unused-imports": "catalog:",
     "oxlint": "^1.54.0",
     "oxlint-tsgolint": "^0.16.0",
-    "prettier": "catalog:",
+    "oxfmt": "catalog:",
     "turbo": "^2.7.2",
     "util": "catalog:",
     "vitest": "catalog:"
