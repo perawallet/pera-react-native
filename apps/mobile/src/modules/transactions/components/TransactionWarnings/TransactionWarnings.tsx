@@ -39,13 +39,8 @@ export const TransactionWarnings = ({
     const { t } = useLanguage()
     const { theme } = useTheme()
 
-    const {
-        warningCount,
-        warningsByType,
-        isModalOpen,
-        openModal,
-        closeModal,
-    } = useTransactionWarnings(transaction)
+    const { warningCount, warningsByType, isModalOpen, openModal, closeModal } =
+        useTransactionWarnings(transaction)
 
     if (warningCount === 0) {
         return null
