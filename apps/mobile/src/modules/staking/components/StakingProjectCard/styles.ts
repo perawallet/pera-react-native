@@ -38,7 +38,7 @@ export const useStyles = makeStyles(
                 gap: theme.spacing.lg,
             },
             logo: {
-                borderRadius: 100,
+                borderRadius: theme.borderRadius.full,
                 height: theme.spacing.xxl,
                 width: theme.spacing.xxl,
             },

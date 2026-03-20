@@ -1454,6 +1454,15 @@ vi.mock('@rneui/themed', () => {
             overlay1: 100,
             max: 10000,
         },
+        borderRadius: {
+            none: 0,
+            xs: 4,
+            sm: 8,
+            md: 12,
+            lg: 16,
+            xl: 24,
+            full: 999,
+        },
         borders: {
             none: 0,
             sm: 1,
