@@ -120,7 +120,7 @@ export const AddressDisplay = ({
                 <PWView style={styles.contactContainer}>
                     {forceShowIcon && (
                         <PWIcon
-                            name={`accounts/${isDarkMode ? 'dark' : 'light'}/watch-account`}
+                            name={`accounts/${isDarkMode ? 'dark' : 'light'}/algo25-account`}
                             size='lg'
                         />
                     )}

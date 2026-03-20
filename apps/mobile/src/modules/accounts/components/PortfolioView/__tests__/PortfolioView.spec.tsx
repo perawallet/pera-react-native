@@ -82,9 +82,8 @@ describe('PortfolioView', () => {
     })
 
     it('excludes watch accounts from portfolio balance queries', async () => {
-        const { useAllAccounts, useAccountBalancesQuery } = await import(
-            '@perawallet/wallet-core-accounts'
-        )
+        const { useAllAccounts, useAccountBalancesQuery } =
+            await import('@perawallet/wallet-core-accounts')
 
         const standardAccount = {
             address: 'standard-addr',
@@ -109,9 +108,8 @@ describe('PortfolioView', () => {
     })
 
     it('passes only non-watch account addresses for history queries', async () => {
-        const { useAllAccounts } = await import(
-            '@perawallet/wallet-core-accounts'
-        )
+        const { useAllAccounts } =
+            await import('@perawallet/wallet-core-accounts')
 
         const standardAccount1 = {
             address: 'standard-addr-1',
@@ -140,9 +138,8 @@ describe('PortfolioView', () => {
     })
 
     it('handles all accounts being watch accounts', async () => {
-        const { useAllAccounts, useAccountBalancesQuery } = await import(
-            '@perawallet/wallet-core-accounts'
-        )
+        const { useAllAccounts, useAccountBalancesQuery } =
+            await import('@perawallet/wallet-core-accounts')
 
         const watchAccount1 = {
             address: 'watch-addr-1',

@@ -66,9 +66,8 @@ describe('AccountAssetItemView', () => {
     })
 
     it('renders asset units and IDs for non-algo assets', async () => {
-        const { useAssetsQuery } = await import(
-            '@perawallet/wallet-core-assets'
-        )
+        const { useAssetsQuery } =
+            await import('@perawallet/wallet-core-assets')
         vi.mocked(useAssetsQuery).mockReturnValue({
             data: new Map([
                 [

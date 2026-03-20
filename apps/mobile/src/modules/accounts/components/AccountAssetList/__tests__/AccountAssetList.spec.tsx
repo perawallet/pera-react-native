@@ -184,9 +184,8 @@ describe('AccountAssetList', () => {
 
     describe('when account is a watch account', () => {
         beforeEach(async () => {
-            const { isWatchAccount } = await import(
-                '@perawallet/wallet-core-accounts'
-            )
+            const { isWatchAccount } =
+                await import('@perawallet/wallet-core-accounts')
             vi.mocked(isWatchAccount).mockReturnValue(true)
         })
 

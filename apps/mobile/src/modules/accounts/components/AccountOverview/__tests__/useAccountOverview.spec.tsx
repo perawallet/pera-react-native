@@ -113,9 +113,8 @@ describe('useAccountOverview', () => {
     })
 
     it('determines hasBalance correctly when balance is zero', async () => {
-        const { useAccountBalancesQuery } = await import(
-            '@perawallet/wallet-core-accounts'
-        )
+        const { useAccountBalancesQuery } =
+            await import('@perawallet/wallet-core-accounts')
         vi.mocked(useAccountBalancesQuery).mockReturnValue({
             portfolioAlgoValue: new Decimal('0'),
             isPending: false,
@@ -254,9 +253,8 @@ describe('useAccountOverview', () => {
 
     it('disables scrolling when a chart point is selected', async () => {
         const setSelectedPoint = vi.fn()
-        const { useChartInteraction } = await import(
-            '@hooks/useChartInteraction'
-        )
+        const { useChartInteraction } =
+            await import('@hooks/useChartInteraction')
         vi.mocked(useChartInteraction).mockReturnValue({
             period: 'one-week' as const,
             setPeriod: vi.fn(),
@@ -286,9 +284,8 @@ describe('useAccountOverview', () => {
 
     it('enables scrolling when chart selection is cleared', async () => {
         const setSelectedPoint = vi.fn()
-        const { useChartInteraction } = await import(
-            '@hooks/useChartInteraction'
-        )
+        const { useChartInteraction } =
+            await import('@hooks/useChartInteraction')
         vi.mocked(useChartInteraction).mockReturnValue({
             period: 'one-week' as const,
             setPeriod: vi.fn(),

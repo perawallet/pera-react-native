@@ -186,9 +186,8 @@ describe('useARC59SendSummaryScreen', () => {
     })
 
     it('computes fee from summary', async () => {
-        const { useArc59SendSummaryQuery } = await import(
-            '@perawallet/wallet-core-asa-inbox'
-        )
+        const { useArc59SendSummaryQuery } =
+            await import('@perawallet/wallet-core-asa-inbox')
         ;(useArc59SendSummaryQuery as Mock).mockReturnValue({
             data: mockSummary,
             isLoading: false,
