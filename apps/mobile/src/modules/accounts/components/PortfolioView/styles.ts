@@ -44,7 +44,7 @@ export const useStyles = makeStyles(theme => {
         },
         trendIconContainer: {
             backgroundColor: 'transparent',
-            borderRadius: 100,
+            borderRadius: theme.borderRadius.full,
             width: theme.spacing.xl,
             height: theme.spacing.xl,
             justifyContent: 'center',

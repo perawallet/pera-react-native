@@ -206,6 +206,15 @@ declare module '@rneui/themed' {
             overlay1: number
             max: number
         }
+        borderRadius: {
+            none: number
+            xs: number
+            sm: number
+            md: number
+            lg: number
+            xl: number
+            full: number
+        }
         borders: {
             none: number
             sm: number

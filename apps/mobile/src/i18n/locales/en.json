@@ -627,11 +627,15 @@
             "create_new_wallet": "Create a new wallet"
         },
         "watch_account": {
-            "title": "Watch an Address",
-            "description": "Enter or scan an Algorand address to add it as a watch-only account. You will be able to view its balance and transactions but cannot sign transactions.",
-            "address_label": "Algorand Address",
-            "address_placeholder": "Enter or paste an address",
-            "watch_button": "Watch Account",
+            "info_title": "Watch account",
+            "info_description": "Monitor activity of an account without needing a recovery passphrase. This is useful for monitoring assets that are kept in cold storage.",
+            "info_warning": "If you do not have the corresponding recovery passphrase, do not send assets to this account.",
+            "info_button": "Create a Watch Account",
+            "title": "Create a watch\naccount",
+            "description": "You are creating a read-only view of an Algorand account.",
+            "address_placeholder": "Account address or short name",
+            "watch_button": "Create a Watch Account",
+            "paste_button": "Paste",
             "invalid_address": "Please enter a valid Algorand address",
             "duplicate_address": "This address has already been added to your wallet"
         }

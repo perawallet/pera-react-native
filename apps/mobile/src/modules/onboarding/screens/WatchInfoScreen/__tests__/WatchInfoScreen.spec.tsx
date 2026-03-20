@@ -13,11 +13,10 @@
 import React from 'react'
 import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ImportInfoScreen } from '../ImportInfoScreen'
+import { WatchInfoScreen } from '../WatchInfoScreen'
 import { config } from '@perawallet/wallet-core-config'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 
-// Mock navigation
 const mockGoBack = vi.fn()
 const mockPush = vi.fn()
 
@@ -28,31 +27,28 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 
-// Note: useAppNavigation mock is still needed by useImportInfoScreen hook
-
 vi.mock('@hooks/useNavigationHeader', () => ({
     useNavigationHeader: vi.fn(),
 }))
 
-vi.mock('@assets/images/key.svg', () => ({
+vi.mock('@assets/images/eye.svg', () => ({
     default: (props: React.SVGProps<SVGSVGElement>) => {
         return React.createElement('div', {
             ...props,
-            'data-testid': 'key-svg',
+            'data-testid': 'eye-svg',
         })
     },
 }))
 
-vi.mock('@assets/images/key-inverted.svg', () => ({
+vi.mock('@assets/images/eye-inverted.svg', () => ({
     default: (props: React.SVGProps<SVGSVGElement>) => {
         return React.createElement('div', {
             ...props,
-            'data-testid': 'key-inverted-svg',
+            'data-testid': 'eye-inverted-svg',
         })
     },
 }))
 
-// Mock react-i18next
 vi.mock('react-i18next', async () => {
     const actual = await vi.importActual<object>('react-i18next')
     return {
@@ -67,20 +63,6 @@ vi.mock('react-i18next', async () => {
     }
 })
 
-// Use global mock from vitest.setup.ts - no override needed
-
-// Mock react-navigation
-vi.mock('@react-navigation/native', async () => {
-    const actual = await vi.importActual<object>('@react-navigation/native')
-    return {
-        ...actual,
-        useRoute: () => ({
-            params: { accountType: 'hdWallet' },
-        }),
-    }
-})
-
-// Mock webview
 const mockPushWebView = vi.fn()
 vi.mock('@modules/webview', () => ({
     useWebView: () => ({
@@ -88,21 +70,30 @@ vi.mock('@modules/webview', () => ({
     }),
 }))
 
-describe('ImportInfoScreen', () => {
+describe('WatchInfoScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
     })
 
-    it('renders correctly', () => {
-        render(<ImportInfoScreen />)
+    it('renders title, description, warning, and button', () => {
+        render(<WatchInfoScreen />)
 
-        expect(screen.getByText('onboarding.import_info.title')).toBeTruthy()
-        expect(screen.getByText('onboarding.import_info.body')).toBeTruthy()
-        expect(screen.getByText('onboarding.import_info.button')).toBeTruthy()
+        expect(
+            screen.getByText('onboarding.watch_account.info_title'),
+        ).toBeTruthy()
+        expect(
+            screen.getByText('onboarding.watch_account.info_description'),
+        ).toBeTruthy()
+        expect(
+            screen.getByText('onboarding.watch_account.info_warning'),
+        ).toBeTruthy()
+        expect(
+            screen.getByText('onboarding.watch_account.info_button'),
+        ).toBeTruthy()
     })
 
     it('sets up header with info button via useNavigationHeader', () => {
-        render(<ImportInfoScreen />)
+        render(<WatchInfoScreen />)
 
         expect(useNavigationHeader).toHaveBeenCalledWith(
             expect.objectContaining({
@@ -111,31 +102,29 @@ describe('ImportInfoScreen', () => {
         )
     })
 
-    it('navigates to ImportAccount when recover button is pressed', () => {
-        render(<ImportInfoScreen />)
+    it('navigates to WatchAccount when primary button is pressed', () => {
+        render(<WatchInfoScreen />)
 
-        const recoverButton = screen.getByText('onboarding.import_info.button')
-        fireEvent.click(recoverButton)
+        const createButton = screen.getByText(
+            'onboarding.watch_account.info_button',
+        )
+        fireEvent.click(createButton)
 
-        expect(mockPush).toHaveBeenCalledWith('ImportAccount', {
-            accountType: 'hdWallet',
-        })
+        expect(mockPush).toHaveBeenCalledWith('WatchAccount')
     })
 
     it('handles info button press via headerRight', () => {
-        render(<ImportInfoScreen />)
+        render(<WatchInfoScreen />)
 
-        // Extract the right element from useNavigationHeader call
         const hookCall = (useNavigationHeader as ReturnType<typeof vi.fn>).mock
             .calls[0][0]
         const rightElement = hookCall.right
 
-        // Render the right element and click it
         const { getByTestId } = render(rightElement)
         fireEvent.click(getByTestId('info-button'))
 
         expect(mockPushWebView).toHaveBeenCalledWith({
-            url: config.recoveryPassphraseSupportUrl,
+            url: config.watchAccountSupportUrl,
         })
     })
 })

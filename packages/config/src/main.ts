@@ -61,6 +61,8 @@ export const configSchema = z.object({
     algorandDefiUrl: z.url(),
     asaVerificationUrl: z.url(),
     accountTypeSupportUrl: z.url(),
+    recoveryPassphraseSupportUrl: z.url(),
+    watchAccountSupportUrl: z.url(),
 
     debugEnabled: z.boolean(),
     profilingEnabled: z.boolean(),
@@ -120,6 +122,9 @@ const productionConfig = {
     asaVerificationUrl: 'https://explorer.perawallet.app/asa-verification/',
     accountTypeSupportUrl:
         'https://support.perawallet.app/en/article/create-a-new-algorand-account-on-pera-wallet-1ehbj11/',
+    recoveryPassphraseSupportUrl:
+        'https://support.perawallet.app/en/article/recover-or-import-an-algorand-account-with-recovery-passphrase-11gdh1y/',
+    watchAccountSupportUrl: 'https://perawallet.app/support/watch-accounts/',
 
     notificationRefreshTime: THIRTY_SECONDS,
     remoteConfigRefreshTime: ONE_HOUR,
@@ -180,6 +185,8 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     algorandDefiUrl: 'ALGORAND_DEFI_URL',
     asaVerificationUrl: 'ASA_VERIFICATION_URL',
     accountTypeSupportUrl: 'ACCOUNT_TYPE_SUPPORT_URL',
+    recoveryPassphraseSupportUrl: 'RECOVERY_PASSPHRASE_SUPPORT_URL',
+    watchAccountSupportUrl: 'WATCH_ACCOUNT_SUPPORT_URL',
     dispenserUrl: 'DISPENSER_URL',
 
     debugEnabled: 'DEBUG_ENABLED',

@@ -48,7 +48,6 @@ export const WatchAccountScreen = () => {
 
                 <AddressEntryField
                     testID='watch_account_address_input'
-                    label={t('onboarding.watch_account.address_label')}
                     placeholder={t(
                         'onboarding.watch_account.address_placeholder',
                     )}

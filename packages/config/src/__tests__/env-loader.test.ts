@@ -271,6 +271,9 @@ describe('env-loader', () => {
             algorandDefiUrl: 'https://defi.example.com',
             asaVerificationUrl: 'https://asa-verification.example.com',
             accountTypeSupportUrl: 'https://account-type-support.example.com',
+            recoveryPassphraseSupportUrl:
+                'https://recovery-passphrase-support.example.com',
+            watchAccountSupportUrl: 'https://watch-account-support.example.com',
             debugEnabled: false,
             profilingEnabled: false,
             pollingEnabled: true,

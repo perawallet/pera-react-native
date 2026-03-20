@@ -21,7 +21,7 @@ import {
     ImportAccountType,
 } from '@perawallet/wallet-core-accounts'
 import { MNEMONIC_WORDLIST as WORDLIST } from '@perawallet/wallet-core-kms'
-import { RECOVERY_PASSPHRASE_SUPPORT_URL } from '@perawallet/wallet-core-config'
+import { config } from '@perawallet/wallet-core-config'
 
 import type { PWInputRef } from '@components/core'
 import type { UseImportAccountScreenResult } from './types'
@@ -299,7 +299,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     )
 
     const handleLearnMore = useCallback(() => {
-        Linking.openURL(RECOVERY_PASSPHRASE_SUPPORT_URL)
+        Linking.openURL(config.recoveryPassphraseSupportUrl)
         handleCloseSupportOptions()
     }, [handleCloseSupportOptions])
 
