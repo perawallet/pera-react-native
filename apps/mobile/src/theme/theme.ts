@@ -599,7 +599,6 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                 thumbColor: theme.colors.textWhite,
             }),
             Text: () => ({
-                //TODO: It seems to be selecting the wrong font at larger sizes - we may need additional font files
                 h1Style: {
                     fontFamily: getFontFamily(500),
                     fontSize: 32,

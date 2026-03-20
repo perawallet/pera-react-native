@@ -14,7 +14,7 @@ import { Theme } from '@rneui/themed'
 import { TextStyle } from 'react-native'
 import { fontFamilies } from '@constants/fonts'
 
-export const getFontFamily = (weight: 300 | 400 | 500 | 600 | 700) => {
+export const getFontFamily = (weight: 400 | 500 | 600 | 700) => {
     return fontFamilies.DMSANS[weight]
 }
 
