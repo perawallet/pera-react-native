@@ -40,15 +40,14 @@ export const TransactionWarnings = ({
     const { theme } = useTheme()
 
     const {
-        warnings,
-        closeWarnings,
-        rekeyWarnings,
+        warningCount,
+        warningsByType,
         isModalOpen,
         openModal,
         closeModal,
     } = useTransactionWarnings(transaction)
 
-    if (warnings.length === 0) {
+    if (warningCount === 0) {
         return null
     }
 
@@ -64,7 +63,7 @@ export const TransactionWarnings = ({
                     title={t('transactions.warning.title')}
                     titleWeight='h4'
                     description={t('transactions.warning.title_cta', {
-                        count: warnings.length,
+                        count: warningCount,
                     })}
                     leftIcon='info'
                     rightIcon='chevron-right'
@@ -88,14 +87,14 @@ export const TransactionWarnings = ({
                             center={
                                 <PWText variant='h4'>
                                     {t('transactions.warning.title', {
-                                        count: warnings.length,
+                                        count: warningCount,
                                     })}
                                 </PWText>
                             }
                             paddingStyle='dense'
                         />
 
-                        {closeWarnings.map((warning, index) => (
+                        {warningsByType.close.map((warning, index) => (
                             <PWView
                                 key={`close-${warning.senderAddress}`}
                                 style={styles.warningSection}
@@ -129,14 +128,14 @@ export const TransactionWarnings = ({
                                 </PWView>
                             </PWView>
                         ))}
-                        {closeWarnings.length > 0 &&
-                            rekeyWarnings.length > 0 && (
+                        {warningsByType.close.length > 0 &&
+                            warningsByType.rekey.length > 0 && (
                                 <PWDivider
                                     style={styles.divider}
                                     color={theme.colors.layerGray}
                                 />
                             )}
-                        {rekeyWarnings.map((warning, index) => (
+                        {warningsByType.rekey.map((warning, index) => (
                             <PWView
                                 key={`rekey-${warning.senderAddress}`}
                                 style={styles.warningSection}
