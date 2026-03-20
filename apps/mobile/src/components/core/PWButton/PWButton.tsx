@@ -97,7 +97,12 @@ export const PWButton = ({
                 />
             )}
             {!!title && !isLoading && (
-                <PWText style={styles.titleStyle}>{title}</PWText>
+                <PWText
+                    style={styles.titleStyle}
+                    numberOfLines={1}
+                >
+                    {title}
+                </PWText>
             )}
             {!!iconRight && !isLoading && (
                 <PWIcon
