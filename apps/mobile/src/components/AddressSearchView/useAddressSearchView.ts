@@ -83,7 +83,7 @@ export const useAddressSearchView = (
             items.push({
                 type: 'account',
                 account: {
-                    type: AccountTypes.watch,
+                    type: AccountTypes.algo25,
                     address: value,
                 },
                 key: `address-${value}`,
