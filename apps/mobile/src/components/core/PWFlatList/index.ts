@@ -11,4 +11,4 @@
  */
 
 export { PWFlatList } from './PWFlatList'
-export type { PWFlatListProps } from './PWFlatList'
+export type { PWFlatListProps, PWFlatListRef } from './PWFlatList'

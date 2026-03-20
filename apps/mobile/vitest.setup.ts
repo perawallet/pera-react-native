@@ -327,34 +327,43 @@ vi.mock('@components/core', () => {
                 title && React.createElement('span', { key: 'title' }, title),
                 children,
             ),
-        PWFlatList: ({
-            data,
-            renderItem,
-            ListHeaderComponent,
-            ListFooterComponent,
-            ListEmptyComponent,
-            testID,
-            ...props
-        }: any) => {
-            const React = require('react')
-            return React.createElement(
-                'div',
-                { ...props, 'data-testid': testID || 'PWFlatList' },
-                typeof ListHeaderComponent === 'function'
-                    ? React.createElement(ListHeaderComponent)
-                    : ListHeaderComponent,
-                data && data.length > 0
-                    ? data.map((item: any, index: number) =>
-                          renderItem({ item, index }),
-                      )
-                    : typeof ListEmptyComponent === 'function'
-                      ? React.createElement(ListEmptyComponent)
-                      : ListEmptyComponent,
-                typeof ListFooterComponent === 'function'
-                    ? React.createElement(ListFooterComponent)
-                    : ListFooterComponent,
-            )
-        },
+        PWFlatList: React.forwardRef(
+            (
+                {
+                    data,
+                    renderItem,
+                    ListHeaderComponent,
+                    ListFooterComponent,
+                    ListEmptyComponent,
+                    testID,
+                    ...props
+                }: any,
+                ref: any,
+            ) => {
+                React.useImperativeHandle(ref, () => ({
+                    scrollToOffset: () => {},
+                    scrollToIndex: () => {},
+                    scrollToEnd: () => {},
+                }))
+                return React.createElement(
+                    'div',
+                    { ...props, 'data-testid': testID || 'PWFlatList' },
+                    typeof ListHeaderComponent === 'function'
+                        ? React.createElement(ListHeaderComponent)
+                        : ListHeaderComponent,
+                    data && data.length > 0
+                        ? data.map((item: any, index: number) =>
+                              renderItem({ item, index }),
+                          )
+                        : typeof ListEmptyComponent === 'function'
+                          ? React.createElement(ListEmptyComponent)
+                          : ListEmptyComponent,
+                    typeof ListFooterComponent === 'function'
+                        ? React.createElement(ListFooterComponent)
+                        : ListFooterComponent,
+                )
+            },
+        ),
         PWIcon: ({ onPress, name, testID }: any) =>
             React.createElement('div', {
                 onClick: onPress,

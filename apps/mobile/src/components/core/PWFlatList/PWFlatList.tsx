@@ -10,27 +10,53 @@
  limitations under the License
  */
 
-import React from 'react'
-import { LegendList, LegendListProps } from '@legendapp/list'
+import React, { forwardRef, useImperativeHandle, useRef } from 'react'
+import { LegendList, LegendListProps, LegendListRef } from '@legendapp/list'
 import { useBottomSheetScrollableCreator } from '@gorhom/bottom-sheet'
+
+export type PWFlatListRef = {
+    scrollToOffset: (params: { offset: number; animated?: boolean }) => void
+    scrollToIndex: (params: {
+        index: number
+        animated?: boolean
+        viewOffset?: number
+        viewPosition?: number
+    }) => void
+    scrollToEnd: (options?: { animated?: boolean }) => void
+}
 
 export type PWFlatListProps<T> = LegendListProps<T> & {
     inBottomSheet?: boolean
 }
 
-export const PWFlatList = <T,>({
-    inBottomSheet,
-    ...props
-}: PWFlatListProps<T>) => {
-    const BottomSheetScrollable = useBottomSheetScrollableCreator()
-    if (inBottomSheet) {
-        return (
-            <LegendList
-                {...(props ?? {})}
-                renderScrollComponent={BottomSheetScrollable}
-            />
-        )
-    } else {
-        return <LegendList {...(props ?? {})} />
-    }
-}
+export const PWFlatList = forwardRef<PWFlatListRef, PWFlatListProps<unknown>>(
+    ({ inBottomSheet, ...props }, ref) => {
+        const innerRef = useRef<LegendListRef>(null)
+        const BottomSheetScrollable = useBottomSheetScrollableCreator()
+
+        useImperativeHandle(ref, () => ({
+            scrollToOffset: params => innerRef.current?.scrollToOffset(params),
+            scrollToIndex: params => innerRef.current?.scrollToIndex(params),
+            scrollToEnd: options => innerRef.current?.scrollToEnd(options),
+        }))
+
+        if (inBottomSheet) {
+            return (
+                <LegendList
+                    {...(props ?? {})}
+                    ref={innerRef}
+                    renderScrollComponent={BottomSheetScrollable}
+                />
+            )
+        } else {
+            return (
+                <LegendList
+                    {...(props ?? {})}
+                    ref={innerRef}
+                />
+            )
+        }
+    },
+) as <T>(
+    props: PWFlatListProps<T> & React.RefAttributes<PWFlatListRef>,
+) => React.ReactNode

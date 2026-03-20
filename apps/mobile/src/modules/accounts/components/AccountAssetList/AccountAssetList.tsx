@@ -17,7 +17,8 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import React, { useCallback } from 'react'
+import type { PWFlatListRef } from '@components/core'
+import React, { useCallback, useEffect, useRef } from 'react'
 import { useStyles } from './styles'
 
 import { SearchInput } from '@components/SearchInput'
@@ -51,8 +52,14 @@ export const AccountAssetList = ({
     scrollEnabled,
     header,
 }: AccountAssetListProps) => {
+    const listRef = useRef<PWFlatListRef>(null)
     const styles = useStyles()
     const { t } = useLanguage()
+
+    useEffect(() => {
+        listRef.current?.scrollToOffset({ offset: 0, animated: false })
+    }, [account.address])
+
     const {
         balances,
         isPending,
@@ -105,6 +112,7 @@ export const AccountAssetList = ({
                 onPress={headerState.open}
             >
                 <PWFlatList
+                    ref={listRef}
                     data={balances}
                     renderItem={renderItem}
                     scrollEnabled={scrollEnabled}

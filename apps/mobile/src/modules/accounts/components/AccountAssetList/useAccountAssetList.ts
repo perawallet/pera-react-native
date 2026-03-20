@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
@@ -86,6 +86,10 @@ export const useAccountAssetList = ({
         balanceData?.assetBalances ?? [],
         assets,
     )
+
+    useEffect(() => {
+        setSearchFilter('')
+    }, [account.address])
 
     const debouncedSearchFilter = useDebouncedValue(searchFilter)
 
