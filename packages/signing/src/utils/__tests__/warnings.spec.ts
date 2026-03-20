@@ -108,7 +108,7 @@ describe('aggregateTransactionWarnings', () => {
         ])
     })
 
-    test('skips all warnings from non-user addresses', () => {
+    test('skips close and freeze warnings from non-user addresses but keeps rekey', () => {
         const txs = [
             makeTx({
                 sender: 'UNKNOWN_ADDR',
@@ -122,7 +122,13 @@ describe('aggregateTransactionWarnings', () => {
         ]
 
         const warnings = aggregateTransactionWarnings(txs, userAccountAddresses)
-        expect(warnings).toEqual([])
+        expect(warnings).toEqual([
+            {
+                type: 'rekey',
+                senderAddress: 'UNKNOWN_ADDR',
+                targetAddress: 'ENCODED_REKEY_TARGET',
+            },
+        ])
     })
 
     test('generates rekey warning even for non-signable addresses', () => {
@@ -135,7 +141,7 @@ describe('aggregateTransactionWarnings', () => {
             }),
         ]
 
-        const warnings = aggregateTransactionWarnings(txs, signableAddresses)
+        const warnings = aggregateTransactionWarnings(txs, userAccountAddresses)
         expect(warnings).toEqual([
             {
                 type: 'rekey',

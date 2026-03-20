@@ -189,7 +189,14 @@ describe('TransactionWarnings', () => {
         expect(getByText('transactions.warning.rekey_warning')).toBeTruthy()
     })
 
-    it('hides rekey warning when sender is not a user account', () => {
+    it('shows rekey warning even when sender is not a user account', () => {
+        vi.mocked(useModalState).mockReturnValue({
+            isOpen: true,
+            open: vi.fn(),
+            close: vi.fn(),
+            toggle: vi.fn(),
+        })
+
         const rekeyTx = {
             sender: 'EXTERNAL_ADDR',
             rekeyTo: {
@@ -198,11 +205,11 @@ describe('TransactionWarnings', () => {
             id: 'TX_ID',
         } as unknown as PeraDisplayableTransaction
 
-        const { container } = render(
+        const { getByText } = render(
             <TransactionWarnings transaction={rekeyTx} />,
         )
 
-        expect(container.firstChild).toBeNull()
+        expect(getByText('transactions.warning.rekey_warning')).toBeTruthy()
     })
 
     it('renders null for close-only transaction when sender is not a user account', () => {
