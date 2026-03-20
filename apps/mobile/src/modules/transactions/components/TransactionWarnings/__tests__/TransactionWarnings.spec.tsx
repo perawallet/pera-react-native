@@ -37,7 +37,9 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
-        await importOriginal<typeof import('@perawallet/wallet-core-accounts')>()
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
     return {
         ...actual,
         useAllAccounts: vi.fn(() => []),
