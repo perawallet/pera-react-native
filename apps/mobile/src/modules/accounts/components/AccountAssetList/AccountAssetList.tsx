@@ -85,6 +85,9 @@ export const AccountAssetList = ({
                 <SwipeableAssetItem
                     item={item}
                     isSwipeEnabled={isSwipeable}
+                    usdPrice={
+                        renderItemProps.assetPrices.get(item.assetId)?.usdPrice
+                    }
                     onPress={renderItemProps.goToAssetScreen}
                     onOptOut={renderItemProps.handleOptOut}
                 />
@@ -109,6 +112,8 @@ export const AccountAssetList = ({
                     renderItem={renderItem}
                     scrollEnabled={scrollEnabled}
                     keyExtractor={item => item.assetId}
+                    estimatedItemSize={72}
+                    recycleItems
                     automaticallyAdjustKeyboardInsets
                     keyboardDismissMode='interactive'
                     contentContainerStyle={styles.rootContainer}
@@ -171,7 +176,7 @@ export const AccountAssetList = ({
                                 <LoadingView
                                     variant='skeleton'
                                     size='sm'
-                                    count={3}
+                                    count={8}
                                 />
                             </PWView>
                         ) : (

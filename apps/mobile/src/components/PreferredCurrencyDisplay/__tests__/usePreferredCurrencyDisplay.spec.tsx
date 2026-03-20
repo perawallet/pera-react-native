@@ -225,4 +225,35 @@ describe('usePreferredCurrencyDisplay', () => {
         expect(result.current.isPending).toBe(true)
         expect(result.current.convertedValue).toBeNull()
     })
+
+    it('uses pre-fetched usdPrice and skips asset price query', () => {
+        mockUseCurrency.mockReturnValue({
+            preferredCurrency: 'EUR',
+            fallbackCurrency: 'USD',
+            usdToPreferred: (v: Decimal) => v.mul(Decimal('0.85')),
+        })
+
+        // Return empty map — should not matter since preFetchedUsdPrice is provided
+        mockUseAssetPricesQuery.mockReturnValue({
+            data: new Map(),
+            isPending: false,
+        })
+
+        const { result } = renderHook(() =>
+            usePreferredCurrencyDisplay(
+                Decimal(10),
+                '123',
+                false,
+                Decimal('1.50'),
+            ),
+        )
+
+        expect(result.current.displayCurrency).toBe('EUR')
+        // 10 * 1.50 = 15 USD, usdToPreferred(15) = 15 * 0.85 = 12.75
+        expect(result.current.convertedValue).toEqual(Decimal(12.75))
+        expect(result.current.isPending).toBe(false)
+
+        // Verify it was called with empty array (no per-item fetch)
+        expect(mockUseAssetPricesQuery).toHaveBeenCalledWith([])
+    })
 })

@@ -52,9 +52,15 @@ vi.mock('@components/PreferredCurrencyDisplay', () => ({
 }))
 
 describe('AccountAssetItemView', () => {
-    it('renders asset info for Algo', () => {
+    it('renders asset info for Algo using pre-fetched asset data', () => {
         const accountBalance = {
             assetId: 0,
+            asset: {
+                assetId: 0,
+                unitName: 'ALGO',
+                name: 'Algorand',
+                decimals: 6,
+            },
             amount: '1000000',
         } as unknown as AssetWithAccountBalance
 
@@ -65,7 +71,25 @@ describe('AccountAssetItemView', () => {
         expect(screen.getByText('ALGO')).toBeTruthy()
     })
 
-    it('renders asset units and IDs for non-algo assets', async () => {
+    it('renders asset units and IDs for non-algo assets using pre-fetched data', () => {
+        const accountBalance = {
+            assetId: 123,
+            asset: {
+                assetId: 123,
+                unitName: 'TEST',
+                name: 'Test Asset',
+                decimals: 2,
+            },
+            amount: '500',
+        } as unknown as AssetWithAccountBalance
+
+        render(<AccountAssetItemView accountBalance={accountBalance} />)
+
+        expect(screen.getByText('Test Asset')).toBeTruthy()
+        expect(screen.getByText('TEST - 123')).toBeTruthy()
+    })
+
+    it('falls back to useAssetsQuery when asset is not pre-fetched', async () => {
         const { useAssetsQuery } =
             await import('@perawallet/wallet-core-assets')
         vi.mocked(useAssetsQuery).mockReturnValue({
@@ -92,5 +116,28 @@ describe('AccountAssetItemView', () => {
 
         expect(screen.getByText('Test Asset')).toBeTruthy()
         expect(screen.getByText('TEST - 123')).toBeTruthy()
+    })
+
+    it('renders skeleton placeholder when asset data is not available', async () => {
+        const { useAssetsQuery } =
+            await import('@perawallet/wallet-core-assets')
+        vi.mocked(useAssetsQuery).mockReturnValue({
+            data: new Map(),
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
+
+        const accountBalance = {
+            assetId: 999,
+            amount: '0',
+        } as unknown as AssetWithAccountBalance
+
+        const { container } = render(
+            <AccountAssetItemView accountBalance={accountBalance} />,
+        )
+
+        // Should not render asset name since data isn't available
+        expect(screen.queryByText('Algo')).toBeNull()
+        // Should render something (the skeleton placeholder)
+        expect(container).toBeTruthy()
     })
 })
