@@ -21,8 +21,8 @@ import { useModalState } from '@hooks/useModalState'
 
 type UseTransactionWarningsResult = {
     warnings: TransactionWarning[]
-    closeWarning: TransactionWarning | undefined
-    rekeyWarning: TransactionWarning | undefined
+    closeWarnings: TransactionWarning[]
+    rekeyWarnings: TransactionWarning[]
     isModalOpen: boolean
     openModal: () => void
     closeModal: () => void
@@ -49,13 +49,13 @@ export const useTransactionWarnings = (
         [transaction, userAccountAddresses],
     )
 
-    const closeWarning = warnings.find(w => w.type === 'close')
-    const rekeyWarning = warnings.find(w => w.type === 'rekey')
+    const closeWarnings = warnings.filter(w => w.type === 'close')
+    const rekeyWarnings = warnings.filter(w => w.type === 'rekey')
 
     return {
         warnings,
-        closeWarning,
-        rekeyWarning,
+        closeWarnings,
+        rekeyWarnings,
         isModalOpen: isOpen,
         openModal: open,
         closeModal: close,
