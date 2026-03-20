@@ -61,13 +61,6 @@ vi.mock('uuid', () => ({
     v7: () => 'mock-uuid',
 }))
 
-vi.mock('../useClipboardAddress', () => ({
-    useClipboardAddress: () => ({
-        clipboardAddress: null,
-        refreshClipboard: vi.fn(),
-    }),
-}))
-
 vi.mock('react-i18next', async () => {
     const actual = await vi.importActual<object>('react-i18next')
     return {

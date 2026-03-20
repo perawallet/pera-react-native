@@ -26,17 +26,6 @@ export const useStyles = makeStyles(theme => ({
     description: {
         color: theme.colors.textGray,
     },
-    pasteButton: {
-        alignSelf: 'flex-start',
-        backgroundColor: theme.colors.tabBarButton,
-        borderRadius: 999,
-        paddingHorizontal: theme.spacing.lg,
-        paddingVertical: theme.spacing.sm,
-        marginTop: 0,
-    },
-    pasteButtonText: {
-        color: theme.colors.textWhite,
-    },
     footerContainer: {
         paddingHorizontal: theme.spacing.xl,
         paddingBottom: theme.spacing['3xl'],
