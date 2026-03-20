@@ -22,6 +22,8 @@ export const TAB_ANIMATION_CONFIG = {
     useNativeDriver: true,
 }
 
+export const BOTTOM_TAB_HEIGHT_IOS = 40
+export const BOTTOM_TAB_HEIGHT_ANDROID = 55
 export const BOTTOM_TAB_LABEL_FONT_SIZE = 11
 export const BOTTOM_TAB_LABEL_LINE_HEIGHT = 14
 
