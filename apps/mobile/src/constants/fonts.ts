@@ -16,7 +16,7 @@ export const fontFamilies = {
     DMSANS: {
         400: isIOS() ? 'DMSans-Regular' : 'DMSansRegular',
         500: isIOS() ? 'DMSans-Medium' : 'DMSansMedium',
-        600: isIOS() ? 'DMSans-Bold' : 'DMSansBold',
+        600: isIOS() ? 'DMSans-SemiBold' : 'DMSansSemiBold',
         700: isIOS() ? 'DMSans-Bold' : 'DMSansBold',
     },
 }

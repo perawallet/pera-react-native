@@ -33,7 +33,7 @@ describe('fontFamilies', () => {
 
         expect(fontFamilies.DMSANS[400]).toBe('DMSans-Regular')
         expect(fontFamilies.DMSANS[500]).toBe('DMSans-Medium')
-        expect(fontFamilies.DMSANS[600]).toBe('DMSans-Bold')
+        expect(fontFamilies.DMSANS[600]).toBe('DMSans-SemiBold')
         expect(fontFamilies.DMSANS[700]).toBe('DMSans-Bold')
     })
 
@@ -42,7 +42,7 @@ describe('fontFamilies', () => {
 
         expect(fontFamilies.DMSANS[400]).toBe('DMSansRegular')
         expect(fontFamilies.DMSANS[500]).toBe('DMSansMedium')
-        expect(fontFamilies.DMSANS[600]).toBe('DMSansBold')
+        expect(fontFamilies.DMSANS[600]).toBe('DMSansSemiBold')
         expect(fontFamilies.DMSANS[700]).toBe('DMSansBold')
     })
 })
