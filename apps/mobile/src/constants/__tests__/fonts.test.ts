@@ -31,18 +31,18 @@ describe('fontFamilies', () => {
     it('returns the expected font names on iOS', async () => {
         const fontFamilies = await loadFontFamilies(true)
 
-        expect(fontFamilies.DMSANS[300]).toBe('DMSans-Light')
         expect(fontFamilies.DMSANS[400]).toBe('DMSans-Regular')
         expect(fontFamilies.DMSANS[500]).toBe('DMSans-Medium')
+        expect(fontFamilies.DMSANS[600]).toBe('DMSans-SemiBold')
         expect(fontFamilies.DMSANS[700]).toBe('DMSans-Bold')
     })
 
     it('returns the expected font names on Android', async () => {
         const fontFamilies = await loadFontFamilies(false)
 
-        expect(fontFamilies.DMSANS[300]).toBe('DMSansLight')
         expect(fontFamilies.DMSANS[400]).toBe('DMSansRegular')
         expect(fontFamilies.DMSANS[500]).toBe('DMSansMedium')
+        expect(fontFamilies.DMSANS[600]).toBe('DMSansSemiBold')
         expect(fontFamilies.DMSANS[700]).toBe('DMSansBold')
     })
 })

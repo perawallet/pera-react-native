@@ -14,7 +14,6 @@ import { isIOS } from '../platform/utils'
 
 export const fontFamilies = {
     DMSANS: {
-        300: isIOS() ? 'DMSans-Light' : 'DMSansLight',
         400: isIOS() ? 'DMSans-Regular' : 'DMSansRegular',
         500: isIOS() ? 'DMSans-Medium' : 'DMSansMedium',
         600: isIOS() ? 'DMSans-SemiBold' : 'DMSansSemiBold',
