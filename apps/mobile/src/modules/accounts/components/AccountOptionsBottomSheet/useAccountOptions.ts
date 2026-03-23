@@ -178,7 +178,7 @@ export const useAccountOptions = ({
             updateAccount({ ...account, name: newName })
             handleCloseRename()
             showToast({
-                title: t('account_options.rename_account'),
+                title: t('account_options.rename_success'),
                 body: '',
                 type: 'success',
             })

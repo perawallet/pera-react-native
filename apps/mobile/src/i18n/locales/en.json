@@ -184,6 +184,7 @@
         "rename_title": "Rename Account",
         "rename_placeholder": "Account name",
         "rename_save": "Save",
+        "rename_success": "Account renamed",
         "remove_title": "Remove Account",
         "remove_message": "Are you sure you want to remove this account? You can always re-add it later.",
         "remove_watch_message": "You are about to remove this watch account. This only removes it from your wallet view — the account itself is not affected.",
