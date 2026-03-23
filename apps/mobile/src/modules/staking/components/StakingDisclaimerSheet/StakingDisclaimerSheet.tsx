@@ -71,6 +71,7 @@ export const StakingDisclaimerSheet = ({
             innerContainerStyle={styles.container}
             enablePanDownToClose
             size='lg'
+            autoCreateContainer={false}
         >
             <PWToolbar
                 left={
