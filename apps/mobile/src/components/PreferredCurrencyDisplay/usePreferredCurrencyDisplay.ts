@@ -48,7 +48,7 @@ export const usePreferredCurrencyDisplay = (
 
     // Skip per-item price fetch when a pre-fetched price is provided (bulk query optimization)
     const priceIDs = useMemo(
-        () => (preFetchedUsdPrice != null ? [] : [sourceAssetId]),
+        () => (preFetchedUsdPrice !== null ? [] : [sourceAssetId]),
         [preFetchedUsdPrice, sourceAssetId],
     )
     const { data: usdPrices, isPending: usdPricesPending } =
