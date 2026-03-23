@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { render, screen, fireEvent } from '@test-utils/render'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { PWText } from '@components/core'
 import { CopyableText } from '../CopyableText'
