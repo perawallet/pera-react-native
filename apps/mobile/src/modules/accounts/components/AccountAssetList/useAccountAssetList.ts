@@ -19,7 +19,11 @@ import {
     WalletAccount,
     AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
-import { useAssetsQuery } from '@perawallet/wallet-core-assets'
+import {
+    useAssetsQuery,
+    useAssetPricesQuery,
+    type AssetPrices,
+} from '@perawallet/wallet-core-assets'
 import { useModalState, ModalState } from '@hooks/useModalState'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { useSortedAssetBalances } from './useSortedAssetBalances'
@@ -48,6 +52,7 @@ type UseAccountAssetListResult = {
     getEmptyBody: () => string
     renderItemProps: {
         isWatch: boolean
+        assetPrices: AssetPrices
         goToAssetScreen: (asset: AssetWithAccountBalance) => void
         handleOptOut: (item: AssetWithAccountBalance) => void
     }
@@ -80,6 +85,7 @@ export const useAccountAssetList = ({
         [balanceData],
     )
     const { data: assets } = useAssetsQuery(assetIDs)
+    const { data: assetPrices } = useAssetPricesQuery(assetIDs)
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
     const { sortedBalances, hideZeroBalance } = useSortedAssetBalances(
@@ -181,10 +187,11 @@ export const useAccountAssetList = ({
     const renderItemProps = useMemo(
         () => ({
             isWatch,
+            assetPrices,
             goToAssetScreen,
             handleOptOut,
         }),
-        [isWatch, goToAssetScreen, handleOptOut],
+        [isWatch, assetPrices, goToAssetScreen, handleOptOut],
     )
 
     return {

@@ -21,11 +21,13 @@ import {
 } from '@components/core'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import { Decimal } from 'decimal.js'
 import { useStyles } from './styles'
 
 export type SwipeableAssetItemProps = {
     item: AssetWithAccountBalance
     isSwipeEnabled: boolean
+    usdPrice?: Decimal
     onPress: (item: AssetWithAccountBalance) => void
     onOptOut: (item: AssetWithAccountBalance) => void
 }
@@ -33,6 +35,7 @@ export type SwipeableAssetItemProps = {
 const SwipeableAssetItemInner = ({
     item,
     isSwipeEnabled,
+    usdPrice,
     onPress,
     onOptOut,
 }: SwipeableAssetItemProps) => {
@@ -69,7 +72,10 @@ const SwipeableAssetItemInner = ({
                 style={styles.itemContainer}
                 onPress={handlePress}
             >
-                <AccountAssetItemView accountBalance={item} />
+                <AccountAssetItemView
+                    accountBalance={item}
+                    usdPrice={usdPrice}
+                />
             </PWTouchableOpacity>
         )
     }
@@ -86,7 +92,10 @@ const SwipeableAssetItemInner = ({
                     style={styles.itemContainer}
                     onPress={handlePress}
                 >
-                    <AccountAssetItemView accountBalance={item} />
+                    <AccountAssetItemView
+                        accountBalance={item}
+                        usdPrice={usdPrice}
+                    />
                 </PWTouchableOpacity>
             </PWView>
         </PWSwipeable>

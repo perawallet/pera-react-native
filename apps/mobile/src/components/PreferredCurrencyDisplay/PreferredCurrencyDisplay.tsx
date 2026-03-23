@@ -21,15 +21,26 @@ export type PreferredCurrencyDisplayProps = {
     sourceAmount: Decimal | null | undefined
     sourceAssetId: string
     forceFallback?: boolean
+    usdPrice?: Decimal
 } & Omit<CurrencyDisplayProps, 'currency' | 'value'>
 
 export const PreferredCurrencyDisplay = (
     props: PreferredCurrencyDisplayProps,
 ) => {
-    const { sourceAmount, sourceAssetId, forceFallback, ...displayProps } =
-        props
+    const {
+        sourceAmount,
+        sourceAssetId,
+        forceFallback,
+        usdPrice,
+        ...displayProps
+    } = props
     const { displayCurrency, convertedValue, isPending } =
-        usePreferredCurrencyDisplay(sourceAmount, sourceAssetId, forceFallback)
+        usePreferredCurrencyDisplay(
+            sourceAmount,
+            sourceAssetId,
+            forceFallback,
+            usdPrice,
+        )
 
     return (
         <CurrencyDisplay

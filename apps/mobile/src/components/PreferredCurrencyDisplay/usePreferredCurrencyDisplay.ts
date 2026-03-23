@@ -32,6 +32,7 @@ export const usePreferredCurrencyDisplay = (
     sourceAmount: Decimal | null | undefined,
     sourceAssetId: string,
     forceFallback?: boolean,
+    preFetchedUsdPrice?: Decimal,
 ): UsePreferredCurrencyDisplayResult => {
     const { preferredCurrency, fallbackCurrency, usdToPreferred } =
         useCurrency()
@@ -45,8 +46,11 @@ export const usePreferredCurrencyDisplay = (
         return preferredCurrency
     }, [needsFallback, fallbackCurrency, preferredCurrency])
 
-    // Asset prices in USD
-    const priceIDs = useMemo(() => [sourceAssetId], [sourceAssetId])
+    // Skip per-item price fetch when a pre-fetched price is provided (bulk query optimization)
+    const priceIDs = useMemo(
+        () => (preFetchedUsdPrice !== undefined ? [] : [sourceAssetId]),
+        [preFetchedUsdPrice, sourceAssetId],
+    )
     const { data: usdPrices, isPending: usdPricesPending } =
         useAssetPricesQuery(priceIDs)
 
@@ -55,19 +59,29 @@ export const usePreferredCurrencyDisplay = (
         usePreferredCurrencyPriceQuery(fallbackCurrency, needsFallback)
 
     const isPending = useMemo(() => {
+        if (preFetchedUsdPrice !== undefined) {
+            return needsFallback ? fallbackRatePending : false
+        }
         if (needsFallback) {
             return usdPricesPending || fallbackRatePending
         }
         return usdPricesPending
-    }, [needsFallback, fallbackRatePending, usdPricesPending])
+    }, [
+        preFetchedUsdPrice,
+        needsFallback,
+        fallbackRatePending,
+        usdPricesPending,
+    ])
 
     const convertedValue = useMemo(() => {
-        if (sourceAmount == null) return null
+        if (!sourceAmount) return null
         if (isPending) return null
 
-        const assetPrice = usdPrices?.get(sourceAssetId)
-        const usdPrice = assetPrice?.usdPrice ?? Decimal(0)
-        const usdValue = sourceAmount.mul(usdPrice)
+        const resolvedUsdPrice =
+            preFetchedUsdPrice ??
+            usdPrices?.get(sourceAssetId)?.usdPrice ??
+            Decimal(0)
+        const usdValue = sourceAmount.mul(resolvedUsdPrice)
 
         if (!needsFallback) {
             return usdToPreferred(usdValue)
@@ -79,6 +93,7 @@ export const usePreferredCurrencyDisplay = (
         sourceAmount,
         isPending,
         needsFallback,
+        preFetchedUsdPrice,
         usdPrices,
         sourceAssetId,
         usdToPreferred,

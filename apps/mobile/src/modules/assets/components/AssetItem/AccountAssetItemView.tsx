@@ -10,12 +10,14 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
 import { AssetIcon } from '../AssetIcon'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import {
     PWIcon,
     PWIconSize,
+    PWSkeleton,
     PWText,
     PWView,
     PWViewProps,
@@ -27,21 +29,31 @@ import { useMemo } from 'react'
 
 export type AccountAssetItemViewProps = {
     accountBalance: AssetWithAccountBalance
+    usdPrice?: Decimal
     iconSize?: PWIconSize
 } & PWViewProps
 
 export const AccountAssetItemView = ({
     accountBalance,
+    usdPrice,
     iconSize,
     ...rest
 }: AccountAssetItemViewProps) => {
     const styles = useStyles()
 
-    const { data: assets } = useAssetsQuery([accountBalance.assetId])
+    // Use pre-fetched asset data when available to avoid N+1 queries.
+    // Falls back to individual fetch for callers that don't populate accountBalance.asset.
+    const assetIds = useMemo(
+        () => (accountBalance.asset ? [] : [accountBalance.assetId]),
+        [accountBalance.asset, accountBalance.assetId],
+    )
+    const { data: fetchedAssets } = useAssetsQuery(assetIds)
 
     const asset = useMemo(() => {
-        return assets?.get(accountBalance.assetId)
-    }, [assets, accountBalance.assetId])
+        return (
+            accountBalance.asset ?? fetchedAssets?.get(accountBalance.assetId)
+        )
+    }, [accountBalance.asset, fetchedAssets, accountBalance.assetId])
 
     const isAlgo = useMemo(
         () => asset?.assetId === ALGO_ASSET_ID,
@@ -77,7 +89,18 @@ export const AccountAssetItemView = ({
     }, [asset, accountBalance.assetId])
 
     if (!asset?.unitName) {
-        return <></>
+        return (
+            <PWView style={[styles.container, rest.style]}>
+                <PWSkeleton
+                    height={40}
+                    width={40}
+                    circle
+                />
+                <PWView style={styles.dataContainer}>
+                    <PWSkeleton height={16} />
+                </PWView>
+            </PWView>
+        )
     }
 
     return (
@@ -121,6 +144,7 @@ export const AccountAssetItemView = ({
                     <PreferredCurrencyDisplay
                         sourceAmount={accountBalance.amount}
                         sourceAssetId={accountBalance.assetId}
+                        usdPrice={usdPrice}
                         precision={2}
                         minPrecision={2}
                         showSymbol
