@@ -13,6 +13,7 @@
 import { PWButton, PWDivider, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { AddressDisplay } from '@components/AddressDisplay'
+import { CopyableText } from '@components/CopyableText'
 import {
     microAlgosToAlgos,
     PeraDisplayableTransaction,
@@ -74,7 +75,9 @@ export const AssetConfigDisplay = ({
             <PWView style={styles.detailContainer}>
                 {configType !== 'create' && assetId !== undefined && (
                     <KeyValueRow title={t('transactions.common.asset_id')}>
-                        <PWText>{assetId.toString()}</PWText>
+                        <CopyableText copyValue={assetId.toString()}>
+                            <PWText>{assetId.toString()}</PWText>
+                        </CopyableText>
                     </KeyValueRow>
                 )}
 

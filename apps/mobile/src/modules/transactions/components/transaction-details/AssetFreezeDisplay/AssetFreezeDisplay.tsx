@@ -13,6 +13,7 @@
 import { PWDivider, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { AddressDisplay } from '@components/AddressDisplay'
+import { CopyableText } from '@components/CopyableText'
 import {
     microAlgosToAlgos,
     type PeraDisplayableTransaction,
@@ -65,7 +66,9 @@ export const AssetFreezeDisplay = ({
 
             <PWView style={styles.detailContainer}>
                 <KeyValueRow title={t('transactions.common.asset_id')}>
-                    <PWText>{assetId}</PWText>
+                    <CopyableText copyValue={assetId}>
+                        <PWText>{assetId}</PWText>
+                    </CopyableText>
                 </KeyValueRow>
 
                 <KeyValueRow title={t('transactions.asset_freeze.target')}>

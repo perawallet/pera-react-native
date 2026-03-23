@@ -573,6 +573,18 @@ vi.mock('expo-clipboard', () => ({
     getStringAsync: vi.fn(),
 }))
 
+vi.mock('expo-haptics', () => ({
+    notificationAsync: vi.fn(),
+    impactAsync: vi.fn(),
+    selectionAsync: vi.fn(),
+    NotificationFeedbackType: {
+        Success: 'success',
+        Warning: 'warning',
+        Error: 'error',
+    },
+    ImpactFeedbackStyle: { Light: 'light', Medium: 'medium', Heavy: 'heavy' },
+}))
+
 vi.mock('expo-localization', () => ({
     getLocales: () => [{ languageTag: 'en-US', regionCode: 'US' }],
 }))

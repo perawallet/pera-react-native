@@ -19,6 +19,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { CopyableText } from '@components/CopyableText'
 import { useLanguage } from '@hooks/useLanguage'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { RejectConfirmBottomSheet } from '@modules/transactions/components/claim-assets/RejectConfirmBottomSheet'
@@ -81,7 +82,11 @@ export const AssetClaimDetailScreen = () => {
                 {request.id && (
                     <>
                         <PWView style={styles.assetIdRow}>
-                            <PWText style={styles.usdText}>{request.id}</PWText>
+                            <CopyableText copyValue={request.id}>
+                                <PWText style={styles.usdText}>
+                                    {request.id}
+                                </PWText>
+                            </CopyableText>
                             <PWTouchableOpacity
                                 style={styles.copyIdPill}
                                 onPress={handleCopyAssetId}

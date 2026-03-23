@@ -17,6 +17,7 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { AddressDisplay } from '@components/AddressDisplay'
+import { CopyableText } from '@components/CopyableText'
 
 export type AppCallDetailsPanelProps = {
     transaction: PeraDisplayableTransaction
@@ -79,12 +80,14 @@ export const AppCallDetailsPanel = ({
                         title={t('transactions.app_call.foreign_apps')}
                     >
                         {appCall.foreignApps.map(appId => (
-                            <PWText
+                            <CopyableText
                                 key={'foreign-app-' + appId.toString()}
-                                style={styles.detailText}
+                                copyValue={appId.toString()}
                             >
-                                {appId.toString()}
-                            </PWText>
+                                <PWText style={styles.detailText}>
+                                    {appId.toString()}
+                                </PWText>
+                            </CopyableText>
                         ))}
                     </KeyValueRow>
                 )}
@@ -95,12 +98,14 @@ export const AppCallDetailsPanel = ({
                         title={t('transactions.app_call.foreign_assets')}
                     >
                         {appCall.foreignAssets.map(assetId => (
-                            <PWText
+                            <CopyableText
                                 key={'foreign-asset-' + assetId.toString()}
-                                style={styles.detailText}
+                                copyValue={assetId.toString()}
                             >
-                                {assetId.toString()}
-                            </PWText>
+                                <PWText style={styles.detailText}>
+                                    {assetId.toString()}
+                                </PWText>
+                            </CopyableText>
                         ))}
                     </KeyValueRow>
                 )}

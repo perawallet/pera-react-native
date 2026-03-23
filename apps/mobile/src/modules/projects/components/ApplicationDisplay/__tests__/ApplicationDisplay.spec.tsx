@@ -48,6 +48,12 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
+vi.mock('@components/CopyableText', () => ({
+    CopyableText: ({ children }: { children: React.ReactNode }) => (
+        <div>{children}</div>
+    ),
+}))
+
 vi.mock('@components/LoadingView', () => ({
     LoadingView: ({
         children,

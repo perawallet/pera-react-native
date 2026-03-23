@@ -77,6 +77,12 @@ vi.mock('react-native-qrcode-svg', () => ({
     default: () => <div data-testid='qr-code' />,
 }))
 
+vi.mock('@components/CopyableText', () => ({
+    CopyableText: ({ children }: { children: React.ReactNode }) => (
+        <div>{children}</div>
+    ),
+}))
+
 vi.mock('@components/EmptyView', () => ({
     EmptyView: ({ title, body }: { title: string; body: string }) => (
         <div data-testid='empty-view'>

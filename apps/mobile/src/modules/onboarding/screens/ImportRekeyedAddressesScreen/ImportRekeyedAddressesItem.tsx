@@ -20,6 +20,7 @@ import {
     PWChip,
     PWRoundIcon,
 } from '@components/core'
+import { CopyableText } from '@components/CopyableText'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
@@ -73,14 +74,16 @@ export const ImportRekeyedAddressesItem = ({
                 </PWView>
 
                 <PWView style={styles.itemTextContainer}>
-                    <PWText
-                        variant='body'
-                        style={styles.itemTitle}
-                        numberOfLines={1}
-                        ellipsizeMode='middle'
-                    >
-                        {account.address}
-                    </PWText>
+                    <CopyableText copyValue={account.address}>
+                        <PWText
+                            variant='body'
+                            style={styles.itemTitle}
+                            numberOfLines={1}
+                            ellipsizeMode='middle'
+                        >
+                            {account.address}
+                        </PWText>
+                    </CopyableText>
                     <PWText
                         variant='caption'
                         style={styles.itemSubtitle}

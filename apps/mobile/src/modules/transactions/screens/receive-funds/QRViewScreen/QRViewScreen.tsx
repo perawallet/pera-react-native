@@ -15,6 +15,7 @@ import { useTheme } from '@rneui/themed'
 import QRCode from 'react-native-qrcode-svg'
 
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import { CopyableText } from '@components/CopyableText'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
@@ -78,7 +79,11 @@ export const QRViewScreen = () => {
                     <PWText variant='h3'>
                         {getAccountDisplayName(account)}
                     </PWText>
-                    <PWText style={styles.address}>{account.address}</PWText>
+                    <CopyableText copyValue={account.address}>
+                        <PWText style={styles.address}>
+                            {account.address}
+                        </PWText>
+                    </CopyableText>
                 </PWView>
             </PWView>
             <PWView style={styles.buttonContainer}>

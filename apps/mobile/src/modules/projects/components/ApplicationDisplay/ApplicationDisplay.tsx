@@ -16,6 +16,7 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { ProjectVerificationIcon } from '../ProjectVerificationIcon'
 import { LoadingView } from '@components/LoadingView'
+import { CopyableText } from '@components/CopyableText'
 
 type ApplicationDisplayProps = {
     applicationId: string
@@ -39,33 +40,37 @@ export const ApplicationDisplay = ({
             isLoading={isLoading}
         >
             {application ? (
-                <PWView style={styles.container}>
-                    <PWView style={styles.row}>
-                        <PWText variant='h4'>{application.name}</PWText>
-                        {!!application?.project?.verificationTier && (
-                            <ProjectVerificationIcon
-                                tier={application.project.verificationTier}
-                                size='sm'
-                            />
-                        )}
+                <CopyableText copyValue={applicationId}>
+                    <PWView style={styles.container}>
+                        <PWView style={styles.row}>
+                            <PWText variant='h4'>{application.name}</PWText>
+                            {!!application?.project?.verificationTier && (
+                                <ProjectVerificationIcon
+                                    tier={application.project.verificationTier}
+                                    size='sm'
+                                />
+                            )}
+                        </PWView>
+                        <PWText
+                            variant='caption'
+                            style={styles.caption}
+                        >
+                            {t('transactions.summary.app_id', {
+                                id: applicationId,
+                            })}
+                        </PWText>
                     </PWView>
-                    <PWText
-                        variant='caption'
-                        style={styles.caption}
-                    >
-                        {t('transactions.summary.app_id', {
-                            id: applicationId,
-                        })}
-                    </PWText>
-                </PWView>
+                </CopyableText>
             ) : (
-                <PWText variant='h4'>
-                    {valueOnlyOnFallback
-                        ? applicationId
-                        : t('transactions.summary.app_id', {
-                              id: applicationId,
-                          })}
-                </PWText>
+                <CopyableText copyValue={applicationId}>
+                    <PWText variant='h4'>
+                        {valueOnlyOnFallback
+                            ? applicationId
+                            : t('transactions.summary.app_id', {
+                                  id: applicationId,
+                              })}
+                    </PWText>
+                </CopyableText>
             )}
         </LoadingView>
     )
