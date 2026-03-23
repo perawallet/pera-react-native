@@ -21,6 +21,10 @@ vi.mock('../useImportRekeyedAddressesScreen', () => ({
     useImportRekeyedAddressesScreen: vi.fn(),
 }))
 
+vi.mock('../RekeyedAccountInfoBottomSheet', () => ({
+    RekeyedAccountInfoBottomSheet: () => null,
+}))
+
 // Use global mock from vitest.setup.ts for @components/core
 
 describe('ImportRekeyedAddressesScreen', () => {

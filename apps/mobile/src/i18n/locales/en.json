@@ -599,7 +599,12 @@
             "skip": "Skip for now",
             "fetching": "Fetching rekeyed accounts...",
             "rekeyed_account_subtitle": "Rekeyed account",
-            "importing_accounts": "Importing accounts..."
+            "importing_accounts": "Importing accounts...",
+            "info_sheet": {
+                "account_details": "Account details",
+                "assets": "Assets",
+                "can_be_signed_by": "Can be signed by"
+            }
         },
         "add_account": {
             "title": "Add an\naccount",

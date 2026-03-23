@@ -22,8 +22,9 @@ import {
 } from '@components/core'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
+import { useModalState } from '@hooks/useModalState'
 import { useStyles } from './styles'
+import { RekeyedAccountInfoBottomSheet } from './RekeyedAccountInfoBottomSheet'
 
 type ImportRekeyedAddressesItemProps = {
     account: WalletAccount
@@ -40,7 +41,7 @@ export const ImportRekeyedAddressesItem = ({
 }: ImportRekeyedAddressesItemProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { infoToast } = useToast()
+    const bottomSheetState = useModalState()
 
     return (
         <PWView
@@ -93,12 +94,8 @@ export const ImportRekeyedAddressesItem = ({
 
             <PWTouchableOpacity
                 style={styles.infoIconContainer}
-                onPress={() =>
-                    infoToast(
-                        t('common.not_implemented.title'),
-                        t('common.not_implemented.body'),
-                    )
-                }
+                onPress={bottomSheetState.open}
+                testID={`import_rekeyed_addresses_item_info_${account.address}`}
             >
                 <PWIcon
                     name='info'
@@ -106,6 +103,12 @@ export const ImportRekeyedAddressesItem = ({
                     variant='secondary'
                 />
             </PWTouchableOpacity>
+
+            <RekeyedAccountInfoBottomSheet
+                isVisible={bottomSheetState.isOpen}
+                onClose={bottomSheetState.close}
+                account={account}
+            />
 
             {isImported && (
                 <PWChip
