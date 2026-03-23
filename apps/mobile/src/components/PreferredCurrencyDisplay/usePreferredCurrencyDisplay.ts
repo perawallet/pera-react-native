@@ -74,7 +74,7 @@ export const usePreferredCurrencyDisplay = (
     ])
 
     const convertedValue = useMemo(() => {
-        if (sourceAmount == null) return null
+        if (!sourceAmount) return null
         if (isPending) return null
 
         const resolvedUsdPrice =
