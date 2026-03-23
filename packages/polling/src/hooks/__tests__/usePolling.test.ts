@@ -118,6 +118,54 @@ describe('services/polling/usePolling', () => {
         expect(mockMutateAsync).toHaveBeenCalledTimes(1)
     })
 
+    test('calls onRefresh callback when backend indicates refresh', async () => {
+        vi.resetModules()
+        const mockOnRefresh = vi.fn()
+        mockMutateAsync.mockResolvedValue({ refresh: true, round: 99 })
+
+        const { usePolling } = await import('../usePolling')
+        const { result } = renderHook(() =>
+            usePolling({ onRefresh: mockOnRefresh }),
+        )
+
+        await act(async () => {
+            await result.current.startPolling()
+            vi.advanceTimersByTime(3000)
+            await flush()
+        })
+
+        expect(mockOnRefresh).toHaveBeenCalledTimes(1)
+        expect(mockSetLastRefreshedRound).toHaveBeenCalledWith(99)
+
+        await act(async () => {
+            await result.current.stopPolling()
+        })
+    })
+
+    test('does not call onRefresh when refresh is false', async () => {
+        vi.resetModules()
+        const mockOnRefresh = vi.fn()
+        mockMutateAsync.mockResolvedValue({ refresh: false, round: null })
+
+        const { usePolling } = await import('../usePolling')
+        const { result } = renderHook(() =>
+            usePolling({ onRefresh: mockOnRefresh }),
+        )
+
+        await act(async () => {
+            await result.current.startPolling()
+            vi.advanceTimersByTime(3000)
+            await flush()
+        })
+
+        expect(mockOnRefresh).not.toHaveBeenCalled()
+        expect(mockSetLastRefreshedRound).not.toHaveBeenCalled()
+
+        await act(async () => {
+            await result.current.stopPolling()
+        })
+    })
+
     test('handles backend errors gracefully', async () => {
         vi.resetModules()
 

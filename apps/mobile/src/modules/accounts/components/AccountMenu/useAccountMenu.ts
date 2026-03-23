@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect } from 'react'
 import {
     useAllAccounts,
     useSelectedAccountAddress,
     useAccountBalancesQuery,
+    useAccountBalancesInvalidator,
     useSortedAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -33,7 +34,12 @@ export const useAccountMenu = (
     const accounts = useAllAccounts()
     const { selectedAccountAddress, setSelectedAccountAddress } =
         useSelectedAccountAddress()
+    const { invalidate } = useAccountBalancesInvalidator()
     const { accountBalances } = useAccountBalancesQuery(accounts, true)
+
+    useEffect(() => {
+        invalidate()
+    }, [])
     const { sortedAccounts, sortMode } = useSortedAccounts(
         accounts,
         accountBalances,
