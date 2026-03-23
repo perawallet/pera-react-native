@@ -29,14 +29,16 @@ vi.mock('../useSelectedAccountAddress', () => ({
     }),
 }))
 
+let mockNetwork = 'mainnet'
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
+    useNetwork: () => ({ network: mockNetwork }),
 }))
 
 describe('useActiveAccountBalanceInvalidator', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockSelectedAddress = 'ABC123'
+        mockNetwork = 'mainnet'
     })
 
     it('invalidates the active account balance query', () => {
@@ -65,5 +67,54 @@ describe('useActiveAccountBalanceInvalidator', () => {
         result.current.invalidateActiveAccount()
 
         expect(mockInvalidateQueries).not.toHaveBeenCalled()
+    })
+
+    it('uses the correct query key for testnet', () => {
+        mockNetwork = 'testnet'
+
+        const { result } = renderHook(() =>
+            useActiveAccountBalanceInvalidator(),
+        )
+
+        result.current.invalidateActiveAccount()
+
+        expect(mockInvalidateQueries).toHaveBeenCalledWith({
+            queryKey: [
+                'accounts',
+                'balance',
+                { address: 'ABC123', network: 'testnet' },
+            ],
+        })
+    })
+
+    it('invalidates only the selected account query key', () => {
+        mockSelectedAddress = 'XYZ789'
+
+        const { result } = renderHook(() =>
+            useActiveAccountBalanceInvalidator(),
+        )
+
+        result.current.invalidateActiveAccount()
+
+        expect(mockInvalidateQueries).toHaveBeenCalledTimes(1)
+        expect(mockInvalidateQueries).toHaveBeenCalledWith({
+            queryKey: [
+                'accounts',
+                'balance',
+                { address: 'XYZ789', network: 'mainnet' },
+            ],
+        })
+    })
+
+    it('can be called multiple times', () => {
+        const { result } = renderHook(() =>
+            useActiveAccountBalanceInvalidator(),
+        )
+
+        result.current.invalidateActiveAccount()
+        result.current.invalidateActiveAccount()
+        result.current.invalidateActiveAccount()
+
+        expect(mockInvalidateQueries).toHaveBeenCalledTimes(3)
     })
 })
