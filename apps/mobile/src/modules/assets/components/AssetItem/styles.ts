@@ -38,7 +38,6 @@ export const useStyles = makeStyles(theme => {
         },
         secondaryUnit: {
             color: theme.colors.textGrayLighter,
-            lineHeight: theme.spacing.md,
         },
         primaryAmount: {
             textAlign: 'right',
@@ -47,7 +46,6 @@ export const useStyles = makeStyles(theme => {
             textAlign: 'right',
             color: theme.colors.textGray,
             alignSelf: 'flex-end',
-            lineHeight: theme.spacing.md,
         },
         row: {
             flexDirection: 'row',
