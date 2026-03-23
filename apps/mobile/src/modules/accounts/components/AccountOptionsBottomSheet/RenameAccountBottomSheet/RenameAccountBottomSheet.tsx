@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BottomSheetTextInput } from '@gorhom/bottom-sheet'
 import {
     PWBottomSheet,
@@ -40,6 +40,12 @@ export const RenameAccountBottomSheet = ({
     const { t } = useLanguage()
     const [name, setName] = useState(currentName)
     const styles = useStyles()
+
+    useEffect(() => {
+        if (isVisible) {
+            setName(currentName)
+        }
+    }, [isVisible, currentName])
 
     const handleSave = () => {
         const trimmed = name.trim()
