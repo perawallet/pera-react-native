@@ -78,6 +78,7 @@
     "@tanstack/react-query-persist-client": "catalog:",
     "bip39": "catalog:",
     "decimal.js": "^10.6.0",
+    "@expo/config-plugins": "~55.0.7",
     "expo": "^55.0.8",
     "expo-application": "^55.0.10",
     "expo-build-properties": "~55.0.10",
