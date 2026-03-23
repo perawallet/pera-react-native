@@ -15,6 +15,13 @@ import { vi } from 'vitest'
 import { ImportRekeyedAddressesItem } from '../ImportRekeyedAddressesItem'
 import { AccountTypes } from '@perawallet/wallet-core-accounts'
 
+vi.mock('../RekeyedAccountInfoBottomSheet', () => ({
+    RekeyedAccountInfoBottomSheet: ({ isVisible }: { isVisible: boolean }) =>
+        isVisible ? (
+            <div data-testid='rekeyed-account-info-bottom-sheet' />
+        ) : null,
+}))
+
 const MOCK_ACCOUNT = {
     id: '1',
     address: 'MOCK_ADDRESS',
@@ -76,6 +83,30 @@ describe('ImportRekeyedAddressesItem', () => {
         ).toBeTruthy()
         // Ensure checkbox is likely not present or indicating disabled state if verified via specific props/styles,
         // but checking the chip is the main visual indicator here.
+    })
+
+    it('opens info bottom sheet when info icon is pressed', () => {
+        render(
+            <ImportRekeyedAddressesItem
+                account={MOCK_ACCOUNT}
+                isImported={false}
+                isSelected={false}
+                onToggle={vi.fn()}
+            />,
+        )
+
+        expect(
+            screen.queryByTestId('rekeyed-account-info-bottom-sheet'),
+        ).toBeNull()
+
+        const infoButton = screen.getByTestId(
+            `import_rekeyed_addresses_item_info_${MOCK_ACCOUNT.address}`,
+        )
+        fireEvent.click(infoButton)
+
+        expect(
+            screen.getByTestId('rekeyed-account-info-bottom-sheet'),
+        ).toBeTruthy()
     })
 
     it('renders selected state correctly', () => {
