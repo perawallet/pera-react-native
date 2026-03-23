@@ -17,6 +17,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import { CopyableText } from '@components/CopyableText'
 import { HDWalletAccount } from '@perawallet/wallet-core-accounts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
@@ -65,12 +66,14 @@ export const WalletStructureTree = ({
                             <PWText variant='body'>
                                 {account.name ?? t('account_info.main_address')}
                             </PWText>
-                            <PWText
-                                variant='body'
-                                style={styles.addressText}
-                            >
-                                {truncateAlgorandAddress(account.address)}
-                            </PWText>
+                            <CopyableText copyValue={account.address}>
+                                <PWText
+                                    variant='body'
+                                    style={styles.addressText}
+                                >
+                                    {truncateAlgorandAddress(account.address)}
+                                </PWText>
+                            </CopyableText>
                         </PWView>
                     </PWView>
                 </PWView>

@@ -14,10 +14,16 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useClipboard } from '../useClipboard'
 import * as Clipboard from 'expo-clipboard'
+import * as Haptics from 'expo-haptics'
 import { useToast } from '../useToast'
 
 vi.mock('expo-clipboard', () => ({
     setStringAsync: vi.fn(),
+}))
+
+vi.mock('expo-haptics', () => ({
+    notificationAsync: vi.fn(),
+    NotificationFeedbackType: { Success: 'success' },
 }))
 
 vi.mock('../useToast', () => ({
@@ -48,6 +54,9 @@ describe('useClipboard', () => {
         })
 
         expect(Clipboard.setStringAsync).toHaveBeenCalledWith('test text')
+        expect(Haptics.notificationAsync).toHaveBeenCalledWith(
+            Haptics.NotificationFeedbackType.Success,
+        )
         expect(mockShowToast).toHaveBeenCalledWith(
             {
                 title: 'common.copied_to_clipboard.title',

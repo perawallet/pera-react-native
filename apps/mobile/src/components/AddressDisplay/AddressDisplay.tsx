@@ -14,10 +14,10 @@ import {
     PWIcon,
     PWText,
     PWTextProps,
-    PWTouchableOpacity,
     PWTouchableOpacityProps,
     PWView,
 } from '@components/core'
+import { CopyableText } from '@components/CopyableText'
 import { useStyles } from './styles'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
@@ -92,10 +92,9 @@ export const AddressDisplay = ({
               : truncateAlgorandAddress(address)
 
     return (
-        <PWTouchableOpacity
+        <CopyableText
             {...rest}
-            activeOpacity={1}
-            onLongPress={copyAddress}
+            copyValue={address}
             style={[styles.addressValueContainer, rest.style]}
         >
             {!!account && (
@@ -137,6 +136,6 @@ export const AddressDisplay = ({
                     onPress={copyAddress}
                 />
             )}
-        </PWTouchableOpacity>
+        </CopyableText>
     )
 }

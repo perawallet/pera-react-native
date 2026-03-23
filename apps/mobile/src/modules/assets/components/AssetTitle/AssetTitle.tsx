@@ -12,6 +12,7 @@
 
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 import { PWIcon, PWText, PWView } from '@components/core'
+import { CopyableText } from '@components/CopyableText'
 import { useStyles } from './styles'
 import { AssetIcon } from '../AssetIcon'
 import { useMemo } from 'react'
@@ -73,12 +74,14 @@ export const AssetTitle = ({
                         )}
                 </PWView>
                 {showId && (
-                    <PWText
-                        variant='caption'
-                        style={styles.id}
-                    >
-                        {asset.assetId}
-                    </PWText>
+                    <CopyableText copyValue={String(asset.assetId)}>
+                        <PWText
+                            variant='caption'
+                            style={styles.id}
+                        >
+                            {asset.assetId}
+                        </PWText>
+                    </CopyableText>
                 )}
             </PWView>
         </PWView>

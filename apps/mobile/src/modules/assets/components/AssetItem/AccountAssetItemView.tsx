@@ -22,6 +22,7 @@ import {
     PWView,
     PWViewProps,
 } from '@components/core'
+import { CopyableText } from '@components/CopyableText'
 import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
@@ -123,14 +124,16 @@ export const AccountAssetItemView = ({
                         </PWText>
                         {verificationIcon}
                     </PWView>
-                    <PWText
-                        style={styles.secondaryUnit}
-                        numberOfLines={1}
-                    >
-                        {asset.unitName}
-                        {asset.assetId !== ALGO_ASSET_ID &&
-                            ` - ${asset.assetId}`}
-                    </PWText>
+                    <CopyableText copyValue={String(asset.assetId)}>
+                        <PWText
+                            style={styles.secondaryUnit}
+                            numberOfLines={1}
+                        >
+                            {asset.unitName}
+                            {asset.assetId !== ALGO_ASSET_ID &&
+                                ` - ${asset.assetId}`}
+                        </PWText>
+                    </CopyableText>
                 </PWView>
                 <PWView style={styles.amountContainer}>
                     <CurrencyDisplay

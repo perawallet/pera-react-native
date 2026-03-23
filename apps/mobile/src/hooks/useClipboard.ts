@@ -13,6 +13,7 @@
 import { useToast } from './useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import * as Clipboard from 'expo-clipboard'
+import * as Haptics from 'expo-haptics'
 import { useCallback } from 'react'
 import type { NotifierRoot } from 'react-native-notifier'
 
@@ -23,6 +24,7 @@ export const useClipboard = () => {
     const copyToClipboard = useCallback(
         async (text: string, notifier?: NotifierRoot) => {
             await Clipboard.setStringAsync(text)
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
             showToast(
                 {
                     title: t('common.copied_to_clipboard.title'),

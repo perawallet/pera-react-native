@@ -20,6 +20,7 @@ import {
     PWToolbar,
     PWView,
 } from '@components/core'
+import { CopyableText } from '@components/CopyableText'
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
@@ -96,13 +97,15 @@ export const RekeyedAccountInfoBottomSheet = ({
                         size='md'
                     />
                     <PWView style={styles.accountTextContainer}>
-                        <PWText
-                            variant='body'
-                            numberOfLines={1}
-                            ellipsizeMode='middle'
-                        >
-                            {account.address}
-                        </PWText>
+                        <CopyableText copyValue={account.address}>
+                            <PWText
+                                variant='body'
+                                numberOfLines={1}
+                                ellipsizeMode='middle'
+                            >
+                                {account.address}
+                            </PWText>
+                        </CopyableText>
                         <PWText
                             variant='caption'
                             style={styles.accountSubtitle}
@@ -170,13 +173,15 @@ export const RekeyedAccountInfoBottomSheet = ({
                                 size='md'
                             />
                             <PWView style={styles.accountTextContainer}>
-                                <PWText
-                                    variant='body'
-                                    numberOfLines={1}
-                                    ellipsizeMode='middle'
-                                >
-                                    {authAddress}
-                                </PWText>
+                                <CopyableText copyValue={authAddress}>
+                                    <PWText
+                                        variant='body'
+                                        numberOfLines={1}
+                                        ellipsizeMode='middle'
+                                    >
+                                        {authAddress}
+                                    </PWText>
+                                </CopyableText>
                             </PWView>
                             <PWView style={styles.balanceContainer}>
                                 <CurrencyDisplay
