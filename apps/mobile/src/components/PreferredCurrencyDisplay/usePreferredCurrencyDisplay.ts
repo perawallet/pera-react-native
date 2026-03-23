@@ -59,7 +59,7 @@ export const usePreferredCurrencyDisplay = (
         usePreferredCurrencyPriceQuery(fallbackCurrency, needsFallback)
 
     const isPending = useMemo(() => {
-        if (preFetchedUsdPrice != null) {
+        if (preFetchedUsdPrice !== null) {
             return needsFallback ? fallbackRatePending : false
         }
         if (needsFallback) {
