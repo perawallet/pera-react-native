@@ -81,6 +81,9 @@ catalogs:
     decimal.js:
       specifier: ^10.6.0
       version: 10.6.0
+    drizzle-orm:
+      specifier: ^0.44.0
+      version: 0.44.7
     eslint:
       specifier: 9.39.1
       version: 9.39.1
@@ -361,7 +364,7 @@ importers:
         specifier: ^10.6.0
         version: 10.6.0
       drizzle-orm:
-        specifier: ^0.44.0
+        specifier: 'catalog:'
         version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(expo@55.0.8))(gel@2.2.0)
       expo:
         specifier: ^55.0.8
@@ -815,6 +818,9 @@ importers:
       '@perawallet/wallet-core-currencies':
         specifier: workspace:*
         version: link:../currencies
+      '@perawallet/wallet-core-database':
+        specifier: workspace:*
+        version: link:../database
       '@perawallet/wallet-core-device':
         specifier: workspace:*
         version: link:../device
@@ -836,6 +842,9 @@ importers:
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(expo@55.0.8))(gel@2.2.0)
       react:
         specifier: 'catalog:'
         version: 19.2.0
@@ -946,6 +955,9 @@ importers:
       '@perawallet/wallet-core-currencies':
         specifier: workspace:*
         version: link:../currencies
+      '@perawallet/wallet-core-database':
+        specifier: workspace:*
+        version: link:../database
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
@@ -961,6 +973,9 @@ importers:
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(expo@55.0.8))(gel@2.2.0)
       react:
         specifier: 'catalog:'
         version: 19.2.0
@@ -1216,7 +1231,7 @@ importers:
         specifier: workspace:*
         version: link:../../extensions/provider
       drizzle-orm:
-        specifier: ^0.44.0
+        specifier: 'catalog:'
         version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(expo@55.0.8))(gel@2.2.0)
     devDependencies:
       '@perawallet/wallet-core-devtools':
@@ -2011,6 +2026,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-database':
+        specifier: workspace:*
+        version: link:../database
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
@@ -2023,6 +2041,9 @@ importers:
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(expo@55.0.8))(gel@2.2.0)
       react:
         specifier: 'catalog:'
         version: 19.2.0

@@ -29,6 +29,7 @@ import {
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAccountBalancesQueryKey } from './querykeys'
 import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import { persistHoldings } from './useAccountHoldingsCache'
 
 //TODO we may not need this query - maybe we should just fetch each account separately
 export const useAccountBalancesQuery = (
@@ -144,6 +145,19 @@ export const useAccountBalancesQuery = (
         const accountBalances: AccountBalances = new Map(
             accounts.map((a, i) => [a.address, accountBalanceList[i]]),
         )
+
+        // Persist holdings to SQLite for cold-start cache
+        results.forEach((r, i) => {
+            if (r.isFetched && r.data?.assets) {
+                const addr = accounts[i].address
+                const holdings = r.data.assets.map(a => ({
+                    assetId: `${a.assetId}`,
+                    amount: `${a.amount ?? '0'}`,
+                }))
+
+                persistHoldings(addr, holdings, network)
+            }
+        })
 
         const portfolioAlgoValue = accountBalanceList.reduce(
             (acc, cur) => acc.plus(cur.algoValue),

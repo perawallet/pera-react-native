@@ -10,5 +10,9 @@
  limitations under the License
  */
 
-// Domain schemas will be added here as they are created.
-// Each domain package defines its tables and exports them from this barrel.
+export { transactions, accountTransactions } from './schema'
+export {
+    upsertTransactions,
+    getTransactionHistory,
+    getLatestTransactionRoundTime,
+} from './repository'

@@ -18,6 +18,10 @@ import type {
     TransactionHistoryItem,
     TransactionHistoryResult,
 } from '../models/types'
+import {
+    getCachedTransactionHistory,
+    useTransactionsCacheSync,
+} from './useTransactionHistoryCache'
 
 /**
  * Parameters for the useTransactionHistoryQuery hook.
@@ -136,12 +140,46 @@ export const useTransactionHistoryQuery = (
         initialPageParam: null as string | null,
         getNextPageParam: (lastPage: TransactionHistoryResult): string | null =>
             lastPage.pagination.nextUrl,
+        placeholderData: () => {
+            const cached = getCachedTransactionHistory({
+                accountAddress,
+                network,
+                assetId,
+                limit,
+            })
+
+            if (cached.length === 0) return undefined
+
+            return {
+                pages: [
+                    {
+                        transactions: cached,
+                        pagination: {
+                            hasNextPage: false,
+                            hasPreviousPage: false,
+                            nextUrl: null,
+                            previousUrl: null,
+                            totalFetched: cached.length,
+                        },
+                        currentRound: 0,
+                    },
+                ],
+                pageParams: [null],
+            }
+        },
         enabled: isEnabled && !!accountAddress,
     })
 
     // Flatten all pages into a single array of transactions
     const transactions =
         query.data?.pages.flatMap(page => page.transactions) ?? []
+
+    useTransactionsCacheSync(
+        transactions,
+        !query.isPlaceholderData && query.isFetched,
+        accountAddress,
+        network,
+    )
 
     return {
         transactions,

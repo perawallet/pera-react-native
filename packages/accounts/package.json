@@ -20,6 +20,7 @@
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-assets": "workspace:*",
     "@perawallet/wallet-core-blockchain": "workspace:*",
+    "@perawallet/wallet-core-database": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-currencies": "workspace:*",
     "@perawallet/wallet-core-device": "workspace:*",
@@ -31,6 +32,7 @@
     "@algorandfoundation/algokit-utils": "catalog:",
     "@tanstack/react-query": "catalog:",
     "decimal.js": "catalog:",
+    "drizzle-orm": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "zustand": "catalog:"

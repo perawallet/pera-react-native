@@ -10,16 +10,20 @@
  limitations under the License
  */
 
-import type { MigrationConfig } from '../migrator'
+import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
 
-import m0000 from './0000_busy_hemingway.sql?raw'
-import journal from './meta/_journal.json'
-
-const migrations: MigrationConfig = {
-    journal,
-    migrations: {
-        '0000_busy_hemingway': m0000,
+export const accountAssetHoldings = sqliteTable(
+    'account_asset_holdings',
+    {
+        accountAddress: text('account_address').notNull(),
+        assetId: text('asset_id').notNull(),
+        network: text('network').notNull(),
+        amount: text('amount').notNull().default('0'),
+        updatedAt: integer('updated_at').notNull(),
     },
-}
-
-export default migrations
+    table => [
+        primaryKey({
+            columns: [table.accountAddress, table.assetId, table.network],
+        }),
+    ],
+)

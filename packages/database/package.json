@@ -23,7 +23,7 @@
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
-    "drizzle-orm": "^0.44.0",
+    "drizzle-orm": "catalog:",
     "@perawallet/wallet-extension-platform": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*"
   },

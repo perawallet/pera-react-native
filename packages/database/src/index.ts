@@ -16,9 +16,5 @@ export {
     resetDrizzle,
     type DrizzleDatabase,
 } from './connection'
-export {
-    runMigrations,
-    type MigrationConfig,
-    type MigratorFn,
-} from './migrator'
+export { runMigrations, type MigrationConfig } from './migrator'
 export { default as migrations } from './migrations'

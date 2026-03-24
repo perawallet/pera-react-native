@@ -10,14 +10,10 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi, afterEach } from 'vitest'
-import {
-    runMigrations,
-    type MigrationConfig,
-    type MigratorFn,
-} from '../migrator'
+import { describe, it, expect, afterEach } from 'vitest'
+import { sql } from 'drizzle-orm'
+import { runMigrations, type MigrationConfig } from '../migrator'
 import { createTestDatabase } from '../test-utils'
-import type { DrizzleDatabase } from '../connection'
 
 describe('runMigrations', () => {
     let teardown: () => void
@@ -26,24 +22,7 @@ describe('runMigrations', () => {
         teardown?.()
     })
 
-    it('calls the migrator function with db and migrations', async () => {
-        const { db, teardown: td } = createTestDatabase()
-        teardown = td
-
-        const migrations: MigrationConfig = {
-            journal: { entries: [] },
-            migrations: {},
-        }
-
-        const migrator = vi.fn<MigratorFn>()
-
-        await runMigrations(db, migrator, migrations)
-
-        expect(migrator).toHaveBeenCalledOnce()
-        expect(migrator).toHaveBeenCalledWith(db, migrations)
-    })
-
-    it('handles empty migration config as a no-op', async () => {
+    it('creates the migrations tracking table', () => {
         const { db, teardown: td } = createTestDatabase()
         teardown = td
 
@@ -52,30 +31,102 @@ describe('runMigrations', () => {
             migrations: {},
         }
 
-        const migrator = vi.fn<MigratorFn>()
+        runMigrations(db, emptyMigrations)
 
-        await runMigrations(db, migrator, emptyMigrations)
+        const tables = db.all<{ name: string }>(
+            sql`SELECT name FROM sqlite_master WHERE type='table' AND name='__drizzle_migrations'`,
+        )
 
-        expect(migrator).toHaveBeenCalledOnce()
+        expect(tables).toHaveLength(1)
     })
 
-    it('propagates errors from the migrator', async () => {
+    it('applies pending migrations', () => {
         const { db, teardown: td } = createTestDatabase()
         teardown = td
 
         const migrations: MigrationConfig = {
             journal: {
-                entries: [{ idx: 0, when: Date.now(), tag: '0001_test' }],
+                entries: [{ idx: 0, when: Date.now(), tag: '0000_test' }],
             },
-            migrations: { '0001_test': 'INVALID SQL' },
+            migrations: {
+                '0000_test':
+                    'CREATE TABLE test_table (id TEXT PRIMARY KEY, name TEXT)',
+            },
         }
 
-        const migrator = vi
-            .fn<MigratorFn>()
-            .mockRejectedValue(new Error('Migration failed'))
+        runMigrations(db, migrations)
 
-        await expect(runMigrations(db, migrator, migrations)).rejects.toThrow(
-            'Migration failed',
+        const tables = db.all<{ name: string }>(
+            sql`SELECT name FROM sqlite_master WHERE type='table' AND name='test_table'`,
+        )
+
+        expect(tables).toHaveLength(1)
+    })
+
+    it('does not re-apply already applied migrations', () => {
+        const { db, teardown: td } = createTestDatabase()
+        teardown = td
+
+        const migrations: MigrationConfig = {
+            journal: {
+                entries: [{ idx: 0, when: Date.now(), tag: '0000_test' }],
+            },
+            migrations: {
+                '0000_test':
+                    'CREATE TABLE test_table (id TEXT PRIMARY KEY, name TEXT)',
+            },
+        }
+
+        runMigrations(db, migrations)
+        runMigrations(db, migrations)
+
+        const applied = db.all<{ tag: string }>(
+            sql`SELECT tag FROM __drizzle_migrations`,
+        )
+
+        expect(applied).toHaveLength(1)
+    })
+
+    it('applies multiple migrations in order', () => {
+        const { db, teardown: td } = createTestDatabase()
+        teardown = td
+
+        const migrations: MigrationConfig = {
+            journal: {
+                entries: [
+                    { idx: 0, when: Date.now(), tag: '0000_first' },
+                    { idx: 1, when: Date.now(), tag: '0001_second' },
+                ],
+            },
+            migrations: {
+                '0000_first': 'CREATE TABLE first_table (id TEXT PRIMARY KEY)',
+                '0001_second':
+                    'CREATE TABLE second_table (id TEXT PRIMARY KEY)',
+            },
+        }
+
+        runMigrations(db, migrations)
+
+        const tables = db.all<{ name: string }>(
+            sql`SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%_table' ORDER BY name`,
+        )
+
+        expect(tables.map(t => t.name)).toEqual(['first_table', 'second_table'])
+    })
+
+    it('throws when migration SQL is missing', () => {
+        const { db, teardown: td } = createTestDatabase()
+        teardown = td
+
+        const migrations: MigrationConfig = {
+            journal: {
+                entries: [{ idx: 0, when: Date.now(), tag: '0000_missing' }],
+            },
+            migrations: {},
+        }
+
+        expect(() => runMigrations(db, migrations)).toThrow(
+            'Migration SQL not found for tag: 0000_missing',
         )
     })
 })

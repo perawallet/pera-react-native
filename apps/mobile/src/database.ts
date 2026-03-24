@@ -12,7 +12,11 @@
 
 import type { SQLiteDatabase } from 'expo-sqlite'
 import { drizzle } from 'drizzle-orm/expo-sqlite'
-import { setDrizzle } from '@perawallet/wallet-core-database'
+import {
+    setDrizzle,
+    runMigrations,
+    migrations,
+} from '@perawallet/wallet-core-database'
 import type { PeraProvider } from '@perawallet/wallet-extension-provider'
 
 const DATABASE_NAME = 'pera.db'
@@ -24,4 +28,5 @@ export const initializeDatabase = async (
     const db = drizzle(dbDriver.driver as SQLiteDatabase)
 
     setDrizzle(db)
+    runMigrations(db, migrations)
 }

@@ -83,7 +83,7 @@
     "expo": "^55.0.8",
     "expo-application": "^55.0.10",
     "expo-build-properties": "~55.0.10",
-    "drizzle-orm": "^0.44.0",
+    "drizzle-orm": "catalog:",
     "expo-clipboard": "^55.0.9",
     "expo-dev-client": "~55.0.18",
     "expo-device": "^55.0.10",

@@ -23,6 +23,7 @@ import { DEFAULT_PAGE_SIZE, partition } from '@perawallet/wallet-core-shared'
 import { getAlgoQueryKey, getAssetsQueryKey } from './querykeys'
 import { AssetsResponse, PublicAssetResponse } from '../api/assets/schema'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { getCachedAssets, useAssetsCacheSync } from './useAssetsCache'
 
 type UseAssetsQueryResult = {
     data: Map<string, PeraAsset>
@@ -79,19 +80,33 @@ export const useAssetsQuery = (ids: string[]): UseAssetsQueryResult => {
         })),
     })
 
-    return useMemo(() => {
+    const result = useMemo(() => {
+        const isPending = queries.some(query => query.isPending)
+        const isFetched = queries.some(query => query.isFetched)
         const assets: Map<string, PeraAsset> = new Map()
+
+        if (isPending && !isFetched) {
+            const cached = getCachedAssets(stableIds, network)
+
+            cached.forEach((asset, id) => assets.set(id, asset))
+        }
+
         queries.forEach(query => {
             query.data?.results?.forEach(asset => {
                 assets.set(asset.assetId, asset)
             })
         })
+
         return {
             data: assets,
-            isPending: queries.some(query => query.isPending),
-            isFetched: queries.some(query => query.isFetched),
+            isPending,
+            isFetched,
             isRefetching: queries.some(query => query.isRefetching),
             isError: queries.some(query => query.isError),
         }
-    }, [queries])
+    }, [queries, stableIds, network])
+
+    useAssetsCacheSync(result.data, result.isFetched, network)
+
+    return result
 }
