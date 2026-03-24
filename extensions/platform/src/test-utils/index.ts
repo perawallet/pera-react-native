@@ -10,5 +10,6 @@
  limitations under the License
  */
 
+export * from './database'
 export * from './storage'
 export * from './wrapper'

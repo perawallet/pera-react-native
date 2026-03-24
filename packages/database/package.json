@@ -1,0 +1,40 @@
+{
+  "name": "@perawallet/wallet-core-database",
+  "private": true,
+  "version": "0.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./test-utils": {
+      "types": "./dist/test-utils/index.d.ts",
+      "default": "./dist/test-utils/index.js"
+    }
+  },
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite build --watch",
+    "test": "vitest run",
+    "db:generate": "drizzle-kit generate",
+    "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.44.0",
+    "@perawallet/wallet-extension-platform": "workspace:*",
+    "@perawallet/wallet-extension-provider": "workspace:*"
+  },
+  "devDependencies": {
+    "better-sqlite3": "^11.0.0",
+    "@types/better-sqlite3": "^7.6.0",
+    "drizzle-kit": "^0.30.0",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vite-plugin-dts": "^4.5.4",
+    "vitest": "catalog:",
+    "@perawallet/wallet-core-devtools": "workspace:*"
+  }
+}

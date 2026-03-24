@@ -18,7 +18,7 @@ export default defineConfig({
     plugins: [
         dts({
             include: ['src'],
-            exclude: ['**/__tests__/**', '**/*.test.ts', '**/*.test.tsx'],
+            exclude: ['**/__tests__/**', '**/*.test.ts', '**/*.spec.ts'],
             afterDiagnostic: diagnostics => {
                 if (diagnostics.length > 0) {
                     throw new Error(
@@ -30,34 +30,23 @@ export default defineConfig({
     ],
     build: {
         lib: {
-            entry: resolve(__dirname, 'src/index.ts'),
+            entry: {
+                index: resolve(__dirname, 'src/index.ts'),
+                'test-utils/index': resolve(
+                    __dirname,
+                    'src/test-utils/index.ts',
+                ),
+            },
             formats: ['es'],
-            fileName: 'index',
         },
         rollupOptions: {
             external: [
-                'react',
-                'react/jsx-runtime',
-                'react-native',
-                'react-native-mmkv',
-                'react-native-keychain',
-                '@react-native-firebase/analytics',
-                '@react-native-firebase/crashlytics',
-                '@react-native-firebase/messaging',
-                '@react-native-firebase/remote-config',
-                '@notifee/react-native',
-                '@sbaiahmed1/react-native-biometrics',
-                'expo-application',
-                'expo-device',
-                'expo-localization',
-                'expo-sqlite',
-                'zustand',
-                '@algorandfoundation/wallet-provider',
-                '@perawallet/wallet-core-config',
-                '@perawallet/wallet-core-remote-config',
-                '@perawallet/wallet-core-shared',
+                'drizzle-orm',
+                'drizzle-orm/sqlite-core',
+                'drizzle-orm/better-sqlite3',
+                'better-sqlite3',
                 '@perawallet/wallet-extension-platform',
-                '@perawallet/wallet-core-blockchain',
+                '@perawallet/wallet-extension-provider',
             ],
         },
     },

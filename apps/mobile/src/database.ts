@@ -10,22 +10,18 @@
  limitations under the License
  */
 
-import { vi } from 'vitest'
+import type { SQLiteDatabase } from 'expo-sqlite'
+import { drizzle } from 'drizzle-orm/expo-sqlite'
+import { setDrizzle } from '@perawallet/wallet-core-database'
+import type { PeraProvider } from '@perawallet/wallet-extension-provider'
 
-const store = new Map<string, string>()
+const DATABASE_NAME = 'pera.db'
 
-vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
-    getPlatformServices: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
-            },
-        },
-        database: {
-            open: async () => ({ driver: null }),
-            close: async () => {},
-        },
-    }),
-}))
+export const initializeDatabase = async (
+    provider: PeraProvider,
+): Promise<void> => {
+    const dbDriver = await provider.database.open(DATABASE_NAME)
+    const db = drizzle(dbDriver.driver as SQLiteDatabase)
+
+    setDrizzle(db)
+}

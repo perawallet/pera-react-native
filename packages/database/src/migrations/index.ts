@@ -10,22 +10,11 @@
  limitations under the License
  */
 
-import { vi } from 'vitest'
+import type { MigrationConfig } from '../migrator'
 
-const store = new Map<string, string>()
+const migrations: MigrationConfig = {
+    journal: { entries: [] },
+    migrations: {},
+}
 
-vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
-    getPlatformServices: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
-            },
-        },
-        database: {
-            open: async () => ({ driver: null }),
-            close: async () => {},
-        },
-    }),
-}))
+export default migrations

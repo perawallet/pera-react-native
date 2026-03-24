@@ -44,5 +44,10 @@
     "vitest": "catalog:"
   },
   "packageManager": "pnpm@10.28.1",
-  "name": "with-vite"
+  "name": "with-vite",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "better-sqlite3"
+    ]
+  }
 }

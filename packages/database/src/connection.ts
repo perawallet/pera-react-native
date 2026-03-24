@@ -10,22 +10,26 @@
  limitations under the License
  */
 
-import { vi } from 'vitest'
+import type { BaseSQLiteDatabase } from 'drizzle-orm/sqlite-core'
 
-const store = new Map<string, string>()
+export type DrizzleDatabase = BaseSQLiteDatabase<'sync', unknown>
 
-vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
-    getPlatformServices: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
-            },
-        },
-        database: {
-            open: async () => ({ driver: null }),
-            close: async () => {},
-        },
-    }),
-}))
+let instance: DrizzleDatabase | null = null
+
+export const setDrizzle = (db: DrizzleDatabase): void => {
+    instance = db
+}
+
+export const getDrizzle = (): DrizzleDatabase => {
+    if (instance === null) {
+        throw new Error(
+            'Database not initialized. Call setDrizzle() during app bootstrap.',
+        )
+    }
+
+    return instance
+}
+
+export const resetDrizzle = (): void => {
+    instance = null
+}

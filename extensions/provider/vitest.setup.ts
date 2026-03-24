@@ -68,6 +68,12 @@ const mockPlatformServices = {
         initializeCrashReporting() {},
         recordNonFatalError() {},
     },
+    database: {
+        async open() {
+            return { driver: null }
+        },
+        async close() {},
+    },
     deviceInfo: {
         getDeviceID() {
             return Promise.resolve('testID')

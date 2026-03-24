@@ -10,22 +10,11 @@
  limitations under the License
  */
 
-import { vi } from 'vitest'
+export interface DatabaseDriver {
+    readonly driver: unknown
+}
 
-const store = new Map<string, string>()
-
-vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
-    getPlatformServices: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
-            },
-        },
-        database: {
-            open: async () => ({ driver: null }),
-            close: async () => {},
-        },
-    }),
-}))
+export interface DatabaseService {
+    open(name: string): Promise<DatabaseDriver>
+    close(name: string): Promise<void>
+}

@@ -15,9 +15,11 @@ import {
     AnalyticsService,
     BiometricsService,
     CrashReportingService,
+    DatabaseService,
     DeviceInfoService,
     DevicePlatforms,
     KeyValueStorageService,
+    MemoryDatabaseService,
     MemoryKeyValueStorage,
     PlatformServices,
     PushNotificationService,
@@ -35,6 +37,7 @@ export type TestPlatformOverrides = Partial<{
     remoteConfig: RemoteConfigService
     pushNotification: PushNotificationService
     crashReporting: CrashReportingService
+    database: DatabaseService
     deviceInfo: DeviceInfoService
 }>
 
@@ -148,6 +151,7 @@ export const buildTestPlatform = (
         remoteConfig: overrides.remoteConfig ?? defaultRemote,
         pushNotification: overrides.pushNotification ?? defaultPushNotification,
         crashReporting: overrides.crashReporting ?? defaultCrash,
+        database: overrides.database ?? new MemoryDatabaseService(),
         deviceInfo: overrides.deviceInfo ?? deviceInfo,
     }
 }

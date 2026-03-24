@@ -12,6 +12,7 @@
 
 import type { PlatformServices } from '@perawallet/wallet-extension-platform'
 import {
+    RNDatabaseService,
     RNKeyValueStorageService,
     RNFirebaseService,
     RNBiometricsService,
@@ -37,6 +38,7 @@ export const platformServices: PlatformServices = {
     remoteConfig: firebaseService,
     secureStorage: new RNSecureStorageService(),
     keyValueStorage,
+    database: new RNDatabaseService(),
     deviceInfo: new RNDeviceInfoStorageService(),
 }
 

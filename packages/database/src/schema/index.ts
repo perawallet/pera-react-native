@@ -10,22 +10,5 @@
  limitations under the License
  */
 
-import { vi } from 'vitest'
-
-const store = new Map<string, string>()
-
-vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
-    getPlatformServices: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
-            },
-        },
-        database: {
-            open: async () => ({ driver: null }),
-            close: async () => {},
-        },
-    }),
-}))
+// Domain schemas will be added here as they are created.
+// Each domain package defines its tables and exports them from this barrel.

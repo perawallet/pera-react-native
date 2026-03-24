@@ -10,22 +10,26 @@
  limitations under the License
  */
 
-import { vi } from 'vitest'
+import Database from 'better-sqlite3'
+import { drizzle } from 'drizzle-orm/better-sqlite3'
+import { setDrizzle, resetDrizzle, type DrizzleDatabase } from '../connection'
 
-const store = new Map<string, string>()
+type TestDatabase = {
+    db: DrizzleDatabase
+    teardown: () => void
+}
 
-vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
-    getPlatformServices: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
-            },
+export const createTestDatabase = (): TestDatabase => {
+    const sqlite = new Database(':memory:')
+    const db: DrizzleDatabase = drizzle(sqlite)
+
+    setDrizzle(db)
+
+    return {
+        db,
+        teardown: () => {
+            sqlite.close()
+            resetDrizzle()
         },
-        database: {
-            open: async () => ({ driver: null }),
-            close: async () => {},
-        },
-    }),
-}))
+    }
+}

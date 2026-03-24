@@ -10,22 +10,12 @@
  limitations under the License
  */
 
-import { vi } from 'vitest'
+import type { DatabaseService, DatabaseDriver } from '../database'
 
-const store = new Map<string, string>()
+export class MemoryDatabaseService implements DatabaseService {
+    async open(_name: string): Promise<DatabaseDriver> {
+        return { driver: null }
+    }
 
-vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
-    getPlatformServices: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
-            },
-        },
-        database: {
-            open: async () => ({ driver: null }),
-            close: async () => {},
-        },
-    }),
-}))
+    async close(_name: string): Promise<void> {}
+}

@@ -10,22 +10,23 @@
  limitations under the License
  */
 
-import { vi } from 'vitest'
+import { defineConfig } from 'vitest/config'
 
-const store = new Map<string, string>()
-
-vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
-    getPlatformServices: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
-            },
+export default defineConfig({
+    test: {
+        globals: true,
+        setupFiles: ['./vitest.setup.ts'],
+        coverage: {
+            provider: 'v8',
+            all: true,
+            include: ['src/**/*.ts'],
+            exclude: [
+                'src/**/__tests__/**',
+                'src/**/index.ts',
+                'src/test-utils/**',
+                'src/migrations/**',
+                'src/schema/**',
+            ],
         },
-        database: {
-            open: async () => ({ driver: null }),
-            close: async () => {},
-        },
-    }),
-}))
+    },
+})

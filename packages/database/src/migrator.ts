@@ -10,22 +10,24 @@
  limitations under the License
  */
 
-import { vi } from 'vitest'
+import type { DrizzleDatabase } from './connection'
 
-const store = new Map<string, string>()
+export type MigrationConfig = {
+    journal: {
+        entries: Array<{ idx: number; when: number; tag: string }>
+    }
+    migrations: Record<string, string>
+}
 
-vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
-    getPlatformServices: () => ({
-        keyValueStorage: {
-            getItem: (key: string) => store.get(key) ?? null,
-            setItem: (key: string, value: string) => store.set(key, value),
-            removeItem: (key: string) => {
-                store.delete(key)
-            },
-        },
-        database: {
-            open: async () => ({ driver: null }),
-            close: async () => {},
-        },
-    }),
-}))
+export type MigratorFn = (
+    db: DrizzleDatabase,
+    migrations: MigrationConfig,
+) => Promise<void>
+
+export const runMigrations = async (
+    db: DrizzleDatabase,
+    migrator: MigratorFn,
+    migrations: MigrationConfig,
+): Promise<void> => {
+    await migrator(db, migrations)
+}
