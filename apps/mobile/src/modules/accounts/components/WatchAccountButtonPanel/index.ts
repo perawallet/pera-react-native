@@ -11,4 +11,3 @@
  */
 
 export { WatchAccountButtonPanel } from './WatchAccountButtonPanel'
-export type { WatchAccountButtonPanelProps } from './WatchAccountButtonPanel'

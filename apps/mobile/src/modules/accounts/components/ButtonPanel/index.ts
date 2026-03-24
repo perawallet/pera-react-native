@@ -11,4 +11,3 @@
  */
 
 export { ButtonPanel } from './ButtonPanel'
-export type { ButtonPanelProps } from './ButtonPanel'

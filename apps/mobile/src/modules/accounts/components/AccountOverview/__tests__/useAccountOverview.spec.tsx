@@ -12,82 +12,22 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import Decimal from 'decimal.js'
 import { useAccountOverview } from '../useAccountOverview'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
-const { mockNavigate, mockReplace } = vi.hoisted(() => ({
-    mockNavigate: vi.fn(),
-    mockReplace: vi.fn(),
-}))
-const { mockShowToast } = vi.hoisted(() => ({ mockShowToast: vi.fn() }))
-
-vi.mock('@hooks/useAppNavigation', () => ({
-    useAppNavigation: () => ({
-        navigate: mockNavigate,
-        replace: mockReplace,
-    }),
-}))
-
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({
-        showToast: mockShowToast,
-    }),
-}))
-
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({
-        t: (key: string) => key,
-    }),
+const { mockSetSelectedAccount, mockSetCanSelectAccount } = vi.hoisted(() => ({
+    mockSetSelectedAccount: vi.fn(),
+    mockSetCanSelectAccount: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAccountBalancesQuery: vi.fn(() => ({
-        portfolioAlgoValue: new Decimal('100'),
-        isPending: false,
-        accountBalances: new Map(),
-        isFetched: true,
-        isRefetching: false,
-        isError: false,
-    })),
-    usePortfolioTotals: vi.fn(() => ({
-        portfolioUsdValue: new Decimal('200'),
-        accountUsdValues: new Map(),
-        isPending: false,
-    })),
-    useSelectedAccount: vi.fn(() => undefined),
-}))
-
-vi.mock('@perawallet/wallet-core-currencies', () => ({
-    useCurrency: vi.fn(() => ({
-        preferredCurrency: 'USD',
-        fallbackCurrency: 'USD',
-        usdToPreferred: vi.fn((amount: Decimal) => amount),
-        algoUsdPrice: new Decimal(0),
-    })),
-}))
-
-vi.mock('@perawallet/wallet-core-settings', () => ({
-    useSettings: vi.fn(() => ({
-        privacyMode: false,
-        setPrivacyMode: vi.fn(),
-    })),
+    useSelectedAccount: vi.fn(() => ({ address: 'selected-address' })),
 }))
 
 vi.mock('@modules/transactions/hooks', () => ({
     useReceiveFunds: vi.fn(() => ({
-        setSelectedAccount: vi.fn(),
-        setCanSelectAccount: vi.fn(),
-    })),
-}))
-
-vi.mock('@hooks/useChartInteraction', () => ({
-    useChartInteraction: vi.fn(() => ({
-        period: 'one-week' as const,
-        setPeriod: vi.fn(),
-        selectedPoint: null,
-        setSelectedPoint: vi.fn(),
-        clearSelection: vi.fn(),
+        setSelectedAccount: mockSetSelectedAccount,
+        setCanSelectAccount: mockSetCanSelectAccount,
     })),
 }))
 
@@ -98,110 +38,13 @@ describe('useAccountOverview', () => {
         vi.clearAllMocks()
     })
 
-    it('returns portfolio values from account balances query', () => {
-        const { result } = renderHook(() => useAccountOverview(mockAccount))
-
-        expect(result.current.portfolioAlgoValue.toString()).toBe('100')
-        expect(result.current.portfolioPreferredValue.toString()).toBe('200')
-        expect(result.current.preferredCurrency).toBe('USD')
-    })
-
-    it('determines hasBalance correctly when balance is greater than zero', () => {
-        const { result } = renderHook(() => useAccountOverview(mockAccount))
-
-        expect(result.current.hasBalance).toBe(true)
-    })
-
-    it('determines hasBalance correctly when balance is zero', async () => {
-        const { useAccountBalancesQuery } =
-            await import('@perawallet/wallet-core-accounts')
-        vi.mocked(useAccountBalancesQuery).mockReturnValue({
-            portfolioAlgoValue: new Decimal('0'),
-            isPending: false,
-            accountBalances: new Map(),
-            isFetched: true,
-            isRefetching: false,
-            isError: false,
-        })
-
-        const { result } = renderHook(() => useAccountOverview(mockAccount))
-
-        expect(result.current.hasBalance).toBe(false)
-    })
-
-    it('toggles privacy mode when togglePrivacyMode is called', async () => {
-        const setPrivacyMode = vi.fn()
-        const { useSettings } = await import('@perawallet/wallet-core-settings')
-        vi.mocked(useSettings).mockReturnValue({
-            privacyMode: false,
-            setPrivacyMode,
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any)
-
-        const { result } = renderHook(() => useAccountOverview(mockAccount))
-
-        act(() => {
-            result.current.togglePrivacyMode()
-        })
-
-        expect(setPrivacyMode).toHaveBeenCalledWith(true)
-    })
-
-    it('navigates to Swap screen when handleSwap is called', () => {
-        const { result } = renderHook(() => useAccountOverview(mockAccount))
-
-        act(() => {
-            result.current.handleSwap()
-        })
-
-        expect(mockReplace).toHaveBeenCalledWith('TabBar', { screen: 'Swap' })
-    })
-
-    it('navigates to Fund screen when handleBuyAlgo is called', () => {
-        const { result } = renderHook(() => useAccountOverview(mockAccount))
-
-        act(() => {
-            result.current.handleBuyAlgo()
-        })
-
-        expect(mockNavigate).toHaveBeenCalledWith('TabBar', { screen: 'Fund' })
-    })
-
-    it('opens account options when handleMore is called', () => {
-        const { result } = renderHook(() => useAccountOverview(mockAccount))
-
-        expect(result.current.isAccountOptionsVisible).toBe(false)
-
-        act(() => {
-            result.current.handleMore()
-        })
-
-        expect(result.current.isAccountOptionsVisible).toBe(true)
-    })
-
-    it('closes account options when handleCloseAccountOptions is called', () => {
-        const { result } = renderHook(() => useAccountOverview(mockAccount))
-
-        act(() => {
-            result.current.handleMore()
-        })
-
-        expect(result.current.isAccountOptionsVisible).toBe(true)
-
-        act(() => {
-            result.current.handleCloseAccountOptions()
-        })
-
-        expect(result.current.isAccountOptionsVisible).toBe(false)
-    })
-
-    it('opens send funds modal when handleOpenSendFunds is called', () => {
+    it('opens send funds modal when openSendFunds is called', () => {
         const { result } = renderHook(() => useAccountOverview(mockAccount))
 
         expect(result.current.isSendFundsVisible).toBe(false)
 
         act(() => {
-            result.current.handleOpenSendFunds()
+            result.current.openSendFunds()
         })
 
         expect(result.current.isSendFundsVisible).toBe(true)
@@ -211,7 +54,7 @@ describe('useAccountOverview', () => {
         const { result } = renderHook(() => useAccountOverview(mockAccount))
 
         act(() => {
-            result.current.handleOpenSendFunds()
+            result.current.openSendFunds()
         })
 
         expect(result.current.isSendFundsVisible).toBe(true)
@@ -223,23 +66,27 @@ describe('useAccountOverview', () => {
         expect(result.current.isSendFundsVisible).toBe(false)
     })
 
-    it('opens receive funds modal when handleReceive is called', () => {
+    it('opens receive funds modal and sets selected account when openReceiveFunds is called', () => {
         const { result } = renderHook(() => useAccountOverview(mockAccount))
 
         expect(result.current.isReceiveFundsVisible).toBe(false)
 
         act(() => {
-            result.current.handleReceive()
+            result.current.openReceiveFunds()
         })
 
         expect(result.current.isReceiveFundsVisible).toBe(true)
+        expect(mockSetCanSelectAccount).toHaveBeenCalledWith(false)
+        expect(mockSetSelectedAccount).toHaveBeenCalledWith({
+            address: 'selected-address',
+        })
     })
 
     it('closes receive funds modal when handleCloseReceiveFunds is called', () => {
         const { result } = renderHook(() => useAccountOverview(mockAccount))
 
         act(() => {
-            result.current.handleReceive()
+            result.current.openReceiveFunds()
         })
 
         expect(result.current.isReceiveFundsVisible).toBe(true)
@@ -251,69 +98,53 @@ describe('useAccountOverview', () => {
         expect(result.current.isReceiveFundsVisible).toBe(false)
     })
 
-    it('disables scrolling when a chart point is selected', async () => {
-        const setSelectedPoint = vi.fn()
-        const { useChartInteraction } =
-            await import('@hooks/useChartInteraction')
-        vi.mocked(useChartInteraction).mockReturnValue({
-            period: 'one-week' as const,
-            setPeriod: vi.fn(),
-            selectedPoint: null,
-            setSelectedPoint,
-            clearSelection: vi.fn(),
+    it('opens account options when openAccountOptions is called', () => {
+        const { result } = renderHook(() => useAccountOverview(mockAccount))
+
+        expect(result.current.isAccountOptionsVisible).toBe(false)
+
+        act(() => {
+            result.current.openAccountOptions()
         })
 
+        expect(result.current.isAccountOptionsVisible).toBe(true)
+    })
+
+    it('closes account options when handleCloseAccountOptions is called', () => {
+        const { result } = renderHook(() => useAccountOverview(mockAccount))
+
+        act(() => {
+            result.current.openAccountOptions()
+        })
+
+        expect(result.current.isAccountOptionsVisible).toBe(true)
+
+        act(() => {
+            result.current.handleCloseAccountOptions()
+        })
+
+        expect(result.current.isAccountOptionsVisible).toBe(false)
+    })
+
+    it('starts with scrolling enabled', () => {
         const { result } = renderHook(() => useAccountOverview(mockAccount))
 
         expect(result.current.scrollingEnabled).toBe(true)
-
-        const mockPoint = {
-            datetime: new Date(),
-            algoValue: new Decimal('100'),
-            preferredValue: new Decimal('200'),
-            round: 12345,
-        }
-
-        act(() => {
-            result.current.handleChartSelectionChange(mockPoint)
-        })
-
-        expect(setSelectedPoint).toHaveBeenCalledWith(mockPoint)
-        expect(result.current.scrollingEnabled).toBe(false)
     })
 
-    it('enables scrolling when chart selection is cleared', async () => {
-        const setSelectedPoint = vi.fn()
-        const { useChartInteraction } =
-            await import('@hooks/useChartInteraction')
-        vi.mocked(useChartInteraction).mockReturnValue({
-            period: 'one-week' as const,
-            setPeriod: vi.fn(),
-            selectedPoint: null,
-            setSelectedPoint,
-            clearSelection: vi.fn(),
-        })
-
+    it('updates scrolling state when onScrollEnabledChange is called', () => {
         const { result } = renderHook(() => useAccountOverview(mockAccount))
 
-        const mockPoint = {
-            datetime: new Date(),
-            algoValue: new Decimal('100'),
-            preferredValue: new Decimal('200'),
-            round: 12345,
-        }
-
         act(() => {
-            result.current.handleChartSelectionChange(mockPoint)
+            result.current.onScrollEnabledChange(false)
         })
 
         expect(result.current.scrollingEnabled).toBe(false)
 
         act(() => {
-            result.current.handleChartSelectionChange(null)
+            result.current.onScrollEnabledChange(true)
         })
 
-        expect(setSelectedPoint).toHaveBeenCalledWith(null)
         expect(result.current.scrollingEnabled).toBe(true)
     })
 })

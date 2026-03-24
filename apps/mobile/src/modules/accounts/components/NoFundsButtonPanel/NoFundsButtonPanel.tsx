@@ -14,20 +14,12 @@ import { useStyles } from './styles'
 import { PWView } from '@components/core'
 import { RoundButton } from '@components/RoundButton'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNoFundsButtonPanel } from './useNoFundsButtonPanel'
 
-export type NoFundsButtonPanelProps = {
-    onBuyAlgo: () => void
-    onReceive: () => void
-    onMore: () => void
-}
-
-export const NoFundsButtonPanel = ({
-    onBuyAlgo,
-    onReceive,
-    onMore,
-}: NoFundsButtonPanelProps) => {
+export const NoFundsButtonPanel = () => {
     const themeStyle = useStyles()
     const { t } = useLanguage()
+    const { handleBuyAlgo, handleReceive, handleMore } = useNoFundsButtonPanel()
 
     return (
         <PWView style={themeStyle.container}>
@@ -35,19 +27,19 @@ export const NoFundsButtonPanel = ({
                 title={t('account_details.no_balance.buy_algo')}
                 icon='algo'
                 variant='primary'
-                onPress={onBuyAlgo}
+                onPress={handleBuyAlgo}
             />
             <RoundButton
                 title={t('account_details.no_balance.receive')}
                 icon='inflow'
                 variant='secondary'
-                onPress={onReceive}
+                onPress={handleReceive}
             />
             <RoundButton
                 title={t('account_details.no_balance.more')}
                 icon='ellipsis'
                 variant='secondary'
-                onPress={onMore}
+                onPress={handleMore}
             />
         </PWView>
     )

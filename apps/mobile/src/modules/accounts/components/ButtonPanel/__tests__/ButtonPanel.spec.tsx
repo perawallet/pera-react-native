@@ -14,17 +14,22 @@ import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { ButtonPanel } from '../ButtonPanel'
 
-vi.mock('@react-navigation/native', async importOriginal => {
-    const actual =
-        await importOriginal<typeof import('@react-navigation/native')>()
-    return {
-        ...actual,
-        useNavigation: () => ({
-            replace: vi.fn(),
-            push: vi.fn(),
-        }),
-    }
-})
+const { mockHandleSwap, mockHandleSend, mockHandleReceive, mockHandleMore } =
+    vi.hoisted(() => ({
+        mockHandleSwap: vi.fn(),
+        mockHandleSend: vi.fn(),
+        mockHandleReceive: vi.fn(),
+        mockHandleMore: vi.fn(),
+    }))
+
+vi.mock('../useButtonPanel', () => ({
+    useButtonPanel: () => ({
+        handleSwap: mockHandleSwap,
+        handleSend: mockHandleSend,
+        handleReceive: mockHandleReceive,
+        handleMore: mockHandleMore,
+    }),
+}))
 
 vi.mock('@components/core', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -58,14 +63,7 @@ vi.mock('@hooks/useLanguage', () => ({
 
 describe('ButtonPanel', () => {
     it('renders all buttons correctly', () => {
-        render(
-            <ButtonPanel
-                onSwap={vi.fn()}
-                onSend={vi.fn()}
-                onReceive={vi.fn()}
-                onMore={vi.fn()}
-            />,
-        )
+        render(<ButtonPanel />)
         expect(
             screen.getByText('account_details.button_panel.swap'),
         ).toBeTruthy()
@@ -81,74 +79,35 @@ describe('ButtonPanel', () => {
     })
 
     it('does not render stake button', () => {
-        render(
-            <ButtonPanel
-                onSwap={vi.fn()}
-                onSend={vi.fn()}
-                onReceive={vi.fn()}
-                onMore={vi.fn()}
-            />,
-        )
+        render(<ButtonPanel />)
         expect(() =>
             screen.getByText('account_details.button_panel.stake'),
         ).toThrow()
     })
 
-    it('calls onSwap when swap button is pressed', () => {
-        const onSwap = vi.fn()
-        render(
-            <ButtonPanel
-                onSwap={onSwap}
-                onSend={vi.fn()}
-                onReceive={vi.fn()}
-                onMore={vi.fn()}
-            />,
-        )
+    it('calls handleSwap when swap button is pressed', () => {
+        render(<ButtonPanel />)
         fireEvent.click(screen.getByText('account_details.button_panel.swap'))
-        expect(onSwap).toHaveBeenCalledOnce()
+        expect(mockHandleSwap).toHaveBeenCalledOnce()
     })
 
-    it('calls onSend when send button is pressed', () => {
-        const onSend = vi.fn()
-        render(
-            <ButtonPanel
-                onSwap={vi.fn()}
-                onSend={onSend}
-                onReceive={vi.fn()}
-                onMore={vi.fn()}
-            />,
-        )
+    it('calls handleSend when send button is pressed', () => {
+        render(<ButtonPanel />)
         fireEvent.click(screen.getByText('account_details.button_panel.send'))
-        expect(onSend).toHaveBeenCalledOnce()
+        expect(mockHandleSend).toHaveBeenCalledOnce()
     })
 
-    it('calls onReceive when receive button is pressed', () => {
-        const onReceive = vi.fn()
-        render(
-            <ButtonPanel
-                onSwap={vi.fn()}
-                onSend={vi.fn()}
-                onReceive={onReceive}
-                onMore={vi.fn()}
-            />,
-        )
+    it('calls handleReceive when receive button is pressed', () => {
+        render(<ButtonPanel />)
         fireEvent.click(
             screen.getByText('account_details.button_panel.receive'),
         )
-        expect(onReceive).toHaveBeenCalledOnce()
+        expect(mockHandleReceive).toHaveBeenCalledOnce()
     })
 
-    it('calls onMore when more button is pressed', () => {
-        const onMore = vi.fn()
-        render(
-            <ButtonPanel
-                onSwap={vi.fn()}
-                onSend={vi.fn()}
-                onReceive={vi.fn()}
-                onMore={onMore}
-            />,
-        )
+    it('calls handleMore when more button is pressed', () => {
+        render(<ButtonPanel />)
         fireEvent.click(screen.getByText('account_details.button_panel.more'))
-        expect(onMore).toHaveBeenCalledOnce()
+        expect(mockHandleMore).toHaveBeenCalledOnce()
     })
 })
