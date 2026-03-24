@@ -133,6 +133,11 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                                 : new Error('Signing failed'),
                         )
                     }
+                } else if (snapshot.matches('rejected')) {
+                    const { request: req } = snapshot.context
+                    if (req.transport === 'callback') {
+                        ;(req as { reject?: () => Promise<void> }).reject?.()
+                    }
                 }
 
                 actorRefsMap.current.delete(actor.id)
