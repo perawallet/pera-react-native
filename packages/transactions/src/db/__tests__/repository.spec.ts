@@ -61,7 +61,12 @@ describe('transaction repository', () => {
     })
 
     it('inserts and retrieves transactions', () => {
-        upsertTransactions({ db, items: [makeTx()], accountAddress: 'ACCT1', network: 'mainnet' })
+        upsertTransactions({
+            db,
+            items: [makeTx()],
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+        })
 
         const result = getTransactionHistory({
             db,
@@ -100,7 +105,12 @@ describe('transaction repository', () => {
     })
 
     it('filters by assetId', () => {
-        const asset = { assetId: 31566704, name: 'USDC', unitName: 'USDC', decimals: 6 }
+        const asset = {
+            assetId: 31566704,
+            name: 'USDC',
+            unitName: 'USDC',
+            decimals: 6,
+        }
 
         upsertTransactions({
             db,
@@ -135,7 +145,12 @@ describe('transaction repository', () => {
             makeTx({ id: `TX${i}`, roundTime: 1700000000 + i }),
         )
 
-        upsertTransactions({ db, items, accountAddress: 'ACCT1', network: 'mainnet' })
+        upsertTransactions({
+            db,
+            items,
+            accountAddress: 'ACCT1',
+            network: 'mainnet',
+        })
 
         const result = getTransactionHistory({
             db,
@@ -165,11 +180,7 @@ describe('transaction repository', () => {
             network: 'mainnet',
         })
 
-        expect(result.map(r => r.id)).toEqual([
-            'TX_NEW',
-            'TX_MID',
-            'TX_OLD',
-        ])
+        expect(result.map(r => r.id)).toEqual(['TX_NEW', 'TX_MID', 'TX_OLD'])
     })
 
     it('isolates transactions by network', () => {
@@ -204,7 +215,12 @@ describe('transaction repository', () => {
     })
 
     it('round-trips nested objects correctly', () => {
-        const asset = { assetId: 100, name: 'Test', unitName: 'TST', decimals: 2 }
+        const asset = {
+            assetId: 100,
+            name: 'Test',
+            unitName: 'TST',
+            decimals: 2,
+        }
         const swapGroupDetail = {
             assetInId: 0,
             assetInUnitName: 'ALGO',

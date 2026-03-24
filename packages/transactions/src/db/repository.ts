@@ -11,7 +11,10 @@
  */
 
 import { eq, and, desc, lt, sql } from 'drizzle-orm'
-import { getDrizzle, type DrizzleDatabase } from '@perawallet/wallet-core-database'
+import {
+    getDrizzle,
+    type DrizzleDatabase,
+} from '@perawallet/wallet-core-database'
 import type { TransactionHistoryItem } from '../models/types'
 import { transactions, accountTransactions } from './schema'
 

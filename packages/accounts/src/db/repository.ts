@@ -11,7 +11,10 @@
  */
 
 import { eq, and } from 'drizzle-orm'
-import { getDrizzle, type DrizzleDatabase } from '@perawallet/wallet-core-database'
+import {
+    getDrizzle,
+    type DrizzleDatabase,
+} from '@perawallet/wallet-core-database'
 import { accountAssetHoldings } from './schema'
 
 export type HoldingRow = {

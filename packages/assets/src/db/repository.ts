@@ -12,7 +12,10 @@
 
 import { eq, and, inArray } from 'drizzle-orm'
 import Decimal from 'decimal.js'
-import { getDrizzle, type DrizzleDatabase } from '@perawallet/wallet-core-database'
+import {
+    getDrizzle,
+    type DrizzleDatabase,
+} from '@perawallet/wallet-core-database'
 import type { PeraAsset, PeraAssetMetadata } from '../models'
 import { assets } from './schema'
 

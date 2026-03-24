@@ -45,7 +45,11 @@ describe('account holdings repository', () => {
             network: 'mainnet',
         })
 
-        const result = getAccountHoldings({ db, accountAddress: 'ADDR1', network: 'mainnet' })
+        const result = getAccountHoldings({
+            db,
+            accountAddress: 'ADDR1',
+            network: 'mainnet',
+        })
 
         expect(result).toHaveLength(2)
         expect(result.map(r => r.assetId).sort()).toEqual(['100', '200'])
@@ -69,7 +73,11 @@ describe('account holdings repository', () => {
             network: 'mainnet',
         })
 
-        const result = getAccountHoldings({ db, accountAddress: 'ADDR1', network: 'mainnet' })
+        const result = getAccountHoldings({
+            db,
+            accountAddress: 'ADDR1',
+            network: 'mainnet',
+        })
 
         expect(result).toHaveLength(1)
         expect(result[0].assetId).toBe('300')
@@ -96,14 +104,42 @@ describe('account holdings repository', () => {
             network: 'testnet',
         })
 
-        expect(getAccountHoldings({ db, accountAddress: 'ADDR1', network: 'mainnet' })).toHaveLength(1)
-        expect(getAccountHoldings({ db, accountAddress: 'ADDR2', network: 'mainnet' })).toHaveLength(1)
-        expect(getAccountHoldings({ db, accountAddress: 'ADDR1', network: 'testnet' })).toHaveLength(1)
-        expect(getAccountHoldings({ db, accountAddress: 'ADDR2', network: 'testnet' })).toHaveLength(0)
+        expect(
+            getAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            }),
+        ).toHaveLength(1)
+        expect(
+            getAccountHoldings({
+                db,
+                accountAddress: 'ADDR2',
+                network: 'mainnet',
+            }),
+        ).toHaveLength(1)
+        expect(
+            getAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'testnet',
+            }),
+        ).toHaveLength(1)
+        expect(
+            getAccountHoldings({
+                db,
+                accountAddress: 'ADDR2',
+                network: 'testnet',
+            }),
+        ).toHaveLength(0)
     })
 
     it('returns empty array for unknown account', () => {
-        const result = getAccountHoldings({ db, accountAddress: 'UNKNOWN', network: 'mainnet' })
+        const result = getAccountHoldings({
+            db,
+            accountAddress: 'UNKNOWN',
+            network: 'mainnet',
+        })
 
         expect(result).toHaveLength(0)
     })

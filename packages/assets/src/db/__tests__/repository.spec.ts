@@ -55,7 +55,11 @@ describe('asset repository', () => {
     it('inserts and retrieves assets', () => {
         upsertAssets({ db, items: [makeAsset()], network: 'mainnet' })
 
-        const result = getAssetsByIds({ db, assetIds: ['31566704'], network: 'mainnet' })
+        const result = getAssetsByIds({
+            db,
+            assetIds: ['31566704'],
+            network: 'mainnet',
+        })
 
         expect(result).toHaveLength(1)
         expect(result[0].assetId).toBe('31566704')
@@ -66,17 +70,33 @@ describe('asset repository', () => {
     })
 
     it('updates existing assets on conflict', () => {
-        upsertAssets({ db, items: [makeAsset({ name: 'Old Name' })], network: 'mainnet' })
-        upsertAssets({ db, items: [makeAsset({ name: 'New Name' })], network: 'mainnet' })
+        upsertAssets({
+            db,
+            items: [makeAsset({ name: 'Old Name' })],
+            network: 'mainnet',
+        })
+        upsertAssets({
+            db,
+            items: [makeAsset({ name: 'New Name' })],
+            network: 'mainnet',
+        })
 
-        const result = getAssetsByIds({ db, assetIds: ['31566704'], network: 'mainnet' })
+        const result = getAssetsByIds({
+            db,
+            assetIds: ['31566704'],
+            network: 'mainnet',
+        })
 
         expect(result).toHaveLength(1)
         expect(result[0].name).toBe('New Name')
     })
 
     it('returns empty array for unknown IDs', () => {
-        const result = getAssetsByIds({ db, assetIds: ['999999'], network: 'mainnet' })
+        const result = getAssetsByIds({
+            db,
+            assetIds: ['999999'],
+            network: 'mainnet',
+        })
 
         expect(result).toHaveLength(0)
     })
@@ -88,15 +108,27 @@ describe('asset repository', () => {
     })
 
     it('isolates assets by network', () => {
-        upsertAssets({ db, items: [makeAsset({ assetId: '100' })], network: 'mainnet' })
+        upsertAssets({
+            db,
+            items: [makeAsset({ assetId: '100' })],
+            network: 'mainnet',
+        })
         upsertAssets({
             db,
             items: [makeAsset({ assetId: '100', name: 'Testnet Asset' })],
             network: 'testnet',
         })
 
-        const mainnet = getAssetsByIds({ db, assetIds: ['100'], network: 'mainnet' })
-        const testnet = getAssetsByIds({ db, assetIds: ['100'], network: 'testnet' })
+        const mainnet = getAssetsByIds({
+            db,
+            assetIds: ['100'],
+            network: 'mainnet',
+        })
+        const testnet = getAssetsByIds({
+            db,
+            assetIds: ['100'],
+            network: 'testnet',
+        })
 
         expect(mainnet).toHaveLength(1)
         expect(mainnet[0].name).toBe('USD Coin')
@@ -117,7 +149,11 @@ describe('asset repository', () => {
 
         upsertAssets({ db, items: [asset], network: 'mainnet' })
 
-        const result = getAssetsByIds({ db, assetIds: ['31566704'], network: 'mainnet' })
+        const result = getAssetsByIds({
+            db,
+            assetIds: ['31566704'],
+            network: 'mainnet',
+        })
 
         expect(result[0].peraMetadata?.isFavorited).toBe(true)
         expect(result[0].peraMetadata?.logo).toBe('https://logo.png')
@@ -132,7 +168,11 @@ describe('asset repository', () => {
 
         upsertAssets({ db, items, network: 'mainnet' })
 
-        const result = getAssetsByIds({ db, assetIds: ['1', '2', '3'], network: 'mainnet' })
+        const result = getAssetsByIds({
+            db,
+            assetIds: ['1', '2', '3'],
+            network: 'mainnet',
+        })
 
         expect(result).toHaveLength(3)
     })
@@ -140,7 +180,11 @@ describe('asset repository', () => {
     it('does nothing for empty items', () => {
         upsertAssets({ db, items: [], network: 'mainnet' })
 
-        const result = getAssetsByIds({ db, assetIds: ['31566704'], network: 'mainnet' })
+        const result = getAssetsByIds({
+            db,
+            assetIds: ['31566704'],
+            network: 'mainnet',
+        })
 
         expect(result).toHaveLength(0)
     })

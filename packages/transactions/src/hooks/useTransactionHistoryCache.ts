@@ -24,7 +24,9 @@ export const getCachedTransactionHistory = (params: {
     try {
         return getTransactionHistory(params)
     } catch (error) {
-        logger.warn('Failed to read cached transactions from database', { error })
+        logger.warn('Failed to read cached transactions from database', {
+            error,
+        })
         return []
     }
 }

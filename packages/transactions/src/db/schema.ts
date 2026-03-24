@@ -43,11 +43,7 @@ export const accountTransactions = sqliteTable(
     },
     table => [
         primaryKey({
-            columns: [
-                table.accountAddress,
-                table.transactionId,
-                table.network,
-            ],
+            columns: [table.accountAddress, table.transactionId, table.network],
         }),
     ],
 )
