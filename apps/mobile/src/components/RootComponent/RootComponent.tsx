@@ -27,10 +27,14 @@ import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useDevice } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { usePolling } from '@perawallet/wallet-core-polling'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    useActiveAccountBalanceInvalidator,
+} from '@perawallet/wallet-core-accounts'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useNetworkStatus, useNetworkStatusListener } from '@modules/network'
 import { WebViewOverlay } from '@modules/webview'
+import { useCallback } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
 import { useTokenListener } from '@modules/token'
@@ -104,7 +108,13 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     const theme = getTheme(isDarkMode ? 'dark' : 'light')
     const { network } = useNetwork()
     const { registerDevice } = useDevice()
-    const { startPolling, stopPolling } = usePolling()
+    const { invalidateActiveAccount } = useActiveAccountBalanceInvalidator()
+    const handlePollingRefresh = useCallback(() => {
+        invalidateActiveAccount()
+    }, [invalidateActiveAccount])
+    const { startPolling, stopPolling } = usePolling({
+        onRefresh: handlePollingRefresh,
+    })
     const accounts = useAllAccounts()
 
     const appState = useRef(AppState.currentState)
