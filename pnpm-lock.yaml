@@ -604,6 +604,9 @@ importers:
       '@tanstack/react-query':
         specifier: 'catalog:'
         version: 5.90.21(react@19.2.0)
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(expo@55.0.8))(gel@2.2.0)
       react:
         specifier: 'catalog:'
         version: 19.2.0
@@ -690,6 +693,9 @@ importers:
       '@sbaiahmed1/react-native-biometrics':
         specifier: ^0.11.0
         version: 0.11.0(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(expo@55.0.8))(gel@2.2.0)
       expo-application:
         specifier: ^7.0.8
         version: 7.0.8(expo@55.0.8)

@@ -10,11 +10,19 @@
  limitations under the License
  */
 
-import type { DatabaseService, DatabaseDriver } from '../database'
+import type {
+    DatabaseService,
+    DatabaseDriver,
+    DrizzleDatabase,
+} from '../database'
 
 export class MemoryDatabaseService implements DatabaseService {
     async open(_name: string): Promise<DatabaseDriver> {
         return { driver: null }
+    }
+
+    async getDatabase(_name: string): Promise<DrizzleDatabase> {
+        throw new Error('MemoryDatabaseService.getDatabase is not implemented')
     }
 
     async close(_name: string): Promise<void> {}

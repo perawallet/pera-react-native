@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-import type { SQLiteDatabase } from 'expo-sqlite'
-import { drizzle } from 'drizzle-orm/expo-sqlite'
 import {
     setDrizzle,
     runMigrations,
@@ -24,8 +22,7 @@ const DATABASE_NAME = 'pera.db'
 export const initializeDatabase = async (
     provider: PeraProvider,
 ): Promise<void> => {
-    const dbDriver = await provider.database.open(DATABASE_NAME)
-    const db = drizzle(dbDriver.driver as SQLiteDatabase)
+    const db = await provider.database.getDatabase(DATABASE_NAME)
 
     setDrizzle(db)
     runMigrations(db, migrations)

@@ -21,6 +21,11 @@ vi.mock('expo-sqlite', () => ({
     openDatabaseAsync: (...args: unknown[]) => mockOpenDatabaseAsync(...args),
 }))
 
+const mockDrizzleInstance = {} as Record<string, unknown>
+vi.mock('drizzle-orm/expo-sqlite', () => ({
+    drizzle: () => mockDrizzleInstance,
+}))
+
 describe('RNDatabaseService', () => {
     let service: RNDatabaseService
 
@@ -56,6 +61,22 @@ describe('RNDatabaseService', () => {
             expect(mockOpenDatabaseAsync).toHaveBeenCalledTimes(2)
             expect(first.driver).toBe(mockDb)
             expect(second.driver).toBe(secondMockDb)
+        })
+    })
+
+    describe('getDatabase', () => {
+        it('returns a drizzle database instance', async () => {
+            const result = await service.getDatabase('test.db')
+
+            expect(mockOpenDatabaseAsync).toHaveBeenCalledWith('test.db')
+            expect(result).toBe(mockDrizzleInstance)
+        })
+
+        it('reuses the same underlying connection', async () => {
+            await service.getDatabase('test.db')
+            await service.getDatabase('test.db')
+
+            expect(mockOpenDatabaseAsync).toHaveBeenCalledTimes(1)
         })
     })
 

@@ -11,9 +11,11 @@
  */
 
 import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite'
+import { drizzle } from 'drizzle-orm/expo-sqlite'
 import type {
     DatabaseService,
     DatabaseDriver,
+    DrizzleDatabase,
 } from '@perawallet/wallet-extension-platform'
 
 class ExpoSQLiteDatabaseDriver implements DatabaseDriver {
@@ -24,14 +26,15 @@ export class RNDatabaseService implements DatabaseService {
     private databases = new Map<string, SQLiteDatabase>()
 
     async open(name: string): Promise<DatabaseDriver> {
-        let db = this.databases.get(name)
-
-        if (!db) {
-            db = await openDatabaseAsync(name)
-            this.databases.set(name, db)
-        }
+        const db = await this.getOrOpen(name)
 
         return new ExpoSQLiteDatabaseDriver(db)
+    }
+
+    async getDatabase(name: string): Promise<DrizzleDatabase> {
+        const db = await this.getOrOpen(name)
+
+        return drizzle(db)
     }
 
     async close(name: string): Promise<void> {
@@ -41,5 +44,16 @@ export class RNDatabaseService implements DatabaseService {
             await db.closeAsync()
             this.databases.delete(name)
         }
+    }
+
+    private async getOrOpen(name: string): Promise<SQLiteDatabase> {
+        let db = this.databases.get(name)
+
+        if (!db) {
+            db = await openDatabaseAsync(name)
+            this.databases.set(name, db)
+        }
+
+        return db
     }
 }

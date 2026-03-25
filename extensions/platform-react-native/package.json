@@ -31,6 +31,7 @@
     "@react-native-firebase/remote-config": "^23.8.6",
     "@notifee/react-native": "^9.1.8",
     "@sbaiahmed1/react-native-biometrics": "^0.11.0",
+    "drizzle-orm": "catalog:",
     "expo-sqlite": "~14.0.0",
     "expo-application": "^7.0.8",
     "expo-device": "^8.0.10",

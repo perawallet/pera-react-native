@@ -10,11 +10,16 @@
  limitations under the License
  */
 
+import type { BaseSQLiteDatabase } from 'drizzle-orm/sqlite-core'
+
+export type DrizzleDatabase = BaseSQLiteDatabase<'sync', unknown>
+
 export interface DatabaseDriver {
     readonly driver: unknown
 }
 
 export interface DatabaseService {
     open(name: string): Promise<DatabaseDriver>
+    getDatabase(name: string): Promise<DrizzleDatabase>
     close(name: string): Promise<void>
 }

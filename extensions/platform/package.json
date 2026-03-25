@@ -24,7 +24,8 @@
     "react-dom": "catalog:",
     "zustand": "catalog:",
     "@tanstack/react-query": "catalog:",
-    "zod": "catalog:"
+    "zod": "catalog:",
+    "drizzle-orm": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:",
