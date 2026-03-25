@@ -176,7 +176,9 @@ export function getTransactionHistory({
     }
 
     if (beforeRoundTime !== undefined) {
-        conditions.push(lt(AccountTransactionsSchema.roundTime, beforeRoundTime))
+        conditions.push(
+            lt(AccountTransactionsSchema.roundTime, beforeRoundTime),
+        )
     }
 
     const rows = db
@@ -201,8 +203,14 @@ export function getTransactionHistory({
         .innerJoin(
             TransactionsSchema,
             and(
-                eq(AccountTransactionsSchema.transactionId, TransactionsSchema.id),
-                eq(AccountTransactionsSchema.network, TransactionsSchema.network),
+                eq(
+                    AccountTransactionsSchema.transactionId,
+                    TransactionsSchema.id,
+                ),
+                eq(
+                    AccountTransactionsSchema.network,
+                    TransactionsSchema.network,
+                ),
             ),
         )
         .where(and(...conditions))

@@ -12,18 +12,11 @@
 
 import { useMemo, useRef } from 'react'
 import { useQueries } from '@tanstack/react-query'
-import {
-    fetchAssets,
-    fetchPublicAssetDetails,
-    transformAssetResponse,
-    transformPublicAssetResponse,
-} from '../api'
-import { ALGO_ASSET_ID, type PeraAsset } from '../models'
+import { type PeraAsset } from '../models'
 import { DEFAULT_PAGE_SIZE, partition } from '@perawallet/wallet-core-shared'
-import { getAlgoQueryKey, getAssetsQueryKey } from './querykeys'
-import { AssetsResponse, PublicAssetResponse } from '../api/assets/schema'
+import { getAssetsQueryKey } from './querykeys'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { getCachedAssets, useAssetsCacheSync } from './useAssetsCache'
+import { getAssetsByIds } from '../db'
 
 type UseAssetsQueryResult = {
     data: Map<string, PeraAsset>
@@ -47,27 +40,11 @@ export const useAssetsQuery = (ids: string[]): UseAssetsQueryResult => {
 
     const queryDefinitions = useMemo(() => {
         const chunks = partition(stableIds, DEFAULT_PAGE_SIZE)
-        return [
-            ...chunks.map(chunk => ({
-                queryKey: getAssetsQueryKey(chunk, network),
-                queryFn: async () => fetchAssets(chunk, network),
-                select: (data: AssetsResponse) => ({
-                    results: data.results.map(transformAssetResponse),
-                    next: data.next,
-                    previous: data.previous,
-                }),
-            })),
-            {
-                queryKey: getAlgoQueryKey(network),
-                queryFn: async () =>
-                    fetchPublicAssetDetails(ALGO_ASSET_ID, network),
-                select: (data: PublicAssetResponse) => ({
-                    results: [transformPublicAssetResponse(data)],
-                    next: null,
-                    previous: null,
-                }),
-            },
-        ]
+        return chunks.map(chunk => ({
+            queryKey: getAssetsQueryKey(chunk, network),
+            staleTime: Infinity,
+            queryFn: () => getAssetsByIds({ assetIds: chunk, network }),
+        }))
     }, [stableIds, network])
 
     // notifyOnChangeProps: 'all' disables Proxy-based property tracking in TanStack Query.
@@ -85,14 +62,8 @@ export const useAssetsQuery = (ids: string[]): UseAssetsQueryResult => {
         const isFetched = queries.some(query => query.isFetched)
         const assets: Map<string, PeraAsset> = new Map()
 
-        if (isPending && !isFetched) {
-            const cached = getCachedAssets(stableIds, network)
-
-            cached.forEach((asset, id) => assets.set(id, asset))
-        }
-
         queries.forEach(query => {
-            query.data?.results?.forEach(asset => {
+            query.data?.forEach(asset => {
                 assets.set(asset.assetId, asset)
             })
         })
@@ -104,9 +75,7 @@ export const useAssetsQuery = (ids: string[]): UseAssetsQueryResult => {
             isRefetching: queries.some(query => query.isRefetching),
             isError: queries.some(query => query.isError),
         }
-    }, [queries, stableIds, network])
-
-    useAssetsCacheSync(result.data, result.isFetched, network)
+    }, [queries])
 
     return result
 }

@@ -8,6 +8,13 @@
       "when": 1774369705948,
       "tag": "0000_busy_hemingway",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1774900000000,
+      "tag": "0001_sync_tables",
+      "breakpoints": true
     }
   ]
 }

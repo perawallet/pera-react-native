@@ -12,17 +12,12 @@
 
 import { useMemo, useRef } from 'react'
 import { useQueries } from '@tanstack/react-query'
-import { ALGO_ASSET_ID, type AssetPrices } from '../models'
-import {
-    fetchAssetPrices,
-    fetchPublicAssetDetails,
-    transformAssetPriceResponse,
-} from '../api'
-import type { AssetPriceResponse } from '../api'
+import { type AssetPrices } from '../models'
+import { transformAssetPriceResponse } from '../api'
 import { DEFAULT_PAGE_SIZE, partition } from '@perawallet/wallet-core-shared'
 import { getAssetPricesQueryKey } from './querykeys'
-import { PublicAssetResponse } from '../api/assets/schema'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { getAssetPricesByIds } from '../db'
 
 type UseAssetPricesQueryResult = {
     data: AssetPrices
@@ -48,38 +43,14 @@ export const useAssetPricesQuery = (
     const stableIds = idsRef.current.ids
 
     const queriesDefinitions = useMemo(() => {
-        const chunks = partition(
-            stableIds.filter(id => id !== ALGO_ASSET_ID),
-            DEFAULT_PAGE_SIZE,
-        )
+        const chunks = partition(stableIds, DEFAULT_PAGE_SIZE)
 
-        return [
-            ...chunks.map(chunk => ({
-                queryKey: getAssetPricesQueryKey(chunk, network),
-                enabled: enabled ?? true,
-                queryFn: async () => fetchAssetPrices(chunk, network),
-                select: (data: { results: AssetPriceResponse[] }) => ({
-                    results: data.results.map(asset => ({
-                        asset_id: `${asset.asset_id}`,
-                        usd_value: asset.usd_value,
-                    })),
-                }),
-            })),
-            {
-                queryKey: getAssetPricesQueryKey([ALGO_ASSET_ID], network),
-                enabled: enabled ?? true,
-                queryFn: async () =>
-                    fetchPublicAssetDetails(ALGO_ASSET_ID, network),
-                select: (data: PublicAssetResponse) => ({
-                    results: [
-                        {
-                            asset_id: ALGO_ASSET_ID,
-                            usd_value: data.usd_value ?? '0',
-                        },
-                    ],
-                }),
-            },
-        ]
+        return chunks.map(chunk => ({
+            queryKey: getAssetPricesQueryKey(chunk, network),
+            enabled: enabled ?? true,
+            staleTime: Infinity,
+            queryFn: () => getAssetPricesByIds({ assetIds: chunk, network }),
+        }))
     }, [stableIds, enabled, network])
 
     // notifyOnChangeProps: 'all' disables Proxy-based property tracking in TanStack Query.
@@ -95,9 +66,12 @@ export const useAssetPricesQuery = (
     return useMemo(() => {
         const assetPrices: AssetPrices = new Map()
         queries.forEach(query => {
-            query.data?.results?.forEach((asset: AssetPriceResponse) => {
-                const assetPrice = transformAssetPriceResponse(asset)
-                assetPrices.set(asset.asset_id.toString(), assetPrice)
+            query.data?.forEach(row => {
+                const assetPrice = transformAssetPriceResponse({
+                    asset_id: row.assetId,
+                    usd_value: row.usdPrice,
+                })
+                assetPrices.set(row.assetId, assetPrice)
             })
         })
         return {

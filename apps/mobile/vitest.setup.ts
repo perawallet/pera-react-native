@@ -1798,6 +1798,28 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
 
 vi.mock('@perawallet/wallet-core-polling', () => ({
     usePolling: vi.fn(),
+    usePollingStore: {
+        getState: vi.fn(() => ({
+            lastRefreshedRound: null,
+            setLastRefreshedRound: vi.fn(),
+        })),
+    },
+    sendShouldRefreshRequest: vi.fn(() =>
+        Promise.resolve({ refresh: false, round: null }),
+    ),
+}))
+
+vi.mock('@perawallet/wallet-core-sync', () => ({
+    initializeSyncService: vi.fn(() => ({
+        start: vi.fn(),
+        stop: vi.fn(),
+        isRunning: vi.fn(() => false),
+    })),
+    getSyncService: vi.fn(() => ({
+        start: vi.fn(),
+        stop: vi.fn(),
+        isRunning: vi.fn(() => false),
+    })),
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({

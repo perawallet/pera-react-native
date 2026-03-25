@@ -26,11 +26,7 @@ import { useToast } from '@hooks/useToast'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useDevice } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { usePolling } from '@perawallet/wallet-core-polling'
-import {
-    useAllAccounts,
-    useActiveAccountBalanceInvalidator,
-} from '@perawallet/wallet-core-accounts'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useNetworkStatus, useNetworkStatusListener } from '@modules/network'
 import { WebViewOverlay } from '@modules/webview'
@@ -44,6 +40,7 @@ import {
     getAppStatePlatform,
     getPollingTransitionAction,
 } from '@utils/app-state'
+import { getSyncService } from '@perawallet/wallet-core-sync'
 
 export type RootComponentProps = {
     fcmToken: string | null
@@ -108,45 +105,36 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     const theme = getTheme(isDarkMode ? 'dark' : 'light')
     const { network } = useNetwork()
     const { registerDevice } = useDevice()
-    const { invalidateActiveAccount } = useActiveAccountBalanceInvalidator()
-    const handlePollingRefresh = useCallback(() => {
-        invalidateActiveAccount()
-    }, [invalidateActiveAccount])
-    const { startPolling, stopPolling } = usePolling({
-        onRefresh: handlePollingRefresh,
-    })
     const accounts = useAllAccounts()
 
     const appState = useRef(AppState.currentState)
     const appStatePlatform = useRef(getAppStatePlatform()).current
 
+    const runSyncAction = useCallback((action: 'start' | 'stop') => {
+        try {
+            const syncService = getSyncService()
+            if (action === 'start') {
+                syncService.start()
+            } else {
+                syncService.stop()
+            }
+        } catch (error) {
+            logger.error('Sync action failed in RootComponent', {
+                source: 'RootComponent',
+                action,
+                error,
+            })
+        }
+    }, [])
+
     useEffect(() => {
         //TODO we should move the registerDevice stuff into the wallet-core somewhere somehow - maybe in setAccounts or something
         const addresses = accounts?.map(account => account.address) ?? []
-        const runPollingAction = async (action: 'start' | 'stop') => {
-            try {
-                if (action === 'start') {
-                    await startPolling()
-                } else {
-                    await stopPolling()
-                }
-            } catch (error) {
-                // Prevent polling failures from bubbling to top-level handlers.
-                logger.error(
-                    'Polling action failed in RootComponent listener',
-                    {
-                        source: 'RootComponent',
-                        action,
-                        error,
-                    },
-                )
-            }
-        }
 
         registerDevice(addresses)
 
         if (!addresses.length) {
-            void runPollingAction('stop')
+            runSyncAction('stop')
         } else if (config.pollingEnabled) {
             const subscription = AppState.addEventListener(
                 'change',
@@ -159,9 +147,9 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
                     )
 
                     if (action === 'start') {
-                        void runPollingAction('start')
+                        runSyncAction('start')
                     } else if (action === 'stop') {
-                        void runPollingAction('stop')
+                        runSyncAction('stop')
                     }
 
                     appState.current = nextAppState
@@ -169,18 +157,11 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
             )
 
             return () => {
-                void runPollingAction('stop')
+                runSyncAction('stop')
                 subscription.remove()
             }
         }
-    }, [
-        appStatePlatform,
-        network,
-        accounts,
-        registerDevice,
-        startPolling,
-        stopPolling,
-    ])
+    }, [appStatePlatform, network, accounts, registerDevice, runSyncAction])
 
     return (
         <ThemeProvider theme={theme}>

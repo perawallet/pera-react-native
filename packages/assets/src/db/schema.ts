@@ -36,3 +36,14 @@ export const AssetsSchema = sqliteTable(
     },
     table => [primaryKey({ columns: [table.assetId, table.network] })],
 )
+
+export const AssetPricesSchema = sqliteTable(
+    'asset_prices',
+    {
+        assetId: text('asset_id').notNull(),
+        network: text('network').notNull(),
+        usdPrice: text('usd_price').notNull().default('0'),
+        updatedAt: integer('updated_at').notNull(),
+    },
+    table => [primaryKey({ columns: [table.assetId, table.network] })],
+)

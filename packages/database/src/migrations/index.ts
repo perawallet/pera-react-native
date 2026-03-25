@@ -13,12 +13,14 @@
 import type { MigrationConfig } from '../migrator'
 
 import m0000 from './0000_busy_hemingway.sql?raw'
+import m0001 from './0001_sync_tables.sql?raw'
 import journal from './meta/_journal.json'
 
 const migrations: MigrationConfig = {
     journal,
     migrations: {
         '0000_busy_hemingway': m0000,
+        '0001_sync_tables': m0001,
     },
 }
 

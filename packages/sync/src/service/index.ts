@@ -10,14 +10,7 @@
  limitations under the License
  */
 
-export { AccountAssetHoldingsSchema, AccountBalancesSchema } from './schema'
-export {
-    upsertAccountHoldings,
-    getAccountHoldings,
-    upsertAccountBalance,
-    getAccountBalance,
-    getAllAccountBalances,
-    getAllAssetIdsForNetwork,
-    type HoldingRow,
-    type AccountBalanceRow,
-} from './repository'
+export { SyncService } from './sync-service'
+export { fetchAndPersistAccount } from './account-syncer'
+export { fetchAndPersistAssets } from './asset-syncer'
+export { fetchAndPersistPrices } from './price-syncer'

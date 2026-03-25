@@ -47,6 +47,7 @@
     "@perawallet/wallet-core-messages": "workspace:*",
     "@perawallet/wallet-core-multisig": "workspace:*",
     "@perawallet/wallet-core-polling": "workspace:*",
+    "@perawallet/wallet-core-sync": "workspace:*",
     "@perawallet/wallet-core-projects": "workspace:*",
     "@perawallet/wallet-core-remote-config": "workspace:*",
     "@perawallet/wallet-core-security": "workspace:*",

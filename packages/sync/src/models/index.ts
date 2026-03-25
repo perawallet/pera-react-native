@@ -10,14 +10,8 @@
  limitations under the License
  */
 
-export { AccountAssetHoldingsSchema, AccountBalancesSchema } from './schema'
-export {
-    upsertAccountHoldings,
-    getAccountHoldings,
-    upsertAccountBalance,
-    getAccountBalance,
-    getAllAccountBalances,
-    getAllAssetIdsForNetwork,
-    type HoldingRow,
-    type AccountBalanceRow,
-} from './repository'
+import type { QueryClient } from '@tanstack/react-query'
+
+export type SyncServiceDeps = {
+    queryClient: QueryClient
+}

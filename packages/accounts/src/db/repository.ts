@@ -10,12 +10,12 @@
  limitations under the License
  */
 
-import { eq, and } from 'drizzle-orm'
+import { eq, and, inArray } from 'drizzle-orm'
 import {
     getDatabase,
     type DrizzleDatabase,
 } from '@perawallet/wallet-core-database'
-import { AccountAssetHoldingsSchema } from './schema'
+import { AccountAssetHoldingsSchema, AccountBalancesSchema } from './schema'
 
 export type HoldingRow = {
     assetId: string
@@ -83,4 +83,148 @@ export function getAccountHoldings({
             ),
         )
         .all()
+}
+
+export type AccountBalanceRow = {
+    accountAddress: string
+    algoBalanceMicro: string
+    totalAssetsOptedIn: number
+    totalCreatedAssets: number
+    totalAppsOptedIn: number
+    authAddress: string | null
+}
+
+type UpsertAccountBalanceParams = {
+    db?: DrizzleDatabase
+    accountAddress: string
+    network: string
+    algoBalanceMicro: string
+    totalAssetsOptedIn: number
+    totalCreatedAssets: number
+    totalAppsOptedIn: number
+    authAddress: string | null
+}
+
+export function upsertAccountBalance({
+    db = getDatabase(),
+    accountAddress,
+    network,
+    algoBalanceMicro,
+    totalAssetsOptedIn,
+    totalCreatedAssets,
+    totalAppsOptedIn,
+    authAddress,
+}: UpsertAccountBalanceParams): void {
+    const now = Date.now()
+
+    db.insert(AccountBalancesSchema)
+        .values({
+            accountAddress,
+            network,
+            algoBalanceMicro,
+            totalAssetsOptedIn,
+            totalCreatedAssets,
+            totalAppsOptedIn,
+            authAddress,
+            updatedAt: now,
+        })
+        .onConflictDoUpdate({
+            target: [
+                AccountBalancesSchema.accountAddress,
+                AccountBalancesSchema.network,
+            ],
+            set: {
+                algoBalanceMicro,
+                totalAssetsOptedIn,
+                totalCreatedAssets,
+                totalAppsOptedIn,
+                authAddress,
+                updatedAt: now,
+            },
+        })
+        .run()
+}
+
+type GetAccountBalanceParams = {
+    db?: DrizzleDatabase
+    accountAddress: string
+    network: string
+}
+
+export function getAccountBalance({
+    db = getDatabase(),
+    accountAddress,
+    network,
+}: GetAccountBalanceParams): AccountBalanceRow | undefined {
+    const rows = db
+        .select({
+            accountAddress: AccountBalancesSchema.accountAddress,
+            algoBalanceMicro: AccountBalancesSchema.algoBalanceMicro,
+            totalAssetsOptedIn: AccountBalancesSchema.totalAssetsOptedIn,
+            totalCreatedAssets: AccountBalancesSchema.totalCreatedAssets,
+            totalAppsOptedIn: AccountBalancesSchema.totalAppsOptedIn,
+            authAddress: AccountBalancesSchema.authAddress,
+        })
+        .from(AccountBalancesSchema)
+        .where(
+            and(
+                eq(AccountBalancesSchema.accountAddress, accountAddress),
+                eq(AccountBalancesSchema.network, network),
+            ),
+        )
+        .all()
+
+    return rows[0]
+}
+
+type GetAllAccountBalancesParams = {
+    db?: DrizzleDatabase
+    accountAddresses: string[]
+    network: string
+}
+
+export function getAllAccountBalances({
+    db = getDatabase(),
+    accountAddresses,
+    network,
+}: GetAllAccountBalancesParams): AccountBalanceRow[] {
+    if (accountAddresses.length === 0) return []
+
+    return db
+        .select({
+            accountAddress: AccountBalancesSchema.accountAddress,
+            algoBalanceMicro: AccountBalancesSchema.algoBalanceMicro,
+            totalAssetsOptedIn: AccountBalancesSchema.totalAssetsOptedIn,
+            totalCreatedAssets: AccountBalancesSchema.totalCreatedAssets,
+            totalAppsOptedIn: AccountBalancesSchema.totalAppsOptedIn,
+            authAddress: AccountBalancesSchema.authAddress,
+        })
+        .from(AccountBalancesSchema)
+        .where(
+            and(
+                inArray(AccountBalancesSchema.accountAddress, accountAddresses),
+                eq(AccountBalancesSchema.network, network),
+            ),
+        )
+        .all()
+}
+
+type GetAllHoldingsForNetworkParams = {
+    db?: DrizzleDatabase
+    network: string
+}
+
+export function getAllAssetIdsForNetwork({
+    db = getDatabase(),
+    network,
+}: GetAllHoldingsForNetworkParams): string[] {
+    const rows = db
+        .selectDistinct({
+            assetId: AccountAssetHoldingsSchema.assetId,
+        })
+        .from(AccountAssetHoldingsSchema)
+        .where(eq(AccountAssetHoldingsSchema.network, network))
+        .all()
+
+    return rows.map(r => r.assetId)
 }

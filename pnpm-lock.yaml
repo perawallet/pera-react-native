@@ -288,6 +288,9 @@ importers:
       '@perawallet/wallet-core-swaps':
         specifier: workspace:*
         version: link:../../packages/swaps
+      '@perawallet/wallet-core-sync':
+        specifier: workspace:*
+        version: link:../../packages/sync
       '@perawallet/wallet-core-transactions':
         specifier: workspace:*
         version: link:../../packages/transactions
@@ -1990,6 +1993,64 @@ importers:
       '@testing-library/react':
         specifier: 'catalog:'
         version: 16.3.0(@testing-library/dom@10.4.1)(@types/react@19.2.14)(react-dom@19.2.0(react@19.2.0))(react@19.2.0)
+      '@types/react':
+        specifier: 'catalog:'
+        version: 19.2.14
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vite:
+        specifier: 'catalog:'
+        version: 7.3.1(@types/node@20.19.37)(jiti@2.5.1)(lightningcss@1.32.0)(terser@5.46.0)(yaml@2.8.2)
+      vite-plugin-dts:
+        specifier: ^4.5.4
+        version: 4.5.4(@types/node@20.19.37)(rollup@4.59.0)(typescript@5.9.3)(vite@7.3.1(@types/node@20.19.37)(jiti@2.5.1)(lightningcss@1.32.0)(terser@5.46.0)(yaml@2.8.2))
+      vitest:
+        specifier: 'catalog:'
+        version: 4.0.16(@types/node@20.19.37)(jiti@2.5.1)(jsdom@27.4.0(@noble/hashes@2.0.1))(lightningcss@1.32.0)(msw@2.12.10(@types/node@20.19.37)(typescript@5.9.3))(terser@5.46.0)(yaml@2.8.2)
+
+  packages/sync:
+    dependencies:
+      '@algorandfoundation/algokit-utils':
+        specifier: 'catalog:'
+        version: 10.0.0-alpha.40
+      '@babel/runtime':
+        specifier: 'catalog:'
+        version: 7.28.6
+      '@perawallet/wallet-core-accounts':
+        specifier: workspace:*
+        version: link:../accounts
+      '@perawallet/wallet-core-assets':
+        specifier: workspace:*
+        version: link:../assets
+      '@perawallet/wallet-core-blockchain':
+        specifier: workspace:*
+        version: link:../blockchain
+      '@perawallet/wallet-core-database':
+        specifier: workspace:*
+        version: link:../database
+      '@perawallet/wallet-core-polling':
+        specifier: workspace:*
+        version: link:../polling
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@perawallet/wallet-extension-provider':
+        specifier: workspace:*
+        version: link:../../extensions/provider
+      '@tanstack/react-query':
+        specifier: 'catalog:'
+        version: 5.90.21(react@19.2.0)
+      decimal.js:
+        specifier: 'catalog:'
+        version: 10.6.0
+    devDependencies:
+      '@perawallet/wallet-core-devtools':
+        specifier: workspace:*
+        version: link:../devtools
+      '@perawallet/wallet-extension-platform':
+        specifier: workspace:*
+        version: link:../../extensions/platform
       '@types/react':
         specifier: 'catalog:'
         version: 19.2.14

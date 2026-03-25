@@ -17,7 +17,7 @@ import {
     type DrizzleDatabase,
 } from '@perawallet/wallet-core-database'
 import type { PeraAsset, PeraAssetMetadata } from '../models'
-import { AssetsSchema } from './schema'
+import { AssetsSchema, AssetPricesSchema } from './schema'
 
 type AssetRow = typeof AssetsSchema.$inferInsert
 
@@ -136,9 +136,79 @@ export function getAssetsByIds({
         })
         .from(AssetsSchema)
         .where(
-            and(inArray(AssetsSchema.assetId, assetIds), eq(AssetsSchema.network, network)),
+            and(
+                inArray(AssetsSchema.assetId, assetIds),
+                eq(AssetsSchema.network, network),
+            ),
         )
         .all()
 
     return rows.map(fromDb)
+}
+
+export type AssetPriceRow = {
+    assetId: string
+    usdPrice: string
+}
+
+type UpsertAssetPricesParams = {
+    db?: DrizzleDatabase
+    prices: AssetPriceRow[]
+    network: string
+}
+
+export function upsertAssetPrices({
+    db = getDatabase(),
+    prices,
+    network,
+}: UpsertAssetPricesParams): void {
+    if (prices.length === 0) return
+
+    const now = Date.now()
+
+    for (const price of prices) {
+        db.insert(AssetPricesSchema)
+            .values({
+                assetId: price.assetId,
+                network,
+                usdPrice: price.usdPrice,
+                updatedAt: now,
+            })
+            .onConflictDoUpdate({
+                target: [AssetPricesSchema.assetId, AssetPricesSchema.network],
+                set: {
+                    usdPrice: price.usdPrice,
+                    updatedAt: now,
+                },
+            })
+            .run()
+    }
+}
+
+type GetAssetPricesByIdsParams = {
+    db?: DrizzleDatabase
+    assetIds: string[]
+    network: string
+}
+
+export function getAssetPricesByIds({
+    db = getDatabase(),
+    assetIds,
+    network,
+}: GetAssetPricesByIdsParams): AssetPriceRow[] {
+    if (assetIds.length === 0) return []
+
+    return db
+        .select({
+            assetId: AssetPricesSchema.assetId,
+            usdPrice: AssetPricesSchema.usdPrice,
+        })
+        .from(AssetPricesSchema)
+        .where(
+            and(
+                inArray(AssetPricesSchema.assetId, assetIds),
+                eq(AssetPricesSchema.network, network),
+            ),
+        )
+        .all()
 }

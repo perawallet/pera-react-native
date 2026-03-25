@@ -13,7 +13,7 @@
 import React, { useEffect, useState } from 'react'
 import './i18n'
 import { Text } from 'react-native'
-import { QueryProvider } from './providers/QueryProvider'
+import { QueryProvider, queryClient } from './providers/QueryProvider'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import { Persister } from '@tanstack/react-query-persist-client'
 import {
@@ -21,6 +21,7 @@ import {
     algorandSafeQueryParse,
 } from '@perawallet/wallet-core-blockchain'
 import { initializeDatabase } from '@perawallet/wallet-core-database'
+import { initializeSyncService } from '@perawallet/wallet-core-sync'
 import { createCrashReportingErrorReporter } from '@perawallet/wallet-extension-platform'
 import {
     getProvider,
@@ -76,6 +77,8 @@ const AppContent = () => {
                 setFcmToken(token ?? null)
 
                 await initializeDatabase(provider.database)
+
+                initializeSyncService({ queryClient })
 
                 updateQueryHeaders()
 

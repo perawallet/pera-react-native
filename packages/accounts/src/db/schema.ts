@@ -27,3 +27,26 @@ export const AccountAssetHoldingsSchema = sqliteTable(
         }),
     ],
 )
+
+export const AccountBalancesSchema = sqliteTable(
+    'account_balances',
+    {
+        accountAddress: text('account_address').notNull(),
+        network: text('network').notNull(),
+        algoBalanceMicro: text('algo_balance_micro').notNull().default('0'),
+        totalAssetsOptedIn: integer('total_assets_opted_in')
+            .notNull()
+            .default(0),
+        totalCreatedAssets: integer('total_created_assets')
+            .notNull()
+            .default(0),
+        totalAppsOptedIn: integer('total_apps_opted_in').notNull().default(0),
+        authAddress: text('auth_address'),
+        updatedAt: integer('updated_at').notNull(),
+    },
+    table => [
+        primaryKey({
+            columns: [table.accountAddress, table.network],
+        }),
+    ],
+)

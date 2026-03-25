@@ -14,25 +14,18 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { useAssetsQuery } from '../useAssetsQuery'
 import { getAssetsQueryKey, getAlgoQueryKey } from '../querykeys'
-import { ALGO_ASSET_ID } from '../../models'
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
+import Decimal from 'decimal.js'
 
-// Mock endpoints
 const mocks = vi.hoisted(() => ({
-    fetchAssets: vi.fn(),
-    fetchPublicAssetDetails: vi.fn(),
+    getAssetsByIds: vi.fn(),
     useNetwork: vi.fn(),
 }))
 
-vi.mock('../../api', async importOriginal => {
-    const actual = await importOriginal<typeof import('../../api')>()
-    return {
-        ...actual,
-        fetchAssets: mocks.fetchAssets,
-        fetchPublicAssetDetails: mocks.fetchPublicAssetDetails,
-    }
-})
+vi.mock('../../db', () => ({
+    getAssetsByIds: mocks.getAssetsByIds,
+}))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: mocks.useNetwork,
@@ -44,6 +37,7 @@ describe('useAssetsQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
+        mocks.getAssetsByIds.mockReturnValue([])
         queryClient = new QueryClient({
             defaultOptions: {
                 queries: {
@@ -79,46 +73,19 @@ describe('useAssetsQuery', () => {
     })
 
     describe('useAssetsQuery hook', () => {
-        const mockAssetResponse = {
-            results: [
-                {
-                    asset_id: 123,
-                    name: 'Test Asset',
-                    unit_name: 'TST',
-                    fraction_decimals: 6,
-                    total: '1000000',
-                    is_deleted: false,
-                    verification_tier: 'unverified',
-                    creator: { address: 'CREATOR123' },
-                    category: null,
-                    is_verified: false,
-                    explorer_url: null,
-                    collectible: null,
-                    type: null,
-                    labels: null,
-                    logo: null,
-                },
-            ],
-            next: null,
-            previous: null,
-        }
+        const mockDbAssets = [
+            {
+                assetId: '123',
+                name: 'Test Asset',
+                unitName: 'TST',
+                decimals: 6,
+                totalSupply: Decimal('1000000'),
+                creator: { address: 'CREATOR123' },
+            },
+        ]
 
-        const mockAlgoResponse = {
-            asset_id: 0,
-            name: 'Algorand',
-            unit_name: 'ALGO',
-            fraction_decimals: 6,
-            total_supply_as_str: '10000000000000000',
-            is_deleted: 'false',
-            verification_tier: 'verified',
-            creator_address: '',
-            url: '',
-            logo: null,
-        }
-
-        it('fetches assets and appends ALGO_ASSET', async () => {
-            mocks.fetchAssets.mockResolvedValue(mockAssetResponse)
-            mocks.fetchPublicAssetDetails.mockResolvedValue(mockAlgoResponse)
+        it('reads assets from the database', async () => {
+            mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
 
             const { result } = renderHook(() => useAssetsQuery(['123']), {
                 wrapper: createWrapper(queryClient),
@@ -127,9 +94,12 @@ describe('useAssetsQuery', () => {
             await waitFor(() => expect(result.current.isPending).toBe(false))
 
             expect(result.current.isError).toBe(false)
-            expect(result.current.data.size).toBe(2)
+            expect(result.current.data.size).toBe(1)
 
-            expect(mocks.fetchAssets).toHaveBeenCalled()
+            expect(mocks.getAssetsByIds).toHaveBeenCalledWith({
+                assetIds: ['123'],
+                network: 'mainnet',
+            })
 
             expect(result.current.data.get('123')).toEqual(
                 expect.objectContaining({
@@ -137,17 +107,10 @@ describe('useAssetsQuery', () => {
                     name: 'Test Asset',
                 }),
             )
-            expect(result.current.data.get(ALGO_ASSET_ID)).toEqual(
-                expect.objectContaining({
-                    assetId: ALGO_ASSET_ID,
-                    name: 'Algorand',
-                }),
-            )
         })
 
         it('does not refetch when ids reference changes but content is the same', async () => {
-            mocks.fetchAssets.mockResolvedValue(mockAssetResponse)
-            mocks.fetchPublicAssetDetails.mockResolvedValue(mockAlgoResponse)
+            mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
 
             const { result, rerender } = renderHook(
                 ({ ids }: { ids: string[] }) => useAssetsQuery(ids),
@@ -158,17 +121,16 @@ describe('useAssetsQuery', () => {
             )
 
             await waitFor(() => expect(result.current.isPending).toBe(false))
-            const fetchCount = mocks.fetchAssets.mock.calls.length
+            const callCount = mocks.getAssetsByIds.mock.calls.length
 
             // Rerender with a new array reference containing the same content
             rerender({ ids: ['123'] })
 
-            expect(mocks.fetchAssets.mock.calls.length).toBe(fetchCount)
+            expect(mocks.getAssetsByIds.mock.calls.length).toBe(callCount)
         })
 
         it('refetches when ids content actually changes', async () => {
-            mocks.fetchAssets.mockResolvedValue(mockAssetResponse)
-            mocks.fetchPublicAssetDetails.mockResolvedValue(mockAlgoResponse)
+            mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
 
             const { result, rerender } = renderHook(
                 ({ ids }: { ids: string[] }) => useAssetsQuery(ids),
@@ -179,46 +141,38 @@ describe('useAssetsQuery', () => {
             )
 
             await waitFor(() => expect(result.current.isPending).toBe(false))
-            mocks.fetchAssets.mockClear()
+            mocks.getAssetsByIds.mockClear()
 
-            mocks.fetchAssets.mockResolvedValue({
-                results: [
-                    {
-                        ...mockAssetResponse.results[0],
-                        asset_id: 456,
-                        name: 'Another Asset',
-                    },
-                ],
-                next: null,
-                previous: null,
-            })
+            mocks.getAssetsByIds.mockReturnValue([
+                {
+                    ...mockDbAssets[0],
+                    assetId: '456',
+                    name: 'Another Asset',
+                },
+            ])
 
             rerender({ ids: ['456'] })
 
             await waitFor(() =>
-                expect(mocks.fetchAssets).toHaveBeenCalledWith(
-                    ['456'],
-                    'mainnet',
-                ),
+                expect(mocks.getAssetsByIds).toHaveBeenCalledWith({
+                    assetIds: ['456'],
+                    network: 'mainnet',
+                }),
             )
         })
 
         it('refetches when network changes', async () => {
-            mocks.fetchAssets.mockResolvedValue(mockAssetResponse)
-            mocks.fetchPublicAssetDetails.mockResolvedValue(mockAlgoResponse)
+            mocks.getAssetsByIds.mockReturnValue(mockDbAssets)
 
             const { result } = renderHook(() => useAssetsQuery(['123']), {
                 wrapper: createWrapper(queryClient),
             })
 
             await waitFor(() => expect(result.current.isPending).toBe(false))
-            mocks.fetchAssets.mockClear()
-            mocks.fetchPublicAssetDetails.mockClear()
+            mocks.getAssetsByIds.mockClear()
 
             // Switch to testnet — new queryClient ensures fresh cache
             mocks.useNetwork.mockReturnValue({ network: 'testnet' })
-            mocks.fetchAssets.mockResolvedValue(mockAssetResponse)
-            mocks.fetchPublicAssetDetails.mockResolvedValue(mockAlgoResponse)
 
             const testnetQueryClient = new QueryClient({
                 defaultOptions: { queries: { retry: false } },
@@ -231,7 +185,10 @@ describe('useAssetsQuery', () => {
 
             await waitFor(() => expect(result2.current.isPending).toBe(false))
 
-            expect(mocks.fetchAssets).toHaveBeenCalledWith(['123'], 'testnet')
+            expect(mocks.getAssetsByIds).toHaveBeenCalledWith({
+                assetIds: ['123'],
+                network: 'testnet',
+            })
         })
     })
 })

@@ -17,5 +17,6 @@ export * from './hooks'
 export * from './errors'
 export * from './utils'
 export * from './account-discovery'
+export * from './db'
 
 export { useAccountsStore } from './store'

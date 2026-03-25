@@ -28,16 +28,31 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAccountBalancesQueryKey } from './querykeys'
-import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
-import { persistHoldings } from './useAccountHoldingsCache'
+import { getAccountBalance, getAccountHoldings } from '../db'
 
-//TODO we may not need this query - maybe we should just fetch each account separately
+type AccountDbSnapshot = {
+    algoBalanceMicro: string
+    holdings: Array<{ assetId: string; amount: string }>
+}
+
+function readAccountFromDb(
+    address: string,
+    network: string,
+): AccountDbSnapshot {
+    const balance = getAccountBalance({ accountAddress: address, network })
+    const holdings = getAccountHoldings({ accountAddress: address, network })
+
+    return {
+        algoBalanceMicro: balance?.algoBalanceMicro ?? '0',
+        holdings,
+    }
+}
+
 export const useAccountBalancesQuery = (
     accounts: WalletAccount[],
     enabled?: boolean,
 ): AccountBalancesWithTotals => {
     const { network } = useNetwork()
-    const algokit = useAlgorandClient()
     const hasAccounts = !!accounts?.length
 
     const queries = useMemo(() => {
@@ -49,7 +64,8 @@ export const useAccountBalancesQuery = (
             return {
                 queryKey: getAccountBalancesQueryKey(address, network),
                 enabled: !!address && enabled,
-                queryFn: () => algokit.account.getInformation(address),
+                staleTime: Infinity,
+                queryFn: () => readAccountFromDb(address, network),
             }
         })
     }, [accounts, hasAccounts, enabled, network])
@@ -65,7 +81,7 @@ export const useAccountBalancesQuery = (
     })
 
     const assetIDs = results.flatMap(
-        r => r.data?.assets?.map(a => `${a.assetId}`) ?? [],
+        r => r.data?.holdings?.map(h => h.assetId) ?? [],
     )
     const { data: assets } = useAssetsQuery(assetIDs)
     const { data: assetPrices } = useAssetPricesQuery(assetIDs)
@@ -97,12 +113,11 @@ export const useAccountBalancesQuery = (
             let algoValue = Decimal(0)
 
             const assetBalances: AssetWithAccountBalance[] = []
-            r.data?.assets?.forEach(assetHolding => {
+            r.data?.holdings?.forEach(holding => {
                 const usdAssetPrice =
-                    assetPrices?.get(`${assetHolding.assetId}`)?.usdPrice ??
-                    Decimal(0)
-                const asset = assets.get(`${assetHolding.assetId}`)
-                const assetAmount = Decimal(assetHolding.amount ?? '0').div(
+                    assetPrices?.get(holding.assetId)?.usdPrice ?? Decimal(0)
+                const asset = assets.get(holding.assetId)
+                const assetAmount = Decimal(holding.amount ?? '0').div(
                     Decimal(10).pow(asset?.decimals ?? 0),
                 )
                 const usdAssetValue = assetAmount.times(usdAssetPrice)
@@ -111,7 +126,7 @@ export const useAccountBalancesQuery = (
                     : usdAssetValue.div(usdAlgoPrice)
                 algoValue = algoValue.plus(algoAssetValue)
                 assetBalances.push({
-                    assetId: `${assetHolding.assetId}`,
+                    assetId: holding.assetId,
                     asset: asset,
                     amount: assetAmount,
                     algoValue: algoAssetValue,
@@ -120,7 +135,7 @@ export const useAccountBalancesQuery = (
 
             //Now add algo into the mix
             const algoAmount = toWholeUnits(
-                r.data?.balance?.microAlgos ?? 0n,
+                BigInt(r.data?.algoBalanceMicro ?? '0'),
                 ALGO_ASSET,
             )
             algoValue = algoValue.plus(algoAmount)
@@ -145,19 +160,6 @@ export const useAccountBalancesQuery = (
         const accountBalances: AccountBalances = new Map(
             accounts.map((a, i) => [a.address, accountBalanceList[i]]),
         )
-
-        // Persist holdings to SQLite for cold-start cache
-        results.forEach((r, i) => {
-            if (r.isFetched && r.data?.assets) {
-                const addr = accounts[i].address
-                const holdings = r.data.assets.map(a => ({
-                    assetId: `${a.assetId}`,
-                    amount: `${a.amount ?? '0'}`,
-                }))
-
-                persistHoldings(addr, holdings, network)
-            }
-        })
 
         const portfolioAlgoValue = accountBalanceList.reduce(
             (acc, cur) => acc.plus(cur.algoValue),
