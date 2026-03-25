@@ -28,31 +28,30 @@ import { fetchAndPersistPrices } from './price-syncer'
 const POLL_INTERVAL = 3000
 
 export class SyncService {
-    private timer: ReturnType<typeof setInterval> | null = null
-    private isSyncing = false
+    private timer: ReturnType<typeof setTimeout> | null = null
+    private running = false
 
     constructor(private readonly deps: SyncServiceDeps) {}
 
     start(): void {
-        if (this.timer !== null) return
-        this.timer = setInterval(() => void this.tick(), POLL_INTERVAL)
+        if (this.running) return
+        this.running = true
         void this.tick()
     }
 
     stop(): void {
+        this.running = false
         if (this.timer !== null) {
-            clearInterval(this.timer)
+            clearTimeout(this.timer)
             this.timer = null
         }
     }
 
     isRunning(): boolean {
-        return this.timer !== null
+        return this.running
     }
 
     private async tick(): Promise<void> {
-        if (this.isSyncing) return
-        this.isSyncing = true
         try {
             const shouldRefresh = await this.checkShouldRefresh()
             if (shouldRefresh) {
@@ -62,8 +61,13 @@ export class SyncService {
         } catch (error) {
             logger.warn('Sync tick failed', { error })
         } finally {
-            this.isSyncing = false
+            this.scheduleNextTick()
         }
+    }
+
+    private scheduleNextTick(): void {
+        if (!this.running) return
+        this.timer = setTimeout(() => void this.tick(), POLL_INTERVAL)
     }
 
     private async checkShouldRefresh(): Promise<boolean> {
