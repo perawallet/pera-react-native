@@ -12,7 +12,7 @@
 
 import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
 
-export const transactions = sqliteTable('transactions', {
+export const TransactionsSchema = sqliteTable('transactions', {
     id: text('id').primaryKey(),
     network: text('network').notNull(),
     txType: text('tx_type').notNull(),
@@ -32,7 +32,7 @@ export const transactions = sqliteTable('transactions', {
     updatedAt: integer('updated_at').notNull(),
 })
 
-export const accountTransactions = sqliteTable(
+export const AccountTransactionsSchema = sqliteTable(
     'account_transactions',
     {
         accountAddress: text('account_address').notNull(),

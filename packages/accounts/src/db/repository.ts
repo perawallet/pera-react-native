@@ -15,7 +15,7 @@ import {
     getDrizzle,
     type DrizzleDatabase,
 } from '@perawallet/wallet-core-database'
-import { accountAssetHoldings } from './schema'
+import { AccountAssetHoldingsSchema } from './schema'
 
 export type HoldingRow = {
     assetId: string
@@ -37,17 +37,17 @@ export function upsertAccountHoldings({
 }: UpsertAccountHoldingsParams): void {
     const now = Date.now()
 
-    db.delete(accountAssetHoldings)
+    db.delete(AccountAssetHoldingsSchema)
         .where(
             and(
-                eq(accountAssetHoldings.accountAddress, accountAddress),
-                eq(accountAssetHoldings.network, network),
+                eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
+                eq(AccountAssetHoldingsSchema.network, network),
             ),
         )
         .run()
 
     for (const holding of holdings) {
-        db.insert(accountAssetHoldings)
+        db.insert(AccountAssetHoldingsSchema)
             .values({
                 accountAddress,
                 assetId: holding.assetId,
@@ -72,14 +72,14 @@ export function getAccountHoldings({
 }: GetAccountHoldingsParams): HoldingRow[] {
     return db
         .select({
-            assetId: accountAssetHoldings.assetId,
-            amount: accountAssetHoldings.amount,
+            assetId: AccountAssetHoldingsSchema.assetId,
+            amount: AccountAssetHoldingsSchema.amount,
         })
-        .from(accountAssetHoldings)
+        .from(AccountAssetHoldingsSchema)
         .where(
             and(
-                eq(accountAssetHoldings.accountAddress, accountAddress),
-                eq(accountAssetHoldings.network, network),
+                eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
+                eq(AccountAssetHoldingsSchema.network, network),
             ),
         )
         .all()

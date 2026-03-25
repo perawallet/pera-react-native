@@ -12,7 +12,7 @@
 
 import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
 
-export const accountAssetHoldings = sqliteTable(
+export const AccountAssetHoldingsSchema = sqliteTable(
     'account_asset_holdings',
     {
         accountAddress: text('account_address').notNull(),

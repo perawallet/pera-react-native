@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-export { transactions, accountTransactions } from './schema'
+export { TransactionsSchema, AccountTransactionsSchema } from './schema'
 export {
     upsertTransactions,
     getTransactionHistory,

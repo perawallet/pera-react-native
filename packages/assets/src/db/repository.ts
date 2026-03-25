@@ -17,9 +17,9 @@ import {
     type DrizzleDatabase,
 } from '@perawallet/wallet-core-database'
 import type { PeraAsset, PeraAssetMetadata } from '../models'
-import { assets } from './schema'
+import { AssetsSchema } from './schema'
 
-type AssetRow = typeof assets.$inferInsert
+type AssetRow = typeof AssetsSchema.$inferInsert
 
 function toDb(asset: PeraAsset, network: string): AssetRow {
     const meta = asset.peraMetadata
@@ -86,10 +86,10 @@ export function upsertAssets({
     for (const item of items) {
         const row = toDb(item, network)
 
-        db.insert(assets)
+        db.insert(AssetsSchema)
             .values(row)
             .onConflictDoUpdate({
-                target: [assets.assetId, assets.network],
+                target: [AssetsSchema.assetId, AssetsSchema.network],
                 set: {
                     decimals: row.decimals,
                     creatorAddress: row.creatorAddress,
@@ -124,19 +124,19 @@ export function getAssetsByIds({
 
     const rows = db
         .select({
-            assetId: assets.assetId,
-            decimals: assets.decimals,
-            creatorAddress: assets.creatorAddress,
-            totalSupply: assets.totalSupply,
-            name: assets.name,
-            unitName: assets.unitName,
-            url: assets.url,
-            metadata: assets.metadata,
-            peraMetadataJson: assets.peraMetadataJson,
+            assetId: AssetsSchema.assetId,
+            decimals: AssetsSchema.decimals,
+            creatorAddress: AssetsSchema.creatorAddress,
+            totalSupply: AssetsSchema.totalSupply,
+            name: AssetsSchema.name,
+            unitName: AssetsSchema.unitName,
+            url: AssetsSchema.url,
+            metadata: AssetsSchema.metadata,
+            peraMetadataJson: AssetsSchema.peraMetadataJson,
         })
-        .from(assets)
+        .from(AssetsSchema)
         .where(
-            and(inArray(assets.assetId, assetIds), eq(assets.network, network)),
+            and(inArray(AssetsSchema.assetId, assetIds), eq(AssetsSchema.network, network)),
         )
         .all()
 

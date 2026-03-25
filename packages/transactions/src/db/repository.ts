@@ -16,7 +16,7 @@ import {
     type DrizzleDatabase,
 } from '@perawallet/wallet-core-database'
 import type { TransactionHistoryItem } from '../models/types'
-import { transactions, accountTransactions } from './schema'
+import { TransactionsSchema, AccountTransactionsSchema } from './schema'
 
 function toDb(item: TransactionHistoryItem) {
     return {
@@ -102,14 +102,14 @@ export function upsertTransactions({
     for (const item of items) {
         const row = toDb(item)
 
-        db.insert(transactions)
+        db.insert(TransactionsSchema)
             .values({
                 ...row,
                 network,
                 updatedAt: now,
             })
             .onConflictDoUpdate({
-                target: transactions.id,
+                target: TransactionsSchema.id,
                 set: {
                     txType: row.txType,
                     sender: row.sender,
@@ -136,7 +136,7 @@ export function upsertTransactions({
               ).assetId?.toString() ?? null)
             : null
 
-        db.insert(accountTransactions)
+        db.insert(AccountTransactionsSchema)
             .values({
                 accountAddress,
                 transactionId: item.id,
@@ -167,46 +167,46 @@ export function getTransactionHistory({
     beforeRoundTime,
 }: GetTransactionHistoryParams): TransactionHistoryItem[] {
     const conditions = [
-        eq(accountTransactions.accountAddress, accountAddress),
-        eq(accountTransactions.network, network),
+        eq(AccountTransactionsSchema.accountAddress, accountAddress),
+        eq(AccountTransactionsSchema.network, network),
     ]
 
     if (assetId !== undefined) {
-        conditions.push(eq(accountTransactions.assetId, assetId))
+        conditions.push(eq(AccountTransactionsSchema.assetId, assetId))
     }
 
     if (beforeRoundTime !== undefined) {
-        conditions.push(lt(accountTransactions.roundTime, beforeRoundTime))
+        conditions.push(lt(AccountTransactionsSchema.roundTime, beforeRoundTime))
     }
 
     const rows = db
         .select({
-            id: transactions.id,
-            txType: transactions.txType,
-            sender: transactions.sender,
-            receiver: transactions.receiver,
-            confirmedRound: transactions.confirmedRound,
-            roundTime: transactions.roundTime,
-            fee: transactions.fee,
-            groupId: transactions.groupId,
-            amount: transactions.amount,
-            closeTo: transactions.closeTo,
-            applicationId: transactions.applicationId,
-            innerTransactionCount: transactions.innerTransactionCount,
-            assetJson: transactions.assetJson,
-            swapGroupDetailJson: transactions.swapGroupDetailJson,
-            interpretedMeaningJson: transactions.interpretedMeaningJson,
+            id: TransactionsSchema.id,
+            txType: TransactionsSchema.txType,
+            sender: TransactionsSchema.sender,
+            receiver: TransactionsSchema.receiver,
+            confirmedRound: TransactionsSchema.confirmedRound,
+            roundTime: TransactionsSchema.roundTime,
+            fee: TransactionsSchema.fee,
+            groupId: TransactionsSchema.groupId,
+            amount: TransactionsSchema.amount,
+            closeTo: TransactionsSchema.closeTo,
+            applicationId: TransactionsSchema.applicationId,
+            innerTransactionCount: TransactionsSchema.innerTransactionCount,
+            assetJson: TransactionsSchema.assetJson,
+            swapGroupDetailJson: TransactionsSchema.swapGroupDetailJson,
+            interpretedMeaningJson: TransactionsSchema.interpretedMeaningJson,
         })
-        .from(accountTransactions)
+        .from(AccountTransactionsSchema)
         .innerJoin(
-            transactions,
+            TransactionsSchema,
             and(
-                eq(accountTransactions.transactionId, transactions.id),
-                eq(accountTransactions.network, transactions.network),
+                eq(AccountTransactionsSchema.transactionId, TransactionsSchema.id),
+                eq(AccountTransactionsSchema.network, TransactionsSchema.network),
             ),
         )
         .where(and(...conditions))
-        .orderBy(desc(accountTransactions.roundTime))
+        .orderBy(desc(AccountTransactionsSchema.roundTime))
         .limit(limit)
         .all()
 
@@ -226,13 +226,13 @@ export function getLatestTransactionRoundTime({
 }: GetLatestTransactionRoundTimeParams): number | null {
     const result = db
         .select({
-            maxRoundTime: sql<number>`MAX(${accountTransactions.roundTime})`,
+            maxRoundTime: sql<number>`MAX(${AccountTransactionsSchema.roundTime})`,
         })
-        .from(accountTransactions)
+        .from(AccountTransactionsSchema)
         .where(
             and(
-                eq(accountTransactions.accountAddress, accountAddress),
-                eq(accountTransactions.network, network),
+                eq(AccountTransactionsSchema.accountAddress, accountAddress),
+                eq(AccountTransactionsSchema.network, network),
             ),
         )
         .get()

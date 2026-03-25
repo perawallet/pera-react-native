@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-export { accountAssetHoldings } from './schema'
+export { AccountAssetHoldingsSchema } from './schema'
 export {
     upsertAccountHoldings,
     getAccountHoldings,

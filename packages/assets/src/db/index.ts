@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { assets } from './schema'
+export { AssetsSchema } from './schema'
 export { upsertAssets, getAssetsByIds } from './repository'
