@@ -42,5 +42,8 @@ opencode.json
 .idea/
 .expo/
 
+# Drizzle Kit snapshots
+**/migrations/meta/*_snapshot.json
+
 # Documentation
 docs/ui-automation-test-ids.md
