@@ -14,6 +14,8 @@ import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { AccountMenu } from '../AccountMenu'
 
+const mockInvalidate = vi.fn()
+
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<
@@ -31,6 +33,9 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             portfolioAlgoValue: '0',
             isPending: false,
             accountBalances: new Map(),
+        })),
+        useAccountBalancesInvalidator: vi.fn(() => ({
+            invalidate: mockInvalidate,
         })),
         usePortfolioTotals: vi.fn(() => ({
             portfolioPreferredValue: '0',
@@ -66,6 +71,18 @@ describe('AccountMenu', () => {
 
         expect(screen.getByText('account_menu.title')).toBeTruthy()
         expect(screen.getByTestId('PortfolioView')).toBeTruthy()
+    })
+
+    it('invalidates all account balances on mount', () => {
+        render(
+            <AccountMenu
+                onSelected={vi.fn()}
+                onAddAccount={vi.fn()}
+                onOpenSort={vi.fn()}
+            />,
+        )
+
+        expect(mockInvalidate).toHaveBeenCalledTimes(1)
     })
 
     it('calls onAddAccount when add account button is pressed', () => {

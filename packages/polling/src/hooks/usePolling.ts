@@ -16,7 +16,11 @@ import { useShouldRefreshMutation } from './useShouldRefreshMutation'
 
 const CACHE_CHECK_INTERVAL = 3000
 
-export const usePolling = () => {
+type UsePollingOptions = {
+    onRefresh?: () => void
+}
+
+export const usePolling = (options?: UsePollingOptions) => {
     const setLastRefreshedRound = usePollingStore(
         state => state.setLastRefreshedRound,
     )
@@ -30,15 +34,14 @@ export const usePolling = () => {
             const response = await mutateAsync()
 
             if (response.refresh) {
-                //TODO: can we be a bit more selective of which queries we reset?
-                //queryClient.resetQueries()
                 setLastRefreshedRound(response.round ?? null)
+                options?.onRefresh?.()
             }
         } catch (error) {
             console.log('Polling failed:')
             console.log(error)
         }
-    }, [mutateAsync])
+    }, [mutateAsync, options?.onRefresh])
 
     const stopPolling = useCallback(async () => {
         if (polling) {
