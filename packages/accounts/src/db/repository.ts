@@ -12,7 +12,7 @@
 
 import { eq, and } from 'drizzle-orm'
 import {
-    getDrizzle,
+    getDatabase,
     type DrizzleDatabase,
 } from '@perawallet/wallet-core-database'
 import { AccountAssetHoldingsSchema } from './schema'
@@ -30,7 +30,7 @@ type UpsertAccountHoldingsParams = {
 }
 
 export function upsertAccountHoldings({
-    db = getDrizzle(),
+    db = getDatabase(),
     accountAddress,
     holdings,
     network,
@@ -66,7 +66,7 @@ type GetAccountHoldingsParams = {
 }
 
 export function getAccountHoldings({
-    db = getDrizzle(),
+    db = getDatabase(),
     accountAddress,
     network,
 }: GetAccountHoldingsParams): HoldingRow[] {

@@ -13,7 +13,7 @@
 import { eq, and, inArray } from 'drizzle-orm'
 import Decimal from 'decimal.js'
 import {
-    getDrizzle,
+    getDatabase,
     type DrizzleDatabase,
 } from '@perawallet/wallet-core-database'
 import type { PeraAsset, PeraAssetMetadata } from '../models'
@@ -77,7 +77,7 @@ type UpsertAssetsParams = {
 }
 
 export function upsertAssets({
-    db = getDrizzle(),
+    db = getDatabase(),
     items,
     network,
 }: UpsertAssetsParams): void {
@@ -116,7 +116,7 @@ type GetAssetsByIdsParams = {
 }
 
 export function getAssetsByIds({
-    db = getDrizzle(),
+    db = getDatabase(),
     assetIds,
     network,
 }: GetAssetsByIdsParams): PeraAsset[] {

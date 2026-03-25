@@ -12,7 +12,7 @@
 
 import { eq, and, desc, lt, sql } from 'drizzle-orm'
 import {
-    getDrizzle,
+    getDatabase,
     type DrizzleDatabase,
 } from '@perawallet/wallet-core-database'
 import type { TransactionHistoryItem } from '../models/types'
@@ -90,7 +90,7 @@ type UpsertTransactionsParams = {
 }
 
 export function upsertTransactions({
-    db = getDrizzle(),
+    db = getDatabase(),
     items,
     accountAddress,
     network,
@@ -159,7 +159,7 @@ type GetTransactionHistoryParams = {
 }
 
 export function getTransactionHistory({
-    db = getDrizzle(),
+    db = getDatabase(),
     accountAddress,
     network,
     assetId,
@@ -220,7 +220,7 @@ type GetLatestTransactionRoundTimeParams = {
 }
 
 export function getLatestTransactionRoundTime({
-    db = getDrizzle(),
+    db = getDatabase(),
     accountAddress,
     network,
 }: GetLatestTransactionRoundTimeParams): number | null {

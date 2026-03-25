@@ -24,8 +24,7 @@
   },
   "dependencies": {
     "drizzle-orm": "catalog:",
-    "@perawallet/wallet-extension-platform": "workspace:*",
-    "@perawallet/wallet-extension-provider": "workspace:*"
+    "@perawallet/wallet-extension-platform": "workspace:*"
   },
   "devDependencies": {
     "better-sqlite3": "^11.0.0",

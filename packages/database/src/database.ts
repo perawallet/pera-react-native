@@ -10,20 +10,38 @@
  limitations under the License
  */
 
-import {
-    setDrizzle,
-    runMigrations,
-    migrations,
-} from '@perawallet/wallet-core-database'
-import type { PeraProvider } from '@perawallet/wallet-extension-provider'
+import type {
+    DatabaseService,
+    DrizzleDatabase,
+} from '@perawallet/wallet-extension-platform'
+import { runMigrations } from './migrator'
+import migrations from './migrations'
+
+export type { DrizzleDatabase }
 
 const DATABASE_NAME = 'pera.db'
 
-export const initializeDatabase = async (
-    provider: PeraProvider,
-): Promise<void> => {
-    const db = await provider.database.getDatabase(DATABASE_NAME)
+let instance: DrizzleDatabase | null = null
 
-    setDrizzle(db)
+export const initializeDatabase = async (
+    database: DatabaseService,
+): Promise<void> => {
+    const db = await database.getDatabase(DATABASE_NAME)
+
+    instance = db
     runMigrations(db, migrations)
+}
+
+export const getDatabase = (): DrizzleDatabase => {
+    if (instance === null) {
+        throw new Error(
+            'Database not initialized. Call initializeDatabase() during app bootstrap.',
+        )
+    }
+
+    return instance
+}
+
+export const resetDatabase = (): void => {
+    instance = null
 }

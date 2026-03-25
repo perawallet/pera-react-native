@@ -11,7 +11,7 @@
  */
 
 import { sql } from 'drizzle-orm'
-import type { DrizzleDatabase } from './connection'
+import type { DrizzleDatabase } from '@perawallet/wallet-extension-platform'
 
 export type MigrationConfig = {
     journal: {

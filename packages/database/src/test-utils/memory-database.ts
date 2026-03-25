@@ -12,7 +12,7 @@
 
 import Database from 'better-sqlite3'
 import { drizzle } from 'drizzle-orm/better-sqlite3'
-import { setDrizzle, resetDrizzle, type DrizzleDatabase } from '../connection'
+import type { DrizzleDatabase } from '../database'
 
 type TestDatabase = {
     db: DrizzleDatabase
@@ -23,13 +23,10 @@ export const createTestDatabase = (): TestDatabase => {
     const sqlite = new Database(':memory:')
     const db: DrizzleDatabase = drizzle(sqlite)
 
-    setDrizzle(db)
-
     return {
         db,
         teardown: () => {
             sqlite.close()
-            resetDrizzle()
         },
     }
 }

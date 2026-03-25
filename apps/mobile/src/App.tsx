@@ -20,7 +20,7 @@ import {
     algorandSafeQuerySerialize,
     algorandSafeQueryParse,
 } from '@perawallet/wallet-core-blockchain'
-import { initializeDatabase } from './database'
+import { initializeDatabase } from '@perawallet/wallet-core-database'
 import { createCrashReportingErrorReporter } from '@perawallet/wallet-extension-platform'
 import {
     getProvider,
@@ -75,7 +75,7 @@ const AppContent = () => {
             provider.initialize().then(async ({ token }) => {
                 setFcmToken(token ?? null)
 
-                await initializeDatabase(provider)
+                await initializeDatabase(provider.database)
 
                 updateQueryHeaders()
 
