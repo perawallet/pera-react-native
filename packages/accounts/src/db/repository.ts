@@ -90,6 +90,8 @@ export type AccountBalanceRow = {
     totalAssetsOptedIn: number
     totalCreatedAssets: number
     totalAppsOptedIn: number
+    minBalanceMicro: string
+    status: string
     authAddress: string | null
 }
 
@@ -101,6 +103,8 @@ type UpsertAccountBalanceParams = {
     totalAssetsOptedIn: number
     totalCreatedAssets: number
     totalAppsOptedIn: number
+    minBalanceMicro: string
+    status: string
     authAddress: string | null
 }
 
@@ -112,6 +116,8 @@ export async function upsertAccountBalance({
     totalAssetsOptedIn,
     totalCreatedAssets,
     totalAppsOptedIn,
+    minBalanceMicro,
+    status,
     authAddress,
 }: UpsertAccountBalanceParams): Promise<void> {
     const now = Date.now()
@@ -125,6 +131,8 @@ export async function upsertAccountBalance({
             totalAssetsOptedIn,
             totalCreatedAssets,
             totalAppsOptedIn,
+            minBalanceMicro,
+            status,
             authAddress,
             updatedAt: now,
         })
@@ -138,6 +146,8 @@ export async function upsertAccountBalance({
                 totalAssetsOptedIn,
                 totalCreatedAssets,
                 totalAppsOptedIn,
+                minBalanceMicro,
+                status,
                 authAddress,
                 updatedAt: now,
             },
@@ -163,6 +173,8 @@ export async function getAccountBalance({
             totalAssetsOptedIn: AccountBalancesSchema.totalAssetsOptedIn,
             totalCreatedAssets: AccountBalancesSchema.totalCreatedAssets,
             totalAppsOptedIn: AccountBalancesSchema.totalAppsOptedIn,
+            minBalanceMicro: AccountBalancesSchema.minBalanceMicro,
+            status: AccountBalancesSchema.status,
             authAddress: AccountBalancesSchema.authAddress,
         })
         .from(AccountBalancesSchema)
@@ -197,6 +209,8 @@ export async function getAllAccountBalances({
             totalAssetsOptedIn: AccountBalancesSchema.totalAssetsOptedIn,
             totalCreatedAssets: AccountBalancesSchema.totalCreatedAssets,
             totalAppsOptedIn: AccountBalancesSchema.totalAppsOptedIn,
+            minBalanceMicro: AccountBalancesSchema.minBalanceMicro,
+            status: AccountBalancesSchema.status,
             authAddress: AccountBalancesSchema.authAddress,
         })
         .from(AccountBalancesSchema)

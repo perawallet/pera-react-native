@@ -15,6 +15,7 @@ import type { MigrationConfig } from '../migrator'
 import m0000 from './0000_busy_hemingway.sql?raw'
 import m0001 from './0001_sync_tables.sql?raw'
 import m0002 from './0002_application_id_to_text.sql?raw'
+import m0003 from './0003_account_info_fields.sql?raw'
 import journal from './meta/_journal.json'
 
 const migrations: MigrationConfig = {
@@ -23,6 +24,7 @@ const migrations: MigrationConfig = {
         '0000_busy_hemingway': m0000,
         '0001_sync_tables': m0001,
         '0002_application_id_to_text': m0002,
+        '0003_account_info_fields': m0003,
     },
 }
 

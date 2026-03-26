@@ -1186,6 +1186,9 @@ importers:
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
+      '@perawallet/wallet-core-database':
+        specifier: workspace:*
+        version: link:../database
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
@@ -1198,6 +1201,9 @@ importers:
       decimal.js:
         specifier: 'catalog:'
         version: 10.6.0
+      drizzle-orm:
+        specifier: 'catalog:'
+        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(patch_hash=0a5bc89131bb04637237f25fbb401548193ee15136b17f4867d55b77b12710dd)(expo@55.0.8))(gel@2.2.0)
       react:
         specifier: 'catalog:'
         version: 19.2.0
@@ -2043,6 +2049,9 @@ importers:
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
+      '@perawallet/wallet-core-transactions':
+        specifier: workspace:*
+        version: link:../transactions
       '@perawallet/wallet-extension-provider':
         specifier: workspace:*
         version: link:../../extensions/provider

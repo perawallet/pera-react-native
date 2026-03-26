@@ -17,8 +17,8 @@ import {
     isHDWalletAccount,
     isWatchAccount,
     useHDWalletGroups,
+    useAccountInformationQuery,
 } from '@perawallet/wallet-core-accounts'
-import { useAccountInformationQuery } from '@perawallet/wallet-core-blockchain'
 import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
 import { navigationRef } from '@routes/navigationRef'

@@ -24,6 +24,7 @@ import type { SyncServiceDeps } from '../models'
 import { fetchAndPersistAccount } from './account-syncer'
 import { fetchAndPersistAssets } from './asset-syncer'
 import { fetchAndPersistPrices } from './price-syncer'
+import { fetchAndPersistTransactions } from './transaction-syncer'
 
 const POLL_INTERVAL = 3000
 
@@ -111,6 +112,11 @@ export class SyncService {
             fetchAndPersistAssets(assetIds, network),
             fetchAndPersistPrices(assetIds, network),
         ])
+
+        // 4. Sync recent transactions for each account
+        await Promise.allSettled(
+            accounts.map(a => fetchAndPersistTransactions(a.address, network)),
+        )
     }
 
     private invalidateQueries(): void {
@@ -120,7 +126,11 @@ export class SyncService {
                 if (key.length < 2) return false
 
                 const prefix = key.at(0)
-                return prefix === 'accounts' || prefix === 'assets'
+                return (
+                    prefix === 'accounts' ||
+                    prefix === 'assets' ||
+                    prefix === 'transactions'
+                )
             },
         })
     }

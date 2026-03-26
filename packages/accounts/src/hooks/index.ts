@@ -11,6 +11,7 @@
  */
 
 export * from './useAccountBalancesQuery'
+export * from './useAccountInformationQuery'
 export * from './usePortfolioTotals'
 export * from './useAccountBalancesHistoryQuery'
 export * from './useAccountsAssetBalanceHistoryQuery'

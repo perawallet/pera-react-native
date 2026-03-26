@@ -12,14 +12,31 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
-import { fetchAlgoUsdPrice } from '../api/assets'
+import { sql } from 'drizzle-orm'
+import { getDatabase } from '@perawallet/wallet-core-database'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { currencyQueryKeys } from './querykeys'
 
+const ALGO_ASSET_ID = '0'
+
+async function getAlgoPriceFromDb(network: string): Promise<string> {
+    const db = getDatabase()
+
+    const rows = await db.all<{ usd_price: string }>(
+        sql`SELECT usd_price FROM asset_prices WHERE asset_id = ${ALGO_ASSET_ID} AND network = ${network} LIMIT 1`,
+    )
+
+    return rows[0]?.usd_price ?? '0'
+}
+
 export const useAlgoUsdPriceQuery = (enabled: boolean = true) => {
+    const { network } = useNetwork()
+
     return useQuery({
-        queryKey: currencyQueryKeys.algoUsdPrice,
-        queryFn: ({ signal }) => fetchAlgoUsdPrice({ signal }),
+        queryKey: currencyQueryKeys.algoUsdPrice(network),
+        queryFn: () => getAlgoPriceFromDb(network),
         select: (data: string) => Decimal(data),
+        staleTime: Infinity,
         enabled,
     })
 }

@@ -144,6 +144,21 @@ export async function getAssetsByIds({
     return rows.map(fromDb)
 }
 
+type GetAssetByIdParams = {
+    db?: Database
+    assetId: string
+    network: string
+}
+
+export async function getAssetById({
+    db = getDatabase(),
+    assetId,
+    network,
+}: GetAssetByIdParams): Promise<PeraAsset | null> {
+    const results = await getAssetsByIds({ db, assetIds: [assetId], network })
+    return results[0] ?? null
+}
+
 export type AssetPriceRow = {
     assetId: string
     usdPrice: string

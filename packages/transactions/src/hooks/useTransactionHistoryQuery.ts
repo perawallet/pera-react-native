@@ -18,7 +18,8 @@ import type {
     TransactionHistoryItem,
     TransactionHistoryResult,
 } from '../models/types'
-import { useTransactionsCacheSync } from './useTransactionHistoryCache'
+import { getTransactionHistory } from '../db'
+import { persistTransactions } from './useTransactionHistoryCache'
 
 /**
  * Parameters for the useTransactionHistoryQuery hook.
@@ -64,24 +65,10 @@ export type UseTransactionHistoryQueryResult = {
 }
 
 /**
- * Hook for fetching transaction history with infinite scrolling support.
+ * Hook for fetching transaction history with DB-first reads and infinite scrolling.
  *
- * This hook uses React Query's useInfiniteQuery to provide automatic
- * pagination handling. Transactions are accumulated across pages.
- *
- * @example
- * ```typescript
- * const {
- *   transactions,
- *   isLoading,
- *   hasNextPage,
- *   fetchNextPage,
- * } = useTransactionHistoryQuery({
- *   accountAddress: 'ABC123...',
- *   network: 'mainnet',
- *   limit: 25,
- * })
- * ```
+ * The first page is read from the local database (populated by the sync service).
+ * Subsequent pages (load-more) are fetched from the API and persisted to DB.
  */
 export const useTransactionHistoryQuery = (
     params: UseTransactionHistoryQueryParams,
@@ -109,47 +96,118 @@ export const useTransactionHistoryQuery = (
         ),
         queryFn: async ({
             pageParam,
-            signal,
         }: {
-            pageParam: string | null
-            signal: AbortSignal
+            pageParam: { type: 'db' } | { type: 'api'; url: string } | null
         }): Promise<TransactionHistoryResult> => {
-            if (pageParam) {
-                // Fetch using pagination URL
-                return fetchMoreTransactions({
-                    url: pageParam,
+            // First page: read from DB
+            if (pageParam === null || pageParam.type === 'db') {
+                const dbTransactions = await getTransactionHistory({
+                    accountAddress,
                     network,
-                    signal,
+                    assetId,
+                    limit: limit ?? 25,
                 })
+
+                return {
+                    transactions: dbTransactions,
+                    pagination: {
+                        hasNextPage: dbTransactions.length >= (limit ?? 25),
+                        hasPreviousPage: false,
+                        nextUrl:
+                            dbTransactions.length >= (limit ?? 25)
+                                ? '__load_more_from_api__'
+                                : null,
+                        previousUrl: null,
+                        totalFetched: dbTransactions.length,
+                    },
+                    currentRound: 0,
+                }
             }
 
-            // Initial fetch
-            return fetchTransactionHistory({
+            // Subsequent pages: fetch from API
+            if (
+                pageParam.type === 'api' &&
+                pageParam.url !== '__load_more_from_api__'
+            ) {
+                const result = await fetchMoreTransactions({
+                    url: pageParam.url,
+                    network,
+                })
+
+                // Persist to DB in background
+                if (result.transactions.length > 0) {
+                    void persistTransactions(
+                        result.transactions,
+                        accountAddress,
+                        network,
+                    )
+                }
+
+                return result
+            }
+
+            // Transition from DB to API: fetch older transactions
+            // Use beforeTime from the oldest DB transaction
+            const dbTransactions = await getTransactionHistory({
                 accountAddress,
                 network,
                 assetId,
-                afterTime,
-                beforeTime,
-                limit,
-                signal,
+                limit: 1,
+                beforeRoundTime: undefined,
             })
+
+            // Get the oldest transaction's roundTime to use as before_time
+            const oldestRoundTime =
+                dbTransactions.length > 0
+                    ? dbTransactions[dbTransactions.length - 1].roundTime
+                    : undefined
+
+            const result = await fetchTransactionHistory({
+                accountAddress,
+                network,
+                assetId,
+                beforeTime: oldestRoundTime
+                    ? new Date(oldestRoundTime * 1000).toISOString()
+                    : beforeTime,
+                limit,
+            })
+
+            // Persist to DB in background
+            if (result.transactions.length > 0) {
+                void persistTransactions(
+                    result.transactions,
+                    accountAddress,
+                    network,
+                )
+            }
+
+            return result
         },
-        initialPageParam: null as string | null,
-        getNextPageParam: (lastPage: TransactionHistoryResult): string | null =>
-            lastPage.pagination.nextUrl,
+        initialPageParam: null as
+            | { type: 'db' }
+            | { type: 'api'; url: string }
+            | null,
+        getNextPageParam: (
+            lastPage: TransactionHistoryResult,
+        ): { type: 'db' } | { type: 'api'; url: string } | undefined => {
+            if (lastPage.pagination.nextUrl === null) return undefined
+
+            if (lastPage.pagination.nextUrl === '__load_more_from_api__') {
+                return {
+                    type: 'api',
+                    url: '__load_more_from_api__',
+                }
+            }
+
+            return { type: 'api', url: lastPage.pagination.nextUrl }
+        },
+        staleTime: Infinity,
         enabled: isEnabled && !!accountAddress,
     })
 
     // Flatten all pages into a single array of transactions
     const transactions =
         query.data?.pages.flatMap(page => page.transactions) ?? []
-
-    useTransactionsCacheSync(
-        transactions,
-        query.isFetched,
-        accountAddress,
-        network,
-    )
 
     return {
         transactions,

@@ -10,16 +10,27 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
+import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
 
 import { useAccountInformationQuery } from '../useAccountInformationQuery'
-import { useAlgorandClient } from '../useAlgorandClient'
 
-// Mock the useAlgorandClient hook
-vi.mock('../useAlgorandClient')
+const mockGetAccountBalance = vi.hoisted(() => vi.fn())
+const mockGetAccountHoldings = vi.hoisted(() => vi.fn())
+
+vi.mock('../../db', () => ({
+    getAccountBalance: mockGetAccountBalance,
+    getAccountHoldings: mockGetAccountHoldings,
+}))
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: () => ({ network: 'mainnet' }),
+    Address: {
+        fromString: (addr: string) => addr,
+    },
+}))
 
 describe('useAccountInformationQuery', () => {
     let queryClient: QueryClient
@@ -27,14 +38,6 @@ describe('useAccountInformationQuery', () => {
 
     const mockAddress =
         'TESTADDRESS123456789012345678901234567890123456789012345678'
-    const mockAccountInfo = {
-        minBalance: 100000,
-        amount: 1000000,
-        address: mockAddress,
-        status: 'Online',
-        rewards: 0,
-        assets: [{ assetId: 123n, amount: 500n, isFrozen: false }],
-    }
 
     beforeEach(() => {
         vi.clearAllMocks()
@@ -51,20 +54,23 @@ describe('useAccountInformationQuery', () => {
                 { client: queryClient },
                 children,
             )
-
-        // Mock the AlgorandClient
-        ;(useAlgorandClient as Mock).mockReturnValue({
-            client: {
-                algod: {
-                    accountInformation: vi
-                        .fn()
-                        .mockResolvedValue(mockAccountInfo),
-                },
-            },
-        })
     })
 
-    test('fetches account information for a given address', async () => {
+    test('reads account information from database', async () => {
+        mockGetAccountBalance.mockResolvedValue({
+            accountAddress: mockAddress,
+            algoBalanceMicro: '1000000',
+            minBalanceMicro: '100000',
+            status: 'Online',
+            totalAssetsOptedIn: 1,
+            totalCreatedAssets: 0,
+            totalAppsOptedIn: 0,
+            authAddress: null,
+        })
+        mockGetAccountHoldings.mockResolvedValue([
+            { assetId: '123', amount: '500' },
+        ])
+
         const { result } = renderHook(
             () => useAccountInformationQuery(mockAddress),
             { wrapper },
@@ -73,16 +79,49 @@ describe('useAccountInformationQuery', () => {
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
         expect(result.current.data).toEqual({
-            minBalance: mockAccountInfo.minBalance,
-            amount: mockAccountInfo.amount,
-            address: mockAccountInfo.address,
-            status: mockAccountInfo.status,
-            rewards: mockAccountInfo.rewards,
-            assets: mockAccountInfo.assets,
+            minBalance: 100000n,
+            amount: 1000000n,
+            address: mockAddress,
+            status: 'Online',
+            rewards: 0n,
+            assets: [{ assetId: 123n, amount: 500n, isFrozen: false }],
+        })
+
+        expect(mockGetAccountBalance).toHaveBeenCalledWith({
+            accountAddress: mockAddress,
+            network: 'mainnet',
+        })
+        expect(mockGetAccountHoldings).toHaveBeenCalledWith({
+            accountAddress: mockAddress,
+            network: 'mainnet',
+        })
+    })
+
+    test('returns defaults when account not in database', async () => {
+        mockGetAccountBalance.mockResolvedValue(undefined)
+        mockGetAccountHoldings.mockResolvedValue([])
+
+        const { result } = renderHook(
+            () => useAccountInformationQuery(mockAddress),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+        expect(result.current.data).toEqual({
+            minBalance: 0n,
+            amount: 0n,
+            address: mockAddress,
+            status: 'Offline',
+            rewards: 0n,
+            assets: [],
         })
     })
 
     test('provides loading state initially', () => {
+        mockGetAccountBalance.mockImplementation(() => new Promise(() => {}))
+        mockGetAccountHoldings.mockImplementation(() => new Promise(() => {}))
+
         const { result } = renderHook(
             () => useAccountInformationQuery(mockAddress),
             { wrapper },
@@ -91,45 +130,21 @@ describe('useAccountInformationQuery', () => {
         expect(result.current.isPending).toBe(true)
     })
 
-    test('handles errors', async () => {
-        const mockError = new Error('Account not found')
-        ;(useAlgorandClient as Mock).mockReturnValue({
-            client: {
-                algod: {
-                    accountInformation: vi.fn().mockRejectedValue(mockError),
-                },
-            },
-        })
-
-        const { result } = renderHook(
-            () => useAccountInformationQuery(mockAddress),
-            { wrapper },
-        )
-
-        await waitFor(() => expect(result.current.isError).toBe(true))
-
-        expect(result.current.error).toBe(mockError)
-    })
-
     test('uses address in query key for caching', async () => {
         const address1 = 'ADDRESS1'
         const address2 = 'ADDRESS2'
 
-        const mockAccountInfo1 = { ...mockAccountInfo, address: address1 }
-        const mockAccountInfo2 = { ...mockAccountInfo, address: address2 }
-
-        const mockAccountInfoFn = vi
-            .fn()
-            .mockResolvedValueOnce(mockAccountInfo1)
-            .mockResolvedValueOnce(mockAccountInfo2)
-
-        ;(useAlgorandClient as Mock).mockReturnValue({
-            client: {
-                algod: {
-                    accountInformation: mockAccountInfoFn,
-                },
-            },
+        mockGetAccountBalance.mockResolvedValue({
+            accountAddress: address1,
+            algoBalanceMicro: '1000000',
+            minBalanceMicro: '100000',
+            status: 'Online',
+            totalAssetsOptedIn: 0,
+            totalCreatedAssets: 0,
+            totalAppsOptedIn: 0,
+            authAddress: null,
         })
+        mockGetAccountHoldings.mockResolvedValue([])
 
         const { result: result1 } = renderHook(
             () => useAccountInformationQuery(address1),
@@ -147,8 +162,6 @@ describe('useAccountInformationQuery', () => {
         await waitFor(() => expect(result2.current.isSuccess).toBe(true))
         expect(result2.current.data?.address).toBe(address2)
 
-        // Both addresses should have been fetched
-        expect(mockAccountInfoFn).toHaveBeenCalledWith(address1)
-        expect(mockAccountInfoFn).toHaveBeenCalledWith(address2)
+        expect(mockGetAccountBalance).toHaveBeenCalledTimes(2)
     })
 })

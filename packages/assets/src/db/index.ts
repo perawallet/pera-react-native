@@ -14,6 +14,7 @@ export { AssetsSchema, AssetPricesSchema } from './schema'
 export {
     upsertAssets,
     getAssetsByIds,
+    getAssetById,
     upsertAssetPrices,
     getAssetPricesByIds,
     type AssetPriceRow,

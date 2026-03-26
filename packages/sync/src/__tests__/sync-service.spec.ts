@@ -40,6 +40,8 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
             getInformation: vi.fn(() =>
                 Promise.resolve({
                     balance: { microAlgos: 1000000n },
+                    minBalance: { microAlgos: 100000n },
+                    status: 'Online',
                     assets: [{ assetId: 123, amount: 100 }],
                     totalAssetsOptedIn: 1,
                     totalCreatedAssets: 0,
@@ -74,6 +76,18 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     upsertAssets: vi.fn(() => Promise.resolve()),
     upsertAssetPrices: vi.fn(() => Promise.resolve()),
     ALGO_ASSET_ID: '0',
+}))
+
+vi.mock('@perawallet/wallet-core-transactions', () => ({
+    fetchTransactionHistory: vi.fn(() =>
+        Promise.resolve({
+            transactions: [],
+            pagination: { nextUrl: null },
+            currentRound: 0,
+        }),
+    ),
+    getLatestTransactionRoundTime: vi.fn(() => Promise.resolve(null)),
+    upsertTransactions: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({

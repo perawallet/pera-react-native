@@ -187,6 +187,8 @@ describe('account repository', () => {
                 totalAssetsOptedIn: 3,
                 totalCreatedAssets: 1,
                 totalAppsOptedIn: 2,
+                minBalanceMicro: '100000',
+                status: 'Online',
                 authAddress: null,
             })
 
@@ -199,6 +201,8 @@ describe('account repository', () => {
             expect(result).toBeDefined()
             expect(result!.algoBalanceMicro).toBe('5000000')
             expect(result!.totalAssetsOptedIn).toBe(3)
+            expect(result!.minBalanceMicro).toBe('100000')
+            expect(result!.status).toBe('Online')
         })
 
         it('updates an existing balance on conflict', async () => {
@@ -210,6 +214,8 @@ describe('account repository', () => {
                 totalAssetsOptedIn: 3,
                 totalCreatedAssets: 1,
                 totalAppsOptedIn: 2,
+                minBalanceMicro: '100000',
+                status: 'Online',
                 authAddress: null,
             })
 
@@ -221,6 +227,8 @@ describe('account repository', () => {
                 totalAssetsOptedIn: 5,
                 totalCreatedAssets: 2,
                 totalAppsOptedIn: 3,
+                minBalanceMicro: '200000',
+                status: 'Offline',
                 authAddress: 'AUTH1',
             })
 
@@ -233,6 +241,8 @@ describe('account repository', () => {
             expect(result).toBeDefined()
             expect(result!.algoBalanceMicro).toBe('9000000')
             expect(result!.totalAssetsOptedIn).toBe(5)
+            expect(result!.minBalanceMicro).toBe('200000')
+            expect(result!.status).toBe('Offline')
             expect(result!.authAddress).toBe('AUTH1')
         })
 
@@ -255,6 +265,8 @@ describe('account repository', () => {
                 totalAssetsOptedIn: 0,
                 totalCreatedAssets: 0,
                 totalAppsOptedIn: 0,
+                minBalanceMicro: '0',
+                status: 'Offline',
                 authAddress: null,
             })
             await upsertAccountBalance({
@@ -265,6 +277,8 @@ describe('account repository', () => {
                 totalAssetsOptedIn: 0,
                 totalCreatedAssets: 0,
                 totalAppsOptedIn: 0,
+                minBalanceMicro: '0',
+                status: 'Offline',
                 authAddress: null,
             })
 

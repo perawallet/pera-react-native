@@ -19,7 +19,8 @@ export const currencyQueryKeys = {
     list: (network: Network) => [MODULE_PREFIX, { network }] as const,
     price: (network: Network, preferredFiatCurrency: string) =>
         [MODULE_PREFIX, { network, preferredFiatCurrency }] as const,
-    algoUsdPrice: [MODULE_PREFIX, 'algo-usd-price'] as const,
+    algoUsdPrice: (network: Network) =>
+        ['assets', 'prices', 'algo-usd', { network }] as const,
 }
 
 // Aliases for backward compatibility

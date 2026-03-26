@@ -31,6 +31,8 @@ export async function fetchAndPersistAccount(
         totalAssetsOptedIn: info.totalAssetsOptedIn ?? 0,
         totalCreatedAssets: info.totalCreatedAssets ?? 0,
         totalAppsOptedIn: info.totalAppsOptedIn ?? 0,
+        minBalanceMicro: info.minBalance.microAlgos.toString(),
+        status: info.status ?? 'Offline',
         authAddress: info.authAddr?.toString() ?? null,
     })
 

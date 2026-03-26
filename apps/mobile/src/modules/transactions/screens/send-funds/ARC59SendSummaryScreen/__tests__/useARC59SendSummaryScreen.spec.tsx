@@ -32,6 +32,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(() => ({
         address: 'SENDERADDR',
     })),
+    useAccountInformationQuery: vi.fn(() => ({
+        data: { amount: 10_000_000n, minBalance: 100_000n },
+    })),
 }))
 
 vi.mock('@perawallet/wallet-core-asa-inbox', () => ({
@@ -41,11 +44,7 @@ vi.mock('@perawallet/wallet-core-asa-inbox', () => ({
     })),
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useAccountInformationQuery: vi.fn(() => ({
-        data: { amount: 10_000_000n, minBalance: 100_000n },
-    })),
-}))
+vi.mock('@perawallet/wallet-core-blockchain', () => ({}))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     ALGO_ASSET: { id: '0', decimals: 6 },

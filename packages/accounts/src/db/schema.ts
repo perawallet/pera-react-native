@@ -44,6 +44,8 @@ export const AccountBalancesSchema = sqliteTable(
             .notNull()
             .default(0),
         totalAppsOptedIn: integer('total_apps_opted_in').notNull().default(0),
+        minBalanceMicro: bigNumeric('min_balance_micro').notNull().default('0'),
+        status: text('status').notNull().default('Offline'),
         authAddress: text('auth_address'),
         updatedAt: integer('updated_at').notNull(),
     },

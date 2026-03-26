@@ -26,115 +26,88 @@ import {
     fetchIndexerAssetDetails,
     fetchPublicAssetDetails,
 } from '../api'
-import {
-    getAssetDetailsQueryKey,
-    getIndexerAssetDetailsQueryKey,
-    getPublicAssetDetailsQueryKey,
-} from './querykeys'
-import { stripNulls } from '@perawallet/wallet-core-shared'
+import { getAssetDetailsQueryKey } from './querykeys'
+import { stripNulls, type Network } from '@perawallet/wallet-core-shared'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { getAssetById } from '../db'
 
-//Fetches data from the indexer and Pera backend and returns the combined data
+async function fetchAssetFromApis(
+    assetId: string,
+    network: Network,
+): Promise<PeraAsset> {
+    const [peraResult, indexerResult, publicResult] = await Promise.allSettled([
+        fetchAssetDetails(assetId, network).then(transformAssetResponse),
+        fetchIndexerAssetDetails(assetId, network).then(
+            transformIndexerAssetResponse,
+        ),
+        fetchPublicAssetDetails(assetId, network).then(
+            transformPublicAssetResponse,
+        ),
+    ])
+
+    const peraData =
+        peraResult.status === 'fulfilled' ? peraResult.value : undefined
+    const indexerData =
+        indexerResult.status === 'fulfilled' ? indexerResult.value : undefined
+    const publicData =
+        publicResult.status === 'fulfilled' ? publicResult.value : undefined
+
+    return {
+        ...DEFAULT_ASSET_VALUES,
+        assetId,
+        ...indexerData,
+        ...(peraData ? stripNulls(peraData) : {}),
+        ...(publicData ? stripNulls(publicData) : {}),
+    }
+}
+
 export const useSingleAssetDetailsQuery = (assetId: string) => {
     const { network } = useNetwork()
-    const {
-        data: peraData,
-        isLoading: peraLoading,
-        isError: peraIsError,
-        error: peraError,
-        isPending: peraIsPending,
-        refetch: peraRefetch,
-    } = useQuery({
+
+    const query = useQuery({
         queryKey: getAssetDetailsQueryKey(assetId),
-        queryFn: () => fetchAssetDetails(assetId, network),
-        select: data => transformAssetResponse(data),
-        enabled: !!assetId.length && assetId !== ALGO_ASSET_ID,
-    })
+        queryFn: async (): Promise<PeraAsset> => {
+            if (assetId === ALGO_ASSET_ID) {
+                return ALGO_ASSET
+            }
 
-    const {
-        data: indexerData,
-        isLoading: indexerLoading,
-        isError: indexerIsError,
-        error: indexerError,
-        isPending: indexerIsPending,
-        refetch: indexerRefetch,
-    } = useQuery({
-        queryKey: getIndexerAssetDetailsQueryKey(assetId),
-        queryFn: () => fetchIndexerAssetDetails(assetId, network),
-        select: data => transformIndexerAssetResponse(data),
-        enabled: !!assetId.length && assetId !== ALGO_ASSET_ID,
-    })
+            // Try DB first (data synced by sync service)
+            const dbAsset = await getAssetById({ assetId, network })
+            if (dbAsset !== null) {
+                return dbAsset
+            }
 
-    const { data: algoData, refetch: algoRefetch } = useQuery({
-        queryKey: getPublicAssetDetailsQueryKey(assetId),
-        queryFn: () => fetchPublicAssetDetails(assetId, network),
-        select: data => transformPublicAssetResponse(data),
+            // Fallback to API for assets not in DB (e.g., non-held assets)
+            return fetchAssetFromApis(assetId, network)
+        },
+        staleTime: Infinity,
         enabled: !!assetId.length,
     })
 
     const results = useMemo<{
         data?: PeraAsset
-        isPending: boolean
+        isLoading: boolean
         isError: boolean
         error: unknown
+        isPending: boolean
         refetch: () => void
-        isLoading: boolean
     }>(() => {
-        let algoAsset = algoData
-        if (!algoAsset && assetId === ALGO_ASSET_ID) {
-            algoAsset = ALGO_ASSET
-        }
-
-        const data = {
-            ...DEFAULT_ASSET_VALUES,
-            assetId,
-            ...indexerData,
-            ...(peraData ? stripNulls(peraData) : {}),
-            ...(algoAsset ? stripNulls(algoAsset) : {}),
-        }
         return {
-            data,
-            isLoading:
-                assetId !== ALGO_ASSET_ID
-                    ? peraLoading || indexerLoading
-                    : false,
-            isError:
-                assetId !== ALGO_ASSET_ID
-                    ? peraIsError && indexerIsError
-                    : false,
-            error:
-                assetId !== ALGO_ASSET_ID
-                    ? (indexerError ?? peraError)
-                    : undefined,
-            isPending:
-                assetId !== ALGO_ASSET_ID
-                    ? peraIsPending && indexerIsPending
-                    : false,
-            refetch: () => {
-                if (assetId === ALGO_ASSET_ID) {
-                    algoRefetch()
-                } else {
-                    peraRefetch()
-                    indexerRefetch()
-                }
-            },
+            data: query.data,
+            isLoading: assetId !== ALGO_ASSET_ID ? query.isLoading : false,
+            isError: assetId !== ALGO_ASSET_ID ? query.isError : false,
+            error: assetId !== ALGO_ASSET_ID ? query.error : undefined,
+            isPending: assetId !== ALGO_ASSET_ID ? query.isPending : false,
+            refetch: query.refetch,
         }
     }, [
         assetId,
-        peraData,
-        peraLoading,
-        peraIsError,
-        peraError,
-        peraIsPending,
-        peraRefetch,
-        indexerData,
-        indexerLoading,
-        indexerIsError,
-        indexerError,
-        indexerIsPending,
-        indexerRefetch,
-        algoData,
-        algoRefetch,
+        query.data,
+        query.isLoading,
+        query.isError,
+        query.error,
+        query.isPending,
+        query.refetch,
     ])
 
     return results

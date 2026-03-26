@@ -19,9 +19,11 @@
   "dependencies": {
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-blockchain": "workspace:*",
+    "@perawallet/wallet-core-database": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "decimal.js": "catalog:",
+    "drizzle-orm": "catalog:",
     "zod": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
