@@ -137,6 +137,11 @@ overrides:
   react-native-quick-base64: ^2.2.2
   ws@>=7.0.0 <7.5.10: 7.5.10
 
+patchedDependencies:
+  expo-sqlite@14.0.6:
+    hash: 0a5bc89131bb04637237f25fbb401548193ee15136b17f4867d55b77b12710dd
+    path: patches/expo-sqlite@14.0.6.patch
+
 importers:
 
   .:
@@ -399,6 +404,9 @@ importers:
       expo-splash-screen:
         specifier: ~55.0.12
         version: 55.0.12(expo@55.0.8)(typescript@5.9.3)
+      expo-sqlite:
+        specifier: ~14.0.0
+        version: 14.0.6(patch_hash=0a5bc89131bb04637237f25fbb401548193ee15136b17f4867d55b77b12710dd)(expo@55.0.8)
       expo-status-bar:
         specifier: ~55.0.4
         version: 55.0.4(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
@@ -603,7 +611,7 @@ importers:
         version: 5.90.21(react@19.2.0)
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(expo@55.0.8))(gel@2.2.0)
+        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(patch_hash=0a5bc89131bb04637237f25fbb401548193ee15136b17f4867d55b77b12710dd)(expo@55.0.8))(gel@2.2.0)
       react:
         specifier: 'catalog:'
         version: 19.2.0
@@ -692,7 +700,7 @@ importers:
         version: 0.11.0(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(expo@55.0.8))(gel@2.2.0)
+        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(patch_hash=0a5bc89131bb04637237f25fbb401548193ee15136b17f4867d55b77b12710dd)(expo@55.0.8))(gel@2.2.0)
       expo-application:
         specifier: ^7.0.8
         version: 7.0.8(expo@55.0.8)
@@ -704,7 +712,7 @@ importers:
         version: 17.0.8(expo@55.0.8)(react@19.2.0)
       expo-sqlite:
         specifier: ~14.0.0
-        version: 14.0.6(expo@55.0.8)
+        version: 14.0.6(patch_hash=0a5bc89131bb04637237f25fbb401548193ee15136b17f4867d55b77b12710dd)(expo@55.0.8)
       react:
         specifier: 'catalog:'
         version: 19.2.0
@@ -847,7 +855,7 @@ importers:
         version: 10.6.0
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(expo@55.0.8))(gel@2.2.0)
+        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(patch_hash=0a5bc89131bb04637237f25fbb401548193ee15136b17f4867d55b77b12710dd)(expo@55.0.8))(gel@2.2.0)
       react:
         specifier: 'catalog:'
         version: 19.2.0
@@ -978,7 +986,7 @@ importers:
         version: 10.6.0
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(expo@55.0.8))(gel@2.2.0)
+        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(patch_hash=0a5bc89131bb04637237f25fbb401548193ee15136b17f4867d55b77b12710dd)(expo@55.0.8))(gel@2.2.0)
       react:
         specifier: 'catalog:'
         version: 19.2.0
@@ -1232,7 +1240,7 @@ importers:
         version: link:../../extensions/platform
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(expo@55.0.8))(gel@2.2.0)
+        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(patch_hash=0a5bc89131bb04637237f25fbb401548193ee15136b17f4867d55b77b12710dd)(expo@55.0.8))(gel@2.2.0)
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
@@ -2101,7 +2109,7 @@ importers:
         version: 10.6.0
       drizzle-orm:
         specifier: 'catalog:'
-        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(expo@55.0.8))(gel@2.2.0)
+        version: 0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(patch_hash=0a5bc89131bb04637237f25fbb401548193ee15136b17f4867d55b77b12710dd)(expo@55.0.8))(gel@2.2.0)
       react:
         specifier: 'catalog:'
         version: 19.2.0
@@ -13765,11 +13773,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(expo@55.0.8))(gel@2.2.0):
+  drizzle-orm@0.44.7(@types/better-sqlite3@7.6.13)(better-sqlite3@11.10.0)(expo-sqlite@14.0.6(patch_hash=0a5bc89131bb04637237f25fbb401548193ee15136b17f4867d55b77b12710dd)(expo@55.0.8))(gel@2.2.0):
     optionalDependencies:
       '@types/better-sqlite3': 7.6.13
       better-sqlite3: 11.10.0
-      expo-sqlite: 14.0.6(expo@55.0.8)
+      expo-sqlite: 14.0.6(patch_hash=0a5bc89131bb04637237f25fbb401548193ee15136b17f4867d55b77b12710dd)(expo@55.0.8)
       gel: 2.2.0
 
   dunder-proto@1.0.1:
@@ -14212,10 +14220,10 @@ snapshots:
       - supports-color
       - typescript
 
-  expo-sqlite@14.0.6(expo@55.0.8):
+  expo-sqlite@14.0.6(patch_hash=0a5bc89131bb04637237f25fbb401548193ee15136b17f4867d55b77b12710dd)(expo@55.0.8):
     dependencies:
       '@expo/websql': 1.0.1
-      expo: 55.0.8(@babel/core@7.29.0)(@expo/dom-webview@55.0.3)(react-dom@19.2.0(react@19.2.0))(react-native-webview@13.16.1(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
+      expo: 55.0.8(@babel/core@7.29.0)(@expo/dom-webview@55.0.3)(react-dom@19.2.0(react@19.2.0))(react-native-webview@13.16.0(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
 
   expo-status-bar@55.0.4(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0):
     dependencies:

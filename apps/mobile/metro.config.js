@@ -66,6 +66,12 @@ const polyfillMap = {
 
 // Custom resolver function
 const customResolveRequest = (context, moduleName, platform) => {
+    // Strip Vite ?raw suffix so Metro can find the actual file
+    if (moduleName.endsWith('?raw')) {
+        const cleanName = moduleName.slice(0, -4);
+        return context.resolveRequest(context, cleanName, platform);
+    }
+
     // Handle path aliases
     for (const [alias, aliasPath] of Object.entries(aliasMap)) {
         if (moduleName.startsWith(alias + '/')) {
@@ -164,14 +170,14 @@ const config = {
     watchFolders,
     transformer: {
         ...defaultConfig.transformer,
-        babelTransformerPath: require.resolve('react-native-svg-transformer'),
+        babelTransformerPath: require.resolve('./metro-raw-transformer.js'),
     },
     resolver: {
         ...defaultConfig.resolver,
         nodeModulesPaths,
         unstable_enableSymlinks: true,
         assetExts: assetExts.filter((ext) => ext !== 'svg'),
-        sourceExts: [...sourceExts, 'svg'],
+        sourceExts: [...sourceExts, 'svg', 'sql'],
         resolveRequest: customResolveRequest,
     },
 };

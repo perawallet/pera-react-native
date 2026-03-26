@@ -231,6 +231,7 @@ module.exports = {
       },
     ],
     // Note: The following packages are autolinked and don't require config plugins:
+    // - expo-sqlite
     // - react-native-mmkv
     // - react-native-keychain
     // - react-native-reanimated

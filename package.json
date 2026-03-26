@@ -36,9 +36,9 @@
     "eslint": "catalog:",
     "eslint-plugin-react-native": "^5.0.0",
     "eslint-plugin-unused-imports": "catalog:",
+    "oxfmt": "catalog:",
     "oxlint": "^1.54.0",
     "oxlint-tsgolint": "^0.16.0",
-    "oxfmt": "catalog:",
     "turbo": "^2.7.2",
     "util": "catalog:",
     "vitest": "catalog:"
@@ -48,6 +48,9 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "better-sqlite3"
-    ]
+    ],
+    "patchedDependencies": {
+      "expo-sqlite@14.0.6": "patches/expo-sqlite@14.0.6.patch"
+    }
   }
 }

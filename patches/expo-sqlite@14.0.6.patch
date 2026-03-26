@@ -1,0 +1,15 @@
+diff --git a/ios/SQLiteModuleNext.swift b/ios/SQLiteModuleNext.swift
+index 66bbb6c7ef42f4ff725085c7ef3d05c268cdd4d5..b198c09d2ea5b96d648c55b8cd4734686e8e3a67 100644
+--- a/ios/SQLiteModuleNext.swift
++++ b/ios/SQLiteModuleNext.swift
+@@ -199,7 +199,9 @@ public final class SQLiteModuleNext: Module {
+     }
+ 
+     let directory = URL(string: fileSystem.documentDirectory)?.appendingPathComponent("SQLite")
+-    fileSystem.ensureDirExists(withPath: directory?.absoluteString)
++    if let dirPath = directory?.absoluteString {
++      fileSystem.ensureDirExists(withPath: dirPath)
++    }
+ 
+     return directory?.appendingPathComponent(name)
+   }
