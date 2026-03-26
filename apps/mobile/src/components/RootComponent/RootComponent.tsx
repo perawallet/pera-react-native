@@ -136,6 +136,8 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
         if (!addresses.length) {
             runSyncAction('stop')
         } else if (config.pollingEnabled) {
+            runSyncAction('start')
+
             const subscription = AppState.addEventListener(
                 'change',
                 nextAppState => {
