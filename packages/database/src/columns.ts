@@ -10,12 +10,19 @@
  limitations under the License
  */
 
-export {
-    initializeDatabase,
-    getDatabase,
-    resetDatabase,
-    type Database,
-} from './database'
-export { runMigrations, type MigrationConfig } from './migrator'
-export { default as migrations } from './migrations'
-export { bigNumeric } from './columns'
+import { customType } from 'drizzle-orm/sqlite-core'
+
+/**
+ * A high-precision numeric column stored as TEXT in SQLite.
+ *
+ * Supports up to 20 integer digits and 20 decimal digits (40 significant digits).
+ * Use for asset IDs, balances, amounts, prices, fees, and any numeric value
+ * that exceeds the precision of SQLite's REAL (~15 digits) or INTEGER (no decimals).
+ *
+ * Stored as a string representation to preserve full precision.
+ */
+export const bigNumeric = customType<{ data: string }>({
+    dataType() {
+        return 'text'
+    },
+})

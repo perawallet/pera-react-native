@@ -194,11 +194,11 @@ describe('transformTransactionItem', () => {
         })
     })
 
-    it('converts application_id to number when present', () => {
+    it('converts application_id to string when present', () => {
         const apiItem = makeApiItem({ application_id: 12345 })
         const result = transformTransactionItem(apiItem)
 
-        expect(result.applicationId).toBe(12345)
+        expect(result.applicationId).toBe('12345')
     })
 
     it('converts inner_transaction_count to number when present', () => {

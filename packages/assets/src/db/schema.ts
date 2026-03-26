@@ -11,15 +11,16 @@
  */
 
 import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
+import { bigNumeric } from '@perawallet/wallet-core-database'
 
 export const AssetsSchema = sqliteTable(
     'assets',
     {
-        assetId: text('asset_id').notNull(),
+        assetId: bigNumeric('asset_id').notNull(),
         network: text('network').notNull(),
         decimals: integer('decimals').notNull().default(0),
         creatorAddress: text('creator_address').notNull().default(''),
-        totalSupply: text('total_supply').notNull().default('0'),
+        totalSupply: bigNumeric('total_supply').notNull().default('0'),
         name: text('name'),
         unitName: text('unit_name'),
         url: text('url'),
@@ -40,9 +41,9 @@ export const AssetsSchema = sqliteTable(
 export const AssetPricesSchema = sqliteTable(
     'asset_prices',
     {
-        assetId: text('asset_id').notNull(),
+        assetId: bigNumeric('asset_id').notNull(),
         network: text('network').notNull(),
-        usdPrice: text('usd_price').notNull().default('0'),
+        usdPrice: bigNumeric('usd_price').notNull().default('0'),
         updatedAt: integer('updated_at').notNull(),
     },
     table => [primaryKey({ columns: [table.assetId, table.network] })],

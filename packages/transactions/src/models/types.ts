@@ -119,7 +119,7 @@ export interface TransactionHistoryItem {
     /** Asset details for asset-related transactions */
     asset: TransactionAssetSummary | null
     /** Application ID for application call transactions (smart contracts) */
-    applicationId: number | null
+    applicationId: string | null
     /** Number of inner transactions if this is an application call */
     innerTransactionCount: number | null
 }

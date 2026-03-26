@@ -90,7 +90,7 @@ export const transformTransactionItem = (
     closeTo: item.close_to ?? null,
     asset: transformAssetSummary(item.asset),
     applicationId:
-        item.application_id != null ? Number(item.application_id) : null,
+        item.application_id != null ? String(item.application_id) : null,
     innerTransactionCount:
         item.inner_transaction_count != null
             ? Number(item.inner_transaction_count)

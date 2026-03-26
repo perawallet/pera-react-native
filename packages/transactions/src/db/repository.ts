@@ -50,7 +50,7 @@ function fromDb(row: {
     groupId: string | null
     amount: string | null
     closeTo: string | null
-    applicationId: number | null
+    applicationId: string | null
     innerTransactionCount: number | null
     assetJson: string | null
     swapGroupDetailJson: string | null

@@ -11,14 +11,15 @@
  */
 
 import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
+import { bigNumeric } from '@perawallet/wallet-core-database'
 
 export const AccountAssetHoldingsSchema = sqliteTable(
     'account_asset_holdings',
     {
         accountAddress: text('account_address').notNull(),
-        assetId: text('asset_id').notNull(),
+        assetId: bigNumeric('asset_id').notNull(),
         network: text('network').notNull(),
-        amount: text('amount').notNull().default('0'),
+        amount: bigNumeric('amount').notNull().default('0'),
         updatedAt: integer('updated_at').notNull(),
     },
     table => [
@@ -33,7 +34,9 @@ export const AccountBalancesSchema = sqliteTable(
     {
         accountAddress: text('account_address').notNull(),
         network: text('network').notNull(),
-        algoBalanceMicro: text('algo_balance_micro').notNull().default('0'),
+        algoBalanceMicro: bigNumeric('algo_balance_micro')
+            .notNull()
+            .default('0'),
         totalAssetsOptedIn: integer('total_assets_opted_in')
             .notNull()
             .default(0),
