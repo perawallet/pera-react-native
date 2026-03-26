@@ -14,7 +14,7 @@ export {
     initializeDatabase,
     getDatabase,
     resetDatabase,
-    type DrizzleDatabase,
+    type Database,
 } from './database'
 export { runMigrations, type MigrationConfig } from './migrator'
 export { default as migrations } from './migrations'

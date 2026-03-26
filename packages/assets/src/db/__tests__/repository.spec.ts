@@ -15,21 +15,26 @@ import Decimal from 'decimal.js'
 import {
     runMigrations,
     migrations,
-    type DrizzleDatabase,
+    type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import type { PeraAsset } from '../../models'
-import { upsertAssets, getAssetsByIds } from '../repository'
+import {
+    upsertAssets,
+    getAssetsByIds,
+    upsertAssetPrices,
+    getAssetPricesByIds,
+} from '../repository'
 
 describe('asset repository', () => {
-    let db: DrizzleDatabase
+    let db: Database
     let teardown: () => void
 
-    beforeEach(() => {
+    beforeEach(async () => {
         const result = createTestDatabase()
         db = result.db
         teardown = result.teardown
-        runMigrations(db, migrations)
+        await runMigrations(db, migrations)
     })
 
     afterEach(() => {
@@ -52,140 +57,211 @@ describe('asset repository', () => {
         ...overrides,
     })
 
-    it('inserts and retrieves assets', () => {
-        upsertAssets({ db, items: [makeAsset()], network: 'mainnet' })
+    describe('assets', () => {
+        it('inserts and retrieves assets', async () => {
+            await upsertAssets({
+                db,
+                items: [makeAsset()],
+                network: 'mainnet',
+            })
 
-        const result = getAssetsByIds({
-            db,
-            assetIds: ['31566704'],
-            network: 'mainnet',
+            const result = await getAssetsByIds({
+                db,
+                assetIds: ['31566704'],
+                network: 'mainnet',
+            })
+
+            expect(result).toHaveLength(1)
+            expect(result[0].assetId).toBe('31566704')
+            expect(result[0].name).toBe('USD Coin')
+            expect(result[0].decimals).toBe(6)
+            expect(result[0].totalSupply.toString()).toBe('10000000000')
+            expect(result[0].creator.address).toBe('ABC123')
         })
 
-        expect(result).toHaveLength(1)
-        expect(result[0].assetId).toBe('31566704')
-        expect(result[0].name).toBe('USD Coin')
-        expect(result[0].decimals).toBe(6)
-        expect(result[0].totalSupply.toString()).toBe('10000000000')
-        expect(result[0].creator.address).toBe('ABC123')
+        it('updates existing assets on conflict', async () => {
+            await upsertAssets({
+                db,
+                items: [makeAsset({ name: 'Old Name' })],
+                network: 'mainnet',
+            })
+            await upsertAssets({
+                db,
+                items: [makeAsset({ name: 'New Name' })],
+                network: 'mainnet',
+            })
+
+            const result = await getAssetsByIds({
+                db,
+                assetIds: ['31566704'],
+                network: 'mainnet',
+            })
+
+            expect(result).toHaveLength(1)
+            expect(result[0].name).toBe('New Name')
+        })
+
+        it('returns empty array for unknown IDs', async () => {
+            const result = await getAssetsByIds({
+                db,
+                assetIds: ['999999'],
+                network: 'mainnet',
+            })
+
+            expect(result).toHaveLength(0)
+        })
+
+        it('returns empty array for empty input', async () => {
+            const result = await getAssetsByIds({
+                db,
+                assetIds: [],
+                network: 'mainnet',
+            })
+
+            expect(result).toHaveLength(0)
+        })
+
+        it('isolates assets by network', async () => {
+            await upsertAssets({
+                db,
+                items: [makeAsset({ assetId: '100' })],
+                network: 'mainnet',
+            })
+            await upsertAssets({
+                db,
+                items: [makeAsset({ assetId: '100', name: 'Testnet Asset' })],
+                network: 'testnet',
+            })
+
+            const mainnet = await getAssetsByIds({
+                db,
+                assetIds: ['100'],
+                network: 'mainnet',
+            })
+            const testnet = await getAssetsByIds({
+                db,
+                assetIds: ['100'],
+                network: 'testnet',
+            })
+
+            expect(mainnet).toHaveLength(1)
+            expect(mainnet[0].name).toBe('USD Coin')
+            expect(testnet).toHaveLength(1)
+            expect(testnet[0].name).toBe('Testnet Asset')
+        })
+
+        it('round-trips PeraAssetMetadata correctly', async () => {
+            const asset = makeAsset({
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: 'verified',
+                    isFavorited: true,
+                    isPriceAlertEnabled: false,
+                    logo: 'https://logo.png',
+                },
+            })
+
+            await upsertAssets({ db, items: [asset], network: 'mainnet' })
+
+            const result = await getAssetsByIds({
+                db,
+                assetIds: ['31566704'],
+                network: 'mainnet',
+            })
+
+            expect(result[0].peraMetadata?.isFavorited).toBe(true)
+            expect(result[0].peraMetadata?.logo).toBe('https://logo.png')
+        })
+
+        it('handles multiple assets in a single batch', async () => {
+            const items = [
+                makeAsset({ assetId: '1', name: 'Asset 1' }),
+                makeAsset({ assetId: '2', name: 'Asset 2' }),
+                makeAsset({ assetId: '3', name: 'Asset 3' }),
+            ]
+
+            await upsertAssets({ db, items, network: 'mainnet' })
+
+            const result = await getAssetsByIds({
+                db,
+                assetIds: ['1', '2', '3'],
+                network: 'mainnet',
+            })
+
+            expect(result).toHaveLength(3)
+        })
+
+        it('does nothing for empty items', async () => {
+            await upsertAssets({ db, items: [], network: 'mainnet' })
+
+            const result = await getAssetsByIds({
+                db,
+                assetIds: ['31566704'],
+                network: 'mainnet',
+            })
+
+            expect(result).toHaveLength(0)
+        })
     })
 
-    it('updates existing assets on conflict', () => {
-        upsertAssets({
-            db,
-            items: [makeAsset({ name: 'Old Name' })],
-            network: 'mainnet',
-        })
-        upsertAssets({
-            db,
-            items: [makeAsset({ name: 'New Name' })],
-            network: 'mainnet',
-        })
+    describe('asset prices', () => {
+        it('inserts and retrieves prices', async () => {
+            await upsertAssetPrices({
+                db,
+                prices: [
+                    { assetId: '100', usdPrice: '1.50' },
+                    { assetId: '200', usdPrice: '0.75' },
+                ],
+                network: 'mainnet',
+            })
 
-        const result = getAssetsByIds({
-            db,
-            assetIds: ['31566704'],
-            network: 'mainnet',
-        })
+            const result = await getAssetPricesByIds({
+                db,
+                assetIds: ['100', '200'],
+                network: 'mainnet',
+            })
 
-        expect(result).toHaveLength(1)
-        expect(result[0].name).toBe('New Name')
-    })
-
-    it('returns empty array for unknown IDs', () => {
-        const result = getAssetsByIds({
-            db,
-            assetIds: ['999999'],
-            network: 'mainnet',
+            expect(result).toHaveLength(2)
+            expect(result.find(r => r.assetId === '100')?.usdPrice).toBe('1.50')
         })
 
-        expect(result).toHaveLength(0)
-    })
+        it('updates existing prices on conflict', async () => {
+            await upsertAssetPrices({
+                db,
+                prices: [{ assetId: '100', usdPrice: '1.00' }],
+                network: 'mainnet',
+            })
 
-    it('returns empty array for empty input', () => {
-        const result = getAssetsByIds({ db, assetIds: [], network: 'mainnet' })
+            await upsertAssetPrices({
+                db,
+                prices: [{ assetId: '100', usdPrice: '2.00' }],
+                network: 'mainnet',
+            })
 
-        expect(result).toHaveLength(0)
-    })
+            const result = await getAssetPricesByIds({
+                db,
+                assetIds: ['100'],
+                network: 'mainnet',
+            })
 
-    it('isolates assets by network', () => {
-        upsertAssets({
-            db,
-            items: [makeAsset({ assetId: '100' })],
-            network: 'mainnet',
-        })
-        upsertAssets({
-            db,
-            items: [makeAsset({ assetId: '100', name: 'Testnet Asset' })],
-            network: 'testnet',
-        })
-
-        const mainnet = getAssetsByIds({
-            db,
-            assetIds: ['100'],
-            network: 'mainnet',
-        })
-        const testnet = getAssetsByIds({
-            db,
-            assetIds: ['100'],
-            network: 'testnet',
+            expect(result).toHaveLength(1)
+            expect(result[0].usdPrice).toBe('2.00')
         })
 
-        expect(mainnet).toHaveLength(1)
-        expect(mainnet[0].name).toBe('USD Coin')
-        expect(testnet).toHaveLength(1)
-        expect(testnet[0].name).toBe('Testnet Asset')
-    })
+        it('does nothing for empty prices', async () => {
+            await upsertAssetPrices({
+                db,
+                prices: [],
+                network: 'mainnet',
+            })
 
-    it('round-trips PeraAssetMetadata correctly', () => {
-        const asset = makeAsset({
-            peraMetadata: {
-                isDeleted: false,
-                verificationTier: 'verified',
-                isFavorited: true,
-                isPriceAlertEnabled: false,
-                logo: 'https://logo.png',
-            },
+            const result = await getAssetPricesByIds({
+                db,
+                assetIds: ['100'],
+                network: 'mainnet',
+            })
+
+            expect(result).toHaveLength(0)
         })
-
-        upsertAssets({ db, items: [asset], network: 'mainnet' })
-
-        const result = getAssetsByIds({
-            db,
-            assetIds: ['31566704'],
-            network: 'mainnet',
-        })
-
-        expect(result[0].peraMetadata?.isFavorited).toBe(true)
-        expect(result[0].peraMetadata?.logo).toBe('https://logo.png')
-    })
-
-    it('handles multiple assets in a single batch', () => {
-        const items = [
-            makeAsset({ assetId: '1', name: 'Asset 1' }),
-            makeAsset({ assetId: '2', name: 'Asset 2' }),
-            makeAsset({ assetId: '3', name: 'Asset 3' }),
-        ]
-
-        upsertAssets({ db, items, network: 'mainnet' })
-
-        const result = getAssetsByIds({
-            db,
-            assetIds: ['1', '2', '3'],
-            network: 'mainnet',
-        })
-
-        expect(result).toHaveLength(3)
-    })
-
-    it('does nothing for empty items', () => {
-        upsertAssets({ db, items: [], network: 'mainnet' })
-
-        const result = getAssetsByIds({
-            db,
-            assetIds: ['31566704'],
-            network: 'mainnet',
-        })
-
-        expect(result).toHaveLength(0)
     })
 })

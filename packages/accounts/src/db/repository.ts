@@ -10,12 +10,7 @@
  limitations under the License
  */
 
-import { eq, and, inArray } from 'drizzle-orm'
-import {
-    getDatabase,
-    type DrizzleDatabase,
-} from '@perawallet/wallet-core-database'
-import { AccountAssetHoldingsSchema, AccountBalancesSchema } from './schema'
+import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 
 export type HoldingRow = {
     assetId: string
@@ -23,66 +18,64 @@ export type HoldingRow = {
 }
 
 type UpsertAccountHoldingsParams = {
-    db?: DrizzleDatabase
+    db?: Database
     accountAddress: string
     holdings: HoldingRow[]
     network: string
 }
 
-export function upsertAccountHoldings({
+export async function upsertAccountHoldings({
     db = getDatabase(),
     accountAddress,
     holdings,
     network,
-}: UpsertAccountHoldingsParams): void {
+}: UpsertAccountHoldingsParams): Promise<void> {
     const now = Date.now()
 
-    db.delete(AccountAssetHoldingsSchema)
-        .where(
-            and(
-                eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
-                eq(AccountAssetHoldingsSchema.network, network),
-            ),
+    await db.withTransactionAsync(async () => {
+        await db.runAsync(
+            `DELETE FROM account_asset_holdings WHERE account_address = ? AND network = ?`,
+            [accountAddress, network],
         )
-        .run()
 
-    for (const holding of holdings) {
-        db.insert(AccountAssetHoldingsSchema)
-            .values({
-                accountAddress,
-                assetId: holding.assetId,
-                network,
-                amount: holding.amount,
-                updatedAt: now,
-            })
-            .run()
-    }
+        if (holdings.length === 0) return
+
+        const placeholders = holdings.map(() => '(?, ?, ?, ?, ?)').join(', ')
+        const values = holdings.flatMap(h => [
+            accountAddress,
+            h.assetId,
+            network,
+            h.amount,
+            now,
+        ])
+
+        await db.runAsync(
+            `INSERT INTO account_asset_holdings (account_address, asset_id, network, amount, updated_at) VALUES ${placeholders}`,
+            values,
+        )
+    })
 }
 
 type GetAccountHoldingsParams = {
-    db?: DrizzleDatabase
+    db?: Database
     accountAddress: string
     network: string
 }
 
-export function getAccountHoldings({
+export async function getAccountHoldings({
     db = getDatabase(),
     accountAddress,
     network,
-}: GetAccountHoldingsParams): HoldingRow[] {
-    return db
-        .select({
-            assetId: AccountAssetHoldingsSchema.assetId,
-            amount: AccountAssetHoldingsSchema.amount,
-        })
-        .from(AccountAssetHoldingsSchema)
-        .where(
-            and(
-                eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
-                eq(AccountAssetHoldingsSchema.network, network),
-            ),
-        )
-        .all()
+}: GetAccountHoldingsParams): Promise<HoldingRow[]> {
+    const rows = await db.getAllAsync<{
+        asset_id: string
+        amount: string
+    }>(
+        `SELECT asset_id, amount FROM account_asset_holdings WHERE account_address = ? AND network = ?`,
+        [accountAddress, network],
+    )
+
+    return rows.map(r => ({ assetId: r.asset_id, amount: r.amount }))
 }
 
 export type AccountBalanceRow = {
@@ -95,7 +88,7 @@ export type AccountBalanceRow = {
 }
 
 type UpsertAccountBalanceParams = {
-    db?: DrizzleDatabase
+    db?: Database
     accountAddress: string
     network: string
     algoBalanceMicro: string
@@ -105,7 +98,7 @@ type UpsertAccountBalanceParams = {
     authAddress: string | null
 }
 
-export function upsertAccountBalance({
+export async function upsertAccountBalance({
     db = getDatabase(),
     accountAddress,
     network,
@@ -114,11 +107,20 @@ export function upsertAccountBalance({
     totalCreatedAssets,
     totalAppsOptedIn,
     authAddress,
-}: UpsertAccountBalanceParams): void {
+}: UpsertAccountBalanceParams): Promise<void> {
     const now = Date.now()
 
-    db.insert(AccountBalancesSchema)
-        .values({
+    await db.runAsync(
+        `INSERT INTO account_balances (account_address, network, algo_balance_micro, total_assets_opted_in, total_created_assets, total_apps_opted_in, auth_address, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+         ON CONFLICT (account_address, network) DO UPDATE SET
+            algo_balance_micro = excluded.algo_balance_micro,
+            total_assets_opted_in = excluded.total_assets_opted_in,
+            total_created_assets = excluded.total_created_assets,
+            total_apps_opted_in = excluded.total_apps_opted_in,
+            auth_address = excluded.auth_address,
+            updated_at = excluded.updated_at`,
+        [
             accountAddress,
             network,
             algoBalanceMicro,
@@ -126,105 +128,90 @@ export function upsertAccountBalance({
             totalCreatedAssets,
             totalAppsOptedIn,
             authAddress,
-            updatedAt: now,
-        })
-        .onConflictDoUpdate({
-            target: [
-                AccountBalancesSchema.accountAddress,
-                AccountBalancesSchema.network,
-            ],
-            set: {
-                algoBalanceMicro,
-                totalAssetsOptedIn,
-                totalCreatedAssets,
-                totalAppsOptedIn,
-                authAddress,
-                updatedAt: now,
-            },
-        })
-        .run()
+            now,
+        ],
+    )
+}
+
+type RawAccountBalanceRow = {
+    account_address: string
+    algo_balance_micro: string
+    total_assets_opted_in: number
+    total_created_assets: number
+    total_apps_opted_in: number
+    auth_address: string | null
+}
+
+function mapAccountBalanceRow(row: RawAccountBalanceRow): AccountBalanceRow {
+    return {
+        accountAddress: row.account_address,
+        algoBalanceMicro: row.algo_balance_micro,
+        totalAssetsOptedIn: row.total_assets_opted_in,
+        totalCreatedAssets: row.total_created_assets,
+        totalAppsOptedIn: row.total_apps_opted_in,
+        authAddress: row.auth_address,
+    }
 }
 
 type GetAccountBalanceParams = {
-    db?: DrizzleDatabase
+    db?: Database
     accountAddress: string
     network: string
 }
 
-export function getAccountBalance({
+export async function getAccountBalance({
     db = getDatabase(),
     accountAddress,
     network,
-}: GetAccountBalanceParams): AccountBalanceRow | undefined {
-    const rows = db
-        .select({
-            accountAddress: AccountBalancesSchema.accountAddress,
-            algoBalanceMicro: AccountBalancesSchema.algoBalanceMicro,
-            totalAssetsOptedIn: AccountBalancesSchema.totalAssetsOptedIn,
-            totalCreatedAssets: AccountBalancesSchema.totalCreatedAssets,
-            totalAppsOptedIn: AccountBalancesSchema.totalAppsOptedIn,
-            authAddress: AccountBalancesSchema.authAddress,
-        })
-        .from(AccountBalancesSchema)
-        .where(
-            and(
-                eq(AccountBalancesSchema.accountAddress, accountAddress),
-                eq(AccountBalancesSchema.network, network),
-            ),
-        )
-        .all()
+}: GetAccountBalanceParams): Promise<AccountBalanceRow | undefined> {
+    const row = await db.getFirstAsync<RawAccountBalanceRow>(
+        `SELECT account_address, algo_balance_micro, total_assets_opted_in, total_created_assets, total_apps_opted_in, auth_address
+         FROM account_balances
+         WHERE account_address = ? AND network = ?`,
+        [accountAddress, network],
+    )
 
-    return rows[0]
+    return row ? mapAccountBalanceRow(row) : undefined
 }
 
 type GetAllAccountBalancesParams = {
-    db?: DrizzleDatabase
+    db?: Database
     accountAddresses: string[]
     network: string
 }
 
-export function getAllAccountBalances({
+export async function getAllAccountBalances({
     db = getDatabase(),
     accountAddresses,
     network,
-}: GetAllAccountBalancesParams): AccountBalanceRow[] {
+}: GetAllAccountBalancesParams): Promise<AccountBalanceRow[]> {
     if (accountAddresses.length === 0) return []
 
-    return db
-        .select({
-            accountAddress: AccountBalancesSchema.accountAddress,
-            algoBalanceMicro: AccountBalancesSchema.algoBalanceMicro,
-            totalAssetsOptedIn: AccountBalancesSchema.totalAssetsOptedIn,
-            totalCreatedAssets: AccountBalancesSchema.totalCreatedAssets,
-            totalAppsOptedIn: AccountBalancesSchema.totalAppsOptedIn,
-            authAddress: AccountBalancesSchema.authAddress,
-        })
-        .from(AccountBalancesSchema)
-        .where(
-            and(
-                inArray(AccountBalancesSchema.accountAddress, accountAddresses),
-                eq(AccountBalancesSchema.network, network),
-            ),
-        )
-        .all()
+    const placeholders = accountAddresses.map(() => '?').join(', ')
+
+    const rows = await db.getAllAsync<RawAccountBalanceRow>(
+        `SELECT account_address, algo_balance_micro, total_assets_opted_in, total_created_assets, total_apps_opted_in, auth_address
+         FROM account_balances
+         WHERE account_address IN (${placeholders}) AND network = ?`,
+        [...accountAddresses, network],
+    )
+
+    return rows.map(mapAccountBalanceRow)
 }
 
 type GetAllHoldingsForNetworkParams = {
-    db?: DrizzleDatabase
+    db?: Database
     network: string
 }
 
-export function getAllAssetIdsForNetwork({
+export async function getAllAssetIdsForNetwork({
     db = getDatabase(),
     network,
-}: GetAllHoldingsForNetworkParams): string[] {
-    const rows = db
-        .selectDistinct({
-            assetId: AccountAssetHoldingsSchema.assetId,
-        })
-        .from(AccountAssetHoldingsSchema)
-        .where(eq(AccountAssetHoldingsSchema.network, network))
-        .all()
+}: GetAllHoldingsForNetworkParams): Promise<string[]> {
+    const rows = await db.getAllAsync<{ asset_id: string }>(
+        `SELECT DISTINCT asset_id FROM account_asset_holdings WHERE network = ?`,
+        [network],
+    )
 
-    return rows.map(r => r.assetId)
+    return rows.map(r => r.asset_id)
 }

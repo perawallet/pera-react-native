@@ -104,7 +104,7 @@ export class SyncService {
         )
 
         // 2. Collect all unique asset IDs from DB holdings
-        const assetIds = getAllAssetIdsForNetwork({ network })
+        const assetIds = await getAllAssetIdsForNetwork({ network })
 
         // 3. Sync asset metadata and prices in parallel
         await Promise.allSettled([

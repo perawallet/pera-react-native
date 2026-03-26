@@ -14,7 +14,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import {
     runMigrations,
     migrations,
-    type DrizzleDatabase,
+    type Database,
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import type { TransactionHistoryItem } from '../../models/types'
@@ -25,14 +25,14 @@ import {
 } from '../repository'
 
 describe('transaction repository', () => {
-    let db: DrizzleDatabase
+    let db: Database
     let teardown: () => void
 
-    beforeEach(() => {
+    beforeEach(async () => {
         const result = createTestDatabase()
         db = result.db
         teardown = result.teardown
-        runMigrations(db, migrations)
+        await runMigrations(db, migrations)
     })
 
     afterEach(() => {
@@ -60,15 +60,15 @@ describe('transaction repository', () => {
         ...overrides,
     })
 
-    it('inserts and retrieves transactions', () => {
-        upsertTransactions({
+    it('inserts and retrieves transactions', async () => {
+        await upsertTransactions({
             db,
             items: [makeTx()],
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
 
-        const result = getTransactionHistory({
+        const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
             network: 'mainnet',
@@ -80,21 +80,21 @@ describe('transaction repository', () => {
         expect(result[0].amount).toBe('5000000')
     })
 
-    it('upserts duplicate transaction IDs without duplicating', () => {
-        upsertTransactions({
+    it('upserts duplicate transaction IDs without duplicating', async () => {
+        await upsertTransactions({
             db,
             items: [makeTx({ amount: '100' })],
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
-        upsertTransactions({
+        await upsertTransactions({
             db,
             items: [makeTx({ amount: '200' })],
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
 
-        const result = getTransactionHistory({
+        const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
             network: 'mainnet',
@@ -104,7 +104,7 @@ describe('transaction repository', () => {
         expect(result[0].amount).toBe('200')
     })
 
-    it('filters by assetId', () => {
+    it('filters by assetId', async () => {
         const asset = {
             assetId: 31566704,
             name: 'USDC',
@@ -112,7 +112,7 @@ describe('transaction repository', () => {
             decimals: 6,
         }
 
-        upsertTransactions({
+        await upsertTransactions({
             db,
             items: [
                 makeTx({ id: 'TX_ASSET', asset }),
@@ -122,14 +122,14 @@ describe('transaction repository', () => {
             network: 'mainnet',
         })
 
-        const withAsset = getTransactionHistory({
+        const withAsset = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
             network: 'mainnet',
             assetId: '31566704',
         })
 
-        const all = getTransactionHistory({
+        const all = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
             network: 'mainnet',
@@ -140,19 +140,19 @@ describe('transaction repository', () => {
         expect(all).toHaveLength(2)
     })
 
-    it('respects limit parameter', () => {
+    it('respects limit parameter', async () => {
         const items = Array.from({ length: 10 }, (_, i) =>
             makeTx({ id: `TX${i}`, roundTime: 1700000000 + i }),
         )
 
-        upsertTransactions({
+        await upsertTransactions({
             db,
             items,
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
 
-        const result = getTransactionHistory({
+        const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
             network: 'mainnet',
@@ -162,8 +162,8 @@ describe('transaction repository', () => {
         expect(result).toHaveLength(3)
     })
 
-    it('orders by roundTime DESC', () => {
-        upsertTransactions({
+    it('orders by roundTime DESC', async () => {
+        await upsertTransactions({
             db,
             items: [
                 makeTx({ id: 'TX_OLD', roundTime: 1700000000 }),
@@ -174,7 +174,7 @@ describe('transaction repository', () => {
             network: 'mainnet',
         })
 
-        const result = getTransactionHistory({
+        const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
             network: 'mainnet',
@@ -183,26 +183,26 @@ describe('transaction repository', () => {
         expect(result.map(r => r.id)).toEqual(['TX_NEW', 'TX_MID', 'TX_OLD'])
     })
 
-    it('isolates transactions by network', () => {
-        upsertTransactions({
+    it('isolates transactions by network', async () => {
+        await upsertTransactions({
             db,
             items: [makeTx({ id: 'TX_MAIN' })],
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
-        upsertTransactions({
+        await upsertTransactions({
             db,
             items: [makeTx({ id: 'TX_TEST' })],
             accountAddress: 'ACCT1',
             network: 'testnet',
         })
 
-        const mainnet = getTransactionHistory({
+        const mainnet = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
-        const testnet = getTransactionHistory({
+        const testnet = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
             network: 'testnet',
@@ -214,7 +214,7 @@ describe('transaction repository', () => {
         expect(testnet[0].id).toBe('TX_TEST')
     })
 
-    it('round-trips nested objects correctly', () => {
+    it('round-trips nested objects correctly', async () => {
         const asset = {
             assetId: 100,
             name: 'Test',
@@ -234,14 +234,14 @@ describe('transaction repository', () => {
             description: 'Swapped 1000 ALGO for 500 TST',
         }
 
-        upsertTransactions({
+        await upsertTransactions({
             db,
             items: [makeTx({ asset, swapGroupDetail, interpretedMeaning })],
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
 
-        const result = getTransactionHistory({
+        const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
             network: 'mainnet',
@@ -252,8 +252,8 @@ describe('transaction repository', () => {
         expect(result[0].interpretedMeaning).toEqual(interpretedMeaning)
     })
 
-    it('supports beforeRoundTime pagination', () => {
-        upsertTransactions({
+    it('supports beforeRoundTime pagination', async () => {
+        await upsertTransactions({
             db,
             items: [
                 makeTx({ id: 'TX1', roundTime: 1000 }),
@@ -264,7 +264,7 @@ describe('transaction repository', () => {
             network: 'mainnet',
         })
 
-        const result = getTransactionHistory({
+        const result = await getTransactionHistory({
             db,
             accountAddress: 'ACCT1',
             network: 'mainnet',
@@ -274,8 +274,8 @@ describe('transaction repository', () => {
         expect(result.map(r => r.id)).toEqual(['TX2', 'TX1'])
     })
 
-    it('returns the latest round time for an account', () => {
-        upsertTransactions({
+    it('returns the latest round time for an account', async () => {
+        await upsertTransactions({
             db,
             items: [
                 makeTx({ id: 'TX1', roundTime: 1000 }),
@@ -286,7 +286,7 @@ describe('transaction repository', () => {
             network: 'mainnet',
         })
 
-        const result = getLatestTransactionRoundTime({
+        const result = await getLatestTransactionRoundTime({
             db,
             accountAddress: 'ACCT1',
             network: 'mainnet',
@@ -295,8 +295,8 @@ describe('transaction repository', () => {
         expect(result).toBe(3000)
     })
 
-    it('returns null for an account with no transactions', () => {
-        const result = getLatestTransactionRoundTime({
+    it('returns null for an account with no transactions', async () => {
+        const result = await getLatestTransactionRoundTime({
             db,
             accountAddress: 'UNKNOWN',
             network: 'mainnet',

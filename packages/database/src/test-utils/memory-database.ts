@@ -10,18 +10,48 @@
  limitations under the License
  */
 
-import Database from 'better-sqlite3'
-import { drizzle } from 'drizzle-orm/better-sqlite3'
-import type { DrizzleDatabase } from '../database'
+import BetterSqlite3 from 'better-sqlite3'
+import type { Database } from '../database'
+import type { DatabaseBindValue } from '@perawallet/wallet-extension-platform'
 
 type TestDatabase = {
-    db: DrizzleDatabase
+    db: Database
     teardown: () => void
 }
 
 export const createTestDatabase = (): TestDatabase => {
-    const sqlite = new Database(':memory:')
-    const db: DrizzleDatabase = drizzle(sqlite)
+    const sqlite = new BetterSqlite3(':memory:')
+
+    const db: Database = {
+        async runAsync(
+            sql: string,
+            params?: DatabaseBindValue[],
+        ): Promise<void> {
+            sqlite.prepare(sql).run(...(params ?? []))
+        },
+        async getAllAsync<T>(
+            sql: string,
+            params?: DatabaseBindValue[],
+        ): Promise<T[]> {
+            return sqlite.prepare(sql).all(...(params ?? [])) as T[]
+        },
+        async getFirstAsync<T>(
+            sql: string,
+            params?: DatabaseBindValue[],
+        ): Promise<T | null> {
+            return (sqlite.prepare(sql).get(...(params ?? [])) as T) ?? null
+        },
+        async withTransactionAsync(fn: () => Promise<void>): Promise<void> {
+            sqlite.exec('BEGIN')
+            try {
+                await fn()
+                sqlite.exec('COMMIT')
+            } catch (error) {
+                sqlite.exec('ROLLBACK')
+                throw error
+            }
+        },
+    }
 
     return {
         db,

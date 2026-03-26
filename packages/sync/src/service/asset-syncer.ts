@@ -31,7 +31,7 @@ export async function fetchAndPersistAssets(
         batches.map(async batch => {
             const response = await fetchAssets(batch, network)
             const assets = response.results.map(transformAssetResponse)
-            upsertAssets({ items: assets, network })
+            await upsertAssets({ items: assets, network })
         }),
     )
 }

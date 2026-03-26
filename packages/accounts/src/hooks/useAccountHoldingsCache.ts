@@ -18,25 +18,25 @@ import {
     type HoldingRow,
 } from '../db'
 
-export const getCachedHoldings = (
+export const getCachedHoldings = async (
     accountAddress: string,
     network: string,
-): HoldingRow[] => {
+): Promise<HoldingRow[]> => {
     try {
-        return getAccountHoldings({ accountAddress, network })
+        return await getAccountHoldings({ accountAddress, network })
     } catch (error) {
         logger.warn('Failed to read cached holdings from database', { error })
         return []
     }
 }
 
-export const persistHoldings = (
+export const persistHoldings = async (
     accountAddress: string,
     holdings: HoldingRow[],
     network: string,
-): void => {
+): Promise<void> => {
     try {
-        upsertAccountHoldings({ accountAddress, holdings, network })
+        await upsertAccountHoldings({ accountAddress, holdings, network })
     } catch (error) {
         logger.warn('Failed to persist holdings to database', { error })
     }
@@ -58,7 +58,7 @@ export const useHoldingsCacheSync = (
                 amount: `${h.amount}`,
             }))
 
-            persistHoldings(accountAddress, rows, network)
+            void persistHoldings(accountAddress, rows, network)
         }
     }, [accountAddress, holdings, isFetched, network])
 }

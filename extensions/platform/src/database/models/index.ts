@@ -10,9 +10,17 @@
  limitations under the License
  */
 
-import type { BaseSQLiteDatabase } from 'drizzle-orm/sqlite-core'
+export type DatabaseBindValue = string | number | null | boolean | Uint8Array
 
-export type DrizzleDatabase = BaseSQLiteDatabase<'sync', unknown>
+export interface Database {
+    runAsync(sql: string, params?: DatabaseBindValue[]): Promise<void>
+    getAllAsync<T>(sql: string, params?: DatabaseBindValue[]): Promise<T[]>
+    getFirstAsync<T>(
+        sql: string,
+        params?: DatabaseBindValue[],
+    ): Promise<T | null>
+    withTransactionAsync(fn: () => Promise<void>): Promise<void>
+}
 
 export interface DatabaseDriver {
     readonly driver: unknown
@@ -20,6 +28,6 @@ export interface DatabaseDriver {
 
 export interface DatabaseService {
     open(name: string): Promise<DatabaseDriver>
-    getDatabase(name: string): Promise<DrizzleDatabase>
+    getDatabase(name: string): Promise<Database>
     close(name: string): Promise<void>
 }

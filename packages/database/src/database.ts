@@ -11,17 +11,17 @@
  */
 
 import type {
+    Database,
     DatabaseService,
-    DrizzleDatabase,
 } from '@perawallet/wallet-extension-platform'
 import { runMigrations } from './migrator'
 import migrations from './migrations'
 
-export type { DrizzleDatabase }
+export type { Database }
 
 const DATABASE_NAME = 'pera.db'
 
-let instance: DrizzleDatabase | null = null
+let instance: Database | null = null
 
 export const initializeDatabase = async (
     database: DatabaseService,
@@ -29,10 +29,10 @@ export const initializeDatabase = async (
     const db = await database.getDatabase(DATABASE_NAME)
 
     instance = db
-    runMigrations(db, migrations)
+    await runMigrations(db, migrations)
 }
 
-export const getDatabase = (): DrizzleDatabase => {
+export const getDatabase = (): Database => {
     if (instance === null) {
         throw new Error(
             'Database not initialized. Call initializeDatabase() during app bootstrap.',

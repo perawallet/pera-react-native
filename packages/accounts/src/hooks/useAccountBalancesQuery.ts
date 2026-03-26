@@ -35,12 +35,18 @@ type AccountDbSnapshot = {
     holdings: Array<{ assetId: string; amount: string }>
 }
 
-function readAccountFromDb(
+async function readAccountFromDb(
     address: string,
     network: string,
-): AccountDbSnapshot {
-    const balance = getAccountBalance({ accountAddress: address, network })
-    const holdings = getAccountHoldings({ accountAddress: address, network })
+): Promise<AccountDbSnapshot> {
+    const balance = await getAccountBalance({
+        accountAddress: address,
+        network,
+    })
+    const holdings = await getAccountHoldings({
+        accountAddress: address,
+        network,
+    })
 
     return {
         algoBalanceMicro: balance?.algoBalanceMicro ?? '0',

@@ -11,15 +11,41 @@
  */
 
 import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite'
-import { drizzle } from 'drizzle-orm/expo-sqlite'
 import type {
+    Database,
+    DatabaseBindValue,
     DatabaseService,
     DatabaseDriver,
-    DrizzleDatabase,
 } from '@perawallet/wallet-extension-platform'
 
 class ExpoSQLiteDatabaseDriver implements DatabaseDriver {
     constructor(readonly driver: SQLiteDatabase) {}
+}
+
+class ExpoSQLiteDatabase implements Database {
+    constructor(private readonly db: SQLiteDatabase) {}
+
+    async runAsync(sql: string, params?: DatabaseBindValue[]): Promise<void> {
+        await this.db.runAsync(sql, params ?? [])
+    }
+
+    async getAllAsync<T>(
+        sql: string,
+        params?: DatabaseBindValue[],
+    ): Promise<T[]> {
+        return this.db.getAllAsync<T>(sql, params ?? [])
+    }
+
+    async getFirstAsync<T>(
+        sql: string,
+        params?: DatabaseBindValue[],
+    ): Promise<T | null> {
+        return this.db.getFirstAsync<T>(sql, params ?? [])
+    }
+
+    async withTransactionAsync(fn: () => Promise<void>): Promise<void> {
+        await this.db.withTransactionAsync(fn)
+    }
 }
 
 export class RNDatabaseService implements DatabaseService {
@@ -31,10 +57,10 @@ export class RNDatabaseService implements DatabaseService {
         return new ExpoSQLiteDatabaseDriver(db)
     }
 
-    async getDatabase(name: string): Promise<DrizzleDatabase> {
+    async getDatabase(name: string): Promise<Database> {
         const db = await this.getOrOpen(name)
 
-        return drizzle(db)
+        return new ExpoSQLiteDatabase(db)
     }
 
     async close(name: string): Promise<void> {

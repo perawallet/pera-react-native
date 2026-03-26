@@ -10,147 +10,136 @@
  limitations under the License
  */
 
-import { eq, and, desc, lt, sql } from 'drizzle-orm'
-import {
-    getDatabase,
-    type DrizzleDatabase,
-} from '@perawallet/wallet-core-database'
+import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import type { TransactionHistoryItem } from '../models/types'
-import { TransactionsSchema, AccountTransactionsSchema } from './schema'
 
-function toDb(item: TransactionHistoryItem) {
-    return {
-        id: item.id,
-        txType: item.txType,
-        sender: item.sender,
-        receiver: item.receiver,
-        confirmedRound: item.confirmedRound,
-        roundTime: item.roundTime,
-        fee: item.fee,
-        groupId: item.groupId,
-        amount: item.amount,
-        closeTo: item.closeTo,
-        applicationId: item.applicationId,
-        innerTransactionCount: item.innerTransactionCount,
-        assetJson: item.asset ? JSON.stringify(item.asset) : null,
-        swapGroupDetailJson: item.swapGroupDetail
-            ? JSON.stringify(item.swapGroupDetail)
-            : null,
-        interpretedMeaningJson: item.interpretedMeaning
-            ? JSON.stringify(item.interpretedMeaning)
-            : null,
-    }
-}
-
-function fromDb(row: {
+type RawTransactionRow = {
     id: string
-    txType: string
+    tx_type: string
     sender: string
     receiver: string | null
-    confirmedRound: number
-    roundTime: number
+    confirmed_round: number
+    round_time: number
     fee: string
-    groupId: string | null
+    group_id: string | null
     amount: string | null
-    closeTo: string | null
-    applicationId: number | null
-    innerTransactionCount: number | null
-    assetJson: string | null
-    swapGroupDetailJson: string | null
-    interpretedMeaningJson: string | null
-}): TransactionHistoryItem {
+    close_to: string | null
+    application_id: number | null
+    inner_transaction_count: number | null
+    asset_json: string | null
+    swap_group_detail_json: string | null
+    interpreted_meaning_json: string | null
+}
+
+function fromDb(row: RawTransactionRow): TransactionHistoryItem {
     return {
         id: row.id,
-        txType: row.txType as TransactionHistoryItem['txType'],
+        txType: row.tx_type as TransactionHistoryItem['txType'],
         sender: row.sender,
         receiver: row.receiver,
-        confirmedRound: row.confirmedRound,
-        roundTime: row.roundTime,
+        confirmedRound: row.confirmed_round,
+        roundTime: row.round_time,
         fee: row.fee,
-        groupId: row.groupId,
+        groupId: row.group_id,
         amount: row.amount,
-        closeTo: row.closeTo,
-        applicationId: row.applicationId,
-        innerTransactionCount: row.innerTransactionCount,
-        asset: row.assetJson ? JSON.parse(row.assetJson) : null,
-        swapGroupDetail: row.swapGroupDetailJson
-            ? JSON.parse(row.swapGroupDetailJson)
+        closeTo: row.close_to,
+        applicationId: row.application_id,
+        innerTransactionCount: row.inner_transaction_count,
+        asset: row.asset_json ? JSON.parse(row.asset_json) : null,
+        swapGroupDetail: row.swap_group_detail_json
+            ? JSON.parse(row.swap_group_detail_json)
             : null,
-        interpretedMeaning: row.interpretedMeaningJson
-            ? JSON.parse(row.interpretedMeaningJson)
+        interpretedMeaning: row.interpreted_meaning_json
+            ? JSON.parse(row.interpreted_meaning_json)
             : null,
     }
 }
 
 type UpsertTransactionsParams = {
-    db?: DrizzleDatabase
+    db?: Database
     items: TransactionHistoryItem[]
     accountAddress: string
     network: string
 }
 
-export function upsertTransactions({
+export async function upsertTransactions({
     db = getDatabase(),
     items,
     accountAddress,
     network,
-}: UpsertTransactionsParams): void {
+}: UpsertTransactionsParams): Promise<void> {
     if (items.length === 0) return
 
     const now = Date.now()
 
-    for (const item of items) {
-        const row = toDb(item)
+    await db.withTransactionAsync(async () => {
+        for (const item of items) {
+            const assetJson = item.asset ? JSON.stringify(item.asset) : null
+            const swapGroupDetailJson = item.swapGroupDetail
+                ? JSON.stringify(item.swapGroupDetail)
+                : null
+            const interpretedMeaningJson = item.interpretedMeaning
+                ? JSON.stringify(item.interpretedMeaning)
+                : null
 
-        db.insert(TransactionsSchema)
-            .values({
-                ...row,
-                network,
-                updatedAt: now,
-            })
-            .onConflictDoUpdate({
-                target: TransactionsSchema.id,
-                set: {
-                    txType: row.txType,
-                    sender: row.sender,
-                    receiver: row.receiver,
-                    confirmedRound: row.confirmedRound,
-                    roundTime: row.roundTime,
-                    fee: row.fee,
-                    groupId: row.groupId,
-                    amount: row.amount,
-                    closeTo: row.closeTo,
-                    applicationId: row.applicationId,
-                    innerTransactionCount: row.innerTransactionCount,
-                    assetJson: row.assetJson,
-                    swapGroupDetailJson: row.swapGroupDetailJson,
-                    interpretedMeaningJson: row.interpretedMeaningJson,
-                    updatedAt: now,
-                },
-            })
-            .run()
+            await db.runAsync(
+                `INSERT INTO transactions (id, network, tx_type, sender, receiver, confirmed_round, round_time, fee, group_id, amount, close_to, application_id, inner_transaction_count, asset_json, swap_group_detail_json, interpreted_meaning_json, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 ON CONFLICT (id) DO UPDATE SET
+                    tx_type = excluded.tx_type,
+                    sender = excluded.sender,
+                    receiver = excluded.receiver,
+                    confirmed_round = excluded.confirmed_round,
+                    round_time = excluded.round_time,
+                    fee = excluded.fee,
+                    group_id = excluded.group_id,
+                    amount = excluded.amount,
+                    close_to = excluded.close_to,
+                    application_id = excluded.application_id,
+                    inner_transaction_count = excluded.inner_transaction_count,
+                    asset_json = excluded.asset_json,
+                    swap_group_detail_json = excluded.swap_group_detail_json,
+                    interpreted_meaning_json = excluded.interpreted_meaning_json,
+                    updated_at = excluded.updated_at`,
+                [
+                    item.id,
+                    network,
+                    item.txType,
+                    item.sender,
+                    item.receiver ?? null,
+                    item.confirmedRound,
+                    item.roundTime,
+                    item.fee,
+                    item.groupId ?? null,
+                    item.amount ?? null,
+                    item.closeTo ?? null,
+                    item.applicationId ?? null,
+                    item.innerTransactionCount ?? null,
+                    assetJson,
+                    swapGroupDetailJson,
+                    interpretedMeaningJson,
+                    now,
+                ],
+            )
 
-        const assetId = row.assetJson
-            ? ((
-                  JSON.parse(row.assetJson) as { assetId?: number }
-              ).assetId?.toString() ?? null)
-            : null
+            const assetId = assetJson
+                ? ((
+                      JSON.parse(assetJson) as { assetId?: number }
+                  ).assetId?.toString() ?? null)
+                : null
 
-        db.insert(AccountTransactionsSchema)
-            .values({
-                accountAddress,
-                transactionId: item.id,
-                network,
-                assetId,
-                roundTime: item.roundTime,
-            })
-            .onConflictDoNothing()
-            .run()
-    }
+            await db.runAsync(
+                `INSERT INTO account_transactions (account_address, transaction_id, network, asset_id, round_time)
+                 VALUES (?, ?, ?, ?, ?)
+                 ON CONFLICT (account_address, transaction_id, network) DO NOTHING`,
+                [accountAddress, item.id, network, assetId, item.roundTime],
+            )
+        }
+    })
 }
 
 type GetTransactionHistoryParams = {
-    db?: DrizzleDatabase
+    db?: Database
     accountAddress: string
     network: string
     assetId?: string
@@ -158,92 +147,57 @@ type GetTransactionHistoryParams = {
     beforeRoundTime?: number
 }
 
-export function getTransactionHistory({
+export async function getTransactionHistory({
     db = getDatabase(),
     accountAddress,
     network,
     assetId,
     limit = 25,
     beforeRoundTime,
-}: GetTransactionHistoryParams): TransactionHistoryItem[] {
-    const conditions = [
-        eq(AccountTransactionsSchema.accountAddress, accountAddress),
-        eq(AccountTransactionsSchema.network, network),
-    ]
+}: GetTransactionHistoryParams): Promise<TransactionHistoryItem[]> {
+    const conditions: string[] = ['at.account_address = ?', 'at.network = ?']
+    const params: (string | number)[] = [accountAddress, network]
 
     if (assetId !== undefined) {
-        conditions.push(eq(AccountTransactionsSchema.assetId, assetId))
+        conditions.push('at.asset_id = ?')
+        params.push(assetId)
     }
 
     if (beforeRoundTime !== undefined) {
-        conditions.push(
-            lt(AccountTransactionsSchema.roundTime, beforeRoundTime),
-        )
+        conditions.push('at.round_time < ?')
+        params.push(beforeRoundTime)
     }
 
-    const rows = db
-        .select({
-            id: TransactionsSchema.id,
-            txType: TransactionsSchema.txType,
-            sender: TransactionsSchema.sender,
-            receiver: TransactionsSchema.receiver,
-            confirmedRound: TransactionsSchema.confirmedRound,
-            roundTime: TransactionsSchema.roundTime,
-            fee: TransactionsSchema.fee,
-            groupId: TransactionsSchema.groupId,
-            amount: TransactionsSchema.amount,
-            closeTo: TransactionsSchema.closeTo,
-            applicationId: TransactionsSchema.applicationId,
-            innerTransactionCount: TransactionsSchema.innerTransactionCount,
-            assetJson: TransactionsSchema.assetJson,
-            swapGroupDetailJson: TransactionsSchema.swapGroupDetailJson,
-            interpretedMeaningJson: TransactionsSchema.interpretedMeaningJson,
-        })
-        .from(AccountTransactionsSchema)
-        .innerJoin(
-            TransactionsSchema,
-            and(
-                eq(
-                    AccountTransactionsSchema.transactionId,
-                    TransactionsSchema.id,
-                ),
-                eq(
-                    AccountTransactionsSchema.network,
-                    TransactionsSchema.network,
-                ),
-            ),
-        )
-        .where(and(...conditions))
-        .orderBy(desc(AccountTransactionsSchema.roundTime))
-        .limit(limit)
-        .all()
+    params.push(limit)
+
+    const rows = await db.getAllAsync<RawTransactionRow>(
+        `SELECT t.id, t.tx_type, t.sender, t.receiver, t.confirmed_round, t.round_time, t.fee, t.group_id, t.amount, t.close_to, t.application_id, t.inner_transaction_count, t.asset_json, t.swap_group_detail_json, t.interpreted_meaning_json
+         FROM account_transactions at
+         INNER JOIN transactions t ON at.transaction_id = t.id AND at.network = t.network
+         WHERE ${conditions.join(' AND ')}
+         ORDER BY at.round_time DESC
+         LIMIT ?`,
+        params,
+    )
 
     return rows.map(fromDb)
 }
 
 type GetLatestTransactionRoundTimeParams = {
-    db?: DrizzleDatabase
+    db?: Database
     accountAddress: string
     network: string
 }
 
-export function getLatestTransactionRoundTime({
+export async function getLatestTransactionRoundTime({
     db = getDatabase(),
     accountAddress,
     network,
-}: GetLatestTransactionRoundTimeParams): number | null {
-    const result = db
-        .select({
-            maxRoundTime: sql<number>`MAX(${AccountTransactionsSchema.roundTime})`,
-        })
-        .from(AccountTransactionsSchema)
-        .where(
-            and(
-                eq(AccountTransactionsSchema.accountAddress, accountAddress),
-                eq(AccountTransactionsSchema.network, network),
-            ),
-        )
-        .get()
+}: GetLatestTransactionRoundTimeParams): Promise<number | null> {
+    const result = await db.getFirstAsync<{ max_round_time: number | null }>(
+        `SELECT MAX(round_time) AS max_round_time FROM account_transactions WHERE account_address = ? AND network = ?`,
+        [accountAddress, network],
+    )
 
-    return result?.maxRoundTime ?? null
+    return result?.max_round_time ?? null
 }

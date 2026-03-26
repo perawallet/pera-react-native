@@ -36,14 +36,14 @@ export async function fetchAndPersistPrices(
                 assetId: `${r.asset_id}`,
                 usdPrice: r.usd_value ?? '0',
             }))
-            upsertAssetPrices({ prices, network })
+            await upsertAssetPrices({ prices, network })
         }),
         (async () => {
             const algoDetails = await fetchPublicAssetDetails(
                 ALGO_ASSET_ID,
                 network,
             )
-            upsertAssetPrices({
+            await upsertAssetPrices({
                 prices: [
                     {
                         assetId: ALGO_ASSET_ID,

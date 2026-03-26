@@ -24,7 +24,7 @@ export async function fetchAndPersistAccount(
     const algokit = getAlgorandClient()
     const info = await algokit.account.getInformation(address)
 
-    upsertAccountBalance({
+    await upsertAccountBalance({
         accountAddress: address,
         network,
         algoBalanceMicro: info.balance.microAlgos.toString(),
@@ -39,7 +39,7 @@ export async function fetchAndPersistAccount(
         amount: `${a.amount ?? '0'}`,
     }))
 
-    upsertAccountHoldings({
+    await upsertAccountHoldings({
         accountAddress: address,
         holdings,
         network,

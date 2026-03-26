@@ -15,12 +15,12 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { upsertAssets, getAssetsByIds } from '../db'
 import type { PeraAsset } from '../models'
 
-export const getCachedAssets = (
+export const getCachedAssets = async (
     assetIds: string[],
     network: string,
-): Map<string, PeraAsset> => {
+): Promise<Map<string, PeraAsset>> => {
     try {
-        const assets = getAssetsByIds({ assetIds, network })
+        const assets = await getAssetsByIds({ assetIds, network })
         const map = new Map<string, PeraAsset>()
 
         for (const asset of assets) {
@@ -34,9 +34,12 @@ export const getCachedAssets = (
     }
 }
 
-export const persistAssets = (items: PeraAsset[], network: string): void => {
+export const persistAssets = async (
+    items: PeraAsset[],
+    network: string,
+): Promise<void> => {
     try {
-        upsertAssets({ items, network })
+        await upsertAssets({ items, network })
     } catch (error) {
         logger.warn('Failed to persist assets to database', { error })
     }
@@ -49,7 +52,7 @@ export const useAssetsCacheSync = (
 ): void => {
     useEffect(() => {
         if (isFetched && fetchedAssets.size > 0) {
-            persistAssets(Array.from(fetchedAssets.values()), network)
+            void persistAssets(Array.from(fetchedAssets.values()), network)
         }
     }, [fetchedAssets, isFetched, network])
 }

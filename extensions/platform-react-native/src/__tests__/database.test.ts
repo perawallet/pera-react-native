@@ -21,11 +21,6 @@ vi.mock('expo-sqlite', () => ({
     openDatabaseAsync: (...args: unknown[]) => mockOpenDatabaseAsync(...args),
 }))
 
-const mockDrizzleInstance = {} as Record<string, unknown>
-vi.mock('drizzle-orm/expo-sqlite', () => ({
-    drizzle: () => mockDrizzleInstance,
-}))
-
 describe('RNDatabaseService', () => {
     let service: RNDatabaseService
 
@@ -65,11 +60,14 @@ describe('RNDatabaseService', () => {
     })
 
     describe('getDatabase', () => {
-        it('returns a drizzle database instance', async () => {
+        it('returns a Database instance with async methods', async () => {
             const result = await service.getDatabase('test.db')
 
             expect(mockOpenDatabaseAsync).toHaveBeenCalledWith('test.db')
-            expect(result).toBe(mockDrizzleInstance)
+            expect(result).toHaveProperty('runAsync')
+            expect(result).toHaveProperty('getAllAsync')
+            expect(result).toHaveProperty('getFirstAsync')
+            expect(result).toHaveProperty('withTransactionAsync')
         })
 
         it('reuses the same underlying connection', async () => {

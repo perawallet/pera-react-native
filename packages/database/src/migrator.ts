@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { sql } from 'drizzle-orm'
-import type { DrizzleDatabase } from '@perawallet/wallet-extension-platform'
+import type { Database } from '@perawallet/wallet-extension-platform'
 
 export type MigrationConfig = {
     journal: {
@@ -20,11 +19,11 @@ export type MigrationConfig = {
     migrations: Record<string, string>
 }
 
-export const runMigrations = (
-    db: DrizzleDatabase,
+export const runMigrations = async (
+    db: Database,
     migrations: MigrationConfig,
-): void => {
-    db.run(sql`
+): Promise<void> => {
+    await db.runAsync(`
         CREATE TABLE IF NOT EXISTS __drizzle_migrations (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             tag TEXT NOT NULL UNIQUE,
@@ -32,13 +31,11 @@ export const runMigrations = (
         )
     `)
 
-    const applied = db
-        .all<{ tag: string }>(
-            sql`SELECT tag FROM __drizzle_migrations ORDER BY id`,
-        )
-        .map(row => row.tag)
+    const applied = await db.getAllAsync<{ tag: string }>(
+        `SELECT tag FROM __drizzle_migrations ORDER BY id`,
+    )
 
-    const appliedSet = new Set(applied)
+    const appliedSet = new Set(applied.map((row: { tag: string }) => row.tag))
 
     const sorted = [...migrations.journal.entries].sort((a, b) => a.idx - b.idx)
 
@@ -59,11 +56,12 @@ export const runMigrations = (
             .filter(s => s.length > 0)
 
         for (const statement of statements) {
-            db.run(sql.raw(statement))
+            await db.runAsync(statement)
         }
 
-        db.run(
-            sql`INSERT INTO __drizzle_migrations (tag, created_at) VALUES (${entry.tag}, ${Date.now()})`,
+        await db.runAsync(
+            `INSERT INTO __drizzle_migrations (tag, created_at) VALUES (?, ?)`,
+            [entry.tag, Date.now()],
         )
     }
 }

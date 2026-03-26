@@ -11,7 +11,6 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
-import { sql } from 'drizzle-orm'
 import { runMigrations, type MigrationConfig } from '../migrator'
 import { createTestDatabase } from '../test-utils'
 
@@ -22,7 +21,7 @@ describe('runMigrations', () => {
         teardown?.()
     })
 
-    it('creates the migrations tracking table', () => {
+    it('creates the migrations tracking table', async () => {
         const { db, teardown: td } = createTestDatabase()
         teardown = td
 
@@ -31,16 +30,16 @@ describe('runMigrations', () => {
             migrations: {},
         }
 
-        runMigrations(db, emptyMigrations)
+        await runMigrations(db, emptyMigrations)
 
-        const tables = db.all<{ name: string }>(
-            sql`SELECT name FROM sqlite_master WHERE type='table' AND name='__drizzle_migrations'`,
+        const tables = await db.getAllAsync<{ name: string }>(
+            `SELECT name FROM sqlite_master WHERE type='table' AND name='__drizzle_migrations'`,
         )
 
         expect(tables).toHaveLength(1)
     })
 
-    it('applies pending migrations', () => {
+    it('applies pending migrations', async () => {
         const { db, teardown: td } = createTestDatabase()
         teardown = td
 
@@ -54,16 +53,16 @@ describe('runMigrations', () => {
             },
         }
 
-        runMigrations(db, migrations)
+        await runMigrations(db, migrations)
 
-        const tables = db.all<{ name: string }>(
-            sql`SELECT name FROM sqlite_master WHERE type='table' AND name='test_table'`,
+        const tables = await db.getAllAsync<{ name: string }>(
+            `SELECT name FROM sqlite_master WHERE type='table' AND name='test_table'`,
         )
 
         expect(tables).toHaveLength(1)
     })
 
-    it('does not re-apply already applied migrations', () => {
+    it('does not re-apply already applied migrations', async () => {
         const { db, teardown: td } = createTestDatabase()
         teardown = td
 
@@ -77,17 +76,17 @@ describe('runMigrations', () => {
             },
         }
 
-        runMigrations(db, migrations)
-        runMigrations(db, migrations)
+        await runMigrations(db, migrations)
+        await runMigrations(db, migrations)
 
-        const applied = db.all<{ tag: string }>(
-            sql`SELECT tag FROM __drizzle_migrations`,
+        const applied = await db.getAllAsync<{ tag: string }>(
+            `SELECT tag FROM __drizzle_migrations`,
         )
 
         expect(applied).toHaveLength(1)
     })
 
-    it('applies multiple migrations in order', () => {
+    it('applies multiple migrations in order', async () => {
         const { db, teardown: td } = createTestDatabase()
         teardown = td
 
@@ -105,16 +104,16 @@ describe('runMigrations', () => {
             },
         }
 
-        runMigrations(db, migrations)
+        await runMigrations(db, migrations)
 
-        const tables = db.all<{ name: string }>(
-            sql`SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%_table' ORDER BY name`,
+        const tables = await db.getAllAsync<{ name: string }>(
+            `SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%_table' ORDER BY name`,
         )
 
         expect(tables.map(t => t.name)).toEqual(['first_table', 'second_table'])
     })
 
-    it('throws when migration SQL is missing', () => {
+    it('throws when migration SQL is missing', async () => {
         const { db, teardown: td } = createTestDatabase()
         teardown = td
 
@@ -125,7 +124,7 @@ describe('runMigrations', () => {
             migrations: {},
         }
 
-        expect(() => runMigrations(db, migrations)).toThrow(
+        await expect(runMigrations(db, migrations)).rejects.toThrow(
             'Migration SQL not found for tag: 0000_missing',
         )
     })
