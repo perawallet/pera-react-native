@@ -10,17 +10,9 @@
  limitations under the License
  */
 
-export type DatabaseBindValue = string | number | null | boolean | Uint8Array
+import type { SqliteRemoteDatabase } from 'drizzle-orm/sqlite-proxy'
 
-export interface Database {
-    runAsync(sql: string, params?: DatabaseBindValue[]): Promise<void>
-    getAllAsync<T>(sql: string, params?: DatabaseBindValue[]): Promise<T[]>
-    getFirstAsync<T>(
-        sql: string,
-        params?: DatabaseBindValue[],
-    ): Promise<T | null>
-    withTransactionAsync(fn: () => Promise<void>): Promise<void>
-}
+export type Database = SqliteRemoteDatabase
 
 export interface DatabaseDriver {
     readonly driver: unknown

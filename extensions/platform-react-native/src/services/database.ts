@@ -11,9 +11,9 @@
  */
 
 import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite'
+import { drizzle } from 'drizzle-orm/sqlite-proxy'
 import type {
     Database,
-    DatabaseBindValue,
     DatabaseService,
     DatabaseDriver,
 } from '@perawallet/wallet-extension-platform'
@@ -22,30 +22,21 @@ class ExpoSQLiteDatabaseDriver implements DatabaseDriver {
     constructor(readonly driver: SQLiteDatabase) {}
 }
 
-class ExpoSQLiteDatabase implements Database {
-    constructor(private readonly db: SQLiteDatabase) {}
+function createExpoSQLiteProxy(client: SQLiteDatabase): Database {
+    return drizzle(async (sql, params, method) => {
+        if (method === 'run') {
+            await client.runAsync(sql, params)
+            return { rows: [] }
+        }
 
-    async runAsync(sql: string, params?: DatabaseBindValue[]): Promise<void> {
-        await this.db.runAsync(sql, params ?? [])
-    }
+        const rows = await client.getAllAsync(sql, params)
 
-    async getAllAsync<T>(
-        sql: string,
-        params?: DatabaseBindValue[],
-    ): Promise<T[]> {
-        return this.db.getAllAsync<T>(sql, params ?? [])
-    }
-
-    async getFirstAsync<T>(
-        sql: string,
-        params?: DatabaseBindValue[],
-    ): Promise<T | null> {
-        return this.db.getFirstAsync<T>(sql, params ?? [])
-    }
-
-    async withTransactionAsync(fn: () => Promise<void>): Promise<void> {
-        await this.db.withTransactionAsync(fn)
-    }
+        return {
+            rows: rows.map(row =>
+                Object.values(row as Record<string, unknown>),
+            ),
+        }
+    })
 }
 
 export class RNDatabaseService implements DatabaseService {
@@ -60,7 +51,7 @@ export class RNDatabaseService implements DatabaseService {
     async getDatabase(name: string): Promise<Database> {
         const db = await this.getOrOpen(name)
 
-        return new ExpoSQLiteDatabase(db)
+        return createExpoSQLiteProxy(db)
     }
 
     async close(name: string): Promise<void> {

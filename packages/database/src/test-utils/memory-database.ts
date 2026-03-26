@@ -11,8 +11,8 @@
  */
 
 import BetterSqlite3 from 'better-sqlite3'
+import { drizzle } from 'drizzle-orm/sqlite-proxy'
 import type { Database } from '../database'
-import type { DatabaseBindValue } from '@perawallet/wallet-extension-platform'
 
 type TestDatabase = {
     db: Database
@@ -22,36 +22,19 @@ type TestDatabase = {
 export const createTestDatabase = (): TestDatabase => {
     const sqlite = new BetterSqlite3(':memory:')
 
-    const db: Database = {
-        async runAsync(
-            sql: string,
-            params?: DatabaseBindValue[],
-        ): Promise<void> {
-            sqlite.prepare(sql).run(...(params ?? []))
-        },
-        async getAllAsync<T>(
-            sql: string,
-            params?: DatabaseBindValue[],
-        ): Promise<T[]> {
-            return sqlite.prepare(sql).all(...(params ?? [])) as T[]
-        },
-        async getFirstAsync<T>(
-            sql: string,
-            params?: DatabaseBindValue[],
-        ): Promise<T | null> {
-            return (sqlite.prepare(sql).get(...(params ?? [])) as T) ?? null
-        },
-        async withTransactionAsync(fn: () => Promise<void>): Promise<void> {
-            sqlite.exec('BEGIN')
-            try {
-                await fn()
-                sqlite.exec('COMMIT')
-            } catch (error) {
-                sqlite.exec('ROLLBACK')
-                throw error
-            }
-        },
-    }
+    const db: Database = drizzle(async (sql, params, method) => {
+        if (method === 'run') {
+            sqlite.prepare(sql).run(...params)
+            return { rows: [] }
+        }
+
+        const rows = sqlite.prepare(sql).all(...params) as Record<
+            string,
+            unknown
+        >[]
+
+        return { rows: rows.map(row => Object.values(row)) }
+    })
 
     return {
         db,

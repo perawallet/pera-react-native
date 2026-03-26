@@ -60,14 +60,15 @@ describe('RNDatabaseService', () => {
     })
 
     describe('getDatabase', () => {
-        it('returns a Database instance with async methods', async () => {
+        it('returns a Drizzle database instance', async () => {
             const result = await service.getDatabase('test.db')
 
             expect(mockOpenDatabaseAsync).toHaveBeenCalledWith('test.db')
-            expect(result).toHaveProperty('runAsync')
-            expect(result).toHaveProperty('getAllAsync')
-            expect(result).toHaveProperty('getFirstAsync')
-            expect(result).toHaveProperty('withTransactionAsync')
+            expect(result).toHaveProperty('select')
+            expect(result).toHaveProperty('insert')
+            expect(result).toHaveProperty('delete')
+            expect(result).toHaveProperty('run')
+            expect(result).toHaveProperty('all')
         })
 
         it('reuses the same underlying connection', async () => {

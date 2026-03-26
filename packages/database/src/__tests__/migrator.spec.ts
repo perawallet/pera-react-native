@@ -11,8 +11,24 @@
  */
 
 import { describe, it, expect, afterEach } from 'vitest'
+import { sql } from 'drizzle-orm'
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
 import { runMigrations, type MigrationConfig } from '../migrator'
 import { createTestDatabase } from '../test-utils'
+
+const sqliteMaster = sqliteTable('sqlite_master', {
+    type: text('type'),
+    name: text('name'),
+    tblName: text('tbl_name'),
+    rootpage: integer('rootpage'),
+    sqlDef: text('sql'),
+})
+
+const drizzleMigrationsTable = sqliteTable('__drizzle_migrations', {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    tag: text('tag').notNull().unique(),
+    createdAt: integer('created_at').notNull(),
+})
 
 describe('runMigrations', () => {
     let teardown: () => void
@@ -32,9 +48,13 @@ describe('runMigrations', () => {
 
         await runMigrations(db, emptyMigrations)
 
-        const tables = await db.getAllAsync<{ name: string }>(
-            `SELECT name FROM sqlite_master WHERE type='table' AND name='__drizzle_migrations'`,
-        )
+        const tables = await db
+            .select({ name: sqliteMaster.name })
+            .from(sqliteMaster)
+            .where(
+                sql`${sqliteMaster.type} = 'table' AND ${sqliteMaster.name} = '__drizzle_migrations'`,
+            )
+            .all()
 
         expect(tables).toHaveLength(1)
     })
@@ -55,9 +75,13 @@ describe('runMigrations', () => {
 
         await runMigrations(db, migrations)
 
-        const tables = await db.getAllAsync<{ name: string }>(
-            `SELECT name FROM sqlite_master WHERE type='table' AND name='test_table'`,
-        )
+        const tables = await db
+            .select({ name: sqliteMaster.name })
+            .from(sqliteMaster)
+            .where(
+                sql`${sqliteMaster.type} = 'table' AND ${sqliteMaster.name} = 'test_table'`,
+            )
+            .all()
 
         expect(tables).toHaveLength(1)
     })
@@ -79,9 +103,10 @@ describe('runMigrations', () => {
         await runMigrations(db, migrations)
         await runMigrations(db, migrations)
 
-        const applied = await db.getAllAsync<{ tag: string }>(
-            `SELECT tag FROM __drizzle_migrations`,
-        )
+        const applied = await db
+            .select({ tag: drizzleMigrationsTable.tag })
+            .from(drizzleMigrationsTable)
+            .all()
 
         expect(applied).toHaveLength(1)
     })
@@ -106,11 +131,18 @@ describe('runMigrations', () => {
 
         await runMigrations(db, migrations)
 
-        const tables = await db.getAllAsync<{ name: string }>(
-            `SELECT name FROM sqlite_master WHERE type='table' AND name LIKE '%_table' ORDER BY name`,
-        )
+        const tables = await db
+            .select({ name: sqliteMaster.name })
+            .from(sqliteMaster)
+            .where(
+                sql`${sqliteMaster.type} = 'table' AND ${sqliteMaster.name} LIKE '%_table'`,
+            )
+            .all()
 
-        expect(tables.map(t => t.name)).toEqual(['first_table', 'second_table'])
+        expect(tables.map(t => t.name).sort()).toEqual([
+            'first_table',
+            'second_table',
+        ])
     })
 
     it('throws when migration SQL is missing', async () => {
