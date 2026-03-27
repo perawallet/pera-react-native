@@ -127,11 +127,22 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
         }
     }, [])
 
+    // Device registration and query invalidation — re-runs when network or accounts change
     useEffect(() => {
-        //TODO we should move the registerDevice stuff into the wallet-core somewhere somehow - maybe in setAccounts or something
         const addresses = accounts?.map(account => account.address) ?? []
-
         registerDevice(addresses)
+
+        // Invalidate all synced queries so the UI re-reads from the DB for the new network
+        try {
+            getSyncService().invalidateQueries()
+        } catch {
+            // SyncService not yet initialized
+        }
+    }, [accounts, network, registerDevice])
+
+    // Sync lifecycle — NOT dependent on network so switching networks won't restart the sync
+    useEffect(() => {
+        const addresses = accounts?.map(account => account.address) ?? []
 
         if (!addresses.length) {
             runSyncAction('stop')
@@ -163,7 +174,7 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
                 subscription.remove()
             }
         }
-    }, [appStatePlatform, network, accounts, registerDevice, runSyncAction])
+    }, [appStatePlatform, accounts, runSyncAction])
 
     return (
         <ThemeProvider theme={theme}>

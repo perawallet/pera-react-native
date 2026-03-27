@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useState } from 'react'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { usePollingStore } from '../store'
 import { useShouldRefreshMutation } from './useShouldRefreshMutation'
 
@@ -21,6 +22,7 @@ type UsePollingOptions = {
 }
 
 export const usePolling = (options?: UsePollingOptions) => {
+    const { network } = useNetwork()
     const setLastRefreshedRound = usePollingStore(
         state => state.setLastRefreshedRound,
     )
@@ -34,14 +36,14 @@ export const usePolling = (options?: UsePollingOptions) => {
             const response = await mutateAsync()
 
             if (response.refresh) {
-                setLastRefreshedRound(response.round ?? null)
+                setLastRefreshedRound(network, response.round ?? null)
                 options?.onRefresh?.()
             }
         } catch (error) {
             console.log('Polling failed:')
             console.log(error)
         }
-    }, [mutateAsync, options?.onRefresh])
+    }, [mutateAsync, network, options?.onRefresh])
 
     const stopPolling = useCallback(async () => {
         if (polling) {

@@ -21,7 +21,7 @@ export async function fetchAndPersistAccount(
     address: string,
     network: Network,
 ): Promise<void> {
-    const algokit = getAlgorandClient()
+    const algokit = getAlgorandClient(network)
     const info = await algokit.account.getInformation(address)
 
     await upsertAccountBalance({

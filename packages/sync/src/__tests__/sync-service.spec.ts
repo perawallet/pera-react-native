@@ -32,9 +32,6 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetworkStore: {
-        getState: () => ({ network: 'mainnet' }),
-    },
     getAlgorandClient: () => ({
         account: {
             getInformation: vi.fn(() =>
@@ -58,7 +55,7 @@ vi.mock('@perawallet/wallet-core-polling', () => ({
         mockSendShouldRefreshRequest(...args),
     usePollingStore: {
         getState: () => ({
-            lastRefreshedRound: null,
+            lastRefreshedRound: { mainnet: null, testnet: null },
             setLastRefreshedRound: mockSetLastRefreshedRound,
         }),
     },
@@ -92,6 +89,7 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: { warn: vi.fn(), error: vi.fn() },
+    Networks: { mainnet: 'mainnet', testnet: 'testnet' },
     partition: (arr: unknown[], size: number) => {
         const result = []
         for (let i = 0; i < arr.length; i += size) {
@@ -136,7 +134,7 @@ describe('SyncService', () => {
         expect(service.isRunning()).toBe(false)
     })
 
-    it('calls shouldRefresh on tick', async () => {
+    it('calls shouldRefresh for all networks on tick', async () => {
         mockSendShouldRefreshRequest.mockResolvedValue({
             refresh: false,
             round: null,
@@ -152,6 +150,12 @@ describe('SyncService', () => {
             ['ADDR1', 'ADDR2'],
             null,
         )
+        expect(mockSendShouldRefreshRequest).toHaveBeenCalledWith(
+            'testnet',
+            ['ADDR1', 'ADDR2'],
+            null,
+        )
+        expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(2)
     })
 
     it('updates last refreshed round when refresh is needed', async () => {
@@ -170,7 +174,8 @@ describe('SyncService', () => {
 
         service.stop()
 
-        expect(mockSetLastRefreshedRound).toHaveBeenCalledWith(42)
+        expect(mockSetLastRefreshedRound).toHaveBeenCalledWith('mainnet', 42)
+        expect(mockSetLastRefreshedRound).toHaveBeenCalledWith('testnet', 42)
     })
 
     it('does not sync when no accounts exist', async () => {

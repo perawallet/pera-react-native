@@ -30,7 +30,9 @@ export async function fetchAndPersistTransactions(
     if (latestRoundTime !== null) {
         // Fetch only transactions newer than what we have
         // Add 1 second to avoid re-fetching the latest transaction
-        afterTime = new Date((latestRoundTime + 1) * 1000).toISOString()
+        afterTime = new Date((latestRoundTime + 1) * 1000)
+            .toISOString()
+            .split('T')[0]
     }
 
     const result = await fetchTransactionHistory({

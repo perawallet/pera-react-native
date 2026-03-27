@@ -14,12 +14,11 @@ import {
     useAccountsStore,
     getAllAssetIdsForNetwork,
 } from '@perawallet/wallet-core-accounts'
-import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import {
     sendShouldRefreshRequest,
     usePollingStore,
 } from '@perawallet/wallet-core-polling'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, Networks, type Network } from '@perawallet/wallet-core-shared'
 import type { SyncServiceDeps } from '../models'
 import { fetchAndPersistAccount } from './account-syncer'
 import { fetchAndPersistAssets } from './asset-syncer'
@@ -54,9 +53,9 @@ export class SyncService {
 
     private async tick(): Promise<void> {
         try {
-            const shouldRefresh = await this.checkShouldRefresh()
-            if (shouldRefresh) {
-                await this.syncAll()
+            const networksToSync = await this.checkShouldRefresh()
+            if (networksToSync.length > 0) {
+                await this.syncAll(networksToSync)
                 this.invalidateQueries()
             }
         } catch (error) {
@@ -71,55 +70,75 @@ export class SyncService {
         this.timer = setTimeout(() => void this.tick(), POLL_INTERVAL)
     }
 
-    private async checkShouldRefresh(): Promise<boolean> {
+    private async checkShouldRefresh(): Promise<Network[]> {
         const accounts = useAccountsStore.getState().accounts
         const addresses = accounts.map(a => a.address)
 
-        if (addresses.length === 0) return false
+        if (addresses.length === 0) return []
 
-        const network = useNetworkStore.getState().network
-        const lastRefreshedRound = usePollingStore.getState().lastRefreshedRound
+        const { lastRefreshedRound, setLastRefreshedRound } =
+            usePollingStore.getState()
 
-        const response = await sendShouldRefreshRequest(
-            network,
-            addresses,
-            lastRefreshedRound,
+        const allNetworks = Object.values(Networks)
+        const networksToSync: Network[] = []
+
+        const results = await Promise.allSettled(
+            allNetworks.map(network =>
+                sendShouldRefreshRequest(
+                    network,
+                    addresses,
+                    lastRefreshedRound[network],
+                ),
+            ),
         )
 
-        if (response.refresh) {
-            usePollingStore
-                .getState()
-                .setLastRefreshedRound(response.round ?? null)
+        for (let i = 0; i < allNetworks.length; i++) {
+            const network = allNetworks[i]
+            const result = results[i]
+            const neverSynced = lastRefreshedRound[network] === null
+
+            if (result.status === 'fulfilled') {
+                if (result.value.refresh || neverSynced) {
+                    setLastRefreshedRound(network, result.value.round ?? null)
+                    networksToSync.push(network)
+                }
+            } else if (neverSynced) {
+                // API call failed but this network was never synced — sync anyway
+                networksToSync.push(network)
+            }
         }
 
-        return response.refresh
+        return networksToSync
     }
 
-    private async syncAll(): Promise<void> {
+    private async syncAll(networks: Network[]): Promise<void> {
         const accounts = useAccountsStore.getState().accounts
-        const network = useNetworkStore.getState().network
 
-        // 1. Sync all accounts in parallel (each failure isolated)
-        await Promise.allSettled(
-            accounts.map(a => fetchAndPersistAccount(a.address, network)),
-        )
+        for (const network of networks) {
+            // 1. Sync all accounts in parallel (each failure isolated)
+            await Promise.allSettled(
+                accounts.map(a => fetchAndPersistAccount(a.address, network)),
+            )
 
-        // 2. Collect all unique asset IDs from DB holdings
-        const assetIds = await getAllAssetIdsForNetwork({ network })
+            // 2. Collect all unique asset IDs from DB holdings
+            const assetIds = await getAllAssetIdsForNetwork({ network })
 
-        // 3. Sync asset metadata and prices in parallel
-        await Promise.allSettled([
-            fetchAndPersistAssets(assetIds, network),
-            fetchAndPersistPrices(assetIds, network),
-        ])
+            // 3. Sync asset metadata and prices in parallel
+            await Promise.allSettled([
+                fetchAndPersistAssets(assetIds, network),
+                fetchAndPersistPrices(assetIds, network),
+            ])
 
-        // 4. Sync recent transactions for each account
-        await Promise.allSettled(
-            accounts.map(a => fetchAndPersistTransactions(a.address, network)),
-        )
+            // 4. Sync recent transactions for each account
+            await Promise.allSettled(
+                accounts.map(a =>
+                    fetchAndPersistTransactions(a.address, network),
+                ),
+            )
+        }
     }
 
-    private invalidateQueries(): void {
+    invalidateQueries(): void {
         this.deps.queryClient.invalidateQueries({
             predicate: query => {
                 const key = query.queryKey

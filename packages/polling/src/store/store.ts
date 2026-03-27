@@ -12,14 +12,21 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
-import { PollingState } from '../models'
+import {
+    registerStore,
+    type Network,
+    type WithPersist,
+} from '@perawallet/wallet-core-shared'
+import type { LastRefreshedRounds, PollingState } from '../models'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'polling-store'
 
 const initialState = {
-    lastRefreshedRound: null as number | null,
+    lastRefreshedRound: {
+        mainnet: null,
+        testnet: null,
+    } as LastRefreshedRounds,
 }
 
 export const usePollingStore: UseBoundStore<
@@ -28,18 +35,34 @@ export const usePollingStore: UseBoundStore<
     persist(
         set => ({
             ...initialState,
-            setLastRefreshedRound: (round: number | null) => {
-                set({ lastRefreshedRound: round })
+            setLastRefreshedRound: (network: Network, round: number | null) => {
+                set(state => ({
+                    lastRefreshedRound: {
+                        ...state.lastRefreshedRound,
+                        [network]: round,
+                    },
+                }))
             },
             resetState: () => set(initialState),
         }),
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 1,
+            version: 2,
             partialize: state => ({
                 lastRefreshedRound: state.lastRefreshedRound,
             }),
+            migrate: (persistedState: unknown, version: number) => {
+                const state = persistedState as Record<string, unknown>
+                if (version < 2) {
+                    const oldRound = state.lastRefreshedRound as number | null
+                    state.lastRefreshedRound = {
+                        mainnet: oldRound,
+                        testnet: null,
+                    }
+                }
+                return state as PollingState
+            },
         },
     ),
 )

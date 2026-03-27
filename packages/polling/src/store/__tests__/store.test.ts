@@ -36,24 +36,42 @@ describe('services/polling/store', () => {
 
         const { result } = renderHook(() => usePollingStore())
 
-        expect(result.current.lastRefreshedRound).toBeNull()
+        expect(result.current.lastRefreshedRound).toEqual({
+            mainnet: null,
+            testnet: null,
+        })
     })
 
-    test('setLastRefreshedRound updates the state', async () => {
+    test('setLastRefreshedRound updates the state per network', async () => {
         const { usePollingStore } = await import('../store')
 
         const { result } = renderHook(() => usePollingStore())
 
         act(() => {
-            result.current.setLastRefreshedRound(100)
+            result.current.setLastRefreshedRound('mainnet', 100)
         })
 
-        expect(result.current.lastRefreshedRound).toBe(100)
+        expect(result.current.lastRefreshedRound).toEqual({
+            mainnet: 100,
+            testnet: null,
+        })
 
         act(() => {
-            result.current.setLastRefreshedRound(null)
+            result.current.setLastRefreshedRound('testnet', 200)
         })
 
-        expect(result.current.lastRefreshedRound).toBeNull()
+        expect(result.current.lastRefreshedRound).toEqual({
+            mainnet: 100,
+            testnet: 200,
+        })
+
+        act(() => {
+            result.current.setLastRefreshedRound('mainnet', null)
+        })
+
+        expect(result.current.lastRefreshedRound).toEqual({
+            mainnet: null,
+            testnet: 200,
+        })
     })
 })
