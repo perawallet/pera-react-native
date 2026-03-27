@@ -11,11 +11,8 @@
  */
 
 import type { Network } from '@perawallet/wallet-core-shared'
-import {
-    fetchTransactionHistory,
-    getLatestTransactionRoundTime,
-    upsertTransactions,
-} from '@perawallet/wallet-core-transactions'
+import { fetchTransactionHistory } from '../api/history'
+import { getLatestTransactionRoundTime, upsertTransactions } from '../db'
 
 export async function fetchAndPersistTransactions(
     address: string,

@@ -19,7 +19,7 @@ import {
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import {
-    upsertAccountHoldings,
+    refreshAccountHoldings,
     getAccountHoldings,
     upsertAccountBalance,
     getAccountBalance,
@@ -44,7 +44,7 @@ describe('account repository', () => {
 
     describe('holdings', () => {
         it('inserts and retrieves holdings', async () => {
-            await upsertAccountHoldings({
+            await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [
@@ -65,7 +65,7 @@ describe('account repository', () => {
         })
 
         it('replaces all holdings on upsert', async () => {
-            await upsertAccountHoldings({
+            await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [
@@ -75,7 +75,7 @@ describe('account repository', () => {
                 network: 'mainnet',
             })
 
-            await upsertAccountHoldings({
+            await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '300', amount: 999n }],
@@ -94,14 +94,14 @@ describe('account repository', () => {
         })
 
         it('handles empty holdings', async () => {
-            await upsertAccountHoldings({
+            await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '100', amount: 5000n }],
                 network: 'mainnet',
             })
 
-            await upsertAccountHoldings({
+            await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [],
@@ -118,19 +118,19 @@ describe('account repository', () => {
         })
 
         it('isolates holdings by account and network', async () => {
-            await upsertAccountHoldings({
+            await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '100', amount: 10n }],
                 network: 'mainnet',
             })
-            await upsertAccountHoldings({
+            await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR2',
                 holdings: [{ assetId: '200', amount: 20n }],
                 network: 'mainnet',
             })
-            await upsertAccountHoldings({
+            await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [{ assetId: '300', amount: 30n }],
@@ -184,11 +184,11 @@ describe('account repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
-                algoBalanceMicro: 5000000n,
+                algoBalance: 5000000n,
                 totalAssetsOptedIn: 3,
                 totalCreatedAssets: 1,
                 totalAppsOptedIn: 2,
-                minBalanceMicro: 100000n,
+                minBalance: 100000n,
                 status: 'Online',
                 authAddress: null,
             })
@@ -200,9 +200,9 @@ describe('account repository', () => {
             })
 
             expect(result).toBeDefined()
-            expect(result!.algoBalanceMicro).toEqual(new Decimal(5000000))
+            expect(result!.algoBalance).toEqual(new Decimal(5000000))
             expect(result!.totalAssetsOptedIn).toBe(3)
-            expect(result!.minBalanceMicro).toEqual(new Decimal(100000))
+            expect(result!.minBalance).toEqual(new Decimal(100000))
             expect(result!.status).toBe('Online')
         })
 
@@ -211,11 +211,11 @@ describe('account repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
-                algoBalanceMicro: 5000000n,
+                algoBalance: 5000000n,
                 totalAssetsOptedIn: 3,
                 totalCreatedAssets: 1,
                 totalAppsOptedIn: 2,
-                minBalanceMicro: 100000n,
+                minBalance: 100000n,
                 status: 'Online',
                 authAddress: null,
             })
@@ -224,11 +224,11 @@ describe('account repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
-                algoBalanceMicro: 9000000n,
+                algoBalance: 9000000n,
                 totalAssetsOptedIn: 5,
                 totalCreatedAssets: 2,
                 totalAppsOptedIn: 3,
-                minBalanceMicro: 200000n,
+                minBalance: 200000n,
                 status: 'Offline',
                 authAddress: 'AUTH1',
             })
@@ -240,9 +240,9 @@ describe('account repository', () => {
             })
 
             expect(result).toBeDefined()
-            expect(result!.algoBalanceMicro).toEqual(new Decimal(9000000))
+            expect(result!.algoBalance).toEqual(new Decimal(9000000))
             expect(result!.totalAssetsOptedIn).toBe(5)
-            expect(result!.minBalanceMicro).toEqual(new Decimal(200000))
+            expect(result!.minBalance).toEqual(new Decimal(200000))
             expect(result!.status).toBe('Offline')
             expect(result!.authAddress).toBe('AUTH1')
         })
@@ -262,11 +262,11 @@ describe('account repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
-                algoBalanceMicro: 1000n,
+                algoBalance: 1000n,
                 totalAssetsOptedIn: 0,
                 totalCreatedAssets: 0,
                 totalAppsOptedIn: 0,
-                minBalanceMicro: 0n,
+                minBalance: 0n,
                 status: 'Offline',
                 authAddress: null,
             })
@@ -274,11 +274,11 @@ describe('account repository', () => {
                 db,
                 accountAddress: 'ADDR2',
                 network: 'mainnet',
-                algoBalanceMicro: 2000n,
+                algoBalance: 2000n,
                 totalAssetsOptedIn: 0,
                 totalCreatedAssets: 0,
                 totalAppsOptedIn: 0,
-                minBalanceMicro: 0n,
+                minBalance: 0n,
                 status: 'Offline',
                 authAddress: null,
             })
@@ -295,7 +295,7 @@ describe('account repository', () => {
 
     describe('getAllAssetIdsForNetwork', () => {
         it('returns distinct asset IDs across accounts', async () => {
-            await upsertAccountHoldings({
+            await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [
@@ -304,7 +304,7 @@ describe('account repository', () => {
                 ],
                 network: 'mainnet',
             })
-            await upsertAccountHoldings({
+            await refreshAccountHoldings({
                 db,
                 accountAddress: 'ADDR2',
                 holdings: [

@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { eq, and, inArray } from 'drizzle-orm'
+import { eq, and, inArray, notInArray } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
+import { AssetsPeraSchema } from '@perawallet/wallet-core-assets'
 import { AccountAssetHoldingsSchema, AccountBalancesSchema } from './schema'
 
 export type HoldingRow = {
@@ -32,7 +33,7 @@ type UpsertAccountHoldingsParams = {
     network: string
 }
 
-export async function upsertAccountHoldings({
+export async function refreshAccountHoldings({
     db = getDatabase(),
     accountAddress,
     holdings,
@@ -68,23 +69,63 @@ type GetAccountHoldingsParams = {
     db?: Database
     accountAddress: string
     network: string
+    excludeAssetTypes?: string[]
 }
 
 export async function getAccountHoldings({
     db = getDatabase(),
     accountAddress,
     network,
+    excludeAssetTypes,
 }: GetAccountHoldingsParams): Promise<HoldingRow[]> {
+    if (!excludeAssetTypes?.length) {
+        const rows = await db
+            .select({
+                assetId: AccountAssetHoldingsSchema.assetId,
+                amount: AccountAssetHoldingsSchema.amount,
+            })
+            .from(AccountAssetHoldingsSchema)
+            .where(
+                and(
+                    eq(
+                        AccountAssetHoldingsSchema.accountAddress,
+                        accountAddress,
+                    ),
+                    eq(AccountAssetHoldingsSchema.network, network),
+                ),
+            )
+            .all()
+
+        return rows.map(r => ({
+            assetId: r.assetId.toString(),
+            amount: r.amount,
+        }))
+    }
+
     const rows = await db
         .select({
             assetId: AccountAssetHoldingsSchema.assetId,
             amount: AccountAssetHoldingsSchema.amount,
         })
         .from(AccountAssetHoldingsSchema)
+        .leftJoin(
+            AssetsPeraSchema,
+            and(
+                eq(
+                    AccountAssetHoldingsSchema.assetId,
+                    AssetsPeraSchema.assetId,
+                ),
+                eq(
+                    AccountAssetHoldingsSchema.network,
+                    AssetsPeraSchema.network,
+                ),
+            ),
+        )
         .where(
             and(
                 eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
                 eq(AccountAssetHoldingsSchema.network, network),
+                notInArray(AssetsPeraSchema.assetType, excludeAssetTypes),
             ),
         )
         .all()
@@ -97,11 +138,11 @@ export async function getAccountHoldings({
 
 export type AccountBalanceRow = {
     accountAddress: string
-    algoBalanceMicro: Decimal
+    algoBalance: Decimal
     totalAssetsOptedIn: number
     totalCreatedAssets: number
     totalAppsOptedIn: number
-    minBalanceMicro: Decimal
+    minBalance: Decimal
     status: string
     authAddress: string | null
 }
@@ -110,11 +151,11 @@ type UpsertAccountBalanceParams = {
     db?: Database
     accountAddress: string
     network: string
-    algoBalanceMicro: Decimal
+    algoBalance: Decimal
     totalAssetsOptedIn: number
     totalCreatedAssets: number
     totalAppsOptedIn: number
-    minBalanceMicro: Decimal
+    minBalance: Decimal
     status: string
     authAddress: string | null
 }
@@ -123,11 +164,11 @@ export async function upsertAccountBalance({
     db = getDatabase(),
     accountAddress,
     network,
-    algoBalanceMicro,
+    algoBalance,
     totalAssetsOptedIn,
     totalCreatedAssets,
     totalAppsOptedIn,
-    minBalanceMicro,
+    minBalance,
     status,
     authAddress,
 }: UpsertAccountBalanceParams): Promise<void> {
@@ -138,11 +179,11 @@ export async function upsertAccountBalance({
         .values({
             accountAddress,
             network,
-            algoBalanceMicro,
+            algoBalance,
             totalAssetsOptedIn,
             totalCreatedAssets,
             totalAppsOptedIn,
-            minBalanceMicro,
+            minBalance,
             status,
             authAddress,
             updatedAt: now,
@@ -153,11 +194,11 @@ export async function upsertAccountBalance({
                 AccountBalancesSchema.network,
             ],
             set: {
-                algoBalanceMicro,
+                algoBalance,
                 totalAssetsOptedIn,
                 totalCreatedAssets,
                 totalAppsOptedIn,
-                minBalanceMicro,
+                minBalance,
                 status,
                 authAddress,
                 updatedAt: now,
@@ -180,11 +221,11 @@ export async function getAccountBalance({
     const rows = await db
         .select({
             accountAddress: AccountBalancesSchema.accountAddress,
-            algoBalanceMicro: AccountBalancesSchema.algoBalanceMicro,
+            algoBalance: AccountBalancesSchema.algoBalance,
             totalAssetsOptedIn: AccountBalancesSchema.totalAssetsOptedIn,
             totalCreatedAssets: AccountBalancesSchema.totalCreatedAssets,
             totalAppsOptedIn: AccountBalancesSchema.totalAppsOptedIn,
-            minBalanceMicro: AccountBalancesSchema.minBalanceMicro,
+            minBalance: AccountBalancesSchema.minBalance,
             status: AccountBalancesSchema.status,
             authAddress: AccountBalancesSchema.authAddress,
         })
@@ -216,11 +257,11 @@ export async function getAllAccountBalances({
     return db
         .select({
             accountAddress: AccountBalancesSchema.accountAddress,
-            algoBalanceMicro: AccountBalancesSchema.algoBalanceMicro,
+            algoBalance: AccountBalancesSchema.algoBalance,
             totalAssetsOptedIn: AccountBalancesSchema.totalAssetsOptedIn,
             totalCreatedAssets: AccountBalancesSchema.totalCreatedAssets,
             totalAppsOptedIn: AccountBalancesSchema.totalAppsOptedIn,
-            minBalanceMicro: AccountBalancesSchema.minBalanceMicro,
+            minBalance: AccountBalancesSchema.minBalance,
             status: AccountBalancesSchema.status,
             authAddress: AccountBalancesSchema.authAddress,
         })

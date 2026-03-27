@@ -11,6 +11,3 @@
  */
 
 export { SyncService } from './sync-service'
-export { fetchAndPersistAccount } from './account-syncer'
-export { fetchAndPersistAssets } from './asset-syncer'
-export { fetchAndPersistPrices } from './price-syncer'

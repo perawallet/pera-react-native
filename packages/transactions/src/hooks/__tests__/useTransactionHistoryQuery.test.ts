@@ -26,8 +26,8 @@ const mockPersistTransactions = vi.hoisted(() => vi.fn())
 vi.mock('../../db', () => ({
     getTransactionHistory: mockGetTransactionHistory,
 }))
-vi.mock('../useTransactionHistoryCache', () => ({
-    persistTransactions: mockPersistTransactions,
+vi.mock('../useTransactionHistoryDb', () => ({
+    persistTransactionsToDb: mockPersistTransactions,
 }))
 
 describe('useTransactionHistoryQuery', () => {

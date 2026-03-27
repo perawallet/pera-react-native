@@ -12,7 +12,7 @@
 
 export { AccountAssetHoldingsSchema, AccountBalancesSchema } from './schema'
 export {
-    upsertAccountHoldings,
+    refreshAccountHoldings,
     getAccountHoldings,
     upsertAccountBalance,
     getAccountBalance,

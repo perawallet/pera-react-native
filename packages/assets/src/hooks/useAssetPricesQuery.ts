@@ -11,9 +11,8 @@
  */
 
 import { useMemo, useRef } from 'react'
-import { useQueries } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { type AssetPrices } from '../models'
-import { DEFAULT_PAGE_SIZE, partition } from '@perawallet/wallet-core-shared'
 import { getAssetPricesQueryKey } from './querykeys'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAssetPricesByIds } from '../db'
@@ -41,43 +40,33 @@ export const useAssetPricesQuery = (
     }
     const stableIds = idsRef.current.ids
 
-    const queriesDefinitions = useMemo(() => {
-        const chunks = partition(stableIds, DEFAULT_PAGE_SIZE)
-
-        return chunks.map(chunk => ({
-            queryKey: getAssetPricesQueryKey(chunk, network),
-            enabled: enabled ?? true,
-            staleTime: Infinity,
-            queryFn: () => getAssetPricesByIds({ assetIds: chunk, network }),
-        }))
-    }, [stableIds, enabled, network])
-
-    // notifyOnChangeProps: 'all' disables Proxy-based property tracking in TanStack Query.
-    // This works around a race condition in QueriesObserver where _observerMatches and _result
-    // can get out of sync during synchronous notifications, causing "new Proxy target must be an Object".
-    const queries = useQueries({
-        queries: queriesDefinitions.map(q => ({
-            ...q,
-            notifyOnChangeProps: 'all' as const,
-        })),
+    const query = useQuery({
+        queryKey: getAssetPricesQueryKey(stableIds, network),
+        enabled: enabled ?? true,
+        staleTime: Infinity,
+        queryFn: () => getAssetPricesByIds({ assetIds: stableIds, network }),
     })
 
     return useMemo(() => {
         const assetPrices: AssetPrices = new Map()
-        queries.forEach(query => {
-            query.data?.forEach(row => {
-                assetPrices.set(row.assetId, {
-                    assetId: row.assetId,
-                    usdPrice: row.usdPrice,
-                })
+        query.data?.forEach(row => {
+            assetPrices.set(row.assetId, {
+                assetId: row.assetId,
+                usdPrice: row.usdPrice,
             })
         })
         return {
             data: assetPrices,
-            isPending: queries.some(query => query.isPending),
-            isFetched: queries.some(query => query.isFetched),
-            isRefetching: queries.some(query => query.isRefetching),
-            isError: queries.some(query => query.isError),
+            isPending: query.isPending,
+            isFetched: query.isFetched,
+            isRefetching: query.isRefetching,
+            isError: query.isError,
         }
-    }, [queries])
+    }, [
+        query.data,
+        query.isPending,
+        query.isFetched,
+        query.isRefetching,
+        query.isError,
+    ])
 }

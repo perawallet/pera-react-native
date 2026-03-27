@@ -14,8 +14,8 @@ import { Decimal } from 'decimal.js'
 import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
 import { decimalColumn } from '@perawallet/wallet-core-database'
 
-export const AssetsSchema = sqliteTable(
-    'assets',
+export const AssetsNodeSchema = sqliteTable(
+    'assets_node',
     {
         assetId: decimalColumn('asset_id').notNull(),
         network: text('network').notNull(),
@@ -28,6 +28,16 @@ export const AssetsSchema = sqliteTable(
         unitName: text('unit_name'),
         url: text('url'),
         metadata: text('metadata'),
+        updatedAt: integer('updated_at').notNull(),
+    },
+    table => [primaryKey({ columns: [table.assetId, table.network] })],
+)
+
+export const AssetsPeraSchema = sqliteTable(
+    'assets_pera',
+    {
+        assetId: decimalColumn('asset_id').notNull(),
+        network: text('network').notNull(),
         verificationTier: text('verification_tier')
             .notNull()
             .default('unverified'),

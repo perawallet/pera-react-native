@@ -11,6 +11,7 @@
  */
 
 import type { Network } from '@perawallet/wallet-core-shared'
+import { QueryClient } from '@tanstack/react-query'
 
 const MODULE_PREFIX = 'transactions'
 
@@ -46,4 +47,10 @@ export const transactionQueryKeys = {
             'page',
             { accountAddress, network, url },
         ] as const,
+}
+
+export function invalidateTransactionQueries(queryClient: QueryClient): void {
+    void queryClient.invalidateQueries({
+        predicate: query => query.queryKey[0] === MODULE_PREFIX,
+    })
 }

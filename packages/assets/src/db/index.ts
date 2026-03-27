@@ -10,9 +10,11 @@
  limitations under the License
  */
 
-export { AssetsSchema, AssetPricesSchema } from './schema'
+export { AssetsNodeSchema, AssetsPeraSchema, AssetPricesSchema } from './schema'
 export {
     upsertAssets,
+    upsertNodeAssets,
+    upsertPeraAssets,
     getAssetsByIds,
     getAssetById,
     upsertAssetPrices,

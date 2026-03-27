@@ -15,7 +15,7 @@ import { logger } from '@perawallet/wallet-core-shared'
 import { upsertTransactions, getTransactionHistory } from '../db'
 import type { TransactionHistoryItem } from '../models/types'
 
-export const getCachedTransactionHistory = async (params: {
+export const getTransactionHistoryFromDb = async (params: {
     accountAddress: string
     network: string
     assetId?: string
@@ -31,7 +31,7 @@ export const getCachedTransactionHistory = async (params: {
     }
 }
 
-export const persistTransactions = async (
+export const persistTransactionsToDb = async (
     items: TransactionHistoryItem[],
     accountAddress: string,
     network: string,
@@ -43,7 +43,7 @@ export const persistTransactions = async (
     }
 }
 
-export const useTransactionsCacheSync = (
+export const useTransactionsDbSync = (
     transactions: TransactionHistoryItem[],
     isFetched: boolean,
     accountAddress: string,
@@ -51,7 +51,7 @@ export const useTransactionsCacheSync = (
 ): void => {
     useEffect(() => {
         if (isFetched && transactions.length > 0) {
-            void persistTransactions(transactions, accountAddress, network)
+            void persistTransactionsToDb(transactions, accountAddress, network)
         }
     }, [transactions, isFetched, accountAddress, network])
 }

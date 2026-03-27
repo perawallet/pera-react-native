@@ -22,7 +22,6 @@ import type {
 import {
     ALGO_ASSET,
     ALGO_ASSET_ID,
-    toWholeUnits,
     useAssetPricesQuery,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
@@ -31,7 +30,7 @@ import { getAccountBalancesQueryKey } from './querykeys'
 import { getAccountBalance, getAccountHoldings } from '../db'
 
 type AccountDbSnapshot = {
-    algoBalanceMicro: Decimal
+    algoBalance: Decimal
     holdings: Array<{ assetId: string; amount: Decimal }>
 }
 
@@ -49,7 +48,7 @@ async function readAccountFromDb(
     })
 
     return {
-        algoBalanceMicro: balance?.algoBalanceMicro ?? new Decimal(0),
+        algoBalance: balance?.algoBalance ?? new Decimal(0),
         holdings,
     }
 }
@@ -141,10 +140,7 @@ export const useAccountBalancesQuery = (
             })
 
             //Now add algo into the mix
-            const algoAmount = toWholeUnits(
-                r.data?.algoBalanceMicro ?? new Decimal(0),
-                ALGO_ASSET,
-            )
+            const algoAmount = r.data?.algoBalance ?? new Decimal(0)
             algoValue = algoValue.plus(algoAmount)
 
             assetBalances.push({
@@ -205,7 +201,7 @@ export const useAccountAssetBalanceQuery = (
     const { accountBalances, isPending, isFetched, isRefetching, isError } =
         useAccountBalancesQuery(
             account ? [account] : [],
-            !!account && assetId != null,
+            !!account && assetId !== null && assetId !== undefined,
         )
 
     const assetBalance = useMemo<AssetWithAccountBalance | null>(() => {

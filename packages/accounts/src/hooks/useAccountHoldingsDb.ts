@@ -14,12 +14,12 @@ import { useEffect } from 'react'
 import { Decimal } from 'decimal.js'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
-    upsertAccountHoldings,
+    refreshAccountHoldings,
     getAccountHoldings,
     type HoldingRow,
 } from '../db'
 
-export const getCachedHoldings = async (
+export const getHoldingsFromDb = async (
     accountAddress: string,
     network: string,
 ): Promise<HoldingRow[]> => {
@@ -31,19 +31,19 @@ export const getCachedHoldings = async (
     }
 }
 
-export const persistHoldings = async (
+export const persistHoldingsToDb = async (
     accountAddress: string,
     holdings: Array<{ assetId: string; amount: Decimal }>,
     network: string,
 ): Promise<void> => {
     try {
-        await upsertAccountHoldings({ accountAddress, holdings, network })
+        await refreshAccountHoldings({ accountAddress, holdings, network })
     } catch (error) {
         logger.warn('Failed to persist holdings to database', { error })
     }
 }
 
-export const useHoldingsCacheSync = (
+export const useHoldingsDbSync = (
     accountAddress: string,
     holdings: Array<{
         assetId: string | number
@@ -59,7 +59,7 @@ export const useHoldingsCacheSync = (
                 amount: new Decimal(h.amount.toString()),
             }))
 
-            void persistHoldings(accountAddress, rows, network)
+            void persistHoldingsToDb(accountAddress, rows, network)
         }
     }, [accountAddress, holdings, isFetched, network])
 }

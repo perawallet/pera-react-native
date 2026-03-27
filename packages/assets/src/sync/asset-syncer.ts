@@ -10,11 +10,8 @@
  limitations under the License
  */
 
-import {
-    fetchAssets,
-    transformAssetResponse,
-    upsertAssets,
-} from '@perawallet/wallet-core-assets'
+import { fetchAssets, transformAssetResponse } from '../api'
+import { upsertAssets } from '../db'
 import { partition, type Network } from '@perawallet/wallet-core-shared'
 
 const ASSET_BATCH_SIZE = 25

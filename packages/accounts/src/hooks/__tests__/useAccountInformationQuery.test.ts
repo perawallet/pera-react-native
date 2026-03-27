@@ -61,8 +61,8 @@ describe('useAccountInformationQuery', () => {
     test('reads account information from database', async () => {
         mockGetAccountBalance.mockResolvedValue({
             accountAddress: mockAddress,
-            algoBalanceMicro: new Decimal(1000000),
-            minBalanceMicro: new Decimal(100000),
+            algoBalance: new Decimal(1), // 1 ALGO (whole units)
+            minBalance: new Decimal(0.1), // 0.1 ALGO (whole units)
             status: 'Online',
             totalAssetsOptedIn: 1,
             totalCreatedAssets: 0,
@@ -138,8 +138,8 @@ describe('useAccountInformationQuery', () => {
 
         mockGetAccountBalance.mockResolvedValue({
             accountAddress: address1,
-            algoBalanceMicro: new Decimal(1000000),
-            minBalanceMicro: new Decimal(100000),
+            algoBalance: new Decimal(1), // 1 ALGO (whole units)
+            minBalance: new Decimal(0.1), // 0.1 ALGO (whole units)
             status: 'Online',
             totalAssetsOptedIn: 0,
             totalCreatedAssets: 0,

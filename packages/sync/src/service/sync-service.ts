@@ -13,17 +13,24 @@
 import {
     useAccountsStore,
     getAllAssetIdsForNetwork,
+    invalidateAccountQueries,
+    fetchAndPersistAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     sendShouldRefreshRequest,
     usePollingStore,
 } from '@perawallet/wallet-core-polling'
+import {
+    invalidateAssetQueries,
+    fetchAndPersistAssets,
+    fetchAndPersistPrices,
+} from '@perawallet/wallet-core-assets'
+import {
+    invalidateTransactionQueries,
+    fetchAndPersistTransactions,
+} from '@perawallet/wallet-core-transactions'
 import { logger, Networks, type Network } from '@perawallet/wallet-core-shared'
 import type { SyncServiceDeps } from '../models'
-import { fetchAndPersistAccount } from './account-syncer'
-import { fetchAndPersistAssets } from './asset-syncer'
-import { fetchAndPersistPrices } from './price-syncer'
-import { fetchAndPersistTransactions } from './transaction-syncer'
 
 const POLL_INTERVAL = 3000
 
@@ -150,18 +157,8 @@ export class SyncService {
     }
 
     invalidateQueries(): void {
-        this.deps.queryClient.invalidateQueries({
-            predicate: query => {
-                const key = query.queryKey
-                if (key.length < 2) return false
-
-                const prefix = key.at(0)
-                return (
-                    prefix === 'accounts' ||
-                    prefix === 'assets' ||
-                    prefix === 'transactions'
-                )
-            },
-        })
+        invalidateAccountQueries(this.deps.queryClient)
+        invalidateAssetQueries(this.deps.queryClient)
+        invalidateTransactionQueries(this.deps.queryClient)
     }
 }

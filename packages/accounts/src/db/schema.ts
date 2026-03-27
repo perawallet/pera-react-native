@@ -35,7 +35,7 @@ export const AccountBalancesSchema = sqliteTable(
     {
         accountAddress: text('account_address').notNull(),
         network: text('network').notNull(),
-        algoBalanceMicro: decimalColumn('algo_balance_micro')
+        algoBalance: decimalColumn('algo_balance')
             .notNull()
             .default(new Decimal(0)),
         totalAssetsOptedIn: integer('total_assets_opted_in')
@@ -45,7 +45,7 @@ export const AccountBalancesSchema = sqliteTable(
             .notNull()
             .default(0),
         totalAppsOptedIn: integer('total_apps_opted_in').notNull().default(0),
-        minBalanceMicro: decimalColumn('min_balance_micro')
+        minBalance: decimalColumn('min_balance')
             .notNull()
             .default(new Decimal(0)),
         status: text('status').notNull().default('Offline'),

@@ -14,30 +14,7 @@ import { eq, and, inArray } from 'drizzle-orm'
 import Decimal from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import type { PeraAsset, PeraAssetMetadata } from '../models'
-import { AssetsSchema, AssetPricesSchema } from './schema'
-
-type AssetRow = typeof AssetsSchema.$inferInsert
-
-function toDb(asset: PeraAsset, network: string): AssetRow {
-    const meta = asset.peraMetadata
-
-    return {
-        assetId: new Decimal(asset.assetId),
-        network,
-        decimals: asset.decimals,
-        creatorAddress: asset.creator.address,
-        totalSupply: asset.totalSupply,
-        name: asset.name ?? null,
-        unitName: asset.unitName ?? null,
-        url: asset.url ?? null,
-        metadata: asset.metadata ?? null,
-        verificationTier: meta?.verificationTier ?? 'unverified',
-        isDeleted: meta?.isDeleted ?? false,
-        assetType: meta?.type ?? null,
-        peraMetadataJson: meta ? JSON.stringify(meta) : null,
-        updatedAt: Date.now(),
-    }
-}
+import { AssetsNodeSchema, AssetsPeraSchema, AssetPricesSchema } from './schema'
 
 function fromDb(row: {
     assetId: Decimal
@@ -67,6 +44,96 @@ function fromDb(row: {
     }
 }
 
+type UpsertNodeAssetsParams = {
+    db?: Database
+    items: PeraAsset[]
+    network: string
+}
+
+export async function upsertNodeAssets({
+    db = getDatabase(),
+    items,
+    network,
+}: UpsertNodeAssetsParams): Promise<void> {
+    if (items.length === 0) return
+
+    const now = Date.now()
+
+    for (const item of items) {
+        await db
+            .insert(AssetsNodeSchema)
+            .values({
+                assetId: new Decimal(item.assetId),
+                network,
+                decimals: item.decimals,
+                creatorAddress: item.creator.address,
+                totalSupply: item.totalSupply,
+                name: item.name ?? null,
+                unitName: item.unitName ?? null,
+                url: item.url ?? null,
+                metadata: item.metadata ?? null,
+                updatedAt: now,
+            })
+            .onConflictDoUpdate({
+                target: [AssetsNodeSchema.assetId, AssetsNodeSchema.network],
+                set: {
+                    decimals: item.decimals,
+                    creatorAddress: item.creator.address,
+                    totalSupply: item.totalSupply,
+                    name: item.name ?? null,
+                    unitName: item.unitName ?? null,
+                    url: item.url ?? null,
+                    metadata: item.metadata ?? null,
+                    updatedAt: now,
+                },
+            })
+            .run()
+    }
+}
+
+type UpsertPeraAssetsParams = {
+    db?: Database
+    items: PeraAsset[]
+    network: string
+}
+
+export async function upsertPeraAssets({
+    db = getDatabase(),
+    items,
+    network,
+}: UpsertPeraAssetsParams): Promise<void> {
+    if (items.length === 0) return
+
+    const now = Date.now()
+
+    for (const item of items) {
+        const meta = item.peraMetadata
+
+        await db
+            .insert(AssetsPeraSchema)
+            .values({
+                assetId: new Decimal(item.assetId),
+                network,
+                verificationTier: meta?.verificationTier ?? 'unverified',
+                isDeleted: meta?.isDeleted ?? false,
+                assetType: meta?.type ?? null,
+                peraMetadataJson: meta ? JSON.stringify(meta) : null,
+                updatedAt: now,
+            })
+            .onConflictDoUpdate({
+                target: [AssetsPeraSchema.assetId, AssetsPeraSchema.network],
+                set: {
+                    verificationTier: meta?.verificationTier ?? 'unverified',
+                    isDeleted: meta?.isDeleted ?? false,
+                    assetType: meta?.type ?? null,
+                    peraMetadataJson: meta ? JSON.stringify(meta) : null,
+                    updatedAt: now,
+                },
+            })
+            .run()
+    }
+}
+
 type UpsertAssetsParams = {
     db?: Database
     items: PeraAsset[]
@@ -78,33 +145,8 @@ export async function upsertAssets({
     items,
     network,
 }: UpsertAssetsParams): Promise<void> {
-    if (items.length === 0) return
-
-    for (const item of items) {
-        const row = toDb(item, network)
-
-        await db
-            .insert(AssetsSchema)
-            .values(row)
-            .onConflictDoUpdate({
-                target: [AssetsSchema.assetId, AssetsSchema.network],
-                set: {
-                    decimals: row.decimals,
-                    creatorAddress: row.creatorAddress,
-                    totalSupply: row.totalSupply,
-                    name: row.name,
-                    unitName: row.unitName,
-                    url: row.url,
-                    metadata: row.metadata,
-                    verificationTier: row.verificationTier,
-                    isDeleted: row.isDeleted,
-                    assetType: row.assetType,
-                    peraMetadataJson: row.peraMetadataJson,
-                    updatedAt: row.updatedAt,
-                },
-            })
-            .run()
-    }
+    await upsertNodeAssets({ db, items, network })
+    await upsertPeraAssets({ db, items, network })
 }
 
 type GetAssetsByIdsParams = {
@@ -124,21 +166,28 @@ export async function getAssetsByIds({
 
     const rows = await db
         .select({
-            assetId: AssetsSchema.assetId,
-            decimals: AssetsSchema.decimals,
-            creatorAddress: AssetsSchema.creatorAddress,
-            totalSupply: AssetsSchema.totalSupply,
-            name: AssetsSchema.name,
-            unitName: AssetsSchema.unitName,
-            url: AssetsSchema.url,
-            metadata: AssetsSchema.metadata,
-            peraMetadataJson: AssetsSchema.peraMetadataJson,
+            assetId: AssetsNodeSchema.assetId,
+            decimals: AssetsNodeSchema.decimals,
+            creatorAddress: AssetsNodeSchema.creatorAddress,
+            totalSupply: AssetsNodeSchema.totalSupply,
+            name: AssetsNodeSchema.name,
+            unitName: AssetsNodeSchema.unitName,
+            url: AssetsNodeSchema.url,
+            metadata: AssetsNodeSchema.metadata,
+            peraMetadataJson: AssetsPeraSchema.peraMetadataJson,
         })
-        .from(AssetsSchema)
+        .from(AssetsNodeSchema)
+        .leftJoin(
+            AssetsPeraSchema,
+            and(
+                eq(AssetsNodeSchema.assetId, AssetsPeraSchema.assetId),
+                eq(AssetsNodeSchema.network, AssetsPeraSchema.network),
+            ),
+        )
         .where(
             and(
-                inArray(AssetsSchema.assetId, decimalIds),
-                eq(AssetsSchema.network, network),
+                inArray(AssetsNodeSchema.assetId, decimalIds),
+                eq(AssetsNodeSchema.network, network),
             ),
         )
         .all()

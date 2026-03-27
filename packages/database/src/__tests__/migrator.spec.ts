@@ -41,10 +41,7 @@ describe('runMigrations', () => {
         const { db, teardown: td } = createTestDatabase()
         teardown = td
 
-        const emptyMigrations: MigrationConfig = {
-            journal: { entries: [] },
-            migrations: {},
-        }
+        const emptyMigrations: MigrationConfig = {}
 
         await runMigrations(db, emptyMigrations)
 
@@ -64,13 +61,8 @@ describe('runMigrations', () => {
         teardown = td
 
         const migrations: MigrationConfig = {
-            journal: {
-                entries: [{ idx: 0, when: Date.now(), tag: '0000_test' }],
-            },
-            migrations: {
-                '0000_test':
-                    'CREATE TABLE test_table (id TEXT PRIMARY KEY, name TEXT)',
-            },
+            '0000_test':
+                'CREATE TABLE test_table (id TEXT PRIMARY KEY, name TEXT)',
         }
 
         await runMigrations(db, migrations)
@@ -91,13 +83,8 @@ describe('runMigrations', () => {
         teardown = td
 
         const migrations: MigrationConfig = {
-            journal: {
-                entries: [{ idx: 0, when: Date.now(), tag: '0000_test' }],
-            },
-            migrations: {
-                '0000_test':
-                    'CREATE TABLE test_table (id TEXT PRIMARY KEY, name TEXT)',
-            },
+            '0000_test':
+                'CREATE TABLE test_table (id TEXT PRIMARY KEY, name TEXT)',
         }
 
         await runMigrations(db, migrations)
@@ -116,17 +103,8 @@ describe('runMigrations', () => {
         teardown = td
 
         const migrations: MigrationConfig = {
-            journal: {
-                entries: [
-                    { idx: 0, when: Date.now(), tag: '0000_first' },
-                    { idx: 1, when: Date.now(), tag: '0001_second' },
-                ],
-            },
-            migrations: {
-                '0000_first': 'CREATE TABLE first_table (id TEXT PRIMARY KEY)',
-                '0001_second':
-                    'CREATE TABLE second_table (id TEXT PRIMARY KEY)',
-            },
+            '0000_first': 'CREATE TABLE first_table (id TEXT PRIMARY KEY)',
+            '0001_second': 'CREATE TABLE second_table (id TEXT PRIMARY KEY)',
         }
 
         await runMigrations(db, migrations)
@@ -143,21 +121,5 @@ describe('runMigrations', () => {
             'first_table',
             'second_table',
         ])
-    })
-
-    it('throws when migration SQL is missing', async () => {
-        const { db, teardown: td } = createTestDatabase()
-        teardown = td
-
-        const migrations: MigrationConfig = {
-            journal: {
-                entries: [{ idx: 0, when: Date.now(), tag: '0000_missing' }],
-            },
-            migrations: {},
-        }
-
-        await expect(runMigrations(db, migrations)).rejects.toThrow(
-            'Migration SQL not found for tag: 0000_missing',
-        )
     })
 })

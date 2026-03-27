@@ -12,10 +12,7 @@
 
 import { Decimal } from 'decimal.js'
 import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
-import {
-    upsertAccountBalance,
-    upsertAccountHoldings,
-} from '@perawallet/wallet-core-accounts'
+import { upsertAccountBalance, refreshAccountHoldings } from '../db'
 import type { Network } from '@perawallet/wallet-core-shared'
 
 export async function fetchAndPersistAccount(
@@ -28,11 +25,15 @@ export async function fetchAndPersistAccount(
     await upsertAccountBalance({
         accountAddress: address,
         network,
-        algoBalanceMicro: new Decimal(info.balance.microAlgos.toString()),
+        algoBalance: new Decimal(info.balance.microAlgos.toString()).div(
+            1_000_000,
+        ),
         totalAssetsOptedIn: info.totalAssetsOptedIn ?? 0,
         totalCreatedAssets: info.totalCreatedAssets ?? 0,
         totalAppsOptedIn: info.totalAppsOptedIn ?? 0,
-        minBalanceMicro: new Decimal(info.minBalance.microAlgos.toString()),
+        minBalance: new Decimal(info.minBalance.microAlgos.toString()).div(
+            1_000_000,
+        ),
         status: info.status ?? 'Offline',
         authAddress: info.authAddr?.toString() ?? null,
     })
@@ -42,7 +43,7 @@ export async function fetchAndPersistAccount(
         amount: new Decimal((a.amount ?? 0n).toString()),
     }))
 
-    await upsertAccountHoldings({
+    await refreshAccountHoldings({
         accountAddress: address,
         holdings,
         network,

@@ -27,8 +27,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         getState: () => ({ accounts: mockAccounts }),
     },
     upsertAccountBalance: vi.fn(() => Promise.resolve()),
-    upsertAccountHoldings: vi.fn(() => Promise.resolve()),
+    refreshAccountHoldings: vi.fn(() => Promise.resolve()),
     getAllAssetIdsForNetwork: vi.fn(() => Promise.resolve(['123', '456'])),
+    invalidateAccountQueries: vi.fn(),
+    fetchAndPersistAccount: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -73,6 +75,9 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     upsertAssets: vi.fn(() => Promise.resolve()),
     upsertAssetPrices: vi.fn(() => Promise.resolve()),
     ALGO_ASSET_ID: '0',
+    invalidateAssetQueries: vi.fn(),
+    fetchAndPersistAssets: vi.fn(() => Promise.resolve()),
+    fetchAndPersistPrices: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
@@ -85,6 +90,8 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     ),
     getLatestTransactionRoundTime: vi.fn(() => Promise.resolve(null)),
     upsertTransactions: vi.fn(() => Promise.resolve()),
+    invalidateTransactionQueries: vi.fn(),
+    fetchAndPersistTransactions: vi.fn(() => Promise.resolve()),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({

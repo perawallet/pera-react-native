@@ -30,6 +30,9 @@ export {
     type FetchMoreTransactionsParams,
 } from './api/history'
 
+// Export syncer for sync service
+export { fetchAndPersistTransactions } from './sync/transaction-syncer'
+
 // Export CSV export functionality
 export {
     fetchTransactionsCsv,

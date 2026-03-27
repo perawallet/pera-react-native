@@ -12,7 +12,7 @@
 
 import { HistoryPeriod, Network } from '@perawallet/wallet-core-shared'
 import { AccountAddress } from '../models'
-import { Query } from '@tanstack/react-query'
+import { Query, QueryClient } from '@tanstack/react-query'
 
 const MODULE_PREFIX = 'accounts'
 
@@ -46,3 +46,9 @@ export const getInvalidateAccountBalancesPredicate = (query: Query) =>
     query.queryKey.length >= 2 &&
     query.queryKey.at(0) === MODULE_PREFIX &&
     query.queryKey.at(1) === 'balance'
+
+export function invalidateAccountQueries(queryClient: QueryClient): void {
+    void queryClient.invalidateQueries({
+        predicate: query => query.queryKey[0] === MODULE_PREFIX,
+    })
+}

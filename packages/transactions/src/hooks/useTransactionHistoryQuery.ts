@@ -19,7 +19,7 @@ import type {
     TransactionHistoryResult,
 } from '../models/types'
 import { getTransactionHistory } from '../db'
-import { persistTransactions } from './useTransactionHistoryCache'
+import { persistTransactionsToDb } from './useTransactionHistoryDb'
 
 /**
  * Parameters for the useTransactionHistoryQuery hook.
@@ -136,7 +136,7 @@ export const useTransactionHistoryQuery = (
 
                 // Persist to DB in background
                 if (result.transactions.length > 0) {
-                    void persistTransactions(
+                    void persistTransactionsToDb(
                         result.transactions,
                         accountAddress,
                         network,
@@ -174,7 +174,7 @@ export const useTransactionHistoryQuery = (
 
             // Persist to DB in background
             if (result.transactions.length > 0) {
-                void persistTransactions(
+                void persistTransactionsToDb(
                     result.transactions,
                     accountAddress,
                     network,

@@ -52,6 +52,20 @@ export function QueryProvider({ persister, children }: QueryProviderProps) {
             persistOptions={{
                 persister,
                 maxAge: config.reactQueryPersistenceAge,
+                dehydrateOptions: {
+                    shouldDehydrateQuery: query => {
+                        const prefix = query.queryKey[0]
+                        // Don't persist DB-backed queries — SQLite is the source of truth
+                        if (
+                            prefix === 'accounts' ||
+                            prefix === 'assets' ||
+                            prefix === 'transactions'
+                        ) {
+                            return false
+                        }
+                        return query.state.status === 'success'
+                    },
+                },
             }}
         >
             {children}

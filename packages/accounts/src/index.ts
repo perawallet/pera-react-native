@@ -20,3 +20,4 @@ export * from './account-discovery'
 export * from './db'
 
 export { useAccountsStore } from './store'
+export { fetchAndPersistAccount } from './sync/account-syncer'

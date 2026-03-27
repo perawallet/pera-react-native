@@ -10,12 +10,9 @@
  limitations under the License
  */
 
-import {
-    fetchAssetPrices,
-    fetchPublicAssetDetails,
-    upsertAssetPrices,
-    ALGO_ASSET_ID,
-} from '@perawallet/wallet-core-assets'
+import { fetchAssetPrices, fetchPublicAssetDetails } from '../api'
+import { upsertAssetPrices } from '../db'
+import { ALGO_ASSET_ID } from '../models'
 import { Decimal } from 'decimal.js'
 import { partition, type Network } from '@perawallet/wallet-core-shared'
 

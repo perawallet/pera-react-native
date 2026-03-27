@@ -11,6 +11,7 @@
  */
 
 import { HistoryPeriod, Network } from '@perawallet/wallet-core-shared'
+import { QueryClient } from '@tanstack/react-query'
 import { ALGO_ASSET_ID } from '../models'
 
 export const MODULE_PREFIX = 'assets'
@@ -54,3 +55,9 @@ export const getIndexerAssetDetailsQueryKey = (assetId: string) => [
     'indexer',
     { assetId },
 ]
+
+export function invalidateAssetQueries(queryClient: QueryClient): void {
+    void queryClient.invalidateQueries({
+        predicate: query => query.queryKey[0] === MODULE_PREFIX,
+    })
+}

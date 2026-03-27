@@ -41,8 +41,12 @@ export const useAccountInformationQuery = (address: string) => {
             })
 
             return {
-                minBalance: balance ? toBigInt(balance.minBalanceMicro) : 0n,
-                amount: balance ? toBigInt(balance.algoBalanceMicro) : 0n,
+                minBalance: balance
+                    ? toBigInt(balance.minBalance.mul(1_000_000))
+                    : 0n,
+                amount: balance
+                    ? toBigInt(balance.algoBalance.mul(1_000_000))
+                    : 0n,
                 address: Address.fromString(address),
                 status: balance?.status ?? 'Offline',
                 rewards: 0n,

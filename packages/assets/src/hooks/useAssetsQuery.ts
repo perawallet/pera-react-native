@@ -11,9 +11,8 @@
  */
 
 import { useMemo, useRef } from 'react'
-import { useQueries } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { type PeraAsset } from '../models'
-import { DEFAULT_PAGE_SIZE, partition } from '@perawallet/wallet-core-shared'
 import { getAssetsQueryKey } from './querykeys'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAssetsByIds } from '../db'
@@ -38,44 +37,30 @@ export const useAssetsQuery = (ids: string[]): UseAssetsQueryResult => {
     }
     const stableIds = idsRef.current.ids
 
-    const queryDefinitions = useMemo(() => {
-        const chunks = partition(stableIds, DEFAULT_PAGE_SIZE)
-        return chunks.map(chunk => ({
-            queryKey: getAssetsQueryKey(chunk, network),
-            staleTime: Infinity,
-            queryFn: () => getAssetsByIds({ assetIds: chunk, network }),
-        }))
-    }, [stableIds, network])
-
-    // notifyOnChangeProps: 'all' disables Proxy-based property tracking in TanStack Query.
-    // This works around a race condition in QueriesObserver where _observerMatches and _result
-    // can get out of sync during synchronous notifications, causing "new Proxy target must be an Object".
-    const queries = useQueries({
-        queries: queryDefinitions.map(q => ({
-            ...q,
-            notifyOnChangeProps: 'all' as const,
-        })),
+    const query = useQuery({
+        queryKey: getAssetsQueryKey(stableIds, network),
+        staleTime: Infinity,
+        queryFn: () => getAssetsByIds({ assetIds: stableIds, network }),
     })
 
-    const result = useMemo(() => {
-        const isPending = queries.some(query => query.isPending)
-        const isFetched = queries.some(query => query.isFetched)
+    return useMemo(() => {
         const assets: Map<string, PeraAsset> = new Map()
-
-        queries.forEach(query => {
-            query.data?.forEach(asset => {
-                assets.set(asset.assetId, asset)
-            })
+        query.data?.forEach(asset => {
+            assets.set(asset.assetId, asset)
         })
 
         return {
             data: assets,
-            isPending,
-            isFetched,
-            isRefetching: queries.some(query => query.isRefetching),
-            isError: queries.some(query => query.isError),
+            isPending: query.isPending,
+            isFetched: query.isFetched,
+            isRefetching: query.isRefetching,
+            isError: query.isError,
         }
-    }, [queries])
-
-    return result
+    }, [
+        query.data,
+        query.isPending,
+        query.isFetched,
+        query.isRefetching,
+        query.isError,
+    ])
 }

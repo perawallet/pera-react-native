@@ -55,13 +55,6 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     })),
     ALGO_ASSET_ID: '0',
     ALGO_ASSET: { id: '0', decimals: 6 },
-    toWholeUnits: (
-        value: Decimal | number | bigint,
-        asset: { decimals: number },
-    ) =>
-        new Decimal(typeof value === 'number' ? value : value.toString()).div(
-            Decimal.pow(10, asset.decimals),
-        ),
 }))
 
 const createWrapper = () => {
@@ -114,7 +107,7 @@ describe('useAccountBalances', () => {
         // Mock DB reads
         mockGetAccountBalance.mockReturnValue({
             accountAddress: 'ADDR1',
-            algoBalanceMicro: new Decimal(1000000), // 1 ALGO
+            algoBalance: new Decimal(1), // 1 ALGO (whole units)
             totalAssetsOptedIn: 1,
             totalCreatedAssets: 0,
             totalAppsOptedIn: 0,
@@ -164,7 +157,7 @@ describe('useAccountBalances', () => {
         // Mock DB reads
         mockGetAccountBalance.mockReturnValue({
             accountAddress: 'ADDR1',
-            algoBalanceMicro: new Decimal(5000000), // 5 ALGO
+            algoBalance: new Decimal(5), // 5 ALGO (whole units)
             totalAssetsOptedIn: 2,
             totalCreatedAssets: 0,
             totalAppsOptedIn: 0,
@@ -228,7 +221,7 @@ describe('useAccountBalances', () => {
         // Mock DB reads
         mockGetAccountBalance.mockReturnValue({
             accountAddress: 'ADDR1',
-            algoBalanceMicro: new Decimal(1000000),
+            algoBalance: new Decimal(1),
             totalAssetsOptedIn: 1,
             totalCreatedAssets: 0,
             totalAppsOptedIn: 0,
@@ -281,7 +274,7 @@ describe('useAccountAssetBalanceQuery', () => {
 
         mockGetAccountBalance.mockReturnValue({
             accountAddress: 'ADDR1',
-            algoBalanceMicro: new Decimal(1000000),
+            algoBalance: new Decimal(1),
             totalAssetsOptedIn: 2,
             totalCreatedAssets: 0,
             totalAppsOptedIn: 0,
@@ -319,7 +312,7 @@ describe('useAccountAssetBalanceQuery', () => {
 
         mockGetAccountBalance.mockReturnValue({
             accountAddress: 'ADDR1',
-            algoBalanceMicro: new Decimal(1000000),
+            algoBalance: new Decimal(1),
             totalAssetsOptedIn: 0,
             totalCreatedAssets: 0,
             totalAppsOptedIn: 0,

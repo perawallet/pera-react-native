@@ -14,12 +14,7 @@ import { sql } from 'drizzle-orm'
 import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core'
 import type { Database } from '@perawallet/wallet-extension-platform'
 
-export type MigrationConfig = {
-    journal: {
-        entries: Array<{ idx: number; when: number; tag: string }>
-    }
-    migrations: Record<string, string>
-}
+export type MigrationConfig = Record<string, string>
 
 const drizzleMigrations = sqliteTable('__drizzle_migrations', {
     id: integer('id').primaryKey({ autoIncrement: true }),
@@ -46,18 +41,14 @@ export const runMigrations = async (
 
     const appliedSet = new Set(applied.map(row => row.tag))
 
-    const sorted = [...migrations.journal.entries].sort((a, b) => a.idx - b.idx)
+    const tags = Object.keys(migrations).sort()
 
-    for (const entry of sorted) {
-        if (appliedSet.has(entry.tag)) {
+    for (const tag of tags) {
+        if (appliedSet.has(tag)) {
             continue
         }
 
-        const migrationSql = migrations.migrations[entry.tag]
-
-        if (!migrationSql) {
-            throw new Error(`Migration SQL not found for tag: ${entry.tag}`)
-        }
+        const migrationSql = migrations[tag]
 
         const statements = migrationSql
             .split('--> statement-breakpoint')
@@ -70,7 +61,7 @@ export const runMigrations = async (
 
         await db
             .insert(drizzleMigrations)
-            .values({ tag: entry.tag, createdAt: Date.now() })
+            .values({ tag, createdAt: Date.now() })
             .run()
     }
 }
