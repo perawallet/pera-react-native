@@ -21,7 +21,9 @@ export const AssetsSchema = sqliteTable(
         network: text('network').notNull(),
         decimals: integer('decimals').notNull().default(0),
         creatorAddress: text('creator_address').notNull().default(''),
-        totalSupply: decimalColumn('total_supply').notNull().default(new Decimal(0)),
+        totalSupply: decimalColumn('total_supply')
+            .notNull()
+            .default(new Decimal(0)),
         name: text('name'),
         unitName: text('unit_name'),
         url: text('url'),
