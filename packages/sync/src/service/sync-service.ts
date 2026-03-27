@@ -30,6 +30,7 @@ const POLL_INTERVAL = 3000
 export class SyncService {
     private timer: ReturnType<typeof setTimeout> | null = null
     private running = false
+    private hasCompletedInitialSync = false
 
     constructor(private readonly deps: SyncServiceDeps) {}
 
@@ -53,7 +54,18 @@ export class SyncService {
 
     private async tick(): Promise<void> {
         try {
-            const networksToSync = await this.checkShouldRefresh()
+            let networksToSync: Network[]
+
+            if (!this.hasCompletedInitialSync) {
+                // First tick: force-sync all networks to ensure DB is populated
+                // The persisted lastRefreshedRound may exist from a previous session
+                // but the DB may not have data for all networks
+                networksToSync = Object.values(Networks)
+                this.hasCompletedInitialSync = true
+            } else {
+                networksToSync = await this.checkShouldRefresh()
+            }
+
             if (networksToSync.length > 0) {
                 await this.syncAll(networksToSync)
                 this.invalidateQueries()
@@ -103,7 +115,6 @@ export class SyncService {
                     networksToSync.push(network)
                 }
             } else if (neverSynced) {
-                // API call failed but this network was never synced — sync anyway
                 networksToSync.push(network)
             }
         }

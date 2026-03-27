@@ -134,7 +134,7 @@ describe('SyncService', () => {
         expect(service.isRunning()).toBe(false)
     })
 
-    it('calls shouldRefresh for all networks on tick', async () => {
+    it('force-syncs all networks on the first tick', async () => {
         mockSendShouldRefreshRequest.mockResolvedValue({
             refresh: false,
             round: null,
@@ -142,8 +142,34 @@ describe('SyncService', () => {
 
         service.start()
 
-        // The first tick runs immediately on start
-        await vi.advanceTimersByTimeAsync(0)
+        // First tick runs immediately — should NOT call shouldRefresh
+        vi.useRealTimers()
+        await new Promise(resolve => setTimeout(resolve, 50))
+        vi.useFakeTimers()
+
+        expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+
+        service.stop()
+    })
+
+    it('calls shouldRefresh for all networks on subsequent ticks', async () => {
+        mockSendShouldRefreshRequest.mockResolvedValue({
+            refresh: false,
+            round: null,
+        })
+
+        vi.useRealTimers()
+
+        service.start()
+
+        // First tick: force-sync (skip shouldRefresh)
+        await new Promise(resolve => setTimeout(resolve, 50))
+
+        // Second tick: uses shouldRefresh (after POLL_INTERVAL = 3000ms)
+        await new Promise(resolve => setTimeout(resolve, 3100))
+
+        service.stop()
+        vi.useFakeTimers()
 
         expect(mockSendShouldRefreshRequest).toHaveBeenCalledWith(
             'mainnet',
@@ -166,10 +192,14 @@ describe('SyncService', () => {
 
         service.start()
 
-        // Wait for the immediate tick's async work to settle
-        // Use real timer for microtask resolution
+        // First tick: force-sync (skip shouldRefresh)
         vi.useRealTimers()
         await new Promise(resolve => setTimeout(resolve, 50))
+        vi.useFakeTimers()
+
+        // Second tick: uses shouldRefresh
+        vi.useRealTimers()
+        await new Promise(resolve => setTimeout(resolve, 3050))
         vi.useFakeTimers()
 
         service.stop()
