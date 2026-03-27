@@ -63,7 +63,7 @@ export const useAccountOverviewHeader = (
     const handleChartSelectionChange = useCallback(
         (selected: AccountBalanceHistoryItem | null) => {
             setSelectedPoint(selected)
-            onScrollEnabledChange(selected === null)
+            onScrollEnabledChange(!selected)
         },
         [setSelectedPoint, onScrollEnabledChange],
     )

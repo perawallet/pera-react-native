@@ -13,7 +13,7 @@
 import { createContext, useContext } from 'react'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
-export type AccountOverviewModalContextValue = {
+export type UseAccountOverviewModalResult = {
     account: WalletAccount
     openSendFunds: () => void
     openReceiveFunds: () => void
@@ -22,15 +22,7 @@ export type AccountOverviewModalContextValue = {
 }
 
 export const AccountOverviewModalContext =
-    createContext<AccountOverviewModalContextValue | null>(null)
-
-export type UseAccountOverviewModalResult = {
-    account: WalletAccount
-    openSendFunds: () => void
-    openReceiveFunds: () => void
-    openAccountOptions: () => void
-    onScrollEnabledChange: (enabled: boolean) => void
-}
+    createContext<UseAccountOverviewModalResult | null>(null)
 
 export const useAccountOverviewModal = (): UseAccountOverviewModalResult => {
     const context = useContext(AccountOverviewModalContext)

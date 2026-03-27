@@ -71,13 +71,6 @@ export const useAccountOverview = (
 
     const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true)
 
-    const onScrollEnabledChange = useCallback(
-        (enabled: boolean) => {
-            setScrollingEnabled(enabled)
-        },
-        [setScrollingEnabled],
-    )
-
     return {
         isSendFundsVisible,
         openSendFunds,
@@ -89,6 +82,6 @@ export const useAccountOverview = (
         openAccountOptions,
         handleCloseAccountOptions,
         scrollingEnabled,
-        onScrollEnabledChange,
+        onScrollEnabledChange: setScrollingEnabled,
     }
 }

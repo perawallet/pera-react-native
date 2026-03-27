@@ -18,7 +18,7 @@ import { useAccountOverviewHeader } from '../useAccountOverviewHeader'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     AccountOverviewModalContext,
-    AccountOverviewModalContextValue,
+    UseAccountOverviewModalResult,
 } from '../AccountOverviewModalContext'
 
 const { mockOnScrollEnabledChange } = vi.hoisted(() => ({
@@ -67,7 +67,7 @@ vi.mock('@hooks/useChartInteraction', () => ({
     })),
 }))
 
-const mockContextValue: AccountOverviewModalContextValue = {
+const mockContextValue: UseAccountOverviewModalResult = {
     account: { address: 'test-address' } as WalletAccount,
     openSendFunds: vi.fn(),
     openReceiveFunds: vi.fn(),

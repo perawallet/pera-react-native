@@ -22,7 +22,7 @@ import { AccountAssetList } from '../AccountAssetList'
 import { AccountOptionsBottomSheet } from '../AccountOptionsBottomSheet'
 import {
     AccountOverviewModalContext,
-    AccountOverviewModalContextValue,
+    UseAccountOverviewModalResult,
 } from './AccountOverviewModalContext'
 
 export type AccountOverviewProps = {
@@ -55,7 +55,7 @@ export const AccountOverview = ({
         onSwipeEnabledChange?.(scrollingEnabled)
     }, [scrollingEnabled, onSwipeEnabledChange])
 
-    const contextValue = useMemo<AccountOverviewModalContextValue>(
+    const contextValue = useMemo<UseAccountOverviewModalResult>(
         () => ({
             account,
             openSendFunds,
