@@ -18,4 +18,4 @@ export {
 } from './database'
 export { runMigrations, type MigrationConfig } from './migrator'
 export { default as migrations } from './migrations'
-export { decimalColumn } from './columns'
+export { decimalColumn, decimalSum, decimalMax, decimalMin } from './columns'
