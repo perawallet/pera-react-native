@@ -21,7 +21,7 @@ import {
     PWLoadingOverlay,
 } from '@components/core'
 import { type HDWalletGroup } from '@perawallet/wallet-core-accounts'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { Decimal } from 'decimal.js'
@@ -90,7 +90,7 @@ export const SelectHDWalletScreen = () => {
                         variant='h4'
                     />
                     <PreferredCurrencyDisplay
-                        sourceAssetId='ALGO'
+                        sourceAssetId={ALGO_ASSET_ID}
                         sourceAmount={groupAlgoValue}
                         precision={2}
                         minPrecision={2}
