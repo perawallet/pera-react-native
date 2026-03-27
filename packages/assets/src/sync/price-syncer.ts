@@ -14,7 +14,11 @@ import { fetchAssetPrices, fetchPublicAssetDetails } from '../api'
 import { upsertAssetPrices } from '../db'
 import { ALGO_ASSET_ID } from '../models'
 import { Decimal } from 'decimal.js'
-import { Networks, partition, type Network } from '@perawallet/wallet-core-shared'
+import {
+    Networks,
+    partition,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 
 const PRICE_BATCH_SIZE = 25
 
