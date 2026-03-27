@@ -11,6 +11,7 @@
  */
 
 // @ts-check
+/* eslint-disable @typescript-eslint/no-require-imports */
 
 const fs = require('fs')
 const svgTransformer = require('react-native-svg-transformer')
