@@ -39,6 +39,19 @@ export const toBigInt = (d: Decimal): bigint => {
     return BigInt(d.toFixed(0))
 }
 
+export const displayUnitsToBaseUnitsBigInt = (
+    amount: number | bigint | Decimal | string,
+    decimals: number,
+): bigint => {
+    return toBigInt(displayUnitsToBaseUnits(amount, decimals))
+}
+
+export const algosToMicroAlgosBigInt = (
+    algos: number | bigint | Decimal | string,
+): bigint => {
+    return displayUnitsToBaseUnitsBigInt(algos, 6)
+}
+
 export const microAlgosToAlgos = (
     microAlgos: number | bigint | Decimal | string,
 ): Decimal => {

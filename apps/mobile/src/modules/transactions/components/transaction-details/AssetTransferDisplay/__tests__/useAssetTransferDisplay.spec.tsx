@@ -60,7 +60,7 @@ describe('useAssetTransferDisplay', () => {
                 decimals: 6,
                 metadata: 'some-metadata-value',
             },
-        } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+        } as UseQueryResult<PeraAsset, Error>)
 
         const { result } = renderHook(() => useAssetTransferDisplay(baseTx))
 
@@ -74,7 +74,7 @@ describe('useAssetTransferDisplay', () => {
                 name: 'Test',
                 decimals: 6,
             },
-        } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+        } as UseQueryResult<PeraAsset, Error>)
 
         const { result } = renderHook(() => useAssetTransferDisplay(baseTx))
 
@@ -89,7 +89,7 @@ describe('useAssetTransferDisplay', () => {
                 decimals: 6,
                 metadata: 'hash',
             },
-        } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+        } as UseQueryResult<PeraAsset, Error>)
 
         const { result } = renderHook(() => useAssetTransferDisplay(baseTx))
 

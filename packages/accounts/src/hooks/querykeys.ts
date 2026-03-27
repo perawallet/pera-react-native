@@ -12,9 +12,12 @@
 
 import { HistoryPeriod, Network } from '@perawallet/wallet-core-shared'
 import { AccountAddress } from '../models'
-import { Query, QueryClient } from '@tanstack/react-query'
+import { Query, QueryClient, type QueryKey } from '@tanstack/react-query'
 
 const MODULE_PREFIX = 'accounts'
+
+export const isAccountQuery = (queryKey: QueryKey): boolean =>
+    queryKey[0] === MODULE_PREFIX
 
 export const getAccountBalancesQueryKey = (
     address: string,

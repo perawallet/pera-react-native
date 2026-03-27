@@ -105,7 +105,7 @@ describe('useTransactionListItem', () => {
         } as ReturnType<typeof useSelectedAccount>)
         vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
             data: undefined,
-        } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+        } as UseQueryResult<PeraAsset, Error>)
     })
 
     describe('title', () => {
@@ -209,7 +209,7 @@ describe('useTransactionListItem', () => {
                     decimals: 6,
                     unitName: 'USDC',
                 },
-            } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+            } as UseQueryResult<PeraAsset, Error>)
 
             const tx = createAssetTransferTx({
                 amount: new Decimal('1000000'),
@@ -231,7 +231,7 @@ describe('useTransactionListItem', () => {
         it('falls back to transaction asset decimals when query has no data', () => {
             vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
                 data: undefined,
-            } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+            } as UseQueryResult<PeraAsset, Error>)
 
             const tx = createAssetTransferTx({
                 amount: new Decimal('1000000'),

@@ -50,6 +50,9 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
             ),
         },
     }),
+    useNetworkStore: {
+        getState: () => ({ network: 'mainnet' }),
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-polling', () => ({
@@ -159,7 +162,7 @@ describe('SyncService', () => {
         service.stop()
     })
 
-    it('calls shouldRefresh for all networks on subsequent ticks', async () => {
+    it('calls shouldRefresh for the active network on subsequent ticks', async () => {
         mockSendShouldRefreshRequest.mockResolvedValue({
             refresh: false,
             round: null,
@@ -183,12 +186,7 @@ describe('SyncService', () => {
             ['ADDR1', 'ADDR2'],
             null,
         )
-        expect(mockSendShouldRefreshRequest).toHaveBeenCalledWith(
-            'testnet',
-            ['ADDR1', 'ADDR2'],
-            null,
-        )
-        expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(2)
+        expect(mockSendShouldRefreshRequest).toHaveBeenCalledTimes(1)
     })
 
     it('updates last refreshed round when refresh is needed', async () => {
@@ -212,7 +210,6 @@ describe('SyncService', () => {
         service.stop()
 
         expect(mockSetLastRefreshedRound).toHaveBeenCalledWith('mainnet', 42)
-        expect(mockSetLastRefreshedRound).toHaveBeenCalledWith('testnet', 42)
     })
 
     it('does not sync when no accounts exist', async () => {

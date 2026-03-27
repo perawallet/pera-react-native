@@ -29,7 +29,8 @@ import {
     invalidateTransactionQueries,
     fetchAndPersistTransactions,
 } from '@perawallet/wallet-core-transactions'
-import { logger, Networks, type Network } from '@perawallet/wallet-core-shared'
+import { logger, type Network } from '@perawallet/wallet-core-shared'
+import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import type { SyncServiceDeps } from '../models'
 
 const POLL_INTERVAL = 3000
@@ -61,16 +62,15 @@ export class SyncService {
 
     private async tick(): Promise<void> {
         try {
+            const activeNetwork = useNetworkStore.getState().network
             let networksToSync: Network[]
 
             if (!this.hasCompletedInitialSync) {
-                // First tick: force-sync all networks to ensure DB is populated
-                // The persisted lastRefreshedRound may exist from a previous session
-                // but the DB may not have data for all networks
-                networksToSync = Object.values(Networks)
+                // First tick: force-sync the active network to ensure DB is populated
+                networksToSync = [activeNetwork]
                 this.hasCompletedInitialSync = true
             } else {
-                networksToSync = await this.checkShouldRefresh()
+                networksToSync = await this.checkShouldRefresh(activeNetwork)
             }
 
             if (networksToSync.length > 0) {
@@ -89,7 +89,9 @@ export class SyncService {
         this.timer = setTimeout(() => void this.tick(), POLL_INTERVAL)
     }
 
-    private async checkShouldRefresh(): Promise<Network[]> {
+    private async checkShouldRefresh(
+        activeNetwork: Network,
+    ): Promise<Network[]> {
         const accounts = useAccountsStore.getState().accounts
         const addresses = accounts.map(a => a.address)
 
@@ -98,35 +100,26 @@ export class SyncService {
         const { lastRefreshedRound, setLastRefreshedRound } =
             usePollingStore.getState()
 
-        const allNetworks = Object.values(Networks)
-        const networksToSync: Network[] = []
+        const neverSynced = lastRefreshedRound[activeNetwork] === null
 
-        const results = await Promise.allSettled(
-            allNetworks.map(network =>
-                sendShouldRefreshRequest(
-                    network,
-                    addresses,
-                    lastRefreshedRound[network],
-                ),
-            ),
-        )
+        try {
+            const result = await sendShouldRefreshRequest(
+                activeNetwork,
+                addresses,
+                lastRefreshedRound[activeNetwork],
+            )
 
-        for (let i = 0; i < allNetworks.length; i++) {
-            const network = allNetworks[i]
-            const result = results[i]
-            const neverSynced = lastRefreshedRound[network] === null
-
-            if (result.status === 'fulfilled') {
-                if (result.value.refresh || neverSynced) {
-                    setLastRefreshedRound(network, result.value.round ?? null)
-                    networksToSync.push(network)
-                }
-            } else if (neverSynced) {
-                networksToSync.push(network)
+            if (result.refresh || neverSynced) {
+                setLastRefreshedRound(activeNetwork, result.round ?? null)
+                return [activeNetwork]
+            }
+        } catch {
+            if (neverSynced) {
+                return [activeNetwork]
             }
         }
 
-        return networksToSync
+        return []
     }
 
     private async syncAll(networks: Network[]): Promise<void> {
@@ -142,6 +135,8 @@ export class SyncService {
             const assetIds = await getAllAssetIdsForNetwork({ network })
 
             // 3. Sync asset metadata and prices in parallel
+            // Prices are always fetched from mainnet (inside fetchAndPersistPrices)
+            // but stored under the active network so DB JOINs work correctly
             await Promise.allSettled([
                 fetchAndPersistAssets(assetIds, network),
                 fetchAndPersistPrices(assetIds, network),

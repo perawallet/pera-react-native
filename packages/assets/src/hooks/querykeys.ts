@@ -11,10 +11,13 @@
  */
 
 import { HistoryPeriod, Network } from '@perawallet/wallet-core-shared'
-import { QueryClient } from '@tanstack/react-query'
+import { QueryClient, type QueryKey } from '@tanstack/react-query'
 import { ALGO_ASSET_ID } from '../models'
 
 export const MODULE_PREFIX = 'assets'
+
+export const isAssetQuery = (queryKey: QueryKey): boolean =>
+    queryKey[0] === MODULE_PREFIX
 
 export const getAssetPricesQueryKey = (
     assetIDs: string[],

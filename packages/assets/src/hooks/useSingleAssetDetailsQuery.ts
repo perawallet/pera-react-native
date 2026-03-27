@@ -11,7 +11,6 @@
  */
 
 import { useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
 import {
     ALGO_ASSET,
     ALGO_ASSET_ID,
@@ -64,7 +63,7 @@ async function fetchAssetFromApis(
 export const useSingleAssetDetailsQuery = (assetId: string) => {
     const { network } = useNetwork()
 
-    const query = useQuery({
+    return useQuery<PeraAsset, Error>({
         queryKey: getAssetDetailsQueryKey(assetId),
         queryFn: async (): Promise<PeraAsset> => {
             if (assetId === ALGO_ASSET_ID) {
@@ -83,32 +82,4 @@ export const useSingleAssetDetailsQuery = (assetId: string) => {
         staleTime: Infinity,
         enabled: !!assetId.length,
     })
-
-    const results = useMemo<{
-        data?: PeraAsset
-        isLoading: boolean
-        isError: boolean
-        error: unknown
-        isPending: boolean
-        refetch: () => void
-    }>(() => {
-        return {
-            data: query.data,
-            isLoading: assetId !== ALGO_ASSET_ID ? query.isLoading : false,
-            isError: assetId !== ALGO_ASSET_ID ? query.isError : false,
-            error: assetId !== ALGO_ASSET_ID ? query.error : undefined,
-            isPending: assetId !== ALGO_ASSET_ID ? query.isPending : false,
-            refetch: query.refetch,
-        }
-    }, [
-        assetId,
-        query.data,
-        query.isLoading,
-        query.isError,
-        query.error,
-        query.isPending,
-        query.refetch,
-    ])
-
-    return results
 }
