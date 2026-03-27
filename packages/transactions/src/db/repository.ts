@@ -11,6 +11,7 @@
  */
 
 import { eq, and, desc, lt, sql } from 'drizzle-orm'
+import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import type { TransactionHistoryItem } from '../models/types'
 import { TransactionsSchema, AccountTransactionsSchema } from './schema'
@@ -27,7 +28,9 @@ function toDb(item: TransactionHistoryItem) {
         groupId: item.groupId,
         amount: item.amount,
         closeTo: item.closeTo,
-        applicationId: item.applicationId,
+        applicationId: item.applicationId
+            ? new Decimal(item.applicationId)
+            : null,
         innerTransactionCount: item.innerTransactionCount,
         assetJson: item.asset ? JSON.stringify(item.asset) : null,
         swapGroupDetailJson: item.swapGroupDetail
@@ -46,11 +49,11 @@ function fromDb(row: {
     receiver: string | null
     confirmedRound: number
     roundTime: number
-    fee: string
+    fee: Decimal
     groupId: string | null
-    amount: string | null
+    amount: Decimal | null
     closeTo: string | null
-    applicationId: string | null
+    applicationId: Decimal | null
     innerTransactionCount: number | null
     assetJson: string | null
     swapGroupDetailJson: string | null
@@ -67,7 +70,7 @@ function fromDb(row: {
         groupId: row.groupId,
         amount: row.amount,
         closeTo: row.closeTo,
-        applicationId: row.applicationId,
+        applicationId: row.applicationId?.toString() ?? null,
         innerTransactionCount: row.innerTransactionCount,
         asset: row.assetJson ? JSON.parse(row.assetJson) : null,
         swapGroupDetail: row.swapGroupDetailJson
@@ -140,7 +143,7 @@ export async function upsertTransactions({
                 accountAddress,
                 transactionId: item.id,
                 network,
-                assetId,
+                assetId: assetId ? new Decimal(assetId) : null,
                 roundTime: item.roundTime,
             })
             .onConflictDoNothing()
@@ -171,7 +174,9 @@ export async function getTransactionHistory({
     ]
 
     if (assetId !== undefined) {
-        conditions.push(eq(AccountTransactionsSchema.assetId, assetId))
+        conditions.push(
+            eq(AccountTransactionsSchema.assetId, new Decimal(assetId)),
+        )
     }
 
     if (beforeRoundTime !== undefined) {

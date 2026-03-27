@@ -14,6 +14,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
     useNetwork,
     Address,
+    toBigInt,
     type AccountInformation,
 } from '@perawallet/wallet-core-blockchain'
 import { getAccountBalance, getAccountHoldings } from '../db'
@@ -40,14 +41,14 @@ export const useAccountInformationQuery = (address: string) => {
             })
 
             return {
-                minBalance: BigInt(balance?.minBalanceMicro ?? '0'),
-                amount: BigInt(balance?.algoBalanceMicro ?? '0'),
+                minBalance: balance ? toBigInt(balance.minBalanceMicro) : 0n,
+                amount: balance ? toBigInt(balance.algoBalanceMicro) : 0n,
                 address: Address.fromString(address),
                 status: balance?.status ?? 'Offline',
                 rewards: 0n,
                 assets: holdings.map(h => ({
                     assetId: BigInt(h.assetId),
-                    amount: BigInt(h.amount),
+                    amount: toBigInt(h.amount),
                     isFrozen: false,
                 })),
             }

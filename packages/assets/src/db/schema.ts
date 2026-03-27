@@ -10,17 +10,18 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
 import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
-import { bigNumeric } from '@perawallet/wallet-core-database'
+import { decimalColumn } from '@perawallet/wallet-core-database'
 
 export const AssetsSchema = sqliteTable(
     'assets',
     {
-        assetId: bigNumeric('asset_id').notNull(),
+        assetId: decimalColumn('asset_id').notNull(),
         network: text('network').notNull(),
         decimals: integer('decimals').notNull().default(0),
         creatorAddress: text('creator_address').notNull().default(''),
-        totalSupply: bigNumeric('total_supply').notNull().default('0'),
+        totalSupply: decimalColumn('total_supply').notNull().default(new Decimal(0)),
         name: text('name'),
         unitName: text('unit_name'),
         url: text('url'),
@@ -41,9 +42,9 @@ export const AssetsSchema = sqliteTable(
 export const AssetPricesSchema = sqliteTable(
     'asset_prices',
     {
-        assetId: bigNumeric('asset_id').notNull(),
+        assetId: decimalColumn('asset_id').notNull(),
         network: text('network').notNull(),
-        usdPrice: bigNumeric('usd_price').notNull().default('0'),
+        usdPrice: decimalColumn('usd_price').notNull(),
         updatedAt: integer('updated_at').notNull(),
     },
     table => [primaryKey({ columns: [table.assetId, table.network] })],

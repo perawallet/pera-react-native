@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
 import type {
     TransactionHistoryItemApiResponse,
     TransactionHistoryApiResponse,
@@ -84,9 +85,12 @@ export const transformTransactionItem = (
     roundTime: Number(item.round_time),
     swapGroupDetail: transformSwapGroupDetail(item.swap_group_detail),
     interpretedMeaning: transformInterpretedMeaning(item.interpreted_meaning),
-    fee: item.fee,
+    fee: new Decimal(item.fee),
     groupId: item.group_id ?? null,
-    amount: item.amount ?? null,
+    amount:
+        item.amount !== undefined && item.amount !== null
+            ? new Decimal(item.amount)
+            : null,
     closeTo: item.close_to ?? null,
     asset: transformAssetSummary(item.asset),
     applicationId:

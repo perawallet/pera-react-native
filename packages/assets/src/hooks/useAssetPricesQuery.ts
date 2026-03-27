@@ -13,7 +13,6 @@
 import { useMemo, useRef } from 'react'
 import { useQueries } from '@tanstack/react-query'
 import { type AssetPrices } from '../models'
-import { transformAssetPriceResponse } from '../api'
 import { DEFAULT_PAGE_SIZE, partition } from '@perawallet/wallet-core-shared'
 import { getAssetPricesQueryKey } from './querykeys'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
@@ -67,11 +66,10 @@ export const useAssetPricesQuery = (
         const assetPrices: AssetPrices = new Map()
         queries.forEach(query => {
             query.data?.forEach(row => {
-                const assetPrice = transformAssetPriceResponse({
-                    asset_id: row.assetId,
-                    usd_value: row.usdPrice,
+                assetPrices.set(row.assetId, {
+                    assetId: row.assetId,
+                    usdPrice: row.usdPrice,
                 })
-                assetPrices.set(row.assetId, assetPrice)
             })
         })
         return {

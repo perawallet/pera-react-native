@@ -31,8 +31,8 @@ import { getAccountBalancesQueryKey } from './querykeys'
 import { getAccountBalance, getAccountHoldings } from '../db'
 
 type AccountDbSnapshot = {
-    algoBalanceMicro: string
-    holdings: Array<{ assetId: string; amount: string }>
+    algoBalanceMicro: Decimal
+    holdings: Array<{ assetId: string; amount: Decimal }>
 }
 
 async function readAccountFromDb(
@@ -49,7 +49,7 @@ async function readAccountFromDb(
     })
 
     return {
-        algoBalanceMicro: balance?.algoBalanceMicro ?? '0',
+        algoBalanceMicro: balance?.algoBalanceMicro ?? new Decimal(0),
         holdings,
     }
 }
@@ -121,14 +121,15 @@ export const useAccountBalancesQuery = (
             const assetBalances: AssetWithAccountBalance[] = []
             r.data?.holdings?.forEach(holding => {
                 const usdAssetPrice =
-                    assetPrices?.get(holding.assetId)?.usdPrice ?? Decimal(0)
+                    assetPrices?.get(holding.assetId)?.usdPrice ??
+                    new Decimal(0)
                 const asset = assets.get(holding.assetId)
-                const assetAmount = Decimal(holding.amount ?? '0').div(
-                    Decimal(10).pow(asset?.decimals ?? 0),
+                const assetAmount = holding.amount.div(
+                    new Decimal(10).pow(asset?.decimals ?? 0),
                 )
                 const usdAssetValue = assetAmount.times(usdAssetPrice)
                 const algoAssetValue = usdAlgoPrice.isZero()
-                    ? Decimal(0)
+                    ? new Decimal(0)
                     : usdAssetValue.div(usdAlgoPrice)
                 algoValue = algoValue.plus(algoAssetValue)
                 assetBalances.push({
@@ -141,7 +142,7 @@ export const useAccountBalancesQuery = (
 
             //Now add algo into the mix
             const algoAmount = toWholeUnits(
-                BigInt(r.data?.algoBalanceMicro ?? '0'),
+                r.data?.algoBalanceMicro ?? new Decimal(0),
                 ALGO_ASSET,
             )
             algoValue = algoValue.plus(algoAmount)

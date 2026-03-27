@@ -11,18 +11,24 @@
  */
 
 import { eq, and, inArray } from 'drizzle-orm'
+import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import { AccountAssetHoldingsSchema, AccountBalancesSchema } from './schema'
 
 export type HoldingRow = {
     assetId: string
-    amount: string
+    amount: Decimal
+}
+
+type UpsertHoldingInput = {
+    assetId: string
+    amount: Decimal
 }
 
 type UpsertAccountHoldingsParams = {
     db?: Database
     accountAddress: string
-    holdings: HoldingRow[]
+    holdings: UpsertHoldingInput[]
     network: string
 }
 
@@ -49,7 +55,7 @@ export async function upsertAccountHoldings({
             .insert(AccountAssetHoldingsSchema)
             .values({
                 accountAddress,
-                assetId: holding.assetId,
+                assetId: new Decimal(holding.assetId),
                 network,
                 amount: holding.amount,
                 updatedAt: now,
@@ -69,7 +75,7 @@ export async function getAccountHoldings({
     accountAddress,
     network,
 }: GetAccountHoldingsParams): Promise<HoldingRow[]> {
-    return db
+    const rows = await db
         .select({
             assetId: AccountAssetHoldingsSchema.assetId,
             amount: AccountAssetHoldingsSchema.amount,
@@ -82,15 +88,20 @@ export async function getAccountHoldings({
             ),
         )
         .all()
+
+    return rows.map(r => ({
+        assetId: r.assetId.toString(),
+        amount: r.amount,
+    }))
 }
 
 export type AccountBalanceRow = {
     accountAddress: string
-    algoBalanceMicro: string
+    algoBalanceMicro: Decimal
     totalAssetsOptedIn: number
     totalCreatedAssets: number
     totalAppsOptedIn: number
-    minBalanceMicro: string
+    minBalanceMicro: Decimal
     status: string
     authAddress: string | null
 }
@@ -99,11 +110,11 @@ type UpsertAccountBalanceParams = {
     db?: Database
     accountAddress: string
     network: string
-    algoBalanceMicro: string
+    algoBalanceMicro: Decimal
     totalAssetsOptedIn: number
     totalCreatedAssets: number
     totalAppsOptedIn: number
-    minBalanceMicro: string
+    minBalanceMicro: Decimal
     status: string
     authAddress: string | null
 }
@@ -240,5 +251,5 @@ export async function getAllAssetIdsForNetwork({
         .where(eq(AccountAssetHoldingsSchema.network, network))
         .all()
 
-    return rows.map(r => r.assetId)
+    return rows.map(r => r.assetId.toString())
 }

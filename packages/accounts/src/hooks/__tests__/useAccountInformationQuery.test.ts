@@ -13,6 +13,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Decimal } from 'decimal.js'
 import React from 'react'
 
 import { useAccountInformationQuery } from '../useAccountInformationQuery'
@@ -30,6 +31,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     Address: {
         fromString: (addr: string) => addr,
     },
+    toBigInt: (d: Decimal) => BigInt(d.toFixed(0)),
 }))
 
 describe('useAccountInformationQuery', () => {
@@ -59,8 +61,8 @@ describe('useAccountInformationQuery', () => {
     test('reads account information from database', async () => {
         mockGetAccountBalance.mockResolvedValue({
             accountAddress: mockAddress,
-            algoBalanceMicro: '1000000',
-            minBalanceMicro: '100000',
+            algoBalanceMicro: new Decimal(1000000),
+            minBalanceMicro: new Decimal(100000),
             status: 'Online',
             totalAssetsOptedIn: 1,
             totalCreatedAssets: 0,
@@ -68,7 +70,7 @@ describe('useAccountInformationQuery', () => {
             authAddress: null,
         })
         mockGetAccountHoldings.mockResolvedValue([
-            { assetId: '123', amount: '500' },
+            { assetId: '123', amount: new Decimal(500) },
         ])
 
         const { result } = renderHook(
@@ -136,8 +138,8 @@ describe('useAccountInformationQuery', () => {
 
         mockGetAccountBalance.mockResolvedValue({
             accountAddress: address1,
-            algoBalanceMicro: '1000000',
-            minBalanceMicro: '100000',
+            algoBalanceMicro: new Decimal(1000000),
+            minBalanceMicro: new Decimal(100000),
             status: 'Online',
             totalAssetsOptedIn: 0,
             totalCreatedAssets: 0,

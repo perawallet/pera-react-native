@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { Decimal } from 'decimal.js'
 import {
     runMigrations,
     migrations,
@@ -47,8 +48,8 @@ describe('account repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [
-                    { assetId: '100', amount: '5000' },
-                    { assetId: '200', amount: '300' },
+                    { assetId: '100', amount: 5000n },
+                    { assetId: '200', amount: 300n },
                 ],
                 network: 'mainnet',
             })
@@ -68,8 +69,8 @@ describe('account repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [
-                    { assetId: '100', amount: '5000' },
-                    { assetId: '200', amount: '300' },
+                    { assetId: '100', amount: 5000n },
+                    { assetId: '200', amount: 300n },
                 ],
                 network: 'mainnet',
             })
@@ -77,7 +78,7 @@ describe('account repository', () => {
             await upsertAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                holdings: [{ assetId: '300', amount: '999' }],
+                holdings: [{ assetId: '300', amount: 999n }],
                 network: 'mainnet',
             })
 
@@ -89,14 +90,14 @@ describe('account repository', () => {
 
             expect(result).toHaveLength(1)
             expect(result[0].assetId).toBe('300')
-            expect(result[0].amount).toBe('999')
+            expect(result[0].amount).toEqual(new Decimal(999))
         })
 
         it('handles empty holdings', async () => {
             await upsertAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                holdings: [{ assetId: '100', amount: '5000' }],
+                holdings: [{ assetId: '100', amount: 5000n }],
                 network: 'mainnet',
             })
 
@@ -120,19 +121,19 @@ describe('account repository', () => {
             await upsertAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                holdings: [{ assetId: '100', amount: '10' }],
+                holdings: [{ assetId: '100', amount: 10n }],
                 network: 'mainnet',
             })
             await upsertAccountHoldings({
                 db,
                 accountAddress: 'ADDR2',
-                holdings: [{ assetId: '200', amount: '20' }],
+                holdings: [{ assetId: '200', amount: 20n }],
                 network: 'mainnet',
             })
             await upsertAccountHoldings({
                 db,
                 accountAddress: 'ADDR1',
-                holdings: [{ assetId: '300', amount: '30' }],
+                holdings: [{ assetId: '300', amount: 30n }],
                 network: 'testnet',
             })
 
@@ -183,11 +184,11 @@ describe('account repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
-                algoBalanceMicro: '5000000',
+                algoBalanceMicro: 5000000n,
                 totalAssetsOptedIn: 3,
                 totalCreatedAssets: 1,
                 totalAppsOptedIn: 2,
-                minBalanceMicro: '100000',
+                minBalanceMicro: 100000n,
                 status: 'Online',
                 authAddress: null,
             })
@@ -199,9 +200,9 @@ describe('account repository', () => {
             })
 
             expect(result).toBeDefined()
-            expect(result!.algoBalanceMicro).toBe('5000000')
+            expect(result!.algoBalanceMicro).toEqual(new Decimal(5000000))
             expect(result!.totalAssetsOptedIn).toBe(3)
-            expect(result!.minBalanceMicro).toBe('100000')
+            expect(result!.minBalanceMicro).toEqual(new Decimal(100000))
             expect(result!.status).toBe('Online')
         })
 
@@ -210,11 +211,11 @@ describe('account repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
-                algoBalanceMicro: '5000000',
+                algoBalanceMicro: 5000000n,
                 totalAssetsOptedIn: 3,
                 totalCreatedAssets: 1,
                 totalAppsOptedIn: 2,
-                minBalanceMicro: '100000',
+                minBalanceMicro: 100000n,
                 status: 'Online',
                 authAddress: null,
             })
@@ -223,11 +224,11 @@ describe('account repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
-                algoBalanceMicro: '9000000',
+                algoBalanceMicro: 9000000n,
                 totalAssetsOptedIn: 5,
                 totalCreatedAssets: 2,
                 totalAppsOptedIn: 3,
-                minBalanceMicro: '200000',
+                minBalanceMicro: 200000n,
                 status: 'Offline',
                 authAddress: 'AUTH1',
             })
@@ -239,9 +240,9 @@ describe('account repository', () => {
             })
 
             expect(result).toBeDefined()
-            expect(result!.algoBalanceMicro).toBe('9000000')
+            expect(result!.algoBalanceMicro).toEqual(new Decimal(9000000))
             expect(result!.totalAssetsOptedIn).toBe(5)
-            expect(result!.minBalanceMicro).toBe('200000')
+            expect(result!.minBalanceMicro).toEqual(new Decimal(200000))
             expect(result!.status).toBe('Offline')
             expect(result!.authAddress).toBe('AUTH1')
         })
@@ -261,11 +262,11 @@ describe('account repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
-                algoBalanceMicro: '1000',
+                algoBalanceMicro: 1000n,
                 totalAssetsOptedIn: 0,
                 totalCreatedAssets: 0,
                 totalAppsOptedIn: 0,
-                minBalanceMicro: '0',
+                minBalanceMicro: 0n,
                 status: 'Offline',
                 authAddress: null,
             })
@@ -273,11 +274,11 @@ describe('account repository', () => {
                 db,
                 accountAddress: 'ADDR2',
                 network: 'mainnet',
-                algoBalanceMicro: '2000',
+                algoBalanceMicro: 2000n,
                 totalAssetsOptedIn: 0,
                 totalCreatedAssets: 0,
                 totalAppsOptedIn: 0,
-                minBalanceMicro: '0',
+                minBalanceMicro: 0n,
                 status: 'Offline',
                 authAddress: null,
             })
@@ -298,8 +299,8 @@ describe('account repository', () => {
                 db,
                 accountAddress: 'ADDR1',
                 holdings: [
-                    { assetId: '100', amount: '10' },
-                    { assetId: '200', amount: '20' },
+                    { assetId: '100', amount: 10n },
+                    { assetId: '200', amount: 20n },
                 ],
                 network: 'mainnet',
             })
@@ -307,8 +308,8 @@ describe('account repository', () => {
                 db,
                 accountAddress: 'ADDR2',
                 holdings: [
-                    { assetId: '200', amount: '30' },
-                    { assetId: '300', amount: '40' },
+                    { assetId: '200', amount: 30n },
+                    { assetId: '300', amount: 40n },
                 ],
                 network: 'mainnet',
             })

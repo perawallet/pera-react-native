@@ -35,6 +35,10 @@ export const displayUnitsToBaseUnits = (
     return amountDecimal.mul(Decimal.pow(10, decimals))
 }
 
+export const toBigInt = (d: Decimal): bigint => {
+    return BigInt(d.toFixed(0))
+}
+
 export const microAlgosToAlgos = (
     microAlgos: number | bigint | Decimal | string,
 ): Decimal => {

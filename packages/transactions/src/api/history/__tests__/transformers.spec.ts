@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect } from 'vitest'
+import { Decimal } from 'decimal.js'
 import {
     transformTransactionItem,
     transformTransactionHistoryResponse,
@@ -50,11 +51,11 @@ describe('transformTransactionItem', () => {
             receiver: 'RECEIVER_ADDR',
             confirmedRound: 12345,
             roundTime: 1700000000,
-            fee: '1000',
+            fee: new Decimal(1000),
             swapGroupDetail: null,
             interpretedMeaning: null,
             groupId: null,
-            amount: '5000000',
+            amount: new Decimal(5000000),
             closeTo: null,
             asset: null,
             applicationId: null,

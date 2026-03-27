@@ -10,16 +10,17 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
 import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
-import { bigNumeric } from '@perawallet/wallet-core-database'
+import { decimalColumn } from '@perawallet/wallet-core-database'
 
 export const AccountAssetHoldingsSchema = sqliteTable(
     'account_asset_holdings',
     {
         accountAddress: text('account_address').notNull(),
-        assetId: bigNumeric('asset_id').notNull(),
+        assetId: decimalColumn('asset_id').notNull(),
         network: text('network').notNull(),
-        amount: bigNumeric('amount').notNull().default('0'),
+        amount: decimalColumn('amount').notNull().default(new Decimal(0)),
         updatedAt: integer('updated_at').notNull(),
     },
     table => [
@@ -34,9 +35,9 @@ export const AccountBalancesSchema = sqliteTable(
     {
         accountAddress: text('account_address').notNull(),
         network: text('network').notNull(),
-        algoBalanceMicro: bigNumeric('algo_balance_micro')
+        algoBalanceMicro: decimalColumn('algo_balance_micro')
             .notNull()
-            .default('0'),
+            .default(new Decimal(0)),
         totalAssetsOptedIn: integer('total_assets_opted_in')
             .notNull()
             .default(0),
@@ -44,7 +45,9 @@ export const AccountBalancesSchema = sqliteTable(
             .notNull()
             .default(0),
         totalAppsOptedIn: integer('total_apps_opted_in').notNull().default(0),
-        minBalanceMicro: bigNumeric('min_balance_micro').notNull().default('0'),
+        minBalanceMicro: decimalColumn('min_balance_micro')
+            .notNull()
+            .default(new Decimal(0)),
         status: text('status').notNull().default('Offline'),
         authAddress: text('auth_address'),
         updatedAt: integer('updated_at').notNull(),

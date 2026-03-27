@@ -11,6 +11,7 @@
  */
 
 import { useEffect } from 'react'
+import { Decimal } from 'decimal.js'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
     upsertAccountHoldings,
@@ -32,7 +33,7 @@ export const getCachedHoldings = async (
 
 export const persistHoldings = async (
     accountAddress: string,
-    holdings: HoldingRow[],
+    holdings: Array<{ assetId: string; amount: Decimal }>,
     network: string,
 ): Promise<void> => {
     try {
@@ -53,9 +54,9 @@ export const useHoldingsCacheSync = (
 ): void => {
     useEffect(() => {
         if (isFetched && holdings.length > 0) {
-            const rows: HoldingRow[] = holdings.map(h => ({
+            const rows = holdings.map(h => ({
                 assetId: `${h.assetId}`,
-                amount: `${h.amount}`,
+                amount: new Decimal(h.amount.toString()),
             }))
 
             void persistHoldings(accountAddress, rows, network)

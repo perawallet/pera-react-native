@@ -22,11 +22,11 @@ function toDb(asset: PeraAsset, network: string): AssetRow {
     const meta = asset.peraMetadata
 
     return {
-        assetId: asset.assetId,
+        assetId: new Decimal(asset.assetId),
         network,
         decimals: asset.decimals,
         creatorAddress: asset.creator.address,
-        totalSupply: asset.totalSupply.toString(),
+        totalSupply: asset.totalSupply,
         name: asset.name ?? null,
         unitName: asset.unitName ?? null,
         url: asset.url ?? null,
@@ -40,10 +40,10 @@ function toDb(asset: PeraAsset, network: string): AssetRow {
 }
 
 function fromDb(row: {
-    assetId: string
+    assetId: Decimal
     decimals: number
     creatorAddress: string
-    totalSupply: string
+    totalSupply: Decimal
     name: string | null
     unitName: string | null
     url: string | null
@@ -55,10 +55,10 @@ function fromDb(row: {
         : undefined
 
     return {
-        assetId: row.assetId,
+        assetId: row.assetId.toString(),
         decimals: row.decimals,
         creator: { address: row.creatorAddress },
-        totalSupply: Decimal(row.totalSupply),
+        totalSupply: row.totalSupply,
         name: row.name ?? undefined,
         unitName: row.unitName ?? undefined,
         url: row.url ?? undefined,
@@ -120,6 +120,8 @@ export async function getAssetsByIds({
 }: GetAssetsByIdsParams): Promise<PeraAsset[]> {
     if (assetIds.length === 0) return []
 
+    const decimalIds = assetIds.map(id => new Decimal(id))
+
     const rows = await db
         .select({
             assetId: AssetsSchema.assetId,
@@ -135,7 +137,7 @@ export async function getAssetsByIds({
         .from(AssetsSchema)
         .where(
             and(
-                inArray(AssetsSchema.assetId, assetIds),
+                inArray(AssetsSchema.assetId, decimalIds),
                 eq(AssetsSchema.network, network),
             ),
         )
@@ -161,7 +163,7 @@ export async function getAssetById({
 
 export type AssetPriceRow = {
     assetId: string
-    usdPrice: string
+    usdPrice: Decimal
 }
 
 type UpsertAssetPricesParams = {
@@ -183,7 +185,7 @@ export async function upsertAssetPrices({
         await db
             .insert(AssetPricesSchema)
             .values({
-                assetId: price.assetId,
+                assetId: new Decimal(price.assetId),
                 network,
                 usdPrice: price.usdPrice,
                 updatedAt: now,
@@ -212,7 +214,9 @@ export async function getAssetPricesByIds({
 }: GetAssetPricesByIdsParams): Promise<AssetPriceRow[]> {
     if (assetIds.length === 0) return []
 
-    return db
+    const decimalIds = assetIds.map(id => new Decimal(id))
+
+    const rows = await db
         .select({
             assetId: AssetPricesSchema.assetId,
             usdPrice: AssetPricesSchema.usdPrice,
@@ -220,9 +224,14 @@ export async function getAssetPricesByIds({
         .from(AssetPricesSchema)
         .where(
             and(
-                inArray(AssetPricesSchema.assetId, assetIds),
+                inArray(AssetPricesSchema.assetId, decimalIds),
                 eq(AssetPricesSchema.network, network),
             ),
         )
         .all()
+
+    return rows.map(r => ({
+        assetId: r.assetId.toString(),
+        usdPrice: r.usdPrice,
+    }))
 }

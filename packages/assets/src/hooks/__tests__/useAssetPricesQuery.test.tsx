@@ -49,8 +49,8 @@ describe('useAssetPricesQuery', () => {
 
     it('reads prices from the database and transforms them', async () => {
         mocks.getAssetPricesByIds.mockReturnValue([
-            { assetId: '123', usdPrice: '2.0' },
-            { assetId: ALGO_ASSET_ID, usdPrice: '1.5' },
+            { assetId: '123', usdPrice: new Decimal('2.0') },
+            { assetId: ALGO_ASSET_ID, usdPrice: new Decimal('1.5') },
         ])
 
         const { result } = renderHook(() => useAssetPricesQuery(['123']), {
@@ -70,7 +70,7 @@ describe('useAssetPricesQuery', () => {
 
     it('handles assets with zero usd_value', async () => {
         mocks.getAssetPricesByIds.mockReturnValue([
-            { assetId: '456', usdPrice: '0' },
+            { assetId: '456', usdPrice: new Decimal('0') },
         ])
 
         const { result } = renderHook(() => useAssetPricesQuery(['456']), {
@@ -84,7 +84,7 @@ describe('useAssetPricesQuery', () => {
 
     it('does not refetch when ids reference changes but content is the same', async () => {
         mocks.getAssetPricesByIds.mockReturnValue([
-            { assetId: '123', usdPrice: '2.0' },
+            { assetId: '123', usdPrice: new Decimal('2.0') },
         ])
 
         const { result, rerender } = renderHook(
@@ -106,7 +106,7 @@ describe('useAssetPricesQuery', () => {
 
     it('refetches when ids content actually changes', async () => {
         mocks.getAssetPricesByIds.mockReturnValue([
-            { assetId: '123', usdPrice: '2.0' },
+            { assetId: '123', usdPrice: new Decimal('2.0') },
         ])
 
         const { result, rerender } = renderHook(
@@ -121,7 +121,7 @@ describe('useAssetPricesQuery', () => {
         mocks.getAssetPricesByIds.mockClear()
 
         mocks.getAssetPricesByIds.mockReturnValue([
-            { assetId: '456', usdPrice: '3.0' },
+            { assetId: '456', usdPrice: new Decimal('3.0') },
         ])
 
         rerender({ ids: ['456'] })
@@ -136,7 +136,7 @@ describe('useAssetPricesQuery', () => {
 
     it('refetches when network changes', async () => {
         mocks.getAssetPricesByIds.mockReturnValue([
-            { assetId: '123', usdPrice: '2.0' },
+            { assetId: '123', usdPrice: new Decimal('2.0') },
         ])
 
         const { result } = renderHook(() => useAssetPricesQuery(['123']), {

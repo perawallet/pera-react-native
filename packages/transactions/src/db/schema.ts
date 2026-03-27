@@ -11,7 +11,7 @@
  */
 
 import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core'
-import { bigNumeric } from '@perawallet/wallet-core-database'
+import { decimalColumn } from '@perawallet/wallet-core-database'
 
 export const TransactionsSchema = sqliteTable('transactions', {
     id: text('id').primaryKey(),
@@ -21,11 +21,11 @@ export const TransactionsSchema = sqliteTable('transactions', {
     receiver: text('receiver'),
     confirmedRound: integer('confirmed_round').notNull(),
     roundTime: integer('round_time').notNull(),
-    fee: bigNumeric('fee').notNull(),
+    fee: decimalColumn('fee').notNull(),
     groupId: text('group_id'),
-    amount: bigNumeric('amount'),
+    amount: decimalColumn('amount'),
     closeTo: text('close_to'),
-    applicationId: bigNumeric('application_id'),
+    applicationId: decimalColumn('application_id'),
     innerTransactionCount: integer('inner_transaction_count'),
     assetJson: text('asset_json'),
     swapGroupDetailJson: text('swap_group_detail_json'),
@@ -39,7 +39,7 @@ export const AccountTransactionsSchema = sqliteTable(
         accountAddress: text('account_address').notNull(),
         transactionId: text('transaction_id').notNull(),
         network: text('network').notNull(),
-        assetId: bigNumeric('asset_id'),
+        assetId: decimalColumn('asset_id'),
         roundTime: integer('round_time').notNull(),
     },
     table => [

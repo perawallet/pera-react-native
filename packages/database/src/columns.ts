@@ -10,19 +10,25 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
 import { customType } from 'drizzle-orm/sqlite-core'
 
 /**
- * A high-precision numeric column stored as TEXT in SQLite.
+ * A high-precision numeric column stored as TEXT in SQLite that maps to `Decimal` in TypeScript.
  *
- * Supports up to 20 integer digits and 20 decimal digits (40 significant digits).
- * Use for asset IDs, balances, amounts, prices, fees, and any numeric value
- * that exceeds the precision of SQLite's REAL (~15 digits) or INTEGER (no decimals).
+ * Use for all numeric values that require precision beyond JS `number`:
+ * balances, amounts, fees, prices, asset IDs, total supply, etc.
  *
- * Stored as a string representation to preserve full precision.
+ * TEXT storage avoids precision loss from SQLite drivers returning JS `number`.
  */
-export const bigNumeric = customType<{ data: string }>({
+export const decimalColumn = customType<{ data: Decimal }>({
     dataType() {
         return 'text'
+    },
+    fromDriver(value: unknown): Decimal {
+        return new Decimal(value as string)
+    },
+    toDriver(value: Decimal): string {
+        return value.toString()
     },
 })

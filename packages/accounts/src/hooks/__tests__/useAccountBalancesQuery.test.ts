@@ -114,14 +114,14 @@ describe('useAccountBalances', () => {
         // Mock DB reads
         mockGetAccountBalance.mockReturnValue({
             accountAddress: 'ADDR1',
-            algoBalanceMicro: '1000000', // 1 ALGO
+            algoBalanceMicro: new Decimal(1000000), // 1 ALGO
             totalAssetsOptedIn: 1,
             totalCreatedAssets: 0,
             totalAppsOptedIn: 0,
             authAddress: null,
         })
         mockGetAccountHoldings.mockReturnValue([
-            { assetId: '123', amount: '100' },
+            { assetId: '123', amount: new Decimal(100) },
         ])
 
         const { result } = renderHook(
@@ -164,15 +164,15 @@ describe('useAccountBalances', () => {
         // Mock DB reads
         mockGetAccountBalance.mockReturnValue({
             accountAddress: 'ADDR1',
-            algoBalanceMicro: '5000000', // 5 ALGO
+            algoBalanceMicro: new Decimal(5000000), // 5 ALGO
             totalAssetsOptedIn: 2,
             totalCreatedAssets: 0,
             totalAppsOptedIn: 0,
             authAddress: null,
         })
         mockGetAccountHoldings.mockReturnValue([
-            { assetId: '456', amount: '1000' }, // 10.00 tokens (decimals: 2)
-            { assetId: '789', amount: '2000000' }, // 2.0 tokens (decimals: 6)
+            { assetId: '456', amount: new Decimal(1000) }, // 10.00 tokens (decimals: 2)
+            { assetId: '789', amount: new Decimal(2000000) }, // 2.0 tokens (decimals: 6)
         ])
 
         const { result } = renderHook(
@@ -228,14 +228,14 @@ describe('useAccountBalances', () => {
         // Mock DB reads
         mockGetAccountBalance.mockReturnValue({
             accountAddress: 'ADDR1',
-            algoBalanceMicro: '1000000',
+            algoBalanceMicro: new Decimal(1000000),
             totalAssetsOptedIn: 1,
             totalCreatedAssets: 0,
             totalAppsOptedIn: 0,
             authAddress: null,
         })
         mockGetAccountHoldings.mockReturnValue([
-            { assetId: '999', amount: '100' },
+            { assetId: '999', amount: new Decimal(100) },
         ])
 
         const { result } = renderHook(
@@ -281,15 +281,15 @@ describe('useAccountAssetBalanceQuery', () => {
 
         mockGetAccountBalance.mockReturnValue({
             accountAddress: 'ADDR1',
-            algoBalanceMicro: '1000000',
+            algoBalanceMicro: new Decimal(1000000),
             totalAssetsOptedIn: 2,
             totalCreatedAssets: 0,
             totalAppsOptedIn: 0,
             authAddress: null,
         })
         mockGetAccountHoldings.mockReturnValue([
-            { assetId: '123', amount: '50000' }, // 5.0000 tokens (decimals: 4)
-            { assetId: '456', amount: '10000' }, // Different asset
+            { assetId: '123', amount: new Decimal(50000) }, // 5.0000 tokens (decimals: 4)
+            { assetId: '456', amount: new Decimal(10000) }, // Different asset
         ])
 
         const { result } = renderHook(
@@ -319,7 +319,7 @@ describe('useAccountAssetBalanceQuery', () => {
 
         mockGetAccountBalance.mockReturnValue({
             accountAddress: 'ADDR1',
-            algoBalanceMicro: '1000000',
+            algoBalanceMicro: new Decimal(1000000),
             totalAssetsOptedIn: 0,
             totalCreatedAssets: 0,
             totalAppsOptedIn: 0,

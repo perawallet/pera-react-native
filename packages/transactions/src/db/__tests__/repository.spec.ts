@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
+import { Decimal } from 'decimal.js'
 import {
     runMigrations,
     migrations,
@@ -48,9 +49,9 @@ describe('transaction repository', () => {
         receiver: 'RECEIVER_ADDR',
         confirmedRound: 12345,
         roundTime: 1700000000,
-        fee: '1000',
+        fee: new Decimal(1000),
         groupId: null,
-        amount: '5000000',
+        amount: new Decimal(5000000),
         closeTo: null,
         applicationId: null,
         innerTransactionCount: null,
@@ -77,19 +78,19 @@ describe('transaction repository', () => {
         expect(result).toHaveLength(1)
         expect(result[0].id).toBe('TX001')
         expect(result[0].sender).toBe('SENDER_ADDR')
-        expect(result[0].amount).toBe('5000000')
+        expect(result[0].amount).toEqual(new Decimal(5000000))
     })
 
     it('upserts duplicate transaction IDs without duplicating', async () => {
         await upsertTransactions({
             db,
-            items: [makeTx({ amount: '100' })],
+            items: [makeTx({ amount: new Decimal(100) })],
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
         await upsertTransactions({
             db,
-            items: [makeTx({ amount: '200' })],
+            items: [makeTx({ amount: new Decimal(200) })],
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
@@ -101,7 +102,7 @@ describe('transaction repository', () => {
         })
 
         expect(result).toHaveLength(1)
-        expect(result[0].amount).toBe('200')
+        expect(result[0].amount).toEqual(new Decimal(200))
     })
 
     it('filters by assetId', async () => {

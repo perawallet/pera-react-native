@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
 import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import {
     upsertAccountBalance,
@@ -27,18 +28,18 @@ export async function fetchAndPersistAccount(
     await upsertAccountBalance({
         accountAddress: address,
         network,
-        algoBalanceMicro: info.balance.microAlgos.toString(),
+        algoBalanceMicro: new Decimal(info.balance.microAlgos.toString()),
         totalAssetsOptedIn: info.totalAssetsOptedIn ?? 0,
         totalCreatedAssets: info.totalCreatedAssets ?? 0,
         totalAppsOptedIn: info.totalAppsOptedIn ?? 0,
-        minBalanceMicro: info.minBalance.microAlgos.toString(),
+        minBalanceMicro: new Decimal(info.minBalance.microAlgos.toString()),
         status: info.status ?? 'Offline',
         authAddress: info.authAddr?.toString() ?? null,
     })
 
     const holdings = (info.assets ?? []).map(a => ({
         assetId: `${a.assetId}`,
-        amount: `${a.amount ?? '0'}`,
+        amount: new Decimal((a.amount ?? 0n).toString()),
     }))
 
     await upsertAccountHoldings({

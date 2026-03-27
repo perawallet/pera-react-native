@@ -209,8 +209,8 @@ describe('asset repository', () => {
             await upsertAssetPrices({
                 db,
                 prices: [
-                    { assetId: '100', usdPrice: '1.50' },
-                    { assetId: '200', usdPrice: '0.75' },
+                    { assetId: '100', usdPrice: new Decimal('1.50') },
+                    { assetId: '200', usdPrice: new Decimal('0.75') },
                 ],
                 network: 'mainnet',
             })
@@ -222,19 +222,21 @@ describe('asset repository', () => {
             })
 
             expect(result).toHaveLength(2)
-            expect(result.find(r => r.assetId === '100')?.usdPrice).toBe('1.50')
+            expect(result.find(r => r.assetId === '100')?.usdPrice).toEqual(
+                new Decimal('1.5'),
+            )
         })
 
         it('updates existing prices on conflict', async () => {
             await upsertAssetPrices({
                 db,
-                prices: [{ assetId: '100', usdPrice: '1.00' }],
+                prices: [{ assetId: '100', usdPrice: new Decimal('1.00') }],
                 network: 'mainnet',
             })
 
             await upsertAssetPrices({
                 db,
-                prices: [{ assetId: '100', usdPrice: '2.00' }],
+                prices: [{ assetId: '100', usdPrice: new Decimal('2.00') }],
                 network: 'mainnet',
             })
 
@@ -245,7 +247,7 @@ describe('asset repository', () => {
             })
 
             expect(result).toHaveLength(1)
-            expect(result[0].usdPrice).toBe('2.00')
+            expect(result[0].usdPrice).toEqual(new Decimal('2'))
         })
 
         it('does nothing for empty prices', async () => {

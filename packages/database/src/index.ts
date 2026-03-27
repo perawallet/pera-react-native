@@ -18,4 +18,4 @@ export {
 } from './database'
 export { runMigrations, type MigrationConfig } from './migrator'
 export { default as migrations } from './migrations'
-export { bigNumeric } from './columns'
+export { decimalColumn } from './columns'

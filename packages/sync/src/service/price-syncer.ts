@@ -16,6 +16,7 @@ import {
     upsertAssetPrices,
     ALGO_ASSET_ID,
 } from '@perawallet/wallet-core-assets'
+import { Decimal } from 'decimal.js'
 import { partition, type Network } from '@perawallet/wallet-core-shared'
 
 const PRICE_BATCH_SIZE = 25
@@ -34,7 +35,7 @@ export async function fetchAndPersistPrices(
             const response = await fetchAssetPrices(batch, network)
             const prices = response.results.map(r => ({
                 assetId: `${r.asset_id}`,
-                usdPrice: r.usd_value ?? '0',
+                usdPrice: new Decimal(r.usd_value ?? '0'),
             }))
             await upsertAssetPrices({ prices, network })
         }),
@@ -47,7 +48,7 @@ export async function fetchAndPersistPrices(
                 prices: [
                     {
                         assetId: ALGO_ASSET_ID,
-                        usdPrice: algoDetails.usd_value ?? '0',
+                        usdPrice: new Decimal(algoDetails.usd_value ?? '0'),
                     },
                 ],
                 network,
