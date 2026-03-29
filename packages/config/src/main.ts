@@ -68,6 +68,9 @@ export const configSchema = z.object({
     profilingEnabled: z.boolean(),
     pollingEnabled: z.boolean(),
 
+    bidaliApiKey: z.string(),
+    bidaliBaseUrl: z.url(),
+
     arc59: z.object({
         testnet: z.object({
             appId: z.bigint(),
@@ -138,6 +141,9 @@ const productionConfig = {
     profilingEnabled: false,
     pollingEnabled: true,
 
+    bidaliApiKey: '',
+    bidaliBaseUrl: 'https://commerce.bidali.com/dapp',
+
     arc59: {
         testnet: {
             appId: 643020148n,
@@ -176,6 +182,8 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     stakingBaseUrl: 'STAKING_BASE_URL',
     onrampBaseUrl: 'ONRAMP_BASE_URL',
     supportBaseUrl: 'SUPPORT_BASE_URL',
+    bidaliApiKey: 'BIDALI_API_KEY',
+    bidaliBaseUrl: 'BIDALI_BASE_URL',
     termsOfServiceUrl: 'TERMS_OF_SERVICE_URL',
     privacyPolicyUrl: 'PRIVACY_POLICY_URL',
     peraDemoDappUrl: 'PERA_DEMO_DAPP_URL',

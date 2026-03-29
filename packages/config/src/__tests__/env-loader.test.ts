@@ -261,6 +261,8 @@ describe('env-loader', () => {
             stakingBaseUrl: 'https://staking.example.com',
             onrampBaseUrl: 'https://onramp.example.com',
             supportBaseUrl: 'https://support.example.com',
+            bidaliApiKey: 'test-bidali-key',
+            bidaliBaseUrl: 'https://commerce.bidali.example.com/dapp',
             termsOfServiceUrl: 'https://terms.example.com',
             privacyPolicyUrl: 'https://privacy.example.com',
             peraDemoDappUrl: 'https://demo.example.com',
