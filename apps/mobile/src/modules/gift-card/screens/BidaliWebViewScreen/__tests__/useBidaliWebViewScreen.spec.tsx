@@ -74,6 +74,7 @@ const mockAccount: WalletAccount = {
     address: VALID_ADDRESS,
     name: 'Test',
     type: 'algo25',
+    keyPairId: 'test-key-pair-id',
 }
 
 // ---------------------------------------------------------------------------

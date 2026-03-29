@@ -92,7 +92,7 @@ const patchedBigInt = (value: Parameters<typeof originalBigInt>[0]) => {
 }
 Object.assign(patchedBigInt, originalBigInt)
 // eslint-disable-next-line no-global-assign
-globalThis.BigInt = patchedBigInt as typeof BigInt
+globalThis.BigInt = patchedBigInt as unknown as typeof BigInt
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -105,6 +105,7 @@ const mockAccount: WalletAccount = {
     address: VALID_ADDRESS,
     name: 'Test',
     type: 'algo25',
+    keyPairId: 'test-key-pair-id',
 }
 
 const emptyBalances: AccountBalances = new Map()

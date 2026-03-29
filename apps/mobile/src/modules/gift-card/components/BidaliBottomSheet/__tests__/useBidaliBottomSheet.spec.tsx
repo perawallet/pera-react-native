@@ -20,6 +20,7 @@ const mockAccount: WalletAccount = {
     address: 'TESTADDRESS123',
     name: 'Test',
     type: 'algo25',
+    keyPairId: 'test-key-pair-id',
 }
 
 describe('useBidaliBottomSheet', () => {
