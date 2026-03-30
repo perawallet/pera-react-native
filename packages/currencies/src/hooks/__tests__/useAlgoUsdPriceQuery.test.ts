@@ -17,9 +17,15 @@ import { useAlgoUsdPriceQuery } from '../useAlgoUsdPriceQuery'
 import React from 'react'
 import Decimal from 'decimal.js'
 
-const mockFetchAlgoUsdPrice = vi.hoisted(() => vi.fn())
-vi.mock('../../api/assets', () => ({
-    fetchAlgoUsdPrice: mockFetchAlgoUsdPrice,
+const mockDbAll = vi.hoisted(() => vi.fn())
+vi.mock('@perawallet/wallet-core-database', () => ({
+    getDatabase: () => ({
+        all: mockDbAll,
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 describe('useAlgoUsdPriceQuery', () => {
@@ -43,8 +49,8 @@ describe('useAlgoUsdPriceQuery', () => {
             children,
         )
 
-    it('fetches and selects ALGO USD price as Decimal', async () => {
-        mockFetchAlgoUsdPrice.mockResolvedValue('0.15')
+    it('fetches and selects ALGO USD price as Decimal from DB', async () => {
+        mockDbAll.mockResolvedValue([{ usd_price: '0.15' }])
 
         const { result } = renderHook(() => useAlgoUsdPriceQuery(), {
             wrapper,
@@ -56,7 +62,7 @@ describe('useAlgoUsdPriceQuery', () => {
     })
 
     it('handles loading state', () => {
-        mockFetchAlgoUsdPrice.mockImplementation(() => new Promise(() => {}))
+        mockDbAll.mockImplementation(() => new Promise(() => {}))
 
         const { result } = renderHook(() => useAlgoUsdPriceQuery(), {
             wrapper,
@@ -71,11 +77,11 @@ describe('useAlgoUsdPriceQuery', () => {
         })
 
         expect(result.current.fetchStatus).toBe('idle')
-        expect(mockFetchAlgoUsdPrice).not.toHaveBeenCalled()
+        expect(mockDbAll).not.toHaveBeenCalled()
     })
 
-    it('handles zero price string', async () => {
-        mockFetchAlgoUsdPrice.mockResolvedValue('0')
+    it('returns zero when no price found in DB', async () => {
+        mockDbAll.mockResolvedValue([])
 
         const { result } = renderHook(() => useAlgoUsdPriceQuery(), {
             wrapper,

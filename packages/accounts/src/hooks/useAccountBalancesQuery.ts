@@ -22,21 +22,42 @@ import type {
 import {
     ALGO_ASSET,
     ALGO_ASSET_ID,
-    toWholeUnits,
     useAssetPricesQuery,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAccountBalancesQueryKey } from './querykeys'
-import { useAlgorandClient } from '@perawallet/wallet-core-blockchain'
+import { getAccountBalance, getAccountHoldings } from '../db'
 
-//TODO we may not need this query - maybe we should just fetch each account separately
+type AccountDbSnapshot = {
+    algoBalance: Decimal
+    holdings: Array<{ assetId: string; amount: Decimal }>
+}
+
+async function readAccountFromDb(
+    address: string,
+    network: string,
+): Promise<AccountDbSnapshot> {
+    const balance = await getAccountBalance({
+        accountAddress: address,
+        network,
+    })
+    const holdings = await getAccountHoldings({
+        accountAddress: address,
+        network,
+    })
+
+    return {
+        algoBalance: balance?.algoBalance ?? new Decimal(0),
+        holdings,
+    }
+}
+
 export const useAccountBalancesQuery = (
     accounts: WalletAccount[],
     enabled?: boolean,
 ): AccountBalancesWithTotals => {
     const { network } = useNetwork()
-    const algokit = useAlgorandClient()
     const hasAccounts = !!accounts?.length
 
     const queries = useMemo(() => {
@@ -48,7 +69,8 @@ export const useAccountBalancesQuery = (
             return {
                 queryKey: getAccountBalancesQueryKey(address, network),
                 enabled: !!address && enabled,
-                queryFn: () => algokit.account.getInformation(address),
+                staleTime: Infinity,
+                queryFn: () => readAccountFromDb(address, network),
             }
         })
     }, [accounts, hasAccounts, enabled, network])
@@ -64,7 +86,7 @@ export const useAccountBalancesQuery = (
     })
 
     const assetIDs = results.flatMap(
-        r => r.data?.assets?.map(a => `${a.assetId}`) ?? [],
+        r => r.data?.holdings?.map(h => h.assetId) ?? [],
     )
     const { data: assets } = useAssetsQuery(assetIDs)
     const { data: assetPrices } = useAssetPricesQuery(assetIDs)
@@ -96,21 +118,21 @@ export const useAccountBalancesQuery = (
             let algoValue = Decimal(0)
 
             const assetBalances: AssetWithAccountBalance[] = []
-            r.data?.assets?.forEach(assetHolding => {
+            r.data?.holdings?.forEach(holding => {
                 const usdAssetPrice =
-                    assetPrices?.get(`${assetHolding.assetId}`)?.usdPrice ??
-                    Decimal(0)
-                const asset = assets.get(`${assetHolding.assetId}`)
-                const assetAmount = Decimal(assetHolding.amount ?? '0').div(
-                    Decimal(10).pow(asset?.decimals ?? 0),
+                    assetPrices?.get(holding.assetId)?.usdPrice ??
+                    new Decimal(0)
+                const asset = assets.get(holding.assetId)
+                const assetAmount = holding.amount.div(
+                    new Decimal(10).pow(asset?.decimals ?? 0),
                 )
                 const usdAssetValue = assetAmount.times(usdAssetPrice)
                 const algoAssetValue = usdAlgoPrice.isZero()
-                    ? Decimal(0)
+                    ? new Decimal(0)
                     : usdAssetValue.div(usdAlgoPrice)
                 algoValue = algoValue.plus(algoAssetValue)
                 assetBalances.push({
-                    assetId: `${assetHolding.assetId}`,
+                    assetId: holding.assetId,
                     asset: asset,
                     amount: assetAmount,
                     algoValue: algoAssetValue,
@@ -118,10 +140,7 @@ export const useAccountBalancesQuery = (
             })
 
             //Now add algo into the mix
-            const algoAmount = toWholeUnits(
-                r.data?.balance?.microAlgos ?? 0n,
-                ALGO_ASSET,
-            )
+            const algoAmount = r.data?.algoBalance ?? new Decimal(0)
             algoValue = algoValue.plus(algoAmount)
 
             assetBalances.push({
@@ -182,7 +201,7 @@ export const useAccountAssetBalanceQuery = (
     const { accountBalances, isPending, isFetched, isRefetching, isError } =
         useAccountBalancesQuery(
             account ? [account] : [],
-            !!account && assetId != null,
+            !!account && assetId !== null && assetId !== undefined,
         )
 
     const assetBalance = useMemo<AssetWithAccountBalance | null>(() => {

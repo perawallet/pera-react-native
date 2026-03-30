@@ -19,7 +19,7 @@ import { useStyles } from './styles'
 
 import { AccountDisplay } from '../AccountDisplay'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 
 export type AccountWithBalanceProps = {
@@ -54,7 +54,7 @@ export const AccountWithBalance = ({
                 />
 
                 <PreferredCurrencyDisplay
-                    sourceAssetId='ALGO'
+                    sourceAssetId={ALGO_ASSET_ID}
                     sourceAmount={
                         accountBalances.get(account.address)?.algoValue
                     }

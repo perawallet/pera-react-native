@@ -86,7 +86,7 @@ describe('AssetTransferDisplay', () => {
     it('renders asset amount correctly', () => {
         vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
             data: mockAsset,
-        } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+        } as UseQueryResult<PeraAsset, Error>)
 
         const { container } = render(
             <AssetTransferDisplay transaction={mockTransaction} />,
@@ -98,7 +98,7 @@ describe('AssetTransferDisplay', () => {
     it('renders sender and receiver addresses', () => {
         vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
             data: mockAsset,
-        } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+        } as UseQueryResult<PeraAsset, Error>)
 
         const { container } = render(
             <AssetTransferDisplay transaction={mockTransaction} />,
@@ -111,7 +111,7 @@ describe('AssetTransferDisplay', () => {
     it('renders AssetTitle when asset is loaded', () => {
         vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
             data: mockAsset,
-        } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+        } as UseQueryResult<PeraAsset, Error>)
 
         const { container } = render(
             <AssetTransferDisplay transaction={mockTransaction} />,
@@ -124,7 +124,7 @@ describe('AssetTransferDisplay', () => {
     it('renders metadata hash button when asset has metadata', () => {
         vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
             data: { ...mockAsset, metadata: 'some-metadata' },
-        } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+        } as UseQueryResult<PeraAsset, Error>)
 
         const { container } = render(
             <AssetTransferDisplay transaction={mockTransaction} />,
@@ -138,7 +138,7 @@ describe('AssetTransferDisplay', () => {
     it('does not render metadata hash button when asset has no metadata', () => {
         vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
             data: mockAsset,
-        } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+        } as UseQueryResult<PeraAsset, Error>)
 
         const { container } = render(
             <AssetTransferDisplay transaction={mockTransaction} />,

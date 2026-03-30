@@ -10,17 +10,21 @@
  limitations under the License
  */
 
-import { config, getNetworkConfig } from '@perawallet/wallet-core-config'
+import {
+    config,
+    getNetworkConfig,
+    type Network,
+} from '@perawallet/wallet-core-config'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { useNetworkStore } from '../store'
 
 /**
- * Returns an instance of AlgorandClient based on the current network in device store.
- * This is a non-hook version and should be used in non-React contexts or where hooks cannot be used.
+ * Returns an instance of AlgorandClient for a specific network.
+ * If no network is provided, defaults to the current active network from the store.
  * @returns {AlgorandClient}
  */
-export const getAlgorandClient = () => {
-    const network = useNetworkStore.getState().network
+export const getAlgorandClient = (networkOverride?: Network) => {
+    const network = networkOverride ?? useNetworkStore.getState().network
     const networkConfig = getNetworkConfig(network)
 
     const algodConfig = {

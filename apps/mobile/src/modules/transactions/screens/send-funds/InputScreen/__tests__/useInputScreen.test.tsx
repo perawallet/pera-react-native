@@ -18,15 +18,13 @@ import Decimal from 'decimal.js'
 import {
     useSelectedAccount,
     useAccountBalancesQuery,
+    useAccountInformationQuery,
 } from '@perawallet/wallet-core-accounts'
 import {
     useAssetsQuery,
     useAssetPricesQuery,
 } from '@perawallet/wallet-core-assets'
-import {
-    useSuggestedParametersQuery,
-    useAccountInformationQuery,
-} from '@perawallet/wallet-core-blockchain'
+import { useSuggestedParametersQuery } from '@perawallet/wallet-core-blockchain'
 import { useToast } from '@hooks/useToast'
 
 const mockNavigate = vi.fn()
@@ -47,6 +45,7 @@ vi.mock('@components/core', () => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
     useAccountBalancesQuery: vi.fn(),
+    useAccountInformationQuery: vi.fn(),
     useAccountAssetBalanceQuery: vi.fn(() => ({
         data: { assetId: '0', amount: Decimal(100), algoValue: Decimal(100) },
     })),
@@ -65,7 +64,6 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useSuggestedParametersQuery: vi.fn(),
-    useAccountInformationQuery: vi.fn(),
 }))
 
 vi.mock('@hooks/useToast', () => ({

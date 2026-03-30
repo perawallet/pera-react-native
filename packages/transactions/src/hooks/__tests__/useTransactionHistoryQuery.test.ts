@@ -21,6 +21,15 @@ import * as endpoints from '../../api/history'
 // Mock the endpoints module
 vi.mock('../../api/history')
 
+const mockGetTransactionHistory = vi.hoisted(() => vi.fn())
+const mockPersistTransactions = vi.hoisted(() => vi.fn())
+vi.mock('../../db', () => ({
+    getTransactionHistory: mockGetTransactionHistory,
+}))
+vi.mock('../useTransactionHistoryDb', () => ({
+    persistTransactionsToDb: mockPersistTransactions,
+}))
+
 describe('useTransactionHistoryQuery', () => {
     let queryClient: QueryClient
     let wrapper: React.FC<{ children: React.ReactNode }>
@@ -28,37 +37,25 @@ describe('useTransactionHistoryQuery', () => {
     const mockAddress =
         'TESTADDRESS123456789012345678901234567890123456789012345678'
 
-    const mockTransactionHistoryResult = {
-        transactions: [
-            {
-                id: 'TX123',
-                txType: 'pay',
-                sender: mockAddress,
-                receiver: 'RECEIVER123',
-                confirmedRound: 12345,
-                roundTime: 1704067200,
-                swapGroupDetail: null,
-                interpretedMeaning: {
-                    title: 'Sent ALGO',
-                    description: 'Sent 1 ALGO to RECEIVER123',
-                },
-                fee: '1000',
-                groupId: null,
-                amount: '1000000',
-                closeTo: null,
-                asset: null,
-                applicationId: null,
-                innerTransactionCount: null,
-            },
-        ],
-        pagination: {
-            hasNextPage: true,
-            hasPreviousPage: false,
-            nextUrl: 'https://api.example.com/next',
-            previousUrl: null,
-            totalFetched: 1,
+    const mockTransaction = {
+        id: 'TX123',
+        txType: 'pay',
+        sender: mockAddress,
+        receiver: 'RECEIVER123',
+        confirmedRound: 12345,
+        roundTime: 1704067200,
+        swapGroupDetail: null,
+        interpretedMeaning: {
+            title: 'Sent ALGO',
+            description: 'Sent 1 ALGO to RECEIVER123',
         },
-        currentRound: 12350,
+        fee: '1000',
+        groupId: null,
+        amount: '1000000',
+        closeTo: null,
+        asset: null,
+        applicationId: null,
+        innerTransactionCount: null,
     }
 
     beforeEach(() => {
@@ -77,13 +74,12 @@ describe('useTransactionHistoryQuery', () => {
                 children,
             )
 
-        // Mock the fetchTransactionHistory function
-        ;(endpoints.fetchTransactionHistory as Mock).mockResolvedValue(
-            mockTransactionHistoryResult,
-        )
+        // Default: DB returns transactions
+        mockGetTransactionHistory.mockResolvedValue([mockTransaction])
+        mockPersistTransactions.mockResolvedValue(undefined)
     })
 
-    test('fetches transaction history for a given address', async () => {
+    test('reads transaction history from database on first page', async () => {
         const { result } = renderHook(
             () =>
                 useTransactionHistoryQuery({
@@ -95,13 +91,22 @@ describe('useTransactionHistoryQuery', () => {
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
 
-        expect(result.current.transactions).toEqual(
-            mockTransactionHistoryResult.transactions,
+        expect(result.current.transactions).toEqual([mockTransaction])
+        expect(mockGetTransactionHistory).toHaveBeenCalledWith(
+            expect.objectContaining({
+                accountAddress: mockAddress,
+                network: 'mainnet',
+            }),
         )
-        expect(result.current.hasNextPage).toBe(true)
+        // Should NOT call API for first page
+        expect(endpoints.fetchTransactionHistory).not.toHaveBeenCalled()
     })
 
     test('provides loading state initially', () => {
+        mockGetTransactionHistory.mockImplementation(
+            () => new Promise(() => {}),
+        )
+
         const { result } = renderHook(
             () =>
                 useTransactionHistoryQuery({
@@ -114,11 +119,9 @@ describe('useTransactionHistoryQuery', () => {
         expect(result.current.isLoading).toBe(true)
     })
 
-    test('handles errors', async () => {
-        const mockError = new Error('Failed to fetch transactions')
-        ;(endpoints.fetchTransactionHistory as Mock).mockRejectedValue(
-            mockError,
-        )
+    test('handles DB errors', async () => {
+        const mockError = new Error('Database error')
+        mockGetTransactionHistory.mockRejectedValue(mockError)
 
         const { result } = renderHook(
             () =>
@@ -145,87 +148,73 @@ describe('useTransactionHistoryQuery', () => {
             { wrapper },
         )
 
+        expect(mockGetTransactionHistory).not.toHaveBeenCalled()
         expect(endpoints.fetchTransactionHistory).not.toHaveBeenCalled()
     })
 
-    test('passes filter parameters correctly with assetId as string', async () => {
-        const filters = {
-            assetId: '31566704',
-            afterTime: '2024-01-01T00:00:00Z',
-            beforeTime: '2024-12-31T23:59:59Z',
-            limit: 50,
-        }
+    test('returns empty when DB has no transactions', async () => {
+        mockGetTransactionHistory.mockResolvedValue([])
 
-        renderHook(
+        const { result } = renderHook(
             () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
                     network: 'mainnet',
-                    ...filters,
                 }),
             { wrapper },
         )
 
-        await waitFor(() =>
-            expect(endpoints.fetchTransactionHistory).toHaveBeenCalled(),
-        )
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
 
-        expect(endpoints.fetchTransactionHistory).toHaveBeenCalledWith(
-            expect.objectContaining({
-                accountAddress: mockAddress,
-                network: 'mainnet',
-                assetId: '31566704',
-                afterTime: filters.afterTime,
-                beforeTime: filters.beforeTime,
-                limit: filters.limit,
-            }),
-        )
+        expect(result.current.transactions).toEqual([])
+        expect(result.current.hasNextPage).toBe(false)
     })
 
-    test('refetches when network changes', async () => {
-        const { result, rerender } = renderHook(
-            ({ network }: { network: string }) =>
+    test('indicates hasNextPage when DB returns full page', async () => {
+        // Return 25 items (default limit) to indicate more may exist
+        const fullPage = Array.from({ length: 25 }, (_, i) => ({
+            ...mockTransaction,
+            id: `TX${i}`,
+        }))
+        mockGetTransactionHistory.mockResolvedValue(fullPage)
+
+        const { result } = renderHook(
+            () =>
                 useTransactionHistoryQuery({
                     accountAddress: mockAddress,
-                    network,
+                    network: 'mainnet',
                 }),
-            { wrapper, initialProps: { network: 'mainnet' } },
+            { wrapper },
         )
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
 
-        expect(endpoints.fetchTransactionHistory).toHaveBeenCalledWith(
-            expect.objectContaining({ network: 'mainnet' }),
-        )
-
-        // Switch network
-        ;(endpoints.fetchTransactionHistory as Mock).mockClear()
-        rerender({ network: 'testnet' })
-
-        await waitFor(() =>
-            expect(endpoints.fetchTransactionHistory).toHaveBeenCalledWith(
-                expect.objectContaining({ network: 'testnet' }),
-            ),
-        )
+        expect(result.current.transactions).toHaveLength(25)
+        expect(result.current.hasNextPage).toBe(true)
     })
 
-    test('fetches next page when fetchNextPage is called', async () => {
+    test('fetches next page from API and persists to DB', async () => {
+        // First page from DB with full results
+        const fullPage = Array.from({ length: 25 }, (_, i) => ({
+            ...mockTransaction,
+            id: `TX${i}`,
+            roundTime: 1704067200 - i,
+        }))
+        mockGetTransactionHistory.mockResolvedValue(fullPage)
+
         const nextPageResult = {
-            ...mockTransactionHistoryResult,
-            transactions: [
-                {
-                    ...mockTransactionHistoryResult.transactions[0],
-                    id: 'TX124',
-                },
-            ],
+            transactions: [{ ...mockTransaction, id: 'TX_NEXT' }],
             pagination: {
-                ...mockTransactionHistoryResult.pagination,
                 hasNextPage: false,
+                hasPreviousPage: true,
                 nextUrl: null,
+                previousUrl: null,
+                totalFetched: 1,
             },
+            currentRound: 12350,
         }
 
-        ;(endpoints.fetchMoreTransactions as Mock).mockResolvedValue(
+        ;(endpoints.fetchTransactionHistory as Mock).mockResolvedValue(
             nextPageResult,
         )
 
@@ -239,6 +228,7 @@ describe('useTransactionHistoryQuery', () => {
         )
 
         await waitFor(() => expect(result.current.isLoading).toBe(false))
+        expect(result.current.hasNextPage).toBe(true)
 
         // Fetch next page
         result.current.fetchNextPage()
@@ -248,7 +238,10 @@ describe('useTransactionHistoryQuery', () => {
         )
 
         // Should have transactions from both pages
-        expect(result.current.transactions).toHaveLength(2)
+        expect(result.current.transactions).toHaveLength(26)
         expect(result.current.hasNextPage).toBe(false)
+
+        // Should have persisted the API transactions to DB
+        expect(mockPersistTransactions).toHaveBeenCalled()
     })
 })

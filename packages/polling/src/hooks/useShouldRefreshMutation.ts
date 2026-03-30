@@ -20,7 +20,7 @@ export const useShouldRefreshMutation = () => {
     const { network } = useNetwork()
     const accounts = useAllAccounts()
     const lastRefreshedRound = usePollingStore(
-        state => state.lastRefreshedRound,
+        state => state.lastRefreshedRound[network],
     )
     return useMutation({
         mutationFn: () =>

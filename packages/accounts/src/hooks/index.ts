@@ -11,6 +11,7 @@
  */
 
 export * from './useAccountBalancesQuery'
+export * from './useAccountInformationQuery'
 export * from './usePortfolioTotals'
 export * from './useAccountBalancesHistoryQuery'
 export * from './useAccountsAssetBalanceHistoryQuery'
@@ -32,3 +33,4 @@ export * from './useAccountBalancesInvalidator'
 export * from './useActiveAccountBalanceInvalidator'
 export * from './useHDWalletGroups'
 export * from './useSortedAccounts'
+export { invalidateAccountQueries, isAccountQuery } from './querykeys'

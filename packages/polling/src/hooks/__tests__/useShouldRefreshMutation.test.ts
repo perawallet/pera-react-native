@@ -31,11 +31,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => mockUseAllAccounts(),
 }))
 
-const mockLastRefreshedRound = 100
 vi.mock('../../store', () => ({
     usePollingStore: (selector: any) => {
         const state = {
-            lastRefreshedRound: mockLastRefreshedRound,
+            lastRefreshedRound: { mainnet: 100, testnet: 200 },
         }
         return selector(state)
     },

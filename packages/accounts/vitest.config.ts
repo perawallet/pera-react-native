@@ -59,6 +59,14 @@ export default defineConfig({
                 __dirname,
                 '../kms/src/index.ts',
             ),
+            '@perawallet/wallet-core-database/test-utils': path.resolve(
+                __dirname,
+                '../database/src/test-utils/index.ts',
+            ),
+            '@perawallet/wallet-core-database': path.resolve(
+                __dirname,
+                '../database/src/index.ts',
+            ),
         },
     },
 })

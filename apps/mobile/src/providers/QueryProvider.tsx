@@ -18,6 +18,9 @@ import {
 import { OmitKeyof, QueryCache, QueryClient } from '@tanstack/react-query'
 import { config } from '@perawallet/wallet-core-config'
 import { logger } from '@perawallet/wallet-core-shared'
+import { isAccountQuery } from '@perawallet/wallet-core-accounts'
+import { isAssetQuery } from '@perawallet/wallet-core-assets'
+import { isTransactionQuery } from '@perawallet/wallet-core-transactions'
 
 const cache = new QueryCache({
     onError: error => {
@@ -52,6 +55,19 @@ export function QueryProvider({ persister, children }: QueryProviderProps) {
             persistOptions={{
                 persister,
                 maxAge: config.reactQueryPersistenceAge,
+                dehydrateOptions: {
+                    shouldDehydrateQuery: query => {
+                        // Don't persist DB-backed queries — SQLite is the source of truth
+                        if (
+                            isAccountQuery(query.queryKey) ||
+                            isAssetQuery(query.queryKey) ||
+                            isTransactionQuery(query.queryKey)
+                        ) {
+                            return false
+                        }
+                        return query.state.status === 'success'
+                    },
+                },
             }}
         >
             {children}

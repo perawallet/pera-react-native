@@ -50,6 +50,7 @@ export default defineConfig({
                 'expo-application',
                 'expo-device',
                 'expo-localization',
+                'expo-sqlite',
                 'zustand',
                 '@algorandfoundation/wallet-provider',
                 '@perawallet/wallet-core-config',

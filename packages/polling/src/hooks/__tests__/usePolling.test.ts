@@ -21,6 +21,10 @@ vi.mock('../useShouldRefreshMutation', () => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: () => ({ network: 'mainnet' }),
+}))
+
 // Mock usePollingStore
 const mockSetLastRefreshedRound = vi.fn()
 vi.mock('../../store', () => ({
@@ -87,7 +91,7 @@ describe('services/polling/usePolling', () => {
             await flush()
         })
 
-        expect(mockSetLastRefreshedRound).toHaveBeenCalledWith(99)
+        expect(mockSetLastRefreshedRound).toHaveBeenCalledWith('mainnet', 99)
 
         await act(async () => {
             await result.current.stopPolling()
@@ -135,7 +139,7 @@ describe('services/polling/usePolling', () => {
         })
 
         expect(mockOnRefresh).toHaveBeenCalledTimes(1)
-        expect(mockSetLastRefreshedRound).toHaveBeenCalledWith(99)
+        expect(mockSetLastRefreshedRound).toHaveBeenCalledWith('mainnet', 99)
 
         await act(async () => {
             await result.current.stopPolling()
@@ -244,7 +248,7 @@ describe('services/polling/usePolling', () => {
         })
 
         expect(mockOnRefresh).toHaveBeenCalledTimes(1)
-        expect(mockSetLastRefreshedRound).toHaveBeenCalledWith(null)
+        expect(mockSetLastRefreshedRound).toHaveBeenCalledWith('mainnet', null)
 
         await act(async () => {
             await result.current.stopPolling()
@@ -264,7 +268,7 @@ describe('services/polling/usePolling', () => {
             await flush()
         })
 
-        expect(mockSetLastRefreshedRound).toHaveBeenCalledWith(50)
+        expect(mockSetLastRefreshedRound).toHaveBeenCalledWith('mainnet', 50)
         // No error thrown when onRefresh is undefined
 
         await act(async () => {

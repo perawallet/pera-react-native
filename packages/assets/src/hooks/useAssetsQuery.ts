@@ -11,18 +11,11 @@
  */
 
 import { useMemo, useRef } from 'react'
-import { useQueries } from '@tanstack/react-query'
-import {
-    fetchAssets,
-    fetchPublicAssetDetails,
-    transformAssetResponse,
-    transformPublicAssetResponse,
-} from '../api'
-import { ALGO_ASSET_ID, type PeraAsset } from '../models'
-import { DEFAULT_PAGE_SIZE, partition } from '@perawallet/wallet-core-shared'
-import { getAlgoQueryKey, getAssetsQueryKey } from './querykeys'
-import { AssetsResponse, PublicAssetResponse } from '../api/assets/schema'
+import { useQuery } from '@tanstack/react-query'
+import { type PeraAsset } from '../models'
+import { getAssetsQueryKey } from './querykeys'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { getAssetsByIds } from '../db'
 
 type UseAssetsQueryResult = {
     data: Map<string, PeraAsset>
@@ -44,54 +37,30 @@ export const useAssetsQuery = (ids: string[]): UseAssetsQueryResult => {
     }
     const stableIds = idsRef.current.ids
 
-    const queryDefinitions = useMemo(() => {
-        const chunks = partition(stableIds, DEFAULT_PAGE_SIZE)
-        return [
-            ...chunks.map(chunk => ({
-                queryKey: getAssetsQueryKey(chunk, network),
-                queryFn: async () => fetchAssets(chunk, network),
-                select: (data: AssetsResponse) => ({
-                    results: data.results.map(transformAssetResponse),
-                    next: data.next,
-                    previous: data.previous,
-                }),
-            })),
-            {
-                queryKey: getAlgoQueryKey(network),
-                queryFn: async () =>
-                    fetchPublicAssetDetails(ALGO_ASSET_ID, network),
-                select: (data: PublicAssetResponse) => ({
-                    results: [transformPublicAssetResponse(data)],
-                    next: null,
-                    previous: null,
-                }),
-            },
-        ]
-    }, [stableIds, network])
-
-    // notifyOnChangeProps: 'all' disables Proxy-based property tracking in TanStack Query.
-    // This works around a race condition in QueriesObserver where _observerMatches and _result
-    // can get out of sync during synchronous notifications, causing "new Proxy target must be an Object".
-    const queries = useQueries({
-        queries: queryDefinitions.map(q => ({
-            ...q,
-            notifyOnChangeProps: 'all' as const,
-        })),
+    const query = useQuery({
+        queryKey: getAssetsQueryKey(stableIds, network),
+        staleTime: Infinity,
+        queryFn: () => getAssetsByIds({ assetIds: stableIds, network }),
     })
 
     return useMemo(() => {
         const assets: Map<string, PeraAsset> = new Map()
-        queries.forEach(query => {
-            query.data?.results?.forEach(asset => {
-                assets.set(asset.assetId, asset)
-            })
+        query.data?.forEach(asset => {
+            assets.set(asset.assetId, asset)
         })
+
         return {
             data: assets,
-            isPending: queries.some(query => query.isPending),
-            isFetched: queries.some(query => query.isFetched),
-            isRefetching: queries.some(query => query.isRefetching),
-            isError: queries.some(query => query.isError),
+            isPending: query.isPending,
+            isFetched: query.isFetched,
+            isRefetching: query.isRefetching,
+            isError: query.isError,
         }
-    }, [queries])
+    }, [
+        query.data,
+        query.isPending,
+        query.isFetched,
+        query.isRefetching,
+        query.isError,
+    ])
 }

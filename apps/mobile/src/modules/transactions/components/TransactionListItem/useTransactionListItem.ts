@@ -55,10 +55,10 @@ export type UseTransactionListItemResult = {
  * Creates an AmountDisplay for an ALGO amount.
  */
 const createAlgoAmount = (
-    microAlgos: string,
+    microAlgos: Decimal,
     isOutgoing: boolean,
 ): AmountDisplay => {
-    const rawAmount = microAlgosToAlgos(microAlgos || 0)
+    const rawAmount = microAlgosToAlgos(microAlgos)
     const absValue = rawAmount.abs()
 
     return {
@@ -73,7 +73,7 @@ const createAlgoAmount = (
  * Creates an AmountDisplay for an asset amount.
  */
 const createAssetAmount = (
-    amount: string,
+    amount: Decimal,
     decimals: number,
     unitName: string,
     isOutgoing: boolean,
@@ -81,7 +81,7 @@ const createAssetAmount = (
     const safeDecimals = isNaN(decimals)
         ? 0
         : Math.max(0, Math.min(19, decimals))
-    const rawAmount = baseUnitsToDisplayUnits(amount || 0, safeDecimals)
+    const rawAmount = baseUnitsToDisplayUnits(amount, safeDecimals)
     const absValue = rawAmount.abs()
 
     return {
@@ -112,7 +112,11 @@ const getTitle = (tx: TransactionHistoryItem, userAddress: string): string => {
         case 'pay':
             return isOutgoing ? 'Send' : 'Receive'
         case 'axfer':
-            if (tx.sender === tx.receiver && tx.amount === '0') {
+            if (
+                tx.sender === tx.receiver &&
+                tx.amount !== null &&
+                tx.amount.isZero()
+            ) {
                 return 'Opt-in'
             }
             return isOutgoing ? 'Send' : 'Receive'

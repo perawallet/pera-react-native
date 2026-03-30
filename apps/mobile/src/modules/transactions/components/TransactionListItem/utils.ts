@@ -31,7 +31,8 @@ export const getTransactionIconType = (
         (transaction.txType === 'axfer' &&
             !(
                 transaction.sender === transaction.receiver &&
-                transaction.amount === '0'
+                transaction.amount !== null &&
+                transaction.amount.isZero()
             ))
     ) {
         return isOutgoing ? 'send' : 'receive'

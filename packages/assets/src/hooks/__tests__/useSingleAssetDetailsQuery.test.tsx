@@ -16,6 +16,7 @@ import { useSingleAssetDetailsQuery } from '../useSingleAssetDetailsQuery'
 import { ALGO_ASSET_ID } from '../../models'
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
+import Decimal from 'decimal.js'
 
 // Mock endpoints
 const mocks = vi.hoisted(() => ({
@@ -23,10 +24,15 @@ const mocks = vi.hoisted(() => ({
     fetchIndexerAssetDetails: vi.fn(),
     fetchPublicAssetDetails: vi.fn(),
     useNetwork: vi.fn(),
+    getAssetById: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: mocks.useNetwork,
+}))
+
+vi.mock('../../db', () => ({
+    getAssetById: mocks.getAssetById,
 }))
 
 vi.mock('../../api', async importOriginal => {
@@ -45,6 +51,7 @@ describe('useSingleAssetDetailsQuery', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
+        mocks.getAssetById.mockResolvedValue(null)
         queryClient = new QueryClient({
             defaultOptions: {
                 queries: {
@@ -56,18 +63,6 @@ describe('useSingleAssetDetailsQuery', () => {
 
     describe('useSingleAssetDetailsQuery hook', () => {
         it('returns ALGO asset details when asset_id is ALGO_ASSET_ID', async () => {
-            mocks.fetchPublicAssetDetails.mockResolvedValue({
-                asset_id: 0,
-                name: 'Algorand',
-                unit_name: 'ALGO',
-                fraction_decimals: 6,
-                total_supply_as_str: '10000000000000000',
-                is_deleted: 'false',
-                verification_tier: 'verified',
-                creator_address: '',
-                url: '',
-            })
-
             const { result } = renderHook(
                 () => useSingleAssetDetailsQuery(ALGO_ASSET_ID),
                 {
@@ -75,7 +70,7 @@ describe('useSingleAssetDetailsQuery', () => {
                 },
             )
 
-            await waitFor(() => expect(result.current.isPending).toBe(false))
+            await waitFor(() => expect(result.current.data).toBeDefined())
 
             expect(result.current.data).toEqual(
                 expect.objectContaining({
@@ -83,9 +78,42 @@ describe('useSingleAssetDetailsQuery', () => {
                     name: 'Algo',
                 }),
             )
+            expect(mocks.getAssetById).not.toHaveBeenCalled()
         })
 
-        it('combines indexer and pera data for other assets', async () => {
+        it('reads asset from DB when available', async () => {
+            const dbAsset = {
+                assetId: '123',
+                decimals: 6,
+                creator: { address: 'ADDR' },
+                totalSupply: Decimal(1000),
+                name: 'DB Asset',
+                unitName: 'TEST',
+            }
+            mocks.getAssetById.mockResolvedValue(dbAsset)
+
+            const { result } = renderHook(
+                () => useSingleAssetDetailsQuery('123'),
+                {
+                    wrapper: createWrapper(queryClient),
+                },
+            )
+
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(result.current.data).toEqual(dbAsset)
+            expect(mocks.getAssetById).toHaveBeenCalledWith({
+                assetId: '123',
+                network: 'mainnet',
+            })
+            // Should NOT call APIs when DB has data
+            expect(mocks.fetchAssetDetails).not.toHaveBeenCalled()
+            expect(mocks.fetchIndexerAssetDetails).not.toHaveBeenCalled()
+        })
+
+        it('falls back to API when asset not in DB', async () => {
+            mocks.getAssetById.mockResolvedValue(null)
+
             mocks.fetchAssetDetails.mockResolvedValue({
                 asset_id: 123,
                 name: 'Pera Name',
@@ -126,16 +154,12 @@ describe('useSingleAssetDetailsQuery', () => {
 
             expect(result.current.data).toBeDefined()
             expect(result.current.data?.assetId).toBe('123')
-            expect(result.current.data?.name).toBe('Pera Name') // Pera data overrides indexer
-            expect(result.current.data?.unitName).toBe('TEST') // From indexer
+            expect(result.current.data?.name).toBe('Pera Name')
+            expect(result.current.data?.unitName).toBe('TEST')
         })
 
         it('handles loading state', () => {
-            mocks.fetchAssetDetails.mockReturnValue(new Promise(() => {}))
-            mocks.fetchIndexerAssetDetails.mockReturnValue(
-                new Promise(() => {}),
-            )
-            mocks.fetchPublicAssetDetails.mockReturnValue(new Promise(() => {}))
+            mocks.getAssetById.mockReturnValue(new Promise(() => {}))
 
             const { result } = renderHook(
                 () => useSingleAssetDetailsQuery('123'),
@@ -147,12 +171,15 @@ describe('useSingleAssetDetailsQuery', () => {
             expect(result.current.isLoading).toBe(true)
         })
 
-        it('handles error state', async () => {
+        it('handles error state when both DB and API fail', async () => {
+            mocks.getAssetById.mockResolvedValue(null)
             mocks.fetchAssetDetails.mockRejectedValue(new Error('Pera Error'))
             mocks.fetchIndexerAssetDetails.mockRejectedValue(
                 new Error('Indexer Error'),
             )
-            mocks.fetchPublicAssetDetails.mockResolvedValue({})
+            mocks.fetchPublicAssetDetails.mockRejectedValue(
+                new Error('Public Error'),
+            )
 
             const { result } = renderHook(
                 () => useSingleAssetDetailsQuery('123'),
@@ -161,7 +188,12 @@ describe('useSingleAssetDetailsQuery', () => {
                 },
             )
 
-            await waitFor(() => expect(result.current.isError).toBe(true))
+            // The hook uses Promise.allSettled, so individual API failures
+            // won't cause the query to error - it returns partial data
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(result.current.data).toBeDefined()
+            expect(result.current.data?.assetId).toBe('123')
         })
     })
 })

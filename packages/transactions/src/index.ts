@@ -15,6 +15,13 @@ export const name = '@perawallet/wallet-core-transactions'
 export * from './models'
 export * from './hooks'
 
+// Export DB functions for sync service and other consumers
+export {
+    upsertTransactions,
+    getTransactionHistory,
+    getLatestTransactionRoundTime,
+} from './db'
+
 // Export API functions for advanced usage
 export {
     fetchTransactionHistory,
@@ -22,6 +29,9 @@ export {
     type FetchTransactionHistoryParams,
     type FetchMoreTransactionsParams,
 } from './api/history'
+
+// Export syncer for sync service
+export { fetchAndPersistTransactions } from './sync/transaction-syncer'
 
 // Export CSV export functionality
 export {

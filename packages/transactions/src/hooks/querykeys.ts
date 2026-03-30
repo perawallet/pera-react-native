@@ -11,8 +11,12 @@
  */
 
 import type { Network } from '@perawallet/wallet-core-shared'
+import { QueryClient, type QueryKey } from '@tanstack/react-query'
 
 const MODULE_PREFIX = 'transactions'
+
+export const isTransactionQuery = (queryKey: QueryKey): boolean =>
+    queryKey[0] === MODULE_PREFIX
 
 /**
  * Query key factory for transaction history queries.
@@ -46,4 +50,10 @@ export const transactionQueryKeys = {
             'page',
             { accountAddress, network, url },
         ] as const,
+}
+
+export function invalidateTransactionQueries(queryClient: QueryClient): void {
+    void queryClient.invalidateQueries({
+        predicate: query => query.queryKey[0] === MODULE_PREFIX,
+    })
 }

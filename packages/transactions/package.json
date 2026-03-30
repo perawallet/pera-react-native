@@ -23,10 +23,12 @@
     "@perawallet/wallet-core-asa-inbox": "workspace:*",
     "@perawallet/wallet-core-assets": "workspace:*",
     "@perawallet/wallet-core-blockchain": "workspace:*",
+    "@perawallet/wallet-core-database": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-core-signing": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "decimal.js": "catalog:",
+    "drizzle-orm": "catalog:",
     "react": "catalog:",
     "zod": "catalog:"
   },

@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
+import { Decimal } from 'decimal.js'
 import { useTransactionListItem } from '../useTransactionListItem'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import {
@@ -56,8 +57,8 @@ const createPaymentTx = (
         txType: 'pay',
         sender: USER_ADDRESS,
         receiver: OTHER_ADDRESS,
-        amount: '500000',
-        fee: '1000',
+        amount: new Decimal('500000'),
+        fee: new Decimal('1000'),
         confirmedRound: 100,
         roundTime: 1700000000,
         asset: null,
@@ -78,8 +79,8 @@ const createAssetTransferTx = (
         txType: 'axfer',
         sender: USER_ADDRESS,
         receiver: OTHER_ADDRESS,
-        amount: '1000000',
-        fee: '1000',
+        amount: new Decimal('1000000'),
+        fee: new Decimal('1000'),
         confirmedRound: 100,
         roundTime: 1700000000,
         asset: {
@@ -104,7 +105,7 @@ describe('useTransactionListItem', () => {
         } as ReturnType<typeof useSelectedAccount>)
         vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
             data: undefined,
-        } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+        } as UseQueryResult<PeraAsset, Error>)
     })
 
     describe('title', () => {
@@ -144,7 +145,7 @@ describe('useTransactionListItem', () => {
             const tx = createAssetTransferTx({
                 sender: USER_ADDRESS,
                 receiver: USER_ADDRESS,
-                amount: '0',
+                amount: new Decimal(0),
             })
             const { result } = renderHook(() =>
                 useTransactionListItem({ transaction: tx }),
@@ -208,10 +209,10 @@ describe('useTransactionListItem', () => {
                     decimals: 6,
                     unitName: 'USDC',
                 },
-            } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+            } as UseQueryResult<PeraAsset, Error>)
 
             const tx = createAssetTransferTx({
-                amount: '1000000',
+                amount: new Decimal('1000000'),
                 asset: {
                     assetId: 31566704,
                     name: 'USD Coin',
@@ -230,10 +231,10 @@ describe('useTransactionListItem', () => {
         it('falls back to transaction asset decimals when query has no data', () => {
             vi.mocked(useSingleAssetDetailsQuery).mockReturnValue({
                 data: undefined,
-            } as UseQueryResult<NoInfer<PeraAsset>, unknown>)
+            } as UseQueryResult<PeraAsset, Error>)
 
             const tx = createAssetTransferTx({
-                amount: '1000000',
+                amount: new Decimal('1000000'),
                 asset: {
                     assetId: 31566704,
                     name: 'USD Coin',
@@ -252,7 +253,7 @@ describe('useTransactionListItem', () => {
         it('shows negative prefix for outgoing transactions', () => {
             const tx = createPaymentTx({
                 sender: USER_ADDRESS,
-                amount: '500000',
+                amount: new Decimal('500000'),
             })
             const { result } = renderHook(() =>
                 useTransactionListItem({ transaction: tx }),
@@ -263,7 +264,7 @@ describe('useTransactionListItem', () => {
         it('shows positive prefix for incoming transactions', () => {
             const tx = createPaymentTx({
                 sender: OTHER_ADDRESS,
-                amount: '500000',
+                amount: new Decimal('500000'),
             })
             const { result } = renderHook(() =>
                 useTransactionListItem({ transaction: tx }),

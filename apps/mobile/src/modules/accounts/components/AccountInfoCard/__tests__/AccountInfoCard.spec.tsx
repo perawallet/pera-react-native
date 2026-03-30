@@ -116,13 +116,11 @@ vi.mock('../AccountTypeInfoContent', () => ({
     ),
 }))
 
-const mockUseAccountInformationQuery = vi.fn()
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useAccountInformationQuery: (...args: unknown[]) =>
-        mockUseAccountInformationQuery(...args),
     microAlgosToAlgos: (v: bigint) => new Decimal(Number(v) / 1_000_000),
 }))
 
+const mockUseAccountInformationQuery = vi.fn()
 const mockUseHDWalletGroups = vi.fn()
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -131,6 +129,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
+        useAccountInformationQuery: (...args: unknown[]) =>
+            mockUseAccountInformationQuery(...args),
         useHDWalletGroups: () => mockUseHDWalletGroups(),
     }
 })

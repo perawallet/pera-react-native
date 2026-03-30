@@ -11,7 +11,6 @@
  */
 
 export * from './querykeys'
-export * from './useAccountInformationQuery'
 export * from './useAlgorandClient'
 export * from './useSuggestedParametersQuery'
 export * from './useTransactionDetailQuery'

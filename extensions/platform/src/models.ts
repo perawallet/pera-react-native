@@ -18,6 +18,7 @@ import type {
     PushNotificationService,
 } from './push-notifications'
 import type { RemoteConfigService } from './remote-config'
+import type { DatabaseService } from './database'
 import type { CrashReportingService } from './reporting'
 import type { KeyValueStorageService, SecureStorageService } from './storage'
 
@@ -30,6 +31,7 @@ export interface PlatformServices {
     analytics: AnalyticsService
     crashReporting: CrashReportingService
     deviceInfo: DeviceInfoService
+    database: DatabaseService
 }
 
 export type PlatformExtension = PlatformServices & {

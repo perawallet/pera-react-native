@@ -17,8 +17,10 @@ import {
     useArc59SendSummaryQuery,
     type Arc59SendSummaryResponse,
 } from '@perawallet/wallet-core-asa-inbox'
-import { useAccountInformationQuery } from '@perawallet/wallet-core-blockchain'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountInformationQuery,
+    useSelectedAccount,
+} from '@perawallet/wallet-core-accounts'
 import {
     ALGO_ASSET,
     PeraAsset,

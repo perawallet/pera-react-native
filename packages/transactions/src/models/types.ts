@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
+
 /**
  * Enumeration of all possible Algorand transaction types.
  *
@@ -108,18 +110,18 @@ export interface TransactionHistoryItem {
     swapGroupDetail: TransactionSwapGroupDetail | null
     /** Human-readable interpretation of what this transaction represents */
     interpretedMeaning: TransactionInterpretedMeaning | null
-    /** Transaction fee paid in microAlgos (as a string to preserve precision) */
-    fee: string
+    /** Transaction fee paid in microAlgos */
+    fee: Decimal
     /** Group ID for atomic transactions */
     groupId: string | null
-    /** The amount transferred, as a string to preserve precision */
-    amount: string | null
+    /** The amount transferred in base units */
+    amount: Decimal | null
     /** The close remainder to address */
     closeTo: string | null
     /** Asset details for asset-related transactions */
     asset: TransactionAssetSummary | null
     /** Application ID for application call transactions (smart contracts) */
-    applicationId: number | null
+    applicationId: string | null
     /** Number of inner transactions if this is an application call */
     innerTransactionCount: number | null
 }

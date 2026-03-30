@@ -15,6 +15,7 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import {
     useAccountAssetBalanceQuery,
     useAccountBalancesQuery,
+    useAccountInformationQuery,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useSendFunds } from '@modules/transactions/hooks'
@@ -26,10 +27,7 @@ import {
     toWholeUnits,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
-import {
-    useSuggestedParametersQuery,
-    useAccountInformationQuery,
-} from '@perawallet/wallet-core-blockchain'
+import { useSuggestedParametersQuery } from '@perawallet/wallet-core-blockchain'
 import { bottomSheetNotifier } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
