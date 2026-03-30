@@ -12,7 +12,7 @@
 
 import { useMemo, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { type PeraAsset } from '../models'
+import { ALGO_ASSET, ALGO_ASSET_ID, type PeraAsset } from '../models'
 import { getAssetsQueryKey } from './querykeys'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAssetsByIds } from '../db'
@@ -45,6 +45,12 @@ export const useAssetsQuery = (ids: string[]): UseAssetsQueryResult => {
 
     return useMemo(() => {
         const assets: Map<string, PeraAsset> = new Map()
+
+        // ALGO is a native asset not stored in the DB — inject the hardcoded constant
+        if (stableIds.includes(ALGO_ASSET_ID)) {
+            assets.set(ALGO_ASSET_ID, ALGO_ASSET)
+        }
+
         query.data?.forEach(asset => {
             assets.set(asset.assetId, asset)
         })
@@ -57,6 +63,7 @@ export const useAssetsQuery = (ids: string[]): UseAssetsQueryResult => {
             isError: query.isError,
         }
     }, [
+        stableIds,
         query.data,
         query.isPending,
         query.isFetched,
