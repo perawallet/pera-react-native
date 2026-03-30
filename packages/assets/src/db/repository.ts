@@ -13,7 +13,11 @@
 import { eq, and, inArray } from 'drizzle-orm'
 import Decimal from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
-import { DEFAULT_ASSET_METADATA, type PeraAsset, type PeraAssetMetadata } from '../models'
+import {
+    DEFAULT_ASSET_METADATA,
+    type PeraAsset,
+    type PeraAssetMetadata,
+} from '../models'
 import { AssetsNodeSchema, AssetsPeraSchema, AssetPricesSchema } from './schema'
 
 function fromDb(row: {

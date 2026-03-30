@@ -202,9 +202,7 @@ describe('useToggleAssetFavoriteMutation', () => {
     })
 
     it('reverts query cache on error', async () => {
-        vi.mocked(toggleAssetFavorite).mockRejectedValue(
-            new Error('Not found'),
-        )
+        vi.mocked(toggleAssetFavorite).mockRejectedValue(new Error('Not found'))
 
         const existingAsset = {
             assetId: '123',
