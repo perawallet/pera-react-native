@@ -124,9 +124,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
 
                 if (snapshot.matches('completed')) {
                     const { request: req } = snapshot.context
-                    ;(
-                        req as { approve?: () => Promise<void> }
-                    ).approve?.()
+                    ;(req as { approve?: () => Promise<void> }).approve?.()
                     setLastCompletedRequestRef.current(req)
                 } else if (snapshot.matches('failed')) {
                     const { request: req, error } = snapshot.context

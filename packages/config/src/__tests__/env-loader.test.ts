@@ -264,7 +264,8 @@ describe('env-loader', () => {
             mainnetBidaliApiKey: 'test-mainnet-bidali-key',
             testnetBidaliApiKey: 'test-testnet-bidali-key',
             mainnetBidaliBaseUrl: 'https://commerce.bidali.example.com/dapp',
-            testnetBidaliBaseUrl: 'https://commerce.staging.bidali.example.com/dapp',
+            testnetBidaliBaseUrl:
+                'https://commerce.staging.bidali.example.com/dapp',
             termsOfServiceUrl: 'https://terms.example.com',
             privacyPolicyUrl: 'https://privacy.example.com',
             peraDemoDappUrl: 'https://demo.example.com',

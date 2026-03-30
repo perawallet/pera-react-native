@@ -45,11 +45,11 @@ export const getNetworkConfig = (network: Network): NetworkConfig => {
         explorerUrl: isMain
             ? config.mainnetExplorerUrl
             : config.testnetExplorerUrl,
-        bidaliBaseUrl: isMain 
+        bidaliBaseUrl: isMain
             ? config.mainnetBidaliBaseUrl
             : config.testnetBidaliBaseUrl,
         bidaliApiKey: isMain
             ? config.mainnetBidaliApiKey
-            : config.testnetBidaliApiKey
+            : config.testnetBidaliApiKey,
     }
 }
