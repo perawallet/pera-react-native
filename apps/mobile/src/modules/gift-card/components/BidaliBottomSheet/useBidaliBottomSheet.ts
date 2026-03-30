@@ -25,6 +25,8 @@ export const useBidaliBottomSheet = (
     }, [reset, onClose])
 
     useLayoutEffect(() => {
-        setOnClose(handleClose)
-    }, [handleClose, setOnClose])
+        if (isVisible) {
+            setOnClose(handleClose)
+        }
+    }, [isVisible, handleClose, setOnClose])
 }

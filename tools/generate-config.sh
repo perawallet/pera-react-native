@@ -91,8 +91,10 @@ append_config "DEBUG_ENABLED" "debugEnabled" "boolean"
 append_config "PROFILING_ENABLED" "profilingEnabled" "boolean"
 append_config "POLLING_ENABLED" "pollingEnabled" "boolean"
 
-append_config "BIDALI_API_KEY" "bidaliApiKey" "string"
-append_config "BIDALI_BASE_URL" "bidaliBaseUrl" "string"
+append_config "MAINNET_BIDALI_API_KEY" "mainnetBidaliApiKey" "string"
+append_config "TESTNET_BIDALI_API_KEY" "testnetBidaliApiKey" "string"
+append_config "MAINNET_BIDALI_BASE_URL" "mainnetBidaliBaseUrl" "string"
+append_config "TESTNET_BIDALI_BASE_URL" "testnetBidaliBaseUrl" "string"
 
 # Default Network
 if [ -n "$PERA_DEFAULT_NETWORK" ] && [ -z "$DEFAULT_NETWORK" ]; then

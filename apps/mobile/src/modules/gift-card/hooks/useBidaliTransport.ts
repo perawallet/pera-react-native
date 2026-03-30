@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo, useRef } from 'react'
 import { Linking } from 'react-native'
-import { config } from '@perawallet/wallet-core-config'
+import { config, getNetworkConfig } from '@perawallet/wallet-core-config'
 import type {
     AccountBalances,
     WalletAccount,
@@ -35,6 +35,7 @@ import {
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import type WebView from 'react-native-webview'
+import Decimal from 'decimal.js'
 
 const SUPPORTED_CURRENCIES = ['algorand', 'usdcalgorand']
 const SUPPORTED_CURRENCIES_JSON = JSON.stringify(SUPPORTED_CURRENCIES)
@@ -51,6 +52,7 @@ const getCurrencyInfo = (
     switch (protocol) {
         case 'algorand':
             return { assetId: ALGO_ASSET_ID, decimals: ALGO_ASSET.decimals }
+        case 'testusdcalgorand':
         case 'usdcalgorand':
             return {
                 assetId: getKnownAssetId('USDC', network),
@@ -156,16 +158,18 @@ export const useBidaliTransport = (
             a => a.assetId === getKnownAssetId('USDC', network),
         )?.amount
 
+        const isTestnet = network === 'testnet'
         const balanceMap: Record<string, string> = {
             algorand: algoBalance?.toString() ?? '0',
-            usdcalgorand: usdcBalance?.toString() ?? '0',
+            [isTestnet ? 'testusdcalgorand' : 'usdcalgorand']:
+                usdcBalance?.toString() ?? '0',
         }
 
         return buildBidaliProviderJS(
-            config.bidaliApiKey,
+            getNetworkConfig(network).bidaliApiKey,
             JSON.stringify(balanceMap),
         )
-    }, [account?.address, balances])
+    }, [network, account?.address, balances])
 
     const handlePaymentRequest = useCallback(
         async (params: Record<string, unknown>) => {
@@ -189,8 +193,18 @@ export const useBidaliTransport = (
                 })
                 return
             }
-            const numericAmount = Number(amount)
-            if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+            let numericAmount: Decimal
+            try {
+                numericAmount = Decimal(amount)
+            } catch {
+                logger.warn('Bidali: invalid amount', { amount })
+                return
+            }
+            if (
+                !numericAmount.isFinite() ||
+                numericAmount.isNegative() ||
+                numericAmount.isZero()
+            ) {
                 logger.warn('Bidali: invalid amount', { amount })
                 return
             }
@@ -243,7 +257,7 @@ export const useBidaliTransport = (
                     sourceMetadata: {
                         name: t('giftCard.signing.source_name'),
                         description: t('giftCard.signing.source_description'),
-                        url: config.bidaliBaseUrl,
+                        url: getNetworkConfig(network).bidaliBaseUrl,
                     },
                     approve: async () => {
                         sendBidaliEvent(webviewRef, 'paymentSent')

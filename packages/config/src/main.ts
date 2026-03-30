@@ -68,8 +68,10 @@ export const configSchema = z.object({
     profilingEnabled: z.boolean(),
     pollingEnabled: z.boolean(),
 
-    bidaliApiKey: z.string(),
-    bidaliBaseUrl: z.url(),
+    mainnetBidaliApiKey: z.string(),
+    testnetBidaliApiKey: z.string(),
+    mainnetBidaliBaseUrl: z.url(),
+    testnetBidaliBaseUrl: z.url(),
 
     arc59: z.object({
         testnet: z.object({
@@ -141,8 +143,10 @@ const productionConfig = {
     profilingEnabled: false,
     pollingEnabled: true,
 
-    bidaliApiKey: '',
-    bidaliBaseUrl: 'https://commerce.bidali.com/dapp',
+    mainnetBidaliApiKey: '',
+    testnetBidaliApiKey: '',
+    mainnetBidaliBaseUrl: 'https://commerce.bidali.com/dapp',
+    testnetBidaliBaseUrl: 'https://commerce.staging.bidali.com/dapp',
 
     arc59: {
         testnet: {
@@ -182,8 +186,6 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     stakingBaseUrl: 'STAKING_BASE_URL',
     onrampBaseUrl: 'ONRAMP_BASE_URL',
     supportBaseUrl: 'SUPPORT_BASE_URL',
-    bidaliApiKey: 'BIDALI_API_KEY',
-    bidaliBaseUrl: 'BIDALI_BASE_URL',
     termsOfServiceUrl: 'TERMS_OF_SERVICE_URL',
     privacyPolicyUrl: 'PRIVACY_POLICY_URL',
     peraDemoDappUrl: 'PERA_DEMO_DAPP_URL',
@@ -200,6 +202,11 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     debugEnabled: 'DEBUG_ENABLED',
     profilingEnabled: 'PROFILING_ENABLED',
     pollingEnabled: 'POLLING_ENABLED',
+
+    mainnetBidaliApiKey: 'MAINNET_BIDALI_API_KEY',
+    testnetBidaliApiKey: 'TESTNET_BIDALI_API_KEY',
+    mainnetBidaliBaseUrl: 'MAINNET_BIDALI_BASE_URL',
+    testnetBidaliBaseUrl: 'BIDALI_BASE_URL',
 
     defaultNetwork: 'DEFAULT_NETWORK',
 }

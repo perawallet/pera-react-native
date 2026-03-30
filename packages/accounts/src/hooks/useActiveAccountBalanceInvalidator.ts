@@ -14,6 +14,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useSelectedAccountAddress } from './useSelectedAccountAddress'
 import { getAccountBalancesQueryKey } from './querykeys'
+import { useCallback } from 'react'
 
 type UseActiveAccountBalanceInvalidatorResult = {
     invalidateActiveAccount: () => void
@@ -25,7 +26,7 @@ export const useActiveAccountBalanceInvalidator =
         const { network } = useNetwork()
         const { selectedAccountAddress } = useSelectedAccountAddress()
 
-        const invalidateActiveAccount = () => {
+        const invalidateActiveAccount = useCallback(() => {
             if (selectedAccountAddress === null) return
             queryClient.invalidateQueries({
                 queryKey: getAccountBalancesQueryKey(
@@ -33,7 +34,7 @@ export const useActiveAccountBalanceInvalidator =
                     network,
                 ),
             })
-        }
+        }, [selectedAccountAddress, queryClient, network])
 
         return { invalidateActiveAccount }
     }

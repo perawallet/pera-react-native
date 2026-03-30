@@ -45,6 +45,10 @@ vi.mock('@perawallet/wallet-core-config', () => ({
         bidaliApiKey: 'test-api-key',
         bidaliBaseUrl: 'https://commerce.bidali.com/dapp',
     },
+    getNetworkConfig: () => ({
+        bidaliApiKey: 'test-api-key',
+        bidaliBaseUrl: 'https://commerce.bidali.com/dapp',
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({

@@ -11,11 +11,12 @@
  */
 
 import { useMemo } from 'react'
-import { config } from '@perawallet/wallet-core-config'
+import { getNetworkConfig } from '@perawallet/wallet-core-config'
 import { useAccountBalancesQuery } from '@perawallet/wallet-core-accounts'
 import { useBidali } from '../../hooks/useBidali'
 import { useBidaliTransport } from '../../hooks/useBidaliTransport'
 import type WebView from 'react-native-webview'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
 
 type UseBidaliWebViewScreenResult = {
     url: string
@@ -27,6 +28,7 @@ type UseBidaliWebViewScreenResult = {
 
 export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
     const { selectedAccount, onClose } = useBidali()
+    const { network } = useNetwork()
 
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
@@ -39,11 +41,9 @@ export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {
     )
 
     const url = useMemo(() => {
-        if (config.bidaliApiKey) {
-            return `${config.bidaliBaseUrl}?key=${config.bidaliApiKey}`
-        }
-        return config.bidaliBaseUrl
-    }, [])
+        const networkConfig = getNetworkConfig(network)
+        return `${networkConfig.bidaliBaseUrl}?key=${networkConfig.bidaliApiKey}`
+    }, [network])
 
     return {
         url,
