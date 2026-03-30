@@ -14,22 +14,10 @@ import { fetchAssetPrices, fetchPublicAssetDetails } from '../api'
 import { upsertAssetPrices } from '../db'
 import { ALGO_ASSET_ID } from '../models'
 import { Decimal } from 'decimal.js'
-import {
-    Networks,
-    partition,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import { partition, type Network } from '@perawallet/wallet-core-shared'
 
 const PRICE_BATCH_SIZE = 25
 
-// Always fetch prices from mainnet for better accuracy
-const FETCH_NETWORK = Networks.mainnet
-
-/**
- * Fetches asset prices from the mainnet API (best accuracy) and stores them
- * under the given `network` key so that DB JOINs with holdings/balances work
- * regardless of the active network.
- */
 export async function fetchAndPersistPrices(
     assetIds: string[],
     network: Network,
@@ -41,7 +29,7 @@ export async function fetchAndPersistPrices(
 
     const results = await Promise.allSettled([
         ...batches.map(async batch => {
-            const response = await fetchAssetPrices(batch, FETCH_NETWORK)
+            const response = await fetchAssetPrices(batch, network)
             const prices = response.results.map(r => ({
                 assetId: `${r.asset_id}`,
                 usdPrice: new Decimal(r.usd_value ?? '0'),
@@ -51,7 +39,7 @@ export async function fetchAndPersistPrices(
         (async () => {
             const algoDetails = await fetchPublicAssetDetails(
                 ALGO_ASSET_ID,
-                FETCH_NETWORK,
+                network,
             )
             await upsertAssetPrices({
                 prices: [
