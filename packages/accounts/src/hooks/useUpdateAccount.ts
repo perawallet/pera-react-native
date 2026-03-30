@@ -28,10 +28,10 @@ export const useUpdateAccount = () => {
     const { mutateAsync: updateDeviceOnBackend } = useUpdateDeviceMutation()
 
     return (account: WalletAccount) => {
-        const index =
-            accounts.findIndex(a => a.address === account.address) ?? null
-        accounts[index] = account
-        setAccounts([...accounts])
+        const updated = accounts.map(a =>
+            a.address === account.address ? account : a,
+        )
+        setAccounts(updated)
 
         if (deviceID) {
             updateDeviceOnBackend({

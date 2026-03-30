@@ -177,11 +177,13 @@ export const useAccountOptions = ({
         (newName: string) => {
             updateAccount({ ...account, name: newName })
             handleCloseRename()
-            showToast({
-                title: t('account_options.rename_success'),
-                body: '',
-                type: 'success',
-            })
+            setTimeout(() => {
+                showToast({
+                    title: t('account_options.rename_success'),
+                    body: '',
+                    type: 'success',
+                })
+            }, 300)
         },
         [updateAccount, account, handleCloseRename, showToast, t],
     )
