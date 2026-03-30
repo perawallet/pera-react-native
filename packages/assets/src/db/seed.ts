@@ -10,15 +10,13 @@
  limitations under the License
  */
 
-export { AssetsNodeSchema, AssetsPeraSchema, AssetPricesSchema } from './schema'
-export {
-    upsertAssets,
-    upsertNodeAssets,
-    upsertPeraAssets,
-    getAssetsByIds,
-    getAssetById,
-    upsertAssetPrices,
-    getAssetPricesByIds,
-    type AssetPriceRow,
-} from './repository'
-export { seedAlgoAsset } from './seed'
+import type { Database } from '@perawallet/wallet-core-database'
+import { ALGO_ASSET } from '../models'
+import { upsertAssets } from './repository'
+
+export async function seedAlgoAsset(db: Database): Promise<void> {
+    const items = [ALGO_ASSET]
+
+    await upsertAssets({ db, items, network: 'mainnet' })
+    await upsertAssets({ db, items, network: 'testnet' })
+}

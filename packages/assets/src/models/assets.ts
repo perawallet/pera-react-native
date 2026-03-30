@@ -118,7 +118,11 @@ export const ALGO_ASSET: PeraAsset = {
     creator: {
         address: '',
     },
-    peraMetadata: DEFAULT_ASSET_METADATA,
+    peraMetadata: {
+        ...DEFAULT_ASSET_METADATA,
+        verificationTier: PeraAssetVerificationTier.verified,
+        type: PeraAssetType.algo,
+    },
 }
 
 export type AssetPrice = {

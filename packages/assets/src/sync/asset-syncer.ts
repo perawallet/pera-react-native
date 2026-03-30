@@ -12,6 +12,7 @@
 
 import { fetchAssets, transformAssetResponse } from '../api'
 import { upsertAssets } from '../db'
+import { ALGO_ASSET_ID } from '../models'
 import { partition, type Network } from '@perawallet/wallet-core-shared'
 
 const ASSET_BATCH_SIZE = 25
@@ -20,9 +21,11 @@ export async function fetchAndPersistAssets(
     assetIds: string[],
     network: Network,
 ): Promise<void> {
-    if (assetIds.length === 0) return
+    const nonAlgoIds = assetIds.filter(id => id !== ALGO_ASSET_ID)
 
-    const batches = partition(assetIds, ASSET_BATCH_SIZE)
+    if (nonAlgoIds.length === 0) return
+
+    const batches = partition(nonAlgoIds, ASSET_BATCH_SIZE)
 
     await Promise.allSettled(
         batches.map(async batch => {
