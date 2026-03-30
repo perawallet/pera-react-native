@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { AccountOverviewHeader } from './AccountOverviewHeader'
 import { SendFundsBottomSheet } from '@modules/transactions/components/send-funds/SendFundsBottomSheet/SendFundsBottomSheet'
 import { ReceiveFundsBottomSheet } from '@modules/transactions/components/receive-funds/ReceiveFundsBottomSheet'
@@ -20,6 +20,10 @@ import { useAccountOverview } from './useAccountOverview'
 import { PWView } from '@components/core'
 import { AccountAssetList } from '../AccountAssetList'
 import { AccountOptionsBottomSheet } from '../AccountOptionsBottomSheet'
+import {
+    AccountOverviewModalContext,
+    UseAccountOverviewModalResult,
+} from './AccountOverviewModalContext'
 
 export type AccountOverviewProps = {
     account: WalletAccount
@@ -34,81 +38,72 @@ export const AccountOverview = ({
 }: AccountOverviewProps) => {
     const styles = useStyles()
     const {
-        portfolioAlgoValue,
-        isPending,
-        period,
-        setPeriod,
-        selectedPoint,
-        scrollingEnabled,
-        preferredCurrency,
-        hasBalance,
-        togglePrivacyMode,
-        handleChartSelectionChange,
         isSendFundsVisible,
-        handleOpenSendFunds,
+        openSendFunds,
         handleCloseSendFunds,
-        handleSwap,
-        handleMore,
-        handleBuyAlgo,
-        handleReceive,
-        handleCopyAddress,
-        handleShowQR,
         isReceiveFundsVisible,
+        openReceiveFunds,
         handleCloseReceiveFunds,
         isAccountOptionsVisible,
+        openAccountOptions,
         handleCloseAccountOptions,
+        scrollingEnabled,
+        onScrollEnabledChange,
     } = useAccountOverview(account)
 
     useEffect(() => {
         onSwipeEnabledChange?.(scrollingEnabled)
     }, [scrollingEnabled, onSwipeEnabledChange])
 
+    const contextValue = useMemo<UseAccountOverviewModalResult>(
+        () => ({
+            account,
+            openSendFunds,
+            openReceiveFunds,
+            openAccountOptions,
+            onScrollEnabledChange,
+        }),
+        [
+            account,
+            openSendFunds,
+            openReceiveFunds,
+            openAccountOptions,
+            onScrollEnabledChange,
+        ],
+    )
+
     return (
-        <PWView style={styles.container}>
-            <AccountAssetList
-                account={account}
-                scrollEnabled={scrollingEnabled}
-                header={
-                    <AccountOverviewHeader
-                        account={account}
-                        hasBalance={hasBalance}
-                        portfolioAlgoValue={portfolioAlgoValue}
-                        isPending={isPending}
-                        period={period}
-                        setPeriod={setPeriod}
-                        selectedPoint={selectedPoint}
-                        preferredCurrency={preferredCurrency}
-                        togglePrivacyMode={togglePrivacyMode}
-                        handleChartSelectionChange={handleChartSelectionChange}
-                        handleSwap={handleSwap}
-                        handleOpenSendFunds={handleOpenSendFunds}
-                        handleMore={handleMore}
-                        handleBuyAlgo={handleBuyAlgo}
-                        handleReceive={handleReceive}
-                        handleCopyAddress={handleCopyAddress}
-                        handleShowQR={handleShowQR}
-                        chartVisible={chartVisible}
-                    />
-                }
-            />
+        <AccountOverviewModalContext.Provider value={contextValue}>
+            <PWView style={styles.container}>
+                <AccountAssetList
+                    account={account}
+                    scrollEnabled={scrollingEnabled}
+                    header={
+                        <AccountOverviewHeader
+                            account={account}
+                            chartVisible={chartVisible}
+                        />
+                    }
+                />
 
-            <SendFundsBottomSheet
-                isVisible={isSendFundsVisible}
-                onClose={handleCloseSendFunds}
-            />
+                <SendFundsBottomSheet
+                    isVisible={isSendFundsVisible}
+                    onClose={handleCloseSendFunds}
+                />
 
-            <ReceiveFundsBottomSheet
-                isVisible={isReceiveFundsVisible}
-                onClose={handleCloseReceiveFunds}
-                account={account}
-            />
+                <ReceiveFundsBottomSheet
+                    isVisible={isReceiveFundsVisible}
+                    onClose={handleCloseReceiveFunds}
+                    account={account}
+                />
 
-            <AccountOptionsBottomSheet
-                isVisible={isAccountOptionsVisible}
-                onClose={handleCloseAccountOptions}
-                onShowAddress={handleReceive}
-                account={account}
-            />
-        </PWView>
+                <AccountOptionsBottomSheet
+                    isVisible={isAccountOptionsVisible}
+                    onClose={handleCloseAccountOptions}
+                    onShowAddress={openReceiveFunds}
+                    account={account}
+                />
+            </PWView>
+        </AccountOverviewModalContext.Provider>
     )
 }

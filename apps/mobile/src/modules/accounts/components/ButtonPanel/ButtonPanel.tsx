@@ -14,22 +14,13 @@ import { useStyles } from './styles'
 import { PWView } from '@components/core'
 import { RoundButton } from '@components/RoundButton'
 import { useLanguage } from '@hooks/useLanguage'
+import { useButtonPanel } from './useButtonPanel'
 
-export type ButtonPanelProps = {
-    onSwap: () => void
-    onSend: () => void
-    onReceive: () => void
-    onMore: () => void
-}
-
-export const ButtonPanel = ({
-    onSwap,
-    onSend,
-    onReceive,
-    onMore,
-}: ButtonPanelProps) => {
+export const ButtonPanel = () => {
     const themeStyle = useStyles()
     const { t } = useLanguage()
+    const { handleSwap, handleSend, handleReceive, handleMore } =
+        useButtonPanel()
 
     return (
         <PWView
@@ -40,28 +31,28 @@ export const ButtonPanel = ({
                 title={t('account_details.button_panel.swap')}
                 icon='swap'
                 variant='primary'
-                onPress={onSwap}
+                onPress={handleSwap}
                 testID='swap_button'
             />
             <RoundButton
                 title={t('account_details.button_panel.send')}
                 icon='outflow'
                 variant='secondary'
-                onPress={onSend}
+                onPress={handleSend}
                 testID='send_button'
             />
             <RoundButton
                 title={t('account_details.button_panel.receive')}
                 icon='inflow'
                 variant='secondary'
-                onPress={onReceive}
+                onPress={handleReceive}
                 testID='receive_button'
             />
             <RoundButton
                 title={t('account_details.button_panel.more')}
                 icon='ellipsis'
                 variant='secondary'
-                onPress={onMore}
+                onPress={handleMore}
                 testID='more_button'
             />
         </PWView>

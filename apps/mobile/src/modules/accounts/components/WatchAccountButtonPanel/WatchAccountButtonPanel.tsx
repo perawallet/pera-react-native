@@ -14,20 +14,13 @@ import { useStyles } from './styles'
 import { PWView } from '@components/core'
 import { RoundButton } from '@components/RoundButton'
 import { useLanguage } from '@hooks/useLanguage'
+import { useWatchAccountButtonPanel } from './useWatchAccountButtonPanel'
 
-export type WatchAccountButtonPanelProps = {
-    onCopyAddress: () => void
-    onShowQR: () => void
-    onMore: () => void
-}
-
-export const WatchAccountButtonPanel = ({
-    onCopyAddress,
-    onShowQR,
-    onMore,
-}: WatchAccountButtonPanelProps) => {
+export const WatchAccountButtonPanel = () => {
     const themeStyle = useStyles()
     const { t } = useLanguage()
+    const { handleCopyAddress, handleShowQR, handleMore } =
+        useWatchAccountButtonPanel()
 
     return (
         <PWView style={themeStyle.container}>
@@ -35,21 +28,21 @@ export const WatchAccountButtonPanel = ({
                 title={t('account_details.watch_button_panel.copy_address')}
                 icon='copy'
                 variant='primary'
-                onPress={onCopyAddress}
+                onPress={handleCopyAddress}
                 testID='copy_address_button'
             />
             <RoundButton
                 title={t('account_details.watch_button_panel.show_qr')}
                 icon='qr'
                 variant='secondary'
-                onPress={onShowQR}
+                onPress={handleShowQR}
                 testID='show_qr_button'
             />
             <RoundButton
                 title={t('account_details.watch_button_panel.more')}
                 icon='ellipsis'
                 variant='secondary'
-                onPress={onMore}
+                onPress={handleMore}
                 testID='more_button'
             />
         </PWView>

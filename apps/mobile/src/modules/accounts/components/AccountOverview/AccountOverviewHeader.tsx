@@ -14,7 +14,6 @@ import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import {
     DEFAULT_PRECISION,
     formatDatetime,
-    HistoryPeriod,
 } from '@perawallet/wallet-core-shared'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import Decimal from 'decimal.js'
@@ -23,11 +22,7 @@ import { ButtonPanel } from '../ButtonPanel'
 import { useStyles } from './styles'
 import { WealthTrend } from '@components/WealthTrend'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
-import {
-    AccountBalanceHistoryItem,
-    isWatchAccount,
-    WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { isWatchAccount, WalletAccount } from '@perawallet/wallet-core-accounts'
 
 import { useLanguage } from '@hooks/useLanguage'
 import { NoFundsButtonPanel } from '../NoFundsButtonPanel'
@@ -35,51 +30,29 @@ import { WatchAccountButtonPanel } from '../WatchAccountButtonPanel'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { ExpandablePanel } from '@components/ExpandablePanel'
+import { useAccountOverviewHeader } from './useAccountOverviewHeader'
 
 export type AccountOverviewHeaderProps = {
     account: WalletAccount
-    hasBalance: boolean
-    portfolioAlgoValue: Decimal
-    isPending: boolean
-    period: HistoryPeriod
-    setPeriod: (period: HistoryPeriod) => void
-    selectedPoint: AccountBalanceHistoryItem | null
-    preferredCurrency: string
-    togglePrivacyMode: () => void
-    handleChartSelectionChange: (
-        selected: AccountBalanceHistoryItem | null,
-    ) => void
-    handleSwap: () => void
-    handleOpenSendFunds: () => void
-    handleMore: () => void
-    handleBuyAlgo: () => void
-    handleReceive: () => void
-    handleCopyAddress: () => void
-    handleShowQR: () => void
     chartVisible: boolean
 }
 
 export const AccountOverviewHeader = ({
     account,
-    hasBalance,
-    portfolioAlgoValue,
-    isPending,
-    period,
-    setPeriod,
-    selectedPoint,
-    togglePrivacyMode,
-    handleChartSelectionChange,
-    handleSwap,
-    handleOpenSendFunds,
-    handleMore,
-    handleBuyAlgo,
-    handleReceive,
-    handleCopyAddress,
-    handleShowQR,
     chartVisible,
 }: AccountOverviewHeaderProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const {
+        portfolioAlgoValue,
+        isPending,
+        period,
+        setPeriod,
+        selectedPoint,
+        hasBalance,
+        togglePrivacyMode,
+        handleChartSelectionChange,
+    } = useAccountOverviewHeader(account)
 
     return hasBalance || isPending ? (
         <PWView style={styles.headerContainer}>
@@ -151,29 +124,16 @@ export const AccountOverviewHeader = ({
 
             <ExpandablePanel isExpanded={!isPending}>
                 {isWatchAccount(account) ? (
-                    <WatchAccountButtonPanel
-                        onCopyAddress={handleCopyAddress}
-                        onShowQR={handleShowQR}
-                        onMore={handleMore}
-                    />
+                    <WatchAccountButtonPanel />
                 ) : (
-                    <ButtonPanel
-                        onSwap={handleSwap}
-                        onSend={handleOpenSendFunds}
-                        onReceive={handleReceive}
-                        onMore={handleMore}
-                    />
+                    <ButtonPanel />
                 )}
             </ExpandablePanel>
         </PWView>
     ) : (
         <PWView style={styles.headerContainer}>
             {isWatchAccount(account) ? (
-                <WatchAccountButtonPanel
-                    onCopyAddress={handleCopyAddress}
-                    onShowQR={handleShowQR}
-                    onMore={handleMore}
-                />
+                <WatchAccountButtonPanel />
             ) : (
                 <>
                     <PWView style={styles.noBalanceContainer}>
@@ -190,11 +150,7 @@ export const AccountOverviewHeader = ({
                             {t('account_details.no_balance.get_started')}
                         </PWText>
                     </PWView>
-                    <NoFundsButtonPanel
-                        onBuyAlgo={handleBuyAlgo}
-                        onReceive={handleReceive}
-                        onMore={handleMore}
-                    />
+                    <NoFundsButtonPanel />
                 </>
             )}
         </PWView>

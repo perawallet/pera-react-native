@@ -10,104 +10,39 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
-import Decimal from 'decimal.js'
+import { useCallback, useState } from 'react'
 import {
-    AccountBalanceHistoryItem,
-    useAccountBalancesQuery,
-    usePortfolioTotals,
     useSelectedAccount,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { useSettings } from '@perawallet/wallet-core-settings'
-import { useChartInteraction } from '@hooks/useChartInteraction'
-import { HistoryPeriod } from '@perawallet/wallet-core-shared'
-import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useModalState } from '@hooks/useModalState'
 import { useReceiveFunds } from '@modules/transactions/hooks'
-import { useClipboard } from '@hooks/useClipboard'
-import { useToast } from '@hooks/useToast'
-import { useLanguage } from '@hooks/useLanguage'
 
 export type UseAccountOverviewResult = {
-    portfolioAlgoValue: Decimal
-    portfolioPreferredValue: Decimal
-    isPending: boolean
-    period: HistoryPeriod
-    setPeriod: (period: HistoryPeriod) => void
-    selectedPoint: AccountBalanceHistoryItem | null
-    scrollingEnabled: boolean
-    preferredCurrency: string
-    hasBalance: boolean
-    togglePrivacyMode: () => void
-    handleChartSelectionChange: (
-        selected: AccountBalanceHistoryItem | null,
-    ) => void
     isSendFundsVisible: boolean
-    handleOpenSendFunds: () => void
+    openSendFunds: () => void
     handleCloseSendFunds: () => void
-    handleSwap: () => void
-    handleMore: () => void
-    handleBuyAlgo: () => void
-    handleReceive: () => void
-    handleCopyAddress: () => void
-    handleShowQR: () => void
     isReceiveFundsVisible: boolean
+    openReceiveFunds: () => void
     handleCloseReceiveFunds: () => void
     isAccountOptionsVisible: boolean
+    openAccountOptions: () => void
     handleCloseAccountOptions: () => void
+    scrollingEnabled: boolean
+    onScrollEnabledChange: (enabled: boolean) => void
 }
 
 export const useAccountOverview = (
-    account: WalletAccount,
+    _account: WalletAccount,
 ): UseAccountOverviewResult => {
-    const { preferredCurrency, usdToPreferred } = useCurrency()
-    const { portfolioAlgoValue, accountBalances, isPending } =
-        useAccountBalancesQuery(account ? [account] : [])
-    const { portfolioUsdValue } = usePortfolioTotals(accountBalances)
-    const portfolioPreferredValue = useMemo(
-        () => usdToPreferred(portfolioUsdValue),
-        [usdToPreferred, portfolioUsdValue],
-    )
-    const { period, setPeriod, selectedPoint, setSelectedPoint } =
-        useChartInteraction<AccountBalanceHistoryItem>()
-    const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true)
-    const { privacyMode, setPrivacyMode } = useSettings()
     const selectedAccount = useSelectedAccount()
     const { setSelectedAccount, setCanSelectAccount } = useReceiveFunds()
 
-    const togglePrivacyMode = useCallback(() => {
-        setPrivacyMode(!privacyMode)
-    }, [privacyMode, setPrivacyMode])
-
-    const handleChartSelectionChange = useCallback(
-        (selected: AccountBalanceHistoryItem | null) => {
-            setSelectedPoint(selected)
-
-            if (selected) {
-                setScrollingEnabled(false)
-            } else {
-                setScrollingEnabled(true)
-            }
-        },
-        [setSelectedPoint],
-    )
-
-    const navigation = useAppNavigation()
     const {
         isOpen: isSendFundsVisible,
-        open: handleOpenSendFunds,
+        open: openSendFunds,
         close: handleCloseSendFunds,
     } = useModalState()
-
-    const handleSwap = useCallback(() => {
-        navigation.replace('TabBar', { screen: 'Swap' })
-    }, [navigation])
-
-    const handleBuyAlgo = useCallback(() => {
-        navigation.navigate('TabBar', { screen: 'Fund' })
-    }, [navigation])
 
     const {
         isOpen: isReceiveFundsVisible,
@@ -117,36 +52,11 @@ export const useAccountOverview = (
 
     const {
         isOpen: isAccountOptionsVisible,
-        open: handleOpenAccountOptions,
+        open: openAccountOptions,
         close: handleCloseAccountOptions,
     } = useModalState()
 
-    const handleReceive = useCallback(() => {
-        if (selectedAccount) {
-            setCanSelectAccount(false)
-            setSelectedAccount(selectedAccount)
-        }
-        handleOpenReceiveFunds()
-    }, [selectedAccount, handleOpenReceiveFunds])
-
-    const handleMore = useCallback(() => {
-        handleOpenAccountOptions()
-    }, [handleOpenAccountOptions])
-
-    const { copyToClipboard } = useClipboard()
-    const { showToast } = useToast()
-    const { t } = useLanguage()
-
-    const handleCopyAddress = useCallback(() => {
-        copyToClipboard(account.address)
-        showToast({
-            title: t('account_options.copy_address'),
-            body: '',
-            type: 'success',
-        })
-    }, [copyToClipboard, account.address, showToast, t])
-
-    const handleShowQR = useCallback(() => {
+    const openReceiveFunds = useCallback(() => {
         if (selectedAccount) {
             setCanSelectAccount(false)
             setSelectedAccount(selectedAccount)
@@ -159,30 +69,19 @@ export const useAccountOverview = (
         setSelectedAccount,
     ])
 
+    const [scrollingEnabled, setScrollingEnabled] = useState<boolean>(true)
+
     return {
-        portfolioAlgoValue,
-        portfolioPreferredValue,
-        isPending,
-        period,
-        setPeriod,
-        selectedPoint,
-        scrollingEnabled,
-        preferredCurrency,
-        hasBalance: portfolioAlgoValue.gt(0),
-        togglePrivacyMode,
-        handleChartSelectionChange,
         isSendFundsVisible,
-        handleOpenSendFunds,
+        openSendFunds,
         handleCloseSendFunds,
-        handleSwap,
-        handleMore,
-        handleBuyAlgo,
-        handleReceive,
-        handleCopyAddress,
-        handleShowQR,
         isReceiveFundsVisible,
+        openReceiveFunds,
         handleCloseReceiveFunds,
         isAccountOptionsVisible,
+        openAccountOptions,
         handleCloseAccountOptions,
+        scrollingEnabled,
+        onScrollEnabledChange: setScrollingEnabled,
     }
 }

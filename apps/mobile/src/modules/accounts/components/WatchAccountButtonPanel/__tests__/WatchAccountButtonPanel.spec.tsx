@@ -14,6 +14,22 @@ import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { WatchAccountButtonPanel } from '../WatchAccountButtonPanel'
 
+const { mockHandleCopyAddress, mockHandleShowQR, mockHandleMore } = vi.hoisted(
+    () => ({
+        mockHandleCopyAddress: vi.fn(),
+        mockHandleShowQR: vi.fn(),
+        mockHandleMore: vi.fn(),
+    }),
+)
+
+vi.mock('../useWatchAccountButtonPanel', () => ({
+    useWatchAccountButtonPanel: () => ({
+        handleCopyAddress: mockHandleCopyAddress,
+        handleShowQR: mockHandleShowQR,
+        handleMore: mockHandleMore,
+    }),
+}))
+
 vi.mock('@components/core', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWView: ({ children, style }: any) => <div style={style}>{children}</div>,
@@ -46,13 +62,7 @@ vi.mock('@hooks/useLanguage', () => ({
 
 describe('WatchAccountButtonPanel', () => {
     it('renders all buttons correctly', () => {
-        render(
-            <WatchAccountButtonPanel
-                onCopyAddress={vi.fn()}
-                onShowQR={vi.fn()}
-                onMore={vi.fn()}
-            />,
-        )
+        render(<WatchAccountButtonPanel />)
         expect(
             screen.getByText('account_details.watch_button_panel.copy_address'),
         ).toBeTruthy()
@@ -65,13 +75,7 @@ describe('WatchAccountButtonPanel', () => {
     })
 
     it('does not render send or swap buttons', () => {
-        render(
-            <WatchAccountButtonPanel
-                onCopyAddress={vi.fn()}
-                onShowQR={vi.fn()}
-                onMore={vi.fn()}
-            />,
-        )
+        render(<WatchAccountButtonPanel />)
         expect(() =>
             screen.getByText('account_details.button_panel.swap'),
         ).toThrow()
@@ -80,48 +84,27 @@ describe('WatchAccountButtonPanel', () => {
         ).toThrow()
     })
 
-    it('calls onCopyAddress when copy address button is pressed', () => {
-        const onCopyAddress = vi.fn()
-        render(
-            <WatchAccountButtonPanel
-                onCopyAddress={onCopyAddress}
-                onShowQR={vi.fn()}
-                onMore={vi.fn()}
-            />,
-        )
+    it('calls handleCopyAddress when copy address button is pressed', () => {
+        render(<WatchAccountButtonPanel />)
         fireEvent.click(
             screen.getByText('account_details.watch_button_panel.copy_address'),
         )
-        expect(onCopyAddress).toHaveBeenCalledOnce()
+        expect(mockHandleCopyAddress).toHaveBeenCalledOnce()
     })
 
-    it('calls onShowQR when show QR button is pressed', () => {
-        const onShowQR = vi.fn()
-        render(
-            <WatchAccountButtonPanel
-                onCopyAddress={vi.fn()}
-                onShowQR={onShowQR}
-                onMore={vi.fn()}
-            />,
-        )
+    it('calls handleShowQR when show QR button is pressed', () => {
+        render(<WatchAccountButtonPanel />)
         fireEvent.click(
             screen.getByText('account_details.watch_button_panel.show_qr'),
         )
-        expect(onShowQR).toHaveBeenCalledOnce()
+        expect(mockHandleShowQR).toHaveBeenCalledOnce()
     })
 
-    it('calls onMore when more button is pressed', () => {
-        const onMore = vi.fn()
-        render(
-            <WatchAccountButtonPanel
-                onCopyAddress={vi.fn()}
-                onShowQR={vi.fn()}
-                onMore={onMore}
-            />,
-        )
+    it('calls handleMore when more button is pressed', () => {
+        render(<WatchAccountButtonPanel />)
         fireEvent.click(
             screen.getByText('account_details.watch_button_panel.more'),
         )
-        expect(onMore).toHaveBeenCalledOnce()
+        expect(mockHandleMore).toHaveBeenCalledOnce()
     })
 })

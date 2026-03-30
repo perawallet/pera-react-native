@@ -23,6 +23,7 @@ const { mockShowToast } = vi.hoisted(() => ({ mockShowToast: vi.fn() }))
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
         navigate: mockNavigate,
+        replace: vi.fn(),
     }),
 }))
 
@@ -163,35 +164,54 @@ vi.mock('@components/WealthTrend', () => ({
     WealthTrend: () => null,
 }))
 
-// Mock sub-components to keep test focused
+// Mock sub-components — they now use internal hooks that consume context.
+// We use the real context via useContext so button presses trigger real modal state changes.
 vi.mock('../../ButtonPanel', () => ({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ButtonPanel: (props: any) => (
-        <div>
-            <button onClick={props.onReceive}>Receive</button>
-        </div>
-    ),
+    ButtonPanel: () => <div data-testid='button-panel' />,
 }))
-vi.mock('../../NoFundsButtonPanel', () => ({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    NoFundsButtonPanel: (props: any) => (
-        <div>
-            <button onClick={props.onBuyAlgo}>Buy Algo</button>
-            <button onClick={props.onReceive}>Receive</button>
-            <button onClick={props.onMore}>More</button>
-        </div>
-    ),
-}))
-vi.mock('../../WatchAccountButtonPanel', () => ({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    WatchAccountButtonPanel: (props: any) => (
-        <div>
-            <button onClick={props.onCopyAddress}>Copy Address</button>
-            <button onClick={props.onShowQR}>Show QR</button>
-            <button onClick={props.onMore}>More</button>
-        </div>
-    ),
-}))
+
+vi.mock('../../NoFundsButtonPanel', async () => {
+    const React = await import('react')
+    const { AccountOverviewModalContext } =
+        await import('../AccountOverviewModalContext')
+    return {
+        NoFundsButtonPanel: () => {
+            const context = React.useContext(AccountOverviewModalContext)
+            return (
+                <div>
+                    <button
+                        onClick={() =>
+                            mockNavigate('TabBar', { screen: 'Fund' })
+                        }
+                    >
+                        Buy Algo
+                    </button>
+                    <button onClick={context?.openReceiveFunds}>Receive</button>
+                    <button onClick={context?.openAccountOptions}>More</button>
+                </div>
+            )
+        },
+    }
+})
+
+vi.mock('../../WatchAccountButtonPanel', async () => {
+    const React = await import('react')
+    const { AccountOverviewModalContext } =
+        await import('../AccountOverviewModalContext')
+    return {
+        WatchAccountButtonPanel: () => {
+            const context = React.useContext(AccountOverviewModalContext)
+            return (
+                <div>
+                    <button onClick={vi.fn()}>Copy Address</button>
+                    <button onClick={context?.openReceiveFunds}>Show QR</button>
+                    <button onClick={context?.openAccountOptions}>More</button>
+                </div>
+            )
+        },
+    }
+})
+
 vi.mock('../../AccountAssetList', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     AccountAssetList: ({ header, children }: any) => (
@@ -238,7 +258,6 @@ describe('AccountOverview', () => {
                 chartVisible={true}
             />,
         )
-        // Primary ALGO value and secondary preferred currency value
         expect(screen.getByTestId('currency-display')).toBeTruthy()
         expect(screen.getByTestId('preferred-currency-display')).toBeTruthy()
         expect(screen.getAllByText('100').length).toBeGreaterThanOrEqual(1)
