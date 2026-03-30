@@ -68,6 +68,11 @@ export const configSchema = z.object({
     profilingEnabled: z.boolean(),
     pollingEnabled: z.boolean(),
 
+    mainnetBidaliApiKey: z.string(),
+    testnetBidaliApiKey: z.string(),
+    mainnetBidaliBaseUrl: z.url(),
+    testnetBidaliBaseUrl: z.url(),
+
     arc59: z.object({
         testnet: z.object({
             appId: z.bigint(),
@@ -138,6 +143,11 @@ const productionConfig = {
     profilingEnabled: false,
     pollingEnabled: true,
 
+    mainnetBidaliApiKey: '',
+    testnetBidaliApiKey: '',
+    mainnetBidaliBaseUrl: 'https://commerce.bidali.com/dapp',
+    testnetBidaliBaseUrl: 'https://commerce.staging.bidali.com/dapp',
+
     arc59: {
         testnet: {
             appId: 643020148n,
@@ -192,6 +202,11 @@ export const overrideEnvironmentMap: Partial<Record<keyof Config, string>> = {
     debugEnabled: 'DEBUG_ENABLED',
     profilingEnabled: 'PROFILING_ENABLED',
     pollingEnabled: 'POLLING_ENABLED',
+
+    mainnetBidaliApiKey: 'MAINNET_BIDALI_API_KEY',
+    testnetBidaliApiKey: 'TESTNET_BIDALI_API_KEY',
+    mainnetBidaliBaseUrl: 'MAINNET_BIDALI_BASE_URL',
+    testnetBidaliBaseUrl: 'BIDALI_BASE_URL',
 
     defaultNetwork: 'DEFAULT_NETWORK',
 }

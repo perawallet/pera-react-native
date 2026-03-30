@@ -21,12 +21,14 @@ import { QRScannerView } from '@components/QRScannerView'
 import { useModalState } from '@hooks/useModalState'
 import { useLanguage } from '@hooks/useLanguage'
 import { ReceiveFundsBottomSheet } from '@modules/transactions/components/receive-funds/ReceiveFundsBottomSheet'
+import { BidaliBottomSheet } from '@modules/gift-card/components/BidaliBottomSheet'
 
 export const MenuScreen = () => {
     const styles = useStyles()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const scanner = useModalState()
     const receiveFunds = useModalState()
+    const bidali = useModalState()
     const { t } = useLanguage()
 
     const goToSettings = () => {
@@ -88,7 +90,7 @@ export const MenuScreen = () => {
                     titleWeight='h3'
                     leftIcon='gift'
                     rightIcon='chevron-right'
-                    onPress={() => {}}
+                    onPress={bidali.open}
                 />
                 <PanelButton
                     title={t('menu.receive')}
@@ -114,6 +116,10 @@ export const MenuScreen = () => {
             <ReceiveFundsBottomSheet
                 isVisible={receiveFunds.isOpen}
                 onClose={receiveFunds.close}
+            />
+            <BidaliBottomSheet
+                isVisible={bidali.isOpen}
+                onClose={bidali.close}
             />
         </PWView>
     )

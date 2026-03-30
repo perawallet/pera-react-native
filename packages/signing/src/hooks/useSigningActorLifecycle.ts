@@ -123,21 +123,19 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 if (!isTerminal) return
 
                 if (snapshot.matches('completed')) {
-                    setLastCompletedRequestRef.current(snapshot.context.request)
+                    const { request: req } = snapshot.context
+                    ;(req as { approve?: () => Promise<void> }).approve?.()
+                    setLastCompletedRequestRef.current(req)
                 } else if (snapshot.matches('failed')) {
                     const { request: req, error } = snapshot.context
-                    if (req.transport === 'callback') {
-                        ;(req as { error?: (err: Error) => void }).error?.(
-                            error instanceof Error
-                                ? error
-                                : new Error('Signing failed'),
-                        )
-                    }
+                    ;(req as { error?: (err: Error) => void }).error?.(
+                        error instanceof Error
+                            ? error
+                            : new Error('Signing failed'),
+                    )
                 } else if (snapshot.matches('rejected')) {
                     const { request: req } = snapshot.context
-                    if (req.transport === 'callback') {
-                        ;(req as { reject?: () => Promise<void> }).reject?.()
-                    }
+                    ;(req as { reject?: () => Promise<void> }).reject?.()
                 }
 
                 actorRefsMap.current.delete(actor.id)

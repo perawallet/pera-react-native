@@ -37,6 +37,8 @@ describe('network-config', () => {
             algodUrl: config.mainnetAlgodUrl,
             indexerUrl: config.mainnetIndexerUrl,
             explorerUrl: config.mainnetExplorerUrl,
+            bidaliBaseUrl: config.mainnetBidaliBaseUrl,
+            bidaliApiKey: config.mainnetBidaliApiKey,
         })
     })
 
@@ -51,6 +53,8 @@ describe('network-config', () => {
             algodUrl: config.testnetAlgodUrl,
             indexerUrl: config.testnetIndexerUrl,
             explorerUrl: config.testnetExplorerUrl,
+            bidaliBaseUrl: config.testnetBidaliBaseUrl,
+            bidaliApiKey: config.testnetBidaliApiKey,
         })
     })
 })

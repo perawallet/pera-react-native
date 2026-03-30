@@ -60,6 +60,9 @@ export type PWWebViewProps = {
     onClose?: () => void
     onBack?: () => void
     inBottomSheet?: boolean
+    customJavaScript?: string
+    onCustomMessage?: (data: unknown) => void
+    webviewRef?: React.RefObject<WebView | null>
 } & WebViewProps
 
 const updateTheme = (mode: 'light' | 'dark') => {
@@ -76,11 +79,15 @@ export const PWWebView = (props: PWWebViewProps) => {
         showControls = false,
         onClose,
         onBack,
+        customJavaScript,
+        onCustomMessage,
+        webviewRef,
         ...rest
     } = props
     const { theme } = useTheme()
     const removeWebView = useWebViewStore(state => state.removeWebView)
-    const webview = useRef<WebView>(null)
+    const internalRef = useRef<WebView>(null)
+    const webview = webviewRef ?? internalRef
     const { showToast } = useToast()
     const [title, setTitle] = useState('')
     const [navigationState, setNavigationState] = useState<WebViewNativeEvent>()
@@ -125,31 +132,35 @@ export const PWWebView = (props: PWWebViewProps) => {
 
     const handleEvent = useCallback(
         (event: WebViewMessageEvent) => {
+            const dataString = event.nativeEvent.data
+            if (!dataString) {
+                return
+            }
+
+            let data: unknown
+            try {
+                data = JSON.parse(dataString)
+            } catch {
+                return
+            }
+
+            if (onCustomMessage) {
+                onCustomMessage(data)
+                return
+            }
+
             if (!enablePeraConnect) {
                 return
             }
 
-            const dataString = event.nativeEvent.data
-            if (!dataString) {
-                showToast(
-                    {
-                        title: 'Invalid message received',
-                        body: `Pera Wallet mobile interface received an invalid event`,
-                        type: 'error',
-                    },
-                    {
-                        notifier: bottomSheetNotifier.current ?? undefined,
-                    },
-                )
-            }
-
-            const data = JSON.parse(dataString)
             logger.debug('WebView: Received onMessage event', {
                 data,
             })
-            mobileInterface.handleMessage(data)
+            mobileInterface.handleMessage(
+                data as Parameters<typeof mobileInterface.handleMessage>[0],
+            )
         },
-        [showToast, mobileInterface],
+        [onCustomMessage, enablePeraConnect, mobileInterface],
     )
 
     const navigationStateChange = useCallback(
@@ -216,10 +227,14 @@ export const PWWebView = (props: PWWebViewProps) => {
             js += peraMobileInterfaceJS
         }
 
+        if (customJavaScript) {
+            js += customJavaScript
+        }
+
         js += updateTheme(theme.mode)
 
         return js
-    }, [enablePeraConnect, theme.mode])
+    }, [enablePeraConnect, customJavaScript, theme.mode])
 
     const renderWebView = useCallback(() => {
         return (

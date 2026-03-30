@@ -377,7 +377,7 @@ describe('useSigningRequest', () => {
             expect(mockReject).toHaveBeenCalledTimes(1)
         })
 
-        test('does not call reject callback when actor reaches rejected state with non-callback transport', () => {
+        test('calls reject callback when actor reaches rejected state with algod transport', () => {
             const actor = makeMockActor('tx-1')
             vi.mocked(createSigningMachine).mockReturnValue(actor as any)
 
@@ -395,7 +395,7 @@ describe('useSigningRequest', () => {
                 actor.simulateDone('rejected', request)
             })
 
-            expect(mockReject).not.toHaveBeenCalled()
+            expect(mockReject).toHaveBeenCalledTimes(1)
         })
 
         test('sets lastCompletedRequest when actor reaches completed state', () => {
