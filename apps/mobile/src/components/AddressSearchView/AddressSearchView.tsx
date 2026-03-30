@@ -124,6 +124,7 @@ export const AddressSearchView = ({
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
                 ListEmptyComponent={emptyComponent}
+                style={styles.list}
                 contentContainerStyle={styles.contentContainer}
             />
         </PWView>
