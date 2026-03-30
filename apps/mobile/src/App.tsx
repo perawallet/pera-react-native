@@ -20,7 +20,11 @@ import {
     algorandSafeQuerySerialize,
     algorandSafeQueryParse,
 } from '@perawallet/wallet-core-blockchain'
-import { initializeDatabase } from '@perawallet/wallet-core-database'
+import {
+    initializeDatabase,
+    getDatabase,
+} from '@perawallet/wallet-core-database'
+import { seedAlgoAsset } from '@perawallet/wallet-core-assets'
 import { initializeSyncService } from '@perawallet/wallet-core-sync'
 import { createCrashReportingErrorReporter } from '@perawallet/wallet-extension-platform'
 import {
@@ -77,6 +81,7 @@ const AppContent = () => {
                 setFcmToken(token ?? null)
 
                 await initializeDatabase(provider.database)
+                await seedAlgoAsset(getDatabase())
 
                 initializeSyncService({ queryClient })
 

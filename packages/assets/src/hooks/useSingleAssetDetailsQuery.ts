@@ -66,14 +66,15 @@ export const useSingleAssetDetailsQuery = (assetId: string) => {
     return useQuery<PeraAsset, Error>({
         queryKey: getAssetDetailsQueryKey(assetId),
         queryFn: async (): Promise<PeraAsset> => {
-            if (assetId === ALGO_ASSET_ID) {
-                return ALGO_ASSET
-            }
-
             // Try DB first (data synced by sync service)
             const dbAsset = await getAssetById({ assetId, network })
             if (dbAsset !== null) {
                 return dbAsset
+            }
+
+            // ALGO is seeded at startup — if not in DB yet, return in-memory constant
+            if (assetId === ALGO_ASSET_ID) {
+                return ALGO_ASSET
             }
 
             // Fallback to API for assets not in DB (e.g., non-held assets)

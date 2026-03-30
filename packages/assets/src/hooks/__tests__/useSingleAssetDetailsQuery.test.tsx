@@ -62,7 +62,16 @@ describe('useSingleAssetDetailsQuery', () => {
     })
 
     describe('useSingleAssetDetailsQuery hook', () => {
-        it('returns ALGO asset details when asset_id is ALGO_ASSET_ID', async () => {
+        it('returns ALGO asset details from DB when asset_id is ALGO_ASSET_ID', async () => {
+            mocks.getAssetById.mockResolvedValue({
+                assetId: ALGO_ASSET_ID,
+                name: 'Algo',
+                unitName: 'ALGO',
+                decimals: 6,
+                totalSupply: Decimal('10000000000000000000'),
+                creator: { address: '' },
+            })
+
             const { result } = renderHook(
                 () => useSingleAssetDetailsQuery(ALGO_ASSET_ID),
                 {
@@ -78,7 +87,10 @@ describe('useSingleAssetDetailsQuery', () => {
                     name: 'Algo',
                 }),
             )
-            expect(mocks.getAssetById).not.toHaveBeenCalled()
+            expect(mocks.getAssetById).toHaveBeenCalledWith({
+                assetId: ALGO_ASSET_ID,
+                network: 'mainnet',
+            })
         })
 
         it('reads asset from DB when available', async () => {

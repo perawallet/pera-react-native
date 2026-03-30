@@ -45,6 +45,7 @@ export const useAssetsQuery = (ids: string[]): UseAssetsQueryResult => {
 
     return useMemo(() => {
         const assets: Map<string, PeraAsset> = new Map()
+
         query.data?.forEach(asset => {
             assets.set(asset.assetId, asset)
         })
@@ -57,6 +58,7 @@ export const useAssetsQuery = (ids: string[]): UseAssetsQueryResult => {
             isError: query.isError,
         }
     }, [
+        stableIds,
         query.data,
         query.isPending,
         query.isFetched,
