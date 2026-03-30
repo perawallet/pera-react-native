@@ -24,6 +24,7 @@ import {
     getAssetsByIds,
     upsertAssetPrices,
     getAssetPricesByIds,
+    updateAssetPeraMetadata,
 } from '../repository'
 
 describe('asset repository', () => {
@@ -201,6 +202,147 @@ describe('asset repository', () => {
             })
 
             expect(result).toHaveLength(0)
+        })
+    })
+
+    describe('updateAssetPeraMetadata', () => {
+        it('updates specific metadata fields without overwriting others', async () => {
+            await upsertAssets({
+                db,
+                items: [
+                    makeAsset({
+                        peraMetadata: {
+                            isDeleted: false,
+                            verificationTier: 'verified',
+                            isFavorited: false,
+                            isPriceAlertEnabled: false,
+                            logo: 'https://logo.png',
+                        },
+                    }),
+                ],
+                network: 'mainnet',
+            })
+
+            await updateAssetPeraMetadata({
+                db,
+                assetId: '31566704',
+                network: 'mainnet',
+                updates: { isFavorited: true },
+            })
+
+            const result = await getAssetsByIds({
+                db,
+                assetIds: ['31566704'],
+                network: 'mainnet',
+            })
+
+            expect(result[0].peraMetadata?.isFavorited).toBe(true)
+            expect(result[0].peraMetadata?.isPriceAlertEnabled).toBe(false)
+            expect(result[0].peraMetadata?.logo).toBe('https://logo.png')
+        })
+
+        it('updates isPriceAlertEnabled without overwriting isFavorited', async () => {
+            await upsertAssets({
+                db,
+                items: [
+                    makeAsset({
+                        peraMetadata: {
+                            isDeleted: false,
+                            verificationTier: 'verified',
+                            isFavorited: true,
+                            isPriceAlertEnabled: false,
+                        },
+                    }),
+                ],
+                network: 'mainnet',
+            })
+
+            await updateAssetPeraMetadata({
+                db,
+                assetId: '31566704',
+                network: 'mainnet',
+                updates: { isPriceAlertEnabled: true },
+            })
+
+            const result = await getAssetsByIds({
+                db,
+                assetIds: ['31566704'],
+                network: 'mainnet',
+            })
+
+            expect(result[0].peraMetadata?.isFavorited).toBe(true)
+            expect(result[0].peraMetadata?.isPriceAlertEnabled).toBe(true)
+        })
+
+        it('does nothing when asset does not exist', async () => {
+            await updateAssetPeraMetadata({
+                db,
+                assetId: '999999',
+                network: 'mainnet',
+                updates: { isFavorited: true },
+            })
+
+            const result = await getAssetsByIds({
+                db,
+                assetIds: ['999999'],
+                network: 'mainnet',
+            })
+
+            expect(result).toHaveLength(0)
+        })
+    })
+
+    describe('sync preserves device-specific fields', () => {
+        it('preserves isFavorited and isPriceAlertEnabled when sync overwrites metadata', async () => {
+            // Initial sync stores asset with defaults
+            await upsertAssets({
+                db,
+                items: [
+                    makeAsset({
+                        peraMetadata: {
+                            isDeleted: false,
+                            verificationTier: 'verified',
+                            isFavorited: false,
+                            isPriceAlertEnabled: false,
+                        },
+                    }),
+                ],
+                network: 'mainnet',
+            })
+
+            // User toggles favorite and price alert
+            await updateAssetPeraMetadata({
+                db,
+                assetId: '31566704',
+                network: 'mainnet',
+                updates: { isFavorited: true, isPriceAlertEnabled: true },
+            })
+
+            // Sync runs again with defaults (API doesn't return device-specific fields)
+            await upsertAssets({
+                db,
+                items: [
+                    makeAsset({
+                        peraMetadata: {
+                            isDeleted: false,
+                            verificationTier: 'verified',
+                            isFavorited: false,
+                            isPriceAlertEnabled: false,
+                        },
+                    }),
+                ],
+                network: 'mainnet',
+            })
+
+            const result = await getAssetsByIds({
+                db,
+                assetIds: ['31566704'],
+                network: 'mainnet',
+            })
+
+            // Device-specific fields should be preserved from the toggle mutation
+            expect(result[0].peraMetadata?.isFavorited).toBe(true)
+            expect(result[0].peraMetadata?.isPriceAlertEnabled).toBe(true)
         })
     })
 

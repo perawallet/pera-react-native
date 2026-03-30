@@ -14,6 +14,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
     ALGO_ASSET,
     ALGO_ASSET_ID,
+    DEFAULT_ASSET_METADATA,
     DEFAULT_ASSET_VALUES,
     type PeraAsset,
 } from '../models'
@@ -28,7 +29,7 @@ import {
 import { getAssetDetailsQueryKey } from './querykeys'
 import { stripNulls, type Network } from '@perawallet/wallet-core-shared'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { getAssetById } from '../db'
+import { getAssetById, getAssetPeraMetadata } from '../db'
 
 async function fetchAssetFromApis(
     assetId: string,
@@ -57,6 +58,12 @@ async function fetchAssetFromApis(
         ...indexerData,
         ...(peraData ? stripNulls(peraData) : {}),
         ...(publicData ? stripNulls(publicData) : {}),
+        peraMetadata: {
+            ...DEFAULT_ASSET_METADATA,
+            ...(indexerData?.peraMetadata ?? {}),
+            ...(peraData?.peraMetadata ?? {}),
+            ...(publicData?.peraMetadata ?? {}),
+        },
     }
 }
 
@@ -67,7 +74,21 @@ export const useSingleAssetDetailsQuery = (assetId: string) => {
         queryKey: getAssetDetailsQueryKey(assetId),
         queryFn: async (): Promise<PeraAsset> => {
             if (assetId === ALGO_ASSET_ID) {
-                return ALGO_ASSET
+                // Read device-specific metadata (isFavorited, isPriceAlertEnabled)
+                // directly from the pera table — ALGO has no row in the node table
+                // so getAssetById (which joins both) would return null
+                const dbMeta = await getAssetPeraMetadata({
+                    assetId,
+                    network,
+                })
+                return {
+                    ...ALGO_ASSET,
+                    peraMetadata: {
+                        ...DEFAULT_ASSET_METADATA,
+                        ...ALGO_ASSET.peraMetadata,
+                        ...(dbMeta ?? {}),
+                    },
+                }
             }
 
             // Try DB first (data synced by sync service)

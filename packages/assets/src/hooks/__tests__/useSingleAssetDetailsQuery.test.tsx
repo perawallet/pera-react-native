@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
     fetchPublicAssetDetails: vi.fn(),
     useNetwork: vi.fn(),
     getAssetById: vi.fn(),
+    getAssetPeraMetadata: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -33,6 +34,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 vi.mock('../../db', () => ({
     getAssetById: mocks.getAssetById,
+    getAssetPeraMetadata: mocks.getAssetPeraMetadata,
 }))
 
 vi.mock('../../api', async importOriginal => {
@@ -52,6 +54,7 @@ describe('useSingleAssetDetailsQuery', () => {
         vi.clearAllMocks()
         mocks.useNetwork.mockReturnValue({ network: 'mainnet' })
         mocks.getAssetById.mockResolvedValue(null)
+        mocks.getAssetPeraMetadata.mockResolvedValue(null)
         queryClient = new QueryClient({
             defaultOptions: {
                 queries: {
@@ -78,7 +81,10 @@ describe('useSingleAssetDetailsQuery', () => {
                     name: 'Algo',
                 }),
             )
-            expect(mocks.getAssetById).not.toHaveBeenCalled()
+            expect(mocks.getAssetPeraMetadata).toHaveBeenCalledWith({
+                assetId: ALGO_ASSET_ID,
+                network: 'mainnet',
+            })
         })
 
         it('reads asset from DB when available', async () => {
@@ -156,6 +162,66 @@ describe('useSingleAssetDetailsQuery', () => {
             expect(result.current.data?.assetId).toBe('123')
             expect(result.current.data?.name).toBe('Pera Name')
             expect(result.current.data?.unitName).toBe('TEST')
+        })
+
+        it('preserves peraMetadata fields from pera API when public API overwrites peraMetadata', async () => {
+            mocks.getAssetById.mockResolvedValue(null)
+
+            mocks.fetchAssetDetails.mockResolvedValue({
+                asset_id: 123,
+                name: 'Pera Name',
+                fraction_decimals: 6,
+                total: '1000',
+                is_deleted: false,
+                verification_tier: 'verified',
+                creator: { address: 'ADDR' },
+                category: null,
+                is_favorited: true,
+                is_price_alert_enabled: true,
+                logo: 'https://pera-logo.png',
+            })
+
+            mocks.fetchIndexerAssetDetails.mockResolvedValue({
+                asset: {
+                    index: 123,
+                    params: {
+                        decimals: 6,
+                        'unit-name': 'TEST',
+                        name: 'Indexer Name',
+                        total: 1000,
+                        creator: 'ADDR',
+                    },
+                },
+            })
+
+            mocks.fetchPublicAssetDetails.mockResolvedValue({
+                asset_id: 123,
+                name: 'Public Name',
+                fraction_decimals: 6,
+                total_supply: 1000,
+                total_supply_as_str: '1000',
+                is_deleted: false,
+                verification_tier: 'verified',
+                is_collectible: false,
+                logo: 'https://public-logo.png',
+            })
+
+            const { result } = renderHook(
+                () => useSingleAssetDetailsQuery('123'),
+                {
+                    wrapper: createWrapper(queryClient),
+                },
+            )
+
+            await waitFor(() => expect(result.current.isPending).toBe(false))
+
+            expect(result.current.data?.peraMetadata?.isFavorited).toBe(true)
+            expect(result.current.data?.peraMetadata?.isPriceAlertEnabled).toBe(
+                true,
+            )
+            expect(result.current.data?.peraMetadata?.logo).toBe(
+                'https://public-logo.png',
+            )
         })
 
         it('handles loading state', () => {

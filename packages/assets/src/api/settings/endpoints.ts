@@ -11,7 +11,13 @@
  */
 
 import { queryClient, type Network } from '@perawallet/wallet-core-shared'
-import { AssetResponse, assetResponseSchema } from '../assets/schema'
+import { z } from 'zod'
+
+const toggleStatusResponseSchema = z.object({
+    is_enabled: z.boolean(),
+})
+
+export type ToggleStatusResponse = z.infer<typeof toggleStatusResponseSchema>
 
 export const toggleAssetFavorite = async ({
     assetID,
@@ -23,19 +29,16 @@ export const toggleAssetFavorite = async ({
     deviceId: string
     enabled: boolean
     network: Network
-}) => {
-    const response = await queryClient<AssetResponse, unknown>({
+}): Promise<ToggleStatusResponse> => {
+    const response = await queryClient<ToggleStatusResponse, unknown>({
         backend: 'pera',
         network,
         method: 'POST',
         url: `/v2/assets/${assetID}/toggle-favorite/`,
-        data: {
-            device_id: Number(deviceId),
-            enabled,
-        },
+        body: `{"device_id":${deviceId},"enabled":${enabled}}`,
     })
 
-    return assetResponseSchema.parse(response.data)
+    return toggleStatusResponseSchema.parse(response.data)
 }
 
 export const toggleAssetPriceAlert = async ({
@@ -48,17 +51,14 @@ export const toggleAssetPriceAlert = async ({
     deviceId: string
     enabled: boolean
     network: Network
-}) => {
-    const response = await queryClient<AssetResponse, unknown>({
+}): Promise<ToggleStatusResponse> => {
+    const response = await queryClient<ToggleStatusResponse, unknown>({
         backend: 'pera',
         network,
         method: 'POST',
         url: `/v2/assets/${assetID}/toggle-price-alert/`,
-        data: {
-            device_id: Number(deviceId),
-            enabled,
-        },
+        body: `{"device_id":${deviceId},"enabled":${enabled}}`,
     })
 
-    return assetResponseSchema.parse(response.data)
+    return toggleStatusResponseSchema.parse(response.data)
 }

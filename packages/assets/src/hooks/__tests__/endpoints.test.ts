@@ -36,24 +36,8 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
-const mockAssetResponse = {
-    asset_id: 123,
-    name: 'Test Asset',
-    unit_name: 'TST',
-    fraction_decimals: 6,
-    total: '1000000',
-    is_deleted: false,
-    verification_tier: 'verified',
-    creator: { address: 'CREATOR123' },
-    category: null,
-    is_verified: true,
-    explorer_url: null,
-    collectible: null,
-    type: null,
-    labels: null,
-    logo: null,
-    is_favorited: true,
-    is_price_alert_enabled: true,
+const mockToggleResponse = {
+    is_enabled: true,
 }
 
 describe('toggleAssetFavorite', () => {
@@ -61,7 +45,7 @@ describe('toggleAssetFavorite', () => {
         lastQueryClientCall = null
         mockError = null
         mockResponse = {
-            data: mockAssetResponse,
+            data: mockToggleResponse,
             status: 200,
         }
         vi.clearAllMocks()
@@ -79,11 +63,10 @@ describe('toggleAssetFavorite', () => {
         expect(lastQueryClientCall?.url).toBe('/v2/assets/123/toggle-favorite/')
         expect(lastQueryClientCall?.method).toBe('POST')
         expect(lastQueryClientCall?.network).toBe('mainnet')
-        expect(lastQueryClientCall?.data).toEqual({
-            device_id: 12345,
-            enabled: true,
-        })
-        expect(result).toEqual(mockAssetResponse)
+        expect(lastQueryClientCall?.body).toBe(
+            '{"device_id":12345,"enabled":true}',
+        )
+        expect(result).toEqual(mockToggleResponse)
     })
 
     it('calls queryClient with correct parameters when unfavoriting', async () => {
@@ -98,22 +81,23 @@ describe('toggleAssetFavorite', () => {
         expect(lastQueryClientCall?.url).toBe('/v2/assets/456/toggle-favorite/')
         expect(lastQueryClientCall?.method).toBe('POST')
         expect(lastQueryClientCall?.network).toBe('testnet')
-        expect(lastQueryClientCall?.data).toEqual({
-            device_id: 67890,
-            enabled: false,
-        })
-        expect(result).toEqual(mockAssetResponse)
+        expect(lastQueryClientCall?.body).toBe(
+            '{"device_id":67890,"enabled":false}',
+        )
+        expect(result).toEqual(mockToggleResponse)
     })
 
-    it('converts deviceId string to number', async () => {
+    it('preserves large device ID precision', async () => {
         await toggleAssetFavorite({
             assetID: '789',
-            deviceId: '999',
+            deviceId: '3721650761318318592',
             enabled: true,
             network: Networks.mainnet,
         })
 
-        expect(lastQueryClientCall?.data?.device_id).toBe(999)
+        expect(lastQueryClientCall?.body).toBe(
+            '{"device_id":3721650761318318592,"enabled":true}',
+        )
     })
 
     it('throws error when API fails', async () => {
@@ -146,7 +130,7 @@ describe('toggleAssetPriceAlert', () => {
         lastQueryClientCall = null
         mockError = null
         mockResponse = {
-            data: mockAssetResponse,
+            data: mockToggleResponse,
             status: 200,
         }
         vi.clearAllMocks()
@@ -166,11 +150,10 @@ describe('toggleAssetPriceAlert', () => {
         )
         expect(lastQueryClientCall?.method).toBe('POST')
         expect(lastQueryClientCall?.network).toBe('mainnet')
-        expect(lastQueryClientCall?.data).toEqual({
-            device_id: 12345,
-            enabled: true,
-        })
-        expect(result).toEqual(mockAssetResponse)
+        expect(lastQueryClientCall?.body).toBe(
+            '{"device_id":12345,"enabled":true}',
+        )
+        expect(result).toEqual(mockToggleResponse)
     })
 
     it('calls queryClient with correct parameters when disabling alerts', async () => {
@@ -187,22 +170,23 @@ describe('toggleAssetPriceAlert', () => {
         )
         expect(lastQueryClientCall?.method).toBe('POST')
         expect(lastQueryClientCall?.network).toBe('testnet')
-        expect(lastQueryClientCall?.data).toEqual({
-            device_id: 67890,
-            enabled: false,
-        })
-        expect(result).toEqual(mockAssetResponse)
+        expect(lastQueryClientCall?.body).toBe(
+            '{"device_id":67890,"enabled":false}',
+        )
+        expect(result).toEqual(mockToggleResponse)
     })
 
-    it('converts deviceId string to number', async () => {
+    it('preserves large device ID precision', async () => {
         await toggleAssetPriceAlert({
             assetID: '789',
-            deviceId: '999',
+            deviceId: '3721650761318318592',
             enabled: true,
             network: Networks.mainnet,
         })
 
-        expect(lastQueryClientCall?.data?.device_id).toBe(999)
+        expect(lastQueryClientCall?.body).toBe(
+            '{"device_id":3721650761318318592,"enabled":true}',
+        )
     })
 
     it('throws error when API fails', async () => {

@@ -44,7 +44,7 @@ const updateQueryHeaders = () => {
     const deviceInfo = getProvider().deviceInfo
     const headers = new Map<string, string>()
     headers.set('App-Name', deviceInfo.getAppName())
-    headers.set('App-Package-Name', deviceInfo.getAppId())
+    headers.set('App-Package-Name', deviceInfo.getAppPackage())
     headers.set('App-Version', deviceInfo.getAppVersion())
     headers.set('Client-Type', deviceInfo.getDevicePlatform())
     headers.set('Device-Version', deviceInfo.getDeviceLocale())

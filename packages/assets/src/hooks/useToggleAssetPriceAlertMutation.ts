@@ -13,8 +13,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toggleAssetPriceAlert } from '../api'
 import { getAssetDetailsQueryKey } from './querykeys'
-import { type Network } from '@perawallet/wallet-core-shared'
-import { AssetResponse } from '../api/assets/schema'
+import { type Network, logger } from '@perawallet/wallet-core-shared'
+import { type ToggleStatusResponse } from '../api/settings/endpoints'
+import { type PeraAsset, DEFAULT_ASSET_METADATA } from '../models'
+import { updateAssetPeraMetadata } from '../db'
 
 type UseToggleAssetPriceAlertMutationParams = {
     assetID: string
@@ -38,14 +40,53 @@ export const useToggleAssetPriceAlertMutation =
         const queryClient = useQueryClient()
 
         const mutation = useMutation<
-            AssetResponse,
+            ToggleStatusResponse,
             Error,
-            UseToggleAssetPriceAlertMutationParams
+            UseToggleAssetPriceAlertMutationParams,
+            { previousAsset: PeraAsset | undefined }
         >({
             mutationFn: toggleAssetPriceAlert,
-            onSuccess: data => {
-                queryClient.invalidateQueries({
-                    queryKey: getAssetDetailsQueryKey(`${data.asset_id}`),
+            throwOnError: false,
+            onMutate: async variables => {
+                const queryKey = getAssetDetailsQueryKey(variables.assetID)
+                await queryClient.cancelQueries({ queryKey })
+
+                const previousAsset =
+                    queryClient.getQueryData<PeraAsset>(queryKey)
+
+                queryClient.setQueryData<PeraAsset>(queryKey, old => {
+                    if (!old) return old
+                    return {
+                        ...old,
+                        peraMetadata: {
+                            ...DEFAULT_ASSET_METADATA,
+                            ...old.peraMetadata,
+                            isPriceAlertEnabled: variables.enabled,
+                        },
+                    }
+                })
+
+                return { previousAsset }
+            },
+            onError: (error, variables, context) => {
+                if (context?.previousAsset) {
+                    queryClient.setQueryData(
+                        getAssetDetailsQueryKey(variables.assetID),
+                        context.previousAsset,
+                    )
+                }
+                logger.error('Failed to toggle asset price alert', {
+                    source: 'useToggleAssetPriceAlertMutation',
+                    error,
+                })
+            },
+            onSuccess: (_data, variables) => {
+                void updateAssetPeraMetadata({
+                    assetId: variables.assetID,
+                    network: variables.network,
+                    updates: {
+                        isPriceAlertEnabled: variables.enabled,
+                    },
                 })
             },
         })

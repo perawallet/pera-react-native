@@ -22,24 +22,12 @@ vi.mock('../../api', () => ({
     toggleAssetPriceAlert: vi.fn(),
 }))
 
-const mockAssetResponse = {
-    asset_id: 123,
-    name: 'Test Asset',
-    unit_name: 'TST',
-    fraction_decimals: 6,
-    total: '1000000',
-    is_deleted: false,
-    verification_tier: 'verified',
-    creator: { address: 'CREATOR123' },
-    category: null,
-    is_verified: true,
-    explorer_url: null,
-    collectible: null,
-    type: null,
-    labels: null,
-    logo: null,
-    is_favorited: false,
-    is_price_alert_enabled: true,
+vi.mock('../../db', () => ({
+    updateAssetPeraMetadata: vi.fn(),
+}))
+
+const mockToggleResponse = {
+    is_enabled: true,
 }
 
 describe('useToggleAssetPriceAlertMutation', () => {
@@ -60,7 +48,7 @@ describe('useToggleAssetPriceAlertMutation', () => {
     })
 
     it('calls toggleAssetPriceAlert with correct parameters when enabling', async () => {
-        vi.mocked(toggleAssetPriceAlert).mockResolvedValue(mockAssetResponse)
+        vi.mocked(toggleAssetPriceAlert).mockResolvedValue(mockToggleResponse)
 
         const { result } = renderHook(
             () => useToggleAssetPriceAlertMutation(),
@@ -92,7 +80,7 @@ describe('useToggleAssetPriceAlertMutation', () => {
     })
 
     it('calls toggleAssetPriceAlert with correct parameters when disabling', async () => {
-        vi.mocked(toggleAssetPriceAlert).mockResolvedValue(mockAssetResponse)
+        vi.mocked(toggleAssetPriceAlert).mockResolvedValue(mockToggleResponse)
 
         const { result } = renderHook(
             () => useToggleAssetPriceAlertMutation(),
@@ -149,8 +137,8 @@ describe('useToggleAssetPriceAlertMutation', () => {
     })
 
     it('returns isLoading true while mutation is in progress', async () => {
-        let resolvePromise: (value: typeof mockAssetResponse) => void
-        const promise = new Promise<typeof mockAssetResponse>(resolve => {
+        let resolvePromise: (value: typeof mockToggleResponse) => void
+        const promise = new Promise<typeof mockToggleResponse>(resolve => {
             resolvePromise = resolve
         })
         vi.mocked(toggleAssetPriceAlert).mockReturnValue(promise)
@@ -175,7 +163,7 @@ describe('useToggleAssetPriceAlertMutation', () => {
             expect(result.current.isLoading).toBe(true)
         })
 
-        resolvePromise!(mockAssetResponse)
+        resolvePromise!(mockToggleResponse)
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true)
@@ -184,10 +172,23 @@ describe('useToggleAssetPriceAlertMutation', () => {
         expect(result.current.isLoading).toBe(false)
     })
 
-    it('invalidates asset details query on success', async () => {
-        vi.mocked(toggleAssetPriceAlert).mockResolvedValue(mockAssetResponse)
+    it('optimistically updates query cache when toggling price alert', async () => {
+        vi.mocked(toggleAssetPriceAlert).mockResolvedValue(mockToggleResponse)
 
-        const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries')
+        const existingAsset = {
+            assetId: '123',
+            decimals: 6,
+            creator: { address: 'CREATOR123' },
+            totalSupply: 1000000,
+            peraMetadata: {
+                isDeleted: false,
+                verificationTier: 'verified' as const,
+                isPriceAlertEnabled: false,
+                isFavorited: true,
+            },
+        }
+
+        queryClient.setQueryData(getAssetDetailsQueryKey('123'), existingAsset)
 
         const { result } = renderHook(
             () => useToggleAssetPriceAlertMutation(),
@@ -207,9 +208,57 @@ describe('useToggleAssetPriceAlertMutation', () => {
             expect(result.current.isSuccess).toBe(true)
         })
 
-        expect(invalidateQueriesSpy).toHaveBeenCalledWith({
-            queryKey: getAssetDetailsQueryKey('123'),
+        const cached = queryClient.getQueryData(
+            getAssetDetailsQueryKey('123'),
+        ) as typeof existingAsset
+
+        expect(cached.peraMetadata.isPriceAlertEnabled).toBe(true)
+        expect(cached.peraMetadata.isFavorited).toBe(true)
+    })
+
+    it('reverts query cache on error', async () => {
+        vi.mocked(toggleAssetPriceAlert).mockRejectedValue(
+            new Error('Not found'),
+        )
+
+        const existingAsset = {
+            assetId: '123',
+            decimals: 6,
+            creator: { address: 'CREATOR123' },
+            totalSupply: 1000000,
+            peraMetadata: {
+                isDeleted: false,
+                verificationTier: 'verified' as const,
+                isPriceAlertEnabled: false,
+                isFavorited: true,
+            },
+        }
+
+        queryClient.setQueryData(getAssetDetailsQueryKey('123'), existingAsset)
+
+        const { result } = renderHook(
+            () => useToggleAssetPriceAlertMutation(),
+            {
+                wrapper: createWrapper(queryClient),
+            },
+        )
+
+        result.current.toggleAssetPriceAlert({
+            assetID: '123',
+            deviceId: 'device-123',
+            enabled: true,
+            network: 'mainnet' as const,
         })
+
+        await waitFor(() => {
+            expect(result.current.isError).toBe(true)
+        })
+
+        const cached = queryClient.getQueryData(
+            getAssetDetailsQueryKey('123'),
+        ) as typeof existingAsset
+
+        expect(cached.peraMetadata.isPriceAlertEnabled).toBe(false)
     })
 
     it('returns correct state when mutation is idle', () => {
