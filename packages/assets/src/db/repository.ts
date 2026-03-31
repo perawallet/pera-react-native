@@ -13,7 +13,11 @@
 import { eq, and, inArray } from 'drizzle-orm'
 import Decimal from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
-import type { PeraAsset, PeraAssetMetadata } from '../models'
+import {
+    DEFAULT_ASSET_METADATA,
+    type PeraAsset,
+    type PeraAssetMetadata,
+} from '../models'
 import { AssetsNodeSchema, AssetsPeraSchema, AssetPricesSchema } from './schema'
 
 function fromDb(row: {
@@ -105,9 +109,48 @@ export async function upsertPeraAssets({
     if (items.length === 0) return
 
     const now = Date.now()
+    const decimalIds = items.map(i => new Decimal(i.assetId))
+
+    // Read existing metadata to preserve device-specific fields (isFavorited, isPriceAlertEnabled)
+    // that are only set by toggle mutations and not returned by the sync API
+    const existingRows = await db
+        .select({
+            assetId: AssetsPeraSchema.assetId,
+            peraMetadataJson: AssetsPeraSchema.peraMetadataJson,
+        })
+        .from(AssetsPeraSchema)
+        .where(
+            and(
+                inArray(AssetsPeraSchema.assetId, decimalIds),
+                eq(AssetsPeraSchema.network, network),
+            ),
+        )
+        .all()
+
+    const existingMetaMap = new Map<string, PeraAssetMetadata>()
+    for (const row of existingRows) {
+        if (row.peraMetadataJson) {
+            existingMetaMap.set(
+                row.assetId.toString(),
+                JSON.parse(row.peraMetadataJson) as PeraAssetMetadata,
+            )
+        }
+    }
 
     for (const item of items) {
         const meta = item.peraMetadata
+        const existing = existingMetaMap.get(item.assetId)
+
+        const mergedMeta = meta
+            ? {
+                  ...meta,
+                  isFavorited: existing?.isFavorited ?? meta.isFavorited,
+                  isPriceAlertEnabled:
+                      existing?.isPriceAlertEnabled ?? meta.isPriceAlertEnabled,
+              }
+            : undefined
+
+        const metaJson = mergedMeta ? JSON.stringify(mergedMeta) : null
 
         await db
             .insert(AssetsPeraSchema)
@@ -117,7 +160,7 @@ export async function upsertPeraAssets({
                 verificationTier: meta?.verificationTier ?? 'unverified',
                 isDeleted: meta?.isDeleted ?? false,
                 assetType: meta?.type ?? null,
-                peraMetadataJson: meta ? JSON.stringify(meta) : null,
+                peraMetadataJson: metaJson,
                 updatedAt: now,
             })
             .onConflictDoUpdate({
@@ -126,7 +169,7 @@ export async function upsertPeraAssets({
                     verificationTier: meta?.verificationTier ?? 'unverified',
                     isDeleted: meta?.isDeleted ?? false,
                     assetType: meta?.type ?? null,
-                    peraMetadataJson: meta ? JSON.stringify(meta) : null,
+                    peraMetadataJson: metaJson,
                     updatedAt: now,
                 },
             })
@@ -208,6 +251,90 @@ export async function getAssetById({
 }: GetAssetByIdParams): Promise<PeraAsset | null> {
     const results = await getAssetsByIds({ db, assetIds: [assetId], network })
     return results[0] ?? null
+}
+
+type GetAssetPeraMetadataParams = {
+    db?: Database
+    assetId: string
+    network: string
+}
+
+export async function getAssetPeraMetadata({
+    db = getDatabase(),
+    assetId,
+    network,
+}: GetAssetPeraMetadataParams): Promise<PeraAssetMetadata | null> {
+    const rows = await db
+        .select({ peraMetadataJson: AssetsPeraSchema.peraMetadataJson })
+        .from(AssetsPeraSchema)
+        .where(
+            and(
+                eq(AssetsPeraSchema.assetId, new Decimal(assetId)),
+                eq(AssetsPeraSchema.network, network),
+            ),
+        )
+        .all()
+
+    if (!rows[0]?.peraMetadataJson) return null
+    return JSON.parse(rows[0].peraMetadataJson) as PeraAssetMetadata
+}
+
+type UpdateAssetPeraMetadataParams = {
+    db?: Database
+    assetId: string
+    network: string
+    updates: Partial<PeraAssetMetadata>
+}
+
+export async function updateAssetPeraMetadata({
+    db = getDatabase(),
+    assetId,
+    network,
+    updates,
+}: UpdateAssetPeraMetadataParams): Promise<void> {
+    const decimalId = new Decimal(assetId)
+    const now = Date.now()
+
+    const rows = await db
+        .select({ peraMetadataJson: AssetsPeraSchema.peraMetadataJson })
+        .from(AssetsPeraSchema)
+        .where(
+            and(
+                eq(AssetsPeraSchema.assetId, decimalId),
+                eq(AssetsPeraSchema.network, network),
+            ),
+        )
+        .all()
+
+    const existing: PeraAssetMetadata | undefined = rows[0]?.peraMetadataJson
+        ? (JSON.parse(rows[0].peraMetadataJson) as PeraAssetMetadata)
+        : undefined
+
+    const merged: PeraAssetMetadata = {
+        ...DEFAULT_ASSET_METADATA,
+        ...existing,
+        ...updates,
+    }
+    const metaJson = JSON.stringify(merged)
+
+    await db
+        .insert(AssetsPeraSchema)
+        .values({
+            assetId: decimalId,
+            network,
+            verificationTier: merged.verificationTier,
+            isDeleted: merged.isDeleted,
+            peraMetadataJson: metaJson,
+            updatedAt: now,
+        })
+        .onConflictDoUpdate({
+            target: [AssetsPeraSchema.assetId, AssetsPeraSchema.network],
+            set: {
+                peraMetadataJson: metaJson,
+                updatedAt: now,
+            },
+        })
+        .run()
 }
 
 export type AssetPriceRow = {

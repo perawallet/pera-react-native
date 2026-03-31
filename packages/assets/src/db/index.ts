@@ -17,6 +17,8 @@ export {
     upsertPeraAssets,
     getAssetsByIds,
     getAssetById,
+    getAssetPeraMetadata,
+    updateAssetPeraMetadata,
     upsertAssetPrices,
     getAssetPricesByIds,
     type AssetPriceRow,

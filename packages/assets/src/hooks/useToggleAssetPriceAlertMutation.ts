@@ -13,8 +13,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toggleAssetPriceAlert } from '../api'
 import { getAssetDetailsQueryKey } from './querykeys'
-import { type Network } from '@perawallet/wallet-core-shared'
-import { AssetResponse } from '../api/assets/schema'
+import { type Network, logger } from '@perawallet/wallet-core-shared'
+import { type ToggleStatusResponse } from '../api/settings/endpoints'
+import { updateAssetPeraMetadata } from '../db'
 
 type UseToggleAssetPriceAlertMutationParams = {
     assetID: string
@@ -38,14 +39,28 @@ export const useToggleAssetPriceAlertMutation =
         const queryClient = useQueryClient()
 
         const mutation = useMutation<
-            AssetResponse,
+            ToggleStatusResponse,
             Error,
             UseToggleAssetPriceAlertMutationParams
         >({
             mutationFn: toggleAssetPriceAlert,
-            onSuccess: data => {
+            throwOnError: false,
+            onError: error => {
+                logger.error('Failed to toggle asset price alert', {
+                    source: 'useToggleAssetPriceAlertMutation',
+                    error,
+                })
+            },
+            onSuccess: (_data, variables) => {
+                void updateAssetPeraMetadata({
+                    assetId: variables.assetID,
+                    network: variables.network,
+                    updates: {
+                        isPriceAlertEnabled: variables.enabled,
+                    },
+                })
                 queryClient.invalidateQueries({
-                    queryKey: getAssetDetailsQueryKey(`${data.asset_id}`),
+                    queryKey: getAssetDetailsQueryKey(variables.assetID),
                 })
             },
         })

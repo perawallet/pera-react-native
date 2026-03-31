@@ -14,6 +14,7 @@ import { useQuery } from '@tanstack/react-query'
 import {
     ALGO_ASSET,
     ALGO_ASSET_ID,
+    DEFAULT_ASSET_METADATA,
     DEFAULT_ASSET_VALUES,
     type PeraAsset,
 } from '../models'
@@ -57,6 +58,10 @@ async function fetchAssetFromApis(
         ...indexerData,
         ...(peraData ? stripNulls(peraData) : {}),
         ...(publicData ? stripNulls(publicData) : {}),
+        peraMetadata: {
+            ...DEFAULT_ASSET_METADATA,
+            ...(peraData?.peraMetadata ?? {}),
+        },
     }
 }
 

@@ -105,7 +105,9 @@ const createFetchClient = (clients: Map<string, BackendInstances>) => {
             const response = await client(path, {
                 searchParams: requestConfig.params as SearchParamsOption,
                 method: requestConfig.method,
-                json: requestConfig.data,
+                ...(requestConfig.body !== undefined
+                    ? { body: requestConfig.body }
+                    : { json: requestConfig.data }),
                 signal: requestConfig.signal,
                 headers: requestConfig.headers,
             })
@@ -262,23 +264,27 @@ clients.set(Networks.testnet, {
 })
 
 export const updateBackendHeaders = (headers: Map<string, string>) => {
+    const applyHeaders = (instance: KyInstance): KyInstance =>
+        instance.extend({
+            hooks: {
+                beforeRequest: [
+                    setStandardHeaders,
+                    request => {
+                        headers.forEach((v, k) => {
+                            request.headers.set(k, v)
+                        })
+                    },
+                    logRequest,
+                ],
+                afterResponse: [logResponse],
+            },
+        })
+
     clients.forEach((client, network) => {
         clients.set(network, {
-            ...client,
-            algod: client.algod.extend({
-                hooks: {
-                    beforeRequest: [
-                        setStandardHeaders,
-                        request => {
-                            headers.forEach((v, k) => {
-                                request.headers.set(k, v)
-                            })
-                        },
-                        logRequest,
-                    ],
-                    afterResponse: [logResponse],
-                },
-            }),
+            algod: applyHeaders(client.algod),
+            indexer: applyHeaders(client.indexer),
+            pera: applyHeaders(client.pera),
         })
     })
 }

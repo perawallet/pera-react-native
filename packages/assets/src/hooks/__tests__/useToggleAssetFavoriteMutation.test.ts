@@ -22,24 +22,12 @@ vi.mock('../../api', () => ({
     toggleAssetFavorite: vi.fn(),
 }))
 
-const mockAssetResponse = {
-    asset_id: 123,
-    name: 'Test Asset',
-    unit_name: 'TST',
-    fraction_decimals: 6,
-    total: '1000000',
-    is_deleted: false,
-    verification_tier: 'verified',
-    creator: { address: 'CREATOR123' },
-    category: null,
-    is_verified: true,
-    explorer_url: null,
-    collectible: null,
-    type: null,
-    labels: null,
-    logo: null,
-    is_favorited: true,
-    is_price_alert_enabled: false,
+vi.mock('../../db', () => ({
+    updateAssetPeraMetadata: vi.fn(),
+}))
+
+const mockToggleResponse = {
+    is_enabled: true,
 }
 
 describe('useToggleAssetFavoriteMutation', () => {
@@ -60,7 +48,7 @@ describe('useToggleAssetFavoriteMutation', () => {
     })
 
     it('calls toggleAssetFavorite with correct parameters when enabling', async () => {
-        vi.mocked(toggleAssetFavorite).mockResolvedValue(mockAssetResponse)
+        vi.mocked(toggleAssetFavorite).mockResolvedValue(mockToggleResponse)
 
         const { result } = renderHook(() => useToggleAssetFavoriteMutation(), {
             wrapper: createWrapper(queryClient),
@@ -89,7 +77,7 @@ describe('useToggleAssetFavoriteMutation', () => {
     })
 
     it('calls toggleAssetFavorite with correct parameters when disabling', async () => {
-        vi.mocked(toggleAssetFavorite).mockResolvedValue(mockAssetResponse)
+        vi.mocked(toggleAssetFavorite).mockResolvedValue(mockToggleResponse)
 
         const { result } = renderHook(() => useToggleAssetFavoriteMutation(), {
             wrapper: createWrapper(queryClient),
@@ -140,8 +128,8 @@ describe('useToggleAssetFavoriteMutation', () => {
     })
 
     it('returns isLoading true while mutation is in progress', async () => {
-        let resolvePromise: (value: typeof mockAssetResponse) => void
-        const promise = new Promise<typeof mockAssetResponse>(resolve => {
+        let resolvePromise: (value: typeof mockToggleResponse) => void
+        const promise = new Promise<typeof mockToggleResponse>(resolve => {
             resolvePromise = resolve
         })
         vi.mocked(toggleAssetFavorite).mockReturnValue(promise)
@@ -163,7 +151,7 @@ describe('useToggleAssetFavoriteMutation', () => {
             expect(result.current.isLoading).toBe(true)
         })
 
-        resolvePromise!(mockAssetResponse)
+        resolvePromise!(mockToggleResponse)
 
         await waitFor(() => {
             expect(result.current.isSuccess).toBe(true)
@@ -172,10 +160,10 @@ describe('useToggleAssetFavoriteMutation', () => {
         expect(result.current.isLoading).toBe(false)
     })
 
-    it('invalidates asset details query on success', async () => {
-        vi.mocked(toggleAssetFavorite).mockResolvedValue(mockAssetResponse)
+    it('invalidates asset query on success', async () => {
+        vi.mocked(toggleAssetFavorite).mockResolvedValue(mockToggleResponse)
 
-        const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries')
+        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
 
         const { result } = renderHook(() => useToggleAssetFavoriteMutation(), {
             wrapper: createWrapper(queryClient),
@@ -192,7 +180,7 @@ describe('useToggleAssetFavoriteMutation', () => {
             expect(result.current.isSuccess).toBe(true)
         })
 
-        expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+        expect(invalidateSpy).toHaveBeenCalledWith({
             queryKey: getAssetDetailsQueryKey('123'),
         })
     })

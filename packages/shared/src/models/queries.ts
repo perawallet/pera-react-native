@@ -19,6 +19,8 @@ export type RequestConfiguration<TData = unknown> = {
     method: 'GET' | 'PUT' | 'PATCH' | 'POST' | 'DELETE'
     params?: object
     data?: TData | FormData
+    /** Raw JSON string body — bypasses JSON.stringify to preserve large integer precision. */
+    body?: string
     responseType?:
         | 'arraybuffer'
         | 'blob'

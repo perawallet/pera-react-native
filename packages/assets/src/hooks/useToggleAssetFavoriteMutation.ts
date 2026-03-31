@@ -13,8 +13,9 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toggleAssetFavorite } from '../api'
 import { getAssetDetailsQueryKey } from './querykeys'
-import { type Network } from '@perawallet/wallet-core-shared'
-import { AssetResponse } from '../api/assets/schema'
+import { type Network, logger } from '@perawallet/wallet-core-shared'
+import { type ToggleStatusResponse } from '../api/settings/endpoints'
+import { updateAssetPeraMetadata } from '../db'
 
 type UseToggleAssetFavoriteMutationParams = {
     assetID: string
@@ -36,14 +37,28 @@ export const useToggleAssetFavoriteMutation =
         const queryClient = useQueryClient()
 
         const mutation = useMutation<
-            AssetResponse,
+            ToggleStatusResponse,
             Error,
             UseToggleAssetFavoriteMutationParams
         >({
             mutationFn: toggleAssetFavorite,
-            onSuccess: data => {
+            throwOnError: false,
+            onError: error => {
+                logger.error('Failed to toggle asset favorite', {
+                    source: 'useToggleAssetFavoriteMutation',
+                    error,
+                })
+            },
+            onSuccess: (_data, variables) => {
+                void updateAssetPeraMetadata({
+                    assetId: variables.assetID,
+                    network: variables.network,
+                    updates: {
+                        isFavorited: variables.enabled,
+                    },
+                })
                 queryClient.invalidateQueries({
-                    queryKey: getAssetDetailsQueryKey(`${data.asset_id}`),
+                    queryKey: getAssetDetailsQueryKey(variables.assetID),
                 })
             },
         })
