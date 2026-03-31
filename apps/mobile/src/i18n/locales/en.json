@@ -876,7 +876,9 @@
             "dispenser_title": "Algorand Dispenser",
             "node_settings": {
                 "mainnet_label": "Algorand MainNet",
-                "testnet_label": "Algorand TestNet"
+                "testnet_label": "Algorand TestNet",
+                "switch_error_title": "Network Switch Failed",
+                "switch_error_body": "Unable to switch networks. Please try again."
             },
             "debug_webview": "Test Webview API",
             "debug_dapp": "Test Dapp",

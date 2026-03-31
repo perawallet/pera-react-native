@@ -56,6 +56,12 @@ export class SyncService {
         }
     }
 
+    restart(): void {
+        this.stop()
+        this.hasCompletedInitialSync = false
+        this.start()
+    }
+
     isRunning(): boolean {
         return this.running
     }

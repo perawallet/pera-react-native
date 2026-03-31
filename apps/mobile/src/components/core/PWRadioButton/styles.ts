@@ -39,6 +39,9 @@ export const useStyles = makeStyles(theme => {
             height: theme.spacing.md,
             backgroundColor: theme.colors.positive,
         },
+        disabled: {
+            opacity: 0.5,
+        },
         input: {
             paddingHorizontal: theme.spacing.md,
             borderRadius: theme.spacing.sm,

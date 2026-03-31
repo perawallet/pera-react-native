@@ -21,12 +21,14 @@ export type PWRadioButtonProps = {
     onPress: () => void
     title: string
     isSelected: boolean
+    isDisabled?: boolean
     testID?: string
 }
 export const PWRadioButton = ({
     onPress,
     title,
     isSelected,
+    isDisabled = false,
     testID,
 }: PWRadioButtonProps) => {
     const styles = useStyles()
@@ -34,7 +36,8 @@ export const PWRadioButton = ({
     return (
         <PWTouchableOpacity
             onPress={onPress}
-            style={styles.row}
+            disabled={isDisabled}
+            style={[styles.row, isDisabled && styles.disabled]}
             {...getTestProps(testID)}
         >
             <PWText>{title}</PWText>
