@@ -157,7 +157,9 @@ export const AccountAssetList = ({
                                                 )}
                                                 variant='helper'
                                                 paddingStyle='dense'
-                                                onPress={addAssetSheetState.open}
+                                                onPress={
+                                                    addAssetSheetState.open
+                                                }
                                             />
                                         </PWView>
                                     )}

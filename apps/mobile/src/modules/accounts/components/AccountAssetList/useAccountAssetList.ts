@@ -160,7 +160,13 @@ export const useAccountAssetList = ({
             optOutConfirmationState.close()
             setAssetForOptOut(null)
         }
-    }, [assetForOptOut, assets, account.address, optOut, optOutConfirmationState])
+    }, [
+        assetForOptOut,
+        assets,
+        account.address,
+        optOut,
+        optOutConfirmationState,
+    ])
 
     const handleCloseOptOut = useCallback(() => {
         optOutConfirmationState.close()

@@ -124,9 +124,10 @@ describe('useAssetOptInMutation', () => {
     })
 
     it('should call insertAssetHolding and invalidateBalances on success', async () => {
-        const mockInsertAssetHolding = await import(
-            '@perawallet/wallet-core-accounts'
-        ).then(m => m.insertAssetHolding)
+        const mockInsertAssetHolding =
+            await import('@perawallet/wallet-core-accounts').then(
+                m => m.insertAssetHolding,
+            )
 
         const { result } = renderHook(() => useAssetOptInMutation())
 
@@ -146,9 +147,10 @@ describe('useAssetOptInMutation', () => {
 
     it('should not call insertAssetHolding when transaction fails', async () => {
         mockAssetOptIn.mockRejectedValue(new Error('signing rejected'))
-        const mockInsertAssetHolding = await import(
-            '@perawallet/wallet-core-accounts'
-        ).then(m => m.insertAssetHolding)
+        const mockInsertAssetHolding =
+            await import('@perawallet/wallet-core-accounts').then(
+                m => m.insertAssetHolding,
+            )
 
         const { result } = renderHook(() => useAssetOptInMutation())
 
@@ -170,9 +172,10 @@ describe('useAssetOptInMutation', () => {
             minBalance: 100000n,
             assets: [{ assetId: 12345n, amount: 0n }],
         })
-        const mockInsertAssetHolding = await import(
-            '@perawallet/wallet-core-accounts'
-        ).then(m => m.insertAssetHolding)
+        const mockInsertAssetHolding =
+            await import('@perawallet/wallet-core-accounts').then(
+                m => m.insertAssetHolding,
+            )
 
         const { result } = renderHook(() => useAssetOptInMutation())
 

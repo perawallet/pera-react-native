@@ -48,9 +48,7 @@ export const AssetSearchItem = ({
     const verificationIcon =
         VERIFICATION_ICON_MAP[item.verificationTier] ?? null
 
-    const subtitle = [item.unitName, item.assetId]
-        .filter(Boolean)
-        .join(' · ')
+    const subtitle = [item.unitName, item.assetId].filter(Boolean).join(' · ')
 
     return (
         <>

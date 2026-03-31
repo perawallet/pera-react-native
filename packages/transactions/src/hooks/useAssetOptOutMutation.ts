@@ -63,8 +63,7 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
     const { signTransactions } = useTransactionSigner()
     const algokit = useAlgorandClient(signTransactions)
     const { network } = useNetwork()
-    const { invalidate: invalidateBalances } =
-        useAccountBalancesInvalidator()
+    const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<Error | null>(null)
 

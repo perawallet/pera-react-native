@@ -224,16 +224,10 @@ describe('useRemoveAssetsScreen', () => {
     })
 
     it('passes creator address when asset metadata is available', async () => {
-        const { useAssetsQuery } = await import(
-            '@perawallet/wallet-core-assets'
-        )
+        const { useAssetsQuery } =
+            await import('@perawallet/wallet-core-assets')
         vi.mocked(useAssetsQuery).mockReturnValue({
-            data: new Map([
-                [
-                    '123',
-                    { creator: { address: 'CREATOR_ADDR' } },
-                ],
-            ]),
+            data: new Map([['123', { creator: { address: 'CREATOR_ADDR' } }]]),
         } as ReturnType<typeof useAssetsQuery>)
 
         const { result } = renderHook(() => useRemoveAssetsScreen())
@@ -261,14 +255,8 @@ describe('useRemoveAssetsScreen', () => {
         )
         useAssetsQuery.mockReturnValue({
             data: new Map([
-                [
-                    '123',
-                    { creator: { address: 'test-address' } },
-                ],
-                [
-                    '456',
-                    { creator: { address: 'other-creator' } },
-                ],
+                ['123', { creator: { address: 'test-address' } }],
+                ['456', { creator: { address: 'other-creator' } }],
             ]),
         } as unknown as ReturnType<typeof useAssetsQuery>)
 
