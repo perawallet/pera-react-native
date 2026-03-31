@@ -46,6 +46,7 @@ type UseAccountAssetListResult = {
     handleOptOut: (item: AssetWithAccountBalance) => void
     handleConfirmOptOut: () => void
     handleCloseOptOut: () => void
+    addAssetSheetState: ModalState
     handleOpenSort: () => void
     handleOpenFilter: () => void
     handleRemoveAssets: () => void
@@ -176,6 +177,8 @@ export const useAccountAssetList = ({
         filterSheetState.open()
     }, [manageSheetState, filterSheetState])
 
+    const addAssetSheetState = useModalState(false)
+
     const handleRemoveAssets = useCallback(() => {
         manageSheetState.close()
         navigation.navigate('RemoveAssets')
@@ -228,6 +231,7 @@ export const useAccountAssetList = ({
         handleOptOut,
         handleConfirmOptOut,
         handleCloseOptOut,
+        addAssetSheetState,
         handleOpenSort,
         handleOpenFilter,
         handleRemoveAssets,

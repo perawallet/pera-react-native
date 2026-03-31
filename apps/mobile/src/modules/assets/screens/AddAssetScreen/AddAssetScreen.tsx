@@ -41,11 +41,9 @@ export const AddAssetScreen = () => {
                 isOptedIn={optedInAssetIds.has(item.assetId)}
                 isOptingIn={optingInAssetId === item.assetId}
                 onAdd={handleAddAsset}
-                addLabel={t('add_asset.add')}
-                addedLabel={t('add_asset.added')}
             />
         ),
-        [optedInAssetIds, optingInAssetId, handleAddAsset, t],
+        [optedInAssetIds, optingInAssetId, handleAddAsset],
     )
 
     const handleEndReached = useCallback(() => {
@@ -74,7 +72,6 @@ export const AddAssetScreen = () => {
                     data={results}
                     renderItem={renderItem}
                     keyExtractor={item => item.assetId}
-                    contentContainerStyle={styles.listContent}
                     onEndReached={handleEndReached}
                     onEndReachedThreshold={0.5}
                     keyboardDismissMode='on-drag'

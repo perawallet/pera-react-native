@@ -13,12 +13,13 @@
 import React from 'react'
 import { ActivityIndicator } from 'react-native'
 import {
-    PWButton,
+    PWIcon,
     PWImage,
     PWText,
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import type { IconName } from '@components/core'
 import type { AssetSearchItem as AssetSearchItemType } from '@perawallet/wallet-core-assets'
 import { useStyles } from './styles'
 
@@ -27,8 +28,13 @@ type AssetSearchItemProps = {
     isOptedIn: boolean
     isOptingIn: boolean
     onAdd: (assetId: string) => void
-    addLabel: string
-    addedLabel: string
+}
+
+const VERIFICATION_ICON_MAP: Record<string, IconName | null> = {
+    verified: 'assets/verified',
+    trusted: 'assets/trusted',
+    suspicious: 'assets/suspicious',
+    unverified: null,
 }
 
 export const AssetSearchItem = ({
@@ -36,72 +42,83 @@ export const AssetSearchItem = ({
     isOptedIn,
     isOptingIn,
     onAdd,
-    addLabel,
-    addedLabel,
 }: AssetSearchItemProps) => {
-    const styles = useStyles({ isOptedIn })
+    const styles = useStyles()
+
+    const verificationIcon =
+        VERIFICATION_ICON_MAP[item.verificationTier] ?? null
+
+    const subtitle = [item.unitName, item.assetId]
+        .filter(Boolean)
+        .join(' · ')
 
     return (
-        <PWTouchableOpacity
-            style={styles.container}
-            onPress={() => !isOptedIn && !isOptingIn && onAdd(item.assetId)}
-            disabled={isOptedIn || isOptingIn}
-        >
-            <PWView style={styles.iconContainer}>
-                {item.logo ? (
-                    <PWImage
-                        source={{ uri: item.logo }}
-                        style={styles.iconContainer}
-                    />
-                ) : (
+        <>
+            <PWTouchableOpacity
+                style={styles.container}
+                onPress={() => onAdd(item.assetId)}
+                disabled={isOptedIn || isOptingIn}
+            >
+                <PWView style={styles.assetIcon}>
+                    {item.logo ? (
+                        <PWImage
+                            source={{ uri: item.logo }}
+                            style={styles.assetIcon}
+                        />
+                    ) : (
+                        <PWText variant='body'>
+                            {(item.unitName ?? item.name ?? '?')
+                                .charAt(0)
+                                .toUpperCase()}
+                        </PWText>
+                    )}
+                </PWView>
+
+                <PWView style={styles.infoContainer}>
+                    <PWView style={styles.titleRow}>
+                        <PWText
+                            variant='body'
+                            numberOfLines={1}
+                            style={styles.titleText}
+                        >
+                            {item.name ?? `Asset ${item.assetId}`}
+                        </PWText>
+                        {verificationIcon ? (
+                            <PWIcon
+                                name={verificationIcon}
+                                size='xs'
+                                style={styles.verificationIcon}
+                            />
+                        ) : null}
+                    </PWView>
                     <PWText
                         variant='caption'
-                        style={styles.secondaryText}
-                    >
-                        {(item.unitName ?? item.name ?? '?')
-                            .charAt(0)
-                            .toUpperCase()}
-                    </PWText>
-                )}
-            </PWView>
-
-            <PWView style={styles.infoContainer}>
-                <PWView style={styles.nameRow}>
-                    <PWText
-                        variant='body'
                         numberOfLines={1}
+                        style={styles.subtitle}
                     >
-                        {item.name ?? `Asset #${item.assetId}`}
+                        {subtitle}
                     </PWText>
-                    {item.unitName ? (
-                        <PWText
-                            variant='caption'
-                            style={styles.unitName}
-                        >
-                            {item.unitName}
-                        </PWText>
-                    ) : null}
                 </PWView>
-                <PWText
-                    variant='caption'
-                    style={styles.secondaryText}
-                >
-                    ID: {item.assetId}
-                </PWText>
-            </PWView>
 
-            <PWView style={styles.actionContainer}>
-                {isOptingIn ? (
-                    <ActivityIndicator />
-                ) : (
-                    <PWButton
-                        title={isOptedIn ? addedLabel : addLabel}
-                        variant={isOptedIn ? 'secondary' : 'primary'}
-                        onPress={() => onAdd(item.assetId)}
-                        isDisabled={isOptedIn}
-                    />
-                )}
-            </PWView>
-        </PWTouchableOpacity>
+                <PWView style={styles.actionButton}>
+                    {isOptingIn ? (
+                        <ActivityIndicator size='small' />
+                    ) : isOptedIn ? (
+                        <PWIcon
+                            name='check'
+                            size='sm'
+                            variant='positive'
+                        />
+                    ) : (
+                        <PWIcon
+                            name='plus'
+                            size='sm'
+                            variant='primary'
+                        />
+                    )}
+                </PWView>
+            </PWTouchableOpacity>
+            <PWView style={styles.separator} />
+        </>
     )
 }

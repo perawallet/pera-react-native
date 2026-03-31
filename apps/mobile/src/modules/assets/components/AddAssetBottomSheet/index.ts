@@ -10,8 +10,5 @@
  limitations under the License
  */
 
-export type AccountStackParamsList = {
-    AccountDetails?: { playConfetti?: boolean }
-    AssetDetails?: { assetId: string }
-    RemoveAssets?: undefined
-}
+export { AddAssetBottomSheet } from './AddAssetBottomSheet'
+export type { AddAssetBottomSheetProps } from './AddAssetBottomSheet'

@@ -34,6 +34,13 @@
         "done": "Done",
         "hide_zero_balance": "Hide Assets with No Balance"
     },
+    "add_asset": {
+        "title": "Opt-in to an Asset",
+        "search_placeholder": "Search by name or asset ID",
+        "add": "Add",
+        "added": "Added",
+        "no_results": "No assets found"
+    },
     "asset_opt_out": {
         "title": "Remove Asset",
         "description": "Are you sure you want to remove {{assetName}} from {{accountName}}?",

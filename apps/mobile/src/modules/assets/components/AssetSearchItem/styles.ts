@@ -12,21 +12,21 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = {
-    isOptedIn: boolean
-}
+const ICON_SIZE = 40
+const ACTION_SIZE = 36
 
-export const useStyles = makeStyles((theme, { isOptedIn }: StyleProps) => ({
+export const useStyles = makeStyles(theme => ({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: theme.spacing.md,
-        opacity: isOptedIn ? 0.5 : 1,
+        paddingHorizontal: theme.spacing.lg,
+        minHeight: 64,
     },
-    iconContainer: {
-        width: theme.spacing.xl,
-        height: theme.spacing.xl,
-        borderRadius: theme.spacing.xl / 2,
+    assetIcon: {
+        width: ICON_SIZE,
+        height: ICON_SIZE,
+        borderRadius: ICON_SIZE / 2,
         backgroundColor: theme.colors.layerGrayLighter,
         alignItems: 'center',
         justifyContent: 'center',
@@ -36,18 +36,31 @@ export const useStyles = makeStyles((theme, { isOptedIn }: StyleProps) => ({
         flex: 1,
         marginLeft: theme.spacing.sm,
     },
-    nameRow: {
+    titleRow: {
         flexDirection: 'row',
         alignItems: 'center',
     },
-    unitName: {
+    titleText: {
+        flexShrink: 1,
+    },
+    verificationIcon: {
         marginLeft: theme.spacing.xs,
+    },
+    subtitle: {
         color: theme.colors.textGray,
     },
-    secondaryText: {
-        color: theme.colors.textGray,
-    },
-    actionContainer: {
+    actionButton: {
+        width: ACTION_SIZE,
+        height: ACTION_SIZE,
+        borderRadius: ACTION_SIZE / 2,
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: theme.colors.layerGrayLighter,
         marginLeft: theme.spacing.sm,
+    },
+    separator: {
+        height: 1,
+        backgroundColor: theme.colors.layerGrayLighter,
+        marginLeft: ICON_SIZE + theme.spacing.sm + theme.spacing.lg,
     },
 }))

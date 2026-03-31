@@ -20,7 +20,6 @@ import { screenListeners } from '@routes/listeners'
 import { AccountScreen } from '@modules/accounts/screens/AccountScreen'
 import { AssetDetailsScreen } from '@modules/assets/screens/AssetDetailsScreen'
 import { RemoveAssetsScreen } from '@modules/accounts/screens/RemoveAssetsScreen'
-import { AddAssetScreen } from '@modules/assets/screens/AddAssetScreen'
 import { fullScreenLayout, safeAreaLayoutWithTabBar } from '@layouts/index'
 
 import { AccountStackParamsList } from './types'
@@ -56,11 +55,6 @@ export const AccountStackNavigator = () => {
                 name='RemoveAssets'
                 component={RemoveAssetsScreen}
                 options={{ title: 'remove_assets.title' }}
-            />
-            <AccountStack.Screen
-                name='AddAsset'
-                component={AddAssetScreen}
-                options={{ title: 'add_asset.title' }}
             />
         </AccountStack.Navigator>
     )
