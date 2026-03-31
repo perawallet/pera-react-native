@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { openDatabaseAsync, type SQLiteDatabase } from 'expo-sqlite'
+import { openDatabaseAsync, type SQLiteDatabase, type SQLiteBindValue } from 'expo-sqlite'
 import { drizzle } from 'drizzle-orm/sqlite-proxy'
 import type {
     Database,
@@ -22,14 +22,45 @@ class ExpoSQLiteDatabaseDriver implements DatabaseDriver {
     constructor(readonly driver: SQLiteDatabase) {}
 }
 
+/**
+ * expo-sqlite on Android rejects null bind params — the Kotlin bridge throws
+ * "Value is null, expected an Object". Replace each `?` whose value is null
+ * with a literal NULL in the SQL and keep only non-null values in the array.
+ */
+function bindParams(
+    sql: string,
+    params: unknown[],
+): [string, SQLiteBindValue[]] {
+    const bound: SQLiteBindValue[] = []
+    let i = 0
+
+    const safeSql = sql.replace(/\?/g, () => {
+        const v = params[i++]
+        if (v === null || v === undefined) return 'NULL'
+        bound.push(
+            typeof v === 'string' ||
+                typeof v === 'number' ||
+                typeof v === 'boolean' ||
+                v instanceof Uint8Array
+                ? v
+                : String(v),
+        )
+        return '?'
+    })
+
+    return [safeSql, bound]
+}
+
 function createExpoSQLiteProxy(client: SQLiteDatabase): Database {
     return drizzle(async (sql, params, method) => {
+        const [safeSql, safeParams] = bindParams(sql, params)
+
         if (method === 'run') {
-            await client.runAsync(sql, params)
+            await client.runAsync(safeSql, safeParams)
             return { rows: [] }
         }
 
-        const rows = await client.getAllAsync(sql, params)
+        const rows = await client.getAllAsync(safeSql, safeParams)
 
         return {
             rows: rows.map(row =>
