@@ -178,7 +178,7 @@ describe('signingMachine', () => {
         actor.start()
 
         const state = await waitFor(actor, s => s.matches('failed'))
-        expect(state.context.error?.message).toMatch(/not found/i)
+        expect(state.context.error?.message).toMatch(/no signable/i)
     })
 
     it('goes to failed when analyzer throws', async () => {
@@ -420,7 +420,7 @@ describe('signingMachine', () => {
         actor.start()
 
         const state = await waitFor(actor, s => s.matches('failed'))
-        expect(state.context.error?.message).toMatch(/not found/i)
+        expect(state.context.error?.message).toMatch(/no signable/i)
     })
 
     it('signs groups sequentially for a mixed localKey + multisig request', async () => {

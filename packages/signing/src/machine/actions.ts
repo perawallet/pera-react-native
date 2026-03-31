@@ -162,10 +162,10 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
  * positions are preserved in `originalIndices` to allow correct reassembly
  * after signing (see transportActor.mergeSigningResults).
  *
- * For external sources (WalletConnect, webview, deeplink), transactions whose
- * effective signer is not in `allAccounts` are silently skipped. This handles
- * dApps that send mixed groups containing contract-signed transactions alongside
- * user-signed ones (e.g. Folks Finance).
+ * Transactions whose effective signer is not in `allAccounts` are silently
+ * skipped. For local sources this is a no-op (the sender is always known);
+ * for external sources it handles dApps that send mixed groups containing
+ * contract-signed transactions alongside user-signed ones.
  *
  * For arbitrary-data requests, a single group is produced using the first
  * item's signer as the group's signerAddress.
@@ -177,11 +177,7 @@ const buildSignableGroups = (
     const source = buildSourceMetadata(request)
 
     if (isTransactionRequest(request)) {
-        // For external sources, filter out transactions with unknown signers
-        const isExternal = source.type !== 'local'
-        const knownAddresses = isExternal
-            ? new Set(allAccounts.map(a => a.address))
-            : null
+        const knownAddresses = new Set(allAccounts.map(a => a.address))
 
         // Group transactions by sender, preserving original position
         const bySender = new Map<
@@ -191,8 +187,8 @@ const buildSignableGroups = (
         for (const [i, tx] of request.txs.entries()) {
             const addr = request.signerOverrides?.get(i) ?? tx.sender.toString()
 
-            // Skip transactions with unknown signers (external sources only)
-            if (knownAddresses && !knownAddresses.has(addr)) continue
+            // Skip transactions whose signer is not a known account
+            if (!knownAddresses.has(addr)) continue
 
             if (!bySender.has(addr)) {
                 bySender.set(addr, { txs: [], indices: [] })

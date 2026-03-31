@@ -61,12 +61,45 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: vi.fn(),
+    resolveSignableTransactions: vi.fn(
+        (
+            txParams: { signers?: string[] }[],
+            txSenders: string[],
+            signableAddresses: Set<string>,
+        ) => {
+            const indicesToSign: number[] = []
+            const signerOverrides = new Map<number, string>()
+            for (let i = 0; i < txParams.length; i++) {
+                const param = txParams[i]
+                const txSender = txSenders[i]
+                if (param.signers && param.signers.length === 0) continue
+                if (param.signers && param.signers.length > 0) {
+                    const match = param.signers.find(s =>
+                        signableAddresses.has(s),
+                    )
+                    if (match) {
+                        const txsIndex = indicesToSign.length
+                        indicesToSign.push(i)
+                        if (match !== txSender)
+                            signerOverrides.set(txsIndex, match)
+                    }
+                    continue
+                }
+                if (signableAddresses.has(txSender)) indicesToSign.push(i)
+            }
+            return { indicesToSign, signerOverrides }
+        },
+    ),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => [
         { address: 'addr1', name: 'Account 1', type: 'standard' },
     ]),
+    useSigningAccounts: vi.fn(() => [
+        { address: 'addr1', name: 'Account 1', type: 'standard' },
+    ]),
+    canSignWithAccount: vi.fn(() => true),
     getAccountDisplayName: vi.fn((a: any) => a.name || a.address),
     isLedgerAccount: vi.fn(() => false),
 }))

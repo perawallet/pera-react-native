@@ -33,6 +33,7 @@ import {
     type PeraArbitraryDataMessage,
     type PeraArbitraryDataSignResult,
     type TransactionSignRequest,
+    resolveSignableTransactions,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import WalletConnect from '@walletconnect/client'
@@ -44,8 +45,10 @@ import {
 } from '../models'
 import { MAX_DATA_SIGN_REQUESTS } from '../constants'
 import {
+    canSignWithAccount,
     isLedgerAccount,
     useAllAccounts,
+    useSigningAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
@@ -138,7 +141,7 @@ const validateDataSignRequest = (
         const account = accounts.find(
             account => account.address === item.signer,
         )
-        if (!account) {
+        if (!account || !canSignWithAccount(account, accounts)) {
             throw new WalletConnectInvalidSessionError('Invalid signer')
         }
 
@@ -162,6 +165,7 @@ export const useWalletConnectHandlers = () => {
     const { encodeSignedTransactions, decodeTransactions } =
         useTransactionEncoder()
     const accounts = useAllAccounts()
+    const signingAccounts = useSigningAccounts()
 
     //TODO handle ARC-60 sign requests
     const handleSignData = useCallback(
@@ -222,7 +226,7 @@ export const useWalletConnectHandlers = () => {
                 },
             } as ArbitraryDataSignRequest)
         },
-        [connections, addSignRequest],
+        [connections, accounts, addSignRequest],
     )
 
     const handleSignTransaction = useCallback(
@@ -248,38 +252,15 @@ export const useWalletConnectHandlers = () => {
             )
 
             // ARC-0001: determine which transactions this wallet should sign
-            // signers: []        → do not sign (dApp-signed)
-            // signers: [addr]    → sign only if addr is a user account
-            // signers absent     → sign only if tx sender is a user account
-            const userAddresses = new Set(accounts.map(a => a.address))
-            const indicesToSign: number[] = []
-            const signerOverrides = new Map<number, string>()
-
-            for (let i = 0; i < paramOne.length; i++) {
-                const param = paramOne[i]
-                const txSender = allTxnObjects[i].sender.toString()
-
-                if (param.signers && param.signers.length === 0) {
-                    continue
-                }
-
-                if (param.signers && param.signers.length > 0) {
-                    const match = param.signers.find(s => userAddresses.has(s))
-                    if (match) {
-                        const txsIndex = indicesToSign.length
-                        indicesToSign.push(i)
-                        if (match !== txSender) {
-                            signerOverrides.set(txsIndex, match)
-                        }
-                    }
-                    continue
-                }
-
-                // signers absent → sign only if sender is a user account
-                if (userAddresses.has(txSender)) {
-                    indicesToSign.push(i)
-                }
-            }
+            const signableAddresses = new Set(
+                signingAccounts.map(a => a.address),
+            )
+            const { indicesToSign, signerOverrides } =
+                resolveSignableTransactions(
+                    paramOne,
+                    allTxnObjects.map(tx => tx.sender.toString()),
+                    signableAddresses,
+                )
 
             // If no transactions need signing, approve with all-null array
             if (indicesToSign.length === 0) {
@@ -330,7 +311,7 @@ export const useWalletConnectHandlers = () => {
                 },
             } as TransactionSignRequest)
         },
-        [connections, addSignRequest],
+        [connections, addSignRequest, signingAccounts],
     )
 
     return {
