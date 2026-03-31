@@ -18,7 +18,9 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { useModalState } from '@hooks/useModalState'
 import { AddAssetScreen } from '@modules/assets/screens/AddAssetScreen'
+import { AsaVerificationInfoBottomSheet } from '@modules/assets/components/AsaVerificationInfoBottomSheet'
 import { useStyles } from './styles'
 
 export type AddAssetBottomSheetProps = {
@@ -32,35 +34,51 @@ export const AddAssetBottomSheet = ({
 }: AddAssetBottomSheetProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const verificationInfoState = useModalState(false)
 
     return (
-        <PWBottomSheet
-            isVisible={isVisible}
-            onBackdropPress={onClose}
-            innerContainerStyle={styles.container}
-            size='lg'
-            enablePanDownToClose
-            autoCreateContainer={false}
-        >
-            <PWView style={styles.header}>
-                <PWTouchableOpacity
-                    style={styles.headerAction}
-                    onPress={onClose}
-                >
-                    <PWIcon
-                        name='cross'
-                        size='sm'
-                    />
-                </PWTouchableOpacity>
-                <PWText
-                    variant='h4'
-                    style={styles.headerTitle}
-                >
-                    {t('add_asset.title')}
-                </PWText>
-                <PWView style={styles.headerAction} />
-            </PWView>
-            <AddAssetScreen />
-        </PWBottomSheet>
+        <>
+            <PWBottomSheet
+                isVisible={isVisible}
+                onBackdropPress={onClose}
+                innerContainerStyle={styles.container}
+                size='lg'
+                enablePanDownToClose
+                autoCreateContainer={false}
+            >
+                <PWView style={styles.header}>
+                    <PWTouchableOpacity
+                        style={styles.headerAction}
+                        onPress={onClose}
+                    >
+                        <PWIcon
+                            name='cross'
+                            size='sm'
+                        />
+                    </PWTouchableOpacity>
+                    <PWText
+                        variant='h4'
+                        style={styles.headerTitle}
+                    >
+                        {t('add_asset.title')}
+                    </PWText>
+                    <PWTouchableOpacity
+                        style={styles.headerAction}
+                        onPress={verificationInfoState.open}
+                    >
+                        <PWIcon
+                            name='info'
+                            size='sm'
+                        />
+                    </PWTouchableOpacity>
+                </PWView>
+                <AddAssetScreen />
+            </PWBottomSheet>
+
+            <AsaVerificationInfoBottomSheet
+                isVisible={verificationInfoState.isOpen}
+                onClose={verificationInfoState.close}
+            />
+        </>
     )
 }

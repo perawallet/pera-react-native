@@ -41,6 +41,13 @@
         "added": "Added",
         "no_results": "No assets found"
     },
+    "asa_verification_info": {
+        "title": "ASA Verification",
+        "body_1": "Pera Wallet's Algorand Standard Asset (ASA) Verification Program allows ASA creators to get automatically verified by validating that they are the owners of the asset.",
+        "body_2": "The main purpose of ASA Verification is to prevent an ASA from pretending to be affiliated with and acting as the token for a project it's not connected to.",
+        "body_3": "ASA Verification is not an endorsement of the project. Neither Algorand nor Pera would ever use the verification process to endorse a project.",
+        "learn_more": "Learn More"
+    },
     "asset_opt_out": {
         "title": "Remove Asset",
         "description": "Are you sure you want to remove {{assetName}} from {{accountName}}?",
