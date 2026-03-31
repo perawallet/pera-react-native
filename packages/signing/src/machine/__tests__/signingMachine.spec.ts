@@ -293,6 +293,136 @@ describe('signingMachine', () => {
         expect(state.context.analyses).toEqual([mockAnalysis])
     })
 
+    it('uses signerOverrides to determine signer instead of tx.sender', async () => {
+        // Simulates a WalletConnect request where the tx sender is a contract
+        // but the actual signer (from ARC-0001 signers field) is the user
+        const CONTRACT_ADDRESS =
+            'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC'
+
+        const contractTx = {
+            sender: { toString: () => CONTRACT_ADDRESS },
+            fee: 1000n,
+            type: 'pay',
+        } as never
+
+        const requestWithOverride: TransactionSignRequest = {
+            id: 'req-override',
+            type: 'transactions',
+            transport: 'callback',
+            txs: [contractTx],
+            signerOverrides: new Map([[0, MOCK_ADDRESS]]),
+        }
+
+        const actor = createActor(mockedMachine, {
+            input: makeInput({ request: requestWithOverride }),
+        })
+        actor.start()
+
+        const state = await waitFor(actor, s => s.matches('awaiting_user'))
+
+        // signerAddress should be the override (user), not the contract sender
+        expect(state.context.signerAddress).toBe(MOCK_ADDRESS)
+        expect(state.context.groupSignerTypes?.get(MOCK_ADDRESS)).toBe(
+            'localKey',
+        )
+        // The group should use the overridden address
+        expect(state.context.signableGroups?.[0]?.signerAddress).toBe(
+            MOCK_ADDRESS,
+        )
+    })
+
+    it('filters out contract-sender transactions for external sources', async () => {
+        const CONTRACT_ADDRESS =
+            'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC'
+
+        const contractTx = {
+            sender: { toString: () => CONTRACT_ADDRESS },
+            fee: 1000n,
+            type: 'pay',
+        } as never
+
+        // External source (webview) sends mixed group: user tx + contract tx
+        const mixedRequest: TransactionSignRequest = {
+            id: 'req-mixed-external',
+            type: 'transactions',
+            transport: 'callback',
+            sourceType: 'webview',
+            txs: [mockTx, contractTx, mockTx],
+        }
+
+        const actor = createActor(mockedMachine, {
+            input: makeInput({ request: mixedRequest }),
+        })
+        actor.start()
+
+        const state = await waitFor(actor, s => s.matches('awaiting_user'))
+
+        // Contract tx should be filtered out, only user txs remain
+        expect(state.context.signableGroups).toHaveLength(1)
+        expect(state.context.signableGroups?.[0]?.signerAddress).toBe(
+            MOCK_ADDRESS,
+        )
+        // originalIndices should map to positions 0 and 2 (skipping 1)
+        expect(state.context.signableGroups?.[0]?.originalIndices).toEqual([
+            0, 2,
+        ])
+    })
+
+    it('fails when all transactions have unknown senders for external sources', async () => {
+        const CONTRACT_ADDRESS =
+            'CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC'
+
+        const contractTx = {
+            sender: { toString: () => CONTRACT_ADDRESS },
+            fee: 1000n,
+            type: 'pay',
+        } as never
+
+        const allContractRequest: TransactionSignRequest = {
+            id: 'req-all-contract',
+            type: 'transactions',
+            transport: 'callback',
+            sourceType: 'webview',
+            txs: [contractTx],
+        }
+
+        const actor = createActor(mockedMachine, {
+            input: makeInput({ request: allContractRequest }),
+        })
+        actor.start()
+
+        const state = await waitFor(actor, s => s.matches('failed'))
+        expect(state.context.error?.message).toMatch(/no signable/i)
+    })
+
+    it('preserves error for unknown sender in local source requests', async () => {
+        // Local sources should still throw — unknown sender is a bug
+        const UNKNOWN_ADDRESS =
+            'UUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUU'
+
+        const unknownTx = {
+            sender: { toString: () => UNKNOWN_ADDRESS },
+            fee: 1000n,
+            type: 'pay',
+        } as never
+
+        const localRequest: TransactionSignRequest = {
+            id: 'req-local-unknown',
+            type: 'transactions',
+            transport: 'algod',
+            // sourceType defaults to 'local' when absent
+            txs: [unknownTx],
+        }
+
+        const actor = createActor(mockedMachine, {
+            input: makeInput({ request: localRequest }),
+        })
+        actor.start()
+
+        const state = await waitFor(actor, s => s.matches('failed'))
+        expect(state.context.error?.message).toMatch(/not found/i)
+    })
+
     it('signs groups sequentially for a mixed localKey + multisig request', async () => {
         const MULTISIG_ADDRESS =
             'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'

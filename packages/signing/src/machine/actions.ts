@@ -39,42 +39,6 @@ import {
 } from '../models'
 
 // =============================================================================
-// Signer address extraction
-// =============================================================================
-
-/**
- * Extracts the signer address from a SignRequest.
- * For transactions: uses the first transaction's sender.
- * For arbitrary data: uses the first data item's signer.
- */
-const extractSignerAddress = (request: SignRequest): string => {
-    if (isTransactionRequest(request)) {
-        const firstTx = request.txs[0]
-        if (!firstTx) {
-            throw new Error('No transactions in request')
-        }
-        return firstTx.sender.toString()
-    }
-
-    if (isArbitraryDataRequest(request)) {
-        const firstData = request.data[0]
-        if (!firstData) {
-            throw new Error('No data in request')
-        }
-        return firstData.signer
-    }
-
-    if (isArc60Request(request)) {
-        return request.signer
-    }
-
-    const _exhaustive: never = request
-    throw new Error(
-        `Cannot determine signer for request type: ${(_exhaustive as SignRequest).type}`,
-    )
-}
-
-// =============================================================================
 // Signer type resolution
 // =============================================================================
 
@@ -198,20 +162,38 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
  * positions are preserved in `originalIndices` to allow correct reassembly
  * after signing (see transportActor.mergeSigningResults).
  *
+ * For external sources (WalletConnect, webview, deeplink), transactions whose
+ * effective signer is not in `allAccounts` are silently skipped. This handles
+ * dApps that send mixed groups containing contract-signed transactions alongside
+ * user-signed ones (e.g. Folks Finance).
+ *
  * For arbitrary-data requests, a single group is produced using the first
  * item's signer as the group's signerAddress.
  */
-const buildSignableGroups = (request: SignRequest): SignableGroup[] => {
+const buildSignableGroups = (
+    request: SignRequest,
+    allAccounts: WalletAccount[],
+): SignableGroup[] => {
     const source = buildSourceMetadata(request)
 
     if (isTransactionRequest(request)) {
+        // For external sources, filter out transactions with unknown signers
+        const isExternal = source.type !== 'local'
+        const knownAddresses = isExternal
+            ? new Set(allAccounts.map(a => a.address))
+            : null
+
         // Group transactions by sender, preserving original position
         const bySender = new Map<
             string,
             { txs: typeof request.txs; indices: number[] }
         >()
         for (const [i, tx] of request.txs.entries()) {
-            const addr = tx.sender.toString()
+            const addr = request.signerOverrides?.get(i) ?? tx.sender.toString()
+
+            // Skip transactions with unknown signers (external sources only)
+            if (knownAddresses && !knownAddresses.has(addr)) continue
+
             if (!bySender.has(addr)) {
                 bySender.set(addr, { txs: [], indices: [] })
             }
@@ -281,8 +263,16 @@ export const resolveInitialContext = (
 ): SigningMachineContext => {
     const { request, allAccounts } = input
 
-    const signerAddress = extractSignerAddress(request)
-    const signableGroups = buildSignableGroups(request)
+    const signableGroups = buildSignableGroups(request, allAccounts)
+
+    if (signableGroups.length === 0) {
+        throw new CannotSignError(
+            'unknown',
+            'No signable transactions found in request',
+        )
+    }
+
+    const signerAddress = signableGroups[0].signerAddress
     const groupSignerTypes = buildGroupSignerTypeMap(
         signableGroups,
         allAccounts,

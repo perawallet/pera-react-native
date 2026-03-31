@@ -242,12 +242,41 @@ export const useWalletConnectHandlers = () => {
                 )
             }
 
+            // Decode all transactions upfront so we can inspect senders
+            const allTxnObjects = decodeTransactions(
+                paramOne.map(p => decodeFromBase64(p.txn)),
+            )
+
             // ARC-0001: determine which transactions this wallet should sign
-            // signers absent or non-empty → sign; signers: [] → do not sign
+            // signers: []        → do not sign (dApp-signed)
+            // signers: [addr]    → sign only if addr is a user account
+            // signers absent     → sign only if tx sender is a user account
+            const userAddresses = new Set(accounts.map(a => a.address))
             const indicesToSign: number[] = []
+            const signerOverrides = new Map<number, string>()
+
             for (let i = 0; i < paramOne.length; i++) {
                 const param = paramOne[i]
-                if (!param.signers || param.signers.length > 0) {
+                const txSender = allTxnObjects[i].sender.toString()
+
+                if (param.signers && param.signers.length === 0) {
+                    continue
+                }
+
+                if (param.signers && param.signers.length > 0) {
+                    const match = param.signers.find(s => userAddresses.has(s))
+                    if (match) {
+                        const txsIndex = indicesToSign.length
+                        indicesToSign.push(i)
+                        if (match !== txSender) {
+                            signerOverrides.set(txsIndex, match)
+                        }
+                    }
+                    continue
+                }
+
+                // signers absent → sign only if sender is a user account
+                if (userAddresses.has(txSender)) {
                     indicesToSign.push(i)
                 }
             }
@@ -261,10 +290,7 @@ export const useWalletConnectHandlers = () => {
                 return
             }
 
-            const signableParams = indicesToSign.map(i => paramOne[i])
-            const txnObjects = decodeTransactions(
-                signableParams.map(p => decodeFromBase64(p.txn)),
-            )
+            const signableTxns = indicesToSign.map(i => allTxnObjects[i])
 
             addSignRequest({
                 id: generateOrderedUniqueId(),
@@ -272,7 +298,9 @@ export const useWalletConnectHandlers = () => {
                 transport: 'callback',
                 sourceType: 'walletconnect',
                 transportId: connector.clientId,
-                txs: txnObjects,
+                txs: signableTxns,
+                signerOverrides:
+                    signerOverrides.size > 0 ? signerOverrides : undefined,
                 sourceMetadata: connector.session?.peerMeta,
                 approve: async (signed: (PeraSignedTransaction | null)[]) => {
                     // Reconstruct full-length response with null at skipped positions
