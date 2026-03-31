@@ -50,7 +50,7 @@ export const AccountDisplay = ({
     const styles = useStyles({ noBorder })
     const displayName = useMemo(
         () => (account ? getAccountDisplayName(account) : 'No Account'),
-        [account],
+        [account?.name, account?.address],
     )
     const address = useMemo(
         () =>
