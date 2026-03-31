@@ -33,6 +33,7 @@ import {
     type PeraArbitraryDataMessage,
     type PeraArbitraryDataSignResult,
     type TransactionSignRequest,
+    resolveSignableTransactions,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import WalletConnect from '@walletconnect/client'
@@ -44,8 +45,10 @@ import {
 } from '../models'
 import { MAX_DATA_SIGN_REQUESTS } from '../constants'
 import {
+    canSignWithAccount,
     isLedgerAccount,
     useAllAccounts,
+    useSigningAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
@@ -138,7 +141,7 @@ const validateDataSignRequest = (
         const account = accounts.find(
             account => account.address === item.signer,
         )
-        if (!account) {
+        if (!account || !canSignWithAccount(account, accounts)) {
             throw new WalletConnectInvalidSessionError('Invalid signer')
         }
 
@@ -162,6 +165,7 @@ export const useWalletConnectHandlers = () => {
     const { encodeSignedTransactions, decodeTransactions } =
         useTransactionEncoder()
     const accounts = useAllAccounts()
+    const signingAccounts = useSigningAccounts()
 
     //TODO handle ARC-60 sign requests
     const handleSignData = useCallback(
@@ -222,7 +226,7 @@ export const useWalletConnectHandlers = () => {
                 },
             } as ArbitraryDataSignRequest)
         },
-        [connections, addSignRequest],
+        [connections, accounts, addSignRequest],
     )
 
     const handleSignTransaction = useCallback(
@@ -242,15 +246,21 @@ export const useWalletConnectHandlers = () => {
                 )
             }
 
+            // Decode all transactions upfront so we can inspect senders
+            const allTxnObjects = decodeTransactions(
+                paramOne.map(p => decodeFromBase64(p.txn)),
+            )
+
             // ARC-0001: determine which transactions this wallet should sign
-            // signers absent or non-empty → sign; signers: [] → do not sign
-            const indicesToSign: number[] = []
-            for (let i = 0; i < paramOne.length; i++) {
-                const param = paramOne[i]
-                if (!param.signers || param.signers.length > 0) {
-                    indicesToSign.push(i)
-                }
-            }
+            const signableAddresses = new Set(
+                signingAccounts.map(a => a.address),
+            )
+            const { indicesToSign, signerOverrides } =
+                resolveSignableTransactions(
+                    paramOne,
+                    allTxnObjects.map(tx => tx.sender.toString()),
+                    signableAddresses,
+                )
 
             // If no transactions need signing, approve with all-null array
             if (indicesToSign.length === 0) {
@@ -261,10 +271,7 @@ export const useWalletConnectHandlers = () => {
                 return
             }
 
-            const signableParams = indicesToSign.map(i => paramOne[i])
-            const txnObjects = decodeTransactions(
-                signableParams.map(p => decodeFromBase64(p.txn)),
-            )
+            const signableTxns = indicesToSign.map(i => allTxnObjects[i])
 
             addSignRequest({
                 id: generateOrderedUniqueId(),
@@ -272,7 +279,9 @@ export const useWalletConnectHandlers = () => {
                 transport: 'callback',
                 sourceType: 'walletconnect',
                 transportId: connector.clientId,
-                txs: txnObjects,
+                txs: signableTxns,
+                signerOverrides:
+                    signerOverrides.size > 0 ? signerOverrides : undefined,
                 sourceMetadata: connector.session?.peerMeta,
                 approve: async (signed: (PeraSignedTransaction | null)[]) => {
                     // Reconstruct full-length response with null at skipped positions
@@ -302,7 +311,7 @@ export const useWalletConnectHandlers = () => {
                 },
             } as TransactionSignRequest)
         },
-        [connections, addSignRequest],
+        [connections, addSignRequest, signingAccounts],
     )
 
     return {

@@ -15,7 +15,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useWalletConnectHandlers } from '../useWalletConnectHandlers'
 import { useWalletConnectStore } from '../../store'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    useNetwork,
+    useTransactionEncoder,
+} from '@perawallet/wallet-core-blockchain'
 import {
     generateOrderedUniqueId,
     Networks,
@@ -44,7 +47,10 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         ),
         decodeTransactions: vi.fn((txnBytes: Uint8Array[]) =>
             txnBytes.map(() => ({
-                sender: { publicKey: new Uint8Array([1, 2, 3]) },
+                sender: {
+                    publicKey: new Uint8Array([1, 2, 3]),
+                    toString: () => 'addr1',
+                },
                 fee: 1000n,
             })),
         ),
@@ -55,12 +61,45 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: vi.fn(),
+    resolveSignableTransactions: vi.fn(
+        (
+            txParams: { signers?: string[] }[],
+            txSenders: string[],
+            signableAddresses: Set<string>,
+        ) => {
+            const indicesToSign: number[] = []
+            const signerOverrides = new Map<number, string>()
+            for (let i = 0; i < txParams.length; i++) {
+                const param = txParams[i]
+                const txSender = txSenders[i]
+                if (param.signers && param.signers.length === 0) continue
+                if (param.signers && param.signers.length > 0) {
+                    const match = param.signers.find(s =>
+                        signableAddresses.has(s),
+                    )
+                    if (match) {
+                        const txsIndex = indicesToSign.length
+                        indicesToSign.push(i)
+                        if (match !== txSender)
+                            signerOverrides.set(txsIndex, match)
+                    }
+                    continue
+                }
+                if (signableAddresses.has(txSender)) indicesToSign.push(i)
+            }
+            return { indicesToSign, signerOverrides }
+        },
+    ),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => [
         { address: 'addr1', name: 'Account 1', type: 'standard' },
     ]),
+    useSigningAccounts: vi.fn(() => [
+        { address: 'addr1', name: 'Account 1', type: 'standard' },
+    ]),
+    canSignWithAccount: vi.fn(() => true),
     getAccountDisplayName: vi.fn((a: any) => a.name || a.address),
     isLedgerAccount: vi.fn(() => false),
 }))
@@ -96,6 +135,25 @@ describe('useWalletConnectHandlers', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+        ;(useAllAccounts as any).mockReturnValue([
+            { address: 'addr1', name: 'Account 1', type: 'standard' },
+        ])
+        ;(isLedgerAccount as any).mockReturnValue(false)
+        ;(useTransactionEncoder as any).mockImplementation(() => ({
+            encodeSignedTransaction: vi.fn(() => new Uint8Array([1, 2, 3, 4])),
+            encodeSignedTransactions: vi.fn((txs: unknown[]) =>
+                txs.length > 0 ? [new Uint8Array([1, 2, 3, 4])] : [],
+            ),
+            decodeTransactions: vi.fn((txnBytes: Uint8Array[]) =>
+                txnBytes.map(() => ({
+                    sender: {
+                        publicKey: new Uint8Array([1, 2, 3]),
+                        toString: () => 'addr1',
+                    },
+                    fee: 1000n,
+                })),
+            ),
+        }))
         ;(useSigningRequest as any).mockReturnValue({
             addSignRequest: mockAddSignRequest,
         })
@@ -614,10 +672,9 @@ describe('useWalletConnectHandlers', () => {
                 sourceType: 'walletconnect',
                 transportId: 'test-client-id',
                 txs: [
-                    {
-                        sender: { publicKey: new Uint8Array([1, 2, 3]) },
+                    expect.objectContaining({
                         fee: 1000n,
-                    },
+                    }),
                 ],
                 sourceMetadata: undefined,
                 approve: expect.any(Function),
@@ -975,7 +1032,7 @@ describe('useWalletConnectHandlers', () => {
             })
         })
 
-        it('should include transactions with non-empty signers array for signing', () => {
+        it('should include transactions with non-empty signers array matching a user account', () => {
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = {
                 clientId: 'test-client-id',
@@ -986,7 +1043,7 @@ describe('useWalletConnectHandlers', () => {
             const payload = {
                 params: [
                     [
-                        { txn: 'txn-with-signer', signers: ['SOME_ADDR'] },
+                        { txn: 'txn-with-signer', signers: ['addr1'] },
                         { txn: 'txn-no-signers' },
                     ],
                 ],
@@ -1006,6 +1063,144 @@ describe('useWalletConnectHandlers', () => {
             // Both transactions should be included
             const signRequest = mockAddSignRequest.mock.calls[0][0]
             expect(signRequest.txs).toHaveLength(2)
+        })
+
+        it('should exclude transactions with non-user sender when signers is absent', () => {
+            // This is the core fix for Folks Finance: contract-sender txns
+            // without signers field should be skipped
+            ;(useTransactionEncoder as any).mockImplementation(() => ({
+                encodeSignedTransactions: vi.fn((txs: unknown[]) =>
+                    txs.length > 0 ? [new Uint8Array([1, 2, 3, 4])] : [],
+                ),
+                decodeTransactions: vi.fn(() => [
+                    {
+                        sender: { toString: () => 'addr1' },
+                        fee: 1000n,
+                    },
+                    {
+                        sender: { toString: () => 'CONTRACT_ADDR' },
+                        fee: 1000n,
+                    },
+                    {
+                        sender: { toString: () => 'addr1' },
+                        fee: 1000n,
+                    },
+                ]),
+            }))
+
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = {
+                clientId: 'test-client-id',
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
+            }
+            const payload = {
+                params: [
+                    [
+                        { txn: 'user-txn-1' },
+                        { txn: 'contract-txn' }, // no signers, non-user sender
+                        { txn: 'user-txn-2' },
+                    ],
+                ],
+                method: 'algo_signTxn' as const,
+                jsonrpc: '2.0',
+                id: 1,
+            }
+
+            result.current.handleSignTransaction(
+                connector as any,
+                Networks.mainnet,
+                null,
+                payload,
+                mockOnError,
+            )
+
+            // Only 2 transactions (user-owned) should be in the sign request
+            const signRequest = mockAddSignRequest.mock.calls[0][0]
+            expect(signRequest.txs).toHaveLength(2)
+        })
+
+        it('should set signerOverrides when signers field differs from sender', () => {
+            ;(useTransactionEncoder as any).mockImplementation(() => ({
+                encodeSignedTransactions: vi.fn((txs: unknown[]) =>
+                    txs.length > 0 ? [new Uint8Array([1, 2, 3, 4])] : [],
+                ),
+                decodeTransactions: vi.fn(() => [
+                    {
+                        sender: { toString: () => 'CONTRACT_ADDR' },
+                        fee: 1000n,
+                    },
+                ]),
+            }))
+
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = {
+                clientId: 'test-client-id',
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
+            }
+            const payload = {
+                params: [
+                    [
+                        {
+                            txn: 'contract-txn',
+                            signers: ['addr1'], // user should sign, but sender is contract
+                        },
+                    ],
+                ],
+                method: 'algo_signTxn' as const,
+                jsonrpc: '2.0',
+                id: 1,
+            }
+
+            result.current.handleSignTransaction(
+                connector as any,
+                Networks.mainnet,
+                null,
+                payload,
+                mockOnError,
+            )
+
+            const signRequest = mockAddSignRequest.mock.calls[0][0]
+            expect(signRequest.txs).toHaveLength(1)
+            expect(signRequest.signerOverrides).toEqual(new Map([[0, 'addr1']]))
+        })
+
+        it('should exclude transactions with signers containing only unknown addresses', () => {
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = {
+                clientId: 'test-client-id',
+                approveRequest: vi.fn(),
+                rejectRequest: vi.fn(),
+            }
+            const payload = {
+                params: [
+                    [
+                        {
+                            txn: 'txn',
+                            signers: ['UNKNOWN_ADDR'],
+                        },
+                    ],
+                ],
+                method: 'algo_signTxn' as const,
+                jsonrpc: '2.0',
+                id: 1,
+            }
+
+            result.current.handleSignTransaction(
+                connector as any,
+                Networks.mainnet,
+                null,
+                payload,
+                mockOnError,
+            )
+
+            // No user address matches → all filtered → approve with all-null
+            expect(mockAddSignRequest).not.toHaveBeenCalled()
+            expect(connector.approveRequest).toHaveBeenCalledWith({
+                id: 1,
+                result: [null],
+            })
         })
 
         it('should propagate error when addSignRequest throws for over-limit transactions', () => {
