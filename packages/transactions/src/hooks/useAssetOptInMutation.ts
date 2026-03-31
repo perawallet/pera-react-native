@@ -14,8 +14,13 @@ import { useCallback, useState } from 'react'
 import {
     ASSET_MBR,
     useAlgorandClient,
+    useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import { useTransactionSigner } from '@perawallet/wallet-core-signing'
+import {
+    insertAssetHolding,
+    useAccountBalancesInvalidator,
+} from '@perawallet/wallet-core-accounts'
 import { TransactionError } from '../errors'
 
 type AssetOptInParams = {
@@ -47,6 +52,9 @@ export class InsufficientBalanceForOptInError extends TransactionError {
 export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
     const { signTransactions } = useTransactionSigner()
     const algokit = useAlgorandClient(signTransactions)
+    const { network } = useNetwork()
+    const { invalidate: invalidateBalances } =
+        useAccountBalancesInvalidator()
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<Error | null>(null)
 
@@ -80,6 +88,14 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                     assetId,
                 })
 
+                // Add the new holding to local DB and refresh UI
+                await insertAssetHolding({
+                    accountAddress: sender,
+                    assetId: String(assetId),
+                    network,
+                })
+                invalidateBalances()
+
                 return { txIds: result.txIds }
             } catch (err) {
                 const error =
@@ -90,7 +106,7 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                 setIsLoading(false)
             }
         },
-        [algokit],
+        [algokit, network, invalidateBalances],
     )
 
     return {

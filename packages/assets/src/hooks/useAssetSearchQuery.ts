@@ -82,7 +82,6 @@ export const useAssetSearchQuery = (
             }),
         initialPageParam: undefined as string | undefined,
         getNextPageParam: lastPage => extractCursor(lastPage.next),
-        enabled: query.length > 0,
     })
 
     const results =

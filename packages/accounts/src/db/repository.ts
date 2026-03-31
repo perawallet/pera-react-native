@@ -65,6 +65,32 @@ export async function refreshAccountHoldings({
     }
 }
 
+type InsertAssetHoldingParams = {
+    db?: Database
+    accountAddress: string
+    assetId: string
+    network: string
+}
+
+export async function insertAssetHolding({
+    db = getDatabase(),
+    accountAddress,
+    assetId,
+    network,
+}: InsertAssetHoldingParams): Promise<void> {
+    await db
+        .insert(AccountAssetHoldingsSchema)
+        .values({
+            accountAddress,
+            assetId: new Decimal(assetId),
+            network,
+            amount: new Decimal(0),
+            updatedAt: Date.now(),
+        })
+        .onConflictDoNothing()
+        .run()
+}
+
 type GetAccountHoldingsParams = {
     db?: Database
     accountAddress: string

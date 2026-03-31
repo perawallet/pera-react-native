@@ -179,6 +179,72 @@ describe('useAssetOptOutMutation', () => {
         expect(mockComposerSend).toHaveBeenCalledTimes(1)
     })
 
+    it('should return empty txIds for empty params array', async () => {
+        const { result } = renderHook(() => useAssetOptOutMutation())
+
+        await act(async () => {
+            const res = await result.current.optOut([])
+            expect(res.txIds).toEqual([])
+        })
+
+        expect(mockAccountInformation).not.toHaveBeenCalled()
+        expect(mockAssetTransfer).not.toHaveBeenCalled()
+    })
+
+    it('should fetch creator from indexer for batch when creators missing', async () => {
+        const { result } = renderHook(() => useAssetOptOutMutation())
+
+        await act(async () => {
+            await result.current.optOut([
+                { sender: 'SENDER', assetId: 100n },
+                { sender: 'SENDER', assetId: 100n, creator: 'KNOWN_CREATOR' },
+            ])
+        })
+
+        expect(mockFetchIndexerAssetDetails).toHaveBeenCalledTimes(1)
+        expect(mockFetchIndexerAssetDetails).toHaveBeenCalledWith(
+            '100',
+            'mainnet',
+        )
+    })
+
+    it('should call deleteAssetHoldings and invalidateBalances on success', async () => {
+        const { result } = renderHook(() => useAssetOptOutMutation())
+
+        await act(async () => {
+            await result.current.optOut({
+                sender: 'SENDER',
+                assetId: 100n,
+                creator: 'CREATOR',
+            })
+        })
+
+        expect(mockDeleteAssetHoldings).toHaveBeenCalledWith({
+            accountAddress: 'SENDER',
+            assetIds: ['100'],
+            network: 'mainnet',
+        })
+        expect(mockInvalidateBalances).toHaveBeenCalled()
+    })
+
+    it('should not call deleteAssetHoldings when transaction fails', async () => {
+        mockAssetTransfer.mockRejectedValue(new Error('tx failed'))
+        const { result } = renderHook(() => useAssetOptOutMutation())
+
+        await act(async () => {
+            await expect(
+                result.current.optOut({
+                    sender: 'SENDER',
+                    assetId: 100n,
+                    creator: 'CREATOR',
+                }),
+            ).rejects.toThrow('tx failed')
+        })
+
+        expect(mockDeleteAssetHoldings).not.toHaveBeenCalled()
+        expect(mockInvalidateBalances).not.toHaveBeenCalled()
+    })
+
     it('should set error state on failure', async () => {
         mockAccountInformation.mockRejectedValue(new Error('Network error'))
         const { result } = renderHook(() => useAssetOptOutMutation())

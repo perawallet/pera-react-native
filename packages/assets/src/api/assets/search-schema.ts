@@ -13,10 +13,13 @@
 import { z } from 'zod'
 
 export const collectibleSearchSchema = z.object({
-    collection: z.object({
-        collection_id: z.number(),
-        name: z.string().nullable().optional(),
-    }),
+    collection: z
+        .object({
+            collection_id: z.number(),
+            name: z.string().nullable().optional(),
+        })
+        .nullable()
+        .optional(),
     primary_image: z.string().nullable().optional(),
     title: z.string().nullable().optional(),
 })

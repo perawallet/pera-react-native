@@ -29,7 +29,15 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    insertAssetHolding: vi.fn().mockResolvedValue(undefined),
+    useAccountBalancesInvalidator: () => ({
+        invalidate: vi.fn(),
+    }),
+}))
+
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: () => ({ network: 'testnet' }),
     useAlgorandClient: () => ({
         send: {
             assetOptIn: mockAssetOptIn,
@@ -112,6 +120,72 @@ describe('useAssetOptInMutation', () => {
             ).rejects.toThrow(InsufficientBalanceForOptInError)
         })
 
+        expect(mockAssetOptIn).not.toHaveBeenCalled()
+    })
+
+    it('should call insertAssetHolding and invalidateBalances on success', async () => {
+        const mockInsertAssetHolding = await import(
+            '@perawallet/wallet-core-accounts'
+        ).then(m => m.insertAssetHolding)
+
+        const { result } = renderHook(() => useAssetOptInMutation())
+
+        await act(async () => {
+            await result.current.optIn({
+                sender: 'SENDER',
+                assetId: 12345n,
+            })
+        })
+
+        expect(mockInsertAssetHolding).toHaveBeenCalledWith({
+            accountAddress: 'SENDER',
+            assetId: '12345',
+            network: 'testnet',
+        })
+    })
+
+    it('should not call insertAssetHolding when transaction fails', async () => {
+        mockAssetOptIn.mockRejectedValue(new Error('signing rejected'))
+        const mockInsertAssetHolding = await import(
+            '@perawallet/wallet-core-accounts'
+        ).then(m => m.insertAssetHolding)
+
+        const { result } = renderHook(() => useAssetOptInMutation())
+
+        await act(async () => {
+            await expect(
+                result.current.optIn({
+                    sender: 'SENDER',
+                    assetId: 12345n,
+                }),
+            ).rejects.toThrow('signing rejected')
+        })
+
+        expect(mockInsertAssetHolding).not.toHaveBeenCalled()
+    })
+
+    it('should not call insertAssetHolding when validation fails', async () => {
+        mockAccountInformation.mockResolvedValue({
+            amount: 1000000n,
+            minBalance: 100000n,
+            assets: [{ assetId: 12345n, amount: 0n }],
+        })
+        const mockInsertAssetHolding = await import(
+            '@perawallet/wallet-core-accounts'
+        ).then(m => m.insertAssetHolding)
+
+        const { result } = renderHook(() => useAssetOptInMutation())
+
+        await act(async () => {
+            await expect(
+                result.current.optIn({
+                    sender: 'SENDER',
+                    assetId: 12345n,
+                }),
+            ).rejects.toThrow(AlreadyOptedInError)
+        })
+
+        expect(mockInsertAssetHolding).not.toHaveBeenCalled()
         expect(mockAssetOptIn).not.toHaveBeenCalled()
     })
 

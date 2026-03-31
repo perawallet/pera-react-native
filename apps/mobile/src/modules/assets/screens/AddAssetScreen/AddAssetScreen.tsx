@@ -63,7 +63,7 @@ export const AddAssetScreen = () => {
                 />
             </PWView>
 
-            {isLoading && searchQuery.length > 0 ? (
+            {isLoading ? (
                 <PWView style={styles.emptyContainer}>
                     <ActivityIndicator />
                 </PWView>
@@ -76,7 +76,7 @@ export const AddAssetScreen = () => {
                     onEndReachedThreshold={0.5}
                     keyboardDismissMode='on-drag'
                     ListEmptyComponent={
-                        searchQuery.length > 0 ? (
+                        !isLoading ? (
                             <PWView style={styles.emptyContainer}>
                                 <PWText>{t('add_asset.no_results')}</PWText>
                             </PWView>

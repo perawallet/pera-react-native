@@ -21,6 +21,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
 import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 
 type UseAddAssetScreenResult = {
     searchQuery: string
@@ -56,6 +57,7 @@ export const useAddAssetScreen = (): UseAddAssetScreenResult => {
         selectedAccount ? [selectedAccount] : [],
     )
     const { optIn } = useAssetOptInMutation()
+    const { showToast } = useToast()
 
     const {
         results,
@@ -110,13 +112,20 @@ export const useAddAssetScreen = (): UseAddAssetScreenResult => {
                     assetId: BigInt(assetId),
                 })
                 setRecentlyOptedIn(prev => new Set([...prev, assetId]))
-            } catch {
-                // Error is handled by the mutation hook
+            } catch (err) {
+                showToast({
+                    title: t('add_asset.opt_in_failed'),
+                    body:
+                        err instanceof Error
+                            ? err.message
+                            : t('add_asset.opt_in_failed'),
+                    type: 'error',
+                })
             } finally {
                 setOptingInAssetId(null)
             }
         },
-        [selectedAccount, optIn, optingInAssetId],
+        [selectedAccount, optIn, optingInAssetId, showToast, t],
     )
 
     return {

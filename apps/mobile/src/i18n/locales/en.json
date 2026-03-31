@@ -39,7 +39,8 @@
         "search_placeholder": "Search by name or asset ID",
         "add": "Add",
         "added": "Added",
-        "no_results": "No assets found"
+        "no_results": "No assets found",
+        "opt_in_failed": "Failed to opt in"
     },
     "asa_verification_info": {
         "title": "ASA Verification",
