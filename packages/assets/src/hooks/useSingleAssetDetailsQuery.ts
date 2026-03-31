@@ -29,7 +29,7 @@ import {
 import { getAssetDetailsQueryKey } from './querykeys'
 import { stripNulls, type Network } from '@perawallet/wallet-core-shared'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { getAssetById, getAssetPeraMetadata } from '../db'
+import { getAssetById } from '../db'
 
 async function fetchAssetFromApis(
     assetId: string,
@@ -73,28 +73,15 @@ export const useSingleAssetDetailsQuery = (assetId: string) => {
     return useQuery<PeraAsset, Error>({
         queryKey: getAssetDetailsQueryKey(assetId),
         queryFn: async (): Promise<PeraAsset> => {
-            if (assetId === ALGO_ASSET_ID) {
-                // Read device-specific metadata (isFavorited, isPriceAlertEnabled)
-                // directly from the pera table — ALGO has no row in the node table
-                // so getAssetById (which joins both) would return null
-                const dbMeta = await getAssetPeraMetadata({
-                    assetId,
-                    network,
-                })
-                return {
-                    ...ALGO_ASSET,
-                    peraMetadata: {
-                        ...DEFAULT_ASSET_METADATA,
-                        ...ALGO_ASSET.peraMetadata,
-                        ...(dbMeta ?? {}),
-                    },
-                }
-            }
-
             // Try DB first (data synced by sync service)
             const dbAsset = await getAssetById({ assetId, network })
             if (dbAsset !== null) {
                 return dbAsset
+            }
+
+            // ALGO is seeded at startup — if not in DB yet, return in-memory constant
+            if (assetId === ALGO_ASSET_ID) {
+                return ALGO_ASSET
             }
 
             // Fallback to API for assets not in DB (e.g., non-held assets)

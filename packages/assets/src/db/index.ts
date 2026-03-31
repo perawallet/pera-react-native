@@ -23,3 +23,4 @@ export {
     getAssetPricesByIds,
     type AssetPriceRow,
 } from './repository'
+export { seedAlgoAsset } from './seed'

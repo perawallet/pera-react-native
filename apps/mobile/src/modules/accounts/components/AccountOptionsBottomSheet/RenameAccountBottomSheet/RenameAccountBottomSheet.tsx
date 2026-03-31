@@ -51,6 +51,7 @@ export const RenameAccountBottomSheet = ({
         const trimmed = name.trim()
         if (trimmed.length > 0) {
             onRename(trimmed)
+            setName('')
         }
     }
 

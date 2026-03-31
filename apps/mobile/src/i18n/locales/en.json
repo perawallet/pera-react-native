@@ -442,6 +442,22 @@
         "receive": "Receive",
         "contacts": "Contacts"
     },
+    "giftCard": {
+        "intro": {
+            "navigation_title": "Buy gift cards with Bidali",
+            "title": "Buy gift cards with Crypto",
+            "body": "You can use your Algo or USDC balance to buy gift cards and mobile top-ups from thousands of brands worldwide!",
+            "buy_gift_cards": "Buy gift cards"
+        },
+        "accountSelection": {
+            "title": "Select account",
+            "subtitle": "Choose an account to proceed with"
+        },
+        "signing": {
+            "source_name": "Bidali",
+            "source_description": "Gift card purchase via Bidali"
+        }
+    },
     "notifications": {
         "empty_title": "No current notifications",
         "empty_body": "Your recent transactions, asset requests and other transactions will appear here"
@@ -860,7 +876,9 @@
             "dispenser_title": "Algorand Dispenser",
             "node_settings": {
                 "mainnet_label": "Algorand MainNet",
-                "testnet_label": "Algorand TestNet"
+                "testnet_label": "Algorand TestNet",
+                "switch_error_title": "Network Switch Failed",
+                "switch_error_body": "Unable to switch networks. Please try again."
             },
             "debug_webview": "Test Webview API",
             "debug_dapp": "Test Dapp",

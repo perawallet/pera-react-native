@@ -21,11 +21,13 @@ export const useStyles = makeStyles(theme => {
             borderRadius: theme.spacing.sm,
             paddingHorizontal: theme.spacing.sm,
         },
+        list: {
+            flex: 1,
+        },
         sectionHeader: {
             marginTop: theme.spacing.lg,
         },
         contentContainer: {
-            flex: 1,
             gap: theme.spacing.lg,
         },
         title: {},

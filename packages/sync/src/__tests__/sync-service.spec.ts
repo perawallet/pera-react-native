@@ -212,6 +212,51 @@ describe('SyncService', () => {
         expect(mockSetLastRefreshedRound).toHaveBeenCalledWith('mainnet', 42)
     })
 
+    it('restart stops, resets initial sync flag, and starts immediately', async () => {
+        mockSendShouldRefreshRequest.mockResolvedValue({
+            refresh: false,
+            round: null,
+        })
+
+        const { fetchAndPersistAccount } =
+            await import('@perawallet/wallet-core-accounts')
+
+        service.start()
+        expect(service.isRunning()).toBe(true)
+
+        // First tick: force-sync (no shouldRefresh)
+        vi.useRealTimers()
+        await new Promise(resolve => setTimeout(resolve, 50))
+        vi.useFakeTimers()
+
+        expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+        expect(fetchAndPersistAccount).toHaveBeenCalled()
+
+        vi.mocked(fetchAndPersistAccount).mockClear()
+        mockSendShouldRefreshRequest.mockClear()
+
+        // Restart — should force-sync again (hasCompletedInitialSync reset)
+        service.restart()
+        expect(service.isRunning()).toBe(true)
+
+        vi.useRealTimers()
+        await new Promise(resolve => setTimeout(resolve, 50))
+        vi.useFakeTimers()
+
+        // Should have force-synced without calling shouldRefresh
+        expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+        expect(fetchAndPersistAccount).toHaveBeenCalled()
+
+        service.stop()
+    })
+
+    it('restart when stopped starts the service', () => {
+        expect(service.isRunning()).toBe(false)
+        service.restart()
+        expect(service.isRunning()).toBe(true)
+        service.stop()
+    })
+
     it('does not sync when no accounts exist', async () => {
         const originalGetState = vi.fn(() => ({ accounts: [] }))
         vi.mocked(

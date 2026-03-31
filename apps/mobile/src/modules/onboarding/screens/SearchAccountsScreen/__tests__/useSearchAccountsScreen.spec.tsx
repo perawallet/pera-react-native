@@ -166,13 +166,14 @@ describe('useSearchAccountsScreen', () => {
         })
     })
 
-    it('selects the imported account and exits when only one HD account is discovered', async () => {
+    it('selects the imported account, scans for rekeyed accounts, and exits when only one HD account is discovered with no rekeys', async () => {
         const singleAccount = {
             id: '1',
             address: 'MOCK_ADDRESS',
             type: AccountTypes.hdWallet,
         }
         mockDiscoverAccounts.mockResolvedValue([singleAccount])
+        mockDiscoverRekeyedAccounts.mockResolvedValue([])
 
         renderHook(() => useSearchAccountsScreen())
 
@@ -180,11 +181,96 @@ describe('useSearchAccountsScreen', () => {
             expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith(
                 'MOCK_ADDRESS',
             )
+            expect(mockDiscoverRekeyedAccounts).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    accountAddresses: ['MOCK_ADDRESS'],
+                }),
+            )
             expect(mockExitAccountFlow).toHaveBeenCalled()
         })
     })
 
-    it('creates next derivation and navigates to NameAccount when createIfEmpty and only one account discovered', async () => {
+    it('navigates to ImportRekeyedAddresses when single HD account has rekeyed accounts', async () => {
+        const singleAccount = {
+            id: '1',
+            address: 'MOCK_ADDRESS',
+            type: AccountTypes.hdWallet,
+        }
+        const rekeyedAccounts = [
+            {
+                id: 'rekeyed-1',
+                address: 'REKEYED_ADDRESS',
+                type: AccountTypes.watch,
+                rekeyAddress: 'MOCK_ADDRESS',
+            },
+        ]
+        mockDiscoverAccounts.mockResolvedValue([singleAccount])
+        mockDiscoverRekeyedAccounts.mockResolvedValue(rekeyedAccounts)
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockReplace).toHaveBeenCalledWith('ImportRekeyedAddresses', {
+                accounts: rekeyedAccounts,
+            })
+            expect(mockExitAccountFlow).not.toHaveBeenCalled()
+        })
+    })
+
+    it('creates next derivation, scans for rekeys, and navigates to NameAccount when createIfEmpty and no rekeys found', async () => {
+        mockRouteParams.current.createIfEmpty = true
+        mockAllAccounts.current = [
+            {
+                id: '1',
+                address: 'MOCK_ADDRESS',
+                type: 'hdWallet' as const,
+                keyPairId: 'wallet-1',
+                hdWalletDetails: {
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                },
+            },
+        ]
+
+        const singleAccount = {
+            id: '1',
+            address: 'MOCK_ADDRESS',
+            type: AccountTypes.hdWallet,
+        }
+        mockDiscoverAccounts.mockResolvedValue([singleAccount])
+        mockDiscoverRekeyedAccounts.mockResolvedValue([])
+
+        const newAccount = {
+            id: 'new-id',
+            address: 'NEW_ADDRESS',
+            type: 'hdWallet' as const,
+        }
+        mockCreateHdWalletAccount.mockResolvedValue(newAccount)
+
+        renderHook(() => useSearchAccountsScreen())
+
+        await waitFor(() => {
+            expect(mockCreateHdWalletAccount).toHaveBeenCalledWith({
+                walletId: 'wallet-1',
+                account: 0,
+                keyIndex: 1,
+            })
+            expect(mockDiscoverRekeyedAccounts).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    accountAddresses: ['NEW_ADDRESS'],
+                }),
+            )
+            expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
+                account: newAccount,
+            })
+        })
+
+        expect(mockExitAccountFlow).not.toHaveBeenCalled()
+    })
+
+    it('creates next derivation and navigates to ImportRekeyedAddresses when createIfEmpty and rekeys found', async () => {
         mockRouteParams.current.createIfEmpty = true
         mockAllAccounts.current = [
             {
@@ -215,20 +301,29 @@ describe('useSearchAccountsScreen', () => {
         }
         mockCreateHdWalletAccount.mockResolvedValue(newAccount)
 
+        const rekeyedAccounts = [
+            {
+                id: 'rekeyed-1',
+                address: 'REKEYED_ADDRESS',
+                type: AccountTypes.watch,
+                rekeyAddress: 'NEW_ADDRESS',
+            },
+        ]
+        mockDiscoverRekeyedAccounts.mockResolvedValue(rekeyedAccounts)
+
         renderHook(() => useSearchAccountsScreen())
 
         await waitFor(() => {
-            expect(mockCreateHdWalletAccount).toHaveBeenCalledWith({
-                walletId: 'wallet-1',
-                account: 0,
-                keyIndex: 1,
-            })
-            expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
-                account: newAccount,
+            expect(mockCreateHdWalletAccount).toHaveBeenCalled()
+            expect(mockReplace).toHaveBeenCalledWith('ImportRekeyedAddresses', {
+                accounts: rekeyedAccounts,
             })
         })
 
-        expect(mockExitAccountFlow).not.toHaveBeenCalled()
+        expect(mockReplace).not.toHaveBeenCalledWith(
+            'NameAccount',
+            expect.anything(),
+        )
     })
 
     it('shows error toast and goes back when createIfEmpty account creation fails', async () => {
