@@ -29,7 +29,11 @@ import {
     invalidateTransactionQueries,
     fetchAndPersistTransactions,
 } from '@perawallet/wallet-core-transactions'
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    calculateBackoff,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import type { SyncServiceDeps } from '../models'
 
@@ -93,8 +97,9 @@ export class SyncService {
         } catch (error) {
             logger.warn('Sync tick failed', { error })
             // Back off on errors to avoid hammering a rate-limited API
-            this.currentInterval = Math.min(
-                this.currentInterval * BACKOFF_MULTIPLIER,
+            this.currentInterval = calculateBackoff(
+                this.currentInterval,
+                BACKOFF_MULTIPLIER,
                 MAX_BACKOFF_INTERVAL,
             )
         } finally {

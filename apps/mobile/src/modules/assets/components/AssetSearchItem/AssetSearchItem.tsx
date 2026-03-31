@@ -19,8 +19,8 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import type { IconName } from '@components/core'
 import type { AssetSearchItem as AssetSearchItemType } from '@perawallet/wallet-core-assets'
+import { getVerificationIcon } from '@modules/assets/utils/verification'
 import { useStyles } from './styles'
 
 type AssetSearchItemProps = {
@@ -28,13 +28,6 @@ type AssetSearchItemProps = {
     isOptedIn: boolean
     isOptingIn: boolean
     onAdd: (assetId: string) => void
-}
-
-const VERIFICATION_ICON_MAP: Record<string, IconName | null> = {
-    verified: 'assets/verified',
-    trusted: 'assets/trusted',
-    suspicious: 'assets/suspicious',
-    unverified: null,
 }
 
 export const AssetSearchItem = ({
@@ -45,8 +38,7 @@ export const AssetSearchItem = ({
 }: AssetSearchItemProps) => {
     const styles = useStyles()
 
-    const verificationIcon =
-        VERIFICATION_ICON_MAP[item.verificationTier] ?? null
+    const verificationIcon = getVerificationIcon(item.verificationTier)
 
     const subtitle = [item.unitName, item.assetId].filter(Boolean).join(' · ')
 

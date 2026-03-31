@@ -12,7 +12,8 @@
 
 import React, { useCallback } from 'react'
 import { ActivityIndicator } from 'react-native'
-import { PWFlatList, PWInput, PWText, PWView } from '@components/core'
+import { PWFlatList, PWInput, PWView } from '@components/core'
+import { EmptyView } from '@components/EmptyView'
 import { AssetSearchItem } from '@modules/assets/components/AssetSearchItem'
 import type { AssetSearchItem as AssetSearchItemType } from '@perawallet/wallet-core-assets'
 import { useAddAssetScreen } from './useAddAssetScreen'
@@ -77,9 +78,10 @@ export const AddAssetScreen = () => {
                     keyboardDismissMode='on-drag'
                     ListEmptyComponent={
                         !isLoading ? (
-                            <PWView style={styles.emptyContainer}>
-                                <PWText>{t('add_asset.no_results')}</PWText>
-                            </PWView>
+                            <EmptyView
+                                body={t('add_asset.no_results')}
+                                icon='magnifying-glass'
+                            />
                         ) : null
                     }
                     ListFooterComponent={

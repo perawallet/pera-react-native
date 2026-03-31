@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
     useAccountBalancesQuery,
     useAccountsStore,
@@ -22,6 +22,8 @@ import {
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import { useDebouncedValue } from '@hooks/useDebouncedValue'
+import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 
 type UseAddAssetScreenResult = {
     searchQuery: string
@@ -38,17 +40,17 @@ type UseAddAssetScreenResult = {
     t: (key: string, params?: Record<string, string | number>) => string
 }
 
-const SEARCH_DEBOUNCE_MS = 400
-
 export const useAddAssetScreen = (): UseAddAssetScreenResult => {
     const { t } = useLanguage()
     const [searchQuery, setSearchQuery] = useState('')
-    const [debouncedQuery, setDebouncedQuery] = useState('')
     const [optingInAssetId, setOptingInAssetId] = useState<string | null>(null)
     const [recentlyOptedIn, setRecentlyOptedIn] = useState<Set<string>>(
         new Set(),
     )
-    const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const debouncedQuery = useDebouncedValue(
+        searchQuery.trim(),
+        SEARCH_DEBOUNCE_TIME,
+    )
 
     const selectedAccount = useAccountsStore(state =>
         state.getSelectedAccount(),
@@ -88,14 +90,6 @@ export const useAddAssetScreen = (): UseAddAssetScreenResult => {
 
     const handleSearchChange = useCallback((text: string) => {
         setSearchQuery(text)
-
-        if (debounceTimerRef.current) {
-            clearTimeout(debounceTimerRef.current)
-        }
-
-        debounceTimerRef.current = setTimeout(() => {
-            setDebouncedQuery(text.trim())
-        }, SEARCH_DEBOUNCE_MS)
     }, [])
 
     const handleAddAsset = useCallback(

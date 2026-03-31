@@ -35,7 +35,7 @@ export const assetSearchResultSchema = z.object({
         .enum(['algo', 'standard_asset', 'dapp_asset', 'collectible'])
         .nullable()
         .optional(),
-    collectible: collectibleSearchSchema.nullable(),
+    collectible: collectibleSearchSchema.nullable().optional(),
     category: z.number().nullable().optional(),
 })
 

@@ -13,18 +13,9 @@
 import { useInfiniteQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { searchAssets } from '../api/assets/search-endpoints'
-import type { AssetSearchResultResponse } from '../api/assets/search-schema'
+import type { AssetSearchItem } from '../models/search'
+import { transformSearchResult } from './mappers'
 import { MODULE_PREFIX } from './querykeys'
-
-type AssetSearchItem = {
-    assetId: string
-    name: string | null
-    unitName: string | null
-    logo: string | null
-    verificationTier: 'verified' | 'unverified' | 'suspicious'
-    usdValue: string | null
-    type: string | null
-}
 
 type UseAssetSearchQueryResult = {
     results: AssetSearchItem[]
@@ -34,18 +25,6 @@ type UseAssetSearchQueryResult = {
     hasNextPage: boolean
     fetchNextPage: () => void
 }
-
-const transformSearchResult = (
-    item: AssetSearchResultResponse,
-): AssetSearchItem => ({
-    assetId: String(item.asset_id),
-    name: item.name ?? null,
-    unitName: item.unit_name ?? null,
-    logo: item.logo ?? null,
-    verificationTier: item.verification_tier,
-    usdValue: item.usd_value ?? null,
-    type: item.type ?? null,
-})
 
 const getAssetSearchQueryKey = (query: string, network: string) => [
     MODULE_PREFIX,

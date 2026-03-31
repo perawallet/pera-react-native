@@ -27,7 +27,7 @@ export const useStyles = makeStyles(theme => ({
     },
     heroImage: {
         width: '100%',
-        height: 200,
+        aspectRatio: 16 / 9,
     },
     scrollContent: {
         flex: 1,

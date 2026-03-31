@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { ASSET_LIST_ITEM_MIN_HEIGHT } from '@constants/ui'
 
 const ICON_SIZE = 40
 const ACTION_SIZE = 36
@@ -21,7 +22,7 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         paddingVertical: theme.spacing.md,
         paddingHorizontal: theme.spacing.lg,
-        minHeight: 64,
+        minHeight: ASSET_LIST_ITEM_MIN_HEIGHT,
     },
     assetIcon: {
         width: ICON_SIZE,

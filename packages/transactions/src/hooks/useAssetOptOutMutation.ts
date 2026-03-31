@@ -21,7 +21,7 @@ import {
     deleteAssetHoldings,
     useAccountBalancesInvalidator,
 } from '@perawallet/wallet-core-accounts'
-import { TransactionError } from '../errors'
+import { NonZeroBalanceError, CreatorCannotOptOutError } from '../errors'
 
 type AssetOptOutParams = {
     sender: string
@@ -37,20 +37,6 @@ type UseAssetOptOutMutationResult = {
     isLoading: boolean
     isError: boolean
     error: Error | null
-}
-
-export class NonZeroBalanceError extends TransactionError {
-    constructor() {
-        super(
-            'Cannot opt out of an asset with a non-zero balance. Transfer the remaining balance first.',
-        )
-    }
-}
-
-export class CreatorCannotOptOutError extends TransactionError {
-    constructor() {
-        super('Asset creators cannot opt out of their own assets.')
-    }
 }
 
 type ResolvedOptOutParams = {

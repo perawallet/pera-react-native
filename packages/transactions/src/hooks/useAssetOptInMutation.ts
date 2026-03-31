@@ -21,7 +21,10 @@ import {
     insertAssetHolding,
     useAccountBalancesInvalidator,
 } from '@perawallet/wallet-core-accounts'
-import { TransactionError } from '../errors'
+import {
+    AlreadyOptedInError,
+    InsufficientBalanceForOptInError,
+} from '../errors'
 
 type AssetOptInParams = {
     sender: string
@@ -33,20 +36,6 @@ type UseAssetOptInMutationResult = {
     isLoading: boolean
     isError: boolean
     error: Error | null
-}
-
-export class AlreadyOptedInError extends TransactionError {
-    constructor() {
-        super('Account is already opted in to this asset')
-    }
-}
-
-export class InsufficientBalanceForOptInError extends TransactionError {
-    constructor() {
-        super(
-            'Insufficient ALGO balance to opt in. Account needs enough to cover the minimum balance requirement and transaction fee.',
-        )
-    }
 }
 
 export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {

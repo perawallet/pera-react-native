@@ -25,6 +25,7 @@ import {
 import { CopyableText } from '@components/CopyableText'
 import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import { getVerificationIcon } from '@modules/assets/utils/verification'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
 
@@ -61,33 +62,13 @@ export const AccountAssetItemView = ({
         [asset?.assetId],
     )
 
-    const verificationIcon = useMemo(() => {
+    const verificationIconName = useMemo(() => {
         if (isAlgo) {
-            return (
-                <PWIcon
-                    name='assets/trusted'
-                    size='xs'
-                />
-            )
+            return 'assets/trusted' as const
         }
-        if (asset?.peraMetadata?.verificationTier === 'verified') {
-            return (
-                <PWIcon
-                    name='assets/verified'
-                    size='xs'
-                />
-            )
-        }
-        if (asset?.peraMetadata?.verificationTier === 'suspicious') {
-            return (
-                <PWIcon
-                    name='assets/suspicious'
-                    size='xs'
-                />
-            )
-        }
-        return undefined
-    }, [asset, accountBalance.assetId])
+        const tier = asset?.peraMetadata?.verificationTier
+        return tier ? getVerificationIcon(tier) : null
+    }, [asset, isAlgo])
 
     if (!asset?.unitName) {
         return (
@@ -122,7 +103,12 @@ export const AccountAssetItemView = ({
                         >
                             {isAlgo ? 'Algo' : asset.name}
                         </PWText>
-                        {verificationIcon}
+                        {verificationIconName ? (
+                            <PWIcon
+                                name={verificationIconName}
+                                size='xs'
+                            />
+                        ) : null}
                     </PWView>
                     <CopyableText copyValue={String(asset.assetId)}>
                         <PWText

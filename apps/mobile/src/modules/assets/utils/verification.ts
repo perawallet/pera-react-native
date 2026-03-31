@@ -10,7 +10,17 @@
  limitations under the License
  */
 
-export * from './assets'
-export * from './asset-preferences'
-export * from './price-history'
-export * from './search'
+import type { IconName } from '@components/core'
+
+const VERIFICATION_ICON_MAP: Record<string, IconName | null> = {
+    verified: 'assets/verified',
+    trusted: 'assets/trusted',
+    suspicious: 'assets/suspicious',
+    unverified: null,
+}
+
+export const getVerificationIcon = (
+    verificationTier: string,
+): IconName | null => {
+    return VERIFICATION_ICON_MAP[verificationTier] ?? null
+}

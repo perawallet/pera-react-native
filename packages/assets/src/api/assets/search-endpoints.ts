@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import {
+    queryClient,
+    DEFAULT_PAGE_SIZE,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import {
     assetSearchResponseSchema,
     type AssetSearchResponse,
@@ -27,7 +31,7 @@ export const searchAssets = async ({
     query,
     network,
     cursor,
-    limit = 50,
+    limit = DEFAULT_PAGE_SIZE,
 }: SearchAssetsParams) => {
     const params: Record<string, string | number> = {
         q: query,

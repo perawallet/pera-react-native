@@ -70,6 +70,7 @@ type InsertAssetHoldingParams = {
     accountAddress: string
     assetId: string
     network: string
+    amount?: string
 }
 
 export async function insertAssetHolding({
@@ -77,6 +78,7 @@ export async function insertAssetHolding({
     accountAddress,
     assetId,
     network,
+    amount,
 }: InsertAssetHoldingParams): Promise<void> {
     await db
         .insert(AccountAssetHoldingsSchema)
@@ -84,7 +86,7 @@ export async function insertAssetHolding({
             accountAddress,
             assetId: new Decimal(assetId),
             network,
-            amount: new Decimal(0),
+            amount: new Decimal(amount ?? '0'),
             updatedAt: Date.now(),
         })
         .onConflictDoNothing()

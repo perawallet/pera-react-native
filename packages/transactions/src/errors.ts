@@ -51,3 +51,31 @@ export class InvalidSendParamsError extends TransactionError {
         })
     }
 }
+
+export class AlreadyOptedInError extends TransactionError {
+    constructor() {
+        super('Account is already opted in to this asset')
+    }
+}
+
+export class InsufficientBalanceForOptInError extends TransactionError {
+    constructor() {
+        super(
+            'Insufficient ALGO balance to opt in. Account needs enough to cover the minimum balance requirement and transaction fee.',
+        )
+    }
+}
+
+export class NonZeroBalanceError extends TransactionError {
+    constructor() {
+        super(
+            'Cannot opt out of an asset with a non-zero balance. Transfer the remaining balance first.',
+        )
+    }
+}
+
+export class CreatorCannotOptOutError extends TransactionError {
+    constructor() {
+        super('Asset creators cannot opt out of their own assets.')
+    }
+}
