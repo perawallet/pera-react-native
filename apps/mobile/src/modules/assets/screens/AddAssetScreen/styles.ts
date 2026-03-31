@@ -10,12 +10,24 @@
  limitations under the License
  */
 
-export * from './useAssetsQuery'
-export * from './useAssetPricesQuery'
-export * from './useAssetPriceHistoryQuery'
-export * from './useSingleAssetDetailsQuery'
-export * from './useInvalidateAssetPrices'
-export * from './useToggleAssetFavoriteMutation'
-export * from './useToggleAssetPriceAlertMutation'
-export * from './useAssetSearchQuery'
-export { invalidateAssetQueries, isAssetQuery } from './querykeys'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        flex: 1,
+        backgroundColor: theme.colors.background,
+    },
+    searchContainer: {
+        paddingHorizontal: theme.spacing.md,
+        paddingVertical: theme.spacing.sm,
+    },
+    listContent: {
+        paddingHorizontal: theme.spacing.md,
+    },
+    emptyContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingTop: theme.spacing['3xl'],
+    },
+}))

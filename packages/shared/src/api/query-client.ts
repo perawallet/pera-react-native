@@ -162,15 +162,20 @@ const standardHooks = {
     beforeRetry: [logRetry],
 }
 
+const peraRetryConfig = {
+    limit: 1,
+    statusCodes: [408, 413, 500, 502, 503, 504],
+    afterStatusCodes: [413, 503],
+    maxRetryAfter: 5000,
+}
+
 const mainnetPeraClient = ky.create({
     hooks: {
         ...standardHooks,
         beforeRequest: [setStandardHeaders, ...standardHooks.beforeRequest],
     },
     prefixUrl: config.mainnetBackendUrl,
-    retry: {
-        limit: 1,
-    },
+    retry: peraRetryConfig,
 })
 
 const testnetPeraClient = ky.create({
@@ -179,6 +184,7 @@ const testnetPeraClient = ky.create({
         beforeRequest: [setStandardHeaders, ...standardHooks.beforeRequest],
     },
     prefixUrl: config.testnetBackendUrl,
+    retry: peraRetryConfig,
 })
 const mainnetAlgodClient = ky.create({
     hooks: {

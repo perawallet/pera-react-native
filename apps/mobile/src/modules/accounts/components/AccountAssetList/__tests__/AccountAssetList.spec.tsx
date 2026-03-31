@@ -81,6 +81,15 @@ vi.mock('@perawallet/wallet-core-assets', async () => ({
     })),
 }))
 
+vi.mock('@perawallet/wallet-core-transactions', () => ({
+    useAssetOptOutMutation: () => ({
+        optOut: vi.fn(),
+        isLoading: false,
+        isError: false,
+        error: null,
+    }),
+}))
+
 vi.mock('@perawallet/wallet-core-currencies', () => ({
     useCurrency: vi.fn(() => ({
         preferredCurrency: 'USD',

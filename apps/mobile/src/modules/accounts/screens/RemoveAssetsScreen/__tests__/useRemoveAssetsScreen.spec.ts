@@ -61,6 +61,15 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetsQuery: vi.fn(() => ({ data: new Map() })),
 }))
 
+vi.mock('@perawallet/wallet-core-transactions', () => ({
+    useAssetOptOutMutation: () => ({
+        optOut: vi.fn(),
+        isLoading: false,
+        isError: false,
+        error: null,
+    }),
+}))
+
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (k: string) => k }),
 }))

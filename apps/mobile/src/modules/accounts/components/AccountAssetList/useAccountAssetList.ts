@@ -24,6 +24,7 @@ import {
     useAssetPricesQuery,
     type AssetPrices,
 } from '@perawallet/wallet-core-assets'
+import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useModalState, ModalState } from '@hooks/useModalState'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { useSortedAssetBalances } from './useSortedAssetBalances'
@@ -86,6 +87,7 @@ export const useAccountAssetList = ({
     )
     const { data: assets } = useAssetsQuery(assetIDs)
     const { data: assetPrices } = useAssetPricesQuery(assetIDs)
+    const { optOut } = useAssetOptOutMutation()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
     const { sortedBalances, hideZeroBalance } = useSortedAssetBalances(
@@ -138,11 +140,26 @@ export const useAccountAssetList = ({
         [optOutConfirmationState],
     )
 
-    const handleConfirmOptOut = useCallback(() => {
-        // TODO: Execute opt-out transaction
-        optOutConfirmationState.close()
-        setAssetForOptOut(null)
-    }, [optOutConfirmationState])
+    const handleConfirmOptOut = useCallback(async () => {
+        if (!assetForOptOut) {
+            return
+        }
+
+        const asset = assets?.get(assetForOptOut.assetId)
+
+        try {
+            await optOut({
+                sender: account.address,
+                assetId: BigInt(assetForOptOut.assetId),
+                creator: asset?.creator.address,
+            })
+        } catch {
+            // Error is surfaced by the mutation hook
+        } finally {
+            optOutConfirmationState.close()
+            setAssetForOptOut(null)
+        }
+    }, [assetForOptOut, assets, account.address, optOut, optOutConfirmationState])
 
     const handleCloseOptOut = useCallback(() => {
         optOutConfirmationState.close()

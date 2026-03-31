@@ -13,4 +13,6 @@
 export * from './useTransactionHistoryQuery'
 export * from './useCsvExportMutation'
 export * from './useTransactionSendFlow'
+export * from './useAssetOptInMutation'
+export * from './useAssetOptOutMutation'
 export * from './querykeys'

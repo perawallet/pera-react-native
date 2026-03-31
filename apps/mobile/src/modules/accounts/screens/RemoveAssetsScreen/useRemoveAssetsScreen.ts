@@ -21,6 +21,7 @@ import {
     useAssetsQuery,
     PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useLanguage } from '@hooks/useLanguage'
 
 type UseRemoveAssetsScreenResult = {
@@ -28,6 +29,8 @@ type UseRemoveAssetsScreenResult = {
     assets: Map<string, PeraAsset> | undefined
     selectedAssetIds: Set<string>
     isAllSelected: boolean
+    isRemoving: boolean
+    removeError: Error | null
     handleToggleSelect: (assetId: string) => void
     handleToggleSelectAll: () => void
     handleRemoveSelected: () => void
@@ -39,6 +42,7 @@ export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
     const [selectedAssetIds, setSelectedAssetIds] = useState<Set<string>>(
         new Set(),
     )
+    const [removeError, setRemoveError] = useState<Error | null>(null)
 
     const selectedAccount = useAccountsStore(state =>
         state.getSelectedAccount(),
@@ -46,6 +50,7 @@ export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
     const { accountBalances } = useAccountBalancesQuery(
         selectedAccount ? [selectedAccount] : [],
     )
+    const { optOut, isLoading: isRemoving } = useAssetOptOutMutation()
 
     const balanceData = useMemo(
         () =>
@@ -59,9 +64,12 @@ export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
         if (!balanceData) {
             return []
         }
-        return balanceData.assetBalances.filter(
-            item => item.assetId !== ALGO_ASSET_ID && item.amount.isZero(),
-        )
+        return balanceData.assetBalances.filter(item => {
+            if (item.assetId === ALGO_ASSET_ID || !item.amount.isZero()) {
+                return false
+            }
+            return true
+        })
     }, [balanceData])
 
     const assetIDs = useMemo(
@@ -70,9 +78,23 @@ export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
     )
     const { data: assets } = useAssetsQuery(assetIDs)
 
+    // Filter out assets where the user is the creator (creators cannot opt out)
+    const filteredRemovableAssets = useMemo(() => {
+        if (!assets || !selectedAccount) {
+            return removableAssets
+        }
+        return removableAssets.filter(item => {
+            const asset = assets.get(item.assetId)
+            if (!asset) {
+                return true
+            }
+            return asset.creator.address !== selectedAccount.address
+        })
+    }, [removableAssets, assets, selectedAccount])
+
     const isAllSelected =
-        removableAssets.length > 0 &&
-        selectedAssetIds.size === removableAssets.length
+        filteredRemovableAssets.length > 0 &&
+        selectedAssetIds.size === filteredRemovableAssets.length
 
     const handleToggleSelect = useCallback((assetId: string) => {
         setSelectedAssetIds(prev => {
@@ -90,19 +112,49 @@ export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
         if (isAllSelected) {
             setSelectedAssetIds(new Set())
         } else {
-            setSelectedAssetIds(new Set(removableAssets.map(a => a.assetId)))
+            setSelectedAssetIds(
+                new Set(filteredRemovableAssets.map(a => a.assetId)),
+            )
         }
-    }, [isAllSelected, removableAssets])
+    }, [isAllSelected, filteredRemovableAssets])
 
-    const handleRemoveSelected = useCallback(() => {
-        // TODO: Execute batch opt-out transactions
-    }, [])
+    const handleRemoveSelected = useCallback(async () => {
+        if (!selectedAccount || selectedAssetIds.size === 0 || !assets) {
+            return
+        }
+
+        setRemoveError(null)
+
+        const optOutParams = Array.from(selectedAssetIds).map(assetId => {
+            const asset = assets.get(assetId)
+            return {
+                sender: selectedAccount.address,
+                assetId: BigInt(assetId),
+                // Creator is optional — the mutation will fetch it from the
+                // indexer when the asset metadata is not in the local DB.
+                creator: asset?.creator.address,
+            }
+        })
+
+        if (optOutParams.length === 0) {
+            return
+        }
+
+        try {
+            await optOut(optOutParams)
+            setSelectedAssetIds(new Set())
+        } catch (err) {
+            setRemoveError(err instanceof Error ? err : new Error(String(err)))
+        }
+    }, [selectedAccount, selectedAssetIds, assets, optOut])
 
     return {
-        removableAssets,
+        removableAssets: filteredRemovableAssets,
         assets,
         selectedAssetIds,
         isAllSelected,
+        isRemoving,
+        removeError,
         handleToggleSelect,
         handleToggleSelectAll,
         handleRemoveSelected,
