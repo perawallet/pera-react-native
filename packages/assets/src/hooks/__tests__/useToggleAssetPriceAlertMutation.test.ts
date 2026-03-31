@@ -172,23 +172,10 @@ describe('useToggleAssetPriceAlertMutation', () => {
         expect(result.current.isLoading).toBe(false)
     })
 
-    it('optimistically updates query cache when toggling price alert', async () => {
+    it('invalidates asset query on success', async () => {
         vi.mocked(toggleAssetPriceAlert).mockResolvedValue(mockToggleResponse)
 
-        const existingAsset = {
-            assetId: '123',
-            decimals: 6,
-            creator: { address: 'CREATOR123' },
-            totalSupply: 1000000,
-            peraMetadata: {
-                isDeleted: false,
-                verificationTier: 'verified' as const,
-                isPriceAlertEnabled: false,
-                isFavorited: true,
-            },
-        }
-
-        queryClient.setQueryData(getAssetDetailsQueryKey('123'), existingAsset)
+        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
 
         const { result } = renderHook(
             () => useToggleAssetPriceAlertMutation(),
@@ -208,57 +195,9 @@ describe('useToggleAssetPriceAlertMutation', () => {
             expect(result.current.isSuccess).toBe(true)
         })
 
-        const cached = queryClient.getQueryData(
-            getAssetDetailsQueryKey('123'),
-        ) as typeof existingAsset
-
-        expect(cached.peraMetadata.isPriceAlertEnabled).toBe(true)
-        expect(cached.peraMetadata.isFavorited).toBe(true)
-    })
-
-    it('reverts query cache on error', async () => {
-        vi.mocked(toggleAssetPriceAlert).mockRejectedValue(
-            new Error('Not found'),
-        )
-
-        const existingAsset = {
-            assetId: '123',
-            decimals: 6,
-            creator: { address: 'CREATOR123' },
-            totalSupply: 1000000,
-            peraMetadata: {
-                isDeleted: false,
-                verificationTier: 'verified' as const,
-                isPriceAlertEnabled: false,
-                isFavorited: true,
-            },
-        }
-
-        queryClient.setQueryData(getAssetDetailsQueryKey('123'), existingAsset)
-
-        const { result } = renderHook(
-            () => useToggleAssetPriceAlertMutation(),
-            {
-                wrapper: createWrapper(queryClient),
-            },
-        )
-
-        result.current.toggleAssetPriceAlert({
-            assetID: '123',
-            deviceId: 'device-123',
-            enabled: true,
-            network: 'mainnet' as const,
+        expect(invalidateSpy).toHaveBeenCalledWith({
+            queryKey: getAssetDetailsQueryKey('123'),
         })
-
-        await waitFor(() => {
-            expect(result.current.isError).toBe(true)
-        })
-
-        const cached = queryClient.getQueryData(
-            getAssetDetailsQueryKey('123'),
-        ) as typeof existingAsset
-
-        expect(cached.peraMetadata.isPriceAlertEnabled).toBe(false)
     })
 
     it('returns correct state when mutation is idle', () => {

@@ -60,9 +60,7 @@ async function fetchAssetFromApis(
         ...(publicData ? stripNulls(publicData) : {}),
         peraMetadata: {
             ...DEFAULT_ASSET_METADATA,
-            ...(indexerData?.peraMetadata ?? {}),
             ...(peraData?.peraMetadata ?? {}),
-            ...(publicData?.peraMetadata ?? {}),
         },
     }
 }

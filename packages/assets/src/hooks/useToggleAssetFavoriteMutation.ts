@@ -15,7 +15,6 @@ import { toggleAssetFavorite } from '../api'
 import { getAssetDetailsQueryKey } from './querykeys'
 import { type Network, logger } from '@perawallet/wallet-core-shared'
 import { type ToggleStatusResponse } from '../api/settings/endpoints'
-import { type PeraAsset, DEFAULT_ASSET_METADATA } from '../models'
 import { updateAssetPeraMetadata } from '../db'
 
 type UseToggleAssetFavoriteMutationParams = {
@@ -40,39 +39,11 @@ export const useToggleAssetFavoriteMutation =
         const mutation = useMutation<
             ToggleStatusResponse,
             Error,
-            UseToggleAssetFavoriteMutationParams,
-            { previousAsset: PeraAsset | undefined }
+            UseToggleAssetFavoriteMutationParams
         >({
             mutationFn: toggleAssetFavorite,
             throwOnError: false,
-            onMutate: async variables => {
-                const queryKey = getAssetDetailsQueryKey(variables.assetID)
-                await queryClient.cancelQueries({ queryKey })
-
-                const previousAsset =
-                    queryClient.getQueryData<PeraAsset>(queryKey)
-
-                queryClient.setQueryData<PeraAsset>(queryKey, old => {
-                    if (!old) return old
-                    return {
-                        ...old,
-                        peraMetadata: {
-                            ...DEFAULT_ASSET_METADATA,
-                            ...old.peraMetadata,
-                            isFavorited: variables.enabled,
-                        },
-                    }
-                })
-
-                return { previousAsset }
-            },
-            onError: (error, variables, context) => {
-                if (context?.previousAsset) {
-                    queryClient.setQueryData(
-                        getAssetDetailsQueryKey(variables.assetID),
-                        context.previousAsset,
-                    )
-                }
+            onError: error => {
                 logger.error('Failed to toggle asset favorite', {
                     source: 'useToggleAssetFavoriteMutation',
                     error,
@@ -85,6 +56,9 @@ export const useToggleAssetFavoriteMutation =
                     updates: {
                         isFavorited: variables.enabled,
                     },
+                })
+                queryClient.invalidateQueries({
+                    queryKey: getAssetDetailsQueryKey(variables.assetID),
                 })
             },
         })

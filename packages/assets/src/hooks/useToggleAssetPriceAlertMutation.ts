@@ -15,7 +15,6 @@ import { toggleAssetPriceAlert } from '../api'
 import { getAssetDetailsQueryKey } from './querykeys'
 import { type Network, logger } from '@perawallet/wallet-core-shared'
 import { type ToggleStatusResponse } from '../api/settings/endpoints'
-import { type PeraAsset, DEFAULT_ASSET_METADATA } from '../models'
 import { updateAssetPeraMetadata } from '../db'
 
 type UseToggleAssetPriceAlertMutationParams = {
@@ -42,39 +41,11 @@ export const useToggleAssetPriceAlertMutation =
         const mutation = useMutation<
             ToggleStatusResponse,
             Error,
-            UseToggleAssetPriceAlertMutationParams,
-            { previousAsset: PeraAsset | undefined }
+            UseToggleAssetPriceAlertMutationParams
         >({
             mutationFn: toggleAssetPriceAlert,
             throwOnError: false,
-            onMutate: async variables => {
-                const queryKey = getAssetDetailsQueryKey(variables.assetID)
-                await queryClient.cancelQueries({ queryKey })
-
-                const previousAsset =
-                    queryClient.getQueryData<PeraAsset>(queryKey)
-
-                queryClient.setQueryData<PeraAsset>(queryKey, old => {
-                    if (!old) return old
-                    return {
-                        ...old,
-                        peraMetadata: {
-                            ...DEFAULT_ASSET_METADATA,
-                            ...old.peraMetadata,
-                            isPriceAlertEnabled: variables.enabled,
-                        },
-                    }
-                })
-
-                return { previousAsset }
-            },
-            onError: (error, variables, context) => {
-                if (context?.previousAsset) {
-                    queryClient.setQueryData(
-                        getAssetDetailsQueryKey(variables.assetID),
-                        context.previousAsset,
-                    )
-                }
+            onError: error => {
                 logger.error('Failed to toggle asset price alert', {
                     source: 'useToggleAssetPriceAlertMutation',
                     error,
@@ -87,6 +58,9 @@ export const useToggleAssetPriceAlertMutation =
                     updates: {
                         isPriceAlertEnabled: variables.enabled,
                     },
+                })
+                queryClient.invalidateQueries({
+                    queryKey: getAssetDetailsQueryKey(variables.assetID),
                 })
             },
         })

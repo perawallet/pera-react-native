@@ -229,7 +229,7 @@ describe('useSingleAssetDetailsQuery', () => {
                 true,
             )
             expect(result.current.data?.peraMetadata?.logo).toBe(
-                'https://public-logo.png',
+                'https://pera-logo.png',
             )
         })
 

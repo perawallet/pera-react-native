@@ -160,23 +160,10 @@ describe('useToggleAssetFavoriteMutation', () => {
         expect(result.current.isLoading).toBe(false)
     })
 
-    it('optimistically updates query cache when toggling favorite', async () => {
+    it('invalidates asset query on success', async () => {
         vi.mocked(toggleAssetFavorite).mockResolvedValue(mockToggleResponse)
 
-        const existingAsset = {
-            assetId: '123',
-            decimals: 6,
-            creator: { address: 'CREATOR123' },
-            totalSupply: 1000000,
-            peraMetadata: {
-                isDeleted: false,
-                verificationTier: 'verified' as const,
-                isPriceAlertEnabled: true,
-                isFavorited: false,
-            },
-        }
-
-        queryClient.setQueryData(getAssetDetailsQueryKey('123'), existingAsset)
+        const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries')
 
         const { result } = renderHook(() => useToggleAssetFavoriteMutation(), {
             wrapper: createWrapper(queryClient),
@@ -193,52 +180,9 @@ describe('useToggleAssetFavoriteMutation', () => {
             expect(result.current.isSuccess).toBe(true)
         })
 
-        const cached = queryClient.getQueryData(
-            getAssetDetailsQueryKey('123'),
-        ) as typeof existingAsset
-
-        expect(cached.peraMetadata.isFavorited).toBe(true)
-        expect(cached.peraMetadata.isPriceAlertEnabled).toBe(true)
-    })
-
-    it('reverts query cache on error', async () => {
-        vi.mocked(toggleAssetFavorite).mockRejectedValue(new Error('Not found'))
-
-        const existingAsset = {
-            assetId: '123',
-            decimals: 6,
-            creator: { address: 'CREATOR123' },
-            totalSupply: 1000000,
-            peraMetadata: {
-                isDeleted: false,
-                verificationTier: 'verified' as const,
-                isPriceAlertEnabled: false,
-                isFavorited: false,
-            },
-        }
-
-        queryClient.setQueryData(getAssetDetailsQueryKey('123'), existingAsset)
-
-        const { result } = renderHook(() => useToggleAssetFavoriteMutation(), {
-            wrapper: createWrapper(queryClient),
+        expect(invalidateSpy).toHaveBeenCalledWith({
+            queryKey: getAssetDetailsQueryKey('123'),
         })
-
-        result.current.toggleAssetFavorite({
-            assetID: '123',
-            deviceId: 'device-123',
-            enabled: true,
-            network: 'mainnet' as const,
-        })
-
-        await waitFor(() => {
-            expect(result.current.isError).toBe(true)
-        })
-
-        const cached = queryClient.getQueryData(
-            getAssetDetailsQueryKey('123'),
-        ) as typeof existingAsset
-
-        expect(cached.peraMetadata.isFavorited).toBe(false)
     })
 
     it('returns correct state when mutation is idle', () => {
