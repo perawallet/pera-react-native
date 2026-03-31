@@ -26,8 +26,8 @@ type ResolveSignableResult = {
 
 /**
  * Determines which transactions the wallet should sign and builds a
- * signer-override map for cases where the actual signer differs from
- * the transaction sender (e.g. rekeyed accounts).
+ * signer-override map for cases where the explicit signer in the
+ * request differs from the transaction sender.
  *
  * @param txParams        Per-transaction signer specs from the request
  * @param txSenders       Sender address of each decoded transaction (same order as txParams)
