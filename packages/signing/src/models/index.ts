@@ -42,6 +42,13 @@ type BaseSignRequest = {
 
 export type TransactionSignRequest = {
     txs: PeraTransaction[]
+    /**
+     * Per-transaction signer address overrides (index in `txs` → address).
+     * When present, the signing pipeline uses this address instead of
+     * `tx.sender` to determine who should sign.
+     * Populated from ARC-0001 `signers` field in WalletConnect requests.
+     */
+    signerOverrides?: Map<number, string>
     approve?: (signedTxs: PeraSignedTransaction[]) => Promise<void>
     reject?: () => Promise<void>
     error?: (error: Error) => Promise<void>
