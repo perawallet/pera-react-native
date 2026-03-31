@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { openDatabaseAsync, type SQLiteDatabase, type SQLiteBindValue } from 'expo-sqlite'
+import {
+    openDatabaseAsync,
+    type SQLiteDatabase,
+    type SQLiteBindValue,
+} from 'expo-sqlite'
 import { drizzle } from 'drizzle-orm/sqlite-proxy'
 import type {
     Database,
