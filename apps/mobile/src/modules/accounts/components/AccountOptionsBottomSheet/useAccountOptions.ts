@@ -31,6 +31,7 @@ import { useToast } from '@hooks/useToast'
 import { useModalState } from '@hooks/useModalState'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { IconName } from '@components/core'
+import { SHORT_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 
 export type AccountOption = {
     id: string
@@ -183,7 +184,7 @@ export const useAccountOptions = ({
                     body: '',
                     type: 'success',
                 })
-            }, 300)
+            }, SHORT_PROMPT_DISPLAY_DELAY)
         },
         [updateAccount, account, handleCloseRename, showToast, t],
     )
