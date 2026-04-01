@@ -14,100 +14,58 @@ import React from 'react'
 import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SwapAssetSelectionBottomSheet } from '../SwapAssetSelectionBottomSheet'
+import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import type { AccountAssetSelectionListProps } from '@modules/assets/components/AccountAssetSelectionList'
 
-const mockUseSelectedAccount = vi.hoisted(() => vi.fn())
-const mockUseAccountBalancesQuery = vi.hoisted(() => vi.fn())
+let capturedOnAssetSelected: ((asset: AssetWithAccountBalance) => void) | null =
+    null
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: mockUseSelectedAccount,
-    useAccountBalancesQuery: mockUseAccountBalancesQuery,
+vi.mock('@modules/assets/components/AccountAssetSelectionList', () => ({
+    AccountAssetSelectionList: (props: AccountAssetSelectionListProps) => {
+        capturedOnAssetSelected = props.onAssetSelected
+        return <div data-testid='account-asset-selection-list' />
+    },
 }))
 
-vi.mock('@components/core', async () => {
-    return {
-        PWBottomSheet: ({
-            children,
-            isVisible,
-        }: {
-            children: React.ReactNode
-            isVisible: boolean
-        }) =>
-            isVisible ? (
-                <div data-testid='PWBottomSheet'>{children}</div>
-            ) : null,
-        PWToolbar: () => <div data-testid='PWToolbar' />,
-        PWIcon: () => <div data-testid='PWIcon' />,
-        PWText: ({ children }: { children: React.ReactNode }) => (
-            <span>{children}</span>
-        ),
-        PWView: ({ children }: { children: React.ReactNode }) => (
-            <div>{children}</div>
-        ),
-        PWFlatList: ({
-            data,
-            renderItem,
-        }: {
-            data: { assetId: string }[]
-            renderItem: ({
-                item,
-            }: {
-                item: { assetId: string }
-            }) => React.ReactNode
-        }) => (
-            <div data-testid='asset-list'>
-                {data?.map((item: { assetId: string }) => (
-                    <div key={item.assetId}>{renderItem({ item })}</div>
-                ))}
-            </div>
-        ),
-        PWTouchableOpacity: ({
-            children,
-            onPress,
-        }: {
-            children: React.ReactNode
-            onPress: () => void
-        }) => (
-            <button
-                data-testid='asset-item'
-                onClick={onPress}
-            >
-                {children}
-            </button>
-        ),
-    }
-})
-
-vi.mock('@modules/assets/components/AssetItem/AccountAssetItemView', () => ({
-    AccountAssetItemView: ({
-        accountBalance,
+vi.mock('@components/core', async () => ({
+    PWBottomSheet: ({
+        children,
+        isVisible,
     }: {
-        accountBalance: { assetId: string }
-    }) => <div data-testid={`asset-${accountBalance.assetId}`} />,
+        children: React.ReactNode
+        isVisible: boolean
+    }) =>
+        isVisible ? <div data-testid='PWBottomSheet'>{children}</div> : null,
+    PWToolbar: ({
+        left,
+        center,
+    }: {
+        left: React.ReactNode
+        center: React.ReactNode
+    }) => (
+        <div data-testid='PWToolbar'>
+            {left}
+            {center}
+        </div>
+    ),
+    PWIcon: ({ onPress }: { onPress?: () => void }) => (
+        <button
+            data-testid='close-icon'
+            onClick={onPress}
+        />
+    ),
+    PWText: ({ children }: { children: React.ReactNode }) => (
+        <span data-testid='toolbar-title'>{children}</span>
+    ),
 }))
-
-vi.mock('@components/LoadingView', () => ({
-    LoadingView: () => <div data-testid='loading-view' />,
-}))
-
-const mockAssetBalances = [
-    { assetId: '0', amount: '1000000' },
-    { assetId: '123', amount: '500' },
-]
 
 describe('SwapAssetSelectionBottomSheet', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUseSelectedAccount.mockReturnValue({
-            address: 'TEST_ADDRESS',
-        })
-        mockUseAccountBalancesQuery.mockReturnValue({
-            accountBalances: new Map([
-                ['TEST_ADDRESS', { assetBalances: mockAssetBalances }],
-            ]),
-        })
+        capturedOnAssetSelected = null
     })
 
-    it('renders asset list when visible', () => {
+    it('renders when visible', () => {
         render(
             <SwapAssetSelectionBottomSheet
                 isVisible={true}
@@ -116,9 +74,8 @@ describe('SwapAssetSelectionBottomSheet', () => {
             />,
         )
 
-        expect(screen.getByTestId('asset-list')).toBeTruthy()
-        expect(screen.getByTestId('asset-0')).toBeTruthy()
-        expect(screen.getByTestId('asset-123')).toBeTruthy()
+        expect(screen.getByTestId('PWBottomSheet')).toBeTruthy()
+        expect(screen.getByTestId('account-asset-selection-list')).toBeTruthy()
     })
 
     it('does not render when not visible', () => {
@@ -133,9 +90,38 @@ describe('SwapAssetSelectionBottomSheet', () => {
         expect(screen.queryByTestId('PWBottomSheet')).toBeNull()
     })
 
-    it('calls onAssetSelected and onClose when an asset is tapped', () => {
+    it('renders toolbar title', () => {
+        render(
+            <SwapAssetSelectionBottomSheet
+                isVisible={true}
+                onClose={vi.fn()}
+                onAssetSelected={vi.fn()}
+            />,
+        )
+
+        expect(screen.getByTestId('toolbar-title')).toBeTruthy()
+    })
+
+    it('calls onClose when close icon is pressed', () => {
+        const onClose = vi.fn()
+
+        render(
+            <SwapAssetSelectionBottomSheet
+                isVisible={true}
+                onClose={onClose}
+                onAssetSelected={vi.fn()}
+            />,
+        )
+
+        fireEvent.click(screen.getByTestId('close-icon'))
+
+        expect(onClose).toHaveBeenCalled()
+    })
+
+    it('calls onAssetSelected and onClose when an asset is selected', () => {
         const onAssetSelected = vi.fn()
         const onClose = vi.fn()
+        const mockAsset = { assetId: '0' } as AssetWithAccountBalance
 
         render(
             <SwapAssetSelectionBottomSheet
@@ -145,10 +131,9 @@ describe('SwapAssetSelectionBottomSheet', () => {
             />,
         )
 
-        const assetItems = screen.getAllByTestId('asset-item')
-        fireEvent.click(assetItems[0])
+        capturedOnAssetSelected!(mockAsset)
 
-        expect(onAssetSelected).toHaveBeenCalledWith(mockAssetBalances[0])
+        expect(onAssetSelected).toHaveBeenCalledWith(mockAsset)
         expect(onClose).toHaveBeenCalled()
     })
 })

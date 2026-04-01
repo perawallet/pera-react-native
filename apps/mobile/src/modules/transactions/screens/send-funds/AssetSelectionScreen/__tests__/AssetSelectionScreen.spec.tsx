@@ -10,16 +10,19 @@
  limitations under the License
  */
 
-import { render, screen, fireEvent } from '@test-utils/render'
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import React from 'react'
+import { render, screen } from '@test-utils/render'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AssetSelectionScreen } from '../AssetSelectionScreen'
-import {
-    useSelectedAccount,
-    useAccountBalancesQuery,
-} from '@perawallet/wallet-core-accounts'
 import { useSendFunds } from '@modules/transactions/hooks'
+import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import type { AccountAssetSelectionListProps } from '@modules/assets/components/AccountAssetSelectionList'
 
 const mockNavigate = vi.fn()
+const mockSetSelectedAssetId = vi.fn()
+
+let capturedOnAssetSelected: ((asset: AssetWithAccountBalance) => void) | null =
+    null
 
 vi.mock('@react-navigation/native', async importOriginal => {
     const actual =
@@ -32,135 +35,46 @@ vi.mock('@react-navigation/native', async importOriginal => {
     }
 })
 
-vi.mock('@components/core', () => ({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWFlatList: ({ data, renderItem, ListEmptyComponent }: any) => (
-        <div data-testid='flat-list'>
-            {data && data.length > 0
-                ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  data.map((item: any, index: number) =>
-                      renderItem({ item, index }),
-                  )
-                : ListEmptyComponent}
-        </div>
-    ),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWTouchableOpacity: ({ children, onPress, ...rest }: any) => (
-        <div
-            onClick={onPress}
-            {...rest}
-        >
-            {children}
-        </div>
-    ),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWView: ({ children }: any) => <div>{children}</div>,
-    PWSkeleton: () => <div data-testid='skeleton' />,
-}))
-
-vi.mock('@components/LoadingView', () => ({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    LoadingView: ({ count }: any) => (
-        <div>
-            {Array.from({ length: count ?? 1 }, (_, i) => (
-                <div
-                    key={i}
-                    data-testid='skeleton'
-                />
-            ))}
-        </div>
-    ),
-}))
-
-vi.mock('@modules/assets/components/AssetItem/AccountAssetItemView', () => ({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    AccountAssetItemView: ({ accountBalance }: any) => (
-        <div data-testid={`asset-item-${accountBalance.assetId}`} />
-    ),
-}))
-
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: vi.fn(),
-    useAccountBalancesQuery: vi.fn(() => ({
-        accountBalances: new Map(),
-    })),
-}))
-
 vi.mock('@modules/transactions/hooks', () => ({
     useSendFunds: vi.fn(),
 }))
 
-const mockSetSelectedAssetId = vi.fn()
-
-const mockAssets = [
-    { assetId: '0', amount: '1000000', algoValue: '1' },
-    { assetId: '123', amount: '500', algoValue: '0.5' },
-]
+vi.mock('@modules/assets/components/AccountAssetSelectionList', () => ({
+    AccountAssetSelectionList: (props: AccountAssetSelectionListProps) => {
+        capturedOnAssetSelected = props.onAssetSelected
+        return <div data-testid='account-asset-selection-list' />
+    },
+}))
 
 describe('AssetSelectionScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(useSendFunds as any).mockReturnValue({
+        capturedOnAssetSelected = null
+        ;(useSendFunds as ReturnType<typeof vi.fn>).mockReturnValue({
             setSelectedAssetId: mockSetSelectedAssetId,
         })
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(useSelectedAccount as any).mockReturnValue({
-            address: 'test-address',
-        })
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(useAccountBalancesQuery as any).mockReturnValue({
-            accountBalances: new Map(),
-        })
     })
 
-    it('renders asset list when balanceData is available', () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(useAccountBalancesQuery as any).mockReturnValue({
-            accountBalances: new Map([
-                ['test-address', { assetBalances: mockAssets }],
-            ]),
-        })
+    it('renders AccountAssetSelectionList', () => {
+        render(<AssetSelectionScreen />)
+
+        expect(screen.getByTestId('account-asset-selection-list')).toBeTruthy()
+    })
+
+    it('calls setSelectedAssetId and navigates to InputAmount when an asset is selected', () => {
+        const mockAsset = { assetId: '123' } as AssetWithAccountBalance
 
         render(<AssetSelectionScreen />)
 
-        expect(screen.getByTestId('asset-item-0')).toBeTruthy()
-        expect(screen.getByTestId('asset-item-123')).toBeTruthy()
-    })
+        capturedOnAssetSelected!(mockAsset)
 
-    it('shows loading skeletons when balanceData is empty', () => {
-        render(<AssetSelectionScreen />)
-
-        const skeletons = screen.getAllByTestId('skeleton')
-        expect(skeletons.length).toBe(3)
-    })
-
-    it('calls setSelectedAsset and navigates to InputAmount when an asset is pressed', () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(useAccountBalancesQuery as any).mockReturnValue({
-            accountBalances: new Map([
-                ['test-address', { assetBalances: mockAssets }],
-            ]),
-        })
-
-        render(<AssetSelectionScreen />)
-
-        fireEvent.click(screen.getByTestId('asset-item-0'))
-
-        expect(mockSetSelectedAssetId).toHaveBeenCalledWith(
-            mockAssets[0].assetId,
-        )
+        expect(mockSetSelectedAssetId).toHaveBeenCalledWith('123')
         expect(mockNavigate).toHaveBeenCalledWith('InputAmount')
     })
 
-    it('renders without error when selectedAccount is null', () => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        ;(useSelectedAccount as any).mockReturnValue(null)
-
+    it('renders without error when useSendFunds returns default state', () => {
         const { container } = render(<AssetSelectionScreen />)
 
         expect(container).toBeTruthy()
-        const skeletons = screen.getAllByTestId('skeleton')
-        expect(skeletons.length).toBe(3)
     })
 })

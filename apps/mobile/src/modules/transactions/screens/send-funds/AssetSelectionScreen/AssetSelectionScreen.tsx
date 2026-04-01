@@ -10,32 +10,22 @@
  limitations under the License
  */
 
-import { PWFlatList, PWTouchableOpacity } from '@components/core'
-import {
-    AssetWithAccountBalance,
-    useAccountBalancesQuery,
-    useSelectedAccount,
-} from '@perawallet/wallet-core-accounts'
-import { useCallback, useMemo } from 'react'
-import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
+import { useCallback } from 'react'
+import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
-import { useStyles } from './styles'
 import { useSendFunds } from '@modules/transactions/hooks'
-import { LoadingView } from '@components/LoadingView'
+import { useLanguage } from '@hooks/useLanguage'
+import { AccountAssetSelectionList } from '@modules/assets/components/AccountAssetSelectionList'
 
 export const AssetSelectionScreen = () => {
-    const styles = useStyles()
-    const selectedAccount = useSelectedAccount()
+    const { t } = useLanguage()
     const { setSelectedAssetId } = useSendFunds()
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
-    const { accountBalances } = useAccountBalancesQuery(
-        selectedAccount ? [selectedAccount] : [],
-    )
 
-    const handleSelected = useCallback(
+    const handleAssetSelected = useCallback(
         (item: AssetWithAccountBalance) => {
             setSelectedAssetId(item.assetId)
             navigation.navigate('InputAmount')
@@ -43,41 +33,16 @@ export const AssetSelectionScreen = () => {
         [navigation, setSelectedAssetId],
     )
 
-    const balanceData = useMemo(
-        () =>
-            selectedAccount?.address
-                ? accountBalances.get(selectedAccount.address)?.assetBalances
-                : [],
-        [accountBalances, selectedAccount?.address],
-    )
-    const renderItem = useCallback(
-        ({ item }: { item: AssetWithAccountBalance }) => {
-            return (
-                <PWTouchableOpacity
-                    onPress={() => handleSelected(item)}
-                    key={`asset-${item.assetId}`}
-                    style={styles.item}
-                >
-                    <AccountAssetItemView accountBalance={item} />
-                </PWTouchableOpacity>
-            )
-        },
-        [handleSelected, styles],
-    )
-
     return (
-        <PWFlatList
+        <AccountAssetSelectionList
+            onAssetSelected={handleAssetSelected}
             inBottomSheet
-            contentContainerStyle={styles.container}
-            data={balanceData ?? []}
-            renderItem={renderItem}
-            keyExtractor={item => item.assetId}
-            ListEmptyComponent={
-                <LoadingView
-                    variant='skeleton'
-                    count={3}
-                />
-            }
+            hasPadding={false}
+            searchPlaceholder={t(
+                'send_funds.asset_selection.search_placeholder',
+            )}
+            emptyResultTitle={t('send_funds.asset_selection.no_results_title')}
+            emptyResultBody={t('send_funds.asset_selection.no_results_body')}
         />
     )
 }

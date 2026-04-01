@@ -10,19 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => {
-    return {
-        container: {
-            flexGrow: 1,
-            gap: theme.spacing.md,
-        },
-        loadingContainer: {
-            gap: theme.spacing.md,
-        },
-        item: {
-            width: '100%',
-        },
-    }
-})
+export { AccountAssetSelectionList } from './AccountAssetSelectionList'
+export type { AccountAssetSelectionListProps } from './AccountAssetSelectionList'
