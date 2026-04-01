@@ -15,7 +15,7 @@ import {
     getAccountDisplayName,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { useResolvedAddress } from '@perawallet/wallet-core-nfd'
 import { useCallback, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useStyles } from './styles'
@@ -53,6 +53,10 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
 
     const account = useSelectedAccount()
     const { data: asset, isPending } = useSingleAssetDetailsQuery(assetId ?? '')
+    const { displayName: accountDisplayName } = useResolvedAddress(
+        account?.address ?? '',
+        { enabled: !!account?.address },
+    )
 
     const notImplemented = useCallback(() => {
         showToast({
@@ -78,7 +82,7 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
                     style={styles.headerSubtitle}
                     numberOfLines={1}
                 >
-                    {truncateAlgorandAddress(account?.address ?? '')}
+                    {accountDisplayName}
                 </PWText>
             </PWView>
         ),

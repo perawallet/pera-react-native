@@ -24,11 +24,8 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PWText, PWView } from '@components/core'
-import {
-    DEFAULT_PRECISION,
-    truncateAlgorandAddress,
-} from '@perawallet/wallet-core-shared'
-import { LONG_ADDRESS_FORMAT } from '@constants/ui'
+import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
+import { useResolvedAddress } from '@perawallet/wallet-core-nfd'
 
 const getInnerTransactionCount = (tx: PeraDisplayableTransaction): number => {
     return tx.innerTxns?.length ?? 0
@@ -38,6 +35,9 @@ export const TxTypeDetails = ({ tx }: { tx: PeraDisplayableTransaction }) => {
     const txType = getTransactionType(tx)
     const { t } = useLanguage()
     const styles = useStyles()
+    const { displayName: senderDisplayName } = useResolvedAddress(tx.sender, {
+        format: 'long',
+    })
     const { data: asset } = useSingleAssetDetailsQuery(
         tx.assetTransferTransaction?.assetId?.toString() ?? '',
     )
@@ -110,10 +110,7 @@ export const TxTypeDetails = ({ tx }: { tx: PeraDisplayableTransaction }) => {
                         variant='caption'
                         style={styles.secondaryText}
                     >
-                        {truncateAlgorandAddress(
-                            tx.sender,
-                            LONG_ADDRESS_FORMAT,
-                        )}
+                        {senderDisplayName}
                     </PWText>
                 )
             }
@@ -125,7 +122,7 @@ export const TxTypeDetails = ({ tx }: { tx: PeraDisplayableTransaction }) => {
                     variant='caption'
                     style={styles.secondaryText}
                 >
-                    {truncateAlgorandAddress(tx.sender, LONG_ADDRESS_FORMAT)}
+                    {senderDisplayName}
                 </PWText>
             )
     }

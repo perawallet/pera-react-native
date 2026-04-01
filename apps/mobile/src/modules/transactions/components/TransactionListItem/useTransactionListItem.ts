@@ -12,7 +12,7 @@
 
 import { useCallback, useMemo } from 'react'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { useResolvedAddress } from '@perawallet/wallet-core-nfd'
 import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
 import {
     microAlgosToAlgos,
@@ -150,6 +150,18 @@ export const useTransactionListItem = ({
         [transaction.sender, userAddress],
     )
 
+    const counterpartyAddress = useMemo(() => {
+        if (transaction.txType === 'pay' || transaction.txType === 'axfer') {
+            return isOutgoing ? transaction.receiver : transaction.sender
+        }
+        return undefined
+    }, [transaction, isOutgoing])
+
+    const { displayName: counterpartyDisplayName } = useResolvedAddress(
+        counterpartyAddress ?? '',
+        { enabled: !!counterpartyAddress },
+    )
+
     const iconType = useMemo(
         (): TransactionIconType =>
             getTransactionIconType(transaction, isOutgoing),
@@ -188,19 +200,12 @@ export const useTransactionListItem = ({
         }
 
         // For payments and transfers, show the counterparty
-        if (transaction.txType === 'pay' || transaction.txType === 'axfer') {
-            const counterparty = isOutgoing
-                ? transaction.receiver
-                : transaction.sender
-
-            if (counterparty) {
-                // Use shared util for address truncation (Review comment #3)
-                return truncateAlgorandAddress(counterparty)
-            }
+        if (counterpartyAddress) {
+            return counterpartyDisplayName
         }
 
         return null
-    }, [transaction, userAddress, isOutgoing])
+    }, [transaction, counterpartyAddress, counterpartyDisplayName])
 
     const amounts = useMemo((): AmountDisplay[] => {
         const result: AmountDisplay[] = []

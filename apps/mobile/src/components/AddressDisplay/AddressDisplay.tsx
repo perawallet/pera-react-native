@@ -22,6 +22,7 @@ import { useStyles } from './styles'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useContacts } from '@perawallet/wallet-core-contacts'
+import { useNfdForAddress } from '@perawallet/wallet-core-nfd'
 import { useClipboard } from '@hooks/useClipboard'
 
 import { SvgProps } from 'react-native-svg'
@@ -42,7 +43,6 @@ export type AddressDisplayProps = {
 
 const LONG_ADDRESS_FORMAT = 20
 
-//TODO add support for NFDs
 export const AddressDisplay = ({
     address,
     addressFormat = 'short',
@@ -80,9 +80,13 @@ export const AddressDisplay = ({
             keyword: address,
             matchAddress: true,
             matchName: false,
-            matchNFD: false,
+            matchNFD: true,
         }).at(0)
     }, [displayType, address, findContacts])
+
+    const { nfdName } = useNfdForAddress(address, {
+        enabled: displayType !== 'address-only' && !account && !contact,
+    })
 
     const truncatedAddress =
         addressFormat === 'full'
@@ -115,7 +119,17 @@ export const AddressDisplay = ({
                 </PWView>
             )}
 
-            {!contact && !account && (
+            {!!nfdName && !contact && !account && (
+                <PWView style={styles.contactContainer}>
+                    <PWIcon
+                        name={`accounts/${isDarkMode ? 'dark' : 'light'}/algo25-account`}
+                        size='lg'
+                    />
+                    <PWText {...textProps}>{nfdName}</PWText>
+                </PWView>
+            )}
+
+            {!nfdName && !contact && !account && (
                 <PWView style={styles.contactContainer}>
                     {forceShowIcon && (
                         <PWIcon

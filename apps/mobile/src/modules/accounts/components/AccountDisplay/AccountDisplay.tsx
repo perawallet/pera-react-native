@@ -27,6 +27,7 @@ import { useStyles } from './styles'
 
 import { AccountIcon, AccountIconProps } from '../AccountIcon'
 import { useMemo } from 'react'
+import { useNfdForAddress } from '@perawallet/wallet-core-nfd'
 
 export type AccountDisplayProps = {
     account?: WalletAccount
@@ -58,8 +59,12 @@ export const AccountDisplay = ({
         [account?.address],
     )
 
+    const { nfdName } = useNfdForAddress(account?.address ?? '', {
+        enabled: !!account?.address,
+    })
+
     const renderSecondary = useMemo(
-        () => displayName === address,
+        () => nfdName || displayName === address,
         [displayName, address],
     )
 
@@ -94,7 +99,7 @@ export const AccountDisplay = ({
                         numberOfLines={1}
                         ellipsizeMode='middle'
                     >
-                        {address}
+                        {nfdName ?? address}
                     </PWText>
                 )}
             </PWView>

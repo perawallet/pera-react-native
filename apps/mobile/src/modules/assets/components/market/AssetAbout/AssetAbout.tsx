@@ -11,10 +11,8 @@
  */
 
 import { useStyles } from './styles'
-import {
-    generateOrderedUniqueId,
-    truncateAlgorandAddress,
-} from '@perawallet/wallet-core-shared'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { useResolvedAddress } from '@perawallet/wallet-core-nfd'
 import { PWButton, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
@@ -31,6 +29,10 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
     const { copyToClipboard } = useClipboard()
+    const { displayName: creatorDisplayName } = useResolvedAddress(
+        assetDetails.creator?.address ?? '',
+        { enabled: !!assetDetails.creator?.address },
+    )
 
     const extractDomain = (url: string) => {
         try {
@@ -81,9 +83,7 @@ export const AssetAbout = ({ assetDetails }: AssetAboutProps) => {
                     verticalAlignment='center'
                 >
                     <PWButton
-                        title={truncateAlgorandAddress(
-                            assetDetails.creator.address,
-                        )}
+                        title={creatorDisplayName}
                         onPress={() =>
                             copyToClipboard(assetDetails.creator.address)
                         }
