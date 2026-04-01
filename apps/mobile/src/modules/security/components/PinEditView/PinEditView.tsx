@@ -29,7 +29,12 @@ type PinEditViewProps = {
     testID?: string
 }
 
-export const PinEditView = ({ mode, onSuccess, onClose, testID }: PinEditViewProps) => {
+export const PinEditView = ({
+    mode,
+    onSuccess,
+    onClose,
+    testID,
+}: PinEditViewProps) => {
     const { height } = useWindowDimensions()
     const insets = useSafeAreaInsets()
     const styles = useStyles({ height, insets })
