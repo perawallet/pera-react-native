@@ -13,7 +13,7 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { useAssetPricesQuery } from '../useAssetPricesQuery'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
 import { ALGO_ASSET_ID } from '../../models'

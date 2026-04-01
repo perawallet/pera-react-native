@@ -20,7 +20,7 @@ import type {
     AccountBalanceHistoryResponseItem,
 } from '../models'
 import { useCallback } from 'react'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { getAccountBalancesHistoryQueryKey } from './querykeys'

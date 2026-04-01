@@ -21,7 +21,7 @@ import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useStyles } from './ArbitraryDataSigningDetailsView.style'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { ScrollView } from 'react-native-gesture-handler'
 
 export type ArbitraryDataSigningDetailsViewProps = {

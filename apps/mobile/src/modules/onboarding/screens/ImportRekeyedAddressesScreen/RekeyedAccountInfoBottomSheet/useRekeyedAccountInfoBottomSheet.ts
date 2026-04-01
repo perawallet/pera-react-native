@@ -19,7 +19,7 @@ import {
     WatchAccount,
 } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 type UseRekeyedAccountInfoBottomSheetParams = {
     account: WalletAccount

@@ -10,6 +10,11 @@
  limitations under the License
  */
 
+import { initDecimalConfig } from '@perawallet/wallet-core-shared'
+
+// Initialize Decimal.js configuration before any other imports that may use it
+initDecimalConfig()
+
 import React, { useEffect, useState } from 'react'
 import './i18n'
 import { Text } from 'react-native'

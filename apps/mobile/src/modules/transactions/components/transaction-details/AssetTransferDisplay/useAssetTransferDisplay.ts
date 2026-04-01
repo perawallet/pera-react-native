@@ -16,7 +16,7 @@ import {
     PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { useStyles } from './styles'
 import { useModalState } from '@hooks/useModalState'
 

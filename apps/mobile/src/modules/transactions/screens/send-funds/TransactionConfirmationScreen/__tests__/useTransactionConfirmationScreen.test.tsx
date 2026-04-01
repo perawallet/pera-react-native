@@ -13,7 +13,7 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useTransactionConfirmationScreen } from '../useTransactionConfirmationScreen'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     useSelectedAccount,
     useAccountAssetBalanceQuery,

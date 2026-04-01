@@ -11,7 +11,7 @@
  */
 
 import { useMemo } from 'react'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { useAssetPricesQuery } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import type { AccountBalances } from '../models'

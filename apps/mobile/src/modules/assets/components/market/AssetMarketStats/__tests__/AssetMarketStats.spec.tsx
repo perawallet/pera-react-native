@@ -14,7 +14,7 @@ import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { AssetMarketStats } from '../AssetMarketStats'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const actual =

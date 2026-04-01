@@ -15,7 +15,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { usePreferredCurrencyPriceQuery } from '../usePreferredCurrencyPriceQuery'
 import React from 'react'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 // Mock the network hook
 const mockUseNetwork = vi.hoisted(() => vi.fn())

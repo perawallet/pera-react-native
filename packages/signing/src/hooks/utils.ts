@@ -12,7 +12,7 @@
 
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { AppError } from '@perawallet/wallet-core-shared'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 import type {
     ResolvedSignerType,

@@ -15,7 +15,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { useAccountsAssetsBalanceHistoryQuery } from '../useAccountsAssetBalanceHistoryQuery'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { WalletAccount } from '../../models'
 
 // Mock endpoints

@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 import { useCurrenciesStore } from '../store'
 import { usePreferredCurrencyPriceQuery } from './usePreferredCurrencyPriceQuery'
 import { useAlgoUsdPriceQuery } from './useAlgoUsdPriceQuery'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 export const useCurrency = () => {
     const preferredCurrency = useCurrenciesStore(

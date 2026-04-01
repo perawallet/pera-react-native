@@ -11,7 +11,7 @@
  */
 
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'

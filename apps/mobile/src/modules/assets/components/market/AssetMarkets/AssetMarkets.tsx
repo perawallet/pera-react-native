@@ -23,7 +23,7 @@ import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { AssetPriceChart } from '../AssetPriceChart/AssetPriceChart'
 import { useChartInteraction } from '@hooks/useChartInteraction'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     PWButton,
     PWIcon,

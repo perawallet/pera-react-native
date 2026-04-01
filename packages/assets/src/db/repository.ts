@@ -11,7 +11,7 @@
  */
 
 import { eq, and, inArray } from 'drizzle-orm'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import {
     DEFAULT_ASSET_METADATA,

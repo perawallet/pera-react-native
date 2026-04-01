@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
+
 import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 
 export type SwapsState = BaseStoreState & {
@@ -60,8 +62,10 @@ export interface SwapHistoryItem {
     transactionGroupId: string | null
     assetIn: DexSwapAsset
     assetOut: DexSwapAsset
-    amountIn: string
-    amountOut: string
+    /** Amount of input asset swapped, in base units */
+    amountIn: Decimal
+    /** Amount of output asset received, in base units */
+    amountOut: Decimal
     amountInUsdValue?: string | null
     amountOutUsdValue?: string | null
 }
@@ -82,18 +86,22 @@ export interface SwapQuote {
     device?: number | null
     assetIn: DexSwapAsset
     assetOut: DexSwapAsset
-    amountIn?: string
-    amountInWithSlippage?: string
+    /** Amount of input asset, in base units */
+    amountIn?: Decimal
+    /** Amount of input asset with slippage applied, in base units */
+    amountInWithSlippage?: Decimal
     amountInUsdValue?: string | null
-    amountOut?: string
-    amountOutWithSlippage?: string
+    /** Amount of output asset, in base units */
+    amountOut?: Decimal
+    /** Amount of output asset with slippage applied, in base units */
+    amountOutWithSlippage?: Decimal
     amountOutUsdValue?: string | null
-    slippage?: string
-    price?: string
-    priceImpact?: string
-    peraFeeAmount?: string
-    exchangeFeeAmount?: string
-    transactionFees?: string | null
+    slippage?: Decimal
+    price?: Decimal
+    priceImpact?: Decimal
+    peraFeeAmount?: Decimal
+    exchangeFeeAmount?: Decimal
+    transactionFees?: Decimal | null
 }
 
 export interface TransactionGroup {
@@ -116,13 +124,13 @@ export interface TopPairItem {
 }
 
 export interface CalculatePeraFeeResult {
-    peraFeeAmount?: number
+    peraFeeAmount?: Decimal
     peraFeeAssetId?: number
 }
 
 export interface CalculateSwapAmountResult {
-    amount?: string
-    peraFee?: string
+    amount?: Decimal
+    peraFee?: Decimal
     peraFeeAssetId?: number
 }
 

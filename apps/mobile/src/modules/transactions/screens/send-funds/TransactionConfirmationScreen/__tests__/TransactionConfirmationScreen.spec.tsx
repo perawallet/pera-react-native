@@ -12,7 +12,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, fireEvent } from '@test-utils/render'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { TransactionConfirmationScreen } from '../TransactionConfirmationScreen'
 import { useTransactionConfirmationScreen } from '../useTransactionConfirmationScreen'
 

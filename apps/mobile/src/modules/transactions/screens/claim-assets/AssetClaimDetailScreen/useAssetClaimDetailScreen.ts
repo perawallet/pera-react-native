@@ -112,7 +112,7 @@ export const useAssetClaimDetailScreen =
 
         const amount = useMemo(() => {
             if (!request) return Decimal(0)
-            return toWholeUnits(Decimal(request.totalAmount), request.asset)
+            return toWholeUnits(request.totalAmount, request.asset)
         }, [request])
 
         return {

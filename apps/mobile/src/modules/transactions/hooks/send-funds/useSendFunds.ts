@@ -12,7 +12,7 @@
 
 import { create } from 'zustand'
 import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-asa-inbox'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 type SendMode = 'normal' | 'express' | 'sendArc59'
 

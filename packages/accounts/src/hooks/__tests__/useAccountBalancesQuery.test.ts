@@ -18,7 +18,7 @@ import {
 } from '../useAccountBalancesQuery'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import type { WalletAccount } from '../../models/accounts'
 
 // Mock DB layer

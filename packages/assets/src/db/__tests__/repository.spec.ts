@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     runMigrations,
     migrations,

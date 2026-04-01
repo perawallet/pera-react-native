@@ -18,7 +18,7 @@ import {
     useAccountBalancesQuery,
     usePortfolioTotals,
 } from '@perawallet/wallet-core-accounts'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 const mockAccount = {
     address: 'test-address',

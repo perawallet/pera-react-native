@@ -11,7 +11,7 @@
  */
 
 import { useQueries } from '@tanstack/react-query'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
 import type {
     AccountBalances,

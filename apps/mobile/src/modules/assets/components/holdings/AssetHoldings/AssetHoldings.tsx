@@ -27,7 +27,7 @@ import {
 } from '@modules/assets/components'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     AccountBalanceHistoryItem,
     useAccountAssetBalanceQuery,

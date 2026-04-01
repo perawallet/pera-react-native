@@ -16,7 +16,7 @@ import type { HistoryPeriod } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '../models'
 import { useQuery } from '@tanstack/react-query'
 import { fetchAccountAssetBalanceHistory } from './endpoints'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { getAccountAssetBalanceHistoryQueryKey } from './querykeys'
 
 export const useAccountsAssetsBalanceHistoryQuery = (

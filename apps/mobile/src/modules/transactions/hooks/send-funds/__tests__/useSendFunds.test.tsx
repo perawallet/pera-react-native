@@ -12,7 +12,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 import { useSendFundsStore, useSendFunds } from '../useSendFunds'
 

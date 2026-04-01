@@ -35,7 +35,7 @@ import {
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import type WebView from 'react-native-webview'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 const SUPPORTED_CURRENCIES = ['algorand', 'usdcalgorand']
 const SUPPORTED_CURRENCIES_JSON = JSON.stringify(SUPPORTED_CURRENCIES)

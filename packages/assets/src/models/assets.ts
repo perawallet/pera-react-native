@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { type Network } from '@perawallet/wallet-core-config'
 
 export const PeraAssetVerificationTier = {
@@ -49,6 +49,7 @@ export type PeraAsset = {
     assetId: string
     decimals: number
     creator: CreatorAccount
+    /** Total supply in base units (smallest indivisible unit of the asset) */
     totalSupply: Decimal
     metadata?: string
     name?: string

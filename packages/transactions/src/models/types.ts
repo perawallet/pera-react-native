@@ -53,10 +53,10 @@ export interface TransactionSwapGroupDetail {
     assetOutId: number | null
     /** The ticker symbol/unit name of the output asset */
     assetOutUnitName: string
-    /** The amount of input asset being swapped, as a string to preserve precision */
-    amountIn: string
-    /** The amount of output asset received, as a string to preserve precision */
-    amountOut: string
+    /** The amount of input asset being swapped, in base units */
+    amountIn: Decimal
+    /** The amount of output asset received, in base units */
+    amountOut: Decimal
 }
 
 /**

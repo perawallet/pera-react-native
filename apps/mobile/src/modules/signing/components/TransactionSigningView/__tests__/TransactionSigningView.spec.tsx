@@ -17,7 +17,7 @@ import {
     type TransactionSignRequest,
     useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 const mockNext = vi.fn()
 const mockFail = vi.fn()

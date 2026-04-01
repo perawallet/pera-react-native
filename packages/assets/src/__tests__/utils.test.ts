@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { toWholeUnits, toDecimalUnits } from '../utils'
 import type { PeraAsset } from '../models'
 

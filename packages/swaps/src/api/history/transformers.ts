@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
+
 import type { SwapHistoryItem, SwapDistinctPairItem } from '../../models'
 import { transformDexSwapAsset } from '../available-assets/transformers'
 import type {
@@ -28,8 +30,8 @@ export const transformSwapHistoryItem = (
     transactionGroupId: data.transaction_group_id,
     assetIn: transformDexSwapAsset(data.asset_in),
     assetOut: transformDexSwapAsset(data.asset_out),
-    amountIn: data.amount_in,
-    amountOut: data.amount_out,
+    amountIn: new Decimal(data.amount_in),
+    amountOut: new Decimal(data.amount_out),
     amountInUsdValue: data.amount_in_usd_value,
     amountOutUsdValue: data.amount_out_usd_value,
 })

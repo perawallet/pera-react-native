@@ -17,7 +17,7 @@ import {
     PeraAsset,
     useAssetPriceHistoryQuery,
 } from '@perawallet/wallet-core-assets'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 vi.mock('react-native-gifted-charts', () => ({
     LineChart: 'LineChart',

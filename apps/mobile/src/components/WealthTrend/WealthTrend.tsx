@@ -17,7 +17,7 @@ import {
     HistoryPeriod,
 } from '@perawallet/wallet-core-shared'
 import { useMemo } from 'react'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import {
     useAccountBalancesHistoryQuery,

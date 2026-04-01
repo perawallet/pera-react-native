@@ -15,7 +15,7 @@ import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { useAssetPriceHistoryQuery } from '../useAssetPriceHistoryQuery'
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 // Mock endpoints
 const mocks = vi.hoisted(() => ({

@@ -16,7 +16,7 @@ import { useAssetsQuery } from '../useAssetsQuery'
 import { getAssetsQueryKey, getAlgoQueryKey } from '../querykeys'
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 const mocks = vi.hoisted(() => ({
     getAssetsByIds: vi.fn(),

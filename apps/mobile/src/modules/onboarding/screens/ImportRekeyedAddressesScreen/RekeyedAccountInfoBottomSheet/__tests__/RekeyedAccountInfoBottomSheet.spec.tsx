@@ -14,7 +14,7 @@ import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { RekeyedAccountInfoBottomSheet } from '../RekeyedAccountInfoBottomSheet'
 import { AccountTypes } from '@perawallet/wallet-core-accounts'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 vi.mock('@perawallet/wallet-core-currencies', () => ({
     useCurrency: vi.fn(() => ({

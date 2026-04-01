@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { PWInput, PWText, PWView } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { useLanguage } from '@hooks/useLanguage'

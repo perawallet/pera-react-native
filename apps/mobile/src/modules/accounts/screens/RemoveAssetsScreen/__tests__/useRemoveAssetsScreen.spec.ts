@@ -12,7 +12,7 @@
 
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { useRemoveAssetsScreen } from '../useRemoveAssetsScreen'
 
 const mockAccount = { address: 'test-address', name: 'Test' }

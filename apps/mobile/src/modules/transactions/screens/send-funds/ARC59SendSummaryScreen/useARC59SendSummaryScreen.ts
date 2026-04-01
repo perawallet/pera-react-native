@@ -34,7 +34,7 @@ import LightHeaderImage from '@assets/images/asset-inbox-send-light.svg'
 import DarkHeaderImage from '@assets/images/asset-inbox-send-dark.svg'
 import { useThemeMode } from '@rneui/themed'
 import { SvgProps } from 'react-native-svg'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { useModalState } from '@hooks/useModalState'
 
 type UseARC59SendSummaryScreenResult = {

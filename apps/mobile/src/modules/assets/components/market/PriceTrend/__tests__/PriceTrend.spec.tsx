@@ -14,7 +14,7 @@ import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { PriceTrend } from '../PriceTrend'
 import { useAssetPriceHistoryQuery } from '@perawallet/wallet-core-assets'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     const actual =

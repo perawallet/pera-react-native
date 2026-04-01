@@ -16,7 +16,7 @@ import { useSingleAssetDetailsQuery } from '../useSingleAssetDetailsQuery'
 import { ALGO_ASSET_ID } from '../../models'
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 // Mock endpoints
 const mocks = vi.hoisted(() => ({

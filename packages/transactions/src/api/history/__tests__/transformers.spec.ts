@@ -99,8 +99,8 @@ describe('transformTransactionItem', () => {
             assetInUnitName: 'USDC',
             assetOutId: 0,
             assetOutUnitName: 'ALGO',
-            amountIn: '1000000',
-            amountOut: '5000000',
+            amountIn: new Decimal('1000000'),
+            amountOut: new Decimal('5000000'),
         })
     })
 
@@ -122,8 +122,8 @@ describe('transformTransactionItem', () => {
             assetInUnitName: '',
             assetOutId: null,
             assetOutUnitName: '',
-            amountIn: '0',
-            amountOut: '0',
+            amountIn: new Decimal('0'),
+            amountOut: new Decimal('0'),
         })
     })
 

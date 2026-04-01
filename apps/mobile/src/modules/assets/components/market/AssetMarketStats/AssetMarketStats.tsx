@@ -13,7 +13,7 @@
 import { useStyles } from './styles'
 import { formatNumber, formatWithUnits } from '@perawallet/wallet-core-shared'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { PWText, PWView } from '@components/core'
 import { useMemo } from 'react'
 import { PeraAsset } from '@perawallet/wallet-core-assets'

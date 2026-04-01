@@ -20,6 +20,7 @@ export const AccountAssetHoldingsSchema = sqliteTable(
         accountAddress: text('account_address').notNull(),
         assetId: decimalColumn('asset_id').notNull(),
         network: text('network').notNull(),
+        /** Asset amount in base units (smallest indivisible unit of the asset) */
         amount: decimalColumn('amount').notNull().default(new Decimal(0)),
         updatedAt: integer('updated_at').notNull(),
     },
@@ -35,6 +36,7 @@ export const AccountBalancesSchema = sqliteTable(
     {
         accountAddress: text('account_address').notNull(),
         network: text('network').notNull(),
+        /** ALGO balance in display units (ALGOs, not microAlgos) */
         algoBalance: decimalColumn('algo_balance')
             .notNull()
             .default(new Decimal(0)),
@@ -45,6 +47,7 @@ export const AccountBalancesSchema = sqliteTable(
             .notNull()
             .default(0),
         totalAppsOptedIn: integer('total_apps_opted_in').notNull().default(0),
+        /** Minimum balance in display units (ALGOs, not microAlgos) */
         minBalance: decimalColumn('min_balance')
             .notNull()
             .default(new Decimal(0)),

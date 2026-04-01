@@ -30,11 +30,15 @@ export type PeraDisplayableTransaction = IndexerTransaction & {
 }
 
 export type AccountInformation = {
+    /** Minimum balance in microAlgos (base units, bigint) */
     minBalance: bigint
+    /** Account balance in microAlgos (base units, bigint) */
     amount: bigint
     address: Address
     status: string
+    /** Pending rewards in microAlgos (base units, bigint) */
     rewards: bigint
+    /** Opted-in assets with amounts in base units (smallest indivisible unit) */
     assets: Array<{ assetId: bigint; amount: bigint; isFrozen: boolean }>
 }
 

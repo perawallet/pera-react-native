@@ -11,9 +11,7 @@
  */
 
 import { toByteArray, fromByteArray } from 'base64-js'
-import { Decimal } from 'decimal.js'
-
-Decimal.set({ precision: 18, crypto: true, rounding: Decimal.ROUND_HALF_UP })
+import { Decimal } from './decimal-config'
 
 export const encodeToBase64 = (bytes: Uint8Array) => {
     return fromByteArray(bytes)

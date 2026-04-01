@@ -27,12 +27,14 @@ import {
     formatCurrency,
 } from '@perawallet/wallet-core-shared'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
+import { Decimal } from 'decimal.js'
 
 export type RejectConfirmBottomSheetProps = {
     isOpen: boolean
     onClose: () => void
     onConfirm: () => void
-    algoRefundAmount: string
+    /** ALGO refund amount in microAlgos (base units) */
+    algoRefundAmount: Decimal
 }
 
 export const RejectConfirmBottomSheet = ({

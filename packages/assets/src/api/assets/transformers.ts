@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     ALGO_ASSET_ID,
     PeraAssetType,

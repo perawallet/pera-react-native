@@ -36,7 +36,7 @@ import {
     useAllAccounts,
     usePortfolioTotals,
 } from '@perawallet/wallet-core-accounts'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { InfoButton } from '@components/InfoButton'

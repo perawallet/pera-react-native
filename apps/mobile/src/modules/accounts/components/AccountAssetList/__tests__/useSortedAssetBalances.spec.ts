@@ -12,7 +12,7 @@
 
 import { renderHook } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { useSortedAssetBalances } from '../useSortedAssetBalances'
 
 let mockSortMode = 'balanceDesc'

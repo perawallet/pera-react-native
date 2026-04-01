@@ -13,7 +13,7 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useCurrency } from '../useCurrency'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { useCurrenciesStore } from '../../store'
 
 // Mock the store

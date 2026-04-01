@@ -15,7 +15,7 @@ import {
     getAssetConfigType,
 } from '@perawallet/wallet-core-blockchain'
 import { useMemo } from 'react'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { formatNumber, formatWithUnits } from '@perawallet/wallet-core-shared'
 import { useModalState } from '@hooks/useModalState'
 
