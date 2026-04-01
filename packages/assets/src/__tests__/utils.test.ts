@@ -53,7 +53,9 @@ describe('utils', () => {
         test('handles Decimal input', () => {
             const asset = createTestAsset(6, 'ALGO')
 
-            expect(toWholeUnits(new Decimal(1000000), asset)).toEqual(new Decimal(1))
+            expect(toWholeUnits(new Decimal(1000000), asset)).toEqual(
+                new Decimal(1),
+            )
             expect(toWholeUnits(new Decimal('5500000.5'), asset)).toEqual(
                 new Decimal('5.5000005'),
             )
@@ -63,7 +65,9 @@ describe('utils', () => {
             const asset = createTestAsset(6, 'ALGO')
 
             expect(toWholeUnits(BigInt(1000000), asset)).toEqual(new Decimal(1))
-            expect(toWholeUnits(BigInt(10000000), asset)).toEqual(new Decimal(10))
+            expect(toWholeUnits(BigInt(10000000), asset)).toEqual(
+                new Decimal(10),
+            )
         })
 
         test('handles zero value', () => {
@@ -115,7 +119,9 @@ describe('utils', () => {
         test('handles Decimal input', () => {
             const asset = createTestAsset(6, 'ALGO')
 
-            expect(toDecimalUnits(new Decimal(1), asset)).toEqual(new Decimal(1000000))
+            expect(toDecimalUnits(new Decimal(1), asset)).toEqual(
+                new Decimal(1000000),
+            )
             expect(toDecimalUnits(new Decimal('5.5'), asset)).toEqual(
                 new Decimal(5500000),
             )
@@ -124,15 +130,21 @@ describe('utils', () => {
         test('handles bigint input', () => {
             const asset = createTestAsset(6, 'ALGO')
 
-            expect(toDecimalUnits(BigInt(1), asset)).toEqual(new Decimal(1000000))
-            expect(toDecimalUnits(BigInt(10), asset)).toEqual(new Decimal(10000000))
+            expect(toDecimalUnits(BigInt(1), asset)).toEqual(
+                new Decimal(1000000),
+            )
+            expect(toDecimalUnits(BigInt(10), asset)).toEqual(
+                new Decimal(10000000),
+            )
         })
 
         test('handles zero value', () => {
             const asset = createTestAsset(6, 'ALGO')
 
             expect(toDecimalUnits(0, asset)).toEqual(new Decimal(0))
-            expect(toDecimalUnits(new Decimal(0), asset)).toEqual(new Decimal(0))
+            expect(toDecimalUnits(new Decimal(0), asset)).toEqual(
+                new Decimal(0),
+            )
             expect(toDecimalUnits(BigInt(0), asset)).toEqual(new Decimal(0))
         })
 

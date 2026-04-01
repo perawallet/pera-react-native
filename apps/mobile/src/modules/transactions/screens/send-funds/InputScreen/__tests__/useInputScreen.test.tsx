@@ -47,7 +47,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountBalancesQuery: vi.fn(),
     useAccountInformationQuery: vi.fn(),
     useAccountAssetBalanceQuery: vi.fn(() => ({
-        data: { assetId: '0', amount: new Decimal(100), algoValue: new Decimal(100) },
+        data: {
+            assetId: '0',
+            amount: new Decimal(100),
+            algoValue: new Decimal(100),
+        },
     })),
 }))
 

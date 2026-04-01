@@ -58,18 +58,22 @@ export const useSortedAccounts = (
             case 'balanceAsc':
                 sorted.sort((a, b) => {
                     const aVal =
-                        accountBalances.get(a.address)?.algoValue ?? new Decimal(-1)
+                        accountBalances.get(a.address)?.algoValue ??
+                        new Decimal(-1)
                     const bVal =
-                        accountBalances.get(b.address)?.algoValue ?? new Decimal(-1)
+                        accountBalances.get(b.address)?.algoValue ??
+                        new Decimal(-1)
                     return aVal.minus(bVal).toNumber()
                 })
                 break
             case 'balanceDesc':
                 sorted.sort((a, b) => {
                     const aVal =
-                        accountBalances.get(a.address)?.algoValue ?? new Decimal(-1)
+                        accountBalances.get(a.address)?.algoValue ??
+                        new Decimal(-1)
                     const bVal =
-                        accountBalances.get(b.address)?.algoValue ?? new Decimal(-1)
+                        accountBalances.get(b.address)?.algoValue ??
+                        new Decimal(-1)
                     return bVal.minus(aVal).toNumber()
                 })
                 break

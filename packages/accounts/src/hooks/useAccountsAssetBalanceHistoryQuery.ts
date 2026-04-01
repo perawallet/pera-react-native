@@ -47,7 +47,9 @@ export const useAccountsAssetsBalanceHistoryQuery = (
             return data.results.map(item => ({
                 datetime: new Date(item.datetime),
                 algoValue: new Decimal(item.algo_value ?? '0'),
-                preferredValue: usdToPreferred(new Decimal(item.usd_value ?? '0')),
+                preferredValue: usdToPreferred(
+                    new Decimal(item.usd_value ?? '0'),
+                ),
                 round: item.round,
             }))
         },

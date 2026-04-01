@@ -114,7 +114,9 @@ export const InputScreen = () => {
                 <CurrencyDisplay
                     currency={asset.unitName ?? ''}
                     precision={asset.decimals}
-                    value={cryptoValue ? new Decimal(cryptoValue) : new Decimal(0)}
+                    value={
+                        cryptoValue ? new Decimal(cryptoValue) : new Decimal(0)
+                    }
                     rawValue={cryptoValue ?? undefined}
                     ignorePrivacyMode
                     style={[

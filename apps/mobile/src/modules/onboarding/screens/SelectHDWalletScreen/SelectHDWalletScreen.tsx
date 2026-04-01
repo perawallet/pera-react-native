@@ -53,7 +53,8 @@ export const SelectHDWalletScreen = () => {
         const groupAlgoValue = item.accounts.reduce(
             (sum, acc) =>
                 sum.plus(
-                    accountBalances.get(acc.address)?.algoValue ?? new Decimal(0),
+                    accountBalances.get(acc.address)?.algoValue ??
+                        new Decimal(0),
                 ),
             new Decimal(0),
         )

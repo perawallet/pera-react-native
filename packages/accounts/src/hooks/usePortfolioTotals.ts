@@ -46,7 +46,8 @@ export const usePortfolioTotals = (
             let accountUsdTotal = new Decimal(0)
             balance.assetBalances.forEach(assetBalance => {
                 const usdPrice =
-                    usdPrices?.get(assetBalance.assetId)?.usdPrice ?? new Decimal(0)
+                    usdPrices?.get(assetBalance.assetId)?.usdPrice ??
+                    new Decimal(0)
                 accountUsdTotal = accountUsdTotal.plus(
                     assetBalance.amount.times(usdPrice),
                 )
