@@ -21,8 +21,10 @@ export const SettingsThemeScreen = () => {
     const { t } = useLanguage()
 
     return (
-        <PWView style={styles.container}
-            testID='settings_theme_screen'>
+        <PWView
+            style={styles.container}
+            testID='settings_theme_screen'
+        >
             <PWRadioButton
                 title={t('settings.theme.system_label')}
                 onPress={() => setTheme('system')}

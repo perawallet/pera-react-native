@@ -46,8 +46,10 @@ export const SettingsSecurityScreen = () => {
     } = useSettingsSecurityScreen()
 
     return (
-        <PWView style={styles.container}
-            testID='settings_security_screen'>
+        <PWView
+            style={styles.container}
+            testID='settings_security_screen'
+        >
             <PWView style={styles.section}>
                 <PWText
                     variant='body'

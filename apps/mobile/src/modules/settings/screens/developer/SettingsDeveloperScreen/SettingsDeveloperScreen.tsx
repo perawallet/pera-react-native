@@ -43,8 +43,10 @@ export const SettingsDeveloperScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}
-            testID='developer_settings_screen'>
+        <PWView
+            style={styles.container}
+            testID='developer_settings_screen'
+        >
             <PWListItem
                 onPress={() => handleTapEvent('NodeSettings')}
                 icon='tree'

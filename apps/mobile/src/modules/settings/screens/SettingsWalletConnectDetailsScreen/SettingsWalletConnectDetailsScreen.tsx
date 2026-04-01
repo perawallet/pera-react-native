@@ -79,8 +79,10 @@ export const SettingsWalletConnectDetailsScreen = ({
     } = useSettingsWalletConnectDetailsScreen(session)
 
     return (
-        <PWScrollView contentContainerStyle={styles.container}
-            testID='wallet_connect_details_screen'>
+        <PWScrollView
+            contentContainerStyle={styles.container}
+            testID='wallet_connect_details_screen'
+        >
             {!!preferredIcon && (
                 <Image
                     source={{ uri: preferredIcon }}
@@ -95,8 +97,10 @@ export const SettingsWalletConnectDetailsScreen = ({
             )}
             <Text h4>{peerMeta?.name ?? 'Unknown'}</Text>
             {peerMeta?.url && (
-                <PWTouchableOpacity onPress={handleOpenLink}
-                    testID='wallet_connect_details_url_link'>
+                <PWTouchableOpacity
+                    onPress={handleOpenLink}
+                    testID='wallet_connect_details_url_link'
+                >
                     <Text style={styles.link}>{peerMeta?.url}</Text>
                 </PWTouchableOpacity>
             )}

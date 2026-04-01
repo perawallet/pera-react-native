@@ -49,8 +49,10 @@ export const SettingsCurrencyScreen = () => {
     )
 
     return (
-        <PWView style={styles.container}
-            testID='settings_currency_screen'>
+        <PWView
+            style={styles.container}
+            testID='settings_currency_screen'
+        >
             <Text h3>{t('settings.currency.title')}</Text>
             <Text>
                 {t('settings.currency.description', {
