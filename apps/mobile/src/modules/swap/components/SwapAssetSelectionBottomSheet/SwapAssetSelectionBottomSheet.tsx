@@ -10,23 +10,11 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
-import {
-    AssetWithAccountBalance,
-    useAccountBalancesQuery,
-    useSelectedAccount,
-} from '@perawallet/wallet-core-accounts'
+import { useCallback } from 'react'
+import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
-import {
-    PWBottomSheet,
-    PWFlatList,
-    PWIcon,
-    PWText,
-    PWToolbar,
-    PWTouchableOpacity,
-} from '@components/core'
-import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
-import { LoadingView } from '@components/LoadingView'
+import { PWBottomSheet, PWIcon, PWText, PWToolbar } from '@components/core'
+import { AccountAssetSelectionList } from '@modules/assets/components/AccountAssetSelectionList'
 import { useStyles } from './styles'
 
 export type SwapAssetSelectionBottomSheetProps = {
@@ -42,18 +30,6 @@ export const SwapAssetSelectionBottomSheet = ({
 }: SwapAssetSelectionBottomSheetProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const selectedAccount = useSelectedAccount()
-    const { accountBalances } = useAccountBalancesQuery(
-        selectedAccount ? [selectedAccount] : [],
-    )
-
-    const balanceData = useMemo(
-        () =>
-            selectedAccount?.address
-                ? accountBalances.get(selectedAccount.address)?.assetBalances
-                : [],
-        [accountBalances, selectedAccount?.address],
-    )
 
     const handleAssetSelected = useCallback(
         (asset: AssetWithAccountBalance) => {
@@ -61,18 +37,6 @@ export const SwapAssetSelectionBottomSheet = ({
             onClose()
         },
         [onAssetSelected, onClose],
-    )
-
-    const renderItem = useCallback(
-        ({ item }: { item: AssetWithAccountBalance }) => (
-            <PWTouchableOpacity
-                onPress={() => handleAssetSelected(item)}
-                style={styles.item}
-            >
-                <AccountAssetItemView accountBalance={item} />
-            </PWTouchableOpacity>
-        ),
-        [handleAssetSelected, styles],
     )
 
     return (
@@ -94,17 +58,12 @@ export const SwapAssetSelectionBottomSheet = ({
                     </PWText>
                 }
             />
-            <PWFlatList
-                contentContainerStyle={styles.listContent}
-                data={balanceData ?? []}
-                renderItem={renderItem}
-                keyExtractor={item => item.assetId}
-                ListEmptyComponent={
-                    <LoadingView
-                        variant='skeleton'
-                        count={3}
-                    />
-                }
+            <AccountAssetSelectionList
+                onAssetSelected={handleAssetSelected}
+                isVisible={isVisible}
+                searchPlaceholder={t('swap.asset_selection.search_placeholder')}
+                emptyResultTitle={t('swap.asset_selection.no_results_title')}
+                emptyResultBody={t('swap.asset_selection.no_results_body')}
             />
         </PWBottomSheet>
     )

@@ -11,12 +11,19 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { Dimensions } from 'react-native'
 
-const { height } = Dimensions.get('window')
+type StyleProps = { hasPadding: boolean }
 
-export const useStyles = makeStyles(() => ({
-    container: {
-        height: height * 0.8,
+export const useStyles = makeStyles((theme, { hasPadding }: StyleProps) => ({
+    searchContainer: {
+        paddingHorizontal: hasPadding ? theme.spacing.md : 0,
+        marginBottom: theme.spacing.md,
+    },
+    listContent: {
+        gap: theme.spacing.md,
+    },
+    item: {
+        width: '100%',
+        paddingHorizontal: hasPadding ? theme.spacing.md : 0,
     },
 }))

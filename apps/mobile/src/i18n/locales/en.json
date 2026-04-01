@@ -753,7 +753,10 @@
             "edit": "Edit Note"
         },
         "asset_selection": {
-            "title": "Select Asset"
+            "title": "Select Asset",
+            "search_placeholder": "Search by asset name or ID",
+            "no_results_title": "No Matching Assets",
+            "no_results_body": "No assets matched your search term"
         },
         "bottom_sheet": {
             "no_account_title": "No Account Selected",
@@ -1202,7 +1205,10 @@
             "select_asset": "Select"
         },
         "asset_selection": {
-            "title": "Select asset"
+            "title": "Select asset",
+            "search_placeholder": "Search by name or ID",
+            "no_results_title": "No Matching Assets",
+            "no_results_body": "No assets matched your search term"
         }
     }
 }
