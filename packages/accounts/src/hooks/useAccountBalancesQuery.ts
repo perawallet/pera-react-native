@@ -91,7 +91,7 @@ export const useAccountBalancesQuery = (
     const { data: assets } = useAssetsQuery(assetIDs)
     const { data: assetPrices } = useAssetPricesQuery(assetIDs)
     const usdAlgoPrice = useMemo(
-        () => assetPrices?.get(ALGO_ASSET_ID)?.usdPrice ?? Decimal(0),
+        () => assetPrices?.get(ALGO_ASSET_ID)?.usdPrice ?? new Decimal(0),
         [assetPrices],
     )
 
@@ -106,7 +106,7 @@ export const useAccountBalancesQuery = (
         if (!hasAccounts) {
             return {
                 accountBalances: new Map() as AccountBalances,
-                portfolioAlgoValue: Decimal(0),
+                portfolioAlgoValue: new Decimal(0),
                 isPending: false,
                 isFetched: false,
                 isRefetching: false,
@@ -115,7 +115,7 @@ export const useAccountBalancesQuery = (
         }
 
         const accountBalanceList = results.map(r => {
-            let algoValue = Decimal(0)
+            let algoValue = new Decimal(0)
 
             const assetBalances: AssetWithAccountBalance[] = []
             r.data?.holdings?.forEach(holding => {
@@ -166,7 +166,7 @@ export const useAccountBalancesQuery = (
 
         const portfolioAlgoValue = accountBalanceList.reduce(
             (acc, cur) => acc.plus(cur.algoValue),
-            Decimal(0),
+            new Decimal(0),
         )
 
         const isPending = results.some(r => r.isPending)

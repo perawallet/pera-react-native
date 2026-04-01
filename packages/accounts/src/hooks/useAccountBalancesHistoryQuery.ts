@@ -31,8 +31,8 @@ const mapAccountBalanceHistoryItem = (
 ): AccountBalanceHistoryItem => {
     return {
         datetime: new Date(item.datetime),
-        preferredValue: usdToPreferred(Decimal(item.usd_value)),
-        algoValue: Decimal(item.algo_value),
+        preferredValue: usdToPreferred(new Decimal(item.usd_value)),
+        algoValue: new Decimal(item.algo_value),
         round: item.round,
     }
 }

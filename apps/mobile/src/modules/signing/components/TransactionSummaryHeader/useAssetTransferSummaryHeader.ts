@@ -54,7 +54,7 @@ export const useAssetTransferSummaryHeader = (
     const { data: asset } = useSingleAssetDetailsQuery(assetId)
 
     const amount = useMemo(() => {
-        return Decimal(microAmount).div(10 ** (asset?.decimals ?? 0))
+        return new Decimal(microAmount).div(10 ** (asset?.decimals ?? 0))
     }, [transaction])
 
     return {

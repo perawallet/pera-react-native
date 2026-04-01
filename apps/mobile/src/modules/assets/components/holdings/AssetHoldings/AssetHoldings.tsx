@@ -76,13 +76,13 @@ export const AssetHoldings = ({
     const cryptoAmount = useMemo(() => {
         const currentCrypto = selectedPoint
             ? selectedPoint.algoValue
-            : (assetHolding?.amount ?? Decimal(0))
+            : (assetHolding?.amount ?? new Decimal(0))
         return currentCrypto
     }, [assetHolding, selectedPoint])
 
     const selectedPreferredValue = useMemo(() => {
         if (!selectedPoint) return null
-        return selectedPoint.preferredValue ?? Decimal(0)
+        return selectedPoint.preferredValue ?? new Decimal(0)
     }, [selectedPoint])
 
     return (
@@ -138,7 +138,7 @@ export const AssetHoldings = ({
                         ) : (
                             <PreferredCurrencyDisplay
                                 sourceAmount={
-                                    assetHolding?.amount ?? Decimal(0)
+                                    assetHolding?.amount ?? new Decimal(0)
                                 }
                                 sourceAssetId={asset.assetId}
                                 precision={2}

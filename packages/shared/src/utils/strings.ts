@@ -122,8 +122,8 @@ export const formatCurrency = (
     minPrecision?: number,
 ) => {
     const { amount, unit } = truncateToUnits
-        ? formatWithUnits(Decimal(value))
-        : { amount: Decimal(value), unit: '' }
+        ? formatWithUnits(new Decimal(value))
+        : { amount: new Decimal(value), unit: '' }
 
     const { sign, integer, fraction } = formatNumber(
         amount,

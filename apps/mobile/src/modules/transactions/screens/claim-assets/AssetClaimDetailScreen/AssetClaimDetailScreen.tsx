@@ -148,7 +148,7 @@ export const AssetClaimDetailScreen = () => {
                 </PWView>
             </PWScrollView>
 
-            {!request.algoGainOnClaim.equals(5) && (
+            {!request.microAlgoGainOnClaim.equals(5) && (
                 <>
                     <PWDivider style={styles.separator} />
                     <PWView style={styles.algoGainRow}>
@@ -163,7 +163,7 @@ export const AssetClaimDetailScreen = () => {
                         >
                             {t('arc59.claim.algo_gain', {
                                 amount: baseUnitsToDisplayUnits(
-                                    request.algoGainOnClaim,
+                                    request.microAlgoGainOnClaim,
                                     6,
                                 ),
                             })}
@@ -193,7 +193,7 @@ export const AssetClaimDetailScreen = () => {
                 isOpen={isRejectSheetOpen}
                 onClose={handleRejectClose}
                 onConfirm={handleRejectConfirm}
-                algoRefundAmount={request.algoGainOnReject}
+                microAlgoRefundAmount={request.microAlgoGainOnReject}
             />
         </PWView>
     )

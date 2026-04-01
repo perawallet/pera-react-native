@@ -129,9 +129,9 @@ describe('useAccountBalances', () => {
         const accountData = result.current.accountBalances.get('ADDR1')
         expect(accountData).toBeDefined()
         // With empty asset prices mock, algoValue includes the ALGO balance
-        expect(accountData?.algoValue).toEqual(Decimal(1))
+        expect(accountData?.algoValue).toEqual(new Decimal(1))
 
-        expect(result.current.portfolioAlgoValue).toEqual(Decimal(1))
+        expect(result.current.portfolioAlgoValue).toEqual(new Decimal(1))
     })
 
     it('calculates asset balances with prices correctly', async () => {
@@ -150,9 +150,9 @@ describe('useAccountBalances', () => {
             decimals: 6,
             name: 'Another Token',
         })
-        mockAssetPrices.set('0', { usdPrice: Decimal(2) }) // ALGO at $2
-        mockAssetPrices.set('456', { usdPrice: Decimal(10) }) // Token at $10
-        mockAssetPrices.set('789', { usdPrice: Decimal(0.5) }) // Token at $0.50
+        mockAssetPrices.set('0', { usdPrice: new Decimal(2) }) // ALGO at $2
+        mockAssetPrices.set('456', { usdPrice: new Decimal(10) }) // Token at $10
+        mockAssetPrices.set('789', { usdPrice: new Decimal(0.5) }) // Token at $0.50
 
         // Mock DB reads
         mockGetAccountBalance.mockReturnValue({
@@ -183,23 +183,23 @@ describe('useAccountBalances', () => {
             b => b.assetId === '456',
         )
         expect(asset456).toBeDefined()
-        expect(asset456?.amount).toEqual(Decimal(10)) // 1000 / 10^2
+        expect(asset456?.amount).toEqual(new Decimal(10)) // 1000 / 10^2
 
         const asset789 = accountData?.assetBalances.find(
             b => b.assetId === '789',
         )
         expect(asset789).toBeDefined()
-        expect(asset789?.amount).toEqual(Decimal(2)) // 2000000 / 10^6
+        expect(asset789?.amount).toEqual(new Decimal(2)) // 2000000 / 10^6
 
         // Check ALGO balance was added
         const algoBalance = accountData?.assetBalances.find(
             b => b.assetId === '0',
         )
         expect(algoBalance).toBeDefined()
-        expect(algoBalance?.amount).toEqual(Decimal(5)) // 5000000 / 10^6
+        expect(algoBalance?.amount).toEqual(new Decimal(5)) // 5000000 / 10^6
 
         // Portfolio totals: 50 (asset456) + 0.5 (asset789) + 5 (ALGO) = 55.5 ALGO
-        expect(result.current.portfolioAlgoValue).toEqual(Decimal(55.5))
+        expect(result.current.portfolioAlgoValue).toEqual(new Decimal(55.5))
     })
 
     it('handles assets with zero price correctly', async () => {
@@ -216,7 +216,7 @@ describe('useAccountBalances', () => {
             decimals: 0,
             name: 'No Price Token',
         })
-        mockAssetPrices.set('0', { usdPrice: Decimal(1) })
+        mockAssetPrices.set('0', { usdPrice: new Decimal(1) })
 
         // Mock DB reads
         mockGetAccountBalance.mockReturnValue({
@@ -244,8 +244,8 @@ describe('useAccountBalances', () => {
         )
 
         expect(asset999).toBeDefined()
-        expect(asset999?.amount).toEqual(Decimal(100)) // decimals: 0
-        expect(asset999?.algoValue).toEqual(Decimal(0)) // No price means 0 value
+        expect(asset999?.amount).toEqual(new Decimal(100)) // decimals: 0
+        expect(asset999?.algoValue).toEqual(new Decimal(0)) // No price means 0 value
     })
 })
 
@@ -269,8 +269,8 @@ describe('useAccountAssetBalanceQuery', () => {
         }
 
         mockAssets.set('123', { id: '123', decimals: 4, name: 'Target Asset' })
-        mockAssetPrices.set('0', { usdPrice: Decimal(1) })
-        mockAssetPrices.set('123', { usdPrice: Decimal(5) })
+        mockAssetPrices.set('0', { usdPrice: new Decimal(1) })
+        mockAssetPrices.set('123', { usdPrice: new Decimal(5) })
 
         mockGetAccountBalance.mockReturnValue({
             accountAddress: 'ADDR1',
@@ -295,7 +295,7 @@ describe('useAccountAssetBalanceQuery', () => {
         expect(result.current.data).toBeDefined()
         if (result.current.data) {
             expect(result.current.data.assetId).toBe('123')
-            expect(result.current.data.amount).toEqual(Decimal(5)) // 50000 / 10^4
+            expect(result.current.data.amount).toEqual(new Decimal(5)) // 50000 / 10^4
         }
     })
 
@@ -308,7 +308,7 @@ describe('useAccountAssetBalanceQuery', () => {
             canSign: true,
         }
 
-        mockAssetPrices.set('0', { usdPrice: Decimal(1) })
+        mockAssetPrices.set('0', { usdPrice: new Decimal(1) })
 
         mockGetAccountBalance.mockReturnValue({
             accountAddress: 'ADDR1',

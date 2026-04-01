@@ -114,7 +114,7 @@ export const InputScreen = () => {
                 <CurrencyDisplay
                     currency={asset.unitName ?? ''}
                     precision={asset.decimals}
-                    value={cryptoValue ? Decimal(cryptoValue) : Decimal(0)}
+                    value={cryptoValue ? new Decimal(cryptoValue) : new Decimal(0)}
                     rawValue={cryptoValue ?? undefined}
                     ignorePrivacyMode
                     style={[
@@ -125,7 +125,7 @@ export const InputScreen = () => {
                     minPrecision={2}
                 />
                 <PreferredCurrencyDisplay
-                    sourceAmount={cryptoValue ? Decimal(cryptoValue) : null}
+                    sourceAmount={cryptoValue ? new Decimal(cryptoValue) : null}
                     ignorePrivacyMode
                     sourceAssetId={accountAssetBalance?.assetId ?? ''}
                     precision={6}

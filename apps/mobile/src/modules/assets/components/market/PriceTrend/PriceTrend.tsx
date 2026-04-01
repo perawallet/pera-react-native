@@ -46,11 +46,11 @@ export const PriceTrend = ({
     const [calculatedPercentage, calculatedValue] = useMemo(() => {
         const dataPoints = chartData?.map(p => p.usdPrice) ?? []
 
-        const firstDp = dataPoints.at(0) ?? Decimal(0)
+        const firstDp = dataPoints.at(0) ?? new Decimal(0)
         const lastDp =
-            selectedDataPoint?.usdPrice ?? dataPoints.at(-1) ?? Decimal(0)
+            selectedDataPoint?.usdPrice ?? dataPoints.at(-1) ?? new Decimal(0)
 
-        if (lastDp.isZero()) return [Decimal(0), Decimal(0)]
+        if (lastDp.isZero()) return [new Decimal(0), new Decimal(0)]
 
         return [
             lastDp.minus(firstDp).div(lastDp).mul(100),
@@ -58,10 +58,10 @@ export const PriceTrend = ({
         ]
     }, [chartData, selectedDataPoint])
 
-    const changePercentage = calculatedPercentage ?? Decimal(0)
+    const changePercentage = calculatedPercentage ?? new Decimal(0)
     const changeValue = calculatedValue
 
-    const isPositive = changePercentage.greaterThanOrEqualTo(Decimal(0))
+    const isPositive = changePercentage.greaterThanOrEqualTo(new Decimal(0))
 
     return (
         <View style={styles.container}>

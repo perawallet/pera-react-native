@@ -71,7 +71,7 @@ export const DEFAULT_ASSET_VALUES: PeraAsset = {
     creator: {
         address: '',
     },
-    totalSupply: Decimal(0),
+    totalSupply: new Decimal(0),
     peraMetadata: DEFAULT_ASSET_METADATA,
 }
 
@@ -115,7 +115,7 @@ export const ALGO_ASSET: PeraAsset = {
     name: 'Algo',
     unitName: 'ALGO',
     decimals: 6,
-    totalSupply: Decimal('10000000000000000000'), //10,000 T microalgos
+    totalSupply: new Decimal('10000000000000000000'), //10,000 T microalgos
     creator: {
         address: '',
     },

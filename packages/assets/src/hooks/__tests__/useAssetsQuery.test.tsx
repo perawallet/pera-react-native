@@ -79,7 +79,7 @@ describe('useAssetsQuery', () => {
                 name: 'Test Asset',
                 unitName: 'TST',
                 decimals: 6,
-                totalSupply: Decimal('1000000'),
+                totalSupply: new Decimal('1000000'),
                 creator: { address: 'CREATOR123' },
             },
         ]

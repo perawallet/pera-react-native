@@ -71,7 +71,7 @@ describe('useSingleAssetDetailsQuery', () => {
                 name: 'Algo',
                 unitName: 'ALGO',
                 decimals: 6,
-                totalSupply: Decimal('10000000000000000000'),
+                totalSupply: new Decimal('10000000000000000000'),
                 creator: { address: '' },
             })
 
@@ -101,7 +101,7 @@ describe('useSingleAssetDetailsQuery', () => {
                 assetId: '123',
                 decimals: 6,
                 creator: { address: 'ADDR' },
-                totalSupply: Decimal(1000),
+                totalSupply: new Decimal(1000),
                 name: 'DB Asset',
                 unitName: 'TEST',
             }

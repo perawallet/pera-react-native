@@ -55,11 +55,11 @@ describe('usePreferredCurrencyDisplay', () => {
         mockUseCurrency.mockReturnValue({
             preferredCurrency: 'EUR',
             fallbackCurrency: 'USD',
-            usdToPreferred: (v: Decimal) => v.mul(Decimal('0.85')),
+            usdToPreferred: (v: Decimal) => v.mul(new Decimal('0.85')),
         })
 
         const usdPrices = new Map([
-            ['0', { assetId: '0', usdPrice: Decimal('1') }],
+            ['0', { assetId: '0', usdPrice: new Decimal('1') }],
         ])
         mockUseAssetPricesQuery.mockReturnValue({
             data: usdPrices,
@@ -67,12 +67,12 @@ describe('usePreferredCurrencyDisplay', () => {
         })
 
         const { result } = renderHook(() =>
-            usePreferredCurrencyDisplay(Decimal(10), '0'),
+            usePreferredCurrencyDisplay(new Decimal(10), '0'),
         )
 
         expect(result.current.displayCurrency).toBe('EUR')
         // 10 * 1 (USD price) = 10 USD, usdToPreferred(10) = 10 * 0.85 = 8.5
-        expect(result.current.convertedValue).toEqual(Decimal(8.5))
+        expect(result.current.convertedValue).toEqual(new Decimal(8.5))
         expect(result.current.isPending).toBe(false)
     })
 
@@ -85,7 +85,7 @@ describe('usePreferredCurrencyDisplay', () => {
 
         // ALGO USD price = 0.15
         const usdPrices = new Map([
-            ['0', { assetId: '0', usdPrice: Decimal('0.15') }],
+            ['0', { assetId: '0', usdPrice: new Decimal('0.15') }],
         ])
         mockUseAssetPricesQuery.mockReturnValue({
             data: usdPrices,
@@ -94,17 +94,17 @@ describe('usePreferredCurrencyDisplay', () => {
 
         // USD→USD rate = 1
         mockUsePreferredCurrencyPriceQuery.mockReturnValue({
-            data: { usdPrice: Decimal('1') },
+            data: { usdPrice: new Decimal('1') },
             isPending: false,
         })
 
         const { result } = renderHook(() =>
-            usePreferredCurrencyDisplay(Decimal(100), '0'),
+            usePreferredCurrencyDisplay(new Decimal(100), '0'),
         )
 
         expect(result.current.displayCurrency).toBe('USD')
         // 100 * 0.15 (USD price) = 15 USD value, * 1 (fallback rate) = 15
-        expect(result.current.convertedValue).toEqual(Decimal(15))
+        expect(result.current.convertedValue).toEqual(new Decimal(15))
         expect(result.current.isPending).toBe(false)
     })
 
@@ -113,12 +113,12 @@ describe('usePreferredCurrencyDisplay', () => {
             preferredCurrency: 'ALGO',
             fallbackCurrency: 'USD',
             // ALGO preferred: usdToPreferred divides by ALGO USD price
-            usdToPreferred: (v: Decimal) => v.div(Decimal('0.15')),
+            usdToPreferred: (v: Decimal) => v.div(new Decimal('0.15')),
         })
 
         // ASA USD price = 1.50 (meaning 1 ASA = $1.50)
         const usdPrices = new Map([
-            ['123', { assetId: '123', usdPrice: Decimal('1.50') }],
+            ['123', { assetId: '123', usdPrice: new Decimal('1.50') }],
         ])
         mockUseAssetPricesQuery.mockReturnValue({
             data: usdPrices,
@@ -126,12 +126,12 @@ describe('usePreferredCurrencyDisplay', () => {
         })
 
         const { result } = renderHook(() =>
-            usePreferredCurrencyDisplay(Decimal(5), '123'),
+            usePreferredCurrencyDisplay(new Decimal(5), '123'),
         )
 
         expect(result.current.displayCurrency).toBe('ALGO')
         // 5 * 1.50 = 7.5 USD, / 0.15 = 50 ALGO
-        expect(result.current.convertedValue).toEqual(Decimal(50))
+        expect(result.current.convertedValue).toEqual(new Decimal(50))
         expect(result.current.isPending).toBe(false)
     })
 
@@ -139,11 +139,11 @@ describe('usePreferredCurrencyDisplay', () => {
         mockUseCurrency.mockReturnValue({
             preferredCurrency: 'ALGO',
             fallbackCurrency: 'EUR',
-            usdToPreferred: (v: Decimal) => v.div(Decimal('0.15')),
+            usdToPreferred: (v: Decimal) => v.div(new Decimal('0.15')),
         })
 
         const usdPrices = new Map([
-            ['123', { assetId: '123', usdPrice: Decimal('1.50') }],
+            ['123', { assetId: '123', usdPrice: new Decimal('1.50') }],
         ])
         mockUseAssetPricesQuery.mockReturnValue({
             data: usdPrices,
@@ -151,17 +151,17 @@ describe('usePreferredCurrencyDisplay', () => {
         })
 
         mockUsePreferredCurrencyPriceQuery.mockReturnValue({
-            data: { usdPrice: Decimal('0.85') },
+            data: { usdPrice: new Decimal('0.85') },
             isPending: false,
         })
 
         const { result } = renderHook(() =>
-            usePreferredCurrencyDisplay(Decimal(5), '123', true),
+            usePreferredCurrencyDisplay(new Decimal(5), '123', true),
         )
 
         expect(result.current.displayCurrency).toBe('EUR')
         // 5 * 1.50 (USD) = 7.5 USD * 0.85 (EUR rate) = 6.375
-        expect(result.current.convertedValue).toEqual(Decimal(6.375))
+        expect(result.current.convertedValue).toEqual(new Decimal(6.375))
     })
 
     it('returns isPending=true while fiat prices load', () => {
@@ -177,7 +177,7 @@ describe('usePreferredCurrencyDisplay', () => {
         })
 
         const { result } = renderHook(() =>
-            usePreferredCurrencyDisplay(Decimal(10), '0'),
+            usePreferredCurrencyDisplay(new Decimal(10), '0'),
         )
 
         expect(result.current.isPending).toBe(true)
@@ -219,7 +219,7 @@ describe('usePreferredCurrencyDisplay', () => {
         })
 
         const { result } = renderHook(() =>
-            usePreferredCurrencyDisplay(Decimal(100), '0'),
+            usePreferredCurrencyDisplay(new Decimal(100), '0'),
         )
 
         expect(result.current.isPending).toBe(true)
@@ -230,7 +230,7 @@ describe('usePreferredCurrencyDisplay', () => {
         mockUseCurrency.mockReturnValue({
             preferredCurrency: 'EUR',
             fallbackCurrency: 'USD',
-            usdToPreferred: (v: Decimal) => v.mul(Decimal('0.85')),
+            usdToPreferred: (v: Decimal) => v.mul(new Decimal('0.85')),
         })
 
         // Return empty map — should not matter since preFetchedUsdPrice is provided
@@ -241,16 +241,16 @@ describe('usePreferredCurrencyDisplay', () => {
 
         const { result } = renderHook(() =>
             usePreferredCurrencyDisplay(
-                Decimal(10),
+                new Decimal(10),
                 '123',
                 false,
-                Decimal('1.50'),
+                new Decimal('1.50'),
             ),
         )
 
         expect(result.current.displayCurrency).toBe('EUR')
         // 10 * 1.50 = 15 USD, usdToPreferred(15) = 15 * 0.85 = 12.75
-        expect(result.current.convertedValue).toEqual(Decimal(12.75))
+        expect(result.current.convertedValue).toEqual(new Decimal(12.75))
         expect(result.current.isPending).toBe(false)
 
         // Verify it was called with empty array (no per-item fetch)

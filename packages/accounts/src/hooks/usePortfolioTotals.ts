@@ -40,13 +40,13 @@ export const usePortfolioTotals = (
 
     return useMemo(() => {
         const accountUsdValues = new Map<string, Decimal>()
-        let portfolioUsdValue = Decimal(0)
+        let portfolioUsdValue = new Decimal(0)
 
         accountBalances.forEach((balance, address) => {
-            let accountUsdTotal = Decimal(0)
+            let accountUsdTotal = new Decimal(0)
             balance.assetBalances.forEach(assetBalance => {
                 const usdPrice =
-                    usdPrices?.get(assetBalance.assetId)?.usdPrice ?? Decimal(0)
+                    usdPrices?.get(assetBalance.assetId)?.usdPrice ?? new Decimal(0)
                 accountUsdTotal = accountUsdTotal.plus(
                     assetBalance.amount.times(usdPrice),
                 )

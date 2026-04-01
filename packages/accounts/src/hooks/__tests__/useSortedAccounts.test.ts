@@ -45,7 +45,7 @@ const makeAccount = (address: string, name?: string): WalletAccount =>
 
 const makeBalance = (algoValue: number): AccountBalance => ({
     assetBalances: [],
-    algoValue: Decimal(algoValue),
+    algoValue: new Decimal(algoValue),
     isPending: false,
     isFetched: true,
     isRefetching: false,

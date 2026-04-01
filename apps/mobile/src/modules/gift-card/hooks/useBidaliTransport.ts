@@ -195,7 +195,7 @@ export const useBidaliTransport = (
             }
             let numericAmount: Decimal
             try {
-                numericAmount = Decimal(amount)
+                numericAmount = new Decimal(amount)
             } catch {
                 logger.warn('Bidali: invalid amount', { amount })
                 return

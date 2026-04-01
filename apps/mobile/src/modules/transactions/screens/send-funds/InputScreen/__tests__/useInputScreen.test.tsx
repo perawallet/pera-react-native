@@ -47,7 +47,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountBalancesQuery: vi.fn(),
     useAccountInformationQuery: vi.fn(),
     useAccountAssetBalanceQuery: vi.fn(() => ({
-        data: { assetId: '0', amount: Decimal(100), algoValue: Decimal(100) },
+        data: { assetId: '0', amount: new Decimal(100), algoValue: new Decimal(100) },
     })),
 }))
 
@@ -57,8 +57,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     ALGO_ASSET_ID: '0',
     ALGO_ASSET: { id: '0', decimals: 6 },
     toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>
-        Decimal(typeof value === 'bigint' ? value.toString() : value).div(
-            Decimal(10).pow(asset.decimals),
+        new Decimal(typeof value === 'bigint' ? value.toString() : value).div(
+            new Decimal(10).pow(asset.decimals),
         ),
 }))
 
@@ -116,7 +116,7 @@ describe('useInputScreen', () => {
             ]),
         })
         ;(useAssetPricesQuery as Mock).mockReturnValue({
-            data: new Map([['0', { usdPrice: Decimal(1.5) }]]),
+            data: new Map([['0', { usdPrice: new Decimal(1.5) }]]),
         })
         ;(useAccountBalancesQuery as Mock).mockReturnValue({
             accountBalances: new Map([
@@ -124,8 +124,8 @@ describe('useInputScreen', () => {
                     'test-addr',
                     {
                         assetBalances: [
-                            { assetId: '0', amount: Decimal(100) },
-                            { assetId: '1', amount: Decimal(50) },
+                            { assetId: '0', amount: new Decimal(100) },
+                            { assetId: '1', amount: new Decimal(50) },
                         ],
                     },
                 ],

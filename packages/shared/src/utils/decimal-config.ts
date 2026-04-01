@@ -17,14 +17,15 @@ import { Decimal } from 'decimal.js'
  *
  * Must be called once at app startup, before any Decimal operations.
  *
- * - precision: 18 — covers Algorand's max 19 decimal places for ASAs
- *   and provides sufficient precision for all financial calculations.
+ * - precision: 40 — Algorand uint64 values can have up to 20 significant digits,
+ *   and intermediate arithmetic (e.g., multiplying two large amounts) can require
+ *   up to double that. 40 provides ample headroom for all financial calculations.
  * - rounding: ROUND_HALF_UP — standard financial rounding.
  * - crypto: true — uses crypto.getRandomValues() for randomness.
  */
 export const initDecimalConfig = () => {
     Decimal.set({
-        precision: 18,
+        precision: 40,
         crypto: true,
         rounding: Decimal.ROUND_HALF_UP,
     })

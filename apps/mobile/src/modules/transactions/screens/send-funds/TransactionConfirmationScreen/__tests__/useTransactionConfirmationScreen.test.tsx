@@ -65,8 +65,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         return new Decimal(value)
     },
     toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>
-        Decimal(typeof value === 'bigint' ? value.toString() : value).div(
-            Decimal(10).pow(asset.decimals),
+        new Decimal(typeof value === 'bigint' ? value.toString() : value).div(
+            new Decimal(10).pow(asset.decimals),
         ),
 }))
 

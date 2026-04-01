@@ -54,13 +54,13 @@ const MOCK_HOOK_RESULT = {
     rekeyedAccountBalances: [
         {
             assetId: '0',
-            amount: Decimal(1027),
-            algoValue: Decimal(1027),
+            amount: new Decimal(1027),
+            algoValue: new Decimal(1027),
         },
     ],
-    rekeyedAccountAlgoValue: Decimal(1027),
+    rekeyedAccountAlgoValue: new Decimal(1027),
     authAddress: 'Z6LHO4ABCDEFGHIJKLMNOPQRSTUVWXYZ1234WBYIMM',
-    authAccountAlgoValue: Decimal(0),
+    authAccountAlgoValue: new Decimal(0),
     isPending: false,
 }
 

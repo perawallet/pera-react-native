@@ -24,10 +24,10 @@ export * from './multisig'
  *
  * @example
  * // 1_000_000 microAlgos → 1.0 ALGO (decimals = 6)
- * baseUnitsToDisplayUnits(1_000_000n, 6) // Decimal(1)
+ * baseUnitsToDisplayUnits(1_000_000n, 6) // new Decimal(1)
  *
  * // 100 base units of a 2-decimal ASA → 1.0
- * baseUnitsToDisplayUnits(100, 2) // Decimal(1)
+ * baseUnitsToDisplayUnits(100, 2) // new Decimal(1)
  *
  * @param amount - The amount in base units (e.g., microAlgos, smallest ASA unit)
  * @param decimals - The number of decimal places for the asset
@@ -46,7 +46,7 @@ export const baseUnitsToDisplayUnits = (
  *
  * @example
  * // 1.0 ALGO → 1_000_000 microAlgos (decimals = 6)
- * displayUnitsToBaseUnits(1, 6) // Decimal(1_000_000)
+ * displayUnitsToBaseUnits(1, 6) // new Decimal(1_000_000)
  *
  * @param amount - The amount in display units (e.g., ALGOs, human-readable ASA amount)
  * @param decimals - The number of decimal places for the asset

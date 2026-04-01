@@ -65,7 +65,7 @@ export const AccountOverviewHeader = ({
                         variant='h1'
                         value={
                             selectedPoint
-                                ? Decimal(selectedPoint.algoValue)
+                                ? new Decimal(selectedPoint.algoValue)
                                 : portfolioAlgoValue
                         }
                         currency='ALGO'

@@ -69,7 +69,7 @@ export const TransactionConfirmationScreen = () => {
                     precision={asset?.decimals ?? DEFAULT_PRECISION}
                     minPrecision={DEFAULT_PRECISION}
                     showSymbol
-                    value={amount ?? Decimal(0)}
+                    value={amount ?? new Decimal(0)}
                 />
                 <PreferredCurrencyDisplay
                     style={styles.secondaryAmount}
