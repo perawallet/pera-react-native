@@ -41,6 +41,7 @@ export const SettingsCurrencyScreen = () => {
                     title={`${item.name} (${item.id})`}
                     onPress={() => setCurrency(item)}
                     isSelected={preferredCurrency === item.id}
+                    testID={`settings_currency_item_${item.id.toLowerCase()}`}
                 />
             )
         },
@@ -48,7 +49,8 @@ export const SettingsCurrencyScreen = () => {
     )
 
     return (
-        <PWView style={styles.container}>
+        <PWView style={styles.container}
+            testID='settings_currency_screen'>
             <Text h3>{t('settings.currency.title')}</Text>
             <Text>
                 {t('settings.currency.description', {
@@ -60,12 +62,14 @@ export const SettingsCurrencyScreen = () => {
                 placeholder={t('settings.currency.search_placeholder')}
                 value={search}
                 onChangeText={setSearch}
+                testID='settings_currency_search_input'
             />
             <PWFlatList
                 data={filteredData}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
                 extraData={preferredCurrency}
+                testID='settings_currency_list'
             />
         </PWView>
     )

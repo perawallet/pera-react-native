@@ -60,6 +60,7 @@ export const SettingsScreen = () => {
                     <PWView
                         style={styles.section}
                         key={`settings-section-${item.title}`}
+                        testID={`settings_section_${item.title.toLowerCase().replace(/\s+/g, '_')}`}
                     >
                         <PWText style={styles.sectionTitle}>
                             {item.title}
@@ -71,6 +72,7 @@ export const SettingsScreen = () => {
                                 icon={page.icon as IconName}
                                 title={page.title}
                                 style={styles.sectionRow}
+                                testID={`settings_item_${page.title.toLowerCase().replace(/\s+/g, '_')}`}
                             />
                         ))}
                     </PWView>
@@ -87,14 +89,17 @@ export const SettingsScreen = () => {
                 isOpen={isDeleteModalOpen}
                 onClose={closeDeleteModal}
                 onSuccess={handleDeleteSuccess}
+                testID='settings_delete_all_confirm_bottom_sheet'
             />
             <DeleteAllSuccessBottomSheet
                 isVisible={isSuccessModalOpen}
                 onClose={handleSuccessClose}
+                testID='settings_delete_all_success_bottom_sheet'
             />
             <RatingsBottomSheet
                 isOpen={isRatingModalOpen}
                 onClose={closeRatingModal}
+                testID='settings_ratings_bottom_sheet'
             />
         </PWScrollView>
     )

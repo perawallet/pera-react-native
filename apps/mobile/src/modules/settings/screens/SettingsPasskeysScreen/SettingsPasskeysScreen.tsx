@@ -20,6 +20,7 @@ export const SettingsPasskeyScreen = () => {
             icon='person-key'
             title={t('common.not_implemented.title')}
             body={t('common.not_implemented.body')}
+            testID='settings_passkeys_screen'
         />
     )
 }

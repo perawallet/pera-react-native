@@ -21,21 +21,25 @@ export const SettingsThemeScreen = () => {
     const { t } = useLanguage()
 
     return (
-        <PWView style={styles.container}>
+        <PWView style={styles.container}
+            testID='settings_theme_screen'>
             <PWRadioButton
                 title={t('settings.theme.system_label')}
                 onPress={() => setTheme('system')}
                 isSelected={!theme || theme === 'system'}
+                testID='settings_theme_system_radio'
             />
             <PWRadioButton
                 title={t('settings.theme.light_label')}
                 onPress={() => setTheme('light')}
                 isSelected={theme === 'light'}
+                testID='settings_theme_light_radio'
             />
             <PWRadioButton
                 title={t('settings.theme.dark_label')}
                 onPress={() => setTheme('dark')}
                 isSelected={theme === 'dark'}
+                testID='settings_theme_dark_radio'
             />
         </PWView>
     )
