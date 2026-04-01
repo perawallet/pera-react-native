@@ -29,16 +29,23 @@ import {
     invalidateTransactionQueries,
     fetchAndPersistTransactions,
 } from '@perawallet/wallet-core-transactions'
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    calculateBackoff,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import type { SyncServiceDeps } from '../models'
 
 const POLL_INTERVAL = 3000
+const MAX_BACKOFF_INTERVAL = 30000
+const BACKOFF_MULTIPLIER = 2
 
 export class SyncService {
     private timer: ReturnType<typeof setTimeout> | null = null
     private running = false
     private hasCompletedInitialSync = false
+    private currentInterval = POLL_INTERVAL
 
     constructor(private readonly deps: SyncServiceDeps) {}
 
@@ -59,6 +66,7 @@ export class SyncService {
     restart(): void {
         this.stop()
         this.hasCompletedInitialSync = false
+        this.currentInterval = POLL_INTERVAL
         this.start()
     }
 
@@ -83,8 +91,17 @@ export class SyncService {
                 await this.syncAll(networksToSync)
                 this.invalidateQueries()
             }
+
+            // Reset interval on success
+            this.currentInterval = POLL_INTERVAL
         } catch (error) {
             logger.warn('Sync tick failed', { error })
+            // Back off on errors to avoid hammering a rate-limited API
+            this.currentInterval = calculateBackoff(
+                this.currentInterval,
+                BACKOFF_MULTIPLIER,
+                MAX_BACKOFF_INTERVAL,
+            )
         } finally {
             this.scheduleNextTick()
         }
@@ -92,7 +109,7 @@ export class SyncService {
 
     private scheduleNextTick(): void {
         if (!this.running) return
-        this.timer = setTimeout(() => void this.tick(), POLL_INTERVAL)
+        this.timer = setTimeout(() => void this.tick(), this.currentInterval)
     }
 
     private async checkShouldRefresh(
@@ -130,12 +147,16 @@ export class SyncService {
 
     private async syncAll(networks: Network[]): Promise<void> {
         const accounts = useAccountsStore.getState().accounts
+        let hasRateLimitError = false
 
         for (const network of networks) {
             // 1. Sync all accounts in parallel (each failure isolated)
-            await Promise.allSettled(
+            const accountResults = await Promise.allSettled(
                 accounts.map(a => fetchAndPersistAccount(a.address, network)),
             )
+            if (this.hasRateLimitFailure(accountResults)) {
+                hasRateLimitError = true
+            }
 
             // 2. Collect all unique asset IDs from DB holdings
             const assetIds = await getAllAssetIdsForNetwork({ network })
@@ -143,18 +164,39 @@ export class SyncService {
             // 3. Sync asset metadata and prices in parallel
             // Prices are always fetched from mainnet (inside fetchAndPersistPrices)
             // but stored under the active network so DB JOINs work correctly
-            await Promise.allSettled([
+            const assetResults = await Promise.allSettled([
                 fetchAndPersistAssets(assetIds, network),
                 fetchAndPersistPrices(assetIds, network),
             ])
+            if (this.hasRateLimitFailure(assetResults)) {
+                hasRateLimitError = true
+            }
 
             // 4. Sync recent transactions for each account
-            await Promise.allSettled(
+            const txResults = await Promise.allSettled(
                 accounts.map(a =>
                     fetchAndPersistTransactions(a.address, network),
                 ),
             )
+            if (this.hasRateLimitFailure(txResults)) {
+                hasRateLimitError = true
+            }
         }
+
+        if (hasRateLimitError) {
+            throw new Error('Rate limited by API')
+        }
+    }
+
+    private hasRateLimitFailure(
+        results: PromiseSettledResult<unknown>[],
+    ): boolean {
+        return results.some(
+            r =>
+                r.status === 'rejected' &&
+                r.reason instanceof Error &&
+                r.reason.message.includes('429'),
+        )
     }
 
     invalidateQueries(): void {

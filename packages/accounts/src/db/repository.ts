@@ -65,6 +65,34 @@ export async function refreshAccountHoldings({
     }
 }
 
+type InsertAssetHoldingParams = {
+    db?: Database
+    accountAddress: string
+    assetId: string
+    network: string
+    amount?: string
+}
+
+export async function insertAssetHolding({
+    db = getDatabase(),
+    accountAddress,
+    assetId,
+    network,
+    amount,
+}: InsertAssetHoldingParams): Promise<void> {
+    await db
+        .insert(AccountAssetHoldingsSchema)
+        .values({
+            accountAddress,
+            assetId: new Decimal(assetId),
+            network,
+            amount: new Decimal(amount ?? '0'),
+            updatedAt: Date.now(),
+        })
+        .onConflictDoNothing()
+        .run()
+}
+
 type GetAccountHoldingsParams = {
     db?: Database
     accountAddress: string
@@ -273,6 +301,35 @@ export async function getAllAccountBalances({
             ),
         )
         .all()
+}
+
+type DeleteAssetHoldingsParams = {
+    db?: Database
+    accountAddress: string
+    assetIds: string[]
+    network: string
+}
+
+export async function deleteAssetHoldings({
+    db = getDatabase(),
+    accountAddress,
+    assetIds,
+    network,
+}: DeleteAssetHoldingsParams): Promise<void> {
+    if (assetIds.length === 0) return
+
+    const assetIdDecimals = assetIds.map(id => new Decimal(id))
+
+    await db
+        .delete(AccountAssetHoldingsSchema)
+        .where(
+            and(
+                eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
+                eq(AccountAssetHoldingsSchema.network, network),
+                inArray(AccountAssetHoldingsSchema.assetId, assetIdDecimals),
+            ),
+        )
+        .run()
 }
 
 type GetAllHoldingsForNetworkParams = {

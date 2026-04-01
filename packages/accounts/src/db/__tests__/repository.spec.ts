@@ -21,6 +21,8 @@ import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import {
     refreshAccountHoldings,
     getAccountHoldings,
+    insertAssetHolding,
+    deleteAssetHoldings,
     upsertAccountBalance,
     getAccountBalance,
     getAllAccountBalances,
@@ -175,6 +177,206 @@ describe('account repository', () => {
             })
 
             expect(result).toHaveLength(0)
+        })
+    })
+
+    describe('insertAssetHolding', () => {
+        it('inserts a new holding with zero amount', async () => {
+            await insertAssetHolding({
+                db,
+                accountAddress: 'ADDR1',
+                assetId: '100',
+                network: 'mainnet',
+            })
+
+            const result = await getAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+
+            expect(result).toHaveLength(1)
+            expect(result[0].assetId).toBe('100')
+            expect(result[0].amount).toEqual(new Decimal(0))
+        })
+
+        it('does not overwrite existing holding on conflict', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [{ assetId: '100', amount: 500n }],
+                network: 'mainnet',
+            })
+
+            await insertAssetHolding({
+                db,
+                accountAddress: 'ADDR1',
+                assetId: '100',
+                network: 'mainnet',
+            })
+
+            const result = await getAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+
+            expect(result).toHaveLength(1)
+            expect(result[0].amount).toEqual(new Decimal(500))
+        })
+
+        it('adds alongside existing holdings', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [{ assetId: '100', amount: 10n }],
+                network: 'mainnet',
+            })
+
+            await insertAssetHolding({
+                db,
+                accountAddress: 'ADDR1',
+                assetId: '200',
+                network: 'mainnet',
+            })
+
+            const result = await getAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+
+            expect(result).toHaveLength(2)
+            expect(result.map(r => r.assetId).sort()).toEqual(['100', '200'])
+        })
+    })
+
+    describe('deleteAssetHoldings', () => {
+        it('deletes specified asset holdings', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [
+                    { assetId: '100', amount: 0n },
+                    { assetId: '200', amount: 0n },
+                    { assetId: '300', amount: 0n },
+                ],
+                network: 'mainnet',
+            })
+
+            await deleteAssetHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                assetIds: ['100', '200'],
+                network: 'mainnet',
+            })
+
+            const result = await getAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+
+            expect(result).toHaveLength(1)
+            expect(result[0].assetId).toBe('300')
+        })
+
+        it('does not affect other accounts', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [{ assetId: '100', amount: 0n }],
+                network: 'mainnet',
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR2',
+                holdings: [{ assetId: '100', amount: 0n }],
+                network: 'mainnet',
+            })
+
+            await deleteAssetHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                assetIds: ['100'],
+                network: 'mainnet',
+            })
+
+            expect(
+                await getAccountHoldings({
+                    db,
+                    accountAddress: 'ADDR1',
+                    network: 'mainnet',
+                }),
+            ).toHaveLength(0)
+            expect(
+                await getAccountHoldings({
+                    db,
+                    accountAddress: 'ADDR2',
+                    network: 'mainnet',
+                }),
+            ).toHaveLength(1)
+        })
+
+        it('does not affect other networks', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [{ assetId: '100', amount: 0n }],
+                network: 'mainnet',
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [{ assetId: '100', amount: 0n }],
+                network: 'testnet',
+            })
+
+            await deleteAssetHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                assetIds: ['100'],
+                network: 'mainnet',
+            })
+
+            expect(
+                await getAccountHoldings({
+                    db,
+                    accountAddress: 'ADDR1',
+                    network: 'mainnet',
+                }),
+            ).toHaveLength(0)
+            expect(
+                await getAccountHoldings({
+                    db,
+                    accountAddress: 'ADDR1',
+                    network: 'testnet',
+                }),
+            ).toHaveLength(1)
+        })
+
+        it('handles empty assetIds array', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [{ assetId: '100', amount: 0n }],
+                network: 'mainnet',
+            })
+
+            await deleteAssetHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                assetIds: [],
+                network: 'mainnet',
+            })
+
+            expect(
+                await getAccountHoldings({
+                    db,
+                    accountAddress: 'ADDR1',
+                    network: 'mainnet',
+                }),
+            ).toHaveLength(1)
         })
     })
 

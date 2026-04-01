@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-export * from './assets'
-export * from './asset-preferences'
-export * from './price-history'
-export * from './search'
+export type AssetSearchItem = {
+    assetId: string
+    name: string | null
+    unitName: string | null
+    logo: string | null
+    verificationTier: 'verified' | 'unverified' | 'suspicious'
+    usdValue: string | null
+    type: string | null
+}

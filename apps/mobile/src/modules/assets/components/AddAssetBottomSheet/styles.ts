@@ -10,7 +10,26 @@
  limitations under the License
  */
 
-export * from './assets'
-export * from './asset-preferences'
-export * from './price-history'
-export * from './search'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        overflow: 'hidden',
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingHorizontal: theme.spacing.md,
+        paddingTop: theme.spacing.md,
+        paddingBottom: theme.spacing.sm,
+    },
+    headerTitle: {
+        flex: 1,
+        textAlign: 'center',
+    },
+    headerAction: {
+        width: theme.spacing.xl,
+        alignItems: 'center',
+    },
+}))

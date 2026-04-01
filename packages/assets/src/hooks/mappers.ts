@@ -10,7 +10,17 @@
  limitations under the License
  */
 
-export * from './assets'
-export * from './asset-preferences'
-export * from './price-history'
-export * from './search'
+import type { AssetSearchResultResponse } from '../api/assets/search-schema'
+import type { AssetSearchItem } from '../models/search'
+
+export const transformSearchResult = (
+    item: AssetSearchResultResponse,
+): AssetSearchItem => ({
+    assetId: String(item.asset_id),
+    name: item.name ?? null,
+    unitName: item.unit_name ?? null,
+    logo: item.logo ?? null,
+    verificationTier: item.verification_tier,
+    usdValue: item.usd_value ?? null,
+    type: item.type ?? null,
+})

@@ -22,3 +22,8 @@ export {
     transformIndexerAssetResponse,
     transformPublicAssetResponse,
 } from './transformers'
+export { searchAssets } from './search-endpoints'
+export type {
+    AssetSearchResultResponse,
+    AssetSearchResponse,
+} from './search-schema'

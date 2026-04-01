@@ -38,6 +38,7 @@ import { AssetSortBottomSheet } from '../AssetSortBottomSheet'
 import { AssetFilterBottomSheet } from '../AssetFilterBottomSheet'
 import { SwipeableAssetItem } from './SwipeableAssetItem'
 import { OptOutConfirmationBottomSheet } from './OptOutConfirmationBottomSheet'
+import { AddAssetBottomSheet } from '@modules/assets/components/AddAssetBottomSheet'
 import { useAccountAssetList } from './useAccountAssetList'
 
 const TAB_AND_HEADER_HEIGHT = 100
@@ -73,6 +74,7 @@ export const AccountAssetList = ({
         setSearchFilter,
         handleConfirmOptOut,
         handleCloseOptOut,
+        addAssetSheetState,
         handleOpenSort,
         handleOpenFilter,
         handleRemoveAssets,
@@ -155,6 +157,9 @@ export const AccountAssetList = ({
                                                 )}
                                                 variant='helper'
                                                 paddingStyle='dense'
+                                                onPress={
+                                                    addAssetSheetState.open
+                                                }
                                             />
                                         </PWView>
                                     )}
@@ -219,6 +224,11 @@ export const AccountAssetList = ({
                 accountBalance={assetForOptOut}
                 accountName={account.name ?? account.address}
                 onConfirmOptOut={handleConfirmOptOut}
+            />
+
+            <AddAssetBottomSheet
+                isVisible={addAssetSheetState.isOpen}
+                onClose={addAssetSheetState.close}
             />
         </KeyboardAvoidingView>
     )

@@ -10,7 +10,4 @@
  limitations under the License
  */
 
-export * from './assets'
-export * from './asset-preferences'
-export * from './price-history'
-export * from './search'
+export { AssetSearchItem } from './AssetSearchItem'

@@ -11,6 +11,21 @@
  */
 
 /**
+ * Calculates the next backoff interval using exponential backoff.
+ * @param currentInterval The current interval in milliseconds.
+ * @param multiplier The multiplier for each backoff step (default: 2).
+ * @param maxInterval The maximum interval in milliseconds (default: 30000).
+ * @returns The next backoff interval, capped at maxInterval.
+ */
+export function calculateBackoff(
+    currentInterval: number,
+    multiplier = 2,
+    maxInterval = 30000,
+): number {
+    return Math.min(currentInterval * multiplier, maxInterval)
+}
+
+/**
  * Defers the execution of a function to a future event loop cycle and returns a Promise.
  * This is useful for allowing the UI to update (e.g., showing a spinner)
  * before starting a heavy synchronous task, or for scheduling delayed work.

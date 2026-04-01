@@ -61,6 +61,19 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetsQuery: vi.fn(() => ({ data: new Map() })),
 }))
 
+const { mockOptOut } = vi.hoisted(() => ({
+    mockOptOut: vi.fn().mockResolvedValue({ txIds: ['tx1'] }),
+}))
+
+vi.mock('@perawallet/wallet-core-transactions', () => ({
+    useAssetOptOutMutation: () => ({
+        optOut: mockOptOut,
+        isLoading: false,
+        isError: false,
+        error: null,
+    }),
+}))
+
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (k: string) => k }),
 }))
@@ -151,5 +164,121 @@ describe('useRemoveAssetsScreen', () => {
         const { result } = renderHook(() => useRemoveAssetsScreen())
 
         expect(result.current.removableAssets).toHaveLength(0)
+    })
+
+    it('calls optOut with correct params when handleRemoveSelected is invoked', async () => {
+        const { result } = renderHook(() => useRemoveAssetsScreen())
+
+        act(() => {
+            result.current.handleToggleSelect('123')
+        })
+
+        await act(async () => {
+            await result.current.handleRemoveSelected()
+        })
+
+        expect(mockOptOut).toHaveBeenCalledWith([
+            {
+                sender: 'test-address',
+                assetId: BigInt('123'),
+                creator: undefined,
+            },
+        ])
+    })
+
+    it('clears selection after successful opt-out', async () => {
+        const { result } = renderHook(() => useRemoveAssetsScreen())
+
+        act(() => {
+            result.current.handleToggleSelect('123')
+            result.current.handleToggleSelect('456')
+        })
+        expect(result.current.selectedAssetIds.size).toBe(2)
+
+        await act(async () => {
+            await result.current.handleRemoveSelected()
+        })
+
+        expect(result.current.selectedAssetIds.size).toBe(0)
+    })
+
+    it('does not call optOut when no assets are selected', async () => {
+        const { result } = renderHook(() => useRemoveAssetsScreen())
+
+        await act(async () => {
+            await result.current.handleRemoveSelected()
+        })
+
+        expect(mockOptOut).not.toHaveBeenCalled()
+    })
+
+    it('does not call optOut when no account is selected', async () => {
+        mockGetSelectedAccount.mockReturnValue(null)
+        const { result } = renderHook(() => useRemoveAssetsScreen())
+
+        await act(async () => {
+            await result.current.handleRemoveSelected()
+        })
+
+        expect(mockOptOut).not.toHaveBeenCalled()
+    })
+
+    it('passes creator address when asset metadata is available', async () => {
+        const { useAssetsQuery } =
+            await import('@perawallet/wallet-core-assets')
+        vi.mocked(useAssetsQuery).mockReturnValue({
+            data: new Map([['123', { creator: { address: 'CREATOR_ADDR' } }]]),
+        } as ReturnType<typeof useAssetsQuery>)
+
+        const { result } = renderHook(() => useRemoveAssetsScreen())
+
+        act(() => {
+            result.current.handleToggleSelect('123')
+        })
+
+        await act(async () => {
+            await result.current.handleRemoveSelected()
+        })
+
+        expect(mockOptOut).toHaveBeenCalledWith([
+            {
+                sender: 'test-address',
+                assetId: BigInt('123'),
+                creator: 'CREATOR_ADDR',
+            },
+        ])
+    })
+
+    it('filters out assets owned by the creator', async () => {
+        const { useAssetsQuery } = vi.mocked(
+            await import('@perawallet/wallet-core-assets'),
+        )
+        useAssetsQuery.mockReturnValue({
+            data: new Map([
+                ['123', { creator: { address: 'test-address' } }],
+                ['456', { creator: { address: 'other-creator' } }],
+            ]),
+        } as unknown as ReturnType<typeof useAssetsQuery>)
+
+        const { result } = renderHook(() => useRemoveAssetsScreen())
+
+        expect(result.current.removableAssets).toHaveLength(1)
+        expect(result.current.removableAssets[0].assetId).toBe('456')
+    })
+
+    it('sets removeError when optOut rejects', async () => {
+        mockOptOut.mockRejectedValueOnce(new Error('Rate limited'))
+
+        const { result } = renderHook(() => useRemoveAssetsScreen())
+
+        act(() => {
+            result.current.handleToggleSelect('123')
+        })
+
+        await act(async () => {
+            await result.current.handleRemoveSelected()
+        })
+
+        expect(result.current.removeError?.message).toBe('Rate limited')
     })
 })

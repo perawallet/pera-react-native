@@ -32,6 +32,7 @@ export const RemoveAssetsScreen = () => {
         removableAssets,
         selectedAssetIds,
         isAllSelected,
+        isRemoving,
         handleToggleSelect,
         handleToggleSelectAll,
         handleRemoveSelected,
@@ -96,7 +97,8 @@ export const RemoveAssetsScreen = () => {
                     })}
                     variant='destructive'
                     onPress={handleRemoveSelected}
-                    isDisabled={selectedAssetIds.size === 0}
+                    isDisabled={selectedAssetIds.size === 0 || isRemoving}
+                    isLoading={isRemoving}
                 />
             </PWView>
         </PWView>

@@ -24,6 +24,7 @@ import {
     useAssetPricesQuery,
     type AssetPrices,
 } from '@perawallet/wallet-core-assets'
+import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useModalState, ModalState } from '@hooks/useModalState'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { useSortedAssetBalances } from './useSortedAssetBalances'
@@ -45,6 +46,7 @@ type UseAccountAssetListResult = {
     handleOptOut: (item: AssetWithAccountBalance) => void
     handleConfirmOptOut: () => void
     handleCloseOptOut: () => void
+    addAssetSheetState: ModalState
     handleOpenSort: () => void
     handleOpenFilter: () => void
     handleRemoveAssets: () => void
@@ -86,6 +88,7 @@ export const useAccountAssetList = ({
     )
     const { data: assets } = useAssetsQuery(assetIDs)
     const { data: assetPrices } = useAssetPricesQuery(assetIDs)
+    const { optOut } = useAssetOptOutMutation()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
     const { sortedBalances, hideZeroBalance } = useSortedAssetBalances(
@@ -138,11 +141,32 @@ export const useAccountAssetList = ({
         [optOutConfirmationState],
     )
 
-    const handleConfirmOptOut = useCallback(() => {
-        // TODO: Execute opt-out transaction
-        optOutConfirmationState.close()
-        setAssetForOptOut(null)
-    }, [optOutConfirmationState])
+    const handleConfirmOptOut = useCallback(async () => {
+        if (!assetForOptOut) {
+            return
+        }
+
+        const asset = assets?.get(assetForOptOut.assetId)
+
+        try {
+            await optOut({
+                sender: account.address,
+                assetId: BigInt(assetForOptOut.assetId),
+                creator: asset?.creator.address,
+            })
+        } catch {
+            // Error is surfaced by the mutation hook
+        } finally {
+            optOutConfirmationState.close()
+            setAssetForOptOut(null)
+        }
+    }, [
+        assetForOptOut,
+        assets,
+        account.address,
+        optOut,
+        optOutConfirmationState,
+    ])
 
     const handleCloseOptOut = useCallback(() => {
         optOutConfirmationState.close()
@@ -158,6 +182,8 @@ export const useAccountAssetList = ({
         manageSheetState.close()
         filterSheetState.open()
     }, [manageSheetState, filterSheetState])
+
+    const addAssetSheetState = useModalState(false)
 
     const handleRemoveAssets = useCallback(() => {
         manageSheetState.close()
@@ -211,6 +237,7 @@ export const useAccountAssetList = ({
         handleOptOut,
         handleConfirmOptOut,
         handleCloseOptOut,
+        addAssetSheetState,
         handleOpenSort,
         handleOpenFilter,
         handleRemoveAssets,
