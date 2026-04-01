@@ -19,7 +19,7 @@ import {
     WatchAccount,
 } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 type UseRekeyedAccountInfoBottomSheetParams = {
     account: WalletAccount
@@ -60,7 +60,7 @@ export function useRekeyedAccountInfoBottomSheet({
         if (!balanceData) {
             return {
                 balances: [],
-                algoValue: Decimal(0),
+                algoValue: new Decimal(0),
             }
         }
 
@@ -77,9 +77,9 @@ export function useRekeyedAccountInfoBottomSheet({
     }, [rekeyedBalances, account.address])
 
     const authAccountAlgoValue = useMemo(() => {
-        if (!authAccount) return Decimal(0)
+        if (!authAccount) return new Decimal(0)
         const balanceData = authBalances.get(authAccount.address)
-        return balanceData?.algoValue ?? Decimal(0)
+        return balanceData?.algoValue ?? new Decimal(0)
     }, [authBalances, authAccount])
 
     return {

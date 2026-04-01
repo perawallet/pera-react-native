@@ -15,7 +15,7 @@ import {
     getAssetTransferType,
     PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
 
 export const useAssetTransferSummaryHeader = (
@@ -54,7 +54,7 @@ export const useAssetTransferSummaryHeader = (
     const { data: asset } = useSingleAssetDetailsQuery(assetId)
 
     const amount = useMemo(() => {
-        return Decimal(microAmount).div(10 ** (asset?.decimals ?? 0))
+        return new Decimal(microAmount).div(10 ** (asset?.decimals ?? 0))
     }, [transaction])
 
     return {

@@ -11,7 +11,7 @@
  */
 
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 import type { SigningMachineContext } from '../machine/context'
 import type {

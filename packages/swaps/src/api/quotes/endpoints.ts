@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
+
 import { queryClient, type Network } from '@perawallet/wallet-core-shared'
 import {
     calculatePeraFeeResponseSchema,
@@ -43,7 +45,10 @@ export const calculatePeraFee = async (
 
     const parsed = calculatePeraFeeResponseSchema.parse(response.data)
     return {
-        peraFeeAmount: parsed.pera_fee_amount,
+        peraFeeAmount:
+            parsed.pera_fee_amount !== undefined
+                ? new Decimal(parsed.pera_fee_amount)
+                : undefined,
         peraFeeAssetId: parsed.pera_fee_asset_id,
     }
 }
@@ -62,8 +67,14 @@ export const calculateSwapAmount = async (
 
     const parsed = calculateSwapAmountResponseSchema.parse(response.data)
     return {
-        amount: parsed.amount,
-        peraFee: parsed.pera_fee,
+        amount:
+            parsed.amount !== undefined
+                ? new Decimal(parsed.amount)
+                : undefined,
+        peraFee:
+            parsed.pera_fee !== undefined
+                ? new Decimal(parsed.pera_fee)
+                : undefined,
         peraFeeAssetId: parsed.pera_fee_asset_id,
     }
 }
@@ -80,6 +91,12 @@ export const createQuotes = async (
         data,
     })
 
+    const toOptionalDecimal = (v?: string | null): Decimal | undefined =>
+        v != null ? new Decimal(v) : undefined
+
+    const toNullableDecimal = (v?: string | null): Decimal | null =>
+        v != null ? new Decimal(v) : null
+
     const parsed = createQuotesResponseSchema.parse(response.data)
     return parsed.results.map(quote => ({
         id: quote.id,
@@ -90,17 +107,19 @@ export const createQuotes = async (
         device: quote.device,
         assetIn: transformDexSwapAsset(quote.asset_in),
         assetOut: transformDexSwapAsset(quote.asset_out),
-        amountIn: quote.amount_in,
-        amountInWithSlippage: quote.amount_in_with_slippage,
+        amountIn: toOptionalDecimal(quote.amount_in),
+        amountInWithSlippage: toOptionalDecimal(quote.amount_in_with_slippage),
         amountInUsdValue: quote.amount_in_usd_value,
-        amountOut: quote.amount_out,
-        amountOutWithSlippage: quote.amount_out_with_slippage,
+        amountOut: toOptionalDecimal(quote.amount_out),
+        amountOutWithSlippage: toOptionalDecimal(
+            quote.amount_out_with_slippage,
+        ),
         amountOutUsdValue: quote.amount_out_usd_value,
-        slippage: quote.slippage,
-        price: quote.price,
-        priceImpact: quote.price_impact,
-        peraFeeAmount: quote.pera_fee_amount,
-        exchangeFeeAmount: quote.exchange_fee_amount,
-        transactionFees: quote.transaction_fees,
+        slippage: toOptionalDecimal(quote.slippage),
+        price: toOptionalDecimal(quote.price),
+        priceImpact: toOptionalDecimal(quote.price_impact),
+        peraFeeAmount: toOptionalDecimal(quote.pera_fee_amount),
+        exchangeFeeAmount: toOptionalDecimal(quote.exchange_fee_amount),
+        transactionFees: toNullableDecimal(quote.transaction_fees),
     }))
 }

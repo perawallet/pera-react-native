@@ -27,19 +27,21 @@ import {
     formatCurrency,
 } from '@perawallet/wallet-core-shared'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
+import { Decimal } from 'decimal.js'
 
 export type RejectConfirmBottomSheetProps = {
     isOpen: boolean
     onClose: () => void
     onConfirm: () => void
-    algoRefundAmount: string
+    /** ALGO refund amount in microAlgos (base units) */
+    microAlgoRefundAmount: Decimal
 }
 
 export const RejectConfirmBottomSheet = ({
     isOpen,
     onClose,
     onConfirm,
-    algoRefundAmount,
+    microAlgoRefundAmount,
 }: RejectConfirmBottomSheetProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -47,7 +49,7 @@ export const RejectConfirmBottomSheet = ({
 
     const algoDisplayAmount = useMemo(() => {
         return formatCurrency(
-            baseUnitsToDisplayUnits(algoRefundAmount, ALGO_ASSET.decimals),
+            baseUnitsToDisplayUnits(microAlgoRefundAmount, ALGO_ASSET.decimals),
             ALGO_ASSET.decimals,
             'ALGO',
             deviceInfo.getDeviceLocale(),
@@ -55,7 +57,7 @@ export const RejectConfirmBottomSheet = ({
             false,
             DEFAULT_PRECISION,
         )
-    }, [algoRefundAmount, deviceInfo.getDeviceLocale])
+    }, [microAlgoRefundAmount, deviceInfo.getDeviceLocale])
 
     return (
         <PWBottomSheet

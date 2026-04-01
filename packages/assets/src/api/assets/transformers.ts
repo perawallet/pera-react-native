@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     ALGO_ASSET_ID,
     PeraAssetType,
@@ -49,7 +49,7 @@ export const transformAssetResponse = (data: AssetResponse): PeraAsset => {
         },
         unitName: data.unit_name,
         decimals: data.fraction_decimals,
-        totalSupply: Decimal(data.total ?? '0'),
+        totalSupply: new Decimal(data.total ?? '0'),
         creator: data.creator,
         url: data.url ?? undefined,
     }
@@ -64,7 +64,7 @@ export const transformIndexerAssetResponse = (
         decimals: asset.params.decimals,
         unitName: asset.params['unit-name'],
         name: asset.params.name,
-        totalSupply: Decimal(`${asset.params.total}`),
+        totalSupply: new Decimal(`${asset.params.total}`),
         creator: {
             address: asset.params.creator,
         },
@@ -89,7 +89,7 @@ export const transformPublicAssetResponse = (
         },
         unitName: asset.unit_name ?? undefined,
         decimals: asset.fraction_decimals,
-        totalSupply: Decimal(asset.total_supply_as_str),
+        totalSupply: new Decimal(asset.total_supply_as_str),
         creator: {
             address: asset.creator_address ?? '',
         },

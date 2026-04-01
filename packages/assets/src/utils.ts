@@ -10,33 +10,36 @@
  limitations under the License
  */
 
+import { Decimal } from 'decimal.js'
+
 import { PeraAsset } from './models'
-import Decimal from 'decimal.js'
 
 /**
- * Converts an amount represented as a decimal value to the amount in units (i.e. milli algos to algos)
+ * Converts an amount from base units to display units for a given asset.
+ * Uses the same logic as `baseUnitsToDisplayUnits` from `@perawallet/wallet-core-blockchain`.
  *
- * @param value The amount to convert in decimal units (e.g. milli algos)
- * @param asset The asset to convert to units for
- * @returns The amount in whole units (e.g. algos)
+ * @param value - The amount in base units (smallest indivisible unit)
+ * @param asset - The asset definition containing decimal places
+ * @returns The amount in display units as a Decimal
  */
 export const toWholeUnits = (
     value: Decimal | number | bigint,
     asset: PeraAsset,
-) => {
-    return Decimal(value).div(Decimal(10).pow(asset.decimals))
+): Decimal => {
+    return new Decimal(value.toString()).div(Decimal.pow(10, asset.decimals))
 }
 
 /**
- * Converts an amount represented as a unit value to the amount in decimal value (i.e. algos to milli algos)
+ * Converts an amount from display units to base units for a given asset.
+ * Uses the same logic as `displayUnitsToBaseUnits` from `@perawallet/wallet-core-blockchain`.
  *
- * @param value The amount to convert in whole units (e.g. algos)
- * @param asset The asset to convert to decimal value for
- * @returns The amount in decimal units (e.g. milli algos)
+ * @param value - The amount in display units (human-readable)
+ * @param asset - The asset definition containing decimal places
+ * @returns The amount in base units as a Decimal
  */
 export const toDecimalUnits = (
     value: Decimal | number | bigint,
     asset: PeraAsset,
-) => {
-    return Decimal(value).mul(Decimal(10).pow(asset.decimals))
+): Decimal => {
+    return new Decimal(value.toString()).mul(Decimal.pow(10, asset.decimals))
 }

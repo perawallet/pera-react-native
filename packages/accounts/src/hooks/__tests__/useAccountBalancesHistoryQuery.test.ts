@@ -16,7 +16,7 @@ import { useAccountBalancesHistoryQuery } from '../useAccountBalancesHistoryQuer
 import { getAccountBalancesHistoryQueryKey } from '../querykeys'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import React from 'react'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 // Mock endpoints
 const mocks = vi.hoisted(() => ({

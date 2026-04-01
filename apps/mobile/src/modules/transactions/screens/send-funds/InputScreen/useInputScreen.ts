@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import {
     useAccountAssetBalanceQuery,
@@ -81,7 +81,7 @@ export const useInputScreen = () => {
         const assetToUse = accountBalances
             ?.get(selectedAccount.address)
             ?.assetBalances?.find(b => b.assetId === selectedAssetId)
-        const assetAmount = assetToUse?.amount ?? Decimal(0)
+        const assetAmount = assetToUse?.amount ?? new Decimal(0)
         return assetAmount
     }, [accountBalances, selectedAssetId, selectedAccount])
 
@@ -96,9 +96,9 @@ export const useInputScreen = () => {
                 ALGO_ASSET,
             )
             const fee = toWholeUnits(params?.minFee ?? 0, ALGO_ASSET)
-            return Decimal.max(balance.sub(minBalance).sub(fee), Decimal(0))
+            return Decimal.max(balance.sub(minBalance).sub(fee), new Decimal(0))
         } else {
-            return Decimal.max(tokenBalance ?? Decimal(0), Decimal(0))
+            return Decimal.max(tokenBalance ?? new Decimal(0), new Decimal(0))
         }
     }, [selectedAssetId, params, accountInformation, tokenBalance])
 
@@ -108,9 +108,9 @@ export const useInputScreen = () => {
                 accountInformation?.amount ?? 0n,
                 ALGO_ASSET,
             )
-            return Decimal.max(balance, Decimal(0))
+            return Decimal.max(balance, new Decimal(0))
         } else {
-            return Decimal.max(tokenBalance ?? Decimal(0), Decimal(0))
+            return Decimal.max(tokenBalance ?? new Decimal(0), new Decimal(0))
         }
     }, [selectedAssetId, params, accountInformation, tokenBalance])
 
@@ -139,7 +139,7 @@ export const useInputScreen = () => {
     }, [selectedAssetId, accountInformation?.assets])
 
     const handleNext = useCallback(() => {
-        if (!value || Decimal(value).lte(0)) {
+        if (!value || new Decimal(value).lte(0)) {
             showToast(
                 {
                     title: t('send_funds.input.error_title'),
@@ -153,7 +153,7 @@ export const useInputScreen = () => {
             return
         }
 
-        if (Decimal(value).gt(totalBalance)) {
+        if (new Decimal(value).gt(totalBalance)) {
             showToast(
                 {
                     title: t('send_funds.input.exceeds_max_title'),
@@ -167,7 +167,7 @@ export const useInputScreen = () => {
             return
         }
 
-        if (Decimal(value).gt(maxAmount)) {
+        if (new Decimal(value).gt(maxAmount)) {
             if (hasNoOptedInAssets) {
                 setIsCloseAccountEligible(true)
             } else {
@@ -177,7 +177,7 @@ export const useInputScreen = () => {
         }
 
         setIsCloseAccount(false)
-        setAmount(Decimal(value ?? '0'))
+        setAmount(new Decimal(value ?? '0'))
         navigation.navigate('SelectDestination')
     }, [
         value,
@@ -200,7 +200,7 @@ export const useInputScreen = () => {
 
     const handleConfirmCloseAccount = useCallback(() => {
         const fee = toWholeUnits(params?.minFee ?? 0, ALGO_ASSET)
-        const closeAmount = Decimal.max(totalBalance.sub(fee), Decimal(0))
+        const closeAmount = Decimal.max(totalBalance.sub(fee), new Decimal(0))
         setIsCloseAccountEligible(false)
         setIsCloseAccount(true)
         setAmount(closeAmount)

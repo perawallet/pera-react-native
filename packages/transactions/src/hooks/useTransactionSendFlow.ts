@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-asa-inbox'
 import {

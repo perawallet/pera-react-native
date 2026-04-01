@@ -13,7 +13,7 @@
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useTransactionConfirmationScreen } from '../useTransactionConfirmationScreen'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     useSelectedAccount,
     useAccountAssetBalanceQuery,
@@ -65,8 +65,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         return new Decimal(value)
     },
     toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>
-        Decimal(typeof value === 'bigint' ? value.toString() : value).div(
-            Decimal(10).pow(asset.decimals),
+        new Decimal(typeof value === 'bigint' ? value.toString() : value).div(
+            new Decimal(10).pow(asset.decimals),
         ),
 }))
 

@@ -35,7 +35,7 @@ export const useAlgoUsdPriceQuery = (enabled: boolean = true) => {
     return useQuery({
         queryKey: currencyQueryKeys.algoUsdPrice(network),
         queryFn: () => getAlgoPriceFromDb(network),
-        select: (data: string) => Decimal(data),
+        select: (data: string) => new Decimal(data),
         staleTime: Infinity,
         enabled,
     })

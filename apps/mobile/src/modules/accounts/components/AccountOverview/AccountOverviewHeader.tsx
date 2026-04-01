@@ -16,7 +16,7 @@ import {
     formatDatetime,
 } from '@perawallet/wallet-core-shared'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { WealthChart } from '@components/WealthChart'
 import { ButtonPanel } from '../ButtonPanel'
 import { useStyles } from './styles'
@@ -65,7 +65,7 @@ export const AccountOverviewHeader = ({
                         variant='h1'
                         value={
                             selectedPoint
-                                ? Decimal(selectedPoint.algoValue)
+                                ? new Decimal(selectedPoint.algoValue)
                                 : portfolioAlgoValue
                         }
                         currency='ALGO'

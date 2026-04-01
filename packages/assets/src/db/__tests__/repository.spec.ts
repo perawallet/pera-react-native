@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     runMigrations,
     migrations,
@@ -46,7 +46,7 @@ describe('asset repository', () => {
         assetId: '31566704',
         decimals: 6,
         creator: { address: 'ABC123' },
-        totalSupply: Decimal('10000000000'),
+        totalSupply: new Decimal('10000000000'),
         name: 'USD Coin',
         unitName: 'USDC',
         url: 'https://usdc.example.com',

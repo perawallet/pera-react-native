@@ -12,7 +12,7 @@
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { useSortedAccounts } from '../useSortedAccounts'
 import { useAccountsStore } from '../../store'
 import type {
@@ -45,7 +45,7 @@ const makeAccount = (address: string, name?: string): WalletAccount =>
 
 const makeBalance = (algoValue: number): AccountBalance => ({
     assetBalances: [],
-    algoValue: Decimal(algoValue),
+    algoValue: new Decimal(algoValue),
     isPending: false,
     isFetched: true,
     isRefetching: false,

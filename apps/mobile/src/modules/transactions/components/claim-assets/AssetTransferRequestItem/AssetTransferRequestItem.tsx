@@ -19,7 +19,6 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import Decimal from 'decimal.js'
 import { AssetIcon } from '@modules/assets/components'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { toWholeUnits } from '@perawallet/wallet-core-assets'
@@ -42,7 +41,7 @@ export const AssetTransferRequestItem = ({
     const remainingCount = senders.count - 1
 
     const amount = useMemo(
-        () => toWholeUnits(Decimal(totalAmount), asset),
+        () => toWholeUnits(totalAmount, asset),
         [totalAmount, asset],
     )
 
@@ -69,7 +68,7 @@ export const AssetTransferRequestItem = ({
                         </PWText>
                     </PWView>
                     <CurrencyDisplay
-                        value={Decimal(amount)}
+                        value={amount}
                         currency={asset?.unitName ?? ''}
                         precision={asset?.decimals}
                         minPrecision={DEFAULT_PRECISION}

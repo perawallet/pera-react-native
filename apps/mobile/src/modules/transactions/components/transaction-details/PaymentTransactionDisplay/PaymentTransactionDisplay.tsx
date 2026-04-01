@@ -16,7 +16,7 @@ import {
     microAlgosToAlgos,
     type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { AddressDisplay } from '@components/AddressDisplay'

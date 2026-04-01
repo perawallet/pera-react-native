@@ -15,7 +15,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { usePreferredCurrencyPriceQuery } from '../usePreferredCurrencyPriceQuery'
 import React from 'react'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 // Mock the network hook
 const mockUseNetwork = vi.hoisted(() => vi.fn())
@@ -54,7 +54,7 @@ describe('usePreferredCurrencyPriceQuery', () => {
     it('fetches and transforms currency price', async () => {
         const mockData = {
             id: 'EUR',
-            usdPrice: Decimal('0.85'),
+            usdPrice: new Decimal('0.85'),
         }
 
         mockFetchCurrency.mockResolvedValue(mockData)
@@ -68,7 +68,7 @@ describe('usePreferredCurrencyPriceQuery', () => {
 
         expect(result.current.data).toEqual({
             id: 'EUR',
-            usdPrice: Decimal('0.85'),
+            usdPrice: new Decimal('0.85'),
         })
     })
 
@@ -76,7 +76,7 @@ describe('usePreferredCurrencyPriceQuery', () => {
         mockUseNetwork.mockReturnValue({ network: 'testnet' })
         mockFetchCurrency.mockResolvedValue({
             id: 'GBP',
-            usdPrice: Decimal('1.25'),
+            usdPrice: new Decimal('1.25'),
         })
 
         renderHook(() => usePreferredCurrencyPriceQuery('GBP'), { wrapper })
@@ -105,7 +105,7 @@ describe('usePreferredCurrencyPriceQuery', () => {
     it('transforms different currency values correctly', async () => {
         const mockData = {
             id: 'CAD',
-            usdPrice: Decimal('0.73'),
+            usdPrice: new Decimal('0.73'),
         }
 
         mockFetchCurrency.mockResolvedValue(mockData)

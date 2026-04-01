@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 import { useCurrenciesStore } from '../store'
 import { usePreferredCurrencyPriceQuery } from './usePreferredCurrencyPriceQuery'
 import { useAlgoUsdPriceQuery } from './useAlgoUsdPriceQuery'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 export const useCurrency = () => {
     const preferredCurrency = useCurrenciesStore(
@@ -48,16 +48,16 @@ export const useCurrency = () => {
                     !algoUsdPrice ||
                     algoUsdPrice.isZero()
                 ) {
-                    return Decimal(0)
+                    return new Decimal(0)
                 }
                 return usdAmount.div(algoUsdPrice)
             }
 
             if (preferredRatePending) {
-                return Decimal(0)
+                return new Decimal(0)
             }
 
-            const usdValue = preferredRate?.usdPrice ?? Decimal('0')
+            const usdValue = preferredRate?.usdPrice ?? new Decimal('0')
             return usdAmount.mul(usdValue)
         },
         [
@@ -76,6 +76,6 @@ export const useCurrency = () => {
         fallbackCurrency,
         setFallbackCurrency,
         usdToPreferred,
-        algoUsdPrice: algoUsdPrice ?? Decimal(0),
+        algoUsdPrice: algoUsdPrice ?? new Decimal(0),
     }
 }

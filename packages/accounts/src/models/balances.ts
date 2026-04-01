@@ -11,12 +11,14 @@
  */
 
 import { PeraAsset } from '@perawallet/wallet-core-assets'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 export type AssetWithAccountBalance = {
     assetId: string
     asset?: PeraAsset
+    /** Asset amount in display units (divided by 10^decimals) */
     amount: Decimal
+    /** Value of this holding in ALGOs (display units) */
     algoValue: Decimal
 }
 

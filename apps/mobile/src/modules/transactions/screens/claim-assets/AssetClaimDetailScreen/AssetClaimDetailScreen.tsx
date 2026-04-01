@@ -28,7 +28,6 @@ import { useAssetClaimDetailScreen } from './useAssetClaimDetailScreen'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
-import Decimal from 'decimal.js'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { baseUnitsToDisplayUnits } from '@perawallet/wallet-core-blockchain'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -135,7 +134,7 @@ export const AssetClaimDetailScreen = () => {
                             />
                             <CurrencyDisplay
                                 value={baseUnitsToDisplayUnits(
-                                    Decimal(senderItem.amount),
+                                    senderItem.amount,
                                     request.asset.decimals,
                                 )}
                                 currency={request.asset?.unitName ?? ''}
@@ -149,7 +148,7 @@ export const AssetClaimDetailScreen = () => {
                 </PWView>
             </PWScrollView>
 
-            {request.algoGainOnClaim !== '5' && (
+            {!request.microAlgoGainOnClaim.equals(5) && (
                 <>
                     <PWDivider style={styles.separator} />
                     <PWView style={styles.algoGainRow}>
@@ -164,7 +163,7 @@ export const AssetClaimDetailScreen = () => {
                         >
                             {t('arc59.claim.algo_gain', {
                                 amount: baseUnitsToDisplayUnits(
-                                    Decimal(request.algoGainOnClaim),
+                                    request.microAlgoGainOnClaim,
                                     6,
                                 ),
                             })}
@@ -194,7 +193,7 @@ export const AssetClaimDetailScreen = () => {
                 isOpen={isRejectSheetOpen}
                 onClose={handleRejectClose}
                 onConfirm={handleRejectConfirm}
-                algoRefundAmount={request.algoGainOnReject}
+                microAlgoRefundAmount={request.microAlgoGainOnReject}
             />
         </PWView>
     )

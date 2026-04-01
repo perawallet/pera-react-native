@@ -23,7 +23,7 @@ import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useStyles } from './styles'
@@ -69,7 +69,7 @@ export const TransactionConfirmationScreen = () => {
                     precision={asset?.decimals ?? DEFAULT_PRECISION}
                     minPrecision={DEFAULT_PRECISION}
                     showSymbol
-                    value={amount ?? Decimal(0)}
+                    value={amount ?? new Decimal(0)}
                 />
                 <PreferredCurrencyDisplay
                     style={styles.secondaryAmount}

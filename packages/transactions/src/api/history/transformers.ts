@@ -37,8 +37,8 @@ const transformSwapGroupDetail = (
         assetOutId:
             detail.asset_out_id != null ? Number(detail.asset_out_id) : null,
         assetOutUnitName: detail.asset_out_unit_name ?? '',
-        amountIn: detail.amount_in ?? '0',
-        amountOut: detail.amount_out ?? '0',
+        amountIn: new Decimal(detail.amount_in ?? '0'),
+        amountOut: new Decimal(detail.amount_out ?? '0'),
     }
 }
 

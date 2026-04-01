@@ -11,7 +11,7 @@
  */
 
 import { useState, useCallback } from 'react'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import {
     AssetWithAccountBalance,
     useAccountAssetBalanceQuery,

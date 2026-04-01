@@ -13,7 +13,7 @@
 import { describe, test, expect } from 'vitest'
 import { calculateTotalFee } from '../fees'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 const makeTx = (fee?: bigint): PeraDisplayableTransaction =>
     ({

@@ -15,7 +15,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useAlgoUsdPriceQuery } from '../useAlgoUsdPriceQuery'
 import React from 'react'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 const mockDbAll = vi.hoisted(() => vi.fn())
 vi.mock('@perawallet/wallet-core-database', () => ({

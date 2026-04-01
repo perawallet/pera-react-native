@@ -36,7 +36,7 @@ import {
     useAllAccounts,
     usePortfolioTotals,
 } from '@perawallet/wallet-core-accounts'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { InfoButton } from '@components/InfoButton'
@@ -84,13 +84,13 @@ export const PortfolioView = (props: PortfolioViewProps) => {
     )
 
     const [trendAbsolute, trendPercentage, isPositiveTrend] = useMemo(() => {
-        const firstDp = historyDataPoints.at(0) ?? Decimal(0)
-        const lastDp = historyDataPoints.at(-1) ?? Decimal(0)
+        const firstDp = historyDataPoints.at(0) ?? new Decimal(0)
+        const lastDp = historyDataPoints.at(-1) ?? new Decimal(0)
 
         return [
             lastDp.minus(firstDp),
             lastDp.isZero()
-                ? Decimal(0)
+                ? new Decimal(0)
                 : lastDp.minus(firstDp).abs().div(lastDp).mul(100),
             lastDp.greaterThanOrEqualTo(firstDp),
         ]

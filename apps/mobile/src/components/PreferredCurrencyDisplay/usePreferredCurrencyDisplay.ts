@@ -80,14 +80,14 @@ export const usePreferredCurrencyDisplay = (
         const resolvedUsdPrice =
             preFetchedUsdPrice ??
             usdPrices?.get(sourceAssetId)?.usdPrice ??
-            Decimal(0)
+            new Decimal(0)
         const usdValue = sourceAmount.mul(resolvedUsdPrice)
 
         if (!needsFallback) {
             return usdToPreferred(usdValue)
         }
 
-        const rate = fallbackRate?.usdPrice ?? Decimal(0)
+        const rate = fallbackRate?.usdPrice ?? new Decimal(0)
         return usdValue.mul(rate)
     }, [
         sourceAmount,

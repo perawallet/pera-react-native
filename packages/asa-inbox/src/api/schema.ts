@@ -14,7 +14,7 @@ import {
     PeraAsset,
     PeraAssetVerificationTier,
 } from '@perawallet/wallet-core-assets'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { z } from 'zod'
 
 export const arc59WarningMessageSchema = z.object({
@@ -96,15 +96,19 @@ export type Arc59AssetRequestResponse = z.infer<typeof arc59AssetRequestSchema>
 
 export type Arc59AssetRequest = {
     id?: string
-    totalAmount: string
+    /** Total amount across all senders, in base units */
+    totalAmount: Decimal
     asset: PeraAsset
-    algoGainOnClaim: string
-    algoGainOnReject: string
+    /** ALGO gain on claim, in microAlgos (base units) */
+    microAlgoGainOnClaim: Decimal
+    /** ALGO gain on reject, in microAlgos (base units) */
+    microAlgoGainOnReject: Decimal
     senders: {
         count: number
         results: Array<{
             sender: { address: string; name: string | null }
-            amount: string
+            /** Sender's amount, in base units */
+            amount: Decimal
         }>
     }
     insufficientAlgoForClaiming: boolean
@@ -116,7 +120,7 @@ export type Arc59AssetRequest = {
 export const mapArc59AssetRequest = (
     raw: Arc59AssetRequestResponse,
 ): Arc59AssetRequest => ({
-    totalAmount: raw.total_amount,
+    totalAmount: new Decimal(raw.total_amount),
     asset: {
         assetId: raw.asset.asset_id.toString(),
         name: raw.asset.name,
@@ -131,15 +135,15 @@ export const mapArc59AssetRequest = (
             collectible: undefined, //TODO: map collectible type
         },
         creator: { address: raw.asset.creator.address },
-        totalSupply: Decimal(0),
+        totalSupply: new Decimal(0),
     },
-    algoGainOnClaim: raw.algo_gain_on_claim,
-    algoGainOnReject: raw.algo_gain_on_reject,
+    microAlgoGainOnClaim: new Decimal(raw.algo_gain_on_claim),
+    microAlgoGainOnReject: new Decimal(raw.algo_gain_on_reject),
     senders: {
         count: raw.senders.count,
         results: raw.senders.results.map(s => ({
             sender: { address: s.sender.address, name: s.sender.name },
-            amount: s.amount,
+            amount: new Decimal(s.amount),
         })),
     },
     insufficientAlgoForClaiming: raw.insufficient_algo_for_claiming,

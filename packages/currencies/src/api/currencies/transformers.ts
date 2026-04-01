@@ -28,5 +28,5 @@ export const transformCurrencyToPrice = (
     response: CurrencyApiResponse,
 ): CurrencyPrice => ({
     id: response.currency_id,
-    usdPrice: Decimal(response.usd_value ?? '0'),
+    usdPrice: new Decimal(response.usd_value ?? '0'),
 })

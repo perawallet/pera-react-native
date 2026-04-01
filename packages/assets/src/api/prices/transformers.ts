@@ -23,7 +23,7 @@ export const transformAssetPriceResponse = (
 ): AssetPrice => {
     return {
         assetId: data.asset_id.toString(),
-        usdPrice: Decimal(data.usd_value ?? '0'),
+        usdPrice: new Decimal(data.usd_value ?? '0'),
     }
 }
 
@@ -32,6 +32,6 @@ export const transformAssetPriceHistoryResponse = (
 ): AssetPriceHistoryItem => {
     return {
         datetime: new Date(data.datetime),
-        usdPrice: Decimal(data.price ?? '0'),
+        usdPrice: new Decimal(data.price ?? '0'),
     }
 }

@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { useTheme } from '@rneui/themed/dist/config/ThemeProvider'
 import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
 import { formatCurrency } from '@perawallet/wallet-core-shared'

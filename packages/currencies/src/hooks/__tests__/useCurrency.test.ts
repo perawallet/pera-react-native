@@ -13,7 +13,7 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useCurrency } from '../useCurrency'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { useCurrenciesStore } from '../../store'
 
 // Mock the store
@@ -58,7 +58,7 @@ describe('services/currencies/hooks', () => {
             )
 
             mockUsePreferredCurrencyPriceQuery.mockReturnValue({
-                data: { usdPrice: Decimal('1.0') },
+                data: { usdPrice: new Decimal('1.0') },
                 isPending: false,
             })
 
@@ -81,7 +81,7 @@ describe('services/currencies/hooks', () => {
             )
 
             mockUsePreferredCurrencyPriceQuery.mockReturnValue({
-                data: { usdPrice: Decimal('1.0') },
+                data: { usdPrice: new Decimal('1.0') },
                 isPending: false,
             })
 
@@ -102,7 +102,7 @@ describe('services/currencies/hooks', () => {
             )
 
             mockUsePreferredCurrencyPriceQuery.mockReturnValue({
-                data: { usdPrice: Decimal('1.0') },
+                data: { usdPrice: new Decimal('1.0') },
                 isPending: false,
             })
 
@@ -119,16 +119,16 @@ describe('services/currencies/hooks', () => {
             )
 
             mockUsePreferredCurrencyPriceQuery.mockReturnValue({
-                data: { usdPrice: Decimal('0.85') },
+                data: { usdPrice: new Decimal('0.85') },
                 isPending: false,
             })
 
             const { result } = renderHook(() => useCurrency())
 
-            const usdAmount = Decimal(100)
+            const usdAmount = new Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
 
-            expect(converted).toEqual(Decimal(85))
+            expect(converted).toEqual(new Decimal(85))
         })
 
         it('returns 0 when data is pending', () => {
@@ -145,10 +145,10 @@ describe('services/currencies/hooks', () => {
 
             const { result } = renderHook(() => useCurrency())
 
-            const usdAmount = Decimal(100)
+            const usdAmount = new Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
 
-            expect(converted).toEqual(Decimal(0))
+            expect(converted).toEqual(new Decimal(0))
         })
 
         it('handles undefined usdPrice gracefully', () => {
@@ -165,10 +165,10 @@ describe('services/currencies/hooks', () => {
 
             const { result } = renderHook(() => useCurrency())
 
-            const usdAmount = Decimal(100)
+            const usdAmount = new Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
 
-            expect(converted).toEqual(Decimal(0))
+            expect(converted).toEqual(new Decimal(0))
         })
 
         it('handles empty usdPrice string gracefully', () => {
@@ -179,16 +179,16 @@ describe('services/currencies/hooks', () => {
             )
 
             mockUsePreferredCurrencyPriceQuery.mockReturnValue({
-                data: { usdPrice: Decimal('0') },
+                data: { usdPrice: new Decimal('0') },
                 isPending: false,
             })
 
             const { result } = renderHook(() => useCurrency())
 
-            const usdAmount = Decimal(100)
+            const usdAmount = new Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
 
-            expect(converted).toEqual(Decimal(0))
+            expect(converted).toEqual(new Decimal(0))
         })
 
         it('converts with decimal precision', () => {
@@ -199,16 +199,16 @@ describe('services/currencies/hooks', () => {
             )
 
             mockUsePreferredCurrencyPriceQuery.mockReturnValue({
-                data: { usdPrice: Decimal('150.5') },
+                data: { usdPrice: new Decimal('150.5') },
                 isPending: false,
             })
 
             const { result } = renderHook(() => useCurrency())
 
-            const usdAmount = Decimal(2.5)
+            const usdAmount = new Decimal(2.5)
             const converted = result.current.usdToPreferred(usdAmount)
 
-            expect(converted).toEqual(Decimal(376.25))
+            expect(converted).toEqual(new Decimal(376.25))
         })
 
         it('returns USD amount unchanged when preferred currency is USD', () => {
@@ -216,16 +216,16 @@ describe('services/currencies/hooks', () => {
                 selector({ preferredCurrency: 'USD' }),
             )
             mockUsePreferredCurrencyPriceQuery.mockReturnValue({
-                data: { usdPrice: Decimal('1.0') },
+                data: { usdPrice: new Decimal('1.0') },
                 isPending: false,
             })
 
             const { result } = renderHook(() => useCurrency())
 
-            const usdAmount = Decimal(100)
+            const usdAmount = new Decimal(100)
             const converted = result.current.usdToPreferred(usdAmount)
 
-            expect(converted).toEqual(Decimal(100))
+            expect(converted).toEqual(new Decimal(100))
         })
 
         it('converts USD to ALGO when preferred currency is ALGO', () => {
@@ -239,15 +239,15 @@ describe('services/currencies/hooks', () => {
             })
 
             mockUseAlgoUsdPriceQuery.mockReturnValue({
-                data: Decimal('0.15'),
+                data: new Decimal('0.15'),
                 isPending: false,
             })
 
             const { result } = renderHook(() => useCurrency())
 
             // $1.50 / $0.15 per ALGO = 10 ALGO
-            const converted = result.current.usdToPreferred(Decimal('1.50'))
-            expect(converted).toEqual(Decimal(10))
+            const converted = result.current.usdToPreferred(new Decimal('1.50'))
+            expect(converted).toEqual(new Decimal(10))
         })
 
         it('returns 0 when preferred is ALGO and price is pending', () => {
@@ -267,8 +267,8 @@ describe('services/currencies/hooks', () => {
 
             const { result } = renderHook(() => useCurrency())
 
-            const converted = result.current.usdToPreferred(Decimal(100))
-            expect(converted).toEqual(Decimal(0))
+            const converted = result.current.usdToPreferred(new Decimal(100))
+            expect(converted).toEqual(new Decimal(0))
         })
 
         it('returns 0 when preferred is ALGO and price is zero', () => {
@@ -282,14 +282,14 @@ describe('services/currencies/hooks', () => {
             })
 
             mockUseAlgoUsdPriceQuery.mockReturnValue({
-                data: Decimal(0),
+                data: new Decimal(0),
                 isPending: false,
             })
 
             const { result } = renderHook(() => useCurrency())
 
-            const converted = result.current.usdToPreferred(Decimal(100))
-            expect(converted).toEqual(Decimal(0))
+            const converted = result.current.usdToPreferred(new Decimal(100))
+            expect(converted).toEqual(new Decimal(0))
         })
 
         it('exposes algoUsdPrice from the query', () => {
@@ -303,13 +303,13 @@ describe('services/currencies/hooks', () => {
             })
 
             mockUseAlgoUsdPriceQuery.mockReturnValue({
-                data: Decimal('0.15'),
+                data: new Decimal('0.15'),
                 isPending: false,
             })
 
             const { result } = renderHook(() => useCurrency())
 
-            expect(result.current.algoUsdPrice).toEqual(Decimal('0.15'))
+            expect(result.current.algoUsdPrice).toEqual(new Decimal('0.15'))
         })
 
         it('defaults algoUsdPrice to 0 when not loaded', () => {
@@ -318,13 +318,13 @@ describe('services/currencies/hooks', () => {
             )
 
             mockUsePreferredCurrencyPriceQuery.mockReturnValue({
-                data: { usdPrice: Decimal('1.0') },
+                data: { usdPrice: new Decimal('1.0') },
                 isPending: false,
             })
 
             const { result } = renderHook(() => useCurrency())
 
-            expect(result.current.algoUsdPrice).toEqual(Decimal(0))
+            expect(result.current.algoUsdPrice).toEqual(new Decimal(0))
         })
     })
 })

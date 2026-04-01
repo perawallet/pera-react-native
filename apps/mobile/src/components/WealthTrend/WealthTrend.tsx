@@ -17,7 +17,7 @@ import {
     HistoryPeriod,
 } from '@perawallet/wallet-core-shared'
 import { useMemo } from 'react'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import {
     useAccountBalancesHistoryQuery,
@@ -61,13 +61,13 @@ export const WealthTrend = ({ account, period }: WealthTrendProps) => {
     )
 
     const [absolute, percentage, isPositive] = useMemo(() => {
-        const firstDp = dataPoints.at(0)?.algoValue ?? Decimal(0)
-        const lastDp = dataPoints.at(-1)?.algoValue ?? Decimal(0)
+        const firstDp = dataPoints.at(0)?.algoValue ?? new Decimal(0)
+        const lastDp = dataPoints.at(-1)?.algoValue ?? new Decimal(0)
 
         return [
             lastDp.minus(firstDp),
             firstDp.isZero()
-                ? Decimal(0)
+                ? new Decimal(0)
                 : lastDp.minus(firstDp).div(firstDp).mul(100),
             lastDp.greaterThanOrEqualTo(firstDp),
         ]

@@ -18,7 +18,7 @@ import {
     useAccountsAssetsBalanceHistoryQuery,
 } from '@perawallet/wallet-core-accounts'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 vi.mock('react-native-gifted-charts', () => ({
     LineChart: () => <div data-testid='line-chart'>LineChart</div>,

@@ -16,7 +16,7 @@ import {
     PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { useStyles } from './styles'
 import { useModalState } from '@hooks/useModalState'
 
@@ -40,7 +40,7 @@ export const useAssetTransferDisplay = (
     const senderAddress = transaction.sender
     const receiverAddress = assetTransfer?.receiver
     const amount = useMemo(() => {
-        const amount = Decimal(assetTransfer?.amount?.toString() ?? '0')
+        const amount = new Decimal(assetTransfer?.amount?.toString() ?? '0')
         return amount
             .dividedBy(new Decimal(10 ** (asset?.decimals ?? 6)))
             .mul(referenceAddress === assetTransfer?.receiver ? -1 : 1)

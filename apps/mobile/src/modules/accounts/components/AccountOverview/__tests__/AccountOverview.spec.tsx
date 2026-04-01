@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
 import { render, screen, fireEvent } from '@test-utils/render'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { AccountOverview } from '../AccountOverview'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 

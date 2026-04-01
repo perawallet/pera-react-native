@@ -111,8 +111,8 @@ export const useAssetClaimDetailScreen =
         }, [request, copyToClipboard])
 
         const amount = useMemo(() => {
-            if (!request) return Decimal(0)
-            return toWholeUnits(Decimal(request.totalAmount), request.asset)
+            if (!request) return new Decimal(0)
+            return toWholeUnits(request.totalAmount, request.asset)
         }, [request])
 
         return {

@@ -11,7 +11,7 @@
  */
 
 import { useMemo, useState } from 'react'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { bottomSheetNotifier } from '@components/core'
 import { useToast } from '@hooks/useToast'
 import { useSendFunds } from '@modules/transactions/hooks'

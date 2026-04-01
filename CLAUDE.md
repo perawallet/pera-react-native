@@ -135,6 +135,50 @@ export const useAccountsQuery = (): UseAccountsQueryResult => {
 - Every store must include `resetState()` method (implements `BaseStoreState`)
 - Separate `State` and `Actions` types, combine as `Store = State & Actions`
 
+## Numbers & Precision (CRITICAL)
+
+All monetary/financial values (amounts, balances, prices, fees) use `Decimal` from `decimal.js` as the internal representation. **Never** use JS `number` for financial amounts — it loses precision beyond 2^53.
+
+### Import
+
+```typescript
+import { Decimal } from 'decimal.js'
+```
+
+Always use the **named import** (`{ Decimal }`), never the default import. Always construct with `new Decimal(...)`, never bare `Decimal(...)` without `new`.
+
+### Boundary Rules
+
+| Boundary                   | From            | To                 | How                                                                                       |
+| -------------------------- | --------------- | ------------------ | ----------------------------------------------------------------------------------------- |
+| API response → app         | `string` (JSON) | `Decimal`          | Wrap in `new Decimal(...)` in transformer functions                                       |
+| AlgoKit/blockchain → app   | `bigint`        | `Decimal`          | Use `microAlgosToAlgos()` or `baseUnitsToDisplayUnits()`                                  |
+| App → display              | `Decimal`       | formatted `string` | Use `formatNumber`/`formatCurrency` from `@perawallet/wallet-core-shared`                 |
+| App → transaction building | `Decimal`       | `bigint`           | Use `toBigInt()` or `algosToMicroAlgosBigInt()` from `@perawallet/wallet-core-blockchain` |
+| App → database             | `Decimal`       | `TEXT`             | Automatic via `decimalColumn` — no manual conversion needed                               |
+
+### Conversion Utilities
+
+Canonical functions in `@perawallet/wallet-core-blockchain`:
+
+- `baseUnitsToDisplayUnits(amount, decimals)` → `Decimal` — e.g., microAlgos → ALGOs
+- `displayUnitsToBaseUnits(amount, decimals)` → `Decimal` — e.g., ALGOs → microAlgos
+- `toBigInt(decimal)` → `bigint` — for transaction building
+- `algosToMicroAlgosBigInt(algos)` → `bigint` — ALGO-specific shorthand
+- `microAlgosToAlgos(microAlgos)` → `Decimal` — ALGO-specific shorthand
+
+Asset-specific wrappers in `@perawallet/wallet-core-assets`:
+
+- `toWholeUnits(value, asset)` → `Decimal` — delegates to `baseUnitsToDisplayUnits`
+- `toDecimalUnits(value, asset)` → `Decimal` — delegates to `displayUnitsToBaseUnits`
+
+### Rules
+
+- Domain model fields for amounts/balances/prices **MUST** be typed as `Decimal`, not `string` or `number`
+- `bigint` is only used at the blockchain boundary (AlgoKit types, transaction building, balance validation)
+- Always document units in JSDoc: specify whether a field is in base units or display units
+- Global Decimal config (precision 40, ROUND_HALF_UP) is initialized via `initDecimalConfig()` from `@perawallet/wallet-core-shared`
+
 ## TypeScript
 
 - `type` for props, unions, simple shapes; `interface` for data models that may be extended

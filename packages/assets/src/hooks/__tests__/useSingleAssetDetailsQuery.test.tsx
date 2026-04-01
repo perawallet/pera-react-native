@@ -16,7 +16,7 @@ import { useSingleAssetDetailsQuery } from '../useSingleAssetDetailsQuery'
 import { ALGO_ASSET_ID } from '../../models'
 import { createWrapper } from './test-utils'
 import { QueryClient } from '@tanstack/react-query'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 
 // Mock endpoints
 const mocks = vi.hoisted(() => ({
@@ -71,7 +71,7 @@ describe('useSingleAssetDetailsQuery', () => {
                 name: 'Algo',
                 unitName: 'ALGO',
                 decimals: 6,
-                totalSupply: Decimal('10000000000000000000'),
+                totalSupply: new Decimal('10000000000000000000'),
                 creator: { address: '' },
             })
 
@@ -101,7 +101,7 @@ describe('useSingleAssetDetailsQuery', () => {
                 assetId: '123',
                 decimals: 6,
                 creator: { address: 'ADDR' },
-                totalSupply: Decimal(1000),
+                totalSupply: new Decimal(1000),
                 name: 'DB Asset',
                 unitName: 'TEST',
             }

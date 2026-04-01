@@ -11,7 +11,7 @@
  */
 
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import Decimal from 'decimal.js'
+import { Decimal } from 'decimal.js'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 
 export const calculateTotalFee = (
