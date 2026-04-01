@@ -25,12 +25,14 @@ type DeleteAllConfirmBottomSheetProps = {
     isOpen: boolean
     onClose: () => void
     onSuccess: () => void
+    testID?: string
 }
 
 export const DeleteAllConfirmBottomSheet = ({
     isOpen,
     onClose,
     onSuccess,
+    testID,
 }: DeleteAllConfirmBottomSheetProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -45,6 +47,7 @@ export const DeleteAllConfirmBottomSheet = ({
             onBackdropPress={onClose}
             innerContainerStyle={styles.bottomSheetContainer}
             enablePanDownToClose
+            testID={testID}
         >
             <PWIcon
                 name='trash'

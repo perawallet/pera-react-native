@@ -26,9 +26,10 @@ type PinEditViewProps = {
     mode: PinEntryMode | null
     onSuccess?: () => void
     onClose?: () => void
+    testID?: string
 }
 
-export const PinEditView = ({ mode, onSuccess, onClose }: PinEditViewProps) => {
+export const PinEditView = ({ mode, onSuccess, onClose, testID }: PinEditViewProps) => {
     const { height } = useWindowDimensions()
     const insets = useSafeAreaInsets()
     const styles = useStyles({ height, insets })
@@ -50,6 +51,7 @@ export const PinEditView = ({ mode, onSuccess, onClose }: PinEditViewProps) => {
             containerStyle={styles.container}
             innerContainerStyle={styles.innerContainer}
             size='full'
+            testID={testID}
         >
             <PWView style={styles.closeButtonContainer}>
                 <PWTouchableOpacity
