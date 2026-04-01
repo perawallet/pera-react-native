@@ -22,7 +22,7 @@ import { ButtonPanel } from '../ButtonPanel'
 import { useStyles } from './styles'
 import { WealthTrend } from '@components/WealthTrend'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
-import { isWatchAccount, WalletAccount } from '@perawallet/wallet-core-accounts'
+import { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 import { useLanguage } from '@hooks/useLanguage'
 import { NoFundsButtonPanel } from '../NoFundsButtonPanel'
@@ -50,6 +50,7 @@ export const AccountOverviewHeader = ({
         setPeriod,
         selectedPoint,
         hasBalance,
+        canSign,
         togglePrivacyMode,
         handleChartSelectionChange,
     } = useAccountOverviewHeader(account)
@@ -123,16 +124,12 @@ export const AccountOverviewHeader = ({
             </ExpandablePanel>
 
             <ExpandablePanel isExpanded={!isPending}>
-                {isWatchAccount(account) ? (
-                    <WatchAccountButtonPanel />
-                ) : (
-                    <ButtonPanel />
-                )}
+                {!canSign ? <WatchAccountButtonPanel /> : <ButtonPanel />}
             </ExpandablePanel>
         </PWView>
     ) : (
         <PWView style={styles.headerContainer}>
-            {isWatchAccount(account) ? (
+            {!canSign ? (
                 <WatchAccountButtonPanel />
             ) : (
                 <>

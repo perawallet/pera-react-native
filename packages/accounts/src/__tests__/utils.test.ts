@@ -186,6 +186,16 @@ describe('services/accounts/utils - account type checks', () => {
         ).toBe(true)
     })
 
+    test('isWatchAccount returns false for rekeyed account stored as watch', () => {
+        expect(
+            isWatchAccount({
+                ...baseAccount,
+                type: 'watch',
+                rekeyAddress: 'AUTH_ADDR',
+            } as any),
+        ).toBe(false)
+    })
+
     test('isMultisigAccount returns true if type is multisig', () => {
         expect(isMultisigAccount(baseAccount)).toBe(false)
         expect(

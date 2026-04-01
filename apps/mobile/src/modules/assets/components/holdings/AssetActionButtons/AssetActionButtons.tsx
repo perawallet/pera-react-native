@@ -23,7 +23,8 @@ import { SendFundsBottomSheet } from '@modules/transactions/components/send-fund
 import { ReceiveFundsBottomSheet } from '@modules/transactions/components/receive-funds/ReceiveFundsBottomSheet'
 import {
     useSelectedAccount,
-    isWatchAccount,
+    useAllAccounts,
+    canSignWithAccount,
     AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
 import { useSendFunds } from '@modules/transactions/hooks'
@@ -45,10 +46,11 @@ export const AssetActionButtons = ({
     const sendFunds = useModalState()
     const receiveFunds = useModalState()
     const account = useSelectedAccount()
+    const accounts = useAllAccounts()
     const { setSelectedAssetId, setCanSelectAsset } = useSendFunds()
     const { copyToClipboard } = useClipboard()
     const { showToast } = useToast()
-    const isWatch = account ? isWatchAccount(account) : false
+    const isWatch = account ? !canSignWithAccount(account, accounts) : true
 
     const goToRootPage = (name: string) => {
         navigation.replace('TabBar', { screen: name })

@@ -57,7 +57,7 @@ export const isAlgo25Account = (
 export const isWatchAccount = (
     account: WalletAccount,
 ): account is WatchAccount => {
-    return account.type === AccountTypes.watch
+    return account.type === AccountTypes.watch && !account.rekeyAddress
 }
 
 export const isMultisigAccount = (

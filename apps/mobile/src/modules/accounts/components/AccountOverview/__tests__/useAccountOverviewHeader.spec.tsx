@@ -39,6 +39,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         accountUsdValues: new Map(),
         isPending: false,
     })),
+    useAllAccounts: vi.fn(() => []),
+    canSignWithAccount: vi.fn(() => true),
 }))
 
 vi.mock('@perawallet/wallet-core-currencies', () => ({
@@ -86,6 +88,28 @@ describe('useAccountOverviewHeader', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
+    })
+
+    it('returns canSign true when canSignWithAccount returns true', () => {
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(mockAccount),
+            { wrapper },
+        )
+
+        expect(result.current.canSign).toBe(true)
+    })
+
+    it('returns canSign false when canSignWithAccount returns false', async () => {
+        const { canSignWithAccount } =
+            await import('@perawallet/wallet-core-accounts')
+        vi.mocked(canSignWithAccount).mockReturnValue(false)
+
+        const { result } = renderHook(
+            () => useAccountOverviewHeader(mockAccount),
+            { wrapper },
+        )
+
+        expect(result.current.canSign).toBe(false)
     })
 
     it('returns portfolio values from account balances query', () => {
