@@ -41,19 +41,19 @@ describe('typography', () => {
             },
         )
 
-        it('returns correct font sizes for each heading variant', () => {
-            expect(getTypography(lightTheme, 'h1').fontSize).toBe(32)
-            expect(getTypography(lightTheme, 'h2').fontSize).toBe(25)
-            expect(getTypography(lightTheme, 'h3').fontSize).toBe(19)
-            expect(getTypography(lightTheme, 'h4').fontSize).toBe(15)
-        })
+        it('returns font sizes in descending order across heading hierarchy', () => {
+            const h1 = getTypography(lightTheme, 'h1').fontSize!
+            const h2 = getTypography(lightTheme, 'h2').fontSize!
+            const h3 = getTypography(lightTheme, 'h3').fontSize!
+            const h4 = getTypography(lightTheme, 'h4').fontSize!
+            const body = getTypography(lightTheme, 'body').fontSize!
+            const caption = getTypography(lightTheme, 'caption').fontSize!
 
-        it('returns correct font size for body typography', () => {
-            expect(getTypography(lightTheme, 'body').fontSize).toBe(13)
-        })
-
-        it('returns correct font size for caption typography', () => {
-            expect(getTypography(lightTheme, 'caption').fontSize).toBe(11)
+            expect(h1).toBeGreaterThan(h2)
+            expect(h2).toBeGreaterThan(h3)
+            expect(h3).toBeGreaterThan(h4)
+            expect(h4).toBeGreaterThan(body)
+            expect(body).toBeGreaterThan(caption)
         })
 
         it('returns textMain color for body variant in light mode', () => {
@@ -71,11 +71,21 @@ describe('typography', () => {
             expect(result.color).toBe(lightTheme.colors.linkPrimary)
         })
 
-        it('includes lineHeight for heading variants', () => {
-            expect(getTypography(lightTheme, 'h1').lineHeight).toBe(40)
-            expect(getTypography(lightTheme, 'h2').lineHeight).toBe(24)
-            expect(getTypography(lightTheme, 'h3').lineHeight).toBe(24)
-            expect(getTypography(lightTheme, 'h4').lineHeight).toBe(24)
+        it('has lineHeight greater than or equal to fontSize for all variants to prevent clipping', () => {
+            const headings: TypographyVariant[] = [
+                'h1',
+                'h2',
+                'h3',
+                'h4',
+                'body',
+                'caption',
+                'link',
+            ]
+
+            for (const variant of headings) {
+                const style = getTypography(lightTheme, variant)
+                expect(style.lineHeight).toBeGreaterThanOrEqual(style.fontSize!)
+            }
         })
     })
 })

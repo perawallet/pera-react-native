@@ -15,7 +15,7 @@
 import { DefaultTheme } from '@react-navigation/native'
 import { createTheme } from '@rneui/themed'
 import { palette } from './colors'
-import { getFontFamily } from './typography'
+import { getFontFamily, getTypography } from './typography'
 
 export const getNavigationTheme = (mode: 'light' | 'dark' = 'light') => ({
     ...DefaultTheme,
@@ -598,32 +598,12 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                 },
                 thumbColor: theme.colors.textWhite,
             }),
-            Text: () => ({
-                h1Style: {
-                    fontFamily: getFontFamily(500),
-                    fontSize: 32,
-                    lineHeight: 40,
-                },
-                h2Style: {
-                    fontFamily: getFontFamily(500),
-                    fontSize: 25,
-                    lineHeight: 24,
-                },
-                h3Style: {
-                    fontFamily: getFontFamily(500),
-                    fontSize: 19,
-                    lineHeight: 24,
-                },
-                h4Style: {
-                    fontFamily: getFontFamily(500),
-                    fontSize: 15,
-                    lineHeight: 24,
-                },
-                style: {
-                    fontFamily: getFontFamily(400),
-                    fontSize: 13,
-                    lineHeight: 24,
-                },
+            Text: (_, theme) => ({
+                h1Style: getTypography(theme, 'h1'),
+                h2Style: getTypography(theme, 'h2'),
+                h3Style: getTypography(theme, 'h3'),
+                h4Style: getTypography(theme, 'h4'),
+                style: getTypography(theme, 'body'),
             }),
         },
     })
