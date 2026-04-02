@@ -26,9 +26,9 @@ describe('useSigningAccounts', () => {
 
     it('should return only accounts that can sign', () => {
         const mockAccounts = [
-            { address: 'addr1', keyPairId: 'pk1' },
-            { address: 'addr2' },
-            { address: 'addr3', keyPairId: 'pk3' },
+            { address: 'addr1', type: 'algo25', keyPairId: 'pk1' },
+            { address: 'addr2', type: 'watch' },
+            { address: 'addr3', type: 'hdWallet', keyPairId: 'pk3' },
         ]
 
         ;(useAccountsStore as any).mockImplementation((selector: any) =>
@@ -38,13 +38,16 @@ describe('useSigningAccounts', () => {
         const { result } = renderHook(() => useSigningAccounts())
 
         expect(result.current).toEqual([
-            { address: 'addr1', keyPairId: 'pk1' },
-            { address: 'addr3', keyPairId: 'pk3' },
+            { address: 'addr1', type: 'algo25', keyPairId: 'pk1' },
+            { address: 'addr3', type: 'hdWallet', keyPairId: 'pk3' },
         ])
     })
 
     it('should return empty array if no accounts can sign', () => {
-        const mockAccounts = [{ address: 'addr1' }, { address: 'addr2' }]
+        const mockAccounts = [
+            { address: 'addr1', type: 'watch' },
+            { address: 'addr2', type: 'watch' },
+        ]
 
         ;(useAccountsStore as any).mockImplementation((selector: any) =>
             selector({ accounts: mockAccounts }),

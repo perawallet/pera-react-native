@@ -12,10 +12,7 @@
 
 import { useMemo } from 'react'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import {
-    useAllAccounts,
-    isSigningAccount,
-} from '@perawallet/wallet-core-accounts'
+import { useSigningAccounts } from '@perawallet/wallet-core-accounts'
 import {
     aggregateTransactionWarnings,
     type TransactionWarning,
@@ -37,17 +34,12 @@ type UseTransactionWarningsResult = {
 export const useTransactionWarnings = (
     transaction: PeraDisplayableTransaction,
 ): UseTransactionWarningsResult => {
-    const accounts = useAllAccounts()
+    const signingAccounts = useSigningAccounts()
     const { isOpen, open, close } = useModalState()
 
     const userAccountAddresses = useMemo(
-        () =>
-            new Set(
-                accounts
-                    .filter(a => isSigningAccount(a, accounts))
-                    .map(a => a.address),
-            ),
-        [accounts],
+        () => new Set(signingAccounts.map(a => a.address)),
+        [signingAccounts],
     )
 
     const warnings = useMemo(

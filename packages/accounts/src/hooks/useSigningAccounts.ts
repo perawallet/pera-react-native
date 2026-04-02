@@ -12,12 +12,12 @@
 
 import { useMemo } from 'react'
 import { useAccountsStore } from '../store'
-import { canSignWithAccount } from '../utils'
+import { isSigningAccount } from '../utils'
 
 export const useSigningAccounts = () => {
     const accounts = useAccountsStore(state => state.accounts)
     return useMemo(
-        () => accounts.filter(account => canSignWithAccount(account, accounts)),
+        () => accounts.filter(account => isSigningAccount(account, accounts)),
         [accounts],
     )
 }
