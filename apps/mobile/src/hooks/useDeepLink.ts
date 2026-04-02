@@ -155,18 +155,21 @@ export const useDeepLink = () => {
                     )
                     break
 
-                case DeeplinkType.RECOVER_ADDRESS:
-                    // Only handle recovery from QR deeplinks
-                    if (source !== 'qr') {
-                        return
-                    }
-                    // TODO: Navigate to account recovery screen
-                    // navigation.navigate('RecoverAccount', { mnemonic: parsedData.mnemonic })
-                    infoToast(
-                        'Recover Address',
-                        'Account recovery not implemented yet',
-                    )
+                case DeeplinkType.RECOVER_ADDRESS: {
+                    const wordCount = parsedData.mnemonic
+                        .trim()
+                        .split(/\s+/).length
+                    const accountType = wordCount === 25 ? 'algo25' : 'hdWallet'
+
+                    navigateToScreen(replaceCurrentScreen, 'AddAccount', {
+                        screen: 'ImportAccount',
+                        params: {
+                            accountType,
+                            mnemonic: parsedData.mnemonic,
+                        },
+                    })
                     break
+                }
 
                 case DeeplinkType.WALLET_CONNECT:
                     connect({
