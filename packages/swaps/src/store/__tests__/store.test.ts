@@ -10,39 +10,24 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
-vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
-    const original =
-        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
-    const { createMockPersistStorage } = await vi.importActual<
-        typeof import('@perawallet/wallet-core-shared/test-utils')
-    >('@perawallet/wallet-core-shared/test-utils')
-    return {
-        ...original,
-        registerStore: vi.fn(),
-        createPersistStorage: createMockPersistStorage,
-    }
-})
+import { useSwapsStore } from '../store'
 
 describe('swaps/store', () => {
     beforeEach(() => {
-        vi.resetModules()
+        useSwapsStore.getState().resetState()
     })
 
-    test('store initializes with defaults', async () => {
-        const { useSwapsStore } = await import('../store')
-
+    test('store initializes with defaults', () => {
         const { result } = renderHook(() => useSwapsStore())
 
         expect(result.current.fromAsset).toBe('0')
         expect(result.current.toAsset).toBe('31566704')
     })
 
-    test('setFromAsset updates fromAsset state', async () => {
-        const { useSwapsStore } = await import('../store')
-
+    test('setFromAsset updates fromAsset state', () => {
         const { result } = renderHook(() => useSwapsStore())
 
         act(() => {
@@ -52,9 +37,7 @@ describe('swaps/store', () => {
         expect(result.current.fromAsset).toBe('1234')
     })
 
-    test('setToAsset updates toAsset state', async () => {
-        const { useSwapsStore } = await import('../store')
-
+    test('setToAsset updates toAsset state', () => {
         const { result } = renderHook(() => useSwapsStore())
 
         act(() => {

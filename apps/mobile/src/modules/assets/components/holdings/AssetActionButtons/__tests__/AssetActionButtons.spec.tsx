@@ -110,7 +110,7 @@ describe('AssetActionButtons', () => {
         expect(text).toContain('receive')
     })
 
-    it('navigates to swap screen when swap button is pressed', () => {
+    it('navigates to swap screen with asset params when swap button is pressed', () => {
         const { container } = render(<AssetActionButtons asset={mockAsset} />)
 
         // Find swap button by text content and click
@@ -122,6 +122,24 @@ describe('AssetActionButtons', () => {
             fireEvent.click(swapButton)
             expect(mockReplace).toHaveBeenCalledWith('TabBar', {
                 screen: 'Swap',
+                params: { assetInId: '0', assetOutId: '123' },
+            })
+        }
+    })
+
+    it('navigates to swap screen without params when asset is ALGO', () => {
+        const algoAsset = { ...mockAsset, assetId: '0' }
+        const { container } = render(<AssetActionButtons asset={algoAsset} />)
+
+        const buttons = container.querySelectorAll('button')
+        const swapButton = Array.from(buttons).find(btn =>
+            btn.textContent?.toLowerCase().includes('swap'),
+        )
+        if (swapButton) {
+            fireEvent.click(swapButton)
+            expect(mockReplace).toHaveBeenCalledWith('TabBar', {
+                screen: 'Swap',
+                params: undefined,
             })
         }
     })
@@ -256,12 +274,7 @@ describe('AssetActionButtons', () => {
             const buttons = container.querySelectorAll('button')
             buttons.forEach(btn => fireEvent.click(btn))
 
-            expect(mockReplace).not.toHaveBeenCalledWith('TabBar', {
-                screen: 'Swap',
-            })
-            expect(mockReplace).not.toHaveBeenCalledWith('TabBar', {
-                screen: 'Fund',
-            })
+            expect(mockReplace).not.toHaveBeenCalled()
         })
     })
 })

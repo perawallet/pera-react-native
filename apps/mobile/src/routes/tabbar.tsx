@@ -23,6 +23,7 @@ import { headeredLayout, safeAreaLayout } from '@layouts/index'
 import { TabLabel } from '@components/TabLabel'
 import { AccountStackNavigator } from '@modules/accounts/routes'
 import { AccountStackParamsList } from '@modules/accounts/routes/types'
+import { SwapScreenParams } from '@modules/swap/routes/types'
 import { NavigatorScreenParams } from '@react-navigation/native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { BOTTOM_TAB_HEIGHT_ANDROID, BOTTOM_TAB_HEIGHT_IOS } from '@constants/ui'
@@ -30,7 +31,7 @@ import { BOTTOM_TAB_HEIGHT_ANDROID, BOTTOM_TAB_HEIGHT_IOS } from '@constants/ui'
 export type TabBarStackParamList = {
     Home: NavigatorScreenParams<AccountStackParamsList>
     Discover: undefined
-    Swap: undefined
+    Swap: SwapScreenParams | undefined
     Fund: undefined
     Menu: undefined
 }

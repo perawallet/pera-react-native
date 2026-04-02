@@ -16,19 +16,6 @@ import { renderHook, act } from '@testing-library/react'
 import { useSwapsStore } from '../../store'
 import { useSwaps } from '../useSwaps'
 
-vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
-    const original =
-        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
-    const { createMockPersistStorage } = await vi.importActual<
-        typeof import('@perawallet/wallet-core-shared/test-utils')
-    >('@perawallet/wallet-core-shared/test-utils')
-    return {
-        ...original,
-        registerStore: vi.fn(),
-        createPersistStorage: createMockPersistStorage,
-    }
-})
-
 describe('swaps/useSwaps', () => {
     beforeEach(() => {
         useSwapsStore.getState().resetState()
