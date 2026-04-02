@@ -19,11 +19,15 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { useNfdSearch, type NfdSearchResult } from '@perawallet/wallet-core-nfd'
+import { useDebouncedValue } from '@hooks/useDebouncedValue'
+import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 
 export type AddressSearchItem =
     | { type: 'section_header'; title: string; key: string }
     | { type: 'account'; account: WalletAccount; key: string }
     | { type: 'contact'; contact: Contact; key: string }
+    | { type: 'nfd'; nfd: NfdSearchResult; key: string }
 
 type UseAddressSearchViewProps = {
     excludeAddress?: string
@@ -35,6 +39,7 @@ type UseAddressSearchViewResult = {
     setValue: (text: string) => void
     matchingItems: AddressSearchItem[]
     hasResults: boolean
+    isNfdLoading: boolean
 }
 
 export const useAddressSearchView = (
@@ -47,6 +52,13 @@ export const useAddressSearchView = (
     const accounts = useAllAccounts()
 
     const addressIsValid = useMemo(() => isValidAlgorandAddress(value), [value])
+
+    const debouncedValue = useDebouncedValue(value, SEARCH_DEBOUNCE_TIME)
+    const shouldSearchNfd = debouncedValue.includes('.') && !addressIsValid
+    const { results: nfdResults, isLoading: isNfdLoading } = useNfdSearch(
+        debouncedValue,
+        { enabled: shouldSearchNfd },
+    )
 
     const matchingAccounts = useMemo(
         () =>
@@ -87,8 +99,23 @@ export const useAddressSearchView = (
                     address: value,
                     keyPairId: '',
                 },
-                key: `address-${value}`,
+                key: `address-${value}-${items.length}`,
             })
+        }
+
+        if (nfdResults.length > 0) {
+            items.push({
+                type: 'section_header',
+                title: 'address_entry.nfd_results',
+                key: 'header-nfd',
+            })
+            for (const nfd of nfdResults) {
+                items.push({
+                    type: 'nfd',
+                    nfd,
+                    key: `nfd-${nfd.name}-${items.length}`,
+                })
+            }
         }
 
         if (matchingAccounts.length > 0) {
@@ -101,7 +128,7 @@ export const useAddressSearchView = (
                 items.push({
                     type: 'account',
                     account: a,
-                    key: `account-${a.address}`,
+                    key: `account-${a.address}-${items.length}`,
                 })
             }
         }
@@ -116,13 +143,13 @@ export const useAddressSearchView = (
                 items.push({
                     type: 'contact',
                     contact: c,
-                    key: `contact-${c.address}`,
+                    key: `contact-${c.address}-${items.length}`,
                 })
             }
         }
 
         return items
-    }, [addressIsValid, value, matchingAccounts, matchingContacts])
+    }, [addressIsValid, value, matchingAccounts, matchingContacts, nfdResults])
 
     const hasResults = matchingItems.length > 0
 
@@ -131,5 +158,6 @@ export const useAddressSearchView = (
         setValue,
         matchingItems,
         hasResults,
+        isNfdLoading,
     }
 }

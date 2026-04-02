@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback, useEffect, useState } from 'react'
 import { useTheme } from '@rneui/themed'
 import { PWButton, PWDialog, PWText, PWView } from '@components/core'
 import { ContactForm } from '@components/ContactForm'
@@ -25,6 +26,10 @@ import { useForm } from 'react-hook-form'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import { useNfdSearch } from '@perawallet/wallet-core-nfd'
+import { useDebouncedValue } from '@hooks/useDebouncedValue'
+import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 
 export const EditContactScreen = () => {
     const styles = useStyles()
@@ -45,11 +50,47 @@ export const EditContactScreen = () => {
         control,
         handleSubmit,
         setError,
+        setValue,
+        watch,
         formState: { isValid, errors },
     } = useForm({
         resolver: zodResolver(contactSchema),
         defaultValues: selectedContact ?? {},
     })
+
+    const addressFieldValue = watch('address')
+    const [rawAddressInput, setRawAddressInput] = useState(
+        addressFieldValue ?? '',
+    )
+
+    const debouncedAddress = useDebouncedValue(
+        rawAddressInput,
+        SEARCH_DEBOUNCE_TIME,
+    )
+    const isDirectAddress = isValidAlgorandAddress(rawAddressInput)
+    const shouldSearchNfd =
+        !isEditMode && debouncedAddress.includes('.') && !isDirectAddress
+    const { results: nfdResults, isLoading: isNfdResolving } = useNfdSearch(
+        debouncedAddress,
+        { enabled: shouldSearchNfd },
+    )
+
+    const nfdMatch = nfdResults.length === 1 ? nfdResults[0] : undefined
+    const isNfdResolved = !isDirectAddress && !!nfdMatch
+
+    useEffect(() => {
+        if (isNfdResolved && nfdMatch) {
+            setValue('address', nfdMatch.address, { shouldValidate: true })
+        }
+    }, [isNfdResolved, nfdMatch, setValue])
+
+    const handleAddressInputChange = useCallback(
+        (text: string) => {
+            setRawAddressInput(text)
+            setValue('address', text, { shouldValidate: true })
+        },
+        [setValue],
+    )
 
     const save = (data: Contact) => {
         if (!isEditMode) {
@@ -89,12 +130,20 @@ export const EditContactScreen = () => {
         <>
             <ContactForm
                 control={control}
-                address={selectedContact?.address ?? ''}
+                address={
+                    isNfdResolved
+                        ? nfdMatch?.address
+                        : (selectedContact?.address ?? '')
+                }
                 nameLabel={t('contacts.edit_contact.name_label')}
                 addressLabel={t('contacts.edit_contact.address_label')}
                 nameError={errors.name?.message}
                 isAddressEditable={!isEditMode}
                 addressError={errors.address?.message}
+                nfdName={isNfdResolved ? nfdMatch?.name : undefined}
+                isResolvingNfd={isNfdResolving}
+                onAddressInputChange={handleAddressInputChange}
+                rawAddressInput={rawAddressInput}
             >
                 <PWView style={styles.buttonContainer}>
                     {isEditMode && (

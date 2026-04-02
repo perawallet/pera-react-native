@@ -32,6 +32,13 @@ export const useNfdForAddress = (
     const enabled =
         (options?.enabled ?? true) && isValidAlgorandAddress(address)
 
+    if (!enabled) {
+        return {
+            nfdName: undefined,
+            isResolving: false,
+        }
+    }
+
     const { data, isFetching } = useQuery({
         queryKey: nfdQueryKeys.forAddress(address, network),
         queryFn: ({ signal }) =>

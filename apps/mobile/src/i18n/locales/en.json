@@ -75,7 +75,10 @@
         "my_accounts": "My Accounts",
         "no_accounts_found": "No Accounts Found",
         "no_accounts_body": "There are no matching accounts",
-        "search_placeholder": "Account address or short name"
+        "search_placeholder": "Account address, NFD name, or short name",
+        "nfd_results": "NFDomains",
+        "nfd_resolving": "Resolving NFD...",
+        "nfd_resolved": "Resolved from {{name}}"
     },
     "arc59": {
         "requests": {
@@ -361,7 +364,8 @@
             "no_contact_title": "No contact found",
             "no_contact_body": "Something appears to have gone wrong.  Couldn't find the contact specified",
             "name_label": "Name",
-            "address_label": "Address"
+            "address_label": "Address",
+            "nfd_label": "NFDomain"
         },
         "list": {
             "no_contacts_title": "No Contacts",

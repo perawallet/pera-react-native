@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import {
     useAccountsStore,
@@ -20,11 +20,18 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { useNfdSearch } from '@perawallet/wallet-core-nfd'
+import { useDebouncedValue } from '@hooks/useDebouncedValue'
+import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 
 type UseWatchAccountScreenResult = {
     address: string
+    resolvedAddress: string
     isValidAddress: boolean
     isDuplicateAddress: boolean
+    isNfdResolved: boolean
+    isNfdResolving: boolean
+    nfdName: string | undefined
     handleAddressChange: (text: string) => void
     handleWatchAccount: () => void
 }
@@ -35,22 +42,40 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
     const setAccounts = useAccountsStore(state => state.setAccounts)
     const [address, setAddress] = useState('')
 
-    const isValidAddress = isValidAlgorandAddress(address)
+    const debouncedAddress = useDebouncedValue(address, SEARCH_DEBOUNCE_TIME)
+    const isDirectAddress = useMemo(
+        () => isValidAlgorandAddress(address),
+        [address],
+    )
+    const shouldSearchNfd = debouncedAddress.includes('.') && !isDirectAddress
+    const { results: nfdResults, isLoading: isNfdResolving } = useNfdSearch(
+        debouncedAddress,
+        { enabled: shouldSearchNfd },
+    )
+
+    const nfdMatch = nfdResults.length === 1 ? nfdResults[0] : undefined
+    const resolvedAddress = isDirectAddress
+        ? address
+        : (nfdMatch?.address ?? '')
+    const isNfdResolved = !isDirectAddress && !!nfdMatch
+    const nfdName = nfdMatch?.name
+
+    const isValidAddress = isValidAlgorandAddress(resolvedAddress)
     const isDuplicateAddress =
-        isValidAddress && accounts.some(a => a.address === address)
+        isValidAddress && accounts.some(a => a.address === resolvedAddress)
 
     const handleAddressChange = useCallback((text: string) => {
         setAddress(text)
     }, [])
 
     const handleWatchAccount = useCallback(() => {
-        if (!isValidAlgorandAddress(address) || isDuplicateAddress) {
+        if (!isValidAlgorandAddress(resolvedAddress) || isDuplicateAddress) {
             return
         }
 
         const newAccount = {
             id: generateOrderedUniqueId(),
-            address,
+            address: resolvedAddress,
             type: AccountTypes.watch,
         }
 
@@ -58,12 +83,16 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
         navigation.push('NameAccount', {
             account: newAccount as WalletAccount,
         })
-    }, [address, isDuplicateAddress, accounts, setAccounts, navigation])
+    }, [resolvedAddress, isDuplicateAddress, accounts, setAccounts, navigation])
 
     return {
         address,
+        resolvedAddress,
         isValidAddress,
         isDuplicateAddress,
+        isNfdResolved,
+        isNfdResolving,
+        nfdName,
         handleAddressChange,
         handleWatchAccount,
     }

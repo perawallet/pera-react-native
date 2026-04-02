@@ -37,6 +37,14 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
     isValidAlgorandAddress: vi.fn(),
 }))
 
+vi.mock('@perawallet/wallet-core-nfd', () => ({
+    useNfdSearch: vi.fn(() => ({ results: [], isLoading: false })),
+}))
+
+vi.mock('@hooks/useDebouncedValue', () => ({
+    useDebouncedValue: (value: string) => value,
+}))
+
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()

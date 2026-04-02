@@ -18,11 +18,16 @@ import { ContactAvatar } from '@components/ContactAvatar'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNfdForAddress } from '@perawallet/wallet-core-nfd'
 
 export const ViewContactScreen = () => {
     const { selectedContact } = useContacts()
     const styles = useStyles()
     const { t } = useLanguage()
+
+    const { nfdName } = useNfdForAddress(selectedContact?.address ?? '', {
+        enabled: !!selectedContact?.address,
+    })
 
     if (!selectedContact) {
         return (
@@ -58,6 +63,14 @@ export const ViewContactScreen = () => {
                     displayType='address-only'
                 />
             </PWView>
+            {nfdName && (
+                <PWView>
+                    <Text style={styles.label}>
+                        {t('contacts.view_contact.nfd_label')}
+                    </Text>
+                    <Text style={styles.value}>{nfdName}</Text>
+                </PWView>
+            )}
         </PWView>
     )
 }

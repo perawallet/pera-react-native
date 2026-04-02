@@ -14,6 +14,7 @@ import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useWatchAccountScreen } from '../useWatchAccountScreen'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { useNfdSearch } from '@perawallet/wallet-core-nfd'
 
 const mockNavigate = vi.fn()
 const mockPush = vi.fn()
@@ -67,10 +68,24 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
     }
 })
 
+vi.mock('@perawallet/wallet-core-nfd', () => ({
+    useNfdSearch: vi.fn(() => ({ results: [], isLoading: false })),
+}))
+
+vi.mock('@hooks/useDebouncedValue', () => ({
+    useDebouncedValue: (value: string) => value,
+}))
+
 describe('useWatchAccountScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockUseAllAccounts.mockReturnValue([])
+        vi.mocked(useNfdSearch).mockReturnValue({
+            results: [],
+            isLoading: false,
+            isError: false,
+            error: null,
+        })
     })
 
     it('initializes with empty address and invalid state', () => {
@@ -229,5 +244,59 @@ describe('useWatchAccountScreen', () => {
                 type: 'watch',
             },
         ])
+    })
+
+    it('resolves NFD name to address when input contains a dot', () => {
+        vi.mocked(useNfdSearch).mockReturnValue({
+            results: [
+                {
+                    name: 'alice.algo',
+                    address: 'VALID_ALGORAND_ADDRESS',
+                    service: { name: 'NFD', logo: '' },
+                },
+            ],
+            isLoading: false,
+            isError: false,
+            error: null,
+        })
+
+        const { result } = renderHook(() => useWatchAccountScreen())
+
+        act(() => {
+            result.current.handleAddressChange('alice.algo')
+        })
+
+        expect(result.current.isNfdResolved).toBe(true)
+        expect(result.current.nfdName).toBe('alice.algo')
+        expect(result.current.resolvedAddress).toBe('VALID_ALGORAND_ADDRESS')
+        expect(result.current.isValidAddress).toBe(true)
+    })
+
+    it('does not resolve NFD when input has no dot', () => {
+        const { result } = renderHook(() => useWatchAccountScreen())
+
+        act(() => {
+            result.current.handleAddressChange('alice')
+        })
+
+        expect(result.current.isNfdResolved).toBe(false)
+        expect(result.current.nfdName).toBeUndefined()
+    })
+
+    it('shows resolving state during NFD lookup', () => {
+        vi.mocked(useNfdSearch).mockReturnValue({
+            results: [],
+            isLoading: true,
+            isError: false,
+            error: null,
+        })
+
+        const { result } = renderHook(() => useWatchAccountScreen())
+
+        act(() => {
+            result.current.handleAddressChange('alice.algo')
+        })
+
+        expect(result.current.isNfdResolving).toBe(true)
     })
 })

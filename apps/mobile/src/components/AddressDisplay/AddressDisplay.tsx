@@ -64,6 +64,8 @@ export const AddressDisplay = ({
     const accounts = useAllAccounts()
     const { findContacts } = useContacts()
 
+    const isAddressOnly = displayType === 'address-only'
+
     const account = useMemo(() => {
         if (displayType !== 'full') {
             return null
@@ -73,7 +75,7 @@ export const AddressDisplay = ({
     }, [displayType, accounts, address])
 
     const contact = useMemo(() => {
-        if (displayType === 'address-only') {
+        if (isAddressOnly) {
             return null
         }
         return findContacts({
@@ -82,10 +84,10 @@ export const AddressDisplay = ({
             matchName: false,
             matchNFD: true,
         }).at(0)
-    }, [displayType, address, findContacts])
+    }, [isAddressOnly, address, findContacts])
 
     const { data: nfdNames } = useNfdForAddressQuery(address, {
-        enabled: displayType !== 'address-only' && !account && !contact,
+        enabled: !isAddressOnly && !account && !contact,
     })
 
     const nfdName = useMemo(() => nfdNames?.at(0)?.name, [nfdNames])
