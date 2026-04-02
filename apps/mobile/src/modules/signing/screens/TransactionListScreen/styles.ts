@@ -18,13 +18,10 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.xl,
     },
     feeContainer: {
-        paddingVertical: theme.spacing.sm,
+        paddingVertical: theme.spacing.lg,
     },
     contentContainer: {
         flexGrow: 1,
-    },
-    footerContainer: {
-        paddingTop: theme.spacing.md,
     },
     listHeader: {
         alignItems: 'center' as const,

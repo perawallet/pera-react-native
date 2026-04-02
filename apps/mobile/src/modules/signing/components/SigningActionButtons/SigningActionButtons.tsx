@@ -10,17 +10,15 @@
  limitations under the License
  */
 
-import { PWButton, PWDivider, PWView } from '@components/core'
+import { PWButton, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import { useTheme } from '@rneui/themed'
 import { useSigningActionButtons } from './useSigningActionButtons'
 import { SecurityGuardBottomSheet } from '../SecurityGuardBottomSheet'
 
 export const SigningActionButtons = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { theme } = useTheme()
     const {
         handleReject,
         handleSignAndSend,
@@ -35,7 +33,6 @@ export const SigningActionButtons = () => {
 
     return (
         <PWView style={styles.container}>
-            <PWDivider color={theme.colors.layerGray} />
             <PWView style={styles.buttonContainer}>
                 <PWButton
                     title={t('common.cancel.label')}

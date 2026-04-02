@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { PWDivider, PWView } from '@components/core'
-import { useTheme } from '@rneui/themed'
+import { PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { SigningWarnings } from '@modules/signing/components/SigningWarnings'
 import { FeeDisplay } from '@modules/signing/components/FeeDisplay'
@@ -20,20 +19,17 @@ import { useStyles } from './styles'
 
 export const TransactionListFooter = () => {
     const styles = useStyles()
-    const { theme } = useTheme()
     const { t } = useLanguage()
 
     return (
-        <PWView style={styles.footerContainer}>
+        <>
             <SigningWarnings isGroup />
-
-            <PWDivider color={theme.colors.layerGray} />
 
             <PWView style={styles.feeContainer}>
                 <FeeDisplay label={t('transactions.common.total_fee')} />
             </PWView>
 
             <SigningActionButtons />
-        </PWView>
+        </>
     )
 }
