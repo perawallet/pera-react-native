@@ -42,7 +42,7 @@ export const getTypography = (
         h2: {
             fontFamily: getFontFamily(500),
             fontSize: 25,
-            lineHeight: 24,
+            lineHeight: 32,
             color: theme.colors.textMain,
             fontWeight: 500,
         },
