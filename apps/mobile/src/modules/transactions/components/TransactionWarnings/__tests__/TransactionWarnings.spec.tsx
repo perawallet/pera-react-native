@@ -15,7 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { TransactionWarnings } from '../TransactionWarnings'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { useModalState } from '@hooks/useModalState'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { useSigningAccounts } from '@perawallet/wallet-core-accounts'
 
 vi.mock('@hooks/useModalState', () => ({
     useModalState: vi.fn(() => ({
@@ -42,7 +42,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useAllAccounts: vi.fn(() => []),
+        useSigningAccounts: vi.fn(() => []),
     }
 })
 
@@ -75,9 +75,9 @@ const mockUserAccount = {
 
 describe('TransactionWarnings', () => {
     beforeEach(() => {
-        vi.mocked(useAllAccounts).mockReturnValue([
+        vi.mocked(useSigningAccounts).mockReturnValue([
             mockUserAccount,
-        ] as unknown as ReturnType<typeof useAllAccounts>)
+        ] as unknown as ReturnType<typeof useSigningAccounts>)
         vi.mocked(useModalState).mockReturnValue({
             isOpen: false,
             open: vi.fn(),
