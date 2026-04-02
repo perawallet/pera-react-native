@@ -14,7 +14,10 @@ import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AssetActionButtons } from '../AssetActionButtons'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
-import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import {
+    AssetWithAccountBalance,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 
 const mockNavigate = vi.fn()
 const mockReplace = vi.fn()
@@ -173,7 +176,7 @@ describe('AssetActionButtons', () => {
                 address: 'REKEYED_ADDR',
                 type: 'watch',
                 rekeyAddress: 'AUTH_ADDR',
-            } as any)
+            } as unknown as WalletAccount)
             vi.mocked(isSigningAccount).mockReturnValue(true)
         })
 
