@@ -16,7 +16,6 @@ import {
     isAlgo25Account,
     isHDWalletAccount,
     isRekeyedAccount,
-    isWatchAccount,
     canSignWithAccount,
     hasSigningKeys,
     useRemoveAccountById,
@@ -167,10 +166,10 @@ export const useAccountOptions = ({
 
     const handleOpenRemoveConfirm = useCallback(() => {
         onClose()
-        if (isWatchAccount(account)) {
-            openRemoveConfirm()
-        } else {
+        if (hasSigningKeys(account)) {
             openBackupWarning()
+        } else {
+            openRemoveConfirm()
         }
     }, [onClose, account, openRemoveConfirm, openBackupWarning])
 

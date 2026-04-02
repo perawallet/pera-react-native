@@ -14,7 +14,10 @@ import { render, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { AssetActionButtons } from '../AssetActionButtons'
 import { PeraAsset } from '@perawallet/wallet-core-assets'
-import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import {
+    AssetWithAccountBalance,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 
 const mockNavigate = vi.fn()
 const mockReplace = vi.fn()
@@ -76,7 +79,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useSelectedAccount: vi.fn(() => ({ address: 'test-address' })),
-        isWatchAccount: vi.fn(() => false),
+        useAllAccounts: vi.fn(() => []),
+        isSigningAccount: vi.fn(() => true),
     }
 })
 
@@ -164,11 +168,45 @@ describe('AssetActionButtons', () => {
         expect(container).toBeTruthy()
     })
 
+    describe('when account is rekeyed with signing capability', () => {
+        beforeEach(async () => {
+            const { useSelectedAccount, isSigningAccount } =
+                await import('@perawallet/wallet-core-accounts')
+            vi.mocked(useSelectedAccount).mockReturnValue({
+                address: 'REKEYED_ADDR',
+                type: 'watch',
+                rekeyAddress: 'AUTH_ADDR',
+            } as unknown as WalletAccount)
+            vi.mocked(isSigningAccount).mockReturnValue(true)
+        })
+
+        it('renders all action buttons including Swap, Buy, Send, Receive', () => {
+            const { container } = render(
+                <AssetActionButtons asset={mockAsset} />,
+            )
+
+            const text = container.textContent?.toLowerCase() || ''
+            expect(text).toContain('swap')
+            expect(text).toContain('buy')
+            expect(text).toContain('send')
+            expect(text).toContain('receive')
+        })
+
+        it('does not render Copy Address button', () => {
+            const { container } = render(
+                <AssetActionButtons asset={mockAsset} />,
+            )
+
+            const text = container.textContent?.toLowerCase() || ''
+            expect(text).not.toContain('copy_address')
+        })
+    })
+
     describe('when account is a watch account', () => {
         beforeEach(async () => {
-            const { isWatchAccount } =
+            const { isSigningAccount } =
                 await import('@perawallet/wallet-core-accounts')
-            vi.mocked(isWatchAccount).mockReturnValue(true)
+            vi.mocked(isSigningAccount).mockReturnValue(false)
         })
 
         it('renders only Copy Address and Receive buttons', () => {

@@ -115,6 +115,19 @@ export const resolveAccountStatus = (
 }
 
 /**
+ * Returns true if the account can sign transactions based on its
+ * derived account status. Returns false for true watch accounts and
+ * rekeyed accounts whose auth account is not present in the wallet (noAuth).
+ */
+export const isSigningAccount = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+): boolean => {
+    const status = resolveAccountStatus(account, accounts)
+    return status !== 'watch' && status !== 'noAuth'
+}
+
+/**
  * Resolve the auth account for a given account.
  * If the account is rekeyed, returns the rekey target.
  * Only follows one level to prevent circular references.

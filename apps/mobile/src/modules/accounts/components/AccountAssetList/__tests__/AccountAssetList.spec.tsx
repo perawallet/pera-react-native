@@ -36,7 +36,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             accountBalances: new Map(),
             isPending: false,
         })),
-        isWatchAccount: vi.fn(() => false),
+        useAllAccounts: vi.fn(() => []),
+        isSigningAccount: vi.fn(() => true),
     }
 })
 
@@ -191,11 +192,41 @@ describe('AccountAssetList', () => {
         expect(text).toContain('account_details.assets.add_asset')
     })
 
+    describe('when account is rekeyed with signing capability', () => {
+        const rekeyedAccount = {
+            address: 'REKEYED_ADDR',
+            name: 'Rekeyed Account',
+            type: 'watch',
+            rekeyAddress: 'AUTH_ADDR',
+        } as unknown as WalletAccount
+
+        beforeEach(async () => {
+            const { isSigningAccount } =
+                await import('@perawallet/wallet-core-accounts')
+            vi.mocked(isSigningAccount).mockReturnValue(true)
+        })
+
+        it('renders Add Asset button', () => {
+            const { container } = render(
+                <AccountAssetList account={rekeyedAccount} />,
+            )
+            const text = container.textContent || ''
+            expect(text).toContain('account_details.assets.add_asset')
+        })
+
+        it('still renders asset title', () => {
+            render(<AccountAssetList account={rekeyedAccount} />)
+            expect(
+                screen.getByText('account_details.assets.title'),
+            ).toBeTruthy()
+        })
+    })
+
     describe('when account is a watch account', () => {
         beforeEach(async () => {
-            const { isWatchAccount } =
+            const { isSigningAccount } =
                 await import('@perawallet/wallet-core-accounts')
-            vi.mocked(isWatchAccount).mockReturnValue(true)
+            vi.mocked(isSigningAccount).mockReturnValue(false)
         })
 
         it('hides Add Asset button for watch accounts', () => {

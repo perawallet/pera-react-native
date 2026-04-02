@@ -65,7 +65,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         isPending: false,
     })),
     useSelectedAccount: vi.fn(() => undefined),
-    isWatchAccount: vi.fn(() => false),
+    useAllAccounts: vi.fn(() => []),
+    isSigningAccount: vi.fn(() => true),
 }))
 
 vi.mock('@modules/transactions/hooks', () => ({
@@ -368,11 +369,58 @@ describe('AccountOverview', () => {
         ).not.toThrow()
     })
 
+    describe('when account is rekeyed with signing capability', () => {
+        const rekeyedAccount = {
+            address: 'REKEYED_ADDR',
+            type: 'watch',
+            rekeyAddress: 'AUTH_ADDR',
+        } as unknown as WalletAccount
+
+        beforeEach(async () => {
+            const { isSigningAccount } =
+                await import('@perawallet/wallet-core-accounts')
+            vi.mocked(isSigningAccount).mockReturnValue(true)
+        })
+
+        it('renders ButtonPanel with full actions when has balance', () => {
+            render(
+                <AccountOverview
+                    account={rekeyedAccount}
+                    chartVisible={true}
+                />,
+            )
+            expect(screen.getByText('Receive')).toBeTruthy()
+            expect(screen.queryByText('Copy Address')).toBeNull()
+        })
+
+        it('renders NoFundsButtonPanel when no balance', async () => {
+            const { useAccountBalancesQuery } =
+                await import('@perawallet/wallet-core-accounts')
+            vi.mocked(useAccountBalancesQuery).mockReturnValue({
+                portfolioAlgoValue: new Decimal('0'),
+                isPending: false,
+                accountBalances: new Map(),
+                isFetched: true,
+                isRefetching: false,
+                isError: false,
+            })
+
+            render(
+                <AccountOverview
+                    account={rekeyedAccount}
+                    chartVisible={true}
+                />,
+            )
+            expect(screen.queryByText('Copy Address')).toBeNull()
+            expect(screen.queryByText('Show QR')).toBeNull()
+        })
+    })
+
     describe('when account is a watch account', () => {
         beforeEach(async () => {
-            const { isWatchAccount } =
+            const { isSigningAccount } =
                 await import('@perawallet/wallet-core-accounts')
-            vi.mocked(isWatchAccount).mockReturnValue(true)
+            vi.mocked(isSigningAccount).mockReturnValue(false)
         })
 
         it('renders WatchAccountButtonPanel instead of ButtonPanel when has balance', () => {

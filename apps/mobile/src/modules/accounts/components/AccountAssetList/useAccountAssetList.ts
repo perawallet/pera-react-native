@@ -14,8 +14,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
-    isWatchAccount,
+    isSigningAccount,
     useAccountBalancesQuery,
+    useAllAccounts,
     WalletAccount,
     AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
@@ -121,7 +122,8 @@ export const useAccountAssetList = ({
         })
     }, [sortedBalances, debouncedSearchFilter, assets])
 
-    const isWatch = isWatchAccount(account)
+    const allAccounts = useAllAccounts()
+    const isWatch = !isSigningAccount(account, allAccounts)
 
     const goToAssetScreen = useCallback(
         (asset: AssetWithAccountBalance) => {
