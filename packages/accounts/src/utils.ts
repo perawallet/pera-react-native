@@ -57,7 +57,7 @@ export const isAlgo25Account = (
 export const isWatchAccount = (
     account: WalletAccount,
 ): account is WatchAccount => {
-    return account.type === AccountTypes.watch && !account.rekeyAddress
+    return account.type === AccountTypes.watch
 }
 
 export const isMultisigAccount = (
@@ -112,6 +112,19 @@ export const resolveAccountStatus = (
     if (isLedgerAccount(account)) return 'ledger'
     if (isAlgo25Account(account)) return 'standard'
     return 'standard'
+}
+
+/**
+ * Returns true if the account can sign transactions based on its
+ * derived account status. Returns false for true watch accounts and
+ * rekeyed accounts whose auth account is not present in the wallet (noAuth).
+ */
+export const isSigningAccount = (
+    account: WalletAccount,
+    accounts: WalletAccount[],
+): boolean => {
+    const status = resolveAccountStatus(account, accounts)
+    return status !== 'watch' && status !== 'noAuth'
 }
 
 /**

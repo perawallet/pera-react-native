@@ -19,6 +19,7 @@ import {
     isHDWalletAccount,
     isLedgerAccount,
     isMultisigAccount,
+    isSigningAccount,
     isRekeyedAccount,
     isWatchAccount,
     resolveAccountStatus,
@@ -184,16 +185,6 @@ describe('services/accounts/utils - account type checks', () => {
                 type: 'watch',
             } as any),
         ).toBe(true)
-    })
-
-    test('isWatchAccount returns false for rekeyed account stored as watch', () => {
-        expect(
-            isWatchAccount({
-                ...baseAccount,
-                type: 'watch',
-                rekeyAddress: 'AUTH_ADDR',
-            } as any),
-        ).toBe(false)
     })
 
     test('isMultisigAccount returns true if type is multisig', () => {
@@ -382,5 +373,58 @@ describe('services/accounts/utils - resolveAccountStatus', () => {
         expect(resolveAccountStatus(account, [authAccount])).toBe(
             'rekeyedLedger',
         )
+    })
+})
+
+describe('services/accounts/utils - isSigningAccount', () => {
+    test('returns false for true watch account', () => {
+        const account = { type: 'watch', address: 'ADDR' } as any
+        expect(isSigningAccount(account, [])).toBe(false)
+    })
+
+    test('returns false for rekeyed account without auth in wallet (noAuth)', () => {
+        const account = {
+            type: 'watch',
+            address: 'ADDR',
+            rekeyAddress: 'MISSING_AUTH',
+        } as any
+        expect(isSigningAccount(account, [])).toBe(false)
+    })
+
+    test('returns true for rekeyed account with auth present (rekeyedStandard)', () => {
+        const authAccount = {
+            type: 'algo25',
+            address: 'AUTH',
+            keyPairId: 'pk1',
+        } as any
+        const account = {
+            type: 'watch',
+            address: 'ADDR',
+            rekeyAddress: 'AUTH',
+        } as any
+        expect(isSigningAccount(account, [authAccount])).toBe(true)
+    })
+
+    test('returns true for rekeyed account with ledger auth present (rekeyedLedger)', () => {
+        const authAccount = {
+            type: 'hardware',
+            address: 'AUTH',
+            hardwareDetails: { manufacturer: 'ledger' },
+        } as any
+        const account = {
+            type: 'watch',
+            address: 'ADDR',
+            rekeyAddress: 'AUTH',
+        } as any
+        expect(isSigningAccount(account, [authAccount])).toBe(true)
+    })
+
+    test('returns true for standard account', () => {
+        const account = {
+            type: 'algo25',
+            address: 'ADDR',
+            keyPairId: 'pk1',
+        } as any
+        expect(isSigningAccount(account, [])).toBe(true)
     })
 })

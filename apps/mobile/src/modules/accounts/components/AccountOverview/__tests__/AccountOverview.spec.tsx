@@ -66,8 +66,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     })),
     useSelectedAccount: vi.fn(() => undefined),
     useAllAccounts: vi.fn(() => []),
-    canSignWithAccount: vi.fn(() => true),
-    isWatchAccount: vi.fn(() => false),
+    isSigningAccount: vi.fn(() => true),
 }))
 
 vi.mock('@modules/transactions/hooks', () => ({
@@ -378,9 +377,9 @@ describe('AccountOverview', () => {
         } as unknown as WalletAccount
 
         beforeEach(async () => {
-            const { canSignWithAccount } =
+            const { isSigningAccount } =
                 await import('@perawallet/wallet-core-accounts')
-            vi.mocked(canSignWithAccount).mockReturnValue(true)
+            vi.mocked(isSigningAccount).mockReturnValue(true)
         })
 
         it('renders ButtonPanel with full actions when has balance', () => {
@@ -417,11 +416,11 @@ describe('AccountOverview', () => {
         })
     })
 
-    describe('when account cannot sign transactions', () => {
+    describe('when account is a watch account', () => {
         beforeEach(async () => {
-            const { canSignWithAccount } =
+            const { isSigningAccount } =
                 await import('@perawallet/wallet-core-accounts')
-            vi.mocked(canSignWithAccount).mockReturnValue(false)
+            vi.mocked(isSigningAccount).mockReturnValue(false)
         })
 
         it('renders WatchAccountButtonPanel instead of ButtonPanel when has balance', () => {

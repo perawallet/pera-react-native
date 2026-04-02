@@ -14,7 +14,7 @@ import { useCallback, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
     AccountBalanceHistoryItem,
-    canSignWithAccount,
+    isSigningAccount,
     useAccountBalancesQuery,
     useAllAccounts,
     usePortfolioTotals,
@@ -45,8 +45,7 @@ export const useAccountOverviewHeader = (
     account: WalletAccount,
 ): UseAccountOverviewHeaderResult => {
     const { usdToPreferred } = useCurrency()
-    const accounts = useAllAccounts()
-    const canSign = canSignWithAccount(account, accounts)
+    const allAccounts = useAllAccounts()
     const { portfolioAlgoValue, accountBalances, isPending } =
         useAccountBalancesQuery(account ? [account] : [])
     const { portfolioUsdValue } = usePortfolioTotals(accountBalances)
@@ -81,7 +80,7 @@ export const useAccountOverviewHeader = (
         setPeriod,
         selectedPoint,
         hasBalance: portfolioAlgoValue.gt(0),
-        canSign,
+        canSign: isSigningAccount(account, allAccounts),
         togglePrivacyMode,
         handleChartSelectionChange,
     }

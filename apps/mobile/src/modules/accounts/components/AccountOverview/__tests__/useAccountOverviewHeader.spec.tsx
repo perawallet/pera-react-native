@@ -40,7 +40,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         isPending: false,
     })),
     useAllAccounts: vi.fn(() => []),
-    canSignWithAccount: vi.fn(() => true),
+    isSigningAccount: vi.fn(() => true),
 }))
 
 vi.mock('@perawallet/wallet-core-currencies', () => ({
@@ -90,7 +90,7 @@ describe('useAccountOverviewHeader', () => {
         vi.clearAllMocks()
     })
 
-    it('returns canSign true when canSignWithAccount returns true', () => {
+    it('returns canSign true when isSigningAccount returns true', () => {
         const { result } = renderHook(
             () => useAccountOverviewHeader(mockAccount),
             { wrapper },
@@ -99,10 +99,10 @@ describe('useAccountOverviewHeader', () => {
         expect(result.current.canSign).toBe(true)
     })
 
-    it('returns canSign false when canSignWithAccount returns false', async () => {
-        const { canSignWithAccount } =
+    it('returns canSign false when isSigningAccount returns false', async () => {
+        const { isSigningAccount } =
             await import('@perawallet/wallet-core-accounts')
-        vi.mocked(canSignWithAccount).mockReturnValue(false)
+        vi.mocked(isSigningAccount).mockReturnValue(false)
 
         const { result } = renderHook(
             () => useAccountOverviewHeader(mockAccount),

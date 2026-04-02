@@ -37,8 +37,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             isPending: false,
         })),
         useAllAccounts: vi.fn(() => []),
-        canSignWithAccount: vi.fn(() => true),
-        isWatchAccount: vi.fn(() => false),
+        isSigningAccount: vi.fn(() => true),
     }
 })
 
@@ -202,9 +201,9 @@ describe('AccountAssetList', () => {
         } as unknown as WalletAccount
 
         beforeEach(async () => {
-            const { canSignWithAccount } =
+            const { isSigningAccount } =
                 await import('@perawallet/wallet-core-accounts')
-            vi.mocked(canSignWithAccount).mockReturnValue(true)
+            vi.mocked(isSigningAccount).mockReturnValue(true)
         })
 
         it('renders Add Asset button', () => {
@@ -223,11 +222,11 @@ describe('AccountAssetList', () => {
         })
     })
 
-    describe('when account cannot sign transactions', () => {
+    describe('when account is a watch account', () => {
         beforeEach(async () => {
-            const { canSignWithAccount } =
+            const { isSigningAccount } =
                 await import('@perawallet/wallet-core-accounts')
-            vi.mocked(canSignWithAccount).mockReturnValue(false)
+            vi.mocked(isSigningAccount).mockReturnValue(false)
         })
 
         it('hides Add Asset button for watch accounts', () => {

@@ -77,8 +77,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         ...actual,
         useSelectedAccount: vi.fn(() => ({ address: 'test-address' })),
         useAllAccounts: vi.fn(() => []),
-        canSignWithAccount: vi.fn(() => true),
-        isWatchAccount: vi.fn(() => false),
+        isSigningAccount: vi.fn(() => true),
     }
 })
 
@@ -168,14 +167,14 @@ describe('AssetActionButtons', () => {
 
     describe('when account is rekeyed with signing capability', () => {
         beforeEach(async () => {
-            const { useSelectedAccount, canSignWithAccount } =
+            const { useSelectedAccount, isSigningAccount } =
                 await import('@perawallet/wallet-core-accounts')
             vi.mocked(useSelectedAccount).mockReturnValue({
                 address: 'REKEYED_ADDR',
                 type: 'watch',
                 rekeyAddress: 'AUTH_ADDR',
             } as any)
-            vi.mocked(canSignWithAccount).mockReturnValue(true)
+            vi.mocked(isSigningAccount).mockReturnValue(true)
         })
 
         it('renders all action buttons including Swap, Buy, Send, Receive', () => {
@@ -200,11 +199,11 @@ describe('AssetActionButtons', () => {
         })
     })
 
-    describe('when account cannot sign transactions', () => {
+    describe('when account is a watch account', () => {
         beforeEach(async () => {
-            const { canSignWithAccount } =
+            const { isSigningAccount } =
                 await import('@perawallet/wallet-core-accounts')
-            vi.mocked(canSignWithAccount).mockReturnValue(false)
+            vi.mocked(isSigningAccount).mockReturnValue(false)
         })
 
         it('renders only Copy Address and Receive buttons', () => {
