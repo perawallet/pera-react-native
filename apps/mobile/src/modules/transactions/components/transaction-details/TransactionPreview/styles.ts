@@ -17,17 +17,16 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.md,
-        paddingVertical: theme.spacing.sm,
-        paddingHorizontal: theme.spacing.sm,
-        backgroundColor: theme.colors.layerGrayLightest,
-        borderRadius: theme.spacing.sm,
+        padding: theme.spacing.lg,
+        backgroundColor: theme.colors.layerGrayLighter,
+        borderRadius: theme.spacing.lg,
+        borderWidth: 1,
+        borderColor: theme.colors.layerGray,
     },
     content: {
         flexGrow: 1,
-        backgroundColor: theme.colors.layerGrayLightest,
     },
     rightContent: {
-        backgroundColor: theme.colors.layerGrayLightest,
         flexDirection: 'row',
         alignItems: 'center',
     },
@@ -37,6 +36,5 @@ export const useStyles = makeStyles(theme => ({
     secondaryText: {
         color: theme.colors.textGray,
         lineHeight: theme.spacing.lg,
-        backgroundColor: theme.colors.layerGrayLightest,
     },
 }))
