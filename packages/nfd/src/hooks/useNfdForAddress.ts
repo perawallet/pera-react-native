@@ -19,9 +19,6 @@ import {
 import { fetchNfdNamesForAddress } from '../api'
 import { nfdQueryKeys } from './querykeys'
 
-const NFD_STALE_TIME = 5 * 60 * 1000
-const NFD_GC_TIME = 30 * 60 * 1000
-
 type UseNfdForAddressResult = {
     nfdName: string | undefined
     isResolving: boolean
@@ -39,8 +36,6 @@ export const useNfdForAddress = (
         queryKey: nfdQueryKeys.forAddress(address, network),
         queryFn: ({ signal }) =>
             fetchNfdNamesForAddress({ address, network, signal }),
-        staleTime: NFD_STALE_TIME,
-        gcTime: NFD_GC_TIME,
         enabled,
     })
 

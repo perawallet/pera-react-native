@@ -24,7 +24,7 @@ import {
     transformNfdNamesList,
     transformBulkResults,
     transformSearchResults,
-} from './transformers'
+} from './mappers'
 
 export type FetchNfdNamesForAddressParams = {
     address: string

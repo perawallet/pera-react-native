@@ -16,8 +16,6 @@ import { fetchNfdSearch } from '../api'
 import { nfdQueryKeys } from './querykeys'
 import type { NfdSearchResult } from '../models'
 
-const NFD_SEARCH_STALE_TIME = 60 * 1000
-
 type UseNfdSearchResult = {
     results: NfdSearchResult[]
     isLoading: boolean
@@ -35,7 +33,6 @@ export const useNfdSearch = (
     const { data, isPending, isError, error } = useQuery({
         queryKey: nfdQueryKeys.search(name, network),
         queryFn: ({ signal }) => fetchNfdSearch({ name, network, signal }),
-        staleTime: NFD_SEARCH_STALE_TIME,
         enabled,
     })
 

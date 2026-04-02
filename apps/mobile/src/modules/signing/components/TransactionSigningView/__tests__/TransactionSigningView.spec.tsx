@@ -71,7 +71,20 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     })),
 }))
 
+vi.mock('@perawallet/wallet-core-nfd', () => ({
+    useNfdForAddress: vi.fn(() => ({
+        nfdName: undefined,
+        isResolving: false,
+    })),
+    useResolvedAddress: vi.fn(() => ({
+        displayName: '',
+        isNfd: false,
+        isResolving: false,
+    })),
+}))
+
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
     useAlgorandClient: vi.fn(() => ({
         client: { algod: { sendRawTransaction: vi.fn() } },
     })),
