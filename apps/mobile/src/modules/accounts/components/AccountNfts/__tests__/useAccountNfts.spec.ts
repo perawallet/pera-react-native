@@ -271,7 +271,7 @@ describe('useAccountNfts', () => {
             result.current.handlePress(result.current.collectibles[0])
         })
 
-        expect(mockNavigate).toHaveBeenCalledWith('AssetDetails', {
+        expect(mockNavigate).toHaveBeenCalledWith('CollectibleDetails', {
             assetId: result.current.collectibles[0].assetId,
         })
     })

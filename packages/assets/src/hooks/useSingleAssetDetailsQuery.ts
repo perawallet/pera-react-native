@@ -65,16 +65,21 @@ async function fetchAssetFromApis(
     }
 }
 
-export const useSingleAssetDetailsQuery = (assetId: string) => {
+export const useSingleAssetDetailsQuery = (
+    assetId: string,
+    useDB: boolean = true,
+) => {
     const { network } = useNetwork()
 
     return useQuery<PeraAsset, Error>({
-        queryKey: getAssetDetailsQueryKey(assetId),
+        queryKey: getAssetDetailsQueryKey(assetId, useDB, network),
         queryFn: async (): Promise<PeraAsset> => {
             // Try DB first (data synced by sync service)
-            const dbAsset = await getAssetById({ assetId, network })
-            if (dbAsset !== null) {
-                return dbAsset
+            if (useDB) {
+                const dbAsset = await getAssetById({ assetId, network })
+                if (dbAsset !== null) {
+                    return dbAsset
+                }
             }
 
             // ALGO is seeded at startup — if not in DB yet, return in-memory constant

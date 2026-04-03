@@ -1,0 +1,170 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import React from 'react'
+import { NativeStackScreenProps } from '@react-navigation/native-stack'
+import { AccountStackParamsList } from '@modules/accounts/routes'
+import {
+    PWChip,
+    PWScrollView,
+    PWText,
+    PWTouchableIcon,
+    PWView,
+} from '@components/core'
+import { MediaCarousel } from '@components/MediaCarousel'
+import { EmptyView } from '@components/EmptyView'
+import { useLanguage } from '@hooks/useLanguage'
+import { useCollectibleDetail } from './useCollectibleDetail'
+import { useStyles } from './styles'
+import { CollectibleTraitsGrid } from './CollectibleTraitsGrid'
+import { CollectibleInfoSection } from './CollectibleInfoSection'
+import { AddressDisplay } from '@components/AddressDisplay'
+import { RoundButton } from '@components/RoundButton'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { CollectibeDescription } from './CollectibleDescription'
+
+export type CollectibleDetailScreenProps = NativeStackScreenProps<
+    AccountStackParamsList,
+    'CollectibleDetails'
+>
+
+export const CollectibleDetailScreen = ({
+    route,
+}: CollectibleDetailScreenProps) => {
+    const assetId = route.params?.assetId ?? ''
+    const styles = useStyles()
+    const { t } = useLanguage()
+
+    const {
+        asset,
+        collectible,
+        isPending,
+        isPure: _isPure,
+        isWatch,
+        traits,
+        media,
+        accountAddress,
+        assetAmount,
+        handleSendPressed,
+        handleSharePressed,
+        handleCopyImage,
+        handleSaveImage,
+    } = useCollectibleDetail(assetId)
+
+    useNavigationHeader({
+        right: (
+            <PWTouchableIcon
+                name='share'
+                variant='primary'
+                onPress={handleSharePressed}
+            />
+        ),
+    })
+
+    if (isPending || !asset) {
+        return (
+            <EmptyView
+                isLoading={isPending}
+                title={t('asset_details.markets.something_went_wrong_title')}
+                body={t('asset_details.markets.something_went_wrong_body')}
+            />
+        )
+    }
+
+    const displayTitle = collectible?.title ?? asset.name ?? `#${asset.assetId}`
+    const quantity = assetAmount.toNumber()
+
+    return (
+        <PWView style={styles.container}>
+            <PWScrollView contentContainerStyle={styles.scrollContent}>
+                <PWView style={styles.contentContainer}>
+                    <PWView style={styles.titleSection}>
+                        <PWText
+                            variant='h3'
+                            style={styles.title}
+                        >
+                            {displayTitle}
+                        </PWText>
+                        {collectible?.collection?.name && (
+                            <PWText
+                                variant='body'
+                                style={styles.collectionName}
+                            >
+                                {collectible.collection.name}
+                            </PWText>
+                        )}
+                    </PWView>
+
+                    {accountAddress ? (
+                        <PWView style={styles.accountRow}>
+                            <AddressDisplay address={accountAddress} />
+                            {quantity > 1 && (
+                                <PWChip
+                                    title={`x${quantity}`}
+                                    variant='secondary'
+                                />
+                            )}
+                        </PWView>
+                    ) : null}
+                </PWView>
+
+                <MediaCarousel
+                    media={media}
+                    fallbackImageUrl={
+                        collectible?.primaryImage ??
+                        asset.peraMetadata?.logo ??
+                        undefined
+                    }
+                />
+
+                <PWView style={styles.contentContainer}>
+                    {!isWatch && (
+                        <PWView style={styles.actionButtonsContainer}>
+                            <RoundButton
+                                title={t('common.send')}
+                                icon='outflow'
+                                variant='primary'
+                                size='md'
+                                onPress={handleSendPressed}
+                            />
+                            <RoundButton
+                                title={t('common.copy')}
+                                icon='copy'
+                                variant='secondary'
+                                size='md'
+                                onPress={handleCopyImage}
+                            />
+                            <RoundButton
+                                title={t('common.save')}
+                                icon='save'
+                                variant='secondary'
+                                size='md'
+                                onPress={handleSaveImage}
+                            />
+                        </PWView>
+                    )}
+
+                    <CollectibleTraitsGrid traits={traits} />
+
+                    <CollectibeDescription
+                        description={collectible?.description}
+                    />
+
+                    <CollectibleInfoSection
+                        asset={asset}
+                        collectible={collectible}
+                    />
+                </PWView>
+            </PWScrollView>
+        </PWView>
+    )
+}

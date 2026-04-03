@@ -13,5 +13,6 @@
 export type AccountStackParamsList = {
     AccountDetails?: { playConfetti?: boolean }
     AssetDetails?: { assetId: string }
+    CollectibleDetails?: { assetId: string }
     RemoveAssets?: undefined
 }

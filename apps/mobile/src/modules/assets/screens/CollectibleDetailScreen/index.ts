@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { CollectibleListItem } from './CollectibleListItem'
+export { CollectibleDetailScreen } from './CollectibleDetailScreen'

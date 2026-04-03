@@ -23,6 +23,7 @@ import {
 import {
     useAssetsQuery,
     useAssetPricesQuery,
+    isCollectible,
     type AssetPrices,
 } from '@perawallet/wallet-core-assets'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
@@ -126,13 +127,20 @@ export const useAccountAssetList = ({
     const isWatch = !isSigningAccount(account, allAccounts)
 
     const goToAssetScreen = useCallback(
-        (asset: AssetWithAccountBalance) => {
+        (item: AssetWithAccountBalance) => {
             headerState.open()
-            navigation.navigate('AssetDetails', {
-                assetId: asset.assetId,
-            })
+            const assetInfo = assets?.get(item.assetId)
+            if (assetInfo && isCollectible(assetInfo)) {
+                navigation.navigate('CollectibleDetails', {
+                    assetId: item.assetId,
+                })
+            } else {
+                navigation.navigate('AssetDetails', {
+                    assetId: item.assetId,
+                })
+            }
         },
-        [headerState, navigation],
+        [headerState, navigation, assets],
     )
 
     const handleOptOut = useCallback(

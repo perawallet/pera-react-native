@@ -10,4 +10,5 @@
  limitations under the License
  */
 
-export { CollectibleGridItem } from './CollectibleGridItem'
+export { MediaCarousel } from './MediaCarousel'
+export type { MediaCarouselProps, MediaItem } from './MediaCarousel'

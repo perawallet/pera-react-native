@@ -42,10 +42,11 @@ export const getAlgoQueryKey = (network: Network) => {
     return [MODULE_PREFIX, { algo: ALGO_ASSET_ID, network }]
 }
 
-export const getAssetDetailsQueryKey = (assetId: string) => [
-    MODULE_PREFIX,
-    { assetId },
-]
+export const getAssetDetailsQueryKey = (
+    assetId: string,
+    useDB: boolean,
+    network: Network,
+) => [MODULE_PREFIX, { assetId, useDB, network }]
 
 export const getPublicAssetDetailsQueryKey = (assetId: string) => [
     MODULE_PREFIX,
