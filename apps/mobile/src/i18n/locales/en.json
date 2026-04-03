@@ -158,6 +158,14 @@
             "nomatch_title": "No Matching Assets",
             "nomatch_body": "No assets matched your search term"
         },
+        "nfts": {
+            "title": "Collectibles",
+            "search_placeholder": "Search collectibles",
+            "empty_title": "No Collectibles",
+            "empty_body": "You have no collectibles linked to this account",
+            "nomatch_title": "No Matching Collectibles",
+            "nomatch_body": "No collectibles matched your search term"
+        },
         "button_panel": {
             "swap": "Swap",
             "send": "Send",

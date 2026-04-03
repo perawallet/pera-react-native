@@ -11,12 +11,30 @@
  */
 
 import { render, screen } from '@test-utils/render'
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { AccountNfts } from '../AccountNfts'
 
+vi.mock('../useAccountNfts', () => ({
+    useAccountNfts: vi.fn().mockReturnValue({
+        collectibles: [],
+        isPending: false,
+        hasAccount: true,
+        galleryLayout: 'grid',
+        searchFilter: '',
+        sortMode: 'titleAsc',
+        setSearchFilter: vi.fn(),
+        setGalleryLayout: vi.fn(),
+        setSortMode: vi.fn(),
+        toggleGalleryLayout: vi.fn(),
+        handlePress: vi.fn(),
+    }),
+}))
+
 describe('AccountNfts', () => {
-    it('renders placeholder', () => {
+    it('renders empty state when no collectibles', () => {
         render(<AccountNfts />)
-        expect(screen.getByText('common.not_implemented.title')).toBeTruthy()
+        expect(
+            screen.getByText('account_details.nfts.empty_title'),
+        ).toBeTruthy()
     })
 })
