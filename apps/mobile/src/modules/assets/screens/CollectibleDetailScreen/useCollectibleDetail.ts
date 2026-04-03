@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
 import { Share } from 'react-native'
+import { useCallback, useMemo, useState } from 'react'
 import {
     useSingleAssetDetailsQuery,
     isPureNft,
@@ -35,6 +35,8 @@ import * as Clipboard from 'expo-clipboard'
 import { File, Paths } from 'expo-file-system'
 import * as MediaLibrary from 'expo-media-library'
 import * as Haptics from 'expo-haptics'
+import { useModalState, type ModalState } from '@hooks/useModalState'
+import type { FullScreenMediaItem } from '@modules/assets/screens/FullScreenImageViewer/FullScreenImageViewer'
 
 type UseCollectibleDetailResult = {
     asset: PeraAsset | undefined
@@ -50,6 +52,10 @@ type UseCollectibleDetailResult = {
     handleSharePressed: () => void
     handleCopyImage: () => void
     handleSaveImage: () => void
+    handleMediaPress: (index: number) => void
+    fullScreenMedia: FullScreenMediaItem[]
+    fullScreenInitialIndex: number
+    fullScreenViewerModal: ModalState
     hasExplorerUrl: boolean
     hasProjectUrl: boolean
 }
@@ -69,6 +75,8 @@ export const useCollectibleDetail = (
         account ?? undefined,
         assetId,
     )
+    const fullScreenViewerModal = useModalState()
+    const [fullScreenInitialIndex, setFullScreenInitialIndex] = useState(0)
 
     const collectible = asset?.peraMetadata?.collectible
     const isWatch = account ? !isSigningAccount(account, allAccounts) : true
@@ -185,6 +193,48 @@ export const useCollectibleDetail = (
         })
     }, [assetId])
 
+    const fullScreenMedia = useMemo<FullScreenMediaItem[]>(() => {
+        const posterFallback =
+            collectible?.primaryImage ?? asset?.peraMetadata?.logo ?? undefined
+
+        const items: FullScreenMediaItem[] = []
+        for (const m of media) {
+            if (
+                m.type !== 'image' &&
+                m.type !== 'video' &&
+                m.type !== 'audio'
+            ) {
+                continue
+            }
+            const uri = m.downloadUrl ?? m.previewUrl
+            if (!uri) continue
+            if (m.type === 'video') {
+                items.push({ uri, type: 'video' })
+            } else if (m.type === 'audio') {
+                items.push({ uri, type: 'audio', posterUri: posterFallback })
+            } else {
+                items.push({ uri, type: 'image' })
+            }
+        }
+
+        if (!items.length && posterFallback) {
+            return [{ uri: posterFallback, type: 'image' }]
+        }
+        return items
+    }, [media, collectible, asset])
+
+    const handleMediaPress = useCallback(
+        (index: number) => {
+            if (fullScreenMedia.length > 0) {
+                setFullScreenInitialIndex(
+                    Math.min(index, fullScreenMedia.length - 1),
+                )
+                fullScreenViewerModal.open()
+            }
+        },
+        [fullScreenMedia, fullScreenViewerModal],
+    )
+
     return {
         asset,
         collectible,
@@ -199,6 +249,10 @@ export const useCollectibleDetail = (
         handleSharePressed,
         handleCopyImage,
         handleSaveImage,
+        handleMediaPress,
+        fullScreenMedia,
+        fullScreenInitialIndex,
+        fullScreenViewerModal,
         hasExplorerUrl: !!explorerUrl,
         hasProjectUrl: !!projectUrl,
     }

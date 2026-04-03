@@ -10,10 +10,19 @@
  limitations under the License
  */
 
-import React, { useCallback, useState } from 'react'
-import { FlatList } from 'react-native'
-import { PWIcon, PWIconSize, PWImage, PWView } from '@components/core'
+import React, { useCallback, useMemo, useState } from 'react'
+import { FlatList, useWindowDimensions } from 'react-native'
+import {
+    PWIcon,
+    PWIconSize,
+    PWImage,
+    PWTouchableIcon,
+    PWView,
+} from '@components/core'
+import { VideoPlayer } from '@components/VideoPlayer'
+import { AudioPlayer } from '@components/AudioPlayer'
 import { useStyles } from './styles'
+import { useTheme } from '@rneui/themed'
 
 export type MediaItem = {
     type: string
@@ -25,84 +34,107 @@ export type MediaCarouselProps = {
     media: MediaItem[]
     fallbackImageUrl?: string
     placeholderIconSize?: PWIconSize
+    onItemPress?: (index: number) => void
+    onFullScreenPress?: (index: number) => void
 }
 
 export const MediaCarousel = ({
     media,
     fallbackImageUrl,
     placeholderIconSize = 'xl',
+    onItemPress,
+    onFullScreenPress,
 }: MediaCarouselProps) => {
     const styles = useStyles()
+    const { theme } = useTheme()
+    const { width: windowWidth } = useWindowDimensions()
+    const videoWidth = useMemo(
+        () => windowWidth - 2 * theme.spacing.lg,
+        [windowWidth],
+    )
     const [activeIndex, setActiveIndex] = useState(0)
 
-    const imageMedia = media.filter(m => m.type === 'image')
-    const hasMultiple = imageMedia.length > 1
+    const displayMedia = media.filter(
+        m => m.type === 'image' || m.type === 'video' || m.type === 'audio',
+    )
+    const hasMultiple = displayMedia.length > 1
 
     const renderMediaItem = useCallback(
-        ({ item }: { item: MediaItem }) => (
-            <PWView style={styles.carouselItem}>
-                {item.previewUrl || item.downloadUrl ? (
-                    <PWImage
-                        source={{ uri: item.previewUrl ?? item.downloadUrl }}
-                        style={styles.image}
-                        resizeMode='contain'
-                    />
-                ) : (
-                    <PWView style={styles.placeholder}>
-                        <PWIcon
-                            name='card-stack'
-                            size={placeholderIconSize ?? 'md'}
+        ({ item, index }: { item?: MediaItem; index: number }) => {
+            const downloadUri = item?.downloadUrl
+            return (
+                <PWView style={styles.carouselItem}>
+                    {item?.type === 'video' && downloadUri ? (
+                        <VideoPlayer
+                            uri={downloadUri}
+                            width={videoWidth}
+                            height={windowWidth}
+                            style={styles.videoPlayer}
                         />
-                    </PWView>
-                )}
-            </PWView>
-        ),
-        [styles, placeholderIconSize],
+                    ) : item?.type === 'audio' && downloadUri ? (
+                        <AudioPlayer
+                            uri={downloadUri}
+                            posterUri={item?.previewUrl ?? fallbackImageUrl}
+                            width={videoWidth}
+                            height={windowWidth}
+                            style={styles.videoPlayer}
+                        />
+                    ) : item?.previewUrl ||
+                      item?.downloadUrl ||
+                      fallbackImageUrl ? (
+                        <PWImage
+                            source={{
+                                uri:
+                                    item?.previewUrl ??
+                                    item?.downloadUrl ??
+                                    fallbackImageUrl,
+                            }}
+                            style={styles.image}
+                            resizeMode='contain'
+                        />
+                    ) : (
+                        <PWView style={styles.placeholder}>
+                            <PWIcon
+                                name='card-stack'
+                                size={placeholderIconSize ?? 'md'}
+                            />
+                        </PWView>
+                    )}
+                    {onFullScreenPress && index >= 0 && (
+                        <PWTouchableIcon
+                            style={styles.fullScreenButton}
+                            onPress={() => onFullScreenPress(index)}
+                            name='full-view'
+                            size='lg'
+                            variant='white'
+                        />
+                    )}
+                </PWView>
+            )
+        },
+        [
+            styles,
+            placeholderIconSize,
+            onItemPress,
+            onFullScreenPress,
+            fallbackImageUrl,
+            windowWidth,
+        ],
     )
 
-    if (!imageMedia.length) {
-        return (
-            <PWView style={styles.container}>
-                {fallbackImageUrl ? (
-                    <PWImage
-                        source={{ uri: fallbackImageUrl }}
-                        style={styles.image}
-                        resizeMode='contain'
-                    />
-                ) : (
-                    <PWView style={styles.placeholder}>
-                        <PWIcon
-                            name='card-stack'
-                            size={placeholderIconSize}
-                        />
-                    </PWView>
-                )}
-            </PWView>
-        )
+    if (!displayMedia.length) {
+        return renderMediaItem({ index: -1 })
     }
 
     if (!hasMultiple) {
-        const singleMedia = imageMedia[0]
-        return (
-            <PWView style={styles.container}>
-                <PWImage
-                    source={{
-                        uri:
-                            singleMedia.previewUrl ??
-                            singleMedia.downloadUrl ??
-                            fallbackImageUrl,
-                    }}
-                    style={styles.image}
-                    resizeMode='contain'
-                />
-            </PWView>
-        )
+        const singleMedia = displayMedia[0]
+        return renderMediaItem({ item: singleMedia, index: 0 })
     }
 
     return (
         <PWView style={styles.container}>
             <FlatList
-                data={imageMedia}
+                data={displayMedia}
                 renderItem={renderMediaItem}
                 keyExtractor={(_, index) => `media-${index}`}
                 horizontal
@@ -117,7 +149,7 @@ export const MediaCarousel = ({
                 }}
             />
             <PWView style={styles.indicator}>
-                {imageMedia.map((_, i) => (
+                {displayMedia.map((_, i) => (
                     <PWView
                         key={i}
                         style={[

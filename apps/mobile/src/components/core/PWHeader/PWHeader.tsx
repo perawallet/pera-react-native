@@ -21,7 +21,7 @@ export type PWHeaderProps = {
     leftIcon?: IconName
     rightIcon?: IconName
     onLeftPress?: () => void
-    onRightPress?: () => VideoFacingModeEnum
+    onRightPress?: () => void
 } & PropsWithChildren
 
 export const PWHeader = ({

@@ -11,57 +11,54 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles(theme => ({
+export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     container: {
-        width: '100%',
-        aspectRatio: 1,
+        flex: 1,
+        backgroundColor: theme.colors.black,
     },
-    image: {
-        margin: theme.spacing.lg,
-        borderRadius: theme.borderRadius.lg,
-        overflow: 'hidden',
-    },
-    videoPlayer: {
-        margin: theme.spacing.lg,
-        borderRadius: theme.borderRadius.lg,
-        overflow: 'hidden',
-    },
-    imageContainer: {
+    innerContainer: {
+        flexGrow: 1,
+        backgroundColor: theme.colors.black,
+        paddingTop: insets.top,
         width: '100%',
         height: '100%',
     },
-    placeholder: {
-        flex: 1,
+    pager: {
+        flexGrow: 1,
+    },
+    page: {
+        flexGrow: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    closeButton: {
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    fullScreenButton: {
-        position: 'absolute',
-        bottom: theme.spacing.xl,
-        right: theme.spacing.xl,
-        borderRadius: theme.borderRadius.sm,
-        backgroundColor: theme.colors.nftIconBg,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    carouselItem: {
-        width: '100%',
-        aspectRatio: 1,
     },
     indicator: {
+        position: 'absolute',
+        bottom: theme.spacing.xxl,
+        left: 0,
+        right: 0,
         flexDirection: 'row',
         justifyContent: 'center',
         gap: theme.spacing.xs,
-        marginTop: theme.spacing.sm,
     },
     dot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-        backgroundColor: theme.colors.layerGrayLighter,
+        width: theme.spacing.xs,
+        height: theme.spacing.xs,
+        borderRadius: theme.spacing.xs,
+        backgroundColor: theme.colors.layerGray,
     },
     dotActive: {
-        backgroundColor: theme.colors.textMain,
+        backgroundColor: theme.colors.white,
+    },
+    counterText: {
+        position: 'absolute',
+        bottom: theme.spacing.xxl,
+        alignSelf: 'center',
+        color: theme.colors.white,
     },
 }))

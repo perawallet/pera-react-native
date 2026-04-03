@@ -12,38 +12,58 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export type PWChipVariant = 'helper' | 'secondary'
+export type PWChipVariant = 'helper' | 'secondary' | 'outline'
 
 type Props = {
     variant: PWChipVariant
+    paddingStyle?: 'dense' | 'normal'
 }
 
-export const useStyles = makeStyles((theme, { variant }: Props) => {
-    const variantStyles = {
-        helper: {
-            backgroundColor: theme.colors.trustedBannerBg,
-            color: theme.colors.trustedBannerContent,
-        },
-        secondary: {
-            backgroundColor: theme.colors.layerGrayLighter,
-            color: theme.colors.textGray,
-        },
-    }
+export const useStyles = makeStyles(
+    (theme, { variant, paddingStyle }: Props) => {
+        const variantStyles = {
+            helper: {
+                backgroundColor: theme.colors.trustedBannerBg,
+                color: theme.colors.trustedBannerContent,
+                borderWidth: 0,
+                borderColor: 'transparent',
+            },
+            secondary: {
+                backgroundColor: theme.colors.layerGrayLighter,
+                color: theme.colors.textGray,
+                borderWidth: 0,
+                borderColor: 'transparent',
+            },
+            outline: {
+                backgroundColor: 'transparent',
+                borderColor: theme.colors.layerGray,
+                borderWidth: theme.borders.sm,
+                color: theme.colors.textMain,
+            },
+        }
 
-    const { backgroundColor, color } = variantStyles[variant]
+        const { backgroundColor, color, borderColor, borderWidth } =
+            variantStyles[variant]
 
-    return {
-        chipStyle: {
-            backgroundColor,
-            paddingHorizontal: theme.spacing.sm,
-            paddingVertical: theme.spacing.xs,
-            borderRadius: theme.spacing.sm,
-            alignSelf: 'flex-start',
-            justifyContent: 'center',
-            alignItems: 'center',
-        },
-        titleStyle: {
-            color,
-        },
-    }
-})
+        return {
+            chipStyle: {
+                backgroundColor,
+                paddingHorizontal:
+                    paddingStyle === 'dense'
+                        ? theme.spacing.xs
+                        : theme.spacing.sm,
+                paddingVertical:
+                    paddingStyle === 'dense' ? 0 : theme.spacing.xs,
+                borderRadius: theme.spacing.sm,
+                alignSelf: 'flex-start',
+                justifyContent: 'center',
+                alignItems: 'center',
+                borderColor,
+                borderWidth,
+            },
+            titleStyle: {
+                color,
+            },
+        }
+    },
+)

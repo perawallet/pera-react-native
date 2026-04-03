@@ -10,21 +10,19 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import { PWSkeleton, PWView } from '@components/core'
+import { useStyles } from './styles'
 
-export const useStyles = makeStyles(() => ({
-    image: {
-        width: '100%',
-        height: '100%',
-    },
-    loadingOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: 'transparent',
-    },
-}))
+export const CollectibleDetailSkeleton = () => {
+    const styles = useStyles()
+
+    return (
+        <PWView style={styles.skeletonContainer}>
+            <PWSkeleton style={styles.bigSkeleton} />
+            <PWSkeleton style={styles.skeleton} />
+            <PWSkeleton style={styles.skeleton} />
+            <PWSkeleton style={styles.skeleton} />
+            <PWSkeleton style={styles.skeleton} />
+        </PWView>
+    )
+}

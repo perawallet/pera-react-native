@@ -40,6 +40,7 @@ import EyeIcon from '@assets/icons/eye.svg'
 import FaceIdIcon from '@assets/icons/faceid.svg'
 import FeedbackIcon from '@assets/icons/feedback.svg'
 import FundIcon from '@assets/icons/fund.svg'
+import FullViewIcon from '@assets/icons/full-view.svg'
 import FunnelIcon from '@assets/icons/funnel.svg'
 import GearIcon from '@assets/icons/gear.svg'
 import GiftIcon from '@assets/icons/gift.svg'
@@ -61,6 +62,8 @@ import PeraIcon from '@assets/icons/pera.svg'
 import PersonKeyIcon from '@assets/icons/person-key.svg'
 import PersonMenuIcon from '@assets/icons/person-menu.svg'
 import PersonIcon from '@assets/icons/person.svg'
+import PauseIcon from '@assets/icons/pause.svg'
+import PlayIcon from '@assets/icons/play.svg'
 import PlusWithBorderIcon from '@assets/icons/plus-with-border.svg'
 import PlusIcon from '@assets/icons/plus.svg'
 import QrIcon from '@assets/icons/qr.svg'
@@ -166,6 +169,7 @@ export const ICON_LIBRARY = {
     faceid: FaceIdIcon,
     feedback: FeedbackIcon,
     fund: FundIcon,
+    'full-view': FullViewIcon,
     funnel: FunnelIcon,
     gear: GearIcon,
     gift: GiftIcon,
@@ -187,6 +191,8 @@ export const ICON_LIBRARY = {
     'person-menu': PersonMenuIcon,
     person: PersonIcon,
     'person-key': PersonKeyIcon,
+    pause: PauseIcon,
+    play: PlayIcon,
     'plus-with-border': PlusWithBorderIcon,
     plus: PlusIcon,
     qr: QrIcon,
