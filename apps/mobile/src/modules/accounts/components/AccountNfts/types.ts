@@ -26,5 +26,5 @@ export type CollectibleDisplayItem = {
 export type CollectibleItemProps = {
     asset: PeraAsset
     amount: Decimal
-    onPress: () => void
+    onPress?: () => void
 }

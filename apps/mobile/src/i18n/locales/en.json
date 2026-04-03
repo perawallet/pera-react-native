@@ -138,6 +138,30 @@
             "filter": "Filter",
             "csv": "CSV"
         },
+        "collectible": {
+            "description": "Description",
+            "properties": "Properties",
+            "collection": "Collection",
+            "creator": "Creator account",
+            "asset_id": "Asset ID",
+            "total_supply": "Total Supply",
+            "show_on": "Show on",
+            "standard": "Standard",
+            "media_type": "Media Type",
+            "external_links": "External Links",
+            "explorer": "Pera Explorer",
+            "project_website": "Project Website",
+            "copy_asset_id": "Asset ID copied",
+            "copy_creator": "Creator address copied",
+            "send": "Send",
+            "no_description": "No description available",
+            "share_message": "",
+            "image_copied": "Image copied to clipboard",
+            "image_saved": "Image saved to photo library",
+            "image_save_failed": "Unable to save image",
+            "image_copy_failed": "Unable to copy image",
+            "photo_permission_denied": "Photo library access is required to save images"
+        },
         "verification_card": {
             "trusted_title": "Trusted ASA",
             "trusted_description": "This is a well-known and established project in the Algorand ecosystem.",
@@ -372,7 +396,10 @@
             "reload": "Reload",
             "failed_body": "An error occurred loading this page. Please check your internet connection and try again."
         },
-        "done": "Done"
+        "done": "Done",
+        "save": "Save",
+        "copy": "Copy",
+        "send": "Send"
     },
     "contacts": {
         "edit_contact": {

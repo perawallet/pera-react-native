@@ -75,6 +75,7 @@ const SwipeableAssetItemInner = ({
                 <AccountAssetItemView
                     accountBalance={item}
                     usdPrice={usdPrice}
+                    onPress={() => onPress(item)}
                 />
             </PWTouchableOpacity>
         )
@@ -95,6 +96,7 @@ const SwipeableAssetItemInner = ({
                     <AccountAssetItemView
                         accountBalance={item}
                         usdPrice={usdPrice}
+                        onPress={() => onPress(item)}
                     />
                 </PWTouchableOpacity>
             </PWView>

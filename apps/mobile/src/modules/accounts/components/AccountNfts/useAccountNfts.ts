@@ -191,7 +191,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
 
     const handlePress = useCallback(
         (item: CollectibleDisplayItem) => {
-            navigation.navigate('AssetDetails', {
+            navigation.navigate('CollectibleDetails', {
                 assetId: item.assetId,
             })
         },
