@@ -62,6 +62,7 @@ export const AccountNfts = () => {
         searchFilter,
         sortMode,
         showOptedIn,
+        showWatchAccounts,
         isManageSheetVisible,
         isSortSheetVisible,
         isFilterSheetVisible,
@@ -69,6 +70,7 @@ export const AccountNfts = () => {
         setGalleryLayout,
         setSortMode,
         setShowOptedIn,
+        setShowWatchAccounts,
         handlePress,
         openManageSheet,
         closeManageSheet,
@@ -224,7 +226,9 @@ export const AccountNfts = () => {
                 isVisible={isFilterSheetVisible}
                 onClose={closeFilterSheet}
                 showOptedIn={showOptedIn}
+                showWatchAccounts={showWatchAccounts}
                 onToggleOptedIn={setShowOptedIn}
+                onToggleWatchAccounts={setShowWatchAccounts}
             />
         </PWView>
     )

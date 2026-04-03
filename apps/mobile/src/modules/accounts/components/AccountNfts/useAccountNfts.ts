@@ -40,6 +40,7 @@ type UseAccountNftsResult = {
     searchFilter: string
     sortMode: CollectibleSortMode
     showOptedIn: boolean
+    showWatchAccounts: boolean
     isManageSheetVisible: boolean
     isSortSheetVisible: boolean
     isFilterSheetVisible: boolean
@@ -47,6 +48,7 @@ type UseAccountNftsResult = {
     setGalleryLayout: (layout: GalleryLayout) => void
     setSortMode: (mode: CollectibleSortMode) => void
     setShowOptedIn: (value: boolean) => void
+    setShowWatchAccounts: (value: boolean) => void
     handlePress: (item: CollectibleDisplayItem) => void
     openManageSheet: () => void
     closeManageSheet: () => void
@@ -111,6 +113,9 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     const showOptedIn = useCollectiblePreferencesStore(
         state => state.showOptedIn,
     )
+    const showWatchAccounts = useCollectiblePreferencesStore(
+        state => state.showWatchAccounts,
+    )
     const setSortMode = useCollectiblePreferencesStore(
         state => state.setCollectibleSortMode,
     )
@@ -119,6 +124,9 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     )
     const setShowOptedIn = useCollectiblePreferencesStore(
         state => state.setShowOptedIn,
+    )
+    const setShowWatchAccounts = useCollectiblePreferencesStore(
+        state => state.setShowWatchAccounts,
     )
 
     const manageSheetModel = useModalState()
@@ -218,6 +226,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         searchFilter,
         sortMode,
         showOptedIn,
+        showWatchAccounts,
         isManageSheetVisible: manageSheetModel.isOpen,
         isSortSheetVisible: sortSheetModel.isOpen,
         isFilterSheetVisible: filterSheetModel.isOpen,
@@ -225,6 +234,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         setGalleryLayout,
         setSortMode,
         setShowOptedIn,
+        setShowWatchAccounts,
         handlePress,
         openManageSheet: manageSheetModel.open,
         closeManageSheet: manageSheetModel.close,

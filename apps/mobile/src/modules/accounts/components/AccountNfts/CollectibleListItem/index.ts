@@ -10,7 +10,4 @@
  limitations under the License
  */
 
-export type {
-    CollectibleDisplayItem,
-    CollectibleItemProps,
-} from '@modules/assets/types/collectible'
+export { CollectibleListItem } from './CollectibleListItem'
