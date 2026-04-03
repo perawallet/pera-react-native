@@ -18,6 +18,7 @@ import {
     ALGO_ASSET_ID,
     useAssetPreferencesStore,
 } from '@perawallet/wallet-core-assets'
+import { logger } from '@perawallet/wallet-core-shared'
 
 type UseSortedAssetBalancesResult = {
     sortedBalances: AssetWithAccountBalance[]
