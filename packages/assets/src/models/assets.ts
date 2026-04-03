@@ -13,6 +13,8 @@
 import { Decimal } from 'decimal.js'
 import { type Network } from '@perawallet/wallet-core-config'
 
+import { type PeraCollectible } from './collectibles'
+
 export const PeraAssetVerificationTier = {
     verified: 'verified',
     suspicious: 'suspicious',
@@ -31,10 +33,7 @@ export const PeraAssetType = {
 
 export type PeraAssetType = (typeof PeraAssetType)[keyof typeof PeraAssetType]
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-export type PeraCollectible = {
-    //TODO: Add collectible type
-}
+export type { PeraCollectible } from './collectibles'
 
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export type PeraAssetLabel = {

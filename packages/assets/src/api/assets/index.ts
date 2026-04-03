@@ -19,6 +19,7 @@ export {
 } from './endpoints'
 export {
     transformAssetResponse,
+    transformCollectibleResponse,
     transformIndexerAssetResponse,
     transformPublicAssetResponse,
 } from './transformers'
@@ -27,3 +28,4 @@ export type {
     AssetSearchResultResponse,
     AssetSearchResponse,
 } from './search-schema'
+export type { CollectibleResponse } from './schema'

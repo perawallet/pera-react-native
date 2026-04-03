@@ -16,12 +16,44 @@ import {
     PeraAssetType,
     PeraAssetVerificationTier,
     type PeraAsset,
+    type PeraCollectible,
+    type CollectibleMediaType,
+    type CollectibleStandard,
 } from '../../models'
 import {
-    AssetResponse,
-    IndexerAssetResponse,
-    PublicAssetResponse,
+    type AssetResponse,
+    type CollectibleResponse,
+    type IndexerAssetResponse,
+    type PublicAssetResponse,
 } from './schema'
+
+export const transformCollectibleResponse = (
+    data: CollectibleResponse,
+): PeraCollectible => {
+    return {
+        title: data.title,
+        standard: data.standard as CollectibleStandard | undefined,
+        primaryImage: data.primary_image,
+        mediaType: data.media_type as CollectibleMediaType,
+        explorerUrl: data.explorer_url,
+        collection: {
+            id: data.collection.id,
+            name: data.collection.name,
+            description: data.collection.description,
+        },
+        description: data.description,
+        traits: data.traits.map(t => ({
+            displayName: t.display_name,
+            displayValue: t.display_value,
+        })),
+        media: data.media.map(m => ({
+            type: m.type as CollectibleMediaType,
+            downloadUrl: m.download_url,
+            previewUrl: m.preview_url,
+            extension: m.extension,
+        })),
+    }
+}
 
 export const transformAssetResponse = (data: AssetResponse): PeraAsset => {
     return {
@@ -34,7 +66,9 @@ export const transformAssetResponse = (data: AssetResponse): PeraAsset => {
             category: data.category ?? undefined,
             isVerified: data.is_verified ?? false,
             explorerUrl: data.explorer_url ?? undefined,
-            collectible: data.collectible,
+            collectible: data.collectible
+                ? transformCollectibleResponse(data.collectible)
+                : undefined,
             type: data.type as PeraAssetType,
             labels: data.labels ?? undefined,
             logo: data.logo,
