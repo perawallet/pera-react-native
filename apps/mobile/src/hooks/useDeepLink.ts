@@ -157,6 +157,8 @@ export const useDeepLink = () => {
                     break
 
                 case DeeplinkType.RECOVER_ADDRESS: {
+                    if (source !== 'qr') break
+
                     const result = resolveImportAccountType(parsedData.mnemonic)
                     if (!result.success) break
 
