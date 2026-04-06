@@ -26,7 +26,6 @@ import {
     type IndexerAssetResponse,
     type PublicAssetResponse,
 } from './schema'
-import { logger } from '@perawallet/wallet-core-shared'
 
 export const transformCollectibleResponse = (
     data: CollectibleResponse,
