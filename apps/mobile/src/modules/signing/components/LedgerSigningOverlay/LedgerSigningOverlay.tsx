@@ -70,7 +70,7 @@ export const LedgerSigningOverlay = ({
                     {showRetry && onRetry && (
                         <PWButton
                             variant='primary'
-                            title={t('ledger.fetch.retry')}
+                            title={t('ledger.fetch_accounts.retry')}
                             onPress={onRetry}
                             style={styles.retryButton}
                         />

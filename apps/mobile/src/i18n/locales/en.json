@@ -1225,33 +1225,38 @@
         "instructions": {
             "title": "Pair Ledger Device",
             "description": "Follow these steps to connect your Ledger device:",
-            "step1": "Turn on your Ledger device",
-            "step2": "Open the Algorand app on your Ledger",
-            "step3": "Keep your Ledger device nearby",
+            "step_1": "Turn on your Ledger device",
+            "step_2": "Open the Algorand app on your Ledger",
+            "step_3": "Keep your Ledger device nearby",
             "continue": "Continue",
-            "bluetooth_required": "Bluetooth Permission Required",
-            "bluetooth_required_body": "Pera needs Bluetooth permission to communicate with your Ledger device. Please enable it in Settings."
+            "permission_required_title": "Bluetooth Permission Required",
+            "permission_required_message": "Pera needs Bluetooth permission to communicate with your Ledger device. Please enable it in Settings."
         },
         "scan": {
             "title": "Looking for Devices",
+            "description": "Select a Ledger device to connect to.",
             "scanning": "Scanning for Ledger devices...",
+            "searching": "Searching for nearby devices...",
             "no_devices": "No devices found",
             "no_devices_description": "Make sure your Ledger device is turned on and nearby.",
             "retry": "Scan Again",
+            "error": "Scan failed. Make sure Bluetooth is enabled and try again.",
             "timeout": "Scan timed out. Make sure your device is on and nearby."
         },
-        "fetch": {
+        "fetch_accounts": {
             "title": "Searching Accounts",
             "connecting": "Connecting to {{deviceName}}...",
-            "searching": "Searching for accounts on your Ledger device...",
+            "discovering": "Searching for accounts on your Ledger device...",
             "progress": "Checking account {{current}}...",
             "error_title": "Connection Error",
             "app_not_open": "Please open the Algorand app on your Ledger device and try again.",
             "retry": "Try Again"
         },
-        "select": {
+        "select_accounts": {
             "title": "Select Accounts",
             "description": "We found {{count}} accounts on your Ledger device",
+            "accounts_count": "{{count}} accounts",
+            "account_label": "Account #{{index}}",
             "select_all": "Select all",
             "already_imported": "Already imported",
             "continue": "Continue",
@@ -1259,11 +1264,14 @@
         },
         "verify": {
             "title": "Verify on Ledger",
-            "description": "Please verify each address on your Ledger device.",
-            "verifying": "Verifying account {{current}} of {{total}}...",
-            "verify_prompt": "Confirm the address shown on your Ledger device matches.",
-            "success": "All accounts verified successfully!",
+            "connecting": "Connecting to your Ledger device...",
+            "verify_on_device": "Please verify each address on your Ledger device.",
+            "progress": "Verifying account {{current}} of {{total}}...",
+            "confirm_instruction": "Confirm the address shown on your Ledger device matches.",
+            "complete": "All accounts verified successfully!",
+            "error_title": "Verification Failed",
             "rejected": "Address verification was rejected on the device.",
+            "retry": "Try Again",
             "saving": "Saving accounts..."
         },
         "signing": {
