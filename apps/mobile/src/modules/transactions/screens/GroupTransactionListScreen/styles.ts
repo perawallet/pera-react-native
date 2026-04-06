@@ -10,5 +10,17 @@
  limitations under the License
  */
 
-export { GroupDetailScreen } from './GroupDetailScreen'
-export { GroupDetailHeader } from './GroupDetailHeader'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        flex: 1,
+    },
+    contentContainer: {
+        paddingHorizontal: theme.spacing.xl,
+    },
+    listContainer: {},
+    itemSeparator: {
+        height: theme.spacing.sm,
+    },
+}))

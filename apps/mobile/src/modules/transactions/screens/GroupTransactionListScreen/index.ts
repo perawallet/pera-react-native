@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { GroupDetailScreen } from './GroupDetailScreen'
-export { GroupDetailHeader } from './GroupDetailHeader'
+export { GroupTransactionListScreen } from './GroupTransactionListScreen'

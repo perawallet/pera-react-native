@@ -32,6 +32,9 @@ export type RootStackParamList = {
     Contacts: NavigatorScreenParams<ContactsStackParamsList>
     Multisig: NavigatorScreenParams<MultisigStackParamList>
     Staking: undefined
+    GroupTransactionList: {
+        groupId: string
+    }
     TransactionDetails: {
         transactionId?: string
         transaction?: PeraDisplayableTransaction
