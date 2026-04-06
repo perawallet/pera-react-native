@@ -132,7 +132,12 @@ export const mapArc59AssetRequest = (
             isVerified: raw.asset.is_verified,
             isDeleted: raw.asset.is_deleted,
             logo: raw.asset.logo,
-            collectible: undefined, //TODO: map collectible type
+            collectible: raw.asset.collectible
+                ? {
+                      title: raw.asset.collectible.title,
+                      primaryImage: raw.asset.collectible.primary_image,
+                  }
+                : undefined,
         },
         creator: { address: raw.asset.creator.address },
         totalSupply: new Decimal(0),
