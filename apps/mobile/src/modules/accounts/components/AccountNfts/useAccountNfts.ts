@@ -24,6 +24,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { type CollectibleDisplayItem } from './types'
+import { useModalState } from '@hooks/useModalState'
 
 export type GalleryLayout = 'grid' | 'list'
 
@@ -49,7 +50,6 @@ type UseAccountNftsResult = {
     setSearchFilter: (value: string) => void
     setGalleryLayout: (layout: GalleryLayout) => void
     setSortMode: (mode: CollectibleSortMode) => void
-    toggleGalleryLayout: () => void
     handlePress: (item: CollectibleDisplayItem) => void
     openManageSheet: () => void
     closeManageSheet: () => void
@@ -70,9 +70,9 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         showOptedIn: true,
         showWatchAccounts: true,
     })
-    const [isManageSheetVisible, setIsManageSheetVisible] = useState(false)
-    const [isSortSheetVisible, setIsSortSheetVisible] = useState(false)
-    const [isFilterSheetVisible, setIsFilterSheetVisible] = useState(false)
+    const manageSheetModel = useModalState()
+    const sortSheetModel = useModalState()
+    const filterSheetModel = useModalState()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
     const { accountBalances, isPending } = useAccountBalancesQuery(
@@ -153,10 +153,6 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         })
     }, [balanceData, assets, debouncedSearchFilter, sortMode])
 
-    const toggleGalleryLayout = useCallback(() => {
-        setGalleryLayout(prev => (prev === 'grid' ? 'list' : 'grid'))
-    }, [])
-
     const handlePress = useCallback(
         (item: CollectibleDisplayItem) => {
             navigation.navigate('AssetDetails', {
@@ -164,19 +160,6 @@ export const useAccountNfts = (): UseAccountNftsResult => {
             })
         },
         [navigation],
-    )
-
-    const openManageSheet = useCallback(() => setIsManageSheetVisible(true), [])
-    const closeManageSheet = useCallback(
-        () => setIsManageSheetVisible(false),
-        [],
-    )
-    const openSortSheet = useCallback(() => setIsSortSheetVisible(true), [])
-    const closeSortSheet = useCallback(() => setIsSortSheetVisible(false), [])
-    const openFilterSheet = useCallback(() => setIsFilterSheetVisible(true), [])
-    const closeFilterSheet = useCallback(
-        () => setIsFilterSheetVisible(false),
-        [],
     )
 
     const setShowOptedIn = useCallback(
@@ -199,20 +182,19 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         searchFilter,
         sortMode,
         filterState,
-        isManageSheetVisible,
-        isSortSheetVisible,
-        isFilterSheetVisible,
+        isManageSheetVisible: manageSheetModel.isOpen,
+        isSortSheetVisible: sortSheetModel.isOpen,
+        isFilterSheetVisible: filterSheetModel.isOpen,
         setSearchFilter,
         setGalleryLayout,
         setSortMode,
-        toggleGalleryLayout,
         handlePress,
-        openManageSheet,
-        closeManageSheet,
-        openSortSheet,
-        closeSortSheet,
-        openFilterSheet,
-        closeFilterSheet,
+        openManageSheet: manageSheetModel.open,
+        closeManageSheet: manageSheetModel.close,
+        openSortSheet: sortSheetModel.open,
+        closeSortSheet: sortSheetModel.close,
+        openFilterSheet: filterSheetModel.open,
+        closeFilterSheet: filterSheetModel.close,
         setShowOptedIn,
         setShowWatchAccounts,
     }

@@ -65,7 +65,6 @@ export const AccountNfts = () => {
         setSearchFilter,
         setGalleryLayout,
         setSortMode,
-        toggleGalleryLayout,
         handlePress,
         openManageSheet,
         closeManageSheet,

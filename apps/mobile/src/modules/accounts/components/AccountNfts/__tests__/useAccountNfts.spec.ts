@@ -198,24 +198,6 @@ describe('useAccountNfts', () => {
         expect(result.current.collectibles[0].assetId).toBe('200')
     })
 
-    it('toggles gallery layout between grid and list', () => {
-        const { result } = renderHook(() => useAccountNfts())
-
-        expect(result.current.galleryLayout).toBe('grid')
-
-        act(() => {
-            result.current.toggleGalleryLayout()
-        })
-
-        expect(result.current.galleryLayout).toBe('list')
-
-        act(() => {
-            result.current.toggleGalleryLayout()
-        })
-
-        expect(result.current.galleryLayout).toBe('grid')
-    })
-
     it('navigates to AssetDetails on press', () => {
         const { result } = renderHook(() => useAccountNfts())
 

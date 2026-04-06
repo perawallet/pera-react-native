@@ -33,7 +33,6 @@ import { getVerificationIcon } from '@modules/assets/utils/verification'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
 import { CollectibleListItem } from '@modules/accounts/components/CollectibleListItem'
-import { logger } from '@perawallet/wallet-core-shared'
 
 export type AccountAssetItemViewProps = {
     accountBalance: AssetWithAccountBalance
