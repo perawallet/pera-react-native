@@ -23,6 +23,7 @@ import {
     isRekeyedAccount,
     isWatchAccount,
     resolveAccountStatus,
+    resolveImportAccountType,
 } from '../utils'
 
 vi.mock('bip39', () => ({
@@ -426,5 +427,48 @@ describe('services/accounts/utils - isSigningAccount', () => {
             keyPairId: 'pk1',
         } as any
         expect(isSigningAccount(account, [])).toBe(true)
+    })
+})
+
+describe('services/accounts/utils - resolveImportAccountType', () => {
+    const words = (count: number) =>
+        Array.from({ length: count }, (_, i) => `word${i}`).join(' ')
+
+    test('returns hdWallet for 24-word mnemonic', () => {
+        const result = resolveImportAccountType(words(24))
+        expect(result).toEqual({ success: true, accountType: 'hdWallet' })
+    })
+
+    test('returns algo25 for 25-word mnemonic', () => {
+        const result = resolveImportAccountType(words(25))
+        expect(result).toEqual({ success: true, accountType: 'algo25' })
+    })
+
+    test('returns failure for 23-word mnemonic', () => {
+        const result = resolveImportAccountType(words(23))
+        expect(result).toEqual({ success: false, wordCount: 23 })
+    })
+
+    test('returns failure for 26-word mnemonic', () => {
+        const result = resolveImportAccountType(words(26))
+        expect(result).toEqual({ success: false, wordCount: 26 })
+    })
+
+    test('returns failure for single word', () => {
+        const result = resolveImportAccountType('single')
+        expect(result).toEqual({ success: false, wordCount: 1 })
+    })
+
+    test('handles leading and trailing whitespace', () => {
+        const result = resolveImportAccountType(`  ${words(25)}  `)
+        expect(result).toEqual({ success: true, accountType: 'algo25' })
+    })
+
+    test('handles extra whitespace between words', () => {
+        const mnemonic = Array.from({ length: 24 }, (_, i) => `word${i}`).join(
+            '   ',
+        )
+        const result = resolveImportAccountType(mnemonic)
+        expect(result).toEqual({ success: true, accountType: 'hdWallet' })
     })
 })

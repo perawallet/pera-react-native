@@ -73,6 +73,12 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: () => ({ address: 'addr1' }),
     useSelectedAccountAddress: () => ({ setSelectedAccountAddress: vi.fn() }),
+    resolveImportAccountType: (mnemonic: string) => {
+        const wordCount = mnemonic.trim().split(/\s+/).length
+        if (wordCount === 24) return { success: true, accountType: 'hdWallet' }
+        if (wordCount === 25) return { success: true, accountType: 'algo25' }
+        return { success: false, wordCount }
+    },
 }))
 
 vi.mock('@modules/webview/hooks', () => ({

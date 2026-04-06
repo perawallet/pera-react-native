@@ -13,10 +13,10 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import {
+    resolveImportAccountType,
     useCreateAccount,
     useCreateNextHDAccount,
     useHDWalletGroups,
-    type ImportAccountType,
 } from '@perawallet/wallet-core-accounts'
 import { useModalState } from '@hooks/useModalState'
 import { useToast } from '@hooks/useToast'
@@ -145,16 +145,9 @@ export const useAddAccountScreen = () => {
             const parsedDeeplink = parseDeeplink(url)
 
             if (parsedDeeplink?.type === DeeplinkType.RECOVER_ADDRESS) {
-                const wordCount = parsedDeeplink.mnemonic
-                    .trim()
-                    .split(/\s+/).length
-                let accountType: ImportAccountType
+                const result = resolveImportAccountType(parsedDeeplink.mnemonic)
 
-                if (wordCount === 24) {
-                    accountType = 'hdWallet'
-                } else if (wordCount === 25) {
-                    accountType = 'algo25'
-                } else {
+                if (!result.success) {
                     showToast({
                         title: t(
                             'onboarding.add_account.qr_scan_invalid_mnemonic_title',
@@ -168,7 +161,7 @@ export const useAddAccountScreen = () => {
                 }
 
                 navigation.push('ImportAccount', {
-                    accountType,
+                    accountType: result.accountType,
                     mnemonic: parsedDeeplink.mnemonic,
                 })
                 return

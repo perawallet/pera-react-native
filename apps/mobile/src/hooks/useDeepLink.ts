@@ -18,6 +18,7 @@ import { parseDeeplink } from './deeplink/parser'
 import { DeeplinkType } from './deeplink/types'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import {
+    resolveImportAccountType,
     useSelectedAccountAddress,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -156,15 +157,13 @@ export const useDeepLink = () => {
                     break
 
                 case DeeplinkType.RECOVER_ADDRESS: {
-                    const wordCount = parsedData.mnemonic
-                        .trim()
-                        .split(/\s+/).length
-                    const accountType = wordCount === 25 ? 'algo25' : 'hdWallet'
+                    const result = resolveImportAccountType(parsedData.mnemonic)
+                    if (!result.success) break
 
                     navigateToScreen(replaceCurrentScreen, 'AddAccount', {
                         screen: 'ImportAccount',
                         params: {
-                            accountType,
+                            accountType: result.accountType,
                             mnemonic: parsedData.mnemonic,
                         },
                     })
