@@ -34,6 +34,7 @@ export type OnboardingStackParamList = {
     }
     ImportAccount: {
         accountType: ImportAccountType
+        mnemonic?: string
     }
     SearchAccounts: {
         account: WalletAccount
@@ -62,6 +63,7 @@ export type AddAccountStackParamList = {
     }
     ImportAccount: {
         accountType: ImportAccountType
+        mnemonic?: string
     }
     SearchAccounts: {
         account: WalletAccount

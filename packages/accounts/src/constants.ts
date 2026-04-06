@@ -10,4 +10,11 @@
  limitations under the License
  */
 
+import { type ImportAccountType } from './models'
+
 export const KEY_DOMAIN = 'pera.accounts'
+
+export const MNEMONIC_WORD_COUNT: Record<ImportAccountType, number> = {
+    hdWallet: 24,
+    algo25: 25,
+}

@@ -18,8 +18,10 @@ import {
     Algo25Account,
     MultiSigAccount,
     WatchAccount,
+    type ImportAccountType,
     type WalletAccount,
 } from './models'
+import { MNEMONIC_WORD_COUNT } from './constants'
 import { RekeyTargetNotFoundError } from './errors'
 
 export const getAccountDisplayName = (account: WalletAccount | null) => {
@@ -149,4 +151,22 @@ export const resolveAuthAccount = (
     }
 
     return rekeyTarget
+}
+
+export type MnemonicAccountTypeResult =
+    | { success: true; accountType: ImportAccountType }
+    | { success: false; wordCount: number }
+
+export const resolveImportAccountType = (
+    mnemonic: string,
+): MnemonicAccountTypeResult => {
+    const wordCount = mnemonic.trim().split(/\s+/).length
+
+    for (const [type, count] of Object.entries(MNEMONIC_WORD_COUNT)) {
+        if (wordCount === count) {
+            return { success: true, accountType: type as ImportAccountType }
+        }
+    }
+
+    return { success: false, wordCount }
 }
