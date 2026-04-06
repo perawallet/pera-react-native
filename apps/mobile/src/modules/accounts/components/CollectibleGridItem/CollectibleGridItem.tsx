@@ -85,7 +85,9 @@ export const CollectibleGridItem = ({
                         style={styles.title}
                         numberOfLines={2}
                     >
-                        {collectible?.title ?? asset.name ?? `#${asset.assetId}`}
+                        {collectible?.title ??
+                            asset.name ??
+                            `#${asset.assetId}`}
                     </PWText>
                     {verificationIconName ? (
                         <PWIcon

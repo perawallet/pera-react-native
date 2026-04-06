@@ -75,7 +75,9 @@ export const CollectibleListItem = ({
                         style={styles.title}
                         numberOfLines={1}
                     >
-                        {collectible?.title ?? asset.name ?? `#${asset.assetId}`}
+                        {collectible?.title ??
+                            asset.name ??
+                            `#${asset.assetId}`}
                     </PWText>
                     {verificationIconName ? (
                         <PWIcon

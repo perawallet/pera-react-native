@@ -121,7 +121,11 @@ export const AccountNfts = () => {
                 renderItem={isGrid ? renderGridItem : renderListItem}
                 numColumns={isGrid ? GRID_COLUMNS : 1}
                 keyExtractor={item => item.assetId}
-                estimatedItemSize={isGrid ? COLLECTIBLE_GRID_ITEM_SIZE : COLLECTIBLE_LIST_ITEM_SIZE}
+                estimatedItemSize={
+                    isGrid
+                        ? COLLECTIBLE_GRID_ITEM_SIZE
+                        : COLLECTIBLE_LIST_ITEM_SIZE
+                }
                 contentContainerStyle={styles.contentContainer}
                 ListHeaderComponent={
                     <PWView style={styles.headerContainer}>
