@@ -17,13 +17,17 @@ import {
     isMultisigAccount,
     resolveAuthAccount,
 } from '@perawallet/wallet-core-accounts'
+import type { LedgerTransportProvider } from '@perawallet/wallet-core-ledger'
 import type { SigningStrategy } from '../types'
 import { CannotSignError } from '../errors'
 import {
     createLocalKeyStrategy,
     type LocalSigningFunction,
 } from './createLocalKeyStrategy'
-import { createHardwareStrategy } from './createHardwareStrategy'
+import {
+    createHardwareStrategy,
+    type EncodeTransactionFunction,
+} from './createHardwareStrategy'
 import { createMultisigStrategy } from './createMultisigStrategy'
 
 /**
@@ -41,6 +45,12 @@ export interface GetSigningStrategyOptions {
 
     /** Get all user accounts */
     getAllAccounts: () => WalletAccount[]
+
+    /** Transaction encoder for hardware wallet signing */
+    encodeTransaction: EncodeTransactionFunction
+
+    /** Ledger BLE transport provider from platform extension (optional) */
+    ledgerTransportProvider?: LedgerTransportProvider
 }
 
 /**
@@ -54,7 +64,10 @@ export const createSigningStrategySelector = (
     allAccounts: WalletAccount[],
 ) => SigningStrategy) => {
     const localStrategy = createLocalKeyStrategy(options.signTransactions)
-    const hardwareStrategy = createHardwareStrategy()
+    const hardwareStrategy = createHardwareStrategy({
+        transportProvider: options.ledgerTransportProvider,
+        encodeTransaction: options.encodeTransaction,
+    })
 
     // The multisig strategy delegates back to selectStrategy for each
     // participant via a lazy callback, avoiding circular init issues.

@@ -20,7 +20,9 @@ import type {
     SourceMetadata,
     TransportResult,
 } from '../pipeline/types'
+import type { LedgerTransportProvider } from '@perawallet/wallet-core-ledger'
 import type { LocalSigningFunction } from '../pipeline/signing/createLocalKeyStrategy'
+import type { EncodeTransactionFunction } from '../pipeline/signing/createHardwareStrategy'
 import type { SignRequest } from '../models'
 
 // =============================================================================
@@ -69,6 +71,10 @@ export type SigningMachineDeps = {
     createTransport: TransportFactory
     /** Current network (mainnet / testnet) */
     network: Network
+    /** Ledger BLE transport provider from platform extension (optional) */
+    ledgerTransportProvider?: LedgerTransportProvider
+    /** Transaction encoder for hardware wallet signing */
+    encodeTransaction: EncodeTransactionFunction
 }
 
 // =============================================================================

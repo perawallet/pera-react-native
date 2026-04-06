@@ -12,34 +12,56 @@
 
 import { fromPromise } from 'xstate'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import { isLedgerAccount } from '@perawallet/wallet-core-accounts'
+import type { LedgerTransportProvider } from '@perawallet/wallet-core-ledger'
 import type {
     AnalyzedSignableGroup,
     SigningResult,
 } from '../../../pipeline/types'
 import { HardwareWalletError } from '../../../pipeline/errors'
+import { createHardwareStrategy } from '../../../pipeline/signing/createHardwareStrategy'
+import type { EncodeTransactionFunction } from '../../../pipeline/signing/createHardwareStrategy'
 
 export type LedgerSignerActorInput = {
     groups: AnalyzedSignableGroup[]
     allAccounts: WalletAccount[]
+    transportProvider: LedgerTransportProvider
+    encodeTransaction: EncodeTransactionFunction
 }
 
 /**
- * XState actor stub for Ledger hardware wallet signing.
+ * XState actor for Ledger hardware wallet signing.
  *
- * TODO: Implement Ledger BLE signing flow:
- *   1. Create an actor from `ledgerSigningMachine`
- *   2. Start the BLE connection + device confirmation flow
- *   3. Resolve with one SigningResult per group once the user confirms on device
- *   4. Reject with HardwareWalletError on BLE failure or timeout
- *
- * See ledgerSigningMachine.ts for the full state machine skeleton.
+ * Signs one or more transaction groups using the hardware strategy,
+ * connecting to the Ledger device and requesting user confirmation.
  */
 export const ledgerSignerActor = fromPromise<
     SigningResult[],
     LedgerSignerActorInput
 >(async ({ input }) => {
-    const firstGroup = input.groups[0]
-    throw new HardwareWalletError(
-        `Ledger signing is not yet implemented for account ${firstGroup?.signerAddress ?? 'unknown'}`,
-    )
+    const { groups, allAccounts, transportProvider, encodeTransaction } = input
+
+    const strategy = createHardwareStrategy({
+        transportProvider,
+        encodeTransaction,
+    })
+
+    const results: SigningResult[] = []
+
+    for (const group of groups) {
+        const signerAccount = allAccounts.find(
+            a => a.address === group.signerAddress,
+        )
+
+        if (!signerAccount || !isLedgerAccount(signerAccount)) {
+            throw new HardwareWalletError(
+                `Ledger signer account not found for address ${group.signerAddress}`,
+            )
+        }
+
+        const result = await strategy.sign(group, signerAccount)
+        results.push(result)
+    }
+
+    return results
 })

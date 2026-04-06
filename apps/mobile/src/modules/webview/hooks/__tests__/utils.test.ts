@@ -39,7 +39,12 @@ describe('webview/utils - getAccountType', () => {
             getAccountType({
                 ...baseAccount,
                 type: 'hardware',
-                hardwareDetails: { manufacturer: 'ledger' },
+                hardwareDetails: {
+                    manufacturer: 'ledger',
+                    deviceId: 'test-device',
+                    deviceName: 'Ledger Nano X',
+                    accountIndex: 0,
+                },
             }),
         ).toBe('LedgerBle')
     })
@@ -102,7 +107,12 @@ describe('webview/utils - getAccountType', () => {
                 ...baseAccount,
                 type: 'hardware',
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                hardwareDetails: { manufacturer: 'other' as any },
+                hardwareDetails: {
+                    manufacturer: 'other' as any,
+                    deviceId: 'test-device',
+                    deviceName: 'Test',
+                    accountIndex: 0,
+                },
             }),
         ).toBe('Unknown')
     })

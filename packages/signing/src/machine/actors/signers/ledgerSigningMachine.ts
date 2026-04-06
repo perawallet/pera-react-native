@@ -11,21 +11,39 @@
  */
 
 import { setup, fromPromise, assign } from 'xstate'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    WalletAccount,
+    HardwareWalletAccount,
+} from '@perawallet/wallet-core-accounts'
+import type {
+    LedgerTransportProvider,
+    LedgerTransport,
+} from '@perawallet/wallet-core-ledger'
+import type {
+    PeraTransaction,
+    PeraSignedTransaction,
+} from '@perawallet/wallet-core-blockchain'
+import { Address } from '@perawallet/wallet-core-blockchain'
 import type {
     AnalyzedSignableGroup,
     SigningResult,
 } from '../../../pipeline/types'
 import { HardwareWalletError } from '../../../pipeline/errors'
+import type { EncodeTransactionFunction } from '../../../pipeline/signing/createHardwareStrategy'
 
 export type LedgerSigningMachineInput = {
     group: AnalyzedSignableGroup
     signerAccount: WalletAccount
+    transportProvider: LedgerTransportProvider
+    encodeTransaction: EncodeTransactionFunction
 }
 
 type LedgerSigningMachineContext = {
     group: AnalyzedSignableGroup
     signerAccount: WalletAccount
+    transportProvider: LedgerTransportProvider
+    encodeTransaction: EncodeTransactionFunction
+    transport: LedgerTransport | null
     signingResult: SigningResult | null
     error: Error | null
 }
@@ -37,15 +55,12 @@ type LedgerSigningMachineContext = {
 const LEDGER_CONFIRMATION_TIMEOUT_MS = 30_000
 
 /**
- * XState sub-machine skeleton for Ledger BLE signing.
+ * XState sub-machine for Ledger BLE signing.
  *
  * State flow:
  *   connecting_ble → device_ready → awaiting_confirmation → signed
  *                 ↘             ↘                        ↘ failed
  *                                                        ↘ timed_out
- *
- * TODO: Wire BLE transport into the stub actors.
- * Suggested libraries: react-native-ble-plx + @ledgerhq/hw-app-algorand
  *
  * To add a new hardware wallet brand:
  *   1. Add a new actor file alongside this one (e.g. trezorSigningMachine.ts)
@@ -61,31 +76,83 @@ export const ledgerSigningMachine = setup({
     },
     actors: {
         /**
-         * Scan for and connect to the Ledger device via BLE.
-         * TODO: use react-native-ble-plx or @ledgerhq/hw-transport-react-native-ble
+         * Connect to the Ledger device via BLE.
          */
-        connectBle: fromPromise<void, void>(async () => {
-            throw new HardwareWalletError('BLE transport not yet implemented')
+        connectBle: fromPromise<
+            LedgerTransport,
+            { transportProvider: LedgerTransportProvider; deviceId: string }
+        >(async ({ input }) => {
+            return input.transportProvider.connect(input.deviceId)
         }),
 
         /**
-         * Open the Algorand app on the connected Ledger device.
-         * TODO: use @ledgerhq/hw-app-algorand to verify app is open
+         * Verify the Algorand app is open on the connected Ledger device.
          */
-        prepareDevice: fromPromise<void, void>(async () => {
-            throw new HardwareWalletError('BLE transport not yet implemented')
-        }),
+        prepareDevice: fromPromise<void, { transport: LedgerTransport }>(
+            async ({ input }) => {
+                // Fetching address at index 0 as a health check.
+                // Throws LedgerAppNotOpenError if the Algorand app is not open.
+                await input.transport.getAddress(0, false)
+            },
+        ),
 
         /**
          * Send each transaction in the group to the device for signing.
          * Resolves once the user physically confirms all transactions.
-         * TODO: iterate group.data.txs, call transport.signTransaction() for each
          */
         signOnDevice: fromPromise<
             SigningResult,
-            { group: AnalyzedSignableGroup; signerAccount: WalletAccount }
-        >(async () => {
-            throw new HardwareWalletError('BLE transport not yet implemented')
+            {
+                group: AnalyzedSignableGroup
+                signerAccount: HardwareWalletAccount
+                transport: LedgerTransport
+                encodeTransaction: EncodeTransactionFunction
+            }
+        >(async ({ input }) => {
+            const { group, signerAccount, transport, encodeTransaction } = input
+
+            if (group.data.type !== 'transactions') {
+                throw new HardwareWalletError(
+                    'Ledger only supports transaction signing',
+                )
+            }
+
+            const { transactions, indicesToSign } = group.data
+            const { accountIndex } = signerAccount.hardwareDetails
+
+            const signed: PeraSignedTransaction[] = await Promise.all(
+                transactions.map(
+                    async (txn: PeraTransaction, index: number) => {
+                        if (!indicesToSign.includes(index)) {
+                            return { txn } as PeraSignedTransaction
+                        }
+
+                        const txnBytes = encodeTransaction(txn)
+                        const signature = await transport.signTransaction(
+                            accountIndex,
+                            txnBytes,
+                        )
+
+                        const senderAddress = txn.sender.toString()
+                        const authAddress =
+                            signerAccount.address !== senderAddress
+                                ? Address.fromString(signerAccount.address)
+                                : undefined
+
+                        return {
+                            txn,
+                            sig: signature,
+                            authAddress,
+                        } as PeraSignedTransaction
+                    },
+                ),
+            )
+
+            return {
+                signedData: { type: 'transactions', signed },
+                signers: [{ address: signerAccount.address }],
+                originalIndices: group.originalIndices,
+            }
         }),
     },
     delays: {
@@ -97,6 +164,9 @@ export const ledgerSigningMachine = setup({
     context: ({ input }) => ({
         group: input.group,
         signerAccount: input.signerAccount,
+        transportProvider: input.transportProvider,
+        encodeTransaction: input.encodeTransaction,
+        transport: null,
         signingResult: null,
         error: null,
     }),
@@ -115,7 +185,17 @@ export const ledgerSigningMachine = setup({
         connecting_ble: {
             invoke: {
                 src: 'connectBle',
-                onDone: { target: 'device_ready' },
+                input: ({ context }) => ({
+                    transportProvider: context.transportProvider,
+                    deviceId: (context.signerAccount as HardwareWalletAccount)
+                        .hardwareDetails.deviceId,
+                }),
+                onDone: {
+                    target: 'device_ready',
+                    actions: assign({
+                        transport: ({ event }) => event.output,
+                    }),
+                },
                 onError: {
                     target: 'failed',
                     actions: assign({
@@ -135,6 +215,9 @@ export const ledgerSigningMachine = setup({
         device_ready: {
             invoke: {
                 src: 'prepareDevice',
+                input: ({ context }) => ({
+                    transport: context.transport!,
+                }),
                 onDone: { target: 'awaiting_confirmation' },
                 onError: {
                     target: 'failed',
@@ -158,7 +241,10 @@ export const ledgerSigningMachine = setup({
                 src: 'signOnDevice',
                 input: ({ context }) => ({
                     group: context.group,
-                    signerAccount: context.signerAccount,
+                    signerAccount:
+                        context.signerAccount as HardwareWalletAccount,
+                    transport: context.transport!,
+                    encodeTransaction: context.encodeTransaction,
                 }),
                 onDone: {
                     target: 'signed',

@@ -78,7 +78,8 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     )
 
     const { signTransactions } = useTransactionSigner()
-    const { encodeSignedTransactions } = useTransactionEncoder()
+    const { encodeTransaction, encodeSignedTransactions } =
+        useTransactionEncoder()
     const algokit = useAlgorandClient()
     const { network } = useNetwork()
     const allAccounts = useAllAccounts()
@@ -100,8 +101,15 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 encodeSignedTransactions,
             }),
             network,
+            encodeTransaction,
         }),
-        [signTransactions, encodeSignedTransactions, algokit, network],
+        [
+            signTransactions,
+            encodeTransaction,
+            encodeSignedTransactions,
+            algokit,
+            network,
+        ],
     )
 
     // Creates, subscribes to, and starts an actor for the given request.

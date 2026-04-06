@@ -13,6 +13,7 @@
 import type { AnalyticsService } from './analytics'
 import type { BiometricsService } from './biometrics'
 import type { DeviceInfoService } from './device'
+import type { LedgerService } from './ledger'
 import type {
     PushNotificationInitResult,
     PushNotificationService,
@@ -32,6 +33,7 @@ export interface PlatformServices {
     crashReporting: CrashReportingService
     deviceInfo: DeviceInfoService
     database: DatabaseService
+    ledger: LedgerService
 }
 
 export type PlatformExtension = PlatformServices & {

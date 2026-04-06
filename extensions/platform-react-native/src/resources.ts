@@ -18,6 +18,7 @@ import {
     RNBiometricsService,
     RNSecureStorageService,
     RNDeviceInfoStorageService,
+    RNLedgerService,
 } from './services'
 
 /**
@@ -40,6 +41,7 @@ export const platformServices: PlatformServices = {
     keyValueStorage,
     database: new RNDatabaseService(),
     deviceInfo: new RNDeviceInfoStorageService(),
+    ledger: new RNLedgerService(),
 }
 
 export const getPlatformServices = (): PlatformServices => platformServices

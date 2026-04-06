@@ -314,6 +314,9 @@ export const signingMachine = setup({
                                 'ledger',
                             ),
                             allAccounts: context.allAccounts,
+                            transportProvider:
+                                context.deps.ledgerTransportProvider!,
+                            encodeTransaction: context.deps.encodeTransaction,
                         }),
                         onDone: {
                             target: 'dispatching',

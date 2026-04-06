@@ -49,6 +49,10 @@ export default defineConfig({
                 __dirname,
                 '../../extensions/platform/src/index.ts',
             ),
+            '@perawallet/wallet-core-ledger': path.resolve(
+                __dirname,
+                '../ledger/src/index.ts',
+            ),
             '@perawallet/wallet-core-kms': path.resolve(
                 __dirname,
                 '../kms/src/index.ts',

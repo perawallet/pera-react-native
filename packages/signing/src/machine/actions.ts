@@ -244,6 +244,8 @@ const extractDeps = (input: SigningMachineInput): SigningMachineDeps => ({
     signTransactions: input.signTransactions,
     createTransport: input.createTransport,
     network: input.network,
+    encodeTransaction: input.encodeTransaction,
+    ledgerTransportProvider: input.ledgerTransportProvider,
 })
 
 /**

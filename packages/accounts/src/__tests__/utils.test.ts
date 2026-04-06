@@ -134,7 +134,12 @@ describe('services/accounts/utils - account type checks', () => {
             isLedgerAccount({
                 ...baseAccount,
                 type: 'hardware',
-                hardwareDetails: { manufacturer: 'ledger' },
+                hardwareDetails: {
+                    manufacturer: 'ledger',
+                    deviceId: 'test-device',
+                    deviceName: 'Ledger Nano X',
+                    accountIndex: 0,
+                },
             } as any),
         ).toBe(true)
         expect(
@@ -308,7 +313,12 @@ describe('services/accounts/utils - resolveAccountStatus', () => {
         const account = {
             type: 'hardware',
             address: 'ADDR',
-            hardwareDetails: { manufacturer: 'ledger' },
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'test-device',
+                deviceName: 'Ledger Nano X',
+                accountIndex: 0,
+            },
         } as any
         expect(resolveAccountStatus(account, [])).toBe('ledger')
     })
@@ -363,7 +373,12 @@ describe('services/accounts/utils - resolveAccountStatus', () => {
         const authAccount = {
             type: 'hardware',
             address: 'AUTH',
-            hardwareDetails: { manufacturer: 'ledger' },
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'test-device',
+                deviceName: 'Ledger Nano X',
+                accountIndex: 0,
+            },
         } as any
         const account = {
             type: 'algo25',
@@ -410,7 +425,12 @@ describe('services/accounts/utils - isSigningAccount', () => {
         const authAccount = {
             type: 'hardware',
             address: 'AUTH',
-            hardwareDetails: { manufacturer: 'ledger' },
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'test-device',
+                deviceName: 'Ledger Nano X',
+                accountIndex: 0,
+            },
         } as any
         const account = {
             type: 'watch',

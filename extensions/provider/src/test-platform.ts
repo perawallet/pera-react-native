@@ -19,6 +19,7 @@ import {
     DeviceInfoService,
     DevicePlatforms,
     KeyValueStorageService,
+    LedgerService,
     MemoryDatabaseService,
     MemoryKeyValueStorage,
     PlatformServices,
@@ -39,6 +40,7 @@ export type TestPlatformOverrides = Partial<{
     crashReporting: CrashReportingService
     database: DatabaseService
     deviceInfo: DeviceInfoService
+    ledger: LedgerService
 }>
 
 /**
@@ -142,6 +144,22 @@ export const buildTestPlatform = (
         },
     }
 
+    const defaultLedger: LedgerService = {
+        createTransportProvider: () => ({
+            scan: () => () => {},
+            connect: async () => ({
+                getAddress: async (accountIndex: number) => ({
+                    address: `TEST_ADDR_${accountIndex}`,
+                    publicKey: new Uint8Array(32),
+                    accountIndex,
+                }),
+                signTransaction: async () => new Uint8Array(64),
+                disconnect: async () => {},
+            }),
+            isSupported: async () => false,
+        }),
+    }
+
     return {
         analytics: overrides.analytics ?? defaultAnalytics,
         keyValueStorage:
@@ -153,6 +171,7 @@ export const buildTestPlatform = (
         crashReporting: overrides.crashReporting ?? defaultCrash,
         database: overrides.database ?? new MemoryDatabaseService(),
         deviceInfo: overrides.deviceInfo ?? deviceInfo,
+        ledger: overrides.ledger ?? defaultLedger,
     }
 }
 

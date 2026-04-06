@@ -176,6 +176,11 @@ export const useAddAccountScreen = () => {
         [closeQRScanner, parseDeeplink, navigation, showToast, t],
     )
 
+    const handlePairLedger = useCallback(
+        () => navigation.push('LedgerInstructions'),
+        [navigation],
+    )
+
     const handleWatchAddress = useCallback(
         () => navigation.push('WatchInfo'),
         [navigation],
@@ -270,6 +275,14 @@ export const useAddAccountScreen = () => {
                     onPress: openImportOptions,
                 },
                 {
+                    testID: 'add_account_pair_ledger_button',
+                    titleKey: 'onboarding.add_account.pair_ledger_option_title',
+                    descriptionKey:
+                        'onboarding.add_account.pair_ledger_option_description',
+                    leftIcon: 'wallet' as IconName,
+                    onPress: handlePairLedger,
+                },
+                {
                     testID: 'add_account_scan_qr_button',
                     titleKey: 'onboarding.add_account.scan_qr_option_title',
                     descriptionKey:
@@ -293,6 +306,7 @@ export const useAddAccountScreen = () => {
             handleCreateUniversalWallet,
             isCreatingAccount,
             openImportOptions,
+            handlePairLedger,
             openQRScanner,
             handleCreateJointAccount,
         ],

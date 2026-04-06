@@ -45,7 +45,12 @@ export type MultiSigDetails = {
 
 export type HardwareWalletDetails = {
     manufacturer: 'ledger'
-    //TODO add any additional details here as needed (MAC addresses, models, etc)
+    /** BLE device identifier for reconnection */
+    deviceId: string
+    /** User-visible device name (e.g. "Ledger Nano X") */
+    deviceName: string
+    /** Sequential account index on the Ledger device (0, 1, 2...) */
+    accountIndex: number
 }
 
 export type WalletAccount =
