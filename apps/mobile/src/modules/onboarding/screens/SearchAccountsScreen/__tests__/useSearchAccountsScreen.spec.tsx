@@ -217,7 +217,7 @@ describe('useSearchAccountsScreen', () => {
         })
     })
 
-    it('creates next derivation, scans for rekeys, and navigates to NameAccount when createIfEmpty and no rekeys found', async () => {
+    it('creates next derivation and navigates to NameAccount when createIfEmpty without scanning for rekeys', async () => {
         mockRouteParams.current.createIfEmpty = true
         mockAllAccounts.current = [
             {
@@ -240,7 +240,6 @@ describe('useSearchAccountsScreen', () => {
             type: AccountTypes.hdWallet,
         }
         mockDiscoverAccounts.mockResolvedValue([singleAccount])
-        mockDiscoverRekeyedAccounts.mockResolvedValue([])
 
         const newAccount = {
             id: 'new-id',
@@ -257,73 +256,13 @@ describe('useSearchAccountsScreen', () => {
                 account: 0,
                 keyIndex: 1,
             })
-            expect(mockDiscoverRekeyedAccounts).toHaveBeenCalledWith(
-                expect.objectContaining({
-                    accountAddresses: ['NEW_ADDRESS'],
-                }),
-            )
+            expect(mockDiscoverRekeyedAccounts).not.toHaveBeenCalled()
             expect(mockReplace).toHaveBeenCalledWith('NameAccount', {
                 account: newAccount,
             })
         })
 
         expect(mockExitAccountFlow).not.toHaveBeenCalled()
-    })
-
-    it('creates next derivation and navigates to ImportRekeyedAddresses when createIfEmpty and rekeys found', async () => {
-        mockRouteParams.current.createIfEmpty = true
-        mockAllAccounts.current = [
-            {
-                id: '1',
-                address: 'MOCK_ADDRESS',
-                type: 'hdWallet' as const,
-                keyPairId: 'wallet-1',
-                hdWalletDetails: {
-                    account: 0,
-                    change: 0,
-                    keyIndex: 0,
-                    derivationType: 9,
-                },
-            },
-        ]
-
-        const singleAccount = {
-            id: '1',
-            address: 'MOCK_ADDRESS',
-            type: AccountTypes.hdWallet,
-        }
-        mockDiscoverAccounts.mockResolvedValue([singleAccount])
-
-        const newAccount = {
-            id: 'new-id',
-            address: 'NEW_ADDRESS',
-            type: 'hdWallet' as const,
-        }
-        mockCreateHdWalletAccount.mockResolvedValue(newAccount)
-
-        const rekeyedAccounts = [
-            {
-                id: 'rekeyed-1',
-                address: 'REKEYED_ADDRESS',
-                type: AccountTypes.watch,
-                rekeyAddress: 'NEW_ADDRESS',
-            },
-        ]
-        mockDiscoverRekeyedAccounts.mockResolvedValue(rekeyedAccounts)
-
-        renderHook(() => useSearchAccountsScreen())
-
-        await waitFor(() => {
-            expect(mockCreateHdWalletAccount).toHaveBeenCalled()
-            expect(mockReplace).toHaveBeenCalledWith('ImportRekeyedAddresses', {
-                accounts: rekeyedAccounts,
-            })
-        })
-
-        expect(mockReplace).not.toHaveBeenCalledWith(
-            'NameAccount',
-            expect.anything(),
-        )
     })
 
     it('shows error toast and goes back when createIfEmpty account creation fails', async () => {
