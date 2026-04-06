@@ -1095,6 +1095,8 @@
             "inner_transactions_one": "{{count}} Inner Transaction",
             "inner_transactions_other": "{{count}} Inner Transactions"
         },
+        "group_transactions_one": "{{count}} Group Transaction",
+        "group_transactions_other": "{{count}} Group Transactions",
         "group": {
             "group_number": "Transaction Group",
             "group_id": "Group ID: {{groupId}}",

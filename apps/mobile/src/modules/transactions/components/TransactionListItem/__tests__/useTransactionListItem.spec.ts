@@ -199,6 +199,59 @@ describe('useTransactionListItem', () => {
             )
             expect(result.current.iconType).toBe('receive')
         })
+
+        it('returns "swap" for swap transaction', () => {
+            const tx = createPaymentTx({
+                swapGroupDetail: {
+                    assetInId: 0,
+                    assetInUnitName: 'ALGO',
+                    assetOutId: 31566704,
+                    assetOutUnitName: 'USDC',
+                    amountIn: new Decimal('1000000'),
+                    amountOut: new Decimal('500000'),
+                },
+            })
+            const { result } = renderHook(() =>
+                useTransactionListItem({ transaction: tx }),
+            )
+            expect(result.current.iconType).toBe('swap')
+        })
+
+        it('returns "asset-opt-in" for asset opt-in', () => {
+            const tx = createAssetTransferTx({
+                sender: USER_ADDRESS,
+                receiver: USER_ADDRESS,
+                amount: new Decimal(0),
+                closeTo: null,
+            })
+            const { result } = renderHook(() =>
+                useTransactionListItem({ transaction: tx }),
+            )
+            expect(result.current.iconType).toBe('asset-opt-in')
+        })
+
+        it('returns "asset-opt-out" for asset opt-out', () => {
+            const tx = createAssetTransferTx({
+                sender: USER_ADDRESS,
+                receiver: OTHER_ADDRESS,
+                closeTo: OTHER_ADDRESS,
+            })
+            const { result } = renderHook(() =>
+                useTransactionListItem({ transaction: tx }),
+            )
+            expect(result.current.iconType).toBe('asset-opt-out')
+        })
+
+        it('returns "app-call" for application call', () => {
+            const tx = createPaymentTx({
+                txType: 'appl',
+                applicationId: '123',
+            } as Partial<TransactionHistoryItem>)
+            const { result } = renderHook(() =>
+                useTransactionListItem({ transaction: tx }),
+            )
+            expect(result.current.iconType).toBe('app-call')
+        })
     })
 
     describe('amounts', () => {

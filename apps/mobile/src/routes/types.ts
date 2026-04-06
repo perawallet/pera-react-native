@@ -35,6 +35,7 @@ export type RootStackParamList = {
     TransactionDetails: {
         transactionId?: string
         transaction?: PeraDisplayableTransaction
+        groupId?: string
     }
 }
 

@@ -174,6 +174,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         (transaction: TransactionHistoryItem) => {
             navigation.navigate('TransactionDetails', {
                 transactionId: transaction.id,
+                groupId: transaction.groupId ?? undefined,
             })
         },
         [navigation],

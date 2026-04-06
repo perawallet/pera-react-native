@@ -24,20 +24,36 @@ export const getTransactionIconType = (
     transaction: TransactionHistoryItem,
     isOutgoing: boolean,
 ): TransactionIconType => {
-    if (transaction.swapGroupDetail) return 'asset-transfer'
+    // Swap transactions
+    if (transaction.swapGroupDetail) return 'swap'
 
-    if (
-        transaction.txType === 'pay' ||
-        (transaction.txType === 'axfer' &&
-            !(
-                transaction.sender === transaction.receiver &&
-                transaction.amount !== null &&
-                transaction.amount.isZero()
-            ))
-    ) {
+    // Asset transfers: check subtypes
+    if (transaction.txType === 'axfer') {
+        // Opt-in: self-transfer with zero amount, no close-to
+        if (
+            transaction.sender === transaction.receiver &&
+            transaction.amount !== null &&
+            transaction.amount.isZero() &&
+            !transaction.closeTo
+        ) {
+            return 'asset-opt-in'
+        }
+
+        // Opt-out: has closeTo address
+        if (transaction.closeTo) {
+            return 'asset-opt-out'
+        }
+
+        // Regular asset transfer
         return isOutgoing ? 'send' : 'receive'
     }
 
+    // Payment transactions
+    if (transaction.txType === 'pay') {
+        return isOutgoing ? 'send' : 'receive'
+    }
+
+    // All other types (app-call, asset-config, etc.)
     return getTransactionType(
         transaction as unknown as PeraDisplayableTransaction,
     )

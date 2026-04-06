@@ -158,6 +158,7 @@ export const useAssetTransactionList = ({
         (transaction: TransactionHistoryItem) => {
             navigation.navigate('TransactionDetails', {
                 transactionId: transaction.id,
+                groupId: transaction.groupId ?? undefined,
             })
         },
         [navigation],

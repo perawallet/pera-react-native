@@ -103,6 +103,10 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         if (tx?.paymentTransaction) return 'payment'
         return 'unknown'
     }),
+    classifyDisplayableTransaction: vi.fn(tx => {
+        if (tx?.paymentTransaction) return 'payment'
+        return 'unknown'
+    }),
     isValidAlgorandAddress: vi.fn(() => true),
 }))
 
