@@ -135,7 +135,8 @@ export const mapArc59AssetRequest = (
             collectible: raw.asset.collectible
                 ? {
                       title: raw.asset.collectible.title,
-                      primaryImage: raw.asset.collectible.primary_image ?? undefined,
+                      primaryImage:
+                          raw.asset.collectible.primary_image ?? undefined,
                   }
                 : undefined,
         },
