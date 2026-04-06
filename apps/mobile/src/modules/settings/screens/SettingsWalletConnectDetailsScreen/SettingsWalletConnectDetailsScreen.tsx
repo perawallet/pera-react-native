@@ -79,7 +79,10 @@ export const SettingsWalletConnectDetailsScreen = ({
     } = useSettingsWalletConnectDetailsScreen(session)
 
     return (
-        <PWScrollView contentContainerStyle={styles.container}>
+        <PWScrollView
+            contentContainerStyle={styles.container}
+            testID='wallet_connect_details_screen'
+        >
             {!!preferredIcon && (
                 <Image
                     source={{ uri: preferredIcon }}
@@ -94,7 +97,10 @@ export const SettingsWalletConnectDetailsScreen = ({
             )}
             <Text h4>{peerMeta?.name ?? 'Unknown'}</Text>
             {peerMeta?.url && (
-                <PWTouchableOpacity onPress={handleOpenLink}>
+                <PWTouchableOpacity
+                    onPress={handleOpenLink}
+                    testID='wallet_connect_details_url_link'
+                >
                     <Text style={styles.link}>{peerMeta?.url}</Text>
                 </PWTouchableOpacity>
             )}
@@ -181,6 +187,7 @@ export const SettingsWalletConnectDetailsScreen = ({
                     variant='secondary'
                     title={t('walletconnect.settings.delete_title')}
                     onPress={deleteModalState.open}
+                    testID='wallet_connect_details_delete_button'
                 />
             </PWView>
             <Dialog
@@ -197,11 +204,13 @@ export const SettingsWalletConnectDetailsScreen = ({
                         titleStyle={{ color: theme.colors.alertNegative }}
                         onPress={handleDelete}
                         disabled={isLoading}
+                        testID='wallet_connect_details_confirm_delete_button'
                     />
                     <Dialog.Button
                         title={t('common.cancel.label')}
                         onPress={deleteModalState.close}
                         disabled={isLoading}
+                        testID='wallet_connect_details_cancel_button'
                     />
                 </Dialog.Actions>
             </Dialog>

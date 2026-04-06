@@ -67,6 +67,7 @@ export type PWBottomSheetProps = {
     enableContentPanningGesture?: boolean
     size?: PWBottomSheetSize
     autoCreateContainer?: boolean
+    testID?: string
 } & PropsWithChildren
 
 export const PWBottomSheet = ({
@@ -79,6 +80,7 @@ export const PWBottomSheet = ({
     enableContentPanningGesture,
     size = 'auto',
     autoCreateContainer = true,
+    testID,
     children,
 }: PWBottomSheetProps) => {
     const bottomSheetModalRef = useRef<BottomSheetModal>(null)
@@ -146,12 +148,14 @@ export const PWBottomSheet = ({
                     {autoCreateContainer ? (
                         <BottomSheetView
                             style={[styles.innerContainer, innerContainerStyle]}
+                            testID={testID}
                         >
                             {children}
                         </BottomSheetView>
                     ) : (
                         <PWView
                             style={[styles.innerContainer, innerContainerStyle]}
+                            testID={testID}
                         >
                             {children}
                         </PWView>

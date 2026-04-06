@@ -20,6 +20,7 @@ export const SettingsNotificationsScreen = () => {
         <NotificationSettingsList
             style={styles.container}
             contentContainerStyle={styles.scrollContent}
+            testID='settings_notifications_screen'
         />
     )
 }
