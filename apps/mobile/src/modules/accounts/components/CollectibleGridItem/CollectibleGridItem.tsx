@@ -17,7 +17,6 @@ import { useStyles } from './styles'
 import type { CollectibleItemProps } from '../AccountNfts/types'
 import { isPureNft } from '@perawallet/wallet-core-assets'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
-import { NFT_NOT_OPTED_IN_OPACITY } from '@constants/ui'
 
 export const CollectibleGridItem = ({
     asset,

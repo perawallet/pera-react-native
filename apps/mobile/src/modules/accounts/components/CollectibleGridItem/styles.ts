@@ -11,7 +11,6 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
     container: {
