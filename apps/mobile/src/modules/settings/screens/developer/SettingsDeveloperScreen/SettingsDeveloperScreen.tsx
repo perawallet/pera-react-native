@@ -43,11 +43,15 @@ export const SettingsDeveloperScreen = () => {
     }
 
     return (
-        <PWView style={styles.container}>
+        <PWView
+            style={styles.container}
+            testID='developer_settings_screen'
+        >
             <PWListItem
                 onPress={() => handleTapEvent('NodeSettings')}
                 icon='tree'
                 title={t('settings.developer.node_settings_title')}
+                testID='developer_settings_node_item'
             />
 
             {isTestnet && (
@@ -55,6 +59,7 @@ export const SettingsDeveloperScreen = () => {
                     onPress={openDispenser}
                     icon='algo'
                     title={t('settings.developer.dispenser_title')}
+                    testID='developer_settings_dispenser_item'
                 />
             )}
 
@@ -63,6 +68,7 @@ export const SettingsDeveloperScreen = () => {
                     onPress={() => handleTapEvent('DevMenu')}
                     icon='sliders'
                     title={t('screens.developer_menu')}
+                    testID='developer_settings_menu_item'
                 />
             )}
         </PWView>

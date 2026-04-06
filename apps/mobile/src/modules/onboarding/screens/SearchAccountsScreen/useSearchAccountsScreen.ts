@@ -128,21 +128,9 @@ export function useSearchAccountsScreen(): UseSearchAccountsScreenResult {
                             keyIndex: nextKeyIndex,
                         })
 
-                        const rekeyedAccounts = await discoverRekeyedAccounts({
-                            walletKeyId,
-                            derivationType,
-                            accountAddresses: [newAccount.address],
+                        navigation.replace('NameAccount', {
+                            account: newAccount,
                         })
-
-                        if (rekeyedAccounts && rekeyedAccounts.length > 0) {
-                            navigation.replace('ImportRekeyedAddresses', {
-                                accounts: rekeyedAccounts,
-                            })
-                        } else {
-                            navigation.replace('NameAccount', {
-                                account: newAccount,
-                            })
-                        }
                     } else {
                         setSelectedAccountAddress(account.address)
 

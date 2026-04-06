@@ -20,6 +20,7 @@ export type PWSwitchProps = {
     disabled?: boolean
     style?: StyleProp<ViewStyle>
     color?: string
+    testID?: string
 }
 
 export const PWSwitch = ({

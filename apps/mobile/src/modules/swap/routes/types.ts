@@ -10,17 +10,7 @@
  limitations under the License
  */
 
-import { NotificationSettingsList } from '@modules/settings/components/NotificationSettingsList'
-import { useStyles } from './styles'
-
-export const SettingsNotificationsScreen = () => {
-    const styles = useStyles()
-
-    return (
-        <NotificationSettingsList
-            style={styles.container}
-            contentContainerStyle={styles.scrollContent}
-            testID='settings_notifications_screen'
-        />
-    )
+export type SwapScreenParams = {
+    assetInId?: string
+    assetOutId?: string
 }

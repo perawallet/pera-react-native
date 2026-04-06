@@ -31,6 +31,7 @@ export type NotificationSettingsListProps = {
     style?: StyleProp<ViewStyle>
     contentContainerStyle?: StyleProp<ViewStyle>
     scrollEnabled?: boolean
+    testID?: string
 }
 
 const iconProps = {
@@ -76,6 +77,7 @@ export const NotificationSettingsList = ({
     style,
     contentContainerStyle,
     scrollEnabled,
+    testID,
 }: NotificationSettingsListProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -99,6 +101,7 @@ export const NotificationSettingsList = ({
                 styles.scrollContent,
                 contentContainerStyle,
             ]}
+            testID={testID}
             ListEmptyComponent={
                 <EmptyView
                     title={t('settings.notifications.no_accounts')}

@@ -46,7 +46,10 @@ export const SettingsSecurityScreen = () => {
     } = useSettingsSecurityScreen()
 
     return (
-        <PWView style={styles.container}>
+        <PWView
+            style={styles.container}
+            testID='settings_security_screen'
+        >
             <PWView style={styles.section}>
                 <PWText
                     variant='body'
@@ -65,6 +68,7 @@ export const SettingsSecurityScreen = () => {
                     <PWSwitch
                         value={isPinEnabled}
                         onValueChange={handlePinToggle}
+                        testID='settings_security_pin_toggle'
                     />
                 </PWView>
 
@@ -72,6 +76,7 @@ export const SettingsSecurityScreen = () => {
                     <PWTouchableOpacity
                         style={styles.listItem}
                         onPress={handleChangePinPress}
+                        testID='settings_security_change_pin_button'
                     >
                         <PWView style={styles.listItemContent}>
                             <PWIcon name='locked' />
@@ -92,6 +97,7 @@ export const SettingsSecurityScreen = () => {
                         <PWSwitch
                             value={isBiometricEnabled}
                             onValueChange={handleBiometricToggle}
+                            testID='settings_security_biometric_toggle'
                         />
                     </PWView>
                 )}
@@ -118,6 +124,7 @@ export const SettingsSecurityScreen = () => {
                         <PWSwitch
                             value={isAdvancedSecurityEnabled}
                             onValueChange={handleAdvancedSecurityToggle}
+                            testID='settings_security_advanced_toggle'
                         />
                     </PWView>
                     <PWText style={styles.listItemSubtitle}>
@@ -142,6 +149,7 @@ export const SettingsSecurityScreen = () => {
                                 <PWSwitch
                                     value={isRekeySupportEnabled}
                                     onValueChange={handleRekeyToggle}
+                                    testID='settings_security_rekey_toggle'
                                 />
                             </PWView>
                             <PWText style={styles.listItemSubtitle}>
@@ -163,6 +171,7 @@ export const SettingsSecurityScreen = () => {
                                 <PWSwitch
                                     value={isAssetFreezeSupportEnabled}
                                     onValueChange={handleAssetFreezeToggle}
+                                    testID='settings_security_asset_freeze_toggle'
                                 />
                             </PWView>
                             <PWText style={styles.listItemSubtitle}>
@@ -179,6 +188,7 @@ export const SettingsSecurityScreen = () => {
                 mode={pinViewMode}
                 onSuccess={pinSetSuccess}
                 onClose={clearPinViewMode}
+                testID='settings_security_pin_edit_view'
             />
         </PWView>
     )

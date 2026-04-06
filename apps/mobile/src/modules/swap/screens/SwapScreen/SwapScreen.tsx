@@ -20,6 +20,7 @@ import { useWebView } from '@modules/webview'
 import { useSwapIntroduction } from '@modules/swap/hooks'
 import { SwapForm, SwapIntroduction } from '@modules/swap/components'
 import { useStyles } from './styles'
+import { useSwapScreen } from './useSwapScreen'
 
 export const SwapScreen = () => {
     const { t } = useLanguage()
@@ -27,6 +28,7 @@ export const SwapScreen = () => {
     const { pushWebView } = useWebView()
     const { isIntroductionSeen, markIntroductionSeen } = useSwapIntroduction()
     const introModal = useModalState(!isIntroductionSeen)
+    useSwapScreen()
 
     const handleStartSwapping = useCallback(() => {
         markIntroductionSeen()

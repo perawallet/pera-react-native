@@ -17,11 +17,13 @@ import { useStyles } from './styles'
 type DeleteAllSuccessBottomSheetProps = {
     isVisible: boolean
     onClose: () => void
+    testID?: string
 }
 
 export const DeleteAllSuccessBottomSheet = ({
     isVisible,
     onClose,
+    testID,
 }: DeleteAllSuccessBottomSheetProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -32,6 +34,7 @@ export const DeleteAllSuccessBottomSheet = ({
             onBackdropPress={onClose}
             innerContainerStyle={styles.container}
             enablePanDownToClose
+            testID={testID}
         >
             <PWIcon
                 name='check'

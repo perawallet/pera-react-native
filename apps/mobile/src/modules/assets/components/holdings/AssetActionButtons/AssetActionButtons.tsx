@@ -56,6 +56,16 @@ export const AssetActionButtons = ({
         navigation.replace('TabBar', { screen: name })
     }
 
+    const handleSwap = useCallback(() => {
+        const isAlgo = asset.assetId === '0'
+        navigation.replace('TabBar', {
+            screen: 'Swap',
+            params: isAlgo
+                ? undefined
+                : { assetInId: '0', assetOutId: asset.assetId },
+        })
+    }, [asset.assetId, navigation])
+
     const handleSend = useCallback(() => {
         if (assetHolding) {
             setSelectedAssetId(assetHolding.assetId)
@@ -106,7 +116,7 @@ export const AssetActionButtons = ({
                 title={t('asset_details.action_buttons.swap')}
                 icon='swap'
                 variant='primary'
-                onPress={() => goToRootPage('Swap')}
+                onPress={handleSwap}
             />
             <RoundButton
                 title={t('asset_details.action_buttons.buy')}

@@ -10,13 +10,8 @@
  limitations under the License
  */
 
-import { create, type StoreApi, type UseBoundStore } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { create } from 'zustand'
 import type { SwapsState } from '../models'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
-import { getProvider } from '@perawallet/wallet-extension-provider'
-
-const STORE_NAME = 'swaps-store'
 
 // TODO: Replace with ALGO_ASSET_ID and KNOWN_ASSET_IDS.USDC from @perawallet/wallet-core-assets
 // once the assets barrel (which re-exports hooks) no longer causes Metro evaluation order issues
@@ -25,35 +20,9 @@ const initialState = {
     toAsset: '31566704', // USDC mainnet
 }
 
-export const useSwapsStore: UseBoundStore<
-    WithPersist<StoreApi<SwapsState>, unknown>
-> = create<SwapsState>()(
-    persist(
-        set => ({
-            ...initialState,
-            setFromAsset: (fromAsset: string) => set({ fromAsset }),
-            setToAsset: (toAsset: string) => set({ toAsset }),
-            resetState: () => set(initialState),
-        }),
-        {
-            name: STORE_NAME,
-            storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 1,
-            partialize: state => ({
-                fromAsset: state.fromAsset,
-                toAsset: state.toAsset,
-            }),
-        },
-    ),
-)
-
-registerStore({
-    name: STORE_NAME,
-    clearStorage: () =>
-        (
-            useSwapsStore as unknown as {
-                persist: { clearStorage: () => void }
-            }
-        ).persist.clearStorage(),
-    resetState: () => useSwapsStore.getState().resetState(),
-})
+export const useSwapsStore = create<SwapsState>()(set => ({
+    ...initialState,
+    setFromAsset: (fromAsset: string) => set({ fromAsset }),
+    setToAsset: (toAsset: string) => set({ toAsset }),
+    resetState: () => set(initialState),
+}))

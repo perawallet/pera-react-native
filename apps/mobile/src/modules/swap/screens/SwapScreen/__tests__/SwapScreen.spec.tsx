@@ -25,6 +25,32 @@ const mockUseModalState = vi.hoisted(() =>
     })),
 )
 
+const mockSetFromAsset = vi.hoisted(() => vi.fn())
+const mockSetToAsset = vi.hoisted(() => vi.fn())
+const mockRouteParams = vi.hoisted(() => ({
+    current: undefined as Record<string, string | undefined> | undefined,
+}))
+
+vi.mock('@react-navigation/native', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@react-navigation/native')>()
+    return {
+        ...actual,
+        useRoute: () => ({
+            params: mockRouteParams.current,
+        }),
+    }
+})
+
+vi.mock('@perawallet/wallet-core-swaps', () => ({
+    useSwaps: () => ({
+        fromAsset: '0',
+        toAsset: '31566704',
+        setFromAsset: mockSetFromAsset,
+        setToAsset: mockSetToAsset,
+    }),
+}))
+
 vi.mock('@modules/swap/hooks', () => ({
     useSwapIntroduction: mockUseSwapIntroduction,
 }))
@@ -58,6 +84,7 @@ vi.mock('@modules/accounts/components/AccountSelection', () => ({
 describe('SwapScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockRouteParams.current = undefined
     })
 
     it('shows introduction when user has not seen it', () => {
@@ -92,5 +119,43 @@ describe('SwapScreen', () => {
 
         expect(screen.queryByTestId('swap-introduction')).toBeNull()
         expect(screen.getByTestId('swap-form')).toBeTruthy()
+    })
+
+    it('sets swap assets from route params', () => {
+        mockUseSwapIntroduction.mockReturnValue({
+            isIntroductionSeen: true,
+            markIntroductionSeen: vi.fn(),
+        })
+        mockRouteParams.current = { assetInId: '0', assetOutId: '12345' }
+
+        render(<SwapScreen />)
+
+        expect(mockSetFromAsset).toHaveBeenCalledWith('0')
+        expect(mockSetToAsset).toHaveBeenCalledWith('12345')
+    })
+
+    it('does not set swap assets when no route params', () => {
+        mockUseSwapIntroduction.mockReturnValue({
+            isIntroductionSeen: true,
+            markIntroductionSeen: vi.fn(),
+        })
+
+        render(<SwapScreen />)
+
+        expect(mockSetFromAsset).not.toHaveBeenCalled()
+        expect(mockSetToAsset).not.toHaveBeenCalled()
+    })
+
+    it('only sets provided params when partial route params given', () => {
+        mockUseSwapIntroduction.mockReturnValue({
+            isIntroductionSeen: true,
+            markIntroductionSeen: vi.fn(),
+        })
+        mockRouteParams.current = { assetOutId: '67890' }
+
+        render(<SwapScreen />)
+
+        expect(mockSetFromAsset).not.toHaveBeenCalled()
+        expect(mockSetToAsset).toHaveBeenCalledWith('67890')
     })
 })

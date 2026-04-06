@@ -21,10 +21,11 @@ import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 type RatingsBottomSheetProps = {
     isOpen: boolean
     onClose: () => void
+    testID?: string
 }
 
 export const RatingsBottomSheet = (props: RatingsBottomSheetProps) => {
-    const { isOpen, onClose } = props
+    const { isOpen, onClose, testID } = props
     const styles = useStyles()
     const { t } = useLanguage()
     const provider = usePeraProvider()
@@ -58,6 +59,7 @@ export const RatingsBottomSheet = (props: RatingsBottomSheetProps) => {
             onBackdropPress={onClose}
             innerContainerStyle={styles.bottomSheetContainer}
             enablePanDownToClose
+            testID={testID}
         >
             <PWView style={styles.buttonContainer}>
                 <RoundButton

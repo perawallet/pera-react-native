@@ -120,6 +120,7 @@ export const SelectHDWalletScreen = () => {
                         {t('onboarding.select_hd_wallet.description')}
                     </PWText>
                     <PWFlatList
+                        style={styles.list}
                         data={hdWalletGroups}
                         renderItem={renderItem}
                         keyExtractor={item => item.keyPairId}
