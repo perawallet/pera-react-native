@@ -181,7 +181,7 @@ describe('useToggleAssetFavoriteMutation', () => {
         })
 
         expect(invalidateSpy).toHaveBeenCalledWith({
-            queryKey: getAssetDetailsQueryKey('123'),
+            queryKey: getAssetDetailsQueryKey('123', true, 'mainnet'),
         })
     })
 
