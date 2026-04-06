@@ -318,6 +318,30 @@ const ASSET_TRANSFER_TYPE_MAP = {
     unknown: 'asset-transfer',
 } as const satisfies Record<AssetTransferType, PeraTransactionType>
 
+/**
+ * Classify a PeraDisplayableTransaction into a detailed PeraTransactionType,
+ * including asset transfer sub-types (opt-in, opt-out, clawback).
+ *
+ * Use this when you already have a displayable transaction (e.g. from the indexer).
+ * For raw PeraTransaction objects, use classifyPeraTransaction instead.
+ */
+export const classifyDisplayableTransaction = (
+    tx: PeraDisplayableTransaction,
+): PeraTransactionType => {
+    const baseType = getTransactionType(tx)
+
+    if (baseType === 'asset-transfer') {
+        const subType = getAssetTransferType(tx)
+        return (
+            ASSET_TRANSFER_TYPE_MAP[
+                subType as keyof typeof ASSET_TRANSFER_TYPE_MAP
+            ] ?? 'asset-transfer'
+        )
+    }
+
+    return baseType
+}
+
 export const classifyPeraTransaction = (
     tx: PeraTransaction,
 ): PeraTransactionType => {

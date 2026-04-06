@@ -23,9 +23,11 @@ import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     useTransactionDetailQuery,
+    useGroupTransactionsQuery,
     type PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { TransactionDisplay } from '@modules/transactions/components/TransactionDisplay'
+import { GroupTransactionsPanel } from '@modules/transactions/components/transaction-details'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import { useStyles } from './styles'
 
@@ -45,17 +47,29 @@ export const TransactionDetailsScreen = () => {
     const { t } = useLanguage()
     const route = useRoute<TransactionDetailsRouteProp>()
 
-    const { transaction: paramTransaction, transactionId } = route.params
+    const {
+        transaction: paramTransaction,
+        transactionId,
+        groupId,
+    } = route.params
 
     const { data: fetchedTransaction, isLoading } = useTransactionDetailQuery({
         transactionId: transactionId || paramTransaction?.id || '',
         isEnabled: !paramTransaction && !!transactionId,
     })
 
+    const { groupTransactions } = useGroupTransactionsQuery({
+        groupId,
+    })
+
     const transaction = paramTransaction || fetchedTransaction || null
 
     const handleInnerTransactionPress = (tx: PeraDisplayableTransaction) => {
-        navigation.push('TransactionDetails', { transaction: tx })
+        navigation.push('TransactionDetails', { transaction: tx, groupId })
+    }
+
+    const handleGroupTransactionPress = (tx: PeraDisplayableTransaction) => {
+        navigation.push('TransactionDetails', { transaction: tx, groupId })
     }
 
     if (transaction) {
@@ -65,6 +79,15 @@ export const TransactionDetailsScreen = () => {
                     transaction={transaction}
                     onInnerTransactionsPress={handleInnerTransactionPress}
                 />
+                {groupTransactions.length > 1 && (
+                    <GroupTransactionsPanel
+                        groupTransactions={groupTransactions}
+                        currentTransactionId={
+                            transaction.id ?? transactionId ?? ''
+                        }
+                        onGroupTransactionPress={handleGroupTransactionPress}
+                    />
+                )}
             </ScrollView>
         )
     }

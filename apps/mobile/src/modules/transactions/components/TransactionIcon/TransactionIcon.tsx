@@ -24,6 +24,7 @@ export type TransactionIconType =
     | 'group'
     | 'send'
     | 'receive'
+    | 'swap'
 
 export type TransactionIconProps = {
     type: TransactionIconType
@@ -32,7 +33,8 @@ export type TransactionIconProps = {
 
 const iconNameMap: Record<TransactionIconType, IconName> = {
     payment: 'transactions/payment',
-    'asset-transfer': 'transactions/swap',
+    'asset-transfer': 'transactions/asset-transfer',
+    swap: 'transactions/swap',
     'asset-config': 'transactions/asset-config',
     'asset-freeze': 'transactions/asset-freeze',
     'key-registration': 'transactions/key-registration',

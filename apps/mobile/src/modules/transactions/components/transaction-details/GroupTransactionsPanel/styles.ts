@@ -10,10 +10,15 @@
  limitations under the License
  */
 
-export * from './querykeys'
-export * from './useAlgorandClient'
-export * from './useSuggestedParametersQuery'
-export * from './useTransactionDetailQuery'
-export * from './useGroupTransactionsQuery'
-export * from './useNetwork'
-export * from './useTransactionEncoder'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        marginTop: theme.spacing.md,
+        marginLeft: theme.spacing.md,
+        gap: theme.spacing.sm,
+        flexShrink: 1,
+        flexWrap: 'nowrap',
+        overflow: 'hidden',
+    },
+}))
