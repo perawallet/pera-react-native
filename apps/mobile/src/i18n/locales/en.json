@@ -180,7 +180,9 @@
             "filter_watch_accounts": "Display NFTs from Watch Accounts",
             "filter_watch_accounts_description": "This will show nfts from your watch accounts as well as your own accounts",
             "sort_title_asc": "Name (A-Z)",
-            "sort_title_desc": "Name (Z-A)"
+            "sort_title_desc": "Name (Z-A)",
+            "sort_newest_first": "Newest to Oldest",
+            "sort_oldest_first": "Oldest to Newest"
         },
         "button_panel": {
             "swap": "Swap",

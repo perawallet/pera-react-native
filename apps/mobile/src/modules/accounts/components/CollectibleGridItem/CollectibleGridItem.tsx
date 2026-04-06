@@ -11,17 +11,13 @@
  */
 
 import React, { useMemo } from 'react'
-import {
-    PWImage,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-    PWIcon,
-} from '@components/core'
+import { PWText, PWTouchableOpacity, PWView, PWIcon } from '@components/core'
+import { CollectibleThumbnail } from '../CollectibleThumbnail'
 import { useStyles } from './styles'
 import type { CollectibleItemProps } from '../AccountNfts/types'
 import { isPureNft } from '@perawallet/wallet-core-assets'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
+import { NFT_NOT_OPTED_IN_OPACITY } from '@constants/ui'
 
 export const CollectibleGridItem = ({
     asset,
@@ -33,6 +29,7 @@ export const CollectibleGridItem = ({
     const isPure = isPureNft(asset)
     const thumbnailUrl = collectible?.primaryImage ?? asset.peraMetadata?.logo
     const showAmount = !isPure && !amount.isZero()
+    const isOptedIn = amount.greaterThan(0)
     const verificationIconName = useMemo(() => {
         const tier = asset.peraMetadata?.verificationTier
         return tier ? getVerificationIcon(tier) : null
@@ -44,20 +41,13 @@ export const CollectibleGridItem = ({
             onPress={onPress}
         >
             <PWView style={styles.imageContainer}>
-                {thumbnailUrl ? (
-                    <PWImage
-                        source={{ uri: thumbnailUrl }}
-                        style={styles.image}
-                        resizeMode='cover'
-                    />
-                ) : (
-                    <PWView style={styles.placeholderContainer}>
-                        <PWIcon
-                            name='card-stack'
-                            size='lg'
-                        />
-                    </PWView>
-                )}
+                <CollectibleThumbnail
+                    thumbnailUrl={thumbnailUrl}
+                    imageStyle={styles.image}
+                    placeholderStyle={styles.placeholderContainer}
+                    iconSize='lg'
+                    notOptedIn={!isOptedIn}
+                />
                 {showAmount && (
                     <PWView style={styles.amountBadge}>
                         <PWText
@@ -68,6 +58,13 @@ export const CollectibleGridItem = ({
                         </PWText>
                     </PWView>
                 )}
+                <PWView style={styles.eyeIconContainer}>
+                    <PWIcon
+                        name='eye'
+                        size='sm'
+                        variant='white'
+                    />
+                </PWView>
             </PWView>
             <PWView style={styles.infoContainer}>
                 {collectible?.collection?.name && (

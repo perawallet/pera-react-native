@@ -11,13 +11,8 @@
  */
 
 import React, { useMemo } from 'react'
-import {
-    PWImage,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-    PWIcon,
-} from '@components/core'
+import { PWText, PWTouchableOpacity, PWView, PWIcon } from '@components/core'
+import { CollectibleThumbnail } from '../CollectibleThumbnail'
 import { useStyles } from './styles'
 import { type CollectibleItemProps } from '../AccountNfts/types'
 import { isPureNft } from '@perawallet/wallet-core-assets'
@@ -33,6 +28,7 @@ export const CollectibleListItem = ({
     const isPure = isPureNft(asset)
     const thumbnailUrl = collectible?.primaryImage ?? asset.peraMetadata?.logo
     const showAmount = !isPure && !amount.isZero()
+    const isOptedIn = amount.greaterThan(0)
     const collectionName = collectible?.collection?.name ?? asset.unitName
     const verificationIconName = useMemo(() => {
         const tier = asset.peraMetadata?.verificationTier
@@ -52,20 +48,13 @@ export const CollectibleListItem = ({
             onPress={onPress}
         >
             <PWView style={styles.thumbnail}>
-                {thumbnailUrl ? (
-                    <PWImage
-                        source={{ uri: thumbnailUrl }}
-                        style={styles.image}
-                        resizeMode='cover'
-                    />
-                ) : (
-                    <PWView style={styles.placeholderContainer}>
-                        <PWIcon
-                            name='card-stack'
-                            size='md'
-                        />
-                    </PWView>
-                )}
+                <CollectibleThumbnail
+                    thumbnailUrl={thumbnailUrl}
+                    imageStyle={styles.image}
+                    placeholderStyle={styles.placeholderContainer}
+                    iconSize='md'
+                    notOptedIn={!isOptedIn}
+                />
             </PWView>
             <PWView style={styles.textContainer}>
                 <PWView style={styles.titleRow}>

@@ -20,6 +20,7 @@ export const useStyles = makeStyles(theme => ({
     contentContainer: {
         flexGrow: 1,
         paddingHorizontal: theme.spacing.md,
+        gap: theme.spacing.sm,
     },
     headerContainer: {
         marginTop: theme.spacing.sm,

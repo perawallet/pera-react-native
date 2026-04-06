@@ -85,7 +85,7 @@ export const ManageNftsBottomSheet = ({
                     }}
                 >
                     <PWIcon
-                        name='sliders'
+                        name='funnel'
                         size='md'
                     />
                     <PWText style={styles.menuLabel}>

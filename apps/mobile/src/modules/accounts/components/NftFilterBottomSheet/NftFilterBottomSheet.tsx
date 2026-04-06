@@ -23,25 +23,18 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
-type NftFilterState = {
-    showOptedIn: boolean
-    showWatchAccounts: boolean
-}
-
 type NftFilterBottomSheetProps = {
     isVisible: boolean
     onClose: () => void
-    filterState: NftFilterState
+    showOptedIn: boolean
     onToggleOptedIn: (value: boolean) => void
-    onToggleWatchAccounts: (value: boolean) => void
 }
 
 export const NftFilterBottomSheet = ({
     isVisible,
     onClose,
-    filterState,
+    showOptedIn,
     onToggleOptedIn,
-    onToggleWatchAccounts,
 }: NftFilterBottomSheetProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -92,28 +85,8 @@ export const NftFilterBottomSheet = ({
                         </PWText>
                     </PWView>
                     <PWSwitch
-                        value={filterState.showOptedIn}
+                        value={showOptedIn}
                         onValueChange={onToggleOptedIn}
-                    />
-                </PWView>
-
-                <PWView style={styles.filterRow}>
-                    <PWView style={styles.filterTextContainer}>
-                        <PWText style={styles.filterLabel}>
-                            {t('account_details.nfts.filter_watch_accounts')}
-                        </PWText>
-                        <PWText
-                            variant='caption'
-                            style={styles.filterDescription}
-                        >
-                            {t(
-                                'account_details.nfts.filter_watch_accounts_description',
-                            )}
-                        </PWText>
-                    </PWView>
-                    <PWSwitch
-                        value={filterState.showWatchAccounts}
-                        onValueChange={onToggleWatchAccounts}
                     />
                 </PWView>
             </PWView>

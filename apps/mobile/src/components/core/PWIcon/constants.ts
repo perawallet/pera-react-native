@@ -40,6 +40,7 @@ import EyeIcon from '@assets/icons/eye.svg'
 import FaceIdIcon from '@assets/icons/faceid.svg'
 import FeedbackIcon from '@assets/icons/feedback.svg'
 import FundIcon from '@assets/icons/fund.svg'
+import FunnelIcon from '@assets/icons/funnel.svg'
 import GearIcon from '@assets/icons/gear.svg'
 import GiftIcon from '@assets/icons/gift.svg'
 import GlobeIcon from '@assets/icons/globe.svg'
@@ -163,6 +164,7 @@ export const ICON_LIBRARY = {
     faceid: FaceIdIcon,
     feedback: FeedbackIcon,
     fund: FundIcon,
+    funnel: FunnelIcon,
     gear: GearIcon,
     gift: GiftIcon,
     globe: GlobeIcon,

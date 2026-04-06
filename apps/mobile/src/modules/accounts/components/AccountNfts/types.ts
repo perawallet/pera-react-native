@@ -21,7 +21,6 @@ export type CollectibleDisplayItem = {
     asset: PeraAsset
     collectible?: PeraCollectible
     amount: Decimal
-    isPure: boolean
 }
 
 export type CollectibleItemProps = {

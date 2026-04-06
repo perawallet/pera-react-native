@@ -10,4 +10,5 @@
  limitations under the License
  */
 
-export { CollectibleListItem } from './CollectibleListItem'
+export { CollectibleThumbnail } from './CollectibleThumbnail'
+export type { CollectibleThumbnailProps } from './CollectibleThumbnail'

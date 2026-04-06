@@ -47,3 +47,5 @@ export const LONG_ADDRESS_FORMAT = 20
 
 export const SEARCH_DEBOUNCE_TIME = 400
 export const ASSET_LIST_ITEM_MIN_HEIGHT = 64
+
+export const NFT_NOT_OPTED_IN_OPACITY = 0.5

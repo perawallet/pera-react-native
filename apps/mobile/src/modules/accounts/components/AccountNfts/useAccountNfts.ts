@@ -16,40 +16,38 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     useSelectedAccount,
     useAccountBalancesQuery,
+    useAllAccounts,
+    isSigningAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     useAssetsQuery,
     isCollectible,
     isPureNft,
+    useCollectiblePreferencesStore,
+    type CollectibleSortMode,
+    type GalleryLayout,
 } from '@perawallet/wallet-core-assets'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { type CollectibleDisplayItem } from './types'
 import { useModalState } from '@hooks/useModalState'
-
-export type GalleryLayout = 'grid' | 'list'
-
-export type CollectibleSortMode = 'titleAsc' | 'titleDesc'
-
-type NftFilterState = {
-    showOptedIn: boolean
-    showWatchAccounts: boolean
-}
 
 type UseAccountNftsResult = {
     collectibles: CollectibleDisplayItem[]
     collectibleCount: number
     isPending: boolean
     hasAccount: boolean
+    canOptIn: boolean
     galleryLayout: GalleryLayout
     searchFilter: string
     sortMode: CollectibleSortMode
-    filterState: NftFilterState
+    showOptedIn: boolean
     isManageSheetVisible: boolean
     isSortSheetVisible: boolean
     isFilterSheetVisible: boolean
     setSearchFilter: (value: string) => void
     setGalleryLayout: (layout: GalleryLayout) => void
     setSortMode: (mode: CollectibleSortMode) => void
+    setShowOptedIn: (value: boolean) => void
     handlePress: (item: CollectibleDisplayItem) => void
     openManageSheet: () => void
     closeManageSheet: () => void
@@ -57,23 +55,72 @@ type UseAccountNftsResult = {
     closeSortSheet: () => void
     openFilterSheet: () => void
     closeFilterSheet: () => void
-    setShowOptedIn: (value: boolean) => void
-    setShowWatchAccounts: (value: boolean) => void
+}
+
+const getCollectibleName = (item: CollectibleDisplayItem): string =>
+    (item.collectible?.title ?? item.asset.name ?? '').toLowerCase()
+
+const sortCollectibles = (
+    items: CollectibleDisplayItem[],
+    mode: CollectibleSortMode,
+): CollectibleDisplayItem[] => {
+    const sorted = [...items]
+
+    switch (mode) {
+        case 'titleAsc':
+            sorted.sort((a, b) =>
+                getCollectibleName(a).localeCompare(getCollectibleName(b)),
+            )
+            break
+        case 'titleDesc':
+            sorted.sort((a, b) =>
+                getCollectibleName(b).localeCompare(getCollectibleName(a)),
+            )
+            break
+        case 'newestFirst':
+            sorted.sort((a, b) => Number(BigInt(b.assetId) - BigInt(a.assetId)))
+            break
+        case 'oldestFirst':
+            sorted.sort((a, b) => Number(BigInt(a.assetId) - BigInt(b.assetId)))
+            break
+    }
+
+    return sorted
 }
 
 export const useAccountNfts = (): UseAccountNftsResult => {
     const account = useSelectedAccount()
+    const allAccounts = useAllAccounts()
     const [searchFilter, setSearchFilter] = useState('')
-    const [galleryLayout, setGalleryLayout] = useState<GalleryLayout>('grid')
-    const [sortMode, setSortMode] = useState<CollectibleSortMode>('titleAsc')
-    const [filterState, setFilterState] = useState<NftFilterState>({
-        showOptedIn: true,
-        showWatchAccounts: true,
-    })
+
+    const sortMode = useCollectiblePreferencesStore(
+        state => state.collectibleSortMode,
+    )
+    const galleryLayout = useCollectiblePreferencesStore(
+        state => state.galleryLayout,
+    )
+    const showOptedIn = useCollectiblePreferencesStore(
+        state => state.showOptedIn,
+    )
+    const setSortMode = useCollectiblePreferencesStore(
+        state => state.setCollectibleSortMode,
+    )
+    const setGalleryLayout = useCollectiblePreferencesStore(
+        state => state.setGalleryLayout,
+    )
+    const setShowOptedIn = useCollectiblePreferencesStore(
+        state => state.setShowOptedIn,
+    )
+
     const manageSheetModel = useModalState()
     const sortSheetModel = useModalState()
     const filterSheetModel = useModalState()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
+
+    const canOptIn = useMemo(
+        () => account !== null && isSigningAccount(account, allAccounts),
+        [account, allAccounts],
+    )
 
     const { accountBalances, isPending } = useAccountBalancesQuery(
         account ? [account] : [],
@@ -109,31 +156,21 @@ export const useAccountNfts = (): UseAccountNftsResult => {
             if (!asset || !isCollectible(asset)) {
                 continue
             }
+            const isOptedIn = balance.amount.isZero()
+
+            if (isOptedIn && !showOptedIn) {
+                continue
+            }
+
             items.push({
                 assetId: balance.assetId,
                 asset,
                 collectible: asset.peraMetadata?.collectible,
                 amount: balance.amount,
-                isPure: isPureNft(asset),
             })
         }
 
-        const sorted = [...items]
-        sorted.sort((a, b) => {
-            const nameA = (
-                a.collectible?.title ??
-                a.asset.name ??
-                ''
-            ).toLowerCase()
-            const nameB = (
-                b.collectible?.title ??
-                b.asset.name ??
-                ''
-            ).toLowerCase()
-            return sortMode === 'titleAsc'
-                ? nameA.localeCompare(nameB)
-                : nameB.localeCompare(nameA)
-        })
+        const sorted = sortCollectibles(items, sortMode)
 
         if (!debouncedSearchFilter) {
             return sorted
@@ -151,7 +188,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
                 collectionName.includes(searchTerm)
             )
         })
-    }, [balanceData, assets, debouncedSearchFilter, sortMode])
+    }, [balanceData, assets, debouncedSearchFilter, sortMode, showOptedIn])
 
     const handlePress = useCallback(
         (item: CollectibleDisplayItem) => {
@@ -162,32 +199,23 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         [navigation],
     )
 
-    const setShowOptedIn = useCallback(
-        (value: boolean) =>
-            setFilterState(prev => ({ ...prev, showOptedIn: value })),
-        [],
-    )
-    const setShowWatchAccounts = useCallback(
-        (value: boolean) =>
-            setFilterState(prev => ({ ...prev, showWatchAccounts: value })),
-        [],
-    )
-
     return {
         collectibles,
         collectibleCount: collectibles.length,
         isPending,
         hasAccount: account !== null,
+        canOptIn,
         galleryLayout,
         searchFilter,
         sortMode,
-        filterState,
+        showOptedIn,
         isManageSheetVisible: manageSheetModel.isOpen,
         isSortSheetVisible: sortSheetModel.isOpen,
         isFilterSheetVisible: filterSheetModel.isOpen,
         setSearchFilter,
         setGalleryLayout,
         setSortMode,
+        setShowOptedIn,
         handlePress,
         openManageSheet: manageSheetModel.open,
         closeManageSheet: manageSheetModel.close,
@@ -195,7 +223,5 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         closeSortSheet: sortSheetModel.close,
         openFilterSheet: filterSheetModel.open,
         closeFilterSheet: filterSheetModel.close,
-        setShowOptedIn,
-        setShowWatchAccounts,
     }
 }

@@ -55,16 +55,18 @@ export const AccountNfts = () => {
         collectibleCount,
         isPending,
         hasAccount,
+        canOptIn,
         galleryLayout,
         searchFilter,
         sortMode,
-        filterState,
+        showOptedIn,
         isManageSheetVisible,
         isSortSheetVisible,
         isFilterSheetVisible,
         setSearchFilter,
         setGalleryLayout,
         setSortMode,
+        setShowOptedIn,
         handlePress,
         openManageSheet,
         closeManageSheet,
@@ -72,32 +74,26 @@ export const AccountNfts = () => {
         closeSortSheet,
         openFilterSheet,
         closeFilterSheet,
-        setShowOptedIn,
-        setShowWatchAccounts,
     } = useAccountNfts()
 
     const isGrid = galleryLayout === 'grid'
 
-    const renderGridItem = useCallback(
-        ({ item }: { item: CollectibleDisplayItem }) => (
-            <CollectibleGridItem
-                asset={item.asset}
-                amount={item.amount}
-                onPress={() => handlePress(item)}
-            />
-        ),
-        [handlePress],
-    )
-
-    const renderListItem = useCallback(
-        ({ item }: { item: CollectibleDisplayItem }) => (
-            <CollectibleListItem
-                asset={item.asset}
-                amount={item.amount}
-                onPress={() => handlePress(item)}
-            />
-        ),
-        [handlePress],
+    const renderItem = useCallback(
+        ({ item }: { item: CollectibleDisplayItem }) =>
+            isGrid ? (
+                <CollectibleGridItem
+                    asset={item.asset}
+                    amount={item.amount}
+                    onPress={() => handlePress(item)}
+                />
+            ) : (
+                <CollectibleListItem
+                    asset={item.asset}
+                    amount={item.amount}
+                    onPress={() => handlePress(item)}
+                />
+            ),
+        [isGrid, handlePress],
     )
 
     if (!hasAccount) {
@@ -117,7 +113,7 @@ export const AccountNfts = () => {
             <PWFlatList
                 key={galleryLayout}
                 data={collectibles}
-                renderItem={isGrid ? renderGridItem : renderListItem}
+                renderItem={renderItem}
                 numColumns={isGrid ? GRID_COLUMNS : 1}
                 keyExtractor={item => item.assetId}
                 estimatedItemSize={
@@ -151,11 +147,13 @@ export const AccountNfts = () => {
                                         {t('account_details.nfts.manage')}
                                     </PWText>
                                 </PWTouchableOpacity>
-                                <PWButton
-                                    icon='plus'
-                                    variant='helper'
-                                    paddingStyle='dense'
-                                />
+                                {canOptIn && (
+                                    <PWButton
+                                        icon='plus'
+                                        variant='helper'
+                                        paddingStyle='dense'
+                                    />
+                                )}
                             </PWView>
                         </PWView>
                         <PWView style={styles.searchRow}>
@@ -225,9 +223,8 @@ export const AccountNfts = () => {
             <NftFilterBottomSheet
                 isVisible={isFilterSheetVisible}
                 onClose={closeFilterSheet}
-                filterState={filterState}
+                showOptedIn={showOptedIn}
                 onToggleOptedIn={setShowOptedIn}
-                onToggleWatchAccounts={setShowWatchAccounts}
             />
         </PWView>
     )

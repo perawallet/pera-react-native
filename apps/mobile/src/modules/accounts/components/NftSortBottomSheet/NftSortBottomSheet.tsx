@@ -22,7 +22,7 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import type { CollectibleSortMode } from '../AccountNfts/useAccountNfts'
+import type { CollectibleSortMode } from '@perawallet/wallet-core-assets'
 
 type NftSortBottomSheetProps = {
     isVisible: boolean
@@ -71,6 +71,16 @@ export const NftSortBottomSheet = ({
             />
 
             <PWView style={styles.contentContainer}>
+                <PWRadioButton
+                    title={t('account_details.nfts.sort_newest_first')}
+                    isSelected={sortMode === 'newestFirst'}
+                    onPress={() => onSortModeChange('newestFirst')}
+                />
+                <PWRadioButton
+                    title={t('account_details.nfts.sort_oldest_first')}
+                    isSelected={sortMode === 'oldestFirst'}
+                    onPress={() => onSortModeChange('oldestFirst')}
+                />
                 <PWRadioButton
                     title={t('account_details.nfts.sort_title_asc')}
                     isSelected={sortMode === 'titleAsc'}
