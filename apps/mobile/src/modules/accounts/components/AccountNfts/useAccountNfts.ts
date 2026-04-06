@@ -22,7 +22,6 @@ import {
 import {
     useAssetsQuery,
     isCollectible,
-    isPureNft,
     useCollectiblePreferencesStore,
     type CollectibleSortMode,
     type GalleryLayout,
