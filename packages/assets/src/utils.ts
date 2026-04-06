@@ -12,7 +12,7 @@
 
 import { Decimal } from 'decimal.js'
 
-import { PeraAsset } from './models'
+import { PeraAsset, PeraAssetType } from './models'
 
 /**
  * Converts an amount from base units to display units for a given asset.
@@ -42,4 +42,26 @@ export const toDecimalUnits = (
     asset: PeraAsset,
 ): Decimal => {
     return new Decimal(value.toString()).mul(Decimal.pow(10, asset.decimals))
+}
+
+/**
+ * Checks whether an asset is a pure NFT per ARC-3 spec.
+ * A pure NFT has exactly 1 total supply and 0 decimals.
+ *
+ * @param asset - The asset to check
+ * @returns true if the asset is a pure (non-fractional) NFT
+ */
+export const isPureNft = (asset: PeraAsset): boolean => {
+    return asset.totalSupply.eq(1) && asset.decimals === 0
+}
+
+/**
+ * Checks whether an asset is classified as a collectible/NFT.
+ * Classification is backend-driven via the `type` field in Pera metadata.
+ *
+ * @param asset - The asset to check
+ * @returns true if the asset is a collectible
+ */
+export const isCollectible = (asset: PeraAsset): boolean => {
+    return asset.peraMetadata?.type === PeraAssetType.collectible
 }

@@ -12,8 +12,13 @@
 
 import { describe, test, expect } from 'vitest'
 import { Decimal } from 'decimal.js'
-import { toWholeUnits, toDecimalUnits } from '../utils'
-import type { PeraAsset } from '../models'
+import {
+    toWholeUnits,
+    toDecimalUnits,
+    isPureNft,
+    isCollectible,
+} from '../utils'
+import { PeraAssetType, type PeraAsset } from '../models'
 
 // Helper to create a valid PeraAsset for testing
 const createTestAsset = (decimals: number, name = 'TestAsset'): PeraAsset => ({
@@ -171,6 +176,95 @@ describe('utils', () => {
             const whole = toWholeUnits(decimal, asset)
 
             expect(whole).toEqual(original)
+        })
+    })
+
+    describe('isPureNft', () => {
+        test('returns true for pure NFT (totalSupply=1, decimals=0)', () => {
+            const asset = createTestAsset(0, 'PureNFT')
+            asset.totalSupply = new Decimal(1)
+
+            expect(isPureNft(asset)).toBe(true)
+        })
+
+        test('returns false when totalSupply > 1', () => {
+            const asset = createTestAsset(0, 'FractionalNFT')
+            asset.totalSupply = new Decimal(100)
+
+            expect(isPureNft(asset)).toBe(false)
+        })
+
+        test('returns false when decimals > 0', () => {
+            const asset = createTestAsset(6, 'Token')
+            asset.totalSupply = new Decimal(1)
+
+            expect(isPureNft(asset)).toBe(false)
+        })
+
+        test('returns false for standard fungible asset', () => {
+            const asset = createTestAsset(6, 'ALGO')
+
+            expect(isPureNft(asset)).toBe(false)
+        })
+    })
+
+    describe('isCollectible', () => {
+        test('returns true when type is collectible', () => {
+            const asset: PeraAsset = {
+                ...createTestAsset(0, 'NFT'),
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: 'unverified',
+                    type: PeraAssetType.collectible,
+                },
+            }
+
+            expect(isCollectible(asset)).toBe(true)
+        })
+
+        test('returns false when type is standard_asset', () => {
+            const asset: PeraAsset = {
+                ...createTestAsset(6, 'Token'),
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: 'verified',
+                    type: PeraAssetType.standard_asset,
+                },
+            }
+
+            expect(isCollectible(asset)).toBe(false)
+        })
+
+        test('returns false when type is algo', () => {
+            const asset: PeraAsset = {
+                ...createTestAsset(6, 'ALGO'),
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: 'verified',
+                    type: PeraAssetType.algo,
+                },
+            }
+
+            expect(isCollectible(asset)).toBe(false)
+        })
+
+        test('returns false when peraMetadata is undefined', () => {
+            const asset = createTestAsset(0, 'Unknown')
+            asset.peraMetadata = undefined
+
+            expect(isCollectible(asset)).toBe(false)
+        })
+
+        test('returns false when type is undefined', () => {
+            const asset: PeraAsset = {
+                ...createTestAsset(0, 'NoType'),
+                peraMetadata: {
+                    isDeleted: false,
+                    verificationTier: 'unverified',
+                },
+            }
+
+            expect(isCollectible(asset)).toBe(false)
         })
     })
 })

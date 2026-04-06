@@ -12,6 +12,38 @@
 
 import { z } from 'zod'
 
+export const collectibleTraitSchema = z.object({
+    display_name: z.string().optional(),
+    display_value: z.string(),
+})
+
+export const collectibleMediaSchema = z.object({
+    type: z.enum(['image', 'video', 'audio', 'mixed', 'unknown']),
+    download_url: z.string().optional(),
+    preview_url: z.string().optional(),
+    extension: z.string(),
+})
+
+export const collectibleCollectionSchema = z.object({
+    id: z.number().optional(),
+    name: z.string(),
+    description: z.string().optional(),
+})
+
+export const collectibleResponseSchema = z.object({
+    title: z.string().optional(),
+    standard: z.enum(['arc3', 'arc69']).optional(),
+    primary_image: z.string().optional(),
+    media_type: z.enum(['image', 'video', 'audio', 'mixed', 'unknown']),
+    explorer_url: z.string(),
+    collection: collectibleCollectionSchema.nullable().optional(),
+    description: z.string().optional(),
+    traits: z.array(collectibleTraitSchema).optional().default([]),
+    media: z.array(collectibleMediaSchema).optional().default([]),
+})
+
+export type CollectibleResponse = z.infer<typeof collectibleResponseSchema>
+
 export const assetResponseSchema = z.object({
     asset_id: z.number(),
     name: z.string().optional(),
@@ -24,7 +56,7 @@ export const assetResponseSchema = z.object({
     is_deleted: z.boolean().optional().nullable(),
     verification_tier: z.string(),
     explorer_url: z.string().nullable().optional(),
-    collectible: z.any().optional(),
+    collectible: collectibleResponseSchema.nullable().optional(),
     creator: z.object({
         address: z.string(),
     }),
