@@ -36,17 +36,19 @@ export const transformCollectibleResponse = (
         primaryImage: data.primary_image,
         mediaType: data.media_type as CollectibleMediaType,
         explorerUrl: data.explorer_url,
-        collection: {
-            id: data.collection.id,
-            name: data.collection.name,
-            description: data.collection.description,
-        },
+        collection: data.collection
+            ? {
+                  id: data.collection.id,
+                  name: data.collection.name,
+                  description: data.collection.description,
+              }
+            : undefined,
         description: data.description,
-        traits: data.traits.map(t => ({
+        traits: (data.traits ?? []).map(t => ({
             displayName: t.display_name,
             displayValue: t.display_value,
         })),
-        media: data.media.map(m => ({
+        media: (data.media ?? []).map(m => ({
             type: m.type as CollectibleMediaType,
             downloadUrl: m.download_url,
             previewUrl: m.preview_url,

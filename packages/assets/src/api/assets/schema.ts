@@ -36,10 +36,10 @@ export const collectibleResponseSchema = z.object({
     primary_image: z.string().optional(),
     media_type: z.enum(['image', 'video', 'audio', 'mixed', 'unknown']),
     explorer_url: z.string(),
-    collection: collectibleCollectionSchema,
+    collection: collectibleCollectionSchema.nullable().optional(),
     description: z.string().optional(),
-    traits: z.array(collectibleTraitSchema),
-    media: z.array(collectibleMediaSchema),
+    traits: z.array(collectibleTraitSchema).optional().default([]),
+    media: z.array(collectibleMediaSchema).optional().default([]),
 })
 
 export type CollectibleResponse = z.infer<typeof collectibleResponseSchema>

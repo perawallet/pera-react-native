@@ -210,6 +210,33 @@ describe('transformCollectibleResponse', () => {
             { displayName: undefined, displayValue: 'SomeValue' },
         ])
     })
+
+    test('handles null collection', () => {
+        const input = createCollectibleResponse({
+            collection: null as any,
+        })
+        const result = transformCollectibleResponse(input)
+
+        expect(result.collection).toBeUndefined()
+    })
+
+    test('handles undefined traits', () => {
+        const input = createCollectibleResponse({
+            traits: undefined as any,
+        })
+        const result = transformCollectibleResponse(input)
+
+        expect(result.traits).toEqual([])
+    })
+
+    test('handles undefined media', () => {
+        const input = createCollectibleResponse({
+            media: undefined as any,
+        })
+        const result = transformCollectibleResponse(input)
+
+        expect(result.media).toEqual([])
+    })
 })
 
 describe('transformAssetResponse', () => {

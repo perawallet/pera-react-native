@@ -13,7 +13,7 @@
 import { fetchAssets, transformAssetResponse } from '../api'
 import { upsertAssets } from '../db'
 import { ALGO_ASSET_ID } from '../models'
-import { partition, type Network } from '@perawallet/wallet-core-shared'
+import { logger, partition, type Network } from '@perawallet/wallet-core-shared'
 
 const ASSET_BATCH_SIZE = 25
 
