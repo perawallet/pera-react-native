@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
     container: {
@@ -46,6 +47,9 @@ export const useStyles = makeStyles(theme => ({
     title: {
         flexShrink: 1,
         color: theme.colors.textMain,
+        lineHeight: theme.spacing.lg,
+        marginHorizontal: theme.spacing.sm,
+        textAlign: 'center',
     },
     collectionName: {
         color: theme.colors.textGray,
@@ -54,9 +58,17 @@ export const useStyles = makeStyles(theme => ({
         position: 'absolute',
         top: theme.spacing.sm,
         right: theme.spacing.sm,
-        backgroundColor: 'rgba(24, 24, 27, 0.6)',
+        backgroundColor: theme.colors.nftIconBg,
         borderRadius: theme.borderRadius.xs,
         paddingHorizontal: theme.spacing.sm,
+    },
+    eyeIconContainer: {
+        position: 'absolute',
+        bottom: theme.spacing.sm,
+        left: theme.spacing.sm,
+        backgroundColor: theme.colors.nftIconBg,
+        borderRadius: theme.borderRadius.xs,
+        padding: theme.spacing.xs,
     },
     amountBadgeText: {
         color: theme.colors.textWhite,

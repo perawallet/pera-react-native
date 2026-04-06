@@ -228,7 +228,6 @@ export const AccountNfts = () => {
                 showOptedIn={showOptedIn}
                 showWatchAccounts={showWatchAccounts}
                 onToggleOptedIn={setShowOptedIn}
-                onToggleWatchAccounts={setShowWatchAccounts}
             />
         </PWView>
     )

@@ -29,7 +29,6 @@ type NftFilterBottomSheetProps = {
     showOptedIn: boolean
     showWatchAccounts: boolean
     onToggleOptedIn: (value: boolean) => void
-    onToggleWatchAccounts: (value: boolean) => void
 }
 
 export const NftFilterBottomSheet = ({
@@ -38,7 +37,6 @@ export const NftFilterBottomSheet = ({
     showOptedIn,
     showWatchAccounts,
     onToggleOptedIn,
-    onToggleWatchAccounts,
 }: NftFilterBottomSheetProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
