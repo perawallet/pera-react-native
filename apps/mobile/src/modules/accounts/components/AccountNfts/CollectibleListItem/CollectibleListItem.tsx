@@ -20,15 +20,16 @@ import {
 } from '@components/core'
 import { useStyles } from './styles'
 import { type CollectibleItemProps } from '../types'
+import { isPureNft } from '@perawallet/wallet-core-assets'
 
 export const CollectibleListItem = ({
     asset,
-    collectible,
     amount,
-    isPure,
     onPress,
 }: CollectibleItemProps) => {
     const styles = useStyles()
+    const collectible = asset.peraMetadata?.collectible
+    const isPure = isPureNft(asset)
     const thumbnailUrl = collectible?.primaryImage ?? asset.peraMetadata?.logo
 
     return (

@@ -31,9 +31,9 @@ import { NftEmptyState } from '../NftEmptyState'
 import { ManageNftsBottomSheet } from '../ManageNftsBottomSheet'
 import { NftSortBottomSheet } from '../NftSortBottomSheet'
 import { NftFilterBottomSheet } from '../NftFilterBottomSheet'
-import type { CollectibleDisplayItem } from './types'
 import { LoadingView } from '@components/LoadingView'
 import { EmptyView } from '@components/EmptyView'
+import { CollectibleDisplayItem } from '@modules/assets/types/collectible'
 
 const GRID_COLUMNS = 2
 const SKELETON_COUNT = 6

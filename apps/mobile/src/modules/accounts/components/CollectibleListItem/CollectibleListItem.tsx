@@ -22,7 +22,6 @@ import { useStyles } from './styles'
 import { type CollectibleItemProps } from '../AccountNfts/types'
 import { isPureNft } from '@perawallet/wallet-core-assets'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
-import { logger } from '@perawallet/wallet-core-shared'
 
 export const CollectibleListItem = ({
     asset,
