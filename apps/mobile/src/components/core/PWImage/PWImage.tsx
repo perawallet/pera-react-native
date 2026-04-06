@@ -23,6 +23,7 @@ import {
 } from 'react-native'
 
 import { useStyles } from './styles'
+import { SHORT_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 
 export type PWImageProps = {
     source: ImageSource | ImageSourcePropType
@@ -69,7 +70,7 @@ export const PWImage = ({
             ? 0
             : typeof transition === 'number'
               ? transition
-              : 300
+              : SHORT_PROMPT_DISPLAY_DELAY
 
     const handleLoad = useCallback<NonNullable<ImageProps['onLoad']>>(
         event => {
