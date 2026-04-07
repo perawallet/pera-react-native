@@ -60,9 +60,9 @@ export const MenuScreen = () => {
                             variant='primary'
                         />
                     </PWTouchableOpacity>
-                    <PWTouchableOpacity 
+                    <PWTouchableOpacity
                         onPress={goToSettings}
-                        testID="menu_settings_button"
+                        testID='menu_settings_button'
                     >
                         <PWIcon
                             name='gear'
