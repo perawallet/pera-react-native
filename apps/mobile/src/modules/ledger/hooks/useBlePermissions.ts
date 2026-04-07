@@ -53,10 +53,14 @@ export const useBlePermissions = (): UseBlePermissionsResult => {
     useEffect(() => {
         if (Platform.OS === 'ios') return
 
-        checkAndroidPermissions().then(granted => {
-            setHasPermissions(granted)
-            setIsChecking(false)
-        })
+        checkAndroidPermissions()
+            .then(granted => {
+                setHasPermissions(granted)
+                setIsChecking(false)
+            })
+            .catch(() => {
+                setIsChecking(false)
+            })
     }, [checkAndroidPermissions])
 
     const requestPermissions = useCallback(async (): Promise<boolean> => {

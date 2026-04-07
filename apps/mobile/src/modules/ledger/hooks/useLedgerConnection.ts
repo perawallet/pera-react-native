@@ -37,7 +37,6 @@ type UseLedgerConnectionResult = {
  */
 export const useLedgerConnection = (): UseLedgerConnectionResult => {
     const [devices, setDevices] = useState<HardwareWalletDevice[]>([])
-    const [isScanning, setIsScanning] = useState(false)
     const [connectionStatus, setConnectionStatus] =
         useState<HardwareWalletConnectionStatus>('disconnected')
     const [error, setError] = useState<Error | null>(null)
@@ -63,13 +62,12 @@ export const useLedgerConnection = (): UseLedgerConnectionResult => {
             clearTimeout(scanTimeoutRef.current)
             scanTimeoutRef.current = null
         }
-        setIsScanning(false)
+        setConnectionStatus('disconnected')
     }, [])
 
     const startScan = useCallback(() => {
         setDevices([])
         setError(null)
-        setIsScanning(true)
         setConnectionStatus('scanning')
 
         const provider = getOrCreateProvider()
@@ -130,13 +128,13 @@ export const useLedgerConnection = (): UseLedgerConnectionResult => {
             if (scanTimeoutRef.current) {
                 clearTimeout(scanTimeoutRef.current)
             }
-            transportRef.current?.disconnect()
+            transportRef.current?.disconnect().catch(() => {})
         }
     }, [])
 
     return {
         devices,
-        isScanning,
+        isScanning: connectionStatus === 'scanning',
         connectionStatus,
         startScan,
         stopScan,

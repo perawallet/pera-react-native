@@ -22,13 +22,9 @@ import {
 } from '@components/core'
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
 
+import { formatAddress } from '../../utils'
 import { useStyles } from './styles'
 import { useLedgerSelectAccountsScreen } from './useLedgerSelectAccountsScreen'
-
-const formatAddress = (address: string): string => {
-    if (address.length <= 12) return address
-    return `${address.slice(0, 6)}...${address.slice(-6)}`
-}
 
 export const LedgerSelectAccountsScreen = () => {
     const styles = useStyles()

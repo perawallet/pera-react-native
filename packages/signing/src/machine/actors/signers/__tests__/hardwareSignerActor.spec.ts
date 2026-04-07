@@ -182,6 +182,59 @@ describe('hardwareSignerActor', () => {
         )
     })
 
+    it('forwards callbacks to the signing strategy', async () => {
+        const transport = makeMockTransport()
+        const provider = makeMockProvider(transport)
+        const onHardwarePrompt = vi.fn().mockResolvedValue(undefined)
+        const onSigningStart = vi.fn()
+        const onProgress = vi.fn()
+        const onSigningComplete = vi.fn()
+
+        const input: HardwareSignerActorInput = {
+            groups: [makeGroup(ADDR_A)],
+            allAccounts: [makeLedgerAccount(ADDR_A)],
+            hardwareWalletRegistry: makeRegistry(provider),
+            encodeTransaction: vi.fn().mockReturnValue(new Uint8Array([0xaa])),
+            callbacks: {
+                onHardwarePrompt,
+                onSigningStart,
+                onProgress,
+                onSigningComplete,
+            },
+        }
+
+        const actor = createActor(hardwareSignerActor, { input })
+        actor.start()
+        await toPromise(actor)
+
+        expect(onHardwarePrompt).toHaveBeenCalledTimes(2)
+        expect(onSigningStart).toHaveBeenCalledTimes(1)
+        expect(onProgress).toHaveBeenCalledTimes(1)
+        expect(onSigningComplete).toHaveBeenCalledTimes(1)
+    })
+
+    it('uses correct account index for non-zero index accounts', async () => {
+        const transport = makeMockTransport()
+        const provider = makeMockProvider(transport)
+
+        const input: HardwareSignerActorInput = {
+            groups: [makeGroup(ADDR_A)],
+            allAccounts: [makeLedgerAccount(ADDR_A, 5)],
+            hardwareWalletRegistry: makeRegistry(provider),
+            encodeTransaction: vi.fn().mockReturnValue(new Uint8Array([0xaa])),
+        }
+
+        const actor = createActor(hardwareSignerActor, { input })
+        actor.start()
+        await toPromise(actor)
+
+        expect(transport.getAddress).toHaveBeenCalledWith(5, false)
+        expect(transport.signTransaction).toHaveBeenCalledWith(
+            5,
+            expect.any(Uint8Array),
+        )
+    })
+
     it('rejects when no provider is registered for manufacturer', async () => {
         const emptyRegistry = createHardwareWalletRegistry()
 

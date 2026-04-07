@@ -66,15 +66,22 @@ export const useLedgerFetchAccountsScreen =
                     return
                 }
 
+                // Note: if unmount occurs during discover(), the transport stays
+                // open until discovery completes. The mountedRef check below
+                // prevents navigation but doesn't abort in-flight discovery.
                 const accounts = await discover(transport)
 
-                if (mountedRef.current && accounts.length > 0) {
-                    navigation.replace('LedgerSelectAccounts', {
-                        deviceId,
-                        deviceName,
-                        accounts,
-                    })
+                if (!mountedRef.current) return
+
+                if (accounts.length === 0) {
+                    throw new Error('No accounts found on this device')
                 }
+
+                navigation.replace('LedgerSelectAccounts', {
+                    deviceId,
+                    deviceName,
+                    accounts,
+                })
             } catch {
                 // Errors are captured in the hook state
             }

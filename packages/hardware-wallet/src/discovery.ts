@@ -45,9 +45,12 @@ export type DiscoverAccountsOptions = {
 /**
  * Sequentially discovers Algorand accounts on a connected hardware wallet device.
  *
- * Fetches accounts at indices 0, 1, 2... and stops after
- * `maxGap` consecutive indices with no on-chain presence.
+ * When `isAccountOnChain` is provided, fetches accounts at indices 0, 1, 2...
+ * and stops after `maxGap` consecutive indices with no on-chain presence.
  * Index 0 is always included even if not funded.
+ *
+ * When `isAccountOnChain` is not provided, returns accounts at indices 0
+ * through `maxGap` (inclusive) since on-chain presence cannot be determined.
  */
 export const discoverAccounts = async (
     options: DiscoverAccountsOptions,

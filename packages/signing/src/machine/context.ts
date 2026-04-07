@@ -21,6 +21,7 @@ import type {
     TransportResult,
 } from '../pipeline/types'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
+import type { SigningCallbacks } from '../pipeline/types'
 import type { LocalSigningFunction } from '../pipeline/signing/createLocalKeyStrategy'
 import type { EncodeTransactionFunction } from '../pipeline/signing/createHardwareStrategy'
 import type { SignRequest } from '../models'
@@ -75,6 +76,8 @@ export type SigningMachineDeps = {
     hardwareWalletRegistry?: HardwareWalletRegistry
     /** Transaction encoder for hardware wallet signing */
     encodeTransaction: EncodeTransactionFunction
+    /** Optional callbacks for hardware wallet signing UI integration */
+    signingCallbacks?: SigningCallbacks
 }
 
 // =============================================================================

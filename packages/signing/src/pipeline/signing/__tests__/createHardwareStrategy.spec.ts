@@ -259,15 +259,15 @@ describe('createHardwareStrategy', () => {
             expect(transport.disconnect).toHaveBeenCalled()
         })
 
-        it('verifies Algorand app is open before signing', async () => {
+        it('verifies Algorand app is open before signing using correct account index', async () => {
             const strategy = createHardwareStrategy({
                 transportProvider: mockProvider,
                 encodeTransaction,
             })
             const group = makeGroup([mockTransaction()], [0])
-            await strategy.sign(group, makeLedgerAccount())
+            await strategy.sign(group, makeLedgerAccount(SIGNER_ADDRESS, 3))
 
-            expect(mockTransport.getAddress).toHaveBeenCalledWith(0, false)
+            expect(mockTransport.getAddress).toHaveBeenCalledWith(3, false)
         })
 
         it('fires progress callbacks in order', async () => {
@@ -317,6 +317,87 @@ describe('createHardwareStrategy', () => {
             await expect(
                 strategy.sign(group, makeLedgerAccount()),
             ).rejects.toThrow('not available')
+        })
+
+        it('calls onSigningStart before signing loop', async () => {
+            const strategy = createHardwareStrategy({
+                transportProvider: mockProvider,
+                encodeTransaction,
+            })
+            const group = makeGroup([mockTransaction()], [0])
+            const onSigningStart = vi.fn()
+
+            await strategy.sign(group, makeLedgerAccount(), { onSigningStart })
+
+            expect(onSigningStart).toHaveBeenCalledTimes(1)
+        })
+
+        it('calls onError callback when signing fails', async () => {
+            const transport = {
+                ...makeMockTransport(),
+                signTransaction: vi
+                    .fn()
+                    .mockRejectedValue(new Error('BLE failure')),
+            }
+            const provider = makeMockProvider(transport)
+            const strategy = createHardwareStrategy({
+                transportProvider: provider,
+                encodeTransaction,
+            })
+            const group = makeGroup([mockTransaction()], [0])
+            const onError = vi.fn()
+
+            await expect(
+                strategy.sign(group, makeLedgerAccount(), { onError }),
+            ).rejects.toThrow()
+
+            expect(onError).toHaveBeenCalledTimes(1)
+            expect(onError).toHaveBeenCalledWith(expect.any(Error))
+        })
+
+        it('calls onHardwarePrompt with connect and approve', async () => {
+            const strategy = createHardwareStrategy({
+                transportProvider: mockProvider,
+                encodeTransaction,
+            })
+            const group = makeGroup([mockTransaction()], [0])
+            const onHardwarePrompt = vi.fn()
+
+            await strategy.sign(group, makeLedgerAccount(), {
+                onHardwarePrompt,
+            })
+
+            expect(onHardwarePrompt).toHaveBeenCalledTimes(2)
+            expect(onHardwarePrompt).toHaveBeenNthCalledWith(
+                1,
+                expect.objectContaining({ type: 'connect' }),
+            )
+            expect(onHardwarePrompt).toHaveBeenNthCalledWith(
+                2,
+                expect.objectContaining({ type: 'approve' }),
+            )
+        })
+
+        it('preserves original error when disconnect also fails', async () => {
+            const transport = {
+                ...makeMockTransport(),
+                signTransaction: vi
+                    .fn()
+                    .mockRejectedValue(new Error('signing failed')),
+                disconnect: vi
+                    .fn()
+                    .mockRejectedValue(new Error('disconnect failed')),
+            }
+            const provider = makeMockProvider(transport)
+            const strategy = createHardwareStrategy({
+                transportProvider: provider,
+                encodeTransaction,
+            })
+            const group = makeGroup([mockTransaction()], [0])
+
+            await expect(
+                strategy.sign(group, makeLedgerAccount()),
+            ).rejects.toThrow('signing failed')
         })
 
         it('throws HardwareWalletError for non-transaction data types', async () => {

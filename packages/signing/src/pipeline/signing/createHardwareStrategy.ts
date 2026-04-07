@@ -15,7 +15,10 @@ import type {
     HardwareWalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { isHardwareWalletAccount } from '@perawallet/wallet-core-accounts'
-import type { HardwareWalletTransportProvider } from '@perawallet/wallet-core-hardware-wallet'
+import type {
+    HardwareWalletTransport,
+    HardwareWalletTransportProvider,
+} from '@perawallet/wallet-core-hardware-wallet'
 import type {
     PeraTransaction,
     PeraSignedTransaction,
@@ -81,17 +84,19 @@ export const createHardwareStrategy = (
             const hwAccount = account as HardwareWalletAccount
             const { deviceId, accountIndex } = hwAccount.hardwareDetails
 
-            // Step 1: Connect to the Ledger device
-            await callbacks?.onHardwarePrompt?.({
-                type: 'connect',
-                message: 'Connecting to hardware wallet...',
-            })
-
-            const transport = await transportProvider.connect(deviceId)
+            let transport: HardwareWalletTransport | undefined
 
             try {
+                // Step 1: Connect to the hardware wallet device
+                await callbacks?.onHardwarePrompt?.({
+                    type: 'connect',
+                    message: 'Connecting to hardware wallet...',
+                })
+
+                transport = await transportProvider.connect(deviceId)
+
                 // Step 2: Verify the device is ready by fetching address
-                await transport.getAddress(0, false)
+                await transport.getAddress(accountIndex, false)
 
                 // Step 3: Prompt user to confirm on device
                 await callbacks?.onHardwarePrompt?.({
@@ -105,6 +110,7 @@ export const createHardwareStrategy = (
                 // Step 4: Sign each transaction sequentially.
                 // Hardware wallet transports are typically single-channel —
                 // concurrent commands can corrupt state or reorder responses.
+                callbacks?.onSigningStart?.()
                 const signed: PeraSignedTransaction[] = []
 
                 for (let index = 0; index < transactions.length; index++) {
@@ -148,6 +154,10 @@ export const createHardwareStrategy = (
                     originalIndices: group.originalIndices,
                 }
             } catch (error) {
+                callbacks?.onError?.(
+                    error instanceof Error ? error : new Error(String(error)),
+                )
+
                 if (
                     error instanceof CannotSignError ||
                     error instanceof HardwareWalletError
@@ -159,7 +169,11 @@ export const createHardwareStrategy = (
                     error instanceof Error ? error : undefined,
                 )
             } finally {
-                await transport.disconnect()
+                try {
+                    await transport?.disconnect()
+                } catch {
+                    // Swallow disconnect errors to preserve original error
+                }
             }
         },
     }

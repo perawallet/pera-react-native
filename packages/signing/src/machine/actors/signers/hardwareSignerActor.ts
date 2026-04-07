@@ -17,6 +17,7 @@ import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wa
 import type { HardwareWalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     AnalyzedSignableGroup,
+    SigningCallbacks,
     SigningResult,
 } from '../../../pipeline/types'
 import { HardwareWalletError } from '../../../pipeline/errors'
@@ -28,6 +29,7 @@ export type HardwareSignerActorInput = {
     allAccounts: WalletAccount[]
     hardwareWalletRegistry: HardwareWalletRegistry
     encodeTransaction: EncodeTransactionFunction
+    callbacks?: SigningCallbacks
 }
 
 /**
@@ -73,7 +75,11 @@ export const hardwareSignerActor = fromPromise<
             encodeTransaction,
         })
 
-        const result = await strategy.sign(group, signerAccount)
+        const result = await strategy.sign(
+            group,
+            signerAccount,
+            input.callbacks,
+        )
         results.push(result)
     }
 

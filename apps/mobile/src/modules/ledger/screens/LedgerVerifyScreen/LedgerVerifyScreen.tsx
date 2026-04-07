@@ -14,6 +14,7 @@ import React from 'react'
 import { ActivityIndicator } from 'react-native'
 import { PWView, PWText, PWButton, PWIcon } from '@components/core'
 
+import { formatAddress } from '../../utils'
 import { useStyles } from './styles'
 import { useLedgerVerifyScreen } from './useLedgerVerifyScreen'
 
@@ -64,7 +65,7 @@ export const LedgerVerifyScreen = () => {
                                         variant='caption'
                                         style={styles.addressText}
                                     >
-                                        {currentAddress}
+                                        {formatAddress(currentAddress)}
                                     </PWText>
                                 )}
 

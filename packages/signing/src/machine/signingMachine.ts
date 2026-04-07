@@ -317,6 +317,7 @@ export const signingMachine = setup({
                             hardwareWalletRegistry:
                                 context.deps.hardwareWalletRegistry!,
                             encodeTransaction: context.deps.encodeTransaction,
+                            callbacks: context.deps.signingCallbacks,
                         }),
                         onDone: {
                             target: 'dispatching',

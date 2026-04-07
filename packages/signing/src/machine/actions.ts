@@ -23,7 +23,7 @@ import type {
     SourceCallbacks,
     SourceMetadata,
 } from '../pipeline/types'
-import { CannotSignError } from '../pipeline/errors'
+import { CannotSignError, HardwareWalletError } from '../pipeline/errors'
 import type {
     GroupSignerTypeMap,
     ResolvedSignerType,
@@ -246,6 +246,7 @@ const extractDeps = (input: SigningMachineInput): SigningMachineDeps => ({
     network: input.network,
     encodeTransaction: input.encodeTransaction,
     hardwareWalletRegistry: input.hardwareWalletRegistry,
+    signingCallbacks: input.signingCallbacks,
 })
 
 /**
@@ -275,6 +276,15 @@ export const resolveInitialContext = (
         signableGroups,
         allAccounts,
     )
+
+    const hasHardwareSigners = [...groupSignerTypes.values()].includes(
+        'hardware',
+    )
+    if (hasHardwareSigners && !input.hardwareWalletRegistry) {
+        throw new HardwareWalletError(
+            'Hardware wallet registry is required for hardware account signing',
+        )
+    }
 
     return {
         request,
