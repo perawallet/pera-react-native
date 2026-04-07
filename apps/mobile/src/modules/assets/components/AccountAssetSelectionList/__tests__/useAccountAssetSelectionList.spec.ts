@@ -110,6 +110,19 @@ describe('useAccountAssetSelectionList', () => {
         expect(result.current.filteredBalanceData).toHaveLength(0)
     })
 
+    it('excludes asset when excludeAssetId is provided', () => {
+        const { result } = renderHook(() =>
+            useAccountAssetSelectionList({ excludeAssetId: '0' }),
+        )
+
+        expect(result.current.filteredBalanceData).toHaveLength(2)
+        expect(
+            result.current.filteredBalanceData.every(
+                item => item.assetId !== '0',
+            ),
+        ).toBe(true)
+    })
+
     it('clears search when isVisible becomes false', () => {
         const { result, rerender } = renderHook(
             ({ isVisible }) => useAccountAssetSelectionList({ isVisible }),

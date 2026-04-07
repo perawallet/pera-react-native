@@ -69,12 +69,14 @@ export const SwapForm = () => {
                 isVisible={payAssetModal.isOpen}
                 onClose={payAssetModal.close}
                 onAssetSelected={handlePayAssetSelected}
+                excludeAssetId={receiveAssetId}
             />
 
             <SwapAssetSelectionBottomSheet
                 isVisible={receiveAssetModal.isOpen}
                 onClose={receiveAssetModal.close}
                 onAssetSelected={handleReceiveAssetSelected}
+                excludeAssetId={payAssetId}
             />
 
             <SwapConfigurationBottomSheet
