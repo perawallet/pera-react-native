@@ -54,13 +54,21 @@ export const useLedgerFetchAccountsScreen =
         } = useLedgerAccounts()
 
         const hasStartedRef = useRef(false)
+        const mountedRef = useRef(true)
 
         const connectAndDiscover = useCallback(async () => {
             try {
                 const transport = await connect(deviceId)
+
+                // If unmounted during connect, clean up immediately
+                if (!mountedRef.current) {
+                    await transport.disconnect()
+                    return
+                }
+
                 const accounts = await discover(transport)
 
-                if (accounts.length > 0) {
+                if (mountedRef.current && accounts.length > 0) {
                     navigation.replace('LedgerSelectAccounts', {
                         deviceId,
                         deviceName,
@@ -73,18 +81,19 @@ export const useLedgerFetchAccountsScreen =
         }, [connect, deviceId, deviceName, discover, navigation])
 
         useEffect(() => {
+            mountedRef.current = true
             if (hasStartedRef.current) return
             hasStartedRef.current = true
 
             connectAndDiscover()
 
             return () => {
+                mountedRef.current = false
                 disconnect()
             }
         }, [connectAndDiscover, disconnect])
 
         const handleRetry = useCallback(() => {
-            hasStartedRef.current = false
             connectAndDiscover()
         }, [connectAndDiscover])
 

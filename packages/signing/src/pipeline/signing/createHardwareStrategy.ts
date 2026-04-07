@@ -102,36 +102,40 @@ export const createHardwareStrategy = (
 
                 const { transactions, indicesToSign } = group.data
 
-                // Step 4: Sign each transaction
-                const signed: PeraSignedTransaction[] = await Promise.all(
-                    transactions.map(async (txn, index) => {
-                        callbacks?.onProgress?.(index + 1, transactions.length)
+                // Step 4: Sign each transaction sequentially.
+                // Ledger BLE transport is single-channel — concurrent APDU
+                // commands can corrupt state or reorder responses.
+                const signed: PeraSignedTransaction[] = []
 
-                        // Only sign transactions in indicesToSign
-                        if (!indicesToSign.includes(index)) {
-                            return { txn } as PeraSignedTransaction
-                        }
+                for (let index = 0; index < transactions.length; index++) {
+                    const txn = transactions[index]
+                    callbacks?.onProgress?.(index + 1, transactions.length)
 
-                        const txnBytes = encodeTransaction(txn)
-                        const signature = await transport.signTransaction(
-                            accountIndex,
-                            txnBytes,
-                        )
+                    // Only sign transactions in indicesToSign
+                    if (!indicesToSign.includes(index)) {
+                        signed.push({ txn } as PeraSignedTransaction)
+                        continue
+                    }
 
-                        // Build SignedTransaction: { txn, sig, authAddress? }
-                        const senderAddress = txn.sender.toString()
-                        const authAddress =
-                            hwAccount.address !== senderAddress
-                                ? Address.fromString(hwAccount.address)
-                                : undefined
+                    const txnBytes = encodeTransaction(txn)
+                    const signature = await transport.signTransaction(
+                        accountIndex,
+                        txnBytes,
+                    )
 
-                        return {
-                            txn,
-                            sig: signature,
-                            authAddress,
-                        } as PeraSignedTransaction
-                    }),
-                )
+                    // Build SignedTransaction: { txn, sig, authAddress? }
+                    const senderAddress = txn.sender.toString()
+                    const authAddress =
+                        hwAccount.address !== senderAddress
+                            ? Address.fromString(hwAccount.address)
+                            : undefined
+
+                    signed.push({
+                        txn,
+                        sig: signature,
+                        authAddress,
+                    } as PeraSignedTransaction)
+                }
 
                 callbacks?.onSigningComplete?.()
 

@@ -91,9 +91,13 @@ export type LedgerTransportProvider = {
     /**
      * Start scanning for Ledger devices via BLE.
      * @param onDevice - Called each time a new device is discovered
+     * @param onError - Called when a scan error occurs (e.g. Bluetooth disabled)
      * @returns A stop function to cancel the scan
      */
-    scan: (onDevice: (device: LedgerDevice) => void) => () => void
+    scan: (
+        onDevice: (device: LedgerDevice) => void,
+        onError?: (error: Error) => void,
+    ) => () => void
 
     /**
      * Connect to a specific Ledger device and open the Algorand app transport.

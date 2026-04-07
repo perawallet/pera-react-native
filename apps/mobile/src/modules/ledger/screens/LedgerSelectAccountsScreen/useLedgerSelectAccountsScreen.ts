@@ -95,6 +95,8 @@ export const useLedgerSelectAccountsScreen =
                 selectedAddresses.has(acc.address),
             )
 
+            if (selectedAccounts.length === 0) return
+
             navigation.navigate('LedgerVerify', {
                 deviceId,
                 deviceName,

@@ -14,7 +14,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { useLanguage } from '@hooks/useLanguage'
 import {
-    useAllAccounts,
+    useAccountsStore,
     useSetAccounts,
     useSelectedAccountAddress,
     AccountTypes,
@@ -45,7 +45,6 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         params: { deviceId, deviceName, selectedAccounts },
     } = useRoute<LedgerVerifyRouteProp>()
     const { t } = useLanguage()
-    const allAccounts = useAllAccounts()
     const { setAccounts } = useSetAccounts()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { exitAccountFlow } = useExitAccountFlow()
@@ -92,7 +91,8 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                 },
             }))
 
-            setAccounts([...allAccounts, ...hwAccounts])
+            const currentAccounts = useAccountsStore.getState().accounts
+            setAccounts([...currentAccounts, ...hwAccounts])
             setSelectedAccountAddress(hwAccounts[0].address)
             exitAccountFlow()
         } catch (err) {
@@ -109,7 +109,6 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         deviceId,
         deviceName,
         selectedAccounts,
-        allAccounts,
         setAccounts,
         setSelectedAccountAddress,
         exitAccountFlow,
@@ -123,7 +122,6 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     }, [verifyAndSave])
 
     const handleRetry = useCallback(() => {
-        hasStartedRef.current = false
         setCurrentIndex(0)
         verifyAndSave()
     }, [verifyAndSave])

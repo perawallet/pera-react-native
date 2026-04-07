@@ -131,7 +131,10 @@ const createTransportWrapper = (
 export class RNLedgerService implements LedgerService {
     createTransportProvider(): LedgerTransportProvider {
         return {
-            scan(onDevice: (device: LedgerDevice) => void): () => void {
+            scan(
+                onDevice: (device: LedgerDevice) => void,
+                onError?: (error: Error) => void,
+            ): () => void {
                 const subscription = TransportBLE.listen({
                     next: (event: {
                         type: string
@@ -157,8 +160,14 @@ export class RNLedgerService implements LedgerService {
                             rssi: rssi ?? null,
                         })
                     },
-                    error: () => {
-                        // Scan errors are handled via the hook layer timeout
+                    error: (err: unknown) => {
+                        if (onError) {
+                            const classified =
+                                err instanceof Error
+                                    ? classifyLedgerError(err)
+                                    : new LedgerConnectionError(String(err))
+                            onError(classified)
+                        }
                     },
                     complete: () => {},
                 })

@@ -15,6 +15,7 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import type {
     LedgerDevice,
     LedgerTransport,
+    LedgerTransportProvider,
     LedgerConnectionStatus,
 } from '@perawallet/wallet-core-ledger'
 import { LEDGER_SCAN_TIMEOUT_MS } from '@perawallet/wallet-core-ledger'
@@ -41,9 +42,17 @@ export const useLedgerConnection = (): UseLedgerConnectionResult => {
         useState<LedgerConnectionStatus>('disconnected')
     const [error, setError] = useState<Error | null>(null)
 
+    const providerRef = useRef<LedgerTransportProvider | null>(null)
     const stopScanRef = useRef<(() => void) | null>(null)
     const scanTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const transportRef = useRef<LedgerTransport | null>(null)
+
+    const getOrCreateProvider = useCallback((): LedgerTransportProvider => {
+        if (!providerRef.current) {
+            providerRef.current = getProvider().ledger.createTransportProvider()
+        }
+        return providerRef.current
+    }, [])
 
     const stopScan = useCallback(() => {
         stopScanRef.current?.()
@@ -61,21 +70,27 @@ export const useLedgerConnection = (): UseLedgerConnectionResult => {
         setIsScanning(true)
         setConnectionStatus('scanning')
 
-        const provider = getProvider().ledger.createTransportProvider()
+        const provider = getOrCreateProvider()
         const seenIds = new Set<string>()
 
-        const stop = provider.scan((device: LedgerDevice) => {
-            if (seenIds.has(device.id)) return
-            seenIds.add(device.id)
-            setDevices(prev => [...prev, device])
-        })
+        const stop = provider.scan(
+            (device: LedgerDevice) => {
+                if (seenIds.has(device.id)) return
+                seenIds.add(device.id)
+                setDevices(prev => [...prev, device])
+            },
+            (err: Error) => {
+                setError(err)
+                stopScan()
+            },
+        )
 
         stopScanRef.current = stop
 
         scanTimeoutRef.current = setTimeout(() => {
             stopScan()
         }, LEDGER_SCAN_TIMEOUT_MS)
-    }, [stopScan])
+    }, [stopScan, getOrCreateProvider])
 
     const connect = useCallback(
         async (deviceId: string): Promise<LedgerTransport> => {
@@ -84,7 +99,7 @@ export const useLedgerConnection = (): UseLedgerConnectionResult => {
             setError(null)
 
             try {
-                const provider = getProvider().ledger.createTransportProvider()
+                const provider = getOrCreateProvider()
                 const transport = await provider.connect(deviceId)
                 transportRef.current = transport
                 setConnectionStatus('connected')
@@ -97,7 +112,7 @@ export const useLedgerConnection = (): UseLedgerConnectionResult => {
                 throw connectError
             }
         },
-        [stopScan],
+        [stopScan, getOrCreateProvider],
     )
 
     const disconnect = useCallback(async () => {

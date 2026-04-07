@@ -106,9 +106,8 @@ describe('webview/utils - getAccountType', () => {
             getAccountType({
                 ...baseAccount,
                 type: 'hardware',
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 hardwareDetails: {
-                    manufacturer: 'other' as any,
+                    manufacturer: 'other' as unknown as 'ledger',
                     deviceId: 'test-device',
                     deviceName: 'Test',
                     accountIndex: 0,
