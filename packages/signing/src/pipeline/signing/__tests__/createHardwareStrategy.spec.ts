@@ -32,7 +32,9 @@ import type {
 import type {
     HardwareWalletTransportProvider,
     HardwareWalletTransport,
+    HardwareWalletRegistry,
 } from '@perawallet/wallet-core-hardware-wallet'
+import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 
 const SIGNER_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
@@ -102,21 +104,31 @@ const makeMockProvider = (
     isSupported: vi.fn().mockResolvedValue(true),
 })
 
+const makeRegistry = (
+    provider: HardwareWalletTransportProvider,
+): HardwareWalletRegistry => {
+    const registry = createHardwareWalletRegistry()
+    registry.register(provider)
+    return registry
+}
+
 describe('createHardwareStrategy', () => {
     let mockTransport: HardwareWalletTransport
     let mockProvider: HardwareWalletTransportProvider
+    let mockRegistry: HardwareWalletRegistry
     let encodeTransaction: EncodeTransactionFunction
 
     beforeEach(() => {
         mockTransport = makeMockTransport()
         mockProvider = makeMockProvider(mockTransport)
+        mockRegistry = makeRegistry(mockProvider)
         encodeTransaction = vi.fn().mockReturnValue(new Uint8Array([0xaa]))
     })
 
     describe('canSign', () => {
         it('returns true for hardware wallet accounts', () => {
             const strategy = createHardwareStrategy({
-                transportProvider: mockProvider,
+                hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
             })
             expect(strategy.canSign(makeLedgerAccount())).toBe(true)
@@ -124,7 +136,7 @@ describe('createHardwareStrategy', () => {
 
         it('returns false for non-hardware accounts', () => {
             const strategy = createHardwareStrategy({
-                transportProvider: mockProvider,
+                hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
             })
             const algo25Account = {
@@ -139,7 +151,7 @@ describe('createHardwareStrategy', () => {
     describe('sign', () => {
         it('signs transactions sequentially and returns result', async () => {
             const strategy = createHardwareStrategy({
-                transportProvider: mockProvider,
+                hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
             })
             const txns = [mockTransaction(), mockTransaction()]
@@ -167,8 +179,9 @@ describe('createHardwareStrategy', () => {
                 }),
             }
             const provider = makeMockProvider(transport)
+            const registry = makeRegistry(provider)
             const strategy = createHardwareStrategy({
-                transportProvider: provider,
+                hardwareWalletRegistry: registry,
                 encodeTransaction,
             })
 
@@ -186,7 +199,7 @@ describe('createHardwareStrategy', () => {
 
         it('skips transactions not in indicesToSign', async () => {
             const strategy = createHardwareStrategy({
-                transportProvider: mockProvider,
+                hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
             })
             const txns = [
@@ -209,7 +222,7 @@ describe('createHardwareStrategy', () => {
 
         it('sets authAddress when signer differs from sender', async () => {
             const strategy = createHardwareStrategy({
-                transportProvider: mockProvider,
+                hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
             })
             const txns = [mockTransaction(DIFFERENT_SENDER)]
@@ -225,7 +238,7 @@ describe('createHardwareStrategy', () => {
 
         it('does not set authAddress when signer matches sender', async () => {
             const strategy = createHardwareStrategy({
-                transportProvider: mockProvider,
+                hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
             })
             const txns = [mockTransaction(SIGNER_ADDRESS)]
@@ -247,8 +260,9 @@ describe('createHardwareStrategy', () => {
                     .mockRejectedValue(new Error('BLE failure')),
             }
             const provider = makeMockProvider(transport)
+            const registry = makeRegistry(provider)
             const strategy = createHardwareStrategy({
-                transportProvider: provider,
+                hardwareWalletRegistry: registry,
                 encodeTransaction,
             })
             const group = makeGroup([mockTransaction()], [0])
@@ -261,7 +275,7 @@ describe('createHardwareStrategy', () => {
 
         it('verifies Algorand app is open before signing using correct account index', async () => {
             const strategy = createHardwareStrategy({
-                transportProvider: mockProvider,
+                hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
             })
             const group = makeGroup([mockTransaction()], [0])
@@ -272,7 +286,7 @@ describe('createHardwareStrategy', () => {
 
         it('fires progress callbacks in order', async () => {
             const strategy = createHardwareStrategy({
-                transportProvider: mockProvider,
+                hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
             })
             const txns = [
@@ -293,7 +307,7 @@ describe('createHardwareStrategy', () => {
 
         it('throws CannotSignError for non-hardware wallet accounts', async () => {
             const strategy = createHardwareStrategy({
-                transportProvider: mockProvider,
+                hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
             })
             const algo25Account = {
@@ -321,7 +335,7 @@ describe('createHardwareStrategy', () => {
 
         it('calls onSigningStart before signing loop', async () => {
             const strategy = createHardwareStrategy({
-                transportProvider: mockProvider,
+                hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
             })
             const group = makeGroup([mockTransaction()], [0])
@@ -340,8 +354,9 @@ describe('createHardwareStrategy', () => {
                     .mockRejectedValue(new Error('BLE failure')),
             }
             const provider = makeMockProvider(transport)
+            const registry = makeRegistry(provider)
             const strategy = createHardwareStrategy({
-                transportProvider: provider,
+                hardwareWalletRegistry: registry,
                 encodeTransaction,
             })
             const group = makeGroup([mockTransaction()], [0])
@@ -357,7 +372,7 @@ describe('createHardwareStrategy', () => {
 
         it('calls onHardwarePrompt with connect and approve', async () => {
             const strategy = createHardwareStrategy({
-                transportProvider: mockProvider,
+                hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
             })
             const group = makeGroup([mockTransaction()], [0])
@@ -389,8 +404,9 @@ describe('createHardwareStrategy', () => {
                     .mockRejectedValue(new Error('disconnect failed')),
             }
             const provider = makeMockProvider(transport)
+            const registry = makeRegistry(provider)
             const strategy = createHardwareStrategy({
-                transportProvider: provider,
+                hardwareWalletRegistry: registry,
                 encodeTransaction,
             })
             const group = makeGroup([mockTransaction()], [0])
@@ -402,7 +418,7 @@ describe('createHardwareStrategy', () => {
 
         it('throws HardwareWalletError for non-transaction data types', async () => {
             const strategy = createHardwareStrategy({
-                transportProvider: mockProvider,
+                hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
             })
             const group = {

@@ -14,7 +14,6 @@ import { fromPromise } from 'xstate'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { isHardwareWalletAccount } from '@perawallet/wallet-core-accounts'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
-import type { HardwareWalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     AnalyzedSignableGroup,
     SigningCallbacks,
@@ -36,8 +35,8 @@ export type HardwareSignerActorInput = {
  * XState actor for hardware wallet signing.
  *
  * Signs one or more transaction groups using the hardware strategy,
- * resolving the correct transport provider from the registry based on
- * each account's manufacturer.
+ * which resolves the correct transport provider from the registry
+ * based on each account's manufacturer at sign-time.
  */
 export const hardwareSignerActor = fromPromise<
     SigningResult[],
@@ -45,6 +44,11 @@ export const hardwareSignerActor = fromPromise<
 >(async ({ input }) => {
     const { groups, allAccounts, hardwareWalletRegistry, encodeTransaction } =
         input
+
+    const strategy = createHardwareStrategy({
+        hardwareWalletRegistry,
+        encodeTransaction,
+    })
 
     const results: SigningResult[] = []
 
@@ -58,22 +62,6 @@ export const hardwareSignerActor = fromPromise<
                 `Hardware wallet signer account not found for address ${group.signerAddress}`,
             )
         }
-
-        const { manufacturer } = (signerAccount as HardwareWalletAccount)
-            .hardwareDetails
-        const transportProvider =
-            hardwareWalletRegistry.getProvider(manufacturer)
-
-        if (!transportProvider) {
-            throw new HardwareWalletError(
-                `No hardware wallet provider registered for manufacturer: ${manufacturer}`,
-            )
-        }
-
-        const strategy = createHardwareStrategy({
-            transportProvider,
-            encodeTransaction,
-        })
 
         const result = await strategy.sign(
             group,

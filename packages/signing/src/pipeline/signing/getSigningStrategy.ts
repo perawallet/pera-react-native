@@ -65,7 +65,7 @@ export const createSigningStrategySelector = (
 ) => SigningStrategy) => {
     const localStrategy = createLocalKeyStrategy(options.signTransactions)
     const hardwareStrategy = createHardwareStrategy({
-        transportProvider: options.hardwareWalletRegistry?.getAllProviders()[0],
+        hardwareWalletRegistry: options.hardwareWalletRegistry,
         encodeTransaction: options.encodeTransaction,
     })
 

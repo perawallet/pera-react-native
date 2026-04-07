@@ -17,7 +17,7 @@ import type {
 import { isHardwareWalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     HardwareWalletTransport,
-    HardwareWalletTransportProvider,
+    HardwareWalletRegistry,
 } from '@perawallet/wallet-core-hardware-wallet'
 import type {
     PeraTransaction,
@@ -39,7 +39,7 @@ import { CannotSignError, HardwareWalletError, SigningError } from '../errors'
 export type EncodeTransactionFunction = (tx: PeraTransaction) => Uint8Array
 
 export type HardwareStrategyOptions = {
-    transportProvider?: HardwareWalletTransportProvider
+    hardwareWalletRegistry?: HardwareWalletRegistry
     encodeTransaction: EncodeTransactionFunction
 }
 
@@ -50,7 +50,7 @@ export type HardwareStrategyOptions = {
 export const createHardwareStrategy = (
     options: HardwareStrategyOptions,
 ): SigningStrategy => {
-    const { transportProvider, encodeTransaction } = options
+    const { hardwareWalletRegistry, encodeTransaction } = options
 
     return {
         canSign: (account: WalletAccount): boolean => {
@@ -69,12 +69,6 @@ export const createHardwareStrategy = (
                 )
             }
 
-            if (!transportProvider) {
-                throw new HardwareWalletError(
-                    'Hardware wallet transport is not available on this platform',
-                )
-            }
-
             if (group.data.type !== 'transactions') {
                 throw new HardwareWalletError(
                     'Hardware wallet only supports transaction signing',
@@ -82,7 +76,17 @@ export const createHardwareStrategy = (
             }
 
             const hwAccount = account as HardwareWalletAccount
-            const { deviceId, accountIndex } = hwAccount.hardwareDetails
+            const { deviceId, accountIndex, manufacturer } =
+                hwAccount.hardwareDetails
+
+            const transportProvider =
+                hardwareWalletRegistry?.getProvider(manufacturer)
+
+            if (!transportProvider) {
+                throw new HardwareWalletError(
+                    'Hardware wallet transport is not available on this platform',
+                )
+            }
 
             let transport: HardwareWalletTransport | undefined
 

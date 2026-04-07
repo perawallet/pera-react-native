@@ -248,8 +248,6 @@ describe('hardwareSignerActor', () => {
         const actor = createActor(hardwareSignerActor, { input })
         actor.start()
 
-        await expect(toPromise(actor)).rejects.toThrow(
-            'No hardware wallet provider registered for manufacturer: ledger',
-        )
+        await expect(toPromise(actor)).rejects.toThrow('not available')
     })
 })
