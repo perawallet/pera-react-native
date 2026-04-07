@@ -65,7 +65,7 @@ export const AccountDisplay = ({
 
     const renderSecondary = useMemo(
         () => nfdName || displayName === address,
-        [displayName, address],
+        [nfdName, displayName, address],
     )
 
     return (

@@ -26,7 +26,7 @@ import { useNfdForAddress } from '@perawallet/wallet-core-nfd'
 import { useClipboard } from '@hooks/useClipboard'
 
 import { SvgProps } from 'react-native-svg'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
@@ -95,21 +95,19 @@ export const AddressDisplay = ({
               ? truncateAlgorandAddress(address, LONG_ADDRESS_FORMAT)
               : truncateAlgorandAddress(address)
 
-    return (
-        <CopyableText
-            {...rest}
-            copyValue={address}
-            style={[styles.addressValueContainer, rest.style]}
-        >
-            {!!account && (
+    const renderAddressView = useCallback(() => {
+        if (account) {
+            return (
                 <AccountDisplay
                     account={account}
                     textProps={textProps}
                     showChevron={false}
                 />
-            )}
+            )
+        }
 
-            {!!contact && !account && (
+        if (contact) {
+            return (
                 <PWView style={styles.contactContainer}>
                     <ContactAvatar
                         size='md'
@@ -117,9 +115,11 @@ export const AddressDisplay = ({
                     />
                     <PWText {...textProps}>{contact.name}</PWText>
                 </PWView>
-            )}
+            )
+        }
 
-            {!!nfdName && !contact && !account && (
+        if (nfdName) {
+            return (
                 <PWView style={styles.contactContainer}>
                     <PWIcon
                         name={`accounts/${isDarkMode ? 'dark' : 'light'}/algo25-account`}
@@ -127,19 +127,29 @@ export const AddressDisplay = ({
                     />
                     <PWText {...textProps}>{nfdName}</PWText>
                 </PWView>
-            )}
+            )
+        }
 
-            {!nfdName && !contact && !account && (
-                <PWView style={styles.contactContainer}>
-                    {forceShowIcon && (
-                        <PWIcon
-                            name={`accounts/${isDarkMode ? 'dark' : 'light'}/algo25-account`}
-                            size='lg'
-                        />
-                    )}
-                    <PWText {...textProps}>{truncatedAddress}</PWText>
-                </PWView>
-            )}
+        return (
+            <PWView style={styles.contactContainer}>
+                {forceShowIcon && (
+                    <PWIcon
+                        name={`accounts/${isDarkMode ? 'dark' : 'light'}/algo25-account`}
+                        size='lg'
+                    />
+                )}
+                <PWText {...textProps}>{truncatedAddress}</PWText>
+            </PWView>
+        )
+    }, [account, contact, nfdName, isDarkMode, forceShowIcon, truncatedAddress, textProps, styles.contactContainer])
+
+    return (
+        <CopyableText
+            {...rest}
+            copyValue={address}
+            style={[styles.addressValueContainer, rest.style]}
+        >
+            {renderAddressView()}
 
             {showCopy && (
                 <PWIcon
