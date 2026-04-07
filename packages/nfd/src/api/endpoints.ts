@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import {
+    queryClient,
+    logger,
+    type Network,
+} from '@perawallet/wallet-core-shared'
 import type { NfdBulkResult, NfdName, NfdSearchResult } from '../models'
 import {
     nfdNamesListResponseSchema,
@@ -46,8 +50,14 @@ export const fetchNfdNamesForAddress = async (
         signal,
     })
 
-    const validated = nfdNamesListResponseSchema.parse(response.data)
-    return transformNfdNamesList(validated)
+    const result = nfdNamesListResponseSchema.safeParse(response.data)
+    if (!result.success) {
+        logger.warn('NFD names response failed schema validation', {
+            error: result.error,
+        })
+        return []
+    }
+    return transformNfdNamesList(result.data)
 }
 
 export type FetchNfdBulkReadParams = {
@@ -71,8 +81,14 @@ export const fetchNfdBulkRead = async (
         signal,
     })
 
-    const validated = nfdBulkReadResponseSchema.parse(response.data)
-    return transformBulkResults(validated)
+    const result = nfdBulkReadResponseSchema.safeParse(response.data)
+    if (!result.success) {
+        logger.warn('NFD bulk read response failed schema validation', {
+            error: result.error,
+        })
+        return []
+    }
+    return transformBulkResults(result.data)
 }
 
 export type FetchNfdSearchParams = {
@@ -96,6 +112,12 @@ export const fetchNfdSearch = async (
         signal,
     })
 
-    const validated = nfdSearchResponseSchema.parse(response.data)
-    return transformSearchResults(validated)
+    const result = nfdSearchResponseSchema.safeParse(response.data)
+    if (!result.success) {
+        logger.warn('NFD search response failed schema validation', {
+            error: result.error,
+        })
+        return []
+    }
+    return transformSearchResults(result.data)
 }

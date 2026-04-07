@@ -16,6 +16,7 @@ import {
     useNetwork,
     isValidAlgorandAddress,
 } from '@perawallet/wallet-core-blockchain'
+import { config } from '@perawallet/wallet-core-config'
 import { fetchNfdNamesForAddress } from '../api'
 import { nfdQueryKeys } from './querykeys'
 
@@ -37,6 +38,8 @@ export const useNfdForAddress = (
         queryFn: ({ signal }) =>
             fetchNfdNamesForAddress({ address, network, signal }),
         enabled,
+        staleTime: config.reactQueryLongLivedStaleTime,
+        gcTime: config.reactQueryLongLivedGCTime,
     })
 
     const nfdName = useMemo(() => data?.at(0)?.name, [data])

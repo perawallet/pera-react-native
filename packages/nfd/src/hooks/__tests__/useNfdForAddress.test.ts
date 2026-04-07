@@ -28,6 +28,13 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         !!address && /^[0-9a-zA-Z]{58}$/.test(address),
 }))
 
+vi.mock('@perawallet/wallet-core-config', () => ({
+    config: {
+        reactQueryLongLivedStaleTime: 7 * 24 * 60 * 60 * 1000,
+        reactQueryLongLivedGCTime: 21 * 24 * 60 * 60 * 1000,
+    },
+}))
+
 const VALID_ADDRESS = 'A'.repeat(58)
 
 describe('useNfdForAddress', () => {

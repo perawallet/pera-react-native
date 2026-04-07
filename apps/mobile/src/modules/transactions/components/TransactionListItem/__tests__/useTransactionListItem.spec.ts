@@ -46,7 +46,7 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     }
 })
 
-vi.mock('@perawallet/wallet-core-nfd', () => ({
+vi.mock('@hooks/useResolvedAddress', () => ({
     useResolvedAddress: vi.fn(() => ({
         displayName: '',
         isNfd: false,

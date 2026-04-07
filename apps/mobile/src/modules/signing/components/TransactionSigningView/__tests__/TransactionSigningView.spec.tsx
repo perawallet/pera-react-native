@@ -76,6 +76,9 @@ vi.mock('@perawallet/wallet-core-nfd', () => ({
         nfdName: undefined,
         isResolving: false,
     })),
+}))
+
+vi.mock('@hooks/useResolvedAddress', () => ({
     useResolvedAddress: vi.fn(() => ({
         displayName: '',
         isNfd: false,

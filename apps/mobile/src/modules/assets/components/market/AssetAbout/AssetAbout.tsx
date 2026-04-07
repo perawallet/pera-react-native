@@ -12,7 +12,7 @@
 
 import { useStyles } from './styles'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
-import { useResolvedAddress } from '@perawallet/wallet-core-nfd'
+import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { PWButton, PWText, PWView } from '@components/core'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'

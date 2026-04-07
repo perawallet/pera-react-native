@@ -11,19 +11,18 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { useResolvedAddress } from '@perawallet/wallet-core-nfd'
-import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
-import {
-    microAlgosToAlgos,
-    baseUnitsToDisplayUnits,
-} from '@perawallet/wallet-core-blockchain'
 import { Decimal } from 'decimal.js'
-
+import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
     ALGO_ASSET,
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
+import {
+    microAlgosToAlgos,
+    baseUnitsToDisplayUnits,
+} from '@perawallet/wallet-core-blockchain'
+import type { TransactionHistoryItem } from '@perawallet/wallet-core-transactions'
+import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
 import { getTransactionIconType } from './utils'
 

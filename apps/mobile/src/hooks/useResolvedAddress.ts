@@ -11,7 +11,7 @@
  */
 
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { useNfdForAddress } from './useNfdForAddress'
+import { useNfdForAddress } from '@perawallet/wallet-core-nfd'
 
 const LONG_ADDRESS_LENGTH = 20
 

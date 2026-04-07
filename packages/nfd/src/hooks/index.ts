@@ -11,7 +11,5 @@
  */
 
 export { useNfdForAddress } from './useNfdForAddress'
-export { useResolvedAddress } from './useResolvedAddress'
-export type { AddressFormat } from './useResolvedAddress'
 export { useNfdSearch } from './useNfdSearch'
 export { nfdQueryKeys } from './querykeys'

@@ -25,7 +25,7 @@ import {
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PWText, PWView } from '@components/core'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
-import { useResolvedAddress } from '@perawallet/wallet-core-nfd'
+import { useResolvedAddress } from '@hooks/useResolvedAddress'
 
 const getInnerTransactionCount = (tx: PeraDisplayableTransaction): number => {
     return tx.innerTxns?.length ?? 0

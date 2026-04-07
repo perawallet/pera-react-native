@@ -19,6 +19,7 @@
   "dependencies": {
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-core-blockchain": "workspace:*",
+    "@perawallet/wallet-core-config": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@tanstack/react-query": "catalog:",
     "react": "catalog:",

@@ -15,7 +15,7 @@ import {
     getAccountDisplayName,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useResolvedAddress } from '@perawallet/wallet-core-nfd'
+import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { useCallback, useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useStyles } from './styles'

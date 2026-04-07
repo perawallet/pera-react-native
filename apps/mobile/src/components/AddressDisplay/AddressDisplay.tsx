@@ -141,7 +141,16 @@ export const AddressDisplay = ({
                 <PWText {...textProps}>{truncatedAddress}</PWText>
             </PWView>
         )
-    }, [account, contact, nfdName, isDarkMode, forceShowIcon, truncatedAddress, textProps, styles.contactContainer])
+    }, [
+        account,
+        contact,
+        nfdName,
+        isDarkMode,
+        forceShowIcon,
+        truncatedAddress,
+        textProps,
+        styles.contactContainer,
+    ])
 
     return (
         <CopyableText

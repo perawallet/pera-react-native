@@ -44,6 +44,8 @@ export const configSchema = z.object({
     reactQueryDefaultStaleTime: z.number().int(),
     reactQueryShortLivedGCTime: z.number().int(),
     reactQueryShortLivedStaleTime: z.number().int(),
+    reactQueryLongLivedGCTime: z.number().int(),
+    reactQueryLongLivedStaleTime: z.number().int(),
     reactQueryPersistenceAge: z.number().int(),
 
     discoverBaseUrl: z.url(),
@@ -137,6 +139,11 @@ const productionConfig = {
     reactQueryDefaultStaleTime: ONE_MINUTE,
     reactQueryShortLivedGCTime: 60 * ONE_DAY,
     reactQueryShortLivedStaleTime: 30 * ONE_SECOND,
+    // Capped under setTimeout's 32-bit signed int limit (~24.8 days). Going
+    // higher causes Node's setTimeout to clamp the value to 1ms, which would
+    // make React Query GC immediately.
+    reactQueryLongLivedGCTime: 21 * ONE_DAY,
+    reactQueryLongLivedStaleTime: 7 * ONE_DAY,
     reactQueryPersistenceAge: 60 * ONE_DAY,
 
     debugEnabled: false,
