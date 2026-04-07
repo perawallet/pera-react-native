@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import React, { useCallback, useMemo, useState } from 'react'
-import { FlatList, useWindowDimensions } from 'react-native'
+import React, { useCallback, useState } from 'react'
+import { useWindowDimensions } from 'react-native'
 import {
     PWIcon,
     PWIconSize,
@@ -22,7 +22,7 @@ import {
 import { VideoPlayer } from '@components/VideoPlayer'
 import { AudioPlayer } from '@components/AudioPlayer'
 import { useStyles } from './styles'
-import { useTheme } from '@rneui/themed'
+import PagerView from 'react-native-pager-view'
 
 export type MediaItem = {
     type: string
@@ -45,13 +45,8 @@ export const MediaCarousel = ({
     onItemPress,
     onFullScreenPress,
 }: MediaCarouselProps) => {
-    const styles = useStyles()
-    const { theme } = useTheme()
-    const { width: windowWidth } = useWindowDimensions()
-    const videoWidth = useMemo(
-        () => windowWidth - 2 * theme.spacing.lg,
-        [windowWidth],
-    )
+    const dimensions = useWindowDimensions()
+    const styles = useStyles(dimensions)
     const [activeIndex, setActiveIndex] = useState(0)
 
     const displayMedia = media.filter(
@@ -63,20 +58,20 @@ export const MediaCarousel = ({
         ({ item, index }: { item?: MediaItem; index: number }) => {
             const downloadUri = item?.downloadUrl
             return (
-                <PWView style={styles.carouselItem}>
+                <PWView
+                    style={styles.carouselItem}
+                    key={`media-${index}`}
+                >
                     {item?.type === 'video' && downloadUri ? (
                         <VideoPlayer
                             uri={downloadUri}
-                            width={videoWidth}
-                            height={windowWidth}
                             style={styles.videoPlayer}
+                            autoPlay={index === activeIndex}
                         />
                     ) : item?.type === 'audio' && downloadUri ? (
                         <AudioPlayer
                             uri={downloadUri}
                             posterUri={item?.previewUrl ?? fallbackImageUrl}
-                            width={videoWidth}
-                            height={windowWidth}
                             style={styles.videoPlayer}
                         />
                     ) : item?.previewUrl ||
@@ -118,7 +113,7 @@ export const MediaCarousel = ({
             onItemPress,
             onFullScreenPress,
             fallbackImageUrl,
-            windowWidth,
+            activeIndex,
         ],
     )
 
@@ -133,21 +128,20 @@ export const MediaCarousel = ({
 
     return (
         <PWView style={styles.container}>
-            <FlatList
-                data={displayMedia}
-                renderItem={renderMediaItem}
-                keyExtractor={(_, index) => `media-${index}`}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onMomentumScrollEnd={e => {
-                    const index = Math.round(
-                        e.nativeEvent.contentOffset.x /
-                            e.nativeEvent.layoutMeasurement.width,
-                    )
-                    setActiveIndex(index)
-                }}
-            />
+            <PagerView
+                style={{ flex: 1, height: dimensions.width }}
+                onPageSelected={e => setActiveIndex(e.nativeEvent.position)}
+            >
+                {displayMedia.map((item, index) => (
+                    <PWView
+                        key={index}
+                        style={styles.carouselItem}
+                    >
+                        {renderMediaItem({ item, index })}
+                    </PWView>
+                ))}
+            </PagerView>
+
             <PWView style={styles.indicator}>
                 {displayMedia.map((_, i) => (
                     <PWView

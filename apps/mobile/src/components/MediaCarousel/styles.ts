@@ -11,57 +11,70 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { ScaledSize } from 'react-native'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        width: '100%',
-        aspectRatio: 1,
-    },
-    image: {
-        margin: theme.spacing.lg,
-        borderRadius: theme.borderRadius.lg,
-        overflow: 'hidden',
-    },
-    videoPlayer: {
-        margin: theme.spacing.lg,
-        borderRadius: theme.borderRadius.lg,
-        overflow: 'hidden',
-    },
-    imageContainer: {
-        width: '100%',
-        height: '100%',
-    },
-    placeholder: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    fullScreenButton: {
-        position: 'absolute',
-        bottom: theme.spacing.xl,
-        right: theme.spacing.xl,
-        borderRadius: theme.borderRadius.sm,
-        backgroundColor: theme.colors.nftIconBg,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    carouselItem: {
-        width: '100%',
-        aspectRatio: 1,
-    },
-    indicator: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        gap: theme.spacing.xs,
-        marginTop: theme.spacing.sm,
-    },
-    dot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-        backgroundColor: theme.colors.layerGrayLighter,
-    },
-    dotActive: {
-        backgroundColor: theme.colors.textMain,
-    },
-}))
+export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
+    const maxWidth = dimensions.width - 2 * theme.spacing.lg
+    const maxHeight = dimensions.width - 2 * theme.spacing.lg
+
+    return {
+        container: {},
+        image: {
+            width: '100%',
+            height: '100%',
+            margin: theme.spacing.lg,
+            borderRadius: theme.borderRadius.lg,
+            overflow: 'hidden',
+            maxWidth,
+            maxHeight,
+        },
+        videoPlayer: {
+            width: '100%',
+            height: '100%',
+            margin: theme.spacing.lg,
+            borderRadius: theme.borderRadius.lg,
+            overflow: 'hidden',
+            maxWidth,
+            maxHeight,
+        },
+        imageContainer: {
+            width: '100%',
+            height: '100%',
+        },
+        placeholder: {
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        fullScreenButton: {
+            position: 'absolute',
+            bottom: theme.spacing.xl,
+            right: 0,
+            borderRadius: theme.borderRadius.sm,
+            backgroundColor: theme.colors.nftIconBg,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        carouselItem: {
+            width: '100%',
+            height: '100%',
+            maxWidth,
+            maxHeight,
+        },
+        indicator: {
+            flexDirection: 'row',
+            justifyContent: 'center',
+            gap: theme.spacing.xs,
+            marginTop: theme.spacing.sm,
+        },
+        dot: {
+            width: 6,
+            height: 6,
+            borderRadius: 3,
+            backgroundColor: theme.colors.layerGrayLighter,
+        },
+        dotActive: {
+            backgroundColor: theme.colors.textMain,
+        },
+    }
+})
