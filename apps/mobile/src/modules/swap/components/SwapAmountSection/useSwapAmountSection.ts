@@ -53,8 +53,12 @@ export const useSwapAmountSection = ({
     const [isFocused, setIsFocused] = useState(false)
 
     useEffect(() => {
-        if (amount === null) setRawText('')
-    }, [amount])
+        if (amount === null) {
+            setRawText('')
+        } else if (!isFocused) {
+            setRawText(amount.toString())
+        }
+    }, [amount, isFocused])
 
     const displayValue = useMemo(() => {
         if (!isPay) return amount ? amount.toString() : ''

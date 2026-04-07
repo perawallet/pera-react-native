@@ -1276,6 +1276,20 @@
             "search_placeholder": "Search by name or ID",
             "no_results_title": "No Matching Assets",
             "no_results_body": "No assets matched your search term"
+        },
+        "configuration": {
+            "title": "Swap settings",
+            "apply": "Apply",
+            "balance_percentage": "Balance percentage",
+            "balance_custom_hint": "Set custom percentage",
+            "balance_error": "Balance percentage must be between {{min}} and {{max}}",
+            "slippage_tolerance": "Slippage tolerance",
+            "slippage_custom_hint": "Set custom slippage",
+            "slippage_error": "Slippage must be between {{min}} and {{max}}",
+            "primary_currency": "Primary currency",
+            "use_local_currency": "Use local currency",
+            "custom": "Custom",
+            "max": "MAX"
         }
     },
     "ledger": {

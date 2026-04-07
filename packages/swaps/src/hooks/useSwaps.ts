@@ -12,16 +12,29 @@
 
 import { useSwapsStore } from '../store'
 
-export const useSwaps = () => {
+type UseSwapsResult = {
+    fromAsset: string
+    toAsset: string
+    slippage: string | null
+    setFromAsset: (fromAsset: string) => void
+    setToAsset: (toAsset: string) => void
+    setSlippage: (slippage: string | null) => void
+}
+
+export const useSwaps = (): UseSwapsResult => {
     const fromAsset = useSwapsStore(state => state.fromAsset)
     const toAsset = useSwapsStore(state => state.toAsset)
+    const slippage = useSwapsStore(state => state.slippage)
     const setFromAsset = useSwapsStore(state => state.setFromAsset)
     const setToAsset = useSwapsStore(state => state.setToAsset)
+    const setSlippage = useSwapsStore(state => state.setSlippage)
 
     return {
         fromAsset,
         toAsset,
+        slippage,
         setFromAsset,
         setToAsset,
+        setSlippage,
     }
 }

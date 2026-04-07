@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-export { SwapAmountSection } from './SwapAmountSection'
-export type { SwapAmountSectionProps } from './SwapAmountSection'
-export { SwapForm } from './SwapForm'
-export { SwapIntroduction } from './SwapIntroduction'
-export { SwapAssetSelectionBottomSheet } from './SwapAssetSelectionBottomSheet'
-export { SwapAssetSelector } from './SwapAssetSelector'
-export { SwapConfigurationBottomSheet } from './SwapConfigurationBottomSheet'
-export type { SwapConfigurationBottomSheetProps } from './SwapConfigurationBottomSheet'
+export const MIN_BALANCE_PERCENT = 1
+export const MAX_BALANCE_PERCENT = 100
+export const MIN_SLIPPAGE = 0.01
+export const MAX_SLIPPAGE = 10
+
+export const BALANCE_PRESETS = [25, 50, 75, 100] as const
+export const SLIPPAGE_PRESETS = [0.5, 1, 2, 5] as const
+
+export const CUSTOM_SLIPPAGE_KEY = 'custom'

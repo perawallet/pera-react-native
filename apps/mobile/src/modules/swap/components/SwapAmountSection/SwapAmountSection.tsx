@@ -110,6 +110,7 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
 
                 <SwapAssetSelector
                     assetId={assetId}
+                    variant={variant}
                     onPress={onAssetPress}
                 />
             </PWView>

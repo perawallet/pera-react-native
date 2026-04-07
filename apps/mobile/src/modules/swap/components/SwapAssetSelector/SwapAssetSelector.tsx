@@ -19,15 +19,17 @@ import { useStyles } from './styles'
 
 export type SwapAssetSelectorProps = {
     assetId: string
+    variant: 'pay' | 'receive'
     onPress: () => void
 }
 
 export const SwapAssetSelector = ({
     assetId,
+    variant,
     onPress,
 }: SwapAssetSelectorProps) => {
     const { t } = useLanguage()
-    const styles = useStyles()
+    const styles = useStyles({ variant })
 
     const { data: assets } = useAssetsQuery([assetId])
 

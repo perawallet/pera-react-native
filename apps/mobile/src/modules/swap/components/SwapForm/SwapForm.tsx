@@ -13,6 +13,7 @@
 import { PWScrollView } from '@components/core'
 import { SwapAssetSelectionBottomSheet } from '../SwapAssetSelectionBottomSheet'
 import { SwapAmountSection } from '../SwapAmountSection'
+import { SwapConfigurationBottomSheet } from '../SwapConfigurationBottomSheet'
 import { SwapFormControls } from './SwapFormControls'
 import { useSwapForm } from './useSwapForm'
 import { useStyles } from './styles'
@@ -28,11 +29,13 @@ export const SwapForm = () => {
         receiveBalance,
         payAssetModal,
         receiveAssetModal,
+        configModal,
         handlePayAmountChange,
         handleSwapDirection,
         handleMaxPress,
         handlePayAssetSelected,
         handleReceiveAssetSelected,
+        handleConfigApply,
     } = useSwapForm()
 
     return (
@@ -50,6 +53,7 @@ export const SwapForm = () => {
                 <SwapFormControls
                     onSwapPress={handleSwapDirection}
                     onMaxPress={handleMaxPress}
+                    onConfigurePress={configModal.open}
                 />
 
                 <SwapAmountSection
@@ -71,6 +75,12 @@ export const SwapForm = () => {
                 isVisible={receiveAssetModal.isOpen}
                 onClose={receiveAssetModal.close}
                 onAssetSelected={handleReceiveAssetSelected}
+            />
+
+            <SwapConfigurationBottomSheet
+                isVisible={configModal.isOpen}
+                onClose={configModal.close}
+                onApply={handleConfigApply}
             />
         </>
     )
