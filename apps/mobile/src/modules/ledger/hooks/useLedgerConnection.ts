@@ -13,46 +13,48 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type {
-    LedgerDevice,
-    LedgerTransport,
-    LedgerTransportProvider,
-    LedgerConnectionStatus,
-} from '@perawallet/wallet-core-ledger'
+    HardwareWalletDevice,
+    HardwareWalletTransport,
+    HardwareWalletTransportProvider,
+    HardwareWalletConnectionStatus,
+} from '@perawallet/wallet-core-hardware-wallet'
 import { LEDGER_SCAN_TIMEOUT_MS } from '@perawallet/wallet-core-ledger'
 
 type UseLedgerConnectionResult = {
-    devices: LedgerDevice[]
+    devices: HardwareWalletDevice[]
     isScanning: boolean
-    connectionStatus: LedgerConnectionStatus
+    connectionStatus: HardwareWalletConnectionStatus
     startScan: () => void
     stopScan: () => void
-    connect: (deviceId: string) => Promise<LedgerTransport>
+    connect: (deviceId: string) => Promise<HardwareWalletTransport>
     disconnect: () => Promise<void>
     error: Error | null
 }
 
 /**
  * Hook that manages BLE scanning and connection to Ledger devices.
- * Uses the platform LedgerService via getProvider().ledger.
+ * Uses the hardware wallet registry via getProvider().hardwareWalletRegistry.
  */
 export const useLedgerConnection = (): UseLedgerConnectionResult => {
-    const [devices, setDevices] = useState<LedgerDevice[]>([])
+    const [devices, setDevices] = useState<HardwareWalletDevice[]>([])
     const [isScanning, setIsScanning] = useState(false)
     const [connectionStatus, setConnectionStatus] =
-        useState<LedgerConnectionStatus>('disconnected')
+        useState<HardwareWalletConnectionStatus>('disconnected')
     const [error, setError] = useState<Error | null>(null)
 
-    const providerRef = useRef<LedgerTransportProvider | null>(null)
+    const providerRef = useRef<HardwareWalletTransportProvider | null>(null)
     const stopScanRef = useRef<(() => void) | null>(null)
     const scanTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const transportRef = useRef<LedgerTransport | null>(null)
+    const transportRef = useRef<HardwareWalletTransport | null>(null)
 
-    const getOrCreateProvider = useCallback((): LedgerTransportProvider => {
-        if (!providerRef.current) {
-            providerRef.current = getProvider().ledger.createTransportProvider()
-        }
-        return providerRef.current
-    }, [])
+    const getOrCreateProvider =
+        useCallback((): HardwareWalletTransportProvider => {
+            if (!providerRef.current) {
+                providerRef.current =
+                    getProvider().hardwareWalletRegistry.getProvider('ledger')!
+            }
+            return providerRef.current
+        }, [])
 
     const stopScan = useCallback(() => {
         stopScanRef.current?.()
@@ -74,7 +76,7 @@ export const useLedgerConnection = (): UseLedgerConnectionResult => {
         const seenIds = new Set<string>()
 
         const stop = provider.scan(
-            (device: LedgerDevice) => {
+            (device: HardwareWalletDevice) => {
                 if (seenIds.has(device.id)) return
                 seenIds.add(device.id)
                 setDevices(prev => [...prev, device])
@@ -93,7 +95,7 @@ export const useLedgerConnection = (): UseLedgerConnectionResult => {
     }, [stopScan, getOrCreateProvider])
 
     const connect = useCallback(
-        async (deviceId: string): Promise<LedgerTransport> => {
+        async (deviceId: string): Promise<HardwareWalletTransport> => {
             stopScan()
             setConnectionStatus('connecting')
             setError(null)

@@ -13,11 +13,11 @@
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     hasSigningKeys,
-    isLedgerAccount,
+    isHardwareWalletAccount,
     isMultisigAccount,
     resolveAuthAccount,
 } from '@perawallet/wallet-core-accounts'
-import type { LedgerTransportProvider } from '@perawallet/wallet-core-ledger'
+import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import type { SigningStrategy } from '../types'
 import { CannotSignError } from '../errors'
 import {
@@ -49,8 +49,8 @@ export interface GetSigningStrategyOptions {
     /** Transaction encoder for hardware wallet signing */
     encodeTransaction: EncodeTransactionFunction
 
-    /** Ledger BLE transport provider from platform extension (optional) */
-    ledgerTransportProvider?: LedgerTransportProvider
+    /** Hardware wallet registry from platform extension (optional) */
+    hardwareWalletRegistry?: HardwareWalletRegistry
 }
 
 /**
@@ -65,7 +65,7 @@ export const createSigningStrategySelector = (
 ) => SigningStrategy) => {
     const localStrategy = createLocalKeyStrategy(options.signTransactions)
     const hardwareStrategy = createHardwareStrategy({
-        transportProvider: options.ledgerTransportProvider,
+        transportProvider: options.hardwareWalletRegistry?.getAllProviders()[0],
         encodeTransaction: options.encodeTransaction,
     })
 
@@ -91,7 +91,7 @@ export const createSigningStrategySelector = (
         const actualSigner = resolveAuthAccount(account, allAccounts)
 
         // Select strategy based on actual signer type
-        if (isLedgerAccount(actualSigner)) {
+        if (isHardwareWalletAccount(actualSigner)) {
             return hardwareStrategy
         }
 

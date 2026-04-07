@@ -19,7 +19,6 @@ import {
     DeviceInfoService,
     DevicePlatforms,
     KeyValueStorageService,
-    LedgerService,
     MemoryDatabaseService,
     MemoryKeyValueStorage,
     PlatformServices,
@@ -27,6 +26,8 @@ import {
     RemoteConfigService,
     SecureStorageService,
 } from '@perawallet/wallet-extension-platform'
+import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
+import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import { initializeProvider, resetProvider } from './singleton'
 import { PeraProvider } from './pera-provider'
 
@@ -40,7 +41,7 @@ export type TestPlatformOverrides = Partial<{
     crashReporting: CrashReportingService
     database: DatabaseService
     deviceInfo: DeviceInfoService
-    ledger: LedgerService
+    hardwareWalletRegistry: HardwareWalletRegistry
 }>
 
 /**
@@ -144,21 +145,21 @@ export const buildTestPlatform = (
         },
     }
 
-    const defaultLedger: LedgerService = {
-        createTransportProvider: () => ({
-            scan: () => () => {},
-            connect: async () => ({
-                getAddress: async (accountIndex: number) => ({
-                    address: `TEST_ADDR_${accountIndex}`,
-                    publicKey: new Uint8Array(32),
-                    accountIndex,
-                }),
-                signTransaction: async () => new Uint8Array(64),
-                disconnect: async () => {},
+    const defaultHardwareWalletRegistry = createHardwareWalletRegistry()
+    defaultHardwareWalletRegistry.register({
+        manufacturer: 'ledger',
+        scan: () => () => {},
+        connect: async () => ({
+            getAddress: async (accountIndex: number) => ({
+                address: `TEST_ADDR_${accountIndex}`,
+                publicKey: new Uint8Array(32),
+                accountIndex,
             }),
-            isSupported: async () => false,
+            signTransaction: async () => new Uint8Array(64),
+            disconnect: async () => {},
         }),
-    }
+        isSupported: async () => false,
+    })
 
     return {
         analytics: overrides.analytics ?? defaultAnalytics,
@@ -171,7 +172,8 @@ export const buildTestPlatform = (
         crashReporting: overrides.crashReporting ?? defaultCrash,
         database: overrides.database ?? new MemoryDatabaseService(),
         deviceInfo: overrides.deviceInfo ?? deviceInfo,
-        ledger: overrides.ledger ?? defaultLedger,
+        hardwareWalletRegistry:
+            overrides.hardwareWalletRegistry ?? defaultHardwareWalletRegistry,
     }
 }
 

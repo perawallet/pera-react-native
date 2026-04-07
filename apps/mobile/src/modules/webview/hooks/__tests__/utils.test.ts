@@ -99,20 +99,18 @@ describe('webview/utils - getAccountType', () => {
         ).toBe('Multisig')
     })
 
-    it('returns Unknown for unknown combinations', () => {
-        // This is tricky because the utility covers most cases,
-        // but if we pass something that doesn't match any branch:
+    it('returns HardwareBle for non-ledger hardware wallet accounts', () => {
         expect(
             getAccountType({
                 ...baseAccount,
                 type: 'hardware',
                 hardwareDetails: {
-                    manufacturer: 'other' as unknown as 'ledger',
+                    manufacturer: 'other',
                     deviceId: 'test-device',
                     deviceName: 'Test',
                     accountIndex: 0,
                 },
             }),
-        ).toBe('Unknown')
+        ).toBe('HardwareBle')
     })
 })

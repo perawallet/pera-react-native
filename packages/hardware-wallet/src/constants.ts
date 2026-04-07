@@ -10,16 +10,8 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-extension-platform'
-
-export * from './analytics'
-export * from './biometrics'
-export * from './database'
-export * from './device'
-export * from './hardware-wallet'
-export * from './push-notifications'
-export * from './remote-config'
-export * from './reporting'
-export * from './storage'
-export * from './models'
-export * from './test-utils'
+/**
+ * Stop scanning for accounts after this many consecutive indices
+ * return addresses with no on-chain presence.
+ */
+export const DEFAULT_MAX_ACCOUNT_SCAN_GAP = 1

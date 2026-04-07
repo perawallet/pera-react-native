@@ -30,7 +30,7 @@ import type {
 } from '../pipeline/types'
 import { analyzerActor } from './actors/analyzerActor'
 import { localKeySignerActor } from './actors/signers/localKeySignerActor'
-import { ledgerSignerActor } from './actors/signers/ledgerSignerActor'
+import { hardwareSignerActor } from './actors/signers/hardwareSignerActor'
 import { multisigSignerActor } from './actors/signers/multisigSignerActor'
 import { transportActor } from './actors/transports/transportActor'
 import { resolveInitialContext, makeFailedContext } from './actions'
@@ -88,7 +88,7 @@ export const signingMachine = setup({
     actors: {
         analyzerActor,
         localKeySignerActor,
-        ledgerSignerActor,
+        hardwareSignerActor,
         multisigSignerActor,
         transportActor,
     },
@@ -99,8 +99,8 @@ export const signingMachine = setup({
             context.groupSignerTypes !== null,
         isNextSignerLocalKey: ({ context }) =>
             getNextPendingSignerType(context) === 'localKey',
-        isNextSignerLedger: ({ context }) =>
-            getNextPendingSignerType(context) === 'ledger',
+        isNextSignerHardware: ({ context }) =>
+            getNextPendingSignerType(context) === 'hardware',
         isNextSignerMultisig: ({ context }) =>
             getNextPendingSignerType(context) === 'multisig',
         isRetryable: ({ context }) => isRetryableError(context.error),
@@ -144,15 +144,15 @@ export const signingMachine = setup({
                 'localKey' as const,
             ],
         }),
-        appendLedgerResults: assign({
-            // event.output is the resolved value of the ledgerSignerActor Promise
+        appendHardwareResults: assign({
+            // event.output is the resolved value of the hardwareSignerActor Promise
             signingResults: ({ context, event }) => [
                 ...(context.signingResults ?? []),
                 ...(event as unknown as { output: SigningResult[] }).output,
             ],
             completedSignerTypes: ({ context }) => [
                 ...context.completedSignerTypes,
-                'ledger' as const,
+                'hardware' as const,
             ],
         }),
         appendMultisigResults: assign({
@@ -276,7 +276,7 @@ export const signingMachine = setup({
                             target: '#signingMachine.transporting',
                         },
                         { guard: 'isNextSignerLocalKey', target: 'localKey' },
-                        { guard: 'isNextSignerLedger', target: 'ledger' },
+                        { guard: 'isNextSignerHardware', target: 'hardware' },
                         { guard: 'isNextSignerMultisig', target: 'multisig' },
                         // No pending signer type — should not happen
                         { target: '#signingMachine.failed' },
@@ -305,22 +305,22 @@ export const signingMachine = setup({
                     },
                 },
 
-                ledger: {
+                hardware: {
                     invoke: {
-                        src: 'ledgerSignerActor',
+                        src: 'hardwareSignerActor',
                         input: ({ context }) => ({
                             groups: getAnalyzedGroupsForSignerType(
                                 context,
-                                'ledger',
+                                'hardware',
                             ),
                             allAccounts: context.allAccounts,
-                            transportProvider:
-                                context.deps.ledgerTransportProvider!,
+                            hardwareWalletRegistry:
+                                context.deps.hardwareWalletRegistry!,
                             encodeTransaction: context.deps.encodeTransaction,
                         }),
                         onDone: {
                             target: 'dispatching',
-                            actions: 'appendLedgerResults',
+                            actions: 'appendHardwareResults',
                         },
                         onError: {
                             target: '#signingMachine.failed',

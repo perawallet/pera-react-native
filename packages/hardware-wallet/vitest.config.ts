@@ -20,6 +20,7 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'node',
+        passWithNoTests: true,
         coverage: {
             provider: 'v8',
             exclude: [
@@ -38,10 +39,6 @@ export default defineConfig({
             '@perawallet/wallet-core-shared': path.resolve(
                 __dirname,
                 '../shared/src/index.ts',
-            ),
-            '@perawallet/wallet-core-hardware-wallet': path.resolve(
-                __dirname,
-                '../hardware-wallet/src/index.ts',
             ),
         },
     },

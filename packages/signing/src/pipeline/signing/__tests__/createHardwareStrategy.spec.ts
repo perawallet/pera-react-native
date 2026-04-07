@@ -30,9 +30,9 @@ import type {
     HardwareWalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type {
-    LedgerTransportProvider,
-    LedgerTransport,
-} from '@perawallet/wallet-core-ledger'
+    HardwareWalletTransportProvider,
+    HardwareWalletTransport,
+} from '@perawallet/wallet-core-hardware-wallet'
 
 const SIGNER_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
@@ -83,7 +83,7 @@ const makeGroup = (
 
 const MOCK_SIGNATURE = new Uint8Array([1, 2, 3, 4])
 
-const makeMockTransport = (): LedgerTransport => ({
+const makeMockTransport = (): HardwareWalletTransport => ({
     getAddress: vi.fn().mockResolvedValue({
         address: SIGNER_ADDRESS,
         publicKey: new Uint8Array(32),
@@ -94,16 +94,17 @@ const makeMockTransport = (): LedgerTransport => ({
 })
 
 const makeMockProvider = (
-    transport: LedgerTransport,
-): LedgerTransportProvider => ({
+    transport: HardwareWalletTransport,
+): HardwareWalletTransportProvider => ({
+    manufacturer: 'ledger',
     scan: () => () => {},
     connect: vi.fn().mockResolvedValue(transport),
     isSupported: vi.fn().mockResolvedValue(true),
 })
 
 describe('createHardwareStrategy', () => {
-    let mockTransport: LedgerTransport
-    let mockProvider: LedgerTransportProvider
+    let mockTransport: HardwareWalletTransport
+    let mockProvider: HardwareWalletTransportProvider
     let encodeTransaction: EncodeTransactionFunction
 
     beforeEach(() => {
@@ -113,7 +114,7 @@ describe('createHardwareStrategy', () => {
     })
 
     describe('canSign', () => {
-        it('returns true for ledger hardware accounts', () => {
+        it('returns true for hardware wallet accounts', () => {
             const strategy = createHardwareStrategy({
                 transportProvider: mockProvider,
                 encodeTransaction,
@@ -290,7 +291,7 @@ describe('createHardwareStrategy', () => {
             expect(onProgress).toHaveBeenNthCalledWith(3, 3, 3)
         })
 
-        it('throws CannotSignError for non-ledger accounts', async () => {
+        it('throws CannotSignError for non-hardware wallet accounts', async () => {
             const strategy = createHardwareStrategy({
                 transportProvider: mockProvider,
                 encodeTransaction,

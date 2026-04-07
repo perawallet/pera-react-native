@@ -13,7 +13,7 @@
 import React from 'react'
 import { ActivityIndicator } from 'react-native'
 import { PWView, PWText, PWFlatList, PWButton } from '@components/core'
-import type { LedgerDevice } from '@perawallet/wallet-core-ledger'
+import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 
 import { LedgerDeviceItem } from '../../components/LedgerDeviceItem'
 import { useStyles } from './styles'
@@ -24,7 +24,7 @@ export const LedgerScanScreen = () => {
     const { devices, isScanning, error, handleDevicePress, handleRetry, t } =
         useLedgerScanScreen()
 
-    const renderItem = ({ item }: { item: LedgerDevice }) => (
+    const renderItem = ({ item }: { item: HardwareWalletDevice }) => (
         <LedgerDeviceItem
             device={item}
             onPress={handleDevicePress}

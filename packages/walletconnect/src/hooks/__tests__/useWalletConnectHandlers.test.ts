@@ -25,7 +25,7 @@ import {
 } from '@perawallet/wallet-core-shared'
 import {
     useAllAccounts,
-    isLedgerAccount,
+    isHardwareWalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
     WalletConnectInvalidNetworkError,
@@ -101,7 +101,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     ]),
     canSignWithAccount: vi.fn(() => true),
     getAccountDisplayName: vi.fn((a: any) => a.name || a.address),
-    isLedgerAccount: vi.fn(() => false),
+    isHardwareWalletAccount: vi.fn(() => false),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async () => {
@@ -138,7 +138,7 @@ describe('useWalletConnectHandlers', () => {
         ;(useAllAccounts as any).mockReturnValue([
             { address: 'addr1', name: 'Account 1', type: 'standard' },
         ])
-        ;(isLedgerAccount as any).mockReturnValue(false)
+        ;(isHardwareWalletAccount as any).mockReturnValue(false)
         ;(useTransactionEncoder as any).mockImplementation(() => ({
             encodeSignedTransaction: vi.fn(() => new Uint8Array([1, 2, 3, 4])),
             encodeSignedTransactions: vi.fn((txs: unknown[]) =>
@@ -619,7 +619,7 @@ describe('useWalletConnectHandlers', () => {
             ;(useAllAccounts as any).mockReturnValue([
                 { address: 'ledger-addr', name: 'Ledger', type: 'ledger' },
             ])
-            ;(isLedgerAccount as any).mockReturnValue(true)
+            ;(isHardwareWalletAccount as any).mockReturnValue(true)
 
             expect(() =>
                 result.current.handleSignData(

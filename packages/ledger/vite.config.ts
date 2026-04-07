@@ -35,7 +35,10 @@ export default defineConfig({
             fileName: 'index',
         },
         rollupOptions: {
-            external: ['@perawallet/wallet-core-shared'],
+            external: [
+                '@perawallet/wallet-core-shared',
+                '@perawallet/wallet-core-hardware-wallet',
+            ],
         },
     },
 })

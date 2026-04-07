@@ -20,7 +20,7 @@ import type {
     SourceMetadata,
     TransportResult,
 } from '../pipeline/types'
-import type { LedgerTransportProvider } from '@perawallet/wallet-core-ledger'
+import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import type { LocalSigningFunction } from '../pipeline/signing/createLocalKeyStrategy'
 import type { EncodeTransactionFunction } from '../pipeline/signing/createHardwareStrategy'
 import type { SignRequest } from '../models'
@@ -32,10 +32,10 @@ import type { SignRequest } from '../models'
 /**
  * The type of signing actor to invoke for a given signer address.
  * - localKey: HD wallet or Algo25 account (signing keys available on device)
- * - ledger: Hardware wallet requiring BLE connection and physical confirmation
+ * - hardware: Hardware wallet requiring device connection and physical confirmation
  * - multisig: Multi-signature account requiring partial signature collection
  */
-export type ResolvedSignerType = 'localKey' | 'ledger' | 'multisig'
+export type ResolvedSignerType = 'localKey' | 'hardware' | 'multisig'
 
 /**
  * Maps each unique signer address in the request to its resolved signing type.
@@ -71,8 +71,8 @@ export type SigningMachineDeps = {
     createTransport: TransportFactory
     /** Current network (mainnet / testnet) */
     network: Network
-    /** Ledger BLE transport provider from platform extension (optional) */
-    ledgerTransportProvider?: LedgerTransportProvider
+    /** Hardware wallet registry from platform extension (optional) */
+    hardwareWalletRegistry?: HardwareWalletRegistry
     /** Transaction encoder for hardware wallet signing */
     encodeTransaction: EncodeTransactionFunction
 }

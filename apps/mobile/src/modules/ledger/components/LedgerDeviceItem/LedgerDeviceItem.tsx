@@ -12,13 +12,13 @@
 
 import React from 'react'
 import { PWView, PWText, PWTouchableOpacity, PWIcon } from '@components/core'
-import type { LedgerDevice } from '@perawallet/wallet-core-ledger'
+import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 
 import { useStyles } from './styles'
 
 type LedgerDeviceItemProps = {
-    device: LedgerDevice
-    onPress: (device: LedgerDevice) => void
+    device: HardwareWalletDevice
+    onPress: (device: HardwareWalletDevice) => void
 }
 
 const getSignalLevel = (rssi: number | null): 'strong' | 'medium' | 'weak' => {
@@ -28,7 +28,7 @@ const getSignalLevel = (rssi: number | null): 'strong' | 'medium' | 'weak' => {
     return 'weak'
 }
 
-const getModelDisplayName = (model: LedgerDevice['model']): string => {
+const getModelDisplayName = (model: string): string => {
     switch (model) {
         case 'nanoX':
             return 'Nano X'

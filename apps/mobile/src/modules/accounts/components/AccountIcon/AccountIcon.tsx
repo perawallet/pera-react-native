@@ -33,9 +33,11 @@ export type AccountIconProps = {
 const iconNames: Record<AccountStatus, string> = {
     hdWallet: `accounts/${THEME_TOKEN}/hdwallet-account`,
     ledger: `accounts/${THEME_TOKEN}/ledger-account`,
+    hardware: `accounts/${THEME_TOKEN}/ledger-account`,
     multisig: `accounts/${THEME_TOKEN}/multisig-account`,
     noAuth: `accounts/${THEME_TOKEN}/noauth-account`,
     rekeyedLedger: `accounts/${THEME_TOKEN}/rekeyed-ledger`,
+    rekeyedHardware: `accounts/${THEME_TOKEN}/rekeyed-ledger`,
     rekeyedStandard: `accounts/${THEME_TOKEN}/rekeyed-standard`,
     standard: `accounts/${THEME_TOKEN}/algo25-account`,
     watch: `accounts/${THEME_TOKEN}/watch-account`,

@@ -37,6 +37,12 @@ export const isHDWalletAccount = (
     return account.type === AccountTypes.hdWallet
 }
 
+export const isHardwareWalletAccount = (
+    account: WalletAccount,
+): account is HardwareWalletAccount => {
+    return account.type === AccountTypes.hardware
+}
+
 export const isLedgerAccount = (
     account: WalletAccount,
 ): account is HardwareWalletAccount => {
@@ -89,10 +95,12 @@ export const canSignWithAccount = (
 export type AccountStatus =
     | 'standard'
     | 'ledger'
+    | 'hardware'
     | 'watch'
     | 'noAuth'
     | 'rekeyedStandard'
     | 'rekeyedLedger'
+    | 'rekeyedHardware'
     | 'hdWallet'
     | 'multisig'
 
@@ -106,12 +114,14 @@ export const resolveAccountStatus = (
         )
         if (!authAccount) return 'noAuth'
         if (isLedgerAccount(authAccount)) return 'rekeyedLedger'
+        if (isHardwareWalletAccount(authAccount)) return 'rekeyedHardware'
         return 'rekeyedStandard'
     }
     if (isHDWalletAccount(account)) return 'hdWallet'
     if (isMultisigAccount(account)) return 'multisig'
     if (isWatchAccount(account)) return 'watch'
     if (isLedgerAccount(account)) return 'ledger'
+    if (isHardwareWalletAccount(account)) return 'hardware'
     if (isAlgo25Account(account)) return 'standard'
     return 'standard'
 }

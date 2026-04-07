@@ -12,17 +12,18 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { createActor, toPromise } from 'xstate'
-import { ledgerSignerActor } from '../ledgerSignerActor'
-import type { LedgerSignerActorInput } from '../ledgerSignerActor'
+import { hardwareSignerActor } from '../hardwareSignerActor'
+import type { HardwareSignerActorInput } from '../hardwareSignerActor'
 import type { AnalyzedSignableGroup } from '../../../../pipeline/types'
 import type {
     WalletAccount,
     HardwareWalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type {
-    LedgerTransportProvider,
-    LedgerTransport,
-} from '@perawallet/wallet-core-ledger'
+    HardwareWalletTransportProvider,
+    HardwareWalletTransport,
+} from '@perawallet/wallet-core-hardware-wallet'
+import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 
 const ADDR_A = 'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 const ADDR_B = 'BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'
@@ -71,7 +72,7 @@ const makeGroup = (
     },
 })
 
-const makeMockTransport = (): LedgerTransport => ({
+const makeMockTransport = (): HardwareWalletTransport => ({
     getAddress: vi.fn().mockResolvedValue({
         address: ADDR_A,
         publicKey: new Uint8Array(32),
@@ -82,26 +83,33 @@ const makeMockTransport = (): LedgerTransport => ({
 })
 
 const makeMockProvider = (
-    transport: LedgerTransport,
-): LedgerTransportProvider => ({
+    transport: HardwareWalletTransport,
+): HardwareWalletTransportProvider => ({
+    manufacturer: 'ledger',
     scan: () => () => {},
     connect: vi.fn().mockResolvedValue(transport),
     isSupported: vi.fn().mockResolvedValue(true),
 })
 
-describe('ledgerSignerActor', () => {
+const makeRegistry = (provider: HardwareWalletTransportProvider) => {
+    const registry = createHardwareWalletRegistry()
+    registry.register(provider)
+    return registry
+}
+
+describe('hardwareSignerActor', () => {
     it('returns SigningResult for a single group', async () => {
         const transport = makeMockTransport()
         const provider = makeMockProvider(transport)
 
-        const input: LedgerSignerActorInput = {
+        const input: HardwareSignerActorInput = {
             groups: [makeGroup(ADDR_A)],
             allAccounts: [makeLedgerAccount(ADDR_A)],
-            transportProvider: provider,
+            hardwareWalletRegistry: makeRegistry(provider),
             encodeTransaction: vi.fn().mockReturnValue(new Uint8Array([0xaa])),
         }
 
-        const actor = createActor(ledgerSignerActor, { input })
+        const actor = createActor(hardwareSignerActor, { input })
         actor.start()
         const results = await toPromise(actor)
 
@@ -114,14 +122,14 @@ describe('ledgerSignerActor', () => {
         const transport = makeMockTransport()
         const provider = makeMockProvider(transport)
 
-        const input: LedgerSignerActorInput = {
+        const input: HardwareSignerActorInput = {
             groups: [makeGroup(ADDR_A), makeGroup(ADDR_A, 2)],
             allAccounts: [makeLedgerAccount(ADDR_A)],
-            transportProvider: provider,
+            hardwareWalletRegistry: makeRegistry(provider),
             encodeTransaction: vi.fn().mockReturnValue(new Uint8Array([0xbb])),
         }
 
-        const actor = createActor(ledgerSignerActor, { input })
+        const actor = createActor(hardwareSignerActor, { input })
         actor.start()
         const results = await toPromise(actor)
 
@@ -134,43 +142,61 @@ describe('ledgerSignerActor', () => {
         const transport = makeMockTransport()
         const provider = makeMockProvider(transport)
 
-        const input: LedgerSignerActorInput = {
+        const input: HardwareSignerActorInput = {
             groups: [makeGroup(ADDR_A)],
             allAccounts: [], // no accounts
-            transportProvider: provider,
+            hardwareWalletRegistry: makeRegistry(provider),
             encodeTransaction: vi.fn(),
         }
 
-        const actor = createActor(ledgerSignerActor, { input })
+        const actor = createActor(hardwareSignerActor, { input })
         actor.start()
 
         await expect(toPromise(actor)).rejects.toThrow(
-            'Ledger signer account not found',
+            'Hardware wallet signer account not found',
         )
     })
 
-    it('rejects when account is not a ledger account', async () => {
+    it('rejects when account is not a hardware wallet account', async () => {
         const transport = makeMockTransport()
         const provider = makeMockProvider(transport)
 
-        const nonLedgerAccount: WalletAccount = {
+        const nonHardwareAccount: WalletAccount = {
             type: 'algo25',
             address: ADDR_B,
             keyPairId: 'key-1',
         } as unknown as WalletAccount
 
-        const input: LedgerSignerActorInput = {
+        const input: HardwareSignerActorInput = {
             groups: [makeGroup(ADDR_B)],
-            allAccounts: [nonLedgerAccount],
-            transportProvider: provider,
+            allAccounts: [nonHardwareAccount],
+            hardwareWalletRegistry: makeRegistry(provider),
             encodeTransaction: vi.fn(),
         }
 
-        const actor = createActor(ledgerSignerActor, { input })
+        const actor = createActor(hardwareSignerActor, { input })
         actor.start()
 
         await expect(toPromise(actor)).rejects.toThrow(
-            'Ledger signer account not found',
+            'Hardware wallet signer account not found',
+        )
+    })
+
+    it('rejects when no provider is registered for manufacturer', async () => {
+        const emptyRegistry = createHardwareWalletRegistry()
+
+        const input: HardwareSignerActorInput = {
+            groups: [makeGroup(ADDR_A)],
+            allAccounts: [makeLedgerAccount(ADDR_A)],
+            hardwareWalletRegistry: emptyRegistry,
+            encodeTransaction: vi.fn(),
+        }
+
+        const actor = createActor(hardwareSignerActor, { input })
+        actor.start()
+
+        await expect(toPromise(actor)).rejects.toThrow(
+            'No hardware wallet provider registered for manufacturer: ledger',
         )
     })
 })

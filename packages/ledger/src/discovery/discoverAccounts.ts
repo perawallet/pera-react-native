@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { discoverAccounts } from '@perawallet/wallet-core-hardware-wallet'
 import type { LedgerAccount, LedgerTransport } from '../types'
 import { MAX_ACCOUNT_SCAN_GAP } from '../constants'
 import { classifyLedgerError } from '../errors'
@@ -38,45 +39,11 @@ export type DiscoverAccountsOptions = {
 export const discoverLedgerAccounts = async (
     options: DiscoverAccountsOptions,
 ): Promise<LedgerAccount[]> => {
-    const { transport, isAccountOnChain, onProgress } = options
-    const accounts: LedgerAccount[] = []
-    let consecutiveEmpty = 0
-    let index = 0
-
-    while (consecutiveEmpty < MAX_ACCOUNT_SCAN_GAP) {
-        let account: LedgerAccount
-        try {
-            account = await transport.getAddress(index, false)
-        } catch (error) {
-            throw classifyLedgerError(error)
-        }
-
-        onProgress?.(index)
-
-        if (isAccountOnChain) {
-            const exists = await isAccountOnChain(account.address)
-
-            if (exists) {
-                accounts.push(account)
-                consecutiveEmpty = 0
-            } else if (index === 0) {
-                // Always include the first account even if not on-chain
-                accounts.push(account)
-                consecutiveEmpty++
-            } else {
-                consecutiveEmpty++
-            }
-        } else {
-            // Without on-chain check, include all accounts
-            accounts.push(account)
-            // Stop after the gap limit since we can't determine presence
-            if (index >= MAX_ACCOUNT_SCAN_GAP) {
-                break
-            }
-        }
-
-        index++
-    }
-
-    return accounts
+    return discoverAccounts({
+        transport: options.transport,
+        isAccountOnChain: options.isAccountOnChain,
+        onProgress: options.onProgress,
+        classifyError: classifyLedgerError,
+        maxGap: MAX_ACCOUNT_SCAN_GAP,
+    })
 }

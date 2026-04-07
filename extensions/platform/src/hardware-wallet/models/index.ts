@@ -10,8 +10,16 @@
  limitations under the License
  */
 
-import type { LedgerTransportProvider } from '@perawallet/wallet-core-ledger'
+import type {
+    HardwareWalletManufacturer,
+    HardwareWalletTransportProvider,
+} from '@perawallet/wallet-core-hardware-wallet'
 
-export interface LedgerService {
-    createTransportProvider: () => LedgerTransportProvider
+/**
+ * A hardware wallet service that provides a transport provider for a specific manufacturer.
+ * Each manufacturer (Ledger, Trezor, etc.) implements this interface.
+ */
+export interface HardwareWalletService {
+    manufacturer: HardwareWalletManufacturer
+    createTransportProvider: () => HardwareWalletTransportProvider
 }

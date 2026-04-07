@@ -1,5 +1,6 @@
 {
-  "name": "@perawallet/wallet-extension-provider",
+  "name": "@perawallet/wallet-core-hardware-wallet",
+  "private": true,
   "version": "0.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,22 +18,11 @@
     "lint": "oxlint --config ../../.oxlintrc.json src --ignore-pattern \"src/**/__tests__/**\""
   },
   "dependencies": {
-    "@algorandfoundation/keystore": "catalog:",
-    "@algorandfoundation/react-native-keystore": "catalog:",
-    "@algorandfoundation/wallet-provider": "catalog:",
-    "@tanstack/store": "catalog:",
     "@babel/runtime": "catalog:",
-    "before-after-hook": "catalog:",
-    "@perawallet/wallet-core-hardware-wallet": "workspace:*",
-    "@perawallet/wallet-extension-platform": "workspace:*",
-    "@perawallet/wallet-extension-platform-driver": "workspace:*",
-    "react": "catalog:"
+    "@perawallet/wallet-core-shared": "workspace:*"
   },
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",
-    "@testing-library/react": "catalog:",
-    "@types/react": "catalog:",
-    "react-dom": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "^4.5.4",

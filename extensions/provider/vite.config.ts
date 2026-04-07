@@ -49,6 +49,7 @@ export default defineConfig({
                 '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-extension-platform-driver',
                 '@perawallet/wallet-core-accounts',
+                '@perawallet/wallet-core-hardware-wallet',
                 '@perawallet/wallet-core-blockchain',
                 '@perawallet/wallet-core-config',
                 '@perawallet/wallet-core-contacts',

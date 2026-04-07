@@ -49,6 +49,10 @@ export default defineConfig({
                 __dirname,
                 '../../extensions/platform/src/index.ts',
             ),
+            '@perawallet/wallet-core-hardware-wallet': path.resolve(
+                __dirname,
+                '../hardware-wallet/src/index.ts',
+            ),
             '@perawallet/wallet-core-ledger': path.resolve(
                 __dirname,
                 '../ledger/src/index.ts',

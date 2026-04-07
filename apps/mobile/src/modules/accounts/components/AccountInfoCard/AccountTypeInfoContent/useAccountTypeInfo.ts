@@ -57,6 +57,10 @@ const STATUS_I18N_MAP: Record<
         title: 'account_type_info.ledger_title',
         description: 'account_type_info.ledger_description',
     },
+    hardware: {
+        title: 'account_type_info.ledger_title',
+        description: 'account_type_info.ledger_description',
+    },
     watch: {
         title: 'account_type_info.watch_title',
         description: 'account_type_info.watch_description',
@@ -70,6 +74,10 @@ const STATUS_I18N_MAP: Record<
         description: 'account_type_info.rekeyed_standard_description',
     },
     rekeyedLedger: {
+        title: 'account_type_info.rekeyed_ledger_title',
+        description: 'account_type_info.rekeyed_ledger_description',
+    },
+    rekeyedHardware: {
         title: 'account_type_info.rekeyed_ledger_title',
         description: 'account_type_info.rekeyed_ledger_description',
     },

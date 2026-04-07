@@ -13,15 +13,15 @@
 import { useEffect, useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
-import type { LedgerDevice } from '@perawallet/wallet-core-ledger'
+import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 
 import { useLedgerConnection } from '../../hooks'
 
 type UseLedgerScanScreenResult = {
-    devices: LedgerDevice[]
+    devices: HardwareWalletDevice[]
     isScanning: boolean
     error: Error | null
-    handleDevicePress: (device: LedgerDevice) => void
+    handleDevicePress: (device: HardwareWalletDevice) => void
     handleRetry: () => void
     t: (key: string, options?: Record<string, unknown>) => string
 }
@@ -41,7 +41,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     }, [startScan, stopScan])
 
     const handleDevicePress = useCallback(
-        (device: LedgerDevice) => {
+        (device: HardwareWalletDevice) => {
             stopScan()
             navigation.navigate('LedgerFetchAccounts', {
                 deviceId: device.id,

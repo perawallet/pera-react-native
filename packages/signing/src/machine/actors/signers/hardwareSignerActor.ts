@@ -12,8 +12,9 @@
 
 import { fromPromise } from 'xstate'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { isLedgerAccount } from '@perawallet/wallet-core-accounts'
-import type { LedgerTransportProvider } from '@perawallet/wallet-core-ledger'
+import { isHardwareWalletAccount } from '@perawallet/wallet-core-accounts'
+import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
+import type { HardwareWalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     AnalyzedSignableGroup,
     SigningResult,
@@ -22,29 +23,26 @@ import { HardwareWalletError } from '../../../pipeline/errors'
 import { createHardwareStrategy } from '../../../pipeline/signing/createHardwareStrategy'
 import type { EncodeTransactionFunction } from '../../../pipeline/signing/createHardwareStrategy'
 
-export type LedgerSignerActorInput = {
+export type HardwareSignerActorInput = {
     groups: AnalyzedSignableGroup[]
     allAccounts: WalletAccount[]
-    transportProvider: LedgerTransportProvider
+    hardwareWalletRegistry: HardwareWalletRegistry
     encodeTransaction: EncodeTransactionFunction
 }
 
 /**
- * XState actor for Ledger hardware wallet signing.
+ * XState actor for hardware wallet signing.
  *
  * Signs one or more transaction groups using the hardware strategy,
- * connecting to the Ledger device and requesting user confirmation.
+ * resolving the correct transport provider from the registry based on
+ * each account's manufacturer.
  */
-export const ledgerSignerActor = fromPromise<
+export const hardwareSignerActor = fromPromise<
     SigningResult[],
-    LedgerSignerActorInput
+    HardwareSignerActorInput
 >(async ({ input }) => {
-    const { groups, allAccounts, transportProvider, encodeTransaction } = input
-
-    const strategy = createHardwareStrategy({
-        transportProvider,
-        encodeTransaction,
-    })
+    const { groups, allAccounts, hardwareWalletRegistry, encodeTransaction } =
+        input
 
     const results: SigningResult[] = []
 
@@ -53,11 +51,27 @@ export const ledgerSignerActor = fromPromise<
             a => a.address === group.signerAddress,
         )
 
-        if (!signerAccount || !isLedgerAccount(signerAccount)) {
+        if (!signerAccount || !isHardwareWalletAccount(signerAccount)) {
             throw new HardwareWalletError(
-                `Ledger signer account not found for address ${group.signerAddress}`,
+                `Hardware wallet signer account not found for address ${group.signerAddress}`,
             )
         }
+
+        const { manufacturer } = (signerAccount as HardwareWalletAccount)
+            .hardwareDetails
+        const transportProvider =
+            hardwareWalletRegistry.getProvider(manufacturer)
+
+        if (!transportProvider) {
+            throw new HardwareWalletError(
+                `No hardware wallet provider registered for manufacturer: ${manufacturer}`,
+            )
+        }
+
+        const strategy = createHardwareStrategy({
+            transportProvider,
+            encodeTransaction,
+        })
 
         const result = await strategy.sign(group, signerAccount)
         results.push(result)

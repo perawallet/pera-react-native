@@ -14,8 +14,8 @@ import type {
     WalletAccount,
     HardwareWalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { isLedgerAccount } from '@perawallet/wallet-core-accounts'
-import type { LedgerTransportProvider } from '@perawallet/wallet-core-ledger'
+import { isHardwareWalletAccount } from '@perawallet/wallet-core-accounts'
+import type { HardwareWalletTransportProvider } from '@perawallet/wallet-core-hardware-wallet'
 import type {
     PeraTransaction,
     PeraSignedTransaction,
@@ -36,12 +36,12 @@ import { CannotSignError, HardwareWalletError, SigningError } from '../errors'
 export type EncodeTransactionFunction = (tx: PeraTransaction) => Uint8Array
 
 export type HardwareStrategyOptions = {
-    transportProvider?: LedgerTransportProvider
+    transportProvider?: HardwareWalletTransportProvider
     encodeTransaction: EncodeTransactionFunction
 }
 
 /**
- * Creates a signing strategy for hardware wallets (Ledger).
+ * Creates a signing strategy for hardware wallets.
  * These accounts require device interaction with user prompts.
  */
 export const createHardwareStrategy = (
@@ -51,7 +51,7 @@ export const createHardwareStrategy = (
 
     return {
         canSign: (account: WalletAccount): boolean => {
-            return isLedgerAccount(account)
+            return isHardwareWalletAccount(account)
         },
 
         sign: async (
@@ -59,7 +59,7 @@ export const createHardwareStrategy = (
             account: WalletAccount,
             callbacks?: SigningCallbacks,
         ): Promise<SigningResult> => {
-            if (!isLedgerAccount(account)) {
+            if (!isHardwareWalletAccount(account)) {
                 throw new CannotSignError(
                     account.address,
                     'Account is not a hardware wallet',
@@ -68,13 +68,13 @@ export const createHardwareStrategy = (
 
             if (!transportProvider) {
                 throw new HardwareWalletError(
-                    'Ledger BLE transport is not available on this platform',
+                    'Hardware wallet transport is not available on this platform',
                 )
             }
 
             if (group.data.type !== 'transactions') {
                 throw new HardwareWalletError(
-                    'Ledger only supports transaction signing',
+                    'Hardware wallet only supports transaction signing',
                 )
             }
 
@@ -84,27 +84,27 @@ export const createHardwareStrategy = (
             // Step 1: Connect to the Ledger device
             await callbacks?.onHardwarePrompt?.({
                 type: 'connect',
-                message: 'Connecting to Ledger device...',
+                message: 'Connecting to hardware wallet...',
             })
 
             const transport = await transportProvider.connect(deviceId)
 
             try {
-                // Step 2: Verify the Algorand app is open by fetching address
+                // Step 2: Verify the device is ready by fetching address
                 await transport.getAddress(0, false)
 
                 // Step 3: Prompt user to confirm on device
                 await callbacks?.onHardwarePrompt?.({
                     type: 'approve',
                     message:
-                        'Please review and approve the transaction on your Ledger device.',
+                        'Please review and approve the transaction on your device.',
                 })
 
                 const { transactions, indicesToSign } = group.data
 
                 // Step 4: Sign each transaction sequentially.
-                // Ledger BLE transport is single-channel — concurrent APDU
-                // commands can corrupt state or reorder responses.
+                // Hardware wallet transports are typically single-channel —
+                // concurrent commands can corrupt state or reorder responses.
                 const signed: PeraSignedTransaction[] = []
 
                 for (let index = 0; index < transactions.length; index++) {

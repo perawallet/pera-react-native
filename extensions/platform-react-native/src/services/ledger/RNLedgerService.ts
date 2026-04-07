@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { LedgerService } from '@perawallet/wallet-extension-platform'
+import type { HardwareWalletService } from '@perawallet/wallet-extension-platform'
 import type {
     LedgerTransportProvider,
     LedgerTransport,
@@ -128,9 +128,12 @@ const createTransportWrapper = (
  * Uses @ledgerhq/react-native-hw-transport-ble for BLE communication
  * and @ledgerhq/hw-app-algorand for Algorand-specific APDU commands.
  */
-export class RNLedgerService implements LedgerService {
+export class RNLedgerService implements HardwareWalletService {
+    manufacturer = 'ledger' as const
+
     createTransportProvider(): LedgerTransportProvider {
         return {
+            manufacturer: 'ledger',
             scan(
                 onDevice: (device: LedgerDevice) => void,
                 onError?: (error: Error) => void,
@@ -156,6 +159,7 @@ export class RNLedgerService implements LedgerService {
                             name:
                                 name ||
                                 `Ledger ${model.charAt(0).toUpperCase() + model.slice(1)}`,
+                            manufacturer: 'ledger',
                             model,
                             rssi: rssi ?? null,
                         })

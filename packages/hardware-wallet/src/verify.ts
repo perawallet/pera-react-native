@@ -10,25 +10,31 @@
  limitations under the License
  */
 
-import { verifyAddress } from '@perawallet/wallet-core-hardware-wallet'
-import type { LedgerAccount, LedgerTransport } from '../types'
-import { classifyLedgerError } from '../errors'
+import type {
+    HardwareWalletDerivedAccount,
+    HardwareWalletTransport,
+} from './types'
 
 /**
- * Verify a Ledger account address on the device.
+ * Verify a hardware wallet account address on the device.
  *
- * Sends the address to the Ledger device with the verify flag set (P1=0x80),
+ * Sends the address to the device with the verify flag set,
  * which displays the address on the device screen for the user to visually confirm.
  * The user must approve on the device before this resolves.
  *
- * @param transport - Connected Ledger transport
+ * @param transport - Connected hardware wallet transport
  * @param accountIndex - The account index to verify
+ * @param classifyError - Optional error classifier for manufacturer-specific errors
  * @returns The verified account (address matches what was shown on device)
- * @throws LedgerUserRejectedError if the user rejects on the device
  */
-export const verifyLedgerAddress = async (
-    transport: LedgerTransport,
+export const verifyAddress = async (
+    transport: HardwareWalletTransport,
     accountIndex: number,
-): Promise<LedgerAccount> => {
-    return verifyAddress(transport, accountIndex, classifyLedgerError)
+    classifyError?: (error: unknown) => Error,
+): Promise<HardwareWalletDerivedAccount> => {
+    try {
+        return await transport.getAddress(accountIndex, true)
+    } catch (error) {
+        throw classifyError ? classifyError(error) : error
+    }
 }

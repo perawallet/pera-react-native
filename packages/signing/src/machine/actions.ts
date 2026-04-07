@@ -13,7 +13,7 @@
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import {
     hasSigningKeys,
-    isLedgerAccount,
+    isHardwareWalletAccount,
     isMultisigAccount,
     resolveAuthAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -45,7 +45,7 @@ import {
 /**
  * Determines the signing strategy type based on the signer and auth accounts.
  * - multisig: the original signer account is a multisig account
- * - ledger:   the auth account (after rekey resolution) is a Ledger hardware wallet
+ * - hardware: the auth account (after rekey resolution) is a hardware wallet
  * - localKey: the auth account has local signing keys (Algo25 / HDWallet)
  */
 const determineSignerType = (
@@ -55,8 +55,8 @@ const determineSignerType = (
     if (isMultisigAccount(signerAccount)) {
         return 'multisig'
     }
-    if (isLedgerAccount(authAccount)) {
-        return 'ledger'
+    if (isHardwareWalletAccount(authAccount)) {
+        return 'hardware'
     }
     if (hasSigningKeys(authAccount)) {
         return 'localKey'
@@ -245,7 +245,7 @@ const extractDeps = (input: SigningMachineInput): SigningMachineDeps => ({
     createTransport: input.createTransport,
     network: input.network,
     encodeTransaction: input.encodeTransaction,
-    ledgerTransportProvider: input.ledgerTransportProvider,
+    hardwareWalletRegistry: input.hardwareWalletRegistry,
 })
 
 /**
