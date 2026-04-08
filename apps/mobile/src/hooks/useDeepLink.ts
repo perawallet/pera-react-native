@@ -18,6 +18,7 @@ import { parseDeeplink } from './deeplink/parser'
 import { DeeplinkType } from './deeplink/types'
 import { useSigningRequest } from '@perawallet/wallet-core-signing'
 import {
+    resolveImportAccountType,
     useSelectedAccountAddress,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -155,18 +156,21 @@ export const useDeepLink = () => {
                     )
                     break
 
-                case DeeplinkType.RECOVER_ADDRESS:
-                    // Only handle recovery from QR deeplinks
-                    if (source !== 'qr') {
-                        return
-                    }
-                    // TODO: Navigate to account recovery screen
-                    // navigation.navigate('RecoverAccount', { mnemonic: parsedData.mnemonic })
-                    infoToast(
-                        'Recover Address',
-                        'Account recovery not implemented yet',
-                    )
+                case DeeplinkType.RECOVER_ADDRESS: {
+                    if (source !== 'qr') break
+
+                    const result = resolveImportAccountType(parsedData.mnemonic)
+                    if (!result.success) break
+
+                    navigateToScreen(replaceCurrentScreen, 'AddAccount', {
+                        screen: 'ImportAccount',
+                        params: {
+                            accountType: result.accountType,
+                            mnemonic: parsedData.mnemonic,
+                        },
+                    })
                     break
+                }
 
                 case DeeplinkType.WALLET_CONNECT:
                     connect({

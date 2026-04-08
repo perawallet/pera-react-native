@@ -46,7 +46,7 @@ import {
 import { MAX_DATA_SIGN_REQUESTS } from '../constants'
 import {
     canSignWithAccount,
-    isLedgerAccount,
+    isHardwareWalletAccount,
     useAllAccounts,
     useSigningAccounts,
     WalletAccount,
@@ -145,9 +145,9 @@ const validateDataSignRequest = (
             throw new WalletConnectInvalidSessionError('Invalid signer')
         }
 
-        if (isLedgerAccount(account)) {
+        if (isHardwareWalletAccount(account)) {
             throw new WalletConnectInvalidSessionError(
-                'Ledger accounts are not supported',
+                'Hardware wallet accounts are not supported',
             )
         }
 

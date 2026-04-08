@@ -12,6 +12,10 @@
 
 export { createLocalKeyStrategy } from './createLocalKeyStrategy'
 export { createHardwareStrategy } from './createHardwareStrategy'
+export type {
+    EncodeTransactionFunction,
+    HardwareStrategyOptions,
+} from './createHardwareStrategy'
 export { createMultisigStrategy } from './createMultisigStrategy'
 export { createSigningStrategySelector } from './getSigningStrategy'
 export { getLocalParticipants, canMeetThresholdLocally } from './utils'

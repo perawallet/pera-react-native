@@ -63,7 +63,12 @@ const algo25Account: WalletAccount = {
 const ledgerAccount: WalletAccount = {
     type: 'hardware',
     address: 'LEDGERADDR1234567890ABCDEFGHIJKLMNOPQRSTUVWX',
-    hardwareDetails: { manufacturer: 'ledger' },
+    hardwareDetails: {
+        manufacturer: 'ledger',
+        deviceId: 'test-device',
+        deviceName: 'Ledger Nano X',
+        accountIndex: 0,
+    },
     keyPairId: 'key-2',
 }
 

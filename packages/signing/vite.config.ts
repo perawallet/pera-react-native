@@ -41,6 +41,8 @@ export default defineConfig({
                 'zustand',
                 'zustand/middleware',
                 '@perawallet/wallet-core-accounts',
+                '@perawallet/wallet-core-hardware-wallet',
+                '@perawallet/wallet-core-ledger',
                 '@perawallet/wallet-core-kms',
                 '@perawallet/wallet-core-blockchain',
                 '@perawallet/wallet-core-config',

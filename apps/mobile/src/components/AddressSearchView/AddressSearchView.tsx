@@ -20,6 +20,7 @@ import {
 import { useStyles } from './styles'
 
 import { useCallback } from 'react'
+import { ActivityIndicator } from 'react-native'
 import { AddressEntryField } from '@components/AddressEntryField'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { EmptyView } from '@components/EmptyView'
@@ -44,9 +45,8 @@ export const AddressSearchView = ({
 }: AddressSearchViewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { value, setValue, matchingItems, hasResults } = useAddressSearchView(
-        { excludeAddress, excludeTypes },
-    )
+    const { value, setValue, matchingItems, hasResults, isNfdLoading } =
+        useAddressSearchView({ excludeAddress, excludeTypes })
 
     const renderItem = useCallback(
         ({ item }: { item: AddressSearchItem }) => {
@@ -82,6 +82,19 @@ export const AddressSearchView = ({
                             <AccountDisplay
                                 account={item.account}
                                 showChevron={false}
+                                style={styles.accountDisplay}
+                            />
+                        </PWTouchableOpacity>
+                    )
+                case 'nfd':
+                    return (
+                        <PWTouchableOpacity
+                            onPress={() => onSelected(item.nfd.address)}
+                            style={styles.nfdItem}
+                        >
+                            <AddressDisplay
+                                address={item.nfd.address}
+                                showCopy={false}
                                 style={styles.accountDisplay}
                             />
                         </PWTouchableOpacity>
@@ -123,7 +136,15 @@ export const AddressSearchView = ({
                 data={hasResults ? matchingItems : []}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
-                ListEmptyComponent={emptyComponent}
+                ListEmptyComponent={
+                    isNfdLoading ? (
+                        <PWView style={styles.loadingContainer}>
+                            <ActivityIndicator />
+                        </PWView>
+                    ) : (
+                        emptyComponent()
+                    )
+                }
                 style={styles.list}
                 contentContainerStyle={styles.contentContainer}
             />
