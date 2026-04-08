@@ -10,50 +10,41 @@
  limitations under the License
  */
 
-import React, { useMemo } from 'react'
+import React from 'react'
 import { PWText, PWTouchableOpacity, PWView, PWIcon } from '@components/core'
 import { CollectibleThumbnail } from '../CollectibleThumbnail'
 import { useStyles } from './styles'
-import { type CollectibleItemProps } from '../AccountNfts/types'
-import { isPureNft } from '@perawallet/wallet-core-assets'
-import { getVerificationIcon } from '@modules/assets/utils/verification'
+import { type CollectibleItemProps } from '@modules/assets/types/collectible'
+import { useCollectibleItem } from '@modules/assets/hooks/useCollectibleItem'
 
-export const CollectibleListItem = ({
-    asset,
-    amount,
-    onPress,
-}: CollectibleItemProps) => {
+const CollectibleListItemBase = ({ item, onPress }: CollectibleItemProps) => {
     const styles = useStyles()
-    const collectible = asset.peraMetadata?.collectible
-    const isPure = isPureNft(asset)
-    const thumbnailUrl = collectible?.primaryImage ?? asset.peraMetadata?.logo
-    const showAmount = !isPure && !amount.isZero()
-    const isOptedIn = amount.greaterThan(0)
-    const collectionName = collectible?.collection?.name ?? asset.unitName
-    const verificationIconName = useMemo(() => {
-        const tier = asset.peraMetadata?.verificationTier
-        return tier ? getVerificationIcon(tier) : null
-    }, [asset.peraMetadata?.verificationTier])
+    const {
+        thumbnailUrl,
+        showAmount,
+        hasBalance,
+        verificationIconName,
+        title,
+        collectionName,
+        handlePress,
+    } = useCollectibleItem({ item, onPress })
 
     const subtitle = [
-        collectionName,
-        showAmount ? `x${amount.toString()}` : null,
+        collectionName ?? item.asset.unitName,
+        showAmount ? `x${item.amount.toString()}` : null,
     ]
         .filter(Boolean)
         .join(' \u00B7 ')
 
-    return (
-        <PWTouchableOpacity
-            style={styles.container}
-            onPress={onPress}
-        >
+    const content = (
+        <>
             <PWView style={styles.thumbnail}>
                 <CollectibleThumbnail
                     thumbnailUrl={thumbnailUrl}
                     imageStyle={styles.image}
                     placeholderStyle={styles.placeholderContainer}
                     iconSize='md'
-                    notOptedIn={!isOptedIn}
+                    notOptedIn={!hasBalance}
                 />
             </PWView>
             <PWView style={styles.textContainer}>
@@ -63,9 +54,7 @@ export const CollectibleListItem = ({
                         style={styles.title}
                         numberOfLines={1}
                     >
-                        {collectible?.title ??
-                            asset.name ??
-                            `#${asset.assetId}`}
+                        {title}
                     </PWText>
                     {verificationIconName ? (
                         <PWIcon
@@ -84,6 +73,21 @@ export const CollectibleListItem = ({
                     </PWText>
                 )}
             </PWView>
-        </PWTouchableOpacity>
+        </>
     )
+
+    if (onPress) {
+        return (
+            <PWTouchableOpacity
+                style={styles.container}
+                onPress={handlePress}
+            >
+                {content}
+            </PWTouchableOpacity>
+        )
+    }
+
+    return <PWView style={styles.container}>{content}</PWView>
 }
+
+export const CollectibleListItem = React.memo(CollectibleListItemBase)

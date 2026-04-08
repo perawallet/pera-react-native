@@ -15,7 +15,6 @@ import { Image, ImageProps, ImageSource, ImageContentFit } from 'expo-image'
 import React, { useCallback, useState } from 'react'
 import {
     ActivityIndicator,
-    ImageSourcePropType,
     StyleProp,
     ImageStyle,
     View,
@@ -26,10 +25,9 @@ import { useStyles } from './styles'
 import { SHORT_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 
 export type PWImageProps = {
-    source: ImageSource | ImageSourcePropType
+    source: ImageSource | number
     style?: StyleProp<ImageStyle>
     containerStyle?: StyleProp<ViewStyle>
-    placeholderStyle?: StyleProp<ImageStyle>
     resizeMode?: 'cover' | 'contain' | 'center' | 'stretch' | 'repeat'
     onLoad?: ImageProps['onLoad']
     onError?: ImageProps['onError']
@@ -88,28 +86,25 @@ export const PWImage = ({
         [onError],
     )
 
-    const imageStyle = [
-        style,
-        containerStyle as StyleProp<ImageStyle>,
+    const wrapperStyle: StyleProp<ViewStyle> = [
+        containerStyle,
         width ? { width } : undefined,
         height ? { height } : undefined,
     ]
 
     return (
-        <View style={imageStyle}>
+        <View style={wrapperStyle}>
             <Image
-                source={source as ImageSource}
-                style={styles.image}
+                source={source}
+                style={[styles.image, style]}
                 contentFit={contentFit}
                 onLoad={handleLoad}
                 onError={handleError}
                 transition={transitionDuration}
                 cachePolicy='memory-disk'
                 recyclingKey={
-                    typeof source === 'object' &&
-                    source !== null &&
-                    'uri' in source
-                        ? (source as ImageSource).uri
+                    typeof source === 'object' && 'uri' in source
+                        ? source.uri
                         : undefined
                 }
             />

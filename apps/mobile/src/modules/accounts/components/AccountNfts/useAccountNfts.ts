@@ -77,10 +77,20 @@ const sortCollectibles = (
             )
             break
         case 'newestFirst':
-            sorted.sort((a, b) => Number(BigInt(b.assetId) - BigInt(a.assetId)))
+            sorted.sort((a, b) => {
+                const aId = BigInt(a.assetId)
+                const bId = BigInt(b.assetId)
+                if (aId === bId) return 0
+                return aId < bId ? 1 : -1
+            })
             break
         case 'oldestFirst':
-            sorted.sort((a, b) => Number(BigInt(a.assetId) - BigInt(b.assetId)))
+            sorted.sort((a, b) => {
+                const aId = BigInt(a.assetId)
+                const bId = BigInt(b.assetId)
+                if (aId === bId) return 0
+                return aId < bId ? -1 : 1
+            })
             break
     }
 
@@ -155,9 +165,9 @@ export const useAccountNfts = (): UseAccountNftsResult => {
             if (!asset || !isCollectible(asset)) {
                 continue
             }
-            const isOptedIn = balance.amount.isZero()
+            const isOptedInOnly = balance.amount.isZero()
 
-            if (isOptedIn && !showOptedIn) {
+            if (isOptedInOnly && !showOptedIn) {
                 continue
             }
 

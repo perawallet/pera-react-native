@@ -10,21 +10,7 @@
  limitations under the License
  */
 
-import { Decimal } from 'decimal.js'
-import {
-    type PeraAsset,
-    type PeraCollectible,
-} from '@perawallet/wallet-core-assets'
-
-export type CollectibleDisplayItem = {
-    assetId: string
-    asset: PeraAsset
-    collectible?: PeraCollectible
-    amount: Decimal
-}
-
-export type CollectibleItemProps = {
-    asset: PeraAsset
-    amount: Decimal
-    onPress: () => void
-}
+export type {
+    CollectibleDisplayItem,
+    CollectibleItemProps,
+} from '@modules/assets/types/collectible'

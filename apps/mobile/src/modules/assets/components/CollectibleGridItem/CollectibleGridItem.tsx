@@ -10,34 +10,29 @@
  limitations under the License
  */
 
-import React, { useMemo } from 'react'
+import React from 'react'
 import { PWText, PWTouchableOpacity, PWView, PWIcon } from '@components/core'
 import { CollectibleThumbnail } from '../CollectibleThumbnail'
 import { useStyles } from './styles'
-import type { CollectibleItemProps } from '../AccountNfts/types'
-import { isPureNft } from '@perawallet/wallet-core-assets'
-import { getVerificationIcon } from '@modules/assets/utils/verification'
+import type { CollectibleItemProps } from '@modules/assets/types/collectible'
+import { useCollectibleItem } from '@modules/assets/hooks/useCollectibleItem'
 
-export const CollectibleGridItem = ({
-    asset,
-    amount,
-    onPress,
-}: CollectibleItemProps) => {
+const CollectibleGridItemBase = ({ item, onPress }: CollectibleItemProps) => {
     const styles = useStyles()
-    const collectible = asset.peraMetadata?.collectible
-    const isPure = isPureNft(asset)
-    const thumbnailUrl = collectible?.primaryImage ?? asset.peraMetadata?.logo
-    const showAmount = !isPure && !amount.isZero()
-    const isOptedIn = amount.greaterThan(0)
-    const verificationIconName = useMemo(() => {
-        const tier = asset.peraMetadata?.verificationTier
-        return tier ? getVerificationIcon(tier) : null
-    }, [asset.peraMetadata?.verificationTier])
+    const {
+        thumbnailUrl,
+        showAmount,
+        hasBalance,
+        verificationIconName,
+        title,
+        collectionName,
+        handlePress,
+    } = useCollectibleItem({ item, onPress })
 
     return (
         <PWTouchableOpacity
             style={styles.container}
-            onPress={onPress}
+            onPress={handlePress}
         >
             <PWView style={styles.imageContainer}>
                 <CollectibleThumbnail
@@ -45,7 +40,7 @@ export const CollectibleGridItem = ({
                     imageStyle={styles.image}
                     placeholderStyle={styles.placeholderContainer}
                     iconSize='lg'
-                    notOptedIn={!isOptedIn}
+                    notOptedIn={!hasBalance}
                 />
                 {showAmount && (
                     <PWView style={styles.amountBadge}>
@@ -53,7 +48,7 @@ export const CollectibleGridItem = ({
                             variant='caption'
                             style={styles.amountBadgeText}
                         >
-                            x{amount.toString()}
+                            x{item.amount.toString()}
                         </PWText>
                     </PWView>
                 )}
@@ -66,13 +61,13 @@ export const CollectibleGridItem = ({
                 </PWView>
             </PWView>
             <PWView style={styles.infoContainer}>
-                {collectible?.collection?.name && (
+                {collectionName && (
                     <PWText
                         variant='caption'
                         style={styles.collectionName}
                         numberOfLines={1}
                     >
-                        {collectible.collection.name}
+                        {collectionName}
                     </PWText>
                 )}
                 <PWView style={styles.titleRow}>
@@ -81,9 +76,7 @@ export const CollectibleGridItem = ({
                         style={styles.title}
                         numberOfLines={2}
                     >
-                        {collectible?.title ??
-                            asset.name ??
-                            `#${asset.assetId}`}
+                        {title}
                     </PWText>
                     {verificationIconName ? (
                         <PWIcon
@@ -96,3 +89,5 @@ export const CollectibleGridItem = ({
         </PWTouchableOpacity>
     )
 }
+
+export const CollectibleGridItem = React.memo(CollectibleGridItemBase)
