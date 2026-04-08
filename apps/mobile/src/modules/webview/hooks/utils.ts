@@ -15,6 +15,7 @@ import {
     isAlgo25Account,
     isHDWalletAccount,
     isHardwareWalletAccount,
+    isLedgerAccount,
     isMultisigAccount,
     isRekeyedAccount,
     isWatchAccount,
@@ -26,6 +27,7 @@ export const getAccountType = (account: WalletAccount) => {
     if (isRekeyedAccount(account) && hasSigningKeys(account))
         return 'RekeyedAuth'
     if (isHDWalletAccount(account)) return 'HdKey'
+    if (isLedgerAccount(account)) return 'LedgerBle'
     if (isHardwareWalletAccount(account)) return 'HardwareBle'
     if (isAlgo25Account(account)) return 'Algo25'
     if (isWatchAccount(account)) return 'NoAuth'
