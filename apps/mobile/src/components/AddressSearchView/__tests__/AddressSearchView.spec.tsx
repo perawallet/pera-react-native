@@ -38,7 +38,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
-    useNfdSearch: vi.fn(() => ({ results: [], isLoading: false })),
+    useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
 }))
 
 vi.mock('@hooks/useDebouncedValue', () => ({
