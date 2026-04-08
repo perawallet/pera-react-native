@@ -18,6 +18,7 @@ import {
     isPureNft,
     isCollectible,
     formatCollectibleAmount,
+    formatAssetAmount,
 } from '../utils'
 import { PeraAssetType, type PeraAsset } from '../models'
 
@@ -298,6 +299,54 @@ describe('utils', () => {
             asset.totalSupply = new Decimal(1000000)
 
             expect(formatCollectibleAmount(new Decimal(0), asset)).toBe('x0')
+        })
+    })
+
+    describe('formatAssetAmount', () => {
+        test('formats amount with 6 decimals and unit name', () => {
+            const result = formatAssetAmount(new Decimal(1000000), {
+                decimals: 6,
+                unitName: 'ALGO',
+            })
+            expect(result).toBe('1.00 ALGO')
+        })
+
+        test('formats amount with 0 decimals', () => {
+            const result = formatAssetAmount(new Decimal(42), {
+                decimals: 0,
+                unitName: 'NFT',
+            })
+            expect(result).toBe('42.00 NFT')
+        })
+
+        test('handles missing unitName', () => {
+            const result = formatAssetAmount(new Decimal(1000000), {
+                decimals: 6,
+            })
+            expect(result).toBe('1.00')
+        })
+
+        test('handles missing decimals (defaults to 0)', () => {
+            const result = formatAssetAmount(new Decimal(100), {
+                unitName: 'TOKEN',
+            })
+            expect(result).toBe('100.00 TOKEN')
+        })
+
+        test('formats string input', () => {
+            const result = formatAssetAmount('5000000', {
+                decimals: 6,
+                unitName: 'ALGO',
+            })
+            expect(result).toBe('5.00 ALGO')
+        })
+
+        test('formats fractional amounts with minimum 2 decimal places', () => {
+            const result = formatAssetAmount(new Decimal(1500000), {
+                decimals: 6,
+                unitName: 'ALGO',
+            })
+            expect(result).toBe('1.50 ALGO')
         })
     })
 })

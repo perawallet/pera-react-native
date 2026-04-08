@@ -10,10 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(() => ({
-    skeleton: {
-        borderWidth: 0,
-    },
-}))
+export { SwapQuoteDetails } from './SwapQuoteDetails'
+export type { SwapQuoteDetailsProps } from './SwapQuoteDetails'

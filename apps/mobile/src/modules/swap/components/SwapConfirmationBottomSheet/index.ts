@@ -10,10 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(() => ({
-    skeleton: {
-        borderWidth: 0,
-    },
-}))
+export { SwapConfirmationBottomSheet } from './SwapConfirmationBottomSheet'
+export type { SwapConfirmationBottomSheetProps } from './SwapConfirmationBottomSheet'

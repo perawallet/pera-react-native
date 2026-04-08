@@ -49,6 +49,9 @@ export const useStyles = makeStyles(theme => ({
     amountText: {
         color: theme.colors.textMain,
     },
+    amountTextMuted: {
+        color: theme.colors.textGrayLighter,
+    },
     amountInputContainer: {
         paddingHorizontal: 0,
     },

@@ -10,15 +10,19 @@
  limitations under the License
  */
 
-import { PWScrollView } from '@components/core'
+import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
+import { useLanguage } from '@hooks/useLanguage'
 import { SwapAssetSelectionBottomSheet } from '../SwapAssetSelectionBottomSheet'
 import { SwapAmountSection } from '../SwapAmountSection'
 import { SwapConfigurationBottomSheet } from '../SwapConfigurationBottomSheet'
+import { SwapQuoteDetails } from '../SwapQuoteDetails'
+import { SwapConfirmationBottomSheet } from '../SwapConfirmationBottomSheet'
 import { SwapFormControls } from './SwapFormControls'
 import { useSwapForm } from './useSwapForm'
 import { useStyles } from './styles'
 
 export const SwapForm = () => {
+    const { t } = useLanguage()
     const styles = useStyles()
     const {
         payAssetId,
@@ -27,41 +31,78 @@ export const SwapForm = () => {
         receiveAmount,
         payBalance,
         receiveBalance,
+        isQuoteFetching,
+        isQuoteError,
+        isConfirming,
+        selectedQuote,
+        canSwap,
         payAssetModal,
         receiveAssetModal,
         configModal,
+        confirmModal,
         handlePayAmountChange,
         handleSwapDirection,
         handleMaxPress,
         handlePayAssetSelected,
         handleReceiveAssetSelected,
         handleConfigApply,
+        handleConfirmSwap,
     } = useSwapForm()
 
     return (
         <>
             <PWScrollView contentContainerStyle={styles.formContainer}>
-                <SwapAmountSection
-                    variant='pay'
-                    assetId={payAssetId}
-                    balance={payBalance}
-                    amount={payAmount}
-                    onAmountChange={handlePayAmountChange}
-                    onAssetPress={payAssetModal.open}
-                />
+                <PWView>
+                    <SwapAmountSection
+                        variant='pay'
+                        assetId={payAssetId}
+                        balance={payBalance}
+                        amount={payAmount}
+                        onAmountChange={handlePayAmountChange}
+                        onAssetPress={payAssetModal.open}
+                    />
 
-                <SwapFormControls
-                    onSwapPress={handleSwapDirection}
-                    onMaxPress={handleMaxPress}
-                    onConfigurePress={configModal.open}
-                />
+                    <SwapFormControls
+                        onSwapPress={handleSwapDirection}
+                        onMaxPress={handleMaxPress}
+                        onConfigurePress={configModal.open}
+                    />
 
-                <SwapAmountSection
-                    variant='receive'
-                    assetId={receiveAssetId}
-                    balance={receiveBalance}
-                    amount={receiveAmount}
-                    onAssetPress={receiveAssetModal.open}
+                    <SwapAmountSection
+                        variant='receive'
+                        assetId={receiveAssetId}
+                        balance={receiveBalance}
+                        amount={receiveAmount}
+                        isLoading={isQuoteFetching && !receiveAmount}
+                        onAssetPress={receiveAssetModal.open}
+                    />
+                </PWView>
+
+                {selectedQuote && (
+                    <SwapQuoteDetails
+                        quote={selectedQuote}
+                        isLoading={isQuoteFetching}
+                    />
+                )}
+
+                {isQuoteError && (
+                    <PWView style={styles.errorContainer}>
+                        <PWText
+                            variant='body'
+                            style={styles.errorText}
+                        >
+                            {t('swap.quote.quote_error')}
+                        </PWText>
+                    </PWView>
+                )}
+
+                <PWButton
+                    variant='primary'
+                    title={t('swap.quote.review_swap')}
+                    onPress={confirmModal.open}
+                    isDisabled={!canSwap}
+                    style={styles.swapButton}
+                    testID='swap-review-button'
                 />
             </PWScrollView>
 
@@ -83,6 +124,14 @@ export const SwapForm = () => {
                 isVisible={configModal.isOpen}
                 onClose={configModal.close}
                 onApply={handleConfigApply}
+            />
+
+            <SwapConfirmationBottomSheet
+                isVisible={confirmModal.isOpen}
+                onClose={confirmModal.close}
+                onConfirm={handleConfirmSwap}
+                quote={selectedQuote}
+                isConfirming={isConfirming}
             />
         </>
     )

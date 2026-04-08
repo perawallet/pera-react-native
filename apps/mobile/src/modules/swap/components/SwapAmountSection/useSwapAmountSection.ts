@@ -12,7 +12,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Decimal } from 'decimal.js'
-import { useTheme } from '@rneui/themed/dist/config/ThemeProvider'
 import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
 import { formatCurrency } from '@perawallet/wallet-core-shared'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
@@ -28,7 +27,7 @@ type UseSwapAmountSectionResult = {
     asset: PeraAsset | undefined
     isPay: boolean
     displayValue: string
-    amountColor: string
+    hasPositiveAmount: boolean
     handleTextChange: (text: string) => void
     handleFocus: () => void
     handleBlur: () => void
@@ -40,7 +39,6 @@ export const useSwapAmountSection = ({
     amount,
     onAmountChange,
 }: UseSwapAmountSectionParams): UseSwapAmountSectionResult => {
-    const { theme } = useTheme()
     const provider = usePeraProvider()
     const deviceInfo = provider.deviceInfo
 
@@ -61,7 +59,18 @@ export const useSwapAmountSection = ({
     }, [amount, isFocused])
 
     const displayValue = useMemo(() => {
-        if (!isPay) return amount ? amount.toString() : ''
+        if (!isPay) {
+            if (!amount) return ''
+            return formatCurrency(
+                amount,
+                asset?.decimals ?? 0,
+                asset?.unitName ?? '',
+                deviceInfo.getDeviceLocale(),
+                false,
+                false,
+                0,
+            )
+        }
         if (isFocused || !amount) return rawText
         return formatCurrency(
             amount,
@@ -75,9 +84,6 @@ export const useSwapAmountSection = ({
     }, [isPay, isFocused, rawText, amount, asset, deviceInfo])
 
     const hasPositiveAmount = amount !== null && amount.greaterThan(0)
-    const amountColor = hasPositiveAmount
-        ? theme.colors.textMain
-        : theme.colors.textGrayLighter
 
     const handleFocus = useCallback(() => setIsFocused(true), [])
     const handleBlur = useCallback(() => setIsFocused(false), [])
@@ -107,7 +113,7 @@ export const useSwapAmountSection = ({
         asset,
         isPay,
         displayValue,
-        amountColor,
+        hasPositiveAmount,
         handleTextChange,
         handleFocus,
         handleBlur,

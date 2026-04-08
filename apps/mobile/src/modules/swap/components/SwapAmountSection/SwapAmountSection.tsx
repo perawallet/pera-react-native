@@ -11,13 +11,13 @@
  */
 
 import { Decimal } from 'decimal.js'
-import { PWInput, PWText, PWView } from '@components/core'
+import { PWInput, PWSkeleton, PWText, PWView } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwapAssetSelector } from '../SwapAssetSelector'
 import { useStyles } from './styles'
 import { useSwapAmountSection } from './useSwapAmountSection'
-import { useTheme } from '@rneui/themed/dist/config/ThemeProvider'
+import { useTheme } from '@rneui/themed'
 
 type SwapAmountSectionPayProps = {
     variant: 'pay'
@@ -33,6 +33,7 @@ type SwapAmountSectionReceiveProps = {
     assetId: string
     balance: Decimal | null
     amount: Decimal | null
+    isLoading?: boolean
     onAssetPress: () => void
 }
 
@@ -42,6 +43,7 @@ export type SwapAmountSectionProps =
 
 export const SwapAmountSection = (props: SwapAmountSectionProps) => {
     const { variant, assetId, balance, amount, onAssetPress } = props
+    const isLoading = variant === 'receive' ? props.isLoading : false
     const { t } = useLanguage()
     const { theme } = useTheme()
     const styles = useStyles()
@@ -51,7 +53,7 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
         asset,
         isPay,
         displayValue,
-        amountColor,
+        hasPositiveAmount,
         handleTextChange,
         handleFocus,
         handleBlur,
@@ -97,11 +99,22 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                                 styles.amountInputInnerContainer
                             }
                             inputStyle={styles.amountInput}
+                            testID='swap-pay-input'
+                        />
+                    ) : isLoading ? (
+                        <PWSkeleton
+                            width={120}
+                            height={28}
                         />
                     ) : (
                         <PWText
-                            style={[styles.amountText, { color: amountColor }]}
+                            style={
+                                hasPositiveAmount
+                                    ? styles.amountText
+                                    : styles.amountTextMuted
+                            }
                             variant='h2'
+                            testID='swap-receive-amount'
                         >
                             {displayValue || '0.00'}
                         </PWText>

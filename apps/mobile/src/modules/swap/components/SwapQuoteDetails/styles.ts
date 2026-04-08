@@ -12,8 +12,30 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(() => ({
-    skeleton: {
-        borderWidth: 0,
+export const useStyles = makeStyles(theme => ({
+    container: {
+        paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.lg,
+        gap: theme.spacing.md,
+    },
+    row: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    label: {
+        color: theme.colors.textGray,
+    },
+    value: {
+        color: theme.colors.textMain,
+    },
+    priceImpactLow: {
+        color: theme.colors.positive,
+    },
+    priceImpactMedium: {
+        color: theme.colors.warning,
+    },
+    priceImpactHigh: {
+        color: theme.colors.negative,
     },
 }))
