@@ -58,9 +58,7 @@ export const hardwareSignerActor = fromPromise<
         )
 
         if (!signerAccount || !isHardwareWalletAccount(signerAccount)) {
-            throw new HardwareWalletError(
-                `Hardware wallet signer account not found for address ${group.signerAddress}`,
-            )
+            throw new HardwareWalletError('signer_not_found')
         }
 
         const result = await strategy.sign(

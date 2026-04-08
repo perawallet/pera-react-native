@@ -246,8 +246,8 @@ export interface DataAnalyzer {
  * Hardware wallet prompt types
  */
 export interface HardwarePrompt {
+    /** Semantic prompt type — the UI layer maps this to an i18n key for display. */
     type: 'connect' | 'approve' | 'review-transaction' | 'review-data'
-    message: string
     /** For review: details to show */
     details?: TransactionSummary | { message: string }
 }

@@ -281,9 +281,7 @@ export const resolveInitialContext = (
         'hardware',
     )
     if (hasHardwareSigners && !input.hardwareWalletRegistry) {
-        throw new HardwareWalletError(
-            'Hardware wallet registry is required for hardware account signing',
-        )
+        throw new HardwareWalletError('registry_required')
     }
 
     return {

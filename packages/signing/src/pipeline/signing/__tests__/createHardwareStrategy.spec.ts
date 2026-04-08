@@ -330,7 +330,7 @@ describe('createHardwareStrategy', () => {
 
             await expect(
                 strategy.sign(group, makeLedgerAccount()),
-            ).rejects.toThrow('not available')
+            ).rejects.toThrow('transport_unavailable')
         })
 
         it('calls onSigningStart before signing loop', async () => {
@@ -428,7 +428,7 @@ describe('createHardwareStrategy', () => {
 
             await expect(
                 strategy.sign(group, makeLedgerAccount()),
-            ).rejects.toThrow('only supports transaction signing')
+            ).rejects.toThrow('unsupported_data_type')
         })
     })
 })

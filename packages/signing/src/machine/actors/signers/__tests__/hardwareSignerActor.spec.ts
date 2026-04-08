@@ -153,7 +153,7 @@ describe('hardwareSignerActor', () => {
         actor.start()
 
         await expect(toPromise(actor)).rejects.toThrow(
-            'Hardware wallet signer account not found',
+            'signer_not_found',
         )
     })
 
@@ -178,7 +178,7 @@ describe('hardwareSignerActor', () => {
         actor.start()
 
         await expect(toPromise(actor)).rejects.toThrow(
-            'Hardware wallet signer account not found',
+            'signer_not_found',
         )
     })
 
@@ -248,6 +248,6 @@ describe('hardwareSignerActor', () => {
         const actor = createActor(hardwareSignerActor, { input })
         actor.start()
 
-        await expect(toPromise(actor)).rejects.toThrow('not available')
+        await expect(toPromise(actor)).rejects.toThrow('transport_unavailable')
     })
 })

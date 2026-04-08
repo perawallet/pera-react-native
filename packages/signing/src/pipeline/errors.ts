@@ -145,11 +145,24 @@ export class TransportError extends PipelineError {
 /**
  * Hardware wallet connection error
  */
+export type HardwareWalletErrorReason =
+    | 'unsupported_data_type'
+    | 'transport_unavailable'
+    | 'signer_not_found'
+    | 'registry_required'
+
 export class HardwareWalletError extends PipelineError {
-    constructor(message: string, originalError?: Error) {
-        super(`Hardware wallet error: ${message}`, originalError, {
+    readonly reason: HardwareWalletErrorReason
+
+    constructor(
+        reason: HardwareWalletErrorReason,
+        originalError?: Error,
+    ) {
+        super(`Hardware wallet error: ${reason}`, originalError, {
             retryable: true,
+            params: { reason },
         })
+        this.reason = reason
     }
 }
 

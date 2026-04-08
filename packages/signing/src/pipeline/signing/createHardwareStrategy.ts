@@ -70,9 +70,7 @@ export const createHardwareStrategy = (
             }
 
             if (group.data.type !== 'transactions') {
-                throw new HardwareWalletError(
-                    'Hardware wallet only supports transaction signing',
-                )
+                throw new HardwareWalletError('unsupported_data_type')
             }
 
             const hwAccount = account as HardwareWalletAccount
@@ -83,9 +81,7 @@ export const createHardwareStrategy = (
                 hardwareWalletRegistry?.getProvider(manufacturer)
 
             if (!transportProvider) {
-                throw new HardwareWalletError(
-                    'Hardware wallet transport is not available on this platform',
-                )
+                throw new HardwareWalletError('transport_unavailable')
             }
 
             let transport: HardwareWalletTransport | undefined
@@ -94,7 +90,6 @@ export const createHardwareStrategy = (
                 // Step 1: Connect to the hardware wallet device
                 await callbacks?.onHardwarePrompt?.({
                     type: 'connect',
-                    message: 'Connecting to hardware wallet...',
                 })
 
                 transport = await transportProvider.connect(deviceId)
@@ -105,8 +100,6 @@ export const createHardwareStrategy = (
                 // Step 3: Prompt user to confirm on device
                 await callbacks?.onHardwarePrompt?.({
                     type: 'approve',
-                    message:
-                        'Please review and approve the transaction on your device.',
                 })
 
                 const { transactions, indicesToSign } = group.data
