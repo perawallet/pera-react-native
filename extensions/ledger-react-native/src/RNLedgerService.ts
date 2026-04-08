@@ -15,11 +15,10 @@ import type {
     LedgerTransportProvider,
     LedgerTransport,
     LedgerDevice,
-    LedgerDeviceModel,
     LedgerAccount,
 } from '@perawallet/wallet-core-ledger'
 import {
-    LEDGER_SERVICE_UUIDS,
+    resolveDeviceModel,
     buildLedgerAccountPath,
     classifyLedgerError,
     LedgerConnectionError,
@@ -27,25 +26,6 @@ import {
 import { hexToBytes, bytesToHex } from '@perawallet/wallet-core-shared'
 import TransportBLE from '@ledgerhq/react-native-hw-transport-ble'
 import Algorand from '@ledgerhq/hw-app-algorand'
-
-/**
- * Detect Ledger device model from BLE service UUIDs.
- */
-const detectDeviceModel = (
-    serviceUUIDs: string[] | null,
-): LedgerDeviceModel => {
-    if (!serviceUUIDs) return 'nanoX'
-
-    const normalizedUUIDs = serviceUUIDs.map(u => u.toLowerCase())
-
-    for (const [model, uuid] of Object.entries(LEDGER_SERVICE_UUIDS)) {
-        if (normalizedUUIDs.includes(uuid.toLowerCase())) {
-            return model as LedgerDeviceModel
-        }
-    }
-
-    return 'nanoX'
-}
 
 /**
  * Wraps a connected Ledger BLE transport + Algorand app instance
@@ -134,7 +114,7 @@ export class RNLedgerService implements HardwareWalletService {
 
                         const { id, name, serviceUUIDs, rssi } =
                             event.descriptor
-                        const model = detectDeviceModel(serviceUUIDs)
+                        const model = resolveDeviceModel(serviceUUIDs)
 
                         onDevice({
                             id,

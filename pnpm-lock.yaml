@@ -1482,6 +1482,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.28.6
+      '@ledgerhq/devices':
+        specifier: ^8.13.0
+        version: 8.13.0
       '@perawallet/wallet-core-hardware-wallet':
         specifier: workspace:*
         version: link:../hardware-wallet

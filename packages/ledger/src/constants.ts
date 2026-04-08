@@ -10,17 +10,45 @@
  limitations under the License
  */
 
+import {
+    DeviceModelId,
+    getBluetoothServiceUuids,
+    getInfosForServiceUuid,
+} from '@ledgerhq/devices'
 import type { LedgerDeviceModel } from './types'
 
 /**
- * BLE service UUIDs for each Ledger device model.
- * Used to identify device model during BLE scanning.
+ * Maps @ledgerhq/devices model IDs to our user-friendly LedgerDeviceModel names.
  */
-export const LEDGER_SERVICE_UUIDS: Record<LedgerDeviceModel, string> = {
-    nanoX: '13d63400-2c97-0004-0000-4c6564676572',
-    stax: '13d63400-2c97-6004-0000-4c6564676572',
-    flex: '13d63400-2c97-3004-0000-4c6564676572',
-    nanoGen5: '13d63400-2c97-8004-0000-4c6564676572',
+const DEVICE_MODEL_MAP: Partial<Record<DeviceModelId, LedgerDeviceModel>> = {
+    [DeviceModelId.nanoX]: 'nanoX',
+    [DeviceModelId.stax]: 'stax',
+    [DeviceModelId.europa]: 'flex',
+    [DeviceModelId.apex]: 'nanoGen5',
+}
+
+/**
+ * All BLE service UUIDs for Ledger devices, sourced from @ledgerhq/devices.
+ */
+export const LEDGER_BLE_SERVICE_UUIDS: string[] = getBluetoothServiceUuids()
+
+/**
+ * Resolve a BLE service UUID to our LedgerDeviceModel.
+ * Returns 'nanoX' as the default if the UUID is unrecognized.
+ */
+export const resolveDeviceModel = (
+    serviceUUIDs: string[] | null,
+): LedgerDeviceModel => {
+    if (!serviceUUIDs) return 'nanoX'
+
+    for (const uuid of serviceUUIDs) {
+        const infos = getInfosForServiceUuid(uuid.toLowerCase())
+        if (infos) {
+            return DEVICE_MODEL_MAP[infos.deviceModel.id as DeviceModelId] ?? 'nanoX'
+        }
+    }
+
+    return 'nanoX'
 }
 
 /**

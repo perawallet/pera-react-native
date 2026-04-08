@@ -38,6 +38,7 @@ export default defineConfig({
             external: [
                 'react',
                 'react/jsx-runtime',
+                '@ledgerhq/devices',
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-core-hardware-wallet',
             ],
