@@ -46,6 +46,14 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     }
 })
 
+vi.mock('@hooks/useResolvedAddress', () => ({
+    useResolvedAddress: vi.fn(() => ({
+        displayName: '',
+        isNfd: false,
+        isResolving: false,
+    })),
+}))
+
 const USER_ADDRESS = 'USER_ADDRESS'
 const OTHER_ADDRESS = 'OTHER_ADDRESS'
 
