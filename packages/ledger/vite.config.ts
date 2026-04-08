@@ -39,6 +39,7 @@ export default defineConfig({
                 'react',
                 'react/jsx-runtime',
                 '@ledgerhq/devices',
+                '@ledgerhq/errors',
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-core-hardware-wallet',
             ],

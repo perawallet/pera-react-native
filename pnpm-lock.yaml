@@ -1485,6 +1485,9 @@ importers:
       '@ledgerhq/devices':
         specifier: ^8.13.0
         version: 8.13.0
+      '@ledgerhq/errors':
+        specifier: ^6.32.0
+        version: 6.32.0
       '@perawallet/wallet-core-hardware-wallet':
         specifier: workspace:*
         version: link:../hardware-wallet

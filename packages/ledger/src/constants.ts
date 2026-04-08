@@ -15,6 +15,7 @@ import {
     getBluetoothServiceUuids,
     getInfosForServiceUuid,
 } from '@ledgerhq/devices'
+import { StatusCodes } from '@ledgerhq/errors'
 import type { LedgerDeviceModel } from './types'
 
 /**
@@ -65,17 +66,17 @@ export const buildLedgerAccountPath = (accountIndex: number): string =>
     `${ALGORAND_BIP44_PREFIX}/${accountIndex}'/0/0`
 
 /**
- * APDU status codes returned by the Ledger Algorand app.
+ * APDU status codes used to classify Ledger responses.
+ *
+ * Standard codes are sourced from @ledgerhq/errors. The Algorand app also
+ * returns a non-standard 0x6986 when the user rejects on firmware >= 2.0.7.
  */
 export const LEDGER_STATUS_CODES = {
-    /** Operation succeeded */
-    SUCCESS: 0x9000,
-    /** User rejected the operation on the device (v2.0.7+) */
+    SUCCESS: StatusCodes.OK,
+    /** User rejected the operation on the device (v2.0.7+, Algorand app-specific) */
     USER_REJECTED: 0x6986,
-    /** User rejected the operation on the device (pre v2.0.7) */
-    USER_REJECTED_LEGACY: 0x6985,
-    /** The Algorand app is not open on the device */
-    APP_NOT_OPEN: 0x6e00,
+    USER_REJECTED_LEGACY: StatusCodes.CONDITIONS_OF_USE_NOT_SATISFIED,
+    APP_NOT_OPEN: StatusCodes.CLA_NOT_SUPPORTED,
 } as const
 
 /**
