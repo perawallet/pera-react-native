@@ -104,7 +104,7 @@ export const AccountAssetItemView = ({
 
     return (
         <PWTouchableOpacity
-            activeOpacity={onPress ? 0.7 : 1}
+            activeOpacity={onPress ? undefined : 1}
             onPress={onPress}
             {...rest}
             style={[styles.container, rest.style]}
