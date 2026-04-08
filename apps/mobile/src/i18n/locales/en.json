@@ -661,6 +661,8 @@
             "create_algo25_option_title": "Create an Algo25 Account",
             "create_algo25_option_description": "Legacy format that is specific to Algorand",
             "terms_and_privacy": "By adding a wallet, you agree to Pera Wallet's <0>Terms and Conditions</0> and <1>Privacy Policy</1>",
+            "pair_ledger_option_title": "Pair Ledger Device",
+            "pair_ledger_option_description": "Connect a Ledger hardware wallet via Bluetooth to import accounts",
             "create_joint_account_option_title": "Create a Joint Account",
             "create_joint_account_option_description": "Create a shared multisig account with multiple participants",
             "see_other_options": "See other options"
@@ -1221,6 +1223,82 @@
             "search_placeholder": "Search by name or ID",
             "no_results_title": "No Matching Assets",
             "no_results_body": "No assets matched your search term"
+        }
+    },
+    "ledger": {
+        "instructions": {
+            "title": "Pair Ledger Device",
+            "description": "Follow these steps to connect your Ledger device:",
+            "step_1": "Turn on your Ledger device",
+            "step_2": "Open the Algorand app on your Ledger",
+            "step_3": "Keep your Ledger device nearby",
+            "continue": "Continue",
+            "permission_required_title": "Bluetooth Permission Required",
+            "permission_required_message": "Pera needs Bluetooth permission to communicate with your Ledger device. Please enable it in Settings."
+        },
+        "scan": {
+            "title": "Looking for Devices",
+            "description": "Select a Ledger device to connect to.",
+            "scanning": "Scanning for Ledger devices...",
+            "searching": "Searching for nearby devices...",
+            "no_devices": "No devices found",
+            "no_devices_description": "Make sure your Ledger device is turned on and nearby.",
+            "retry": "Scan Again",
+            "error": "Scan failed. Make sure Bluetooth is enabled and try again.",
+            "timeout": "Scan timed out. Make sure your device is on and nearby."
+        },
+        "fetch_accounts": {
+            "title": "Searching Accounts",
+            "connecting": "Connecting to {{deviceName}}...",
+            "discovering": "Searching for accounts on your Ledger device...",
+            "progress": "Checking account {{current}}...",
+            "error_title": "Connection Error",
+            "app_not_open": "Please open the Algorand app on your Ledger device and try again.",
+            "retry": "Try Again"
+        },
+        "select_accounts": {
+            "title": "Select Accounts",
+            "description": "We found {{count}} accounts on your Ledger device",
+            "accounts_count": "{{count}} accounts",
+            "account_label": "Account #{{index}}",
+            "select_all": "Select all",
+            "already_imported": "Already imported",
+            "continue": "Continue",
+            "no_new_accounts": "All accounts on this device are already imported."
+        },
+        "verify": {
+            "title": "Verify on Ledger",
+            "connecting": "Connecting to your Ledger device...",
+            "verify_on_device": "Please verify each address on your Ledger device.",
+            "progress": "Verifying account {{current}} of {{total}}...",
+            "confirm_instruction": "Confirm the address shown on your Ledger device matches.",
+            "complete": "All accounts verified successfully!",
+            "error_title": "Verification Failed",
+            "rejected": "Address verification was rejected on the device.",
+            "retry": "Try Again",
+            "saving": "Saving accounts..."
+        },
+        "signing": {
+            "title": "Approve on Ledger",
+            "connect": "Connecting to your Ledger device...",
+            "confirm": "Please review and approve the transaction on your Ledger device.",
+            "timeout": "The transaction was not confirmed in time. Please try again.",
+            "cancel": "Cancel"
+        },
+        "errors": {
+            "app_not_open": "The Algorand app is not open on your Ledger device.",
+            "connection_lost": "Connection to the Ledger device was lost.",
+            "user_rejected": "The operation was rejected on the Ledger device.",
+            "bluetooth_disabled": "Bluetooth is not enabled. Please enable Bluetooth and try again.",
+            "connection_failed": "Failed to connect to the Ledger device."
+        },
+        "status": {
+            "disconnected": "Disconnected",
+            "scanning": "Scanning",
+            "connecting": "Connecting",
+            "connected": "Connected",
+            "app_not_open": "App Not Open",
+            "ready": "Ready"
         }
     }
 }

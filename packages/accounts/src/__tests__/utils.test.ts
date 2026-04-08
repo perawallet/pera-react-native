@@ -134,7 +134,12 @@ describe('services/accounts/utils - account type checks', () => {
             isLedgerAccount({
                 ...baseAccount,
                 type: 'hardware',
-                hardwareDetails: { manufacturer: 'ledger' },
+                hardwareDetails: {
+                    manufacturer: 'ledger',
+                    deviceId: 'test-device',
+                    deviceName: 'Ledger Nano X',
+                    accountIndex: 0,
+                },
             } as any),
         ).toBe(true)
         expect(
@@ -304,13 +309,18 @@ describe('services/accounts/utils - resolveAccountStatus', () => {
         expect(resolveAccountStatus(account, [])).toBe('standard')
     })
 
-    test('returns ledger for hardware account with ledger manufacturer', () => {
+    test('returns hardware for hardware wallet account', () => {
         const account = {
             type: 'hardware',
             address: 'ADDR',
-            hardwareDetails: { manufacturer: 'ledger' },
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'test-device',
+                deviceName: 'Ledger Nano X',
+                accountIndex: 0,
+            },
         } as any
-        expect(resolveAccountStatus(account, [])).toBe('ledger')
+        expect(resolveAccountStatus(account, [])).toBe('hardware')
     })
 
     test('returns watch for watch account', () => {
@@ -359,11 +369,16 @@ describe('services/accounts/utils - resolveAccountStatus', () => {
         )
     })
 
-    test('returns rekeyedLedger for rekeyed account when auth is ledger', () => {
+    test('returns rekeyedHardware for rekeyed account when auth is hardware wallet', () => {
         const authAccount = {
             type: 'hardware',
             address: 'AUTH',
-            hardwareDetails: { manufacturer: 'ledger' },
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'test-device',
+                deviceName: 'Ledger Nano X',
+                accountIndex: 0,
+            },
         } as any
         const account = {
             type: 'algo25',
@@ -372,7 +387,7 @@ describe('services/accounts/utils - resolveAccountStatus', () => {
             keyPairId: 'pk1',
         } as any
         expect(resolveAccountStatus(account, [authAccount])).toBe(
-            'rekeyedLedger',
+            'rekeyedHardware',
         )
     })
 })
@@ -410,7 +425,12 @@ describe('services/accounts/utils - isSigningAccount', () => {
         const authAccount = {
             type: 'hardware',
             address: 'AUTH',
-            hardwareDetails: { manufacturer: 'ledger' },
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'test-device',
+                deviceName: 'Ledger Nano X',
+                accountIndex: 0,
+            },
         } as any
         const account = {
             type: 'watch',

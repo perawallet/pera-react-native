@@ -58,8 +58,8 @@ describe('AccountIcon', () => {
         ).toBeTruthy()
     })
 
-    it('renders correct icon for ledger account', () => {
-        mockResolveAccountStatus.mockReturnValue('ledger')
+    it('renders correct icon for hardware wallet account', () => {
+        mockResolveAccountStatus.mockReturnValue('hardware')
 
         render(<AccountIcon account={account} />)
 
@@ -108,8 +108,8 @@ describe('AccountIcon', () => {
         ).toBeTruthy()
     })
 
-    it('renders correct icon for rekeyedLedger account', () => {
-        mockResolveAccountStatus.mockReturnValue('rekeyedLedger')
+    it('renders correct icon for rekeyedHardware account', () => {
+        mockResolveAccountStatus.mockReturnValue('rekeyedHardware')
 
         render(<AccountIcon account={account} />)
 

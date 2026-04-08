@@ -24,4 +24,5 @@ export {
     RNKeyValueStorageService,
     RNDeviceInfoStorageService,
 } from './services'
+
 export { getPlatformServices } from './resources'
