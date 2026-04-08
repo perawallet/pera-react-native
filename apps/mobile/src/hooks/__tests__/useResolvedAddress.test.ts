@@ -17,7 +17,7 @@ import { useResolvedAddress } from '../useResolvedAddress'
 const mockUseNfdForAddress = vi.hoisted(() => vi.fn())
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
-    useNfdForAddress: mockUseNfdForAddress,
+    useNfdForAddressQuery: mockUseNfdForAddress,
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -36,8 +36,8 @@ describe('useResolvedAddress', () => {
 
     it('returns NFD name when resolved', () => {
         mockUseNfdForAddress.mockReturnValue({
-            nfdName: 'alice.algo',
-            isResolving: false,
+            data: [{ name: 'alice.algo' }],
+            isPending: false,
         })
 
         const { result } = renderHook(() => useResolvedAddress(VALID_ADDRESS))
@@ -49,8 +49,8 @@ describe('useResolvedAddress', () => {
 
     it('returns truncated address as fallback', () => {
         mockUseNfdForAddress.mockReturnValue({
-            nfdName: undefined,
-            isResolving: false,
+            data: undefined,
+            isPending: false,
         })
 
         const { result } = renderHook(() => useResolvedAddress(VALID_ADDRESS))
@@ -61,8 +61,8 @@ describe('useResolvedAddress', () => {
 
     it('uses long format when specified', () => {
         mockUseNfdForAddress.mockReturnValue({
-            nfdName: undefined,
-            isResolving: false,
+            data: undefined,
+            isPending: false,
         })
 
         const { result } = renderHook(() =>
@@ -75,8 +75,8 @@ describe('useResolvedAddress', () => {
 
     it('returns full address when format is full', () => {
         mockUseNfdForAddress.mockReturnValue({
-            nfdName: undefined,
-            isResolving: false,
+            data: undefined,
+            isPending: false,
         })
 
         const { result } = renderHook(() =>
@@ -86,10 +86,10 @@ describe('useResolvedAddress', () => {
         expect(result.current.displayName).toBe(VALID_ADDRESS)
     })
 
-    it('passes enabled option through to useNfdForAddress', () => {
+    it('passes enabled option through to useNfdForAddressQuery', () => {
         mockUseNfdForAddress.mockReturnValue({
-            nfdName: undefined,
-            isResolving: false,
+            data: undefined,
+            isPending: false,
         })
 
         renderHook(() => useResolvedAddress(VALID_ADDRESS, { enabled: false }))

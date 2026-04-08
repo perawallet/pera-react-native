@@ -25,12 +25,12 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
 }))
 
 const mockUseNfdForAddress = vi.fn(() => ({
-    nfdName: undefined as string | undefined,
-    isResolving: false,
+    data: undefined as { name: string }[] | undefined,
+    isPending: false,
 }))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
-    useNfdForAddress: (...args: Parameters<typeof mockUseNfdForAddress>) =>
+    useNfdForAddressQuery: (...args: Parameters<typeof mockUseNfdForAddress>) =>
         mockUseNfdForAddress(...args),
 }))
 
@@ -38,8 +38,8 @@ describe('AddressDisplay', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockUseNfdForAddress.mockReturnValue({
-            nfdName: undefined,
-            isResolving: false,
+            data: undefined,
+            isPending: false,
         })
     })
 
@@ -52,8 +52,8 @@ describe('AddressDisplay', () => {
 
     it('renders NFD name when resolved', () => {
         mockUseNfdForAddress.mockReturnValue({
-            nfdName: 'alice.algo',
-            isResolving: false,
+            data: [{ name: 'alice.algo' }],
+            isPending: false,
         })
 
         render(<AddressDisplay address={'A'.repeat(58)} />)
@@ -63,8 +63,8 @@ describe('AddressDisplay', () => {
 
     it('renders truncated address when no NFD found', () => {
         mockUseNfdForAddress.mockReturnValue({
-            nfdName: undefined,
-            isResolving: false,
+            data: undefined,
+            isPending: false,
         })
 
         const address = 'ABCDEFGHIJ1234567890'

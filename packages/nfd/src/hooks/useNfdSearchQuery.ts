@@ -10,36 +10,22 @@
  limitations under the License
  */
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, UseQueryResult } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { fetchNfdSearch } from '../api'
 import { nfdQueryKeys } from './querykeys'
 import type { NfdSearchResult } from '../models'
 
-type UseNfdSearchResult = {
-    results: NfdSearchResult[]
-    isLoading: boolean
-    isError: boolean
-    error: Error | null
-}
-
-export const useNfdSearch = (
+export const useNfdSearchQuery = (
     name: string,
     options?: { enabled?: boolean },
-): UseNfdSearchResult => {
+): UseQueryResult<NfdSearchResult[]> => {
     const { network } = useNetwork()
     const enabled = (options?.enabled ?? true) && name.length > 0
 
-    const { data, isPending, isError, error } = useQuery({
+    return useQuery({
         queryKey: nfdQueryKeys.search(name, network),
         queryFn: ({ signal }) => fetchNfdSearch({ name, network, signal }),
         enabled,
     })
-
-    return {
-        results: data ?? [],
-        isLoading: isPending && enabled,
-        isError,
-        error: error instanceof Error ? error : null,
-    }
 }

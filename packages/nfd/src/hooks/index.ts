@@ -10,6 +10,6 @@
  limitations under the License
  */
 
-export { useNfdForAddress } from './useNfdForAddress'
-export { useNfdSearch } from './useNfdSearch'
+export { useNfdForAddressQuery } from './useNfdForAddressQuery'
+export { useNfdSearchQuery } from './useNfdSearchQuery'
 export { nfdQueryKeys } from './querykeys'

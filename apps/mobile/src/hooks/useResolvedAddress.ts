@@ -11,7 +11,8 @@
  */
 
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { useNfdForAddress } from '@perawallet/wallet-core-nfd'
+import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
+import { useMemo } from 'react'
 
 const LONG_ADDRESS_LENGTH = 20
 
@@ -30,9 +31,11 @@ export const useResolvedAddress = (
     address: string,
     options?: { enabled?: boolean; format?: AddressFormat },
 ): UseResolvedAddressResult => {
-    const { nfdName, isResolving } = useNfdForAddress(address, {
+    const { data: nfdNames, isPending } = useNfdForAddressQuery(address, {
         enabled: options?.enabled,
     })
+
+    const nfdName = useMemo(() => nfdNames?.at(0)?.name, [nfdNames])
 
     const format = options?.format ?? 'short'
 
@@ -48,6 +51,6 @@ export const useResolvedAddress = (
     return {
         displayName,
         isNfd: !!nfdName,
-        isResolving,
+        isResolving: isPending,
     }
 }

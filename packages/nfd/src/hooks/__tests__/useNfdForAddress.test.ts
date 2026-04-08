@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useNfdForAddress } from '../useNfdForAddress'
+import { useNfdForAddressQuery } from '../useNfdForAddressQuery'
 import React from 'react'
 
 const mockFetchNfdNamesForAddress = vi.hoisted(() => vi.fn())
@@ -67,11 +67,11 @@ describe('useNfdForAddress', () => {
             },
         ])
 
-        const { result } = renderHook(() => useNfdForAddress(VALID_ADDRESS), {
+        const { result } = renderHook(() => useNfdForAddressQuery(VALID_ADDRESS), {
             wrapper,
         })
 
-        await waitFor(() => expect(result.current.nfdName).toBe('alice.algo'))
+        await waitFor(() => expect(result.current.data?.at(0)?.name).toBe('alice.algo'))
     })
 
     it('returns undefined nfdName while loading', () => {
@@ -79,43 +79,43 @@ describe('useNfdForAddress', () => {
             () => new Promise(() => {}),
         )
 
-        const { result } = renderHook(() => useNfdForAddress(VALID_ADDRESS), {
+        const { result } = renderHook(() => useNfdForAddressQuery(VALID_ADDRESS), {
             wrapper,
         })
 
-        expect(result.current.nfdName).toBeUndefined()
-        expect(result.current.isResolving).toBe(true)
+        expect(result.current.data?.at(0)).toBeUndefined()
+        expect(result.current.isPending).toBe(true)
     })
 
     it('returns undefined when no NFD names found', async () => {
         mockFetchNfdNamesForAddress.mockResolvedValue([])
 
-        const { result } = renderHook(() => useNfdForAddress(VALID_ADDRESS), {
+        const { result } = renderHook(() => useNfdForAddressQuery(VALID_ADDRESS), {
             wrapper,
         })
 
-        await waitFor(() => expect(result.current.isResolving).toBe(false))
+        await waitFor(() => expect(result.current.isPending).toBe(false))
 
-        expect(result.current.nfdName).toBeUndefined()
+        expect(result.current.data?.at(0)).toBeUndefined()
     })
 
     it('does not fetch when enabled is false', () => {
         const { result } = renderHook(
-            () => useNfdForAddress(VALID_ADDRESS, { enabled: false }),
+            () => useNfdForAddressQuery(VALID_ADDRESS, { enabled: false }),
             { wrapper },
         )
 
-        expect(result.current.nfdName).toBeUndefined()
+        expect(result.current.data?.at(0)).toBeUndefined()
         expect(mockFetchNfdNamesForAddress).not.toHaveBeenCalled()
     })
 
     it('does not fetch for invalid address', () => {
         const { result } = renderHook(
-            () => useNfdForAddress('invalid-address'),
+            () => useNfdForAddressQuery('invalid-address'),
             { wrapper },
         )
 
-        expect(result.current.nfdName).toBeUndefined()
+        expect(result.current.data?.at(0)).toBeUndefined()
         expect(mockFetchNfdNamesForAddress).not.toHaveBeenCalled()
     })
 
@@ -125,10 +125,10 @@ describe('useNfdForAddress', () => {
             { name: 'secondary.algo', source: 'nfd', image: '' },
         ])
 
-        const { result } = renderHook(() => useNfdForAddress(VALID_ADDRESS), {
+        const { result } = renderHook(() => useNfdForAddressQuery(VALID_ADDRESS), {
             wrapper,
         })
 
-        await waitFor(() => expect(result.current.nfdName).toBe('primary.algo'))
+        await waitFor(() => expect(result.current.data?.at(0)?.name).toBe('primary.algo'))
     })
 })

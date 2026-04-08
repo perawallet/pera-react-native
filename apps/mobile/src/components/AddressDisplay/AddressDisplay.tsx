@@ -22,7 +22,7 @@ import { useStyles } from './styles'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useContacts } from '@perawallet/wallet-core-contacts'
-import { useNfdForAddress } from '@perawallet/wallet-core-nfd'
+import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { useClipboard } from '@hooks/useClipboard'
 
 import { SvgProps } from 'react-native-svg'
@@ -84,9 +84,11 @@ export const AddressDisplay = ({
         }).at(0)
     }, [displayType, address, findContacts])
 
-    const { nfdName } = useNfdForAddress(address, {
+    const { data: nfdNames } = useNfdForAddressQuery(address, {
         enabled: displayType !== 'address-only' && !account && !contact,
     })
+
+    const nfdName = useMemo(() => nfdNames?.at(0)?.name, [nfdNames])
 
     const truncatedAddress =
         addressFormat === 'full'

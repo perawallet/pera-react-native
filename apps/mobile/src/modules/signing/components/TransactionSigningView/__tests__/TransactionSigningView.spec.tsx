@@ -72,9 +72,9 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
-    useNfdForAddress: vi.fn(() => ({
-        nfdName: undefined,
-        isResolving: false,
+    useNfdForAddressQuery: vi.fn(() => ({
+        data: undefined,
+        isPending: false,
     })),
 }))
 

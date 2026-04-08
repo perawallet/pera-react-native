@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, UseQueryResult } from '@tanstack/react-query'
 import {
     useNetwork,
     isValidAlgorandAddress,
@@ -19,21 +18,17 @@ import {
 import { config } from '@perawallet/wallet-core-config'
 import { fetchNfdNamesForAddress } from '../api'
 import { nfdQueryKeys } from './querykeys'
+import { NfdName } from '../models'
 
-type UseNfdForAddressResult = {
-    nfdName: string | undefined
-    isResolving: boolean
-}
-
-export const useNfdForAddress = (
+export const useNfdForAddressQuery = (
     address: string,
     options?: { enabled?: boolean },
-): UseNfdForAddressResult => {
+): UseQueryResult<NfdName[], Error> => {
     const { network } = useNetwork()
     const enabled =
         (options?.enabled ?? true) && isValidAlgorandAddress(address)
 
-    const { data, isFetching } = useQuery({
+    return useQuery({
         queryKey: nfdQueryKeys.forAddress(address, network),
         queryFn: ({ signal }) =>
             fetchNfdNamesForAddress({ address, network, signal }),
@@ -41,11 +36,4 @@ export const useNfdForAddress = (
         staleTime: config.reactQueryLongLivedStaleTime,
         gcTime: config.reactQueryLongLivedGCTime,
     })
-
-    const nfdName = useMemo(() => data?.at(0)?.name, [data])
-
-    return {
-        nfdName,
-        isResolving: isFetching,
-    }
 }
