@@ -82,13 +82,6 @@ export const MenuScreen = () => {
                     onPress={goToStaking}
                 />
                 <PanelButton
-                    title={t('menu.nfts')}
-                    titleWeight='h3'
-                    leftIcon='card-stack'
-                    rightIcon='chevron-right'
-                    onPress={() => {}}
-                />
-                <PanelButton
                     title={t('menu.buy_gift_card')}
                     titleWeight='h3'
                     leftIcon='gift'
