@@ -154,10 +154,7 @@ export type HardwareWalletErrorReason =
 export class HardwareWalletError extends PipelineError {
     readonly reason: HardwareWalletErrorReason
 
-    constructor(
-        reason: HardwareWalletErrorReason,
-        originalError?: Error,
-    ) {
+    constructor(reason: HardwareWalletErrorReason, originalError?: Error) {
         super(`Hardware wallet error: ${reason}`, originalError, {
             retryable: true,
             params: { reason },

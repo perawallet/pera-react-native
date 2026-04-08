@@ -45,7 +45,10 @@ export const resolveDeviceModel = (
     for (const uuid of serviceUUIDs) {
         const infos = getInfosForServiceUuid(uuid.toLowerCase())
         if (infos) {
-            return DEVICE_MODEL_MAP[infos.deviceModel.id as DeviceModelId] ?? 'nanoX'
+            return (
+                DEVICE_MODEL_MAP[infos.deviceModel.id as DeviceModelId] ??
+                'nanoX'
+            )
         }
     }
 

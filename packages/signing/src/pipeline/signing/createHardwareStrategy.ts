@@ -182,8 +182,11 @@ export const createHardwareStrategy = (
             account: WalletAccount,
             callbacks?: SigningCallbacks,
         ): Promise<SigningResult> => {
-            const { hwAccount, transportProvider, data } =
-                validateAndExtract(group, account, hardwareWalletRegistry)
+            const { hwAccount, transportProvider, data } = validateAndExtract(
+                group,
+                account,
+                hardwareWalletRegistry,
+            )
 
             const { deviceId, accountIndex } = hwAccount.hardwareDetails
             let transport: HardwareWalletTransport | undefined

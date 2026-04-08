@@ -152,9 +152,7 @@ describe('hardwareSignerActor', () => {
         const actor = createActor(hardwareSignerActor, { input })
         actor.start()
 
-        await expect(toPromise(actor)).rejects.toThrow(
-            'signer_not_found',
-        )
+        await expect(toPromise(actor)).rejects.toThrow('signer_not_found')
     })
 
     it('rejects when account is not a hardware wallet account', async () => {
@@ -177,9 +175,7 @@ describe('hardwareSignerActor', () => {
         const actor = createActor(hardwareSignerActor, { input })
         actor.start()
 
-        await expect(toPromise(actor)).rejects.toThrow(
-            'signer_not_found',
-        )
+        await expect(toPromise(actor)).rejects.toThrow('signer_not_found')
     })
 
     it('forwards callbacks to the signing strategy', async () => {
