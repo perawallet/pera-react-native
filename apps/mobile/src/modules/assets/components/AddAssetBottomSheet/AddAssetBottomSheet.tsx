@@ -23,18 +23,27 @@ import { AddAssetScreen } from '@modules/assets/screens/AddAssetScreen'
 import { AsaVerificationInfoBottomSheet } from '@modules/assets/components/AsaVerificationInfoBottomSheet'
 import { useStyles } from './styles'
 
+export type AddAssetBottomSheetVariant = 'asset' | 'collectible'
+
 export type AddAssetBottomSheetProps = {
     isVisible: boolean
     onClose: () => void
+    variant?: AddAssetBottomSheetVariant
 }
 
 export const AddAssetBottomSheet = ({
     isVisible,
     onClose,
+    variant = 'asset',
 }: AddAssetBottomSheetProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const verificationInfoState = useModalState(false)
+
+    const title =
+        variant === 'collectible'
+            ? t('add_asset.collectible_title')
+            : t('add_asset.title')
 
     return (
         <>
@@ -60,7 +69,7 @@ export const AddAssetBottomSheet = ({
                         variant='h4'
                         style={styles.headerTitle}
                     >
-                        {t('add_asset.title')}
+                        {title}
                     </PWText>
                     <PWTouchableOpacity
                         style={styles.headerAction}
@@ -72,7 +81,7 @@ export const AddAssetBottomSheet = ({
                         />
                     </PWTouchableOpacity>
                 </PWView>
-                <AddAssetScreen />
+                <AddAssetScreen variant={variant} />
             </PWBottomSheet>
 
             <AsaVerificationInfoBottomSheet

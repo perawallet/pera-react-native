@@ -11,4 +11,7 @@
  */
 
 export { AddAssetBottomSheet } from './AddAssetBottomSheet'
-export type { AddAssetBottomSheetProps } from './AddAssetBottomSheet'
+export type {
+    AddAssetBottomSheetProps,
+    AddAssetBottomSheetVariant,
+} from './AddAssetBottomSheet'

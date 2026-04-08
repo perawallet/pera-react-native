@@ -25,6 +25,7 @@ type SearchAssetsParams = {
     network: Network
     cursor?: string
     limit?: number
+    hasCollectible?: boolean
 }
 
 export const searchAssets = async ({
@@ -32,6 +33,7 @@ export const searchAssets = async ({
     network,
     cursor,
     limit = DEFAULT_PAGE_SIZE,
+    hasCollectible,
 }: SearchAssetsParams) => {
     const params: Record<string, string | number> = {
         q: query,
@@ -40,6 +42,10 @@ export const searchAssets = async ({
 
     if (cursor) {
         params.cursor = cursor
+    }
+
+    if (hasCollectible) {
+        params.has_collectible = 'true'
     }
 
     const response = await queryClient<AssetSearchResponse, string>({

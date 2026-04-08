@@ -17,9 +17,29 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         backgroundColor: theme.colors.background,
     },
+    listContainer: {
+        flex: 1,
+    },
     searchContainer: {
         paddingHorizontal: theme.spacing.md,
         paddingVertical: theme.spacing.sm,
+    },
+    noteContainer: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: theme.spacing.sm,
+        marginHorizontal: theme.spacing.md,
+        marginTop: theme.spacing.sm,
+        padding: theme.spacing.md,
+        borderRadius: theme.borderRadius.sm,
+        backgroundColor: theme.colors.positiveLighter,
+    },
+    noteText: {
+        flex: 1,
+        color: theme.colors.positive,
+    },
+    noteIcon: {
+        marginTop: theme.spacing.xs,
     },
     listContent: {
         paddingHorizontal: theme.spacing.md,

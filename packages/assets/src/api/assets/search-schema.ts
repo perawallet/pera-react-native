@@ -15,7 +15,7 @@ import { z } from 'zod'
 export const collectibleSearchSchema = z.object({
     collection: z
         .object({
-            collection_id: z.number(),
+            collection_id: z.number().nullable().optional(),
             name: z.string().nullable().optional(),
         })
         .nullable()

@@ -21,6 +21,7 @@ import {
     insertAssetHolding,
     useAccountBalancesInvalidator,
 } from '@perawallet/wallet-core-accounts'
+import { fetchAndPersistAssets } from '@perawallet/wallet-core-assets'
 import {
     AlreadyOptedInError,
     InsufficientBalanceForOptInError,
@@ -76,12 +77,17 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                     assetId,
                 })
 
-                // Add the new holding to local DB and refresh UI
+                // Add the new holding to local DB and ensure the asset's
+                // metadata is persisted before invalidating, so the UI can
+                // resolve the asset on its next render instead of waiting
+                // for the next sync poll.
+                const assetIdString = String(assetId)
                 await insertAssetHolding({
                     accountAddress: sender,
-                    assetId: String(assetId),
+                    assetId: assetIdString,
                     network,
                 })
+                await fetchAndPersistAssets([assetIdString], network)
                 invalidateBalances()
 
                 return { txIds: result.txIds }

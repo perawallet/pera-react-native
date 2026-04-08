@@ -33,6 +33,15 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'center',
         overflow: 'hidden',
     },
+    collectibleIcon: {
+        width: ICON_SIZE,
+        height: ICON_SIZE,
+        borderRadius: theme.borderRadius.sm,
+        backgroundColor: theme.colors.layerGrayLighter,
+        alignItems: 'center',
+        justifyContent: 'center',
+        overflow: 'hidden',
+    },
     infoContainer: {
         flex: 1,
         marginLeft: theme.spacing.sm,

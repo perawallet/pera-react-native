@@ -15,19 +15,14 @@ import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import NftEmptyIllustration from '@assets/images/nft-empty-state.svg'
-import { useToast } from '@hooks/useToast'
 
-export const NftEmptyState = () => {
+type NftEmptyStateProps = {
+    onOptInPress: () => void
+}
+
+export const NftEmptyState = ({ onOptInPress }: NftEmptyStateProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { errorToast } = useToast()
-
-    const handleOptIn = () => {
-        errorToast(
-            t('common.not_implemented.title'),
-            t('common.not_implemented.body'),
-        )
-    }
 
     return (
         <PWView style={styles.container}>
@@ -51,7 +46,7 @@ export const NftEmptyState = () => {
                 icon='plus'
                 variant='primary'
                 style={styles.button}
-                onPress={handleOptIn}
+                onPress={onOptInPress}
             />
         </PWView>
     )

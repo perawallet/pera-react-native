@@ -12,15 +12,21 @@
 
 import React, { useCallback } from 'react'
 import { ActivityIndicator } from 'react-native'
-import { PWFlatList, PWInput, PWView } from '@components/core'
+import { PWFlatList, PWIcon, PWInput, PWText, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { AssetSearchItem } from '@modules/assets/components/AssetSearchItem'
 import type { AssetSearchItem as AssetSearchItemType } from '@perawallet/wallet-core-assets'
+import type { AddAssetBottomSheetVariant } from '@modules/assets/components/AddAssetBottomSheet'
 import { useAddAssetScreen } from './useAddAssetScreen'
 import { useStyles } from './styles'
 
-export const AddAssetScreen = () => {
+type AddAssetScreenProps = {
+    variant?: AddAssetBottomSheetVariant
+}
+
+export const AddAssetScreen = ({ variant = 'asset' }: AddAssetScreenProps) => {
     const styles = useStyles()
+    const isCollectible = variant === 'collectible'
     const {
         searchQuery,
         handleSearchChange,
@@ -33,7 +39,7 @@ export const AddAssetScreen = () => {
         optingInAssetId,
         handleAddAsset,
         t,
-    } = useAddAssetScreen()
+    } = useAddAssetScreen({ variant })
 
     const renderItem = useCallback(
         ({ item }: { item: AssetSearchItemType }) => (
@@ -55,11 +61,33 @@ export const AddAssetScreen = () => {
 
     return (
         <PWView style={styles.container}>
+            {isCollectible && (
+                <PWView style={styles.noteContainer}>
+                    <PWIcon
+                        name='info'
+                        size='sm'
+                        variant='positive'
+                        style={styles.noteIcon}
+                    />
+                    <PWText
+                        variant='body'
+                        style={styles.noteText}
+                    >
+                        {t('add_asset.collectible_note')}
+                    </PWText>
+                </PWView>
+            )}
             <PWView style={styles.searchContainer}>
                 <PWInput
                     value={searchQuery}
                     onChangeText={handleSearchChange}
-                    placeholder={t('add_asset.search_placeholder')}
+                    placeholder={
+                        isCollectible
+                            ? t('add_asset.collectible_search_placeholder')
+                            : t('add_asset.search_placeholder')
+                    }
+                    autoCapitalize='none'
+                    autoCorrect={false}
                     autoFocus
                 />
             </PWView>
@@ -76,10 +104,12 @@ export const AddAssetScreen = () => {
                     onEndReached={handleEndReached}
                     onEndReachedThreshold={0.5}
                     keyboardDismissMode='on-drag'
+                    contentContainerStyle={styles.listContainer}
                     ListEmptyComponent={
                         !isLoading ? (
                             <EmptyView
-                                body={t('add_asset.no_results')}
+                                title={t('add_asset.no_results')}
+                                body=''
                                 icon='magnifying-glass'
                             />
                         ) : null

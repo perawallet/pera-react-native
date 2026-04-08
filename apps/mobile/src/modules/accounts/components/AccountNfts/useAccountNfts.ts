@@ -43,6 +43,7 @@ type UseAccountNftsResult = {
     isManageSheetVisible: boolean
     isSortSheetVisible: boolean
     isFilterSheetVisible: boolean
+    isAddNftSheetVisible: boolean
     setSearchFilter: (value: string) => void
     setGalleryLayout: (layout: GalleryLayout) => void
     setSortMode: (mode: CollectibleSortMode) => void
@@ -54,6 +55,8 @@ type UseAccountNftsResult = {
     closeSortSheet: () => void
     openFilterSheet: () => void
     closeFilterSheet: () => void
+    openAddNftSheet: () => void
+    closeAddNftSheet: () => void
 }
 
 const getCollectibleName = (item: CollectibleDisplayItem): string =>
@@ -114,6 +117,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     const manageSheetModel = useModalState()
     const sortSheetModel = useModalState()
     const filterSheetModel = useModalState()
+    const addNftSheetModel = useModalState()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
     const canOptIn = useMemo(
@@ -211,6 +215,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         isManageSheetVisible: manageSheetModel.isOpen,
         isSortSheetVisible: sortSheetModel.isOpen,
         isFilterSheetVisible: filterSheetModel.isOpen,
+        isAddNftSheetVisible: addNftSheetModel.isOpen,
         setSearchFilter,
         setGalleryLayout,
         setSortMode,
@@ -222,5 +227,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         closeSortSheet: sortSheetModel.close,
         openFilterSheet: filterSheetModel.open,
         closeFilterSheet: filterSheetModel.close,
+        openAddNftSheet: addNftSheetModel.open,
+        closeAddNftSheet: addNftSheetModel.close,
     }
 }
