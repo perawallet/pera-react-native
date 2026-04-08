@@ -10,14 +10,15 @@
  limitations under the License
  */
 
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useState } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { LedgerConnectionStatus } from '@perawallet/wallet-core-ledger'
+import { connectAndDiscoverAccounts } from '@perawallet/wallet-core-ledger'
+import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
-
-import { useLedgerConnection, useLedgerAccounts } from '../../hooks'
 
 type LedgerFetchAccountsRouteProp = RouteProp<
     AddAccountStackParamList,
@@ -40,71 +41,84 @@ export const useLedgerFetchAccountsScreen =
         } = useRoute<LedgerFetchAccountsRouteProp>()
         const { t } = useLanguage()
         const navigation = useAppNavigation()
-        const {
-            connectionStatus,
-            connect,
-            disconnect,
-            error: connectionError,
-        } = useLedgerConnection()
-        const {
-            isDiscovering,
-            progress,
-            error: discoveryError,
-            discover,
-        } = useLedgerAccounts()
+
+        const [connectionStatus, setConnectionStatus] =
+            useState<LedgerConnectionStatus>('disconnected')
+        const [isDiscovering, setIsDiscovering] = useState(false)
+        const [progress, setProgress] = useState<{
+            current: number
+            total: number | null
+        }>({ current: 0, total: null })
+        const [error, setError] = useState<Error | null>(null)
 
         const hasStartedRef = useRef(false)
         const mountedRef = useRef(true)
+        const transportRef = useRef<HardwareWalletTransport | null>(null)
 
-        const connectAndDiscover = useCallback(async () => {
+        const run = useCallback(async () => {
+            setError(null)
+            setConnectionStatus('connecting')
+            setIsDiscovering(false)
+            setProgress({ current: 0, total: null })
+
             try {
-                const transport = await connect(deviceId)
+                const provider =
+                    getProvider().hardwareWalletRegistry.getProvider('ledger')!
 
-                // If unmounted during connect, clean up immediately
+                setIsDiscovering(true)
+                const result = await connectAndDiscoverAccounts({
+                    provider,
+                    deviceId,
+                    onProgress: (index: number) => {
+                        setProgress({ current: index + 1, total: null })
+                    },
+                })
+
+                transportRef.current = result.transport
+
                 if (!mountedRef.current) {
-                    await transport.disconnect()
+                    await result.transport.disconnect()
                     return
                 }
 
-                // Note: if unmount occurs during discover(), the transport stays
-                // open until discovery completes. The mountedRef check below
-                // prevents navigation but doesn't abort in-flight discovery.
-                const accounts = await discover(transport)
+                setConnectionStatus('connected')
+                setIsDiscovering(false)
 
-                if (!mountedRef.current) return
-
-                if (accounts.length === 0) {
+                if (result.accounts.length === 0) {
                     throw new Error('No accounts found on this device')
                 }
 
                 navigation.replace('LedgerSelectAccounts', {
                     deviceId,
                     deviceName,
-                    accounts,
+                    accounts: result.accounts,
                 })
-            } catch {
-                // Errors are captured in the hook state
+            } catch (err) {
+                if (!mountedRef.current) return
+                const resolvedError =
+                    err instanceof Error ? err : new Error(String(err))
+                setError(resolvedError)
+                setConnectionStatus('disconnected')
+                setIsDiscovering(false)
             }
-        }, [connect, deviceId, deviceName, discover, navigation])
+        }, [deviceId, deviceName, navigation])
 
         useEffect(() => {
             mountedRef.current = true
             if (hasStartedRef.current) return
             hasStartedRef.current = true
 
-            connectAndDiscover()
+            run()
 
             return () => {
                 mountedRef.current = false
-                disconnect()
+                transportRef.current?.disconnect().catch(() => {})
             }
-        }, [connectAndDiscover, disconnect])
+        }, [run])
 
         const handleRetry = useCallback(() => {
-            connectAndDiscover()
-        }, [connectAndDiscover])
-
-        const error = connectionError ?? discoveryError
+            run()
+        }, [run])
 
         return {
             connectionStatus,

@@ -24,28 +24,9 @@ import {
     classifyLedgerError,
     LedgerConnectionError,
 } from '@perawallet/wallet-core-ledger'
+import { hexToBytes, bytesToHex } from '@perawallet/wallet-core-shared'
 import TransportBLE from '@ledgerhq/react-native-hw-transport-ble'
 import Algorand from '@ledgerhq/hw-app-algorand'
-
-/**
- * Convert a hex string to Uint8Array.
- */
-const hexToBytes = (hex: string): Uint8Array => {
-    const bytes = new Uint8Array(hex.length / 2)
-    for (let i = 0; i < hex.length; i += 2) {
-        bytes[i / 2] = parseInt(hex.substring(i, i + 2), 16)
-    }
-    return bytes
-}
-
-/**
- * Convert a Uint8Array to hex string.
- */
-const bytesToHex = (bytes: Uint8Array): string => {
-    return Array.from(bytes)
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('')
-}
 
 /**
  * Detect Ledger device model from BLE service UUIDs.
@@ -132,8 +113,9 @@ export class RNLedgerService implements HardwareWalletService {
     manufacturer = 'ledger' as const
 
     createTransportProvider(): LedgerTransportProvider {
+        const { manufacturer } = this
         return {
-            manufacturer: 'ledger',
+            manufacturer,
             scan(
                 onDevice: (device: LedgerDevice) => void,
                 onError?: (error: Error) => void,

@@ -28,18 +28,15 @@ const getSignalLevel = (rssi: number | null): 'strong' | 'medium' | 'weak' => {
     return 'weak'
 }
 
-const getModelDisplayName = (model: string): string => {
-    switch (model) {
-        case 'nanoX':
-            return 'Nano X'
-        case 'stax':
-            return 'Stax'
-        case 'flex':
-            return 'Flex'
-        default:
-            return 'Ledger'
-    }
+const MODEL_DISPLAY_NAMES: Record<string, string> = {
+    nanoX: 'Nano X',
+    stax: 'Stax',
+    flex: 'Flex',
+    nanoGen5: 'Nano Gen5',
 }
+
+const getModelDisplayName = (model: string): string =>
+    MODEL_DISPLAY_NAMES[model] ?? 'Ledger'
 
 export const LedgerDeviceItem = ({
     device,

@@ -19,7 +19,6 @@ import {
     RNBiometricsService,
     RNSecureStorageService,
     RNDeviceInfoStorageService,
-    RNLedgerService,
 } from './services'
 
 /**
@@ -33,8 +32,6 @@ export const keyValueStorage = new RNKeyValueStorageService()
 const firebaseService = new RNFirebaseService()
 
 const hardwareWalletRegistry = createHardwareWalletRegistry()
-const ledgerService = new RNLedgerService()
-hardwareWalletRegistry.register(ledgerService.createTransportProvider())
 
 export const platformServices: PlatformServices = {
     analytics: firebaseService,

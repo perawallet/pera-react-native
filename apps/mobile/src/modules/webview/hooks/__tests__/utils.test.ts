@@ -34,7 +34,7 @@ describe('webview/utils - getAccountType', () => {
         ).toBe('HdKey')
     })
 
-    it('returns LedgerBle if it is a ledger account', () => {
+    it('returns HardwareBle for a ledger hardware wallet account', () => {
         expect(
             getAccountType({
                 ...baseAccount,
@@ -46,7 +46,7 @@ describe('webview/utils - getAccountType', () => {
                     accountIndex: 0,
                 },
             }),
-        ).toBe('LedgerBle')
+        ).toBe('HardwareBle')
     })
 
     it('returns RekeyedAuth if it is rekeyed and can sign', () => {

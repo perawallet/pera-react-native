@@ -10,4 +10,7 @@
  limitations under the License
  */
 
+export const name = '@perawallet/wallet-extension-ledger-react-native'
+
+export { WithLedgerExtension } from './extension'
 export { RNLedgerService } from './RNLedgerService'

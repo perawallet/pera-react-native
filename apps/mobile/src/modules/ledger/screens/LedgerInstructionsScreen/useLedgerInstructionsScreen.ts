@@ -11,9 +11,9 @@
  */
 
 import { useCallback } from 'react'
-import { Alert } from 'react-native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 
 import { useBlePermissions } from '../../hooks'
 
@@ -27,6 +27,7 @@ export const useLedgerInstructionsScreen =
     (): UseLedgerInstructionsScreenResult => {
         const { t } = useLanguage()
         const navigation = useAppNavigation()
+        const { errorToast } = useToast()
         const { hasPermissions, isChecking, requestPermissions } =
             useBlePermissions()
 
@@ -41,12 +42,12 @@ export const useLedgerInstructionsScreen =
             if (granted) {
                 navigation.navigate('LedgerScan')
             } else {
-                Alert.alert(
+                errorToast(
                     t('ledger.instructions.permission_required_title'),
                     t('ledger.instructions.permission_required_message'),
                 )
             }
-        }, [hasPermissions, requestPermissions, navigation, t])
+        }, [hasPermissions, requestPermissions, navigation, t, errorToast])
 
         return {
             isChecking,

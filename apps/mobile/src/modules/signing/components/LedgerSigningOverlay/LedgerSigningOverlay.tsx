@@ -11,8 +11,8 @@
  */
 
 import React from 'react'
-import { ActivityIndicator, View } from 'react-native'
-import { PWBottomSheet, PWButton, PWText } from '@components/core'
+import { ActivityIndicator } from 'react-native'
+import { PWBottomSheet, PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -23,6 +23,14 @@ type LedgerSigningOverlayProps = {
     onRetry?: () => void
 }
 
+const STATUS_MESSAGE_KEYS: Record<LedgerSigningOverlayProps['status'], string> =
+    {
+        connecting: 'ledger.signing.connect',
+        confirming: 'ledger.signing.confirm',
+        timeout: 'ledger.signing.timeout',
+        error: 'ledger.errors.connection_failed',
+    }
+
 export const LedgerSigningOverlay = ({
     isVisible,
     status,
@@ -32,19 +40,6 @@ export const LedgerSigningOverlay = ({
     const styles = useStyles()
     const { t } = useLanguage()
 
-    const getMessage = () => {
-        switch (status) {
-            case 'connecting':
-                return t('ledger.signing.connect')
-            case 'confirming':
-                return t('ledger.signing.confirm')
-            case 'timeout':
-                return t('ledger.signing.timeout')
-            case 'error':
-                return t('ledger.errors.connection_failed')
-        }
-    }
-
     const showRetry = status === 'error' || status === 'timeout'
 
     return (
@@ -52,7 +47,7 @@ export const LedgerSigningOverlay = ({
             isVisible={isVisible}
             onDismiss={onCancel}
         >
-            <View style={styles.container}>
+            <PWView style={styles.container}>
                 <PWText style={styles.title}>
                     {t('ledger.signing.title')}
                 </PWText>
@@ -64,9 +59,11 @@ export const LedgerSigningOverlay = ({
                     />
                 )}
 
-                <PWText style={styles.message}>{getMessage()}</PWText>
+                <PWText style={styles.message}>
+                    {t(STATUS_MESSAGE_KEYS[status])}
+                </PWText>
 
-                <View style={styles.actions}>
+                <PWView style={styles.actions}>
                     {showRetry && onRetry && (
                         <PWButton
                             variant='primary'
@@ -80,8 +77,8 @@ export const LedgerSigningOverlay = ({
                         title={t('ledger.signing.cancel')}
                         onPress={onCancel}
                     />
-                </View>
-            </View>
+                </PWView>
+            </PWView>
         </PWBottomSheet>
     )
 }

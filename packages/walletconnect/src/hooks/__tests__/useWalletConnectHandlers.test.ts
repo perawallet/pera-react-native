@@ -617,7 +617,7 @@ describe('useWalletConnectHandlers', () => {
                     selector({ walletConnectConnections: mockSessionsLocal }),
             )
             ;(useAllAccounts as any).mockReturnValue([
-                { address: 'ledger-addr', name: 'Ledger', type: 'ledger' },
+                { address: 'ledger-addr', name: 'Ledger', type: 'hardware', hardwareDetails: { manufacturer: 'ledger', deviceId: 'test-device', deviceName: 'Ledger Nano X', accountIndex: 0 } },
             ])
             ;(isHardwareWalletAccount as any).mockReturnValue(true)
 

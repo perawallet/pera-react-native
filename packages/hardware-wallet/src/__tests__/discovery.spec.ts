@@ -84,12 +84,12 @@ describe('discoverAccounts', () => {
             expect(accounts.map(a => a.accountIndex)).toEqual([0, 1, 2])
         })
 
-        it('returns indices 0 and 1 with default maxGap (1)', async () => {
+        it('returns indices 0 through default maxGap (2) inclusive', async () => {
             const transport = makeMockTransport()
 
             const accounts = await discoverAccounts({ transport })
 
-            expect(accounts.map(a => a.accountIndex)).toEqual([0, 1])
+            expect(accounts.map(a => a.accountIndex)).toEqual([0, 1, 2])
         })
     })
 

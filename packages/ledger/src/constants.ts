@@ -20,6 +20,7 @@ export const LEDGER_SERVICE_UUIDS: Record<LedgerDeviceModel, string> = {
     nanoX: '13d63400-2c97-0004-0000-4c6564676572',
     stax: '13d63400-2c97-6004-0000-4c6564676572',
     flex: '13d63400-2c97-3004-0000-4c6564676572',
+    nanoGen5: '13d63400-2c97-8004-0000-4c6564676572',
 }
 
 /**
@@ -63,4 +64,4 @@ export const LEDGER_CONFIRMATION_TIMEOUT_MS = 30_000
  * Stop scanning for accounts after this many consecutive indices
  * return addresses with no on-chain presence.
  */
-export const MAX_ACCOUNT_SCAN_GAP = 1
+export const MAX_ACCOUNT_SCAN_GAP = 2

@@ -21,7 +21,7 @@ import type {
 /**
  * Supported Ledger device models with Bluetooth capability.
  */
-export type LedgerDeviceModel = 'nanoX' | 'stax' | 'flex'
+export type LedgerDeviceModel = 'nanoX' | 'stax' | 'flex' | 'nanoGen5'
 
 /**
  * A discovered Ledger device during BLE scanning.

@@ -12,4 +12,9 @@
 
 export { discoverLedgerAccounts } from './discoverAccounts'
 export type { DiscoverAccountsOptions } from './discoverAccounts'
+export { connectAndDiscoverAccounts } from './connectAndDiscover'
+export type {
+    ConnectAndDiscoverOptions,
+    ConnectAndDiscoverResult,
+} from './connectAndDiscover'
 export { verifyLedgerAddress } from './verifyAddress'

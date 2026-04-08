@@ -14,4 +14,4 @@
  * Stop scanning for accounts after this many consecutive indices
  * return addresses with no on-chain presence.
  */
-export const DEFAULT_MAX_ACCOUNT_SCAN_GAP = 1
+export const DEFAULT_MAX_ACCOUNT_SCAN_GAP = 2

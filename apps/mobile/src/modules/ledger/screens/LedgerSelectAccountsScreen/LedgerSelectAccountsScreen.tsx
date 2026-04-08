@@ -22,7 +22,7 @@ import {
 } from '@components/core'
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
 
-import { formatAddress } from '../../utils'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useLedgerSelectAccountsScreen } from './useLedgerSelectAccountsScreen'
 
@@ -64,7 +64,7 @@ export const LedgerSelectAccountsScreen = () => {
                         variant='caption'
                         style={styles.itemSubtitle}
                     >
-                        {formatAddress(item.address)}
+                        {truncateAlgorandAddress(item.address, 13)}
                     </PWText>
                 </PWView>
 

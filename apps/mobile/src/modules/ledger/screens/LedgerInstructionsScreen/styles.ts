@@ -43,9 +43,9 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
     },
     stepCircle: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
+        width: theme.spacing.xxl,
+        height: theme.spacing.xxl,
+        borderRadius: theme.spacing.xxl / 2,
         backgroundColor: theme.colors.layerGrayLighter,
         alignItems: 'center',
         justifyContent: 'center',
@@ -64,6 +64,6 @@ export const useStyles = makeStyles(theme => ({
         borderTopWidth: theme.borders.sm,
         borderTopColor: theme.colors.layerGrayLighter,
         backgroundColor: theme.colors.background,
-        paddingBottom: theme.spacing.xl + 20,
+        paddingBottom: theme.spacing['3xl'],
     },
 }))

@@ -11,29 +11,28 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
     container: {
         padding: theme.spacing.xl,
-        alignItems: 'center' as const,
+        alignItems: 'center',
     },
     title: {
-        fontSize: 18,
-        fontWeight: '600' as const,
-        color: theme.colors.textMain,
+        ...getTypography(theme, 'h3'),
         marginBottom: theme.spacing.lg,
     },
     indicator: {
         marginVertical: theme.spacing.lg,
     },
     message: {
-        fontSize: 14,
+        ...getTypography(theme, 'body'),
         color: theme.colors.textGray,
-        textAlign: 'center' as const,
+        textAlign: 'center',
         marginBottom: theme.spacing.xl,
     },
     actions: {
-        width: '100%' as const,
+        width: '100%',
         gap: theme.spacing.sm,
     },
     retryButton: {

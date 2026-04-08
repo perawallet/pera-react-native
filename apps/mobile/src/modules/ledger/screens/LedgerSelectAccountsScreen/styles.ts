@@ -73,7 +73,7 @@ export const useStyles = makeStyles(theme => ({
     },
     itemTitle: {
         color: theme.colors.textMain,
-        marginBottom: 2,
+        marginBottom: theme.borders.md,
     },
     itemSubtitle: {
         color: theme.colors.textGray,
@@ -83,6 +83,6 @@ export const useStyles = makeStyles(theme => ({
         borderTopWidth: theme.borders.sm,
         borderTopColor: theme.colors.layerGrayLighter,
         backgroundColor: theme.colors.background,
-        paddingBottom: theme.spacing.xl + 20,
+        paddingBottom: theme.spacing['3xl'],
     },
 }))

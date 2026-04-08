@@ -94,12 +94,10 @@ export const canSignWithAccount = (
 
 export type AccountStatus =
     | 'standard'
-    | 'ledger'
     | 'hardware'
     | 'watch'
     | 'noAuth'
     | 'rekeyedStandard'
-    | 'rekeyedLedger'
     | 'rekeyedHardware'
     | 'hdWallet'
     | 'multisig'
@@ -113,14 +111,12 @@ export const resolveAccountStatus = (
             a => a.address === account.rekeyAddress,
         )
         if (!authAccount) return 'noAuth'
-        if (isLedgerAccount(authAccount)) return 'rekeyedLedger'
         if (isHardwareWalletAccount(authAccount)) return 'rekeyedHardware'
         return 'rekeyedStandard'
     }
     if (isHDWalletAccount(account)) return 'hdWallet'
     if (isMultisigAccount(account)) return 'multisig'
     if (isWatchAccount(account)) return 'watch'
-    if (isLedgerAccount(account)) return 'ledger'
     if (isHardwareWalletAccount(account)) return 'hardware'
     if (isAlgo25Account(account)) return 'standard'
     return 'standard'
