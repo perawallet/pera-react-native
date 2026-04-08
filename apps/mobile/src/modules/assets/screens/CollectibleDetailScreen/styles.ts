@@ -118,4 +118,20 @@ export const useStyles = makeStyles(theme => ({
         alignSelf: 'center',
         marginLeft: theme.spacing.sm,
     },
+    mediaContainerDimmed: {
+        opacity: 0.4,
+    },
+    optOutNotice: {
+        gap: theme.spacing.md,
+    },
+    optOutNoticeRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+        marginVertical: theme.spacing.sm,
+    },
+    optOutNoticeText: {
+        color: theme.colors.textGrayLighter,
+        flexShrink: 1,
+    },
 }))

@@ -12,6 +12,7 @@
 
 import { Share } from 'react-native'
 import { useCallback, useMemo, useState } from 'react'
+import { useNavigation } from '@react-navigation/native'
 import {
     useSingleAssetDetailsQuery,
     isPureNft,
@@ -25,7 +26,9 @@ import {
     useAllAccounts,
     useAccountAssetBalanceQuery,
     isSigningAccount,
+    type AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
+import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { Decimal } from 'decimal.js'
@@ -47,7 +50,16 @@ type UseCollectibleDetailResult = {
     traits: CollectibleTrait[]
     media: CollectibleMedia[]
     accountAddress: string
+    accountName: string
     assetAmount: Decimal
+    isOptedIn: boolean
+    isOwned: boolean
+    isOptedInNotOwned: boolean
+    assetBalance: AssetWithAccountBalance | null
+    isOptingOut: boolean
+    optOutModal: ModalState
+    handleOptOutPressed: () => void
+    handleConfirmOptOut: () => void
     handleSendPressed: () => void
     handleSharePressed: () => void
     handleCopyImage: () => void
@@ -78,6 +90,9 @@ export const useCollectibleDetail = (
     )
     const fullScreenViewerModal = useModalState()
     const sendFundsModal = useModalState()
+    const optOutModal = useModalState()
+    const { optOut, isLoading: isOptingOut } = useAssetOptOutMutation()
+    const navigation = useNavigation()
     const [fullScreenInitialIndex, setFullScreenInitialIndex] = useState(0)
 
     const collectible = asset?.peraMetadata?.collectible
@@ -87,7 +102,11 @@ export const useCollectibleDetail = (
     const media = collectible?.media ?? []
 
     const accountAddress = account?.address ?? ''
+    const accountName = account?.name ?? accountAddress
     const assetAmount = assetBalance?.amount ?? new Decimal(0)
+    const isOptedIn = assetBalance != null
+    const isOwned = isOptedIn && assetAmount.greaterThan(0)
+    const isOptedInNotOwned = isOptedIn && !isOwned
     const { showToast } = useToast()
 
     const explorerUrl =
@@ -107,6 +126,40 @@ export const useCollectibleDetail = (
     const handleSendPressed = useCallback(() => {
         sendFundsModal.open()
     }, [sendFundsModal])
+
+    const handleOptOutPressed = useCallback(() => {
+        optOutModal.open()
+    }, [optOutModal])
+
+    const handleConfirmOptOut = useCallback(async () => {
+        if (!account || !asset) {
+            return
+        }
+
+        try {
+            await optOut({
+                sender: account.address,
+                assetId: BigInt(assetId),
+                creator: asset.creator.address,
+            })
+            optOutModal.close()
+            showToast({
+                title: t('asset_opt_out.success'),
+                body: '',
+                type: 'success',
+            })
+            if (navigation.canGoBack()) {
+                navigation.goBack()
+            }
+        } catch (err) {
+            optOutModal.close()
+            showToast({
+                title: t('asset_opt_out.error'),
+                body: err instanceof Error ? err.message : '',
+                type: 'error',
+            })
+        }
+    }, [account, asset, assetId, navigation, optOut, optOutModal, showToast, t])
 
     const handleCopyImage = useCallback(async () => {
         const imageUrl = getImageUrl()
@@ -242,7 +295,16 @@ export const useCollectibleDetail = (
         traits,
         media,
         accountAddress,
+        accountName,
         assetAmount,
+        isOptedIn,
+        isOwned,
+        isOptedInNotOwned,
+        assetBalance: assetBalance ?? null,
+        isOptingOut,
+        optOutModal,
+        handleOptOutPressed,
+        handleConfirmOptOut,
         handleSendPressed,
         handleSharePressed,
         handleCopyImage,

@@ -29,6 +29,7 @@ import {
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useModalState, ModalState } from '@hooks/useModalState'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
+import { useToast } from '@hooks/useToast'
 import { useSortedAssetBalances } from './useSortedAssetBalances'
 
 type UseAccountAssetListResult = {
@@ -43,6 +44,7 @@ type UseAccountAssetListResult = {
     filterSheetState: ModalState
     optOutConfirmationState: ModalState
     assetForOptOut: AssetWithAccountBalance | null
+    isOptingOut: boolean
     setSearchFilter: (value: string) => void
     goToAssetScreen: (asset: AssetWithAccountBalance) => void
     handleOptOut: (item: AssetWithAccountBalance) => void
@@ -90,7 +92,8 @@ export const useAccountAssetList = ({
     )
     const { data: assets } = useAssetsQuery(assetIDs)
     const { data: assetPrices } = useAssetPricesQuery(assetIDs)
-    const { optOut } = useAssetOptOutMutation()
+    const { optOut, isLoading: isOptingOut } = useAssetOptOutMutation()
+    const { showToast } = useToast()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
     const { sortedBalances, hideZeroBalance } = useSortedAssetBalances(
@@ -156,16 +159,26 @@ export const useAccountAssetList = ({
             return
         }
 
-        const asset = assets?.get(assetForOptOut.assetId)
+        const target = assetForOptOut
+        const asset = assets?.get(target.assetId)
 
         try {
             await optOut({
                 sender: account.address,
-                assetId: BigInt(assetForOptOut.assetId),
+                assetId: BigInt(target.assetId),
                 creator: asset?.creator.address,
             })
-        } catch {
-            // Error is surfaced by the mutation hook
+            showToast({
+                title: t('asset_opt_out.success'),
+                body: '',
+                type: 'success',
+            })
+        } catch (err) {
+            showToast({
+                title: t('asset_opt_out.error'),
+                body: err instanceof Error ? err.message : '',
+                type: 'error',
+            })
         } finally {
             optOutConfirmationState.close()
             setAssetForOptOut(null)
@@ -176,6 +189,8 @@ export const useAccountAssetList = ({
         account.address,
         optOut,
         optOutConfirmationState,
+        showToast,
+        t,
     ])
 
     const handleCloseOptOut = useCallback(() => {
@@ -242,6 +257,7 @@ export const useAccountAssetList = ({
         filterSheetState,
         optOutConfirmationState,
         assetForOptOut,
+        isOptingOut,
         setSearchFilter,
         goToAssetScreen,
         handleOptOut,
