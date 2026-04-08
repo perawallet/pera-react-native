@@ -16,24 +16,49 @@ export const useStyles = makeStyles(theme => ({
     container: {
         paddingBottom: theme.spacing.xl,
     },
-    summarySection: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingVertical: theme.spacing.lg,
-        gap: theme.spacing.md,
+    headerCenter: {
+        alignItems: 'center',
     },
-    summaryRow: {
+    accountRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+        marginTop: theme.spacing.xs,
+    },
+    accountName: {
+        color: theme.colors.textGray,
+    },
+    assetSection: {
+        paddingHorizontal: theme.spacing.lg,
+        paddingVertical: theme.spacing.md,
+    },
+    assetRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    assetAmountContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.md,
     },
-    summaryLabel: {
-        color: theme.colors.textGray,
+    amountTextContainer: {
+        gap: theme.spacing.xs,
     },
-    summaryAmount: {
+    assetAmount: {
         color: theme.colors.textMain,
     },
-    arrowContainer: {
-        paddingLeft: theme.spacing.sm,
+    usdValue: {
+        color: theme.colors.textGray,
+    },
+    toDivider: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: theme.spacing.lg,
+        gap: theme.spacing.sm,
+    },
+    toLabel: {
+        color: theme.colors.textGray,
     },
     detailsSection: {
         paddingHorizontal: theme.spacing.lg,
@@ -44,6 +69,16 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+    },
+    rateValueRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
+    detailLabelRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
     },
     detailLabel: {
         color: theme.colors.textGray,
@@ -69,6 +104,28 @@ export const useStyles = makeStyles(theme => ({
     },
     warningText: {
         color: theme.colors.negative,
+    },
+    errorBanner: {
+        marginHorizontal: theme.spacing.lg,
+        marginTop: theme.spacing.md,
+        padding: theme.spacing.md,
+        backgroundColor: theme.colors.negativeLighter,
+        borderRadius: theme.spacing.sm,
+    },
+    errorText: {
+        color: theme.colors.negative,
+    },
+    assetChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+        backgroundColor: theme.colors.layerGrayLighter,
+        paddingHorizontal: theme.spacing.sm,
+        paddingVertical: theme.spacing.xs,
+        borderRadius: theme.spacing.sm,
+    },
+    assetChipText: {
+        color: theme.colors.textMain,
     },
     confirmButton: {
         marginHorizontal: theme.spacing.lg,

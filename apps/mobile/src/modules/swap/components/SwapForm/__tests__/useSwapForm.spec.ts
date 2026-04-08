@@ -22,7 +22,8 @@ const mockSetSlippage = vi.fn()
 const mockResetQuoteMutation = vi.fn()
 const mockCreateQuotes = vi.fn()
 const mockCalculateSwapAmount = vi.fn()
-const mockPrepareTransactions = vi.fn()
+const mockSwapExecute = vi.fn().mockResolvedValue(true)
+const mockSwapReset = vi.fn()
 const mockSetPreferredCurrency = vi.fn()
 
 let mockFromAsset = '0'
@@ -47,10 +48,6 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
     }),
     useCalculateSwapAmountMutation: () => ({
         mutateAsync: mockCalculateSwapAmount,
-    }),
-    usePrepareTransactionsMutation: () => ({
-        mutateAsync: mockPrepareTransactions,
-        isPending: false,
     }),
 }))
 
@@ -117,6 +114,16 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         if (a === null || b === null) return false
         return a.equals(b)
     },
+}))
+
+vi.mock('../../../hooks/useSwapExecution', () => ({
+    useSwapExecution: () => ({
+        execute: mockSwapExecute,
+        status: 'idle' as const,
+        error: null,
+        txIds: [],
+        reset: mockSwapReset,
+    }),
 }))
 
 describe('useSwapForm', () => {

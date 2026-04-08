@@ -16,6 +16,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { SwapConfirmationBottomSheet } from '../SwapConfirmationBottomSheet'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import type { SwapExecutionStatus } from '../../../hooks/useSwapExecution'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -34,6 +35,43 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 vi.mock('@perawallet/wallet-core-assets', () => ({
     formatAssetAmount: (amount: Decimal, asset: { unitName?: string }) =>
         `${amount.toString()} ${asset.unitName ?? ''}`.trim(),
+    useAssetsQuery: () => ({ data: undefined }),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', () => ({
+    useSelectedAccount: () => ({
+        address: 'TESTADDRESS123',
+        name: 'Main Account',
+    }),
+}))
+
+vi.mock('@modules/accounts/components/AccountIcon', () => ({
+    AccountIcon: () => <div data-testid='account-icon' />,
+}))
+
+vi.mock('@modules/assets/components/AssetIcon', () => ({
+    AssetIcon: () => <div data-testid='asset-icon' />,
+}))
+
+vi.mock('@modules/assets/utils/verification', () => ({
+    getVerificationIcon: (tier: string) =>
+        tier === 'verified' ? 'assets/verified' : null,
+}))
+
+vi.mock('@components/InfoButton/InfoButton', () => ({
+    InfoButton: ({ children }: { children: React.ReactNode }) => (
+        <div data-testid='info-button'>{children}</div>
+    ),
+}))
+
+vi.mock('@components/CurrencyDisplay/CurrencyDisplay', () => ({
+    CurrencyDisplay: ({
+        value,
+        currency,
+    }: {
+        value: unknown
+        currency: string
+    }) => <span data-testid='currency-display'>{`${currency} ${value}`}</span>,
 }))
 
 vi.mock('@components/core', () => ({
@@ -90,6 +128,7 @@ vi.mock('@components/core', () => ({
         title,
         onPress,
         testID,
+        isLoading,
     }: {
         title: string
         onPress: () => void
@@ -101,6 +140,7 @@ vi.mock('@components/core', () => ({
         <button
             data-testid={testID}
             onClick={onPress}
+            data-loading={isLoading}
         >
             {title}
         </button>
@@ -124,6 +164,7 @@ const createQuote = (overrides: Partial<SwapQuote> = {}): SwapQuote => ({
     },
     amountIn: new Decimal('1000000'),
     amountOut: new Decimal('150000'),
+    amountOutWithSlippage: new Decimal('149250'),
     price: new Decimal('0.15'),
     priceImpact: new Decimal('0.5'),
     slippage: new Decimal('0.5'),
@@ -139,6 +180,7 @@ describe('SwapConfirmationBottomSheet', () => {
         onClose: vi.fn(),
         onConfirm: vi.fn(),
         quote: createQuote(),
+        swapStatus: 'idle' as SwapExecutionStatus,
     }
 
     beforeEach(() => {
@@ -161,6 +203,18 @@ describe('SwapConfirmationBottomSheet', () => {
 
         expect(screen.getByText(/1000000 ALGO/)).toBeDefined()
         expect(screen.getByText(/150000 USDC/)).toBeDefined()
+    })
+
+    it('renders quote details', () => {
+        render(<SwapConfirmationBottomSheet {...defaultProps} />)
+
+        expect(screen.getByText('swap.quote.rate')).toBeDefined()
+        expect(screen.getByText('swap.quote.provider')).toBeDefined()
+        expect(screen.getByText('swap.quote.slippage_tolerance')).toBeDefined()
+        expect(screen.getByText('swap.quote.price_impact')).toBeDefined()
+        expect(screen.getByText('swap.quote.minimum_received')).toBeDefined()
+        expect(screen.getByText('swap.quote.exchange_fee')).toBeDefined()
+        expect(screen.getByText('swap.quote.pera_fee')).toBeDefined()
     })
 
     it('shows high price impact warning when priceImpact >= 5', () => {
@@ -214,5 +268,45 @@ describe('SwapConfirmationBottomSheet', () => {
 
         fireEvent.click(screen.getByTestId('swap-confirm-close'))
         expect(onClose).toHaveBeenCalledTimes(1)
+    })
+
+    it('shows signing status text when signing', () => {
+        render(
+            <SwapConfirmationBottomSheet
+                {...defaultProps}
+                swapStatus='signing'
+            />,
+        )
+
+        expect(screen.getByText('swap.execution.signing')).toBeDefined()
+    })
+
+    it('shows submitting status text when submitting', () => {
+        render(
+            <SwapConfirmationBottomSheet
+                {...defaultProps}
+                swapStatus='submitting'
+            />,
+        )
+
+        expect(screen.getByText('swap.execution.submitting')).toBeDefined()
+    })
+
+    it('shows error banner on error status', () => {
+        render(
+            <SwapConfirmationBottomSheet
+                {...defaultProps}
+                swapStatus='error'
+            />,
+        )
+
+        expect(screen.getByTestId('swap-confirm-error')).toBeDefined()
+        expect(screen.getByText('swap.execution.error')).toBeDefined()
+    })
+
+    it('shows account name in header', () => {
+        render(<SwapConfirmationBottomSheet {...defaultProps} />)
+
+        expect(screen.getByText('Main Account')).toBeDefined()
     })
 })

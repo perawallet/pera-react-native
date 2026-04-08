@@ -20,7 +20,7 @@ export const transactionGroupSchema = z.object({
 })
 
 export const prepareTransactionsRequestSchema = z.object({
-    quote: z.number(),
+    quote: z.string(),
 })
 
 export const prepareTransactionsResponseSchema = z.object({

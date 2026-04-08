@@ -15,7 +15,6 @@ import { useLanguage } from '@hooks/useLanguage'
 import { SwapAssetSelectionBottomSheet } from '../SwapAssetSelectionBottomSheet'
 import { SwapAmountSection } from '../SwapAmountSection'
 import { SwapConfigurationBottomSheet } from '../SwapConfigurationBottomSheet'
-import { SwapQuoteDetails } from '../SwapQuoteDetails'
 import { SwapConfirmationBottomSheet } from '../SwapConfirmationBottomSheet'
 import { SwapFormControls } from './SwapFormControls'
 import { useSwapForm } from './useSwapForm'
@@ -33,9 +32,9 @@ export const SwapForm = () => {
         receiveBalance,
         isQuoteFetching,
         isQuoteError,
-        isConfirming,
         selectedQuote,
         canSwap,
+        swapStatus,
         payAssetModal,
         receiveAssetModal,
         configModal,
@@ -78,13 +77,6 @@ export const SwapForm = () => {
                     />
                 </PWView>
 
-                {selectedQuote && (
-                    <SwapQuoteDetails
-                        quote={selectedQuote}
-                        isLoading={isQuoteFetching}
-                    />
-                )}
-
                 {isQuoteError && (
                     <PWView style={styles.errorContainer}>
                         <PWText
@@ -98,11 +90,11 @@ export const SwapForm = () => {
 
                 <PWButton
                     variant='primary'
-                    title={t('swap.quote.review_swap')}
+                    title={t('swap.form.swap')}
                     onPress={confirmModal.open}
                     isDisabled={!canSwap}
                     style={styles.swapButton}
-                    testID='swap-review-button'
+                    testID='swap-button'
                 />
             </PWScrollView>
 
@@ -131,7 +123,7 @@ export const SwapForm = () => {
                 onClose={confirmModal.close}
                 onConfirm={handleConfirmSwap}
                 quote={selectedQuote}
-                isConfirming={isConfirming}
+                swapStatus={swapStatus}
             />
         </>
     )

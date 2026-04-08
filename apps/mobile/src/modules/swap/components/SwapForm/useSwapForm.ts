@@ -26,7 +26,6 @@ import {
 import {
     useCalculateSwapAmountMutation,
     useCreateQuotesMutation,
-    usePrepareTransactionsMutation,
     useSwaps,
     type SwapQuote,
     type SwapConfigurationResult,
@@ -36,6 +35,10 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useModalState } from '@hooks/useModalState'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { isDecimalEqual } from '@perawallet/wallet-core-shared'
+import {
+    useSwapExecution,
+    type SwapExecutionStatus,
+} from '../../hooks/useSwapExecution'
 
 type ModalState = ReturnType<typeof useModalState>
 
@@ -48,9 +51,9 @@ type UseSwapFormResult = {
     receiveBalance: Decimal | null
     isQuoteFetching: boolean
     isQuoteError: boolean
-    isConfirming: boolean
     selectedQuote: SwapQuote | null
     canSwap: boolean
+    swapStatus: SwapExecutionStatus
     payAssetModal: ModalState
     receiveAssetModal: ModalState
     configModal: ModalState
@@ -101,10 +104,7 @@ export const useSwapForm = (): UseSwapFormResult => {
     const createQuotesRef = useRef(createQuotes)
     createQuotesRef.current = createQuotes
 
-    const { mutateAsync: prepareTransactions, isPending: isConfirming } =
-        usePrepareTransactionsMutation()
-    const prepareTransactionsRef = useRef(prepareTransactions)
-    prepareTransactionsRef.current = prepareTransactions
+    const swapExecution = useSwapExecution()
 
     const { data: payAssets } = useAssetsQuery([fromAsset])
     const payAsset = payAssets?.get(fromAsset)
@@ -290,15 +290,12 @@ export const useSwapForm = (): UseSwapFormResult => {
     )
 
     const handleConfirmSwap = useCallback(async () => {
-        if (!selectedQuote?.id) return
-        try {
-            await prepareTransactionsRef.current({ quote: selectedQuote.id })
-            // TODO: Phase 4 — sign and submit transactions
+        if (!selectedQuote?.quoteIdStr) return
+        const success = await swapExecution.execute(selectedQuote.quoteIdStr)
+        if (success) {
             confirmModal.close()
-        } catch {
-            // Transaction preparation failed — error state handled by mutation
         }
-    }, [selectedQuote, confirmModal])
+    }, [selectedQuote, confirmModal, swapExecution])
 
     const handleConfigApply = useCallback(
         (result: SwapConfigurationResult) => {
@@ -335,9 +332,9 @@ export const useSwapForm = (): UseSwapFormResult => {
         receiveBalance: receiveAssetBalance?.amount ?? null,
         isQuoteFetching,
         isQuoteError,
-        isConfirming,
         selectedQuote,
         canSwap,
+        swapStatus: swapExecution.status,
         payAssetModal,
         receiveAssetModal,
         configModal,

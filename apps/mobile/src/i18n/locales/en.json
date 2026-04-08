@@ -1265,8 +1265,10 @@
             "terms_agreement": "By continuing, you agree to our swap partner's <0>Terms of Service</0>"
         },
         "form": {
+            "swap": "Swap",
             "you_pay": "You pay",
             "you_receive": "You receive",
+            "to": "To",
             "balance_label": "Balance: ",
             "max": "MAX",
             "select_asset": "Select"
@@ -1289,7 +1291,9 @@
             "primary_currency": "Primary currency",
             "use_local_currency": "Use local currency",
             "custom": "Custom",
-            "max": "MAX"
+            "max": "MAX",
+            "swap": "Swap",
+            "to": "TO"
         },
         "quote": {
             "rate": "Rate",
@@ -1298,10 +1302,22 @@
             "pera_fee": "Pera Fee",
             "exchange_fee": "Exchange Fee",
             "provider": "Provider",
+            "minimum_received": "Minimum Received",
             "review_swap": "Review Swap",
             "confirm_swap": "Confirm Swap",
             "high_price_impact_warning": "This swap has a high price impact. You may receive significantly fewer tokens than expected.",
             "quote_error": "Unable to get quotes. Please try again."
+        },
+        "execution": {
+            "signing": "Signing...",
+            "submitting": "Submitting...",
+            "finalizing": "Finalizing...",
+            "error": "Transaction failed. Please try again."
+        },
+        "info": {
+            "slippage_tolerance": "The maximum difference between the expected price and the execution price. A higher tolerance increases the chance of a successful swap but may result in a less favorable rate.",
+            "price_impact": "The difference between the market price and the estimated price due to trade size. Larger trades typically have a higher price impact.",
+            "exchange_fee": "The fee charged by the decentralized exchange for facilitating this swap."
         }
     },
     "ledger": {
