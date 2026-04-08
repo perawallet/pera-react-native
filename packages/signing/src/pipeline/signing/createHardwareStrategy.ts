@@ -18,6 +18,7 @@ import { isHardwareWalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     HardwareWalletTransport,
     HardwareWalletRegistry,
+    HardwareWalletTransportProvider,
 } from '@perawallet/wallet-core-hardware-wallet'
 import type {
     PeraTransaction,
@@ -27,6 +28,7 @@ import { Address } from '@perawallet/wallet-core-blockchain'
 import type {
     SigningStrategy,
     AnalyzedSignableGroup,
+    TransactionSignableData,
     SigningResult,
     SigningCallbacks,
 } from '../types'
@@ -41,6 +43,124 @@ export type EncodeTransactionFunction = (tx: PeraTransaction) => Uint8Array
 export type HardwareStrategyOptions = {
     hardwareWalletRegistry?: HardwareWalletRegistry
     encodeTransaction: EncodeTransactionFunction
+}
+
+/**
+ * Validate preconditions and extract hardware account details.
+ */
+const validateAndExtract = (
+    group: AnalyzedSignableGroup,
+    account: WalletAccount,
+    registry?: HardwareWalletRegistry,
+): {
+    hwAccount: HardwareWalletAccount
+    transportProvider: HardwareWalletTransportProvider
+    data: TransactionSignableData
+} => {
+    if (!isHardwareWalletAccount(account)) {
+        throw new CannotSignError(
+            account.address,
+            'Account is not a hardware wallet',
+        )
+    }
+
+    if (group.data.type !== 'transactions') {
+        throw new HardwareWalletError('unsupported_data_type')
+    }
+
+    const hwAccount = account as HardwareWalletAccount
+    const transportProvider = registry?.getProvider(
+        hwAccount.hardwareDetails.manufacturer,
+    )
+
+    if (!transportProvider) {
+        throw new HardwareWalletError('transport_unavailable')
+    }
+
+    return { hwAccount, transportProvider, data: group.data }
+}
+
+/**
+ * Connect to the hardware device and verify it is ready.
+ */
+const connectAndVerify = async (
+    transportProvider: HardwareWalletTransportProvider,
+    deviceId: string,
+    accountIndex: number,
+    callbacks?: SigningCallbacks,
+): Promise<HardwareWalletTransport> => {
+    callbacks?.onPhaseChange?.('connecting')
+    const transport = await transportProvider.connect(deviceId)
+    await transport.getAddress(accountIndex, false)
+    callbacks?.onPhaseChange?.('awaiting-approval')
+    return transport
+}
+
+/**
+ * Sign each transaction sequentially on the hardware device.
+ *
+ * Hardware wallet transports are typically single-channel —
+ * concurrent commands can corrupt state or reorder responses.
+ */
+const signTransactions = async (
+    transport: HardwareWalletTransport,
+    data: TransactionSignableData,
+    hwAccount: HardwareWalletAccount,
+    encodeTransaction: EncodeTransactionFunction,
+    callbacks?: SigningCallbacks,
+): Promise<PeraSignedTransaction[]> => {
+    const { transactions, indicesToSign } = data
+    const { accountIndex } = hwAccount.hardwareDetails
+
+    callbacks?.onSigningStart?.()
+    const signed: PeraSignedTransaction[] = []
+
+    for (let index = 0; index < transactions.length; index++) {
+        const txn = transactions[index]
+        callbacks?.onProgress?.(index + 1, transactions.length)
+
+        if (!indicesToSign.includes(index)) {
+            signed.push({ txn } as PeraSignedTransaction)
+            continue
+        }
+
+        const txnBytes = encodeTransaction(txn)
+        const signature = await transport.signTransaction(
+            accountIndex,
+            txnBytes,
+        )
+
+        const senderAddress = txn.sender.toString()
+        const authAddress =
+            hwAccount.address !== senderAddress
+                ? Address.fromString(hwAccount.address)
+                : undefined
+
+        signed.push({
+            txn,
+            sig: signature,
+            authAddress,
+        } as PeraSignedTransaction)
+    }
+
+    callbacks?.onSigningComplete?.()
+    return signed
+}
+
+/**
+ * Classify and re-throw errors with proper types.
+ */
+const classifyError = (error: unknown): never => {
+    if (
+        error instanceof CannotSignError ||
+        error instanceof HardwareWalletError
+    ) {
+        throw error
+    }
+    throw new SigningError(
+        error instanceof Error ? error.message : String(error),
+        error instanceof Error ? error : undefined,
+    )
 }
 
 /**
@@ -62,87 +182,30 @@ export const createHardwareStrategy = (
             account: WalletAccount,
             callbacks?: SigningCallbacks,
         ): Promise<SigningResult> => {
-            if (!isHardwareWalletAccount(account)) {
-                throw new CannotSignError(
-                    account.address,
-                    'Account is not a hardware wallet',
-                )
-            }
+            const { hwAccount, transportProvider, data } =
+                validateAndExtract(group, account, hardwareWalletRegistry)
 
-            if (group.data.type !== 'transactions') {
-                throw new HardwareWalletError('unsupported_data_type')
-            }
-
-            const hwAccount = account as HardwareWalletAccount
-            const { deviceId, accountIndex, manufacturer } =
-                hwAccount.hardwareDetails
-
-            const transportProvider =
-                hardwareWalletRegistry?.getProvider(manufacturer)
-
-            if (!transportProvider) {
-                throw new HardwareWalletError('transport_unavailable')
-            }
-
+            const { deviceId, accountIndex } = hwAccount.hardwareDetails
             let transport: HardwareWalletTransport | undefined
 
             try {
-                // Step 1: Connect to the hardware wallet device
-                callbacks?.onPhaseChange?.('connecting')
+                transport = await connectAndVerify(
+                    transportProvider,
+                    deviceId,
+                    accountIndex,
+                    callbacks,
+                )
 
-                transport = await transportProvider.connect(deviceId)
-
-                // Step 2: Verify the device is ready by fetching address
-                await transport.getAddress(accountIndex, false)
-
-                // Step 3: Prompt user to confirm on device
-                callbacks?.onPhaseChange?.('awaiting-approval')
-
-                const { transactions, indicesToSign } = group.data
-
-                // Step 4: Sign each transaction sequentially.
-                // Hardware wallet transports are typically single-channel —
-                // concurrent commands can corrupt state or reorder responses.
-                callbacks?.onSigningStart?.()
-                const signed: PeraSignedTransaction[] = []
-
-                for (let index = 0; index < transactions.length; index++) {
-                    const txn = transactions[index]
-                    callbacks?.onProgress?.(index + 1, transactions.length)
-
-                    // Only sign transactions in indicesToSign
-                    if (!indicesToSign.includes(index)) {
-                        signed.push({ txn } as PeraSignedTransaction)
-                        continue
-                    }
-
-                    const txnBytes = encodeTransaction(txn)
-                    const signature = await transport.signTransaction(
-                        accountIndex,
-                        txnBytes,
-                    )
-
-                    // Build SignedTransaction: { txn, sig, authAddress? }
-                    const senderAddress = txn.sender.toString()
-                    const authAddress =
-                        hwAccount.address !== senderAddress
-                            ? Address.fromString(hwAccount.address)
-                            : undefined
-
-                    signed.push({
-                        txn,
-                        sig: signature,
-                        authAddress,
-                    } as PeraSignedTransaction)
-                }
-
-                callbacks?.onSigningComplete?.()
+                const signed = await signTransactions(
+                    transport,
+                    data,
+                    hwAccount,
+                    encodeTransaction,
+                    callbacks,
+                )
 
                 return {
-                    signedData: {
-                        type: 'transactions',
-                        signed,
-                    },
+                    signedData: { type: 'transactions', signed },
                     signers: [{ address: account.address }],
                     originalIndices: group.originalIndices,
                 }
@@ -150,17 +213,7 @@ export const createHardwareStrategy = (
                 callbacks?.onError?.(
                     error instanceof Error ? error : new Error(String(error)),
                 )
-
-                if (
-                    error instanceof CannotSignError ||
-                    error instanceof HardwareWalletError
-                ) {
-                    throw error
-                }
-                throw new SigningError(
-                    error instanceof Error ? error.message : String(error),
-                    error instanceof Error ? error : undefined,
-                )
+                return classifyError(error)
             } finally {
                 try {
                     await transport?.disconnect()
