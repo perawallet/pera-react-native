@@ -14,7 +14,7 @@ import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useWatchAccountScreen } from '../useWatchAccountScreen'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { useNfdSearch } from '@perawallet/wallet-core-nfd'
+import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
 
 const mockNavigate = vi.fn()
 const mockPush = vi.fn()
@@ -69,7 +69,7 @@ vi.mock('@perawallet/wallet-core-shared', async () => {
 })
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
-    useNfdSearch: vi.fn(() => ({ results: [], isLoading: false })),
+    useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
 }))
 
 vi.mock('@hooks/useDebouncedValue', () => ({
@@ -80,12 +80,10 @@ describe('useWatchAccountScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockUseAllAccounts.mockReturnValue([])
-        vi.mocked(useNfdSearch).mockReturnValue({
-            results: [],
+        vi.mocked(useNfdSearchQuery).mockReturnValue({
+            data: [],
             isLoading: false,
-            isError: false,
-            error: null,
-        })
+        } as ReturnType<typeof useNfdSearchQuery>)
     })
 
     it('initializes with empty address and invalid state', () => {
@@ -247,8 +245,8 @@ describe('useWatchAccountScreen', () => {
     })
 
     it('resolves NFD name to address when input contains a dot', () => {
-        vi.mocked(useNfdSearch).mockReturnValue({
-            results: [
+        vi.mocked(useNfdSearchQuery).mockReturnValue({
+            data: [
                 {
                     name: 'alice.algo',
                     address: 'VALID_ALGORAND_ADDRESS',
@@ -256,9 +254,7 @@ describe('useWatchAccountScreen', () => {
                 },
             ],
             isLoading: false,
-            isError: false,
-            error: null,
-        })
+        } as ReturnType<typeof useNfdSearchQuery>)
 
         const { result } = renderHook(() => useWatchAccountScreen())
 
@@ -284,12 +280,10 @@ describe('useWatchAccountScreen', () => {
     })
 
     it('shows resolving state during NFD lookup', () => {
-        vi.mocked(useNfdSearch).mockReturnValue({
-            results: [],
+        vi.mocked(useNfdSearchQuery).mockReturnValue({
+            data: [],
             isLoading: true,
-            isError: false,
-            error: null,
-        })
+        } as ReturnType<typeof useNfdSearchQuery>)
 
         const { result } = renderHook(() => useWatchAccountScreen())
 
