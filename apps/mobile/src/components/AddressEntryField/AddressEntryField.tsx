@@ -72,6 +72,8 @@ export const AddressEntryField = ({
         <PWView>
             <PWInput
                 testID={testID}
+                autoCapitalize='none'
+                autoCorrect={false}
                 {...rest}
                 rightIcon={
                     allowQRCode ? (
