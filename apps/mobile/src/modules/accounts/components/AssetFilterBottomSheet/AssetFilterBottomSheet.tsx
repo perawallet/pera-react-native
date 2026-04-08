@@ -13,14 +13,13 @@
 import {
     PWBottomSheet,
     PWButton,
-    PWCheckbox,
     PWIcon,
     PWText,
     PWToolbar,
-    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { FilterRow } from './FilterRow'
 import { useStyles } from './styles'
 import { useAssetFilterBottomSheet } from './useAssetFilterBottomSheet'
 
@@ -35,7 +34,14 @@ export const AssetFilterBottomSheet = ({
 }: AssetFilterBottomSheetProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const { hideZeroBalance, handleToggle } = useAssetFilterBottomSheet()
+    const {
+        hideZeroBalance,
+        displayNfts,
+        displayOptedInNfts,
+        handleToggleHideZeroBalance,
+        handleToggleDisplayNfts,
+        handleToggleDisplayOptedInNfts,
+    } = useAssetFilterBottomSheet()
 
     return (
         <PWBottomSheet
@@ -64,21 +70,34 @@ export const AssetFilterBottomSheet = ({
             />
 
             <PWView style={styles.contentContainer}>
-                <PWTouchableOpacity
-                    style={styles.filterRow}
-                    onPress={handleToggle}
+                <FilterRow
+                    label={t('asset_filter.hide_zero_balance')}
+                    description={t(
+                        'asset_filter.hide_zero_balance_description',
+                    )}
+                    value={hideZeroBalance}
+                    onToggle={handleToggleHideZeroBalance}
                     testID='asset_filter_hide_zero_balance'
-                >
-                    <PWText style={styles.filterLabel}>
-                        {t('asset_filter.hide_zero_balance')}
-                    </PWText>
-                    <PWView pointerEvents='none'>
-                        <PWCheckbox
-                            checked={hideZeroBalance}
-                            containerStyle={styles.checkboxContainer}
-                        />
-                    </PWView>
-                </PWTouchableOpacity>
+                />
+                <FilterRow
+                    label={t('asset_filter.display_nfts')}
+                    description={t('asset_filter.display_nfts_description')}
+                    value={displayNfts}
+                    onToggle={handleToggleDisplayNfts}
+                    testID='asset_filter_display_nfts'
+                />
+                <FilterRow
+                    label={t('asset_filter.display_opted_in_nfts')}
+                    description={t(
+                        'asset_filter.display_opted_in_nfts_description',
+                    )}
+                    // Opted-in NFTs are a subset of NFTs, so this option is only
+                    // meaningful when the parent NFTs toggle is enabled.
+                    value={displayNfts && displayOptedInNfts}
+                    onToggle={handleToggleDisplayOptedInNfts}
+                    testID='asset_filter_display_opted_in_nfts'
+                    disabled={!displayNfts}
+                />
             </PWView>
         </PWBottomSheet>
     )

@@ -10,10 +10,10 @@
  limitations under the License
  */
 
-import { eq, and, inArray, notInArray } from 'drizzle-orm'
+import { eq, and, inArray, notInArray, ne, or, isNull } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
-import { AssetsPeraSchema } from '@perawallet/wallet-core-assets'
+import { AssetsPeraSchema, PeraAssetType } from '@perawallet/wallet-core-assets'
 import { AccountAssetHoldingsSchema, AccountBalancesSchema } from './schema'
 
 export type HoldingRow = {
@@ -93,41 +93,95 @@ export async function insertAssetHolding({
         .run()
 }
 
+export type AccountHoldingsFilters = {
+    /** When true, rows with amount === 0 are excluded. */
+    hideZeroBalance?: boolean
+    /** When true, NFTs (collectible asset type) are excluded entirely. */
+    hideNfts?: boolean
+    /** When true, NFTs that are opted-in but have a zero balance are excluded. */
+    hideOptedInNfts?: boolean
+    /** Asset types to exclude regardless of holding amount. */
+    excludeAssetTypes?: string[]
+}
+
 type GetAccountHoldingsParams = {
     db?: Database
     accountAddress: string
     network: string
-    excludeAssetTypes?: string[]
-}
+} & AccountHoldingsFilters
 
 export async function getAccountHoldings({
     db = getDatabase(),
     accountAddress,
     network,
+    hideZeroBalance,
+    hideNfts,
+    hideOptedInNfts,
     excludeAssetTypes,
 }: GetAccountHoldingsParams): Promise<HoldingRow[]> {
-    if (!excludeAssetTypes?.length) {
+    const needsAssetJoin =
+        hideNfts === true ||
+        hideOptedInNfts === true ||
+        !!excludeAssetTypes?.length
+
+    const baseConditions = [
+        eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
+        eq(AccountAssetHoldingsSchema.network, network),
+    ]
+
+    if (hideZeroBalance) {
+        // Decimal columns are stored as TEXT and normalized via Decimal#toString,
+        // so a zero amount is always the literal "0".
+        baseConditions.push(
+            ne(AccountAssetHoldingsSchema.amount, new Decimal(0)),
+        )
+    }
+
+    if (!needsAssetJoin) {
         const rows = await db
             .select({
                 assetId: AccountAssetHoldingsSchema.assetId,
                 amount: AccountAssetHoldingsSchema.amount,
             })
             .from(AccountAssetHoldingsSchema)
-            .where(
-                and(
-                    eq(
-                        AccountAssetHoldingsSchema.accountAddress,
-                        accountAddress,
-                    ),
-                    eq(AccountAssetHoldingsSchema.network, network),
-                ),
-            )
+            .where(and(...baseConditions))
             .all()
 
         return rows.map(r => ({
             assetId: r.assetId.toString(),
             amount: r.amount,
         }))
+    }
+
+    const joinConditions = [...baseConditions]
+
+    if (hideNfts) {
+        // Exclude any holding whose asset type is collectible. Unknown
+        // (NULL) asset types are kept since we can't yet classify them.
+        joinConditions.push(
+            or(
+                isNull(AssetsPeraSchema.assetType),
+                ne(AssetsPeraSchema.assetType, PeraAssetType.collectible),
+            )!,
+        )
+    } else if (hideOptedInNfts) {
+        // Keep all non-NFT holdings, plus NFT holdings with a non-zero balance.
+        joinConditions.push(
+            or(
+                isNull(AssetsPeraSchema.assetType),
+                ne(AssetsPeraSchema.assetType, PeraAssetType.collectible),
+                ne(AccountAssetHoldingsSchema.amount, new Decimal(0)),
+            )!,
+        )
+    }
+
+    if (excludeAssetTypes?.length) {
+        joinConditions.push(
+            or(
+                isNull(AssetsPeraSchema.assetType),
+                notInArray(AssetsPeraSchema.assetType, excludeAssetTypes),
+            )!,
+        )
     }
 
     const rows = await db
@@ -149,13 +203,7 @@ export async function getAccountHoldings({
                 ),
             ),
         )
-        .where(
-            and(
-                eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
-                eq(AccountAssetHoldingsSchema.network, network),
-                notInArray(AssetsPeraSchema.assetType, excludeAssetTypes),
-            ),
-        )
+        .where(and(...joinConditions))
         .all()
 
     return rows.map(r => ({

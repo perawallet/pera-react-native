@@ -23,6 +23,7 @@ import {
 import {
     useAssetsQuery,
     useAssetPricesQuery,
+    useAssetPreferencesStore,
     isCollectible,
     type AssetPrices,
 } from '@perawallet/wallet-core-assets'
@@ -81,7 +82,29 @@ export const useAccountAssetList = ({
     const [searchFilter, setSearchFilter] = useState('')
     const [assetForOptOut, setAssetForOptOut] =
         useState<AssetWithAccountBalance | null>(null)
-    const { accountBalances, isPending } = useAccountBalancesQuery([account])
+    const hideZeroBalance = useAssetPreferencesStore(
+        state => state.hideZeroBalance,
+    )
+    const displayNfts = useAssetPreferencesStore(state => state.displayNfts)
+    const displayOptedInNfts = useAssetPreferencesStore(
+        state => state.displayOptedInNfts,
+    )
+    // Opted-in NFT visibility is a subset of NFT visibility — if NFTs are
+    // hidden entirely, the opted-in toggle has no effect.
+    const effectiveDisplayOptedInNfts = displayNfts && displayOptedInNfts
+    const balanceFilters = useMemo(
+        () => ({
+            hideZeroBalance,
+            hideNfts: !displayNfts,
+            hideOptedInNfts: !effectiveDisplayOptedInNfts,
+        }),
+        [hideZeroBalance, displayNfts, effectiveDisplayOptedInNfts],
+    )
+    const { accountBalances, isPending } = useAccountBalancesQuery(
+        [account],
+        undefined,
+        balanceFilters,
+    )
     const balanceData = useMemo(
         () => accountBalances.get(account.address),
         [accountBalances, account.address],
@@ -96,7 +119,7 @@ export const useAccountAssetList = ({
     const { showToast } = useToast()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
-    const { sortedBalances, hideZeroBalance } = useSortedAssetBalances(
+    const { sortedBalances } = useSortedAssetBalances(
         balanceData?.assetBalances ?? [],
         assets,
     )
@@ -215,25 +238,22 @@ export const useAccountAssetList = ({
         navigation.navigate('RemoveAssets')
     }, [manageSheetState, navigation])
 
+    const hasActiveFilter =
+        hideZeroBalance || !displayNfts || !effectiveDisplayOptedInNfts
+
     const getEmptyTitle = useCallback(() => {
-        if (searchFilter?.length) {
-            return t('account_details.assets.nomatch_title')
-        }
-        if (hideZeroBalance) {
+        if (searchFilter?.length || hasActiveFilter) {
             return t('account_details.assets.nomatch_title')
         }
         return t('account_details.assets.empty_title')
-    }, [searchFilter, hideZeroBalance, t])
+    }, [searchFilter, hasActiveFilter, t])
 
     const getEmptyBody = useCallback(() => {
-        if (searchFilter?.length) {
-            return t('account_details.assets.nomatch_body')
-        }
-        if (hideZeroBalance) {
+        if (searchFilter?.length || hasActiveFilter) {
             return t('account_details.assets.nomatch_body')
         }
         return t('account_details.assets.empty_body')
-    }, [searchFilter, hideZeroBalance, t])
+    }, [searchFilter, hasActiveFilter, t])
 
     const renderItemProps = useMemo(
         () => ({
