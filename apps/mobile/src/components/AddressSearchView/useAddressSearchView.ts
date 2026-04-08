@@ -19,7 +19,10 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { useNfdSearch, type NfdSearchResult } from '@perawallet/wallet-core-nfd'
+import {
+    useNfdSearchQuery,
+    type NfdSearchResult,
+} from '@perawallet/wallet-core-nfd'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 
@@ -55,10 +58,11 @@ export const useAddressSearchView = (
 
     const debouncedValue = useDebouncedValue(value, SEARCH_DEBOUNCE_TIME)
     const shouldSearchNfd = debouncedValue.includes('.') && !addressIsValid
-    const { results: nfdResults, isLoading: isNfdLoading } = useNfdSearch(
+    const { data: nfdData, isLoading: isNfdLoading } = useNfdSearchQuery(
         debouncedValue,
         { enabled: shouldSearchNfd },
     )
+    const nfdResults = nfdData ?? []
 
     const matchingAccounts = useMemo(
         () =>

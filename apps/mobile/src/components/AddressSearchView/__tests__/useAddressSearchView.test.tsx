@@ -19,7 +19,7 @@ import {
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { useNfdSearch } from '@perawallet/wallet-core-nfd'
+import { useNfdSearchQuery } from '@perawallet/wallet-core-nfd'
 
 vi.mock('@perawallet/wallet-core-contacts', () => ({
     useContacts: vi.fn(),
@@ -41,7 +41,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-nfd', () => ({
-    useNfdSearch: vi.fn(() => ({ results: [], isLoading: false })),
+    useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
 }))
 
 vi.mock('@hooks/useDebouncedValue', () => ({
@@ -63,12 +63,10 @@ describe('useAddressSearchView', () => {
 
         vi.mocked(useAllAccounts).mockReturnValue([])
         vi.mocked(isValidAlgorandAddress).mockReturnValue(false)
-        vi.mocked(useNfdSearch).mockReturnValue({
-            results: [],
+        vi.mocked(useNfdSearchQuery).mockReturnValue({
+            data: [],
             isLoading: false,
-            isError: false,
-            error: null,
-        })
+        } as unknown as ReturnType<typeof useNfdSearchQuery>)
         mockFindContacts.mockReturnValue([])
     })
 
@@ -260,8 +258,8 @@ describe('useAddressSearchView', () => {
     })
 
     it('returns NFD results when value contains a dot', () => {
-        vi.mocked(useNfdSearch).mockReturnValue({
-            results: [
+        vi.mocked(useNfdSearchQuery).mockReturnValue({
+            data: [
                 {
                     name: 'alice.algo',
                     address: 'NFD_RESOLVED_ADDR',
@@ -269,9 +267,7 @@ describe('useAddressSearchView', () => {
                 },
             ],
             isLoading: false,
-            isError: false,
-            error: null,
-        })
+        } as unknown as ReturnType<typeof useNfdSearchQuery>)
 
         const { result } = renderHook(() => useAddressSearchView())
 
@@ -308,7 +304,7 @@ describe('useAddressSearchView', () => {
             result.current.setValue('alice')
         })
 
-        expect(vi.mocked(useNfdSearch)).toHaveBeenCalledWith(
+        expect(vi.mocked(useNfdSearchQuery)).toHaveBeenCalledWith(
             expect.anything(),
             expect.objectContaining({ enabled: false }),
         )
@@ -318,12 +314,10 @@ describe('useAddressSearchView', () => {
     })
 
     it('exposes isNfdLoading state', () => {
-        vi.mocked(useNfdSearch).mockReturnValue({
-            results: [],
+        vi.mocked(useNfdSearchQuery).mockReturnValue({
+            data: [],
             isLoading: true,
-            isError: false,
-            error: null,
-        })
+        } as unknown as ReturnType<typeof useNfdSearchQuery>)
 
         const { result } = renderHook(() => useAddressSearchView())
 

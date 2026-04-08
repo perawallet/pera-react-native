@@ -83,7 +83,7 @@ describe('useWatchAccountScreen', () => {
         vi.mocked(useNfdSearchQuery).mockReturnValue({
             data: [],
             isLoading: false,
-        } as ReturnType<typeof useNfdSearchQuery>)
+        } as unknown as ReturnType<typeof useNfdSearchQuery>)
     })
 
     it('initializes with empty address and invalid state', () => {
@@ -254,7 +254,7 @@ describe('useWatchAccountScreen', () => {
                 },
             ],
             isLoading: false,
-        } as ReturnType<typeof useNfdSearchQuery>)
+        } as unknown as ReturnType<typeof useNfdSearchQuery>)
 
         const { result } = renderHook(() => useWatchAccountScreen())
 
@@ -283,7 +283,7 @@ describe('useWatchAccountScreen', () => {
         vi.mocked(useNfdSearchQuery).mockReturnValue({
             data: [],
             isLoading: true,
-        } as ReturnType<typeof useNfdSearchQuery>)
+        } as unknown as ReturnType<typeof useNfdSearchQuery>)
 
         const { result } = renderHook(() => useWatchAccountScreen())
 
