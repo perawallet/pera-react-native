@@ -167,6 +167,7 @@
             "share_message": "",
             "image_copied": "Image copied to clipboard",
             "image_saved": "Image saved to photo library",
+            "model_3d_mode": "3D Mode",
             "image_save_failed": "Unable to save image",
             "image_copy_failed": "Unable to copy image",
             "photo_permission_denied": "Photo library access is required to save images",

@@ -58,6 +58,8 @@ type UseCollectibleDetailResult = {
     assetBalance: AssetWithAccountBalance | null
     isOptingOut: boolean
     optOutModal: ModalState
+    modelViewerModal: ModalState
+    modelViewerUrl: string | undefined
     handleOptOutPressed: () => void
     handleConfirmOptOut: () => void
     handleSendPressed: () => void
@@ -91,6 +93,8 @@ export const useCollectibleDetail = (
     const fullScreenViewerModal = useModalState()
     const sendFundsModal = useModalState()
     const optOutModal = useModalState()
+    const modelViewerModal = useModalState()
+    const [modelViewerUrl, setModelViewerUrl] = useState<string | null>(null)
     const { optOut, isLoading: isOptingOut } = useAssetOptOutMutation()
     const navigation = useNavigation()
     const [fullScreenInitialIndex, setFullScreenInitialIndex] = useState(0)
@@ -276,6 +280,14 @@ export const useCollectibleDetail = (
 
     const handleMediaPress = useCallback(
         (index: number) => {
+            const item = media[index]
+            if (item?.type === 'model') {
+                const url = item.downloadUrl ?? item.previewUrl
+                if (!url) return
+                setModelViewerUrl(url)
+                modelViewerModal.open()
+                return
+            }
             if (fullScreenMedia.length > 0) {
                 setFullScreenInitialIndex(
                     Math.min(index, fullScreenMedia.length - 1),
@@ -283,7 +295,7 @@ export const useCollectibleDetail = (
                 fullScreenViewerModal.open()
             }
         },
-        [fullScreenMedia, fullScreenViewerModal],
+        [media, fullScreenMedia, fullScreenViewerModal, modelViewerModal],
     )
 
     return {
@@ -303,6 +315,8 @@ export const useCollectibleDetail = (
         assetBalance: assetBalance ?? null,
         isOptingOut,
         optOutModal,
+        modelViewerModal,
+        modelViewerUrl: modelViewerUrl ?? undefined,
         handleOptOutPressed,
         handleConfirmOptOut,
         handleSendPressed,

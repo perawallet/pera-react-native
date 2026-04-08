@@ -30,6 +30,7 @@ import ChevronRightIcon from '@assets/icons/chevron-right.svg'
 import CodeIcon from '@assets/icons/code.svg'
 import CopyIcon from '@assets/icons/copy.svg'
 import CrossIcon from '@assets/icons/cross.svg'
+import Cube3dIcon from '@assets/icons/cube-3d.svg'
 import DeleteIcon from '@assets/icons/delete.svg'
 import DollarIcon from '@assets/icons/dollar.svg'
 import DotStackIcon from '@assets/icons/dot-stack.svg'
@@ -156,6 +157,7 @@ export const ICON_LIBRARY = {
     copy: CopyIcon,
     code: CodeIcon,
     cross: CrossIcon,
+    'cube-3d': Cube3dIcon,
     delete: DeleteIcon,
     dollar: DollarIcon,
     'document-download': DocumentDownloadIcon,

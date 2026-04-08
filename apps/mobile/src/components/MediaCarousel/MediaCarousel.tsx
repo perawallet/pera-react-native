@@ -16,11 +16,14 @@ import {
     PWIcon,
     PWIconSize,
     PWImage,
+    PWText,
     PWTouchableIcon,
+    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import { VideoPlayer } from '@components/VideoPlayer'
 import { AudioPlayer } from '@components/AudioPlayer'
+import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import PagerView from 'react-native-pager-view'
 
@@ -47,16 +50,22 @@ export const MediaCarousel = ({
 }: MediaCarouselProps) => {
     const dimensions = useWindowDimensions()
     const styles = useStyles(dimensions)
+    const { t } = useLanguage()
     const [activeIndex, setActiveIndex] = useState(0)
 
     const displayMedia = media.filter(
-        m => m.type === 'image' || m.type === 'video' || m.type === 'audio',
+        m =>
+            m.type === 'image' ||
+            m.type === 'video' ||
+            m.type === 'audio' ||
+            m.type === 'model',
     )
     const hasMultiple = displayMedia.length > 1
 
     const renderMediaItem = useCallback(
         ({ item, index }: { item?: MediaItem; index: number }) => {
             const downloadUri = item?.downloadUrl
+            const isModel = item?.type === 'model'
             return (
                 <PWView
                     style={styles.carouselItem}
@@ -95,7 +104,24 @@ export const MediaCarousel = ({
                             />
                         </PWView>
                     )}
-                    {onFullScreenPress && index >= 0 && (
+                    {isModel && index >= 0 && (
+                        <PWTouchableOpacity
+                            style={styles.modelBadge}
+                            onPress={() => onItemPress?.(index)}
+                            disabled={!onItemPress}
+                            testID='model-3d-badge'
+                        >
+                            <PWIcon
+                                name='cube-3d'
+                                variant='white'
+                                size='sm'
+                            />
+                            <PWText style={styles.modelBadgeText}>
+                                {t('asset_details.collectible.model_3d_mode')}
+                            </PWText>
+                        </PWTouchableOpacity>
+                    )}
+                    {onFullScreenPress && index >= 0 && !isModel && (
                         <PWTouchableIcon
                             style={styles.fullScreenButton}
                             onPress={() => onFullScreenPress(index)}
@@ -114,6 +140,7 @@ export const MediaCarousel = ({
             onFullScreenPress,
             fallbackImageUrl,
             activeIndex,
+            t,
         ],
     )
 

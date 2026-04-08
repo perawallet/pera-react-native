@@ -14,6 +14,7 @@ export const CollectibleMediaType = {
     image: 'image',
     video: 'video',
     audio: 'audio',
+    model: 'model',
     mixed: 'mixed',
     unknown: 'unknown',
 } as const
