@@ -67,11 +67,16 @@ describe('useNfdForAddress', () => {
             },
         ])
 
-        const { result } = renderHook(() => useNfdForAddressQuery(VALID_ADDRESS), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useNfdForAddressQuery(VALID_ADDRESS),
+            {
+                wrapper,
+            },
+        )
 
-        await waitFor(() => expect(result.current.data?.at(0)?.name).toBe('alice.algo'))
+        await waitFor(() =>
+            expect(result.current.data?.at(0)?.name).toBe('alice.algo'),
+        )
     })
 
     it('returns undefined nfdName while loading', () => {
@@ -79,9 +84,12 @@ describe('useNfdForAddress', () => {
             () => new Promise(() => {}),
         )
 
-        const { result } = renderHook(() => useNfdForAddressQuery(VALID_ADDRESS), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useNfdForAddressQuery(VALID_ADDRESS),
+            {
+                wrapper,
+            },
+        )
 
         expect(result.current.data?.at(0)).toBeUndefined()
         expect(result.current.isPending).toBe(true)
@@ -90,9 +98,12 @@ describe('useNfdForAddress', () => {
     it('returns undefined when no NFD names found', async () => {
         mockFetchNfdNamesForAddress.mockResolvedValue([])
 
-        const { result } = renderHook(() => useNfdForAddressQuery(VALID_ADDRESS), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useNfdForAddressQuery(VALID_ADDRESS),
+            {
+                wrapper,
+            },
+        )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
@@ -125,10 +136,15 @@ describe('useNfdForAddress', () => {
             { name: 'secondary.algo', source: 'nfd', image: '' },
         ])
 
-        const { result } = renderHook(() => useNfdForAddressQuery(VALID_ADDRESS), {
-            wrapper,
-        })
+        const { result } = renderHook(
+            () => useNfdForAddressQuery(VALID_ADDRESS),
+            {
+                wrapper,
+            },
+        )
 
-        await waitFor(() => expect(result.current.data?.at(0)?.name).toBe('primary.algo'))
+        await waitFor(() =>
+            expect(result.current.data?.at(0)?.name).toBe('primary.algo'),
+        )
     })
 })
