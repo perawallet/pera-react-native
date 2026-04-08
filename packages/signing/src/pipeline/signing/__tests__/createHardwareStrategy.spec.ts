@@ -370,26 +370,23 @@ describe('createHardwareStrategy', () => {
             expect(onError).toHaveBeenCalledWith(expect.any(Error))
         })
 
-        it('calls onHardwarePrompt with connect and approve', async () => {
+        it('calls onPhaseChange with connecting and awaiting-approval', async () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
             })
             const group = makeGroup([mockTransaction()], [0])
-            const onHardwarePrompt = vi.fn()
+            const onPhaseChange = vi.fn()
 
             await strategy.sign(group, makeLedgerAccount(), {
-                onHardwarePrompt,
+                onPhaseChange,
             })
 
-            expect(onHardwarePrompt).toHaveBeenCalledTimes(2)
-            expect(onHardwarePrompt).toHaveBeenNthCalledWith(
-                1,
-                expect.objectContaining({ type: 'connect' }),
-            )
-            expect(onHardwarePrompt).toHaveBeenNthCalledWith(
+            expect(onPhaseChange).toHaveBeenCalledTimes(2)
+            expect(onPhaseChange).toHaveBeenNthCalledWith(1, 'connecting')
+            expect(onPhaseChange).toHaveBeenNthCalledWith(
                 2,
-                expect.objectContaining({ type: 'approve' }),
+                'awaiting-approval',
             )
         })
 

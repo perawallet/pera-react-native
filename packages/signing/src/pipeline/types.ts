@@ -243,14 +243,14 @@ export interface DataAnalyzer {
 // =============================================================================
 
 /**
- * Hardware wallet prompt types
+ * Signing lifecycle phases that strategies can report.
+ * The UI layer maps these to i18n keys and appropriate UI treatment.
  */
-export interface HardwarePrompt {
-    /** Semantic prompt type — the UI layer maps this to an i18n key for display. */
-    type: 'connect' | 'approve' | 'review-transaction' | 'review-data'
-    /** For review: details to show */
-    details?: TransactionSummary | { message: string }
-}
+export type SigningPhase =
+    | 'connecting'
+    | 'awaiting-approval'
+    | 'reviewing-transaction'
+    | 'reviewing-data'
 
 /**
  * Callbacks for UI integration during signing
@@ -262,8 +262,12 @@ export interface SigningCallbacks {
     /** Called with progress updates */
     onProgress?: (current: number, total: number) => void
 
-    /** Called when hardware wallet needs user action */
-    onHardwarePrompt?: (prompt: HardwarePrompt) => Promise<void>
+    /**
+     * Called when the signing strategy enters a new phase that the UI may
+     * want to reflect (e.g. showing a "connect your device" or "approve on device" prompt).
+     * Any strategy can emit phases relevant to its flow.
+     */
+    onPhaseChange?: (phase: SigningPhase) => void
 
     /** Called when signing completes */
     onSigningComplete?: () => void

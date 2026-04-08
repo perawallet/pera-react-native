@@ -185,7 +185,7 @@ describe('hardwareSignerActor', () => {
     it('forwards callbacks to the signing strategy', async () => {
         const transport = makeMockTransport()
         const provider = makeMockProvider(transport)
-        const onHardwarePrompt = vi.fn().mockResolvedValue(undefined)
+        const onPhaseChange = vi.fn()
         const onSigningStart = vi.fn()
         const onProgress = vi.fn()
         const onSigningComplete = vi.fn()
@@ -196,7 +196,7 @@ describe('hardwareSignerActor', () => {
             hardwareWalletRegistry: makeRegistry(provider),
             encodeTransaction: vi.fn().mockReturnValue(new Uint8Array([0xaa])),
             callbacks: {
-                onHardwarePrompt,
+                onPhaseChange,
                 onSigningStart,
                 onProgress,
                 onSigningComplete,
@@ -207,7 +207,7 @@ describe('hardwareSignerActor', () => {
         actor.start()
         await toPromise(actor)
 
-        expect(onHardwarePrompt).toHaveBeenCalledTimes(2)
+        expect(onPhaseChange).toHaveBeenCalledTimes(2)
         expect(onSigningStart).toHaveBeenCalledTimes(1)
         expect(onProgress).toHaveBeenCalledTimes(1)
         expect(onSigningComplete).toHaveBeenCalledTimes(1)

@@ -88,9 +88,7 @@ export const createHardwareStrategy = (
 
             try {
                 // Step 1: Connect to the hardware wallet device
-                await callbacks?.onHardwarePrompt?.({
-                    type: 'connect',
-                })
+                callbacks?.onPhaseChange?.('connecting')
 
                 transport = await transportProvider.connect(deviceId)
 
@@ -98,9 +96,7 @@ export const createHardwareStrategy = (
                 await transport.getAddress(accountIndex, false)
 
                 // Step 3: Prompt user to confirm on device
-                await callbacks?.onHardwarePrompt?.({
-                    type: 'approve',
-                })
+                callbacks?.onPhaseChange?.('awaiting-approval')
 
                 const { transactions, indicesToSign } = group.data
 
