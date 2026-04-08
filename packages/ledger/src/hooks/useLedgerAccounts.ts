@@ -11,11 +11,8 @@
  */
 
 import { useState, useCallback } from 'react'
-import type {
-    LedgerAccount,
-    LedgerTransport,
-} from '@perawallet/wallet-core-ledger'
-import { discoverLedgerAccounts } from '@perawallet/wallet-core-ledger'
+import type { LedgerAccount, LedgerTransport } from '../types'
+import { discoverLedgerAccounts } from '../discovery'
 
 type UseLedgerAccountsResult = {
     accounts: LedgerAccount[]

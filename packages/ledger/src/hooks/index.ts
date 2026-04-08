@@ -10,8 +10,5 @@
  limitations under the License
  */
 
-export * from './types'
-export * from './constants'
-export * from './errors'
-export * from './discovery'
-export * from './hooks'
+export { useLedgerAccounts } from './useLedgerAccounts'
+export { useLedgerConnection } from './useLedgerConnection'

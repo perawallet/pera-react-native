@@ -11,14 +11,13 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import type {
     HardwareWalletDevice,
     HardwareWalletTransport,
     HardwareWalletTransportProvider,
     HardwareWalletConnectionStatus,
 } from '@perawallet/wallet-core-hardware-wallet'
-import { LEDGER_SCAN_TIMEOUT_MS } from '@perawallet/wallet-core-ledger'
+import { LEDGER_SCAN_TIMEOUT_MS } from '../constants'
 
 type UseLedgerConnectionResult = {
     devices: HardwareWalletDevice[]
@@ -33,27 +32,22 @@ type UseLedgerConnectionResult = {
 
 /**
  * Hook that manages BLE scanning and connection to Ledger devices.
- * Uses the hardware wallet registry via getProvider().hardwareWalletRegistry.
+ *
+ * @param provider - The hardware wallet transport provider for Ledger devices.
+ *   Callers obtain this from the hardware wallet registry, e.g.
+ *   `getProvider().hardwareWalletRegistry.getProvider('ledger')`.
  */
-export const useLedgerConnection = (): UseLedgerConnectionResult => {
+export const useLedgerConnection = (
+    provider: HardwareWalletTransportProvider,
+): UseLedgerConnectionResult => {
     const [devices, setDevices] = useState<HardwareWalletDevice[]>([])
     const [connectionStatus, setConnectionStatus] =
         useState<HardwareWalletConnectionStatus>('disconnected')
     const [error, setError] = useState<Error | null>(null)
 
-    const providerRef = useRef<HardwareWalletTransportProvider | null>(null)
     const stopScanRef = useRef<(() => void) | null>(null)
     const scanTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
     const transportRef = useRef<HardwareWalletTransport | null>(null)
-
-    const getOrCreateProvider =
-        useCallback((): HardwareWalletTransportProvider => {
-            if (!providerRef.current) {
-                providerRef.current =
-                    getProvider().hardwareWalletRegistry.getProvider('ledger')!
-            }
-            return providerRef.current
-        }, [])
 
     const stopScan = useCallback(() => {
         stopScanRef.current?.()
@@ -70,7 +64,6 @@ export const useLedgerConnection = (): UseLedgerConnectionResult => {
         setError(null)
         setConnectionStatus('scanning')
 
-        const provider = getOrCreateProvider()
         const seenIds = new Set<string>()
 
         const stop = provider.scan(
@@ -90,7 +83,7 @@ export const useLedgerConnection = (): UseLedgerConnectionResult => {
         scanTimeoutRef.current = setTimeout(() => {
             stopScan()
         }, LEDGER_SCAN_TIMEOUT_MS)
-    }, [stopScan, getOrCreateProvider])
+    }, [stopScan, provider])
 
     const connect = useCallback(
         async (deviceId: string): Promise<HardwareWalletTransport> => {
@@ -99,7 +92,6 @@ export const useLedgerConnection = (): UseLedgerConnectionResult => {
             setError(null)
 
             try {
-                const provider = getOrCreateProvider()
                 const transport = await provider.connect(deviceId)
                 transportRef.current = transport
                 setConnectionStatus('connected')
@@ -112,7 +104,7 @@ export const useLedgerConnection = (): UseLedgerConnectionResult => {
                 throw connectError
             }
         },
-        [stopScan, getOrCreateProvider],
+        [stopScan, provider],
     )
 
     const disconnect = useCallback(async () => {

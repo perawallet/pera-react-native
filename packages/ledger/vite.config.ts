@@ -36,6 +36,8 @@ export default defineConfig({
         },
         rollupOptions: {
             external: [
+                'react',
+                'react/jsx-runtime',
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-core-hardware-wallet',
             ],

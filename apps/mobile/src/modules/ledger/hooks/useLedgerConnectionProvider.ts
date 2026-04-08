@@ -10,8 +10,19 @@
  limitations under the License
  */
 
-export * from './types'
-export * from './constants'
-export * from './errors'
-export * from './discovery'
-export * from './hooks'
+import { useMemo } from 'react'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+import { useLedgerConnection as useLedgerConnectionCore } from '@perawallet/wallet-core-ledger'
+
+/**
+ * App-level wrapper around the core useLedgerConnection hook
+ * that resolves the Ledger transport provider from the app's
+ * hardware wallet registry.
+ */
+export const useLedgerConnection = () => {
+    const provider = useMemo(
+        () => getProvider().hardwareWalletRegistry.getProvider('ledger')!,
+        [],
+    )
+    return useLedgerConnectionCore(provider)
+}

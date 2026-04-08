@@ -11,5 +11,5 @@
  */
 
 export { useBlePermissions } from './useBlePermissions'
-export { useLedgerConnection } from './useLedgerConnection'
-export { useLedgerAccounts } from './useLedgerAccounts'
+export { useLedgerAccounts } from '@perawallet/wallet-core-ledger'
+export { useLedgerConnection } from './useLedgerConnectionProvider'
