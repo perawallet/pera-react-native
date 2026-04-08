@@ -11,7 +11,9 @@
  */
 
 import { useCallback } from 'react'
+import { Decimal } from 'decimal.js'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import { isCollectible, isPureNft } from '@perawallet/wallet-core-assets'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
@@ -21,16 +23,27 @@ import { AccountAssetSelectionList } from '@modules/assets/components/AccountAss
 
 export const AssetSelectionScreen = () => {
     const { t } = useLanguage()
-    const { setSelectedAssetId } = useSendFunds()
+    const { setSelectedAssetId, setAmount } = useSendFunds()
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
 
     const handleAssetSelected = useCallback(
         (item: AssetWithAccountBalance) => {
             setSelectedAssetId(item.assetId)
+            // Pure collectibles have a fixed quantity of 1, so prefill
+            // the amount and skip straight to picking a destination.
+            if (
+                item.asset &&
+                isCollectible(item.asset) &&
+                isPureNft(item.asset)
+            ) {
+                setAmount(new Decimal(1))
+                navigation.navigate('SelectDestination')
+                return
+            }
             navigation.navigate('InputAmount')
         },
-        [navigation, setSelectedAssetId],
+        [navigation, setSelectedAssetId, setAmount],
     )
 
     return (

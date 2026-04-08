@@ -19,8 +19,9 @@ import {
     PWIconSize,
     PWSkeleton,
     PWText,
+    PWTouchableOpacity,
+    PWTouchableOpacityProps,
     PWView,
-    PWViewProps,
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
 import {
@@ -38,8 +39,7 @@ export type AccountAssetItemViewProps = {
     accountBalance: AssetWithAccountBalance
     usdPrice?: Decimal
     iconSize?: PWIconSize
-    onPress?: () => void
-} & PWViewProps
+} & PWTouchableOpacityProps
 
 export const AccountAssetItemView = ({
     accountBalance,
@@ -103,7 +103,9 @@ export const AccountAssetItemView = ({
     }
 
     return (
-        <PWView
+        <PWTouchableOpacity
+            activeOpacity={onPress ? 0.7 : 1}
+            onPress={onPress}
             {...rest}
             style={[styles.container, rest.style]}
         >
@@ -158,6 +160,6 @@ export const AccountAssetItemView = ({
                     />
                 </PWView>
             </PWView>
-        </PWView>
+        </PWTouchableOpacity>
     )
 }

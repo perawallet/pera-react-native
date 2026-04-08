@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
-import { PWFlatList, PWTouchableOpacity, PWView } from '@components/core'
+import { PWFlatList, PWView } from '@components/core'
 import { SearchInput } from '@components/SearchInput'
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
@@ -49,12 +49,11 @@ export const AccountAssetSelectionList = ({
 
     const renderItem = useCallback(
         ({ item }: { item: AssetWithAccountBalance }) => (
-            <PWTouchableOpacity
+            <AccountAssetItemView
                 onPress={() => onAssetSelected(item)}
                 style={styles.item}
-            >
-                <AccountAssetItemView accountBalance={item} />
-            </PWTouchableOpacity>
+                accountBalance={item}
+            />
         ),
         [onAssetSelected, styles],
     )

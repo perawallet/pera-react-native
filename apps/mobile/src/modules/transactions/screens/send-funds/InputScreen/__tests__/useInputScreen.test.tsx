@@ -64,6 +64,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         new Decimal(typeof value === 'bigint' ? value.toString() : value).div(
             new Decimal(10).pow(asset.decimals),
         ),
+    isCollectible: () => false,
+    isPureNft: () => false,
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({

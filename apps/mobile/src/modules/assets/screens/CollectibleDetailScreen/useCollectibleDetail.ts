@@ -56,6 +56,7 @@ type UseCollectibleDetailResult = {
     fullScreenMedia: FullScreenMediaItem[]
     fullScreenInitialIndex: number
     fullScreenViewerModal: ModalState
+    sendFundsModal: ModalState
     hasExplorerUrl: boolean
     hasProjectUrl: boolean
 }
@@ -76,6 +77,7 @@ export const useCollectibleDetail = (
         assetId,
     )
     const fullScreenViewerModal = useModalState()
+    const sendFundsModal = useModalState()
     const [fullScreenInitialIndex, setFullScreenInitialIndex] = useState(0)
 
     const collectible = asset?.peraMetadata?.collectible
@@ -103,12 +105,8 @@ export const useCollectibleDetail = (
     }, [media, collectible?.primaryImage])
 
     const handleSendPressed = useCallback(() => {
-        showToast({
-            title: t('common.not_implemented.title'),
-            body: t('common.not_implemented.body'),
-            type: 'error',
-        })
-    }, [showToast, t])
+        sendFundsModal.open()
+    }, [sendFundsModal])
 
     const handleCopyImage = useCallback(async () => {
         const imageUrl = getImageUrl()
@@ -253,6 +251,7 @@ export const useCollectibleDetail = (
         fullScreenMedia,
         fullScreenInitialIndex,
         fullScreenViewerModal,
+        sendFundsModal,
         hasExplorerUrl: !!explorerUrl,
         hasProjectUrl: !!projectUrl,
     }

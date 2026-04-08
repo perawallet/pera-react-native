@@ -65,3 +65,23 @@ export const isPureNft = (asset: PeraAsset): boolean => {
 export const isCollectible = (asset: PeraAsset): boolean => {
     return asset.peraMetadata?.type === PeraAssetType.collectible
 }
+
+/**
+ * Formats a collectible amount for display.
+ * Pure NFTs (totalSupply=1, decimals=0) return an empty string since
+ * the quantity is implicit. Fractional NFTs return the amount with an
+ * "x" prefix (e.g., "x0.5").
+ *
+ * @param amount - The amount in display units
+ * @param asset - The asset to format for
+ * @returns Formatted amount string, or empty string for pure NFTs
+ */
+export const formatCollectibleAmount = (
+    amount: Decimal,
+    asset: PeraAsset,
+): string => {
+    if (isPureNft(asset)) {
+        return ''
+    }
+    return `x${amount.toString()}`
+}

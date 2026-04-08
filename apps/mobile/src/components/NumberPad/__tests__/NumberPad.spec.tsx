@@ -29,4 +29,21 @@ describe('NumberPad', () => {
         fireEvent.click(screen.getByText('5'))
         expect(onPress).toHaveBeenCalledWith('5')
     })
+
+    it('renders the decimal key by default', () => {
+        const onPress = vi.fn()
+        render(<NumberPad onPress={onPress} />)
+        expect(screen.getByText('.')).toBeTruthy()
+    })
+
+    it('hides the decimal key when allowDecimal is false', () => {
+        const onPress = vi.fn()
+        render(
+            <NumberPad
+                onPress={onPress}
+                allowDecimal={false}
+            />,
+        )
+        expect(screen.queryByText('.')).toBeNull()
+    })
 })
