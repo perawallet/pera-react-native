@@ -12,6 +12,7 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
+import * as Haptics from 'expo-haptics'
 import {
     AssetWithAccountBalance,
     useAccountAssetBalanceQuery,
@@ -32,9 +33,11 @@ import {
 } from '@perawallet/wallet-core-swaps'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
+import { isDecimalEqual } from '@perawallet/wallet-core-shared'
 import { useModalState } from '@hooks/useModalState'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
-import { isDecimalEqual } from '@perawallet/wallet-core-shared'
+import { useToast } from '@hooks/useToast'
+import { useLanguage } from '@hooks/useLanguage'
 import {
     useSwapExecution,
     type SwapExecutionStatus,
@@ -105,6 +108,8 @@ export const useSwapForm = (): UseSwapFormResult => {
     createQuotesRef.current = createQuotes
 
     const swapExecution = useSwapExecution()
+    const { successToast } = useToast()
+    const { t } = useLanguage()
 
     const { data: payAssets } = useAssetsQuery([fromAsset])
     const payAsset = payAssets?.get(fromAsset)
@@ -294,8 +299,27 @@ export const useSwapForm = (): UseSwapFormResult => {
         const success = await swapExecution.execute(selectedQuote.quoteIdStr)
         if (success) {
             confirmModal.close()
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+            successToast(
+                t('swap.execution.success_title'),
+                t('swap.execution.success_body', {
+                    fromAsset: selectedQuote.assetIn.unitName ?? '',
+                    toAsset: selectedQuote.assetOut.unitName ?? '',
+                }),
+            )
+            setPayAmount(null)
+            setReceiveAmount(null)
+            setSelectedQuote(null)
+            resetQuoteMutation()
         }
-    }, [selectedQuote, confirmModal, swapExecution])
+    }, [
+        selectedQuote,
+        confirmModal,
+        swapExecution,
+        successToast,
+        t,
+        resetQuoteMutation,
+    ])
 
     const handleConfigApply = useCallback(
         (result: SwapConfigurationResult) => {

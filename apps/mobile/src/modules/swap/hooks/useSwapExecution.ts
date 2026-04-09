@@ -72,32 +72,58 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
 
     const processTransactionGroup = useCallback(
         async (group: TransactionGroup): Promise<PeraSignedTransaction[]> => {
-            const signedTxns: PeraSignedTransaction[] = []
+            const signed = group.signedTransactions ?? []
+            const unsigned = group.transactions ?? []
+            const length = Math.max(signed.length, unsigned.length)
 
-            // Pre-signed transactions from the API (e.g., fee transactions)
-            if (group.signedTransactions?.length) {
-                for (const b64 of group.signedTransactions) {
-                    const bytes = decodeFromBase64(b64)
-                    signedTxns.push(decodeSignedTransaction(bytes))
+            // signed_transactions and transactions are parallel arrays:
+            // - signed_transactions[i] is a pre-signed base64 string, or null if user must sign
+            // - transactions[i] is an unsigned base64 string, or null if already signed
+            const preSigned: PeraSignedTransaction[] = []
+            const toSign: {
+                index: number
+                txn: ReturnType<typeof decodeTransaction>
+            }[] = []
+
+            for (let i = 0; i < length; i++) {
+                const signedEntry = signed[i]
+                const unsignedEntry = unsigned[i]
+                if (signedEntry) {
+                    const bytes = decodeFromBase64(signedEntry)
+                    preSigned.push(decodeSignedTransaction(bytes))
+                } else if (unsignedEntry) {
+                    const bytes = decodeFromBase64(unsignedEntry)
+                    toSign.push({ index: i, txn: decodeTransaction(bytes) })
                 }
             }
 
-            // Unsigned transactions that need user signing
-            if (group.transactions?.length) {
-                const unsignedTxns = group.transactions.map(b64 => {
-                    const bytes = decodeFromBase64(b64)
-                    return decodeTransaction(bytes)
-                })
-
-                const allIndices = unsignedTxns.map((_, i) => i)
-                const signed = await signTransactionsRef.current(
-                    unsignedTxns,
-                    allIndices,
+            // Sign all unsigned transactions
+            if (toSign.length > 0) {
+                const txns = toSign.map(t => t.txn)
+                const indices = txns.map((_, i) => i)
+                const userSigned = await signTransactionsRef.current(
+                    txns,
+                    indices,
                 )
-                signedTxns.push(...signed)
+
+                // Merge back in original order
+                const result: PeraSignedTransaction[] = []
+                let preSignedIdx = 0
+                let userSignedIdx = 0
+
+                for (let i = 0; i < length; i++) {
+                    const signedEntry = signed[i]
+                    const unsignedEntry = unsigned[i]
+                    if (signedEntry) {
+                        result.push(preSigned[preSignedIdx++])
+                    } else if (unsignedEntry) {
+                        result.push(userSigned[userSignedIdx++])
+                    }
+                }
+                return result
             }
 
-            return signedTxns
+            return preSigned
         },
         [decodeTransaction, decodeSignedTransaction],
     )

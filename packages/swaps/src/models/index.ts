@@ -115,8 +115,8 @@ export interface SwapQuote {
 export interface TransactionGroup {
     purpose?: TransactionGroupPurpose
     transactionGroupId?: string
-    transactions?: string[]
-    signedTransactions?: string[]
+    transactions?: (string | null)[]
+    signedTransactions?: (string | null)[]
 }
 
 export interface SwapProviderItem {
