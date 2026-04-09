@@ -92,6 +92,7 @@
     "expo-device": "^55.0.10",
     "expo-font": "~55.0.4",
     "expo-haptics": "^55.0.9",
+    "expo-image": "^55.0.6",
     "expo-linear-gradient": "^55.0.9",
     "expo-localization": "^55.0.9",
     "expo-splash-screen": "~55.0.12",

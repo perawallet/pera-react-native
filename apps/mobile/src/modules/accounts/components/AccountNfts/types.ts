@@ -10,12 +10,7 @@
  limitations under the License
  */
 
-export * from './AssetFavoriteButton'
-export * from './AssetNotificationButton'
-export * from './AssetTitle'
-export * from './AssetIcon'
-export * from './AssetItem'
-export * from './AssetSelection'
-export * from './CollectibleGridItem'
-export * from './CollectibleListItem'
-export * from './CollectibleThumbnail'
+export type {
+    CollectibleDisplayItem,
+    CollectibleItemProps,
+} from '@modules/assets/types/collectible'

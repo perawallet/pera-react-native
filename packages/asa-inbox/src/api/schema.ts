@@ -45,7 +45,7 @@ const arc59AssetCreatorSchema = z.object({
 
 const arc59AssetCollectibleSchema = z.object({
     title: z.string(),
-    primary_image: z.string(),
+    primary_image: z.string().nullable(),
 })
 
 const arc59AssetSchema = z.object({
@@ -135,7 +135,8 @@ export const mapArc59AssetRequest = (
             collectible: raw.asset.collectible
                 ? {
                       title: raw.asset.collectible.title,
-                      primaryImage: raw.asset.collectible.primary_image,
+                      primaryImage:
+                          raw.asset.collectible.primary_image ?? undefined,
                   }
                 : undefined,
         },

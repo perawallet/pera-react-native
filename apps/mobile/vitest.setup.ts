@@ -568,6 +568,18 @@ afterEach(() => {
     vi.clearAllMocks()
 })
 
+vi.mock('expo-image', () => {
+    const React = require('react')
+    return {
+        Image: (props: Record<string, unknown>) =>
+            React.createElement('img', {
+                ...props,
+                'data-testid': props.testID || 'expo-image',
+            }),
+        ImageContentFit: {},
+    }
+})
+
 vi.mock('expo-clipboard', () => ({
     setStringAsync: vi.fn(),
     getStringAsync: vi.fn(),

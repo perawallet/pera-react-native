@@ -11,3 +11,4 @@
  */
 
 export { useAssetPreferencesStore } from './store'
+export { useCollectiblePreferencesStore } from './collectible-preferences-store'

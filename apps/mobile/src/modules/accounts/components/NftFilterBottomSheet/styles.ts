@@ -13,18 +13,28 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    image: {
-        width: '100%',
-        height: '100%',
+    toolbar: {
+        paddingHorizontal: theme.spacing.xl,
     },
-    loadingOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        justifyContent: 'center',
+    contentContainer: {
+        paddingHorizontal: theme.spacing.lg,
+        paddingBottom: theme.spacing.xl,
+    },
+    filterRow: {
+        flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: theme.colors.layerGrayLighter,
+        justifyContent: 'space-between',
+        paddingVertical: theme.spacing.lg,
+        gap: theme.spacing.md,
+    },
+    filterTextContainer: {
+        flex: 1,
+        gap: theme.spacing.xs,
+    },
+    filterLabel: {
+        color: theme.colors.textMain,
+    },
+    filterDescription: {
+        color: theme.colors.textGray,
     },
 }))

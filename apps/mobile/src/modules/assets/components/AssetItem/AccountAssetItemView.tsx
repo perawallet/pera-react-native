@@ -23,11 +23,16 @@ import {
     PWViewProps,
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
-import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
+import {
+    ALGO_ASSET_ID,
+    isCollectible,
+    useAssetsQuery,
+} from '@perawallet/wallet-core-assets'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
+import { CollectibleListItem } from '../CollectibleListItem'
 
 export type AccountAssetItemViewProps = {
     accountBalance: AssetWithAccountBalance
@@ -69,6 +74,19 @@ export const AccountAssetItemView = ({
         const tier = asset?.peraMetadata?.verificationTier
         return tier ? getVerificationIcon(tier) : null
     }, [asset, isAlgo])
+
+    if (asset && isCollectible(asset)) {
+        return (
+            <CollectibleListItem
+                item={{
+                    assetId: accountBalance.assetId,
+                    asset,
+                    collectible: asset.peraMetadata?.collectible,
+                    amount: accountBalance.amount,
+                }}
+            />
+        )
+    }
 
     if (!asset?.unitName) {
         return (

@@ -33,7 +33,7 @@ export const transformCollectibleResponse = (
     return {
         title: data.title,
         standard: data.standard as CollectibleStandard | undefined,
-        primaryImage: data.primary_image,
+        primaryImage: data.primary_image ?? undefined,
         mediaType: data.media_type as CollectibleMediaType,
         explorerUrl: data.explorer_url,
         collection: data.collection

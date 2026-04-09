@@ -10,29 +10,45 @@
  limitations under the License
  */
 
-import { Image as RNEImage, ImageProps as RNEImageProps } from '@rneui/themed'
+import { Image, ImageProps, ImageSource, ImageContentFit } from 'expo-image'
 
-import { ActivityIndicator } from 'react-native'
+import React, { useCallback, useState } from 'react'
+import {
+    ActivityIndicator,
+    StyleProp,
+    ImageStyle,
+    View,
+    ViewStyle,
+} from 'react-native'
+
+import { useStyles } from './styles'
+import { SHORT_PROMPT_DISPLAY_DELAY } from '@constants/ui'
 
 export type PWImageProps = {
-    source: RNEImageProps['source']
-    style?: RNEImageProps['style']
-    containerStyle?: RNEImageProps['containerStyle']
-    placeholderStyle?: RNEImageProps['placeholderStyle']
-    resizeMode?: RNEImageProps['resizeMode']
-    onLoad?: RNEImageProps['onLoad']
-    onError?: RNEImageProps['onError']
-    PlaceholderContent?: RNEImageProps['PlaceholderContent']
-    transition?: boolean
+    source: ImageSource | number
+    style?: StyleProp<ImageStyle>
+    containerStyle?: StyleProp<ViewStyle>
+    resizeMode?: 'cover' | 'contain' | 'center' | 'stretch' | 'repeat'
+    onLoad?: ImageProps['onLoad']
+    onError?: ImageProps['onError']
+    PlaceholderContent?: React.ReactElement
+    transition?: boolean | number
     width?: number
     height?: number
+}
+
+const RESIZE_MODE_TO_CONTENT_FIT: Record<string, ImageContentFit> = {
+    cover: 'cover',
+    contain: 'contain',
+    center: 'none',
+    stretch: 'fill',
+    repeat: 'cover',
 }
 
 export const PWImage = ({
     source,
     style,
     containerStyle,
-    placeholderStyle,
     resizeMode,
     onLoad,
     onError,
@@ -40,26 +56,63 @@ export const PWImage = ({
     transition = true,
     width,
     height,
-    ...props
 }: PWImageProps) => {
-    // const styles = useStyles()
+    const styles = useStyles()
+    const [isLoading, setIsLoading] = useState(true)
+
+    const contentFit = resizeMode
+        ? RESIZE_MODE_TO_CONTENT_FIT[resizeMode]
+        : undefined
+    const transitionDuration =
+        transition === false
+            ? 0
+            : typeof transition === 'number'
+              ? transition
+              : SHORT_PROMPT_DISPLAY_DELAY
+
+    const handleLoad = useCallback<NonNullable<ImageProps['onLoad']>>(
+        event => {
+            setIsLoading(false)
+            onLoad?.(event)
+        },
+        [onLoad],
+    )
+
+    const handleError = useCallback<NonNullable<ImageProps['onError']>>(
+        event => {
+            setIsLoading(false)
+            onError?.(event)
+        },
+        [onError],
+    )
+
+    const wrapperStyle: StyleProp<ViewStyle> = [
+        containerStyle,
+        width ? { width } : undefined,
+        height ? { height } : undefined,
+    ]
 
     return (
-        <RNEImage
-            source={source}
-            style={[
-                style,
-                width ? { width } : undefined,
-                height ? { height } : undefined,
-            ]}
-            containerStyle={containerStyle}
-            placeholderStyle={placeholderStyle}
-            resizeMode={resizeMode}
-            onLoad={onLoad}
-            onError={onError}
-            PlaceholderContent={PlaceholderContent ?? <ActivityIndicator />}
-            transition={transition}
-            {...props}
-        />
+        <View style={wrapperStyle}>
+            <Image
+                source={source}
+                style={[styles.image, style]}
+                contentFit={contentFit}
+                onLoad={handleLoad}
+                onError={handleError}
+                transition={transitionDuration}
+                cachePolicy='memory-disk'
+                recyclingKey={
+                    typeof source === 'object' && 'uri' in source
+                        ? source.uri
+                        : undefined
+                }
+            />
+            {isLoading && (
+                <View style={styles.loadingOverlay}>
+                    {PlaceholderContent ?? <ActivityIndicator />}
+                </View>
+            )}
+        </View>
     )
 }

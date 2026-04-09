@@ -40,6 +40,7 @@ import EyeIcon from '@assets/icons/eye.svg'
 import FaceIdIcon from '@assets/icons/faceid.svg'
 import FeedbackIcon from '@assets/icons/feedback.svg'
 import FundIcon from '@assets/icons/fund.svg'
+import FunnelIcon from '@assets/icons/funnel.svg'
 import GearIcon from '@assets/icons/gear.svg'
 import GiftIcon from '@assets/icons/gift.svg'
 import GlobeIcon from '@assets/icons/globe.svg'
@@ -126,6 +127,8 @@ import TxReceiveIcon from '@assets/icons/transactions/receive.svg'
 import TxSendIcon from '@assets/icons/transactions/send.svg'
 import TxSwapIcon from '@assets/icons/transactions/swap.svg'
 import DocumentDownloadIcon from '@assets/icons/document-download.svg'
+import GridViewIcon from '@assets/icons/grid-view.svg'
+import ListViewIcon from '@assets/icons/list-view.svg'
 
 export const ICON_LIBRARY = {
     algo: AlgoIcon,
@@ -151,6 +154,8 @@ export const ICON_LIBRARY = {
     delete: DeleteIcon,
     dollar: DollarIcon,
     'document-download': DocumentDownloadIcon,
+    'grid-view': GridViewIcon,
+    'list-view': ListViewIcon,
     'dot-stack': DotStackIcon,
     'edit-pen': EditPenIcon,
     ellipsis: EllipsisIcon,
@@ -159,6 +164,7 @@ export const ICON_LIBRARY = {
     faceid: FaceIdIcon,
     feedback: FeedbackIcon,
     fund: FundIcon,
+    funnel: FunnelIcon,
     gear: GearIcon,
     gift: GiftIcon,
     globe: GlobeIcon,

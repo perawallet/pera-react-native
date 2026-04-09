@@ -10,12 +10,20 @@
  limitations under the License
  */
 
-export * from './AssetFavoriteButton'
-export * from './AssetNotificationButton'
-export * from './AssetTitle'
-export * from './AssetIcon'
-export * from './AssetItem'
-export * from './AssetSelection'
-export * from './CollectibleGridItem'
-export * from './CollectibleListItem'
-export * from './CollectibleThumbnail'
+import { Decimal } from 'decimal.js'
+import {
+    type PeraAsset,
+    type PeraCollectible,
+} from '@perawallet/wallet-core-assets'
+
+export type CollectibleDisplayItem = {
+    assetId: string
+    asset: PeraAsset
+    collectible?: PeraCollectible
+    amount: Decimal
+}
+
+export type CollectibleItemProps = {
+    item: CollectibleDisplayItem
+    onPress?: (item: CollectibleDisplayItem) => void
+}

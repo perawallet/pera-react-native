@@ -33,7 +33,7 @@ export const collectibleCollectionSchema = z.object({
 export const collectibleResponseSchema = z.object({
     title: z.string().optional(),
     standard: z.enum(['arc3', 'arc69']).optional(),
-    primary_image: z.string().optional(),
+    primary_image: z.string().nullable().optional(),
     media_type: z.enum(['image', 'video', 'audio', 'mixed', 'unknown']),
     explorer_url: z.string(),
     collection: collectibleCollectionSchema.nullable().optional(),
