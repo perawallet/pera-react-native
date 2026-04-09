@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
-import { Decimal } from 'decimal.js'
 import {
     PWBottomSheet,
     PWButton,
@@ -22,17 +20,12 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { formatCurrency, formatNumber } from '@perawallet/wallet-core-shared'
-import { CurrencyDisplay } from '@components/CurrencyDisplay/CurrencyDisplay'
-import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
-import { useAssetsQuery } from '@perawallet/wallet-core-assets'
-import { formatAssetAmount } from '@perawallet/wallet-core-assets'
-import type { SwapQuote } from '@perawallet/wallet-core-swaps'
-import { InfoButton } from '@components/InfoButton/InfoButton'
 import { AccountIcon } from '@modules/accounts/components/AccountIcon'
-import { AssetIcon } from '@modules/assets/components/AssetIcon'
-import { getVerificationIcon } from '@modules/assets/utils/verification'
+import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import type { SwapExecutionStatus } from '../../hooks/useSwapExecution'
+import { useSwapConfirmation } from './useSwapConfirmation'
+import { SwapAssetSection } from './SwapAssetSection'
+import { SwapDetailsSection } from './SwapDetailsSection'
 import { useStyles } from './styles'
 
 export type SwapConfirmationBottomSheetProps = {
@@ -43,8 +36,6 @@ export type SwapConfirmationBottomSheetProps = {
     swapStatus: SwapExecutionStatus
 }
 
-const PRICE_IMPACT_HIGH_THRESHOLD = new Decimal(5)
-
 export const SwapConfirmationBottomSheet = ({
     isVisible,
     onClose,
@@ -54,86 +45,23 @@ export const SwapConfirmationBottomSheet = ({
 }: SwapConfirmationBottomSheetProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const selectedAccount = useSelectedAccount()
 
-    const assetInId = quote?.assetIn.assetId?.toString()
-    const assetOutId = quote?.assetOut.assetId?.toString()
-    const { data: inAssets } = useAssetsQuery(assetInId ? [assetInId] : [])
-    const { data: outAssets } = useAssetsQuery(assetOutId ? [assetOutId] : [])
-    const inAsset = assetInId ? inAssets?.get(assetInId) : undefined
-    const outAsset = assetOutId ? outAssets?.get(assetOutId) : undefined
-
-    const isProcessing =
-        swapStatus === 'preparing' ||
-        swapStatus === 'signing' ||
-        swapStatus === 'submitting' ||
-        swapStatus === 'updating-status'
-
-    const buttonTitle = useMemo(() => {
-        switch (swapStatus) {
-            case 'signing':
-                return t('swap.execution.signing')
-            case 'submitting':
-                return t('swap.execution.submitting')
-            case 'updating-status':
-                return t('swap.execution.finalizing')
-            default:
-                return t('swap.quote.confirm_swap')
-        }
-    }, [swapStatus, t])
-
-    const payDisplay = useMemo(() => {
-        if (!quote?.amountIn) return '-'
-        return formatAssetAmount(quote.amountIn, quote.assetIn)
-    }, [quote?.amountIn, quote?.assetIn])
-
-    const receiveDisplay = useMemo(() => {
-        if (!quote?.amountOut) return '-'
-        return formatAssetAmount(quote.amountOut, quote.assetOut)
-    }, [quote?.amountOut, quote?.assetOut])
-
-    const payUsdDisplay = useMemo(() => {
-        if (!quote?.amountInUsdValue) return undefined
-        return formatCurrency(quote.amountInUsdValue, 2, 'USD')
-    }, [quote?.amountInUsdValue])
-
-    const receiveUsdDisplay = useMemo(() => {
-        if (!quote?.amountOutUsdValue) return undefined
-        return formatCurrency(quote.amountOutUsdValue, 2, 'USD')
-    }, [quote?.amountOutUsdValue])
-
-    const rateDisplay = useMemo(() => {
-        if (!quote?.price) return '-'
-        const outDecimals = quote.assetOut.decimals ?? 6
-        const { sign, integer, fraction } = formatNumber(
-            quote.price,
-            outDecimals,
-            undefined,
-            2,
-        )
-        return `1 ${quote.assetIn.unitName ?? ''} ≈ ${sign}${integer}${fraction} ${quote.assetOut.unitName ?? ''}`
-    }, [quote?.price, quote?.assetIn, quote?.assetOut])
-
-    const minimumReceivedDisplay = useMemo(() => {
-        if (!quote?.amountOutWithSlippage) return '-'
-        return formatAssetAmount(quote.amountOutWithSlippage, quote.assetOut)
-    }, [quote?.amountOutWithSlippage, quote?.assetOut])
-
-    const hasHighPriceImpact = useMemo(
-        () =>
-            quote?.priceImpact?.greaterThanOrEqualTo(
-                PRICE_IMPACT_HIGH_THRESHOLD,
-            ) ?? false,
-        [quote?.priceImpact],
-    )
-
-    const priceImpactStyle = useMemo(() => {
-        if (!quote?.priceImpact) return styles.detailValue
-        if (quote.priceImpact.lessThan(1)) return styles.priceImpactLow
-        if (quote.priceImpact.lessThan(PRICE_IMPACT_HIGH_THRESHOLD))
-            return styles.priceImpactMedium
-        return styles.priceImpactHigh
-    }, [quote?.priceImpact, styles])
+    const {
+        selectedAccount,
+        inAsset,
+        outAsset,
+        isProcessing,
+        buttonTitle,
+        payDisplay,
+        receiveDisplay,
+        payFiatDisplay,
+        receiveFiatDisplay,
+        rateDisplay,
+        minimumReceivedDisplay,
+        hasHighPriceImpact,
+        priceImpactDisplay,
+        priceImpactStyle,
+    } = useSwapConfirmation({ quote, swapStatus })
 
     if (!quote) return null
 
@@ -176,41 +104,14 @@ export const SwapConfirmationBottomSheet = ({
                     paddingStyle='dense'
                 />
 
-                {/* Pay section */}
-                <PWView style={styles.assetSection}>
-                    <PWView style={styles.assetRow}>
-                        <PWView style={styles.assetAmountContainer}>
-                            {inAsset && (
-                                <AssetIcon
-                                    asset={inAsset}
-                                    size='lg'
-                                />
-                            )}
-                            <PWView style={styles.amountTextContainer}>
-                                <PWText
-                                    variant='h2'
-                                    style={styles.assetAmount}
-                                >
-                                    {payDisplay}
-                                </PWText>
-                                {payUsdDisplay && (
-                                    <PWText
-                                        variant='caption'
-                                        style={styles.usdValue}
-                                    >
-                                        {payUsdDisplay}
-                                    </PWText>
-                                )}
-                            </PWView>
-                        </PWView>
-                        <AssetChip
-                            unitName={quote.assetIn.unitName}
-                            verificationTier={quote.assetIn.verificationTier}
-                        />
-                    </PWView>
-                </PWView>
+                <SwapAssetSection
+                    asset={inAsset}
+                    amountDisplay={payDisplay}
+                    fiatDisplay={payFiatDisplay}
+                    unitName={quote.assetIn.unitName}
+                    verificationTier={quote.assetIn.verificationTier}
+                />
 
-                {/* TO divider */}
                 <PWView style={styles.toDivider}>
                     <PWDivider />
                     <PWText
@@ -222,118 +123,21 @@ export const SwapConfirmationBottomSheet = ({
                     <PWDivider />
                 </PWView>
 
-                {/* Receive section */}
-                <PWView style={styles.assetSection}>
-                    <PWView style={styles.assetRow}>
-                        <PWView style={styles.assetAmountContainer}>
-                            {outAsset && (
-                                <AssetIcon
-                                    asset={outAsset}
-                                    size='lg'
-                                />
-                            )}
-                            <PWView style={styles.amountTextContainer}>
-                                <PWText
-                                    variant='h2'
-                                    style={styles.assetAmount}
-                                >
-                                    {receiveDisplay}
-                                </PWText>
-                                {receiveUsdDisplay && (
-                                    <PWText
-                                        variant='caption'
-                                        style={styles.usdValue}
-                                    >
-                                        {receiveUsdDisplay}
-                                    </PWText>
-                                )}
-                            </PWView>
-                        </PWView>
-                        <AssetChip
-                            unitName={quote.assetOut.unitName}
-                            verificationTier={quote.assetOut.verificationTier}
-                        />
-                    </PWView>
-                </PWView>
+                <SwapAssetSection
+                    asset={outAsset}
+                    amountDisplay={receiveDisplay}
+                    fiatDisplay={receiveFiatDisplay}
+                    unitName={quote.assetOut.unitName}
+                    verificationTier={quote.assetOut.verificationTier}
+                />
 
-                {/* Details section */}
-                <PWView style={styles.detailsSection}>
-                    <DetailRow label={t('swap.quote.rate')}>
-                        <PWView style={styles.rateValueRow}>
-                            <PWText
-                                variant='body'
-                                style={styles.detailValue}
-                            >
-                                {rateDisplay}
-                            </PWText>
-                            <PWIcon
-                                name='swap'
-                                size='xs'
-                            />
-                        </PWView>
-                    </DetailRow>
-                    <DetailRow
-                        label={t('swap.quote.provider')}
-                        value={quote.provider ?? '-'}
-                        valueStyle={styles.detailValue}
-                    />
-                    <DetailRow
-                        label={t('swap.quote.slippage_tolerance')}
-                        value={
-                            quote.slippage
-                                ? `${quote.slippage.toString()}%`
-                                : '-'
-                        }
-                        valueStyle={styles.detailValue}
-                        info={t('swap.info.slippage_tolerance')}
-                    />
-                    <DetailRow
-                        label={t('swap.quote.price_impact')}
-                        value={
-                            quote.priceImpact
-                                ? `${quote.priceImpact.toDecimalPlaces(2).toString()}%`
-                                : '-'
-                        }
-                        valueStyle={priceImpactStyle}
-                        info={t('swap.info.price_impact')}
-                    />
-                    <DetailRow
-                        label={t('swap.quote.minimum_received')}
-                        value={minimumReceivedDisplay}
-                        valueStyle={styles.detailValue}
-                    />
-                    <DetailRow
-                        label={t('swap.quote.exchange_fee')}
-                        info={t('swap.info.exchange_fee')}
-                    >
-                        <CurrencyDisplay
-                            currency={
-                                quote.assetIn.unitName === 'ALGO'
-                                    ? 'ALGO'
-                                    : (quote.assetIn.unitName ?? '')
-                            }
-                            value={quote.exchangeFeeAmount ?? null}
-                            precision={quote.assetIn.decimals ?? 6}
-                            showSymbol={quote.assetIn.unitName === 'ALGO'}
-                            symbolPosition='start'
-                            variant='body'
-                        />
-                    </DetailRow>
-                    <DetailRow label={t('swap.quote.pera_fee')}>
-                        <CurrencyDisplay
-                            currency={
-                                quote.assetIn.unitName === 'ALGO'
-                                    ? 'ALGO'
-                                    : (quote.assetIn.unitName ?? '')
-                            }
-                            value={quote.peraFeeAmount ?? null}
-                            precision={quote.assetIn.decimals ?? 6}
-                            showSymbol={quote.assetIn.unitName === 'ALGO'}
-                            symbolPosition='start'
-                            variant='body'
-                        />
-                    </DetailRow>
-                </PWView>
+                <SwapDetailsSection
+                    quote={quote}
+                    rateDisplay={rateDisplay}
+                    minimumReceivedDisplay={minimumReceivedDisplay}
+                    priceImpactDisplay={priceImpactDisplay}
+                    priceImpactStyle={priceImpactStyle}
+                />
 
                 {hasHighPriceImpact && (
                     <PWView
@@ -374,76 +178,5 @@ export const SwapConfirmationBottomSheet = ({
                 />
             </PWView>
         </PWBottomSheet>
-    )
-}
-
-type AssetChipProps = {
-    unitName?: string
-    verificationTier: string
-}
-
-const AssetChip = ({ unitName, verificationTier }: AssetChipProps) => {
-    const styles = useStyles()
-    const icon = getVerificationIcon(verificationTier)
-
-    return (
-        <PWView style={styles.assetChip}>
-            <PWText
-                variant='body'
-                style={styles.assetChipText}
-            >
-                {unitName ?? ''}
-            </PWText>
-            {icon && (
-                <PWIcon
-                    name={icon}
-                    size='xs'
-                />
-            )}
-        </PWView>
-    )
-}
-
-type DetailRowProps = {
-    label: string
-    value?: string
-    valueStyle?: object
-    info?: string
-    children?: React.ReactNode
-}
-
-const DetailRow = ({
-    label,
-    value,
-    valueStyle,
-    info,
-    children,
-}: DetailRowProps) => {
-    const styles = useStyles()
-
-    return (
-        <PWView style={styles.detailRow}>
-            <PWView style={styles.detailLabelRow}>
-                <PWText
-                    variant='body'
-                    style={styles.detailLabel}
-                >
-                    {label}
-                </PWText>
-                {info && (
-                    <InfoButton size='xs'>
-                        <PWText variant='body'>{info}</PWText>
-                    </InfoButton>
-                )}
-            </PWView>
-            {children ?? (
-                <PWText
-                    variant='body'
-                    style={valueStyle}
-                >
-                    {value}
-                </PWText>
-            )}
-        </PWView>
     )
 }

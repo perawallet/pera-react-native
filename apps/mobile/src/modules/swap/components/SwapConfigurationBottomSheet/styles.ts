@@ -60,3 +60,23 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
     },
 }))
+
+type ChipStyleProps = {
+    isSelected: boolean
+}
+
+export const useChipStyles = makeStyles(
+    (theme, { isSelected }: ChipStyleProps) => ({
+        container: {
+            backgroundColor: isSelected
+                ? theme.colors.positiveLighter
+                : theme.colors.layerGrayLighter,
+            borderRadius: theme.borderRadius.full,
+            paddingHorizontal: theme.spacing.md,
+            paddingVertical: theme.spacing.sm,
+        },
+        label: {
+            color: isSelected ? theme.colors.positive : theme.colors.textGray,
+        },
+    }),
+)

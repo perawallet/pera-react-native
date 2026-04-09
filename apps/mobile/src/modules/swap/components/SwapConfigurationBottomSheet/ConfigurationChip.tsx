@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
 import { PWText, PWTouchableOpacity } from '@components/core'
+import { useChipStyles } from './styles'
 
 type ConfigurationChipProps = {
     label: string
@@ -19,24 +19,6 @@ type ConfigurationChipProps = {
     onPress: () => void
     testID?: string
 }
-
-type StyleProps = {
-    isSelected: boolean
-}
-
-const useChipStyles = makeStyles((theme, { isSelected }: StyleProps) => ({
-    container: {
-        backgroundColor: isSelected
-            ? theme.colors.positiveLighter
-            : theme.colors.layerGrayLighter,
-        borderRadius: theme.borderRadius.full,
-        paddingHorizontal: theme.spacing.md,
-        paddingVertical: theme.spacing.sm,
-    },
-    label: {
-        color: isSelected ? theme.colors.positive : theme.colors.textGray,
-    },
-}))
 
 export const ConfigurationChip = ({
     label,
