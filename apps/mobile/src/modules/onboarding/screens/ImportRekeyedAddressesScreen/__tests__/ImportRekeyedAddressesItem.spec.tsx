@@ -14,6 +14,7 @@ import { render, fireEvent, screen } from '@test-utils/render'
 import { vi } from 'vitest'
 import { ImportRekeyedAddressesItem } from '../ImportRekeyedAddressesItem'
 import { AccountTypes } from '@perawallet/wallet-core-accounts'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
 vi.mock('../RekeyedAccountInfoBottomSheet', () => ({
     RekeyedAccountInfoBottomSheet: ({ isVisible }: { isVisible: boolean }) =>
@@ -30,8 +31,10 @@ const MOCK_ACCOUNT = {
     keyPairId: 'pk',
 }
 
+const TRUNCATED_ADDRESS = truncateAlgorandAddress(MOCK_ACCOUNT.address)
+
 describe('ImportRekeyedAddressesItem', () => {
-    it('renders correctly', () => {
+    it('renders correctly with truncated address', () => {
         render(
             <ImportRekeyedAddressesItem
                 account={MOCK_ACCOUNT}
@@ -41,7 +44,7 @@ describe('ImportRekeyedAddressesItem', () => {
             />,
         )
 
-        expect(screen.getByText('MOCK_ADDRESS')).toBeTruthy()
+        expect(screen.getByText(TRUNCATED_ADDRESS)).toBeTruthy()
         expect(
             screen.getByText(
                 'onboarding.import_rekeyed_addresses.rekeyed_account_subtitle',
@@ -60,7 +63,7 @@ describe('ImportRekeyedAddressesItem', () => {
             />,
         )
 
-        fireEvent.click(screen.getByText('MOCK_ADDRESS'))
+        fireEvent.click(screen.getByText(TRUNCATED_ADDRESS))
         expect(onToggle).toHaveBeenCalledWith('MOCK_ADDRESS')
     })
 
@@ -81,8 +84,6 @@ describe('ImportRekeyedAddressesItem', () => {
                 ),
             ),
         ).toBeTruthy()
-        // Ensure checkbox is likely not present or indicating disabled state if verified via specific props/styles,
-        // but checking the chip is the main visual indicator here.
     })
 
     it('opens info bottom sheet when info icon is pressed', () => {
@@ -110,9 +111,6 @@ describe('ImportRekeyedAddressesItem', () => {
     })
 
     it('renders selected state correctly', () => {
-        // Since PWCheckbox is wrapped, we might verify it via props mocking if we deeply tested,
-        // but for now we trust the component passes the prop.
-        // We can check if it renders without error.
         render(
             <ImportRekeyedAddressesItem
                 account={MOCK_ACCOUNT}
@@ -121,6 +119,6 @@ describe('ImportRekeyedAddressesItem', () => {
                 onToggle={vi.fn()}
             />,
         )
-        expect(screen.getByText('MOCK_ADDRESS')).toBeTruthy()
+        expect(screen.getByText(TRUNCATED_ADDRESS)).toBeTruthy()
     })
 })

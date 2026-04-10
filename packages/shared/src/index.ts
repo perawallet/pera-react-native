@@ -11,6 +11,7 @@
  */
 
 export * from './api/query-client'
+export * from './api/account-fast-lookup'
 export * from './models'
 export * from './utils'
 
