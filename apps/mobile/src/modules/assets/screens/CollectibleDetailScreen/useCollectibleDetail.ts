@@ -14,7 +14,6 @@ import { Share } from 'react-native'
 import { useCallback, useMemo, useState } from 'react'
 import {
     useSingleAssetDetailsQuery,
-    isPureNft,
     type PeraAsset,
     type PeraCollectible,
     type CollectibleTrait,
@@ -51,6 +50,7 @@ type UseCollectibleDetailResult = {
     handleSharePressed: () => void
     handleCopyImage: () => void
     handleSaveImage: () => void
+    handleMediaPress: (index: number) => void
     fullScreenMedia: FullScreenMediaItem[]
     fullScreenInitialIndex: number
     fullScreenViewerModal: ModalState
@@ -245,6 +245,7 @@ export const useCollectibleDetail = (
         handleSharePressed,
         handleCopyImage,
         handleSaveImage,
+        handleMediaPress,
         fullScreenMedia,
         fullScreenInitialIndex,
         fullScreenViewerModal,
