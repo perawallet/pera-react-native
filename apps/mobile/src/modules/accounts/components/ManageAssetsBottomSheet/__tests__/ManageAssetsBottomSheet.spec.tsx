@@ -14,19 +14,11 @@ import React from 'react'
 import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import {
-    ManageAssetsBottomSheet,
-    ManageAssetsBottomSheetProps,
+    ManageAssetsContent,
+    ManageAssetsContentProps,
 } from '../ManageAssetsBottomSheet'
 
 vi.mock('@components/core', () => ({
-    PWBottomSheet: ({
-        children,
-        isVisible,
-    }: {
-        children: React.ReactNode
-        isVisible: boolean
-    }) =>
-        isVisible ? <div data-testid='PWBottomSheet'>{children}</div> : null,
     PWToolbar: () => <div data-testid='PWToolbar' />,
     PWIcon: ({ name }: { name: string }) => (
         <div data-testid={`PWIcon-${name}`} />
@@ -52,8 +44,7 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
-const defaultProps: ManageAssetsBottomSheetProps = {
-    isVisible: true,
+const defaultProps: ManageAssetsContentProps = {
     onClose: vi.fn(),
     onOpenSort: vi.fn(),
     onOpenFilter: vi.fn(),
@@ -61,17 +52,15 @@ const defaultProps: ManageAssetsBottomSheetProps = {
     isWatchAccount: false,
 }
 
-const renderComponent = (
-    overrides: Partial<ManageAssetsBottomSheetProps> = {},
-) =>
+const renderComponent = (overrides: Partial<ManageAssetsContentProps> = {}) =>
     render(
-        <ManageAssetsBottomSheet
+        <ManageAssetsContent
             {...defaultProps}
             {...overrides}
         />,
     )
 
-describe('ManageAssetsBottomSheet', () => {
+describe('ManageAssetsContent', () => {
     it('renders sort option', () => {
         // Arrange & Act
         renderComponent()

@@ -10,32 +10,29 @@
  limitations under the License
  */
 
-import { PWBottomSheet, PWButton, PWIcon, PWText } from '@components/core'
+import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
-type DeleteAllSuccessBottomSheetProps = {
-    isVisible: boolean
+export type DeleteAllSuccessContentProps = {
     onClose: () => void
-    testID?: string
+    onComplete?: () => void
 }
 
-export const DeleteAllSuccessBottomSheet = ({
-    isVisible,
+export const DeleteAllSuccessContent = ({
     onClose,
-    testID,
-}: DeleteAllSuccessBottomSheetProps) => {
+    onComplete,
+}: DeleteAllSuccessContentProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
 
+    const handleClose = () => {
+        onClose()
+        onComplete?.()
+    }
+
     return (
-        <PWBottomSheet
-            isVisible={isVisible}
-            onBackdropPress={onClose}
-            innerContainerStyle={styles.container}
-            enablePanDownToClose
-            testID={testID}
-        >
+        <PWView style={styles.container}>
             <PWIcon
                 name='check'
                 variant='positive'
@@ -51,8 +48,8 @@ export const DeleteAllSuccessBottomSheet = ({
                 style={styles.button}
                 variant='secondary'
                 title={t('common.close.label')}
-                onPress={onClose}
+                onPress={handleClose}
             />
-        </PWBottomSheet>
+        </PWView>
     )
 }

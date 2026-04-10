@@ -11,7 +11,6 @@
  */
 
 import {
-    PWBottomSheet,
     PWButton,
     PWIcon,
     PWRadioButton,
@@ -24,15 +23,11 @@ import { useAccountSortBottomSheet } from './useAccountSortBottomSheet'
 import { DraggableAccountList } from './DraggableAccountList'
 import { useStyles } from './styles'
 
-export type AccountSortBottomSheetProps = {
-    isVisible: boolean
+export type AccountSortContentProps = {
     onClose: () => void
 }
 
-export const AccountSortBottomSheet = ({
-    isVisible,
-    onClose,
-}: AccountSortBottomSheetProps) => {
+export const AccountSortContent = ({ onClose }: AccountSortContentProps) => {
     const styles = useStyles()
     const {
         sortOptions,
@@ -45,12 +40,7 @@ export const AccountSortBottomSheet = ({
     } = useAccountSortBottomSheet({ onClose })
 
     return (
-        <PWBottomSheet
-            isVisible={isVisible}
-            onBackdropPress={onClose}
-            size='lg'
-            enableContentPanningGesture={false}
-        >
+        <>
             <PWToolbar
                 left={
                     <PWIcon
@@ -97,6 +87,6 @@ export const AccountSortBottomSheet = ({
                     </>
                 )}
             </PWView>
-        </PWBottomSheet>
+        </>
     )
 }

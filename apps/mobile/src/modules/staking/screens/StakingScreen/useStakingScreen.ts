@@ -12,6 +12,7 @@
 
 import { useCallback, useRef } from 'react'
 import { useWebView } from '@modules/webview'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { useModalState } from '@hooks/useModalState'
 import {
     useStakingDisclaimer,
@@ -19,17 +20,16 @@ import {
 } from '@modules/staking/hooks'
 import type { StakingProject } from '@modules/staking/models'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
+import { StakingHelpContent } from '@modules/staking/components'
 
 type UseStakingScreenResult = {
     projects: StakingProject[]
     isLoading: boolean
     isError: boolean
-    isHelpVisible: boolean
     isDisclaimerVisible: boolean
     handleRetry: () => void
     handleProjectPress: (project: StakingProject) => void
     handleHelpOpen: () => void
-    handleHelpClose: () => void
     handleDisclaimerAccept: () => void
     handleDisclaimerClose: () => void
 }
@@ -38,6 +38,7 @@ export const useStakingScreen = (): UseStakingScreenResult => {
     const provider = usePeraProvider()
     const analyticsService = provider.analytics
     const { pushWebView } = useWebView()
+    const { openSheet } = useBottomSheet()
     const {
         data: projects,
         isLoading,
@@ -46,7 +47,6 @@ export const useStakingScreen = (): UseStakingScreenResult => {
     } = useStakingProjectsQuery()
     const { isDisclaimerAccepted, acceptDisclaimer } = useStakingDisclaimer()
 
-    const helpModal = useModalState()
     const disclaimerModal = useModalState()
     const pendingProjectRef = useRef<StakingProject | null>(null)
 
@@ -64,6 +64,16 @@ export const useStakingScreen = (): UseStakingScreenResult => {
         },
         [analyticsService, pushWebView],
     )
+
+    const handleHelpOpen = useCallback(() => {
+        openSheet(
+            StakingHelpContent,
+            {},
+            {
+                enablePanDownToClose: true,
+            },
+        )
+    }, [openSheet])
 
     const handleProjectPress = useCallback(
         (project: StakingProject) => {
@@ -104,12 +114,10 @@ export const useStakingScreen = (): UseStakingScreenResult => {
         projects,
         isLoading,
         isError,
-        isHelpVisible: helpModal.isOpen,
         isDisclaimerVisible: disclaimerModal.isOpen,
         handleRetry,
         handleProjectPress,
-        handleHelpOpen: helpModal.open,
-        handleHelpClose: helpModal.close,
+        handleHelpOpen,
         handleDisclaimerAccept,
         handleDisclaimerClose,
     }

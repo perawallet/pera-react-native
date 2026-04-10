@@ -33,12 +33,8 @@ import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
 import { KeyboardAvoidingView } from 'react-native'
 import { ExpandablePanel } from '@components/ExpandablePanel'
-import { ManageAssetsBottomSheet } from '../ManageAssetsBottomSheet'
-import { AssetSortBottomSheet } from '../AssetSortBottomSheet'
-import { AssetFilterBottomSheet } from '../AssetFilterBottomSheet'
 import { SwipeableAssetItem } from './SwipeableAssetItem'
 import { OptOutConfirmationBottomSheet } from './OptOutConfirmationBottomSheet'
-import { AddAssetBottomSheet } from '@modules/assets/components/AddAssetBottomSheet'
 import { useAccountAssetList } from './useAccountAssetList'
 
 const TAB_AND_HEADER_HEIGHT = 100
@@ -66,19 +62,14 @@ export const AccountAssetList = ({
         isPending,
         isWatch,
         headerState,
-        manageSheetState,
-        sortSheetState,
-        filterSheetState,
         optOutConfirmationState,
         assetForOptOut,
         isOptingOut,
         setSearchFilter,
         handleConfirmOptOut,
         handleCloseOptOut,
-        addAssetSheetState,
-        handleOpenSort,
-        handleOpenFilter,
-        handleRemoveAssets,
+        openAddAssetSheet,
+        openManageSheet,
         getEmptyTitle,
         getEmptyBody,
         renderItemProps,
@@ -149,7 +140,7 @@ export const AccountAssetList = ({
                                                 icon='sliders'
                                                 variant='helper'
                                                 paddingStyle='dense'
-                                                onPress={manageSheetState.open}
+                                                onPress={openManageSheet}
                                             />
                                             <PWButton
                                                 icon='plus'
@@ -158,9 +149,7 @@ export const AccountAssetList = ({
                                                 )}
                                                 variant='helper'
                                                 paddingStyle='dense'
-                                                onPress={
-                                                    addAssetSheetState.open
-                                                }
+                                                onPress={openAddAssetSheet}
                                             />
                                         </PWView>
                                     )}
@@ -200,25 +189,6 @@ export const AccountAssetList = ({
                 />
             </PWTouchableOpacity>
 
-            <ManageAssetsBottomSheet
-                isVisible={manageSheetState.isOpen}
-                onClose={manageSheetState.close}
-                onOpenSort={handleOpenSort}
-                onOpenFilter={handleOpenFilter}
-                onRemoveAssets={handleRemoveAssets}
-                isWatchAccount={isWatch}
-            />
-
-            <AssetSortBottomSheet
-                isVisible={sortSheetState.isOpen}
-                onClose={sortSheetState.close}
-            />
-
-            <AssetFilterBottomSheet
-                isVisible={filterSheetState.isOpen}
-                onClose={filterSheetState.close}
-            />
-
             <OptOutConfirmationBottomSheet
                 isVisible={optOutConfirmationState.isOpen}
                 onClose={handleCloseOptOut}
@@ -227,11 +197,6 @@ export const AccountAssetList = ({
                 accountName={account.name ?? account.address}
                 onConfirmOptOut={handleConfirmOptOut}
                 isLoading={isOptingOut}
-            />
-
-            <AddAssetBottomSheet
-                isVisible={addAssetSheetState.isOpen}
-                onClose={addAssetSheetState.close}
             />
         </KeyboardAvoidingView>
     )

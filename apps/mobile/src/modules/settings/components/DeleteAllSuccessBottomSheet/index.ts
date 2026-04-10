@@ -10,4 +10,5 @@
  limitations under the License
  */
 
-export { DeleteAllSuccessBottomSheet } from './DeleteAllSuccessBottomSheet'
+export { DeleteAllSuccessContent } from './DeleteAllSuccessBottomSheet'
+export type { DeleteAllSuccessContentProps } from './DeleteAllSuccessBottomSheet'

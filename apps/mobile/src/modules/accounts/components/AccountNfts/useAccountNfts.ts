@@ -28,7 +28,11 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { type CollectibleDisplayItem } from '@modules/assets/types/collectible'
-import { useModalState } from '@hooks/useModalState'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { ManageNftsContent } from '../ManageNftsBottomSheet'
+import { NftSortContent } from '../NftSortContent'
+import { NftFilterContent } from '../NftFilterContent'
+import { AddAssetContent } from '@modules/assets/components/AddAssetContent'
 
 type UseAccountNftsResult = {
     collectibles: CollectibleDisplayItem[]
@@ -38,27 +42,11 @@ type UseAccountNftsResult = {
     canOptIn: boolean
     galleryLayout: GalleryLayout
     searchFilter: string
-    sortMode: CollectibleSortMode
-    showOptedIn: boolean
-    isAddNftSheetVisible: boolean
-    showWatchAccounts: boolean
-    isManageSheetVisible: boolean
-    isSortSheetVisible: boolean
-    isFilterSheetVisible: boolean
     setSearchFilter: (value: string) => void
     setGalleryLayout: (layout: GalleryLayout) => void
-    setSortMode: (mode: CollectibleSortMode) => void
-    setShowOptedIn: (value: boolean) => void
-    setShowWatchAccounts: (value: boolean) => void
     handlePress: (item: CollectibleDisplayItem) => void
     openManageSheet: () => void
-    closeManageSheet: () => void
-    openSortSheet: () => void
-    closeSortSheet: () => void
-    openFilterSheet: () => void
-    closeFilterSheet: () => void
     openAddNftSheet: () => void
-    closeAddNftSheet: () => void
 }
 
 const getCollectibleName = (item: CollectibleDisplayItem): string =>
@@ -116,26 +104,11 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     const showOptedIn = useCollectiblePreferencesStore(
         state => state.showOptedIn,
     )
-    const showWatchAccounts = useCollectiblePreferencesStore(
-        state => state.showWatchAccounts,
-    )
-    const setSortMode = useCollectiblePreferencesStore(
-        state => state.setCollectibleSortMode,
-    )
     const setGalleryLayout = useCollectiblePreferencesStore(
         state => state.setGalleryLayout,
     )
-    const setShowOptedIn = useCollectiblePreferencesStore(
-        state => state.setShowOptedIn,
-    )
-    const setShowWatchAccounts = useCollectiblePreferencesStore(
-        state => state.setShowWatchAccounts,
-    )
 
-    const manageSheetModel = useModalState()
-    const sortSheetModel = useModalState()
-    const filterSheetModel = useModalState()
-    const addNftSheetModel = useModalState()
+    const { openSheet } = useBottomSheet()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
     const canOptIn = useMemo(
@@ -220,6 +193,29 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         [navigation],
     )
 
+    const openSortSheet = useCallback(() => {
+        openSheet(NftSortContent, {}, { size: 'auto' })
+    }, [openSheet])
+
+    const openFilterSheet = useCallback(() => {
+        openSheet(NftFilterContent, {}, { size: 'auto' })
+    }, [openSheet])
+
+    const openAddNftSheet = useCallback(() => {
+        openSheet(AddAssetContent, { variant: 'collectible' }, { size: 'lg' })
+    }, [openSheet])
+
+    const openManageSheet = useCallback(() => {
+        openSheet(
+            ManageNftsContent,
+            {
+                onSortPress: openSortSheet,
+                onFilterPress: openFilterSheet,
+            },
+            { size: 'auto' },
+        )
+    }, [openSheet, openSortSheet, openFilterSheet])
+
     return {
         collectibles,
         collectibleCount: collectibles.length,
@@ -228,26 +224,10 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         canOptIn,
         galleryLayout,
         searchFilter,
-        sortMode,
-        showOptedIn,
-        isManageSheetVisible: manageSheetModel.isOpen,
-        isSortSheetVisible: sortSheetModel.isOpen,
-        isFilterSheetVisible: filterSheetModel.isOpen,
-        isAddNftSheetVisible: addNftSheetModel.isOpen,
-        showWatchAccounts,
         setSearchFilter,
         setGalleryLayout,
-        setSortMode,
-        setShowOptedIn,
-        setShowWatchAccounts,
         handlePress,
-        openManageSheet: manageSheetModel.open,
-        closeManageSheet: manageSheetModel.close,
-        openSortSheet: sortSheetModel.open,
-        closeSortSheet: sortSheetModel.close,
-        openFilterSheet: filterSheetModel.open,
-        closeFilterSheet: filterSheetModel.close,
-        openAddNftSheet: addNftSheetModel.open,
-        closeAddNftSheet: addNftSheetModel.close,
+        openManageSheet,
+        openAddNftSheet,
     }
 }

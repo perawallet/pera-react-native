@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { ManageAssetsBottomSheet } from './ManageAssetsBottomSheet'
-export type { ManageAssetsBottomSheetProps } from './ManageAssetsBottomSheet'
+export { ManageAssetsContent } from './ManageAssetsBottomSheet'
+export type { ManageAssetsContentProps } from './ManageAssetsBottomSheet'

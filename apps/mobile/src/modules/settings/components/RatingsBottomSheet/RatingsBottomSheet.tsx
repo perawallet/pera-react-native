@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWBottomSheet, PWText, PWView } from '@components/core'
+import { PWText, PWView } from '@components/core'
 import { useStyles } from './RatingsBottomSheet.style'
 import RateApp, { AndroidMarket } from 'react-native-rate-app'
 import { RoundButton } from '@components/RoundButton'
@@ -18,14 +18,11 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
-type RatingsBottomSheetProps = {
-    isOpen: boolean
+export type RatingsContentProps = {
     onClose: () => void
-    testID?: string
 }
 
-export const RatingsBottomSheet = (props: RatingsBottomSheetProps) => {
-    const { isOpen, onClose, testID } = props
+export const RatingsContent = ({ onClose }: RatingsContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const provider = usePeraProvider()
@@ -54,13 +51,7 @@ export const RatingsBottomSheet = (props: RatingsBottomSheetProps) => {
     }
 
     return (
-        <PWBottomSheet
-            isVisible={isOpen}
-            onBackdropPress={onClose}
-            innerContainerStyle={styles.bottomSheetContainer}
-            enablePanDownToClose
-            testID={testID}
-        >
+        <PWView style={styles.bottomSheetContainer}>
             <PWView style={styles.buttonContainer}>
                 <RoundButton
                     icon='thumb_up'
@@ -75,6 +66,6 @@ export const RatingsBottomSheet = (props: RatingsBottomSheetProps) => {
             <PWText style={styles.bottomSheetMessage}>
                 {t('settings.rating.body')}
             </PWText>
-        </PWBottomSheet>
+        </PWView>
     )
 }

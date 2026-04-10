@@ -17,9 +17,24 @@ import { useAccountNfts } from '../useAccountNfts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 
 const mockNavigate = vi.fn()
-vi.mock('@react-navigation/native', () => ({
-    useNavigation: () => ({
-        navigate: mockNavigate,
+vi.mock('@react-navigation/native', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@react-navigation/native')>()
+    return {
+        ...actual,
+        useNavigation: () => ({
+            navigate: mockNavigate,
+        }),
+    }
+})
+
+const mockOpenSheet = vi.fn()
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: () => ({
+        openSheet: mockOpenSheet,
+        closeSheet: vi.fn(),
+        closeTopSheet: vi.fn(),
+        closeAllSheets: vi.fn(),
     }),
 }))
 
@@ -49,9 +64,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 })
 
 const mockUseAssetsQuery = vi.fn()
-const mockSetCollectibleSortMode = vi.fn()
 const mockSetGalleryLayout = vi.fn()
-const mockSetShowOptedIn = vi.fn()
 let mockSortMode = 'titleAsc'
 let mockGalleryLayout = 'grid'
 let mockShowOptedIn = false
@@ -69,9 +82,7 @@ vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
                 collectibleSortMode: mockSortMode,
                 galleryLayout: mockGalleryLayout,
                 showOptedIn: mockShowOptedIn,
-                setCollectibleSortMode: mockSetCollectibleSortMode,
                 setGalleryLayout: mockSetGalleryLayout,
-                setShowOptedIn: mockSetShowOptedIn,
             }),
     }
 })
@@ -186,7 +197,6 @@ describe('useAccountNfts', () => {
     it('sorts collectibles by title ascending by default', () => {
         const { result } = renderHook(() => useAccountNfts())
 
-        expect(result.current.sortMode).toBe('titleAsc')
         expect(result.current.collectibles[0].asset.name).toBe('Another NFT')
         expect(result.current.collectibles[1].asset.name).toBe('Cool NFT')
     })
@@ -213,16 +223,6 @@ describe('useAccountNfts', () => {
 
         expect(result.current.collectibles[0].assetId).toBe('100')
         expect(result.current.collectibles[1].assetId).toBe('200')
-    })
-
-    it('calls store setter when setSortMode is invoked', () => {
-        const { result } = renderHook(() => useAccountNfts())
-
-        act(() => {
-            result.current.setSortMode('newestFirst')
-        })
-
-        expect(mockSetCollectibleSortMode).toHaveBeenCalledWith('newestFirst')
     })
 
     it('calls store setter when setGalleryLayout is invoked', () => {

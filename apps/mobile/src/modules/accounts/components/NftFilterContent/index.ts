@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { NftFilterBottomSheet } from './NftFilterBottomSheet'
+export { NftFilterContent } from './NftFilterContent'

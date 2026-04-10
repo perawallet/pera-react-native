@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-export { AddAssetBottomSheet } from './AddAssetBottomSheet'
+export { AddAssetContent } from './AddAssetContent'
 export type {
-    AddAssetBottomSheetProps,
-    AddAssetBottomSheetVariant,
-} from './AddAssetBottomSheet'
+    AddAssetContentProps,
+    AddAssetContentVariant,
+} from './AddAssetContent'

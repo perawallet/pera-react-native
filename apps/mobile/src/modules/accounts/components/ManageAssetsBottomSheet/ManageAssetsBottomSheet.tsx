@@ -11,7 +11,6 @@
  */
 
 import {
-    PWBottomSheet,
     PWIcon,
     PWText,
     PWToolbar,
@@ -21,8 +20,7 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
-export type ManageAssetsBottomSheetProps = {
-    isVisible: boolean
+export type ManageAssetsContentProps = {
     onClose: () => void
     onOpenSort: () => void
     onOpenFilter: () => void
@@ -30,23 +28,18 @@ export type ManageAssetsBottomSheetProps = {
     isWatchAccount: boolean
 }
 
-export const ManageAssetsBottomSheet = ({
-    isVisible,
+export const ManageAssetsContent = ({
     onClose,
     onOpenSort,
     onOpenFilter,
     onRemoveAssets,
     isWatchAccount,
-}: ManageAssetsBottomSheetProps) => {
+}: ManageAssetsContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 
     return (
-        <PWBottomSheet
-            isVisible={isVisible}
-            onBackdropPress={onClose}
-            size='auto'
-        >
+        <>
             <PWToolbar
                 left={
                     <PWIcon
@@ -107,6 +100,6 @@ export const ManageAssetsBottomSheet = ({
                     </PWTouchableOpacity>
                 )}
             </PWView>
-        </PWBottomSheet>
+        </>
     )
 }

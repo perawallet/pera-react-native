@@ -16,12 +16,12 @@ import { PWFlatList, PWIcon, PWInput, PWText, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { AssetSearchItem } from '@modules/assets/components/AssetSearchItem'
 import type { AssetSearchItem as AssetSearchItemType } from '@perawallet/wallet-core-assets'
-import type { AddAssetBottomSheetVariant } from '@modules/assets/components/AddAssetBottomSheet'
+import type { AddAssetContentVariant } from '@modules/assets/components/AddAssetContent'
 import { useAddAssetScreen } from './useAddAssetScreen'
 import { useStyles } from './styles'
 
 type AddAssetScreenProps = {
-    variant?: AddAssetBottomSheetVariant
+    variant?: AddAssetContentVariant
 }
 
 export const AddAssetScreen = ({ variant = 'asset' }: AddAssetScreenProps) => {

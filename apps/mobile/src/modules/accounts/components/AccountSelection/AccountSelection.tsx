@@ -17,8 +17,9 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useStyles } from './styles'
 import { AccountMenuBottomSheet } from '@modules/accounts/components/AccountMenuBottomSheet'
-import { AccountSortBottomSheet } from '@modules/accounts/components/AccountSortBottomSheet'
+import { AccountSortContent } from '@modules/accounts/components/AccountSortBottomSheet'
 import { useModalState } from '@hooks/useModalState'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
 import { AccountDisplay } from '../AccountDisplay'
@@ -36,7 +37,7 @@ export const AccountSelection = ({
     const styles = useStyles()
     const account = useSelectedAccount()
     const accountMenuState = useModalState()
-    const sortSheetState = useModalState()
+    const { openSheet } = useBottomSheet()
     const pendingSort = useRef(false)
     const navigation = useAppNavigation()
 
@@ -58,14 +59,16 @@ export const AccountSelection = ({
     const handleAccountMenuDismissed = useCallback(() => {
         if (pendingSort.current) {
             pendingSort.current = false
-            sortSheetState.open()
+            openSheet(
+                AccountSortContent,
+                {},
+                {
+                    size: 'lg',
+                    enableContentPanningGesture: false,
+                },
+            )
         }
-    }, [sortSheetState])
-
-    const handleSortClosed = useCallback(() => {
-        sortSheetState.close()
-        setTimeout(() => accountMenuState.open(), 100)
-    }, [sortSheetState, accountMenuState])
+    }, [openSheet])
 
     return (
         <>
@@ -89,10 +92,6 @@ export const AccountSelection = ({
                 onSelected={handleSelected}
                 onAddAccount={handleAddAccount}
                 headerContent={headerContent}
-            />
-            <AccountSortBottomSheet
-                isVisible={sortSheetState.isOpen}
-                onClose={handleSortClosed}
             />
         </>
     )

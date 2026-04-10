@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { StakingHelpSheet } from './StakingHelpSheet'
-export type { StakingHelpSheetProps } from './StakingHelpSheet'
+export { StakingHelpContent } from './StakingHelpSheet'
+export type { StakingHelpContentProps } from './StakingHelpSheet'

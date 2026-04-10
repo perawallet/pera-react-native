@@ -24,10 +24,10 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
-import type { AddAssetBottomSheetVariant } from '@modules/assets/components/AddAssetBottomSheet'
+import type { AddAssetContentVariant } from '@modules/assets/components/AddAssetContent'
 
 type UseAddAssetScreenOptions = {
-    variant?: AddAssetBottomSheetVariant
+    variant?: AddAssetContentVariant
 }
 
 type UseAddAssetScreenResult = {

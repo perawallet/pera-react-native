@@ -29,6 +29,11 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useModalState, ModalState } from '@hooks/useModalState'
+import { useBottomSheet } from '@modules/bottom-sheet'
+import { ManageAssetsContent } from '../ManageAssetsBottomSheet'
+import { AssetSortContent } from '../AssetSortBottomSheet'
+import { AssetFilterContent } from '../AssetFilterBottomSheet'
+import { AddAssetContent } from '@modules/assets/components/AddAssetContent'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { useToast } from '@hooks/useToast'
 import { useSortedAssetBalances } from './useSortedAssetBalances'
@@ -40,9 +45,6 @@ type UseAccountAssetListResult = {
     hideZeroBalance: boolean
     searchFilter: string
     headerState: ModalState
-    manageSheetState: ModalState
-    sortSheetState: ModalState
-    filterSheetState: ModalState
     optOutConfirmationState: ModalState
     assetForOptOut: AssetWithAccountBalance | null
     isOptingOut: boolean
@@ -51,10 +53,8 @@ type UseAccountAssetListResult = {
     handleOptOut: (item: AssetWithAccountBalance) => void
     handleConfirmOptOut: () => void
     handleCloseOptOut: () => void
-    addAssetSheetState: ModalState
-    handleOpenSort: () => void
-    handleOpenFilter: () => void
-    handleRemoveAssets: () => void
+    openAddAssetSheet: () => void
+    openManageSheet: () => void
     getEmptyTitle: () => string
     getEmptyBody: () => string
     renderItemProps: {
@@ -74,10 +74,8 @@ export const useAccountAssetList = ({
     account,
     t,
 }: UseAccountAssetListParams): UseAccountAssetListResult => {
+    const { openSheet } = useBottomSheet()
     const headerState = useModalState(true)
-    const manageSheetState = useModalState(false)
-    const sortSheetState = useModalState(false)
-    const filterSheetState = useModalState(false)
     const optOutConfirmationState = useModalState(false)
     const [searchFilter, setSearchFilter] = useState('')
     const [assetForOptOut, setAssetForOptOut] =
@@ -222,21 +220,39 @@ export const useAccountAssetList = ({
     }, [optOutConfirmationState])
 
     const handleOpenSort = useCallback(() => {
-        manageSheetState.close()
-        sortSheetState.open()
-    }, [manageSheetState, sortSheetState])
+        openSheet(AssetSortContent, {}, { size: 'auto' })
+    }, [openSheet])
 
     const handleOpenFilter = useCallback(() => {
-        manageSheetState.close()
-        filterSheetState.open()
-    }, [manageSheetState, filterSheetState])
+        openSheet(AssetFilterContent, {}, { size: 'auto' })
+    }, [openSheet])
 
-    const addAssetSheetState = useModalState(false)
+    const openAddAssetSheet = useCallback(() => {
+        openSheet(AddAssetContent, {}, { size: 'lg' })
+    }, [openSheet])
 
     const handleRemoveAssets = useCallback(() => {
-        manageSheetState.close()
         navigation.navigate('RemoveAssets')
-    }, [manageSheetState, navigation])
+    }, [navigation])
+
+    const openManageSheet = useCallback(() => {
+        openSheet(
+            ManageAssetsContent,
+            {
+                onOpenSort: handleOpenSort,
+                onOpenFilter: handleOpenFilter,
+                onRemoveAssets: handleRemoveAssets,
+                isWatchAccount: isWatch,
+            },
+            { size: 'auto' },
+        )
+    }, [
+        openSheet,
+        handleOpenSort,
+        handleOpenFilter,
+        handleRemoveAssets,
+        isWatch,
+    ])
 
     const hasActiveFilter =
         hideZeroBalance || !displayNfts || !effectiveDisplayOptedInNfts
@@ -272,9 +288,6 @@ export const useAccountAssetList = ({
         hideZeroBalance,
         searchFilter,
         headerState,
-        manageSheetState,
-        sortSheetState,
-        filterSheetState,
         optOutConfirmationState,
         assetForOptOut,
         isOptingOut,
@@ -283,10 +296,8 @@ export const useAccountAssetList = ({
         handleOptOut,
         handleConfirmOptOut,
         handleCloseOptOut,
-        addAssetSheetState,
-        handleOpenSort,
-        handleOpenFilter,
-        handleRemoveAssets,
+        openAddAssetSheet,
+        openManageSheet,
         getEmptyTitle,
         getEmptyBody,
         renderItemProps,

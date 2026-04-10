@@ -10,4 +10,6 @@
  limitations under the License
  */
 
-export { NftSortBottomSheet } from './NftSortBottomSheet'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(() => ({}))

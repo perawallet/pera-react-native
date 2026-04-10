@@ -12,7 +12,6 @@
 
 import React from 'react'
 import {
-    PWBottomSheet,
     PWButton,
     PWIcon,
     PWSwitch,
@@ -22,33 +21,30 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
+import { useCollectiblePreferencesStore } from '@perawallet/wallet-core-assets'
 
-type NftFilterBottomSheetProps = {
-    isVisible: boolean
+type NftFilterContentProps = {
     onClose: () => void
-    showOptedIn: boolean
-    showWatchAccounts: boolean
-    onToggleOptedIn: (value: boolean) => void
-    onToggleWatchAccounts: (value: boolean) => void
 }
 
-export const NftFilterBottomSheet = ({
-    isVisible,
-    onClose,
-    showOptedIn,
-    showWatchAccounts,
-    onToggleOptedIn,
-    onToggleWatchAccounts,
-}: NftFilterBottomSheetProps) => {
+export const NftFilterContent = ({ onClose }: NftFilterContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const showOptedIn = useCollectiblePreferencesStore(
+        state => state.showOptedIn,
+    )
+    const showWatchAccounts = useCollectiblePreferencesStore(
+        state => state.showWatchAccounts,
+    )
+    const setShowOptedIn = useCollectiblePreferencesStore(
+        state => state.setShowOptedIn,
+    )
+    const setShowWatchAccounts = useCollectiblePreferencesStore(
+        state => state.setShowWatchAccounts,
+    )
 
     return (
-        <PWBottomSheet
-            isVisible={isVisible}
-            onBackdropPress={onClose}
-            size='auto'
-        >
+        <>
             <PWToolbar
                 left={
                     <PWIcon
@@ -90,7 +86,7 @@ export const NftFilterBottomSheet = ({
                     </PWView>
                     <PWSwitch
                         value={showOptedIn}
-                        onValueChange={onToggleOptedIn}
+                        onValueChange={setShowOptedIn}
                     />
                 </PWView>
 
@@ -110,10 +106,10 @@ export const NftFilterBottomSheet = ({
                     </PWView>
                     <PWSwitch
                         value={showWatchAccounts}
-                        onValueChange={onToggleWatchAccounts}
+                        onValueChange={setShowWatchAccounts}
                     />
                 </PWView>
             </PWView>
-        </PWBottomSheet>
+        </>
     )
 }

@@ -13,6 +13,7 @@
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useWebView } from '@modules/webview'
 import { useModalState } from '@hooks/useModalState'
+import { useBottomSheet } from '@modules/bottom-sheet'
 import { useSettingsOptions } from './useSettingsOptions'
 import { SettingsStackParamsList } from '@modules/settings/routes'
 import {
@@ -21,24 +22,17 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { clearAccountsStore } from '@modules/settings/hooks/useDeleteAllData'
 import { useCallback } from 'react'
+import { DeleteAllSuccessContent } from '@modules/settings/components/DeleteAllSuccessBottomSheet'
+import { RatingsContent } from '@modules/settings/components/RatingsBottomSheet/RatingsBottomSheet'
 
 export const useSettingsScreen = () => {
     const navigation = useAppNavigation()
     const { pushWebView } = useWebView()
+    const { openSheet } = useBottomSheet()
     const {
         isOpen: isDeleteModalOpen,
         open: openDeleteModal,
         close: closeDeleteModal,
-    } = useModalState()
-    const {
-        isOpen: isSuccessModalOpen,
-        open: openSuccessModal,
-        close: closeSuccessModal,
-    } = useModalState()
-    const {
-        isOpen: isRatingModalOpen,
-        open: openRatingModal,
-        close: closeRatingModal,
     } = useModalState()
     const { settingsOptions } = useSettingsOptions()
 
@@ -65,34 +59,34 @@ export const useSettingsScreen = () => {
         } else if (page.url) {
             openWebView(page.url)
         } else {
-            openRatingModal()
+            openSheet(RatingsContent, {}, { enablePanDownToClose: true })
         }
     }
 
     const handleDeleteSuccess = useCallback(() => {
-        openSuccessModal()
-    }, [openSuccessModal])
-
-    const handleSuccessClose = useCallback(() => {
-        closeSuccessModal()
-        clearAccountsStore()
-
-        deferToNextCycle(() => {
-            navigation.navigate('Onboarding', {
-                screen: 'OnboardingHome',
-            })
-        })
-    }, [closeSuccessModal])
+        openSheet(
+            DeleteAllSuccessContent,
+            {
+                onComplete: () => {
+                    clearAccountsStore()
+                    deferToNextCycle(() => {
+                        navigation.navigate('Onboarding', {
+                            screen: 'OnboardingHome',
+                        })
+                    })
+                },
+            },
+            {
+                enablePanDownToClose: true,
+            },
+        )
+    }, [openSheet, navigation])
 
     return {
         isDeleteModalOpen,
         openDeleteModal,
         closeDeleteModal,
-        isSuccessModalOpen,
         handleDeleteSuccess,
-        handleSuccessClose,
-        isRatingModalOpen,
-        closeRatingModal,
         settingsOptions,
         handleTapEvent,
     }

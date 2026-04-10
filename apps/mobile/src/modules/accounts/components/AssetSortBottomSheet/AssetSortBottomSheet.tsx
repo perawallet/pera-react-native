@@ -11,7 +11,6 @@
  */
 
 import {
-    PWBottomSheet,
     PWButton,
     PWIcon,
     PWRadioButton,
@@ -22,25 +21,17 @@ import {
 import { useAssetSortBottomSheet } from './useAssetSortBottomSheet'
 import { useStyles } from './styles'
 
-export type AssetSortBottomSheetProps = {
-    isVisible: boolean
+export type AssetSortContentProps = {
     onClose: () => void
 }
 
-export const AssetSortBottomSheet = ({
-    isVisible,
-    onClose,
-}: AssetSortBottomSheetProps) => {
+export const AssetSortContent = ({ onClose }: AssetSortContentProps) => {
     const styles = useStyles()
     const { sortOptions, assetSortMode, handleSortModeChange, handleDone, t } =
         useAssetSortBottomSheet({ onClose })
 
     return (
-        <PWBottomSheet
-            isVisible={isVisible}
-            onBackdropPress={onClose}
-            size='auto'
-        >
+        <>
             <PWToolbar
                 left={
                     <PWIcon
@@ -72,6 +63,6 @@ export const AssetSortBottomSheet = ({
                     />
                 ))}
             </PWView>
-        </PWBottomSheet>
+        </>
     )
 }

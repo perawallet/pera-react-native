@@ -16,6 +16,7 @@ import { useSettingsScreen } from '../useSettingsScreen'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useWebView } from '@modules/webview'
 import { useModalState } from '@hooks/useModalState'
+import { useBottomSheet } from '@modules/bottom-sheet'
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: vi.fn(),
@@ -28,6 +29,25 @@ vi.mock('@modules/webview', () => ({
 vi.mock('@hooks/useModalState', () => ({
     useModalState: vi.fn(),
 }))
+
+vi.mock('@modules/bottom-sheet', () => ({
+    useBottomSheet: vi.fn(),
+}))
+
+vi.mock('@modules/settings/hooks/useDeleteAllData', () => ({
+    clearAccountsStore: vi.fn(),
+}))
+
+vi.mock('@modules/settings/components/DeleteAllSuccessBottomSheet', () => ({
+    DeleteAllSuccessContent: vi.fn(),
+}))
+
+vi.mock(
+    '@modules/settings/components/RatingsBottomSheet/RatingsBottomSheet',
+    () => ({
+        RatingsContent: vi.fn(),
+    }),
+)
 
 vi.mock('../useSettingsOptions', () => ({
     useSettingsOptions: vi.fn(() => ({
@@ -50,6 +70,7 @@ describe('useSettingsScreen', () => {
     const mockPushWebView = vi.fn()
     const mockOpenModal = vi.fn()
     const mockCloseModal = vi.fn()
+    const mockOpenSheet = vi.fn()
 
     beforeEach(() => {
         vi.clearAllMocks()
@@ -64,6 +85,9 @@ describe('useSettingsScreen', () => {
             open: mockOpenModal,
             close: mockCloseModal,
         })
+        ;(useBottomSheet as Mock).mockReturnValue({
+            openSheet: mockOpenSheet,
+        })
     })
 
     it('returns modal state and handlers', () => {
@@ -72,8 +96,7 @@ describe('useSettingsScreen', () => {
         expect(result.current.isDeleteModalOpen).toBeDefined()
         expect(result.current.openDeleteModal).toBeDefined()
         expect(result.current.closeDeleteModal).toBeDefined()
-        expect(result.current.isRatingModalOpen).toBeDefined()
-        expect(result.current.closeRatingModal).toBeDefined()
+        expect(result.current.handleDeleteSuccess).toBeDefined()
         expect(result.current.settingsOptions).toBeDefined()
         expect(result.current.handleTapEvent).toBeDefined()
     })
@@ -111,7 +134,7 @@ describe('useSettingsScreen', () => {
         expect(mockPush).not.toHaveBeenCalled()
     })
 
-    it('opens rating modal when neither route nor url is provided', () => {
+    it('opens rating sheet when neither route nor url is provided', () => {
         const { result } = renderHook(() => useSettingsScreen())
 
         act(() => {
@@ -121,8 +144,7 @@ describe('useSettingsScreen', () => {
             })
         })
 
-        // The second useModalState call is for rating modal, so open is called
-        expect(mockOpenModal).toHaveBeenCalled()
+        expect(mockOpenSheet).toHaveBeenCalled()
         expect(mockPush).not.toHaveBeenCalled()
         expect(mockPushWebView).not.toHaveBeenCalled()
     })

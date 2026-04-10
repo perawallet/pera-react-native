@@ -30,6 +30,7 @@ import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { logger } from '@perawallet/wallet-core-shared'
 import { useNetworkStatus, useNetworkStatusListener } from '@modules/network'
 import { WebViewOverlay } from '@modules/webview'
+import { BottomSheetRenderer } from '@modules/bottom-sheet'
 import { useCallback } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { WalletConnectProvider } from '@modules/walletconnect/providers/WalletConnectProvider'
@@ -94,6 +95,7 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
                 <GestureHandlerRootView>
                     <MainRoutes />
                     <WebViewOverlay />
+                    <BottomSheetRenderer />
                 </GestureHandlerRootView>
             </PWView>
         </ErrorBoundary>

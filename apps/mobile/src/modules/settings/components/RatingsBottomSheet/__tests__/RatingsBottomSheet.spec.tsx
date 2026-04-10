@@ -12,7 +12,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, fireEvent, screen } from '@test-utils/render'
-import { RatingsBottomSheet } from '../RatingsBottomSheet'
+import { RatingsContent } from '../RatingsBottomSheet'
 import RateApp from 'react-native-rate-app'
 
 vi.mock('react-native-rate-app', () => ({
@@ -53,7 +53,7 @@ vi.mock('@hooks/useToast', () => ({
     }),
 }))
 
-describe('RatingsBottomSheet', () => {
+describe('RatingsContent', () => {
     const mockOnClose = vi.fn()
 
     beforeEach(() => {
@@ -61,24 +61,14 @@ describe('RatingsBottomSheet', () => {
     })
 
     it('renders title and body text when open', () => {
-        render(
-            <RatingsBottomSheet
-                isOpen={true}
-                onClose={mockOnClose}
-            />,
-        )
+        render(<RatingsContent onClose={mockOnClose} />)
 
         expect(screen.getByText('settings.rating.title')).toBeTruthy()
         expect(screen.getByText('settings.rating.body')).toBeTruthy()
     })
 
     it('renders thumb up and thumb down buttons', () => {
-        render(
-            <RatingsBottomSheet
-                isOpen={true}
-                onClose={mockOnClose}
-            />,
-        )
+        render(<RatingsContent onClose={mockOnClose} />)
 
         // RoundButtons with icons should be present
         const buttons = screen.getAllByRole('button')
@@ -86,12 +76,7 @@ describe('RatingsBottomSheet', () => {
     })
 
     it('opens store for review and closes when thumb up is pressed', async () => {
-        render(
-            <RatingsBottomSheet
-                isOpen={true}
-                onClose={mockOnClose}
-            />,
-        )
+        render(<RatingsContent onClose={mockOnClose} />)
 
         const buttons = screen.getAllByRole('button')
         await fireEvent.click(buttons[0])
@@ -105,12 +90,7 @@ describe('RatingsBottomSheet', () => {
     })
 
     it('opens store for review and closes when thumb down is pressed', async () => {
-        render(
-            <RatingsBottomSheet
-                isOpen={true}
-                onClose={mockOnClose}
-            />,
-        )
+        render(<RatingsContent onClose={mockOnClose} />)
 
         const buttons = screen.getAllByRole('button')
         await fireEvent.click(buttons[1])

@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { AsaVerificationInfoBottomSheet } from './AsaVerificationInfoBottomSheet'
-export type { AsaVerificationInfoBottomSheetProps } from './AsaVerificationInfoBottomSheet'
+export { AsaVerificationInfoContent } from './AsaVerificationInfoContent'

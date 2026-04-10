@@ -10,28 +10,17 @@
  limitations under the License
  */
 
-import {
-    PWBottomSheet,
-    PWButton,
-    PWIcon,
-    PWText,
-    PWToolbar,
-    PWView,
-} from '@components/core'
+import { PWButton, PWIcon, PWText, PWToolbar, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { FilterRow } from './FilterRow'
 import { useStyles } from './styles'
 import { useAssetFilterBottomSheet } from './useAssetFilterBottomSheet'
 
-export type AssetFilterBottomSheetProps = {
-    isVisible: boolean
+export type AssetFilterContentProps = {
     onClose: () => void
 }
 
-export const AssetFilterBottomSheet = ({
-    isVisible,
-    onClose,
-}: AssetFilterBottomSheetProps) => {
+export const AssetFilterContent = ({ onClose }: AssetFilterContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
@@ -44,11 +33,7 @@ export const AssetFilterBottomSheet = ({
     } = useAssetFilterBottomSheet()
 
     return (
-        <PWBottomSheet
-            isVisible={isVisible}
-            onBackdropPress={onClose}
-            size='auto'
-        >
+        <>
             <PWToolbar
                 left={
                     <PWIcon
@@ -99,6 +84,6 @@ export const AssetFilterBottomSheet = ({
                     disabled={!displayNfts}
                 />
             </PWView>
-        </PWBottomSheet>
+        </>
     )
 }

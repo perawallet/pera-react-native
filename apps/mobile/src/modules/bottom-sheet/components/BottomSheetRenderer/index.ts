@@ -10,5 +10,4 @@
  limitations under the License
  */
 
-export { ManageNftsContent } from './ManageNftsBottomSheet'
-export type { ManageNftsContentProps } from './ManageNftsBottomSheet'
+export { BottomSheetRenderer } from './BottomSheetRenderer'

@@ -12,7 +12,6 @@
 
 import React from 'react'
 import {
-    PWBottomSheet,
     PWIcon,
     PWText,
     PWToolbar,
@@ -22,28 +21,22 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
-type ManageNftsBottomSheetProps = {
-    isVisible: boolean
+export type ManageNftsContentProps = {
     onClose: () => void
     onSortPress: () => void
     onFilterPress: () => void
 }
 
-export const ManageNftsBottomSheet = ({
-    isVisible,
+export const ManageNftsContent = ({
     onClose,
     onSortPress,
     onFilterPress,
-}: ManageNftsBottomSheetProps) => {
+}: ManageNftsContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 
     return (
-        <PWBottomSheet
-            isVisible={isVisible}
-            onBackdropPress={onClose}
-            size='auto'
-        >
+        <>
             <PWToolbar
                 left={
                     <PWIcon
@@ -93,6 +86,6 @@ export const ManageNftsBottomSheet = ({
                     </PWText>
                 </PWTouchableOpacity>
             </PWView>
-        </PWBottomSheet>
+        </>
     )
 }

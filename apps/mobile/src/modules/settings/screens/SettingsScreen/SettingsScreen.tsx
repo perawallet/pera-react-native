@@ -25,9 +25,7 @@ import { AppVersion } from '@modules/settings/components/AppVersion'
 import { useSettingsScreen } from './useSettingsScreen'
 import { useLanguage } from '@hooks/useLanguage'
 import type { SettingsStackParamsList } from '@modules/settings/routes'
-import { RatingsBottomSheet } from '@modules/settings/components/RatingsBottomSheet/RatingsBottomSheet'
 import { DeleteAllConfirmBottomSheet } from '@modules/settings/components/DeleteAllConfirmBottomSheet/DeleteAllConfirmBottomSheet'
-import { DeleteAllSuccessBottomSheet } from '@modules/settings/components/DeleteAllSuccessBottomSheet'
 import { getTestProps } from '@utils/test-id-helper'
 
 export type SettingsRouteName = keyof SettingsStackParamsList
@@ -42,11 +40,7 @@ export const SettingsScreen = () => {
         isDeleteModalOpen,
         openDeleteModal,
         closeDeleteModal,
-        isSuccessModalOpen,
         handleDeleteSuccess,
-        handleSuccessClose,
-        isRatingModalOpen,
-        closeRatingModal,
     } = useSettingsScreen()
 
     return (
@@ -90,16 +84,6 @@ export const SettingsScreen = () => {
                 onClose={closeDeleteModal}
                 onSuccess={handleDeleteSuccess}
                 testID='settings_delete_all_confirm_bottom_sheet'
-            />
-            <DeleteAllSuccessBottomSheet
-                isVisible={isSuccessModalOpen}
-                onClose={handleSuccessClose}
-                testID='settings_delete_all_success_bottom_sheet'
-            />
-            <RatingsBottomSheet
-                isOpen={isRatingModalOpen}
-                onClose={closeRatingModal}
-                testID='settings_ratings_bottom_sheet'
             />
         </PWScrollView>
     )

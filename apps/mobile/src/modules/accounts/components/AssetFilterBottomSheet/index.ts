@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { AssetFilterBottomSheet } from './AssetFilterBottomSheet'
-export type { AssetFilterBottomSheetProps } from './AssetFilterBottomSheet'
+export { AssetFilterContent } from './AssetFilterBottomSheet'
+export type { AssetFilterContentProps } from './AssetFilterBottomSheet'

@@ -26,7 +26,6 @@ import { useLanguage } from '@hooks/useLanguage'
 import {
     StakingDisclaimerSheet,
     StakingErrorBoundary,
-    StakingHelpSheet,
     StakingProjectCard,
 } from '@modules/staking/components'
 import type { StakingProject } from '@modules/staking/models'
@@ -43,12 +42,10 @@ export const StakingScreen = () => {
         projects,
         isLoading,
         isError,
-        isHelpVisible,
         isDisclaimerVisible,
         handleRetry,
         handleProjectPress,
         handleHelpOpen,
-        handleHelpClose,
         handleDisclaimerAccept,
         handleDisclaimerClose,
     } = useStakingScreen()
@@ -140,11 +137,6 @@ export const StakingScreen = () => {
                     />
                 )}
             </StakingErrorBoundary>
-
-            <StakingHelpSheet
-                isVisible={isHelpVisible}
-                onClose={handleHelpClose}
-            />
 
             <StakingDisclaimerSheet
                 isVisible={isDisclaimerVisible}

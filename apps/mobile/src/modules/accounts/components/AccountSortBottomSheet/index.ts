@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { AccountSortBottomSheet } from './AccountSortBottomSheet'
-export type { AccountSortBottomSheetProps } from './AccountSortBottomSheet'
+export { AccountSortContent } from './AccountSortBottomSheet'
+export type { AccountSortContentProps } from './AccountSortBottomSheet'

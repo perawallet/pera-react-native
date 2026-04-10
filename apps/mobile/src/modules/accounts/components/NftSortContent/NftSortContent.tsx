@@ -12,7 +12,6 @@
 
 import React from 'react'
 import {
-    PWBottomSheet,
     PWButton,
     PWIcon,
     PWRadioButton,
@@ -22,30 +21,24 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import type { CollectibleSortMode } from '@perawallet/wallet-core-assets'
+import { useCollectiblePreferencesStore } from '@perawallet/wallet-core-assets'
 
-type NftSortBottomSheetProps = {
-    isVisible: boolean
+type NftSortContentProps = {
     onClose: () => void
-    sortMode: CollectibleSortMode
-    onSortModeChange: (mode: CollectibleSortMode) => void
 }
 
-export const NftSortBottomSheet = ({
-    isVisible,
-    onClose,
-    sortMode,
-    onSortModeChange,
-}: NftSortBottomSheetProps) => {
+export const NftSortContent = ({ onClose }: NftSortContentProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const sortMode = useCollectiblePreferencesStore(
+        state => state.collectibleSortMode,
+    )
+    const setSortMode = useCollectiblePreferencesStore(
+        state => state.setCollectibleSortMode,
+    )
 
     return (
-        <PWBottomSheet
-            isVisible={isVisible}
-            onBackdropPress={onClose}
-            size='auto'
-        >
+        <>
             <PWToolbar
                 left={
                     <PWIcon
@@ -74,24 +67,24 @@ export const NftSortBottomSheet = ({
                 <PWRadioButton
                     title={t('account_details.nfts.sort_newest_first')}
                     isSelected={sortMode === 'newestFirst'}
-                    onPress={() => onSortModeChange('newestFirst')}
+                    onPress={() => setSortMode('newestFirst')}
                 />
                 <PWRadioButton
                     title={t('account_details.nfts.sort_oldest_first')}
                     isSelected={sortMode === 'oldestFirst'}
-                    onPress={() => onSortModeChange('oldestFirst')}
+                    onPress={() => setSortMode('oldestFirst')}
                 />
                 <PWRadioButton
                     title={t('account_details.nfts.sort_title_asc')}
                     isSelected={sortMode === 'titleAsc'}
-                    onPress={() => onSortModeChange('titleAsc')}
+                    onPress={() => setSortMode('titleAsc')}
                 />
                 <PWRadioButton
                     title={t('account_details.nfts.sort_title_desc')}
                     isSelected={sortMode === 'titleDesc'}
-                    onPress={() => onSortModeChange('titleDesc')}
+                    onPress={() => setSortMode('titleDesc')}
                 />
             </PWView>
-        </PWBottomSheet>
+        </>
     )
 }

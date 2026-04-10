@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export { AssetSortBottomSheet } from './AssetSortBottomSheet'
-export type { AssetSortBottomSheetProps } from './AssetSortBottomSheet'
+export { AssetSortContent } from './AssetSortBottomSheet'
+export type { AssetSortContentProps } from './AssetSortBottomSheet'

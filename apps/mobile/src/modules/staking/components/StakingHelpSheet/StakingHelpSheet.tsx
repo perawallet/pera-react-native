@@ -10,39 +10,24 @@
  limitations under the License
  */
 
-import {
-    PWBottomSheet,
-    PWIcon,
-    PWText,
-    PWToolbar,
-    PWView,
-} from '@components/core'
+import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { StakingType } from '../../models'
 import { StakingTypeRow } from './StakingTypeRow'
 import { useStyles } from './styles'
 
-export type StakingHelpSheetProps = {
-    isVisible: boolean
+export type StakingHelpContentProps = {
     onClose: () => void
 }
 
 const STAKING_TYPES: StakingType[] = ['liquid', 'pools', 'delegated']
 
-export const StakingHelpSheet = ({
-    isVisible,
-    onClose,
-}: StakingHelpSheetProps) => {
+export const StakingHelpContent = ({ onClose }: StakingHelpContentProps) => {
     const styles = useStyles({ isLast: false })
     const { t } = useLanguage()
 
     return (
-        <PWBottomSheet
-            isVisible={isVisible}
-            onBackdropPress={onClose}
-            innerContainerStyle={styles.container}
-            enablePanDownToClose
-        >
+        <PWView style={styles.container}>
             <PWToolbar
                 left={
                     <PWIcon
@@ -65,6 +50,6 @@ export const StakingHelpSheet = ({
                     />
                 ))}
             </PWView>
-        </PWBottomSheet>
+        </PWView>
     )
 }

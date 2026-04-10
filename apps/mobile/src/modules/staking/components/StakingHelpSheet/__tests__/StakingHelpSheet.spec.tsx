@@ -12,7 +12,7 @@
 
 import { fireEvent, render, screen } from '@test-utils/render'
 import { describe, expect, it, vi } from 'vitest'
-import { StakingHelpSheet } from '../StakingHelpSheet'
+import { StakingHelpContent } from '../StakingHelpSheet'
 
 vi.mock('@modules/webview', () => ({
     useWebView: vi.fn(() => ({
@@ -26,14 +26,9 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     },
 }))
 
-describe('StakingHelpSheet', () => {
+describe('StakingHelpContent', () => {
     it('renders all three staking type rows when visible', () => {
-        render(
-            <StakingHelpSheet
-                isVisible={true}
-                onClose={vi.fn()}
-            />,
-        )
+        render(<StakingHelpContent onClose={vi.fn()} />)
 
         expect(screen.getByText('staking.type_liquid')).toBeTruthy()
         expect(screen.getByText('staking.type_pools')).toBeTruthy()
@@ -41,12 +36,7 @@ describe('StakingHelpSheet', () => {
     })
 
     it('renders the sheet title', () => {
-        render(
-            <StakingHelpSheet
-                isVisible={true}
-                onClose={vi.fn()}
-            />,
-        )
+        render(<StakingHelpContent onClose={vi.fn()} />)
 
         expect(screen.getByText('staking.help.title')).toBeTruthy()
     })
@@ -54,12 +44,7 @@ describe('StakingHelpSheet', () => {
     it('calls onClose when close icon is pressed', () => {
         const onClose = vi.fn()
 
-        render(
-            <StakingHelpSheet
-                isVisible={true}
-                onClose={onClose}
-            />,
-        )
+        render(<StakingHelpContent onClose={onClose} />)
 
         fireEvent.click(screen.getByTestId('icon-cross'))
 

@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
 import { render, screen, fireEvent } from '@test-utils/render'
-import { AssetFilterBottomSheet } from '../AssetFilterBottomSheet'
+import { AssetFilterContent } from '../AssetFilterBottomSheet'
 
 const mockSetHideZeroBalance = vi.fn()
 const mockSetDisplayNfts = vi.fn()
@@ -41,9 +41,8 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
-describe('AssetFilterBottomSheet', () => {
+describe('AssetFilterContent', () => {
     const defaultProps = {
-        isVisible: true,
         onClose: vi.fn(),
     }
 
@@ -55,7 +54,7 @@ describe('AssetFilterBottomSheet', () => {
     })
 
     it('renders all three filter rows', () => {
-        render(<AssetFilterBottomSheet {...defaultProps} />)
+        render(<AssetFilterContent {...defaultProps} />)
 
         expect(
             screen.getByTestId('asset_filter_hide_zero_balance'),
@@ -67,7 +66,7 @@ describe('AssetFilterBottomSheet', () => {
     })
 
     it('toggles hideZeroBalance from false to true on press', () => {
-        render(<AssetFilterBottomSheet {...defaultProps} />)
+        render(<AssetFilterContent {...defaultProps} />)
 
         fireEvent.click(screen.getByTestId('asset_filter_hide_zero_balance'))
 
@@ -75,7 +74,7 @@ describe('AssetFilterBottomSheet', () => {
     })
 
     it('toggles displayNfts from true to false on press', () => {
-        render(<AssetFilterBottomSheet {...defaultProps} />)
+        render(<AssetFilterContent {...defaultProps} />)
 
         fireEvent.click(screen.getByTestId('asset_filter_display_nfts'))
 
@@ -83,7 +82,7 @@ describe('AssetFilterBottomSheet', () => {
     })
 
     it('toggles displayOptedInNfts from true to false on press', () => {
-        render(<AssetFilterBottomSheet {...defaultProps} />)
+        render(<AssetFilterContent {...defaultProps} />)
 
         fireEvent.click(
             screen.getByTestId('asset_filter_display_opted_in_nfts'),
@@ -95,7 +94,7 @@ describe('AssetFilterBottomSheet', () => {
     it('does not toggle displayOptedInNfts when displayNfts is false', () => {
         mockDisplayNfts = false
 
-        render(<AssetFilterBottomSheet {...defaultProps} />)
+        render(<AssetFilterContent {...defaultProps} />)
 
         fireEvent.click(
             screen.getByTestId('asset_filter_display_opted_in_nfts'),

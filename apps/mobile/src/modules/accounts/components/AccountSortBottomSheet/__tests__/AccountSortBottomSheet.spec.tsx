@@ -12,7 +12,7 @@
 
 import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import { AccountSortBottomSheet } from '../AccountSortBottomSheet'
+import { AccountSortContent } from '../AccountSortBottomSheet'
 
 const mockSetSortMode = vi.fn()
 const mockSetManualAccountOrder = vi.fn()
@@ -40,15 +40,10 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     }
 })
 
-describe('AccountSortBottomSheet', () => {
+describe('AccountSortContent', () => {
     it('renders all sort options', () => {
         const onClose = vi.fn()
-        render(
-            <AccountSortBottomSheet
-                isVisible={true}
-                onClose={onClose}
-            />,
-        )
+        render(<AccountSortContent onClose={onClose} />)
 
         expect(screen.getByTestId('sort_option_alphabeticalAsc')).toBeTruthy()
         expect(screen.getByTestId('sort_option_alphabeticalDesc')).toBeTruthy()
@@ -59,12 +54,7 @@ describe('AccountSortBottomSheet', () => {
 
     it('calls setSortMode when a sort option is pressed', () => {
         const onClose = vi.fn()
-        render(
-            <AccountSortBottomSheet
-                isVisible={true}
-                onClose={onClose}
-            />,
-        )
+        render(<AccountSortContent onClose={onClose} />)
 
         const alphaOption = screen.getByTestId('sort_option_alphabeticalAsc')
         fireEvent.click(alphaOption)

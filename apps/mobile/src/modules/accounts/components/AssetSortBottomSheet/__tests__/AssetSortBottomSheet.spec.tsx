@@ -12,7 +12,7 @@
 
 import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { AssetSortBottomSheet } from '../AssetSortBottomSheet'
+import { AssetSortContent } from '../AssetSortBottomSheet'
 
 const mockHandleSortModeChange = vi.fn()
 const mockHandleDone = vi.fn()
@@ -23,7 +23,7 @@ vi.mock('../useAssetSortBottomSheet', () => ({
     useAssetSortBottomSheet: mockUseAssetSortBottomSheet,
 }))
 
-describe('AssetSortBottomSheet', () => {
+describe('AssetSortContent', () => {
     beforeEach(() => {
         vi.clearAllMocks()
 
@@ -48,12 +48,7 @@ describe('AssetSortBottomSheet', () => {
     })
 
     it('renders all four sort options with correct testIDs', () => {
-        render(
-            <AssetSortBottomSheet
-                isVisible={true}
-                onClose={vi.fn()}
-            />,
-        )
+        render(<AssetSortContent onClose={vi.fn()} />)
 
         expect(
             screen.getByTestId('asset_sort_option_alphabeticalAsc'),
@@ -66,12 +61,7 @@ describe('AssetSortBottomSheet', () => {
     })
 
     it('shows all sort option labels', () => {
-        render(
-            <AssetSortBottomSheet
-                isVisible={true}
-                onClose={vi.fn()}
-            />,
-        )
+        render(<AssetSortContent onClose={vi.fn()} />)
 
         expect(screen.getByTitle('asset_sort.alphabetical_asc')).toBeTruthy()
         expect(screen.getByTitle('asset_sort.alphabetical_desc')).toBeTruthy()
@@ -80,12 +70,7 @@ describe('AssetSortBottomSheet', () => {
     })
 
     it('calls handleSortModeChange when radio button is pressed', () => {
-        render(
-            <AssetSortBottomSheet
-                isVisible={true}
-                onClose={vi.fn()}
-            />,
-        )
+        render(<AssetSortContent onClose={vi.fn()} />)
 
         fireEvent.click(screen.getByTestId('asset_sort_option_balanceDesc'))
 
@@ -93,12 +78,7 @@ describe('AssetSortBottomSheet', () => {
     })
 
     it('calls handleDone when done button is pressed', () => {
-        render(
-            <AssetSortBottomSheet
-                isVisible={true}
-                onClose={vi.fn()}
-            />,
-        )
+        render(<AssetSortContent onClose={vi.fn()} />)
 
         fireEvent.click(screen.getByText('asset_sort.done'))
 
