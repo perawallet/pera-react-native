@@ -41,20 +41,6 @@ vi.mock('@components/core', async () => ({
                 : ListEmptyComponent}
         </div>
     ),
-    PWTouchableOpacity: ({
-        children,
-        onPress,
-    }: {
-        children: React.ReactNode
-        onPress: () => void
-    }) => (
-        <button
-            data-testid='asset-item'
-            onClick={onPress}
-        >
-            {children}
-        </button>
-    ),
     PWView: ({ children }: { children: React.ReactNode }) => (
         <div>{children}</div>
     ),
@@ -94,9 +80,16 @@ vi.mock('@components/LoadingView', () => ({
 vi.mock('@modules/assets/components/AssetItem/AccountAssetItemView', () => ({
     AccountAssetItemView: ({
         accountBalance,
+        onPress,
     }: {
         accountBalance: { assetId: string }
-    }) => <div data-testid={`asset-${accountBalance.assetId}`} />,
+        onPress?: () => void
+    }) => (
+        <button
+            data-testid={`asset-${accountBalance.assetId}`}
+            onClick={onPress}
+        />
+    ),
 }))
 
 const mockAssets = [
@@ -147,8 +140,7 @@ describe('AccountAssetSelectionList', () => {
             />,
         )
 
-        const assetItems = screen.getAllByTestId('asset-item')
-        fireEvent.click(assetItems[0])
+        fireEvent.click(screen.getByTestId(`asset-${mockAssets[0].assetId}`))
 
         expect(onAssetSelected).toHaveBeenCalledWith(mockAssets[0])
     })

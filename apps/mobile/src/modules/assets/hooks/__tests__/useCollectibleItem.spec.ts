@@ -108,26 +108,4 @@ describe('useCollectibleItem', () => {
         expect(result.current.hasBalance).toBe(false)
         expect(result.current.showAmount).toBe(false)
     })
-
-    it('handlePress invokes onPress with the item', () => {
-        const onPress = vi.fn()
-        const item = buildItem()
-
-        const { result } = renderHook(() =>
-            useCollectibleItem({ item, onPress }),
-        )
-
-        result.current.handlePress()
-
-        expect(onPress).toHaveBeenCalledTimes(1)
-        expect(onPress).toHaveBeenCalledWith(item)
-    })
-
-    it('handlePress is a no-op when onPress is not provided', () => {
-        const { result } = renderHook(() =>
-            useCollectibleItem({ item: buildItem() }),
-        )
-
-        expect(() => result.current.handlePress()).not.toThrow()
-    })
 })

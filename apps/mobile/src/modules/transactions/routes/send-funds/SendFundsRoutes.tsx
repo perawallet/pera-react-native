@@ -17,6 +17,11 @@ import {
 
 import { PWIcon } from '@components/core'
 import { NavigationHeader } from '@components/NavigationHeader'
+import {
+    isCollectible,
+    isPureNft,
+    useAssetsQuery,
+} from '@perawallet/wallet-core-assets'
 import { useSendFunds } from '@modules/transactions/hooks'
 import { AssetSelectionScreen } from '../../screens/send-funds/AssetSelectionScreen/AssetSelectionScreen'
 import { InputScreen } from '../../screens/send-funds/InputScreen/InputScreen'
@@ -33,12 +38,28 @@ import type { SendFundsStackParamList } from './types'
 const Stack = createStackNavigator<SendFundsStackParamList>()
 
 export const SendFundsRoutes = () => {
-    const { canSelectAsset, onFinished } = useSendFunds()
+    const { canSelectAsset, selectedAssetId, onFinished } = useSendFunds()
     const styles = useStyles()
+
+    const { data: assets } = useAssetsQuery(
+        selectedAssetId ? [selectedAssetId] : [],
+    )
+    const selectedAsset = selectedAssetId
+        ? assets.get(selectedAssetId)
+        : undefined
+    const isPureCollectible = selectedAsset
+        ? isCollectible(selectedAsset) && isPureNft(selectedAsset)
+        : false
+
+    const initialRouteName = canSelectAsset
+        ? 'AssetSelection'
+        : isPureCollectible
+          ? 'SelectDestination'
+          : 'InputAmount'
 
     return (
         <Stack.Navigator
-            initialRouteName={canSelectAsset ? 'AssetSelection' : 'InputAmount'}
+            initialRouteName={initialRouteName}
             detachInactiveScreens={false}
             screenOptions={{
                 headerShown: true,

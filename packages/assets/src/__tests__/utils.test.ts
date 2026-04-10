@@ -17,6 +17,7 @@ import {
     toDecimalUnits,
     isPureNft,
     isCollectible,
+    formatCollectibleAmount,
 } from '../utils'
 import { PeraAssetType, type PeraAsset } from '../models'
 
@@ -265,6 +266,38 @@ describe('utils', () => {
             }
 
             expect(isCollectible(asset)).toBe(false)
+        })
+    })
+
+    describe('formatCollectibleAmount', () => {
+        test('returns empty string for pure NFT', () => {
+            const asset = createTestAsset(0, 'PureNFT')
+            asset.totalSupply = new Decimal(1)
+
+            expect(formatCollectibleAmount(new Decimal(1), asset)).toBe('')
+        })
+
+        test('returns "x" prefixed amount for fractional NFT', () => {
+            const asset = createTestAsset(2, 'FractionalNFT')
+            asset.totalSupply = new Decimal(100)
+
+            expect(formatCollectibleAmount(new Decimal(5), asset)).toBe('x5')
+        })
+
+        test('returns "x" prefixed decimal amount', () => {
+            const asset = createTestAsset(6, 'FractionalNFT')
+            asset.totalSupply = new Decimal(1000000)
+
+            expect(formatCollectibleAmount(new Decimal('0.5'), asset)).toBe(
+                'x0.5',
+            )
+        })
+
+        test('returns "x0" for zero amount on non-pure asset', () => {
+            const asset = createTestAsset(6, 'FractionalNFT')
+            asset.totalSupply = new Decimal(1000000)
+
+            expect(formatCollectibleAmount(new Decimal(0), asset)).toBe('x0')
         })
     })
 })

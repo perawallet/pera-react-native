@@ -12,13 +12,7 @@
 
 import React, { useCallback, useRef } from 'react'
 import { GestureResponderEvent, View } from 'react-native'
-import {
-    PWIcon,
-    PWSwipeable,
-    PWSwipeableRef,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWIcon, PWSwipeable, PWSwipeableRef, PWView } from '@components/core'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { Decimal } from 'decimal.js'
@@ -68,16 +62,12 @@ const SwipeableAssetItemInner = ({
 
     if (!isSwipeEnabled) {
         return (
-            <PWTouchableOpacity
+            <AccountAssetItemView
+                accountBalance={item}
+                usdPrice={usdPrice}
                 style={styles.itemContainer}
                 onPress={handlePress}
-            >
-                <AccountAssetItemView
-                    accountBalance={item}
-                    usdPrice={usdPrice}
-                    onPress={() => onPress(item)}
-                />
-            </PWTouchableOpacity>
+            />
         )
     }
 
@@ -89,16 +79,12 @@ const SwipeableAssetItemInner = ({
             overshootRight={false}
         >
             <PWView style={styles.swipeableContent}>
-                <PWTouchableOpacity
+                <AccountAssetItemView
+                    accountBalance={item}
+                    usdPrice={usdPrice}
                     style={styles.itemContainer}
                     onPress={handlePress}
-                >
-                    <AccountAssetItemView
-                        accountBalance={item}
-                        usdPrice={usdPrice}
-                        onPress={() => onPress(item)}
-                    />
-                </PWTouchableOpacity>
+                />
             </PWView>
         </PWSwipeable>
     )

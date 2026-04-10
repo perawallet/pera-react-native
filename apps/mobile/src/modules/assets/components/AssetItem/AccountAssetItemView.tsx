@@ -19,8 +19,9 @@ import {
     PWIconSize,
     PWSkeleton,
     PWText,
+    PWTouchableOpacity,
+    PWTouchableOpacityProps,
     PWView,
-    PWViewProps,
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
 import {
@@ -38,8 +39,7 @@ export type AccountAssetItemViewProps = {
     accountBalance: AssetWithAccountBalance
     usdPrice?: Decimal
     iconSize?: PWIconSize
-    onPress?: () => void
-} & PWViewProps
+} & PWTouchableOpacityProps
 
 export const AccountAssetItemView = ({
     accountBalance,
@@ -77,15 +77,22 @@ export const AccountAssetItemView = ({
         return tier ? getVerificationIcon(tier) : null
     }, [asset, isAlgo])
 
-    if (asset && isCollectible(asset)) {
+    const item = useMemo(() => {
+        if (asset && isCollectible(asset)) {
+            return {
+                assetId: accountBalance.assetId,
+                asset,
+                collectible: asset.peraMetadata?.collectible,
+                amount: accountBalance.amount,
+            }
+        }
+        return null
+    }, [asset, accountBalance])
+
+    if (item) {
         return (
             <CollectibleListItem
-                item={{
-                    assetId: accountBalance.assetId,
-                    asset,
-                    collectible: asset.peraMetadata?.collectible,
-                    amount: accountBalance.amount,
-                }}
+                item={item}
                 onPress={onPress}
             />
         )
@@ -107,7 +114,9 @@ export const AccountAssetItemView = ({
     }
 
     return (
-        <PWView
+        <PWTouchableOpacity
+            activeOpacity={onPress ? undefined : 1}
+            onPress={onPress}
             {...rest}
             style={[styles.container, rest.style]}
         >
@@ -162,6 +171,6 @@ export const AccountAssetItemView = ({
                     />
                 </PWView>
             </PWView>
-        </PWView>
+        </PWTouchableOpacity>
     )
 }

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useMemo } from 'react'
 import { isPureNft } from '@perawallet/wallet-core-assets'
 import type { IconName } from '@components/core'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
@@ -23,12 +23,10 @@ type UseCollectibleItemResult = {
     verificationIconName: IconName | null
     title: string
     collectionName: string | undefined
-    handlePress: () => void
 }
 
 export const useCollectibleItem = ({
     item,
-    onPress,
 }: CollectibleItemProps): UseCollectibleItemResult => {
     const { asset, amount, collectible } = item
 
@@ -43,8 +41,6 @@ export const useCollectibleItem = ({
         return tier ? getVerificationIcon(tier) : null
     }, [asset.peraMetadata?.verificationTier])
 
-    const handlePress = useCallback(() => onPress?.(item), [onPress, item])
-
     return {
         thumbnailUrl,
         showAmount,
@@ -52,6 +48,5 @@ export const useCollectibleItem = ({
         verificationIconName,
         title,
         collectionName,
-        handlePress,
     }
 }

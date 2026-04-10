@@ -15,6 +15,7 @@ import {
     type PeraAsset,
     type PeraCollectible,
 } from '@perawallet/wallet-core-assets'
+import { GestureResponderEvent } from 'react-native'
 
 export type CollectibleDisplayItem = {
     assetId: string
@@ -26,5 +27,5 @@ export type CollectibleDisplayItem = {
 export type CollectibleItemProps = {
     asset: PeraAsset
     amount: Decimal
-    onPress?: () => void
+    onPress?: (event: GestureResponderEvent) => void
 }

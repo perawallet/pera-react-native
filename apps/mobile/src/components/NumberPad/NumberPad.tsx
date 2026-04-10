@@ -16,6 +16,7 @@ import { useStyles } from './styles'
 
 export type NumberPadProps = {
     onPress: (key?: string) => void
+    allowDecimal?: boolean
 }
 
 const padArrangment = [
@@ -25,29 +26,45 @@ const padArrangment = [
     ['.', '0', undefined],
 ]
 
-export const NumberPad = memo(({ onPress }: NumberPadProps) => {
-    const styles = useStyles()
-    return (
-        <PWView style={styles.container}>
-            {padArrangment.map((row, idx) => (
-                <PWView
-                    style={styles.row}
-                    key={`numpad-row-${idx}`}
-                >
-                    {row.map(key => (
-                        <PWTouchableOpacity
-                            key={`numpad-key-${key}`}
-                            onPress={() => onPress(key)}
-                            style={styles.key}
-                        >
-                            {!!key && (
-                                <PWText style={styles.keyText}>{key}</PWText>
-                            )}
-                            {!key && <PWIcon name='delete' />}
-                        </PWTouchableOpacity>
-                    ))}
-                </PWView>
-            ))}
-        </PWView>
-    )
-})
+export const NumberPad = memo(
+    ({ onPress, allowDecimal = true }: NumberPadProps) => {
+        const styles = useStyles()
+        return (
+            <PWView style={styles.container}>
+                {padArrangment.map((row, idx) => (
+                    <PWView
+                        style={styles.row}
+                        key={`numpad-row-${idx}`}
+                    >
+                        {row.map((key, keyIdx) => {
+                            const isDecimalKey = key === '.'
+                            const isInert = isDecimalKey && !allowDecimal
+                            if (isInert) {
+                                return (
+                                    <PWView
+                                        key={`numpad-key-${idx}-${keyIdx}`}
+                                        style={styles.key}
+                                    />
+                                )
+                            }
+                            return (
+                                <PWTouchableOpacity
+                                    key={`numpad-key-${idx}-${keyIdx}`}
+                                    onPress={() => onPress(key)}
+                                    style={styles.key}
+                                >
+                                    {!!key && (
+                                        <PWText style={styles.keyText}>
+                                            {key}
+                                        </PWText>
+                                    )}
+                                    {!key && <PWIcon name='delete' />}
+                                </PWTouchableOpacity>
+                            )
+                        })}
+                    </PWView>
+                ))}
+            </PWView>
+        )
+    },
+)

@@ -18,11 +18,18 @@ import { useSendFunds } from '@modules/transactions/hooks'
 
 const mockSetSelectedAssetId = vi.fn()
 const mockSetCanSelectAsset = vi.fn()
+const mockSetAmount = vi.fn()
 const mockSetOnFinished = vi.fn()
 const mockReset = vi.fn()
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccount: vi.fn(),
+}))
+
+vi.mock('@perawallet/wallet-core-assets', () => ({
+    useAssetsQuery: vi.fn(() => ({ data: new Map() })),
+    isCollectible: vi.fn(() => false),
+    isPureNft: vi.fn(() => false),
 }))
 
 vi.mock('@modules/transactions/hooks', () => ({
@@ -44,6 +51,7 @@ describe('useSendFundsBottomSheet', () => {
             selectedAssetId: undefined,
             setSelectedAssetId: mockSetSelectedAssetId,
             setCanSelectAsset: mockSetCanSelectAsset,
+            setAmount: mockSetAmount,
             setOnFinished: mockSetOnFinished,
             reset: mockReset,
         })
@@ -80,6 +88,7 @@ describe('useSendFundsBottomSheet', () => {
             selectedAssetId: '123',
             setSelectedAssetId: mockSetSelectedAssetId,
             setCanSelectAsset: mockSetCanSelectAsset,
+            setAmount: mockSetAmount,
             setOnFinished: mockSetOnFinished,
             reset: mockReset,
         })

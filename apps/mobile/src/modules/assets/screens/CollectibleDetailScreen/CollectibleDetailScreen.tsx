@@ -21,6 +21,7 @@ import {
     PWView,
 } from '@components/core'
 import { MediaCarousel } from '@components/MediaCarousel'
+import { SendFundsBottomSheet } from '@modules/transactions/components/send-funds/SendFundsBottomSheet/SendFundsBottomSheet'
 import { FullScreenImageViewer } from '@modules/assets/screens/FullScreenImageViewer'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -63,6 +64,7 @@ export const CollectibleDetailScreen = ({
         fullScreenMedia,
         fullScreenInitialIndex,
         fullScreenViewerModal,
+        sendFundsModal,
     } = useCollectibleDetail(assetId)
 
     useNavigationHeader({
@@ -180,6 +182,11 @@ export const CollectibleDetailScreen = ({
                 onClose={fullScreenViewerModal.close}
                 media={fullScreenMedia}
                 initialIndex={fullScreenInitialIndex}
+            />
+            <SendFundsBottomSheet
+                assetId={assetId}
+                isVisible={sendFundsModal.isOpen}
+                onClose={sendFundsModal.close}
             />
         </PWView>
     )

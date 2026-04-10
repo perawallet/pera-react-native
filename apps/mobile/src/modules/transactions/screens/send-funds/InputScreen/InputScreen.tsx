@@ -156,7 +156,10 @@ export const InputScreen = () => {
                 </PWView>
 
                 <PWView style={styles.numpadContainer}>
-                    <NumberPad onPress={handleKey} />
+                    <NumberPad
+                        onPress={handleKey}
+                        allowDecimal={(asset.decimals ?? 0) > 0}
+                    />
                 </PWView>
             </PWView>
 

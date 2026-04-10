@@ -65,6 +65,7 @@ export const useInputScreen = () => {
         if (!selectedAssetId) return null
         return assets.get(selectedAssetId)
     }, [selectedAssetId, assets])
+
     const { data: params } = useSuggestedParametersQuery()
     const { data: accountInformation } = useAccountInformationQuery(
         selectedAccount?.address ?? '',
@@ -229,6 +230,9 @@ export const useInputScreen = () => {
         (key?: string) => {
             const current = valueRef.current ?? null
             if (key) {
+                if (key === '.' && assetDecimalsRef.current === 0) {
+                    return
+                }
                 if (key === '.' && (current ?? '').includes('.')) {
                     return
                 }

@@ -11,7 +11,13 @@
  */
 
 import { useCallback, useLayoutEffect } from 'react'
+import { Decimal } from 'decimal.js'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    isCollectible,
+    isPureNft,
+    useAssetsQuery,
+} from '@perawallet/wallet-core-assets'
 import { useSendFunds } from '@modules/transactions/hooks'
 
 type UseSendFundsBottomSheetResult = {
@@ -30,9 +36,13 @@ export const useSendFundsBottomSheet = (
         selectedAssetId,
         setSelectedAssetId,
         setCanSelectAsset,
+        setAmount,
         setOnFinished,
         reset,
     } = useSendFunds()
+
+    const { data: assets } = useAssetsQuery(assetId ? [assetId] : [])
+    const asset = assetId ? assets.get(assetId) : undefined
 
     useLayoutEffect(() => {
         if (isVisible && assetId != null) {
@@ -43,12 +53,20 @@ export const useSendFundsBottomSheet = (
             if (selectedAssetId !== assetId) {
                 setSelectedAssetId(assetId)
             }
+
+            // Pure collectibles have a fixed quantity of 1, so prefill
+            // the amount and skip the input screen entirely.
+            if (asset && isCollectible(asset) && isPureNft(asset)) {
+                setAmount(new Decimal(1))
+            }
         }
     }, [
         isVisible,
         assetId,
+        asset,
         setCanSelectAsset,
         setSelectedAssetId,
+        setAmount,
         canSelectAsset,
         selectedAssetId,
     ])

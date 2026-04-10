@@ -26,13 +26,12 @@ const CollectibleGridItemBase = ({ item, onPress }: CollectibleItemProps) => {
         verificationIconName,
         title,
         collectionName,
-        handlePress,
     } = useCollectibleItem({ item, onPress })
 
     return (
         <PWTouchableOpacity
             style={styles.container}
-            onPress={handlePress}
+            onPress={onPress}
         >
             <PWView style={styles.imageContainer}>
                 <CollectibleThumbnail
