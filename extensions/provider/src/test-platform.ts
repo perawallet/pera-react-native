@@ -62,6 +62,7 @@ export const buildTestPlatform = (
             return null
         },
         async removeItem(_: string) {},
+        async clearAll() {},
         async authenticate() {
             return true
         },

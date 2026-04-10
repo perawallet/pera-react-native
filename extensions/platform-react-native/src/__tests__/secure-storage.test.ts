@@ -17,6 +17,7 @@ vi.mock('react-native-keychain', () => ({
     setGenericPassword: vi.fn(async () => true),
     getGenericPassword: vi.fn(),
     resetGenericPassword: vi.fn(async () => true),
+    getAllGenericPasswordServices: vi.fn(async () => []),
     ACCESSIBLE: {
         WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'WhenUnlockedThisDeviceOnly',
     },
@@ -149,6 +150,62 @@ describe('RNSecureStorageService', () => {
                     service: 'com.algorand.android.my-key',
                 }),
             )
+        })
+    })
+
+    describe('clearAll', () => {
+        it('clears all keychain entries matching the service prefix', async () => {
+            service.initialize()
+
+            mockKeychain.getAllGenericPasswordServices.mockResolvedValue([
+                'com.algorand.android.pin',
+                'com.algorand.android.key-1',
+                'com.algorand.android.key-2',
+                'com.other.service',
+            ])
+
+            await service.clearAll()
+
+            expect(
+                mockKeychain.getAllGenericPasswordServices,
+            ).toHaveBeenCalledOnce()
+            expect(mockKeychain.resetGenericPassword).toHaveBeenCalledTimes(3)
+            expect(mockKeychain.resetGenericPassword).toHaveBeenCalledWith({
+                service: 'com.algorand.android.pin',
+            })
+            expect(mockKeychain.resetGenericPassword).toHaveBeenCalledWith({
+                service: 'com.algorand.android.key-1',
+            })
+            expect(mockKeychain.resetGenericPassword).toHaveBeenCalledWith({
+                service: 'com.algorand.android.key-2',
+            })
+        })
+
+        it('does nothing when no matching services exist', async () => {
+            service.initialize()
+
+            mockKeychain.getAllGenericPasswordServices.mockResolvedValue([
+                'com.other.service',
+            ])
+
+            await service.clearAll()
+
+            expect(mockKeychain.resetGenericPassword).not.toHaveBeenCalled()
+        })
+
+        it('continues even if individual resets fail', async () => {
+            service.initialize()
+
+            mockKeychain.getAllGenericPasswordServices.mockResolvedValue([
+                'com.algorand.android.key-1',
+                'com.algorand.android.key-2',
+            ])
+            mockKeychain.resetGenericPassword
+                .mockRejectedValueOnce(new Error('fail'))
+                .mockResolvedValueOnce(true)
+
+            await expect(service.clearAll()).resolves.not.toThrow()
+            expect(mockKeychain.resetGenericPassword).toHaveBeenCalledTimes(2)
         })
     })
 

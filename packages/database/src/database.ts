@@ -45,3 +45,10 @@ export const getDatabase = (): Database => {
 export const resetDatabase = (): void => {
     instance = null
 }
+
+export const deleteDatabase = async (
+    databaseService: DatabaseService,
+): Promise<void> => {
+    await databaseService.delete(DATABASE_NAME)
+    instance = null
+}

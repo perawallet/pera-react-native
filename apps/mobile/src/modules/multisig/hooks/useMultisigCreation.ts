@@ -11,6 +11,7 @@
  */
 
 import { create } from 'zustand'
+import { registerStore } from '@perawallet/wallet-core-shared'
 
 export type Participant = {
     address: string
@@ -31,6 +32,7 @@ type MultisigCreationActions = {
     setThreshold: (threshold: number) => void
     setAccountName: (name: string) => void
     resetState: () => void
+    clearStorage: () => void
 }
 
 type MultisigCreationStore = MultisigCreationState & MultisigCreationActions
@@ -60,4 +62,11 @@ export const useMultisigCreationStore = create<MultisigCreationStore>(set => ({
     setThreshold: (threshold: number) => set({ threshold }),
     setAccountName: (name: string) => set({ accountName: name }),
     resetState: () => set(initialState),
+    clearStorage: () => {},
 }))
+
+registerStore({
+    name: 'multisig-creation-store',
+    clearStorage: () => {},
+    resetState: () => useMultisigCreationStore.getState().resetState(),
+})

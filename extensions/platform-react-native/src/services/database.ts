@@ -12,6 +12,7 @@
 
 import {
     openDatabaseAsync,
+    deleteDatabaseAsync,
     type SQLiteDatabase,
     type SQLiteBindValue,
 } from 'expo-sqlite'
@@ -96,6 +97,11 @@ export class RNDatabaseService implements DatabaseService {
             await db.closeAsync()
             this.databases.delete(name)
         }
+    }
+
+    async delete(name: string): Promise<void> {
+        await this.close(name)
+        await deleteDatabaseAsync(name)
     }
 
     private async getOrOpen(name: string): Promise<SQLiteDatabase> {

@@ -22,4 +22,6 @@ export class MemoryDatabaseService implements DatabaseService {
     }
 
     async close(_name: string): Promise<void> {}
+
+    async delete(_name: string): Promise<void> {}
 }
