@@ -11,9 +11,18 @@
  */
 
 import React, { useCallback, useState } from 'react'
-import { FlatList } from 'react-native'
-import { PWIcon, PWIconSize, PWImage, PWView } from '@components/core'
+import { useWindowDimensions } from 'react-native'
+import {
+    PWIcon,
+    PWIconSize,
+    PWImage,
+    PWTouchableIcon,
+    PWView,
+} from '@components/core'
+import { VideoPlayer } from '@components/VideoPlayer'
+import { AudioPlayer } from '@components/AudioPlayer'
 import { useStyles } from './styles'
+import PagerView from 'react-native-pager-view'
 
 export type MediaItem = {
     type: string
@@ -25,99 +34,113 @@ export type MediaCarouselProps = {
     media: MediaItem[]
     fallbackImageUrl?: string
     placeholderIconSize?: PWIconSize
+    onFullScreenPress?: (index: number) => void
 }
 
 export const MediaCarousel = ({
     media,
     fallbackImageUrl,
     placeholderIconSize = 'xl',
+    onFullScreenPress,
 }: MediaCarouselProps) => {
-    const styles = useStyles()
+    const dimensions = useWindowDimensions()
+    const styles = useStyles(dimensions)
     const [activeIndex, setActiveIndex] = useState(0)
 
-    const imageMedia = media.filter(m => m.type === 'image')
-    const hasMultiple = imageMedia.length > 1
+    const displayMedia = media.filter(
+        m => m.type === 'image' || m.type === 'video' || m.type === 'audio',
+    )
+    const hasMultiple = displayMedia.length > 1
 
     const renderMediaItem = useCallback(
-        ({ item }: { item: MediaItem }) => (
-            <PWView style={styles.carouselItem}>
-                {item.previewUrl || item.downloadUrl ? (
-                    <PWImage
-                        source={{ uri: item.previewUrl ?? item.downloadUrl }}
-                        style={styles.image}
-                        resizeMode='contain'
-                    />
-                ) : (
-                    <PWView style={styles.placeholder}>
-                        <PWIcon
-                            name='card-stack'
-                            size={placeholderIconSize ?? 'md'}
+        ({ item, index }: { item?: MediaItem; index: number }) => {
+            const downloadUri = item?.downloadUrl
+            return (
+                <PWView
+                    style={styles.carouselItem}
+                    key={`media-${index}`}
+                >
+                    {item?.type === 'video' && downloadUri ? (
+                        <VideoPlayer
+                            uri={downloadUri}
+                            style={styles.videoPlayer}
+                            autoPlay={index === activeIndex}
                         />
-                    </PWView>
-                )}
-            </PWView>
-        ),
-        [styles, placeholderIconSize],
+                    ) : item?.type === 'audio' && downloadUri ? (
+                        <AudioPlayer
+                            uri={downloadUri}
+                            posterUri={item?.previewUrl ?? fallbackImageUrl}
+                            style={styles.videoPlayer}
+                        />
+                    ) : item?.previewUrl ||
+                      item?.downloadUrl ||
+                      fallbackImageUrl ? (
+                        <PWImage
+                            source={{
+                                uri:
+                                    item?.previewUrl ??
+                                    item?.downloadUrl ??
+                                    fallbackImageUrl,
+                            }}
+                            style={styles.image}
+                            resizeMode='contain'
+                        />
+                    ) : (
+                        <PWView style={styles.placeholder}>
+                            <PWIcon
+                                name='card-stack'
+                                size={placeholderIconSize ?? 'md'}
+                            />
+                        </PWView>
+                    )}
+                    {onFullScreenPress && index >= 0 && (
+                        <PWTouchableIcon
+                            style={styles.fullScreenButton}
+                            onPress={() => onFullScreenPress(index)}
+                            name='full-view'
+                            size='lg'
+                            variant='white'
+                        />
+                    )}
+                </PWView>
+            )
+        },
+        [
+            styles,
+            placeholderIconSize,
+            onFullScreenPress,
+            fallbackImageUrl,
+            activeIndex,
+        ],
     )
 
-    if (!imageMedia.length) {
-        return (
-            <PWView style={styles.container}>
-                {fallbackImageUrl ? (
-                    <PWImage
-                        source={{ uri: fallbackImageUrl }}
-                        style={styles.image}
-                        resizeMode='contain'
-                    />
-                ) : (
-                    <PWView style={styles.placeholder}>
-                        <PWIcon
-                            name='card-stack'
-                            size={placeholderIconSize}
-                        />
-                    </PWView>
-                )}
-            </PWView>
-        )
+    if (!displayMedia.length) {
+        return renderMediaItem({ index: -1 })
     }
 
     if (!hasMultiple) {
-        const singleMedia = imageMedia[0]
-        return (
-            <PWView style={styles.container}>
-                <PWImage
-                    source={{
-                        uri:
-                            singleMedia.previewUrl ??
-                            singleMedia.downloadUrl ??
-                            fallbackImageUrl,
-                    }}
-                    style={styles.image}
-                    resizeMode='contain'
-                />
-            </PWView>
-        )
+        const singleMedia = displayMedia[0]
+        return renderMediaItem({ item: singleMedia, index: 0 })
     }
 
     return (
         <PWView style={styles.container}>
-            <FlatList
-                data={imageMedia}
-                renderItem={renderMediaItem}
-                keyExtractor={(_, index) => `media-${index}`}
-                horizontal
-                pagingEnabled
-                showsHorizontalScrollIndicator={false}
-                onMomentumScrollEnd={e => {
-                    const index = Math.round(
-                        e.nativeEvent.contentOffset.x /
-                            e.nativeEvent.layoutMeasurement.width,
-                    )
-                    setActiveIndex(index)
-                }}
-            />
+            <PagerView
+                style={styles.pagerView}
+                onPageSelected={e => setActiveIndex(e.nativeEvent.position)}
+            >
+                {displayMedia.map((item, index) => (
+                    <PWView
+                        key={index}
+                        style={styles.carouselItem}
+                    >
+                        {renderMediaItem({ item, index })}
+                    </PWView>
+                ))}
+            </PagerView>
+
             <PWView style={styles.indicator}>
-                {imageMedia.map((_, i) => (
+                {displayMedia.map((_, i) => (
                     <PWView
                         key={i}
                         style={[

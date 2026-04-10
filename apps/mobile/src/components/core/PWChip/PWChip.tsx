@@ -21,14 +21,18 @@ export type PWChipProps = {
     title: string
     variant?: PWChipVariant
     style?: StyleProp<ViewStyle>
+    paddingStyle?: 'dense' | 'normal'
+    forceUppercase?: boolean
 }
 
 export const PWChip = ({
     title,
     variant = 'secondary',
     style,
+    paddingStyle = 'normal',
+    forceUppercase = true,
 }: PWChipProps) => {
-    const styles = useStyles({ variant })
+    const styles = useStyles({ variant, paddingStyle })
 
     return (
         <PWView style={[styles.chipStyle, style]}>
@@ -36,7 +40,7 @@ export const PWChip = ({
                 variant='body'
                 style={styles.titleStyle}
             >
-                {title.toUpperCase()}
+                {forceUppercase ? title.toUpperCase() : title}
             </PWText>
         </PWView>
     )

@@ -21,6 +21,7 @@ import {
     PWView,
 } from '@components/core'
 import { MediaCarousel } from '@components/MediaCarousel'
+import { FullScreenImageViewer } from '@modules/assets/screens/FullScreenImageViewer'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCollectibleDetail } from './useCollectibleDetail'
@@ -30,6 +31,7 @@ import { CollectibleInfoSection } from './CollectibleInfoSection'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { RoundButton } from '@components/RoundButton'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { CollectibleDetailSkeleton } from './CollectibleDetailSkeleton'
 import { CollectibleDescription } from './CollectibleDescription'
 
 export type CollectibleDetailScreenProps = NativeStackScreenProps<
@@ -55,8 +57,12 @@ export const CollectibleDetailScreen = ({
         assetAmount,
         handleSendPressed,
         handleSharePressed,
+        handleMediaPress,
         handleCopyImage,
         handleSaveImage,
+        fullScreenMedia,
+        fullScreenInitialIndex,
+        fullScreenViewerModal,
     } = useCollectibleDetail(assetId)
 
     useNavigationHeader({
@@ -73,6 +79,7 @@ export const CollectibleDetailScreen = ({
         return (
             <EmptyView
                 isLoading={isPending}
+                loadingView={<CollectibleDetailSkeleton />}
                 title={t('asset_details.markets.something_went_wrong_title')}
                 body={t('asset_details.markets.something_went_wrong_body')}
             />
@@ -106,10 +113,13 @@ export const CollectibleDetailScreen = ({
                     {accountAddress ? (
                         <PWView style={styles.accountRow}>
                             <AddressDisplay address={accountAddress} />
-                            {quantity > 1 && (
+                            {quantity > 0 && (
                                 <PWChip
                                     title={`x${quantity}`}
-                                    variant='secondary'
+                                    variant='outline'
+                                    paddingStyle='dense'
+                                    forceUppercase={false}
+                                    style={styles.quantityChip}
                                 />
                             )}
                         </PWView>
@@ -123,6 +133,7 @@ export const CollectibleDetailScreen = ({
                         asset.peraMetadata?.logo ??
                         undefined
                     }
+                    onFullScreenPress={handleMediaPress}
                 />
 
                 <PWView style={styles.contentContainer}>
@@ -164,6 +175,12 @@ export const CollectibleDetailScreen = ({
                     />
                 </PWView>
             </PWScrollView>
+            <FullScreenImageViewer
+                isVisible={fullScreenViewerModal.isOpen}
+                onClose={fullScreenViewerModal.close}
+                media={fullScreenMedia}
+                initialIndex={fullScreenInitialIndex}
+            />
         </PWView>
     )
 }

@@ -22,7 +22,7 @@ export const useStyles = makeStyles(theme => ({
     },
     contentContainer: {
         paddingHorizontal: theme.spacing.lg,
-        paddingTop: theme.spacing.lg,
+        paddingTop: theme.spacing.xl,
         gap: theme.spacing.xl,
     },
     titleSection: {
@@ -96,5 +96,26 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         alignSelf: 'center',
         paddingHorizontal: theme.spacing.lg,
+    },
+    skeletonContainer: {
+        paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.xl,
+        alignItems: 'center',
+    },
+    bigSkeleton: {
+        width: '80%',
+        height: 300,
+        borderRadius: theme.borderRadius.lg,
+        marginBottom: theme.spacing.xl,
+    },
+    skeleton: {
+        width: '90%',
+        height: theme.spacing.xxl,
+        borderRadius: theme.borderRadius.md,
+        marginBottom: theme.spacing.sm,
+    },
+    quantityChip: {
+        alignSelf: 'center',
+        marginLeft: theme.spacing.sm,
     },
 }))
