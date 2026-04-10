@@ -27,8 +27,21 @@ vi.mock('@perawallet/wallet-core-security', () => ({
     usePinCode: vi.fn(),
 }))
 
+const mockRemoveItem = vi.fn()
+const mockClearKeystore = vi.fn().mockResolvedValue(undefined)
+const mockDeleteDatabase = vi.fn().mockResolvedValue(undefined)
+
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     clearDataStores: vi.fn(),
+    getProvider: () => ({
+        keyValueStorage: { removeItem: mockRemoveItem },
+        database: {},
+    }),
+    clearKeystore: (...args: unknown[]) => mockClearKeystore(...args),
+}))
+
+vi.mock('@perawallet/wallet-core-database', () => ({
+    deleteDatabase: (...args: unknown[]) => mockDeleteDatabase(...args),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -42,6 +55,30 @@ vi.mock('@tanstack/react-query', () => ({
 
 vi.mock('@perawallet/wallet-core-device', () => ({
     useDeleteDeviceMutation: vi.fn(),
+}))
+
+const mockDeleteAllSessions = vi.fn().mockResolvedValue(undefined)
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: () => ({ network: 'mainnet' }),
+}))
+vi.mock('@perawallet/wallet-core-walletconnect', () => ({
+    useWalletConnect: () => ({
+        deleteAllSessions: mockDeleteAllSessions,
+    }),
+}))
+
+const mockSendFundsReset = vi.fn()
+vi.mock('@modules/transactions/hooks/send-funds/useSendFunds', () => ({
+    useSendFundsStore: Object.assign(vi.fn(), {
+        getState: () => ({ reset: mockSendFundsReset }),
+    }),
+}))
+
+const mockMultisigResetState = vi.fn()
+vi.mock('@modules/multisig/hooks/useMultisigCreation', () => ({
+    useMultisigCreationStore: Object.assign(vi.fn(), {
+        getState: () => ({ resetState: mockMultisigResetState }),
+    }),
 }))
 
 const { mockAccountsResetState, mockAccountsClearStorage } = vi.hoisted(() => ({
@@ -89,14 +126,20 @@ describe('useDeleteAllData', () => {
         })
 
         expect(mockRemoveQueries).toHaveBeenCalledTimes(1)
+        expect(mockRemoveItem).toHaveBeenCalledWith('reactQuery')
         expect(mockDeleteKey).toHaveBeenCalledTimes(2)
         expect(mockDeleteKey).toHaveBeenCalledWith('key-1')
         expect(mockDeleteKey).toHaveBeenCalledWith('key-2')
+        expect(mockClearKeystore).toHaveBeenCalledTimes(1)
+        expect(mockDeleteAllSessions).toHaveBeenCalledTimes(1)
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
         expect(mockSavePin).toHaveBeenCalledWith(null)
+        expect(mockDeleteDatabase).toHaveBeenCalledTimes(1)
         expect(clearAllStores).toHaveBeenCalledWith({
             skip: ['accounts-store'],
         })
+        expect(mockSendFundsReset).toHaveBeenCalledTimes(1)
+        expect(mockMultisigResetState).toHaveBeenCalledTimes(1)
     })
 
     it('should clear accounts store when clearAccountsStore is called', () => {
@@ -177,5 +220,48 @@ describe('useDeleteAllData', () => {
 
         expect(mockDeleteKey).not.toHaveBeenCalled()
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
+    })
+
+    it('should continue if clearKeystore fails', async () => {
+        mockClearKeystore.mockRejectedValueOnce(new Error('Keystore error'))
+
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(mockClearKeystore).toHaveBeenCalledTimes(1)
+        expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
+    })
+
+    it('should continue if WalletConnect disconnect fails', async () => {
+        mockDeleteAllSessions.mockRejectedValueOnce(
+            new Error('WC disconnect error'),
+        )
+
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(mockDeleteAllSessions).toHaveBeenCalledTimes(1)
+        expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
+    })
+
+    it('should continue if database deletion fails', async () => {
+        mockDeleteDatabase.mockRejectedValueOnce(new Error('DB delete error'))
+
+        const { result } = renderHook(() => useDeleteAllData())
+
+        await act(async () => {
+            await result.current.deleteAllData()
+        })
+
+        expect(mockDeleteDatabase).toHaveBeenCalledTimes(1)
+        expect(clearAllStores).toHaveBeenCalledWith({
+            skip: ['accounts-store'],
+        })
     })
 })

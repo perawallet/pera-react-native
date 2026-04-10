@@ -14,6 +14,7 @@ export {
     initializeDatabase,
     getDatabase,
     resetDatabase,
+    deleteDatabase,
     type Database,
 } from './database'
 export { runMigrations, type MigrationConfig } from './migrator'

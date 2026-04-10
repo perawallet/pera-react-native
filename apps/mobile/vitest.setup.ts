@@ -623,6 +623,7 @@ vi.mock('react-native-keychain', () => ({
         password: 'test-password',
     }),
     resetGenericPassword: vi.fn().mockResolvedValue(true),
+    getAllGenericPasswordServices: vi.fn().mockResolvedValue([]),
     ACCESSIBLE: {
         WHEN_UNLOCKED_THIS_DEVICE_ONLY: 'WhenUnlockedThisDeviceOnly',
     },

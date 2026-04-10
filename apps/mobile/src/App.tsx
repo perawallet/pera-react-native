@@ -17,7 +17,7 @@ initDecimalConfig()
 
 import React, { useEffect, useState } from 'react'
 import './i18n'
-import { Text } from 'react-native'
+import { Platform, Text } from 'react-native'
 import { QueryProvider, queryClient } from './providers/QueryProvider'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import { Persister } from '@tanstack/react-query-persist-client'
@@ -84,6 +84,18 @@ const AppContent = () => {
         if (!bootstrapped) {
             provider.initialize().then(async ({ token }) => {
                 setFcmToken(token ?? null)
+
+                // iOS Keychain persists across uninstalls. On first launch after
+                // a reinstall, MMKV is empty (wiped by OS) but stale keychain
+                // entries from the previous install remain. Clear them.
+                const APP_INSTALLED_KEY = 'pera.app_installed'
+                if (
+                    Platform.OS === 'ios' &&
+                    !provider.keyValueStorage.getItem(APP_INSTALLED_KEY)
+                ) {
+                    await provider.secureStorage.clearAll()
+                }
+                provider.keyValueStorage.setItem(APP_INSTALLED_KEY, '1')
 
                 await initializeDatabase(provider.database)
                 await seedAlgoAsset(getDatabase())

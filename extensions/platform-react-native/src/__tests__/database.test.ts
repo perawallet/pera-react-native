@@ -16,9 +16,12 @@ import { RNDatabaseService } from '../services/database'
 const mockCloseAsync = vi.fn()
 const mockDb = { closeAsync: mockCloseAsync }
 const mockOpenDatabaseAsync = vi.fn().mockResolvedValue(mockDb)
+const mockDeleteDatabaseAsync = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('expo-sqlite', () => ({
     openDatabaseAsync: (...args: unknown[]) => mockOpenDatabaseAsync(...args),
+    deleteDatabaseAsync: (...args: unknown[]) =>
+        mockDeleteDatabaseAsync(...args),
 }))
 
 describe('RNDatabaseService', () => {
@@ -97,6 +100,31 @@ describe('RNDatabaseService', () => {
             await service.open('test.db')
             await service.close('test.db')
 
+            await service.open('test.db')
+
+            expect(mockOpenDatabaseAsync).toHaveBeenCalledTimes(2)
+        })
+    })
+
+    describe('delete', () => {
+        it('closes the database and deletes the file', async () => {
+            await service.open('test.db')
+            await service.delete('test.db')
+
+            expect(mockCloseAsync).toHaveBeenCalledOnce()
+            expect(mockDeleteDatabaseAsync).toHaveBeenCalledWith('test.db')
+        })
+
+        it('deletes even if database was not previously opened', async () => {
+            await service.delete('unknown.db')
+
+            expect(mockCloseAsync).not.toHaveBeenCalled()
+            expect(mockDeleteDatabaseAsync).toHaveBeenCalledWith('unknown.db')
+        })
+
+        it('removes database from cache so next open creates a new one', async () => {
+            await service.open('test.db')
+            await service.delete('test.db')
             await service.open('test.db')
 
             expect(mockOpenDatabaseAsync).toHaveBeenCalledTimes(2)

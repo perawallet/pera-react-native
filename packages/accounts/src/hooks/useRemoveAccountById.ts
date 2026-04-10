@@ -21,23 +21,35 @@ export const useRemoveAccountById = () => {
 
     return async (id: string) => {
         const account = accounts.find(a => a.id === id)
+        const remaining = accounts.filter(a => a.id !== id)
+
         if (account && account.keyPairId) {
             if (account.type === 'algo25' || account.type === 'hdWallet') {
                 await deleteKey(account.keyPairId)
             }
 
             if (isAlgo25Account(account) && account.seedKeyId) {
-                await keyStore.remove(account.seedKeyId)
+                const sharedSeed = remaining.some(
+                    a =>
+                        isAlgo25Account(a) && a.seedKeyId === account.seedKeyId,
+                )
+                if (!sharedSeed) {
+                    await keyStore.remove(account.seedKeyId)
+                }
             }
 
             if (isHDWalletAccount(account) && account.entropyKeyId) {
-                await keyStore.remove(account.entropyKeyId)
+                const sharedEntropy = remaining.some(
+                    a =>
+                        isHDWalletAccount(a) &&
+                        a.entropyKeyId === account.entropyKeyId,
+                )
+                if (!sharedEntropy) {
+                    await keyStore.remove(account.entropyKeyId)
+                }
             }
         }
 
-        //TODO we need to delete the wallet key if there are no other accounts with that wallet id
-
-        const remaining = accounts.filter(a => a.id !== id)
         setAccounts([...remaining])
     }
 }

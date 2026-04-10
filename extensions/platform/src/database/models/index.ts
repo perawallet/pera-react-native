@@ -22,4 +22,5 @@ export interface DatabaseService {
     open(name: string): Promise<DatabaseDriver>
     getDatabase(name: string): Promise<Database>
     close(name: string): Promise<void>
+    delete(name: string): Promise<void>
 }
