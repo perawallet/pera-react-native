@@ -16,13 +16,21 @@ import { render, screen, fireEvent } from '@test-utils/render'
 import { AssetFilterBottomSheet } from '../AssetFilterBottomSheet'
 
 const mockSetHideZeroBalance = vi.fn()
+const mockSetDisplayNfts = vi.fn()
+const mockSetDisplayOptedInNfts = vi.fn()
 let mockHideZeroBalance = false
+let mockDisplayNfts = true
+let mockDisplayOptedInNfts = true
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     useAssetPreferencesStore: vi.fn(selector =>
         selector({
             hideZeroBalance: mockHideZeroBalance,
+            displayNfts: mockDisplayNfts,
+            displayOptedInNfts: mockDisplayOptedInNfts,
             setHideZeroBalance: mockSetHideZeroBalance,
+            setDisplayNfts: mockSetDisplayNfts,
+            setDisplayOptedInNfts: mockSetDisplayOptedInNfts,
         }),
     ),
 }))
@@ -42,23 +50,23 @@ describe('AssetFilterBottomSheet', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockHideZeroBalance = false
+        mockDisplayNfts = true
+        mockDisplayOptedInNfts = true
     })
 
-    it('renders the filter option with testID', () => {
+    it('renders all three filter rows', () => {
         render(<AssetFilterBottomSheet {...defaultProps} />)
 
         expect(
             screen.getByTestId('asset_filter_hide_zero_balance'),
         ).toBeTruthy()
+        expect(screen.getByTestId('asset_filter_display_nfts')).toBeTruthy()
+        expect(
+            screen.getByTestId('asset_filter_display_opted_in_nfts'),
+        ).toBeTruthy()
     })
 
-    it('shows the hide zero balance label text', () => {
-        render(<AssetFilterBottomSheet {...defaultProps} />)
-
-        expect(screen.getByText('asset_filter.hide_zero_balance')).toBeTruthy()
-    })
-
-    it('calls setHideZeroBalance with true when toggle pressed and currently false', () => {
+    it('toggles hideZeroBalance from false to true on press', () => {
         render(<AssetFilterBottomSheet {...defaultProps} />)
 
         fireEvent.click(screen.getByTestId('asset_filter_hide_zero_balance'))
@@ -66,13 +74,33 @@ describe('AssetFilterBottomSheet', () => {
         expect(mockSetHideZeroBalance).toHaveBeenCalledWith(true)
     })
 
-    it('calls setHideZeroBalance with false when toggle pressed and currently true', () => {
-        mockHideZeroBalance = true
+    it('toggles displayNfts from true to false on press', () => {
+        render(<AssetFilterBottomSheet {...defaultProps} />)
+
+        fireEvent.click(screen.getByTestId('asset_filter_display_nfts'))
+
+        expect(mockSetDisplayNfts).toHaveBeenCalledWith(false)
+    })
+
+    it('toggles displayOptedInNfts from true to false on press', () => {
+        render(<AssetFilterBottomSheet {...defaultProps} />)
+
+        fireEvent.click(
+            screen.getByTestId('asset_filter_display_opted_in_nfts'),
+        )
+
+        expect(mockSetDisplayOptedInNfts).toHaveBeenCalledWith(false)
+    })
+
+    it('does not toggle displayOptedInNfts when displayNfts is false', () => {
+        mockDisplayNfts = false
 
         render(<AssetFilterBottomSheet {...defaultProps} />)
 
-        fireEvent.click(screen.getByTestId('asset_filter_hide_zero_balance'))
+        fireEvent.click(
+            screen.getByTestId('asset_filter_display_opted_in_nfts'),
+        )
 
-        expect(mockSetHideZeroBalance).toHaveBeenCalledWith(false)
+        expect(mockSetDisplayOptedInNfts).not.toHaveBeenCalled()
     })
 })

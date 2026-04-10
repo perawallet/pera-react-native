@@ -19,11 +19,19 @@ const MODULE_PREFIX = 'accounts'
 export const isAccountQuery = (queryKey: QueryKey): boolean =>
     queryKey[0] === MODULE_PREFIX
 
+type AccountBalancesQueryKeyFilters = {
+    hideZeroBalance?: boolean
+    hideNfts?: boolean
+    hideOptedInNfts?: boolean
+    excludeAssetTypes?: string[]
+}
+
 export const getAccountBalancesQueryKey = (
     address: string,
     network: Network,
+    filters?: AccountBalancesQueryKeyFilters,
 ) => {
-    return [MODULE_PREFIX, 'balance', { address, network }]
+    return [MODULE_PREFIX, 'balance', { address, network, filters }]
 }
 
 export const getAccountBalancesHistoryQueryKey = (

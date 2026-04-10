@@ -21,6 +21,8 @@ const STORE_NAME = 'asset-preferences-store'
 const initialState = {
     assetSortMode: 'balanceDesc' as AssetSortMode,
     hideZeroBalance: false,
+    displayNfts: false,
+    displayOptedInNfts: false,
 }
 
 export const useAssetPreferencesStore: UseBoundStore<
@@ -35,15 +37,23 @@ export const useAssetPreferencesStore: UseBoundStore<
             setHideZeroBalance: (hide: boolean) => {
                 set({ hideZeroBalance: hide })
             },
+            setDisplayNfts: (display: boolean) => {
+                set({ displayNfts: display })
+            },
+            setDisplayOptedInNfts: (display: boolean) => {
+                set({ displayOptedInNfts: display })
+            },
             resetState: () => set(initialState),
         }),
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 1,
+            version: 2,
             partialize: state => ({
                 assetSortMode: state.assetSortMode,
                 hideZeroBalance: state.hideZeroBalance,
+                displayNfts: state.displayNfts,
+                displayOptedInNfts: state.displayOptedInNfts,
             }),
         },
     ),

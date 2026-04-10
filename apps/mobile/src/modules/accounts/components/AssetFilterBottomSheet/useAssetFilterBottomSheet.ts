@@ -15,7 +15,11 @@ import { useAssetPreferencesStore } from '@perawallet/wallet-core-assets'
 
 type UseAssetFilterBottomSheetResult = {
     hideZeroBalance: boolean
-    handleToggle: () => void
+    displayNfts: boolean
+    displayOptedInNfts: boolean
+    handleToggleHideZeroBalance: () => void
+    handleToggleDisplayNfts: () => void
+    handleToggleDisplayOptedInNfts: () => void
 }
 
 export const useAssetFilterBottomSheet =
@@ -23,16 +27,38 @@ export const useAssetFilterBottomSheet =
         const hideZeroBalance = useAssetPreferencesStore(
             state => state.hideZeroBalance,
         )
+        const displayNfts = useAssetPreferencesStore(state => state.displayNfts)
+        const displayOptedInNfts = useAssetPreferencesStore(
+            state => state.displayOptedInNfts,
+        )
         const setHideZeroBalance = useAssetPreferencesStore(
             state => state.setHideZeroBalance,
         )
+        const setDisplayNfts = useAssetPreferencesStore(
+            state => state.setDisplayNfts,
+        )
+        const setDisplayOptedInNfts = useAssetPreferencesStore(
+            state => state.setDisplayOptedInNfts,
+        )
 
-        const handleToggle = useCallback(() => {
+        const handleToggleHideZeroBalance = useCallback(() => {
             setHideZeroBalance(!hideZeroBalance)
         }, [hideZeroBalance, setHideZeroBalance])
 
+        const handleToggleDisplayNfts = useCallback(() => {
+            setDisplayNfts(!displayNfts)
+        }, [displayNfts, setDisplayNfts])
+
+        const handleToggleDisplayOptedInNfts = useCallback(() => {
+            setDisplayOptedInNfts(!displayOptedInNfts)
+        }, [displayOptedInNfts, setDisplayOptedInNfts])
+
         return {
             hideZeroBalance,
-            handleToggle,
+            displayNfts,
+            displayOptedInNfts,
+            handleToggleHideZeroBalance,
+            handleToggleDisplayNfts,
+            handleToggleDisplayOptedInNfts,
         }
     }

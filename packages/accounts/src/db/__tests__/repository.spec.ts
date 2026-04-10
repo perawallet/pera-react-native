@@ -19,6 +19,11 @@ import {
 } from '@perawallet/wallet-core-database'
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import {
+    upsertAssets,
+    PeraAssetType,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
+import {
     refreshAccountHoldings,
     getAccountHoldings,
     insertAssetHolding,
@@ -177,6 +182,121 @@ describe('account repository', () => {
             })
 
             expect(result).toHaveLength(0)
+        })
+    })
+
+    describe('getAccountHoldings filters', () => {
+        // Holdings layout used by the filter tests below:
+        //   '100' - standard asset, non-zero amount
+        //   '200' - standard asset, zero amount
+        //   '300' - collectible (NFT), non-zero amount (owned NFT)
+        //   '400' - collectible (NFT), zero amount (opted-in but not owned)
+        //   '500' - unknown asset (no row in assets_pera) — should always be kept
+        //           when filters do not explicitly exclude it
+        const makeAsset = (
+            assetId: string,
+            type: (typeof PeraAssetType)[keyof typeof PeraAssetType],
+        ): PeraAsset => ({
+            assetId,
+            decimals: 0,
+            creator: { address: 'CREATOR' },
+            totalSupply: new Decimal(1),
+            peraMetadata: {
+                isDeleted: false,
+                verificationTier: 'unverified',
+                isFavorited: false,
+                isPriceAlertEnabled: false,
+                type,
+            },
+        })
+
+        beforeEach(async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [
+                    { assetId: '100', amount: new Decimal(50) },
+                    { assetId: '200', amount: new Decimal(0) },
+                    { assetId: '300', amount: new Decimal(1) },
+                    { assetId: '400', amount: new Decimal(0) },
+                    { assetId: '500', amount: new Decimal(0) },
+                ],
+                network: 'mainnet',
+            })
+            await upsertAssets({
+                db,
+                items: [
+                    makeAsset('100', PeraAssetType.standard_asset),
+                    makeAsset('200', PeraAssetType.standard_asset),
+                    makeAsset('300', PeraAssetType.collectible),
+                    makeAsset('400', PeraAssetType.collectible),
+                ],
+                network: 'mainnet',
+            })
+        })
+
+        const idsOf = async (filters: Record<string, unknown>) => {
+            const rows = await getAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                ...filters,
+            })
+            return rows.map(r => r.assetId).sort()
+        }
+
+        it('returns all holdings when no filters are provided', async () => {
+            expect(await idsOf({})).toEqual(['100', '200', '300', '400', '500'])
+        })
+
+        it('hideZeroBalance excludes rows with amount equal to zero', async () => {
+            expect(await idsOf({ hideZeroBalance: true })).toEqual([
+                '100',
+                '300',
+            ])
+        })
+
+        it('hideNfts excludes all collectibles but keeps unknown asset types', async () => {
+            expect(await idsOf({ hideNfts: true })).toEqual([
+                '100',
+                '200',
+                '500',
+            ])
+        })
+
+        it('hideOptedInNfts excludes only zero-balance collectibles', async () => {
+            // Owned NFT '300' is kept, opted-in '400' is dropped, unknown '500' kept.
+            expect(await idsOf({ hideOptedInNfts: true })).toEqual([
+                '100',
+                '200',
+                '300',
+                '500',
+            ])
+        })
+
+        it('combines hideZeroBalance with hideNfts', async () => {
+            expect(
+                await idsOf({ hideZeroBalance: true, hideNfts: true }),
+            ).toEqual(['100'])
+        })
+
+        it('combines hideZeroBalance with hideOptedInNfts', async () => {
+            // hideZeroBalance drops '200', '400', '500'; hideOptedInNfts is
+            // already covered by hideZeroBalance for collectibles.
+            expect(
+                await idsOf({
+                    hideZeroBalance: true,
+                    hideOptedInNfts: true,
+                }),
+            ).toEqual(['100', '300'])
+        })
+
+        it('excludeAssetTypes still works for arbitrary type lists', async () => {
+            expect(
+                await idsOf({
+                    excludeAssetTypes: [PeraAssetType.standard_asset],
+                }),
+            ).toEqual(['300', '400', '500'])
         })
     })
 

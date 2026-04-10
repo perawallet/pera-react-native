@@ -15,16 +15,13 @@ import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import {
     type PeraAsset,
     type AssetSortMode,
-    ALGO_ASSET_ID,
     useAssetPreferencesStore,
 } from '@perawallet/wallet-core-assets'
 
 type UseSortedAssetBalancesResult = {
     sortedBalances: AssetWithAccountBalance[]
     assetSortMode: AssetSortMode
-    hideZeroBalance: boolean
     setAssetSortMode: (mode: AssetSortMode) => void
-    setHideZeroBalance: (hide: boolean) => void
 }
 
 const sortByMode = (
@@ -68,29 +65,15 @@ export const useSortedAssetBalances = (
     assets: Map<string, PeraAsset> | undefined,
 ): UseSortedAssetBalancesResult => {
     const assetSortMode = useAssetPreferencesStore(state => state.assetSortMode)
-    const hideZeroBalance = useAssetPreferencesStore(
-        state => state.hideZeroBalance,
-    )
     const setAssetSortMode = useAssetPreferencesStore(
         state => state.setAssetSortMode,
     )
-    const setHideZeroBalance = useAssetPreferencesStore(
-        state => state.setHideZeroBalance,
-    )
 
     const sortedBalances = useMemo(() => {
-        let filtered = assetBalances
-
-        if (hideZeroBalance) {
-            filtered = filtered.filter(
-                item => item.assetId === ALGO_ASSET_ID || !item.amount.isZero(),
-            )
-        }
-
         const favorited: AssetWithAccountBalance[] = []
         const rest: AssetWithAccountBalance[] = []
 
-        for (const item of filtered) {
+        for (const item of assetBalances) {
             const asset = assets?.get(item.assetId)
             if (asset?.peraMetadata?.isFavorited) {
                 favorited.push(item)
@@ -103,13 +86,11 @@ export const useSortedAssetBalances = (
             ...sortByMode(favorited, assetSortMode, assets),
             ...sortByMode(rest, assetSortMode, assets),
         ]
-    }, [assetBalances, assets, assetSortMode, hideZeroBalance])
+    }, [assetBalances, assets, assetSortMode])
 
     return {
         sortedBalances,
         assetSortMode,
-        hideZeroBalance,
         setAssetSortMode,
-        setHideZeroBalance,
     }
 }

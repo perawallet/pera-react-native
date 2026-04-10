@@ -22,4 +22,5 @@ export {
     getAllAssetIdsForNetwork,
     type HoldingRow,
     type AccountBalanceRow,
+    type AccountHoldingsFilters,
 } from './repository'

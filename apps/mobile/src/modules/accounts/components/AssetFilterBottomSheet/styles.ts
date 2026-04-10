@@ -27,14 +27,15 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.md,
         paddingHorizontal: theme.spacing.md,
     },
-    filterLabel: {
-        flex: 1,
+    filterRowDisabled: {
+        opacity: 0.5,
     },
-    checkboxContainer: {
-        padding: 0,
-        margin: 0,
-        marginLeft: 0,
-        marginRight: 0,
-        backgroundColor: 'transparent',
+    filterTextColumn: {
+        flex: 1,
+        marginRight: theme.spacing.md,
+    },
+    filterDescription: {
+        marginTop: theme.spacing.xs,
+        color: theme.colors.textGray,
     },
 }))
