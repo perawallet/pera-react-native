@@ -11,3 +11,4 @@
  */
 
 export { GroupDetailScreen } from './GroupDetailScreen'
+export { GroupDetailHeader } from './GroupDetailHeader'

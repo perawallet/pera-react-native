@@ -20,11 +20,16 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { useNfdResolve } from '@hooks/useNfdResolve'
 
 type UseWatchAccountScreenResult = {
     address: string
+    resolvedAddress: string
     isValidAddress: boolean
     isDuplicateAddress: boolean
+    isNfdResolved: boolean
+    isNfdResolving: boolean
+    nfdName: string | undefined
     handleAddressChange: (text: string) => void
     handleWatchAccount: () => void
 }
@@ -35,22 +40,25 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
     const setAccounts = useAccountsStore(state => state.setAccounts)
     const [address, setAddress] = useState('')
 
-    const isValidAddress = isValidAlgorandAddress(address)
+    const { resolvedAddress, isNfdResolved, isNfdResolving, nfdName } =
+        useNfdResolve(address)
+
+    const isValidAddress = isValidAlgorandAddress(resolvedAddress)
     const isDuplicateAddress =
-        isValidAddress && accounts.some(a => a.address === address)
+        isValidAddress && accounts.some(a => a.address === resolvedAddress)
 
     const handleAddressChange = useCallback((text: string) => {
         setAddress(text)
     }, [])
 
     const handleWatchAccount = useCallback(() => {
-        if (!isValidAlgorandAddress(address) || isDuplicateAddress) {
+        if (!isValidAlgorandAddress(resolvedAddress) || isDuplicateAddress) {
             return
         }
 
         const newAccount = {
             id: generateOrderedUniqueId(),
-            address,
+            address: resolvedAddress,
             type: AccountTypes.watch,
         }
 
@@ -58,12 +66,16 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
         navigation.push('NameAccount', {
             account: newAccount as WalletAccount,
         })
-    }, [address, isDuplicateAddress, accounts, setAccounts, navigation])
+    }, [resolvedAddress, isDuplicateAddress, accounts, setAccounts, navigation])
 
     return {
         address,
+        resolvedAddress,
         isValidAddress,
         isDuplicateAddress,
+        isNfdResolved,
+        isNfdResolving,
+        nfdName,
         handleAddressChange,
         handleWatchAccount,
     }

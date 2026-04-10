@@ -24,11 +24,24 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     return {
         ...actual,
         encodeAlgorandAddress: vi.fn(() => 'ENCODED_ADDRESS_TEST123'),
-        getTransactionType: vi.fn((tx: PeraDisplayableTransaction) => {
-            if (tx.txType === 'pay') return 'payment'
-            if (tx.txType === 'appl') return 'app-call'
-            return 'unknown'
-        }),
+        classifyDisplayableTransaction: vi.fn(
+            (tx: PeraDisplayableTransaction) => {
+                if (tx.txType === 'pay') return 'payment'
+                if (tx.txType === 'appl') return 'app-call'
+                if (tx.txType === 'axfer') {
+                    const axfer = tx.assetTransferTransaction
+                    if (
+                        axfer &&
+                        tx.sender === axfer.receiver &&
+                        axfer.amount === 0n
+                    ) {
+                        return 'asset-opt-in'
+                    }
+                    return 'asset-transfer'
+                }
+                return 'unknown'
+            },
+        ),
         microAlgosToAlgos: vi.fn((amount: bigint) =>
             new Decimal(amount.toString()).div(1_000_000),
         ),
@@ -101,6 +114,23 @@ describe('TransactionPreview', () => {
     it('renders without crashing for app call transaction', () => {
         const { container } = render(
             <TransactionPreview transaction={mockAppCallTransaction} />,
+        )
+
+        expect(container).toBeTruthy()
+    })
+
+    it('renders without crashing for asset opt-in transaction', () => {
+        const mockOptInTransaction = {
+            sender: 'ENCODED_ADDRESS_TEST123',
+            assetTransferTransaction: {
+                receiver: 'ENCODED_ADDRESS_TEST123',
+                amount: BigInt(0),
+            },
+            txType: 'axfer',
+        } as unknown as PeraDisplayableTransaction
+
+        const { container } = render(
+            <TransactionPreview transaction={mockOptInTransaction} />,
         )
 
         expect(container).toBeTruthy()

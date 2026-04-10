@@ -30,4 +30,12 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.xl,
         paddingBottom: theme.spacing['3xl'],
     },
+    nfdStatus: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+    },
+    nfdStatusText: {
+        color: theme.colors.textGray,
+    },
 }))

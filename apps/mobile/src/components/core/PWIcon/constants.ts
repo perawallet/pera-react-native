@@ -39,8 +39,8 @@ import EnvelopeLetterIcon from '@assets/icons/envelope-letter.svg'
 import EyeIcon from '@assets/icons/eye.svg'
 import FaceIdIcon from '@assets/icons/faceid.svg'
 import FeedbackIcon from '@assets/icons/feedback.svg'
-import FundIcon from '@assets/icons/fund.svg'
 import FullViewIcon from '@assets/icons/full-view.svg'
+import FundIcon from '@assets/icons/fund.svg'
 import FunnelIcon from '@assets/icons/funnel.svg'
 import GearIcon from '@assets/icons/gear.svg'
 import GiftIcon from '@assets/icons/gift.svg'
@@ -168,8 +168,8 @@ export const ICON_LIBRARY = {
     eye: EyeIcon,
     faceid: FaceIdIcon,
     feedback: FeedbackIcon,
-    fund: FundIcon,
     'full-view': FullViewIcon,
+    fund: FundIcon,
     funnel: FunnelIcon,
     gear: GearIcon,
     gift: GiftIcon,

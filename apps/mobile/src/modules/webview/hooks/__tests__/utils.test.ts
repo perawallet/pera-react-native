@@ -34,12 +34,17 @@ describe('webview/utils - getAccountType', () => {
         ).toBe('HdKey')
     })
 
-    it('returns LedgerBle if it is a ledger account', () => {
+    it('returns LedgerBle for a ledger hardware wallet account', () => {
         expect(
             getAccountType({
                 ...baseAccount,
                 type: 'hardware',
-                hardwareDetails: { manufacturer: 'ledger' },
+                hardwareDetails: {
+                    manufacturer: 'ledger',
+                    deviceId: 'test-device',
+                    deviceName: 'Ledger Nano X',
+                    accountIndex: 0,
+                },
             }),
         ).toBe('LedgerBle')
     })
@@ -94,16 +99,18 @@ describe('webview/utils - getAccountType', () => {
         ).toBe('Multisig')
     })
 
-    it('returns Unknown for unknown combinations', () => {
-        // This is tricky because the utility covers most cases,
-        // but if we pass something that doesn't match any branch:
+    it('returns HardwareBle for non-ledger hardware wallet accounts', () => {
         expect(
             getAccountType({
                 ...baseAccount,
                 type: 'hardware',
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                hardwareDetails: { manufacturer: 'other' as any },
+                hardwareDetails: {
+                    manufacturer: 'other',
+                    deviceId: 'test-device',
+                    deviceName: 'Test',
+                    accountIndex: 0,
+                },
             }),
-        ).toBe('Unknown')
+        ).toBe('HardwareBle')
     })
 })

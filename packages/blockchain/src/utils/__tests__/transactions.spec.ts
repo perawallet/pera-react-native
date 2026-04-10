@@ -15,6 +15,7 @@ import {
     mapToDisplayableTransaction,
     getTransactionType,
     classifyPeraTransaction,
+    classifyDisplayableTransaction,
     isPaymentTransaction,
     isAssetTransferTransaction,
     isAssetConfigTransaction,
@@ -649,6 +650,103 @@ describe('transactions utils', () => {
         it('should return unknown for unknown transaction type', () => {
             const tx = { type: TransactionType.Unknown } as any
             expect(classifyPeraTransaction(tx)).toBe('unknown')
+        })
+    })
+
+    describe('classifyDisplayableTransaction', () => {
+        it('should classify payment transaction', () => {
+            const tx = {
+                txType: 'pay',
+                paymentTransaction: { amount: 5000n, receiver: 'addr-2' },
+            } as PeraDisplayableTransaction
+            expect(classifyDisplayableTransaction(tx)).toBe('payment')
+        })
+
+        it('should classify app call transaction', () => {
+            const tx = {
+                txType: 'appl',
+                applicationTransaction: { applicationId: 1n },
+            } as PeraDisplayableTransaction
+            expect(classifyDisplayableTransaction(tx)).toBe('app-call')
+        })
+
+        it('should classify regular asset transfer', () => {
+            const tx = {
+                txType: 'axfer',
+                sender: 'addr-1',
+                assetTransferTransaction: {
+                    receiver: 'addr-2',
+                    amount: 10n,
+                },
+            } as PeraDisplayableTransaction
+            expect(classifyDisplayableTransaction(tx)).toBe('asset-transfer')
+        })
+
+        it('should classify asset opt-in', () => {
+            const tx = {
+                txType: 'axfer',
+                sender: 'addr-1',
+                assetTransferTransaction: {
+                    receiver: 'addr-1',
+                    amount: 0n,
+                },
+            } as PeraDisplayableTransaction
+            expect(classifyDisplayableTransaction(tx)).toBe('asset-opt-in')
+        })
+
+        it('should classify asset opt-out', () => {
+            const tx = {
+                txType: 'axfer',
+                sender: 'addr-1',
+                assetTransferTransaction: {
+                    receiver: 'addr-2',
+                    amount: 0n,
+                    closeTo: 'addr-3',
+                },
+            } as PeraDisplayableTransaction
+            expect(classifyDisplayableTransaction(tx)).toBe('asset-opt-out')
+        })
+
+        it('should classify asset clawback', () => {
+            const tx = {
+                txType: 'axfer',
+                sender: 'addr-1',
+                assetTransferTransaction: {
+                    receiver: 'addr-2',
+                    amount: 50n,
+                    sender: 'addr-3',
+                },
+            } as PeraDisplayableTransaction
+            expect(classifyDisplayableTransaction(tx)).toBe('asset-clawback')
+        })
+
+        it('should classify asset config transaction', () => {
+            const tx = {
+                txType: 'acfg',
+                assetConfigTransaction: {
+                    assetId: 100n,
+                    params: { manager: 'addr-1' },
+                },
+            } as PeraDisplayableTransaction
+            expect(classifyDisplayableTransaction(tx)).toBe('asset-config')
+        })
+
+        it('should classify asset freeze transaction', () => {
+            const tx = {
+                txType: 'afrz',
+                assetFreezeTransaction: { assetId: 100n },
+            } as PeraDisplayableTransaction
+            expect(classifyDisplayableTransaction(tx)).toBe('asset-freeze')
+        })
+
+        it('should classify key registration transaction', () => {
+            const tx = { txType: 'keyreg' } as PeraDisplayableTransaction
+            expect(classifyDisplayableTransaction(tx)).toBe('key-registration')
+        })
+
+        it('should return unknown for unknown type', () => {
+            const tx = { txType: 'other' } as any
+            expect(classifyDisplayableTransaction(tx)).toBe('unknown')
         })
     })
 

@@ -256,6 +256,8 @@ describe('env-loader', () => {
             reactQueryDefaultStaleTime: 60000,
             reactQueryShortLivedGCTime: 86400000,
             reactQueryShortLivedStaleTime: 30000,
+            reactQueryLongLivedGCTime: 1814400000,
+            reactQueryLongLivedStaleTime: 604800000,
             reactQueryPersistenceAge: 5184000000,
             discoverBaseUrl: 'https://discover.example.com',
             stakingBaseUrl: 'https://staking.example.com',

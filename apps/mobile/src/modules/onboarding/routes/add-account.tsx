@@ -26,6 +26,13 @@ import { ImportSelectAddressesScreen } from '@modules/onboarding/screens/ImportS
 import { ImportRekeyedAddressesScreen } from '@modules/onboarding/screens/ImportRekeyedAddressesScreen'
 import { SearchAccountsScreen } from '@modules/onboarding/screens/SearchAccountsScreen'
 import { SelectHDWalletScreen } from '@modules/onboarding/screens/SelectHDWalletScreen'
+import {
+    LedgerInstructionsScreen,
+    LedgerScanScreen,
+    LedgerFetchAccountsScreen,
+    LedgerSelectAccountsScreen,
+    LedgerVerifyScreen,
+} from '@modules/ledger'
 import { AccountErrorBoundary } from '@modules/accounts/components/AccountErrorBoundary/AccountErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { screenListeners } from '@routes/listeners'
@@ -70,6 +77,19 @@ const ImportRekeyedAddressesScreenWithErrorBoundary = withAccountErrorBoundary(
 )
 const SelectHDWalletScreenWithErrorBoundary =
     withAccountErrorBoundary(SelectHDWalletScreen)
+const LedgerInstructionsScreenWithErrorBoundary = withAccountErrorBoundary(
+    LedgerInstructionsScreen,
+)
+const LedgerScanScreenWithErrorBoundary =
+    withAccountErrorBoundary(LedgerScanScreen)
+const LedgerFetchAccountsScreenWithErrorBoundary = withAccountErrorBoundary(
+    LedgerFetchAccountsScreen,
+)
+const LedgerSelectAccountsScreenWithErrorBoundary = withAccountErrorBoundary(
+    LedgerSelectAccountsScreen,
+)
+const LedgerVerifyScreenWithErrorBoundary =
+    withAccountErrorBoundary(LedgerVerifyScreen)
 
 const AddAccountStack = createNativeStackNavigator<AddAccountStackParamList>()
 
@@ -155,6 +175,43 @@ export const AddAccountStackNavigator = () => {
                     title: '',
                 }}
                 component={ImportRekeyedAddressesScreenWithErrorBoundary}
+            />
+            <AddAccountStack.Screen
+                name='LedgerInstructions'
+                options={{
+                    title: '',
+                }}
+                component={LedgerInstructionsScreenWithErrorBoundary}
+            />
+            <AddAccountStack.Screen
+                name='LedgerScan'
+                options={{
+                    title: '',
+                }}
+                component={LedgerScanScreenWithErrorBoundary}
+            />
+            <AddAccountStack.Screen
+                name='LedgerFetchAccounts'
+                options={{
+                    headerShown: false,
+                }}
+                layout={fullScreenLayout}
+                component={LedgerFetchAccountsScreenWithErrorBoundary}
+            />
+            <AddAccountStack.Screen
+                name='LedgerSelectAccounts'
+                options={{
+                    title: '',
+                }}
+                component={LedgerSelectAccountsScreenWithErrorBoundary}
+            />
+            <AddAccountStack.Screen
+                name='LedgerVerify'
+                options={{
+                    headerShown: false,
+                }}
+                layout={fullScreenLayout}
+                component={LedgerVerifyScreenWithErrorBoundary}
             />
         </AddAccountStack.Navigator>
     )

@@ -1941,6 +1941,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
         })),
         getAccountDisplayName: vi.fn(a => a?.name || ''),
         // Account type functions with actual implementations
+        isHardwareWalletAccount: vi.fn(
+            (account: any) => account?.type === 'hardware',
+        ),
         isLedgerAccount: vi.fn(
             (account: any) =>
                 account?.type === 'hardware' &&

@@ -20,17 +20,19 @@ import {
     WithPlatformExtension,
     type PlatformExtension,
 } from '@perawallet/wallet-extension-platform-driver'
+import { WithLedgerExtension } from '@perawallet/wallet-extension-ledger-react-native'
 
 type PeraExtensions = readonly [
     typeof WithPlatformExtension,
+    typeof WithLedgerExtension,
     typeof WithKeyStore,
 ]
 
 /**
- * The Pera Wallet Provider with platform services and keystore.
+ * The Pera Wallet Provider with platform services, Ledger hardware wallet, and keystore.
  * Instances include all platform service properties (analytics, keyValueStorage, etc.)
- * via the build-time resolved platform driver extension, plus the keystore extension
- * for cryptographic key management.
+ * via the build-time resolved platform driver extension, the Ledger extension for
+ * hardware wallet support, plus the keystore extension for cryptographic key management.
  */
 export const PeraProvider: {
     new (
@@ -41,6 +43,7 @@ export const PeraProvider: {
     EXTENSIONS: PeraExtensions
 } & typeof Provider = Provider.withExtensions([
     WithPlatformExtension,
+    WithLedgerExtension,
     WithKeyStore,
 ] as const)
 

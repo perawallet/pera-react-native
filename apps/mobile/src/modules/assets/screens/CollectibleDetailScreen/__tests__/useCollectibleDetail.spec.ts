@@ -165,7 +165,6 @@ describe('useCollectibleDetail', () => {
         expect(result.current.collectible?.collection?.name).toBe(
             'Cool Collection',
         )
-        expect(result.current.isPure).toBe(true)
     })
 
     it('returns traits and media', () => {

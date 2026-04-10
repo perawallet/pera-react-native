@@ -43,6 +43,7 @@ export default defineConfig({
                 '@algorandfoundation/keystore',
                 '@algorandfoundation/wallet-provider',
                 '@perawallet/wallet-core-config',
+                '@perawallet/wallet-core-hardware-wallet',
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-core-blockchain',
                 'zod',
