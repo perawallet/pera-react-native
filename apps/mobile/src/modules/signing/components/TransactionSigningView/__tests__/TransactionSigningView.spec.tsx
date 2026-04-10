@@ -71,7 +71,23 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     })),
 }))
 
+vi.mock('@perawallet/wallet-core-nfd', () => ({
+    useNfdForAddressQuery: vi.fn(() => ({
+        data: undefined,
+        isPending: false,
+    })),
+}))
+
+vi.mock('@hooks/useResolvedAddress', () => ({
+    useResolvedAddress: vi.fn(() => ({
+        displayName: '',
+        isNfd: false,
+        isResolving: false,
+    })),
+}))
+
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: vi.fn(() => ({ network: 'mainnet' })),
     useAlgorandClient: vi.fn(() => ({
         client: { algod: { sendRawTransaction: vi.fn() } },
     })),
@@ -100,6 +116,10 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         }
     }),
     getTransactionType: vi.fn(tx => {
+        if (tx?.paymentTransaction) return 'payment'
+        return 'unknown'
+    }),
+    classifyDisplayableTransaction: vi.fn(tx => {
         if (tx?.paymentTransaction) return 'payment'
         return 'unknown'
     }),

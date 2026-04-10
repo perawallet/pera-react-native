@@ -11,6 +11,7 @@
  */
 
 import { Decimal } from 'decimal.js'
+import { formatNumber } from '@perawallet/wallet-core-shared'
 
 import { PeraAsset, PeraAssetType } from './models'
 
@@ -84,4 +85,29 @@ export const formatCollectibleAmount = (
         return ''
     }
     return `x${amount.toString()}`
+}
+
+/**
+ * Formats an asset amount from base units into a human-readable string
+ * with the asset's unit name appended.
+ *
+ * @param amount - The amount in base units
+ * @param asset - The asset definition (needs decimals and unitName)
+ * @returns Formatted string, e.g. "1,234.56 ALGO"
+ */
+export const formatAssetAmount = (
+    amount: Decimal | string,
+    asset: { decimals?: number; unitName?: string },
+): string => {
+    const decimals = asset.decimals ?? 0
+    const display = new Decimal(amount.toString()).div(
+        Decimal.pow(10, decimals),
+    )
+    const { sign, integer, fraction } = formatNumber(
+        display,
+        decimals,
+        undefined,
+        2,
+    )
+    return `${sign}${integer}${fraction} ${asset.unitName ?? ''}`.trim()
 }

@@ -17,8 +17,16 @@ import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 export type SwapsState = BaseStoreState & {
     fromAsset: string
     toAsset: string
+    slippage: string | null
     setFromAsset: (fromAsset: string) => void
     setToAsset: (toAsset: string) => void
+    setSlippage: (slippage: string | null) => void
+}
+
+export type SwapConfigurationResult = {
+    balancePercentage: number | null
+    slippageTolerance: string | null
+    useLocalCurrency: boolean
 }
 
 export type SwapProvider = string
@@ -107,8 +115,8 @@ export interface SwapQuote {
 export interface TransactionGroup {
     purpose?: TransactionGroupPurpose
     transactionGroupId?: string
-    transactions?: string[]
-    signedTransactions?: string[]
+    transactions?: (string | null)[]
+    signedTransactions?: (string | null)[]
 }
 
 export interface SwapProviderItem {

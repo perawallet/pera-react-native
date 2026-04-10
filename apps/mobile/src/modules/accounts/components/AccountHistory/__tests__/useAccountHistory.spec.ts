@@ -432,7 +432,7 @@ describe('useAccountHistory', () => {
     })
 
     describe('transaction press', () => {
-        it('navigates to TransactionDetails with transactionId when handleTransactionPress is called', () => {
+        it('navigates to TransactionDetails for a regular transaction without groupId', () => {
             const { result } = renderHook(() => useAccountHistory())
 
             const mockTransaction = {
@@ -458,6 +458,106 @@ describe('useAccountHistory', () => {
 
             expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
                 transactionId: 'TX_123',
+                groupId: undefined,
+            })
+        })
+
+        it('navigates to TransactionDetails for a non-swap transaction with groupId', () => {
+            const { result } = renderHook(() => useAccountHistory())
+
+            const mockTransaction = {
+                id: 'TX_456',
+                txType: 'pay',
+                sender: 'sender-address',
+                receiver: 'receiver-address',
+                confirmedRound: 200,
+                roundTime: 1704153600,
+                swapGroupDetail: null,
+                interpretedMeaning: null,
+                fee: '1000',
+                groupId: 'GROUP_XYZ',
+                amount: '5000000',
+                closeTo: null,
+                asset: null,
+                applicationId: null,
+                innerTransactionCount: null,
+            }
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            result.current.handleTransactionPress(mockTransaction as any)
+
+            expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
+                transactionId: 'TX_456',
+                groupId: 'GROUP_XYZ',
+            })
+        })
+
+        it('navigates to GroupTransactionList for a swap transaction with groupId', () => {
+            const { result } = renderHook(() => useAccountHistory())
+
+            const mockTransaction = {
+                id: 'TX_SWAP_789',
+                txType: 'appl',
+                sender: 'sender-address',
+                receiver: null,
+                confirmedRound: 300,
+                roundTime: 1704240000,
+                swapGroupDetail: {
+                    amountIn: '1000000',
+                    assetInUnitName: 'ALGO',
+                    amountOut: '500000',
+                    assetOutUnitName: 'USDC',
+                },
+                interpretedMeaning: null,
+                fee: '2000',
+                groupId: 'SWAP_GROUP_ABC',
+                amount: null,
+                closeTo: null,
+                asset: null,
+                applicationId: '12345',
+                innerTransactionCount: 3,
+            }
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            result.current.handleTransactionPress(mockTransaction as any)
+
+            expect(mockNavigate).toHaveBeenCalledWith('GroupTransactionList', {
+                groupId: 'SWAP_GROUP_ABC',
+            })
+        })
+
+        it('navigates to TransactionDetails for a swap transaction without groupId', () => {
+            const { result } = renderHook(() => useAccountHistory())
+
+            const mockTransaction = {
+                id: 'TX_SWAP_NO_GROUP',
+                txType: 'appl',
+                sender: 'sender-address',
+                receiver: null,
+                confirmedRound: 400,
+                roundTime: 1704326400,
+                swapGroupDetail: {
+                    amountIn: '1000000',
+                    assetInUnitName: 'ALGO',
+                    amountOut: '500000',
+                    assetOutUnitName: 'USDC',
+                },
+                interpretedMeaning: null,
+                fee: '2000',
+                groupId: null,
+                amount: null,
+                closeTo: null,
+                asset: null,
+                applicationId: '12345',
+                innerTransactionCount: 3,
+            }
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            result.current.handleTransactionPress(mockTransaction as any)
+
+            expect(mockNavigate).toHaveBeenCalledWith('TransactionDetails', {
+                transactionId: 'TX_SWAP_NO_GROUP',
+                groupId: undefined,
             })
         })
     })

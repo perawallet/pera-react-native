@@ -1,0 +1,162 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useMemo } from 'react'
+import { Decimal } from 'decimal.js'
+import { useLanguage } from '@hooks/useLanguage'
+import { formatCurrency, formatNumber } from '@perawallet/wallet-core-shared'
+import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
+import {
+    useAssetsQuery,
+    formatAssetAmount,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
+import { useCurrency } from '@perawallet/wallet-core-currencies'
+import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import type { SwapExecutionStatus } from '../../hooks/useSwapExecution'
+import { useStyles } from './styles'
+
+const PRICE_IMPACT_HIGH_THRESHOLD = new Decimal(5)
+
+const STATUS_TO_BUTTON_TITLE_KEY: Record<SwapExecutionStatus, string> = {
+    signing: 'swap.execution.signing',
+    submitting: 'swap.execution.submitting',
+    'updating-status': 'swap.execution.finalizing',
+    idle: 'swap.quote.confirm_swap',
+    preparing: 'swap.quote.confirm_swap',
+    success: 'swap.quote.confirm_swap',
+    error: 'swap.quote.confirm_swap',
+}
+
+type UseSwapConfirmationParams = {
+    quote: SwapQuote | null
+    swapStatus: SwapExecutionStatus
+}
+
+type UseSwapConfirmationResult = {
+    selectedAccount: ReturnType<typeof useSelectedAccount>
+    inAsset: PeraAsset | undefined
+    outAsset: PeraAsset | undefined
+    isProcessing: boolean
+    buttonTitle: string
+    payDisplay: string
+    receiveDisplay: string
+    payFiatDisplay: string | undefined
+    receiveFiatDisplay: string | undefined
+    rateDisplay: string
+    minimumReceivedDisplay: string
+    hasHighPriceImpact: boolean
+    priceImpactDisplay: string
+    priceImpactStyle: object
+}
+
+export const useSwapConfirmation = ({
+    quote,
+    swapStatus,
+}: UseSwapConfirmationParams): UseSwapConfirmationResult => {
+    const { t } = useLanguage()
+    const styles = useStyles()
+    const selectedAccount = useSelectedAccount()
+    const { preferredCurrency, usdToPreferred } = useCurrency()
+
+    const assetInId = quote?.assetIn.assetId?.toString()
+    const assetOutId = quote?.assetOut.assetId?.toString()
+    const { data: inAssets } = useAssetsQuery(assetInId ? [assetInId] : [])
+    const { data: outAssets } = useAssetsQuery(assetOutId ? [assetOutId] : [])
+    const inAsset = assetInId ? inAssets?.get(assetInId) : undefined
+    const outAsset = assetOutId ? outAssets?.get(assetOutId) : undefined
+
+    const isProcessing =
+        swapStatus === 'preparing' ||
+        swapStatus === 'signing' ||
+        swapStatus === 'submitting' ||
+        swapStatus === 'updating-status'
+
+    const buttonTitle = t(STATUS_TO_BUTTON_TITLE_KEY[swapStatus])
+
+    const payDisplay = useMemo(() => {
+        if (!quote?.amountIn) return '-'
+        return formatAssetAmount(quote.amountIn, quote.assetIn)
+    }, [quote?.amountIn, quote?.assetIn])
+
+    const receiveDisplay = useMemo(() => {
+        if (!quote?.amountOut) return '-'
+        return formatAssetAmount(quote.amountOut, quote.assetOut)
+    }, [quote?.amountOut, quote?.assetOut])
+
+    const payFiatDisplay = useMemo(() => {
+        if (!quote?.amountInUsdValue) return undefined
+        const value = usdToPreferred(new Decimal(quote.amountInUsdValue))
+        return formatCurrency(value, 2, preferredCurrency)
+    }, [quote?.amountInUsdValue, usdToPreferred, preferredCurrency])
+
+    const receiveFiatDisplay = useMemo(() => {
+        if (!quote?.amountOutUsdValue) return undefined
+        const value = usdToPreferred(new Decimal(quote.amountOutUsdValue))
+        return formatCurrency(value, 2, preferredCurrency)
+    }, [quote?.amountOutUsdValue, usdToPreferred, preferredCurrency])
+
+    const rateDisplay = useMemo(() => {
+        if (!quote?.price) return '-'
+        const outDecimals = quote.assetOut.decimals ?? 6
+        const { sign, integer, fraction } = formatNumber(
+            quote.price,
+            outDecimals,
+            undefined,
+            2,
+        )
+        return `1 ${quote.assetIn.unitName ?? ''} ≈ ${sign}${integer}${fraction} ${quote.assetOut.unitName ?? ''}`
+    }, [quote?.price, quote?.assetIn, quote?.assetOut])
+
+    const minimumReceivedDisplay = useMemo(() => {
+        if (!quote?.amountOutWithSlippage) return '-'
+        return formatAssetAmount(quote.amountOutWithSlippage, quote.assetOut)
+    }, [quote?.amountOutWithSlippage, quote?.assetOut])
+
+    const hasHighPriceImpact = useMemo(
+        () =>
+            quote?.priceImpact?.greaterThanOrEqualTo(
+                PRICE_IMPACT_HIGH_THRESHOLD,
+            ) ?? false,
+        [quote?.priceImpact],
+    )
+
+    const priceImpactDisplay = useMemo(() => {
+        if (!quote?.priceImpact) return '-'
+        return `${quote.priceImpact.toDecimalPlaces(2).toString()}%`
+    }, [quote?.priceImpact])
+
+    const priceImpactStyle = useMemo(() => {
+        if (!quote?.priceImpact) return styles.detailValue
+        if (quote.priceImpact.lessThan(1)) return styles.priceImpactLow
+        if (quote.priceImpact.lessThan(PRICE_IMPACT_HIGH_THRESHOLD))
+            return styles.priceImpactMedium
+        return styles.priceImpactHigh
+    }, [quote?.priceImpact, styles])
+
+    return {
+        selectedAccount,
+        inAsset,
+        outAsset,
+        isProcessing,
+        buttonTitle,
+        payDisplay,
+        receiveDisplay,
+        payFiatDisplay,
+        receiveFiatDisplay,
+        rateDisplay,
+        minimumReceivedDisplay,
+        hasHighPriceImpact,
+        priceImpactDisplay,
+        priceImpactStyle,
+    }
+}

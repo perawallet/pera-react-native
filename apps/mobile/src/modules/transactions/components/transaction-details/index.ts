@@ -30,3 +30,6 @@ export type { AppCallTransactionDisplayProps } from './AppCallTransactionDisplay
 
 export { TransactionPreview } from './TransactionPreview'
 export type { TransactionPreviewProps } from './TransactionPreview'
+
+export { GroupTransactionsPanel } from './GroupTransactionsPanel'
+export type { GroupTransactionsPanelProps } from './GroupTransactionsPanel'

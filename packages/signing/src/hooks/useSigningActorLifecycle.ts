@@ -19,6 +19,7 @@ import {
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useTransactionSigner } from './useTransactionSigner'
 import { useSigningStore } from '../store'
 import { createSigningMachine } from '../machine/createSigningMachine'
@@ -78,7 +79,8 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     )
 
     const { signTransactions } = useTransactionSigner()
-    const { encodeSignedTransactions } = useTransactionEncoder()
+    const { encodeTransaction, encodeSignedTransactions } =
+        useTransactionEncoder()
     const algokit = useAlgorandClient()
     const { network } = useNetwork()
     const allAccounts = useAllAccounts()
@@ -100,8 +102,16 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 encodeSignedTransactions,
             }),
             network,
+            encodeTransaction,
+            hardwareWalletRegistry: getProvider().hardwareWalletRegistry,
         }),
-        [signTransactions, encodeSignedTransactions, algokit, network],
+        [
+            signTransactions,
+            encodeTransaction,
+            encodeSignedTransactions,
+            algokit,
+            network,
+        ],
     )
 
     // Creates, subscribes to, and starts an actor for the given request.

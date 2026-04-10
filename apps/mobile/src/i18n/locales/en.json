@@ -89,7 +89,10 @@
         "my_accounts": "My Accounts",
         "no_accounts_found": "No Accounts Found",
         "no_accounts_body": "There are no matching accounts",
-        "search_placeholder": "Account address or short name"
+        "search_placeholder": "Account address, NFD name, or short name",
+        "nfd_results": "NFDomains",
+        "nfd_resolving": "Resolving NFD...",
+        "nfd_resolved": "Resolved from {{name}}"
     },
     "arc59": {
         "requests": {
@@ -430,7 +433,8 @@
             "no_contact_title": "No contact found",
             "no_contact_body": "Something appears to have gone wrong.  Couldn't find the contact specified",
             "name_label": "Name",
-            "address_label": "Address"
+            "address_label": "Address",
+            "nfd_label": "NFDomain"
         },
         "list": {
             "no_contacts_title": "No Contacts",
@@ -713,6 +717,12 @@
             "add_account_option_description": "Add a new account to your existing Universal Wallet",
             "import_account_option_title": "Import Account",
             "import_account_option_description": "Import an existing Algorand account with various methods",
+            "scan_qr_option_title": "Scan QR Code",
+            "scan_qr_option_description": "Import an account by scanning a QR code containing a recovery passphrase",
+            "qr_scan_invalid_title": "Invalid QR Code",
+            "qr_scan_invalid_body": "This QR code doesn't contain a valid account recovery link",
+            "qr_scan_invalid_mnemonic_title": "Invalid Passphrase",
+            "qr_scan_invalid_mnemonic_body": "The scanned QR code contains a passphrase with an unexpected number of words",
             "watch_address_option_title": "Watch an Address",
             "watch_address_option_description": "Monitor an Algorand address by providing its address",
             "create_universal_wallet_option_title": "Create a Universal Wallet",
@@ -720,6 +730,8 @@
             "create_algo25_option_title": "Create an Algo25 Account",
             "create_algo25_option_description": "Legacy format that is specific to Algorand",
             "terms_and_privacy": "By adding a wallet, you agree to Pera Wallet's <0>Terms and Conditions</0> and <1>Privacy Policy</1>",
+            "pair_ledger_option_title": "Pair Ledger Device",
+            "pair_ledger_option_description": "Connect a Ledger hardware wallet via Bluetooth to import accounts",
             "create_joint_account_option_title": "Create a Joint Account",
             "create_joint_account_option_description": "Create a shared multisig account with multiple participants",
             "see_other_options": "See other options"
@@ -1164,6 +1176,8 @@
             "inner_transactions_one": "{{count}} Inner Transaction",
             "inner_transactions_other": "{{count}} Inner Transactions"
         },
+        "group_transactions_one": "{{count}} Group Transaction",
+        "group_transactions_other": "{{count}} Group Transactions",
         "group": {
             "group_number": "Transaction Group",
             "group_id": "Group ID: {{groupId}}",
@@ -1267,8 +1281,10 @@
             "terms_agreement": "By continuing, you agree to our swap partner's <0>Terms of Service</0>"
         },
         "form": {
+            "swap": "Swap",
             "you_pay": "You pay",
             "you_receive": "You receive",
+            "to": "To",
             "balance_label": "Balance: ",
             "max": "MAX",
             "select_asset": "Select"
@@ -1278,6 +1294,124 @@
             "search_placeholder": "Search by name or ID",
             "no_results_title": "No Matching Assets",
             "no_results_body": "No assets matched your search term"
+        },
+        "configuration": {
+            "title": "Swap settings",
+            "apply": "Apply",
+            "balance_percentage": "Balance percentage",
+            "balance_custom_hint": "Set custom percentage",
+            "balance_error": "Balance percentage must be between {{min}} and {{max}}",
+            "slippage_tolerance": "Slippage tolerance",
+            "slippage_custom_hint": "Set custom slippage",
+            "slippage_error": "Slippage must be between {{min}} and {{max}}",
+            "primary_currency": "Primary currency",
+            "use_local_currency": "Use local currency",
+            "custom": "Custom",
+            "max": "MAX",
+            "swap": "Swap",
+            "to": "TO"
+        },
+        "quote": {
+            "rate": "Rate",
+            "price_impact": "Price Impact",
+            "slippage_tolerance": "Slippage Tolerance",
+            "pera_fee": "Pera Fee",
+            "exchange_fee": "Exchange Fee",
+            "provider": "Provider",
+            "minimum_received": "Minimum Received",
+            "review_swap": "Review Swap",
+            "confirm_swap": "Confirm Swap",
+            "high_price_impact_warning": "This swap has a high price impact. You may receive significantly fewer tokens than expected.",
+            "quote_error": "Unable to get quotes. Please try again."
+        },
+        "execution": {
+            "signing": "Signing...",
+            "submitting": "Submitting...",
+            "finalizing": "Finalizing...",
+            "error": "Transaction failed. Please try again.",
+            "success_title": "Swap Complete",
+            "success_body": "Swapped {{fromAsset}} for {{toAsset}}"
+        },
+        "info": {
+            "slippage_tolerance": "The maximum difference between the expected price and the execution price. A higher tolerance increases the chance of a successful swap but may result in a less favorable rate.",
+            "price_impact": "The difference between the market price and the estimated price due to trade size. Larger trades typically have a higher price impact.",
+            "exchange_fee": "The fee charged by the decentralized exchange for facilitating this swap."
+        }
+    },
+    "ledger": {
+        "instructions": {
+            "title": "Pair Ledger Device",
+            "description": "Follow these steps to connect your Ledger device:",
+            "step_1": "Turn on your Ledger device",
+            "step_2": "Open the Algorand app on your Ledger",
+            "step_3": "Keep your Ledger device nearby",
+            "continue": "Continue",
+            "permission_required_title": "Bluetooth Permission Required",
+            "permission_required_message": "Pera needs Bluetooth permission to communicate with your Ledger device. Please enable it in Settings."
+        },
+        "scan": {
+            "title": "Looking for Devices",
+            "description": "Select a Ledger device to connect to.",
+            "scanning": "Scanning for Ledger devices...",
+            "searching": "Searching for nearby devices...",
+            "no_devices": "No devices found",
+            "no_devices_description": "Make sure your Ledger device is turned on and nearby.",
+            "retry": "Scan Again",
+            "error": "Scan failed. Make sure Bluetooth is enabled and try again.",
+            "timeout": "Scan timed out. Make sure your device is on and nearby."
+        },
+        "fetch_accounts": {
+            "title": "Searching Accounts",
+            "connecting": "Connecting to {{deviceName}}...",
+            "discovering": "Searching for accounts on your Ledger device...",
+            "progress": "Checking account {{current}}...",
+            "error_title": "Connection Error",
+            "app_not_open": "Please open the Algorand app on your Ledger device and try again.",
+            "retry": "Try Again"
+        },
+        "select_accounts": {
+            "title": "Select Accounts",
+            "description": "We found {{count}} accounts on your Ledger device",
+            "accounts_count": "{{count}} accounts",
+            "account_label": "Account #{{index}}",
+            "select_all": "Select all",
+            "already_imported": "Already imported",
+            "continue": "Continue",
+            "no_new_accounts": "All accounts on this device are already imported."
+        },
+        "verify": {
+            "title": "Verify on Ledger",
+            "connecting": "Connecting to your Ledger device...",
+            "verify_on_device": "Please verify each address on your Ledger device.",
+            "progress": "Verifying account {{current}} of {{total}}...",
+            "confirm_instruction": "Confirm the address shown on your Ledger device matches.",
+            "complete": "All accounts verified successfully!",
+            "error_title": "Verification Failed",
+            "rejected": "Address verification was rejected on the device.",
+            "retry": "Try Again",
+            "saving": "Saving accounts..."
+        },
+        "signing": {
+            "title": "Approve on Ledger",
+            "connect": "Connecting to your Ledger device...",
+            "confirm": "Please review and approve the transaction on your Ledger device.",
+            "timeout": "The transaction was not confirmed in time. Please try again.",
+            "cancel": "Cancel"
+        },
+        "errors": {
+            "app_not_open": "The Algorand app is not open on your Ledger device.",
+            "connection_lost": "Connection to the Ledger device was lost.",
+            "user_rejected": "The operation was rejected on the Ledger device.",
+            "bluetooth_disabled": "Bluetooth is not enabled. Please enable Bluetooth and try again.",
+            "connection_failed": "Failed to connect to the Ledger device."
+        },
+        "status": {
+            "disconnected": "Disconnected",
+            "scanning": "Scanning",
+            "connecting": "Connecting",
+            "connected": "Connected",
+            "app_not_open": "App Not Open",
+            "ready": "Ready"
         }
     }
 }

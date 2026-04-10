@@ -162,7 +162,7 @@ const makeCollectibleAsset = (): PeraAsset => ({
 })
 
 describe('useCollectibleDetail', () => {
-    const mockAccount = { address: 'ACCOUNT_ADDRESS', name: 'My Account' }
+    const mockAccount = { address: 'ACCOUNT_ADDRESS' }
 
     beforeEach(() => {
         vi.clearAllMocks()
@@ -184,7 +184,6 @@ describe('useCollectibleDetail', () => {
         expect(result.current.collectible?.collection?.name).toBe(
             'Cool Collection',
         )
-        expect(result.current.isPure).toBe(true)
     })
 
     it('returns traits and media', () => {

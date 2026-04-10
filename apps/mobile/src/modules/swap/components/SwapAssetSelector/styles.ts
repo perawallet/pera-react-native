@@ -12,10 +12,15 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
+type StyleProps = { variant: 'pay' | 'receive' }
+
+export const useStyles = makeStyles((theme, { variant }: StyleProps) => ({
     container: {
         borderRadius: theme.spacing.lg,
-        backgroundColor: theme.colors.layerGrayLightest,
+        backgroundColor:
+            variant === 'pay'
+                ? theme.colors.layerGrayLightest
+                : theme.colors.layerGray,
     },
     content: {
         flexDirection: 'row',

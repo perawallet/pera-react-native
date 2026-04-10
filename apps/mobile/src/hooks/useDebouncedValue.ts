@@ -14,10 +14,16 @@ import { useEffect, useState } from 'react'
 
 const DEFAULT_DELAY = 300
 
-export const useDebouncedValue = <T>(value: T, delay = DEFAULT_DELAY): T => {
+export const useDebouncedValue = <T>(
+    value: T,
+    delay = DEFAULT_DELAY,
+    isEqual?: (a: T, b: T) => boolean,
+): T => {
     const [debouncedValue, setDebouncedValue] = useState(value)
 
     useEffect(() => {
+        if (isEqual?.(value, debouncedValue)) return
+
         const timer = setTimeout(() => {
             setDebouncedValue(value)
         }, delay)
@@ -25,7 +31,7 @@ export const useDebouncedValue = <T>(value: T, delay = DEFAULT_DELAY): T => {
         return () => {
             clearTimeout(timer)
         }
-    }, [value, delay])
+    }, [value, delay, isEqual])
 
     return debouncedValue
 }

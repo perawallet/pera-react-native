@@ -92,5 +92,9 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
         dotActive: {
             backgroundColor: theme.colors.textMain,
         },
+        pagerView: {
+            flex: 1,
+            height: dimensions.width,
+        },
     }
 })

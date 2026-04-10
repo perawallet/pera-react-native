@@ -21,6 +21,10 @@ vi.mock('@algorandfoundation/react-native-keystore', () => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-extension-ledger-react-native', () => ({
+    WithLedgerExtension: () => ({}),
+}))
+
 vi.mock('@tanstack/store', () => ({
     Store: class MockStore {
         constructor() {}
