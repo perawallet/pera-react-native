@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React, { useCallback } from 'react'
+import React from 'react'
 import {
     PWBottomSheet,
     PWIcon,
@@ -21,7 +21,6 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import { BOTTOM_SHEET_TRANSITION_DURATION } from '@constants/ui'
 
 type ManageNftsBottomSheetProps = {
     isVisible: boolean
@@ -38,16 +37,6 @@ export const ManageNftsBottomSheet = ({
 }: ManageNftsBottomSheetProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-
-    const handleSortPress = useCallback(() => {
-        onClose()
-        setTimeout(onSortPress, BOTTOM_SHEET_TRANSITION_DURATION)
-    }, [onClose, onSortPress])
-
-    const handleFilterPress = useCallback(() => {
-        onClose()
-        setTimeout(onFilterPress, BOTTOM_SHEET_TRANSITION_DURATION)
-    }, [onClose, onFilterPress])
 
     return (
         <PWBottomSheet
@@ -74,7 +63,10 @@ export const ManageNftsBottomSheet = ({
             <PWView style={styles.contentContainer}>
                 <PWTouchableOpacity
                     style={styles.menuRow}
-                    onPress={handleSortPress}
+                    onPress={() => {
+                        onClose()
+                        onSortPress()
+                    }}
                 >
                     <PWIcon
                         name='list-arrow-down'
@@ -87,7 +79,10 @@ export const ManageNftsBottomSheet = ({
 
                 <PWTouchableOpacity
                     style={styles.menuRow}
-                    onPress={handleFilterPress}
+                    onPress={() => {
+                        onClose()
+                        onFilterPress()
+                    }}
                 >
                     <PWIcon
                         name='funnel'
