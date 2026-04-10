@@ -79,6 +79,6 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
         pagerView: {
             flex: 1,
             height: dimensions.width,
-        }
+        },
     }
 })
