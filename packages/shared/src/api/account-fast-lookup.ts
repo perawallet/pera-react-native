@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import { queryClient } from './query-client'
+import type { Network } from '../models/base-types'
 
 export type AccountFastLookup = {
     address: string
