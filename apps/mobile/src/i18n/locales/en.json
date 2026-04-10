@@ -54,10 +54,16 @@
     },
     "asset_opt_out": {
         "title": "Remove Asset",
-        "description": "Are you sure you want to remove {{assetName}} from {{accountName}}?",
+        "description": "You're about to remove and opt-out from the {{assetName}} asset with {{accountName}}. You'll be unable to transact with this asset from this account unless you opt-in to it again.",
         "fee_label": "Transaction Fee",
         "remove": "Remove",
-        "keep": "Keep It"
+        "keep": "Keep it",
+        "copy_id": "Copy ID",
+        "id_copied": "Asset ID copied",
+        "account_label": "Account",
+        "success": "Asset removed",
+        "error": "Unable to remove asset",
+        "opt_out_cta": "Opt-out"
     },
     "remove_assets": {
         "title": "Remove Assets",
@@ -166,7 +172,8 @@
             "image_saved": "Image saved to photo library",
             "image_save_failed": "Unable to save image",
             "image_copy_failed": "Unable to copy image",
-            "photo_permission_denied": "Photo library access is required to save images"
+            "photo_permission_denied": "Photo library access is required to save images",
+            "not_owner_notice": "You are not the owner of this NFT yet, however you opted-in for it. You can now transfer it to your account."
         },
         "verification_card": {
             "trusted_title": "Trusted ASA",

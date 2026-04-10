@@ -17,32 +17,72 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.lg,
         paddingBottom: theme.spacing.lg,
     },
-    assetInfo: {
+    header: {
+        flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: theme.spacing.lg,
+        justifyContent: 'space-between',
+        paddingHorizontal: theme.spacing.lg,
+        paddingVertical: theme.spacing.md,
     },
-    title: {
-        marginTop: theme.spacing.md,
+    headerAction: {
+        width: theme.spacing.xl,
+        height: theme.spacing.xl,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    description: {
-        color: theme.colors.textGrayLighter,
+    headerTitle: {
+        color: theme.colors.textMain,
         textAlign: 'center',
+    },
+    body: {
+        paddingHorizontal: theme.spacing.lg,
+        gap: theme.spacing.md,
+    },
+    assetNameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        flexWrap: 'wrap',
+        gap: theme.spacing.sm,
         marginTop: theme.spacing.sm,
     },
-    feeRow: {
+    assetName: {
+        color: theme.colors.textMain,
+        flexShrink: 1,
+    },
+    unitNameRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
+    unitName: {
+        color: theme.colors.textGrayLighter,
+    },
+    divider: {
+        height: 1,
+        backgroundColor: theme.colors.layerGrayLighter,
+    },
+    row: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: theme.spacing.md,
-        borderTopWidth: 1,
-        borderTopColor: theme.colors.layerGrayLighter,
+        minHeight: theme.spacing.xxl,
     },
-    feeLabel: {
+    rowLabel: {
         color: theme.colors.textGrayLighter,
+        flexShrink: 1,
     },
-    feeValue: {},
+    rowValue: {
+        color: theme.colors.textMain,
+    },
+    description: {
+        color: theme.colors.textMain,
+        marginTop: theme.spacing.sm,
+    },
     buttonContainer: {
         gap: theme.spacing.sm,
         marginTop: theme.spacing.md,
+    },
+    copyButton: {
+        borderRadius: theme.borderRadius.full,
     },
 }))

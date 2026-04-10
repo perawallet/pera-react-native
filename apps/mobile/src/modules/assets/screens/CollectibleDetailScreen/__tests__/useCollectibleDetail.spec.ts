@@ -19,6 +19,25 @@ import type { PeraAsset } from '@perawallet/wallet-core-assets'
 const mockCopyToClipboard = vi.fn()
 const mockShowToast = vi.fn()
 const mockOpenURL = vi.fn()
+const mockOptOut = vi.fn()
+const mockGoBack = vi.fn()
+const mockCanGoBack = vi.fn(() => true)
+
+vi.mock('@react-navigation/native', () => ({
+    useNavigation: () => ({
+        goBack: mockGoBack,
+        canGoBack: mockCanGoBack,
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-transactions', () => ({
+    useAssetOptOutMutation: () => ({
+        optOut: mockOptOut,
+        isLoading: false,
+        isError: false,
+        error: null,
+    }),
+}))
 
 vi.mock('@hooks/useClipboard', () => ({
     useClipboard: () => ({ copyToClipboard: mockCopyToClipboard }),
@@ -186,6 +205,76 @@ describe('useCollectibleDetail', () => {
 
         expect(result.current.isPending).toBe(true)
         expect(result.current.asset).toBeUndefined()
+    })
+
+    it('reports owned state when account has a positive balance', () => {
+        const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+        expect(result.current.isOptedIn).toBe(true)
+        expect(result.current.isOwned).toBe(true)
+        expect(result.current.isOptedInNotOwned).toBe(false)
+    })
+
+    it('reports opted-in-not-owned when balance exists with amount 0', () => {
+        mockUseAccountAssetBalanceQuery.mockReturnValue({
+            data: { amount: new Decimal(0), algoValue: new Decimal(0) },
+        })
+
+        const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+        expect(result.current.isOptedIn).toBe(true)
+        expect(result.current.isOwned).toBe(false)
+        expect(result.current.isOptedInNotOwned).toBe(true)
+    })
+
+    it('reports not opted in when balance query returns null', () => {
+        mockUseAccountAssetBalanceQuery.mockReturnValue({ data: null })
+
+        const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+        expect(result.current.isOptedIn).toBe(false)
+        expect(result.current.isOwned).toBe(false)
+        expect(result.current.isOptedInNotOwned).toBe(false)
+    })
+
+    it('opts out the asset and navigates back on success', async () => {
+        mockUseAccountAssetBalanceQuery.mockReturnValue({
+            data: { amount: new Decimal(0), algoValue: new Decimal(0) },
+        })
+        mockOptOut.mockResolvedValueOnce({ txIds: ['TX1'] })
+
+        const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+        await result.current.handleConfirmOptOut()
+
+        expect(mockOptOut).toHaveBeenCalledWith({
+            sender: 'ACCOUNT_ADDRESS',
+            assetId: BigInt('12345'),
+            creator: 'CREATOR_ADDRESS',
+        })
+        expect(mockShowToast).toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'success' }),
+        )
+        expect(mockGoBack).toHaveBeenCalled()
+    })
+
+    it('shows an error toast when opt-out fails', async () => {
+        mockUseAccountAssetBalanceQuery.mockReturnValue({
+            data: { amount: new Decimal(0), algoValue: new Decimal(0) },
+        })
+        mockOptOut.mockRejectedValueOnce(new Error('signing rejected'))
+
+        const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+        await result.current.handleConfirmOptOut()
+
+        expect(mockShowToast).toHaveBeenCalledWith(
+            expect.objectContaining({
+                type: 'error',
+                body: 'signing rejected',
+            }),
+        )
+        expect(mockGoBack).not.toHaveBeenCalled()
     })
 
     it('returns empty traits and media when collectible is undefined', () => {

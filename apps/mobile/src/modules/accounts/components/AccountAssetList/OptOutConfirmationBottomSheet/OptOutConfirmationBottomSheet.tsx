@@ -10,9 +10,15 @@
  limitations under the License
  */
 
-import { PWBottomSheet, PWButton, PWText, PWView } from '@components/core'
+import {
+    PWBottomSheet,
+    PWButton,
+    PWHeader,
+    PWText,
+    PWView,
+} from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { AssetIcon } from '@modules/assets/components/AssetIcon'
+import { AddressDisplay } from '@components/AddressDisplay'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import {
     ALGO_ASSET,
@@ -22,42 +28,33 @@ import {
 import { MIN_TXN_FEE } from '@perawallet/wallet-core-blockchain'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
+import { useClipboard } from '@hooks/useClipboard'
 import { useStyles } from './styles'
 
-const MAX_ASSET_NAME_LENGTH = 40
 const MIN_FEE_WHOLE_UNITS = toWholeUnits(Number(MIN_TXN_FEE), ALGO_ASSET)
-
-const sanitizeAssetName = (
-    name: string | undefined,
-    assetId: string,
-): string => {
-    if (!name) {
-        return assetId
-    }
-    const truncated =
-        name.length > MAX_ASSET_NAME_LENGTH
-            ? `${name.slice(0, MAX_ASSET_NAME_LENGTH)}...`
-            : name
-    return `${truncated} (ID: ${assetId})`
-}
 
 export type OptOutConfirmationBottomSheetProps = {
     isVisible: boolean
     onClose: () => void
     accountBalance: AssetWithAccountBalance | null
+    accountAddress: string
     accountName: string
     onConfirmOptOut: () => void
+    isLoading?: boolean
 }
 
 export const OptOutConfirmationBottomSheet = ({
     isVisible,
     onClose,
     accountBalance,
+    accountAddress,
     accountName,
     onConfirmOptOut,
+    isLoading,
 }: OptOutConfirmationBottomSheetProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const { copyToClipboard } = useClipboard()
 
     const { data: assets } = useAssetsQuery(
         accountBalance ? [accountBalance.assetId] : [],
@@ -70,39 +67,87 @@ export const OptOutConfirmationBottomSheet = ({
         return null
     }
 
+    const assetDisplayName = asset?.name ?? accountBalance.assetId
+    const unitName = asset?.unitName
+
+    const handleCopyId = () => {
+        copyToClipboard(accountBalance.assetId)
+    }
+
     return (
         <PWBottomSheet
             isVisible={isVisible}
             onBackdropPress={onClose}
+            innerContainerStyle={styles.container}
             size='auto'
         >
-            <PWView style={styles.container}>
-                <PWView style={styles.assetInfo}>
-                    {asset && (
-                        <AssetIcon
-                            asset={asset}
-                            size='xl'
-                        />
-                    )}
+            <PWHeader
+                leftIcon='cross'
+                onLeftPress={onClose}
+                title={t('asset_opt_out.title')}
+            />
+
+            <PWView style={styles.body}>
+                <PWView style={styles.assetNameRow}>
                     <PWText
-                        variant='h4'
-                        style={styles.title}
+                        variant='h3'
+                        style={styles.assetName}
                     >
-                        {t('asset_opt_out.title')}
-                    </PWText>
-                    <PWText style={styles.description}>
-                        {t('asset_opt_out.description', {
-                            assetName: sanitizeAssetName(
-                                asset?.name,
-                                accountBalance.assetId,
-                            ),
-                            accountName,
-                        })}
+                        {assetDisplayName}
                     </PWText>
                 </PWView>
+                {!!unitName && (
+                    <PWView style={styles.unitNameRow}>
+                        <PWText
+                            variant='body'
+                            style={styles.unitName}
+                        >
+                            {unitName}
+                        </PWText>
+                    </PWView>
+                )}
 
-                <PWView style={styles.feeRow}>
-                    <PWText style={styles.feeLabel}>
+                <PWView style={styles.divider} />
+
+                <PWView style={styles.row}>
+                    <PWText
+                        variant='body'
+                        style={styles.rowLabel}
+                    >
+                        {accountBalance.assetId}
+                    </PWText>
+                    <PWButton
+                        title={t('asset_opt_out.copy_id')}
+                        variant='secondary'
+                        paddingStyle='dense'
+                        onPress={handleCopyId}
+                        testID='opt_out_copy_id'
+                        rounded
+                    />
+                </PWView>
+
+                <PWView style={styles.divider} />
+
+                <PWView style={styles.row}>
+                    <PWText
+                        variant='body'
+                        style={styles.rowLabel}
+                    >
+                        {t('asset_opt_out.account_label')}
+                    </PWText>
+                    <AddressDisplay
+                        address={accountAddress}
+                        showCopy={false}
+                    />
+                </PWView>
+
+                <PWView style={styles.divider} />
+
+                <PWView style={styles.row}>
+                    <PWText
+                        variant='body'
+                        style={styles.rowLabel}
+                    >
                         {t('asset_opt_out.fee_label')}
                     </PWText>
                     <CurrencyDisplay
@@ -111,21 +156,34 @@ export const OptOutConfirmationBottomSheet = ({
                         minPrecision={DEFAULT_PRECISION}
                         value={MIN_FEE_WHOLE_UNITS}
                         showSymbol
-                        style={styles.feeValue}
+                        style={styles.rowValue}
                     />
                 </PWView>
+
+                <PWText
+                    variant='body'
+                    style={styles.description}
+                >
+                    {t('asset_opt_out.description', {
+                        assetName: unitName ?? assetDisplayName,
+                        accountName,
+                    })}
+                </PWText>
 
                 <PWView style={styles.buttonContainer}>
                     <PWButton
                         title={t('asset_opt_out.remove')}
-                        variant='destructive'
+                        variant='primary'
                         onPress={onConfirmOptOut}
+                        isLoading={isLoading}
+                        isDisabled={isLoading}
                         testID='opt_out_confirm'
                     />
                     <PWButton
                         title={t('asset_opt_out.keep')}
                         variant='secondary'
                         onPress={onClose}
+                        isDisabled={isLoading}
                         testID='opt_out_cancel'
                     />
                 </PWView>

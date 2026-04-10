@@ -71,6 +71,7 @@ export const AccountAssetList = ({
         filterSheetState,
         optOutConfirmationState,
         assetForOptOut,
+        isOptingOut,
         setSearchFilter,
         handleConfirmOptOut,
         handleCloseOptOut,
@@ -222,8 +223,10 @@ export const AccountAssetList = ({
                 isVisible={optOutConfirmationState.isOpen}
                 onClose={handleCloseOptOut}
                 accountBalance={assetForOptOut}
+                accountAddress={account.address}
                 accountName={account.name ?? account.address}
                 onConfirmOptOut={handleConfirmOptOut}
+                isLoading={isOptingOut}
             />
 
             <AddAssetBottomSheet
