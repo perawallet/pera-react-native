@@ -43,6 +43,7 @@ export default defineConfig({
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-core-assets',
                 '@perawallet/wallet-core-blockchain',
+                '@perawallet/wallet-core-hardware-wallet',
                 '@perawallet/wallet-core-config',
                 '@perawallet/wallet-core-database',
                 'drizzle-orm',

@@ -20,6 +20,7 @@
     "@algorandfoundation/keystore": "catalog:",
     "@babel/runtime": "catalog:",
     "@algorandfoundation/wallet-provider": "catalog:",
+    "@perawallet/wallet-core-hardware-wallet": "workspace:*",
     "react": "catalog:",
     "react-dom": "catalog:",
     "zustand": "catalog:",

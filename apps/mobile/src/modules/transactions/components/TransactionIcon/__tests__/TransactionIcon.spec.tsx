@@ -36,7 +36,40 @@ describe('TransactionIcon', () => {
         render(<TransactionIcon type='asset-transfer' />)
         expect(PWIcon).toHaveBeenCalledWith(
             expect.objectContaining({
+                name: 'transactions/asset-transfer',
+            }),
+            undefined,
+        )
+    })
+
+    it('renders correct icon for swap type', () => {
+        vi.clearAllMocks()
+        render(<TransactionIcon type='swap' />)
+        expect(PWIcon).toHaveBeenCalledWith(
+            expect.objectContaining({
                 name: 'transactions/swap',
+            }),
+            undefined,
+        )
+    })
+
+    it('renders correct icon for asset-opt-in type', () => {
+        vi.clearAllMocks()
+        render(<TransactionIcon type='asset-opt-in' />)
+        expect(PWIcon).toHaveBeenCalledWith(
+            expect.objectContaining({
+                name: 'transactions/opt-in',
+            }),
+            undefined,
+        )
+    })
+
+    it('renders correct icon for asset-opt-out type', () => {
+        vi.clearAllMocks()
+        render(<TransactionIcon type='asset-opt-out' />)
+        expect(PWIcon).toHaveBeenCalledWith(
+            expect.objectContaining({
+                name: 'transactions/opt-out',
             }),
             undefined,
         )

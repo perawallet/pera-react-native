@@ -23,11 +23,13 @@ import { useStyles } from './styles'
 type SwapFormControlsProps = {
     onSwapPress: () => void
     onMaxPress: () => void
+    onConfigurePress: () => void
 }
 
 export const SwapFormControls = ({
     onSwapPress,
     onMaxPress,
+    onConfigurePress,
 }: SwapFormControlsProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -41,26 +43,31 @@ export const SwapFormControls = ({
                 onPress={onSwapPress}
             />
 
-            <PWTouchableOpacity
-                style={styles.maxRow}
-                onPress={onMaxPress}
-            >
-                <PWView style={styles.maxIconContainer}>
+            <PWView style={styles.maxRow}>
+                <PWTouchableOpacity
+                    style={styles.maxIconContainer}
+                    onPress={onConfigurePress}
+                    testID='swap-configure-button'
+                >
                     <PWIcon
                         name='sliders'
                         variant='link'
                     />
-                </PWView>
+                </PWTouchableOpacity>
                 <PWView style={styles.maxDivider} />
-                <PWView style={styles.maxButton}>
+                <PWTouchableOpacity
+                    style={styles.maxButton}
+                    onPress={onMaxPress}
+                    testID='swap-max-button'
+                >
                     <PWText
-                        variant='h4'
+                        variant='link'
                         style={styles.maxText}
                     >
                         {t('swap.form.max')}
                     </PWText>
-                </PWView>
-            </PWTouchableOpacity>
+                </PWTouchableOpacity>
+            </PWView>
         </PWView>
     )
 }

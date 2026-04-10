@@ -24,7 +24,7 @@ import { CopyableText } from '@components/CopyableText'
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
@@ -45,6 +45,9 @@ export const RekeyedAccountInfoBottomSheet = ({
 }: RekeyedAccountInfoBottomSheetProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const { displayName: accountDisplayName } = useResolvedAddress(
+        account.address,
+    )
     const {
         rekeyedAccountBalances,
         rekeyedAccountAlgoValue,
@@ -68,11 +71,7 @@ export const RekeyedAccountInfoBottomSheet = ({
                         onPress={onClose}
                     />
                 }
-                center={
-                    <PWText variant='h4'>
-                        {truncateAlgorandAddress(account.address)}
-                    </PWText>
-                }
+                center={<PWText variant='h4'>{accountDisplayName}</PWText>}
                 paddingStyle='dense'
             />
 

@@ -11,18 +11,27 @@
  */
 
 import { EmptyView } from '@components/EmptyView'
-import { PWView } from '@components/core'
-import { Text } from '@rneui/themed'
+import { PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
+import { useMemo } from 'react'
 
 export const ViewContactScreen = () => {
     const { selectedContact } = useContacts()
     const styles = useStyles()
     const { t } = useLanguage()
+
+    const { data: nfdNames } = useNfdForAddressQuery(
+        selectedContact?.address ?? '',
+        {
+            enabled: !!selectedContact?.address,
+        },
+    )
+    const nfdName = useMemo(() => nfdNames?.at(0)?.name, [nfdNames])
 
     if (!selectedContact) {
         return (
@@ -43,21 +52,29 @@ export const ViewContactScreen = () => {
                 />
             </PWView>
             <PWView>
-                <Text style={styles.label}>
+                <PWText style={styles.label}>
                     {t('contacts.view_contact.name_label')}
-                </Text>
-                <Text style={styles.value}>{selectedContact.name}</Text>
+                </PWText>
+                <PWText style={styles.value}>{selectedContact.name}</PWText>
             </PWView>
             <PWView>
-                <Text style={styles.label}>
+                <PWText style={styles.label}>
                     {t('contacts.view_contact.address_label')}
-                </Text>
+                </PWText>
                 <AddressDisplay
                     address={selectedContact.address}
                     showCopy
                     displayType='address-only'
                 />
             </PWView>
+            {nfdName && (
+                <PWView>
+                    <PWText style={styles.label}>
+                        {t('contacts.view_contact.nfd_label')}
+                    </PWText>
+                    <PWText style={styles.value}>{nfdName}</PWText>
+                </PWView>
+            )}
         </PWView>
     )
 }

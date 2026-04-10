@@ -11,3 +11,8 @@
  */
 
 export { useSwapIntroduction } from './useSwapIntroduction'
+export { useSwapExecution } from './useSwapExecution'
+export type {
+    SwapExecutionStatus,
+    SwapExecutionError,
+} from './useSwapExecution'

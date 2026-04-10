@@ -172,9 +172,16 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
 
     const handleTransactionPress = useCallback(
         (transaction: TransactionHistoryItem) => {
-            navigation.navigate('TransactionDetails', {
-                transactionId: transaction.id,
-            })
+            if (transaction.swapGroupDetail && transaction.groupId) {
+                navigation.navigate('GroupTransactionList', {
+                    groupId: transaction.groupId,
+                })
+            } else {
+                navigation.navigate('TransactionDetails', {
+                    transactionId: transaction.id,
+                    groupId: transaction.groupId ?? undefined,
+                })
+            }
         },
         [navigation],
     )

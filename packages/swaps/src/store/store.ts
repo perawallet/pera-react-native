@@ -10,19 +10,72 @@
  limitations under the License
  */
 
-import { create } from 'zustand'
+import { create, type StoreApi, type UseBoundStore } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
 import type { SwapsState } from '../models'
+import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import { getProvider } from '@perawallet/wallet-extension-provider'
+
+const STORE_NAME = 'swaps-store'
 
 // TODO: Replace with ALGO_ASSET_ID and KNOWN_ASSET_IDS.USDC from @perawallet/wallet-core-assets
 // once the assets barrel (which re-exports hooks) no longer causes Metro evaluation order issues
 const initialState = {
     fromAsset: '0', // ALGO
     toAsset: '31566704', // USDC mainnet
+    slippage: null as string | null,
 }
 
-export const useSwapsStore = create<SwapsState>()(set => ({
-    ...initialState,
-    setFromAsset: (fromAsset: string) => set({ fromAsset }),
-    setToAsset: (toAsset: string) => set({ toAsset }),
-    resetState: () => set(initialState),
-}))
+export const useSwapsStore: UseBoundStore<
+    WithPersist<StoreApi<SwapsState>, unknown>
+> = create<SwapsState>()(
+    persist(
+        set => ({
+            ...initialState,
+            setFromAsset: (fromAsset: string) => set({ fromAsset }),
+            setToAsset: (toAsset: string) => set({ toAsset }),
+            setSlippage: (slippage: string | null) => set({ slippage }),
+            resetState: () =>
+                set(state => ({
+                    ...initialState,
+                    slippage: state.slippage,
+                })),
+        }),
+        {
+            name: STORE_NAME,
+            storage: createJSONStorage(() => getProvider().keyValueStorage),
+            version: 3,
+            migrate: (persisted, version) => {
+                if (version < 2) {
+                    return {
+                        ...(persisted as Partial<SwapsState>),
+                        slippage: null,
+                    } as SwapsState
+                }
+                if (version < 3) {
+                    const {
+                        fromAsset: _fromAsset,
+                        toAsset: _toAsset,
+                        ...rest
+                    } = persisted as Record<string, unknown>
+                    return rest as SwapsState
+                }
+                return persisted as SwapsState
+            },
+            partialize: state => ({
+                slippage: state.slippage,
+            }),
+        },
+    ),
+)
+
+registerStore({
+    name: STORE_NAME,
+    clearStorage: () =>
+        (
+            useSwapsStore as unknown as {
+                persist: { clearStorage: () => void }
+            }
+        ).persist.clearStorage(),
+    resetState: () => useSwapsStore.getState().resetState(),
+})

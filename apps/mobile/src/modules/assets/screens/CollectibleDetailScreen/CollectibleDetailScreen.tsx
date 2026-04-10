@@ -36,8 +36,8 @@ import { CollectibleInfoSection } from './CollectibleInfoSection'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { RoundButton } from '@components/RoundButton'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { CollectibeDescription } from './CollectibleDescription'
 import { CollectibleDetailSkeleton } from './CollectibleDetailSkeleton'
+import { CollectibleDescription } from './CollectibleDescription'
 
 export type CollectibleDetailScreenProps = NativeStackScreenProps<
     AccountStackParamsList,
@@ -54,24 +54,23 @@ export const CollectibleDetailScreen = ({
         asset,
         collectible,
         isPending,
-        isPure: _isPure,
         isWatch,
         traits,
         media,
         accountAddress,
-        accountName,
         assetAmount,
         isOptedInNotOwned,
-        assetBalance,
-        isOptingOut,
         optOutModal,
-        handleOptOutPressed,
-        handleConfirmOptOut,
+        isOptingOut,
+        assetBalance,
+        accountName,
         handleSendPressed,
         handleSharePressed,
         handleMediaPress,
         handleCopyImage,
         handleSaveImage,
+        handleOptOutPressed,
+        handleConfirmOptOut,
         fullScreenMedia,
         fullScreenInitialIndex,
         fullScreenViewerModal,
@@ -142,7 +141,6 @@ export const CollectibleDetailScreen = ({
                         </PWView>
                     ) : null}
                 </PWView>
-
                 <PWView
                     style={
                         isOptedInNotOwned
@@ -163,7 +161,7 @@ export const CollectibleDetailScreen = ({
                 </PWView>
 
                 <PWView style={styles.contentContainer}>
-                    {!isWatch && !isOptedInNotOwned && (
+                    {!isOptedInNotOwned && !isWatch && (
                         <PWView style={styles.actionButtonsContainer}>
                             <RoundButton
                                 title={t('common.send')}
@@ -216,7 +214,7 @@ export const CollectibleDetailScreen = ({
 
                     <CollectibleTraitsGrid traits={traits} />
 
-                    <CollectibeDescription
+                    <CollectibleDescription
                         description={collectible?.description}
                     />
 

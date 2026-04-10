@@ -20,6 +20,7 @@
     "@babel/runtime": "catalog:",
     "@algorandfoundation/wallet-provider": "catalog:",
     "@perawallet/wallet-extension-platform": "workspace:*",
+    "@perawallet/wallet-core-hardware-wallet": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
     "react": "catalog:",
     "react-native": "0.81.5",

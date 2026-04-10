@@ -46,4 +46,50 @@ describe('swaps/store', () => {
 
         expect(result.current.toAsset).toBe('5678')
     })
+
+    test('slippage defaults to null', async () => {
+        const { useSwapsStore } = await import('../store')
+
+        const { result } = renderHook(() => useSwapsStore())
+
+        expect(result.current.slippage).toBeNull()
+    })
+
+    test('setSlippage updates slippage state', async () => {
+        const { useSwapsStore } = await import('../store')
+
+        const { result } = renderHook(() => useSwapsStore())
+
+        act(() => {
+            result.current.setSlippage('1.5')
+        })
+
+        expect(result.current.slippage).toBe('1.5')
+
+        act(() => {
+            result.current.setSlippage(null)
+        })
+
+        expect(result.current.slippage).toBeNull()
+    })
+
+    test('resetState resets assets but preserves slippage', async () => {
+        const { useSwapsStore } = await import('../store')
+
+        const { result } = renderHook(() => useSwapsStore())
+
+        act(() => {
+            result.current.setFromAsset('1234')
+            result.current.setToAsset('5678')
+            result.current.setSlippage('2.5')
+        })
+
+        act(() => {
+            result.current.resetState()
+        })
+
+        expect(result.current.fromAsset).toBe('0')
+        expect(result.current.toAsset).toBe('31566704')
+        expect(result.current.slippage).toBe('2.5')
+    })
 })

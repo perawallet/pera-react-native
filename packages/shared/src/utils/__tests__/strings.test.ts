@@ -12,6 +12,7 @@
 
 import { describe, test, expect } from 'vitest'
 import { encodeToBase64, decodeFromBase64 } from '../strings'
+import { hexToBytes, bytesToHex } from '../strings'
 import { formatCurrency, formatDatetime, formatRelativeTime } from '../strings'
 
 describe('utils/strings - base64 encoding', () => {
@@ -33,6 +34,31 @@ describe('utils/strings - base64 encoding', () => {
         const encoded = encodeToBase64(original)
         const decoded = decodeFromBase64(encoded)
         expect(Array.from(decoded)).toEqual(Array.from(original))
+    })
+})
+
+describe('utils/strings - hex encoding', () => {
+    test('hexToBytes converts hex string to Uint8Array', () => {
+        expect(Array.from(hexToBytes('00ff10'))).toEqual([0, 255, 16])
+    })
+
+    test('bytesToHex converts Uint8Array to hex string', () => {
+        expect(bytesToHex(new Uint8Array([0, 255, 16]))).toBe('00ff10')
+    })
+
+    test('round-trip hex encode/decode returns original bytes', () => {
+        const original = new Uint8Array([0, 1, 127, 128, 254, 255])
+        const hex = bytesToHex(original)
+        const decoded = hexToBytes(hex)
+        expect(Array.from(decoded)).toEqual(Array.from(original))
+    })
+
+    test('hexToBytes handles empty string', () => {
+        expect(Array.from(hexToBytes(''))).toEqual([])
+    })
+
+    test('bytesToHex handles empty array', () => {
+        expect(bytesToHex(new Uint8Array([]))).toBe('')
     })
 })
 

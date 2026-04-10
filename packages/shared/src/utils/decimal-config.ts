@@ -34,4 +34,17 @@ export const initDecimalConfig = () => {
 // Apply config immediately on import as a safety net
 initDecimalConfig()
 
+/**
+ * Null-safe equality check for two Decimal values.
+ * Returns true if both are null, or both are non-null and numerically equal.
+ */
+export const isDecimalEqual = (
+    a: Decimal | null,
+    b: Decimal | null,
+): boolean => {
+    if (a === b) return true
+    if (a === null || b === null) return false
+    return a.equals(b)
+}
+
 export { Decimal }

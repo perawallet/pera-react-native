@@ -156,7 +156,7 @@ export const MediaCarousel = ({
     return (
         <PWView style={styles.container}>
             <PagerView
-                style={{ flex: 1, height: dimensions.width }}
+                style={styles.pagerView}
                 onPageSelected={e => setActiveIndex(e.nativeEvent.position)}
             >
                 {displayMedia.map((item, index) => (

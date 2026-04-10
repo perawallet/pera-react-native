@@ -26,6 +26,7 @@ const initialState = {
     collectibleSortMode: 'titleAsc' as CollectibleSortMode,
     galleryLayout: 'grid' as GalleryLayout,
     showOptedIn: false,
+    showWatchAccounts: false,
 }
 
 export const useCollectiblePreferencesStore: UseBoundStore<
@@ -42,6 +43,9 @@ export const useCollectiblePreferencesStore: UseBoundStore<
             },
             setShowOptedIn: (show: boolean) => {
                 set({ showOptedIn: show })
+            },
+            setShowWatchAccounts: (show: boolean) => {
+                set({ showWatchAccounts: show })
             },
             resetState: () => set(initialState),
         }),

@@ -19,10 +19,12 @@ import type { AccountAssetSelectionListProps } from '@modules/assets/components/
 
 let capturedOnAssetSelected: ((asset: AssetWithAccountBalance) => void) | null =
     null
+let capturedExcludeAssetId: string | undefined = undefined
 
 vi.mock('@modules/assets/components/AccountAssetSelectionList', () => ({
     AccountAssetSelectionList: (props: AccountAssetSelectionListProps) => {
         capturedOnAssetSelected = props.onAssetSelected
+        capturedExcludeAssetId = props.excludeAssetId
         return <div data-testid='account-asset-selection-list' />
     },
 }))
@@ -63,6 +65,7 @@ describe('SwapAssetSelectionBottomSheet', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         capturedOnAssetSelected = null
+        capturedExcludeAssetId = undefined
     })
 
     it('renders when visible', () => {
@@ -116,6 +119,19 @@ describe('SwapAssetSelectionBottomSheet', () => {
         fireEvent.click(screen.getByTestId('close-icon'))
 
         expect(onClose).toHaveBeenCalled()
+    })
+
+    it('forwards excludeAssetId to AccountAssetSelectionList', () => {
+        render(
+            <SwapAssetSelectionBottomSheet
+                isVisible={true}
+                onClose={vi.fn()}
+                onAssetSelected={vi.fn()}
+                excludeAssetId='0'
+            />,
+        )
+
+        expect(capturedExcludeAssetId).toBe('0')
     })
 
     it('calls onAssetSelected and onClose when an asset is selected', () => {

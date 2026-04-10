@@ -15,12 +15,12 @@ import { z } from 'zod'
 export const transactionGroupSchema = z.object({
     purpose: z.enum(['opt-in', 'swap', 'fee']).optional(),
     transaction_group_id: z.string().optional(),
-    transactions: z.array(z.string()).optional(),
-    signed_transactions: z.array(z.string()).optional(),
+    transactions: z.array(z.string().nullable()).optional(),
+    signed_transactions: z.array(z.string().nullable()).optional(),
 })
 
 export const prepareTransactionsRequestSchema = z.object({
-    quote: z.number(),
+    quote: z.string(),
 })
 
 export const prepareTransactionsResponseSchema = z.object({

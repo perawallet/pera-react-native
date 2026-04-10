@@ -53,7 +53,7 @@ const STATUS_I18N_MAP: Record<
         title: 'account_type_info.standard_title',
         description: 'account_type_info.standard_description',
     },
-    ledger: {
+    hardware: {
         title: 'account_type_info.ledger_title',
         description: 'account_type_info.ledger_description',
     },
@@ -69,7 +69,7 @@ const STATUS_I18N_MAP: Record<
         title: 'account_type_info.rekeyed_standard_title',
         description: 'account_type_info.rekeyed_standard_description',
     },
-    rekeyedLedger: {
+    rekeyedHardware: {
         title: 'account_type_info.rekeyed_ledger_title',
         description: 'account_type_info.rekeyed_ledger_description',
     },

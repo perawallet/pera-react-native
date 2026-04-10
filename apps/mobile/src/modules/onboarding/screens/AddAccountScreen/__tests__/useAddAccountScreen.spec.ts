@@ -93,6 +93,16 @@ vi.mock('@perawallet/wallet-core-config', async () => {
     }
 })
 
+const mockParseDeeplink = vi.fn()
+vi.mock('@hooks/useDeepLink', () => ({
+    useDeepLink: () => ({
+        parseDeeplink: mockParseDeeplink,
+        handleDeepLink: vi.fn(),
+        isValidDeepLink: vi.fn(),
+        buildAccountDeeplink: vi.fn(),
+    }),
+}))
+
 vi.mock('react-i18next', async () => {
     const actual = await vi.importActual<object>('react-i18next')
     return {
