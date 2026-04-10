@@ -27,7 +27,7 @@ import {
     type GalleryLayout,
 } from '@perawallet/wallet-core-assets'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
-import { type CollectibleDisplayItem } from './types'
+import { type CollectibleDisplayItem } from '@modules/assets/types/collectible'
 import { useModalState } from '@hooks/useModalState'
 
 type UseAccountNftsResult = {

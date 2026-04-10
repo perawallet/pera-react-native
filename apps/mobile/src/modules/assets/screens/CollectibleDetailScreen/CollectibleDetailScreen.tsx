@@ -30,7 +30,7 @@ import { CollectibleInfoSection } from './CollectibleInfoSection'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { RoundButton } from '@components/RoundButton'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { CollectibeDescription } from './CollectibleDescription'
+import { CollectibleDescription } from './CollectibleDescription'
 
 export type CollectibleDetailScreenProps = NativeStackScreenProps<
     AccountStackParamsList,
@@ -48,7 +48,6 @@ export const CollectibleDetailScreen = ({
         asset,
         collectible,
         isPending,
-        isPure: _isPure,
         isWatch,
         traits,
         media,
@@ -155,7 +154,7 @@ export const CollectibleDetailScreen = ({
 
                     <CollectibleTraitsGrid traits={traits} />
 
-                    <CollectibeDescription
+                    <CollectibleDescription
                         description={collectible?.description}
                     />
 

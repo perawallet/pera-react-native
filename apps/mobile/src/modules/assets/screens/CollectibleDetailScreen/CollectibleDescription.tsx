@@ -16,7 +16,7 @@ import { ExpandableText } from '@components/ExpandableText'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 
-export const CollectibeDescription = ({
+export const CollectibleDescription = ({
     description,
 }: {
     description?: string

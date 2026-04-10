@@ -38,9 +38,9 @@ export const useStyles = makeStyles(theme => ({
         marginTop: theme.spacing.sm,
     },
     dot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
+        width: theme.spacing.sm,
+        height: theme.spacing.sm,
+        borderRadius: theme.borderRadius.full,
         backgroundColor: theme.colors.layerGrayLighter,
     },
     dotActive: {
