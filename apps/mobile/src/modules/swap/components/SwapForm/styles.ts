@@ -23,6 +23,7 @@ export const useStyles = makeStyles(theme => ({
         top: '50%',
         left: 0,
         right: 0,
+        transform: [{ translateY: '-50%' }],
         zIndex: theme.zIndex.layer1,
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -66,5 +67,15 @@ export const useStyles = makeStyles(theme => ({
     },
     maxText: {
         color: theme.colors.linkPrimary,
+    },
+    swapButton: {
+        marginTop: theme.spacing.lg,
+    },
+    errorContainer: {
+        paddingHorizontal: theme.spacing.lg,
+        paddingTop: theme.spacing.md,
+    },
+    errorText: {
+        color: theme.colors.negative,
     },
 }))

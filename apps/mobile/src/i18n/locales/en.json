@@ -1268,8 +1268,10 @@
             "terms_agreement": "By continuing, you agree to our swap partner's <0>Terms of Service</0>"
         },
         "form": {
+            "swap": "Swap",
             "you_pay": "You pay",
             "you_receive": "You receive",
+            "to": "To",
             "balance_label": "Balance: ",
             "max": "MAX",
             "select_asset": "Select"
@@ -1279,6 +1281,48 @@
             "search_placeholder": "Search by name or ID",
             "no_results_title": "No Matching Assets",
             "no_results_body": "No assets matched your search term"
+        },
+        "configuration": {
+            "title": "Swap settings",
+            "apply": "Apply",
+            "balance_percentage": "Balance percentage",
+            "balance_custom_hint": "Set custom percentage",
+            "balance_error": "Balance percentage must be between {{min}} and {{max}}",
+            "slippage_tolerance": "Slippage tolerance",
+            "slippage_custom_hint": "Set custom slippage",
+            "slippage_error": "Slippage must be between {{min}} and {{max}}",
+            "primary_currency": "Primary currency",
+            "use_local_currency": "Use local currency",
+            "custom": "Custom",
+            "max": "MAX",
+            "swap": "Swap",
+            "to": "TO"
+        },
+        "quote": {
+            "rate": "Rate",
+            "price_impact": "Price Impact",
+            "slippage_tolerance": "Slippage Tolerance",
+            "pera_fee": "Pera Fee",
+            "exchange_fee": "Exchange Fee",
+            "provider": "Provider",
+            "minimum_received": "Minimum Received",
+            "review_swap": "Review Swap",
+            "confirm_swap": "Confirm Swap",
+            "high_price_impact_warning": "This swap has a high price impact. You may receive significantly fewer tokens than expected.",
+            "quote_error": "Unable to get quotes. Please try again."
+        },
+        "execution": {
+            "signing": "Signing...",
+            "submitting": "Submitting...",
+            "finalizing": "Finalizing...",
+            "error": "Transaction failed. Please try again.",
+            "success_title": "Swap Complete",
+            "success_body": "Swapped {{fromAsset}} for {{toAsset}}"
+        },
+        "info": {
+            "slippage_tolerance": "The maximum difference between the expected price and the execution price. A higher tolerance increases the chance of a successful swap but may result in a less favorable rate.",
+            "price_impact": "The difference between the market price and the estimated price due to trade size. Larger trades typically have a higher price impact.",
+            "exchange_fee": "The fee charged by the decentralized exchange for facilitating this swap."
         }
     },
     "ledger": {

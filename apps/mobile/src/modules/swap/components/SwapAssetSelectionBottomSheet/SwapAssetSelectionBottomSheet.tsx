@@ -21,12 +21,14 @@ export type SwapAssetSelectionBottomSheetProps = {
     isVisible: boolean
     onClose: () => void
     onAssetSelected: (asset: AssetWithAccountBalance) => void
+    excludeAssetId?: string
 }
 
 export const SwapAssetSelectionBottomSheet = ({
     isVisible,
     onClose,
     onAssetSelected,
+    excludeAssetId,
 }: SwapAssetSelectionBottomSheetProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -61,6 +63,7 @@ export const SwapAssetSelectionBottomSheet = ({
             <AccountAssetSelectionList
                 onAssetSelected={handleAssetSelected}
                 isVisible={isVisible}
+                excludeAssetId={excludeAssetId}
                 searchPlaceholder={t('swap.asset_selection.search_placeholder')}
                 emptyResultTitle={t('swap.asset_selection.no_results_title')}
                 emptyResultBody={t('swap.asset_selection.no_results_body')}

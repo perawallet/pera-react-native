@@ -25,6 +25,7 @@ export type AccountAssetSelectionListProps = {
     isVisible?: boolean
     inBottomSheet?: boolean
     hasPadding?: boolean
+    excludeAssetId?: string
     searchPlaceholder: string
     emptyResultTitle: string
     emptyResultBody: string
@@ -35,6 +36,7 @@ export const AccountAssetSelectionList = ({
     isVisible,
     inBottomSheet,
     hasPadding = true,
+    excludeAssetId,
     searchPlaceholder,
     emptyResultTitle,
     emptyResultBody,
@@ -45,7 +47,7 @@ export const AccountAssetSelectionList = ({
         searchFilter,
         setSearchFilter,
         debouncedSearchFilter,
-    } = useAccountAssetSelectionList({ isVisible })
+    } = useAccountAssetSelectionList({ isVisible, excludeAssetId })
 
     const renderItem = useCallback(
         ({ item }: { item: AssetWithAccountBalance }) => (

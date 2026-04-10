@@ -42,7 +42,7 @@ export const calculateSwapAmountResponseSchema = z.object({
 export const createQuotesRequestSchema = z.object({
     swapper_address: z.string(),
     swap_type: swapTypeEnum,
-    device: z.number().nullable().optional(),
+    device: z.string().nullable().optional(),
     asset_in_id: z.number(),
     asset_out_id: z.number(),
     amount: z.string(),
