@@ -15,6 +15,7 @@ import {
     HDWalletAccount,
     ImportAccountType,
 } from '@perawallet/wallet-core-accounts'
+import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
 
 export type OnboardingStackParamList = {
     OnboardingHome: undefined
@@ -34,10 +35,27 @@ export type OnboardingStackParamList = {
     }
     ImportAccount: {
         accountType: ImportAccountType
+        mnemonic?: string
     }
     SearchAccounts: {
         account: WalletAccount
         createIfEmpty?: boolean
+    }
+    LedgerInstructions: undefined
+    LedgerScan: undefined
+    LedgerFetchAccounts: {
+        deviceId: string
+        deviceName: string
+    }
+    LedgerSelectAccounts: {
+        deviceId: string
+        deviceName: string
+        accounts: LedgerAccount[]
+    }
+    LedgerVerify: {
+        deviceId: string
+        deviceName: string
+        selectedAccounts: LedgerAccount[]
     }
 }
 
@@ -62,9 +80,26 @@ export type AddAccountStackParamList = {
     }
     ImportAccount: {
         accountType: ImportAccountType
+        mnemonic?: string
     }
     SearchAccounts: {
         account: WalletAccount
         createIfEmpty?: boolean
+    }
+    LedgerInstructions: undefined
+    LedgerScan: undefined
+    LedgerFetchAccounts: {
+        deviceId: string
+        deviceName: string
+    }
+    LedgerSelectAccounts: {
+        deviceId: string
+        deviceName: string
+        accounts: LedgerAccount[]
+    }
+    LedgerVerify: {
+        deviceId: string
+        deviceName: string
+        selectedAccounts: LedgerAccount[]
     }
 }

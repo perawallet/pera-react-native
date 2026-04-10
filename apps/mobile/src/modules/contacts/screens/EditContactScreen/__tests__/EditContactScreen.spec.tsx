@@ -30,12 +30,36 @@ vi.mock('@hookform/resolvers/zod', () => ({
     zodResolver: vi.fn(),
 }))
 
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    isValidAlgorandAddress: vi.fn(() => false),
+}))
+
+vi.mock('@perawallet/wallet-core-nfd', () => ({
+    useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
+}))
+
+vi.mock('@hooks/useDebouncedValue', () => ({
+    useDebouncedValue: (value: string) => value,
+}))
+
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...actual,
+        truncateAlgorandAddress: (addr: string) =>
+            addr.substring(0, 10) + '...',
+    }
+})
+
 vi.mock('react-hook-form', () => {
     return {
         useForm: () => ({
             control: {},
             handleSubmit: (fn: (data: unknown) => void) => fn,
             setError: vi.fn(),
+            setValue: vi.fn(),
+            watch: vi.fn(() => ''),
             formState: { isValid: true, errors: {} },
         }),
         Controller: ({

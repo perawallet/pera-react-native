@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback, useEffect, useState } from 'react'
 import { useTheme } from '@rneui/themed'
 import { PWButton, PWDialog, PWText, PWView } from '@components/core'
 import { ContactForm } from '@components/ContactForm'
@@ -25,6 +26,7 @@ import { useForm } from 'react-hook-form'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
+import { useNfdResolve } from '@hooks/useNfdResolve'
 
 export const EditContactScreen = () => {
     const styles = useStyles()
@@ -45,11 +47,35 @@ export const EditContactScreen = () => {
         control,
         handleSubmit,
         setError,
+        setValue,
+        watch,
         formState: { isValid, errors },
     } = useForm({
         resolver: zodResolver(contactSchema),
         defaultValues: selectedContact ?? {},
     })
+
+    const addressFieldValue = watch('address')
+    const [rawAddressInput, setRawAddressInput] = useState(
+        addressFieldValue ?? '',
+    )
+
+    const { resolvedAddress, isNfdResolved, isNfdResolving, nfdName } =
+        useNfdResolve(rawAddressInput, { enabled: !isEditMode })
+
+    useEffect(() => {
+        if (isNfdResolved) {
+            setValue('address', resolvedAddress, { shouldValidate: true })
+        }
+    }, [isNfdResolved, resolvedAddress, setValue])
+
+    const handleAddressInputChange = useCallback(
+        (text: string) => {
+            setRawAddressInput(text)
+            setValue('address', text, { shouldValidate: true })
+        },
+        [setValue],
+    )
 
     const save = (data: Contact) => {
         if (!isEditMode) {
@@ -89,12 +115,20 @@ export const EditContactScreen = () => {
         <>
             <ContactForm
                 control={control}
-                address={selectedContact?.address ?? ''}
+                address={
+                    isNfdResolved
+                        ? resolvedAddress
+                        : (selectedContact?.address ?? '')
+                }
                 nameLabel={t('contacts.edit_contact.name_label')}
                 addressLabel={t('contacts.edit_contact.address_label')}
                 nameError={errors.name?.message}
                 isAddressEditable={!isEditMode}
                 addressError={errors.address?.message}
+                nfdName={isNfdResolved ? nfdName : undefined}
+                isResolvingNfd={isNfdResolving}
+                onAddressInputChange={handleAddressInputChange}
+                rawAddressInput={rawAddressInput}
             >
                 <PWView style={styles.buttonContainer}>
                     {isEditMode && (

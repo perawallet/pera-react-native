@@ -27,7 +27,7 @@ import {
     type GalleryLayout,
 } from '@perawallet/wallet-core-assets'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
-import { type CollectibleDisplayItem } from './types'
+import { type CollectibleDisplayItem } from '@modules/assets/types/collectible'
 import { useModalState } from '@hooks/useModalState'
 
 type UseAccountNftsResult = {
@@ -40,14 +40,16 @@ type UseAccountNftsResult = {
     searchFilter: string
     sortMode: CollectibleSortMode
     showOptedIn: boolean
+    isAddNftSheetVisible: boolean
+    showWatchAccounts: boolean
     isManageSheetVisible: boolean
     isSortSheetVisible: boolean
     isFilterSheetVisible: boolean
-    isAddNftSheetVisible: boolean
     setSearchFilter: (value: string) => void
     setGalleryLayout: (layout: GalleryLayout) => void
     setSortMode: (mode: CollectibleSortMode) => void
     setShowOptedIn: (value: boolean) => void
+    setShowWatchAccounts: (value: boolean) => void
     handlePress: (item: CollectibleDisplayItem) => void
     openManageSheet: () => void
     closeManageSheet: () => void
@@ -80,10 +82,20 @@ const sortCollectibles = (
             )
             break
         case 'newestFirst':
-            sorted.sort((a, b) => Number(BigInt(b.assetId) - BigInt(a.assetId)))
+            sorted.sort((a, b) => {
+                const aId = BigInt(a.assetId)
+                const bId = BigInt(b.assetId)
+                if (aId === bId) return 0
+                return aId < bId ? 1 : -1
+            })
             break
         case 'oldestFirst':
-            sorted.sort((a, b) => Number(BigInt(a.assetId) - BigInt(b.assetId)))
+            sorted.sort((a, b) => {
+                const aId = BigInt(a.assetId)
+                const bId = BigInt(b.assetId)
+                if (aId === bId) return 0
+                return aId < bId ? -1 : 1
+            })
             break
     }
 
@@ -104,6 +116,9 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     const showOptedIn = useCollectiblePreferencesStore(
         state => state.showOptedIn,
     )
+    const showWatchAccounts = useCollectiblePreferencesStore(
+        state => state.showWatchAccounts,
+    )
     const setSortMode = useCollectiblePreferencesStore(
         state => state.setCollectibleSortMode,
     )
@@ -112,6 +127,9 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     )
     const setShowOptedIn = useCollectiblePreferencesStore(
         state => state.setShowOptedIn,
+    )
+    const setShowWatchAccounts = useCollectiblePreferencesStore(
+        state => state.setShowWatchAccounts,
     )
 
     const manageSheetModel = useModalState()
@@ -159,9 +177,9 @@ export const useAccountNfts = (): UseAccountNftsResult => {
             if (!asset || !isCollectible(asset)) {
                 continue
             }
-            const isOptedIn = balance.amount.isZero()
+            const isOptedInOnly = balance.amount.isZero()
 
-            if (isOptedIn && !showOptedIn) {
+            if (isOptedInOnly && !showOptedIn) {
                 continue
             }
 
@@ -216,10 +234,12 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         isSortSheetVisible: sortSheetModel.isOpen,
         isFilterSheetVisible: filterSheetModel.isOpen,
         isAddNftSheetVisible: addNftSheetModel.isOpen,
+        showWatchAccounts,
         setSearchFilter,
         setGalleryLayout,
         setSortMode,
         setShowOptedIn,
+        setShowWatchAccounts,
         handlePress,
         openManageSheet: manageSheetModel.open,
         closeManageSheet: manageSheetModel.close,

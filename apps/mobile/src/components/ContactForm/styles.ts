@@ -32,5 +32,13 @@ export const useStyles = makeStyles(theme => {
                     : theme.colors.textGray,
             marginBottom: theme.spacing.xs,
         },
+        nfdStatus: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.sm,
+        },
+        nfdStatusText: {
+            color: theme.colors.textGray,
+        },
     }
 })

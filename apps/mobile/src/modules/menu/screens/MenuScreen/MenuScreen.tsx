@@ -60,7 +60,10 @@ export const MenuScreen = () => {
                             variant='primary'
                         />
                     </PWTouchableOpacity>
-                    <PWTouchableOpacity onPress={goToSettings}>
+                    <PWTouchableOpacity
+                        onPress={goToSettings}
+                        testID='menu_settings_button'
+                    >
                         <PWIcon
                             name='gear'
                             variant='primary'
@@ -77,13 +80,6 @@ export const MenuScreen = () => {
                     leftIcon='dot-stack'
                     rightIcon='chevron-right'
                     onPress={goToStaking}
-                />
-                <PanelButton
-                    title={t('menu.nfts')}
-                    titleWeight='h3'
-                    leftIcon='card-stack'
-                    rightIcon='chevron-right'
-                    onPress={() => {}}
                 />
                 <PanelButton
                     title={t('menu.buy_gift_card')}

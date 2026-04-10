@@ -30,6 +30,7 @@ import { NavigationHeader } from '@components/NavigationHeader'
 import { getNavigationTheme } from '@theme/theme'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { TransactionDetailsScreen } from '@modules/signing/screens/TransactionDetailsScreen'
+import { GroupTransactionListScreen } from '@modules/transactions/screens/GroupTransactionListScreen'
 import { useHasAccounts } from '@perawallet/wallet-core-accounts'
 import { useIsOnboarding } from '@modules/onboarding/hooks'
 
@@ -110,6 +111,18 @@ export const MainRoutes = () => {
                                 }}
                                 layout={fullScreenLayout}
                                 component={StakingScreen}
+                            />
+                            <RootStack.Screen
+                                name='GroupTransactionList'
+                                layout={fullScreenLayout}
+                                component={GroupTransactionListScreen}
+                                options={{
+                                    headerShown: true,
+                                    header: (props: NativeStackHeaderProps) => (
+                                        <NavigationHeader {...props} />
+                                    ),
+                                    title: 'transactions.group.group_number',
+                                }}
                             />
                             <RootStack.Screen
                                 name='TransactionDetails'

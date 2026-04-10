@@ -29,12 +29,28 @@ export const useStyles = makeStyles(theme => {
         },
         contentContainer: {
             gap: theme.spacing.lg,
+            flex: 1,
         },
         title: {},
         accountDisplay: {
             flexDirection: 'row',
             alignItems: 'center',
             gap: theme.spacing.md,
+        },
+        nfdItem: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.md,
+        },
+        nfdInfo: {
+            flex: 1,
+        },
+        nfdAddress: {
+            color: theme.colors.textGray,
+        },
+        loadingContainer: {
+            paddingVertical: theme.spacing.xl,
+            alignItems: 'center',
         },
     }
 })

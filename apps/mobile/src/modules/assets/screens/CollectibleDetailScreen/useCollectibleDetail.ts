@@ -15,7 +15,6 @@ import { useCallback, useMemo, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import {
     useSingleAssetDetailsQuery,
-    isPureNft,
     type PeraAsset,
     type PeraCollectible,
     type CollectibleTrait,
@@ -45,7 +44,6 @@ type UseCollectibleDetailResult = {
     asset: PeraAsset | undefined
     collectible: PeraCollectible | undefined
     isPending: boolean
-    isPure: boolean
     isWatch: boolean
     traits: CollectibleTrait[]
     media: CollectibleMedia[]
@@ -97,7 +95,6 @@ export const useCollectibleDetail = (
 
     const collectible = asset?.peraMetadata?.collectible
     const isWatch = account ? !isSigningAccount(account, allAccounts) : true
-    const isPure = asset ? isPureNft(asset) : false
     const traits = collectible?.traits ?? []
     const media = collectible?.media ?? []
 
@@ -290,7 +287,6 @@ export const useCollectibleDetail = (
         asset,
         collectible,
         isPending,
-        isPure,
         isWatch,
         traits,
         media,
