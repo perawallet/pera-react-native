@@ -81,7 +81,7 @@ export const ManageAssetsBottomSheet = ({
                     testID='manage_assets_filter'
                 >
                     <PWIcon
-                        name='sliders'
+                        name='funnel'
                         variant='primary'
                         size='sm'
                     />

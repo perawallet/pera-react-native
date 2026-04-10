@@ -16,18 +16,13 @@ import { Decimal } from 'decimal.js'
 import { useSortedAssetBalances } from '../useSortedAssetBalances'
 
 let mockSortMode = 'balanceDesc'
-let mockHideZero = false
 const mockSetSortMode = vi.fn()
-const mockSetHideZero = vi.fn()
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    ALGO_ASSET_ID: '0',
     useAssetPreferencesStore: vi.fn((selector: (state: unknown) => unknown) =>
         selector({
             assetSortMode: mockSortMode,
-            hideZeroBalance: mockHideZero,
             setAssetSortMode: mockSetSortMode,
-            setHideZeroBalance: mockSetHideZero,
         }),
     ),
 }))
@@ -53,7 +48,6 @@ const mockBalances = [
 describe('useSortedAssetBalances', () => {
     beforeEach(() => {
         mockSortMode = 'balanceDesc'
-        mockHideZero = false
     })
 
     it('sorts by balance descending by default with favorited first', () => {
@@ -114,39 +108,6 @@ describe('useSortedAssetBalances', () => {
         const ids = result.current.sortedBalances.map(b => b.assetId)
         // Favorited first: Apple ('2'), then rest alphabetical desc: Cherry ('3'), Banana ('1'), Algorand ('0')
         expect(ids).toEqual(['2', '3', '1', '0'])
-    })
-
-    it('filters zero balance items when hideZeroBalance is true but keeps ALGO', () => {
-        // Arrange
-        mockHideZero = true
-
-        // Act
-        const { result } = renderHook(() =>
-            useSortedAssetBalances(mockBalances, mockAssets as never),
-        )
-
-        // Assert
-        const ids = result.current.sortedBalances.map(b => b.assetId)
-        // Asset '3' (Cherry) has zero balance and should be removed
-        // Asset '0' (Algorand) has zero-exemption via ALGO_ASSET_ID, but here amount is 1000 anyway
-        expect(ids).not.toContain('3')
-        expect(ids).toContain('0')
-        expect(result.current.sortedBalances).toHaveLength(3)
-    })
-
-    it('keeps zero balance items when hideZeroBalance is false', () => {
-        // Arrange
-        mockHideZero = false
-
-        // Act
-        const { result } = renderHook(() =>
-            useSortedAssetBalances(mockBalances, mockAssets as never),
-        )
-
-        // Assert
-        const ids = result.current.sortedBalances.map(b => b.assetId)
-        expect(ids).toContain('3')
-        expect(result.current.sortedBalances).toHaveLength(4)
     })
 
     it('always places favorited assets before non-favorited', () => {

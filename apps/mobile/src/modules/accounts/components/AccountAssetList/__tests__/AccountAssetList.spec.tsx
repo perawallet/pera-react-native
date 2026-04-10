@@ -73,8 +73,12 @@ vi.mock('@perawallet/wallet-core-assets', async () => ({
         selector({
             assetSortMode: 'balanceDesc',
             hideZeroBalance: false,
+            displayNfts: true,
+            displayOptedInNfts: true,
             setAssetSortMode: vi.fn(),
             setHideZeroBalance: vi.fn(),
+            setDisplayNfts: vi.fn(),
+            setDisplayOptedInNfts: vi.fn(),
         }),
     ),
     useAssetPricesQuery: vi.fn(() => ({

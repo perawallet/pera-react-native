@@ -78,6 +78,17 @@ export class RNSecureStorageService implements SecureStorageService {
         })
     }
 
+    async clearAll(): Promise<void> {
+        const services = await Keychain.getAllGenericPasswordServices()
+        const prefix = this.baseOpts.service ?? SERVICE_PREFIX
+
+        await Promise.allSettled(
+            services
+                .filter(service => service.startsWith(prefix))
+                .map(service => Keychain.resetGenericPassword({ service })),
+        )
+    }
+
     async authenticate(): Promise<boolean> {
         //TODO implement me
         return true

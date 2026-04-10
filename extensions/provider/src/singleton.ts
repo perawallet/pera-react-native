@@ -13,6 +13,7 @@
 import { Store } from '@tanstack/store'
 import Hook from 'before-after-hook'
 import type { KeyStoreState } from '@algorandfoundation/keystore'
+import { clear as clearKeystoreStore } from '@algorandfoundation/react-native-keystore'
 import { PeraProvider } from './pera-provider'
 
 const keystoreStore = new Store<KeyStoreState>({
@@ -55,6 +56,14 @@ export const initializeProvider = (provider: PeraProvider): void => {
         throw new Error('Provider already initialized.')
     }
     instance = provider
+}
+
+/**
+ * Clears all keys from the keystore's persistent storage and reactive store.
+ * Used during "delete all data" flows as a safety net after individual key deletion.
+ */
+export const clearKeystore = async (): Promise<void> => {
+    await clearKeystoreStore({ store: keystoreStore })
 }
 
 /**

@@ -23,5 +23,6 @@ export interface SecureStorageService {
     setItem(key: string, value: Uint8Array): Promise<void>
     getItem(key: string): Promise<Uint8Array | null>
     removeItem(key: string): Promise<void>
+    clearAll(): Promise<void>
     authenticate(): Promise<boolean>
 }

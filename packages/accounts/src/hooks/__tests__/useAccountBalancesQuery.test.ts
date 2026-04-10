@@ -202,6 +202,95 @@ describe('useAccountBalances', () => {
         expect(result.current.portfolioAlgoValue).toEqual(new Decimal(55.5))
     })
 
+    it('passes filters through to getAccountHoldings', async () => {
+        const account: WalletAccount = {
+            address: 'ADDR1',
+            name: 'Account 1',
+            id: '1',
+            type: 'algo25',
+            canSign: true,
+        }
+
+        mockGetAccountBalance.mockReturnValue({
+            accountAddress: 'ADDR1',
+            algoBalance: new Decimal(1),
+            totalAssetsOptedIn: 0,
+            totalCreatedAssets: 0,
+            totalAppsOptedIn: 0,
+            authAddress: null,
+        })
+        mockGetAccountHoldings.mockReturnValue([])
+
+        const filters = {
+            hideZeroBalance: true,
+            hideNfts: true,
+            hideOptedInNfts: false,
+        }
+
+        const { result } = renderHook(
+            () => useAccountBalancesQuery([account], true, filters),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        expect(mockGetAccountHoldings).toHaveBeenCalledWith(
+            expect.objectContaining({
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                hideZeroBalance: true,
+                hideNfts: true,
+                hideOptedInNfts: false,
+            }),
+        )
+    })
+
+    it('refetches with a fresh DB read when filters change', async () => {
+        const account: WalletAccount = {
+            address: 'ADDR1',
+            name: 'Account 1',
+            id: '1',
+            type: 'algo25',
+            canSign: true,
+        }
+
+        mockGetAccountBalance.mockReturnValue({
+            accountAddress: 'ADDR1',
+            algoBalance: new Decimal(1),
+            totalAssetsOptedIn: 0,
+            totalCreatedAssets: 0,
+            totalAppsOptedIn: 0,
+            authAddress: null,
+        })
+        mockGetAccountHoldings.mockReturnValue([])
+
+        const { result, rerender } = renderHook(
+            ({ hideNfts }: { hideNfts: boolean }) =>
+                useAccountBalancesQuery([account], true, { hideNfts }),
+            {
+                wrapper: createWrapper(),
+                initialProps: { hideNfts: false },
+            },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        const initialCalls = mockGetAccountHoldings.mock.calls.length
+        expect(initialCalls).toBeGreaterThan(0)
+
+        rerender({ hideNfts: true })
+
+        await waitFor(() =>
+            expect(mockGetAccountHoldings.mock.calls.length).toBeGreaterThan(
+                initialCalls,
+            ),
+        )
+
+        const lastCallArgs = mockGetAccountHoldings.mock.calls.at(-1)?.[0]
+        expect(lastCallArgs).toEqual(
+            expect.objectContaining({ hideNfts: true }),
+        )
+    })
+
     it('handles assets with zero price correctly', async () => {
         const account: WalletAccount = {
             address: 'ADDR1',

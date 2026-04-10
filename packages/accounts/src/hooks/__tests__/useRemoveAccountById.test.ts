@@ -143,4 +143,110 @@ describe('useRemoveAccountById', () => {
         expect(deleteKeySpy).toHaveBeenCalledWith('hd-1')
         expect(keyStoreRemoveSpy).not.toHaveBeenCalled()
     })
+
+    test('removeAccountById preserves shared entropy key when other HD accounts use it', async () => {
+        const accounts: WalletAccount[] = [
+            {
+                id: '1',
+                name: 'HD-1',
+                type: 'hdWallet',
+                address: 'ADDR1',
+                keyPairId: 'hd-1',
+                hdWalletDetails: {
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                },
+                entropyKeyId: 'shared-entropy',
+            },
+            {
+                id: '2',
+                name: 'HD-2',
+                type: 'hdWallet',
+                address: 'ADDR2',
+                keyPairId: 'hd-2',
+                hdWalletDetails: {
+                    account: 0,
+                    change: 0,
+                    keyIndex: 1,
+                    derivationType: 9,
+                },
+                entropyKeyId: 'shared-entropy',
+            },
+        ]
+        useAccountsStore.setState({ accounts })
+
+        const { result } = renderHook(() => useRemoveAccountById())
+
+        await act(async () => {
+            await result.current('1')
+        })
+
+        expect(useAccountsStore.getState().accounts).toHaveLength(1)
+        expect(deleteKeySpy).toHaveBeenCalledWith('hd-1')
+        expect(keyStoreRemoveSpy).not.toHaveBeenCalled()
+    })
+
+    test('removeAccountById deletes entropy key when last HD account using it is removed', async () => {
+        const accounts: WalletAccount[] = [
+            {
+                id: '1',
+                name: 'HD-1',
+                type: 'hdWallet',
+                address: 'ADDR1',
+                keyPairId: 'hd-1',
+                hdWalletDetails: {
+                    account: 0,
+                    change: 0,
+                    keyIndex: 0,
+                    derivationType: 9,
+                },
+                entropyKeyId: 'shared-entropy',
+            },
+        ]
+        useAccountsStore.setState({ accounts })
+
+        const { result } = renderHook(() => useRemoveAccountById())
+
+        await act(async () => {
+            await result.current('1')
+        })
+
+        expect(useAccountsStore.getState().accounts).toEqual([])
+        expect(deleteKeySpy).toHaveBeenCalledWith('hd-1')
+        expect(keyStoreRemoveSpy).toHaveBeenCalledWith('shared-entropy')
+    })
+
+    test('removeAccountById preserves shared seed key when other algo25 accounts use it', async () => {
+        const accounts: WalletAccount[] = [
+            {
+                id: '1',
+                name: 'A25-1',
+                type: 'algo25',
+                address: 'ADDR1',
+                keyPairId: 'kp-1',
+                seedKeyId: 'shared-seed',
+            },
+            {
+                id: '2',
+                name: 'A25-2',
+                type: 'algo25',
+                address: 'ADDR2',
+                keyPairId: 'kp-2',
+                seedKeyId: 'shared-seed',
+            },
+        ]
+        useAccountsStore.setState({ accounts })
+
+        const { result } = renderHook(() => useRemoveAccountById())
+
+        await act(async () => {
+            await result.current('1')
+        })
+
+        expect(useAccountsStore.getState().accounts).toHaveLength(1)
+        expect(deleteKeySpy).toHaveBeenCalledWith('kp-1')
+        expect(keyStoreRemoveSpy).not.toHaveBeenCalled()
+    })
 })

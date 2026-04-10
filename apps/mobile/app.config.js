@@ -151,6 +151,7 @@ module.exports = {
         category: ['DEFAULT', 'BROWSABLE'],
       },
     ],
+    allowBackup: false,
     // Firebase config - stored in config/ directory (not in native folder)
     googleServicesFile: './config/google-services.json',
   },

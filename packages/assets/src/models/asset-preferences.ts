@@ -24,6 +24,10 @@ export type AssetSortMode = (typeof AssetSortModes)[keyof typeof AssetSortModes]
 export type AssetPreferencesState = BaseStoreState & {
     assetSortMode: AssetSortMode
     hideZeroBalance: boolean
+    displayNfts: boolean
+    displayOptedInNfts: boolean
     setAssetSortMode: (mode: AssetSortMode) => void
     setHideZeroBalance: (hide: boolean) => void
+    setDisplayNfts: (display: boolean) => void
+    setDisplayOptedInNfts: (display: boolean) => void
 }

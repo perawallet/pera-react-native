@@ -11,14 +11,25 @@
  */
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import {
+    deleteDatabase,
+    initializeDatabase,
+} from '@perawallet/wallet-core-database'
 import { useDeleteDeviceMutation } from '@perawallet/wallet-core-device'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { usePinCode } from '@perawallet/wallet-core-security'
 import { clearAllStores, logger } from '@perawallet/wallet-core-shared'
+import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
+import {
+    getProvider,
+    clearKeystore,
+} from '@perawallet/wallet-extension-provider'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
 
 const ACCOUNTS_STORE_NAME = 'accounts-store'
+const REACT_QUERY_PERSIST_KEY = 'reactQuery'
 
 export const clearAccountsStore = () => {
     useAccountsStore.getState().resetState()
@@ -34,12 +45,17 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
     const queryClient = useQueryClient()
     const { mutateAsync: deleteDevices } = useDeleteDeviceMutation()
     const { savePin } = usePinCode()
+    const { network } = useNetwork()
+    const { deleteAllSessions } = useWalletConnect(network)
 
     const deleteAllData = useCallback(async () => {
+        // 1. Clear React Query — both in-memory and persisted cache
         if (queryClient) {
             queryClient.removeQueries()
         }
+        getProvider().keyValueStorage.removeItem(REACT_QUERY_PERSIST_KEY)
 
+        // 2. Delete all cryptographic keys from keystore
         if (keys) {
             await Promise.allSettled(
                 Array.from(keys.values()).map(async k => {
@@ -50,20 +66,50 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
             )
         }
 
+        // 3. Bulk-clear keystore MMKV as safety net for any orphaned keys
+        try {
+            await clearKeystore()
+        } catch (e) {
+            logger.error('Failed to clear keystore', { error: e })
+        }
+
+        // 4. Disconnect WalletConnect peers before wiping store data
+        try {
+            await deleteAllSessions()
+        } catch (e) {
+            logger.error('Failed to disconnect WalletConnect sessions', {
+                error: e,
+            })
+        }
+
+        // 5. Unregister device from push notification backend
         try {
             await deleteDevices()
         } catch (e) {
             logger.error('Failed to delete devices', { error: e })
         }
 
-        // Clear PIN and biometrics from secure storage
+        // 6. Clear PIN and biometrics from secure storage
         await savePin(null)
 
-        // Clear all stores except accounts — accounts store is cleared
-        // separately after the success dialog so the navigation guard
-        // doesn't redirect before the user sees the confirmation
+        // 7. Delete SQLite database file, then re-initialize with empty DB
+        // so the app remains functional after cleanup
+        try {
+            await deleteDatabase(getProvider().database)
+            await initializeDatabase(getProvider().database)
+        } catch (e) {
+            logger.error('Failed to delete database', { error: e })
+        }
+
         clearAllStores({ skip: [ACCOUNTS_STORE_NAME] })
-    }, [queryClient, keys, deleteKey, savePin, deleteDevices])
+    }, [
+        queryClient,
+        keys,
+        deleteKey,
+        savePin,
+        deleteDevices,
+        deleteAllSessions,
+    ])
 
     return { deleteAllData }
 }

@@ -27,7 +27,11 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAccountBalancesQueryKey } from './querykeys'
-import { getAccountBalance, getAccountHoldings } from '../db'
+import {
+    getAccountBalance,
+    getAccountHoldings,
+    type AccountHoldingsFilters,
+} from '../db'
 
 type AccountDbSnapshot = {
     algoBalance: Decimal
@@ -37,6 +41,7 @@ type AccountDbSnapshot = {
 async function readAccountFromDb(
     address: string,
     network: string,
+    filters?: AccountHoldingsFilters,
 ): Promise<AccountDbSnapshot> {
     const balance = await getAccountBalance({
         accountAddress: address,
@@ -45,6 +50,7 @@ async function readAccountFromDb(
     const holdings = await getAccountHoldings({
         accountAddress: address,
         network,
+        ...filters,
     })
 
     return {
@@ -56,6 +62,7 @@ async function readAccountFromDb(
 export const useAccountBalancesQuery = (
     accounts: WalletAccount[],
     enabled?: boolean,
+    filters?: AccountHoldingsFilters,
 ): AccountBalancesWithTotals => {
     const { network } = useNetwork()
     const hasAccounts = !!accounts?.length
@@ -67,13 +74,24 @@ export const useAccountBalancesQuery = (
         return accounts.map(acc => {
             const address = acc.address
             return {
-                queryKey: getAccountBalancesQueryKey(address, network),
+                queryKey: getAccountBalancesQueryKey(address, network, filters),
                 enabled: !!address && enabled,
                 staleTime: Infinity,
-                queryFn: () => readAccountFromDb(address, network),
+                queryFn: () => readAccountFromDb(address, network, filters),
             }
         })
-    }, [accounts, hasAccounts, enabled, network])
+        // filters is a stable object passed from a Zustand selector or memoized
+        // by the caller; deep equality is enforced via getAccountBalancesQueryKey.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [
+        accounts,
+        hasAccounts,
+        enabled,
+        network,
+        filters?.hideZeroBalance,
+        filters?.hideNfts,
+        filters?.hideOptedInNfts,
+    ])
 
     // notifyOnChangeProps: 'all' disables Proxy-based property tracking in TanStack Query.
     // This works around a race condition in QueriesObserver where _observerMatches and _result
