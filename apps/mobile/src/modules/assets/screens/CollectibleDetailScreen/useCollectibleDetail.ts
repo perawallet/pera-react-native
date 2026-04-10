@@ -42,7 +42,6 @@ type UseCollectibleDetailResult = {
     asset: PeraAsset | undefined
     collectible: PeraCollectible | undefined
     isPending: boolean
-    isPure: boolean
     isWatch: boolean
     traits: CollectibleTrait[]
     media: CollectibleMedia[]
@@ -52,7 +51,6 @@ type UseCollectibleDetailResult = {
     handleSharePressed: () => void
     handleCopyImage: () => void
     handleSaveImage: () => void
-    handleMediaPress: (index: number) => void
     fullScreenMedia: FullScreenMediaItem[]
     fullScreenInitialIndex: number
     fullScreenViewerModal: ModalState
@@ -80,7 +78,6 @@ export const useCollectibleDetail = (
 
     const collectible = asset?.peraMetadata?.collectible
     const isWatch = account ? !isSigningAccount(account, allAccounts) : true
-    const isPure = asset ? isPureNft(asset) : false
     const traits = collectible?.traits ?? []
     const media = collectible?.media ?? []
 
@@ -239,7 +236,6 @@ export const useCollectibleDetail = (
         asset,
         collectible,
         isPending,
-        isPure,
         isWatch,
         traits,
         media,
@@ -249,7 +245,6 @@ export const useCollectibleDetail = (
         handleSharePressed,
         handleCopyImage,
         handleSaveImage,
-        handleMediaPress,
         fullScreenMedia,
         fullScreenInitialIndex,
         fullScreenViewerModal,

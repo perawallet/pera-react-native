@@ -17,8 +17,8 @@ import * as Clipboard from 'expo-clipboard'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { OnboardingStackParamList } from '../../routes/types'
 import {
+    MNEMONIC_WORD_COUNT,
     useImportAccount,
-    ImportAccountType,
 } from '@perawallet/wallet-core-accounts'
 import { MNEMONIC_WORDLIST as WORDLIST } from '@perawallet/wallet-core-kms'
 import { config } from '@perawallet/wallet-core-config'
@@ -34,16 +34,11 @@ import { useKeyboardHeight } from '@hooks/useKeyboardHeight'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { DeeplinkType } from '@hooks/deeplink/types'
 
-const MNEMONIC_LENGTH_MAP: Record<ImportAccountType, number> = {
-    hdWallet: 24,
-    algo25: 25,
-}
-
 const MAX_SUGGESTIONS = 4
 
 export function useImportAccountScreen(): UseImportAccountScreenResult {
     const {
-        params: { accountType },
+        params: { accountType, mnemonic: initialMnemonic },
     } = useRoute<RouteProp<OnboardingStackParamList, 'ImportAccount'>>()
     const navigation = useAppNavigation()
     const importAccount = useImportAccount()
@@ -53,7 +48,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
 
     const { isKeyboardVisible, keyboardHeight } = useKeyboardHeight()
 
-    const mnemonicLength = MNEMONIC_LENGTH_MAP[accountType]
+    const mnemonicLength = MNEMONIC_WORD_COUNT[accountType]
 
     const [words, setWords] = useState<string[]>(
         new Array(mnemonicLength).fill(''),
@@ -90,6 +85,13 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
 
     const focusInput = useCallback((index: number) => {
         inputRefs.current[index]?.focus()
+    }, [])
+
+    useEffect(() => {
+        if (initialMnemonic) {
+            updateWord(initialMnemonic, 0)
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     useEffect(() => {

@@ -23,15 +23,17 @@ import { SearchInput } from '@components/SearchInput'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useAccountNfts } from './useAccountNfts'
-import { CollectibleGridItem } from '../CollectibleGridItem'
-import { CollectibleListItem } from '../CollectibleListItem'
+import {
+    CollectibleGridItem,
+    CollectibleListItem,
+} from '@modules/assets/components'
 import { NftEmptyState } from '../NftEmptyState'
 import { ManageNftsBottomSheet } from '../ManageNftsBottomSheet'
 import { NftSortBottomSheet } from '../NftSortBottomSheet'
 import { NftFilterBottomSheet } from '../NftFilterBottomSheet'
-import type { CollectibleDisplayItem } from './types'
 import { LoadingView } from '@components/LoadingView'
 import { EmptyView } from '@components/EmptyView'
+import { CollectibleDisplayItem } from '@modules/assets/types/collectible'
 
 const GRID_COLUMNS = 2
 const SKELETON_COUNT = 6
@@ -60,6 +62,7 @@ export const AccountNfts = () => {
         searchFilter,
         sortMode,
         showOptedIn,
+        showWatchAccounts,
         isManageSheetVisible,
         isSortSheetVisible,
         isFilterSheetVisible,
@@ -67,6 +70,7 @@ export const AccountNfts = () => {
         setGalleryLayout,
         setSortMode,
         setShowOptedIn,
+        setShowWatchAccounts,
         handlePress,
         openManageSheet,
         closeManageSheet,
@@ -82,15 +86,13 @@ export const AccountNfts = () => {
         ({ item }: { item: CollectibleDisplayItem }) =>
             isGrid ? (
                 <CollectibleGridItem
-                    asset={item.asset}
-                    amount={item.amount}
-                    onPress={() => handlePress(item)}
+                    item={item}
+                    onPress={handlePress}
                 />
             ) : (
                 <CollectibleListItem
-                    asset={item.asset}
-                    amount={item.amount}
-                    onPress={() => handlePress(item)}
+                    item={item}
+                    onPress={handlePress}
                 />
             ),
         [isGrid, handlePress],
@@ -224,7 +226,9 @@ export const AccountNfts = () => {
                 isVisible={isFilterSheetVisible}
                 onClose={closeFilterSheet}
                 showOptedIn={showOptedIn}
+                showWatchAccounts={showWatchAccounts}
                 onToggleOptedIn={setShowOptedIn}
+                onToggleWatchAccounts={setShowWatchAccounts}
             />
         </PWView>
     )

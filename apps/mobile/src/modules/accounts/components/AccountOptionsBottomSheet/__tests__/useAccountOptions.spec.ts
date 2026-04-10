@@ -116,7 +116,12 @@ describe('useAccountOptions', () => {
         id: 'acc-4',
         address: 'HARDWAREADDRESS',
         type: AccountTypes.hardware,
-        hardwareDetails: { manufacturer: 'ledger' },
+        hardwareDetails: {
+            manufacturer: 'ledger',
+            deviceId: 'test-device',
+            deviceName: 'Ledger Nano X',
+            accountIndex: 0,
+        },
     }
 
     beforeEach(() => {

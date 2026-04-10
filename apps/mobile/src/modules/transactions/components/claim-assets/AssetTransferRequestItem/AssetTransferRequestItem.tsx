@@ -13,10 +13,8 @@
 import { PWBadge, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
-import {
-    DEFAULT_PRECISION,
-    truncateAlgorandAddress,
-} from '@perawallet/wallet-core-shared'
+import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
+import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { useStyles } from './styles'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { AssetIcon } from '@modules/assets/components'
@@ -39,6 +37,10 @@ export const AssetTransferRequestItem = ({
 
     const firstSender = senders.results[0]
     const remainingCount = senders.count - 1
+    const { displayName: senderDisplayName } = useResolvedAddress(
+        firstSender?.sender.address ?? '',
+        { enabled: !!firstSender?.sender.address && !firstSender?.sender.name },
+    )
 
     const amount = useMemo(
         () => toWholeUnits(totalAmount, asset),
@@ -81,10 +83,7 @@ export const AssetTransferRequestItem = ({
                             <PWBadge
                                 variant='secondary'
                                 value={
-                                    firstSender.sender.name ??
-                                    truncateAlgorandAddress(
-                                        firstSender.sender.address,
-                                    )
+                                    firstSender.sender.name ?? senderDisplayName
                                 }
                             />
                         )}

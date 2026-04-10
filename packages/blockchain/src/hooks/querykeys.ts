@@ -30,6 +30,11 @@ export const getTransactionDetailQueryKey = (
     network: Network,
 ) => [MODULE_PREFIX, 'transaction-detail', { transactionId, network }]
 
+export const getGroupTransactionsQueryKey = (
+    groupId: string,
+    network: Network,
+) => [MODULE_PREFIX, 'group-transactions', { groupId, network }]
+
 export const getArc59SendSummaryQueryKey = (
     receiverAddress: string,
     assetId: string,

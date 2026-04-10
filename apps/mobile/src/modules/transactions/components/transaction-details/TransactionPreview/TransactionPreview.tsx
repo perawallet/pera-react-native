@@ -13,7 +13,7 @@
 import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 import { TransactionIcon } from '@modules/transactions/components/TransactionIcon'
 import {
-    getTransactionType,
+    classifyDisplayableTransaction,
     PeraDisplayableTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { useStyles } from './styles'
@@ -29,7 +29,7 @@ export const TransactionPreview = ({
     onPress,
 }: TransactionPreviewProps) => {
     const styles = useStyles()
-    const type = getTransactionType(transaction)
+    const type = classifyDisplayableTransaction(transaction)
 
     const handlePress = () => {
         onPress?.(transaction)

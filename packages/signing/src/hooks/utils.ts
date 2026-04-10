@@ -45,7 +45,7 @@ export const deriveStage = (snapshot: MachineSnapshot): PipelineStage => {
     if (snapshot.matches('rejected')) return 'rejected'
     if (snapshot.matches('failed')) return 'failed'
     if (snapshot.matches('transporting')) return 'transporting'
-    // 'signing' parent state covers routing, localKey, ledger, multisig substates
+    // 'signing' parent state covers routing, localKey, hardware, multisig substates
     if (snapshot.matches('signing')) return 'signing'
     if (snapshot.matches('awaiting_user')) return 'awaiting_user'
     if (snapshot.matches('validating')) return 'validating'
@@ -64,7 +64,7 @@ export const derivePrimarySignerType = (
     const { groupSignerTypes } = context
     if (!groupSignerTypes) return null
     const types = [...groupSignerTypes.values()]
-    if (types.includes('ledger')) return 'ledger'
+    if (types.includes('hardware')) return 'hardware'
     if (types.includes('multisig')) return 'multisig'
     if (types.includes('localKey')) return 'localKey'
     return null

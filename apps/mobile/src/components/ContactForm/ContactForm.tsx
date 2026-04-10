@@ -11,13 +11,15 @@
  */
 
 import { type ReactNode } from 'react'
-import { KeyboardAvoidingView } from 'react-native'
+import { ActivityIndicator, KeyboardAvoidingView } from 'react-native'
 import { type Control, Controller } from 'react-hook-form'
 import { PWInput, PWScrollView, PWText, PWView } from '@components/core'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { AddressEntryField } from '@components/AddressEntryField'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useStyles } from './styles'
+import { useLanguage } from '@hooks/useLanguage'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
 type ContactFormProps = {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,6 +31,10 @@ type ContactFormProps = {
     nameError?: string
     isAddressEditable?: boolean
     addressError?: string
+    nfdName?: string
+    isResolvingNfd?: boolean
+    onAddressInputChange?: (text: string) => void
+    rawAddressInput?: string
     children?: ReactNode
 }
 
@@ -41,9 +47,14 @@ export const ContactForm = ({
     nameError,
     isAddressEditable,
     addressError,
+    nfdName,
+    isResolvingNfd,
+    onAddressInputChange,
+    rawAddressInput,
     children,
 }: ContactFormProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
 
     return (
         <KeyboardAvoidingView behavior='height'>
@@ -66,26 +77,54 @@ export const ContactForm = ({
                                 label={nameLabel}
                                 placeholder={namePlaceholder}
                                 errorMessage={nameError}
+                                autoCapitalize='none'
                             />
                         )}
                     />
                     {isAddressEditable && (
-                        <Controller
-                            control={control}
-                            name='address'
-                            render={({
-                                field: { onChange, onBlur, value },
-                            }) => (
-                                <AddressEntryField
-                                    allowQRCode
-                                    label={addressLabel}
-                                    onBlur={onBlur}
-                                    onChangeText={onChange}
-                                    value={value}
-                                    errorMessage={addressError}
-                                />
+                        <>
+                            <Controller
+                                control={control}
+                                name='address'
+                                render={({ field: { onBlur } }) => (
+                                    <AddressEntryField
+                                        allowQRCode
+                                        label={addressLabel}
+                                        onBlur={onBlur}
+                                        onChangeText={
+                                            onAddressInputChange ?? (() => {})
+                                        }
+                                        value={rawAddressInput ?? ''}
+                                        errorMessage={addressError}
+                                    />
+                                )}
+                            />
+                            {isResolvingNfd && (
+                                <PWView style={styles.nfdStatus}>
+                                    <ActivityIndicator size='small' />
+                                    <PWText
+                                        variant='caption'
+                                        style={styles.nfdStatusText}
+                                    >
+                                        {t('address_entry.nfd_resolving')}
+                                    </PWText>
+                                </PWView>
                             )}
-                        />
+                            {nfdName && (
+                                <PWView style={styles.nfdStatus}>
+                                    <PWText
+                                        variant='caption'
+                                        style={styles.nfdStatusText}
+                                    >
+                                        {t('address_entry.nfd_resolved', {
+                                            name: nfdName,
+                                        })}
+                                        {' — '}
+                                        {truncateAlgorandAddress(address)}
+                                    </PWText>
+                                </PWView>
+                            )}
+                        </>
                     )}
                     {!isAddressEditable && (
                         <PWView>

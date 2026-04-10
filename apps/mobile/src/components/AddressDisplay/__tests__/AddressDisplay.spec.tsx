@@ -24,9 +24,23 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
     })),
 }))
 
+const mockUseNfdForAddress = vi.fn(() => ({
+    data: undefined as { name: string }[] | undefined,
+    isPending: false,
+}))
+
+vi.mock('@perawallet/wallet-core-nfd', () => ({
+    useNfdForAddressQuery: (...args: Parameters<typeof mockUseNfdForAddress>) =>
+        mockUseNfdForAddress(...args),
+}))
+
 describe('AddressDisplay', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockUseNfdForAddress.mockReturnValue({
+            data: undefined,
+            isPending: false,
+        })
     })
 
     it('renders correctly with address', () => {
@@ -34,5 +48,42 @@ describe('AddressDisplay', () => {
         render(<AddressDisplay address={address} />)
 
         expect(screen.getByText(/ABC/)).toBeTruthy()
+    })
+
+    it('renders NFD name when resolved', () => {
+        mockUseNfdForAddress.mockReturnValue({
+            data: [{ name: 'alice.algo' }],
+            isPending: false,
+        })
+
+        render(<AddressDisplay address={'A'.repeat(58)} />)
+
+        expect(screen.getByText('alice.algo')).toBeTruthy()
+    })
+
+    it('renders truncated address when no NFD found', () => {
+        mockUseNfdForAddress.mockReturnValue({
+            data: undefined,
+            isPending: false,
+        })
+
+        const address = 'ABCDEFGHIJ1234567890'
+        render(<AddressDisplay address={address} />)
+
+        expect(screen.getByText(/ABC/)).toBeTruthy()
+    })
+
+    it('does not resolve NFD when displayType is address-only', () => {
+        render(
+            <AddressDisplay
+                address={'A'.repeat(58)}
+                displayType='address-only'
+            />,
+        )
+
+        expect(mockUseNfdForAddress).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.objectContaining({ enabled: false }),
+        )
     })
 })

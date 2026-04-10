@@ -45,6 +45,10 @@ vi.mock('@hooks/useAppNavigation', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useImportAccount: vi.fn(),
+    MNEMONIC_WORD_COUNT: {
+        hdWallet: 24,
+        algo25: 25,
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
