@@ -13,6 +13,7 @@
 import { create } from 'zustand'
 import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-asa-inbox'
 import { Decimal } from 'decimal.js'
+import { registerStore } from '@perawallet/wallet-core-shared'
 
 type SendMode = 'normal' | 'express' | 'sendArc59'
 
@@ -39,6 +40,7 @@ type SendFundsActions = {
     setArc59Summary: (summary?: Arc59SendSummaryResponse) => void
     setIsCloseAccount: (isClose: boolean) => void
     reset: () => void
+    resetState: () => void
 }
 
 type SendFundsStore = SendFundsState & SendFundsActions
@@ -67,7 +69,15 @@ export const useSendFundsStore = create<SendFundsStore>()(set => ({
     setArc59Summary: summary => set({ arc59Summary: summary }),
     setIsCloseAccount: isClose => set({ isCloseAccount: isClose }),
     reset: () => set(initialState),
+    resetState: () => set(initialState),
+    clearStorage: () => {},
 }))
+
+registerStore({
+    name: 'send-funds-store',
+    clearStorage: () => {},
+    resetState: () => useSendFundsStore.getState().resetState(),
+})
 
 // Explicit return types for decoupled access
 

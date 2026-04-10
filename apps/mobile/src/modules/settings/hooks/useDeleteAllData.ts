@@ -12,7 +12,10 @@
 
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { deleteDatabase } from '@perawallet/wallet-core-database'
+import {
+    deleteDatabase,
+    initializeDatabase,
+} from '@perawallet/wallet-core-database'
 import { useDeleteDeviceMutation } from '@perawallet/wallet-core-device'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { usePinCode } from '@perawallet/wallet-core-security'
@@ -24,9 +27,6 @@ import {
 } from '@perawallet/wallet-extension-provider'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback } from 'react'
-
-import { useMultisigCreationStore } from '@modules/multisig/hooks/useMultisigCreation'
-import { useSendFundsStore } from '@modules/transactions/hooks/send-funds/useSendFunds'
 
 const ACCOUNTS_STORE_NAME = 'accounts-store'
 const REACT_QUERY_PERSIST_KEY = 'reactQuery'
@@ -92,21 +92,16 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
         // 6. Clear PIN and biometrics from secure storage
         await savePin(null)
 
-        // 7. Delete SQLite database file
+        // 7. Delete SQLite database file, then re-initialize with empty DB
+        // so the app remains functional after cleanup
         try {
             await deleteDatabase(getProvider().database)
+            await initializeDatabase(getProvider().database)
         } catch (e) {
             logger.error('Failed to delete database', { error: e })
         }
 
-        // 8. Clear all stores except accounts — accounts store is cleared
-        // separately after the success dialog so the navigation guard
-        // doesn't redirect before the user sees the confirmation
         clearAllStores({ skip: [ACCOUNTS_STORE_NAME] })
-
-        // 9. Reset sensitive in-memory stores
-        useSendFundsStore.getState().reset()
-        useMultisigCreationStore.getState().resetState()
     }, [
         queryClient,
         keys,

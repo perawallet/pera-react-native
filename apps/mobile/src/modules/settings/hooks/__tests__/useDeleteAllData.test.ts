@@ -30,6 +30,7 @@ vi.mock('@perawallet/wallet-core-security', () => ({
 const mockRemoveItem = vi.fn()
 const mockClearKeystore = vi.fn().mockResolvedValue(undefined)
 const mockDeleteDatabase = vi.fn().mockResolvedValue(undefined)
+const mockInitializeDatabase = vi.fn().mockResolvedValue(undefined)
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     clearDataStores: vi.fn(),
@@ -42,6 +43,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 
 vi.mock('@perawallet/wallet-core-database', () => ({
     deleteDatabase: (...args: unknown[]) => mockDeleteDatabase(...args),
+    initializeDatabase: (...args: unknown[]) => mockInitializeDatabase(...args),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -64,20 +66,6 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     useWalletConnect: () => ({
         deleteAllSessions: mockDeleteAllSessions,
-    }),
-}))
-
-const mockSendFundsReset = vi.fn()
-vi.mock('@modules/transactions/hooks/send-funds/useSendFunds', () => ({
-    useSendFundsStore: Object.assign(vi.fn(), {
-        getState: () => ({ reset: mockSendFundsReset }),
-    }),
-}))
-
-const mockMultisigResetState = vi.fn()
-vi.mock('@modules/multisig/hooks/useMultisigCreation', () => ({
-    useMultisigCreationStore: Object.assign(vi.fn(), {
-        getState: () => ({ resetState: mockMultisigResetState }),
     }),
 }))
 
@@ -135,11 +123,10 @@ describe('useDeleteAllData', () => {
         expect(mockDeleteDevices).toHaveBeenCalledTimes(1)
         expect(mockSavePin).toHaveBeenCalledWith(null)
         expect(mockDeleteDatabase).toHaveBeenCalledTimes(1)
+        expect(mockInitializeDatabase).toHaveBeenCalledTimes(1)
         expect(clearAllStores).toHaveBeenCalledWith({
             skip: ['accounts-store'],
         })
-        expect(mockSendFundsReset).toHaveBeenCalledTimes(1)
-        expect(mockMultisigResetState).toHaveBeenCalledTimes(1)
     })
 
     it('should clear accounts store when clearAccountsStore is called', () => {
