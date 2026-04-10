@@ -104,19 +104,31 @@ const buildGroupSignerTypeMap = (
 
 /**
  * Constructs {@link SourceMetadata} from a {@link SignRequest}.
- * For local requests, returns a minimal metadata object.
- * For external sources (WalletConnect, webview, deeplink), wires the request's
- * approve/reject/error callbacks into the {@link SourceCallbacks} shape so
- * the transport layer can notify the originator of the signing outcome.
+ *
+ * - Local requests with `transport: 'algod'` get a minimal metadata object;
+ *   the transport layer submits the signed group directly to the network.
+ * - Local requests with `transport: 'callback'` (e.g. swap) keep
+ *   `type: 'local'` but carry `callbacks`, so the transport selector picks
+ *   the callback transport and the caller receives the signed bytes.
+ * - External sources (WalletConnect, webview, deeplink) always wire the
+ *   request's approve/reject/error callbacks into the {@link SourceCallbacks}
+ *   shape so the transport layer can notify the originator.
+ *
+ * Dispatch here is on the tagged fields (`sourceType`, `transport`) — not on
+ * the runtime presence of an `approve` callback — so the selector stays
+ * predictable as new caller shapes are added.
  */
 const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
     const sourceType = request.sourceType ?? 'local'
+    const isLocalAlgod =
+        sourceType === 'local' && request.transport !== 'callback'
 
-    if (sourceType === 'local') {
+    if (isLocalAlgod) {
         return { type: 'local' }
     }
 
-    // External sources (walletconnect, webview, deeplink) use callbacks
+    // Local+callback and external sources both deliver via callbacks.
+    // Wrap the typed request callback into the generic SourceCallbacks shape.
     let approveCallback: SourceCallbacks['approve']
 
     if (isTransactionRequest(request) && request.approve) {
@@ -145,6 +157,7 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
 
     return {
         type: sourceType,
+        transport: request.transport,
         requestId: request.transportId ?? request.id,
         callbacks: {
             approve: approveCallback,
