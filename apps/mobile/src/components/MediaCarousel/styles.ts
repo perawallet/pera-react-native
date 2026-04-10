@@ -12,46 +12,38 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const THUMBNAIL_SIZE = 48
-
 export const useStyles = makeStyles(theme => ({
     container: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-        paddingVertical: theme.spacing.sm,
-    },
-    thumbnail: {
-        width: THUMBNAIL_SIZE,
-        height: THUMBNAIL_SIZE,
-        borderRadius: theme.borderRadius.sm,
-        overflow: 'hidden',
+        width: '100%',
+        aspectRatio: 1,
     },
     image: {
-        width: THUMBNAIL_SIZE,
-        height: THUMBNAIL_SIZE,
+        margin: theme.spacing.lg,
+        borderRadius: theme.borderRadius.lg,
+        overflow: 'hidden',
     },
-    placeholderContainer: {
-        width: THUMBNAIL_SIZE,
-        height: THUMBNAIL_SIZE,
+    placeholder: {
+        flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: theme.colors.layerGrayLighter,
-        borderRadius: theme.borderRadius.sm,
     },
-    textContainer: {
-        flex: 1,
+    carouselItem: {
+        width: '100%',
+        aspectRatio: 1,
     },
-    titleRow: {
+    indicator: {
         flexDirection: 'row',
-        alignItems: 'center',
+        justifyContent: 'center',
         gap: theme.spacing.xs,
+        marginTop: theme.spacing.sm,
     },
-    title: {
-        flexShrink: 1,
-        color: theme.colors.textMain,
+    dot: {
+        width: theme.spacing.sm,
+        height: theme.spacing.sm,
+        borderRadius: theme.borderRadius.full,
+        backgroundColor: theme.colors.layerGrayLighter,
     },
-    subtitle: {
-        color: theme.colors.textGray,
+    dotActive: {
+        backgroundColor: theme.colors.textMain,
     },
 }))

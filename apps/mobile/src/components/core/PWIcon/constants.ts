@@ -57,6 +57,7 @@ import MinusIcon from '@assets/icons/minus.svg'
 import MoonIcon from '@assets/icons/moon.svg'
 import OutflowIcon from '@assets/icons/outflow.svg'
 import PeopleIcon from '@assets/icons/people.svg'
+import PeraIcon from '@assets/icons/pera.svg'
 import PersonKeyIcon from '@assets/icons/person-key.svg'
 import PersonMenuIcon from '@assets/icons/person-menu.svg'
 import PersonIcon from '@assets/icons/person.svg'
@@ -67,6 +68,7 @@ import QuestionMarkIcon from '@assets/icons/question-mark.svg'
 import RekeyIcon from '@assets/icons/rekey.svg'
 import ReloadIcon from '@assets/icons/reload.svg'
 import PhoneIcon from '@assets/icons/phone.svg'
+import SaveIcon from '@assets/icons/save.svg'
 import ShareIcon from '@assets/icons/share.svg'
 import ShieldCheckIcon from '@assets/icons/shield-check.svg'
 import SlidersIcon from '@assets/icons/sliders.svg'
@@ -181,6 +183,7 @@ export const ICON_LIBRARY = {
     moon: MoonIcon,
     outflow: OutflowIcon,
     people: PeopleIcon,
+    pera: PeraIcon,
     'person-menu': PersonMenuIcon,
     person: PersonIcon,
     'person-key': PersonKeyIcon,
@@ -191,6 +194,7 @@ export const ICON_LIBRARY = {
     rekey: RekeyIcon,
     reload: ReloadIcon,
     phone: PhoneIcon,
+    save: SaveIcon,
     share: ShareIcon,
     'shield-check': ShieldCheckIcon,
     sliders: SlidersIcon,

@@ -38,12 +38,14 @@ export type AccountAssetItemViewProps = {
     accountBalance: AssetWithAccountBalance
     usdPrice?: Decimal
     iconSize?: PWIconSize
+    onPress?: () => void
 } & PWViewProps
 
 export const AccountAssetItemView = ({
     accountBalance,
     usdPrice,
     iconSize,
+    onPress,
     ...rest
 }: AccountAssetItemViewProps) => {
     const styles = useStyles()
@@ -84,6 +86,7 @@ export const AccountAssetItemView = ({
                     collectible: asset.peraMetadata?.collectible,
                     amount: accountBalance.amount,
                 }}
+                onPress={onPress}
             />
         )
     }

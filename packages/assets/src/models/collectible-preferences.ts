@@ -33,7 +33,9 @@ export type CollectiblePreferencesState = BaseStoreState & {
     collectibleSortMode: CollectibleSortMode
     galleryLayout: GalleryLayout
     showOptedIn: boolean
+    showWatchAccounts: boolean
     setCollectibleSortMode: (mode: CollectibleSortMode) => void
     setGalleryLayout: (layout: GalleryLayout) => void
     setShowOptedIn: (show: boolean) => void
+    setShowWatchAccounts: (show: boolean) => void
 }

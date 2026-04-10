@@ -41,6 +41,7 @@ export const useStyles = makeStyles(theme => ({
     },
     textContainer: {
         flex: 1,
+        gap: 2,
     },
     titleRow: {
         flexDirection: 'row',

@@ -12,35 +12,31 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const THUMBNAIL_SIZE = 48
-
 export const useStyles = makeStyles(theme => ({
     container: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-        paddingVertical: theme.spacing.sm,
+        flex: 1,
+        paddingHorizontal: theme.spacing.xs,
+        paddingBottom: theme.spacing.md,
     },
-    thumbnail: {
-        width: THUMBNAIL_SIZE,
-        height: THUMBNAIL_SIZE,
+    imageContainer: {
+        aspectRatio: 1,
         borderRadius: theme.borderRadius.sm,
         overflow: 'hidden',
+        backgroundColor: theme.colors.layerGrayLighter,
     },
     image: {
-        width: THUMBNAIL_SIZE,
-        height: THUMBNAIL_SIZE,
+        width: '100%',
+        height: '100%',
     },
     placeholderContainer: {
-        width: THUMBNAIL_SIZE,
-        height: THUMBNAIL_SIZE,
+        flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: theme.colors.layerGrayLighter,
-        borderRadius: theme.borderRadius.sm,
     },
-    textContainer: {
-        flex: 1,
+    infoContainer: {
+        paddingTop: theme.spacing.sm,
+        alignItems: 'center',
     },
     titleRow: {
         flexDirection: 'row',
@@ -50,8 +46,30 @@ export const useStyles = makeStyles(theme => ({
     title: {
         flexShrink: 1,
         color: theme.colors.textMain,
+        lineHeight: theme.spacing.lg,
+        marginHorizontal: theme.spacing.sm,
+        textAlign: 'center',
     },
-    subtitle: {
+    collectionName: {
         color: theme.colors.textGray,
+    },
+    amountBadge: {
+        position: 'absolute',
+        top: theme.spacing.sm,
+        right: theme.spacing.sm,
+        backgroundColor: theme.colors.nftIconBg,
+        borderRadius: theme.borderRadius.xs,
+        paddingHorizontal: theme.spacing.sm,
+    },
+    eyeIconContainer: {
+        position: 'absolute',
+        bottom: theme.spacing.sm,
+        left: theme.spacing.sm,
+        backgroundColor: theme.colors.nftIconBg,
+        borderRadius: theme.borderRadius.xs,
+        padding: theme.spacing.xs,
+    },
+    amountBadgeText: {
+        color: theme.colors.textWhite,
     },
 }))

@@ -60,7 +60,11 @@ export const useToggleAssetPriceAlertMutation =
                     },
                 })
                 queryClient.invalidateQueries({
-                    queryKey: getAssetDetailsQueryKey(variables.assetID),
+                    queryKey: getAssetDetailsQueryKey(
+                        variables.assetID,
+                        true,
+                        variables.network,
+                    ),
                 })
             },
         })
