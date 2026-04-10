@@ -18,4 +18,7 @@ export type AssetSearchItem = {
     verificationTier: 'verified' | 'unverified' | 'suspicious'
     usdValue: string | null
     type: string | null
+    collectibleTitle: string | null
+    collectibleImage: string | null
+    collectionName: string | null
 }

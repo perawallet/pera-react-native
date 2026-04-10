@@ -20,7 +20,7 @@ import {
     PWView,
 } from '@components/core'
 import type { AssetSearchItem as AssetSearchItemType } from '@perawallet/wallet-core-assets'
-import { getVerificationIcon } from '@modules/assets/utils/verification'
+import { useAssetSearchItem } from './useAssetSearchItem'
 import { useStyles } from './styles'
 
 type AssetSearchItemProps = {
@@ -37,10 +37,16 @@ export const AssetSearchItem = ({
     onAdd,
 }: AssetSearchItemProps) => {
     const styles = useStyles()
+    const {
+        isCollectible,
+        thumbnailUri,
+        displayName,
+        subtitle,
+        fallbackInitial,
+        verificationIcon,
+    } = useAssetSearchItem(item)
 
-    const verificationIcon = getVerificationIcon(item.verificationTier)
-
-    const subtitle = [item.unitName, item.assetId].filter(Boolean).join(' · ')
+    const iconStyle = isCollectible ? styles.collectibleIcon : styles.assetIcon
 
     return (
         <>
@@ -49,18 +55,14 @@ export const AssetSearchItem = ({
                 onPress={() => onAdd(item.assetId)}
                 disabled={isOptedIn || isOptingIn}
             >
-                <PWView style={styles.assetIcon}>
-                    {item.logo ? (
+                <PWView style={iconStyle}>
+                    {thumbnailUri ? (
                         <PWImage
-                            source={{ uri: item.logo }}
-                            style={styles.assetIcon}
+                            source={{ uri: thumbnailUri }}
+                            style={iconStyle}
                         />
                     ) : (
-                        <PWText variant='body'>
-                            {(item.unitName ?? item.name ?? '?')
-                                .charAt(0)
-                                .toUpperCase()}
-                        </PWText>
+                        <PWText variant='body'>{fallbackInitial}</PWText>
                     )}
                 </PWView>
 
@@ -71,7 +73,7 @@ export const AssetSearchItem = ({
                             numberOfLines={1}
                             style={styles.titleText}
                         >
-                            {item.name ?? `Asset ${item.assetId}`}
+                            {displayName}
                         </PWText>
                         {verificationIcon ? (
                             <PWIcon

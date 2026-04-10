@@ -40,7 +40,10 @@
         "add": "Add",
         "added": "Added",
         "no_results": "No assets found",
-        "opt_in_failed": "Failed to opt in"
+        "opt_in_failed": "Failed to opt in",
+        "collectible_title": "Opt-in to NFT",
+        "collectible_note": "You need to opt-in to the NFT ASA ID to be able to transfer it to your wallet. Paste the ASA ID in the search bar.",
+        "collectible_search_placeholder": "Search Asset ID or NFT name"
     },
     "asa_verification_info": {
         "title": "ASA Verification",

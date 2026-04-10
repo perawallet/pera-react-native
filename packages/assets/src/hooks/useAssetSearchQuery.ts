@@ -17,6 +17,10 @@ import type { AssetSearchItem } from '../models/search'
 import { transformSearchResult } from './mappers'
 import { MODULE_PREFIX } from './querykeys'
 
+type UseAssetSearchQueryOptions = {
+    hasCollectible?: boolean
+}
+
 type UseAssetSearchQueryResult = {
     results: AssetSearchItem[]
     isLoading: boolean
@@ -26,11 +30,11 @@ type UseAssetSearchQueryResult = {
     fetchNextPage: () => void
 }
 
-const getAssetSearchQueryKey = (query: string, network: string) => [
-    MODULE_PREFIX,
-    'search',
-    { query, network },
-]
+const getAssetSearchQueryKey = (
+    query: string,
+    network: string,
+    hasCollectible: boolean,
+) => [MODULE_PREFIX, 'search', { query, network, hasCollectible }]
 
 const extractCursor = (
     nextUrl: string | null | undefined,
@@ -48,16 +52,19 @@ const extractCursor = (
 
 export const useAssetSearchQuery = (
     query: string,
+    options?: UseAssetSearchQueryOptions,
 ): UseAssetSearchQueryResult => {
     const { network } = useNetwork()
+    const hasCollectible = options?.hasCollectible ?? false
 
     const infiniteQuery = useInfiniteQuery({
-        queryKey: getAssetSearchQueryKey(query, network),
+        queryKey: getAssetSearchQueryKey(query, network, hasCollectible),
         queryFn: ({ pageParam }) =>
             searchAssets({
                 query,
                 network,
                 cursor: pageParam,
+                hasCollectible,
             }),
         initialPageParam: undefined as string | undefined,
         getNextPageParam: lastPage => extractCursor(lastPage.next),

@@ -20,7 +20,10 @@ type PWInputStyleProps = {
 export const useStyles = makeStyles(
     (theme, { variant }: PWInputStyleProps) => ({
         container: {},
-        inputContainer: {},
+        inputContainer: {
+            paddingHorizontal: theme.spacing.xs,
+            borderRadius: theme.borderRadius.xs,
+        },
         input: { ...getTypography(theme, variant), lineHeight: undefined },
         label: {},
     }),

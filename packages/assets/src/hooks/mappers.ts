@@ -23,4 +23,7 @@ export const transformSearchResult = (
     verificationTier: item.verification_tier,
     usdValue: item.usd_value ?? null,
     type: item.type ?? null,
+    collectibleTitle: item.collectible?.title ?? null,
+    collectibleImage: item.collectible?.primary_image ?? null,
+    collectionName: item.collectible?.collection?.name ?? null,
 })

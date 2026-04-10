@@ -36,6 +36,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-core-assets', () => ({
+    fetchAndPersistAssets: vi.fn().mockResolvedValue(undefined),
+}))
+
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'testnet' }),
     useAlgorandClient: () => ({

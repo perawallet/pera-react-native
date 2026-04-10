@@ -32,6 +32,7 @@ vi.mock('../useAccountNfts', () => ({
         isManageSheetVisible: false,
         isSortSheetVisible: false,
         isFilterSheetVisible: false,
+        isAddNftSheetVisible: false,
         setSearchFilter: vi.fn(),
         setGalleryLayout: vi.fn(),
         setSortMode: vi.fn(),
@@ -43,6 +44,8 @@ vi.mock('../useAccountNfts', () => ({
         closeSortSheet: vi.fn(),
         openFilterSheet: vi.fn(),
         closeFilterSheet: vi.fn(),
+        openAddNftSheet: vi.fn(),
+        closeAddNftSheet: vi.fn(),
     }),
 }))
 

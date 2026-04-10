@@ -24,6 +24,11 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
+import type { AddAssetBottomSheetVariant } from '@modules/assets/components/AddAssetBottomSheet'
+
+type UseAddAssetScreenOptions = {
+    variant?: AddAssetBottomSheetVariant
+}
 
 type UseAddAssetScreenResult = {
     searchQuery: string
@@ -40,8 +45,11 @@ type UseAddAssetScreenResult = {
     t: (key: string, params?: Record<string, string | number>) => string
 }
 
-export const useAddAssetScreen = (): UseAddAssetScreenResult => {
+export const useAddAssetScreen = (
+    options?: UseAddAssetScreenOptions,
+): UseAddAssetScreenResult => {
     const { t } = useLanguage()
+    const hasCollectible = options?.variant === 'collectible'
     const [searchQuery, setSearchQuery] = useState('')
     const [optingInAssetId, setOptingInAssetId] = useState<string | null>(null)
     const [recentlyOptedIn, setRecentlyOptedIn] = useState<Set<string>>(
@@ -68,7 +76,7 @@ export const useAddAssetScreen = (): UseAddAssetScreenResult => {
         isFetchingNextPage,
         hasNextPage,
         fetchNextPage,
-    } = useAssetSearchQuery(debouncedQuery)
+    } = useAssetSearchQuery(debouncedQuery, { hasCollectible })
 
     // Build set of already opted-in asset IDs
     const optedInAssetIds = useMemo(() => {
