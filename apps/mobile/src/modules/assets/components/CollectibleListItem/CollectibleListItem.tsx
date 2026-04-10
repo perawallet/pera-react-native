@@ -26,7 +26,6 @@ const CollectibleListItemBase = ({ item, onPress }: CollectibleItemProps) => {
         verificationIconName,
         title,
         collectionName,
-        handlePress,
     } = useCollectibleItem({ item, onPress })
 
     const subtitle = [
@@ -80,7 +79,7 @@ const CollectibleListItemBase = ({ item, onPress }: CollectibleItemProps) => {
         return (
             <PWTouchableOpacity
                 style={styles.container}
-                onPress={handlePress}
+                onPress={onPress}
             >
                 {content}
             </PWTouchableOpacity>

@@ -87,12 +87,12 @@ export const AccountNfts = () => {
             isGrid ? (
                 <CollectibleGridItem
                     item={item}
-                    onPress={handlePress}
+                    onPress={() => handlePress(item)}
                 />
             ) : (
                 <CollectibleListItem
                     item={item}
-                    onPress={handlePress}
+                    onPress={() => handlePress(item)}
                 />
             ),
         [isGrid, handlePress],
