@@ -12,9 +12,9 @@
 
 import {
     PWBottomSheet,
-    PWButton,
     PWDivider,
     PWIcon,
+    PWSlideToConfirm,
     PWText,
     PWToolbar,
     PWView,
@@ -51,7 +51,6 @@ export const SwapConfirmationBottomSheet = ({
         inAsset,
         outAsset,
         isProcessing,
-        buttonTitle,
         payDisplay,
         receiveDisplay,
         payFiatDisplay,
@@ -161,14 +160,13 @@ export const SwapConfirmationBottomSheet = ({
                     </PWView>
                 )}
 
-                {/* TODO: Replace with slide-to-confirm component */}
-                <PWButton
-                    variant='primary'
-                    title={buttonTitle}
-                    onPress={onConfirm}
+                <PWSlideToConfirm
+                    title={t('swap.quote.slide_to_confirm')}
+                    onConfirm={onConfirm}
                     isLoading={isProcessing}
+                    isConfirmed={swapStatus === 'success'}
                     style={styles.confirmButton}
-                    testID='swap-confirm-button'
+                    testID='swap-confirm-slide'
                 />
             </PWView>
         </PWBottomSheet>

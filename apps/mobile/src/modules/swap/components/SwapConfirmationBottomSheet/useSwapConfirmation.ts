@@ -12,7 +12,6 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { useLanguage } from '@hooks/useLanguage'
 import { formatCurrency, formatNumber } from '@perawallet/wallet-core-shared'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
@@ -27,16 +26,6 @@ import { useStyles } from './styles'
 
 const PRICE_IMPACT_HIGH_THRESHOLD = new Decimal(5)
 
-const STATUS_TO_BUTTON_TITLE_KEY: Record<SwapExecutionStatus, string> = {
-    signing: 'swap.execution.signing',
-    submitting: 'swap.execution.submitting',
-    'updating-status': 'swap.execution.finalizing',
-    idle: 'swap.quote.confirm_swap',
-    preparing: 'swap.quote.confirm_swap',
-    success: 'swap.quote.confirm_swap',
-    error: 'swap.quote.confirm_swap',
-}
-
 type UseSwapConfirmationParams = {
     quote: SwapQuote | null
     swapStatus: SwapExecutionStatus
@@ -47,7 +36,6 @@ type UseSwapConfirmationResult = {
     inAsset: PeraAsset | undefined
     outAsset: PeraAsset | undefined
     isProcessing: boolean
-    buttonTitle: string
     payDisplay: string
     receiveDisplay: string
     payFiatDisplay: string | undefined
@@ -63,7 +51,6 @@ export const useSwapConfirmation = ({
     quote,
     swapStatus,
 }: UseSwapConfirmationParams): UseSwapConfirmationResult => {
-    const { t } = useLanguage()
     const styles = useStyles()
     const selectedAccount = useSelectedAccount()
     const { preferredCurrency, usdToPreferred } = useCurrency()
@@ -80,8 +67,6 @@ export const useSwapConfirmation = ({
         swapStatus === 'signing' ||
         swapStatus === 'submitting' ||
         swapStatus === 'updating-status'
-
-    const buttonTitle = t(STATUS_TO_BUTTON_TITLE_KEY[swapStatus])
 
     const payDisplay = useMemo(() => {
         if (!quote?.amountIn) return '-'
@@ -148,7 +133,6 @@ export const useSwapConfirmation = ({
         inAsset,
         outAsset,
         isProcessing,
-        buttonTitle,
         payDisplay,
         receiveDisplay,
         payFiatDisplay,

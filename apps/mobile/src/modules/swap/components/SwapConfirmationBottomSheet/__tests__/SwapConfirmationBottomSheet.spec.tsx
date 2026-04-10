@@ -124,23 +124,25 @@ vi.mock('@components/core', () => ({
         />
     ),
     PWDivider: () => <hr />,
-    PWButton: ({
+    PWSlideToConfirm: ({
         title,
-        onPress,
+        onConfirm,
         testID,
         isLoading,
+        isConfirmed,
     }: {
         title: string
-        onPress: () => void
+        onConfirm: () => void
         testID?: string
-        variant?: string
         isLoading?: boolean
+        isConfirmed?: boolean
         style?: unknown
     }) => (
         <button
             data-testid={testID}
-            onClick={onPress}
+            onClick={onConfirm}
             data-loading={isLoading}
+            data-confirmed={isConfirmed}
         >
             {title}
         </button>
@@ -253,7 +255,7 @@ describe('SwapConfirmationBottomSheet', () => {
             />,
         )
 
-        fireEvent.click(screen.getByTestId('swap-confirm-button'))
+        fireEvent.click(screen.getByTestId('swap-confirm-slide'))
         expect(onConfirm).toHaveBeenCalledTimes(1)
     })
 
@@ -270,7 +272,7 @@ describe('SwapConfirmationBottomSheet', () => {
         expect(onClose).toHaveBeenCalledTimes(1)
     })
 
-    it('shows signing status text when signing', () => {
+    it('marks the slide-to-confirm as loading while signing', () => {
         render(
             <SwapConfirmationBottomSheet
                 {...defaultProps}
@@ -278,10 +280,14 @@ describe('SwapConfirmationBottomSheet', () => {
             />,
         )
 
-        expect(screen.getByText('swap.execution.signing')).toBeDefined()
+        expect(
+            screen
+                .getByTestId('swap-confirm-slide')
+                .getAttribute('data-loading'),
+        ).toBe('true')
     })
 
-    it('shows submitting status text when submitting', () => {
+    it('marks the slide-to-confirm as loading while submitting', () => {
         render(
             <SwapConfirmationBottomSheet
                 {...defaultProps}
@@ -289,7 +295,26 @@ describe('SwapConfirmationBottomSheet', () => {
             />,
         )
 
-        expect(screen.getByText('swap.execution.submitting')).toBeDefined()
+        expect(
+            screen
+                .getByTestId('swap-confirm-slide')
+                .getAttribute('data-loading'),
+        ).toBe('true')
+    })
+
+    it('marks the slide-to-confirm as confirmed on success', () => {
+        render(
+            <SwapConfirmationBottomSheet
+                {...defaultProps}
+                swapStatus='success'
+            />,
+        )
+
+        expect(
+            screen
+                .getByTestId('swap-confirm-slide')
+                .getAttribute('data-confirmed'),
+        ).toBe('true')
     })
 
     it('shows error banner on error status', () => {
