@@ -14,9 +14,7 @@ import React from 'react'
 import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { AccountStackParamsList } from '@modules/accounts/routes'
 import {
-    PWButton,
     PWChip,
-    PWIcon,
     PWScrollView,
     PWText,
     PWTouchableIcon,
@@ -25,7 +23,6 @@ import {
 import { MediaCarousel } from '@components/MediaCarousel'
 import { SendFundsBottomSheet } from '@modules/transactions/components/send-funds/SendFundsBottomSheet/SendFundsBottomSheet'
 import { FullScreenImageViewer } from '@modules/assets/screens/FullScreenImageViewer'
-import { OptOutConfirmationBottomSheet } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationBottomSheet'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCollectibleDetail } from './useCollectibleDetail'
@@ -47,6 +44,7 @@ export const CollectibleDetailScreen = ({
     route,
 }: CollectibleDetailScreenProps) => {
     const assetId = route.params?.assetId ?? ''
+    const styles = useStyles()
     const { t } = useLanguage()
 
     const {
@@ -57,16 +55,10 @@ export const CollectibleDetailScreen = ({
         traits,
         media,
         accountAddress,
-        accountName,
         assetAmount,
-        isOptedInNotOwned,
-        assetBalance,
-        isOptingOut,
-        optOutModal,
-        handleOptOutPressed,
-        handleConfirmOptOut,
         handleSendPressed,
         handleSharePressed,
+        handleMediaPress,
         handleCopyImage,
         handleSaveImage,
         fullScreenMedia,
@@ -74,8 +66,6 @@ export const CollectibleDetailScreen = ({
         fullScreenViewerModal,
         sendFundsModal,
     } = useCollectibleDetail(assetId)
-
-    const styles = useStyles()
 
     useNavigationHeader({
         right: (
@@ -138,26 +128,18 @@ export const CollectibleDetailScreen = ({
                     ) : null}
                 </PWView>
 
-                <PWView
-                    style={
-                        isOptedInNotOwned
-                            ? styles.mediaContainerDimmed
-                            : undefined
+                <MediaCarousel
+                    media={media}
+                    fallbackImageUrl={
+                        collectible?.primaryImage ??
+                        asset.peraMetadata?.logo ??
+                        undefined
                     }
-                >
-                    <MediaCarousel
-                        media={media}
-                        fallbackImageUrl={
-                            collectible?.primaryImage ??
-                            asset.peraMetadata?.logo ??
-                            undefined
-                        }
-                        onFullScreenPress={handleMediaPress}
-                    />
-                </PWView>
+                    onFullScreenPress={handleMediaPress}
+                />
 
                 <PWView style={styles.contentContainer}>
-                    {!isWatch && !isOptedInNotOwned && (
+                    {!isWatch && (
                         <PWView style={styles.actionButtonsContainer}>
                             <RoundButton
                                 title={t('common.send')}
@@ -179,31 +161,6 @@ export const CollectibleDetailScreen = ({
                                 variant='secondary'
                                 size='md'
                                 onPress={handleSaveImage}
-                            />
-                        </PWView>
-                    )}
-
-                    {isOptedInNotOwned && !isWatch && (
-                        <PWView style={styles.optOutNotice}>
-                            <PWView style={styles.optOutNoticeRow}>
-                                <PWIcon
-                                    name='info'
-                                    size='md'
-                                    variant='secondary'
-                                />
-                                <PWText
-                                    variant='caption'
-                                    style={styles.optOutNoticeText}
-                                >
-                                    {t(
-                                        'asset_details.collectible.not_owner_notice',
-                                    )}
-                                </PWText>
-                            </PWView>
-                            <PWButton
-                                title={t('asset_opt_out.opt_out_cta')}
-                                variant='secondary'
-                                onPress={handleOptOutPressed}
                             />
                         </PWView>
                     )}
@@ -230,15 +187,6 @@ export const CollectibleDetailScreen = ({
                 assetId={assetId}
                 isVisible={sendFundsModal.isOpen}
                 onClose={sendFundsModal.close}
-            />
-            <OptOutConfirmationBottomSheet
-                isVisible={optOutModal.isOpen}
-                onClose={optOutModal.close}
-                accountBalance={assetBalance}
-                accountAddress={accountAddress}
-                accountName={accountName}
-                onConfirmOptOut={handleConfirmOptOut}
-                isLoading={isOptingOut}
             />
         </PWView>
     )
