@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { QueryClient } from '@tanstack/react-query'
 import type { Network } from '@perawallet/wallet-core-shared'
 
 const MODULE_PREFIX = 'nfd'
@@ -20,4 +21,10 @@ export const nfdQueryKeys = {
         [MODULE_PREFIX, 'address', { address, network }] as const,
     search: (name: string, network: Network) =>
         [MODULE_PREFIX, 'search', { name, network }] as const,
+}
+
+export function invalidateNfdQueries(queryClient: QueryClient): void {
+    void queryClient.invalidateQueries({
+        predicate: query => query.queryKey[0] === MODULE_PREFIX,
+    })
 }

@@ -1809,7 +1809,7 @@ vi.mock('@perawallet/wallet-core-polling', () => ({
     ),
 }))
 
-vi.mock('@perawallet/wallet-core-sync', () => ({
+vi.mock('@perawallet/wallet-core-background', () => ({
     initializeSyncService: vi.fn(() => ({
         start: vi.fn(),
         stop: vi.fn(),

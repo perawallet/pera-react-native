@@ -13,13 +13,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useNfdForAddressQuery } from '../useNfdForAddressQuery'
 import React from 'react'
 
-const mockFetchNfdNamesForAddress = vi.hoisted(() => vi.fn())
+const mockEnqueue = vi.hoisted(() => vi.fn())
 
-vi.mock('../../api', () => ({
-    fetchNfdNamesForAddress: mockFetchNfdNamesForAddress,
+vi.mock('../../services/nfdBatchQueue', () => ({
+    nfdBatchQueue: { enqueue: mockEnqueue },
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -35,20 +34,18 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     },
 }))
 
+import { useNfdForAddressQuery } from '../useNfdForAddressQuery'
+
 const VALID_ADDRESS = 'A'.repeat(58)
 
-describe('useNfdForAddress', () => {
+describe('useNfdForAddressQuery', () => {
     let queryClient: QueryClient
 
     beforeEach(() => {
         queryClient = new QueryClient({
-            defaultOptions: {
-                queries: {
-                    retry: false,
-                },
-            },
+            defaultOptions: { queries: { retry: false } },
         })
-        vi.clearAllMocks()
+        mockEnqueue.mockReset().mockResolvedValue(undefined)
     })
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
@@ -58,93 +55,87 @@ describe('useNfdForAddress', () => {
             children,
         )
 
-    it('returns nfdName after successful resolution', async () => {
-        mockFetchNfdNamesForAddress.mockResolvedValue([
-            {
-                name: 'alice.algo',
-                source: 'nfd',
-                image: 'https://example.com/img.png',
-            },
-        ])
+    it('returns the NFD name resolved by the batch queue', async () => {
+        mockEnqueue.mockResolvedValue({
+            name: 'alice.algo',
+            image: '',
+            source: 'nfd',
+        })
 
         const { result } = renderHook(
             () => useNfdForAddressQuery(VALID_ADDRESS),
-            {
-                wrapper,
-            },
+            { wrapper },
         )
 
         await waitFor(() =>
             expect(result.current.data?.at(0)?.name).toBe('alice.algo'),
         )
+        expect(mockEnqueue).toHaveBeenCalledTimes(1)
+        expect(mockEnqueue).toHaveBeenCalledWith(VALID_ADDRESS, 'mainnet')
     })
 
-    it('returns undefined nfdName while loading', () => {
-        mockFetchNfdNamesForAddress.mockImplementation(
-            () => new Promise(() => {}),
-        )
+    it('returns empty array when the queue resolves with null (negative cache)', async () => {
+        mockEnqueue.mockResolvedValue(null)
 
         const { result } = renderHook(
             () => useNfdForAddressQuery(VALID_ADDRESS),
-            {
-                wrapper,
-            },
-        )
-
-        expect(result.current.data?.at(0)).toBeUndefined()
-        expect(result.current.isPending).toBe(true)
-    })
-
-    it('returns undefined when no NFD names found', async () => {
-        mockFetchNfdNamesForAddress.mockResolvedValue([])
-
-        const { result } = renderHook(
-            () => useNfdForAddressQuery(VALID_ADDRESS),
-            {
-                wrapper,
-            },
+            { wrapper },
         )
 
         await waitFor(() => expect(result.current.isPending).toBe(false))
-
-        expect(result.current.data?.at(0)).toBeUndefined()
+        expect(result.current.data).toEqual([])
     })
 
-    it('does not fetch when enabled is false', () => {
-        const { result } = renderHook(
-            () => useNfdForAddressQuery(VALID_ADDRESS, { enabled: false }),
-            { wrapper },
-        )
-
-        expect(result.current.data?.at(0)).toBeUndefined()
-        expect(mockFetchNfdNamesForAddress).not.toHaveBeenCalled()
-    })
-
-    it('does not fetch for invalid address', () => {
-        const { result } = renderHook(
-            () => useNfdForAddressQuery('invalid-address'),
-            { wrapper },
-        )
-
-        expect(result.current.data?.at(0)).toBeUndefined()
-        expect(mockFetchNfdNamesForAddress).not.toHaveBeenCalled()
-    })
-
-    it('returns the first NFD name when multiple exist', async () => {
-        mockFetchNfdNamesForAddress.mockResolvedValue([
-            { name: 'primary.algo', source: 'nfd', image: '' },
-            { name: 'secondary.algo', source: 'nfd', image: '' },
-        ])
+    it('returns empty array when the queue resolves with undefined', async () => {
+        mockEnqueue.mockResolvedValue(undefined)
 
         const { result } = renderHook(
             () => useNfdForAddressQuery(VALID_ADDRESS),
-            {
-                wrapper,
-            },
+            { wrapper },
         )
 
-        await waitFor(() =>
-            expect(result.current.data?.at(0)?.name).toBe('primary.algo'),
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+        expect(result.current.data).toEqual([])
+    })
+
+    it('calls enqueue synchronously inside queryFn (no awaits before it)', async () => {
+        // This is the regression guard for the batching bug: if the hook
+        // ever introduces an `await` before `enqueue`, microtask flushes
+        // can fire between concurrent rows and the queue stops batching.
+        // We assert by mounting two hooks and checking that BOTH
+        // enqueue calls happen before either resolves.
+        let resolveFirst!: (v: unknown) => void
+        const firstPromise = new Promise(resolve => {
+            resolveFirst = resolve
+        })
+        mockEnqueue
+            .mockImplementationOnce(() => firstPromise)
+            .mockImplementationOnce(() =>
+                Promise.resolve({ name: 'bob.algo', image: '', source: 'nfd' }),
+            )
+
+        const ADDR_1 = 'A'.repeat(58)
+        const ADDR_2 = 'B'.repeat(58)
+
+        renderHook(() => useNfdForAddressQuery(ADDR_1), { wrapper })
+        renderHook(() => useNfdForAddressQuery(ADDR_2), { wrapper })
+
+        // Both should have enqueued before either resolves (no await gating)
+        await waitFor(() => expect(mockEnqueue).toHaveBeenCalledTimes(2))
+
+        resolveFirst({ name: 'alice.algo', image: '', source: 'nfd' })
+    })
+
+    it('does not query when enabled is false', () => {
+        renderHook(
+            () => useNfdForAddressQuery(VALID_ADDRESS, { enabled: false }),
+            { wrapper },
         )
+        expect(mockEnqueue).not.toHaveBeenCalled()
+    })
+
+    it('does not query for invalid addresses', () => {
+        renderHook(() => useNfdForAddressQuery('not-an-address'), { wrapper })
+        expect(mockEnqueue).not.toHaveBeenCalled()
     })
 })

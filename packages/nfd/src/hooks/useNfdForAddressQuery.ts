@@ -16,10 +16,23 @@ import {
     isValidAlgorandAddress,
 } from '@perawallet/wallet-core-blockchain'
 import { config } from '@perawallet/wallet-core-config'
-import { fetchNfdNamesForAddress } from '../api'
+import { nfdBatchQueue } from '../services/nfdBatchQueue'
 import { nfdQueryKeys } from './querykeys'
 import { NfdName } from '../models'
 
+/**
+ * The batch queue coalesces enqueues that land in the same microtask.
+ * Putting an `await` (e.g. an SQLite cache check) BEFORE `enqueue` would
+ * yield to the event loop, which causes the microtask flush to fire between
+ * each row's enqueue → each address ends up in its own bulk request →
+ * the whole batching benefit disappears.
+ *
+ * The cache check is intentionally pushed down into the executor itself
+ * (`fetchAndPersistNfds` calls `getStaleOrMissingAddresses` against SQL),
+ * so cached/fresh addresses are skipped at the bulk-fetch step. Cached
+ * results still flow back through the executor's `getNfdsByAddresses`
+ * re-read, so the hook gets the right value either way.
+ */
 export const useNfdForAddressQuery = (
     address: string,
     options?: { enabled?: boolean },
@@ -30,8 +43,10 @@ export const useNfdForAddressQuery = (
 
     return useQuery({
         queryKey: nfdQueryKeys.forAddress(address, network),
-        queryFn: ({ signal }) =>
-            fetchNfdNamesForAddress({ address, network, signal }),
+        queryFn: () => {
+            const valuePromise = nfdBatchQueue.enqueue(address, network)
+            return valuePromise.then(value => (value ? [value] : []))
+        },
         enabled,
         staleTime: config.reactQueryLongLivedStaleTime,
         gcTime: config.reactQueryLongLivedGCTime,

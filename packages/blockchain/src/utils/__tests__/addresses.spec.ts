@@ -25,9 +25,17 @@ describe('addresses utils', () => {
 
     describe('isValidAlgorandAddress', () => {
         it('should return true for valid Algorand address', () => {
+            // Zero-key address (all-zero 32-byte public key)
             const validAddress =
-                'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+                'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAY5HFKQ'
             expect(isValidAlgorandAddress(validAddress)).toBe(true)
+        })
+
+        it('should return false for invalid checksum', () => {
+            // 58 chars, looks like an address, but has a bad checksum
+            const badChecksum =
+                'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+            expect(isValidAlgorandAddress(badChecksum)).toBe(false)
         })
 
         it('should return false for invalid length', () => {
