@@ -15,6 +15,7 @@ import { Decimal } from 'decimal.js'
 import {
     transformCollectibleResponse,
     transformAssetResponse,
+    resolveMediaType,
 } from '../transformers'
 import type { CollectibleResponse, AssetResponse } from '../schema'
 
@@ -236,6 +237,80 @@ describe('transformCollectibleResponse', () => {
         const result = transformCollectibleResponse(input)
 
         expect(result.media).toEqual([])
+    })
+})
+
+describe('resolveMediaType', () => {
+    test('reclassifies unknown type with glb extension as model', () => {
+        expect(resolveMediaType('unknown', 'glb')).toBe('model')
+    })
+
+    test('reclassifies unknown type with gltf extension as model', () => {
+        expect(resolveMediaType('unknown', 'gltf')).toBe('model')
+    })
+
+    test('reclassifies unknown type with usdz extension as model', () => {
+        expect(resolveMediaType('unknown', 'usdz')).toBe('model')
+    })
+
+    test('handles case-insensitive extensions', () => {
+        expect(resolveMediaType('unknown', 'GLB')).toBe('model')
+        expect(resolveMediaType('unknown', 'Gltf')).toBe('model')
+    })
+
+    test('does not reclassify non-unknown types', () => {
+        expect(resolveMediaType('image', 'glb')).toBe('image')
+        expect(resolveMediaType('video', 'gltf')).toBe('video')
+    })
+
+    test('leaves unknown type with non-model extension unchanged', () => {
+        expect(resolveMediaType('unknown', 'png')).toBe('unknown')
+        expect(resolveMediaType('unknown', 'mp4')).toBe('unknown')
+    })
+
+    test('passes through known types unchanged', () => {
+        expect(resolveMediaType('image', 'png')).toBe('image')
+        expect(resolveMediaType('video', 'mp4')).toBe('video')
+        expect(resolveMediaType('audio', 'mp3')).toBe('audio')
+    })
+})
+
+describe('transformCollectibleResponse — model media', () => {
+    test('reclassifies unknown media with glb extension to model', () => {
+        const input = createCollectibleResponse({
+            media: [
+                {
+                    type: 'unknown',
+                    download_url: 'https://example.com/model.glb',
+                    preview_url: 'https://example.com/thumb.jpg',
+                    extension: 'glb',
+                },
+            ],
+        })
+        const result = transformCollectibleResponse(input)
+
+        expect(result.media![0].type).toBe('model')
+    })
+
+    test('preserves known types during media transformation', () => {
+        const input = createCollectibleResponse({
+            media: [
+                {
+                    type: 'image',
+                    download_url: 'https://example.com/image.png',
+                    extension: 'png',
+                },
+                {
+                    type: 'unknown',
+                    download_url: 'https://example.com/model.gltf',
+                    extension: 'gltf',
+                },
+            ],
+        })
+        const result = transformCollectibleResponse(input)
+
+        expect(result.media![0].type).toBe('image')
+        expect(result.media![1].type).toBe('model')
     })
 })
 

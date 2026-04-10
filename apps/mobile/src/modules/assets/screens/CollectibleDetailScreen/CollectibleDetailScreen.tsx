@@ -25,6 +25,8 @@ import {
 import { MediaCarousel } from '@components/MediaCarousel'
 import { SendFundsBottomSheet } from '@modules/transactions/components/send-funds/SendFundsBottomSheet/SendFundsBottomSheet'
 import { FullScreenImageViewer } from '@modules/assets/screens/FullScreenImageViewer'
+import { ModelViewerBottomSheet } from '@components/ModelViewerBottomSheet'
+import { OptOutConfirmationBottomSheet } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationBottomSheet'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { useCollectibleDetail } from './useCollectibleDetail'
@@ -36,7 +38,6 @@ import { RoundButton } from '@components/RoundButton'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { CollectibleDetailSkeleton } from './CollectibleDetailSkeleton'
 import { CollectibleDescription } from './CollectibleDescription'
-import { OptOutConfirmationBottomSheet } from '@modules/accounts/components/AccountAssetList/OptOutConfirmationBottomSheet'
 
 export type CollectibleDetailScreenProps = NativeStackScreenProps<
     AccountStackParamsList,
@@ -47,7 +48,6 @@ export const CollectibleDetailScreen = ({
     route,
 }: CollectibleDetailScreenProps) => {
     const assetId = route.params?.assetId ?? ''
-    const styles = useStyles()
     const { t } = useLanguage()
 
     const {
@@ -75,7 +75,11 @@ export const CollectibleDetailScreen = ({
         fullScreenInitialIndex,
         fullScreenViewerModal,
         sendFundsModal,
+        modelViewerModal,
+        modelViewerUrl,
     } = useCollectibleDetail(assetId)
+
+    const styles = useStyles()
 
     useNavigationHeader({
         right: (
@@ -151,6 +155,7 @@ export const CollectibleDetailScreen = ({
                             asset.peraMetadata?.logo ??
                             undefined
                         }
+                        onItemPress={handleMediaPress}
                         onFullScreenPress={handleMediaPress}
                     />
                 </PWView>
@@ -225,12 +230,16 @@ export const CollectibleDetailScreen = ({
                 media={fullScreenMedia}
                 initialIndex={fullScreenInitialIndex}
             />
+            <ModelViewerBottomSheet
+                isVisible={modelViewerModal.isOpen}
+                onClose={modelViewerModal.close}
+                modelUrl={modelViewerUrl ?? ''}
+            />
             <SendFundsBottomSheet
                 assetId={assetId}
                 isVisible={sendFundsModal.isOpen}
                 onClose={sendFundsModal.close}
             />
-
             <OptOutConfirmationBottomSheet
                 isVisible={optOutModal.isOpen}
                 onClose={optOutModal.close}

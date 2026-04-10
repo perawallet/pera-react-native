@@ -25,6 +25,15 @@ export default defineConfig({
                 replacement: 'react-native-web',
             },
             {
+                // The published expo-linear-gradient build ships untransformed
+                // JSX that vitest's parser can't read; swap it for a stub.
+                find: 'expo-linear-gradient',
+                replacement: path.resolve(
+                    __dirname,
+                    './src/test-utils/expo-linear-gradient-stub.tsx',
+                ),
+            },
+            {
                 find: 'react',
                 replacement: path.resolve(__dirname, './node_modules/react'),
             },

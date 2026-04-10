@@ -18,7 +18,7 @@ export const collectibleTraitSchema = z.object({
 })
 
 export const collectibleMediaSchema = z.object({
-    type: z.enum(['image', 'video', 'audio', 'mixed', 'unknown']),
+    type: z.enum(['image', 'video', 'audio', 'model', 'mixed', 'unknown']),
     download_url: z.string().optional(),
     preview_url: z.string().optional(),
     extension: z.string(),
@@ -34,7 +34,14 @@ export const collectibleResponseSchema = z.object({
     title: z.string().optional(),
     standard: z.enum(['arc3', 'arc69']).optional(),
     primary_image: z.string().nullable().optional(),
-    media_type: z.enum(['image', 'video', 'audio', 'mixed', 'unknown']),
+    media_type: z.enum([
+        'image',
+        'video',
+        'audio',
+        'model',
+        'mixed',
+        'unknown',
+    ]),
     explorer_url: z.string(),
     collection: collectibleCollectionSchema.nullable().optional(),
     description: z.string().optional(),

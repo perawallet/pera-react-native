@@ -27,6 +27,18 @@ import {
     type PublicAssetResponse,
 } from './schema'
 
+const MODEL_EXTENSIONS = new Set(['glb', 'gltf', 'usdz'])
+
+export const resolveMediaType = (
+    type: string,
+    extension: string,
+): CollectibleMediaType => {
+    if (type === 'unknown' && MODEL_EXTENSIONS.has(extension.toLowerCase())) {
+        return 'model'
+    }
+    return type as CollectibleMediaType
+}
+
 export const transformCollectibleResponse = (
     data: CollectibleResponse,
 ): PeraCollectible => {
@@ -49,7 +61,7 @@ export const transformCollectibleResponse = (
             displayValue: t.display_value,
         })),
         media: (data.media ?? []).map(m => ({
-            type: m.type as CollectibleMediaType,
+            type: resolveMediaType(m.type, m.extension),
             downloadUrl: m.download_url,
             previewUrl: m.preview_url,
             extension: m.extension,

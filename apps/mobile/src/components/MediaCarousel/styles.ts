@@ -46,6 +46,22 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
             alignItems: 'center',
             justifyContent: 'center',
         },
+        modelBadge: {
+            flexDirection: 'row',
+            gap: theme.spacing.xs,
+            position: 'absolute',
+            borderRadius: theme.borderRadius.full,
+            paddingHorizontal: theme.spacing.sm,
+            paddingVertical: theme.spacing.xs,
+            bottom: theme.spacing.sm,
+            left: theme.spacing.xl,
+            backgroundColor: theme.colors.nftIconBg,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        modelBadgeText: {
+            color: theme.colors.textWhite,
+        },
         fullScreenButton: {
             position: 'absolute',
             bottom: theme.spacing.xl,
