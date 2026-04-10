@@ -20,6 +20,7 @@ export type SigningStackParamList = {
     TransactionDetails: {
         transaction?: PeraDisplayableTransaction
         transactionId?: string
+        groupId?: string
     }
     GroupDetail: { groupIndex: number }
     SecuritySettings: undefined

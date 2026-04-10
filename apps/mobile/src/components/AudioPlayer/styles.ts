@@ -48,9 +48,9 @@ export const useStyles = makeStyles(
         },
         progressTrack: {
             flex: 1,
-            height: 4,
-            borderRadius: 2,
-            backgroundColor: 'rgba(255, 255, 255, 0.32)',
+            height: theme.spacing.xs,
+            borderRadius: theme.borders.md,
+            backgroundColor: theme.colors.layerGrayLightest,
             overflow: 'hidden',
         },
         progressFill: {

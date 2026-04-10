@@ -53,6 +53,7 @@ export default defineConfig({
                 'expo-sqlite',
                 'zustand',
                 '@algorandfoundation/wallet-provider',
+                '@perawallet/wallet-core-hardware-wallet',
                 '@perawallet/wallet-core-config',
                 '@perawallet/wallet-core-remote-config',
                 '@perawallet/wallet-core-shared',

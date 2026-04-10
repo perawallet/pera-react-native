@@ -22,10 +22,11 @@ import { useStyles } from './styles'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useContacts } from '@perawallet/wallet-core-contacts'
+import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { useClipboard } from '@hooks/useClipboard'
 
 import { SvgProps } from 'react-native-svg'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
@@ -42,7 +43,6 @@ export type AddressDisplayProps = {
 
 const LONG_ADDRESS_FORMAT = 20
 
-//TODO add support for NFDs
 export const AddressDisplay = ({
     address,
     addressFormat = 'short',
@@ -64,6 +64,8 @@ export const AddressDisplay = ({
     const accounts = useAllAccounts()
     const { findContacts } = useContacts()
 
+    const isAddressOnly = displayType === 'address-only'
+
     const account = useMemo(() => {
         if (displayType !== 'full') {
             return null
@@ -73,16 +75,22 @@ export const AddressDisplay = ({
     }, [displayType, accounts, address])
 
     const contact = useMemo(() => {
-        if (displayType === 'address-only') {
+        if (isAddressOnly) {
             return null
         }
         return findContacts({
             keyword: address,
             matchAddress: true,
             matchName: false,
-            matchNFD: false,
+            matchNFD: true,
         }).at(0)
-    }, [displayType, address, findContacts])
+    }, [isAddressOnly, address, findContacts])
+
+    const { data: nfdNames } = useNfdForAddressQuery(address, {
+        enabled: !isAddressOnly && !account && !contact,
+    })
+
+    const nfdName = useMemo(() => nfdNames?.at(0)?.name, [nfdNames])
 
     const truncatedAddress =
         addressFormat === 'full'
@@ -91,21 +99,19 @@ export const AddressDisplay = ({
               ? truncateAlgorandAddress(address, LONG_ADDRESS_FORMAT)
               : truncateAlgorandAddress(address)
 
-    return (
-        <CopyableText
-            {...rest}
-            copyValue={address}
-            style={[styles.addressValueContainer, rest.style]}
-        >
-            {!!account && (
+    const renderAddressView = useCallback(() => {
+        if (account) {
+            return (
                 <AccountDisplay
                     account={account}
                     textProps={textProps}
                     showChevron={false}
                 />
-            )}
+            )
+        }
 
-            {!!contact && !account && (
+        if (contact) {
+            return (
                 <PWView style={styles.contactContainer}>
                     <ContactAvatar
                         size='md'
@@ -113,19 +119,50 @@ export const AddressDisplay = ({
                     />
                     <PWText {...textProps}>{contact.name}</PWText>
                 </PWView>
-            )}
+            )
+        }
 
-            {!contact && !account && (
+        if (nfdName) {
+            return (
                 <PWView style={styles.contactContainer}>
-                    {forceShowIcon && (
-                        <PWIcon
-                            name={`accounts/${isDarkMode ? 'dark' : 'light'}/algo25-account`}
-                            size='lg'
-                        />
-                    )}
-                    <PWText {...textProps}>{truncatedAddress}</PWText>
+                    <PWIcon
+                        name={`accounts/${isDarkMode ? 'dark' : 'light'}/algo25-account`}
+                        size='lg'
+                    />
+                    <PWText {...textProps}>{nfdName}</PWText>
                 </PWView>
-            )}
+            )
+        }
+
+        return (
+            <PWView style={styles.contactContainer}>
+                {forceShowIcon && (
+                    <PWIcon
+                        name={`accounts/${isDarkMode ? 'dark' : 'light'}/algo25-account`}
+                        size='lg'
+                    />
+                )}
+                <PWText {...textProps}>{truncatedAddress}</PWText>
+            </PWView>
+        )
+    }, [
+        account,
+        contact,
+        nfdName,
+        isDarkMode,
+        forceShowIcon,
+        truncatedAddress,
+        textProps,
+        styles.contactContainer,
+    ])
+
+    return (
+        <CopyableText
+            {...rest}
+            copyValue={address}
+            style={[styles.addressValueContainer, rest.style]}
+        >
+            {renderAddressView()}
 
             {showCopy && (
                 <PWIcon

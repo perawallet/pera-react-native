@@ -23,6 +23,7 @@ import {
     isRekeyedAccount,
     isWatchAccount,
     resolveAccountStatus,
+    resolveImportAccountType,
 } from '../utils'
 
 vi.mock('bip39', () => ({
@@ -133,7 +134,12 @@ describe('services/accounts/utils - account type checks', () => {
             isLedgerAccount({
                 ...baseAccount,
                 type: 'hardware',
-                hardwareDetails: { manufacturer: 'ledger' },
+                hardwareDetails: {
+                    manufacturer: 'ledger',
+                    deviceId: 'test-device',
+                    deviceName: 'Ledger Nano X',
+                    accountIndex: 0,
+                },
             } as any),
         ).toBe(true)
         expect(
@@ -303,13 +309,18 @@ describe('services/accounts/utils - resolveAccountStatus', () => {
         expect(resolveAccountStatus(account, [])).toBe('standard')
     })
 
-    test('returns ledger for hardware account with ledger manufacturer', () => {
+    test('returns hardware for hardware wallet account', () => {
         const account = {
             type: 'hardware',
             address: 'ADDR',
-            hardwareDetails: { manufacturer: 'ledger' },
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'test-device',
+                deviceName: 'Ledger Nano X',
+                accountIndex: 0,
+            },
         } as any
-        expect(resolveAccountStatus(account, [])).toBe('ledger')
+        expect(resolveAccountStatus(account, [])).toBe('hardware')
     })
 
     test('returns watch for watch account', () => {
@@ -358,11 +369,16 @@ describe('services/accounts/utils - resolveAccountStatus', () => {
         )
     })
 
-    test('returns rekeyedLedger for rekeyed account when auth is ledger', () => {
+    test('returns rekeyedHardware for rekeyed account when auth is hardware wallet', () => {
         const authAccount = {
             type: 'hardware',
             address: 'AUTH',
-            hardwareDetails: { manufacturer: 'ledger' },
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'test-device',
+                deviceName: 'Ledger Nano X',
+                accountIndex: 0,
+            },
         } as any
         const account = {
             type: 'algo25',
@@ -371,7 +387,7 @@ describe('services/accounts/utils - resolveAccountStatus', () => {
             keyPairId: 'pk1',
         } as any
         expect(resolveAccountStatus(account, [authAccount])).toBe(
-            'rekeyedLedger',
+            'rekeyedHardware',
         )
     })
 })
@@ -409,7 +425,12 @@ describe('services/accounts/utils - isSigningAccount', () => {
         const authAccount = {
             type: 'hardware',
             address: 'AUTH',
-            hardwareDetails: { manufacturer: 'ledger' },
+            hardwareDetails: {
+                manufacturer: 'ledger',
+                deviceId: 'test-device',
+                deviceName: 'Ledger Nano X',
+                accountIndex: 0,
+            },
         } as any
         const account = {
             type: 'watch',
@@ -426,5 +447,48 @@ describe('services/accounts/utils - isSigningAccount', () => {
             keyPairId: 'pk1',
         } as any
         expect(isSigningAccount(account, [])).toBe(true)
+    })
+})
+
+describe('services/accounts/utils - resolveImportAccountType', () => {
+    const words = (count: number) =>
+        Array.from({ length: count }, (_, i) => `word${i}`).join(' ')
+
+    test('returns hdWallet for 24-word mnemonic', () => {
+        const result = resolveImportAccountType(words(24))
+        expect(result).toEqual({ success: true, accountType: 'hdWallet' })
+    })
+
+    test('returns algo25 for 25-word mnemonic', () => {
+        const result = resolveImportAccountType(words(25))
+        expect(result).toEqual({ success: true, accountType: 'algo25' })
+    })
+
+    test('returns failure for 23-word mnemonic', () => {
+        const result = resolveImportAccountType(words(23))
+        expect(result).toEqual({ success: false, wordCount: 23 })
+    })
+
+    test('returns failure for 26-word mnemonic', () => {
+        const result = resolveImportAccountType(words(26))
+        expect(result).toEqual({ success: false, wordCount: 26 })
+    })
+
+    test('returns failure for single word', () => {
+        const result = resolveImportAccountType('single')
+        expect(result).toEqual({ success: false, wordCount: 1 })
+    })
+
+    test('handles leading and trailing whitespace', () => {
+        const result = resolveImportAccountType(`  ${words(25)}  `)
+        expect(result).toEqual({ success: true, accountType: 'algo25' })
+    })
+
+    test('handles extra whitespace between words', () => {
+        const mnemonic = Array.from({ length: 24 }, (_, i) => `word${i}`).join(
+            '   ',
+        )
+        const result = resolveImportAccountType(mnemonic)
+        expect(result).toEqual({ success: true, accountType: 'hdWallet' })
     })
 })

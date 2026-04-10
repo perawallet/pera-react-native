@@ -122,6 +122,12 @@ module.exports = {
       'android.permission.USE_FINGERPRINT',
       'android.permission.VIBRATE',
       'android.permission.RECEIVE_BOOT_COMPLETED',
+      // BLE permissions for Ledger hardware wallet communication
+      'android.permission.BLUETOOTH',
+      'android.permission.BLUETOOTH_ADMIN',
+      'android.permission.BLUETOOTH_SCAN',
+      'android.permission.BLUETOOTH_CONNECT',
+      'android.permission.ACCESS_FINE_LOCATION',
     ],
     intentFilters: [
       {

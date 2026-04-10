@@ -33,7 +33,7 @@ import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
-import { CollectibleListItem } from '@modules/accounts/components/CollectibleListItem'
+import { CollectibleListItem } from '../CollectibleListItem'
 
 export type AccountAssetItemViewProps = {
     accountBalance: AssetWithAccountBalance
@@ -77,11 +77,22 @@ export const AccountAssetItemView = ({
         return tier ? getVerificationIcon(tier) : null
     }, [asset, isAlgo])
 
-    if (asset && isCollectible(asset)) {
+    const item = useMemo(() => {
+        if (asset && isCollectible(asset)) {
+            return {
+                assetId: accountBalance.assetId,
+                asset,
+                collectible: asset.peraMetadata?.collectible,
+                amount: accountBalance.amount,
+            }
+        }
+        return null
+    }, [asset, accountBalance])
+
+    if (item) {
         return (
             <CollectibleListItem
-                asset={asset}
-                amount={accountBalance.amount}
+                item={item}
                 onPress={onPress}
             />
         )

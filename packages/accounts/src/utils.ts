@@ -18,8 +18,10 @@ import {
     Algo25Account,
     MultiSigAccount,
     WatchAccount,
+    type ImportAccountType,
     type WalletAccount,
 } from './models'
+import { MNEMONIC_WORD_COUNT } from './constants'
 import { RekeyTargetNotFoundError } from './errors'
 
 export const getAccountDisplayName = (account: WalletAccount | null) => {
@@ -33,6 +35,12 @@ export const isHDWalletAccount = (
     account: WalletAccount,
 ): account is HDWalletAccount => {
     return account.type === AccountTypes.hdWallet
+}
+
+export const isHardwareWalletAccount = (
+    account: WalletAccount,
+): account is HardwareWalletAccount => {
+    return account.type === AccountTypes.hardware
 }
 
 export const isLedgerAccount = (
@@ -86,11 +94,11 @@ export const canSignWithAccount = (
 
 export type AccountStatus =
     | 'standard'
-    | 'ledger'
+    | 'hardware'
     | 'watch'
     | 'noAuth'
     | 'rekeyedStandard'
-    | 'rekeyedLedger'
+    | 'rekeyedHardware'
     | 'hdWallet'
     | 'multisig'
 
@@ -103,13 +111,13 @@ export const resolveAccountStatus = (
             a => a.address === account.rekeyAddress,
         )
         if (!authAccount) return 'noAuth'
-        if (isLedgerAccount(authAccount)) return 'rekeyedLedger'
+        if (isHardwareWalletAccount(authAccount)) return 'rekeyedHardware'
         return 'rekeyedStandard'
     }
     if (isHDWalletAccount(account)) return 'hdWallet'
     if (isMultisigAccount(account)) return 'multisig'
     if (isWatchAccount(account)) return 'watch'
-    if (isLedgerAccount(account)) return 'ledger'
+    if (isHardwareWalletAccount(account)) return 'hardware'
     if (isAlgo25Account(account)) return 'standard'
     return 'standard'
 }
@@ -149,4 +157,22 @@ export const resolveAuthAccount = (
     }
 
     return rekeyTarget
+}
+
+export type MnemonicAccountTypeResult =
+    | { success: true; accountType: ImportAccountType }
+    | { success: false; wordCount: number }
+
+export const resolveImportAccountType = (
+    mnemonic: string,
+): MnemonicAccountTypeResult => {
+    const wordCount = mnemonic.trim().split(/\s+/).length
+
+    for (const [type, count] of Object.entries(MNEMONIC_WORD_COUNT)) {
+        if (wordCount === count) {
+            return { success: true, accountType: type as ImportAccountType }
+        }
+    }
+
+    return { success: false, wordCount }
 }

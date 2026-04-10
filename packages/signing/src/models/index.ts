@@ -102,13 +102,13 @@ export type TransactionWarning = {
 
 /**
  * Flat representation of the signing machine's current state.
- * The 'signing' stage collapses all signing substates (localKey, ledger, multisig).
+ * The 'signing' stage collapses all signing substates (localKey, hardware, multisig).
  */
 export type PipelineStage =
     | 'idle' // no request or actor initializing
     | 'validating' // analyzerActor running
     | 'awaiting_user' // waiting for next() or fail()
-    | 'signing' // localKey | ledger | multisig actor running
+    | 'signing' // localKey | hardware | multisig actor running
     | 'transporting' // transportActor delivering signed data
     | 'completed' // terminal: signing and delivery succeeded
     | 'rejected' // terminal: user cancelled
@@ -143,8 +143,8 @@ export type SigningPipelineEvent =
           failedDuringState: 'validating' | 'signing' | 'transporting' | null
           isRetryable: boolean
       }
-    /** Reserved for Ledger hardware wallet confirmation (Phase 8) */
-    | { type: 'ledger_confirmation_requested' }
+    /** Reserved for hardware wallet confirmation */
+    | { type: 'hardware_confirmation_requested' }
 
 export {
     isTransactionRequest,

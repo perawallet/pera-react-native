@@ -34,7 +34,6 @@ export type MediaCarouselProps = {
     media: MediaItem[]
     fallbackImageUrl?: string
     placeholderIconSize?: PWIconSize
-    onItemPress?: (index: number) => void
     onFullScreenPress?: (index: number) => void
 }
 
@@ -42,7 +41,6 @@ export const MediaCarousel = ({
     media,
     fallbackImageUrl,
     placeholderIconSize = 'xl',
-    onItemPress,
     onFullScreenPress,
 }: MediaCarouselProps) => {
     const dimensions = useWindowDimensions()
@@ -110,7 +108,6 @@ export const MediaCarousel = ({
         [
             styles,
             placeholderIconSize,
-            onItemPress,
             onFullScreenPress,
             fallbackImageUrl,
             activeIndex,
@@ -129,7 +126,7 @@ export const MediaCarousel = ({
     return (
         <PWView style={styles.container}>
             <PagerView
-                style={{ flex: 1, height: dimensions.width }}
+                style={styles.pagerView}
                 onPageSelected={e => setActiveIndex(e.nativeEvent.position)}
             >
                 {displayMedia.map((item, index) => (
