@@ -14,7 +14,6 @@ import { useCallback } from 'react'
 import { Share } from 'react-native'
 import {
     useSingleAssetDetailsQuery,
-    isPureNft,
     type PeraAsset,
     type PeraCollectible,
     type CollectibleTrait,
