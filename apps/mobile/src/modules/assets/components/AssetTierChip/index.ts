@@ -10,13 +10,5 @@
  limitations under the License
  */
 
-export * from './AssetFavoriteButton'
-export * from './AssetNotificationButton'
-export * from './AssetTierChip'
-export * from './AssetTitle'
-export * from './AssetIcon'
-export * from './AssetItem'
-export * from './AssetSelection'
-export * from './CollectibleGridItem'
-export * from './CollectibleListItem'
-export * from './CollectibleThumbnail'
+export { AssetTierChip } from './AssetTierChip'
+export type { AssetTierChipProps } from './AssetTierChip'

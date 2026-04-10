@@ -12,7 +12,6 @@
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import * as Haptics from 'expo-haptics'
 import {
     AssetWithAccountBalance,
     useAccountAssetBalanceQuery,
@@ -299,7 +298,6 @@ export const useSwapForm = (): UseSwapFormResult => {
         const success = await swapExecution.execute(selectedQuote.quoteIdStr)
         if (success) {
             confirmModal.close()
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
             successToast(
                 t('swap.execution.success_title'),
                 t('swap.execution.success_body', {

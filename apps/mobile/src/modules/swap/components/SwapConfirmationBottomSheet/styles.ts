@@ -115,18 +115,6 @@ export const useStyles = makeStyles(theme => ({
     errorText: {
         color: theme.colors.negative,
     },
-    assetChip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
-        backgroundColor: theme.colors.layerGrayLighter,
-        paddingHorizontal: theme.spacing.sm,
-        paddingVertical: theme.spacing.xs,
-        borderRadius: theme.spacing.sm,
-    },
-    assetChipText: {
-        color: theme.colors.textMain,
-    },
     confirmButton: {
         marginHorizontal: theme.spacing.lg,
         marginTop: theme.spacing.xl,

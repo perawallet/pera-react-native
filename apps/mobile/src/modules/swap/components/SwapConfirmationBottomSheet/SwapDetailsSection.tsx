@@ -39,12 +39,7 @@ export const SwapDetailsSection = ({
         <PWView style={styles.detailsSection}>
             <DetailRow label={t('swap.quote.rate')}>
                 <PWView style={styles.rateValueRow}>
-                    <PWText
-                        variant='body'
-                        style={styles.detailValue}
-                    >
-                        {rateDisplay}
-                    </PWText>
+                    <PWText style={styles.detailValue}>{rateDisplay}</PWText>
                     <PWIcon
                         name='swap'
                         size='xs'
@@ -87,7 +82,6 @@ export const SwapDetailsSection = ({
                     precision={quote.assetIn.decimals ?? 6}
                     showSymbol={quote.assetIn.unitName === 'ALGO'}
                     symbolPosition='start'
-                    variant='body'
                 />
             </DetailRow>
             <DetailRow label={t('swap.quote.pera_fee')}>
@@ -101,7 +95,6 @@ export const SwapDetailsSection = ({
                     precision={quote.assetIn.decimals ?? 6}
                     showSymbol={quote.assetIn.unitName === 'ALGO'}
                     symbolPosition='start'
-                    variant='body'
                 />
             </DetailRow>
         </PWView>

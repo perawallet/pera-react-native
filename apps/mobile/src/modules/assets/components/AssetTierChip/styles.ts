@@ -10,13 +10,19 @@
  limitations under the License
  */
 
-export * from './AssetFavoriteButton'
-export * from './AssetNotificationButton'
-export * from './AssetTierChip'
-export * from './AssetTitle'
-export * from './AssetIcon'
-export * from './AssetItem'
-export * from './AssetSelection'
-export * from './CollectibleGridItem'
-export * from './CollectibleListItem'
-export * from './CollectibleThumbnail'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+        backgroundColor: theme.colors.layerGrayLighter,
+        paddingHorizontal: theme.spacing.sm,
+        paddingVertical: theme.spacing.xs,
+        borderRadius: theme.spacing.sm,
+    },
+    label: {
+        color: theme.colors.textMain,
+    },
+}))

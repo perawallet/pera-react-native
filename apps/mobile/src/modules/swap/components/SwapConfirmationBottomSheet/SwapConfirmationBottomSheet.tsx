@@ -144,10 +144,7 @@ export const SwapConfirmationBottomSheet = ({
                         style={styles.warningBanner}
                         testID='swap-confirm-warning'
                     >
-                        <PWText
-                            variant='body'
-                            style={styles.warningText}
-                        >
+                        <PWText style={styles.warningText}>
                             {t('swap.quote.high_price_impact_warning')}
                         </PWText>
                     </PWView>
@@ -158,10 +155,7 @@ export const SwapConfirmationBottomSheet = ({
                         style={styles.errorBanner}
                         testID='swap-confirm-error'
                     >
-                        <PWText
-                            variant='body'
-                            style={styles.errorText}
-                        >
+                        <PWText style={styles.errorText}>
                             {t('swap.execution.error')}
                         </PWText>
                     </PWView>

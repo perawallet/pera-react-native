@@ -13,7 +13,7 @@
 import { PWText, PWView } from '@components/core'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import { AssetIcon } from '@modules/assets/components/AssetIcon'
-import { AssetChip } from './AssetChip'
+import { AssetTierChip } from '@modules/assets/components/AssetTierChip'
 import { useStyles } from './styles'
 
 type SwapAssetSectionProps = {
@@ -60,7 +60,7 @@ export const SwapAssetSection = ({
                         )}
                     </PWView>
                 </PWView>
-                <AssetChip
+                <AssetTierChip
                     unitName={unitName}
                     verificationTier={verificationTier}
                 />

@@ -34,26 +34,14 @@ export const DetailRow = ({
     return (
         <PWView style={styles.detailRow}>
             <PWView style={styles.detailLabelRow}>
-                <PWText
-                    variant='body'
-                    style={styles.detailLabel}
-                >
-                    {label}
-                </PWText>
+                <PWText style={styles.detailLabel}>{label}</PWText>
                 {info && (
                     <InfoButton size='xs'>
-                        <PWText variant='body'>{info}</PWText>
+                        <PWText>{info}</PWText>
                     </InfoButton>
                 )}
             </PWView>
-            {children ?? (
-                <PWText
-                    variant='body'
-                    style={valueStyle}
-                >
-                    {value}
-                </PWText>
-            )}
+            {children ?? <PWText style={valueStyle}>{value}</PWText>}
         </PWView>
     )
 }
