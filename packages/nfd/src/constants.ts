@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-export * from './models'
-export * from './hooks'
-export * from './api'
-export * from './db'
-export * from './sync'
+/** Maximum addresses per bulk-read request. Conservative — tune if backend allows more. */
+export const NFD_BULK_CHUNK_SIZE = 50
+
+/** How long a cached row (positive or negative) is considered fresh. */
+export const NFD_CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24h

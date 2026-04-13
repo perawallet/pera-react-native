@@ -10,8 +10,12 @@
  limitations under the License
  */
 
-export * from './models'
-export * from './hooks'
-export * from './api'
-export * from './db'
-export * from './sync'
+export { NfdCacheSchema } from './schema'
+export {
+    upsertNfdEntries,
+    getNfdByAddress,
+    getNfdsByAddresses,
+    getStaleOrMissingAddresses,
+    type NfdCacheEntry,
+    type NfdCacheRow,
+} from './repository'

@@ -18,10 +18,13 @@
   },
   "dependencies": {
     "@babel/runtime": "catalog:",
+    "@perawallet/wallet-core-background": "workspace:*",
     "@perawallet/wallet-core-blockchain": "workspace:*",
     "@perawallet/wallet-core-config": "workspace:*",
+    "@perawallet/wallet-core-database": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "@tanstack/react-query": "catalog:",
+    "drizzle-orm": "catalog:",
     "react": "catalog:",
     "zod": "catalog:"
   },

@@ -40,7 +40,7 @@ import {
     getAppStatePlatform,
     getPollingTransitionAction,
 } from '@utils/app-state'
-import { getSyncService } from '@perawallet/wallet-core-sync'
+import { getSyncService } from '@perawallet/wallet-core-background'
 
 export type RootComponentProps = {
     fcmToken: string | null
