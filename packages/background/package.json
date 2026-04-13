@@ -1,5 +1,5 @@
 {
-  "name": "@perawallet/wallet-core-sync",
+  "name": "@perawallet/wallet-core-background",
   "version": "0.0.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,6 +8,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./queue": {
+      "types": "./dist/queue/index.d.ts",
+      "default": "./dist/queue.js"
     }
   },
   "scripts": {

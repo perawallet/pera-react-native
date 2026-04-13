@@ -10,9 +10,5 @@
  limitations under the License
  */
 
-export { createAlgodTransport } from './createAlgodTransport'
-export { createCallbackTransport } from './createCallbackTransport'
-export { createWalletConnectTransport } from './createWalletConnectTransport'
-export { createMultisigProposeTransport } from './createMultisigProposeTransport'
-export { createMultisigCosignTransport } from './createMultisigCosignTransport'
-export { createTransportSelector } from './getTransport'
+export { fetchAndPersistNfds } from './nfd-syncer'
+export { NFD_BULK_CHUNK_SIZE, NFD_CACHE_TTL_MS } from '../constants'

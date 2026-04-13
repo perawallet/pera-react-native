@@ -39,7 +39,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         .mockReturnValue([{ address: 'ADDR1' }, { address: 'ADDR2' }]),
 }))
 
-vi.mock('@perawallet/wallet-core-sync', () => ({
+vi.mock('@perawallet/wallet-core-background', () => ({
     getSyncService: () => ({
         invalidateQueries: mockInvalidateQueries,
         restart: mockRestart,

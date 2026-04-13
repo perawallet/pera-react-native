@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+export { BatchQueue, type BatchExecutor } from './queue'
+
 import { SyncService } from './service'
 import type { SyncServiceDeps } from './models'
 

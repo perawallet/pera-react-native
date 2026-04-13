@@ -1330,7 +1330,12 @@
             "finalizing": "Finalizing...",
             "error": "Transaction failed. Please try again.",
             "success_title": "Swap Complete",
-            "success_body": "Swapped {{fromAsset}} for {{toAsset}}"
+            "success_body": "Swapped {{fromAsset}} for {{toAsset}}",
+            "user_rejected": "Swap cancelled"
+        },
+        "signing": {
+            "source_name": "Swap",
+            "source_description": "Confirm transactions to complete your swap"
         },
         "info": {
             "slippage_tolerance": "The maximum difference between the expected price and the execution price. A higher tolerance increases the chance of a successful swap but may result in a less favorable rate.",

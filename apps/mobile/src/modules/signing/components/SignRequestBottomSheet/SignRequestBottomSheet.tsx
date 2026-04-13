@@ -18,7 +18,9 @@ import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 
 export function SignRequestBottomSheet() {
     const { pendingSignRequests, lastCompletedRequest } = useSigningRequest()
-    const nextRequest = pendingSignRequests.at(0)
+    // Headless requests run signing in the background without any user-facing
+    // UI — the originating screen (e.g. swap) drives its own confirmation.
+    const nextRequest = pendingSignRequests.find(r => !r.headless)
     const [isVisible, setIsVisible] = React.useState(false)
 
     useEffect(() => {

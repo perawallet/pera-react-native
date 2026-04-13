@@ -10,18 +10,27 @@
  limitations under the License
  */
 
-import { encodeAddress, decodeAddress } from '@algorandfoundation/algokit-utils'
+import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 
-export const encodeAlgorandAddress = (bytes: Uint8Array): string => {
-    return encodeAddress(bytes)
+/**
+ * Encoder function type for signed transactions.
+ */
+export type EncodeSignedTransactionsFn = (
+    txns: PeraSignedTransaction[],
+) => Uint8Array[]
+
+/**
+ * Algod client interface for submitting raw transactions.
+ */
+export interface AlgodClientInterface {
+    sendRawTransaction(rawTxns: Uint8Array): Promise<unknown>
 }
 
-export const isValidAlgorandAddress = (address?: string): boolean => {
-    if (!address) return false
-    try {
-        decodeAddress(address)
-        return true
-    } catch {
-        return false
+/**
+ * AlgorandClient-like interface with algod client access.
+ */
+export interface AlgokitClientInterface {
+    client: {
+        algod: AlgodClientInterface
     }
 }

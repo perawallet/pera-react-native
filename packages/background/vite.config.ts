@@ -30,15 +30,18 @@ export default defineConfig({
     ],
     build: {
         lib: {
-            entry: resolve(__dirname, 'src/index.ts'),
+            entry: {
+                index: resolve(__dirname, 'src/index.ts'),
+                queue: resolve(__dirname, 'src/queue/index.ts'),
+            },
             formats: ['es'],
-            fileName: 'index',
         },
         rollupOptions: {
             external: [
                 'react',
                 'react/jsx-runtime',
                 'zustand',
+                'zustand/middleware',
                 'decimal.js',
                 '@tanstack/react-query',
                 '@algorandfoundation/algokit-utils',

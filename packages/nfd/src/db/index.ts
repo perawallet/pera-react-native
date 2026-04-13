@@ -10,9 +10,12 @@
  limitations under the License
  */
 
-export { createAlgodTransport } from './createAlgodTransport'
-export { createCallbackTransport } from './createCallbackTransport'
-export { createWalletConnectTransport } from './createWalletConnectTransport'
-export { createMultisigProposeTransport } from './createMultisigProposeTransport'
-export { createMultisigCosignTransport } from './createMultisigCosignTransport'
-export { createTransportSelector } from './getTransport'
+export { NfdCacheSchema } from './schema'
+export {
+    upsertNfdEntries,
+    getNfdByAddress,
+    getNfdsByAddresses,
+    getStaleOrMissingAddresses,
+    type NfdCacheEntry,
+    type NfdCacheRow,
+} from './repository'

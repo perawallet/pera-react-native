@@ -10,9 +10,8 @@
  limitations under the License
  */
 
-export { createAlgodTransport } from './createAlgodTransport'
-export { createCallbackTransport } from './createCallbackTransport'
-export { createWalletConnectTransport } from './createWalletConnectTransport'
-export { createMultisigProposeTransport } from './createMultisigProposeTransport'
-export { createMultisigCosignTransport } from './createMultisigCosignTransport'
-export { createTransportSelector } from './getTransport'
+/** Maximum addresses per bulk-read request. Conservative — tune if backend allows more. */
+export const NFD_BULK_CHUNK_SIZE = 50
+
+/** How long a cached row (positive or negative) is considered fresh. */
+export const NFD_CACHE_TTL_MS = 24 * 60 * 60 * 1000 // 24h

@@ -27,3 +27,7 @@ export * from './signing'
 
 // Transports
 export * from './transports'
+
+// Submission helpers (low-level algod submission — prefer the pipeline for
+// end-to-end flows, but exposed for callers that merge pre-signed bytes).
+export * from './submission'

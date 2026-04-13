@@ -13,3 +13,5 @@
 export * from './models'
 export * from './hooks'
 export * from './api'
+export * from './db'
+export * from './sync'

@@ -94,6 +94,7 @@ export const signingMachine = setup({
     },
     guards: {
         hasError: ({ context }) => context.error !== null,
+        isHeadless: ({ context }) => context.request.headless === true,
         allGroupsSigned: ({ context }) =>
             getNextPendingSignerType(context) === undefined &&
             context.groupSignerTypes !== null,
@@ -224,6 +225,10 @@ export const signingMachine = setup({
         /**
          * Analyzes the signable group: calculates fees, detects warnings,
          * extracts signable addresses.
+         *
+         * Headless requests skip `awaiting_user` and proceed directly to
+         * signing — the caller has already collected user intent on a
+         * preceding screen.
          */
         validating: {
             invoke: {
@@ -238,10 +243,17 @@ export const signingMachine = setup({
                         accounts: context.allAccounts,
                     },
                 }),
-                onDone: {
-                    target: 'awaiting_user',
-                    actions: 'storeAnalyses',
-                },
+                onDone: [
+                    {
+                        guard: 'isHeadless',
+                        target: 'signing',
+                        actions: 'storeAnalyses',
+                    },
+                    {
+                        target: 'awaiting_user',
+                        actions: 'storeAnalyses',
+                    },
+                ],
                 onError: {
                     target: 'failed',
                     actions: 'setValidatingError',

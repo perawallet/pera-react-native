@@ -133,8 +133,10 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 if (!isTerminal) return
 
                 if (snapshot.matches('completed')) {
+                    // The transport is responsible for invoking the request's
+                    // approve callback (with the actual signed data) — see
+                    // createCallbackTransport / createWalletConnectTransport.
                     const { request: req } = snapshot.context
-                    ;(req as { approve?: () => Promise<void> }).approve?.()
                     setLastCompletedRequestRef.current(req)
                 } else if (snapshot.matches('failed')) {
                     const { request: req, error } = snapshot.context

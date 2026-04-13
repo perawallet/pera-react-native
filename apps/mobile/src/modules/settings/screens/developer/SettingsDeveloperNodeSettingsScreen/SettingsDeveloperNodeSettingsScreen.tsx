@@ -17,7 +17,7 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { Networks } from '@perawallet/wallet-core-shared'
 import { useSwitchNetwork } from '@perawallet/wallet-core-device'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { getSyncService } from '@perawallet/wallet-core-sync'
+import { getSyncService } from '@perawallet/wallet-core-background'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 

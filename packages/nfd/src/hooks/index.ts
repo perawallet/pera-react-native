@@ -12,4 +12,4 @@
 
 export { useNfdForAddressQuery } from './useNfdForAddressQuery'
 export { useNfdSearchQuery } from './useNfdSearchQuery'
-export { nfdQueryKeys } from './querykeys'
+export { nfdQueryKeys, invalidateNfdQueries } from './querykeys'
