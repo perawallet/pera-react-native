@@ -18,7 +18,7 @@ import {
     useCsvExportMutation,
     useTransactionHistoryQuery,
 } from '@perawallet/wallet-core-transactions'
-import { Share } from 'react-native'
+import { shareCsvFile } from '@utils/shareCsvFile'
 import { useToast } from '@hooks/useToast'
 import { TransactionFilter } from '../../../../../accounts/components/TransactionsFilterBottomSheet/types'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -50,13 +50,14 @@ vi.mock('@react-navigation/native', () => ({
 }))
 
 vi.mock('react-native', () => ({
-    Share: {
-        share: vi.fn(),
-    },
     Platform: {
         OS: 'ios',
         select: vi.fn(),
     },
+}))
+
+vi.mock('@utils/shareCsvFile', () => ({
+    shareCsvFile: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
@@ -528,7 +529,7 @@ describe('useAssetTransactionList', () => {
             expect(result.current.isExportingCsv).toBe(true)
         })
 
-        it('triggers native share upon successful export', async () => {
+        it('shares CSV as a file upon successful export', async () => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             let successCallback: (result: any) => Promise<void> = async () => {}
             vi.mocked(useCsvExportMutation).mockImplementation(
@@ -560,10 +561,7 @@ describe('useAssetTransactionList', () => {
 
             await successCallback(mockResult)
 
-            expect(Share.share).toHaveBeenCalledWith({
-                title: 'test.csv',
-                message: 'data',
-            })
+            expect(shareCsvFile).toHaveBeenCalledWith('test.csv', 'data')
         })
 
         it('shows error toast when share fails', async () => {
@@ -581,7 +579,7 @@ describe('useAssetTransactionList', () => {
                 },
             )
 
-            vi.mocked(Share.share).mockRejectedValueOnce(
+            vi.mocked(shareCsvFile).mockRejectedValueOnce(
                 new Error('Share cancelled'),
             )
 

@@ -11,7 +11,6 @@
  */
 
 import { useMemo, useCallback, useState } from 'react'
-import { Share } from 'react-native'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
@@ -23,6 +22,7 @@ import {
     useCsvExportMutation,
     type TransactionHistoryItem,
 } from '@perawallet/wallet-core-transactions'
+import { shareCsvFile } from '@utils/shareCsvFile'
 import {
     TransactionFilter,
     type CustomDateRange,
@@ -143,10 +143,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         network,
         onSuccess: async result => {
             try {
-                await Share.share({
-                    title: result.filename,
-                    message: result.csvContent,
-                })
+                await shareCsvFile(result.filename, result.csvContent)
             } catch (error) {
                 showToast({
                     title: t('errors.general.title'),
