@@ -54,7 +54,10 @@ vi.mock('@hooks/useLanguage', () => ({
 vi.mock('react-native', () => ({
     Linking: { openURL: (...args: unknown[]) => mockOpenURL(...args) },
     Platform: { OS: 'ios' },
-    Share: { share: vi.fn() },
+}))
+
+vi.mock('@utils/shareText', () => ({
+    shareText: vi.fn(),
 }))
 
 vi.mock('expo-clipboard', () => ({

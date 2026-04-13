@@ -10,22 +10,23 @@
  limitations under the License
  */
 
-import { File, Paths } from 'expo-file-system'
 import Share from 'react-native-share'
-import { CSV_MIME_TYPE } from '@perawallet/wallet-core-transactions'
 
-export const shareCsvFile = async (
-    filename: string,
-    csvContent: string,
-): Promise<void> => {
-    const file = new File(Paths.cache, filename)
-    file.create({ overwrite: true })
-    file.write(csvContent)
+type ShareTextOptions = {
+    message: string
+    title?: string
+    url?: string
+}
 
+export const shareText = async ({
+    message,
+    title,
+    url,
+}: ShareTextOptions): Promise<void> => {
     await Share.open({
-        url: file.uri,
-        filename,
-        type: CSV_MIME_TYPE,
+        message,
+        title,
+        url,
         failOnCancel: false,
     })
 }

@@ -12,8 +12,8 @@
 
 import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { Share } from 'react-native'
 import { useQRViewScreen } from '../useQRViewScreen'
+import { shareText } from '@utils/shareText'
 import { useReceiveFunds } from '@modules/transactions/hooks'
 import { useToast } from '@hooks/useToast'
 import { useClipboard } from '@hooks/useClipboard'
@@ -49,15 +49,9 @@ vi.mock('@components/core', () => ({
     bottomSheetNotifier: { current: null },
 }))
 
-vi.mock('react-native', async () => {
-    const actual = await vi.importActual('react-native')
-    return {
-        ...actual,
-        Share: {
-            share: vi.fn(),
-        },
-    }
-})
+vi.mock('@utils/shareText', () => ({
+    shareText: vi.fn(),
+}))
 
 const mockAccount = {
     address: 'test-address-123',
@@ -134,10 +128,8 @@ describe('useQRViewScreen', () => {
         expect(mockCopyToClipboard).toHaveBeenCalledWith('')
     })
 
-    it('shares address', async () => {
-        const shareSpy = vi
-            .spyOn(Share, 'share')
-            .mockResolvedValue({ action: 'sharedAction' })
+    it('shares address via shareText', async () => {
+        vi.mocked(shareText).mockResolvedValue()
 
         const { result } = renderHook(() => useQRViewScreen())
 
@@ -145,7 +137,7 @@ describe('useQRViewScreen', () => {
             await result.current.handleShareAddress()
         })
 
-        expect(shareSpy).toHaveBeenCalledWith({
+        expect(shareText).toHaveBeenCalledWith({
             title: 'Test Account',
             message: 'test-address-123',
         })
@@ -156,19 +148,17 @@ describe('useQRViewScreen', () => {
             selectedAccount: undefined,
         })
 
-        const shareSpy = vi.spyOn(Share, 'share')
-
         const { result } = renderHook(() => useQRViewScreen())
 
         await act(async () => {
             await result.current.handleShareAddress()
         })
 
-        expect(shareSpy).not.toHaveBeenCalled()
+        expect(shareText).not.toHaveBeenCalled()
     })
 
     it('shows toast on share error', async () => {
-        vi.spyOn(Share, 'share').mockRejectedValue(new Error('Share failed'))
+        vi.mocked(shareText).mockRejectedValue(new Error('Share failed'))
 
         const { result } = renderHook(() => useQRViewScreen())
 

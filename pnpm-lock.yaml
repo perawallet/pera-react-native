@@ -9,42 +9,12 @@ catalogs:
     '@algorandfoundation/algokit-utils':
       specifier: ^10.0.0-alpha.29
       version: 10.0.0-alpha.40
-    '@algorandfoundation/react-native-keystore':
-      specifier: 1.0.0-canary.5
-      version: 1.0.0-canary.5
-    '@algorandfoundation/wallet-provider':
-      specifier: 1.0.0-canary.3
-      version: 1.0.0-canary.3
     '@algorandfoundation/xhd-wallet-api':
       specifier: ^2.0.0-canary.1
       version: 2.0.0-canary.1
     '@babel/runtime':
       specifier: ^7.28.4
       version: 7.28.6
-    '@kubb/cli':
-      specifier: ^4.5.8
-      version: 4.33.2
-    '@kubb/core':
-      specifier: ^4.5.8
-      version: 4.33.2
-    '@kubb/plugin-client':
-      specifier: ^4.5.8
-      version: 4.33.2
-    '@kubb/plugin-msw':
-      specifier: ^4.5.8
-      version: 4.33.2
-    '@kubb/plugin-oas':
-      specifier: ^4.5.8
-      version: 4.33.2
-    '@kubb/plugin-react-query':
-      specifier: ^4.5.8
-      version: 4.33.2
-    '@kubb/plugin-ts':
-      specifier: ^4.5.8
-      version: 4.33.2
-    '@kubb/plugin-zod':
-      specifier: ^4.5.8
-      version: 4.33.2
     '@tanstack/query-async-storage-persister':
       specifier: ^5.90.9
       version: 5.90.24
@@ -54,9 +24,6 @@ catalogs:
     '@tanstack/react-query-persist-client':
       specifier: ^5.90.9
       version: 5.90.24
-    '@tanstack/store':
-      specifier: ^0.8.1
-      version: 0.8.1
     '@testing-library/react':
       specifier: 16.3.0
       version: 16.3.0
@@ -66,30 +33,9 @@ catalogs:
     '@vitejs/plugin-react':
       specifier: 5.1.0
       version: 5.1.0
-    '@vitest/coverage-v8':
-      specifier: ^4.0.16
-      version: 4.0.18
-    '@xstate/react':
-      specifier: ^6.1.0
-      version: 6.1.0
-    before-after-hook:
-      specifier: ^4.0.0
-      version: 4.0.0
     bip39:
       specifier: ^3.1.0
       version: 3.1.0
-    decimal.js:
-      specifier: ^10.6.0
-      version: 10.6.0
-    drizzle-orm:
-      specifier: ^0.44.0
-      version: 0.44.7
-    eslint:
-      specifier: 9.39.1
-      version: 9.39.1
-    eslint-plugin-unused-imports:
-      specifier: 4.3.0
-      version: 4.3.0
     oxfmt:
       specifier: ^0.41.0
       version: 0.41.0
@@ -102,18 +48,9 @@ catalogs:
     util:
       specifier: ^0.12.5
       version: 0.12.5
-    uuid:
-      specifier: 13.0.0
-      version: 13.0.0
-    vite:
-      specifier: ^7.2.7
-      version: 7.3.1
     vitest:
       specifier: 4.0.16
       version: 4.0.16
-    xstate:
-      specifier: ^5.28.0
-      version: 5.28.0
     zod:
       specifier: ^4.1.12
       version: 4.3.6
@@ -422,9 +359,6 @@ importers:
       expo-media-library:
         specifier: ^55.0.10
         version: 55.0.10(expo@55.0.8)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))
-      expo-sharing:
-        specifier: ^55.0.15
-        version: 55.0.18(expo@55.0.8)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
       expo-splash-screen:
         specifier: ~55.0.12
         version: 55.0.12(expo@55.0.8)(typescript@5.9.3)
@@ -518,6 +452,9 @@ importers:
       react-native-screens:
         specifier: ^4.23.0
         version: 4.23.0(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
+      react-native-share:
+        specifier: ^12.2.6
+        version: 12.2.6
       react-native-svg:
         specifier: ^15.12.1
         version: 15.15.3(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)
@@ -3759,9 +3696,6 @@ packages:
   '@expo/config-plugins@55.0.7':
     resolution: {integrity: sha512-XZUoDWrsHEkH3yasnDSJABM/UxP5a1ixzRwU/M+BToyn/f0nTrSJJe/Ay/FpxkI4JSNz2n0e06I23b2bleXKVA==}
 
-  '@expo/config-plugins@55.0.8':
-    resolution: {integrity: sha512-8WfWTRntTCcowfOS+tHdB0z98gKetTwktg4G5TWkCkXVa8Jt1NUnvzaaU4UHk2vbR2U4N84RyZJFizSwfF6C9g==}
-
   '@expo/config-types@55.0.5':
     resolution: {integrity: sha512-sCmSUZG4mZ/ySXvfyyBdhjivz8Q539X1NondwDdYG7s3SBsk+wsgPJzYsqgAG/P9+l0xWjUD2F+kQ1cAJ6NNLg==}
 
@@ -3802,9 +3736,6 @@ packages:
 
   '@expo/json-file@10.0.12':
     resolution: {integrity: sha512-inbDycp1rMAelAofg7h/mMzIe+Owx6F7pur3XdQ3EPTy00tme+4P6FWgHKUcjN8dBSrnbRNpSyh5/shzHyVCyQ==}
-
-  '@expo/json-file@10.0.13':
-    resolution: {integrity: sha512-pX/XjQn7tgNw6zuuV2ikmegmwe/S7uiwhrs2wXrANMkq7ozrA+JcZwgW9Q/8WZgciBzfAhNp5hnackHcrmapQA==}
 
   '@expo/local-build-cache-provider@55.0.7':
     resolution: {integrity: sha512-Qg9uNZn1buv4zJUA4ZQaz+ZnKDCipRgjoEg2Gcp8Qfy+2Gq5yZKX4YN1TThCJ01LJk/pvJsCRxXlXZSwdZppgg==}
@@ -6791,13 +6722,6 @@ packages:
     resolution: {integrity: sha512-xI72FTm469FfuuBL2R5aNtthgH+GR7ygOpsx/KcPS0K8AZaZd7VjtEExbzn9/qyyYkWW3T+3dAmCDKOMX8gdmQ==}
     engines: {node: '>=20.16.0'}
 
-  expo-sharing@55.0.18:
-    resolution: {integrity: sha512-Tqy4LXRLw/UEg5mT7BKhx8y4ReNz8fVldvhHJV5cesH3kRgEerHkYxVwid2vd7v34KnNp0RH1OqUyDlzZTQ9AQ==}
-    peerDependencies:
-      expo: '*'
-      react: '*'
-      react-native: 0.83.2
-
   expo-splash-screen@55.0.12:
     resolution: {integrity: sha512-+QYsmW+fIF4bL6zXDeVRkxQr+i6w3UJRwDGOybT1NgN9GWxAO7J/lT9Q0IKVPyW4hDiQrdEMbVISOfpYm6QPIw==}
     peerDependencies:
@@ -8524,6 +8448,10 @@ packages:
     peerDependencies:
       react: '*'
       react-native: 0.83.2
+
+  react-native-share@12.2.6:
+    resolution: {integrity: sha512-K9jZCQaTIqSNG37kMVygU1rflVMJm2g0ikslnbbmQ7EgsckYpw7ipePyp01E64hG+HrWNl+z9ZnFWLCC6H+Tiw==}
+    engines: {node: '>=16'}
 
   react-native-size-matters@0.4.2:
     resolution: {integrity: sha512-DKE3f/sdcozd24oASgkP1iGg+YU3HoajRa5k3a4wkRzpiqREq8SGX12Y5zBgAt/8IivLQoTMYkyQu1/Giuy+zQ==}
@@ -11085,24 +11013,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@expo/config-plugins@55.0.8':
-    dependencies:
-      '@expo/config-types': 55.0.5
-      '@expo/json-file': 10.0.13
-      '@expo/plist': 0.5.2
-      '@expo/sdk-runtime-versions': 1.0.0
-      chalk: 4.1.2
-      debug: 4.4.3
-      getenv: 2.0.0
-      glob: 13.0.6
-      resolve-from: 5.0.0
-      semver: 7.7.4
-      slugify: 1.6.6
-      xcode: 3.0.1
-      xml2js: 0.6.0
-    transitivePeerDependencies:
-      - supports-color
-
   '@expo/config-types@55.0.5': {}
 
   '@expo/config@55.0.10(typescript@5.9.3)':
@@ -11177,11 +11087,6 @@ snapshots:
       semver: 7.7.4
 
   '@expo/json-file@10.0.12':
-    dependencies:
-      '@babel/code-frame': 7.29.0
-      json5: 2.2.3
-
-  '@expo/json-file@10.0.13':
     dependencies:
       '@babel/code-frame': 7.29.0
       json5: 2.2.3
@@ -14587,17 +14492,6 @@ snapshots:
 
   expo-server@55.0.6: {}
 
-  expo-sharing@55.0.18(expo@55.0.8)(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0):
-    dependencies:
-      '@expo/config-plugins': 55.0.8
-      '@expo/config-types': 55.0.5
-      '@expo/plist': 0.5.2
-      expo: 55.0.8(@babel/core@7.29.0)(@expo/dom-webview@55.0.3)(react-dom@19.2.0(react@19.2.0))(react-native-webview@13.16.0(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0))(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0))(react@19.2.0)(typescript@5.9.3)
-      react: 19.2.0
-      react-native: 0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0)
-    transitivePeerDependencies:
-      - supports-color
-
   expo-splash-screen@55.0.12(expo@55.0.8)(typescript@5.9.3):
     dependencies:
       '@expo/prebuild-config': 55.0.10(expo@55.0.8)(typescript@5.9.3)
@@ -16677,6 +16571,8 @@ snapshots:
       react-freeze: 1.0.4(react@19.2.0)
       react-native: 0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0)
       warn-once: 0.1.1
+
+  react-native-share@12.2.6: {}
 
   react-native-size-matters@0.4.2(react-native@0.83.2(@babel/core@7.29.0)(@types/react@19.2.14)(react@19.2.0)):
     dependencies:

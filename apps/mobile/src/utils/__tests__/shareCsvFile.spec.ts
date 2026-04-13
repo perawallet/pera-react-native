@@ -11,9 +11,8 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { Platform, Share } from 'react-native'
+import Share from 'react-native-share'
 import { File } from 'expo-file-system'
-import * as Sharing from 'expo-sharing'
 import { shareCsvFile } from '../shareCsvFile'
 
 const mockFileInstance = {
@@ -22,11 +21,6 @@ const mockFileInstance = {
     write: vi.fn(),
 }
 
-vi.mock('react-native', () => ({
-    Platform: { OS: 'ios' },
-    Share: { share: vi.fn() },
-}))
-
 vi.mock('expo-file-system', () => ({
     File: vi.fn().mockImplementation(function FileMock(this: unknown) {
         Object.assign(this as object, mockFileInstance)
@@ -34,9 +28,8 @@ vi.mock('expo-file-system', () => ({
     Paths: { cache: { uri: 'file:///cache' } },
 }))
 
-vi.mock('expo-sharing', () => ({
-    isAvailableAsync: vi.fn(),
-    shareAsync: vi.fn(),
+vi.mock('react-native-share', () => ({
+    default: { open: vi.fn() },
 }))
 
 vi.mock('@perawallet/wallet-core-transactions', () => ({
@@ -46,7 +39,6 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 describe('shareCsvFile', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        ;(Platform as { OS: string }).OS = 'ios'
     })
 
     it('writes CSV content to a cache file with overwrite', async () => {
@@ -59,42 +51,14 @@ describe('shareCsvFile', () => {
         expect(mockFileInstance.write).toHaveBeenCalledWith('a,b,c')
     })
 
-    it('uses react-native Share with the file URI on iOS', async () => {
-        ;(Platform as { OS: string }).OS = 'ios'
-
+    it('shares the file via react-native-share with the CSV mime type', async () => {
         await shareCsvFile('tx.csv', 'data')
 
-        expect(Share.share).toHaveBeenCalledWith({
+        expect(Share.open).toHaveBeenCalledWith({
             url: 'file:///cache/test.csv',
-            title: 'tx.csv',
+            filename: 'tx.csv',
+            type: 'text/csv',
+            failOnCancel: false,
         })
-        expect(Sharing.shareAsync).not.toHaveBeenCalled()
-    })
-
-    it('uses expo-sharing shareAsync on Android', async () => {
-        ;(Platform as { OS: string }).OS = 'android'
-        vi.mocked(Sharing.isAvailableAsync).mockResolvedValueOnce(true)
-
-        await shareCsvFile('tx.csv', 'data')
-
-        expect(Sharing.isAvailableAsync).toHaveBeenCalled()
-        expect(Sharing.shareAsync).toHaveBeenCalledWith(
-            'file:///cache/test.csv',
-            expect.objectContaining({
-                mimeType: 'text/csv',
-                dialogTitle: 'tx.csv',
-            }),
-        )
-        expect(Share.share).not.toHaveBeenCalled()
-    })
-
-    it('throws when sharing is unavailable on Android', async () => {
-        ;(Platform as { OS: string }).OS = 'android'
-        vi.mocked(Sharing.isAvailableAsync).mockResolvedValueOnce(false)
-
-        await expect(shareCsvFile('tx.csv', 'data')).rejects.toThrow(
-            /not available/i,
-        )
-        expect(Sharing.shareAsync).not.toHaveBeenCalled()
     })
 })
