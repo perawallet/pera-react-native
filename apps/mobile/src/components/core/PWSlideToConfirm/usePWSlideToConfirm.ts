@@ -37,7 +37,8 @@ type UsePWSlideToConfirmResult = {
     panGesture: PanGesture
     thumbAnimatedStyle: AnimatedStyle
     fillAnimatedStyle: AnimatedStyle
-    labelAnimatedStyle: AnimatedStyle
+    labelOverlayClipStyle: AnimatedStyle
+    labelOverlayInnerStyle: AnimatedStyle
     onTrackLayout: (event: LayoutChangeEvent) => void
 }
 
@@ -110,25 +111,23 @@ export const usePWSlideToConfirm = ({
     }))
 
     const fillAnimatedStyle = useAnimatedStyle(() => ({
-        width: translateX.value + thumbSize + trackInset * 2,
+        width: translateX.value + thumbSize,
     }))
 
-    const labelAnimatedStyle = useAnimatedStyle(() => {
-        const maxOffset = Math.max(
-            0,
-            trackWidth.value - thumbSize - trackInset * 2,
-        )
-        const progress = maxOffset > 0 ? translateX.value / maxOffset : 0
-        return {
-            opacity: Math.max(0, 1 - progress * 1.4),
-        }
-    })
+    const labelOverlayClipStyle = useAnimatedStyle(() => ({
+        width: translateX.value + thumbSize + trackInset,
+    }))
+
+    const labelOverlayInnerStyle = useAnimatedStyle(() => ({
+        width: trackWidth.value,
+    }))
 
     return {
         panGesture,
         thumbAnimatedStyle,
         fillAnimatedStyle,
-        labelAnimatedStyle,
+        labelOverlayClipStyle,
+        labelOverlayInnerStyle,
         onTrackLayout,
     }
 }

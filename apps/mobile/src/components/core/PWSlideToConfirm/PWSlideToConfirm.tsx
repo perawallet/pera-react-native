@@ -46,7 +46,8 @@ export const PWSlideToConfirm = ({
         panGesture,
         thumbAnimatedStyle,
         fillAnimatedStyle,
-        labelAnimatedStyle,
+        labelOverlayClipStyle,
+        labelOverlayInnerStyle,
         onTrackLayout,
     } = usePWSlideToConfirm({
         onConfirm,
@@ -100,16 +101,31 @@ export const PWSlideToConfirm = ({
                 style={[styles.fill, fillAnimatedStyle]}
                 pointerEvents='none'
             />
-            <Animated.View
-                style={[styles.label, labelAnimatedStyle]}
+            <View
+                style={styles.label}
                 pointerEvents='none'
             >
                 <PWText
                     variant='body'
-                    style={styles.labelText}
+                    style={styles.labelTextBase}
                 >
                     {title}
                 </PWText>
+            </View>
+            <Animated.View
+                style={[styles.labelOverlayClip, labelOverlayClipStyle]}
+                pointerEvents='none'
+            >
+                <Animated.View
+                    style={[styles.labelOverlayInner, labelOverlayInnerStyle]}
+                >
+                    <PWText
+                        variant='body'
+                        style={styles.labelTextOverlay}
+                    >
+                        {title}
+                    </PWText>
+                </Animated.View>
             </Animated.View>
             <GestureDetector gesture={panGesture}>
                 <Animated.View

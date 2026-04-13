@@ -32,7 +32,9 @@ describe('PWSlideToConfirm', () => {
             />,
         )
 
-        expect(screen.getByText('Slide To Confirm')).toBeTruthy()
+        expect(screen.getAllByText('Slide To Confirm').length).toBeGreaterThan(
+            0,
+        )
         expect(screen.queryByTestId('pw-slide-to-confirm-lottie')).toBeNull()
         expect(screen.queryByTestId('pw-slide-to-confirm-check')).toBeNull()
     })
@@ -47,7 +49,7 @@ describe('PWSlideToConfirm', () => {
         )
 
         expect(screen.getByTestId('pw-slide-to-confirm-lottie')).toBeTruthy()
-        expect(screen.queryByText('Slide To Confirm')).toBeNull()
+        expect(screen.queryAllByText('Slide To Confirm')).toHaveLength(0)
         expect(screen.queryByTestId('pw-slide-to-confirm-check')).toBeNull()
     })
 
@@ -61,7 +63,7 @@ describe('PWSlideToConfirm', () => {
         )
 
         expect(screen.getByTestId('pw-slide-to-confirm-check')).toBeTruthy()
-        expect(screen.queryByText('Slide To Confirm')).toBeNull()
+        expect(screen.queryAllByText('Slide To Confirm')).toHaveLength(0)
         expect(screen.queryByTestId('pw-slide-to-confirm-lottie')).toBeNull()
     })
 

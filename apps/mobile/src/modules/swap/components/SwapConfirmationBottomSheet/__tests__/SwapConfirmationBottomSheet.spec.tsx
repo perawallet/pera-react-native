@@ -45,8 +45,17 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     }),
 }))
 
-vi.mock('@modules/accounts/components/AccountIcon', () => ({
-    AccountIcon: () => <div data-testid='account-icon' />,
+vi.mock('@modules/accounts/components/AccountDisplay', () => ({
+    AccountDisplay: ({
+        account,
+    }: {
+        account?: { name?: string; address?: string }
+    }) => (
+        <div data-testid='account-display'>
+            <span>{account?.name}</span>
+            <span>{account?.address}</span>
+        </div>
+    ),
 }))
 
 vi.mock('@modules/assets/components/AssetIcon', () => ({

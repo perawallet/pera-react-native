@@ -20,13 +20,7 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
     },
     accountRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
         marginTop: theme.spacing.xs,
-    },
-    accountName: {
-        color: theme.colors.textGray,
     },
     assetSection: {
         paddingHorizontal: theme.spacing.lg,

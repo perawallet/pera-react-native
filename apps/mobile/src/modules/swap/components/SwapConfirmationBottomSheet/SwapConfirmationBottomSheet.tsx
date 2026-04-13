@@ -20,7 +20,7 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { AccountIcon } from '@modules/accounts/components/AccountIcon'
+import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import type { SwapExecutionStatus } from '../../hooks/useSwapExecution'
 import { useSwapConfirmation } from './useSwapConfirmation'
@@ -85,18 +85,13 @@ export const SwapConfirmationBottomSheet = ({
                                 {t('swap.quote.confirm_swap')}
                             </PWText>
                             {selectedAccount && (
-                                <PWView style={styles.accountRow}>
-                                    <AccountIcon
-                                        account={selectedAccount}
-                                        size='sm'
-                                    />
-                                    <PWText
-                                        variant='caption'
-                                        style={styles.accountName}
-                                    >
-                                        {selectedAccount.name}
-                                    </PWText>
-                                </PWView>
+                                <AccountDisplay
+                                    account={selectedAccount}
+                                    iconProps={{ size: 'sm' }}
+                                    textProps={{ variant: 'caption' }}
+                                    showChevron={false}
+                                    style={styles.accountRow}
+                                />
                             )}
                         </PWView>
                     }

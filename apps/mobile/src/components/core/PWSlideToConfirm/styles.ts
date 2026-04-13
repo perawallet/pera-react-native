@@ -13,7 +13,7 @@
 import { makeStyles } from '@rneui/themed'
 
 export const TRACK_HEIGHT = 56
-export const THUMB_SIZE = 48
+export const THUMB_SIZE = 64
 export const TRACK_INSET = 4
 
 type StyleProps = {
@@ -28,14 +28,13 @@ export const useStyles = makeStyles((theme, { isDisabled }: StyleProps) => ({
         justifyContent: 'center',
         paddingHorizontal: TRACK_INSET,
         opacity: isDisabled ? 0.6 : 1,
-        overflow: 'hidden',
     },
     fill: {
         position: 'absolute',
-        left: 0,
+        left: TRACK_INSET,
         top: 0,
         bottom: 0,
-        backgroundColor: theme.colors.buttonPrimaryBg,
+        backgroundColor: theme.colors.buttonHelperPeraIcon,
         borderRadius: theme.borderRadius.full,
     },
     label: {
@@ -45,8 +44,23 @@ export const useStyles = makeStyles((theme, { isDisabled }: StyleProps) => ({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    labelText: {
-        color: theme.colors.textGray,
+    labelTextBase: {
+        color: theme.colors.textMain,
+    },
+    labelOverlayClip: {
+        position: 'absolute',
+        left: 0,
+        top: 0,
+        bottom: 0,
+        overflow: 'hidden',
+    },
+    labelOverlayInner: {
+        height: '100%',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    labelTextOverlay: {
+        color: theme.colors.buttonFloatIconMain,
     },
     thumb: {
         width: THUMB_SIZE,
@@ -59,7 +73,7 @@ export const useStyles = makeStyles((theme, { isDisabled }: StyleProps) => ({
     loadingPill: {
         height: TRACK_HEIGHT,
         borderRadius: theme.borderRadius.full,
-        backgroundColor: theme.colors.buttonPrimaryBg,
+        backgroundColor: theme.colors.buttonHelperPeraIcon,
         alignItems: 'center',
         justifyContent: 'center',
     },
