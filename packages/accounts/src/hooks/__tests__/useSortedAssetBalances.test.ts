@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { renderHook } from '@test-utils/render'
+import { renderHook } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { useSortedAssetBalances } from '../useSortedAssetBalances'
@@ -51,80 +51,109 @@ describe('useSortedAssetBalances', () => {
     })
 
     it('sorts by balance descending by default with favorited first', () => {
-        // Arrange
-        // default mockSortMode is 'balanceDesc'
-
-        // Act
         const { result } = renderHook(() =>
             useSortedAssetBalances(mockBalances, mockAssets as never),
         )
 
-        // Assert
         const ids = result.current.sortedBalances.map(b => b.assetId)
-        // Favorited first (asset '2'), then rest sorted by algoValue desc
         expect(ids).toEqual(['2', '0', '1', '3'])
     })
 
     it('sorts by balance ascending', () => {
-        // Arrange
         mockSortMode = 'balanceAsc'
 
-        // Act
         const { result } = renderHook(() =>
             useSortedAssetBalances(mockBalances, mockAssets as never),
         )
 
-        // Assert
         const ids = result.current.sortedBalances.map(b => b.assetId)
-        // Favorited first (asset '2'), then rest sorted by algoValue asc
         expect(ids).toEqual(['2', '3', '1', '0'])
     })
 
     it('sorts alphabetically A-Z with favorited first', () => {
-        // Arrange
         mockSortMode = 'alphabeticalAsc'
 
-        // Act
         const { result } = renderHook(() =>
             useSortedAssetBalances(mockBalances, mockAssets as never),
         )
 
-        // Assert
         const ids = result.current.sortedBalances.map(b => b.assetId)
-        // Favorited first: Apple ('2'), then rest alphabetical asc: Algorand ('0'), Banana ('1'), Cherry ('3')
         expect(ids).toEqual(['2', '0', '1', '3'])
     })
 
     it('sorts alphabetically Z-A with favorited first', () => {
-        // Arrange
         mockSortMode = 'alphabeticalDesc'
 
-        // Act
         const { result } = renderHook(() =>
             useSortedAssetBalances(mockBalances, mockAssets as never),
         )
 
-        // Assert
         const ids = result.current.sortedBalances.map(b => b.assetId)
-        // Favorited first: Apple ('2'), then rest alphabetical desc: Cherry ('3'), Banana ('1'), Algorand ('0')
         expect(ids).toEqual(['2', '3', '1', '0'])
     })
 
-    it('always places favorited assets before non-favorited', () => {
-        // Arrange
+    it('breaks ties in balanceDesc by name then assetId', () => {
+        mockSortMode = 'balanceDesc'
+        const tied = [
+            {
+                assetId: '10',
+                amount: new Decimal(0),
+                algoValue: new Decimal(0),
+            },
+            {
+                assetId: '11',
+                amount: new Decimal(0),
+                algoValue: new Decimal(0),
+            },
+            {
+                assetId: '12',
+                amount: new Decimal(0),
+                algoValue: new Decimal(0),
+            },
+        ]
+        const tiedAssets = new Map([
+            ['10', { name: 'Zeta', peraMetadata: { isFavorited: false } }],
+            ['11', { name: 'Alpha', peraMetadata: { isFavorited: false } }],
+            ['12', { name: 'Alpha', peraMetadata: { isFavorited: false } }],
+        ])
+
+        const { result } = renderHook(() =>
+            useSortedAssetBalances(tied, tiedAssets as never),
+        )
+
+        expect(result.current.sortedBalances.map(b => b.assetId)).toEqual([
+            '11',
+            '12',
+            '10',
+        ])
+    })
+
+    it('falls back gracefully when assets map is undefined', () => {
         mockSortMode = 'balanceDesc'
 
-        // Act
+        const { result } = renderHook(() =>
+            useSortedAssetBalances(mockBalances, undefined),
+        )
+
+        expect(result.current.sortedBalances.map(b => b.assetId)).toEqual([
+            '0',
+            '1',
+            '2',
+            '3',
+        ])
+    })
+
+    it('always places favorited assets before non-favorited', () => {
+        mockSortMode = 'balanceDesc'
+
         const { result } = renderHook(() =>
             useSortedAssetBalances(mockBalances, mockAssets as never),
         )
 
-        // Assert
         const ids = result.current.sortedBalances.map(b => b.assetId)
         const favoritedIndex = ids.indexOf('2')
         const nonFavoritedIndices = ['0', '1', '3'].map(id => ids.indexOf(id))
 
-        // Favorited asset '2' should come before all non-favorited assets
         for (const idx of nonFavoritedIndices) {
             expect(favoritedIndex).toBeLessThan(idx)
         }

@@ -77,6 +77,8 @@ export const AccountAssetItemView = ({
         return tier ? getVerificationIcon(tier) : null
     }, [asset, isAlgo])
 
+    const isFavorited = asset?.peraMetadata?.isFavorited ?? false
+
     const item = useMemo(() => {
         if (asset && isCollectible(asset)) {
             return {
@@ -133,6 +135,14 @@ export const AccountAssetItemView = ({
                         >
                             {isAlgo ? 'Algo' : asset.name}
                         </PWText>
+                        {isFavorited ? (
+                            <PWIcon
+                                name='star-filled'
+                                size='xs'
+                                variant='favorite'
+                                testID='favorite-star-icon'
+                            />
+                        ) : null}
                         {verificationIconName ? (
                             <PWIcon
                                 name={verificationIconName}

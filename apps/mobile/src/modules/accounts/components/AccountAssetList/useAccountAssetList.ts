@@ -17,6 +17,7 @@ import {
     isSigningAccount,
     useAccountBalancesQuery,
     useAllAccounts,
+    useSortedAssetBalances,
     WalletAccount,
     AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
@@ -26,18 +27,19 @@ import {
     useAssetPreferencesStore,
     isCollectible,
     type AssetPrices,
+    type AssetSortMode,
 } from '@perawallet/wallet-core-assets'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useModalState, ModalState } from '@hooks/useModalState'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { useToast } from '@hooks/useToast'
-import { useSortedAssetBalances } from './useSortedAssetBalances'
 
 type UseAccountAssetListResult = {
     balances: AssetWithAccountBalance[]
     isPending: boolean
     isWatch: boolean
     hideZeroBalance: boolean
+    assetSortMode: AssetSortMode
     searchFilter: string
     headerState: ModalState
     manageSheetState: ModalState
@@ -119,7 +121,7 @@ export const useAccountAssetList = ({
     const { showToast } = useToast()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
-    const { sortedBalances } = useSortedAssetBalances(
+    const { sortedBalances, assetSortMode } = useSortedAssetBalances(
         balanceData?.assetBalances ?? [],
         assets,
     )
@@ -270,6 +272,7 @@ export const useAccountAssetList = ({
         isPending,
         isWatch,
         hideZeroBalance,
+        assetSortMode,
         searchFilter,
         headerState,
         manageSheetState,
