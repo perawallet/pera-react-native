@@ -73,7 +73,6 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
         },
         carouselItem: {
             width: '100%',
-            height: '100%',
             maxWidth,
             maxHeight,
         },

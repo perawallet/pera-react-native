@@ -18,7 +18,7 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.background,
     },
     listContainer: {
-        flex: 1,
+        flexGrow: 1,
     },
     searchContainer: {
         paddingHorizontal: theme.spacing.md,
