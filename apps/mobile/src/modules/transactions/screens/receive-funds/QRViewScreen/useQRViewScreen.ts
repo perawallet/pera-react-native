@@ -11,8 +11,8 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { Share } from 'react-native'
 
+import { shareText } from '@utils/shareText'
 import { useToast } from '@hooks/useToast'
 import { useClipboard } from '@hooks/useClipboard'
 import { useDeepLink } from '@hooks/useDeepLink'
@@ -71,7 +71,7 @@ export const useQRViewScreen = (
             if (!selectedAccount) {
                 return
             }
-            await Share.share({
+            await shareText({
                 title: getAccountDisplayName(selectedAccount),
                 message: selectedAccount.address,
             })

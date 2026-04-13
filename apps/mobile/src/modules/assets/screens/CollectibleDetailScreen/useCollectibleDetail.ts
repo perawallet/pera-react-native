@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { Share } from 'react-native'
 import { useCallback, useMemo, useState } from 'react'
+import { shareText } from '@utils/shareText'
 import { useNavigation } from '@react-navigation/native'
 import {
     useSingleAssetDetailsQuery,
@@ -234,16 +234,16 @@ export const useCollectibleDetail = (
     }, [assetId, getImageUrl, media, showToast, t])
 
     const handleSharePressed = useCallback(() => {
-        const config = getNetworkConfig(network)
-        const url = config.explorerUrl
-            ? `${config.explorerUrl}/asset/${assetId}`
+        const networkConfig = getNetworkConfig(network)
+        const url = networkConfig.explorerUrl
+            ? `${networkConfig.explorerUrl}/asset/${assetId}`
             : undefined
 
-        Share.share({
+        void shareText({
             message: t('asset_details.collectible.share_message'),
             url,
         })
-    }, [assetId])
+    }, [assetId, network, t])
 
     const fullScreenMedia = useMemo<FullScreenMediaItem[]>(() => {
         const posterFallback =
