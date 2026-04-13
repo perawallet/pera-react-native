@@ -68,9 +68,12 @@ type UseSwapFormResult = {
     handleReceiveAssetSelected: (asset: AssetWithAccountBalance) => void
     handleConfigApply: (result: SwapConfigurationResult) => void
     handleConfirmSwap: () => void
+    handleOpenConfirm: () => void
+    handleCloseConfirm: () => void
 }
 
 const QUOTE_DEBOUNCE_MS = 500
+const SUCCESS_DISPLAY_MS = 3000
 
 export const useSwapForm = (): UseSwapFormResult => {
     const {
@@ -295,16 +298,46 @@ export const useSwapForm = (): UseSwapFormResult => {
         [setToAsset, resetQuoteMutation],
     )
 
+    const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const pendingSuccessCleanupRef = useRef<(() => void) | null>(null)
+
+    useEffect(() => {
+        return () => {
+            if (autoCloseTimerRef.current) {
+                clearTimeout(autoCloseTimerRef.current)
+            }
+        }
+    }, [])
+
+    const flushPendingSuccess = useCallback(() => {
+        if (autoCloseTimerRef.current) {
+            clearTimeout(autoCloseTimerRef.current)
+            autoCloseTimerRef.current = null
+        }
+        const cleanup = pendingSuccessCleanupRef.current
+        pendingSuccessCleanupRef.current = null
+        cleanup?.()
+    }, [])
+
+    const handleCloseConfirm = useCallback(() => {
+        flushPendingSuccess()
+        confirmModal.close()
+    }, [confirmModal, flushPendingSuccess])
+
     const handleConfirmSwap = useCallback(async () => {
         if (!selectedQuote?.quoteIdStr) return
         const success = await swapExecution.execute(selectedQuote.quoteIdStr)
-        if (success) {
-            confirmModal.close()
+        if (!success) return
+
+        const fromUnit = selectedQuote.assetIn.unitName ?? ''
+        const toUnit = selectedQuote.assetOut.unitName ?? ''
+
+        pendingSuccessCleanupRef.current = () => {
             successToast(
                 t('swap.execution.success_title'),
                 t('swap.execution.success_body', {
-                    fromAsset: selectedQuote.assetIn.unitName ?? '',
-                    toAsset: selectedQuote.assetOut.unitName ?? '',
+                    fromAsset: fromUnit,
+                    toAsset: toUnit,
                 }),
             )
             setPayAmount(null)
@@ -312,6 +345,12 @@ export const useSwapForm = (): UseSwapFormResult => {
             setSelectedQuote(null)
             resetQuoteMutation()
         }
+
+        autoCloseTimerRef.current = setTimeout(() => {
+            autoCloseTimerRef.current = null
+            flushPendingSuccess()
+            confirmModal.close()
+        }, SUCCESS_DISPLAY_MS)
     }, [
         selectedQuote,
         confirmModal,
@@ -319,7 +358,14 @@ export const useSwapForm = (): UseSwapFormResult => {
         successToast,
         t,
         resetQuoteMutation,
+        flushPendingSuccess,
     ])
+
+    const handleOpenConfirm = useCallback(() => {
+        flushPendingSuccess()
+        swapExecution.reset()
+        confirmModal.open()
+    }, [swapExecution, confirmModal, flushPendingSuccess])
 
     const handleConfigApply = useCallback(
         (result: SwapConfigurationResult) => {
@@ -370,5 +416,7 @@ export const useSwapForm = (): UseSwapFormResult => {
         handleReceiveAssetSelected,
         handleConfigApply,
         handleConfirmSwap,
+        handleOpenConfirm,
+        handleCloseConfirm,
     }
 }

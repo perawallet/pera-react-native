@@ -12,8 +12,10 @@
 
 import { useCallback, useEffect } from 'react'
 import type { LayoutChangeEvent } from 'react-native'
+import { useTheme } from '@rneui/themed'
 import { Gesture, type PanGesture } from 'react-native-gesture-handler'
 import {
+    interpolateColor,
     useAnimatedStyle,
     useSharedValue,
     withTiming,
@@ -39,7 +41,17 @@ type UsePWSlideToConfirmResult = {
     fillAnimatedStyle: AnimatedStyle
     labelOverlayClipStyle: AnimatedStyle
     labelOverlayInnerStyle: AnimatedStyle
+    rootAnimatedStyle: AnimatedStyle
+    idleContentStyle: AnimatedStyle
+    loadingContentStyle: AnimatedStyle
+    confirmedContentStyle: AnimatedStyle
     onTrackLayout: (event: LayoutChangeEvent) => void
+}
+
+const getPhaseTarget = (isLoading: boolean, isConfirmed: boolean): number => {
+    if (isConfirmed) return 2
+    if (isLoading) return 1
+    return 0
 }
 
 export const usePWSlideToConfirm = ({
@@ -50,9 +62,17 @@ export const usePWSlideToConfirm = ({
     isDisabled,
     isConfirmed,
 }: UsePWSlideToConfirmParams): UsePWSlideToConfirmResult => {
+    const { theme } = useTheme()
     const translateX = useSharedValue(0)
     const trackWidth = useSharedValue(0)
     const startX = useSharedValue(0)
+    const phase = useSharedValue(getPhaseTarget(isLoading, isConfirmed))
+
+    useEffect(() => {
+        phase.value = withTiming(getPhaseTarget(isLoading, isConfirmed), {
+            duration: SLIDE_TO_CONFIRM_ANIMATION_DURATION,
+        })
+    }, [isLoading, isConfirmed, phase])
 
     useEffect(() => {
         if (!isLoading && !isConfirmed) {
@@ -122,12 +142,43 @@ export const usePWSlideToConfirm = ({
         width: trackWidth.value,
     }))
 
+    const idleColor = theme.colors.layerGrayLighter
+    const loadingColor = theme.colors.buttonHelperPeraIcon
+    const confirmedColor = theme.colors.positive
+
+    const rootAnimatedStyle = useAnimatedStyle(() => ({
+        backgroundColor: interpolateColor(
+            phase.value,
+            [0, 1, 2],
+            [idleColor, loadingColor, confirmedColor],
+        ),
+    }))
+
+    const idleContentStyle = useAnimatedStyle(() => ({
+        opacity: 1 - Math.min(Math.max(phase.value, 0), 1),
+    }))
+
+    const loadingContentStyle = useAnimatedStyle(() => ({
+        opacity:
+            phase.value <= 1
+                ? Math.max(0, phase.value)
+                : Math.max(0, 2 - phase.value),
+    }))
+
+    const confirmedContentStyle = useAnimatedStyle(() => ({
+        opacity: Math.max(0, phase.value - 1),
+    }))
+
     return {
         panGesture,
         thumbAnimatedStyle,
         fillAnimatedStyle,
         labelOverlayClipStyle,
         labelOverlayInnerStyle,
+        rootAnimatedStyle,
+        idleContentStyle,
+        loadingContentStyle,
+        confirmedContentStyle,
         onTrackLayout,
     }
 }

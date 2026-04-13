@@ -46,6 +46,8 @@ export const SwapForm = () => {
         handleReceiveAssetSelected,
         handleConfigApply,
         handleConfirmSwap,
+        handleOpenConfirm,
+        handleCloseConfirm,
     } = useSwapForm()
 
     return (
@@ -91,7 +93,7 @@ export const SwapForm = () => {
                 <PWButton
                     variant='primary'
                     title={t('swap.form.swap')}
-                    onPress={confirmModal.open}
+                    onPress={handleOpenConfirm}
                     isDisabled={!canSwap}
                     style={styles.swapButton}
                     testID='swap-button'
@@ -120,7 +122,7 @@ export const SwapForm = () => {
 
             <SwapConfirmationBottomSheet
                 isVisible={confirmModal.isOpen}
-                onClose={confirmModal.close}
+                onClose={handleCloseConfirm}
                 onConfirm={handleConfirmSwap}
                 quote={selectedQuote}
                 swapStatus={swapStatus}

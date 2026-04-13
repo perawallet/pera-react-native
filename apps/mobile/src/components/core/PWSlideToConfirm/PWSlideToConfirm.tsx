@@ -48,6 +48,10 @@ export const PWSlideToConfirm = ({
         fillAnimatedStyle,
         labelOverlayClipStyle,
         labelOverlayInnerStyle,
+        rootAnimatedStyle,
+        idleContentStyle,
+        loadingContentStyle,
+        confirmedContentStyle,
         onTrackLayout,
     } = usePWSlideToConfirm({
         onConfirm,
@@ -58,27 +62,72 @@ export const PWSlideToConfirm = ({
         isConfirmed,
     })
 
-    if (isConfirmed) {
-        return (
-            <View
-                style={[styles.confirmedPill, style]}
-                {...getTestProps(testID)}
-            >
-                <PWIcon
-                    name='check'
-                    variant='white'
-                    size='md'
-                    testID='pw-slide-to-confirm-check'
-                />
-            </View>
-        )
-    }
+    const isIdleInactive = isLoading || isConfirmed
 
-    if (isLoading) {
-        return (
-            <View
-                style={[styles.loadingPill, style]}
-                {...getTestProps(testID)}
+    return (
+        <View
+            style={[styles.root, style]}
+            onLayout={onTrackLayout}
+            {...getTestProps(testID)}
+        >
+            <Animated.View
+                style={[styles.background, rootAnimatedStyle]}
+                pointerEvents='none'
+            />
+            <Animated.View
+                style={[styles.idleLayer, idleContentStyle]}
+                pointerEvents={isIdleInactive ? 'none' : 'auto'}
+            >
+                <Animated.View
+                    style={[styles.fill, fillAnimatedStyle]}
+                    pointerEvents='none'
+                />
+                <View
+                    style={styles.label}
+                    pointerEvents='none'
+                >
+                    <PWText
+                        variant='body'
+                        style={styles.labelTextBase}
+                    >
+                        {title}
+                    </PWText>
+                </View>
+                <Animated.View
+                    style={[styles.labelOverlayClip, labelOverlayClipStyle]}
+                    pointerEvents='none'
+                >
+                    <Animated.View
+                        style={[
+                            styles.labelOverlayInner,
+                            labelOverlayInnerStyle,
+                        ]}
+                    >
+                        <PWText
+                            variant='body'
+                            style={styles.labelTextOverlay}
+                        >
+                            {title}
+                        </PWText>
+                    </Animated.View>
+                </Animated.View>
+                <GestureDetector gesture={panGesture}>
+                    <Animated.View
+                        style={[styles.thumb, thumbAnimatedStyle]}
+                        {...getTestProps(testID, 'thumb')}
+                    >
+                        <PWIcon
+                            name='chevron-right'
+                            variant='buttonPrimary'
+                            size='md'
+                        />
+                    </Animated.View>
+                </GestureDetector>
+            </Animated.View>
+
+            <Animated.View
+                style={[styles.centerLayer, loadingContentStyle]}
+                pointerEvents='none'
             >
                 <LottieView
                     autoPlay
@@ -87,58 +136,19 @@ export const PWSlideToConfirm = ({
                     style={styles.lottie}
                     testID='pw-slide-to-confirm-lottie'
                 />
-            </View>
-        )
-    }
-
-    return (
-        <View
-            style={[styles.track, style]}
-            onLayout={onTrackLayout}
-            {...getTestProps(testID)}
-        >
-            <Animated.View
-                style={[styles.fill, fillAnimatedStyle]}
-                pointerEvents='none'
-            />
-            <View
-                style={styles.label}
-                pointerEvents='none'
-            >
-                <PWText
-                    variant='body'
-                    style={styles.labelTextBase}
-                >
-                    {title}
-                </PWText>
-            </View>
-            <Animated.View
-                style={[styles.labelOverlayClip, labelOverlayClipStyle]}
-                pointerEvents='none'
-            >
-                <Animated.View
-                    style={[styles.labelOverlayInner, labelOverlayInnerStyle]}
-                >
-                    <PWText
-                        variant='body'
-                        style={styles.labelTextOverlay}
-                    >
-                        {title}
-                    </PWText>
-                </Animated.View>
             </Animated.View>
-            <GestureDetector gesture={panGesture}>
-                <Animated.View
-                    style={[styles.thumb, thumbAnimatedStyle]}
-                    {...getTestProps(testID, 'thumb')}
-                >
-                    <PWIcon
-                        name='chevron-right'
-                        variant='buttonPrimary'
-                        size='md'
-                    />
-                </Animated.View>
-            </GestureDetector>
+
+            <Animated.View
+                style={[styles.centerLayer, confirmedContentStyle]}
+                pointerEvents='none'
+            >
+                <PWIcon
+                    name='check'
+                    variant='white'
+                    size='md'
+                    testID='pw-slide-to-confirm-check'
+                />
+            </Animated.View>
         </View>
     )
 }

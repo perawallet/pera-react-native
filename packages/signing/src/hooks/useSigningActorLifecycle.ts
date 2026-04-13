@@ -137,7 +137,11 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                     // approve callback (with the actual signed data) — see
                     // createCallbackTransport / createWalletConnectTransport.
                     const { request: req } = snapshot.context
-                    setLastCompletedRequestRef.current(req)
+                    // Headless callers own the completion UI, same as the
+                    // pre-sign review UI (see SignRequest.headless).
+                    if (!req.headless) {
+                        setLastCompletedRequestRef.current(req)
+                    }
                 } else if (snapshot.matches('failed')) {
                     const { request: req, error } = snapshot.context
                     ;(req as { error?: (err: Error) => void }).error?.(

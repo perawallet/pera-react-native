@@ -21,13 +21,38 @@ type StyleProps = {
 }
 
 export const useStyles = makeStyles((theme, { isDisabled }: StyleProps) => ({
-    track: {
+    root: {
         height: TRACK_HEIGHT,
         borderRadius: theme.borderRadius.full,
-        backgroundColor: theme.colors.layerGrayLighter,
         justifyContent: 'center',
         paddingHorizontal: TRACK_INSET,
         opacity: isDisabled ? 0.6 : 1,
+    },
+    background: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        borderRadius: theme.borderRadius.full,
+    },
+    idleLayer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        justifyContent: 'center',
+        paddingHorizontal: TRACK_INSET,
+    },
+    centerLayer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     fill: {
         position: 'absolute',
@@ -67,20 +92,6 @@ export const useStyles = makeStyles((theme, { isDisabled }: StyleProps) => ({
         height: THUMB_SIZE,
         borderRadius: theme.borderRadius.full,
         backgroundColor: theme.colors.buttonPrimaryBg,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    loadingPill: {
-        height: TRACK_HEIGHT,
-        borderRadius: theme.borderRadius.full,
-        backgroundColor: theme.colors.buttonHelperPeraIcon,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    confirmedPill: {
-        height: TRACK_HEIGHT,
-        borderRadius: theme.borderRadius.full,
-        backgroundColor: theme.colors.positive,
         alignItems: 'center',
         justifyContent: 'center',
     },

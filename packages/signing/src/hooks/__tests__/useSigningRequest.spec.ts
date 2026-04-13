@@ -414,5 +414,26 @@ describe('useSigningRequest', () => {
 
             expect(result.current.lastCompletedRequest?.id).toBe('tx-1')
         })
+
+        test('does not set lastCompletedRequest for headless requests', () => {
+            const actor = makeMockActor('tx-1')
+            vi.mocked(createSigningMachine).mockReturnValue(actor as any)
+
+            const { result } = renderHook(() => useSigningRequest())
+            const request = makeTxRequest({
+                transport: 'callback',
+                headless: true,
+            })
+
+            act(() => {
+                result.current.addSignRequest(request)
+            })
+            act(() => {
+                actor.simulateDone('completed', request)
+            })
+
+            expect(result.current.lastCompletedRequest).toBeNull()
+            expect(result.current.pendingSignRequests).toHaveLength(0)
+        })
     })
 })

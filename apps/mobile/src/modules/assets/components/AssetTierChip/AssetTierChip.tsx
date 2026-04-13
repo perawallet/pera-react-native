@@ -30,7 +30,12 @@ export const AssetTierChip = ({
 
     return (
         <PWView style={styles.container}>
-            <PWText style={styles.label}>{unitName ?? ''}</PWText>
+            <PWText
+                variant={size === 'md' ? 'h4' : 'body'}
+                style={styles.label}
+            >
+                {unitName ?? ''}
+            </PWText>
             {icon && (
                 <PWIcon
                     name={icon}

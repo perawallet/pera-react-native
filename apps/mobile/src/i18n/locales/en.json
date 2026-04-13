@@ -1331,7 +1331,7 @@
             "finalizing": "Finalizing...",
             "error": "Transaction failed. Please try again.",
             "success_title": "Swap Complete",
-            "success_body": "Swapped {{fromAsset}} for {{toAsset}}",
+            "success_body": "{{fromAsset}} to {{toAsset}} swap successfully completed",
             "user_rejected": "Swap cancelled"
         },
         "signing": {

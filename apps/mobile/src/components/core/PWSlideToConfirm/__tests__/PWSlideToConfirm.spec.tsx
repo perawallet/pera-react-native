@@ -24,7 +24,7 @@ vi.mock('@assets/animations/pera-transaction-loading.json', () => ({
 }))
 
 describe('PWSlideToConfirm', () => {
-    it('renders the title and chevron thumb when idle', () => {
+    it('renders the title when idle', () => {
         render(
             <PWSlideToConfirm
                 title='Slide To Confirm'
@@ -35,11 +35,9 @@ describe('PWSlideToConfirm', () => {
         expect(screen.getAllByText('Slide To Confirm').length).toBeGreaterThan(
             0,
         )
-        expect(screen.queryByTestId('pw-slide-to-confirm-lottie')).toBeNull()
-        expect(screen.queryByTestId('pw-slide-to-confirm-check')).toBeNull()
     })
 
-    it('renders the Pera lottie animation when loading and hides the title', () => {
+    it('mounts the Pera lottie animation when loading', () => {
         render(
             <PWSlideToConfirm
                 title='Slide To Confirm'
@@ -49,11 +47,9 @@ describe('PWSlideToConfirm', () => {
         )
 
         expect(screen.getByTestId('pw-slide-to-confirm-lottie')).toBeTruthy()
-        expect(screen.queryAllByText('Slide To Confirm')).toHaveLength(0)
-        expect(screen.queryByTestId('pw-slide-to-confirm-check')).toBeNull()
     })
 
-    it('renders the check icon when confirmed and hides the title', () => {
+    it('mounts the check icon when confirmed', () => {
         render(
             <PWSlideToConfirm
                 title='Slide To Confirm'
@@ -63,11 +59,9 @@ describe('PWSlideToConfirm', () => {
         )
 
         expect(screen.getByTestId('pw-slide-to-confirm-check')).toBeTruthy()
-        expect(screen.queryAllByText('Slide To Confirm')).toHaveLength(0)
-        expect(screen.queryByTestId('pw-slide-to-confirm-lottie')).toBeNull()
     })
 
-    it('prefers the confirmed state over the loading state', () => {
+    it('keeps the check icon mounted when both loading and confirmed are set', () => {
         render(
             <PWSlideToConfirm
                 title='Slide To Confirm'
@@ -78,10 +72,9 @@ describe('PWSlideToConfirm', () => {
         )
 
         expect(screen.getByTestId('pw-slide-to-confirm-check')).toBeTruthy()
-        expect(screen.queryByTestId('pw-slide-to-confirm-lottie')).toBeNull()
     })
 
-    it('attaches the provided testID to the track', () => {
+    it('attaches the provided testID to the root', () => {
         render(
             <PWSlideToConfirm
                 title='Slide To Confirm'

@@ -57,6 +57,8 @@ export const useStyles = makeStyles(theme => ({
     },
     toDividerLine: {
         flex: 1,
+        borderBottomColor: theme.colors.layerGray,
+        borderBottomWidth: 1,
     },
     toLabel: {
         color: theme.colors.textGray,

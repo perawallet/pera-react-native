@@ -25,9 +25,9 @@ export const useStyles = makeStyles((theme, { size }: StyleProps) => ({
             size === 'md'
                 ? theme.colors.layerGrayLightest
                 : theme.colors.layerGrayLighter,
-        paddingHorizontal: size === 'md' ? theme.spacing.md : theme.spacing.sm,
-        paddingVertical: size === 'md' ? theme.spacing.sm : theme.spacing.xs,
-        borderRadius: size === 'md' ? theme.spacing.md : theme.spacing.sm,
+        paddingHorizontal: size === 'md' ? theme.spacing.lg : theme.spacing.sm,
+        paddingVertical: size === 'md' ? theme.spacing.lg : theme.spacing.xs,
+        borderRadius: size === 'md' ? theme.spacing.lg : theme.spacing.sm,
     },
     label: {
         color: theme.colors.textMain,

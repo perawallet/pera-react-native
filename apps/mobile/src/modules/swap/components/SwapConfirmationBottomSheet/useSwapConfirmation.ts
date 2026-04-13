@@ -72,12 +72,16 @@ export const useSwapConfirmation = ({
 
     const payDisplay = useMemo(() => {
         if (!quote?.amountIn) return '-'
-        return formatAssetAmount(quote.amountIn, quote.assetIn)
+        return formatAssetAmount(quote.amountIn, {
+            decimals: quote.assetIn.decimals,
+        })
     }, [quote?.amountIn, quote?.assetIn])
 
     const receiveDisplay = useMemo(() => {
         if (!quote?.amountOut) return '-'
-        return formatAssetAmount(quote.amountOut, quote.assetOut)
+        return formatAssetAmount(quote.amountOut, {
+            decimals: quote.assetOut.decimals,
+        })
     }, [quote?.amountOut, quote?.assetOut])
 
     const payFiatDisplay = useMemo(() => {

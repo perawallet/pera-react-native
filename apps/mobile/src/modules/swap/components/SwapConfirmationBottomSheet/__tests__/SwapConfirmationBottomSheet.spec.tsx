@@ -218,8 +218,8 @@ describe('SwapConfirmationBottomSheet', () => {
     it('renders pay and receive amounts', () => {
         render(<SwapConfirmationBottomSheet {...defaultProps} />)
 
-        expect(screen.getByText(/1000000 ALGO/)).toBeDefined()
-        expect(screen.getByText(/150000 USDC/)).toBeDefined()
+        expect(screen.getByText('1000000')).toBeDefined()
+        expect(screen.getByText('150000')).toBeDefined()
     })
 
     it('renders quote details', () => {
