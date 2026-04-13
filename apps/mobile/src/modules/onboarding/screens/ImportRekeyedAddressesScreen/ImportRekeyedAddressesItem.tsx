@@ -20,6 +20,7 @@ import {
     PWChip,
     PWRoundIcon,
 } from '@components/core'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { CopyableText } from '@components/CopyableText'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
@@ -78,10 +79,8 @@ export const ImportRekeyedAddressesItem = ({
                         <PWText
                             variant='body'
                             style={styles.itemTitle}
-                            numberOfLines={1}
-                            ellipsizeMode='middle'
                         >
-                            {account.address}
+                            {truncateAlgorandAddress(account.address)}
                         </PWText>
                     </CopyableText>
                     <PWText

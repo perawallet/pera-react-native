@@ -14,9 +14,10 @@ import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import {
     encodeAlgorandAddress,
     getAlgorandClient,
+    useNetworkStore,
 } from '@perawallet/wallet-core-blockchain'
-import { Account } from '@algorandfoundation/algokit-utils/indexer-client'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
+import { Account } from '@algorandfoundation/algokit-utils/indexer-client'
 import type { KMSHDWalletSession } from '@perawallet/wallet-core-kms'
 import {
     AccountTypes,
@@ -24,7 +25,10 @@ import {
     WalletAccount,
     WatchAccount,
 } from './models/accounts'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    fetchAccountFastLookup,
+} from '@perawallet/wallet-core-shared'
 
 const ACCOUNT_GAP_LIMIT = 5
 const KEY_INDEX_GAP_LIMIT = 5
@@ -38,24 +42,23 @@ type DiscoverAccountsParams = {
     accountAddresses?: string[]
 }
 
-async function checkActivity(
-    algorandClient: AlgorandClient,
-    address: string,
-): Promise<boolean> {
+async function checkActivityBatch(
+    addresses: string[],
+): Promise<Map<string, boolean>> {
+    const network = useNetworkStore.getState().network
     try {
-        const accountInfo =
-            await algorandClient.client.algod.accountInformation(address)
-
-        return (
-            accountInfo.amount > 0 ||
-            accountInfo.totalAppsOptedIn > 0 ||
-            accountInfo.totalAssetsOptedIn > 0 ||
-            accountInfo.totalCreatedApps > 0 ||
-            accountInfo.totalCreatedAssets > 0
-        )
+        const results = await fetchAccountFastLookup(addresses, network)
+        const activityMap = new Map<string, boolean>()
+        for (const result of results) {
+            activityMap.set(result.address, result.accountExists)
+        }
+        return activityMap
     } catch {
-        // Algod returns 404 for empty accounts
-        return false
+        const activityMap = new Map<string, boolean>()
+        for (const address of addresses) {
+            activityMap.set(address, false)
+        }
+        return activityMap
     }
 }
 
@@ -65,7 +68,6 @@ type ScanAccountKeysParams = {
     session: KMSHDWalletSession
     walletKeyId: string
     derivationType: BIP32DerivationType
-    algorandClient: AlgorandClient
 }
 
 type ScanResult = {
@@ -79,7 +81,6 @@ async function scanAccountKeys({
     session,
     walletKeyId,
     derivationType,
-    algorandClient,
 }: ScanAccountKeysParams): Promise<ScanResult> {
     const activeAccounts: HDWalletAccount[] = []
     let zeroAccount: HDWalletAccount | null = null
@@ -88,50 +89,50 @@ async function scanAccountKeys({
 
     while (keyGap < keyIndexGapLimit) {
         const batchSize = keyIndexGapLimit
-        const tasks = []
+        const keyIndices: number[] = []
+        const accountsData: Map<number, HDWalletAccount> = new Map()
 
         for (let i = 0; i < batchSize; i++) {
             const currentKeyIdx = keyIdx + i
-            tasks.push(async () => {
-                const addressBytes = await session.getPublicKey({
+            keyIndices.push(currentKeyIdx)
+
+            const addressBytes = await session.getPublicKey({
+                account: accountIdx,
+                keyIndex: currentKeyIdx,
+                derivationType,
+            })
+            const address = encodeAlgorandAddress(addressBytes)
+
+            const accountData: HDWalletAccount = {
+                id: generateOrderedUniqueId(),
+                address,
+                type: AccountTypes.hdWallet,
+                keyPairId: walletKeyId,
+                hdWalletDetails: {
                     account: accountIdx,
+                    change: 0,
                     keyIndex: currentKeyIdx,
                     derivationType,
-                })
-                const address = encodeAlgorandAddress(addressBytes)
-
-                const accountData: HDWalletAccount = {
-                    id: generateOrderedUniqueId(),
-                    address,
-                    type: AccountTypes.hdWallet,
-                    keyPairId: walletKeyId,
-                    hdWalletDetails: {
-                        account: accountIdx,
-                        change: 0,
-                        keyIndex: currentKeyIdx,
-                        derivationType,
-                    },
-                }
-
-                let isZeroAccount = false
-                if (accountIdx === 0 && currentKeyIdx === 0) {
-                    isZeroAccount = true
-                }
-
-                const isActive = await checkActivity(algorandClient, address)
-                return { isActive, data: accountData, isZeroAccount }
-            })
-        }
-
-        const results = await Promise.all(tasks.map(t => t()))
-
-        for (const res of results) {
-            if (res.isZeroAccount) {
-                zeroAccount = res.data
+                },
             }
 
-            if (res.isActive) {
-                activeAccounts.push(res.data)
+            if (accountIdx === 0 && currentKeyIdx === 0) {
+                zeroAccount = accountData
+            }
+
+            accountsData.set(currentKeyIdx, accountData)
+        }
+
+        const activityMap = await checkActivityBatch(
+            Array.from(accountsData.values()).map(a => a.address),
+        )
+
+        for (const currentKeyIdx of keyIndices) {
+            const accountData = accountsData.get(currentKeyIdx)!
+            const isActive = activityMap.get(accountData.address) ?? false
+
+            if (isActive) {
+                activeAccounts.push(accountData)
                 keyGap = 0
             } else {
                 keyGap++
@@ -154,7 +155,6 @@ export async function discoverAccounts({
     accountGapLimit = ACCOUNT_GAP_LIMIT,
     keyIndexGapLimit = KEY_INDEX_GAP_LIMIT,
 }: DiscoverAccountsParams): Promise<HDWalletAccount[]> {
-    const algorandClient = getAlgorandClient()
     const foundAccounts: HDWalletAccount[] = []
     let firstAccount: HDWalletAccount | null = null
 
@@ -163,7 +163,7 @@ export async function discoverAccounts({
 
     while (accountGap < accountGapLimit) {
         const batchSize = accountGapLimit
-        const tasks = []
+        const tasks: Promise<ScanResult>[] = []
 
         for (let i = 0; i < batchSize; i++) {
             tasks.push(
@@ -173,7 +173,6 @@ export async function discoverAccounts({
                     session,
                     walletKeyId,
                     derivationType,
-                    algorandClient,
                 }),
             )
         }
@@ -182,6 +181,8 @@ export async function discoverAccounts({
 
         for (const result of results) {
             if (result.status === 'rejected') {
+                accountGap++
+                if (accountGap >= accountGapLimit) break
                 continue
             }
 
@@ -209,7 +210,12 @@ export async function discoverAccounts({
         return [firstAccount]
     }
 
-    return foundAccounts
+    return foundAccounts.sort((a, b) => {
+        const aIdx = a.hdWalletDetails
+        const bIdx = b.hdWalletDetails
+        if (aIdx.account !== bIdx.account) return aIdx.account - bIdx.account
+        return aIdx.keyIndex - bIdx.keyIndex
+    })
 }
 
 async function checkRekeyed(

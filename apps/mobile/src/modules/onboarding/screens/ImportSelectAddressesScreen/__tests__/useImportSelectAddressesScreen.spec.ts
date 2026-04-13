@@ -121,20 +121,21 @@ describe('useImportSelectAddressesScreen', () => {
         vi.useRealTimers()
     })
 
-    it('initializes with no accounts selected', () => {
+    it('initializes with first account pre-selected', () => {
         const { result } = renderHook(() => useImportSelectAddressesScreen())
 
-        expect(result.current.selectedAddresses.size).toBe(0)
+        expect(result.current.selectedAddresses.size).toBe(1)
+        expect(result.current.selectedAddresses.has('ADDR1')).toBe(true)
         expect(result.current.isAllSelected).toBe(false)
-        expect(result.current.canContinue).toBe(false)
+        expect(result.current.canContinue).toBe(true)
     })
 
     it('handleContinue selects the first new account after adding', async () => {
         const { result } = renderHook(() => useImportSelectAddressesScreen())
 
-        // Select all accounts first since they start unselected
+        // ADDR1 is already pre-selected, select ADDR2 as well
         act(() => {
-            result.current.toggleSelectAll()
+            result.current.toggleSelection('ADDR2')
         })
 
         act(() => {
@@ -157,10 +158,17 @@ describe('useImportSelectAddressesScreen', () => {
         const { result } = renderHook(() => useImportSelectAddressesScreen())
 
         act(() => {
-            result.current.toggleSelection('ADDR1')
+            result.current.toggleSelection('ADDR2')
         })
 
         expect(result.current.selectedAddresses.has('ADDR1')).toBe(true)
-        expect(result.current.selectedAddresses.has('ADDR2')).toBe(false)
+        expect(result.current.selectedAddresses.has('ADDR2')).toBe(true)
+
+        act(() => {
+            result.current.toggleSelection('ADDR1')
+        })
+
+        expect(result.current.selectedAddresses.has('ADDR1')).toBe(false)
+        expect(result.current.selectedAddresses.has('ADDR2')).toBe(true)
     })
 })
