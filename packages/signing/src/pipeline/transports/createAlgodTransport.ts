@@ -10,8 +10,6 @@
  limitations under the License
  */
 
-import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
-import { concatBytes } from '@perawallet/wallet-core-shared'
 import type {
     DataTransport,
     SigningResult,
@@ -19,29 +17,20 @@ import type {
     TransportResult,
 } from '../types'
 import { TransportError } from '../errors'
+import {
+    submitSignedTransactionGroup,
+    type AlgokitClientInterface,
+    type EncodeSignedTransactionsFn,
+} from '../submission'
 
-/**
- * Encoder function type for signed transactions
- */
-export type EncodeSignedTransactionsFn = (
-    txns: PeraSignedTransaction[],
-) => Uint8Array[]
-
-/**
- * Algod client interface for submitting raw transactions
- */
-export interface AlgodClientInterface {
-    sendRawTransaction(rawTxns: Uint8Array): Promise<unknown>
-}
-
-/**
- * AlgorandClient-like interface with algod client access
- */
-export interface AlgokitClientInterface {
-    client: {
-        algod: AlgodClientInterface
-    }
-}
+// Re-export for backward compatibility with callers that import these
+// types from `createAlgodTransport`. The source of truth lives in
+// `../submission/types`.
+export type {
+    AlgodClientInterface,
+    AlgokitClientInterface,
+    EncodeSignedTransactionsFn,
+} from '../submission'
 
 /**
  * Creates a transport that submits transactions directly to algod.
@@ -69,34 +58,11 @@ export const createAlgodTransport = (
             const { signed } = result.signedData
 
             try {
-                // Encode signed transactions
-                const encodedTxns = encodeSignedTransactions(signed)
-
-                // Concatenate encoded transactions for raw submission
-                const concatenated = concatBytes(...encodedTxns)
-
-                // Submit to algod
-                const response = (await algokit.client.algod.sendRawTransaction(
-                    concatenated,
-                )) as { txid?: string | string[] }
-
-                // Extract transaction IDs
-                const txIds: string[] = []
-                if (typeof response?.txid === 'string') {
-                    txIds.push(response.txid)
-                } else if (Array.isArray(response?.txid)) {
-                    txIds.push(...response.txid)
-                }
-
-                // If we didn't get any txIds from response, compute them from the signed txns
-                if (txIds.length === 0) {
-                    for (const signedTxn of signed) {
-                        if (signedTxn.txn.txId) {
-                            const id = signedTxn.txn.txId()
-                            txIds.push(id)
-                        }
-                    }
-                }
+                const txIds = await submitSignedTransactionGroup(
+                    algokit,
+                    encodeSignedTransactions,
+                    signed,
+                )
 
                 return {
                     type: 'submitted',

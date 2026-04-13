@@ -90,6 +90,19 @@ export type SourceType =
 export interface SourceMetadata {
     type: SourceType
 
+    /**
+     * How signed data should be delivered.
+     * - `'algod'`: submit directly to the network. Implicit default when the
+     *   request originates locally.
+     * - `'callback'`: hand signed bytes back to the caller via
+     *   `callbacks.approve`.
+     *
+     * External sources (`walletconnect`, `webview`, `deeplink`,
+     * `multisig-cosign`, `arc60`) always deliver via their own transport
+     * regardless of this field — the selector dispatches on `type` first.
+     */
+    transport?: 'algod' | 'callback'
+
     /** For WalletConnect: the dApp info */
     peerMetadata?: { name?: string; url?: string; icons?: string[] }
 

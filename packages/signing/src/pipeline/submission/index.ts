@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-export { createAlgodTransport } from './createAlgodTransport'
-export { createCallbackTransport } from './createCallbackTransport'
-export { createWalletConnectTransport } from './createWalletConnectTransport'
-export { createMultisigProposeTransport } from './createMultisigProposeTransport'
-export { createMultisigCosignTransport } from './createMultisigCosignTransport'
-export { createTransportSelector } from './getTransport'
+export type {
+    AlgodClientInterface,
+    AlgokitClientInterface,
+    EncodeSignedTransactionsFn,
+} from './types'
+export { submitSignedTransactionGroup } from './submitSignedTransactionGroup'

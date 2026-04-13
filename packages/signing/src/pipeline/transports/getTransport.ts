@@ -19,6 +19,7 @@ import {
     type AlgokitClientInterface,
 } from './createAlgodTransport'
 import { createWalletConnectTransport } from './createWalletConnectTransport'
+import { createCallbackTransport } from './createCallbackTransport'
 import {
     createMultisigProposeTransport,
     type ProposeSignRequestFn,
@@ -83,6 +84,15 @@ export const createTransportSelector = (
                 )
             }
             return createMultisigProposeTransport(options.proposeSignRequest)
+        }
+
+        // Local + callback: hand the signed bytes back to the caller instead
+        // of submitting (e.g. swap, which submits its own assembled groups).
+        // Dispatch on the tagged `transport` field, not on the shape of
+        // `callbacks`, so the selector stays predictable as new caller
+        // shapes are added.
+        if (source.transport === 'callback') {
+            return createCallbackTransport()
         }
 
         // Everything else goes directly to algod

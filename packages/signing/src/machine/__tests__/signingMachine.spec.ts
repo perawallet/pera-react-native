@@ -139,6 +139,35 @@ describe('signingMachine', () => {
         expect(state.context.error).toBeNull()
     })
 
+    it('skips awaiting_user for headless requests and reaches completed', async () => {
+        const headlessRequest: TransactionSignRequest = {
+            ...mockRequest,
+            id: 'req-headless',
+            transport: 'callback',
+            headless: true,
+            approve: vi.fn().mockResolvedValue(undefined),
+        }
+
+        const actor = createActor(mockedMachine, {
+            input: makeInput({ request: headlessRequest }),
+        })
+
+        const visited: string[] = []
+        actor.subscribe(snapshot => {
+            const value =
+                typeof snapshot.value === 'string'
+                    ? snapshot.value
+                    : Object.keys(snapshot.value)[0]
+            if (value && !visited.includes(value)) visited.push(value)
+        })
+
+        actor.start()
+
+        const state = await waitFor(actor, s => s.matches('completed'))
+        expect(state.matches('completed')).toBe(true)
+        expect(visited).not.toContain('awaiting_user')
+    })
+
     it('requires USER_APPROVED before signing — stays in awaiting_user', async () => {
         const actor = createActor(mockedMachine, { input: makeInput() })
         actor.start()

@@ -38,6 +38,23 @@ type BaseSignRequest = {
     /** Origin of the request. Defaults to 'local' when not specified. */
     sourceType?: SourceType
     sourceMetadata?: SignRequestSource
+    /**
+     * When true, the signing pipeline skips the `awaiting_user` review state
+     * and proceeds directly from `validating` to `signing`.
+     *
+     * **Contract — the caller takes on full responsibility for user review:**
+     * the pipeline will not surface fees, warnings, risk level, or any other
+     * analysis the `validating` stage produces. Before setting `headless: true`
+     * the caller MUST have already shown the user everything they would see
+     * on the standard review screen (amounts, fees, warnings, destination,
+     * etc.) and collected an explicit confirmation.
+     *
+     * Intended for internal flows like swap where the review UI lives on the
+     * preceding screen. Do not set this for external (WalletConnect, webview,
+     * deeplink) requests — those must always pass through `awaiting_user` so
+     * the standard review sheet is shown.
+     */
+    headless?: boolean
 }
 
 export type TransactionSignRequest = {
