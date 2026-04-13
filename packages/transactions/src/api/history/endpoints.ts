@@ -29,9 +29,9 @@ export type FetchTransactionHistoryParams = {
     network: Network
     /** Optional: Filter transactions to only show those involving a specific asset */
     assetId?: string
-    /** Optional: Only return transactions confirmed after this time (ISO 8601) */
+    /** Optional: Only return transactions confirmed after this date (YYYY-MM-DD) */
     afterTime?: string
-    /** Optional: Only return transactions confirmed before this time (ISO 8601) */
+    /** Optional: Only return transactions confirmed before this date (YYYY-MM-DD) */
     beforeTime?: string
     /** Optional: Maximum number of transactions to return per request */
     limit?: number

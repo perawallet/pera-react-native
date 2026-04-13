@@ -167,7 +167,9 @@ export const useTransactionHistoryQuery = (
                 network,
                 assetId,
                 beforeTime: oldestRoundTime
-                    ? new Date(oldestRoundTime * 1000).toISOString()
+                    ? new Date(oldestRoundTime * 1000)
+                          .toISOString()
+                          .split('T')[0]
                     : beforeTime,
                 limit,
             })
