@@ -28,6 +28,7 @@ import { transformDexSwapAsset } from '../available-assets/transformers'
 import type {
     CalculatePeraFeeResult,
     CalculateSwapAmountResult,
+    SwapProviderItem,
     SwapQuote,
 } from '../../models'
 
@@ -82,6 +83,7 @@ export const calculateSwapAmount = async (
 export const createQuotes = async (
     data: CreateQuotesRequest,
     network: Network,
+    providers: SwapProviderItem[],
 ): Promise<SwapQuote[]> => {
     const response = await queryClient<CreateQuotesApiResponse>({
         backend: 'pera',
@@ -102,6 +104,8 @@ export const createQuotes = async (
         id: quote.id,
         quoteIdStr: quote.quote_id_str,
         provider: quote.provider,
+        providerDisplayName: providers.find(p => p.name === quote.provider)
+            ?.displayName,
         swapType: quote.swap_type,
         swapperAddress: quote.swapper_address,
         device: quote.device,

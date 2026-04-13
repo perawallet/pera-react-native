@@ -181,7 +181,8 @@ const createQuote = (overrides: Partial<SwapQuote> = {}): SwapQuote => ({
     slippage: new Decimal('0.5'),
     peraFeeAmount: new Decimal('1000'),
     exchangeFeeAmount: new Decimal('2000'),
-    provider: 'Tinyman',
+    provider: 'tinyman',
+    providerDisplayName: 'Tinyman',
     ...overrides,
 })
 
@@ -221,6 +222,7 @@ describe('SwapConfirmationBottomSheet', () => {
 
         expect(screen.getByText('swap.quote.rate')).toBeDefined()
         expect(screen.getByText('swap.quote.provider')).toBeDefined()
+        expect(screen.getByText('Tinyman')).toBeDefined()
         expect(screen.getByText('swap.quote.slippage_tolerance')).toBeDefined()
         expect(screen.getByText('swap.quote.price_impact')).toBeDefined()
         expect(screen.getByText('swap.quote.minimum_received')).toBeDefined()

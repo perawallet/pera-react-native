@@ -49,6 +49,7 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
     useCalculateSwapAmountMutation: () => ({
         mutateAsync: mockCalculateSwapAmount,
     }),
+    useProvidersQuery: () => ({ data: [], isLoading: false }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({

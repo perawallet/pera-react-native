@@ -10,15 +10,23 @@
  limitations under the License
  */
 
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { createQuotes } from '../api'
+import { createQuotes, fetchProviders } from '../api'
 import type { CreateQuotesRequest } from '../api'
+import { swapQueryKeys } from './querykeys'
 
 export const useCreateQuotesMutation = () => {
     const { network } = useNetwork()
+    const queryClient = useQueryClient()
 
     return useMutation({
-        mutationFn: (data: CreateQuotesRequest) => createQuotes(data, network),
+        mutationFn: async (data: CreateQuotesRequest) => {
+            const providers = await queryClient.ensureQueryData({
+                queryKey: swapQueryKeys.providers(network),
+                queryFn: () => fetchProviders(network),
+            })
+            return createQuotes(data, network, providers)
+        },
     })
 }

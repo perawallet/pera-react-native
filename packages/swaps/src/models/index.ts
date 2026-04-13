@@ -89,6 +89,7 @@ export interface SwapQuote {
     id?: number
     quoteIdStr?: string
     provider?: SwapProvider
+    providerDisplayName?: string
     swapType?: SwapType
     swapperAddress?: string
     device?: number | null

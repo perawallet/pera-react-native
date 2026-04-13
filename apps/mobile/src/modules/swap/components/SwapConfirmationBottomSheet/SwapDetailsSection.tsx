@@ -48,7 +48,7 @@ export const SwapDetailsSection = ({
             </DetailRow>
             <DetailRow
                 label={t('swap.quote.provider')}
-                value={quote.provider ?? '-'}
+                value={quote.providerDisplayName ?? quote.provider ?? '-'}
                 valueStyle={styles.detailValue}
             />
             <DetailRow

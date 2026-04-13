@@ -84,7 +84,8 @@ const createQuote = (overrides: Partial<SwapQuote> = {}): SwapQuote => ({
     slippage: new Decimal('0.5'),
     peraFeeAmount: new Decimal('1000'),
     exchangeFeeAmount: new Decimal('2000'),
-    provider: 'Tinyman',
+    provider: 'tinyman',
+    providerDisplayName: 'Tinyman',
     ...overrides,
 })
 
@@ -122,11 +123,22 @@ describe('SwapQuoteDetails', () => {
             peraFeeAmount: undefined,
             exchangeFeeAmount: undefined,
             provider: undefined,
+            providerDisplayName: undefined,
         })
         render(<SwapQuoteDetails quote={quote} />)
 
         const dashes = screen.getAllByText('-')
         expect(dashes.length).toBeGreaterThanOrEqual(4)
+    })
+
+    it('falls back to raw provider name when displayName is missing', () => {
+        const quote = createQuote({
+            provider: 'deflex',
+            providerDisplayName: undefined,
+        })
+        render(<SwapQuoteDetails quote={quote} />)
+
+        expect(screen.getByText('deflex')).toBeDefined()
     })
 
     it('renders container with testID', () => {
