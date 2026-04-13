@@ -110,6 +110,63 @@ describe('useSortedAssetBalances', () => {
         expect(ids).toEqual(['2', '3', '1', '0'])
     })
 
+    it('breaks ties in balanceDesc by name then assetId', () => {
+        // Arrange
+        mockSortMode = 'balanceDesc'
+        const tied = [
+            {
+                assetId: '10',
+                amount: new Decimal(0),
+                algoValue: new Decimal(0),
+            },
+            {
+                assetId: '11',
+                amount: new Decimal(0),
+                algoValue: new Decimal(0),
+            },
+            {
+                assetId: '12',
+                amount: new Decimal(0),
+                algoValue: new Decimal(0),
+            },
+        ]
+        const tiedAssets = new Map([
+            ['10', { name: 'Zeta', peraMetadata: { isFavorited: false } }],
+            ['11', { name: 'Alpha', peraMetadata: { isFavorited: false } }],
+            ['12', { name: 'Alpha', peraMetadata: { isFavorited: false } }],
+        ])
+
+        // Act
+        const { result } = renderHook(() =>
+            useSortedAssetBalances(tied, tiedAssets as never),
+        )
+
+        // Assert — equal value → name asc; equal name → assetId asc
+        expect(result.current.sortedBalances.map(b => b.assetId)).toEqual([
+            '11',
+            '12',
+            '10',
+        ])
+    })
+
+    it('falls back gracefully when assets map is undefined', () => {
+        // Arrange
+        mockSortMode = 'balanceDesc'
+
+        // Act
+        const { result } = renderHook(() =>
+            useSortedAssetBalances(mockBalances, undefined),
+        )
+
+        // Assert — no favorites detected, pure balance desc with assetId tiebreak
+        expect(result.current.sortedBalances.map(b => b.assetId)).toEqual([
+            '0',
+            '1',
+            '2',
+            '3',
+        ])
+    })
+
     it('always places favorited assets before non-favorited', () => {
         // Arrange
         mockSortMode = 'balanceDesc'

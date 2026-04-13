@@ -24,40 +24,44 @@ type UseSortedAssetBalancesResult = {
     setAssetSortMode: (mode: AssetSortMode) => void
 }
 
-const sortByMode = (
-    items: AssetWithAccountBalance[],
+const buildComparator = (
     mode: AssetSortMode,
     assets: Map<string, PeraAsset> | undefined,
-): AssetWithAccountBalance[] => {
-    const sorted = [...items]
+) => {
+    const getName = (id: string) => assets?.get(id)?.name?.toLowerCase() ?? ''
+    const isFav = (id: string) =>
+        assets?.get(id)?.peraMetadata?.isFavorited ?? false
 
-    switch (mode) {
-        case 'balanceDesc':
-            sorted.sort((a, b) => b.algoValue.minus(a.algoValue).toNumber())
-            break
-        case 'balanceAsc':
-            sorted.sort((a, b) => a.algoValue.minus(b.algoValue).toNumber())
-            break
-        case 'alphabeticalAsc':
-        case 'alphabeticalDesc': {
-            const nameMap = new Map(
-                sorted.map(item => [
-                    item.assetId,
-                    assets?.get(item.assetId)?.name?.toLowerCase() ?? '',
-                ]),
-            )
-            sorted.sort((a, b) => {
-                const nameA = nameMap.get(a.assetId) ?? ''
-                const nameB = nameMap.get(b.assetId) ?? ''
-                return mode === 'alphabeticalAsc'
-                    ? nameA.localeCompare(nameB)
-                    : nameB.localeCompare(nameA)
-            })
-            break
+    return (a: AssetWithAccountBalance, b: AssetWithAccountBalance): number => {
+        const favA = isFav(a.assetId)
+        const favB = isFav(b.assetId)
+        if (favA !== favB) return favA ? -1 : 1
+
+        let primary = 0
+        switch (mode) {
+            case 'balanceDesc':
+                primary = b.algoValue.cmp(a.algoValue)
+                break
+            case 'balanceAsc':
+                primary = a.algoValue.cmp(b.algoValue)
+                break
+            case 'alphabeticalAsc':
+                primary = getName(a.assetId).localeCompare(getName(b.assetId))
+                break
+            case 'alphabeticalDesc':
+                primary = getName(b.assetId).localeCompare(getName(a.assetId))
+                break
         }
-    }
+        if (primary !== 0) return primary
 
-    return sorted
+        const isBalanceMode = mode === 'balanceDesc' || mode === 'balanceAsc'
+        const secondary = isBalanceMode
+            ? getName(a.assetId).localeCompare(getName(b.assetId))
+            : b.algoValue.cmp(a.algoValue)
+        if (secondary !== 0) return secondary
+
+        return a.assetId.localeCompare(b.assetId)
+    }
 }
 
 export const useSortedAssetBalances = (
@@ -70,22 +74,8 @@ export const useSortedAssetBalances = (
     )
 
     const sortedBalances = useMemo(() => {
-        const favorited: AssetWithAccountBalance[] = []
-        const rest: AssetWithAccountBalance[] = []
-
-        for (const item of assetBalances) {
-            const asset = assets?.get(item.assetId)
-            if (asset?.peraMetadata?.isFavorited) {
-                favorited.push(item)
-            } else {
-                rest.push(item)
-            }
-        }
-
-        return [
-            ...sortByMode(favorited, assetSortMode, assets),
-            ...sortByMode(rest, assetSortMode, assets),
-        ]
+        const comparator = buildComparator(assetSortMode, assets)
+        return [...assetBalances].sort(comparator)
     }, [assetBalances, assets, assetSortMode])
 
     return {

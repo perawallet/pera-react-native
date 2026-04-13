@@ -57,14 +57,11 @@ export const AccountAssetList = ({
     const styles = useStyles()
     const { t } = useLanguage()
 
-    useEffect(() => {
-        listRef.current?.scrollToOffset({ offset: 0, animated: false })
-    }, [account.address])
-
     const {
         balances,
         isPending,
         isWatch,
+        assetSortMode,
         headerState,
         manageSheetState,
         sortSheetState,
@@ -83,6 +80,10 @@ export const AccountAssetList = ({
         getEmptyBody,
         renderItemProps,
     } = useAccountAssetList({ account, t })
+
+    useEffect(() => {
+        listRef.current?.scrollToOffset({ offset: 0, animated: false })
+    }, [account.address, assetSortMode])
 
     const renderItem = useCallback(
         ({ item }: { item: AssetWithAccountBalance }) => {

@@ -119,6 +119,42 @@ describe('AccountAssetItemView', () => {
         expect(screen.getByText('TEST - 123')).toBeTruthy()
     })
 
+    it('renders a favorite star icon when the asset is favorited', () => {
+        const accountBalance = {
+            assetId: 456,
+            asset: {
+                assetId: 456,
+                unitName: 'FAV',
+                name: 'Favorited Asset',
+                decimals: 2,
+                peraMetadata: { isFavorited: true },
+            },
+            amount: '500',
+        } as unknown as AssetWithAccountBalance
+
+        render(<AccountAssetItemView accountBalance={accountBalance} />)
+
+        expect(screen.getByTestId('favorite-star-icon')).toBeTruthy()
+    })
+
+    it('does not render a favorite star icon when the asset is not favorited', () => {
+        const accountBalance = {
+            assetId: 457,
+            asset: {
+                assetId: 457,
+                unitName: 'NOFAV',
+                name: 'Plain Asset',
+                decimals: 2,
+                peraMetadata: { isFavorited: false },
+            },
+            amount: '500',
+        } as unknown as AssetWithAccountBalance
+
+        render(<AccountAssetItemView accountBalance={accountBalance} />)
+
+        expect(screen.queryByTestId('favorite-star-icon')).toBeNull()
+    })
+
     it('renders skeleton placeholder when asset data is not available', async () => {
         const { useAssetsQuery } =
             await import('@perawallet/wallet-core-assets')
