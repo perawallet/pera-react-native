@@ -11,12 +11,12 @@
  */
 
 import { useMemo } from 'react'
-import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import {
     type PeraAsset,
     type AssetSortMode,
     useAssetPreferencesStore,
 } from '@perawallet/wallet-core-assets'
+import type { AssetWithAccountBalance } from '../models'
 
 type UseSortedAssetBalancesResult = {
     sortedBalances: AssetWithAccountBalance[]

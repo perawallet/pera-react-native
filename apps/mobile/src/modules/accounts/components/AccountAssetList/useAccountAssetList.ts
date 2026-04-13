@@ -17,6 +17,7 @@ import {
     isSigningAccount,
     useAccountBalancesQuery,
     useAllAccounts,
+    useSortedAssetBalances,
     WalletAccount,
     AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
@@ -32,7 +33,6 @@ import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useModalState, ModalState } from '@hooks/useModalState'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { useToast } from '@hooks/useToast'
-import { useSortedAssetBalances } from './useSortedAssetBalances'
 
 type UseAccountAssetListResult = {
     balances: AssetWithAccountBalance[]
