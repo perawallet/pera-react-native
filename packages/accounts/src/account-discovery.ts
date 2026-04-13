@@ -181,6 +181,8 @@ export async function discoverAccounts({
 
         for (const result of results) {
             if (result.status === 'rejected') {
+                accountGap++
+                if (accountGap >= accountGapLimit) break
                 continue
             }
 

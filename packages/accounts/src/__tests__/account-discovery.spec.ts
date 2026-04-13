@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { discoverAccounts, discoverRekeyedAccounts } from '../account-discovery'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
+import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import type { KMSHDWalletSession } from '@perawallet/wallet-core-kms'
 
 vi.mock('@algorandfoundation/xhd-wallet-api', () => ({
@@ -24,7 +25,9 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         (bytes: Uint8Array) => `ADDRESS_${bytes[0]}_${bytes[1]}`,
     ),
     getAlgorandClient: vi.fn(),
-    useNetworkStore: vi.fn(() => ({ network: 'testnet' })),
+    useNetworkStore: {
+        getState: vi.fn(() => ({ network: 'testnet' })),
+    },
 }))
 
 const mockFetchAccountFastLookup = vi.fn()
