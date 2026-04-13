@@ -43,29 +43,24 @@ export const useSettingsSecurityScreen =
         const { showToast } = useToast()
         const { t } = useLanguage()
         const {
-            checkBiometricsEnabled,
-            checkBiometricsAvailable,
+            isEnabled: isBiometricEnabled,
+            isAvailable: isBiometricsAvailable,
             enableBiometrics,
             disableBiometrics,
         } = useBiometrics()
 
         const [isPinEnabled, setIsPinEnabled] = useState(false)
-        const [isBiometricEnabled, setIsBiometricEnabled] = useState(false)
-        const [isBiometricsAvailable, setIsBiometricsAvailable] =
-            useState(false)
         const [pinViewMode, setPinViewMode] = useState<PinEntryMode | null>(
             null,
         )
 
-        const updateSettings = useCallback(() => {
-            checkBiometricsAvailable().then(setIsBiometricsAvailable)
+        const refreshPinState = useCallback(() => {
             checkPinEnabled().then(setIsPinEnabled)
-            checkBiometricsEnabled().then(setIsBiometricEnabled)
-        }, [checkBiometricsAvailable, checkPinEnabled, checkBiometricsEnabled])
+        }, [checkPinEnabled])
 
         useEffect(() => {
-            updateSettings()
-        }, [updateSettings])
+            refreshPinState()
+        }, [refreshPinState])
 
         const handlePinToggle = useCallback(
             async (value: boolean) => {
@@ -75,7 +70,7 @@ export const useSettingsSecurityScreen =
                     setPinViewMode('verify')
                 }
             },
-            [savePin, updateSettings],
+            [savePin, refreshPinState],
         )
 
         const handleBiometricToggle = useCallback(
@@ -95,11 +90,10 @@ export const useSettingsSecurityScreen =
                     return success
                 } else {
                     await disableBiometrics()
-                    updateSettings()
                     return true
                 }
             },
-            [enableBiometrics, disableBiometrics, updateSettings],
+            [enableBiometrics, disableBiometrics],
         )
 
         const handleChangePinPress = useCallback(() => {
@@ -111,9 +105,9 @@ export const useSettingsSecurityScreen =
                 savePin(null)
             }
             setPreference(UserPreferences._securityPinSetupPrompt, true)
-            updateSettings()
+            refreshPinState()
             setPinViewMode(null)
-        }, [pinViewMode, savePin, updateSettings])
+        }, [pinViewMode, savePin, refreshPinState])
 
         const clearPinViewMode = useCallback(() => {
             setPinViewMode(null)

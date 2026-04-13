@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest'
-import { renderHook, act } from '@testing-library/react'
+import { renderHook, act, waitFor } from '@testing-library/react'
 import { useBiometrics } from '../useBiometrics'
 import { PIN_STORAGE_KEY, BIOMETRIC_STORAGE_KEY } from '../../constants'
 
@@ -21,31 +21,74 @@ const mockRemoveItem = vi.fn()
 const mockCheckBiometricsAvailable = vi.fn()
 const mockAuthenticate = vi.fn()
 
+const mockSecureStorage = {
+    getItem: mockGetItem,
+    setItem: mockSetItem,
+    removeItem: mockRemoveItem,
+}
+
+const mockBiometricsService = {
+    checkBiometricsAvailable: mockCheckBiometricsAvailable,
+    authenticate: mockAuthenticate,
+    getSupportedBiometricType: vi.fn(),
+}
+
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     getProvider: () => ({
-        secureStorage: {
-            getItem: mockGetItem,
-            setItem: mockSetItem,
-            removeItem: mockRemoveItem,
-        },
-        biometrics: {
-            checkBiometricsAvailable: mockCheckBiometricsAvailable,
-            authenticate: mockAuthenticate,
-            getSupportedBiometricType: vi.fn(),
-        },
+        secureStorage: mockSecureStorage,
+        biometrics: mockBiometricsService,
     }),
 }))
+
+/**
+ * Helper to render the hook and flush the initial useEffect that reads
+ * isEnabled / isAvailable from storage on mount.
+ */
+const renderAndSettle = async () => {
+    const hook = renderHook(() => useBiometrics())
+    await act(async () => {
+        await new Promise(resolve => setTimeout(resolve, 0))
+    })
+    return hook
+}
 
 describe('useBiometrics', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        mockGetItem.mockResolvedValue(null)
+        mockCheckBiometricsAvailable.mockResolvedValue(false)
+    })
+
+    test('initializes isEnabled from secure storage on mount', async () => {
+        const biometricData = new TextEncoder().encode('123456')
+        mockGetItem.mockResolvedValue(biometricData)
+
+        const { result } = renderHook(() => useBiometrics())
+
+        expect(result.current.isEnabled).toBe(false)
+
+        await waitFor(() => {
+            expect(result.current.isEnabled).toBe(true)
+        })
+    })
+
+    test('initializes isAvailable from biometrics service on mount', async () => {
+        mockCheckBiometricsAvailable.mockResolvedValue(true)
+
+        const { result } = renderHook(() => useBiometrics())
+
+        expect(result.current.isAvailable).toBe(false)
+
+        await waitFor(() => {
+            expect(result.current.isAvailable).toBe(true)
+        })
     })
 
     test('checkBiometricsEnabled returns true when biometric data exists', async () => {
         const biometricData = new TextEncoder().encode('123456')
         mockGetItem.mockResolvedValue(biometricData)
 
-        const { result } = renderHook(() => useBiometrics())
+        const { result } = await renderAndSettle()
 
         let isEnabled: boolean = false
         await act(async () => {
@@ -59,7 +102,7 @@ describe('useBiometrics', () => {
     test('checkBiometricsEnabled returns false when no biometric data', async () => {
         mockGetItem.mockResolvedValue(null)
 
-        const { result } = renderHook(() => useBiometrics())
+        const { result } = await renderAndSettle()
 
         let isEnabled: boolean = true
         await act(async () => {
@@ -73,7 +116,7 @@ describe('useBiometrics', () => {
     test('checkBiometricsAvailable returns true when available', async () => {
         mockCheckBiometricsAvailable.mockResolvedValue(true)
 
-        const { result } = renderHook(() => useBiometrics())
+        const { result } = await renderAndSettle()
 
         let isAvailable: boolean = false
         await act(async () => {
@@ -87,7 +130,7 @@ describe('useBiometrics', () => {
     test('checkBiometricsAvailable returns false when not available', async () => {
         mockCheckBiometricsAvailable.mockResolvedValue(false)
 
-        const { result } = renderHook(() => useBiometrics())
+        const { result } = await renderAndSettle()
 
         let isAvailable: boolean = true
         await act(async () => {
@@ -98,8 +141,10 @@ describe('useBiometrics', () => {
         expect(mockCheckBiometricsAvailable).toHaveBeenCalled()
     })
 
-    test('setBiometricsCode stores biometric code', async () => {
-        const { result } = renderHook(() => useBiometrics())
+    test('setBiometricsCode stores biometric code and sets isEnabled', async () => {
+        const { result } = await renderAndSettle()
+
+        expect(result.current.isEnabled).toBe(false)
 
         const code = new TextEncoder().encode('123456')
 
@@ -108,12 +153,13 @@ describe('useBiometrics', () => {
         })
 
         expect(mockSetItem).toHaveBeenCalledWith(BIOMETRIC_STORAGE_KEY, code)
+        expect(result.current.isEnabled).toBe(true)
     })
 
     test('enableBiometrics returns false when PIN is not enabled', async () => {
         mockGetItem.mockResolvedValue(null)
 
-        const { result } = renderHook(() => useBiometrics())
+        const { result } = await renderAndSettle()
 
         let success: boolean = true
         await act(async () => {
@@ -122,12 +168,13 @@ describe('useBiometrics', () => {
 
         expect(success).toBe(false)
         expect(mockGetItem).toHaveBeenCalledWith(PIN_STORAGE_KEY)
+        expect(result.current.isEnabled).toBe(false)
     })
 
     test('enableBiometrics returns false when PIN data not found', async () => {
         mockGetItem.mockResolvedValue(null)
 
-        const { result } = renderHook(() => useBiometrics())
+        const { result } = await renderAndSettle()
 
         let success: boolean = true
         await act(async () => {
@@ -138,13 +185,13 @@ describe('useBiometrics', () => {
         expect(mockGetItem).toHaveBeenCalledWith(PIN_STORAGE_KEY)
     })
 
-    test('enableBiometrics successfully copies PIN to biometric storage', async () => {
+    test('enableBiometrics successfully copies PIN to biometric storage and sets isEnabled', async () => {
         const pinData = new TextEncoder().encode('123456')
         mockGetItem.mockResolvedValue(pinData)
         mockCheckBiometricsAvailable.mockResolvedValue(true)
         mockAuthenticate.mockResolvedValue(true)
 
-        const { result } = renderHook(() => useBiometrics())
+        const { result } = await renderAndSettle()
 
         let success: boolean = false
         await act(async () => {
@@ -156,6 +203,7 @@ describe('useBiometrics', () => {
         expect(mockCheckBiometricsAvailable).toHaveBeenCalled()
         expect(mockAuthenticate).toHaveBeenCalled()
         expect(mockSetItem).toHaveBeenCalledWith(BIOMETRIC_STORAGE_KEY, pinData)
+        expect(result.current.isEnabled).toBe(true)
     })
 
     test('enableBiometrics returns false on error', async () => {
@@ -164,7 +212,7 @@ describe('useBiometrics', () => {
         mockCheckBiometricsAvailable.mockResolvedValue(true)
         mockAuthenticate.mockRejectedValue(new Error('Auth error'))
 
-        const { result } = renderHook(() => useBiometrics())
+        const { result } = await renderAndSettle()
 
         let success: boolean = true
         await act(async () => {
@@ -174,20 +222,32 @@ describe('useBiometrics', () => {
         expect(success).toBe(false)
     })
 
-    test('disableBiometrics removes biometric data and updates state', async () => {
-        const { result } = renderHook(() => useBiometrics())
+    test('disableBiometrics removes biometric data and sets isEnabled to false', async () => {
+        const biometricData = new TextEncoder().encode('123456')
+        mockGetItem.mockResolvedValue(biometricData)
+        mockCheckBiometricsAvailable.mockResolvedValue(true)
+        mockAuthenticate.mockResolvedValue(true)
+
+        const { result } = await renderAndSettle()
+
+        await act(async () => {
+            await result.current.enableBiometrics()
+        })
+
+        expect(result.current.isEnabled).toBe(true)
 
         await act(async () => {
             await result.current.disableBiometrics()
         })
 
         expect(mockRemoveItem).toHaveBeenCalledWith(BIOMETRIC_STORAGE_KEY)
+        expect(result.current.isEnabled).toBe(false)
     })
 
     test('authenticateWithBiometrics returns false when biometrics not enabled', async () => {
         mockGetItem.mockResolvedValue(null)
 
-        const { result } = renderHook(() => useBiometrics())
+        const { result } = await renderAndSettle()
 
         let authenticated: boolean = true
         await act(async () => {
@@ -200,10 +260,10 @@ describe('useBiometrics', () => {
 
     test('authenticateWithBiometrics returns true when biometrics enabled and auth succeeds', async () => {
         const biometricData = new TextEncoder().encode('123456')
-        mockGetItem.mockResolvedValueOnce(biometricData) // checkBiometricsEnabled
+        mockGetItem.mockResolvedValue(biometricData)
         mockAuthenticate.mockResolvedValue(true)
 
-        const { result } = renderHook(() => useBiometrics())
+        const { result } = await renderAndSettle()
 
         let authenticated: boolean = false
         await act(async () => {
@@ -215,10 +275,10 @@ describe('useBiometrics', () => {
     })
 
     test('authenticateWithBiometrics returns false when biometric data missing', async () => {
-        mockGetItem.mockResolvedValueOnce(null) // checkBiometricsEnabled returns false
+        mockGetItem.mockResolvedValue(null)
         mockAuthenticate.mockResolvedValue(true)
 
-        const { result } = renderHook(() => useBiometrics())
+        const { result } = await renderAndSettle()
 
         let authenticated: boolean = true
         await act(async () => {
@@ -231,10 +291,10 @@ describe('useBiometrics', () => {
 
     test('authenticateWithBiometrics returns false when biometrics auth fails', async () => {
         const biometricData = new TextEncoder().encode('123456')
-        mockGetItem.mockResolvedValueOnce(biometricData) // checkBiometricsEnabled
+        mockGetItem.mockResolvedValue(biometricData)
         mockAuthenticate.mockResolvedValue(false)
 
-        const { result } = renderHook(() => useBiometrics())
+        const { result } = await renderAndSettle()
 
         let authenticated: boolean = true
         await act(async () => {
@@ -246,10 +306,10 @@ describe('useBiometrics', () => {
 
     test('authenticateWithBiometrics returns false on error', async () => {
         const biometricData = new TextEncoder().encode('123456')
-        mockGetItem.mockResolvedValueOnce(biometricData) // checkBiometricsEnabled
+        mockGetItem.mockResolvedValue(biometricData)
         mockAuthenticate.mockRejectedValue(new Error('Auth error'))
 
-        const { result } = renderHook(() => useBiometrics())
+        const { result } = await renderAndSettle()
 
         let authenticated: boolean = true
         await act(async () => {

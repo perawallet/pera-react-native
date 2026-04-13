@@ -10,12 +10,14 @@
  limitations under the License
  */
 
-import { useCallback, useRef } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { type BiometricType } from '@perawallet/wallet-extension-platform'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { BIOMETRIC_STORAGE_KEY, PIN_STORAGE_KEY } from '../constants'
 
 type UseBiometricsResult = {
+    isEnabled: boolean
+    isAvailable: boolean
     checkBiometricsEnabled: () => Promise<boolean>
     checkBiometricsAvailable: () => Promise<boolean>
     setBiometricsCode: (code: Uint8Array) => Promise<void>
@@ -25,27 +27,34 @@ type UseBiometricsResult = {
 }
 
 export const useBiometrics = (): UseBiometricsResult => {
-    const forceRefresh = useRef(0)
     const secureStorage = getProvider().secureStorage
     const biometricsService = getProvider().biometrics
+
+    const [isEnabled, setIsEnabled] = useState(false)
+    const [isAvailable, setIsAvailable] = useState(false)
 
     const checkBiometricsEnabled = useCallback(async (): Promise<boolean> => {
         const biometricPinData = await secureStorage.getItem(
             BIOMETRIC_STORAGE_KEY,
         )
         return !!biometricPinData
-    }, [secureStorage, forceRefresh.current])
+    }, [secureStorage])
 
     const checkBiometricsAvailable = useCallback(async (): Promise<boolean> => {
         return biometricsService.checkBiometricsAvailable()
-    }, [biometricsService, forceRefresh.current])
+    }, [biometricsService])
+
+    useEffect(() => {
+        checkBiometricsEnabled().then(setIsEnabled)
+        checkBiometricsAvailable().then(setIsAvailable)
+    }, [checkBiometricsEnabled, checkBiometricsAvailable])
 
     const setBiometricsCode = useCallback(
         async (code: Uint8Array): Promise<void> => {
             await secureStorage.setItem(BIOMETRIC_STORAGE_KEY, code)
-            forceRefresh.current += 1
+            setIsEnabled(true)
         },
-        [secureStorage, forceRefresh.current],
+        [secureStorage],
     )
 
     const enableBiometrics = useCallback(
@@ -84,8 +93,8 @@ export const useBiometrics = (): UseBiometricsResult => {
 
     const disableBiometrics = useCallback(async () => {
         await secureStorage.removeItem(BIOMETRIC_STORAGE_KEY)
-        forceRefresh.current += 1
-    }, [secureStorage, forceRefresh.current])
+        setIsEnabled(false)
+    }, [secureStorage])
 
     const authenticateWithBiometrics = useCallback(
         async (
@@ -109,6 +118,8 @@ export const useBiometrics = (): UseBiometricsResult => {
     )
 
     return {
+        isEnabled,
+        isAvailable,
         checkBiometricsEnabled,
         checkBiometricsAvailable,
         setBiometricsCode,
