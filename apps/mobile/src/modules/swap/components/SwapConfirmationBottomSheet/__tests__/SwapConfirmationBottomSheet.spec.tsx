@@ -32,6 +32,10 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-core-swaps', () => ({
+    useProvidersQuery: () => ({ data: undefined }),
+}))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
     formatAssetAmount: (amount: Decimal, asset: { unitName?: string }) =>
         `${amount.toString()} ${asset.unitName ?? ''}`.trim(),
@@ -133,6 +137,7 @@ vi.mock('@components/core', () => ({
         />
     ),
     PWDivider: () => <hr />,
+    PWImage: () => <div data-testid='pw-image' />,
     PWSlideToConfirm: ({
         title,
         onConfirm,

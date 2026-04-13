@@ -14,13 +14,16 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        paddingBottom: theme.spacing.xl,
+        paddingBottom: theme.spacing['3xl'],
     },
     headerCenter: {
         alignItems: 'center',
     },
     accountRow: {
         marginTop: theme.spacing.xs,
+    },
+    assetsGroup: {
+        paddingVertical: theme.spacing.xl,
     },
     assetSection: {
         paddingHorizontal: theme.spacing.lg,
@@ -37,13 +40,14 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.md,
     },
     amountTextContainer: {
-        gap: theme.spacing.xs,
+        gap: 0,
     },
     assetAmount: {
         color: theme.colors.textMain,
     },
     usdValue: {
         color: theme.colors.textGray,
+        lineHeight: 16,
     },
     toDivider: {
         flexDirection: 'row',
@@ -51,12 +55,21 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.lg,
         gap: theme.spacing.sm,
     },
+    toDividerLine: {
+        flex: 1,
+    },
     toLabel: {
         color: theme.colors.textGray,
     },
+    detailsDivider: {
+        marginHorizontal: theme.spacing.lg,
+        marginTop: theme.spacing.md,
+        borderBottomColor: theme.colors.layerGray,
+        borderBottomWidth: 1,
+    },
     detailsSection: {
         paddingHorizontal: theme.spacing.lg,
-        paddingTop: theme.spacing.lg,
+        paddingTop: theme.spacing.xl,
         gap: theme.spacing.md,
     },
     detailRow: {
@@ -68,6 +81,9 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.xs,
+    },
+    rateIcon: {
+        transform: [{ rotate: '90deg' }],
     },
     detailLabelRow: {
         flexDirection: 'row',
@@ -81,7 +97,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textMain,
     },
     priceImpactLow: {
-        color: theme.colors.positive,
+        color: theme.colors.textMain,
     },
     priceImpactMedium: {
         color: theme.colors.warning,
@@ -111,6 +127,6 @@ export const useStyles = makeStyles(theme => ({
     },
     confirmButton: {
         marginHorizontal: theme.spacing.lg,
-        marginTop: theme.spacing.xl,
+        marginTop: theme.spacing.xxl,
     },
 }))

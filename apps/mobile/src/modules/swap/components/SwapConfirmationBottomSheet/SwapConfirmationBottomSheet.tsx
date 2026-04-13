@@ -57,6 +57,8 @@ export const SwapConfirmationBottomSheet = ({
         receiveFiatDisplay,
         rateDisplay,
         minimumReceivedDisplay,
+        peraFeeDisplay,
+        exchangeFeeDisplay,
         hasHighPriceImpact,
         priceImpactDisplay,
         priceImpactStyle,
@@ -68,7 +70,7 @@ export const SwapConfirmationBottomSheet = ({
         <PWBottomSheet
             isVisible={isVisible}
             onBackdropPress={isProcessing ? undefined : onClose}
-            size='lg'
+            size='auto'
         >
             <PWView style={styles.container}>
                 <PWToolbar
@@ -98,37 +100,43 @@ export const SwapConfirmationBottomSheet = ({
                     paddingStyle='dense'
                 />
 
-                <SwapAssetSection
-                    asset={inAsset}
-                    amountDisplay={payDisplay}
-                    fiatDisplay={payFiatDisplay}
-                    unitName={quote.assetIn.unitName}
-                    verificationTier={quote.assetIn.verificationTier}
-                />
+                <PWView style={styles.assetsGroup}>
+                    <SwapAssetSection
+                        asset={inAsset}
+                        amountDisplay={payDisplay}
+                        fiatDisplay={payFiatDisplay}
+                        unitName={quote.assetIn.unitName}
+                        verificationTier={quote.assetIn.verificationTier}
+                    />
 
-                <PWView style={styles.toDivider}>
-                    <PWDivider />
-                    <PWText
-                        variant='caption'
-                        style={styles.toLabel}
-                    >
-                        {t('swap.form.to')}
-                    </PWText>
-                    <PWDivider />
+                    <PWView style={styles.toDivider}>
+                        <PWDivider style={styles.toDividerLine} />
+                        <PWText
+                            variant='caption'
+                            style={styles.toLabel}
+                        >
+                            {t('swap.form.to')}
+                        </PWText>
+                        <PWDivider style={styles.toDividerLine} />
+                    </PWView>
+
+                    <SwapAssetSection
+                        asset={outAsset}
+                        amountDisplay={receiveDisplay}
+                        fiatDisplay={receiveFiatDisplay}
+                        unitName={quote.assetOut.unitName}
+                        verificationTier={quote.assetOut.verificationTier}
+                    />
                 </PWView>
 
-                <SwapAssetSection
-                    asset={outAsset}
-                    amountDisplay={receiveDisplay}
-                    fiatDisplay={receiveFiatDisplay}
-                    unitName={quote.assetOut.unitName}
-                    verificationTier={quote.assetOut.verificationTier}
-                />
+                <PWDivider style={styles.detailsDivider} />
 
                 <SwapDetailsSection
                     quote={quote}
                     rateDisplay={rateDisplay}
                     minimumReceivedDisplay={minimumReceivedDisplay}
+                    peraFeeDisplay={peraFeeDisplay}
+                    exchangeFeeDisplay={exchangeFeeDisplay}
                     priceImpactDisplay={priceImpactDisplay}
                     priceImpactStyle={priceImpactStyle}
                 />

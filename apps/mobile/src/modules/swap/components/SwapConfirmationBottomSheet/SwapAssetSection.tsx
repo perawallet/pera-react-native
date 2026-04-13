@@ -63,6 +63,7 @@ export const SwapAssetSection = ({
                 <AssetTierChip
                     unitName={unitName}
                     verificationTier={verificationTier}
+                    size='md'
                 />
             </PWView>
         </PWView>

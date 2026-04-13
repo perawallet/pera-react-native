@@ -132,7 +132,6 @@ export const PWBottomSheet = ({
                 enablePanDownToClose ? styles.handleIndicator : styles.hidden
             }
             backgroundStyle={mergedBackgroundStyle}
-            bottomInset={insets.bottom}
             detached={false}
             keyboardBehavior='interactive'
             keyboardBlurBehavior='restore'
