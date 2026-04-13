@@ -158,10 +158,17 @@ describe('useImportSelectAddressesScreen', () => {
         const { result } = renderHook(() => useImportSelectAddressesScreen())
 
         act(() => {
-            result.current.toggleSelection('ADDR1')
+            result.current.toggleSelection('ADDR2')
         })
 
         expect(result.current.selectedAddresses.has('ADDR1')).toBe(true)
-        expect(result.current.selectedAddresses.has('ADDR2')).toBe(false)
+        expect(result.current.selectedAddresses.has('ADDR2')).toBe(true)
+
+        act(() => {
+            result.current.toggleSelection('ADDR1')
+        })
+
+        expect(result.current.selectedAddresses.has('ADDR1')).toBe(false)
+        expect(result.current.selectedAddresses.has('ADDR2')).toBe(true)
     })
 })
