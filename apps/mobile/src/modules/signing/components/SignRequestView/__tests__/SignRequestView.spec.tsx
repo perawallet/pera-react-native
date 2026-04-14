@@ -21,12 +21,9 @@ vi.mock('@modules/signing/routes', () => ({
             return <div>TransactionSigningView</div>
         if (request.type === 'arbitrary-data')
             return <div>ArbitraryDataSigningView</div>
+        if (request.type === 'arc60') return <div>Arc60SigningView</div>
         return null
     },
-}))
-
-vi.mock('../../Arc60DataSigningView', () => ({
-    Arc60DataSigningView: () => <div>Arc60DataSigningView</div>,
 }))
 
 describe('SigningView', () => {
@@ -56,7 +53,7 @@ describe('SigningView', () => {
         } as unknown as SignRequest
 
         const { container } = render(<SignRequestView request={request} />)
-        expect(container.textContent).toContain('Arc60DataSigningView')
+        expect(container.textContent).toContain('Arc60SigningView')
     })
 
     it('renders empty view for unknown request types', () => {

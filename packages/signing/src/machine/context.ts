@@ -22,7 +22,11 @@ import type {
 } from '../pipeline/types'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import type { SigningCallbacks } from '../pipeline/types'
-import type { LocalSigningFunction } from '../pipeline/signing/createLocalKeyStrategy'
+import type {
+    LocalSigningFunction,
+    LocalArbitrarySigningFunction,
+    LocalArc60SigningFunction,
+} from '../pipeline/signing/createLocalKeyStrategy'
 import type { EncodeTransactionFunction } from '../pipeline/signing/createHardwareStrategy'
 import type { SignRequest } from '../models'
 
@@ -68,6 +72,10 @@ export type TransportFactory = (
 export type SigningMachineDeps = {
     /** KMS signing function from useTransactionSigner */
     signTransactions: LocalSigningFunction
+    /** KMS arbitrary-data signing function from useArbitraryDataSigner */
+    signArbitraryData: LocalArbitrarySigningFunction
+    /** KMS ARC-60 signing function from useArc60Signer */
+    signArc60: LocalArc60SigningFunction
     /** Selects the correct transport (algod, callback, multisig, etc.) */
     createTransport: TransportFactory
     /** Current network (mainnet / testnet) */

@@ -413,7 +413,7 @@ describe('createHardwareStrategy', () => {
             ).rejects.toThrow('signing failed')
         })
 
-        it('throws HardwareWalletError for non-transaction data types', async () => {
+        it('throws SigningError for arbitrary-data (hardware not supported)', async () => {
             const strategy = createHardwareStrategy({
                 hardwareWalletRegistry: mockRegistry,
                 encodeTransaction,
@@ -425,7 +425,9 @@ describe('createHardwareStrategy', () => {
 
             await expect(
                 strategy.sign(group, makeLedgerAccount()),
-            ).rejects.toThrow('unsupported_data_type')
+            ).rejects.toThrow(
+                'Hardware wallet signing of arbitrary data is not supported',
+            )
         })
     })
 })

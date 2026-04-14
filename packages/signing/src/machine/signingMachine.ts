@@ -305,6 +305,8 @@ export const signingMachine = setup({
                             ),
                             allAccounts: context.allAccounts,
                             signTransactions: context.deps.signTransactions,
+                            signArbitraryData: context.deps.signArbitraryData,
+                            signArc60: context.deps.signArc60,
                         }),
                         onDone: {
                             target: 'dispatching',

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWIcon, PWImage, PWText, PWView } from '@components/core'
+import { PWText, PWView } from '@components/core'
 import {
     ArbitraryDataSignRequest,
     PeraArbitraryDataMessage,
@@ -39,40 +39,10 @@ export const ArbitraryDataSigningDetailsView = ({
         account => account.address === dataMessage.signer,
     )
     const styles = useStyles()
-    const preferredIcon =
-        request.sourceMetadata?.icons?.find(
-            icon =>
-                icon.endsWith('.png') ||
-                icon.endsWith('.jpg') ||
-                icon.endsWith('.jpeg'),
-        ) ?? request.sourceMetadata?.icons?.at(0)
-    const unnamedSource = t('signing.arbitrary_data_details.unnamed')
 
     return (
         <PWView style={styles.container}>
             <PWView style={[styles.section, styles.titleSection]}>
-                {preferredIcon ? (
-                    <PWImage
-                        source={{ uri: preferredIcon }}
-                        style={styles.metadataIcon}
-                    />
-                ) : (
-                    <PWView style={styles.metadataIconContainer}>
-                        <PWIcon
-                            name='wallet-connect'
-                            variant='secondary'
-                            size='xl'
-                        />
-                    </PWView>
-                )}
-                <PWText
-                    variant='h3'
-                    style={styles.title}
-                >
-                    {t('signing.arbitrary_data_details.title', {
-                        name: request?.sourceMetadata?.name ?? unnamedSource,
-                    })}
-                </PWText>
                 <PWText style={styles.description}>
                     {t('signing.arbitrary_data_details.description')}
                 </PWText>

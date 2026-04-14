@@ -10,24 +10,4 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => {
-    return {
-        container: {
-            flex: 1,
-            minHeight: 500,
-        },
-        buttonContainer: {
-            flexDirection: 'row',
-            gap: theme.spacing.lg,
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingVertical: theme.spacing.sm,
-            paddingHorizontal: theme.spacing.xl,
-        },
-        button: {
-            flexGrow: 1,
-        },
-    }
-})
+export { Arc60SigningDetailsScreen } from './Arc60SigningDetailsScreen'

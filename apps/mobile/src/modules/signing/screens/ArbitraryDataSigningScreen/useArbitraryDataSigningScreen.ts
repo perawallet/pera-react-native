@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import {
@@ -43,7 +43,17 @@ export const useArbitraryDataSigningScreen =
 
         const isSingleSignRequest = request?.data.length === 1
 
+        // Local optimistic flag: flips true the instant the user taps Confirm
+        // so the spinner is visible immediately, before the actor's stage
+        // transition propagates through the React subscription.
+        const [isApproving, setIsApproving] = useState(false)
+
+        useEffect(() => {
+            if (!pipeline.isLoading) setIsApproving(false)
+        }, [pipeline.isLoading])
+
         const handleApprove = useCallback(() => {
+            setIsApproving(true)
             pipeline.next()
         }, [pipeline])
 
@@ -61,7 +71,7 @@ export const useArbitraryDataSigningScreen =
         return {
             request,
             isSingleSignRequest,
-            isPending: pipeline.isLoading,
+            isPending: pipeline.isLoading || isApproving,
             handleApprove,
             handleReject,
             handleDetailsPress,

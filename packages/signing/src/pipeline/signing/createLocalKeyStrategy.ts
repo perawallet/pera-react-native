@@ -23,6 +23,8 @@ import type {
     SigningResult,
     SigningCallbacks,
     SignerInfo,
+    Arc60StdSigData,
+    Arc60Metadata,
 } from '../types'
 import { CannotSignError, SigningError } from '../errors'
 
@@ -35,14 +37,37 @@ export type LocalSigningFunction = (
 ) => Promise<PeraSignedTransaction[]>
 
 /**
+ * Signing function type that matches useArbitraryDataSigner's signArbitraryData
+ */
+export type LocalArbitrarySigningFunction = (
+    account: WalletAccount,
+    data: string | string[],
+) => Promise<Uint8Array[]>
+
+/**
+ * Signing function type that matches useArc60Signer's signArc60
+ */
+export type LocalArc60SigningFunction = (
+    account: WalletAccount,
+    stdSigData: Arc60StdSigData,
+    metadata: Arc60Metadata,
+) => Promise<Uint8Array>
+
+export type LocalKeyStrategyOptions = {
+    signTransactions: LocalSigningFunction
+    signArbitraryData: LocalArbitrarySigningFunction
+    signArc60: LocalArc60SigningFunction
+}
+
+/**
  * Creates a signing strategy for accounts with local keys (Algo25, HDWallet).
  * These accounts have immediate access to private keys via KMS.
- *
- * @param signTransactions - The signing function from useTransactionSigner
  */
 export const createLocalKeyStrategy = (
-    signTransactions: LocalSigningFunction,
+    options: LocalKeyStrategyOptions,
 ): SigningStrategy => {
+    const { signTransactions, signArbitraryData, signArc60 } = options
+
     return {
         canSign: (account: WalletAccount): boolean => {
             return hasSigningKeys(account)
@@ -53,7 +78,6 @@ export const createLocalKeyStrategy = (
             account: WalletAccount,
             callbacks?: SigningCallbacks,
         ): Promise<SigningResult> => {
-            // Validate that we can sign with this account
             if (!hasSigningKeys(account)) {
                 throw new CannotSignError(
                     account.address,
@@ -68,51 +92,100 @@ export const createLocalKeyStrategy = (
                 )
             }
 
-            // Only handle transaction signing
-            if (group.data.type !== 'transactions') {
-                throw new SigningError(
-                    'Local key strategy only supports transaction signing',
-                )
-            }
+            switch (group.data.type) {
+                case 'transactions': {
+                    const { transactions, indicesToSign } = group.data
+                    try {
+                        callbacks?.onSigningStart?.()
+                        callbacks?.onProgress?.(0, transactions.length)
 
-            const { transactions, indicesToSign } = group.data
+                        const signed = await signTransactions(
+                            transactions,
+                            indicesToSign,
+                        )
 
-            try {
-                callbacks?.onSigningStart?.()
-                callbacks?.onProgress?.(0, transactions.length)
+                        callbacks?.onProgress?.(
+                            transactions.length,
+                            transactions.length,
+                        )
+                        callbacks?.onSigningComplete?.()
 
-                // Sign the transactions
-                const signedTransactions = await signTransactions(
-                    transactions,
-                    indicesToSign,
-                )
-
-                callbacks?.onProgress?.(
-                    transactions.length,
-                    transactions.length,
-                )
-                callbacks?.onSigningComplete?.()
-
-                // Create signer info
-                const signerInfo: SignerInfo = {
-                    address: account.address,
+                        const signerInfo: SignerInfo = {
+                            address: account.address,
+                        }
+                        return {
+                            signedData: { type: 'transactions', signed },
+                            signers: [signerInfo],
+                            originalIndices: group.originalIndices,
+                        }
+                    } catch (error) {
+                        const signingError = new SigningError(
+                            error instanceof Error
+                                ? error.message
+                                : String(error),
+                            error instanceof Error ? error : undefined,
+                        )
+                        callbacks?.onError?.(signingError)
+                        throw signingError
+                    }
                 }
 
-                return {
-                    signedData: {
-                        type: 'transactions',
-                        signed: signedTransactions,
-                    },
-                    signers: [signerInfo],
-                    originalIndices: group.originalIndices,
+                case 'arbitrary-data': {
+                    try {
+                        callbacks?.onSigningStart?.()
+                        const payloads = group.data.data.map(m => m.data)
+                        const signatures = await signArbitraryData(
+                            account,
+                            payloads,
+                        )
+                        callbacks?.onSigningComplete?.()
+
+                        return {
+                            signedData: {
+                                type: 'arbitrary-data',
+                                signatures,
+                            },
+                            signers: [{ address: account.address }],
+                            originalIndices: group.originalIndices,
+                        }
+                    } catch (error) {
+                        const signingError = new SigningError(
+                            error instanceof Error
+                                ? error.message
+                                : String(error),
+                            error instanceof Error ? error : undefined,
+                        )
+                        callbacks?.onError?.(signingError)
+                        throw signingError
+                    }
                 }
-            } catch (error) {
-                const signingError = new SigningError(
-                    error instanceof Error ? error.message : String(error),
-                    error instanceof Error ? error : undefined,
-                )
-                callbacks?.onError?.(signingError)
-                throw signingError
+
+                case 'arc60': {
+                    try {
+                        callbacks?.onSigningStart?.()
+                        const signature = await signArc60(
+                            account,
+                            group.data.stdSigData,
+                            group.data.metadata,
+                        )
+                        callbacks?.onSigningComplete?.()
+
+                        return {
+                            signedData: { type: 'arc60', signature },
+                            signers: [{ address: account.address }],
+                            originalIndices: group.originalIndices,
+                        }
+                    } catch (error) {
+                        const signingError = new SigningError(
+                            error instanceof Error
+                                ? error.message
+                                : String(error),
+                            error instanceof Error ? error : undefined,
+                        )
+                        callbacks?.onError?.(signingError)
+                        throw signingError
+                    }
+                }
             }
         },
     }

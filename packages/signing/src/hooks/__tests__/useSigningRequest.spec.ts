@@ -50,6 +50,18 @@ vi.mock('../useTransactionSigner', () => ({
     })),
 }))
 
+vi.mock('../useArbitraryDataSigner', () => ({
+    useArbitraryDataSigner: vi.fn(() => ({
+        signArbitraryData: vi.fn(),
+    })),
+}))
+
+vi.mock('../useArc60Signer', () => ({
+    useArc60Signer: vi.fn(() => ({
+        signArc60: vi.fn(),
+    })),
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => [
         { address: 'ADDR1', type: 'algo25' },

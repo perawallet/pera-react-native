@@ -16,7 +16,8 @@ import type {
 } from '@perawallet/wallet-core-blockchain'
 import { BaseStoreState } from '@perawallet/wallet-core-shared'
 import type {
-    Arc60Data,
+    Arc60Metadata,
+    Arc60StdSigData,
     SignableAnalysis,
     SourceType,
     TransportResult,
@@ -91,8 +92,19 @@ export type ArbitraryDataSignRequest = {
 } & BaseSignRequest
 
 export type Arc60SignRequest = {
-    signer: string
-    structuredData: Arc60Data
+    /**
+     * Spec-defined signing payload. The encoded `data`, `domain`,
+     * `authenticatorData`, and optional `hdPath` are all consumed by the
+     * signing pipeline; `signer` selects the signing account.
+     */
+    stdSigData: Arc60StdSigData
+    /** Scope + encoding metadata supplied by the dApp. */
+    metadata: Arc60Metadata
+    /**
+     * Approve callback. Always invoked with a single-element array so the
+     * existing `algo_signData` response shape (array of base64 signatures)
+     * stays consistent across legacy and ARC-60 modalities.
+     */
     approve?: (signed: PeraArbitraryDataSignResult[]) => Promise<void>
     reject?: () => Promise<void>
     error?: (error: Error) => Promise<void>

@@ -151,6 +151,17 @@ const buildSourceMetadata = (request: SignRequest): SourceMetadata => {
                         signer: result.signers[i]?.address ?? '',
                     })),
                 )
+            } else if (result.signedData.type === 'arc60') {
+                // ARC-60 produces a single signature; project the result
+                // through the same `[{ signature, signer }]` shape so the
+                // callback consumer (WalletConnect bridge) doesn't need to
+                // branch on the modality.
+                await dataApprove([
+                    {
+                        signature: result.signedData.signature,
+                        signer: result.signers[0]?.address ?? '',
+                    },
+                ])
             }
         }
     }
@@ -240,7 +251,24 @@ const buildSignableGroups = (
         ]
     }
 
-    throw new Error(`Unsupported request type: ${request.type}`)
+    if (isArc60Request(request)) {
+        return [
+            {
+                data: {
+                    type: 'arc60',
+                    stdSigData: request.stdSigData,
+                    metadata: request.metadata,
+                },
+                source,
+                signerAddress: request.stdSigData.signer,
+            },
+        ]
+    }
+
+    const exhaustiveCheck: never = request
+    throw new Error(
+        `Unsupported request type: ${(exhaustiveCheck as { type: string }).type}`,
+    )
 }
 
 // =============================================================================
@@ -255,6 +283,8 @@ const buildSignableGroups = (
  */
 const extractDeps = (input: SigningMachineInput): SigningMachineDeps => ({
     signTransactions: input.signTransactions,
+    signArbitraryData: input.signArbitraryData,
+    signArc60: input.signArc60,
     createTransport: input.createTransport,
     network: input.network,
     encodeTransaction: input.encodeTransaction,

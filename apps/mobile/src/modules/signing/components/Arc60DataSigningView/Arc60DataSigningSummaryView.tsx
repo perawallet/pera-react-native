@@ -11,43 +11,63 @@
  */
 
 import { PWButton, PWText, PWView } from '@components/core'
-import type { PeraArbitraryDataMessage } from '@perawallet/wallet-core-signing'
-import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
+import type { Arc60SignRequest } from '@perawallet/wallet-core-signing'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from './styles'
+import type { Arc60ParsedPayload } from './parseArc60ForDisplay'
+import { useStyles } from './Arc60DataSigningSummaryView.style'
 
-export type SingleArbitrarySignRequestViewProps = {
-    request: PeraArbitraryDataMessage
-    onDetailsPress: (message: PeraArbitraryDataMessage) => void
+export type Arc60DataSigningSummaryViewProps = {
+    request: Arc60SignRequest
+    account: WalletAccount | undefined
+    parsed: Arc60ParsedPayload
+    onDetailsPress: () => void
 }
 
-export const SingleArbitrarySignRequestView = ({
+export const Arc60DataSigningSummaryView = ({
     request,
+    account,
+    parsed,
     onDetailsPress,
-}: SingleArbitrarySignRequestViewProps) => {
+}: Arc60DataSigningSummaryViewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const account = useFindAccountByAddress(request.signer)
 
-    const handleDetailsPress = () => {
-        onDetailsPress(request)
-    }
+    const siwa = parsed.type === 'siwa' ? parsed.siwa : undefined
 
     return (
         <PWView style={styles.container}>
             <PWView style={styles.messageContainer}>
                 <PWText
                     variant='h2'
-                    style={styles.body}
+                    style={styles.title}
                 >
-                    {t('signing.arbitrary_data_view.body')}
+                    {t('signing.arc60_view.title')}
                 </PWText>
-                <PWText style={styles.message}>{request.message}</PWText>
+                <PWText
+                    variant='body'
+                    style={styles.description}
+                >
+                    {t('signing.arc60_view.description', {
+                        domain: request.stdSigData.domain,
+                    })}
+                </PWText>
+                {!!siwa?.statement && (
+                    <PWView style={styles.statementContainer}>
+                        <PWText
+                            variant='caption'
+                            style={styles.statementLabel}
+                        >
+                            {t('signing.arc60_view.siwa_statement')}
+                        </PWText>
+                        <PWText variant='body'>{siwa.statement}</PWText>
+                    </PWView>
+                )}
                 {!!account && (
                     <PWView style={styles.accountContainer}>
                         <PWText style={styles.onBehalfOf}>
-                            {t('signing.arbitrary_data_view.on_behalf_of')}
+                            {t('signing.arc60_view.on_behalf_of')}
                         </PWText>
                         <AccountDisplay
                             account={account}
@@ -58,10 +78,10 @@ export const SingleArbitrarySignRequestView = ({
             </PWView>
             <PWView style={styles.detailsContainer}>
                 <PWButton
-                    title={t('signing.arbitrary_data_view.show_details')}
+                    title={t('signing.arc60_view.show_details')}
                     variant='link'
                     paddingStyle='dense'
-                    onPress={handleDetailsPress}
+                    onPress={onDetailsPress}
                 />
             </PWView>
         </PWView>
