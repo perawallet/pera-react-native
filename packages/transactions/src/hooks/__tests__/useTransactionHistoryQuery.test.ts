@@ -243,5 +243,12 @@ describe('useTransactionHistoryQuery', () => {
 
         // Should have persisted the API transactions to DB
         expect(mockPersistTransactions).toHaveBeenCalled()
+
+        // Verify before_time is sent as date-only (YYYY-MM-DD), not full ISO datetime
+        expect(endpoints.fetchTransactionHistory).toHaveBeenCalledWith(
+            expect.objectContaining({
+                beforeTime: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+            }),
+        )
     })
 })
