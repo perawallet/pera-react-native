@@ -30,6 +30,7 @@ export type AccountMenuProps = {
     onAddAccount: () => void
     onOpenSort: () => void
     headerContent?: ReactNode
+    hideDefaultHeader?: boolean
 }
 
 export const AccountMenu = (props: AccountMenuProps) => {
@@ -37,7 +38,7 @@ export const AccountMenu = (props: AccountMenuProps) => {
     const { t } = useLanguage()
     const { sortedAccounts, selectedAccountAddress, sortMode, handleTap } =
         useAccountMenu(props)
-    const { onAddAccount, onOpenSort, headerContent } = props
+    const { onAddAccount, onOpenSort, headerContent, hideDefaultHeader } = props
 
     return (
         <PWView style={styles.container}>
@@ -46,30 +47,32 @@ export const AccountMenu = (props: AccountMenuProps) => {
             )}
 
             <PWView style={styles.mainContent}>
-                <PWView style={styles.titleBar}>
-                    <PWText
-                        variant='h3'
-                        style={styles.activeTitle}
-                    >
-                        {t('account_menu.title')}
-                    </PWText>
-                    <PWView style={styles.titleBarButtonContainer}>
-                        <PWButton
-                            variant='link'
-                            icon='list-arrow-down'
-                            title={t('account_menu.sort')}
-                            paddingStyle='dense'
-                            onPress={onOpenSort}
-                        />
-                        <PWButton
-                            testID='account_menu_add_account_button'
-                            variant='helper'
-                            icon='plus'
-                            paddingStyle='dense'
-                            onPress={onAddAccount}
-                        />
+                {!hideDefaultHeader && (
+                    <PWView style={styles.titleBar}>
+                        <PWText
+                            variant='h3'
+                            style={styles.activeTitle}
+                        >
+                            {t('account_menu.title')}
+                        </PWText>
+                        <PWView style={styles.titleBarButtonContainer}>
+                            <PWButton
+                                variant='link'
+                                icon='list-arrow-down'
+                                title={t('account_menu.sort')}
+                                paddingStyle='dense'
+                                onPress={onOpenSort}
+                            />
+                            <PWButton
+                                testID='account_menu_add_account_button'
+                                variant='helper'
+                                icon='plus'
+                                paddingStyle='dense'
+                                onPress={onAddAccount}
+                            />
+                        </PWView>
                     </PWView>
-                </PWView>
+                )}
 
                 <PWFlatList<WalletAccount>
                     data={sortedAccounts}

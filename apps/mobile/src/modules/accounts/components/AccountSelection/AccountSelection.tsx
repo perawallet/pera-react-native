@@ -20,17 +20,34 @@ import { AccountMenuBottomSheet } from '@modules/accounts/components/AccountMenu
 import { AccountSortBottomSheet } from '@modules/accounts/components/AccountSortBottomSheet'
 import { useModalState } from '@hooks/useModalState'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { TouchableOpacity, TouchableOpacityProps } from 'react-native'
+import {
+    StyleProp,
+    TouchableOpacity,
+    TouchableOpacityProps,
+    ViewStyle,
+} from 'react-native'
 import { AccountDisplay } from '../AccountDisplay'
+import { AccountIconProps } from '../AccountIcon'
+import { PWTextProps } from '@components/core'
 
 export type AccountSelectionProps = {
     onSelected?: (account: WalletAccount) => void
     headerContent?: ReactNode
+    triggerStyle?: StyleProp<ViewStyle>
+    triggerIconProps?: Omit<AccountIconProps, 'account'>
+    triggerTextProps?: PWTextProps
+    closeIconPosition?: 'left' | 'right'
+    hideDefaultHeader?: boolean
 } & TouchableOpacityProps
 
 export const AccountSelection = ({
     onSelected,
     headerContent,
+    triggerStyle,
+    triggerIconProps,
+    triggerTextProps,
+    closeIconPosition,
+    hideDefaultHeader,
     ...props
 }: AccountSelectionProps) => {
     const styles = useStyles()
@@ -77,7 +94,9 @@ export const AccountSelection = ({
             >
                 <AccountDisplay
                     account={account ?? undefined}
-                    style={styles.container}
+                    style={[styles.container, triggerStyle]}
+                    iconProps={triggerIconProps}
+                    textProps={triggerTextProps}
                     noBorder
                 />
             </TouchableOpacity>
@@ -89,6 +108,8 @@ export const AccountSelection = ({
                 onSelected={handleSelected}
                 onAddAccount={handleAddAccount}
                 headerContent={headerContent}
+                closeIconPosition={closeIconPosition}
+                hideDefaultHeader={hideDefaultHeader}
             />
             <AccountSortBottomSheet
                 isVisible={sortSheetState.isOpen}

@@ -24,6 +24,8 @@ export type AccountMenuBottomSheetProps = {
     onSelected: (account: WalletAccount) => void
     onAddAccount: () => void
     headerContent?: ReactNode
+    closeIconPosition?: 'left' | 'right'
+    hideDefaultHeader?: boolean
 }
 
 export const AccountMenuBottomSheet = ({
@@ -34,8 +36,17 @@ export const AccountMenuBottomSheet = ({
     onSelected,
     onAddAccount,
     headerContent,
+    closeIconPosition = 'right',
+    hideDefaultHeader = false,
 }: AccountMenuBottomSheetProps) => {
     const styles = useStyles()
+
+    const closeIcon = (
+        <PWIcon
+            name='cross'
+            onPress={onClose}
+        />
+    )
 
     return (
         <PWBottomSheet
@@ -47,12 +58,8 @@ export const AccountMenuBottomSheet = ({
             autoCreateContainer={false}
         >
             <PWToolbar
-                right={
-                    <PWIcon
-                        name='cross'
-                        onPress={onClose}
-                    />
-                }
+                left={closeIconPosition === 'left' ? closeIcon : undefined}
+                right={closeIconPosition === 'right' ? closeIcon : undefined}
                 paddingStyle='dense'
             />
             <AccountMenu
@@ -60,6 +67,7 @@ export const AccountMenuBottomSheet = ({
                 onAddAccount={onAddAccount}
                 onOpenSort={onOpenSort}
                 headerContent={headerContent}
+                hideDefaultHeader={hideDefaultHeader}
             />
         </PWBottomSheet>
     )
