@@ -41,7 +41,7 @@ export const useStyles = makeStyles((theme, { isHighlighted }: StyleProps) => {
         },
         fiatBalance: {
             color: theme.colors.textGray,
-            lineHeight: theme.spacing.md,
+            lineHeight: theme.spacing.lg,
         },
     }
 })

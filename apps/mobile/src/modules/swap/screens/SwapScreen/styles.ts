@@ -25,10 +25,14 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.sm,
     },
     selectHeader: {
-        paddingTop: theme.spacing.lg,
+        paddingTop: theme.spacing.sm,
         gap: theme.spacing.md,
     },
     selectDescription: {
         color: theme.colors.textGray,
+    },
+    accountTrigger: {
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGray,
     },
 }))

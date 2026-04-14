@@ -53,9 +53,14 @@ export const SwapScreen = () => {
                 }
                 right={
                     <AccountSelection
+                        triggerStyle={styles.accountTrigger}
+                        triggerIconProps={{ size: 'md' }}
+                        triggerTextProps={{ variant: 'body' }}
+                        closeIconPosition='left'
+                        hideDefaultHeader
                         headerContent={
                             <PWView style={styles.selectHeader}>
-                                <PWText variant='h2'>
+                                <PWText variant='h1'>
                                     {t('account_menu.select_title')}
                                 </PWText>
                                 <PWText style={styles.selectDescription}>
