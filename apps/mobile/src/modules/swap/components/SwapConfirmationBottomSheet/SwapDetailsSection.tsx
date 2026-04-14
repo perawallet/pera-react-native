@@ -12,8 +12,8 @@
 
 import { PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { CurrencyDisplay } from '@components/CurrencyDisplay/CurrencyDisplay'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import { SwapProviderDisplay } from '../SwapProviderDisplay'
 import { DetailRow } from './DetailRow'
 import { useStyles } from './styles'
 
@@ -21,6 +21,8 @@ type SwapDetailsSectionProps = {
     quote: SwapQuote
     rateDisplay: string
     minimumReceivedDisplay: string
+    peraFeeDisplay: string
+    exchangeFeeDisplay: string
     priceImpactDisplay: string
     priceImpactStyle: object
 }
@@ -29,6 +31,8 @@ export const SwapDetailsSection = ({
     quote,
     rateDisplay,
     minimumReceivedDisplay,
+    peraFeeDisplay,
+    exchangeFeeDisplay,
     priceImpactDisplay,
     priceImpactStyle,
 }: SwapDetailsSectionProps) => {
@@ -40,17 +44,20 @@ export const SwapDetailsSection = ({
             <DetailRow label={t('swap.quote.rate')}>
                 <PWView style={styles.rateValueRow}>
                     <PWText style={styles.detailValue}>{rateDisplay}</PWText>
-                    <PWIcon
-                        name='swap'
-                        size='xs'
-                    />
+                    <PWView style={styles.rateIcon}>
+                        <PWIcon
+                            name='swap'
+                            size='xs'
+                        />
+                    </PWView>
                 </PWView>
             </DetailRow>
-            <DetailRow
-                label={t('swap.quote.provider')}
-                value={quote.provider ?? '-'}
-                valueStyle={styles.detailValue}
-            />
+            <DetailRow label={t('swap.quote.provider')}>
+                <SwapProviderDisplay
+                    providerName={quote.provider}
+                    providerDisplayName={quote.providerDisplayName}
+                />
+            </DetailRow>
             <DetailRow
                 label={t('swap.quote.slippage_tolerance')}
                 value={quote.slippage ? `${quote.slippage.toString()}%` : '-'}
@@ -70,33 +77,15 @@ export const SwapDetailsSection = ({
             />
             <DetailRow
                 label={t('swap.quote.exchange_fee')}
+                value={exchangeFeeDisplay}
+                valueStyle={styles.detailValue}
                 info={t('swap.info.exchange_fee')}
-            >
-                <CurrencyDisplay
-                    currency={
-                        quote.assetIn.unitName === 'ALGO'
-                            ? 'ALGO'
-                            : (quote.assetIn.unitName ?? '')
-                    }
-                    value={quote.exchangeFeeAmount ?? null}
-                    precision={quote.assetIn.decimals ?? 6}
-                    showSymbol={quote.assetIn.unitName === 'ALGO'}
-                    symbolPosition='start'
-                />
-            </DetailRow>
-            <DetailRow label={t('swap.quote.pera_fee')}>
-                <CurrencyDisplay
-                    currency={
-                        quote.assetIn.unitName === 'ALGO'
-                            ? 'ALGO'
-                            : (quote.assetIn.unitName ?? '')
-                    }
-                    value={quote.peraFeeAmount ?? null}
-                    precision={quote.assetIn.decimals ?? 6}
-                    showSymbol={quote.assetIn.unitName === 'ALGO'}
-                    symbolPosition='start'
-                />
-            </DetailRow>
+            />
+            <DetailRow
+                label={t('swap.quote.pera_fee')}
+                value={peraFeeDisplay}
+                valueStyle={styles.detailValue}
+            />
         </PWView>
     )
 }

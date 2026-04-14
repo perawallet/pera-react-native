@@ -49,6 +49,7 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
     useCalculateSwapAmountMutation: () => ({
         mutateAsync: mockCalculateSwapAmount,
     }),
+    usePrefetchProviders: () => vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -275,5 +276,16 @@ describe('useSwapForm', () => {
         })
 
         expect(mockSetPreferredCurrency).toHaveBeenCalledWith('ALGO')
+    })
+
+    it('handleOpenConfirm resets swap execution state before opening the confirm modal', () => {
+        const { result } = renderHook(() => useSwapForm())
+
+        act(() => {
+            result.current.handleOpenConfirm()
+        })
+
+        expect(mockSwapReset).toHaveBeenCalled()
+        expect(result.current.confirmModal.open).toHaveBeenCalled()
     })
 })

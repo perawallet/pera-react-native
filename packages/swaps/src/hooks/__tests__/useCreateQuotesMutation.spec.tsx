@@ -13,9 +13,10 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Decimal } from 'decimal.js'
 import React from 'react'
 import { useCreateQuotesMutation } from '../useCreateQuotesMutation'
-import { createQuotes } from '../../api'
+import { createQuotes, fetchProviders } from '../../api'
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'mainnet' }),
@@ -23,15 +24,21 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 vi.mock('../../api', () => ({
     createQuotes: vi.fn(),
+    fetchProviders: vi.fn(),
 }))
 
 const mockAsset = { assetId: 0, verificationTier: 'verified' as const }
+const mockProviders = [
+    { name: 'deflex', displayName: 'Deflex', iconUrl: 'https://x/deflex.png' },
+]
 const mockQuote = {
     id: 1,
+    provider: 'deflex',
+    providerDisplayName: 'Deflex',
     assetIn: mockAsset,
     assetOut: mockAsset,
-    amountIn: '1000000',
-    amountOut: '2000000',
+    amountIn: new Decimal('1000000'),
+    amountOut: new Decimal('2000000'),
 }
 
 const mockRequest = {
@@ -55,6 +62,7 @@ function createWrapper() {
 describe('swaps/useCreateQuotesMutation', () => {
     beforeEach(() => {
         vi.mocked(createQuotes).mockResolvedValue([mockQuote])
+        vi.mocked(fetchProviders).mockResolvedValue(mockProviders)
     })
 
     test('calls createQuotes with correct args and returns data', async () => {
@@ -68,7 +76,12 @@ describe('swaps/useCreateQuotesMutation', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-        expect(createQuotes).toHaveBeenCalledWith(mockRequest, 'mainnet')
+        expect(fetchProviders).toHaveBeenCalledWith('mainnet')
+        expect(createQuotes).toHaveBeenCalledWith(
+            mockRequest,
+            'mainnet',
+            mockProviders,
+        )
         expect(result.current.data).toEqual([mockQuote])
     })
 

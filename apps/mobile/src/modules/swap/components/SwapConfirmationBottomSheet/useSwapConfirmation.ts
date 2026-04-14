@@ -12,7 +12,6 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { useLanguage } from '@hooks/useLanguage'
 import { formatCurrency, formatNumber } from '@perawallet/wallet-core-shared'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
@@ -27,16 +26,6 @@ import { useStyles } from './styles'
 
 const PRICE_IMPACT_HIGH_THRESHOLD = new Decimal(5)
 
-const STATUS_TO_BUTTON_TITLE_KEY: Record<SwapExecutionStatus, string> = {
-    signing: 'swap.execution.signing',
-    submitting: 'swap.execution.submitting',
-    'updating-status': 'swap.execution.finalizing',
-    idle: 'swap.quote.confirm_swap',
-    preparing: 'swap.quote.confirm_swap',
-    success: 'swap.quote.confirm_swap',
-    error: 'swap.quote.confirm_swap',
-}
-
 type UseSwapConfirmationParams = {
     quote: SwapQuote | null
     swapStatus: SwapExecutionStatus
@@ -47,13 +36,14 @@ type UseSwapConfirmationResult = {
     inAsset: PeraAsset | undefined
     outAsset: PeraAsset | undefined
     isProcessing: boolean
-    buttonTitle: string
     payDisplay: string
     receiveDisplay: string
     payFiatDisplay: string | undefined
     receiveFiatDisplay: string | undefined
     rateDisplay: string
     minimumReceivedDisplay: string
+    peraFeeDisplay: string
+    exchangeFeeDisplay: string
     hasHighPriceImpact: boolean
     priceImpactDisplay: string
     priceImpactStyle: object
@@ -63,7 +53,6 @@ export const useSwapConfirmation = ({
     quote,
     swapStatus,
 }: UseSwapConfirmationParams): UseSwapConfirmationResult => {
-    const { t } = useLanguage()
     const styles = useStyles()
     const selectedAccount = useSelectedAccount()
     const { preferredCurrency, usdToPreferred } = useCurrency()
@@ -81,16 +70,18 @@ export const useSwapConfirmation = ({
         swapStatus === 'submitting' ||
         swapStatus === 'updating-status'
 
-    const buttonTitle = t(STATUS_TO_BUTTON_TITLE_KEY[swapStatus])
-
     const payDisplay = useMemo(() => {
         if (!quote?.amountIn) return '-'
-        return formatAssetAmount(quote.amountIn, quote.assetIn)
+        return formatAssetAmount(quote.amountIn, {
+            decimals: quote.assetIn.decimals,
+        })
     }, [quote?.amountIn, quote?.assetIn])
 
     const receiveDisplay = useMemo(() => {
         if (!quote?.amountOut) return '-'
-        return formatAssetAmount(quote.amountOut, quote.assetOut)
+        return formatAssetAmount(quote.amountOut, {
+            decimals: quote.assetOut.decimals,
+        })
     }, [quote?.amountOut, quote?.assetOut])
 
     const payFiatDisplay = useMemo(() => {
@@ -122,6 +113,19 @@ export const useSwapConfirmation = ({
         return formatAssetAmount(quote.amountOutWithSlippage, quote.assetOut)
     }, [quote?.amountOutWithSlippage, quote?.assetOut])
 
+    const peraFeeDisplay = useMemo(() => {
+        if (!quote?.peraFeeAmount) return '-'
+        return formatAssetAmount(quote.peraFeeAmount, quote.assetIn)
+    }, [quote?.peraFeeAmount, quote?.assetIn])
+
+    const exchangeFeeDisplay = useMemo(() => {
+        if (!quote?.exchangeFeeAmount) return '-'
+        if (quote.exchangeFeeAmount.isZero()) {
+            return `0 ${quote.assetIn.unitName ?? ''}`.trim()
+        }
+        return formatAssetAmount(quote.exchangeFeeAmount, quote.assetIn)
+    }, [quote?.exchangeFeeAmount, quote?.assetIn])
+
     const hasHighPriceImpact = useMemo(
         () =>
             quote?.priceImpact?.greaterThanOrEqualTo(
@@ -148,13 +152,14 @@ export const useSwapConfirmation = ({
         inAsset,
         outAsset,
         isProcessing,
-        buttonTitle,
         payDisplay,
         receiveDisplay,
         payFiatDisplay,
         receiveFiatDisplay,
         rateDisplay,
         minimumReceivedDisplay,
+        peraFeeDisplay,
+        exchangeFeeDisplay,
         hasHighPriceImpact,
         priceImpactDisplay,
         priceImpactStyle,

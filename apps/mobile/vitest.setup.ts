@@ -558,6 +558,36 @@ vi.mock('@components/core', () => {
         PWDropdownItem: createMockComponent('PWDropdownItem'),
         PWSwipeable: createMockComponent('PWSwipeable'),
         DEFAULT_SWIPE_ACTION_WIDTH: 80,
+        PWSlideToConfirm: ({
+            title,
+            loadingTitle,
+            onConfirm,
+            isLoading,
+            isDisabled,
+            testID,
+            ...props
+        }: any) =>
+            React.createElement(
+                'button',
+                {
+                    ...props,
+                    onClick: onConfirm,
+                    disabled: isDisabled,
+                    'data-testid': testID || 'PWSlideToConfirm',
+                },
+                isLoading
+                    ? React.createElement('div', {
+                          'data-testid': 'activity-indicator',
+                      })
+                    : title,
+                isLoading && loadingTitle
+                    ? React.createElement(
+                          'span',
+                          { key: 'loading' },
+                          loadingTitle,
+                      )
+                    : null,
+            ),
     }
 })
 
@@ -1357,7 +1387,51 @@ vi.mock('react-native-gesture-handler', () => {
     const React = require('react')
     const MockView = (props: any) =>
         React.createElement('div', props, props.children)
+    const createGestureBuilder = () => {
+        const builder: any = {}
+        const chainable = [
+            'enabled',
+            'minPointers',
+            'maxPointers',
+            'numberOfTaps',
+            'onStart',
+            'onUpdate',
+            'onEnd',
+            'onBegin',
+            'onFinalize',
+            'onTouchesDown',
+            'onTouchesUp',
+            'onChange',
+            'minDistance',
+            'activeOffsetX',
+            'activeOffsetY',
+            'failOffsetX',
+            'failOffsetY',
+            'simultaneousWithExternalGesture',
+            'requireExternalGestureToFail',
+        ]
+        chainable.forEach(method => {
+            builder[method] = () => builder
+        })
+        return builder
+    }
+    const Gesture = {
+        Pan: createGestureBuilder,
+        Tap: createGestureBuilder,
+        Pinch: createGestureBuilder,
+        LongPress: createGestureBuilder,
+        Fling: createGestureBuilder,
+        Rotation: createGestureBuilder,
+        Native: createGestureBuilder,
+        Manual: createGestureBuilder,
+        Race: (...gestures: any[]) => gestures[0],
+        Simultaneous: (...gestures: any[]) => gestures[0],
+        Exclusive: (...gestures: any[]) => gestures[0],
+    }
     return {
+        Gesture,
+        GestureDetector: ({ children }: any) => children,
+        GestureHandlerRootView: MockView,
         Swipeable: MockView,
         DrawerLayout: MockView,
         State: {},

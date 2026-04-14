@@ -12,22 +12,17 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export type AssetTierChipSize = 'sm' | 'md'
-
-type StyleProps = { size: AssetTierChipSize }
-
-export const useStyles = makeStyles((theme, { size }: StyleProps) => ({
+export const useStyles = makeStyles(theme => ({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.xs,
-        backgroundColor:
-            size === 'md'
-                ? theme.colors.layerGrayLightest
-                : theme.colors.layerGrayLighter,
-        paddingHorizontal: size === 'md' ? theme.spacing.lg : theme.spacing.sm,
-        paddingVertical: size === 'md' ? theme.spacing.lg : theme.spacing.xs,
-        borderRadius: size === 'md' ? theme.spacing.lg : theme.spacing.sm,
+    },
+    logo: {
+        width: theme.spacing.lg,
+        height: theme.spacing.lg,
+        borderRadius: theme.borderRadius.sm,
+        overflow: 'hidden',
     },
     label: {
         color: theme.colors.textMain,

@@ -14,19 +14,16 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        paddingBottom: theme.spacing.xl,
+        paddingBottom: theme.spacing['3xl'],
     },
     headerCenter: {
         alignItems: 'center',
     },
     accountRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
         marginTop: theme.spacing.xs,
     },
-    accountName: {
-        color: theme.colors.textGray,
+    assetsGroup: {
+        paddingVertical: theme.spacing.xl,
     },
     assetSection: {
         paddingHorizontal: theme.spacing.lg,
@@ -43,13 +40,14 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.md,
     },
     amountTextContainer: {
-        gap: theme.spacing.xs,
+        gap: 0,
     },
     assetAmount: {
         color: theme.colors.textMain,
     },
     usdValue: {
         color: theme.colors.textGray,
+        lineHeight: theme.spacing.lg,
     },
     toDivider: {
         flexDirection: 'row',
@@ -57,12 +55,24 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.lg,
         gap: theme.spacing.sm,
     },
+    toDividerLine: {
+        flex: 1,
+        borderBottomColor: theme.colors.layerGray,
+        borderBottomWidth: theme.borders.sm,
+    },
     toLabel: {
         color: theme.colors.textGray,
+        textTransform: 'uppercase',
+    },
+    detailsDivider: {
+        marginHorizontal: theme.spacing.lg,
+        marginTop: theme.spacing.md,
+        borderBottomColor: theme.colors.layerGray,
+        borderBottomWidth: theme.borders.sm,
     },
     detailsSection: {
         paddingHorizontal: theme.spacing.lg,
-        paddingTop: theme.spacing.lg,
+        paddingTop: theme.spacing.xl,
         gap: theme.spacing.md,
     },
     detailRow: {
@@ -74,6 +84,9 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.xs,
+    },
+    rateIcon: {
+        transform: [{ rotate: '90deg' }],
     },
     detailLabelRow: {
         flexDirection: 'row',
@@ -87,7 +100,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textMain,
     },
     priceImpactLow: {
-        color: theme.colors.positive,
+        color: theme.colors.textMain,
     },
     priceImpactMedium: {
         color: theme.colors.warning,
@@ -117,6 +130,6 @@ export const useStyles = makeStyles(theme => ({
     },
     confirmButton: {
         marginHorizontal: theme.spacing.lg,
-        marginTop: theme.spacing.xl,
+        marginTop: theme.spacing.xxl,
     },
 }))

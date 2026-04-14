@@ -199,7 +199,7 @@ export const SwapQuoteDetails = ({
                         variant='body'
                         style={styles.value}
                     >
-                        {quote.provider ?? '-'}
+                        {quote.providerDisplayName ?? quote.provider ?? '-'}
                     </PWText>
                 )}
             </PWView>

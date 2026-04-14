@@ -26,6 +26,7 @@ import {
 import {
     useCalculateSwapAmountMutation,
     useCreateQuotesMutation,
+    usePrefetchProviders,
     useSwaps,
     type SwapQuote,
     type SwapConfigurationResult,
@@ -35,6 +36,7 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { isDecimalEqual } from '@perawallet/wallet-core-shared'
 import { useModalState } from '@hooks/useModalState'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
+import { useRunAfterDelay } from '@hooks/useRunAfterDelay'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -67,9 +69,12 @@ type UseSwapFormResult = {
     handleReceiveAssetSelected: (asset: AssetWithAccountBalance) => void
     handleConfigApply: (result: SwapConfigurationResult) => void
     handleConfirmSwap: () => void
+    handleOpenConfirm: () => void
+    handleCloseConfirm: () => void
 }
 
 const QUOTE_DEBOUNCE_MS = 500
+const SUCCESS_DISPLAY_MS = 3000
 
 export const useSwapForm = (): UseSwapFormResult => {
     const {
@@ -92,6 +97,12 @@ export const useSwapForm = (): UseSwapFormResult => {
     const confirmModal = useModalState()
     const selectedAccount = useSelectedAccount()
     const deviceId = useDeviceID(network)
+    const prefetchProviders = usePrefetchProviders()
+
+    useEffect(() => {
+        prefetchProviders()
+    }, [prefetchProviders])
+
     const { mutateAsync: calculateSwapAmount } =
         useCalculateSwapAmountMutation()
     const calculateSwapAmountRef = useRef(calculateSwapAmount)
@@ -293,23 +304,35 @@ export const useSwapForm = (): UseSwapFormResult => {
         [setToAsset, resetQuoteMutation],
     )
 
+    const successCloseTimer = useRunAfterDelay()
+
+    const handleCloseConfirm = useCallback(() => {
+        successCloseTimer.flush()
+        confirmModal.close()
+    }, [confirmModal, successCloseTimer])
+
     const handleConfirmSwap = useCallback(async () => {
         if (!selectedQuote?.quoteIdStr) return
         const success = await swapExecution.execute(selectedQuote.quoteIdStr)
-        if (success) {
-            confirmModal.close()
+        if (!success) return
+
+        const fromUnit = selectedQuote.assetIn.unitName ?? ''
+        const toUnit = selectedQuote.assetOut.unitName ?? ''
+
+        successCloseTimer.schedule(() => {
             successToast(
                 t('swap.execution.success_title'),
                 t('swap.execution.success_body', {
-                    fromAsset: selectedQuote.assetIn.unitName ?? '',
-                    toAsset: selectedQuote.assetOut.unitName ?? '',
+                    fromAsset: fromUnit,
+                    toAsset: toUnit,
                 }),
             )
             setPayAmount(null)
             setReceiveAmount(null)
             setSelectedQuote(null)
             resetQuoteMutation()
-        }
+            confirmModal.close()
+        }, SUCCESS_DISPLAY_MS)
     }, [
         selectedQuote,
         confirmModal,
@@ -317,7 +340,14 @@ export const useSwapForm = (): UseSwapFormResult => {
         successToast,
         t,
         resetQuoteMutation,
+        successCloseTimer,
     ])
+
+    const handleOpenConfirm = useCallback(() => {
+        successCloseTimer.flush()
+        swapExecution.reset()
+        confirmModal.open()
+    }, [swapExecution, confirmModal, successCloseTimer])
 
     const handleConfigApply = useCallback(
         (result: SwapConfigurationResult) => {
@@ -368,5 +398,7 @@ export const useSwapForm = (): UseSwapFormResult => {
         handleReceiveAssetSelected,
         handleConfigApply,
         handleConfirmSwap,
+        handleOpenConfirm,
+        handleCloseConfirm,
     }
 }

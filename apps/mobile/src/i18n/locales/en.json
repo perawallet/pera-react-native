@@ -1321,6 +1321,7 @@
             "minimum_received": "Minimum Received",
             "review_swap": "Review Swap",
             "confirm_swap": "Confirm Swap",
+            "slide_to_confirm": "Slide To Confirm",
             "high_price_impact_warning": "This swap has a high price impact. You may receive significantly fewer tokens than expected.",
             "quote_error": "Unable to get quotes. Please try again."
         },
@@ -1330,7 +1331,7 @@
             "finalizing": "Finalizing...",
             "error": "Transaction failed. Please try again.",
             "success_title": "Swap Complete",
-            "success_body": "Swapped {{fromAsset}} for {{toAsset}}",
+            "success_body": "{{fromAsset}} to {{toAsset}} swap successfully completed",
             "user_rejected": "Swap cancelled"
         },
         "signing": {

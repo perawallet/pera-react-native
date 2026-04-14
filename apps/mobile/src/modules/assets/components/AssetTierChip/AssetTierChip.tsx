@@ -12,27 +12,34 @@
 
 import { PWIcon, PWText, PWView } from '@components/core'
 import { getVerificationIcon } from '../../utils/verification'
-import { useStyles } from './styles'
+import { useStyles, type AssetTierChipSize } from './styles'
 
 export type AssetTierChipProps = {
     unitName?: string
     verificationTier: string
+    size?: AssetTierChipSize
 }
 
 export const AssetTierChip = ({
     unitName,
     verificationTier,
+    size = 'sm',
 }: AssetTierChipProps) => {
-    const styles = useStyles()
+    const styles = useStyles({ size })
     const icon = getVerificationIcon(verificationTier)
 
     return (
         <PWView style={styles.container}>
-            <PWText style={styles.label}>{unitName ?? ''}</PWText>
+            <PWText
+                variant={size === 'md' ? 'h4' : 'body'}
+                style={styles.label}
+            >
+                {unitName ?? ''}
+            </PWText>
             {icon && (
                 <PWIcon
                     name={icon}
-                    size='xs'
+                    size={size === 'md' ? 'sm' : 'xs'}
                 />
             )}
         </PWView>

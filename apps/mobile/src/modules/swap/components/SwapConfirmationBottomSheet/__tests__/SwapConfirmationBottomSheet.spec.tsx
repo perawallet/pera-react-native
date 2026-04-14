@@ -32,6 +32,10 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     }),
 }))
 
+vi.mock('@perawallet/wallet-core-swaps', () => ({
+    useProvidersQuery: () => ({ data: undefined }),
+}))
+
 vi.mock('@perawallet/wallet-core-assets', () => ({
     formatAssetAmount: (amount: Decimal, asset: { unitName?: string }) =>
         `${amount.toString()} ${asset.unitName ?? ''}`.trim(),
@@ -45,8 +49,17 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     }),
 }))
 
-vi.mock('@modules/accounts/components/AccountIcon', () => ({
-    AccountIcon: () => <div data-testid='account-icon' />,
+vi.mock('@modules/accounts/components/AccountDisplay', () => ({
+    AccountDisplay: ({
+        account,
+    }: {
+        account?: { name?: string; address?: string }
+    }) => (
+        <div data-testid='account-display'>
+            <span>{account?.name}</span>
+            <span>{account?.address}</span>
+        </div>
+    ),
 }))
 
 vi.mock('@modules/assets/components/AssetIcon', () => ({
@@ -124,23 +137,26 @@ vi.mock('@components/core', () => ({
         />
     ),
     PWDivider: () => <hr />,
-    PWButton: ({
+    PWImage: () => <div data-testid='pw-image' />,
+    PWSlideToConfirm: ({
         title,
-        onPress,
+        onConfirm,
         testID,
         isLoading,
+        isConfirmed,
     }: {
         title: string
-        onPress: () => void
+        onConfirm: () => void
         testID?: string
-        variant?: string
         isLoading?: boolean
+        isConfirmed?: boolean
         style?: unknown
     }) => (
         <button
             data-testid={testID}
-            onClick={onPress}
+            onClick={onConfirm}
             data-loading={isLoading}
+            data-confirmed={isConfirmed}
         >
             {title}
         </button>
@@ -170,7 +186,8 @@ const createQuote = (overrides: Partial<SwapQuote> = {}): SwapQuote => ({
     slippage: new Decimal('0.5'),
     peraFeeAmount: new Decimal('1000'),
     exchangeFeeAmount: new Decimal('2000'),
-    provider: 'Tinyman',
+    provider: 'tinyman',
+    providerDisplayName: 'Tinyman',
     ...overrides,
 })
 
@@ -201,8 +218,8 @@ describe('SwapConfirmationBottomSheet', () => {
     it('renders pay and receive amounts', () => {
         render(<SwapConfirmationBottomSheet {...defaultProps} />)
 
-        expect(screen.getByText(/1000000 ALGO/)).toBeDefined()
-        expect(screen.getByText(/150000 USDC/)).toBeDefined()
+        expect(screen.getByText('1000000')).toBeDefined()
+        expect(screen.getByText('150000')).toBeDefined()
     })
 
     it('renders quote details', () => {
@@ -210,6 +227,7 @@ describe('SwapConfirmationBottomSheet', () => {
 
         expect(screen.getByText('swap.quote.rate')).toBeDefined()
         expect(screen.getByText('swap.quote.provider')).toBeDefined()
+        expect(screen.getByText('Tinyman')).toBeDefined()
         expect(screen.getByText('swap.quote.slippage_tolerance')).toBeDefined()
         expect(screen.getByText('swap.quote.price_impact')).toBeDefined()
         expect(screen.getByText('swap.quote.minimum_received')).toBeDefined()
@@ -253,7 +271,7 @@ describe('SwapConfirmationBottomSheet', () => {
             />,
         )
 
-        fireEvent.click(screen.getByTestId('swap-confirm-button'))
+        fireEvent.click(screen.getByTestId('swap-confirm-slide'))
         expect(onConfirm).toHaveBeenCalledTimes(1)
     })
 
@@ -270,7 +288,7 @@ describe('SwapConfirmationBottomSheet', () => {
         expect(onClose).toHaveBeenCalledTimes(1)
     })
 
-    it('shows signing status text when signing', () => {
+    it('marks the slide-to-confirm as loading while signing', () => {
         render(
             <SwapConfirmationBottomSheet
                 {...defaultProps}
@@ -278,10 +296,14 @@ describe('SwapConfirmationBottomSheet', () => {
             />,
         )
 
-        expect(screen.getByText('swap.execution.signing')).toBeDefined()
+        expect(
+            screen
+                .getByTestId('swap-confirm-slide')
+                .getAttribute('data-loading'),
+        ).toBe('true')
     })
 
-    it('shows submitting status text when submitting', () => {
+    it('marks the slide-to-confirm as loading while submitting', () => {
         render(
             <SwapConfirmationBottomSheet
                 {...defaultProps}
@@ -289,7 +311,26 @@ describe('SwapConfirmationBottomSheet', () => {
             />,
         )
 
-        expect(screen.getByText('swap.execution.submitting')).toBeDefined()
+        expect(
+            screen
+                .getByTestId('swap-confirm-slide')
+                .getAttribute('data-loading'),
+        ).toBe('true')
+    })
+
+    it('marks the slide-to-confirm as confirmed on success', () => {
+        render(
+            <SwapConfirmationBottomSheet
+                {...defaultProps}
+                swapStatus='success'
+            />,
+        )
+
+        expect(
+            screen
+                .getByTestId('swap-confirm-slide')
+                .getAttribute('data-confirmed'),
+        ).toBe('true')
     })
 
     it('shows error banner on error status', () => {

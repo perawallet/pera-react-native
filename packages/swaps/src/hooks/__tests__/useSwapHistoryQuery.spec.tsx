@@ -13,6 +13,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Decimal } from 'decimal.js'
 import React from 'react'
 import { useSwapHistoryQuery } from '../useSwapHistoryQuery'
 import { fetchSwapHistory } from '../../api'
@@ -34,8 +35,8 @@ const mockHistoryItem = {
     transactionGroupId: 'abc123',
     assetIn: mockAsset,
     assetOut: mockAsset,
-    amountIn: '1000000',
-    amountOut: '2000000',
+    amountIn: new Decimal('1000000'),
+    amountOut: new Decimal('2000000'),
     amountInUsdValue: '1.00',
     amountOutUsdValue: '2.00',
 }

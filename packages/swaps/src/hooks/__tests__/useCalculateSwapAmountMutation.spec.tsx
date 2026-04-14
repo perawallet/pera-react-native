@@ -13,6 +13,7 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { Decimal } from 'decimal.js'
 import React from 'react'
 import { useCalculateSwapAmountMutation } from '../useCalculateSwapAmountMutation'
 import { calculateSwapAmount } from '../../api'
@@ -26,8 +27,8 @@ vi.mock('../../api', () => ({
 }))
 
 const mockResult = {
-    amount: '1000000',
-    peraFee: '5000',
+    amount: new Decimal('1000000'),
+    peraFee: new Decimal('5000'),
     peraFeeAssetId: 0,
 }
 

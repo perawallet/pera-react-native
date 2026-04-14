@@ -12,15 +12,15 @@
 
 import {
     PWBottomSheet,
-    PWButton,
     PWDivider,
     PWIcon,
+    PWSlideToConfirm,
     PWText,
     PWToolbar,
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { AccountIcon } from '@modules/accounts/components/AccountIcon'
+import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import type { SwapExecutionStatus } from '../../hooks/useSwapExecution'
 import { useSwapConfirmation } from './useSwapConfirmation'
@@ -51,13 +51,14 @@ export const SwapConfirmationBottomSheet = ({
         inAsset,
         outAsset,
         isProcessing,
-        buttonTitle,
         payDisplay,
         receiveDisplay,
         payFiatDisplay,
         receiveFiatDisplay,
         rateDisplay,
         minimumReceivedDisplay,
+        peraFeeDisplay,
+        exchangeFeeDisplay,
         hasHighPriceImpact,
         priceImpactDisplay,
         priceImpactStyle,
@@ -69,7 +70,7 @@ export const SwapConfirmationBottomSheet = ({
         <PWBottomSheet
             isVisible={isVisible}
             onBackdropPress={isProcessing ? undefined : onClose}
-            size='lg'
+            size='auto'
         >
             <PWView style={styles.container}>
                 <PWToolbar
@@ -86,55 +87,56 @@ export const SwapConfirmationBottomSheet = ({
                                 {t('swap.quote.confirm_swap')}
                             </PWText>
                             {selectedAccount && (
-                                <PWView style={styles.accountRow}>
-                                    <AccountIcon
-                                        account={selectedAccount}
-                                        size='sm'
-                                    />
-                                    <PWText
-                                        variant='caption'
-                                        style={styles.accountName}
-                                    >
-                                        {selectedAccount.name}
-                                    </PWText>
-                                </PWView>
+                                <AccountDisplay
+                                    account={selectedAccount}
+                                    iconProps={{ size: 'sm' }}
+                                    textProps={{ variant: 'caption' }}
+                                    showChevron={false}
+                                    style={styles.accountRow}
+                                />
                             )}
                         </PWView>
                     }
                     paddingStyle='dense'
                 />
 
-                <SwapAssetSection
-                    asset={inAsset}
-                    amountDisplay={payDisplay}
-                    fiatDisplay={payFiatDisplay}
-                    unitName={quote.assetIn.unitName}
-                    verificationTier={quote.assetIn.verificationTier}
-                />
+                <PWView style={styles.assetsGroup}>
+                    <SwapAssetSection
+                        asset={inAsset}
+                        amountDisplay={payDisplay}
+                        fiatDisplay={payFiatDisplay}
+                        unitName={quote.assetIn.unitName}
+                        verificationTier={quote.assetIn.verificationTier}
+                    />
 
-                <PWView style={styles.toDivider}>
-                    <PWDivider />
-                    <PWText
-                        variant='caption'
-                        style={styles.toLabel}
-                    >
-                        {t('swap.form.to')}
-                    </PWText>
-                    <PWDivider />
+                    <PWView style={styles.toDivider}>
+                        <PWDivider style={styles.toDividerLine} />
+                        <PWText
+                            variant='caption'
+                            style={styles.toLabel}
+                        >
+                            {t('swap.form.to')}
+                        </PWText>
+                        <PWDivider style={styles.toDividerLine} />
+                    </PWView>
+
+                    <SwapAssetSection
+                        asset={outAsset}
+                        amountDisplay={receiveDisplay}
+                        fiatDisplay={receiveFiatDisplay}
+                        unitName={quote.assetOut.unitName}
+                        verificationTier={quote.assetOut.verificationTier}
+                    />
                 </PWView>
 
-                <SwapAssetSection
-                    asset={outAsset}
-                    amountDisplay={receiveDisplay}
-                    fiatDisplay={receiveFiatDisplay}
-                    unitName={quote.assetOut.unitName}
-                    verificationTier={quote.assetOut.verificationTier}
-                />
+                <PWDivider style={styles.detailsDivider} />
 
                 <SwapDetailsSection
                     quote={quote}
                     rateDisplay={rateDisplay}
                     minimumReceivedDisplay={minimumReceivedDisplay}
+                    peraFeeDisplay={peraFeeDisplay}
+                    exchangeFeeDisplay={exchangeFeeDisplay}
                     priceImpactDisplay={priceImpactDisplay}
                     priceImpactStyle={priceImpactStyle}
                 />
@@ -161,14 +163,13 @@ export const SwapConfirmationBottomSheet = ({
                     </PWView>
                 )}
 
-                {/* TODO: Replace with slide-to-confirm component */}
-                <PWButton
-                    variant='primary'
-                    title={buttonTitle}
-                    onPress={onConfirm}
+                <PWSlideToConfirm
+                    title={t('swap.quote.slide_to_confirm')}
+                    onConfirm={onConfirm}
                     isLoading={isProcessing}
+                    isConfirmed={swapStatus === 'success'}
                     style={styles.confirmButton}
-                    testID='swap-confirm-button'
+                    testID='swap-confirm-slide'
                 />
             </PWView>
         </PWBottomSheet>
