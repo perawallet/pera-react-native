@@ -30,17 +30,26 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
 
 describe('SettingsSecurityScreen', () => {
     const mockCheckPinEnabled = vi.fn()
-    const mockCheckBiometricsEnabled = vi.fn()
-    const mockCheckBiometricsAvailable = vi.fn()
     const mockSavePin = vi.fn()
     const mockEnableBiometrics = vi.fn()
     const mockDisableBiometrics = vi.fn()
 
+    let biometricsMock: {
+        isEnabled: boolean
+        isAvailable: boolean
+        enableBiometrics: Mock
+        disableBiometrics: Mock
+    }
+
     beforeEach(() => {
         vi.clearAllMocks()
         mockCheckPinEnabled.mockResolvedValue(false)
-        mockCheckBiometricsEnabled.mockResolvedValue(false)
-        mockCheckBiometricsAvailable.mockResolvedValue(false)
+        biometricsMock = {
+            isEnabled: false,
+            isAvailable: false,
+            enableBiometrics: mockEnableBiometrics,
+            disableBiometrics: mockDisableBiometrics,
+        }
         ;(usePinCode as Mock).mockReturnValue({
             failedAttempts: 0,
             lockoutEndTime: null,
@@ -56,14 +65,7 @@ describe('SettingsSecurityScreen', () => {
             setLockoutEndTime: vi.fn(),
             setAutoLockStartedAt: vi.fn(),
         })
-        ;(useBiometrics as Mock).mockReturnValue({
-            checkBiometricsEnabled: mockCheckBiometricsEnabled,
-            checkBiometricsAvailable: mockCheckBiometricsAvailable,
-            setBiometricsCode: vi.fn(),
-            enableBiometrics: mockEnableBiometrics,
-            disableBiometrics: mockDisableBiometrics,
-            authenticateWithBiometrics: vi.fn(),
-        })
+        ;(useBiometrics as Mock).mockImplementation(() => biometricsMock)
     })
 
     it('renders correctly', () => {
@@ -112,7 +114,7 @@ describe('SettingsSecurityScreen', () => {
 
     it('does not show biometrics option when PIN is disabled', async () => {
         mockCheckPinEnabled.mockResolvedValue(false)
-        mockCheckBiometricsAvailable.mockResolvedValue(true)
+        biometricsMock.isAvailable = true
 
         const { queryByText } = render(<SettingsSecurityScreen />)
 
@@ -125,7 +127,7 @@ describe('SettingsSecurityScreen', () => {
 
     it('does not show biometrics option when biometrics unavailable', async () => {
         mockCheckPinEnabled.mockResolvedValue(true)
-        mockCheckBiometricsAvailable.mockResolvedValue(false)
+        biometricsMock.isAvailable = false
 
         const { queryByText, findByText } = render(<SettingsSecurityScreen />)
 
@@ -136,7 +138,7 @@ describe('SettingsSecurityScreen', () => {
 
     it('shows biometrics option when PIN is enabled and biometrics available', async () => {
         mockCheckPinEnabled.mockResolvedValue(true)
-        mockCheckBiometricsAvailable.mockResolvedValue(true)
+        biometricsMock.isAvailable = true
 
         const { findByText } = render(<SettingsSecurityScreen />)
 

@@ -28,8 +28,6 @@ vi.mock('@perawallet/wallet-core-settings', () => ({
 describe('useSettingsSecurityScreen', () => {
     const mockCheckPinEnabled = vi.fn()
     const mockSavePin = vi.fn()
-    const mockCheckBiometricsEnabled = vi.fn()
-    const mockCheckBiometricsAvailable = vi.fn()
     const mockEnableBiometrics = vi.fn()
     const mockDisableBiometrics = vi.fn()
     const mockSetPreference = vi.fn()
@@ -38,16 +36,14 @@ describe('useSettingsSecurityScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockCheckPinEnabled.mockResolvedValue(false)
-        mockCheckBiometricsEnabled.mockResolvedValue(false)
-        mockCheckBiometricsAvailable.mockResolvedValue(false)
         mockGetPreference.mockReturnValue(undefined)
         ;(usePinCode as Mock).mockReturnValue({
             checkPinEnabled: mockCheckPinEnabled,
             savePin: mockSavePin,
         })
         ;(useBiometrics as Mock).mockReturnValue({
-            checkBiometricsEnabled: mockCheckBiometricsEnabled,
-            checkBiometricsAvailable: mockCheckBiometricsAvailable,
+            isEnabled: false,
+            isAvailable: false,
             enableBiometrics: mockEnableBiometrics,
             disableBiometrics: mockDisableBiometrics,
         })
@@ -69,15 +65,12 @@ describe('useSettingsSecurityScreen', () => {
         expect(result.current.pinViewMode).toBeNull()
     })
 
-    it('should check settings on mount', async () => {
+    it('should check pin settings on mount', async () => {
         renderHook(() => useSettingsSecurityScreen())
 
         await waitFor(() => {
             expect(mockCheckPinEnabled).toHaveBeenCalled()
         })
-
-        expect(mockCheckBiometricsEnabled).toHaveBeenCalled()
-        expect(mockCheckBiometricsAvailable).toHaveBeenCalled()
     })
 
     it('should update isPinEnabled when checkPinEnabled returns true', async () => {
@@ -90,24 +83,30 @@ describe('useSettingsSecurityScreen', () => {
         })
     })
 
-    it('should update isBiometricEnabled when checkBiometricsEnabled returns true', async () => {
-        mockCheckBiometricsEnabled.mockResolvedValue(true)
+    it('should reflect isBiometricEnabled from useBiometrics hook', () => {
+        ;(useBiometrics as Mock).mockReturnValue({
+            isEnabled: true,
+            isAvailable: false,
+            enableBiometrics: mockEnableBiometrics,
+            disableBiometrics: mockDisableBiometrics,
+        })
 
         const { result } = renderHook(() => useSettingsSecurityScreen())
 
-        await waitFor(() => {
-            expect(result.current.isBiometricEnabled).toBe(true)
-        })
+        expect(result.current.isBiometricEnabled).toBe(true)
     })
 
-    it('should update isBiometricsAvailable when checkBiometricsAvailable returns true', async () => {
-        mockCheckBiometricsAvailable.mockResolvedValue(true)
+    it('should reflect isBiometricsAvailable from useBiometrics hook', () => {
+        ;(useBiometrics as Mock).mockReturnValue({
+            isEnabled: false,
+            isAvailable: true,
+            enableBiometrics: mockEnableBiometrics,
+            disableBiometrics: mockDisableBiometrics,
+        })
 
         const { result } = renderHook(() => useSettingsSecurityScreen())
 
-        await waitFor(() => {
-            expect(result.current.isBiometricsAvailable).toBe(true)
-        })
+        expect(result.current.isBiometricsAvailable).toBe(true)
     })
 
     describe('handlePinToggle', () => {

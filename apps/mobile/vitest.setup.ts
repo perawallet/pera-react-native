@@ -27,10 +27,9 @@ vi.mock('@perawallet/wallet-extension-platform-driver', () => ({
             setUserProperty: vi.fn(),
         },
         biometrics: {
-            isSensorAvailable: vi.fn().mockResolvedValue(false),
-            simplePrompt: vi.fn().mockResolvedValue({ success: false }),
-            createKeys: vi.fn(),
-            deleteKeys: vi.fn(),
+            getSupportedBiometricType: vi.fn().mockResolvedValue(null),
+            checkBiometricsAvailable: vi.fn().mockResolvedValue(false),
+            authenticate: vi.fn().mockResolvedValue(false),
         },
         crashReporting: {
             log: vi.fn(),
@@ -90,10 +89,9 @@ vi.mock('@perawallet/wallet-extension-provider', () => {
             setUserProperty: vi.fn(),
         },
         biometrics: {
-            isSensorAvailable: vi.fn().mockResolvedValue(false),
-            simplePrompt: vi.fn().mockResolvedValue({ success: false }),
-            createKeys: vi.fn(),
-            deleteKeys: vi.fn(),
+            getSupportedBiometricType: vi.fn().mockResolvedValue(null),
+            checkBiometricsAvailable: vi.fn().mockResolvedValue(false),
+            authenticate: vi.fn().mockResolvedValue(false),
         },
         crashReporting: {
             log: vi.fn(),
