@@ -154,6 +154,9 @@ export class SyncService {
             const accountResults = await Promise.allSettled(
                 accounts.map(a => fetchAndPersistAccount(a.address, network)),
             )
+            this.logFailures('account', accountResults, network, i =>
+                accounts[i]?.address,
+            )
             if (this.hasRateLimitFailure(accountResults)) {
                 hasRateLimitError = true
             }
@@ -168,6 +171,12 @@ export class SyncService {
                 fetchAndPersistAssets(assetIds, network),
                 fetchAndPersistPrices(assetIds, network),
             ])
+            this.logFailures(
+                'asset-metadata-or-prices',
+                assetResults,
+                network,
+                i => (i === 0 ? 'assets' : 'prices'),
+            )
             if (this.hasRateLimitFailure(assetResults)) {
                 hasRateLimitError = true
             }
@@ -178,6 +187,9 @@ export class SyncService {
                     fetchAndPersistTransactions(a.address, network),
                 ),
             )
+            this.logFailures('transactions', txResults, network, i =>
+                accounts[i]?.address,
+            )
             if (this.hasRateLimitFailure(txResults)) {
                 hasRateLimitError = true
             }
@@ -186,6 +198,36 @@ export class SyncService {
         if (hasRateLimitError) {
             throw new Error('Rate limited by API')
         }
+    }
+
+    private logFailures(
+        phase: string,
+        results: PromiseSettledResult<unknown>[],
+        network: Network,
+        subject: (index: number) => string | undefined,
+    ): void {
+        results.forEach((result, index) => {
+            if (result.status !== 'rejected') return
+            // Rate limits are handled separately via backoff — skip noise.
+            if (
+                result.reason instanceof Error &&
+                result.reason.message.includes('429')
+            ) {
+                return
+            }
+            logger.warn('Sync step failed', {
+                phase,
+                network,
+                subject: subject(index),
+                error:
+                    result.reason instanceof Error
+                        ? {
+                              message: result.reason.message,
+                              stack: result.reason.stack,
+                          }
+                        : result.reason,
+            })
+        })
     }
 
     private hasRateLimitFailure(

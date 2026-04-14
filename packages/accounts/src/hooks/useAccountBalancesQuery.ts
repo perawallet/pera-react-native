@@ -13,6 +13,7 @@
 import { useQueries } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
+import { logger, type Network } from '@perawallet/wallet-core-shared'
 import type {
     AccountBalances,
     AccountBalancesWithTotals,
@@ -30,12 +31,18 @@ import { getAccountBalancesQueryKey } from './querykeys'
 import {
     getAccountBalance,
     getAccountHoldings,
+    getAccountPortfolioValue,
     type AccountHoldingsFilters,
 } from '../db'
+import { fetchAndPersistAccount } from '../sync/account-syncer'
 
 type AccountDbSnapshot = {
     algoBalance: Decimal
     holdings: Array<{ assetId: string; amount: Decimal }>
+    /** Portfolio total in ALGO, aggregated in SQL */
+    portfolioAlgoValue: Decimal
+    /** Current ALGO/USD price from DB; used to derive per-asset algoValue */
+    algoUsdPrice: Decimal
 }
 
 async function readAccountFromDb(
@@ -43,19 +50,48 @@ async function readAccountFromDb(
     network: string,
     filters?: AccountHoldingsFilters,
 ): Promise<AccountDbSnapshot> {
-    const balance = await getAccountBalance({
+    // If this account has no balance row yet the background sync either
+    // hasn't run or silently failed. Pull directly from the chain before
+    // reading so the UI recovers without waiting for the next poll cycle.
+    const existing = await getAccountBalance({
         accountAddress: address,
         network,
     })
-    const holdings = await getAccountHoldings({
-        accountAddress: address,
-        network,
-        ...filters,
-    })
+    if (!existing) {
+        try {
+            await fetchAndPersistAccount(address, network as Network)
+        } catch (error) {
+            logger.warn('On-demand account fetch failed', {
+                address,
+                network,
+                error:
+                    error instanceof Error
+                        ? { message: error.message, stack: error.stack }
+                        : error,
+            })
+        }
+    }
+
+    const [balance, holdings, portfolio] = await Promise.all([
+        getAccountBalance({ accountAddress: address, network }),
+        getAccountHoldings({ accountAddress: address, network, ...filters }),
+        getAccountPortfolioValue({
+            accountAddress: address,
+            network,
+            ...filters,
+        }),
+    ])
+
+    const algoBalance = balance?.algoBalance ?? new Decimal(0)
+    const portfolioAlgoValue = portfolio.algoUsdPrice.isZero()
+        ? algoBalance
+        : algoBalance.plus(portfolio.asaUsdTotal.div(portfolio.algoUsdPrice))
 
     return {
-        algoBalance: balance?.algoBalance ?? new Decimal(0),
+        algoBalance,
         holdings,
+        portfolioAlgoValue,
+        algoUsdPrice: portfolio.algoUsdPrice,
     }
 }
 
@@ -108,10 +144,6 @@ export const useAccountBalancesQuery = (
     )
     const { data: assets } = useAssetsQuery(assetIDs)
     const { data: assetPrices } = useAssetPricesQuery(assetIDs)
-    const usdAlgoPrice = useMemo(
-        () => assetPrices?.get(ALGO_ASSET_ID)?.usdPrice ?? new Decimal(0),
-        [assetPrices],
-    )
 
     const {
         accountBalances,
@@ -133,7 +165,11 @@ export const useAccountBalancesQuery = (
         }
 
         const accountBalanceList = results.map(r => {
-            let algoValue = new Decimal(0)
+            // Per-account ALGO/USD price comes from the DB snapshot — the
+            // `account_asset_holdings` table never stores ALGO, so it would
+            // otherwise be absent from `assetPrices` and zero out the
+            // per-asset `algoValue` used for sorting.
+            const usdAlgoPrice = r.data?.algoUsdPrice ?? new Decimal(0)
 
             const assetBalances: AssetWithAccountBalance[] = []
             r.data?.holdings?.forEach(holding => {
@@ -148,7 +184,6 @@ export const useAccountBalancesQuery = (
                 const algoAssetValue = usdAlgoPrice.isZero()
                     ? new Decimal(0)
                     : usdAssetValue.div(usdAlgoPrice)
-                algoValue = algoValue.plus(algoAssetValue)
                 assetBalances.push({
                     assetId: holding.assetId,
                     asset: asset,
@@ -159,7 +194,6 @@ export const useAccountBalancesQuery = (
 
             //Now add algo into the mix
             const algoAmount = r.data?.algoBalance ?? new Decimal(0)
-            algoValue = algoValue.plus(algoAmount)
 
             assetBalances.push({
                 assetId: ALGO_ASSET_ID,
@@ -170,7 +204,7 @@ export const useAccountBalancesQuery = (
 
             return {
                 assetBalances,
-                algoValue,
+                algoValue: r.data?.portfolioAlgoValue ?? new Decimal(0),
                 isPending: r.isPending,
                 isFetched: r.isFetched,
                 isRefetching: r.isRefetching,

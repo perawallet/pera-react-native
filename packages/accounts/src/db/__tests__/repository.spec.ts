@@ -20,6 +20,7 @@ import {
 import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import {
     upsertAssets,
+    upsertAssetPrices,
     PeraAssetType,
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
@@ -32,6 +33,7 @@ import {
     getAccountBalance,
     getAllAccountBalances,
     getAllAssetIdsForNetwork,
+    getAccountPortfolioValue,
 } from '../repository'
 
 describe('account repository', () => {
@@ -642,6 +644,138 @@ describe('account repository', () => {
             })
 
             expect(result.sort()).toEqual(['100', '200', '300'])
+        })
+    })
+
+    describe('getAccountPortfolioValue', () => {
+        const makeAsset = (
+            assetId: string,
+            decimals: number,
+            type: (typeof PeraAssetType)[keyof typeof PeraAssetType] = PeraAssetType.standard_asset,
+        ): PeraAsset => ({
+            assetId,
+            decimals,
+            creator: { address: 'CREATOR' },
+            totalSupply: new Decimal(1),
+            peraMetadata: {
+                isDeleted: false,
+                verificationTier: 'unverified',
+                isFavorited: false,
+                isPriceAlertEnabled: false,
+                type,
+            },
+        })
+
+        beforeEach(async () => {
+            await upsertAccountBalance({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                algoBalance: new Decimal(5),
+                totalAssetsOptedIn: 3,
+                totalCreatedAssets: 0,
+                totalAppsOptedIn: 0,
+                minBalance: new Decimal(0),
+                status: 'Online',
+                authAddress: null,
+            })
+            await upsertAssets({
+                db,
+                items: [
+                    makeAsset('456', 2), // token with 2 decimals
+                    makeAsset('789', 6), // token with 6 decimals
+                    makeAsset('999', 0, PeraAssetType.collectible),
+                ],
+                network: 'mainnet',
+            })
+            await upsertAssetPrices({
+                db,
+                prices: [
+                    { assetId: '0', usdPrice: new Decimal(2) },
+                    { assetId: '456', usdPrice: new Decimal(10) },
+                    { assetId: '789', usdPrice: new Decimal('0.5') },
+                    { assetId: '999', usdPrice: new Decimal(100) },
+                ],
+                network: 'mainnet',
+            })
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [
+                    { assetId: '456', amount: new Decimal(1000) }, // 10 tokens
+                    { assetId: '789', amount: new Decimal(2000000) }, // 2 tokens
+                    { assetId: '999', amount: new Decimal(1) }, // 1 NFT
+                ],
+                network: 'mainnet',
+            })
+        })
+
+        it('aggregates algo balance, ASA USD total, and ALGO price in one query', async () => {
+            const result = await getAccountPortfolioValue({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+
+            expect(result.algoBalance).toEqual(new Decimal(5))
+            expect(result.algoUsdPrice).toEqual(new Decimal(2))
+            // 10 * $10 + 2 * $0.50 + 1 * $100 = $201
+            expect(result.asaUsdTotal.toNumber()).toBeCloseTo(201, 10)
+        })
+
+        it('excludes NFTs when hideNfts filter is applied', async () => {
+            const result = await getAccountPortfolioValue({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+                hideNfts: true,
+            })
+
+            // 10 * $10 + 2 * $0.50 = $101, NFT contribution removed
+            expect(result.asaUsdTotal.toNumber()).toBeCloseTo(101, 10)
+        })
+
+        it('drops holdings without a price row from the sum', async () => {
+            await refreshAccountHoldings({
+                db,
+                accountAddress: 'ADDR1',
+                holdings: [
+                    { assetId: '456', amount: new Decimal(1000) },
+                    { assetId: '321', amount: new Decimal(50000) }, // no price row
+                ],
+                network: 'mainnet',
+            })
+
+            const result = await getAccountPortfolioValue({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'mainnet',
+            })
+
+            // Only priced '456' contributes: 10 * $10 = $100
+            expect(result.asaUsdTotal.toNumber()).toBeCloseTo(100, 10)
+        })
+
+        it('returns zeros for an unknown account', async () => {
+            const result = await getAccountPortfolioValue({
+                db,
+                accountAddress: 'UNKNOWN',
+                network: 'mainnet',
+            })
+
+            expect(result.algoBalance).toEqual(new Decimal(0))
+            expect(result.asaUsdTotal).toEqual(new Decimal(0))
+        })
+
+        it('returns zero ALGO price when asset_prices has no ALGO row', async () => {
+            const result = await getAccountPortfolioValue({
+                db,
+                accountAddress: 'ADDR1',
+                network: 'testnet', // nothing seeded on testnet
+            })
+
+            expect(result.algoUsdPrice).toEqual(new Decimal(0))
+            expect(result.asaUsdTotal).toEqual(new Decimal(0))
         })
     })
 })

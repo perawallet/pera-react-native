@@ -257,6 +257,43 @@ describe('SyncService', () => {
         service.stop()
     })
 
+    it('logs per-account sync errors instead of swallowing them', async () => {
+        const { fetchAndPersistAccount } = await import(
+            '@perawallet/wallet-core-accounts'
+        )
+        const { logger } = await import('@perawallet/wallet-core-shared')
+
+        vi.mocked(fetchAndPersistAccount).mockImplementation(
+            async (address: string) => {
+                if (address === 'ADDR2') {
+                    throw new Error('algod network error')
+                }
+            },
+        )
+
+        service.start()
+        vi.useRealTimers()
+        await new Promise(resolve => setTimeout(resolve, 50))
+        vi.useFakeTimers()
+
+        expect(logger.warn).toHaveBeenCalledWith(
+            'Sync step failed',
+            expect.objectContaining({
+                phase: 'account',
+                network: 'mainnet',
+                subject: 'ADDR2',
+                error: expect.objectContaining({
+                    message: 'algod network error',
+                }),
+            }),
+        )
+
+        vi.mocked(fetchAndPersistAccount).mockImplementation(() =>
+            Promise.resolve(),
+        )
+        service.stop()
+    })
+
     it('does not sync when no accounts exist', async () => {
         const originalGetState = vi.fn(() => ({ accounts: [] }))
         vi.mocked(

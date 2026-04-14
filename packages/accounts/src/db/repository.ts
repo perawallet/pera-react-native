@@ -10,10 +10,16 @@
  limitations under the License
  */
 
-import { eq, and, inArray, notInArray, ne, or, isNull } from 'drizzle-orm'
+import { eq, and, inArray, notInArray, ne, or, isNull, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
-import { AssetsPeraSchema, PeraAssetType } from '@perawallet/wallet-core-assets'
+import {
+    ALGO_ASSET_ID,
+    AssetPricesSchema,
+    AssetsNodeSchema,
+    AssetsPeraSchema,
+    PeraAssetType,
+} from '@perawallet/wallet-core-assets'
 import { AccountAssetHoldingsSchema, AccountBalancesSchema } from './schema'
 
 export type HoldingRow = {
@@ -398,4 +404,162 @@ export async function getAllAssetIdsForNetwork({
         .all()
 
     return rows.map(r => r.assetId.toString())
+}
+
+export type AccountPortfolioValue = {
+    /** Native ALGO balance in display units (ALGOs) */
+    algoBalance: Decimal
+    /** Σ over filtered ASA holdings of (amount / 10^decimals) * usdPrice */
+    asaUsdTotal: Decimal
+    /** Current ALGO/USD price; zero when not yet cached */
+    algoUsdPrice: Decimal
+}
+
+type GetAccountPortfolioValueParams = {
+    db?: Database
+    accountAddress: string
+    network: string
+} & AccountHoldingsFilters
+
+/**
+ * Aggregates the account's portfolio value directly in SQL.
+ *
+ * Returns the native ALGO balance, the current ALGO/USD price, and the
+ * sum over all priced ASA holdings (filtered by the same rules as
+ * {@link getAccountHoldings}) of `(amount / 10^decimals) * usdPrice` in USD.
+ *
+ * The caller composes the final "portfolio in ALGO" figure as
+ * `algoBalance + asaUsdTotal / algoUsdPrice`.
+ *
+ * Holdings without a price row are dropped from the sum (INNER JOIN on
+ * `asset_prices`), matching the previous JS behavior that defaulted missing
+ * prices to zero. The multiplication uses SQLite REAL arithmetic, same as
+ * the existing `decimalSum` helper — acceptable for display values.
+ */
+export async function getAccountPortfolioValue({
+    db = getDatabase(),
+    accountAddress,
+    network,
+    hideZeroBalance,
+    hideNfts,
+    hideOptedInNfts,
+    excludeAssetTypes,
+}: GetAccountPortfolioValueParams): Promise<AccountPortfolioValue> {
+    const conditions = [
+        eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
+        eq(AccountAssetHoldingsSchema.network, network),
+    ]
+
+    if (hideZeroBalance) {
+        conditions.push(ne(AccountAssetHoldingsSchema.amount, new Decimal(0)))
+    }
+    if (hideNfts) {
+        conditions.push(
+            or(
+                isNull(AssetsPeraSchema.assetType),
+                ne(AssetsPeraSchema.assetType, PeraAssetType.collectible),
+            )!,
+        )
+    } else if (hideOptedInNfts) {
+        conditions.push(
+            or(
+                isNull(AssetsPeraSchema.assetType),
+                ne(AssetsPeraSchema.assetType, PeraAssetType.collectible),
+                ne(AccountAssetHoldingsSchema.amount, new Decimal(0)),
+            )!,
+        )
+    }
+    if (excludeAssetTypes?.length) {
+        conditions.push(
+            or(
+                isNull(AssetsPeraSchema.assetType),
+                notInArray(AssetsPeraSchema.assetType, excludeAssetTypes),
+            )!,
+        )
+    }
+
+    // One SUM over the joined holdings/prices/decimals. REAL arithmetic is
+    // acceptable here — same precision profile as the shared `decimalSum`
+    // helper used elsewhere for display totals. `pow()` requires the SQLite
+    // math extension, enabled via `SQLITE_ENABLE_MATH_FUNCTIONS` in both
+    // platforms' build configs (see apps/mobile/ios/Podfile post_install and
+    // apps/mobile/android/gradle.properties).
+    const asaTotalExpr = sql<string>`CAST(COALESCE(SUM(
+        CAST(${AccountAssetHoldingsSchema.amount} AS REAL)
+        * CAST(${AssetPricesSchema.usdPrice} AS REAL)
+        / pow(10, COALESCE(${AssetsNodeSchema.decimals}, 0))
+    ), 0) AS TEXT)`
+
+    const [asaRow, balanceRow, algoPriceRow] = await Promise.all([
+        db
+            .select({ asaUsdTotal: asaTotalExpr })
+            .from(AccountAssetHoldingsSchema)
+            .innerJoin(
+                AssetPricesSchema,
+                and(
+                    eq(
+                        AccountAssetHoldingsSchema.assetId,
+                        AssetPricesSchema.assetId,
+                    ),
+                    eq(
+                        AccountAssetHoldingsSchema.network,
+                        AssetPricesSchema.network,
+                    ),
+                ),
+            )
+            .leftJoin(
+                AssetsNodeSchema,
+                and(
+                    eq(
+                        AccountAssetHoldingsSchema.assetId,
+                        AssetsNodeSchema.assetId,
+                    ),
+                    eq(
+                        AccountAssetHoldingsSchema.network,
+                        AssetsNodeSchema.network,
+                    ),
+                ),
+            )
+            .leftJoin(
+                AssetsPeraSchema,
+                and(
+                    eq(
+                        AccountAssetHoldingsSchema.assetId,
+                        AssetsPeraSchema.assetId,
+                    ),
+                    eq(
+                        AccountAssetHoldingsSchema.network,
+                        AssetsPeraSchema.network,
+                    ),
+                ),
+            )
+            .where(and(...conditions))
+            .all(),
+        db
+            .select({ algoBalance: AccountBalancesSchema.algoBalance })
+            .from(AccountBalancesSchema)
+            .where(
+                and(
+                    eq(AccountBalancesSchema.accountAddress, accountAddress),
+                    eq(AccountBalancesSchema.network, network),
+                ),
+            )
+            .all(),
+        db
+            .select({ usdPrice: AssetPricesSchema.usdPrice })
+            .from(AssetPricesSchema)
+            .where(
+                and(
+                    eq(AssetPricesSchema.assetId, new Decimal(ALGO_ASSET_ID)),
+                    eq(AssetPricesSchema.network, network),
+                ),
+            )
+            .all(),
+    ])
+
+    return {
+        algoBalance: balanceRow[0]?.algoBalance ?? new Decimal(0),
+        algoUsdPrice: algoPriceRow[0]?.usdPrice ?? new Decimal(0),
+        asaUsdTotal: new Decimal(asaRow[0]?.asaUsdTotal ?? '0'),
+    }
 }
