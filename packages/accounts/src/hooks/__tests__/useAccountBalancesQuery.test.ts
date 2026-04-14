@@ -24,14 +24,11 @@ import type { WalletAccount } from '../../models/accounts'
 // Mock DB layer
 const mockGetAccountBalance = vi.fn()
 const mockGetAccountHoldings = vi.fn()
-const mockGetAccountPortfolioValue = vi.fn()
 const mockFetchAndPersistAccount = vi.fn()
 
 vi.mock('../../db', () => ({
     getAccountBalance: (...args: unknown[]) => mockGetAccountBalance(...args),
     getAccountHoldings: (...args: unknown[]) => mockGetAccountHoldings(...args),
-    getAccountPortfolioValue: (...args: unknown[]) =>
-        mockGetAccountPortfolioValue(...args),
 }))
 
 vi.mock('../../sync/account-syncer', () => ({
@@ -40,7 +37,8 @@ vi.mock('../../sync/account-syncer', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
-    const actual = await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
     return {
         ...actual,
         logger: {
@@ -103,11 +101,6 @@ describe('useAccountBalances', () => {
         mockAssetPrices.clear()
         mockGetAccountBalance.mockReturnValue(undefined)
         mockGetAccountHoldings.mockReturnValue([])
-        mockGetAccountPortfolioValue.mockReturnValue({
-            algoBalance: new Decimal(0),
-            asaUsdTotal: new Decimal(0),
-            algoUsdPrice: new Decimal(0),
-        })
         mockFetchAndPersistAccount.mockResolvedValue(undefined)
     })
 
@@ -144,12 +137,6 @@ describe('useAccountBalances', () => {
         mockGetAccountHoldings.mockReturnValue([
             { assetId: '123', amount: new Decimal(100) },
         ])
-        // DB aggregation: no ALGO price → portfolio collapses to ALGO balance
-        mockGetAccountPortfolioValue.mockReturnValue({
-            algoBalance: new Decimal(1),
-            asaUsdTotal: new Decimal(0),
-            algoUsdPrice: new Decimal(0),
-        })
 
         const { result } = renderHook(
             () => useAccountBalancesQuery([account]),
@@ -201,13 +188,6 @@ describe('useAccountBalances', () => {
             { assetId: '456', amount: new Decimal(1000) }, // 10.00 tokens (decimals: 2)
             { assetId: '789', amount: new Decimal(2000000) }, // 2.0 tokens (decimals: 6)
         ])
-        // asaUsdTotal = 10*$10 + 2*$0.50 = $101; algo at $2; algoBalance 5
-        // portfolioAlgoValue = 5 + 101/2 = 55.5
-        mockGetAccountPortfolioValue.mockReturnValue({
-            algoBalance: new Decimal(5),
-            asaUsdTotal: new Decimal(101),
-            algoUsdPrice: new Decimal(2),
-        })
 
         const { result } = renderHook(
             () => useAccountBalancesQuery([account]),
@@ -276,15 +256,6 @@ describe('useAccountBalances', () => {
         await waitFor(() => expect(result.current.isPending).toBe(false))
 
         expect(mockGetAccountHoldings).toHaveBeenCalledWith(
-            expect.objectContaining({
-                accountAddress: 'ADDR1',
-                network: 'mainnet',
-                hideZeroBalance: true,
-                hideNfts: true,
-                hideOptedInNfts: false,
-            }),
-        )
-        expect(mockGetAccountPortfolioValue).toHaveBeenCalledWith(
             expect.objectContaining({
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
@@ -369,11 +340,6 @@ describe('useAccountBalances', () => {
         mockGetAccountHoldings.mockReturnValue([
             { assetId: '999', amount: new Decimal(100) },
         ])
-        mockGetAccountPortfolioValue.mockReturnValue({
-            algoBalance: new Decimal(1),
-            asaUsdTotal: new Decimal(0),
-            algoUsdPrice: new Decimal(1),
-        })
 
         const { result } = renderHook(
             () => useAccountBalancesQuery([account]),
@@ -467,11 +433,6 @@ describe('useAccountAssetBalanceQuery', () => {
         mockAssetPrices.clear()
         mockGetAccountBalance.mockReturnValue(undefined)
         mockGetAccountHoldings.mockReturnValue([])
-        mockGetAccountPortfolioValue.mockReturnValue({
-            algoBalance: new Decimal(0),
-            asaUsdTotal: new Decimal(0),
-            algoUsdPrice: new Decimal(0),
-        })
         mockFetchAndPersistAccount.mockResolvedValue(undefined)
     })
 

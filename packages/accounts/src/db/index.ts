@@ -20,9 +20,7 @@ export {
     getAccountBalance,
     getAllAccountBalances,
     getAllAssetIdsForNetwork,
-    getAccountPortfolioValue,
     type HoldingRow,
     type AccountBalanceRow,
     type AccountHoldingsFilters,
-    type AccountPortfolioValue,
 } from './repository'

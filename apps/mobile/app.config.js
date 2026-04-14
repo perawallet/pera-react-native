@@ -255,10 +255,6 @@ module.exports = {
     // Custom plugin for Podfile modifications (RCT-Folly fix for webassembly)
     './plugins/withPodfileModifications.js',
 
-    // Custom plugin to enable SQLite math functions (pow, log, etc.) used by
-    // in-SQL portfolio aggregation in packages/accounts/src/db/repository.ts
-    './plugins/withSQLiteMathFunctions.js',
-
     // Custom plugin for Xcode 26+ Swift 6.2 import access levels (SE-0409)
     './plugins/withPublicSwiftImports.js',
   ],

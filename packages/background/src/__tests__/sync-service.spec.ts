@@ -258,9 +258,8 @@ describe('SyncService', () => {
     })
 
     it('logs per-account sync errors instead of swallowing them', async () => {
-        const { fetchAndPersistAccount } = await import(
-            '@perawallet/wallet-core-accounts'
-        )
+        const { fetchAndPersistAccount } =
+            await import('@perawallet/wallet-core-accounts')
         const { logger } = await import('@perawallet/wallet-core-shared')
 
         vi.mocked(fetchAndPersistAccount).mockImplementation(

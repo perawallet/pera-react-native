@@ -154,8 +154,11 @@ export class SyncService {
             const accountResults = await Promise.allSettled(
                 accounts.map(a => fetchAndPersistAccount(a.address, network)),
             )
-            this.logFailures('account', accountResults, network, i =>
-                accounts[i]?.address,
+            this.logFailures(
+                'account',
+                accountResults,
+                network,
+                i => accounts[i]?.address,
             )
             if (this.hasRateLimitFailure(accountResults)) {
                 hasRateLimitError = true
@@ -187,8 +190,11 @@ export class SyncService {
                     fetchAndPersistTransactions(a.address, network),
                 ),
             )
-            this.logFailures('transactions', txResults, network, i =>
-                accounts[i]?.address,
+            this.logFailures(
+                'transactions',
+                txResults,
+                network,
+                i => accounts[i]?.address,
             )
             if (this.hasRateLimitFailure(txResults)) {
                 hasRateLimitError = true
