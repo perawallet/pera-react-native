@@ -26,7 +26,7 @@ import {
 import {
     useCalculateSwapAmountMutation,
     useCreateQuotesMutation,
-    usePrefetchProvidersQuery,
+    usePrefetchProviders,
     useSwaps,
     type SwapQuote,
     type SwapConfigurationResult,
@@ -36,6 +36,7 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { isDecimalEqual } from '@perawallet/wallet-core-shared'
 import { useModalState } from '@hooks/useModalState'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
+import { useRunAfterDelay } from '@hooks/useRunAfterDelay'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -96,7 +97,12 @@ export const useSwapForm = (): UseSwapFormResult => {
     const confirmModal = useModalState()
     const selectedAccount = useSelectedAccount()
     const deviceId = useDeviceID(network)
-    usePrefetchProvidersQuery()
+    const prefetchProviders = usePrefetchProviders()
+
+    useEffect(() => {
+        prefetchProviders()
+    }, [prefetchProviders])
+
     const { mutateAsync: calculateSwapAmount } =
         useCalculateSwapAmountMutation()
     const calculateSwapAmountRef = useRef(calculateSwapAmount)
@@ -298,31 +304,12 @@ export const useSwapForm = (): UseSwapFormResult => {
         [setToAsset, resetQuoteMutation],
     )
 
-    const autoCloseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const pendingSuccessCleanupRef = useRef<(() => void) | null>(null)
-
-    useEffect(() => {
-        return () => {
-            if (autoCloseTimerRef.current) {
-                clearTimeout(autoCloseTimerRef.current)
-            }
-        }
-    }, [])
-
-    const flushPendingSuccess = useCallback(() => {
-        if (autoCloseTimerRef.current) {
-            clearTimeout(autoCloseTimerRef.current)
-            autoCloseTimerRef.current = null
-        }
-        const cleanup = pendingSuccessCleanupRef.current
-        pendingSuccessCleanupRef.current = null
-        cleanup?.()
-    }, [])
+    const successCloseTimer = useRunAfterDelay()
 
     const handleCloseConfirm = useCallback(() => {
-        flushPendingSuccess()
+        successCloseTimer.flush()
         confirmModal.close()
-    }, [confirmModal, flushPendingSuccess])
+    }, [confirmModal, successCloseTimer])
 
     const handleConfirmSwap = useCallback(async () => {
         if (!selectedQuote?.quoteIdStr) return
@@ -332,7 +319,7 @@ export const useSwapForm = (): UseSwapFormResult => {
         const fromUnit = selectedQuote.assetIn.unitName ?? ''
         const toUnit = selectedQuote.assetOut.unitName ?? ''
 
-        pendingSuccessCleanupRef.current = () => {
+        successCloseTimer.schedule(() => {
             successToast(
                 t('swap.execution.success_title'),
                 t('swap.execution.success_body', {
@@ -344,11 +331,6 @@ export const useSwapForm = (): UseSwapFormResult => {
             setReceiveAmount(null)
             setSelectedQuote(null)
             resetQuoteMutation()
-        }
-
-        autoCloseTimerRef.current = setTimeout(() => {
-            autoCloseTimerRef.current = null
-            flushPendingSuccess()
             confirmModal.close()
         }, SUCCESS_DISPLAY_MS)
     }, [
@@ -358,14 +340,14 @@ export const useSwapForm = (): UseSwapFormResult => {
         successToast,
         t,
         resetQuoteMutation,
-        flushPendingSuccess,
+        successCloseTimer,
     ])
 
     const handleOpenConfirm = useCallback(() => {
-        flushPendingSuccess()
+        successCloseTimer.flush()
         swapExecution.reset()
         confirmModal.open()
-    }, [swapExecution, confirmModal, flushPendingSuccess])
+    }, [swapExecution, confirmModal, successCloseTimer])
 
     const handleConfigApply = useCallback(
         (result: SwapConfigurationResult) => {

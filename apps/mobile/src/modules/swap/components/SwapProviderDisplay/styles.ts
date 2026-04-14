@@ -19,9 +19,9 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xs,
     },
     logo: {
-        width: 16,
-        height: 16,
-        borderRadius: 8,
+        width: theme.spacing.lg,
+        height: theme.spacing.lg,
+        borderRadius: theme.borderRadius.sm,
         overflow: 'hidden',
     },
     label: {

@@ -47,7 +47,7 @@ export const useStyles = makeStyles(theme => ({
     },
     usdValue: {
         color: theme.colors.textGray,
-        lineHeight: 16,
+        lineHeight: theme.spacing.lg,
     },
     toDivider: {
         flexDirection: 'row',

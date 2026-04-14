@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useTheme } from '@rneui/themed'
 import { PWImage, PWText, PWView } from '@components/core'
 import { useProvidersQuery } from '@perawallet/wallet-core-swaps'
 import { useStyles } from './styles'
@@ -24,6 +25,7 @@ export const SwapProviderDisplay = ({
     providerDisplayName,
 }: SwapProviderDisplayProps) => {
     const styles = useStyles()
+    const { theme } = useTheme()
     const { data: providers } = useProvidersQuery()
 
     const provider = providers?.find(item => item.name === providerName)
@@ -34,8 +36,8 @@ export const SwapProviderDisplay = ({
             {provider?.iconUrl && (
                 <PWImage
                     source={{ uri: provider.iconUrl }}
-                    width={16}
-                    height={16}
+                    width={theme.spacing.lg}
+                    height={theme.spacing.lg}
                     containerStyle={styles.logo}
                 />
             )}

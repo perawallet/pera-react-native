@@ -10,17 +10,19 @@
  limitations under the License
  */
 
-import { useEffect } from 'react'
+import { useCallback } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { fetchProviders } from '../api'
 import { swapQueryKeys } from './querykeys'
 
-export const usePrefetchProvidersQuery = (): void => {
+type UsePrefetchProvidersResult = () => void
+
+export const usePrefetchProviders = (): UsePrefetchProvidersResult => {
     const queryClient = useQueryClient()
     const { network } = useNetwork()
 
-    useEffect(() => {
+    return useCallback(() => {
         queryClient.prefetchQuery({
             queryKey: swapQueryKeys.providers(network),
             queryFn: () => fetchProviders(network),
