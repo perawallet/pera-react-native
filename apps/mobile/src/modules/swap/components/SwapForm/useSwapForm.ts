@@ -26,7 +26,7 @@ import {
 import {
     useCalculateSwapAmountMutation,
     useCreateQuotesMutation,
-    useProvidersQuery,
+    usePrefetchProvidersQuery,
     useSwaps,
     type SwapQuote,
     type SwapConfigurationResult,
@@ -96,7 +96,7 @@ export const useSwapForm = (): UseSwapFormResult => {
     const confirmModal = useModalState()
     const selectedAccount = useSelectedAccount()
     const deviceId = useDeviceID(network)
-    useProvidersQuery()
+    usePrefetchProvidersQuery()
     const { mutateAsync: calculateSwapAmount } =
         useCalculateSwapAmountMutation()
     const calculateSwapAmountRef = useRef(calculateSwapAmount)

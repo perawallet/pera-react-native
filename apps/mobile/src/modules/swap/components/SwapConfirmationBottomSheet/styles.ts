@@ -58,16 +58,17 @@ export const useStyles = makeStyles(theme => ({
     toDividerLine: {
         flex: 1,
         borderBottomColor: theme.colors.layerGray,
-        borderBottomWidth: 1,
+        borderBottomWidth: theme.borders.sm,
     },
     toLabel: {
         color: theme.colors.textGray,
+        textTransform: 'uppercase',
     },
     detailsDivider: {
         marginHorizontal: theme.spacing.lg,
         marginTop: theme.spacing.md,
         borderBottomColor: theme.colors.layerGray,
-        borderBottomWidth: 1,
+        borderBottomWidth: theme.borders.sm,
     },
     detailsSection: {
         paddingHorizontal: theme.spacing.lg,
