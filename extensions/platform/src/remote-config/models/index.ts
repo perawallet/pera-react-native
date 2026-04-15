@@ -15,6 +15,8 @@ export const RemoteConfigKeys = {
     fee_warning_standard_fee: 'fee_warning_standard_fee',
     fee_warning_usd_threshold: 'fee_warning_usd_threshold',
     staking_projects: 'staking_projects',
+    swap_price_impact_low_threshold: 'swap_price_impact_low_threshold',
+    swap_price_impact_high_threshold: 'swap_price_impact_high_threshold',
 } as const
 
 export type RemoteConfigKey =
@@ -28,6 +30,8 @@ export const RemoteConfigDefaults: Record<
     fee_warning_standard_fee: 0.001,
     fee_warning_usd_threshold: 0.01,
     staking_projects: '',
+    swap_price_impact_low_threshold: 1,
+    swap_price_impact_high_threshold: 5,
 }
 
 export interface RemoteConfigService {

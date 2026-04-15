@@ -10,11 +10,9 @@
  limitations under the License
  */
 
-import { formatNumber } from '@perawallet/wallet-core-shared'
+import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
+import { DEFAULT_PRECISION, formatNumber } from '@perawallet/wallet-core-shared'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
-
-const RATE_FALLBACK_DECIMALS = 6
-const RATE_MIN_PRECISION = 2
 
 export const pickBestByAmountOut = (quotes: SwapQuote[]): SwapQuote | null =>
     quotes.reduce<SwapQuote | null>((prev, curr) => {
@@ -35,12 +33,12 @@ export const sortQuotesByAmountOutDesc = (quotes: SwapQuote[]): SwapQuote[] =>
 
 export const formatSwapRate = (quote: SwapQuote): string => {
     if (!quote.price) return '-'
-    const outDecimals = quote.assetOut.decimals ?? RATE_FALLBACK_DECIMALS
+    const outDecimals = quote.assetOut.decimals ?? ALGO_ASSET.decimals
     const { sign, integer, fraction } = formatNumber(
         quote.price,
         outDecimals,
         undefined,
-        RATE_MIN_PRECISION,
+        DEFAULT_PRECISION,
     )
     const inUnit = quote.assetIn.unitName ?? ''
     const outUnit = quote.assetOut.unitName ?? ''

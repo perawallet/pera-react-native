@@ -36,7 +36,6 @@ export const SwapQuoteDetails = ({
         priceImpactLevel,
         slippageDisplay,
         peraFeeDisplay,
-        exchangeFeeDisplay,
         providerDisplay,
     } = useSwapQuoteDetails(quote)
 
@@ -136,28 +135,6 @@ export const SwapQuoteDetails = ({
                         style={styles.value}
                     >
                         {peraFeeDisplay}
-                    </PWText>
-                )}
-            </PWView>
-
-            <PWView style={styles.row}>
-                <PWText
-                    variant='body'
-                    style={styles.label}
-                >
-                    {t('swap.quote.exchange_fee')}
-                </PWText>
-                {isLoading ? (
-                    <PWSkeleton
-                        width={80}
-                        height={16}
-                    />
-                ) : (
-                    <PWText
-                        variant='body'
-                        style={styles.value}
-                    >
-                        {exchangeFeeDisplay}
                     </PWText>
                 )}
             </PWView>

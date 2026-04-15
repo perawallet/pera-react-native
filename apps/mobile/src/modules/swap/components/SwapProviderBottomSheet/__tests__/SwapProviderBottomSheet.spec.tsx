@@ -17,12 +17,6 @@ import { Decimal } from 'decimal.js'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import { SwapProviderBottomSheet } from '../SwapProviderBottomSheet'
 
-vi.mock('@assets/icons/sparkle.svg', () => ({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    default: (props: any) =>
-        React.createElement('svg', { ...props, 'data-testid': 'sparkle-icon' }),
-}))
-
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (key: string) => key }),
 }))
@@ -115,6 +109,30 @@ vi.mock('@components/core', () => ({
             style={style as React.CSSProperties}
         >
             {children}
+        </button>
+    ),
+    PWRadioButton: ({
+        children,
+        onPress,
+        testID,
+        containerStyle,
+        isSelected,
+    }: {
+        children?: React.ReactNode
+        onPress?: () => void
+        testID?: string
+        containerStyle?: unknown
+        isSelected?: boolean
+    }) => (
+        <button
+            data-testid={testID}
+            onClick={onPress}
+            style={containerStyle as React.CSSProperties}
+        >
+            {children}
+            <div data-testid={testID ? `${testID}-radio` : undefined}>
+                {isSelected ? <div /> : null}
+            </div>
         </button>
     ),
     PWView: ({

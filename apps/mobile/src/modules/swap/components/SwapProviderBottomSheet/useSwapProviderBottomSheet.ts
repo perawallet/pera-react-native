@@ -38,7 +38,7 @@ export type SwapProviderRow = {
 }
 
 type UseSwapProviderBottomSheetResult = {
-    draftSelection: string | null
+    userSelection: string | null
     rows: SwapProviderRow[]
     handleSelect: (providerName: string | null) => void
     handleApply: () => void
@@ -54,22 +54,22 @@ export const useSwapProviderBottomSheet = ({
     const { preferredCurrency, usdToPreferred } = useCurrency()
     const { data: providers } = useProvidersQuery()
 
-    const [draftSelection, setDraftSelection] = useState<string | null>(
+    const [userSelection, setUserSelection] = useState<string | null>(
         selectedProviderName,
     )
 
     useEffect(() => {
-        if (isVisible) setDraftSelection(selectedProviderName)
+        if (isVisible) setUserSelection(selectedProviderName)
     }, [isVisible, selectedProviderName])
 
     const handleSelect = useCallback((providerName: string | null) => {
-        setDraftSelection(providerName)
+        setUserSelection(providerName)
     }, [])
 
     const handleApply = useCallback(() => {
-        onApply(draftSelection)
+        onApply(userSelection)
         onClose()
-    }, [draftSelection, onApply, onClose])
+    }, [userSelection, onApply, onClose])
 
     const sortedQuotes = useMemo(
         () => sortQuotesByAmountOutDesc(quotes),
@@ -114,5 +114,5 @@ export const useSwapProviderBottomSheet = ({
         [alternativeQuotes, providers, usdToPreferred, preferredCurrency],
     )
 
-    return { draftSelection, rows, handleSelect, handleApply }
+    return { userSelection, rows, handleSelect, handleApply }
 }

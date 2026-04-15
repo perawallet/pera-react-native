@@ -13,6 +13,10 @@
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import { formatAssetAmount } from '@perawallet/wallet-core-assets'
+import {
+    RemoteConfigKeys,
+    useRemoteConfig,
+} from '@perawallet/wallet-core-remote-config'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import { formatSwapRate } from '../../hooks/swapQuoteHelpers'
 
@@ -24,42 +28,55 @@ type UseSwapQuoteDetailsResult = {
     priceImpactLevel: PriceImpactLevel
     slippageDisplay: string
     peraFeeDisplay: string
-    exchangeFeeDisplay: string
     providerDisplay: string
 }
 
-const PRICE_IMPACT_LOW_THRESHOLD = new Decimal(1)
-const PRICE_IMPACT_HIGH_THRESHOLD = new Decimal(5)
-
 const getPriceImpactLevel = (
     priceImpact: Decimal | null | undefined,
+    lowThreshold: Decimal,
+    highThreshold: Decimal,
 ): PriceImpactLevel => {
     if (!priceImpact) return 'none'
-    if (priceImpact.lessThan(PRICE_IMPACT_LOW_THRESHOLD)) return 'low'
-    if (priceImpact.lessThan(PRICE_IMPACT_HIGH_THRESHOLD)) return 'medium'
+    if (priceImpact.lessThan(lowThreshold)) return 'low'
+    if (priceImpact.lessThan(highThreshold)) return 'medium'
     return 'high'
 }
 
 export const useSwapQuoteDetails = (
     quote: SwapQuote,
-): UseSwapQuoteDetailsResult =>
-    useMemo(
+): UseSwapQuoteDetailsResult => {
+    const remoteConfigService = useRemoteConfig()
+
+    const lowThreshold = new Decimal(
+        remoteConfigService.getNumberValue(
+            RemoteConfigKeys.swap_price_impact_low_threshold,
+        ),
+    )
+    const highThreshold = new Decimal(
+        remoteConfigService.getNumberValue(
+            RemoteConfigKeys.swap_price_impact_high_threshold,
+        ),
+    )
+
+    return useMemo(
         () => ({
             rateDisplay: formatSwapRate(quote),
             priceImpactDisplay: quote.priceImpact
                 ? `${quote.priceImpact.toDecimalPlaces(2).toString()}%`
                 : '-',
-            priceImpactLevel: getPriceImpactLevel(quote.priceImpact),
+            priceImpactLevel: getPriceImpactLevel(
+                quote.priceImpact,
+                lowThreshold,
+                highThreshold,
+            ),
             slippageDisplay: quote.slippage
                 ? `${quote.slippage.toString()}%`
                 : '-',
             peraFeeDisplay: quote.peraFeeAmount
                 ? formatAssetAmount(quote.peraFeeAmount, quote.assetIn)
                 : '-',
-            exchangeFeeDisplay: quote.exchangeFeeAmount
-                ? formatAssetAmount(quote.exchangeFeeAmount, quote.assetIn)
-                : '-',
             providerDisplay: quote.providerDisplayName ?? quote.provider ?? '-',
         }),
-        [quote],
+        [quote, lowThreshold, highThreshold],
     )
+}

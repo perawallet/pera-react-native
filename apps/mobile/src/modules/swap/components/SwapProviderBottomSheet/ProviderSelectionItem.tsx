@@ -11,7 +11,7 @@
  */
 
 import { ReactNode } from 'react'
-import { PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { PWRadioButton, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 
 export type ProviderSelectionItemProps = {
@@ -34,10 +34,11 @@ export const ProviderSelectionItem = ({
     const styles = useStyles()
 
     return (
-        <PWTouchableOpacity
-            style={styles.item}
+        <PWRadioButton
+            isSelected={isSelected}
             onPress={onPress}
             testID={testID}
+            containerStyle={styles.item}
         >
             <PWView style={styles.itemLeft}>
                 {left}
@@ -48,18 +49,7 @@ export const ProviderSelectionItem = ({
                     {label}
                 </PWText>
             </PWView>
-            <PWView style={styles.itemRight}>
-                {right}
-                <PWView
-                    style={[
-                        styles.radioContainer,
-                        isSelected && styles.radioSelectedBorder,
-                    ]}
-                    testID={testID ? `${testID}-radio` : undefined}
-                >
-                    {isSelected && <PWView style={styles.radioInner} />}
-                </PWView>
-            </PWView>
-        </PWTouchableOpacity>
+            <PWView style={styles.itemRight}>{right}</PWView>
+        </PWRadioButton>
     )
 }

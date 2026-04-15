@@ -109,7 +109,6 @@ export interface SwapQuote {
     price?: Decimal
     priceImpact?: Decimal
     peraFeeAmount?: Decimal
-    exchangeFeeAmount?: Decimal
     transactionFees?: Decimal | null
 }
 

@@ -22,7 +22,6 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
-import SparkleIcon from '@assets/icons/sparkle.svg'
 import { ProviderSelectionItem } from './ProviderSelectionItem'
 import { useSwapProviderBottomSheet } from './useSwapProviderBottomSheet'
 import { useStyles } from './styles'
@@ -46,7 +45,7 @@ export const SwapProviderBottomSheet = ({
     const styles = useStyles()
     const { theme } = useTheme()
 
-    const { draftSelection, rows, handleSelect, handleApply } =
+    const { userSelection, rows, handleSelect, handleApply } =
         useSwapProviderBottomSheet({
             isVisible,
             quotes,
@@ -87,9 +86,9 @@ export const SwapProviderBottomSheet = ({
             <PWView style={styles.list}>
                 <ProviderSelectionItem
                     left={
-                        <SparkleIcon
-                            width={theme.spacing.xxl}
-                            height={theme.spacing.xxl}
+                        <PWIcon
+                            name='sparkle'
+                            size='lg'
                         />
                     }
                     label={t('swap.provider.auto_label')}
@@ -101,7 +100,7 @@ export const SwapProviderBottomSheet = ({
                             {t('swap.provider.auto_description')}
                         </PWText>
                     }
-                    isSelected={draftSelection === null}
+                    isSelected={userSelection === null}
                     onPress={() => handleSelect(null)}
                     testID='swap-provider-option-auto'
                 />
@@ -139,7 +138,7 @@ export const SwapProviderBottomSheet = ({
                                 )}
                             </PWView>
                         }
-                        isSelected={draftSelection === row.quote.provider}
+                        isSelected={userSelection === row.quote.provider}
                         onPress={() => handleSelect(row.quote.provider ?? null)}
                         testID={`swap-provider-option-${row.quote.provider ?? 'unknown'}`}
                     />

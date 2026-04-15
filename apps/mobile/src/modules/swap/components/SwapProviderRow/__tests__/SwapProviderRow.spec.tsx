@@ -22,11 +22,16 @@ vi.mock('@hooks/useLanguage', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
+    DEFAULT_PRECISION: 2,
     formatNumber: (value: Decimal) => ({
         sign: '',
         integer: value.toFixed(2).split('.')[0],
         fraction: `.${value.toFixed(2).split('.')[1] ?? '00'}`,
     }),
+}))
+
+vi.mock('@perawallet/wallet-core-assets', () => ({
+    ALGO_ASSET: { decimals: 6 },
 }))
 
 vi.mock('../../SwapProviderDisplay', () => ({

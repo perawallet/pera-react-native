@@ -77,6 +77,7 @@ import ShareIcon from '@assets/icons/share.svg'
 import ShieldCheckIcon from '@assets/icons/shield-check.svg'
 import SlidersIcon from '@assets/icons/sliders.svg'
 import SnowflakeIcon from '@assets/icons/snowflake.svg'
+import SparkleIcon from '@assets/icons/sparkle.svg'
 import StarIcon from '@assets/icons/star.svg'
 import StarFilledIcon from '@assets/icons/star-filled.svg'
 import SwapIcon from '@assets/icons/swap.svg'
@@ -207,6 +208,7 @@ export const ICON_LIBRARY = {
     'shield-check': ShieldCheckIcon,
     sliders: SlidersIcon,
     snowflake: SnowflakeIcon,
+    sparkle: SparkleIcon,
     star: StarIcon,
     'star-filled': StarFilledIcon,
     swap: SwapIcon,

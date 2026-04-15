@@ -21,6 +21,7 @@ export const useStyles = makeStyles(theme => ({
     },
     list: {
         paddingHorizontal: theme.spacing.lg,
+        paddingVertical: theme.spacing.md,
         gap: theme.spacing.lg,
     },
     item: {
@@ -29,6 +30,7 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'space-between',
         gap: theme.spacing.md,
         paddingVertical: theme.spacing.sm,
+        paddingHorizontal: 0,
     },
     itemLeft: {
         flexDirection: 'row',
@@ -39,7 +41,7 @@ export const useStyles = makeStyles(theme => ({
     logo: {
         width: theme.spacing.xl,
         height: theme.spacing.xl,
-        borderRadius: theme.spacing.xl / 2,
+        borderRadius: theme.borderRadius.full,
         overflow: 'hidden',
     },
     itemLabel: {
@@ -61,23 +63,5 @@ export const useStyles = makeStyles(theme => ({
     },
     autoDescription: {
         color: theme.colors.textGray,
-    },
-    radioContainer: {
-        borderWidth: theme.borders.sm,
-        borderRadius: theme.spacing.xl,
-        borderColor: theme.colors.layerGray,
-        width: theme.spacing.xl,
-        height: theme.spacing.xl,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    radioSelectedBorder: {
-        borderColor: theme.colors.buttonPrimaryBg,
-    },
-    radioInner: {
-        borderRadius: theme.spacing.lg,
-        width: theme.spacing.md,
-        height: theme.spacing.md,
-        backgroundColor: theme.colors.buttonPrimaryBg,
     },
 }))

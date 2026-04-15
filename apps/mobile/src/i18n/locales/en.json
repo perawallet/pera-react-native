@@ -1316,7 +1316,6 @@
             "price_impact": "Price Impact",
             "slippage_tolerance": "Slippage Tolerance",
             "pera_fee": "Pera Fee",
-            "exchange_fee": "Exchange Fee",
             "provider": "Provider",
             "minimum_received": "Minimum Received",
             "review_swap": "Review Swap",
@@ -1340,8 +1339,7 @@
         },
         "info": {
             "slippage_tolerance": "The maximum difference between the expected price and the execution price. A higher tolerance increases the chance of a successful swap but may result in a less favorable rate.",
-            "price_impact": "The difference between the market price and the estimated price due to trade size. Larger trades typically have a higher price impact.",
-            "exchange_fee": "The fee charged by the decentralized exchange for facilitating this swap."
+            "price_impact": "The difference between the market price and the estimated price due to trade size. Larger trades typically have a higher price impact."
         },
         "provider": {
             "title_auto": "Provider (Best price available)",

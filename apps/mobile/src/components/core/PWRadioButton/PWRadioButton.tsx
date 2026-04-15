@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+import { ReactNode } from 'react'
+import { StyleProp, ViewStyle } from 'react-native'
 import { PWText } from '../PWText'
 import { PWTouchableOpacity } from '../PWTouchableOpacity'
 import { PWView } from '../PWView'
@@ -19,17 +21,21 @@ import { useStyles } from './styles'
 
 export type PWRadioButtonProps = {
     onPress: () => void
-    title: string
+    title?: string
+    children?: ReactNode
     isSelected: boolean
     isDisabled?: boolean
     testID?: string
+    containerStyle?: StyleProp<ViewStyle>
 }
 export const PWRadioButton = ({
     onPress,
     title,
+    children,
     isSelected,
     isDisabled = false,
     testID,
+    containerStyle,
 }: PWRadioButtonProps) => {
     const styles = useStyles()
 
@@ -37,15 +43,16 @@ export const PWRadioButton = ({
         <PWTouchableOpacity
             onPress={onPress}
             disabled={isDisabled}
-            style={[styles.row, isDisabled && styles.disabled]}
+            style={[styles.row, isDisabled && styles.disabled, containerStyle]}
             {...getTestProps(testID)}
         >
-            <PWText>{title}</PWText>
+            {children ?? <PWText>{title}</PWText>}
             <PWView
                 style={[
                     styles.radioContainer,
                     isSelected && styles.selectedBorder,
                 ]}
+                testID={testID ? `${testID}-radio` : undefined}
             >
                 {isSelected && <PWView style={styles.selectedRadio} />}
             </PWView>
