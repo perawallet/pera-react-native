@@ -90,6 +90,7 @@ const makeInput = (
 ): SigningMachineInput => ({
     request: mockRequest,
     allAccounts: [mockAlgo25Account],
+    authAddresses: new Map(),
     ...mockDeps,
     ...overrides,
 })

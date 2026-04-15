@@ -304,6 +304,7 @@ export const signingMachine = setup({
                                 'localKey',
                             ),
                             allAccounts: context.allAccounts,
+                            authAddresses: context.authAddresses,
                             signTransactions: context.deps.signTransactions,
                         }),
                         onDone: {

@@ -55,6 +55,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         { address: 'ADDR1', type: 'algo25' },
         { address: 'ADDR2', type: 'algo25' },
     ]),
+    useAccountAuthAddresses: vi.fn(() => ({
+        authAddresses: new Map<string, string | null>(),
+        isPending: false,
+        isFetched: true,
+    })),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {

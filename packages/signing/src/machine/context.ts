@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    WalletAccount,
+    AuthAddressLookup,
+} from '@perawallet/wallet-core-accounts'
 import type { Network } from '@perawallet/wallet-core-shared'
 import type {
     DataTransport,
@@ -101,6 +104,14 @@ export type SigningMachineContext = {
      * storing copies in context.
      */
     allAccounts: WalletAccount[]
+
+    /**
+     * Snapshot of the dynamic on-chain auth address for every account,
+     * captured at the moment the signing request was created. Used to
+     * resolve the auth account for rekeyed signers without touching the
+     * persisted `WalletAccount` record.
+     */
+    authAddresses: AuthAddressLookup
 
     /**
      * The primary signer address for this request (from the first group's sender).
@@ -197,4 +208,5 @@ export type SigningMachineEvent =
 export type SigningMachineInput = {
     request: SignRequest
     allAccounts: WalletAccount[]
+    authAddresses: AuthAddressLookup
 } & SigningMachineDeps

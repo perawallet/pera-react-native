@@ -53,6 +53,7 @@ describe('localKeySignerActor', () => {
         const input: LocalKeySignerActorInput = {
             groups: [mockGroup],
             allAccounts: [mockAlgo25Account],
+            authAddresses: new Map(),
             signTransactions,
         }
 
@@ -83,6 +84,7 @@ describe('localKeySignerActor', () => {
         const input: LocalKeySignerActorInput = {
             groups: [mockGroup],
             allAccounts: [mockAlgo25Account],
+            authAddresses: new Map(),
             signTransactions,
         }
 
@@ -109,6 +111,7 @@ describe('localKeySignerActor', () => {
         const input: LocalKeySignerActorInput = {
             groups: [groupForMultisig],
             allAccounts: [accountWithoutKeys],
+            authAddresses: new Map(),
             signTransactions,
         }
 
@@ -124,6 +127,7 @@ describe('localKeySignerActor', () => {
         const input: LocalKeySignerActorInput = {
             groups: [mockGroup],
             allAccounts: [], // no matching account
+            authAddresses: new Map(),
             signTransactions,
         }
 

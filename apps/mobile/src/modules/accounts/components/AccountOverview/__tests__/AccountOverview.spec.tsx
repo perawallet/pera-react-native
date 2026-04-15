@@ -66,6 +66,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     })),
     useSelectedAccount: vi.fn(() => undefined),
     useAllAccounts: vi.fn(() => []),
+    useAccountAuthAddresses: vi.fn(() => ({
+        authAddresses: new Map<string, string | null>(),
+        isPending: false,
+        isFetched: true,
+    })),
     isSigningAccount: vi.fn(() => true),
 }))
 

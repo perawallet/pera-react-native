@@ -17,6 +17,7 @@ import { mapToDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import {
     canSignWithAccount,
     useAllAccounts,
+    useAccountAuthAddresses,
 } from '@perawallet/wallet-core-accounts'
 import type { PipelineStage, TransactionSignRequest } from '../models'
 import {
@@ -62,6 +63,7 @@ export const useSigningPipeline = (
     } = useSigningRequest()
 
     const accounts = useAllAccounts()
+    const { authAddresses } = useAccountAuthAddresses()
 
     // -------------------------------------------------------------------------
     // Display data — computed from the request's transaction payload.
@@ -82,7 +84,7 @@ export const useSigningPipeline = (
 
         const signableAddresses = new Set(
             accounts
-                .filter(a => canSignWithAccount(a, accounts))
+                .filter(a => canSignWithAccount(a, accounts, authAddresses))
                 .map(a => a.address),
         )
 
@@ -111,7 +113,7 @@ export const useSigningPipeline = (
             distinctWarnings,
             requestStructure,
         }
-    }, [txRequest?.txs, accounts])
+    }, [txRequest?.txs, accounts, authAddresses])
 
     // -------------------------------------------------------------------------
     // Machine state — derived from actor subscription

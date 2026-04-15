@@ -89,7 +89,7 @@ export const useAccountsStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 2,
+            version: 3,
             partialize: state => ({
                 accounts: state.accounts,
                 selectedAccountAddress: state.selectedAccountAddress,
@@ -102,6 +102,20 @@ export const useAccountsStore: UseBoundStore<
                     const accounts = (state.accounts ?? []) as WalletAccount[]
                     state.sortMode = 'manual'
                     state.manualAccountOrder = accounts.map(a => a.address)
+                }
+                if (version < 3) {
+                    // v3: rekeyAddress is no longer persisted on the account
+                    // record. The dynamic auth address from the chain is now
+                    // the single source of truth, stored in the SQLite
+                    // account_balances row and refreshed by the background
+                    // sync service. Drop the stale static field.
+                    const accounts = (state.accounts ?? []) as Array<
+                        Record<string, unknown>
+                    >
+                    state.accounts = accounts.map(acc => {
+                        const { rekeyAddress: _ignored, ...rest } = acc
+                        return rest
+                    })
                 }
                 return state as AccountsState
             },

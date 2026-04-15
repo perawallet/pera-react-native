@@ -23,6 +23,7 @@ import {
 import {
     useSelectedAccount,
     useAllAccounts,
+    useAccountAuthAddresses,
     useAccountAssetBalanceQuery,
     isSigningAccount,
     type AssetWithAccountBalance,
@@ -83,6 +84,7 @@ export const useCollectibleDetail = (
     const account = useSelectedAccount()
     const { network } = useNetwork()
     const allAccounts = useAllAccounts()
+    const { authAddresses } = useAccountAuthAddresses()
     const { t } = useLanguage()
     const { data: assetBalance } = useAccountAssetBalanceQuery(
         account ?? undefined,
@@ -98,7 +100,13 @@ export const useCollectibleDetail = (
     const [fullScreenInitialIndex, setFullScreenInitialIndex] = useState(0)
 
     const collectible = asset?.peraMetadata?.collectible
-    const isWatch = account ? !isSigningAccount(account, allAccounts) : true
+    const isWatch = account
+        ? !isSigningAccount(
+              account,
+              allAccounts,
+              authAddresses.get(account.address),
+          )
+        : true
     const traits = collectible?.traits ?? []
     const media = collectible?.media ?? []
 

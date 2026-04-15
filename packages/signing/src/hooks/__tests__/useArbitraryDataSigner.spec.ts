@@ -30,9 +30,15 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 const mockIsHDWalletAccount = vi.fn()
 const mockIsAlgo25Account = vi.fn()
 let mockAccounts: WalletAccount[] = []
+let mockAuthAddresses: Map<string, string | null> = new Map()
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: (selector: any) => selector({ accounts: mockAccounts }),
+    useAccountAuthAddresses: () => ({
+        authAddresses: mockAuthAddresses,
+        isPending: false,
+        isFetched: true,
+    }),
     isHDWalletAccount: (...args: any[]) => mockIsHDWalletAccount(...args),
     isAlgo25Account: (...args: any[]) => mockIsAlgo25Account(...args),
 }))
@@ -66,6 +72,7 @@ describe('useArbitraryDataSigner', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockAccounts = []
+        mockAuthAddresses = new Map()
         mockGetKeyOrThrow.mockReturnValue(mockKey)
         mockIsHDWalletAccount.mockReturnValue(false)
         mockIsAlgo25Account.mockReturnValue(false)
@@ -237,10 +244,10 @@ describe('useArbitraryDataSigner', () => {
             const originalAccount = {
                 ...algo25Account,
                 address: 'ORIGINAL_ADDR',
-                rekeyAddress: 'REKEYED_ADDR',
             } as unknown as WalletAccount
 
             mockAccounts = [rekeyedAccount as unknown as WalletAccount]
+            mockAuthAddresses = new Map([['ORIGINAL_ADDR', 'REKEYED_ADDR']])
             mockIsAlgo25Account.mockReturnValue(true)
             mockWithAlgo25Session.mockResolvedValue([new Uint8Array([42])])
 
@@ -257,10 +264,10 @@ describe('useArbitraryDataSigner', () => {
             const originalAccount = {
                 ...algo25Account,
                 address: 'ORIGINAL_ADDR',
-                rekeyAddress: 'MISSING_ADDR',
             } as unknown as WalletAccount
 
             mockAccounts = []
+            mockAuthAddresses = new Map([['ORIGINAL_ADDR', 'MISSING_ADDR']])
 
             const { result } = renderHook(() => useArbitraryDataSigner())
 

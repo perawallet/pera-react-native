@@ -52,8 +52,11 @@ export const isLedgerAccount = (
     )
 }
 
-export const isRekeyedAccount = (account: WalletAccount) => {
-    return !!account.rekeyAddress
+export const isRekeyedAccount = (
+    account: WalletAccount,
+    authAddress: string | null | undefined,
+): boolean => {
+    return !!authAddress && authAddress !== account.address
 }
 
 export const isAlgo25Account = (
@@ -78,16 +81,20 @@ export const hasSigningKeys = (account: WalletAccount): boolean => {
     return !!account.keyPairId
 }
 
+export type AuthAddressLookup = ReadonlyMap<string, string | null>
+
 export const canSignWithAccount = (
     account: WalletAccount,
     accounts: WalletAccount[],
+    authAddresses: AuthAddressLookup,
 ): boolean => {
     if (hasSigningKeys(account)) return true
-    if (account.rekeyAddress) {
-        const authAccount = accounts.find(
-            a => a.address === account.rekeyAddress,
-        )
-        if (authAccount) return canSignWithAccount(authAccount, accounts)
+    const authAddress = authAddresses.get(account.address)
+    if (authAddress && authAddress !== account.address) {
+        const authAccount = accounts.find(a => a.address === authAddress)
+        if (authAccount) {
+            return canSignWithAccount(authAccount, accounts, authAddresses)
+        }
     }
     return false
 }
@@ -105,11 +112,10 @@ export type AccountStatus =
 export const resolveAccountStatus = (
     account: WalletAccount,
     accounts: WalletAccount[],
+    authAddress: string | null | undefined,
 ): AccountStatus => {
-    if (isRekeyedAccount(account)) {
-        const authAccount = accounts.find(
-            a => a.address === account.rekeyAddress,
-        )
+    if (isRekeyedAccount(account, authAddress)) {
+        const authAccount = accounts.find(a => a.address === authAddress)
         if (!authAccount) return 'noAuth'
         if (isHardwareWalletAccount(authAccount)) return 'rekeyedHardware'
         return 'rekeyedStandard'
@@ -130,30 +136,32 @@ export const resolveAccountStatus = (
 export const isSigningAccount = (
     account: WalletAccount,
     accounts: WalletAccount[],
+    authAddress: string | null | undefined,
 ): boolean => {
-    const status = resolveAccountStatus(account, accounts)
+    const status = resolveAccountStatus(account, accounts, authAddress)
     return status !== 'watch' && status !== 'noAuth'
 }
 
 /**
  * Resolve the auth account for a given account.
- * If the account is rekeyed, returns the rekey target.
- * Only follows one level to prevent circular references.
+ * If the account is rekeyed (chain auth address differs), returns the
+ * rekey target from the wallet. Only follows one level to prevent
+ * circular references. Returns the account itself when not rekeyed.
+ * Throws RekeyTargetNotFoundError if the auth address is not in the wallet.
  */
 export const resolveAuthAccount = (
     account: WalletAccount,
     allAccounts: WalletAccount[],
+    authAddress: string | null | undefined,
 ): WalletAccount => {
-    if (!account.rekeyAddress) {
+    if (!authAddress || authAddress === account.address) {
         return account
     }
 
-    const rekeyTarget = allAccounts.find(
-        a => a.address === account.rekeyAddress,
-    )
+    const rekeyTarget = allAccounts.find(a => a.address === authAddress)
 
     if (!rekeyTarget) {
-        throw new RekeyTargetNotFoundError(account.rekeyAddress)
+        throw new RekeyTargetNotFoundError(authAddress)
     }
 
     return rekeyTarget

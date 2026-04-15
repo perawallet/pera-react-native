@@ -17,6 +17,7 @@ import {
     canSignWithAccount,
     hasSigningKeys,
     useAllAccounts,
+    useAccountAuthAddresses,
     resolveAccountStatus,
     type AccountStatus,
 } from '@perawallet/wallet-core-accounts'
@@ -91,10 +92,12 @@ export const useAccountTypeInfo = ({
     const { showToast } = useToast()
     const { pushWebView } = useWebView()
     const accounts = useAllAccounts()
+    const { authAddresses } = useAccountAuthAddresses()
+    const accountAuthAddress = authAddresses.get(account.address) ?? null
 
     const status = useMemo(
-        () => resolveAccountStatus(account, accounts),
-        [account, accounts],
+        () => resolveAccountStatus(account, accounts, accountAuthAddress),
+        [account, accounts, accountAuthAddress],
     )
 
     const title = t(STATUS_I18N_MAP[status].title)
@@ -116,7 +119,7 @@ export const useAccountTypeInfo = ({
     const actions = useMemo(() => {
         const items: AccountTypeAction[] = []
 
-        if (canSignWithAccount(account, accounts)) {
+        if (canSignWithAccount(account, accounts, authAddresses)) {
             items.push({
                 id: 'rekey-to-ledger',
                 title: t('account_type_info.rekey_to_ledger'),
@@ -131,7 +134,10 @@ export const useAccountTypeInfo = ({
             })
         }
 
-        if (isRekeyedAccount(account) && hasSigningKeys(account)) {
+        if (
+            isRekeyedAccount(account, accountAuthAddress) &&
+            hasSigningKeys(account)
+        ) {
             items.push({
                 id: 'undo-rekey',
                 title: t('account_type_info.undo_rekey'),
@@ -140,7 +146,7 @@ export const useAccountTypeInfo = ({
             })
         }
 
-        if (isRekeyedAccount(account)) {
+        if (isRekeyedAccount(account, accountAuthAddress)) {
             items.push({
                 id: 'rescan-rekeyed',
                 title: t('account_type_info.rescan_rekeyed'),
@@ -150,7 +156,14 @@ export const useAccountTypeInfo = ({
         }
 
         return items
-    }, [account, accounts, t, notImplemented])
+    }, [
+        account,
+        accounts,
+        accountAuthAddress,
+        authAddresses,
+        t,
+        notImplemented,
+    ])
 
     return {
         title,

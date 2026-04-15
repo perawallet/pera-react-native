@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    WalletAccount,
+    AuthAddressLookup,
+} from '@perawallet/wallet-core-accounts'
 import { isMultisigAccount } from '@perawallet/wallet-core-accounts'
 import type { SigningStrategy, SigningResult, SignerInfo } from '../types'
 import { NoLocalParticipantsError } from '../errors'
@@ -20,16 +23,21 @@ export interface CreateMultisigStrategyOptions {
     getLocalParticipants: (
         account: WalletAccount,
         allAccounts: WalletAccount[],
+        authAddresses: AuthAddressLookup,
     ) => WalletAccount[]
 
     /** Get signing strategy for an individual participant */
     getStrategyForParticipant: (
         participant: WalletAccount,
         allAccounts: WalletAccount[],
+        authAddresses: AuthAddressLookup,
     ) => SigningStrategy
 
     /** Get all user accounts */
     getAllAccounts: () => WalletAccount[]
+
+    /** Get the current on-chain auth-address lookup */
+    getAuthAddresses: () => AuthAddressLookup
 }
 
 /**
@@ -39,8 +47,12 @@ export interface CreateMultisigStrategyOptions {
 export const createMultisigStrategy = (
     options: CreateMultisigStrategyOptions,
 ): SigningStrategy => {
-    const { getLocalParticipants, getStrategyForParticipant, getAllAccounts } =
-        options
+    const {
+        getLocalParticipants,
+        getStrategyForParticipant,
+        getAllAccounts,
+        getAuthAddresses,
+    } = options
 
     return {
         canSign: (account: WalletAccount): boolean => {
@@ -49,7 +61,12 @@ export const createMultisigStrategy = (
 
         sign: async (group, account, callbacks) => {
             const allAccounts = getAllAccounts()
-            const localParticipants = getLocalParticipants(account, allAccounts)
+            const authAddresses = getAuthAddresses()
+            const localParticipants = getLocalParticipants(
+                account,
+                allAccounts,
+                authAddresses,
+            )
 
             if (localParticipants.length === 0) {
                 throw new NoLocalParticipantsError(account.address)
@@ -61,6 +78,7 @@ export const createMultisigStrategy = (
                     const strategy = getStrategyForParticipant(
                         participant,
                         allAccounts,
+                        authAddresses,
                     )
                     return strategy.sign(group, participant, callbacks)
                 }),

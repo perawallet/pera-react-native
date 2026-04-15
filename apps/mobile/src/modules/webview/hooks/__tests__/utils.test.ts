@@ -26,91 +26,113 @@ describe('webview/utils - getAccountType', () => {
 
     it('returns HdKey if hdWalletDetails is present', () => {
         expect(
-            getAccountType({
-                ...baseAccount,
-                hdWalletDetails: {} as HDWalletDetails,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any),
+            getAccountType(
+                {
+                    ...baseAccount,
+                    hdWalletDetails: {} as HDWalletDetails,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any,
+                null,
+            ),
         ).toBe('HdKey')
     })
 
     it('returns LedgerBle for a ledger hardware wallet account', () => {
         expect(
-            getAccountType({
-                ...baseAccount,
-                type: 'hardware',
-                hardwareDetails: {
-                    manufacturer: 'ledger',
-                    deviceId: 'test-device',
-                    deviceName: 'Ledger Nano X',
-                    accountIndex: 0,
+            getAccountType(
+                {
+                    ...baseAccount,
+                    type: 'hardware',
+                    hardwareDetails: {
+                        manufacturer: 'ledger',
+                        deviceId: 'test-device',
+                        deviceName: 'Ledger Nano X',
+                        accountIndex: 0,
+                    },
                 },
-            }),
+                null,
+            ),
         ).toBe('LedgerBle')
     })
 
     it('returns RekeyedAuth if it is rekeyed and can sign', () => {
         expect(
-            getAccountType({
-                ...baseAccount,
-                rekeyAddress: 'ADDR2',
-                keyPairId: 'pk',
-            }),
+            getAccountType(
+                {
+                    ...baseAccount,
+                    keyPairId: 'pk',
+                },
+                'ADDR2',
+            ),
         ).toBe('RekeyedAuth')
     })
 
     it('returns Rekeyed if it is rekeyed but cannot sign', () => {
         expect(
-            getAccountType({
-                ...baseAccount,
-                rekeyAddress: 'ADDR2',
-                keyPairId: undefined,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any),
+            getAccountType(
+                {
+                    ...baseAccount,
+                    keyPairId: undefined,
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any,
+                'ADDR2',
+            ),
         ).toBe('Rekeyed')
     })
 
     it('returns Algo25 for standard accounts without HD details', () => {
         expect(
-            getAccountType({
-                ...baseAccount,
-                type: 'algo25',
-                keyPairId: 'pk',
-            }),
+            getAccountType(
+                {
+                    ...baseAccount,
+                    type: 'algo25',
+                    keyPairId: 'pk',
+                },
+                null,
+            ),
         ).toBe('Algo25')
     })
 
     it('returns NoAuth for watch accounts', () => {
         expect(
-            getAccountType({
-                ...baseAccount,
-                type: 'watch',
-            }),
+            getAccountType(
+                {
+                    ...baseAccount,
+                    type: 'watch',
+                },
+                null,
+            ),
         ).toBe('NoAuth')
     })
 
     it('returns Multisig for multisig accounts', () => {
         expect(
-            getAccountType({
-                ...baseAccount,
-                type: 'multisig',
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            } as any),
+            getAccountType(
+                {
+                    ...baseAccount,
+                    type: 'multisig',
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any,
+                null,
+            ),
         ).toBe('Multisig')
     })
 
     it('returns HardwareBle for non-ledger hardware wallet accounts', () => {
         expect(
-            getAccountType({
-                ...baseAccount,
-                type: 'hardware',
-                hardwareDetails: {
-                    manufacturer: 'other',
-                    deviceId: 'test-device',
-                    deviceName: 'Test',
-                    accountIndex: 0,
+            getAccountType(
+                {
+                    ...baseAccount,
+                    type: 'hardware',
+                    hardwareDetails: {
+                        manufacturer: 'other',
+                        deviceId: 'test-device',
+                        deviceName: 'Test',
+                        accountIndex: 0,
+                    },
                 },
-            }),
+                null,
+            ),
         ).toBe('HardwareBle')
     })
 })

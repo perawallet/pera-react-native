@@ -46,8 +46,14 @@ const MOCK_ACCOUNT = {
     id: '1',
     address: 'P4ZYH3ABCDEFGHIJKLMNOPQRSTUVWXYZ1234YW4XM4',
     type: AccountTypes.algo25,
-    rekeyAddress: 'Z6LHO4ABCDEFGHIJKLMNOPQRSTUVWXYZ1234WBYIMM',
     keyPairId: 'pk',
+}
+
+const MOCK_AUTH_ADDRESS = 'Z6LHO4ABCDEFGHIJKLMNOPQRSTUVWXYZ1234WBYIMM'
+
+const MOCK_DISCOVERED = {
+    account: MOCK_ACCOUNT,
+    authAddress: MOCK_AUTH_ADDRESS,
 }
 
 const MOCK_HOOK_RESULT = {
@@ -74,7 +80,7 @@ describe('RekeyedAccountInfoBottomSheet', () => {
             <RekeyedAccountInfoBottomSheet
                 isVisible={true}
                 onClose={vi.fn()}
-                account={MOCK_ACCOUNT}
+                discovered={MOCK_DISCOVERED}
             />,
         )
 
@@ -100,7 +106,7 @@ describe('RekeyedAccountInfoBottomSheet', () => {
             <RekeyedAccountInfoBottomSheet
                 isVisible={true}
                 onClose={vi.fn()}
-                account={MOCK_ACCOUNT}
+                discovered={MOCK_DISCOVERED}
             />,
         )
 
@@ -114,11 +120,11 @@ describe('RekeyedAccountInfoBottomSheet', () => {
             <RekeyedAccountInfoBottomSheet
                 isVisible={true}
                 onClose={vi.fn()}
-                account={MOCK_ACCOUNT}
+                discovered={MOCK_DISCOVERED}
             />,
         )
 
-        expect(screen.getByText(MOCK_ACCOUNT.rekeyAddress)).toBeTruthy()
+        expect(screen.getByText(MOCK_AUTH_ADDRESS)).toBeTruthy()
     })
 
     it('calls onClose when close button is pressed', () => {
@@ -127,7 +133,7 @@ describe('RekeyedAccountInfoBottomSheet', () => {
             <RekeyedAccountInfoBottomSheet
                 isVisible={true}
                 onClose={onClose}
-                account={MOCK_ACCOUNT}
+                discovered={MOCK_DISCOVERED}
             />,
         )
 
@@ -145,7 +151,10 @@ describe('RekeyedAccountInfoBottomSheet', () => {
             <RekeyedAccountInfoBottomSheet
                 isVisible={true}
                 onClose={vi.fn()}
-                account={{ ...MOCK_ACCOUNT, rekeyAddress: undefined }}
+                discovered={{
+                    account: MOCK_ACCOUNT,
+                    authAddress: undefined as unknown as string,
+                }}
             />,
         )
 

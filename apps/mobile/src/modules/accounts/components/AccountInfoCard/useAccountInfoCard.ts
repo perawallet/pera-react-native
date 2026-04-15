@@ -17,6 +17,7 @@ import {
     isHDWalletAccount,
     isSigningAccount,
     useAllAccounts,
+    useAccountAuthAddresses,
     useHDWalletGroups,
     useAccountInformationQuery,
 } from '@perawallet/wallet-core-accounts'
@@ -56,8 +57,13 @@ export const useAccountInfoCard = ({
     const { hdWalletGroups } = useHDWalletGroups()
 
     const allAccounts = useAllAccounts()
+    const { authAddresses } = useAccountAuthAddresses()
     const isHDWallet = isHDWalletAccount(account)
-    const showMinBalance = isSigningAccount(account, allAccounts)
+    const showMinBalance = isSigningAccount(
+        account,
+        allAccounts,
+        authAddresses.get(account.address),
+    )
 
     const handleToggleExpanded = useCallback(() => {
         setIsExpanded(prev => !prev)

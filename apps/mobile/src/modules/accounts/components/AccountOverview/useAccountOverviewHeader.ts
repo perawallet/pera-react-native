@@ -17,6 +17,7 @@ import {
     isSigningAccount,
     useAccountBalancesQuery,
     useAllAccounts,
+    useAccountAuthAddresses,
     usePortfolioTotals,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -46,6 +47,7 @@ export const useAccountOverviewHeader = (
 ): UseAccountOverviewHeaderResult => {
     const { usdToPreferred } = useCurrency()
     const allAccounts = useAllAccounts()
+    const { authAddresses } = useAccountAuthAddresses()
     const { portfolioAlgoValue, accountBalances, isPending } =
         useAccountBalancesQuery(account ? [account] : [])
     const { portfolioUsdValue } = usePortfolioTotals(accountBalances)
@@ -80,7 +82,11 @@ export const useAccountOverviewHeader = (
         setPeriod,
         selectedPoint,
         hasBalance: portfolioAlgoValue.gt(0),
-        canSign: isSigningAccount(account, allAccounts),
+        canSign: isSigningAccount(
+            account,
+            allAccounts,
+            authAddresses.get(account.address),
+        ),
         togglePrivacyMode,
         handleChartSelectionChange,
     }

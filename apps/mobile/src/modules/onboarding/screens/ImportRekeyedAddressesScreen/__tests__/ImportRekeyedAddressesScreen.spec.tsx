@@ -37,11 +37,13 @@ describe('ImportRekeyedAddressesScreen', () => {
         vi.mocked(useImportRekeyedAddressesScreen).mockReturnValue({
             accounts: [
                 {
-                    id: '1',
-                    address: 'MOCK_ADDRESS',
-                    type: AccountTypes.algo25,
-                    rekeyAddress: 'REKEY_ADDRESS',
-                    keyPairId: 'pk',
+                    account: {
+                        id: '1',
+                        address: 'MOCK_ADDRESS',
+                        type: AccountTypes.algo25,
+                        keyPairId: 'pk',
+                    },
+                    authAddress: 'REKEY_ADDRESS',
                 },
             ],
             selectedAddresses: new Set(),

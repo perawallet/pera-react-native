@@ -231,8 +231,8 @@ describe('discoverRekeyedAccounts', () => {
             accountGapLimit: 1,
         })
 
-        expect(accounts[0].address).toBe('REKEYED_ACC_1')
-        expect(accounts[0].rekeyAddress).toBe('ADDRESS_0_0')
+        expect(accounts[0].account.address).toBe('REKEYED_ACC_1')
+        expect(accounts[0].authAddress).toBe('ADDRESS_0_0')
     })
 
     it('should use provided accountAddresses instead of HD derivation', async () => {
@@ -264,7 +264,7 @@ describe('discoverRekeyedAccounts', () => {
         })
 
         expect(accounts).toHaveLength(1)
-        expect(accounts[0].address).toBe('REKEYED_FROM_EXPLICIT')
-        expect(accounts[0].rekeyAddress).toBe('EXPLICIT_ADDRESS')
+        expect(accounts[0].account.address).toBe('REKEYED_FROM_EXPLICIT')
+        expect(accounts[0].authAddress).toBe('EXPLICIT_ADDRESS')
     })
 })

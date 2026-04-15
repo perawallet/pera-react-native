@@ -13,11 +13,20 @@
 import { useMemo } from 'react'
 import { useAccountsStore } from '../store'
 import { isSigningAccount } from '../utils'
+import { useAccountAuthAddresses } from './useAccountAuthAddresses'
 
 export const useSigningAccounts = () => {
     const accounts = useAccountsStore(state => state.accounts)
+    const { authAddresses } = useAccountAuthAddresses()
     return useMemo(
-        () => accounts.filter(account => isSigningAccount(account, accounts)),
-        [accounts],
+        () =>
+            accounts.filter(account =>
+                isSigningAccount(
+                    account,
+                    accounts,
+                    authAddresses.get(account.address),
+                ),
+            ),
+        [accounts, authAddresses],
     )
 }

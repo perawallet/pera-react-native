@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountsStore,
+    useAccountAuthAddresses,
+} from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
 import {
@@ -27,6 +30,7 @@ import { SIGNING_KEY_DOMAIN } from '../constants'
 
 export const useArbitraryDataSigner = () => {
     const accounts = useAccountsStore(state => state.accounts)
+    const { authAddresses } = useAccountAuthAddresses()
     const { getKeyOrThrow, withHDSession, withAlgo25Session } = useKMS()
 
     const signHDWalletArbitraryData = useCallback(
@@ -96,16 +100,31 @@ export const useArbitraryDataSigner = () => {
             account: WalletAccount,
             data: string | string[],
         ): Promise<Uint8Array[]> => {
-            if (account.rekeyAddress) {
+            const authAddress = authAddresses.get(account.address)
+            if (authAddress && authAddress !== account.address) {
                 const rekeyedAccount =
-                    accounts.find(a => a.address === account.rekeyAddress) ??
-                    null
+                    accounts.find(a => a.address === authAddress) ?? null
                 if (!rekeyedAccount) {
                     return Promise.reject(
-                        `No rekeyed account found for ${account.rekeyAddress}`,
+                        `No rekeyed account found for ${authAddress}`,
                     )
                 }
-                return signArbitraryData(rekeyedAccount, data)
+
+                if (isHDWalletAccount(rekeyedAccount)) {
+                    return signHDWalletArbitraryData(
+                        rekeyedAccount as HDWalletAccount,
+                        data,
+                    )
+                }
+                if (isAlgo25Account(rekeyedAccount)) {
+                    return signAlgo25ArbitraryData(
+                        rekeyedAccount as Algo25Account,
+                        data,
+                    )
+                }
+                return Promise.reject(
+                    `Unsupported auth account type ${rekeyedAccount.type} for ${rekeyedAccount.address}`,
+                )
             }
 
             if (isHDWalletAccount(account)) {
@@ -123,7 +142,12 @@ export const useArbitraryDataSigner = () => {
                 `Unsupported account type ${account.type} for ${account.address}`,
             )
         },
-        [accounts, signHDWalletArbitraryData, signAlgo25ArbitraryData],
+        [
+            accounts,
+            authAddresses,
+            signHDWalletArbitraryData,
+            signAlgo25ArbitraryData,
+        ],
     )
 
     return {

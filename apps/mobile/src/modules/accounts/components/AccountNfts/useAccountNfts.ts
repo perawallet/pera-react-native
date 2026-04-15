@@ -17,6 +17,7 @@ import {
     useSelectedAccount,
     useAccountBalancesQuery,
     useAllAccounts,
+    useAccountAuthAddresses,
     isSigningAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -105,6 +106,7 @@ const sortCollectibles = (
 export const useAccountNfts = (): UseAccountNftsResult => {
     const account = useSelectedAccount()
     const allAccounts = useAllAccounts()
+    const { authAddresses } = useAccountAuthAddresses()
     const [searchFilter, setSearchFilter] = useState('')
 
     const sortMode = useCollectiblePreferencesStore(
@@ -139,8 +141,14 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
     const canOptIn = useMemo(
-        () => account !== null && isSigningAccount(account, allAccounts),
-        [account, allAccounts],
+        () =>
+            account !== null &&
+            isSigningAccount(
+                account,
+                allAccounts,
+                authAddresses.get(account.address),
+            ),
+        [account, allAccounts, authAddresses],
     )
 
     const { accountBalances, isPending } = useAccountBalancesQuery(

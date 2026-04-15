@@ -92,6 +92,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     getAccountDisplayName: vi.fn(account => account.name),
     isHDWalletAccount: vi.fn(account => account.type === 'standard'),
     isRekeyedAccount: vi.fn(() => false),
+    useAccountAuthAddresses: vi.fn(() => ({
+        authAddresses: new Map<string, string | null>(),
+        isPending: false,
+        isFetched: true,
+    })),
     useAllAccounts: vi.fn(() => [
         {
             address: 'addr1',

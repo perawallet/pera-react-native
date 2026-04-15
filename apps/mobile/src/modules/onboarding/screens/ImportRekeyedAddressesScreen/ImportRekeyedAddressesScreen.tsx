@@ -49,12 +49,14 @@ export const ImportRekeyedAddressesScreen = () => {
                 )}
                 data={accounts}
                 extraData={selectedAddresses}
-                keyExtractor={item => item.address}
+                keyExtractor={item => item.account.address}
                 renderItem={({ item }) => (
                     <ImportRekeyedAddressesItem
-                        account={item}
-                        isImported={alreadyImportedAddresses.has(item.address)}
-                        isSelected={selectedAddresses.has(item.address)}
+                        discovered={item}
+                        isImported={alreadyImportedAddresses.has(
+                            item.account.address,
+                        )}
+                        isSelected={selectedAddresses.has(item.account.address)}
                         onToggle={toggleSelection}
                     />
                 )}

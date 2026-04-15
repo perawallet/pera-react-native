@@ -48,8 +48,10 @@ import {
     canSignWithAccount,
     isHardwareWalletAccount,
     useAllAccounts,
+    useAccountAuthAddresses,
     useSigningAccounts,
     WalletAccount,
+    type AuthAddressLookup,
 } from '@perawallet/wallet-core-accounts'
 
 const validateRequest = (
@@ -102,6 +104,7 @@ const validateRequest = (
 const validateDataSignRequest = (
     connector: WalletConnect,
     accounts: WalletAccount[],
+    authAddresses: AuthAddressLookup,
     connections: WalletConnectConnection[],
     network: Network,
     data: PeraArbitraryDataMessage[],
@@ -141,7 +144,7 @@ const validateDataSignRequest = (
         const account = accounts.find(
             account => account.address === item.signer,
         )
-        if (!account || !canSignWithAccount(account, accounts)) {
+        if (!account || !canSignWithAccount(account, accounts, authAddresses)) {
             throw new WalletConnectInvalidSessionError('Invalid signer')
         }
 
@@ -165,6 +168,7 @@ export const useWalletConnectHandlers = () => {
     const { encodeSignedTransactions, decodeTransactions } =
         useTransactionEncoder()
     const accounts = useAllAccounts()
+    const { authAddresses } = useAccountAuthAddresses()
     const signingAccounts = useSigningAccounts()
 
     //TODO handle ARC-60 sign requests
@@ -182,6 +186,7 @@ export const useWalletConnectHandlers = () => {
             validateDataSignRequest(
                 connector,
                 accounts,
+                authAddresses,
                 connections,
                 network,
                 params,
@@ -226,7 +231,7 @@ export const useWalletConnectHandlers = () => {
                 },
             } as ArbitraryDataSignRequest)
         },
-        [connections, accounts, addSignRequest],
+        [connections, accounts, authAddresses, addSignRequest],
     )
 
     const handleSignTransaction = useCallback(

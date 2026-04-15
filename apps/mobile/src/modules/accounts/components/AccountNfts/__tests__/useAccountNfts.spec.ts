@@ -44,6 +44,11 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useAccountBalancesQuery: (...args: unknown[]) =>
             mockUseAccountBalancesQuery(...args),
         useAllAccounts: (...args: unknown[]) => mockUseAllAccounts(...args),
+        useAccountAuthAddresses: () => ({
+            authAddresses: new Map<string, string | null>(),
+            isPending: false,
+            isFetched: true,
+        }),
         isSigningAccount: (...args: unknown[]) => mockIsSigningAccount(...args),
     }
 })

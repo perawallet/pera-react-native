@@ -21,6 +21,7 @@ import {
     useRemoveAccountById,
     useUpdateAccount,
     useAllAccounts,
+    useAccountAuthAddresses,
 } from '@perawallet/wallet-core-accounts'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
@@ -70,6 +71,8 @@ export const useAccountOptions = ({
     const { copyToClipboard } = useClipboard()
     const { isAccountEnabled, setAccountEnabled } = useNotificationPreferences()
     const accounts = useAllAccounts()
+    const { authAddresses } = useAccountAuthAddresses()
+    const accountAuthAddress = authAddresses.get(account.address) ?? null
     const removeAccountById = useRemoveAccountById()
     const updateAccount = useUpdateAccount()
     const navigation = useAppNavigation()
@@ -116,11 +119,11 @@ export const useAccountOptions = ({
     }, [notImplemented])
 
     const handleAuthAddress = useCallback(() => {
-        if (account.rekeyAddress) {
-            copyToClipboard(account.rekeyAddress)
+        if (accountAuthAddress) {
+            copyToClipboard(accountAuthAddress)
         }
         onClose()
-    }, [copyToClipboard, account.rekeyAddress, onClose])
+    }, [copyToClipboard, accountAuthAddress, onClose])
 
     const handleUndoRekey = useCallback(() => {
         notImplemented()
@@ -189,9 +192,11 @@ export const useAccountOptions = ({
     )
 
     const handleConfirmRemove = useCallback(() => {
-        const rekeyedToThisAccount = accounts.filter(
-            a => a.rekeyAddress === account.address && a.id !== account.id,
-        )
+        const rekeyedToThisAccount = accounts.filter(a => {
+            if (a.id === account.id) return false
+            const auth = authAddresses.get(a.address) ?? null
+            return auth === account.address
+        })
 
         if (rekeyedToThisAccount.length > 0) {
             handleCloseRemoveConfirm()
@@ -215,6 +220,7 @@ export const useAccountOptions = ({
         }
     }, [
         accounts,
+        authAddresses,
         account.address,
         account.id,
         removeAccountById,
@@ -253,7 +259,7 @@ export const useAccountOptions = ({
             })
         }
 
-        if (isRekeyedAccount(account)) {
+        if (isRekeyedAccount(account, accountAuthAddress)) {
             items.push({
                 id: 'auth-address',
                 icon: 'account-rekeyed',
@@ -262,7 +268,10 @@ export const useAccountOptions = ({
             })
         }
 
-        if (isRekeyedAccount(account) && hasSigningKeys(account)) {
+        if (
+            isRekeyedAccount(account, accountAuthAddress) &&
+            hasSigningKeys(account)
+        ) {
             items.push({
                 id: 'undo-rekey',
                 icon: 'undo',
@@ -271,7 +280,7 @@ export const useAccountOptions = ({
             })
         }
 
-        if (canSignWithAccount(account, accounts)) {
+        if (canSignWithAccount(account, accounts, authAddresses)) {
             items.push({
                 id: 'rekey-to-ledger',
                 icon: 'rekey',
@@ -315,6 +324,9 @@ export const useAccountOptions = ({
     }, [
         t,
         account,
+        accounts,
+        accountAuthAddress,
+        authAddresses,
         notificationsEnabled,
         handleCopyAddress,
         handleShowAddress,

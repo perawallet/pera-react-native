@@ -17,6 +17,7 @@ import {
     isSigningAccount,
     useAccountBalancesQuery,
     useAllAccounts,
+    useAccountAuthAddresses,
     useSortedAssetBalances,
     WalletAccount,
     AssetWithAccountBalance,
@@ -152,7 +153,12 @@ export const useAccountAssetList = ({
     }, [sortedBalances, debouncedSearchFilter, assets])
 
     const allAccounts = useAllAccounts()
-    const isWatch = !isSigningAccount(account, allAccounts)
+    const { authAddresses } = useAccountAuthAddresses()
+    const isWatch = !isSigningAccount(
+        account,
+        allAccounts,
+        authAddresses.get(account.address),
+    )
 
     const goToAssetScreen = useCallback(
         (item: AssetWithAccountBalance) => {

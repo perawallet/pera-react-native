@@ -22,22 +22,25 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
 
-const MOCK_ACCOUNTS = [
+const MOCK_WALLET_ACCOUNTS = [
     {
         id: '1',
         address: 'ACC1',
         type: AccountTypes.algo25,
-        rekeyAddress: 'REKEY',
         keyPairId: 'pk',
     },
     {
         id: '2',
         address: 'ACC2',
         type: AccountTypes.algo25,
-        rekeyAddress: 'REKEY',
         keyPairId: 'pk2',
     },
 ]
+
+const MOCK_ACCOUNTS = MOCK_WALLET_ACCOUNTS.map(account => ({
+    account,
+    authAddress: 'REKEY',
+}))
 
 vi.mock('@react-navigation/native', () => ({
     useRoute: vi.fn(),
@@ -47,9 +50,15 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(),
     useSetAccounts: vi.fn(),
     useSelectedAccountAddress: vi.fn(),
+    useAccountBalancesInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
+    fetchAndPersistAccount: vi.fn().mockResolvedValue(undefined),
     AccountTypes: {
         algo25: 'algo25',
     },
+}))
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -62,6 +71,7 @@ vi.mock('@modules/onboarding/hooks', () => ({
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     deferToNextCycle: (cb: () => void) => setTimeout(cb, 0),
+    logger: { warn: vi.fn() },
 }))
 
 describe('useImportRekeyedAddressesScreen', () => {
@@ -125,7 +135,7 @@ describe('useImportRekeyedAddressesScreen', () => {
 
     it('tracks already imported addresses without selecting any', () => {
         vi.mocked(useAllAccounts).mockReturnValue([
-            { ...MOCK_ACCOUNTS[0] }, // ACC1 is already imported
+            { ...MOCK_WALLET_ACCOUNTS[0] }, // ACC1 is already imported
         ])
 
         const { result } = renderHook(() => useImportRekeyedAddressesScreen())
@@ -155,7 +165,7 @@ describe('useImportRekeyedAddressesScreen', () => {
             vi.runAllTimers()
         })
 
-        expect(mockSetAccounts).toHaveBeenCalledWith(MOCK_ACCOUNTS)
+        expect(mockSetAccounts).toHaveBeenCalledWith(MOCK_WALLET_ACCOUNTS)
         expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith('ACC1')
         expect(mockExitAccountFlow).toHaveBeenCalled()
     })

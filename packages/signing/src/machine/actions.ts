@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    WalletAccount,
+    AuthAddressLookup,
+} from '@perawallet/wallet-core-accounts'
 import {
     hasSigningKeys,
     isHardwareWalletAccount,
@@ -79,6 +82,7 @@ const determineSignerType = (
 const buildGroupSignerTypeMap = (
     groups: SignableGroup[],
     allAccounts: WalletAccount[],
+    authAddresses: AuthAddressLookup,
 ): GroupSignerTypeMap => {
     const map: GroupSignerTypeMap = new Map()
     for (const group of groups) {
@@ -89,7 +93,11 @@ const buildGroupSignerTypeMap = (
         if (!signerAccount) {
             throw new Error(`Signer account not found: ${group.signerAddress}`)
         }
-        const authAccount = resolveAuthAccount(signerAccount, allAccounts)
+        const authAccount = resolveAuthAccount(
+            signerAccount,
+            allAccounts,
+            authAddresses.get(signerAccount.address),
+        )
         map.set(
             group.signerAddress,
             determineSignerType(signerAccount, authAccount),
@@ -273,7 +281,7 @@ const extractDeps = (input: SigningMachineInput): SigningMachineDeps => ({
 export const resolveInitialContext = (
     input: SigningMachineInput,
 ): SigningMachineContext => {
-    const { request, allAccounts } = input
+    const { request, allAccounts, authAddresses } = input
 
     const signableGroups = buildSignableGroups(request, allAccounts)
 
@@ -288,6 +296,7 @@ export const resolveInitialContext = (
     const groupSignerTypes = buildGroupSignerTypeMap(
         signableGroups,
         allAccounts,
+        authAddresses,
     )
 
     const hasHardwareSigners = [...groupSignerTypes.values()].includes(
@@ -300,6 +309,7 @@ export const resolveInitialContext = (
     return {
         request,
         allAccounts,
+        authAddresses,
         signerAddress,
         groupSignerTypes,
         completedSignerTypes: [],
@@ -323,6 +333,7 @@ export const makeFailedContext = (
 ): SigningMachineContext => ({
     request: input.request,
     allAccounts: input.allAccounts,
+    authAddresses: input.authAddresses,
     signerAddress: null,
     groupSignerTypes: null,
     completedSignerTypes: [],

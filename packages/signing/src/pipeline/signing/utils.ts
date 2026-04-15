@@ -13,6 +13,7 @@
 import type {
     WalletAccount,
     MultiSigAccount,
+    AuthAddressLookup,
 } from '@perawallet/wallet-core-accounts'
 import {
     isMultisigAccount,
@@ -31,6 +32,7 @@ import {
 export const getLocalParticipants = (
     account: WalletAccount,
     allAccounts: WalletAccount[],
+    authAddresses: AuthAddressLookup,
 ): WalletAccount[] => {
     if (!isMultisigAccount(account)) {
         return []
@@ -50,7 +52,7 @@ export const getLocalParticipants = (
         }
 
         // Check if this account can sign (has keys or is rekeyed to an account with keys)
-        return canSignWithAccount(localAccount, allAccounts)
+        return canSignWithAccount(localAccount, allAccounts, authAddresses)
     })
 }
 
@@ -64,13 +66,18 @@ export const getLocalParticipants = (
 export const canMeetThresholdLocally = (
     account: WalletAccount,
     allAccounts: WalletAccount[],
+    authAddresses: AuthAddressLookup,
 ): boolean => {
     if (!isMultisigAccount(account)) {
         return false
     }
 
     const multisigAccount = account as MultiSigAccount
-    const localParticipants = getLocalParticipants(account, allAccounts)
+    const localParticipants = getLocalParticipants(
+        account,
+        allAccounts,
+        authAddresses,
+    )
 
     return localParticipants.length >= multisigAccount.multisigDetails.threshold
 }

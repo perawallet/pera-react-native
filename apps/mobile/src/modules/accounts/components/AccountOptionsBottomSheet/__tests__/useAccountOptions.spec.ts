@@ -30,6 +30,13 @@ const { mockRemoveAccountById } = vi.hoisted(() => ({
 const { mockAllAccounts } = vi.hoisted(() => ({
     mockAllAccounts: vi.fn((): WalletAccount[] => []),
 }))
+const { mockAuthAddresses } = vi.hoisted(() => ({
+    mockAuthAddresses: vi.fn(
+        (): { authAddresses: Map<string, string | null> } => ({
+            authAddresses: new Map(),
+        }),
+    ),
+}))
 const { mockUpdateAccount } = vi.hoisted(() => ({
     mockUpdateAccount: vi.fn(),
 }))
@@ -76,6 +83,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useRemoveAccountById: () => mockRemoveAccountById,
         useUpdateAccount: () => mockUpdateAccount,
         useAllAccounts: () => mockAllAccounts(),
+        useAccountAuthAddresses: () => mockAuthAddresses(),
     }
 })
 
@@ -102,14 +110,12 @@ describe('useAccountOptions', () => {
         address: 'REKEYEDADDRESS',
         type: AccountTypes.algo25,
         keyPairId: 'key-3',
-        rekeyAddress: 'AUTHADDRESS',
     }
 
     const rekeyedWatchAccount: WalletAccount = {
         id: 'acc-5',
         address: 'REKEYEDWATCHADDRESS',
         type: AccountTypes.watch,
-        rekeyAddress: 'ALGO25ADDRESS',
     }
 
     const hardwareAccount: WalletAccount = {
@@ -127,6 +133,7 @@ describe('useAccountOptions', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockIsAccountEnabled.mockReturnValue(true)
+        mockAuthAddresses.mockReturnValue({ authAddresses: new Map() })
         mockAllAccounts.mockReturnValue([algo25Account, watchAccount])
     })
 
@@ -173,6 +180,12 @@ describe('useAccountOptions', () => {
         })
 
         it('shows all options including rekey for a rekeyed account', () => {
+            mockAuthAddresses.mockReturnValue({
+                authAddresses: new Map([
+                    [rekeyedAccount.address, 'AUTHADDRESS'],
+                ]),
+            })
+
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: rekeyedAccount,
@@ -201,6 +214,11 @@ describe('useAccountOptions', () => {
                 algo25Account,
                 rekeyedWatchAccount,
             ])
+            mockAuthAddresses.mockReturnValue({
+                authAddresses: new Map([
+                    [rekeyedWatchAccount.address, algo25Account.address],
+                ]),
+            })
 
             const { result } = renderHook(() =>
                 useAccountOptions({
@@ -475,6 +493,12 @@ describe('useAccountOptions', () => {
         })
 
         it('copies rekey auth address when auth address option is pressed', () => {
+            mockAuthAddresses.mockReturnValue({
+                authAddresses: new Map([
+                    [rekeyedAccount.address, 'AUTHADDRESS'],
+                ]),
+            })
+
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: rekeyedAccount,
@@ -632,6 +656,12 @@ describe('useAccountOptions', () => {
         })
 
         it('shows not implemented toast for undo-rekey', () => {
+            mockAuthAddresses.mockReturnValue({
+                authAddresses: new Map([
+                    [rekeyedAccount.address, 'AUTHADDRESS'],
+                ]),
+            })
+
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: rekeyedAccount,
@@ -680,9 +710,13 @@ describe('useAccountOptions', () => {
                 address: 'SOMEOTHERADDRESS',
                 type: AccountTypes.algo25,
                 keyPairId: 'key-rekeyed',
-                rekeyAddress: 'ALGO25ADDRESS',
             }
             mockAllAccounts.mockReturnValue([algo25Account, rekeyedToAlgo25])
+            mockAuthAddresses.mockReturnValue({
+                authAddresses: new Map([
+                    [rekeyedToAlgo25.address, algo25Account.address],
+                ]),
+            })
 
             const { result } = renderHook(() =>
                 useAccountOptions({

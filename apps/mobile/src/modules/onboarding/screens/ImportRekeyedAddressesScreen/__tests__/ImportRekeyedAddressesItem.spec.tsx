@@ -27,8 +27,12 @@ const MOCK_ACCOUNT = {
     id: '1',
     address: 'MOCK_ADDRESS',
     type: AccountTypes.algo25,
-    rekeyAddress: 'REKEY_ADDRESS',
     keyPairId: 'pk',
+}
+
+const MOCK_DISCOVERED = {
+    account: MOCK_ACCOUNT,
+    authAddress: 'REKEY_ADDRESS',
 }
 
 const TRUNCATED_ADDRESS = truncateAlgorandAddress(MOCK_ACCOUNT.address)
@@ -37,7 +41,7 @@ describe('ImportRekeyedAddressesItem', () => {
     it('renders correctly with truncated address', () => {
         render(
             <ImportRekeyedAddressesItem
-                account={MOCK_ACCOUNT}
+                discovered={MOCK_DISCOVERED}
                 isImported={false}
                 isSelected={false}
                 onToggle={vi.fn()}
@@ -56,7 +60,7 @@ describe('ImportRekeyedAddressesItem', () => {
         const onToggle = vi.fn()
         render(
             <ImportRekeyedAddressesItem
-                account={MOCK_ACCOUNT}
+                discovered={MOCK_DISCOVERED}
                 isImported={false}
                 isSelected={false}
                 onToggle={onToggle}
@@ -70,7 +74,7 @@ describe('ImportRekeyedAddressesItem', () => {
     it('renders as disabled and shows "already imported" chip when isImported is true', () => {
         render(
             <ImportRekeyedAddressesItem
-                account={MOCK_ACCOUNT}
+                discovered={MOCK_DISCOVERED}
                 isImported={true}
                 isSelected={false}
                 onToggle={vi.fn()}
@@ -89,7 +93,7 @@ describe('ImportRekeyedAddressesItem', () => {
     it('opens info bottom sheet when info icon is pressed', () => {
         render(
             <ImportRekeyedAddressesItem
-                account={MOCK_ACCOUNT}
+                discovered={MOCK_DISCOVERED}
                 isImported={false}
                 isSelected={false}
                 onToggle={vi.fn()}
@@ -113,7 +117,7 @@ describe('ImportRekeyedAddressesItem', () => {
     it('renders selected state correctly', () => {
         render(
             <ImportRekeyedAddressesItem
-                account={MOCK_ACCOUNT}
+                discovered={MOCK_DISCOVERED}
                 isImported={false}
                 isSelected={true}
                 onToggle={vi.fn()}

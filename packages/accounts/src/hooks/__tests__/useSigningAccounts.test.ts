@@ -19,6 +19,14 @@ vi.mock('../../store', () => ({
     useAccountsStore: vi.fn(),
 }))
 
+vi.mock('../useAccountAuthAddresses', () => ({
+    useAccountAuthAddresses: () => ({
+        authAddresses: new Map<string, string | null>(),
+        isPending: false,
+        isFetched: true,
+    }),
+}))
+
 describe('useSigningAccounts', () => {
     beforeEach(() => {
         vi.clearAllMocks()

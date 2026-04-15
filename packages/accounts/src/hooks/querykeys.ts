@@ -34,6 +34,12 @@ export const getAccountBalancesQueryKey = (
     return [MODULE_PREFIX, 'balance', { address, network, filters }]
 }
 
+export const getAccountAuthAddressesQueryKey = (network: Network) => [
+    MODULE_PREFIX,
+    'auth-addresses',
+    { network },
+]
+
 export const getAccountBalancesHistoryQueryKey = (
     addresses: AccountAddress[],
     period: HistoryPeriod,
@@ -56,7 +62,8 @@ export const getAccountAssetBalanceHistoryQueryKey = (
 export const getInvalidateAccountBalancesPredicate = (query: Query) =>
     query.queryKey.length >= 2 &&
     query.queryKey.at(0) === MODULE_PREFIX &&
-    query.queryKey.at(1) === 'balance'
+    (query.queryKey.at(1) === 'balance' ||
+        query.queryKey.at(1) === 'auth-addresses')
 
 export function invalidateAccountQueries(queryClient: QueryClient): void {
     void queryClient.invalidateQueries({

@@ -18,6 +18,11 @@ import { useSettingsNotificationsScreen } from '../useSettingsNotificationsScree
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     resolveAccountStatus: () => 'standard',
     useAllAccounts: () => [],
+    useAccountAuthAddresses: () => ({
+        authAddresses: new Map<string, string | null>(),
+        isPending: false,
+        isFetched: true,
+    }),
     getAccountDisplayName: (account: { name?: string }) =>
         account?.name ?? 'Account',
 }))

@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import {
+    useAccountsStore,
+    useAccountAuthAddresses,
+} from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useCallback } from 'react'
 import {
@@ -34,6 +37,7 @@ import { SIGNING_KEY_DOMAIN } from '../constants'
 
 export const useTransactionSigner = () => {
     const accounts = useAccountsStore(state => state.accounts)
+    const { authAddresses } = useAccountAuthAddresses()
     const { getKeyOrThrow, withHDSession, withAlgo25Session } = useKMS()
     const { encodeTransaction } = useTransactionEncoder()
 
@@ -122,13 +126,14 @@ export const useTransactionSigner = () => {
             txns: PeraTransactionGroup,
             dontFollowRekey?: boolean,
         ): Promise<PeraSignedTransaction[]> => {
-            if (account.rekeyAddress && !dontFollowRekey) {
+            const authAddress = authAddresses.get(account.address)
+            const isRekeyed = !!authAddress && authAddress !== account.address
+            if (isRekeyed && !dontFollowRekey) {
                 const rekeyedAccount =
-                    accounts.find(a => a.address === account.rekeyAddress) ??
-                    null
+                    accounts.find(a => a.address === authAddress) ?? null
                 if (!rekeyedAccount) {
                     return Promise.reject(
-                        `No rekeyed account found for ${account.rekeyAddress}`,
+                        `No rekeyed account found for ${authAddress}`,
                     )
                 }
                 //rekeys don't chain, so only follow rekeys for one level
@@ -152,7 +157,12 @@ export const useTransactionSigner = () => {
                 `Unsupported account type ${account.type} for ${account.address}`,
             )
         },
-        [accounts, signHDWalletTransactions, signAlgo25Transactions],
+        [
+            accounts,
+            authAddresses,
+            signHDWalletTransactions,
+            signAlgo25Transactions,
+        ],
     )
 
     const signTransactions = useCallback(

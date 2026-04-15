@@ -22,25 +22,26 @@ import {
 } from '@components/core'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { CopyableText } from '@components/CopyableText'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { DiscoveredRekeyedAccount } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { useStyles } from './styles'
 import { RekeyedAccountInfoBottomSheet } from './RekeyedAccountInfoBottomSheet'
 
 type ImportRekeyedAddressesItemProps = {
-    account: WalletAccount
+    discovered: DiscoveredRekeyedAccount
     isImported: boolean
     isSelected: boolean
     onToggle: (address: string) => void
 }
 
 export const ImportRekeyedAddressesItem = ({
-    account,
+    discovered,
     isImported,
     isSelected,
     onToggle,
 }: ImportRekeyedAddressesItemProps) => {
+    const { account } = discovered
     const styles = useStyles()
     const { t } = useLanguage()
     const bottomSheetState = useModalState()
@@ -109,7 +110,7 @@ export const ImportRekeyedAddressesItem = ({
             <RekeyedAccountInfoBottomSheet
                 isVisible={bottomSheetState.isOpen}
                 onClose={bottomSheetState.close}
-                account={account}
+                discovered={discovered}
             />
 
             {isImported && (

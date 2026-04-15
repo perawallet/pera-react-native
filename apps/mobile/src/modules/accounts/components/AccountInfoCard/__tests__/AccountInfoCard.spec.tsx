@@ -132,6 +132,11 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useAccountInformationQuery: (...args: unknown[]) =>
             mockUseAccountInformationQuery(...args),
         useHDWalletGroups: () => mockUseHDWalletGroups(),
+        useAccountAuthAddresses: () => ({
+            authAddresses: new Map<string, string | null>(),
+            isPending: false,
+            isFetched: true,
+        }),
     }
 })
 

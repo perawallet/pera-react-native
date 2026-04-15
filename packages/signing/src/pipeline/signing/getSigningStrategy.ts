@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    WalletAccount,
+    AuthAddressLookup,
+} from '@perawallet/wallet-core-accounts'
 import {
     hasSigningKeys,
     isHardwareWalletAccount,
@@ -41,10 +44,14 @@ export interface GetSigningStrategyOptions {
     getLocalParticipants: (
         account: WalletAccount,
         allAccounts: WalletAccount[],
+        authAddresses: AuthAddressLookup,
     ) => WalletAccount[]
 
     /** Get all user accounts */
     getAllAccounts: () => WalletAccount[]
+
+    /** Get the current on-chain auth-address lookup */
+    getAuthAddresses: () => AuthAddressLookup
 
     /** Transaction encoder for hardware wallet signing */
     encodeTransaction: EncodeTransactionFunction
@@ -62,6 +69,7 @@ export const createSigningStrategySelector = (
 ): ((
     account: WalletAccount,
     allAccounts: WalletAccount[],
+    authAddresses: AuthAddressLookup,
 ) => SigningStrategy) => {
     const localStrategy = createLocalKeyStrategy(options.signTransactions)
     const hardwareStrategy = createHardwareStrategy({
@@ -73,14 +81,16 @@ export const createSigningStrategySelector = (
     // participant via a lazy callback, avoiding circular init issues.
     const multisigStrategy = createMultisigStrategy({
         getLocalParticipants: options.getLocalParticipants,
-        getStrategyForParticipant: (participant, allAccounts) =>
-            selectStrategy(participant, allAccounts),
+        getStrategyForParticipant: (participant, allAccounts, authAddresses) =>
+            selectStrategy(participant, allAccounts, authAddresses),
         getAllAccounts: options.getAllAccounts,
+        getAuthAddresses: options.getAuthAddresses,
     })
 
     const selectStrategy = (
         account: WalletAccount,
         allAccounts: WalletAccount[],
+        authAddresses: AuthAddressLookup,
     ): SigningStrategy => {
         // Multisig accounts are handled by the multisig strategy
         if (isMultisigAccount(account)) {
@@ -88,7 +98,11 @@ export const createSigningStrategySelector = (
         }
 
         // Follow rekey chain to find actual signer
-        const actualSigner = resolveAuthAccount(account, allAccounts)
+        const actualSigner = resolveAuthAccount(
+            account,
+            allAccounts,
+            authAddresses.get(account.address),
+        )
 
         // Select strategy based on actual signer type
         if (isHardwareWalletAccount(actualSigner)) {

@@ -43,6 +43,8 @@ vi.mock('@perawallet/wallet-core-config', () => ({
 }))
 
 const mockUseAllAccounts = vi.fn()
+const mockUseAccountAuthAddresses =
+    vi.fn<() => { authAddresses: Map<string, string | null> }>()
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<
@@ -51,6 +53,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     return {
         ...actual,
         useAllAccounts: () => mockUseAllAccounts(),
+        useAccountAuthAddresses: () => mockUseAccountAuthAddresses(),
     }
 })
 
@@ -104,23 +107,35 @@ const multisigAccount: WalletAccount = {
 const rekeyedWithAuthAccount: WalletAccount = {
     type: 'algo25',
     address: 'REKEYEDADDR1234567890ABCDEFGHIJKLMNOPQRSTUVW',
-    rekeyAddress: 'ALGO25ADDR1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ',
     keyPairId: 'key-4',
 }
 
 const rekeyedToLedgerAccount: WalletAccount = {
     type: 'algo25',
     address: 'REKEYLEDGADDR1234567890ABCDEFGHIJKLMNOPQRSTUV',
-    rekeyAddress: 'LEDGERADDR1234567890ABCDEFGHIJKLMNOPQRSTUVWX',
     keyPairId: 'key-5',
 }
 
 const rekeyedNoAuthAccount: WalletAccount = {
     type: 'algo25',
     address: 'REKEYNOAUTHADDR1234567890ABCDEFGHIJKLMNOPQRST',
-    rekeyAddress: 'UNKNOWNADDR1234567890ABCDEFGHIJKLMNOPQRSTUV',
     keyPairId: 'key-6',
 }
+
+const authAddressMap = new Map<string, string | null>([
+    [
+        rekeyedWithAuthAccount.address,
+        'ALGO25ADDR1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    ],
+    [
+        rekeyedToLedgerAccount.address,
+        'LEDGERADDR1234567890ABCDEFGHIJKLMNOPQRSTUVWX',
+    ],
+    [
+        rekeyedNoAuthAccount.address,
+        'UNKNOWNADDR1234567890ABCDEFGHIJKLMNOPQRSTUV',
+    ],
+])
 
 describe('useAccountTypeInfo', () => {
     const onClose = vi.fn()
@@ -133,6 +148,9 @@ describe('useAccountTypeInfo', () => {
             watchAccount,
             hdWalletAccount,
         ])
+        mockUseAccountAuthAddresses.mockReturnValue({
+            authAddresses: authAddressMap,
+        })
     })
 
     it('resolves standard account type', () => {

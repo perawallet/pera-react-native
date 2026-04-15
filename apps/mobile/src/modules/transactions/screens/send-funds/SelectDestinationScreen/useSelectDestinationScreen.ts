@@ -16,6 +16,7 @@ import {
     canSignWithAccount,
     useAccountBalancesQuery,
     useAllAccounts,
+    useAccountAuthAddresses,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID, useAssetsQuery } from '@perawallet/wallet-core-assets'
@@ -27,6 +28,7 @@ export const useSelectDestinationScreen = () => {
     const { selectedAssetId, setDestination, setSendMode } = useSendFunds()
     const selectedAccount = useSelectedAccount()
     const accounts = useAllAccounts()
+    const { authAddresses } = useAccountAuthAddresses()
     const { accountBalances } = useAccountBalancesQuery(accounts)
 
     const assetIDs = useMemo(
@@ -72,7 +74,8 @@ export const useSelectDestinationScreen = () => {
             // Check if receiver is a local account we can sign for
             const localAccount = accounts.find(a => a.address === address)
             const isLocalSignable =
-                localAccount && canSignWithAccount(localAccount, accounts)
+                localAccount &&
+                canSignWithAccount(localAccount, accounts, authAddresses)
 
             if (isLocalSignable) {
                 // Express send: local account, we handle opt-in + transfer
@@ -87,6 +90,7 @@ export const useSelectDestinationScreen = () => {
         [
             selectedAsset,
             accounts,
+            authAddresses,
             accountBalances,
             setSendMode,
             setDestination,

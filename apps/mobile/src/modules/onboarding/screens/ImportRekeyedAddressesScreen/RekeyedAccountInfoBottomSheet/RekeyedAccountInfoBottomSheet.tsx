@@ -22,7 +22,7 @@ import {
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
 import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { DiscoveredRekeyedAccount } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { useLanguage } from '@hooks/useLanguage'
@@ -35,16 +35,17 @@ import { useStyles } from './styles'
 export type RekeyedAccountInfoBottomSheetProps = {
     isVisible: boolean
     onClose: () => void
-    account: WalletAccount
+    discovered: DiscoveredRekeyedAccount
 }
 
 export const RekeyedAccountInfoBottomSheet = ({
     isVisible,
     onClose,
-    account,
+    discovered,
 }: RekeyedAccountInfoBottomSheetProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const { account } = discovered
     const { displayName: accountDisplayName } = useResolvedAddress(
         account.address,
     )
@@ -53,7 +54,7 @@ export const RekeyedAccountInfoBottomSheet = ({
         rekeyedAccountAlgoValue,
         authAddress,
         authAccountAlgoValue,
-    } = useRekeyedAccountInfoBottomSheet({ account, isVisible })
+    } = useRekeyedAccountInfoBottomSheet({ discovered, isVisible })
 
     return (
         <PWBottomSheet

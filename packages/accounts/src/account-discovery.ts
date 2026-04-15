@@ -218,6 +218,11 @@ export async function discoverAccounts({
     })
 }
 
+export type DiscoveredRekeyedAccount = {
+    account: WalletAccount
+    authAddress: string
+}
+
 async function checkRekeyed(
     algorandClient: AlgorandClient,
     address: string,
@@ -248,8 +253,8 @@ async function scanRekeyedKeys({
     session,
     derivationType,
     algorandClient,
-}: ScanRekeyedKeysParams): Promise<WalletAccount[]> {
-    const foundAccounts: WalletAccount[] = []
+}: ScanRekeyedKeysParams): Promise<DiscoveredRekeyedAccount[]> {
+    const foundAccounts: DiscoveredRekeyedAccount[] = []
     let keyGap = 0
     let keyIdx = 0
 
@@ -272,11 +277,15 @@ async function scanRekeyedKeys({
                 )
 
                 return rekeyedAccounts.map(
-                    (account: { address: string }): WatchAccount => ({
-                        id: generateOrderedUniqueId(),
-                        address: account.address,
-                        type: AccountTypes.watch,
-                        rekeyAddress: address,
+                    (account: {
+                        address: string
+                    }): DiscoveredRekeyedAccount => ({
+                        account: {
+                            id: generateOrderedUniqueId(),
+                            address: account.address,
+                            type: AccountTypes.watch,
+                        } as WatchAccount,
+                        authAddress: address,
                     }),
                 )
             })
@@ -308,7 +317,7 @@ export async function discoverRekeyedAccounts({
     accountGapLimit = ACCOUNT_GAP_LIMIT,
     keyIndexGapLimit = KEY_INDEX_GAP_LIMIT,
     accountAddresses,
-}: DiscoverAccountsParams): Promise<WalletAccount[]> {
+}: DiscoverAccountsParams): Promise<DiscoveredRekeyedAccount[]> {
     const algorandClient = getAlgorandClient()
 
     if (accountAddresses && accountAddresses.length > 0) {
@@ -316,11 +325,13 @@ export async function discoverRekeyedAccounts({
             const rekeyedAccounts = await checkRekeyed(algorandClient, address)
 
             return rekeyedAccounts.map(
-                (account: { address: string }): WalletAccount => ({
-                    id: generateOrderedUniqueId(),
-                    address: account.address,
-                    type: AccountTypes.watch,
-                    rekeyAddress: address,
+                (account: { address: string }): DiscoveredRekeyedAccount => ({
+                    account: {
+                        id: generateOrderedUniqueId(),
+                        address: account.address,
+                        type: AccountTypes.watch,
+                    } as WatchAccount,
+                    authAddress: address,
                 }),
             )
         })
@@ -329,7 +340,7 @@ export async function discoverRekeyedAccounts({
         return results.flat()
     }
 
-    const foundAccounts: WalletAccount[] = []
+    const foundAccounts: DiscoveredRekeyedAccount[] = []
 
     let accountGap = 0
     let accountIndex = 0

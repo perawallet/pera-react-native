@@ -17,6 +17,7 @@ import {
     AccountStatus,
     resolveAccountStatus,
     useAllAccounts,
+    useAccountAuthAddresses,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
@@ -45,12 +46,17 @@ export const AccountIcon = (props: AccountIconProps) => {
     const { account, size = 'md', ...rest } = props
     const darkmode = useIsDarkMode()
     const accounts = useAllAccounts()
+    const { authAddresses } = useAccountAuthAddresses()
 
     const icon = useMemo(() => {
         if (!account) return <></>
 
         const theme = darkmode ? 'dark' : 'light'
-        const accountStatus = resolveAccountStatus(account, accounts)
+        const accountStatus = resolveAccountStatus(
+            account,
+            accounts,
+            authAddresses.get(account.address),
+        )
         const icon = iconNames[accountStatus] ?? FALLBACK_ASSET
         const iconName: IconName = icon.replaceAll(
             THEME_TOKEN,

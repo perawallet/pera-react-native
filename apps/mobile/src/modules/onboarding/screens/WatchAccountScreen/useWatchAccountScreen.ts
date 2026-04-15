@@ -17,9 +17,14 @@ import {
     useAllAccounts,
     AccountTypes,
     WalletAccount,
+    fetchAndPersistAccount,
+    useAccountBalancesInvalidator,
 } from '@perawallet/wallet-core-accounts'
-import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
-import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import {
+    isValidAlgorandAddress,
+    useNetwork,
+} from '@perawallet/wallet-core-blockchain'
+import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import { useNfdResolve } from '@hooks/useNfdResolve'
 
 type UseWatchAccountScreenResult = {
@@ -38,6 +43,9 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
     const navigation = useAppNavigation()
     const accounts = useAllAccounts()
     const setAccounts = useAccountsStore(state => state.setAccounts)
+    const { network } = useNetwork()
+    const { invalidate: invalidateAccountBalances } =
+        useAccountBalancesInvalidator()
     const [address, setAddress] = useState('')
 
     const { resolvedAddress, isNfdResolved, isNfdResolving, nfdName } =
@@ -63,10 +71,36 @@ export const useWatchAccountScreen = (): UseWatchAccountScreenResult => {
         }
 
         setAccounts([...accounts, newAccount])
+
+        // Eagerly pull the on-chain account info so the derived status can
+        // upgrade this watch account to rekeyed immediately if its
+        // auth-addr matches another wallet account. Any failure just falls
+        // back to the background sync service's next tick.
+        fetchAndPersistAccount(resolvedAddress, network)
+            .then(() => invalidateAccountBalances())
+            .catch(error => {
+                logger.warn('Failed to prefetch watch account info', {
+                    address: resolvedAddress,
+                    network,
+                    error:
+                        error instanceof Error
+                            ? { message: error.message, stack: error.stack }
+                            : error,
+                })
+            })
+
         navigation.push('NameAccount', {
             account: newAccount as WalletAccount,
         })
-    }, [resolvedAddress, isDuplicateAddress, accounts, setAccounts, navigation])
+    }, [
+        resolvedAddress,
+        isDuplicateAddress,
+        accounts,
+        setAccounts,
+        navigation,
+        network,
+        invalidateAccountBalances,
+    ])
 
     return {
         address,

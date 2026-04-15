@@ -15,6 +15,7 @@ import { useKMS } from '@perawallet/wallet-core-kms'
 import {
     discoverAccounts as baseDiscoverAccounts,
     discoverRekeyedAccounts as baseDiscoverRekeyedAccounts,
+    type DiscoveredRekeyedAccount,
 } from '../account-discovery'
 import { BIP32DerivationType } from '@algorandfoundation/xhd-wallet-api'
 import { KEY_DOMAIN } from '../constants'
@@ -47,7 +48,7 @@ export const useAccountDiscovery = () => {
             accountGapLimit?: number
             keyIndexGapLimit?: number
             accountAddresses?: string[]
-        }) => {
+        }): Promise<DiscoveredRekeyedAccount[]> => {
             // When account addresses are provided (e.g. Algo25 imports),
             // no HD session is needed — just check rekeyed accounts by address.
             if (params.accountAddresses && params.accountAddresses.length > 0) {

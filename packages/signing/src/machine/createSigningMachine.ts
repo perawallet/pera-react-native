@@ -11,7 +11,10 @@
  */
 
 import { createActor } from 'xstate'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    WalletAccount,
+    AuthAddressLookup,
+} from '@perawallet/wallet-core-accounts'
 import type { SignRequest } from '../models'
 import type { SigningMachineDeps } from './context'
 import { signingMachine } from './signingMachine'
@@ -22,16 +25,18 @@ import { signingMachine } from './signingMachine'
  * Called from useSigningRequest (Phase 6) where all runtime deps
  * (KMS functions, AlgoKit client, etc.) are available via React hooks.
  *
- * @param request     The sign request to process
- * @param allAccounts All user accounts (for signer resolution and analysis)
- * @param deps        Runtime dependencies injected from the React hook layer
+ * @param request       The sign request to process
+ * @param allAccounts   All user accounts (for signer resolution and analysis)
+ * @param authAddresses On-chain auth-address lookup captured at request time
+ * @param deps          Runtime dependencies injected from the React hook layer
  */
 export const createSigningMachine = (
     request: SignRequest,
     allAccounts: WalletAccount[],
+    authAddresses: AuthAddressLookup,
     deps: SigningMachineDeps,
 ) =>
     createActor(signingMachine, {
         id: request.id,
-        input: { request, allAccounts, ...deps },
+        input: { request, allAccounts, authAddresses, ...deps },
     })

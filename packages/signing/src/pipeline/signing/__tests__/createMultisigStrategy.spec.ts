@@ -79,6 +79,7 @@ describe('createMultisigStrategy', () => {
                 getLocalParticipants: () => localParticipants,
                 getStrategyForParticipant: () => mockParticipantStrategy,
                 getAllAccounts: () => allAccounts,
+                getAuthAddresses: () => new Map(),
             }),
             mockParticipantStrategy,
         }

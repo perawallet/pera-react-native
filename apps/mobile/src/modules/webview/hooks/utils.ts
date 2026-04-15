@@ -22,9 +22,13 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
-export const getAccountType = (account: WalletAccount) => {
-    if (isRekeyedAccount(account) && !hasSigningKeys(account)) return 'Rekeyed'
-    if (isRekeyedAccount(account) && hasSigningKeys(account))
+export const getAccountType = (
+    account: WalletAccount,
+    authAddress: string | null | undefined,
+) => {
+    if (isRekeyedAccount(account, authAddress) && !hasSigningKeys(account))
+        return 'Rekeyed'
+    if (isRekeyedAccount(account, authAddress) && hasSigningKeys(account))
         return 'RekeyedAuth'
     if (isHDWalletAccount(account)) return 'HdKey'
     if (isLedgerAccount(account)) return 'LedgerBle'

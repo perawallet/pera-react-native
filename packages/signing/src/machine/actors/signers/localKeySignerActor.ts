@@ -11,7 +11,10 @@
  */
 
 import { fromPromise } from 'xstate'
-import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type {
+    WalletAccount,
+    AuthAddressLookup,
+} from '@perawallet/wallet-core-accounts'
 import type {
     AnalyzedSignableGroup,
     SigningResult,
@@ -26,6 +29,7 @@ import { CannotSignError } from '../../../pipeline/errors'
 export type LocalKeySignerActorInput = {
     groups: AnalyzedSignableGroup[]
     allAccounts: WalletAccount[]
+    authAddresses: AuthAddressLookup
     signTransactions: LocalSigningFunction
 }
 
@@ -39,7 +43,7 @@ export const localKeySignerActor = fromPromise<
     SigningResult[],
     LocalKeySignerActorInput
 >(async ({ input }) => {
-    const { groups, allAccounts, signTransactions } = input
+    const { groups, allAccounts, authAddresses, signTransactions } = input
     const strategy = createLocalKeyStrategy(signTransactions)
 
     return Promise.all(
@@ -53,7 +57,11 @@ export const localKeySignerActor = fromPromise<
                     'Account not found in allAccounts',
                 )
             }
-            const authAccount = resolveAuthAccount(signerAccount, allAccounts)
+            const authAccount = resolveAuthAccount(
+                signerAccount,
+                allAccounts,
+                authAddresses.get(signerAccount.address),
+            )
             return strategy.sign(group, authAccount)
         }),
     )

@@ -1992,6 +1992,11 @@ vi.mock('@perawallet/wallet-core-settings', () => {
 vi.mock('@perawallet/wallet-core-accounts', () => {
     return {
         useAllAccounts: vi.fn(() => []),
+        useAccountAuthAddresses: vi.fn(() => ({
+            authAddresses: new Map<string, string | null>(),
+            isPending: false,
+            isFetched: true,
+        })),
         useAccountDiscovery: vi.fn(() => ({
             discoverRekeyedAccounts: vi.fn(),
         })),
@@ -2022,7 +2027,19 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
                 account?.type === 'hardware' &&
                 account?.hardwareDetails?.manufacturer === 'ledger',
         ),
-        isRekeyedAccount: vi.fn((account: any) => !!account?.rekeyAddress),
+        isRekeyedAccount: vi.fn(
+            (_account: any, authAddress: string | null | undefined) =>
+                !!authAddress,
+        ),
+        resolveAccountStatus: vi.fn(() => 'standard'),
+        resolveAuthAccount: vi.fn((account: any) => account),
+        isSigningAccount: vi.fn(
+            (account: any) => !!account?.keyPairId && account?.type !== 'watch',
+        ),
+        fetchAndPersistAccount: vi.fn().mockResolvedValue(undefined),
+        useAccountBalancesInvalidator: vi.fn(() => ({
+            invalidate: vi.fn(),
+        })),
         isHDWalletAccount: vi.fn((account: any) => !!account?.hdWalletDetails),
         isAlgo25Account: vi.fn((account: any) => account?.type === 'algo25'),
         isWatchAccount: vi.fn((account: any) => account?.type === 'watch'),

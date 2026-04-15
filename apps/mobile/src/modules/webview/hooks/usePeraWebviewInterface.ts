@@ -24,6 +24,7 @@ import {
 import {
     getAccountDisplayName,
     useAllAccounts,
+    useAccountAuthAddresses,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useCallback } from 'react'
@@ -72,6 +73,7 @@ export const usePeraWebviewInterface = (
 ) => {
     const { showToast } = useToast()
     const accounts = useAllAccounts()
+    const { authAddresses } = useAccountAuthAddresses()
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
     const darkmode = useIsDarkMode()
@@ -242,12 +244,12 @@ export const usePeraWebviewInterface = (
                 const payload = accounts.map(a => ({
                     name: getAccountDisplayName(a),
                     address: a.address,
-                    type: getAccountType(a),
+                    type: getAccountType(a, authAddresses.get(a.address)),
                 }))
                 sendMessageToWebview(message.id, payload, webview)
             })
         },
-        [securedConnection, accounts, webview],
+        [securedConnection, accounts, authAddresses, webview],
     )
 
     const getSettings = useCallback(

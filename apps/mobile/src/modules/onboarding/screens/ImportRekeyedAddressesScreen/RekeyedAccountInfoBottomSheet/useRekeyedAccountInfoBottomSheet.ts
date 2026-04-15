@@ -15,14 +15,14 @@ import {
     AccountTypes,
     AssetWithAccountBalance,
     useAccountBalancesQuery,
-    WalletAccount,
     WatchAccount,
+    type DiscoveredRekeyedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'
 
 type UseRekeyedAccountInfoBottomSheetParams = {
-    account: WalletAccount
+    discovered: DiscoveredRekeyedAccount
     isVisible: boolean
 }
 
@@ -35,19 +35,20 @@ export type UseRekeyedAccountInfoBottomSheetResult = {
 }
 
 export function useRekeyedAccountInfoBottomSheet({
-    account,
+    discovered,
     isVisible,
 }: UseRekeyedAccountInfoBottomSheetParams): UseRekeyedAccountInfoBottomSheetResult {
+    const { account, authAddress: discoveredAuthAddress } = discovered
     const { accountBalances: rekeyedBalances, isPending: isRekeyedPending } =
         useAccountBalancesQuery([account], isVisible)
 
     const authAccount = useMemo<WatchAccount | undefined>(() => {
-        if (!account.rekeyAddress) return undefined
+        if (!discoveredAuthAddress) return undefined
         return {
-            address: account.rekeyAddress,
+            address: discoveredAuthAddress,
             type: AccountTypes.watch,
         }
-    }, [account.rekeyAddress])
+    }, [discoveredAuthAddress])
 
     const { accountBalances: authBalances, isPending: isAuthPending } =
         useAccountBalancesQuery(
@@ -85,7 +86,7 @@ export function useRekeyedAccountInfoBottomSheet({
     return {
         rekeyedAccountBalances: rekeyedAccountData.balances,
         rekeyedAccountAlgoValue: rekeyedAccountData.algoValue,
-        authAddress: account.rekeyAddress,
+        authAddress: discoveredAuthAddress,
         authAccountAlgoValue,
         isPending: isRekeyedPending || isAuthPending,
     }

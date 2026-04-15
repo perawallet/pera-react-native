@@ -68,7 +68,6 @@ export type BaseWalletAccount = {
     type: AccountType
     address: string
     keyPairId?: string
-    rekeyAddress?: string
 }
 
 export type Algo25Account = BaseWalletAccount & {

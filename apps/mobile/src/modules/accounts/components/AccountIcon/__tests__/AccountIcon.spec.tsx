@@ -26,6 +26,11 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     resolveAccountStatus: (...args: unknown[]) =>
         mockResolveAccountStatus(...(args as [])),
     useAllAccounts: vi.fn(() => []),
+    useAccountAuthAddresses: vi.fn(() => ({
+        authAddresses: new Map<string, string | null>(),
+        isPending: false,
+        isFetched: true,
+    })),
 }))
 
 const account = { address: 'addr' } as WalletAccount

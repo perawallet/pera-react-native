@@ -151,14 +151,11 @@ describe('services/accounts/utils - account type checks', () => {
         ).toBe(false)
     })
 
-    test('isRekeyedAccount returns true if rekeyAddress is present', () => {
-        expect(isRekeyedAccount(baseAccount)).toBe(false)
-        expect(
-            isRekeyedAccount({
-                ...baseAccount,
-                rekeyAddress: 'ADDR2',
-            } as any),
-        ).toBe(true)
+    test('isRekeyedAccount returns true when authAddress differs from account address', () => {
+        expect(isRekeyedAccount(baseAccount, null)).toBe(false)
+        expect(isRekeyedAccount(baseAccount, undefined)).toBe(false)
+        expect(isRekeyedAccount(baseAccount, baseAccount.address)).toBe(false)
+        expect(isRekeyedAccount(baseAccount, 'ADDR2')).toBe(true)
     })
 
     test('isAlgo25Account returns true if type is algo25', () => {
@@ -214,7 +211,7 @@ describe('services/accounts/utils - account type checks', () => {
     })
 
     test('canSignWithAccount returns true for account with keyPairId', () => {
-        expect(canSignWithAccount(baseAccount, [])).toBe(true)
+        expect(canSignWithAccount(baseAccount, [], new Map())).toBe(true)
     })
 
     test('canSignWithAccount returns false for account without keyPairId', () => {
@@ -222,6 +219,7 @@ describe('services/accounts/utils - account type checks', () => {
             canSignWithAccount(
                 { ...baseAccount, keyPairId: undefined } as any,
                 [],
+                new Map(),
             ),
         ).toBe(false)
     })
@@ -238,10 +236,13 @@ describe('services/accounts/utils - account type checks', () => {
             id: '3',
             type: 'watch',
             address: 'REKEYED_ADDR',
-            rekeyAddress: 'AUTH_ADDR',
         } as any
 
-        expect(canSignWithAccount(rekeyedAccount, [authAccount])).toBe(true)
+        const authAddresses = new Map([[rekeyedAccount.address, 'AUTH_ADDR']])
+
+        expect(
+            canSignWithAccount(rekeyedAccount, [authAccount], authAddresses),
+        ).toBe(true)
     })
 
     test('canSignWithAccount returns false for rekeyed account when auth account has no keys', () => {
@@ -255,10 +256,13 @@ describe('services/accounts/utils - account type checks', () => {
             id: '3',
             type: 'watch',
             address: 'REKEYED_ADDR',
-            rekeyAddress: 'AUTH_ADDR',
         } as any
 
-        expect(canSignWithAccount(rekeyedAccount, [authAccount])).toBe(false)
+        const authAddresses = new Map([[rekeyedAccount.address, 'AUTH_ADDR']])
+
+        expect(
+            canSignWithAccount(rekeyedAccount, [authAccount], authAddresses),
+        ).toBe(false)
     })
 
     test('canSignWithAccount returns false for rekeyed account when auth account is not in list', () => {
@@ -266,10 +270,11 @@ describe('services/accounts/utils - account type checks', () => {
             id: '3',
             type: 'watch',
             address: 'REKEYED_ADDR',
-            rekeyAddress: 'AUTH_ADDR',
         } as any
-
-        expect(canSignWithAccount(rekeyedAccount, [])).toBe(false)
+        const authAddresses = new Map([[rekeyedAccount.address, 'AUTH_ADDR']])
+        expect(canSignWithAccount(rekeyedAccount, [], authAddresses)).toBe(
+            false,
+        )
     })
 
     test('canSignWithAccount handles rekey chain', () => {
@@ -284,18 +289,22 @@ describe('services/accounts/utils - account type checks', () => {
             id: '2',
             type: 'watch',
             address: 'MIDDLE_ADDR',
-            rekeyAddress: 'ROOT_ADDR',
         } as any
 
         const leafAccount = {
             id: '3',
             type: 'watch',
             address: 'LEAF_ADDR',
-            rekeyAddress: 'MIDDLE_ADDR',
         } as any
 
         const accounts = [rootAccount, middleAccount, leafAccount]
-        expect(canSignWithAccount(leafAccount, accounts)).toBe(true)
+        const authAddresses = new Map<string, string | null>([
+            [leafAccount.address, 'MIDDLE_ADDR'],
+            [middleAccount.address, 'ROOT_ADDR'],
+        ])
+        expect(canSignWithAccount(leafAccount, accounts, authAddresses)).toBe(
+            true,
+        )
     })
 })
 
@@ -306,7 +315,7 @@ describe('services/accounts/utils - resolveAccountStatus', () => {
             address: 'ADDR',
             keyPairId: 'pk1',
         } as any
-        expect(resolveAccountStatus(account, [])).toBe('standard')
+        expect(resolveAccountStatus(account, [], null)).toBe('standard')
     })
 
     test('returns hardware for hardware wallet account', () => {
@@ -320,12 +329,12 @@ describe('services/accounts/utils - resolveAccountStatus', () => {
                 accountIndex: 0,
             },
         } as any
-        expect(resolveAccountStatus(account, [])).toBe('hardware')
+        expect(resolveAccountStatus(account, [], null)).toBe('hardware')
     })
 
     test('returns watch for watch account', () => {
         const account = { type: 'watch', address: 'ADDR' } as any
-        expect(resolveAccountStatus(account, [])).toBe('watch')
+        expect(resolveAccountStatus(account, [], null)).toBe('watch')
     })
 
     test('returns hdWallet for hdWallet account', () => {
@@ -334,22 +343,21 @@ describe('services/accounts/utils - resolveAccountStatus', () => {
             address: 'ADDR',
             keyPairId: 'pk1',
         } as any
-        expect(resolveAccountStatus(account, [])).toBe('hdWallet')
+        expect(resolveAccountStatus(account, [], null)).toBe('hdWallet')
     })
 
     test('returns multisig for multisig account', () => {
         const account = { type: 'multisig', address: 'ADDR' } as any
-        expect(resolveAccountStatus(account, [])).toBe('multisig')
+        expect(resolveAccountStatus(account, [], null)).toBe('multisig')
     })
 
     test('returns noAuth for rekeyed account when auth account is not in wallet', () => {
         const account = {
             type: 'algo25',
             address: 'ADDR',
-            rekeyAddress: 'UNKNOWN',
             keyPairId: 'pk1',
         } as any
-        expect(resolveAccountStatus(account, [])).toBe('noAuth')
+        expect(resolveAccountStatus(account, [], 'UNKNOWN')).toBe('noAuth')
     })
 
     test('returns rekeyedStandard for rekeyed account when auth is algo25', () => {
@@ -361,10 +369,9 @@ describe('services/accounts/utils - resolveAccountStatus', () => {
         const account = {
             type: 'algo25',
             address: 'ADDR',
-            rekeyAddress: 'AUTH',
             keyPairId: 'pk1',
         } as any
-        expect(resolveAccountStatus(account, [authAccount])).toBe(
+        expect(resolveAccountStatus(account, [authAccount], 'AUTH')).toBe(
             'rekeyedStandard',
         )
     })
@@ -383,11 +390,25 @@ describe('services/accounts/utils - resolveAccountStatus', () => {
         const account = {
             type: 'algo25',
             address: 'ADDR',
-            rekeyAddress: 'AUTH',
             keyPairId: 'pk1',
         } as any
-        expect(resolveAccountStatus(account, [authAccount])).toBe(
+        expect(resolveAccountStatus(account, [authAccount], 'AUTH')).toBe(
             'rekeyedHardware',
+        )
+    })
+
+    test('watch account with auth address in wallet upgrades to rekeyedStandard', () => {
+        const authAccount = {
+            type: 'algo25',
+            address: 'AUTH',
+            keyPairId: 'pk1',
+        } as any
+        const watchAccount = {
+            type: 'watch',
+            address: 'WATCH_ADDR',
+        } as any
+        expect(resolveAccountStatus(watchAccount, [authAccount], 'AUTH')).toBe(
+            'rekeyedStandard',
         )
     })
 })
@@ -395,16 +416,15 @@ describe('services/accounts/utils - resolveAccountStatus', () => {
 describe('services/accounts/utils - isSigningAccount', () => {
     test('returns false for true watch account', () => {
         const account = { type: 'watch', address: 'ADDR' } as any
-        expect(isSigningAccount(account, [])).toBe(false)
+        expect(isSigningAccount(account, [], null)).toBe(false)
     })
 
     test('returns false for rekeyed account without auth in wallet (noAuth)', () => {
         const account = {
             type: 'watch',
             address: 'ADDR',
-            rekeyAddress: 'MISSING_AUTH',
         } as any
-        expect(isSigningAccount(account, [])).toBe(false)
+        expect(isSigningAccount(account, [], 'MISSING_AUTH')).toBe(false)
     })
 
     test('returns true for rekeyed account with auth present (rekeyedStandard)', () => {
@@ -416,9 +436,8 @@ describe('services/accounts/utils - isSigningAccount', () => {
         const account = {
             type: 'watch',
             address: 'ADDR',
-            rekeyAddress: 'AUTH',
         } as any
-        expect(isSigningAccount(account, [authAccount])).toBe(true)
+        expect(isSigningAccount(account, [authAccount], 'AUTH')).toBe(true)
     })
 
     test('returns true for rekeyed account with ledger auth present (rekeyedLedger)', () => {
@@ -435,9 +454,8 @@ describe('services/accounts/utils - isSigningAccount', () => {
         const account = {
             type: 'watch',
             address: 'ADDR',
-            rekeyAddress: 'AUTH',
         } as any
-        expect(isSigningAccount(account, [authAccount])).toBe(true)
+        expect(isSigningAccount(account, [authAccount], 'AUTH')).toBe(true)
     })
 
     test('returns true for standard account', () => {
@@ -446,7 +464,7 @@ describe('services/accounts/utils - isSigningAccount', () => {
             address: 'ADDR',
             keyPairId: 'pk1',
         } as any
-        expect(isSigningAccount(account, [])).toBe(true)
+        expect(isSigningAccount(account, [], null)).toBe(true)
     })
 })
 

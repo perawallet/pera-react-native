@@ -43,6 +43,11 @@ vi.mock('@hooks/useAppNavigation', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: () => [],
+    useAccountAuthAddresses: () => ({
+        authAddresses: new Map<string, string | null>(),
+        isPending: false,
+        isFetched: true,
+    }),
     useUpdateAccount: () => mockUpdateAccount,
     useCreateAccount: () => ({
         createHdWalletAccount: mockCreateHdWalletAccount,

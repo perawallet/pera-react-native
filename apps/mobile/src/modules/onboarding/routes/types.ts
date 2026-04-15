@@ -14,6 +14,7 @@ import {
     WalletAccount,
     HDWalletAccount,
     ImportAccountType,
+    DiscoveredRekeyedAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
 
@@ -28,7 +29,7 @@ export type OnboardingStackParamList = {
         accounts: HDWalletAccount[]
     }
     ImportRekeyedAddresses: {
-        accounts: WalletAccount[]
+        accounts: DiscoveredRekeyedAccount[]
     }
     ImportInfo: {
         accountType: ImportAccountType
@@ -74,7 +75,7 @@ export type AddAccountStackParamList = {
         accounts: HDWalletAccount[]
     }
     ImportRekeyedAddresses: {
-        accounts: WalletAccount[]
+        accounts: DiscoveredRekeyedAccount[]
     }
     ImportInfo: {
         accountType: ImportAccountType

@@ -18,7 +18,10 @@ import {
     useTransactionEncoder,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    useAccountAuthAddresses,
+} from '@perawallet/wallet-core-accounts'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useTransactionSigner } from './useTransactionSigner'
 import { useSigningStore } from '../store'
@@ -84,6 +87,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     const algokit = useAlgorandClient()
     const { network } = useNetwork()
     const allAccounts = useAllAccounts()
+    const { authAddresses } = useAccountAuthAddresses()
 
     // Actor refs stored in a Map ref — ephemeral, not persisted, no re-renders
     const actorRefsMap = useRef(new Map<string, AnyActorRef>())
@@ -122,6 +126,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             const actor = createSigningMachine(
                 request,
                 allAccounts,
+                authAddresses,
                 buildDeps(),
             )
 
@@ -163,7 +168,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             actor.start()
             actorRefsMap.current.set(request.id, actor)
         },
-        [allAccounts, buildDeps],
+        [allAccounts, authAddresses, buildDeps],
     )
 
     // Ref so the effect always has the latest createActorForRequest
