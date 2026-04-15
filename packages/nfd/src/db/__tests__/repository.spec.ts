@@ -12,11 +12,10 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import {
-    runMigrations,
-    migrations,
-    type Database,
+    bootstrapTestCollections,
+    resetRegistryForTest,
+    type CollectionRegistry,
 } from '@perawallet/wallet-core-database'
-import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import {
     upsertNfdEntries,
     getNfdByAddress,
@@ -29,25 +28,21 @@ const ADDR_B = 'B'.repeat(58)
 const ADDR_C = 'C'.repeat(58)
 
 describe('nfd repository', () => {
-    let db: Database
-    let teardown: () => void
+    let registry: CollectionRegistry
 
-    beforeEach(async () => {
-        const result = createTestDatabase()
-        db = result.db
-        teardown = result.teardown
-        await runMigrations(db, migrations)
+    beforeEach(() => {
+        registry = bootstrapTestCollections()
     })
 
     afterEach(() => {
-        teardown()
+        resetRegistryForTest()
         vi.useRealTimers()
     })
 
     describe('upsertNfdEntries + getNfdByAddress', () => {
         it('persists positive entries and reads them back', async () => {
             await upsertNfdEntries({
-                db,
+                registry,
                 network: 'mainnet',
                 entries: [
                     {
@@ -62,7 +57,7 @@ describe('nfd repository', () => {
             })
 
             const row = await getNfdByAddress({
-                db,
+                registry,
                 address: ADDR_A,
                 network: 'mainnet',
             })
@@ -75,13 +70,13 @@ describe('nfd repository', () => {
 
         it('persists negative entries (no NFD) as cached null', async () => {
             await upsertNfdEntries({
-                db,
+                registry,
                 network: 'mainnet',
                 entries: [{ address: ADDR_A, name: null }],
             })
 
             const row = await getNfdByAddress({
-                db,
+                registry,
                 address: ADDR_A,
                 network: 'mainnet',
             })
@@ -92,7 +87,7 @@ describe('nfd repository', () => {
 
         it('returns null for unknown addresses', async () => {
             const row = await getNfdByAddress({
-                db,
+                registry,
                 address: ADDR_A,
                 network: 'mainnet',
             })
@@ -103,7 +98,7 @@ describe('nfd repository', () => {
             vi.useFakeTimers()
             vi.setSystemTime(new Date('2026-01-01T00:00:00Z'))
             await upsertNfdEntries({
-                db,
+                registry,
                 network: 'mainnet',
                 entries: [
                     {
@@ -117,14 +112,14 @@ describe('nfd repository', () => {
                 ],
             })
             const first = await getNfdByAddress({
-                db,
+                registry,
                 address: ADDR_A,
                 network: 'mainnet',
             })
 
             vi.setSystemTime(new Date('2026-01-02T00:00:00Z'))
             await upsertNfdEntries({
-                db,
+                registry,
                 network: 'mainnet',
                 entries: [
                     {
@@ -138,7 +133,7 @@ describe('nfd repository', () => {
                 ],
             })
             const second = await getNfdByAddress({
-                db,
+                registry,
                 address: ADDR_A,
                 network: 'mainnet',
             })
@@ -149,7 +144,7 @@ describe('nfd repository', () => {
 
         it('isolates entries per network', async () => {
             await upsertNfdEntries({
-                db,
+                registry,
                 network: 'mainnet',
                 entries: [
                     {
@@ -163,7 +158,7 @@ describe('nfd repository', () => {
                 ],
             })
             await upsertNfdEntries({
-                db,
+                registry,
                 network: 'testnet',
                 entries: [
                     {
@@ -178,12 +173,12 @@ describe('nfd repository', () => {
             })
 
             const mainnetRow = await getNfdByAddress({
-                db,
+                registry,
                 address: ADDR_A,
                 network: 'mainnet',
             })
             const testnetRow = await getNfdByAddress({
-                db,
+                registry,
                 address: ADDR_A,
                 network: 'testnet',
             })
@@ -194,12 +189,12 @@ describe('nfd repository', () => {
 
         it('no-op on empty entries', async () => {
             await upsertNfdEntries({
-                db,
+                registry,
                 network: 'mainnet',
                 entries: [],
             })
             const row = await getNfdByAddress({
-                db,
+                registry,
                 address: ADDR_A,
                 network: 'mainnet',
             })
@@ -210,7 +205,7 @@ describe('nfd repository', () => {
     describe('getNfdsByAddresses', () => {
         it('returns rows for the requested subset only', async () => {
             await upsertNfdEntries({
-                db,
+                registry,
                 network: 'mainnet',
                 entries: [
                     {
@@ -225,7 +220,7 @@ describe('nfd repository', () => {
             })
 
             const rows = await getNfdsByAddresses({
-                db,
+                registry,
                 addresses: [ADDR_A, ADDR_C],
                 network: 'mainnet',
             })
@@ -236,7 +231,7 @@ describe('nfd repository', () => {
 
         it('returns empty array for empty input', async () => {
             const rows = await getNfdsByAddresses({
-                db,
+                registry,
                 addresses: [],
                 network: 'mainnet',
             })
@@ -247,7 +242,7 @@ describe('nfd repository', () => {
     describe('getStaleOrMissingAddresses', () => {
         it('returns missing addresses', async () => {
             await upsertNfdEntries({
-                db,
+                registry,
                 network: 'mainnet',
                 entries: [
                     {
@@ -258,7 +253,7 @@ describe('nfd repository', () => {
             })
 
             const result = await getStaleOrMissingAddresses({
-                db,
+                registry,
                 addresses: [ADDR_A, ADDR_B, ADDR_C],
                 network: 'mainnet',
                 ttlMs: 60_000,
@@ -271,7 +266,7 @@ describe('nfd repository', () => {
             vi.useFakeTimers()
             vi.setSystemTime(new Date('2026-01-01T00:00:00Z'))
             await upsertNfdEntries({
-                db,
+                registry,
                 network: 'mainnet',
                 entries: [
                     {
@@ -281,10 +276,9 @@ describe('nfd repository', () => {
                 ],
             })
 
-            // Advance past TTL
             vi.setSystemTime(new Date('2026-01-02T00:00:00Z'))
             const result = await getStaleOrMissingAddresses({
-                db,
+                registry,
                 addresses: [ADDR_A],
                 network: 'mainnet',
                 ttlMs: 60_000,
@@ -295,7 +289,7 @@ describe('nfd repository', () => {
 
         it('skips fresh addresses regardless of positive or negative cache', async () => {
             await upsertNfdEntries({
-                db,
+                registry,
                 network: 'mainnet',
                 entries: [
                     {
@@ -307,7 +301,7 @@ describe('nfd repository', () => {
             })
 
             const result = await getStaleOrMissingAddresses({
-                db,
+                registry,
                 addresses: [ADDR_A, ADDR_B],
                 network: 'mainnet',
                 ttlMs: 60 * 60 * 1000,

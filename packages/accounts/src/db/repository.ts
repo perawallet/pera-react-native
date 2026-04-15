@@ -10,11 +10,29 @@
  limitations under the License
  */
 
-import { eq, and, inArray, notInArray, ne, or, isNull } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
-import { getDatabase, type Database } from '@perawallet/wallet-core-database'
-import { AssetsPeraSchema, PeraAssetType } from '@perawallet/wallet-core-assets'
-import { AccountAssetHoldingsSchema, AccountBalancesSchema } from './schema'
+import {
+    accountAssetHoldingsKey,
+    accountAssetHoldingsPrefix,
+    accountBalancesKey,
+    assetsPeraKey,
+    getCollections,
+    type AccountBalanceCollectionRow,
+    type CollectionRegistry,
+} from '@perawallet/wallet-core-database'
+import { PeraAssetType } from '@perawallet/wallet-core-assets'
+
+type WithRegistry = { registry?: CollectionRegistry }
+
+function resolveRegistry(
+    registry: CollectionRegistry | undefined,
+): CollectionRegistry {
+    return registry ?? getCollections()
+}
+
+// ---------------------------------------------------------------------------
+// Holdings
+// ---------------------------------------------------------------------------
 
 export type HoldingRow = {
     assetId: string
@@ -26,47 +44,52 @@ type UpsertHoldingInput = {
     amount: Decimal
 }
 
-type UpsertAccountHoldingsParams = {
-    db?: Database
+type UpsertAccountHoldingsParams = WithRegistry & {
     accountAddress: string
     holdings: UpsertHoldingInput[]
     network: string
 }
 
+/**
+ * Replace every holding for one (network, account) with the supplied set.
+ *
+ * Wrapped in a single `transact` so subscribers see one atomic update
+ * rather than a flicker of "no holdings" followed by each new row. The
+ * adapter also gets `deleteMany`/`putMany` batching on commit.
+ */
 export async function refreshAccountHoldings({
-    db = getDatabase(),
+    registry,
     accountAddress,
     holdings,
     network,
 }: UpsertAccountHoldingsParams): Promise<void> {
+    const { accountAssetHoldings } = resolveRegistry(registry)
     const now = Date.now()
 
-    await db
-        .delete(AccountAssetHoldingsSchema)
-        .where(
-            and(
-                eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
-                eq(AccountAssetHoldingsSchema.network, network),
-            ),
-        )
-        .run()
+    const prefix = accountAssetHoldingsPrefix({ network, accountAddress })
 
-    for (const holding of holdings) {
-        await db
-            .insert(AccountAssetHoldingsSchema)
-            .values({
+    accountAssetHoldings.transact(() => {
+        const existingKeys: string[] = []
+        for (const [key] of accountAssetHoldings.entriesWithPrefix(prefix)) {
+            existingKeys.push(key)
+        }
+        for (const key of existingKeys) {
+            accountAssetHoldings.delete(key)
+        }
+
+        for (const holding of holdings) {
+            accountAssetHoldings.upsert({
+                network,
                 accountAddress,
                 assetId: new Decimal(holding.assetId),
-                network,
                 amount: holding.amount,
                 updatedAt: now,
             })
-            .run()
-    }
+        }
+    })
 }
 
-type InsertAssetHoldingParams = {
-    db?: Database
+type InsertAssetHoldingParams = WithRegistry & {
     accountAddress: string
     assetId: string
     network: string
@@ -74,24 +97,31 @@ type InsertAssetHoldingParams = {
 }
 
 export async function insertAssetHolding({
-    db = getDatabase(),
+    registry,
     accountAddress,
     assetId,
     network,
     amount,
 }: InsertAssetHoldingParams): Promise<void> {
-    await db
-        .insert(AccountAssetHoldingsSchema)
-        .values({
-            accountAddress,
-            assetId: new Decimal(assetId),
-            network,
-            amount: new Decimal(amount ?? '0'),
-            updatedAt: Date.now(),
-        })
-        .onConflictDoNothing()
-        .run()
+    const { accountAssetHoldings } = resolveRegistry(registry)
+    const key = accountAssetHoldingsKey({ network, accountAddress, assetId })
+
+    // Mirror the old `.onConflictDoNothing()` semantics: if a row already
+    // exists for this (network, account, assetId), leave it alone.
+    if (accountAssetHoldings.has(key)) return
+
+    accountAssetHoldings.upsert({
+        network,
+        accountAddress,
+        assetId: new Decimal(assetId),
+        amount: new Decimal(amount ?? '0'),
+        updatedAt: Date.now(),
+    })
 }
+
+// ---------------------------------------------------------------------------
+// Reads
+// ---------------------------------------------------------------------------
 
 export type AccountHoldingsFilters = {
     /** When true, rows with amount === 0 are excluded. */
@@ -104,14 +134,24 @@ export type AccountHoldingsFilters = {
     excludeAssetTypes?: string[]
 }
 
-type GetAccountHoldingsParams = {
-    db?: Database
+type GetAccountHoldingsParams = WithRegistry & {
     accountAddress: string
     network: string
 } & AccountHoldingsFilters
 
+/**
+ * Return every holding for one (network, account), optionally filtered
+ * by zero balance or asset type.
+ *
+ * The old SQL version LEFT JOINed `account_asset_holdings` against
+ * `assets_pera` to look up `asset_type` for the NFT filter. Here we
+ * scan the holdings collection by prefix and sync-lookup each asset's
+ * pera metadata in the `assets_pera` collection via `.get()` — that's
+ * one `Map.get` per holding, which is faster than a SQL join for the
+ * sizes we deal with (10s to 100s of holdings per account).
+ */
 export async function getAccountHoldings({
-    db = getDatabase(),
+    registry,
     accountAddress,
     network,
     hideZeroBalance,
@@ -119,98 +159,54 @@ export async function getAccountHoldings({
     hideOptedInNfts,
     excludeAssetTypes,
 }: GetAccountHoldingsParams): Promise<HoldingRow[]> {
-    const needsAssetJoin =
+    const { accountAssetHoldings, assetsPera } = resolveRegistry(registry)
+    const prefix = accountAssetHoldingsPrefix({ network, accountAddress })
+
+    const needsAssetLookup =
         hideNfts === true ||
         hideOptedInNfts === true ||
         !!excludeAssetTypes?.length
 
-    const baseConditions = [
-        eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
-        eq(AccountAssetHoldingsSchema.network, network),
-    ]
+    const excludeSet = new Set(excludeAssetTypes ?? [])
+    const results: HoldingRow[] = []
 
-    if (hideZeroBalance) {
-        // Decimal columns are stored as TEXT and normalized via Decimal#toString,
-        // so a zero amount is always the literal "0".
-        baseConditions.push(
-            ne(AccountAssetHoldingsSchema.amount, new Decimal(0)),
-        )
-    }
+    for (const [, holding] of accountAssetHoldings.entriesWithPrefix(prefix)) {
+        const isZero = holding.amount.isZero()
+        if (hideZeroBalance && isZero) continue
 
-    if (!needsAssetJoin) {
-        const rows = await db
-            .select({
-                assetId: AccountAssetHoldingsSchema.assetId,
-                amount: AccountAssetHoldingsSchema.amount,
-            })
-            .from(AccountAssetHoldingsSchema)
-            .where(and(...baseConditions))
-            .all()
+        let assetType: string | null = null
+        if (needsAssetLookup) {
+            const peraRow = assetsPera.get(
+                assetsPeraKey({ network, assetId: holding.assetId }),
+            )
+            assetType = peraRow?.assetType ?? null
+        }
 
-        return rows.map(r => ({
-            assetId: r.assetId.toString(),
-            amount: r.amount,
-        }))
-    }
+        if (hideNfts && assetType === PeraAssetType.collectible) continue
 
-    const joinConditions = [...baseConditions]
+        if (
+            hideOptedInNfts &&
+            !hideNfts &&
+            assetType === PeraAssetType.collectible &&
+            isZero
+        ) {
+            continue
+        }
 
-    if (hideNfts) {
-        // Exclude any holding whose asset type is collectible. Unknown
-        // (NULL) asset types are kept since we can't yet classify them.
-        joinConditions.push(
-            or(
-                isNull(AssetsPeraSchema.assetType),
-                ne(AssetsPeraSchema.assetType, PeraAssetType.collectible),
-            )!,
-        )
-    } else if (hideOptedInNfts) {
-        // Keep all non-NFT holdings, plus NFT holdings with a non-zero balance.
-        joinConditions.push(
-            or(
-                isNull(AssetsPeraSchema.assetType),
-                ne(AssetsPeraSchema.assetType, PeraAssetType.collectible),
-                ne(AccountAssetHoldingsSchema.amount, new Decimal(0)),
-            )!,
-        )
-    }
+        if (assetType !== null && excludeSet.has(assetType)) continue
 
-    if (excludeAssetTypes?.length) {
-        joinConditions.push(
-            or(
-                isNull(AssetsPeraSchema.assetType),
-                notInArray(AssetsPeraSchema.assetType, excludeAssetTypes),
-            )!,
-        )
-    }
-
-    const rows = await db
-        .select({
-            assetId: AccountAssetHoldingsSchema.assetId,
-            amount: AccountAssetHoldingsSchema.amount,
+        results.push({
+            assetId: holding.assetId.toString(),
+            amount: holding.amount,
         })
-        .from(AccountAssetHoldingsSchema)
-        .leftJoin(
-            AssetsPeraSchema,
-            and(
-                eq(
-                    AccountAssetHoldingsSchema.assetId,
-                    AssetsPeraSchema.assetId,
-                ),
-                eq(
-                    AccountAssetHoldingsSchema.network,
-                    AssetsPeraSchema.network,
-                ),
-            ),
-        )
-        .where(and(...joinConditions))
-        .all()
+    }
 
-    return rows.map(r => ({
-        assetId: r.assetId.toString(),
-        amount: r.amount,
-    }))
+    return results
 }
+
+// ---------------------------------------------------------------------------
+// Balances
+// ---------------------------------------------------------------------------
 
 export type AccountBalanceRow = {
     accountAddress: string
@@ -223,8 +219,7 @@ export type AccountBalanceRow = {
     authAddress: string | null
 }
 
-type UpsertAccountBalanceParams = {
-    db?: Database
+type UpsertAccountBalanceParams = WithRegistry & {
     accountAddress: string
     network: string
     algoBalance: Decimal
@@ -237,7 +232,7 @@ type UpsertAccountBalanceParams = {
 }
 
 export async function upsertAccountBalance({
-    db = getDatabase(),
+    registry,
     accountAddress,
     network,
     algoBalance,
@@ -248,154 +243,119 @@ export async function upsertAccountBalance({
     status,
     authAddress,
 }: UpsertAccountBalanceParams): Promise<void> {
-    const now = Date.now()
+    const { accountBalances } = resolveRegistry(registry)
 
-    await db
-        .insert(AccountBalancesSchema)
-        .values({
-            accountAddress,
-            network,
-            algoBalance,
-            totalAssetsOptedIn,
-            totalCreatedAssets,
-            totalAppsOptedIn,
-            minBalance,
-            status,
-            authAddress,
-            updatedAt: now,
-        })
-        .onConflictDoUpdate({
-            target: [
-                AccountBalancesSchema.accountAddress,
-                AccountBalancesSchema.network,
-            ],
-            set: {
-                algoBalance,
-                totalAssetsOptedIn,
-                totalCreatedAssets,
-                totalAppsOptedIn,
-                minBalance,
-                status,
-                authAddress,
-                updatedAt: now,
-            },
-        })
-        .run()
+    accountBalances.upsert({
+        network,
+        accountAddress,
+        algoBalance,
+        totalAssetsOptedIn,
+        totalCreatedAssets,
+        totalAppsOptedIn,
+        minBalance,
+        status,
+        authAddress,
+        updatedAt: Date.now(),
+    })
 }
 
-type GetAccountBalanceParams = {
-    db?: Database
+type GetAccountBalanceParams = WithRegistry & {
     accountAddress: string
     network: string
 }
 
+function rowToBalance(row: AccountBalanceCollectionRow): AccountBalanceRow {
+    return {
+        accountAddress: row.accountAddress,
+        algoBalance: row.algoBalance,
+        totalAssetsOptedIn: row.totalAssetsOptedIn,
+        totalCreatedAssets: row.totalCreatedAssets,
+        totalAppsOptedIn: row.totalAppsOptedIn,
+        minBalance: row.minBalance,
+        status: row.status,
+        authAddress: row.authAddress,
+    }
+}
+
 export async function getAccountBalance({
-    db = getDatabase(),
+    registry,
     accountAddress,
     network,
 }: GetAccountBalanceParams): Promise<AccountBalanceRow | undefined> {
-    const rows = await db
-        .select({
-            accountAddress: AccountBalancesSchema.accountAddress,
-            algoBalance: AccountBalancesSchema.algoBalance,
-            totalAssetsOptedIn: AccountBalancesSchema.totalAssetsOptedIn,
-            totalCreatedAssets: AccountBalancesSchema.totalCreatedAssets,
-            totalAppsOptedIn: AccountBalancesSchema.totalAppsOptedIn,
-            minBalance: AccountBalancesSchema.minBalance,
-            status: AccountBalancesSchema.status,
-            authAddress: AccountBalancesSchema.authAddress,
-        })
-        .from(AccountBalancesSchema)
-        .where(
-            and(
-                eq(AccountBalancesSchema.accountAddress, accountAddress),
-                eq(AccountBalancesSchema.network, network),
-            ),
-        )
-        .all()
-
-    return rows[0]
+    const { accountBalances } = resolveRegistry(registry)
+    const row = accountBalances.get(
+        accountBalancesKey({ network, accountAddress }),
+    )
+    return row ? rowToBalance(row) : undefined
 }
 
-type GetAllAccountBalancesParams = {
-    db?: Database
+type GetAllAccountBalancesParams = WithRegistry & {
     accountAddresses: string[]
     network: string
 }
 
 export async function getAllAccountBalances({
-    db = getDatabase(),
+    registry,
     accountAddresses,
     network,
 }: GetAllAccountBalancesParams): Promise<AccountBalanceRow[]> {
     if (accountAddresses.length === 0) return []
 
-    return db
-        .select({
-            accountAddress: AccountBalancesSchema.accountAddress,
-            algoBalance: AccountBalancesSchema.algoBalance,
-            totalAssetsOptedIn: AccountBalancesSchema.totalAssetsOptedIn,
-            totalCreatedAssets: AccountBalancesSchema.totalCreatedAssets,
-            totalAppsOptedIn: AccountBalancesSchema.totalAppsOptedIn,
-            minBalance: AccountBalancesSchema.minBalance,
-            status: AccountBalancesSchema.status,
-            authAddress: AccountBalancesSchema.authAddress,
-        })
-        .from(AccountBalancesSchema)
-        .where(
-            and(
-                inArray(AccountBalancesSchema.accountAddress, accountAddresses),
-                eq(AccountBalancesSchema.network, network),
-            ),
+    const { accountBalances } = resolveRegistry(registry)
+    const results: AccountBalanceRow[] = []
+    for (const accountAddress of accountAddresses) {
+        const row = accountBalances.get(
+            accountBalancesKey({ network, accountAddress }),
         )
-        .all()
+        if (row !== undefined) results.push(rowToBalance(row))
+    }
+    return results
 }
 
-type DeleteAssetHoldingsParams = {
-    db?: Database
+type DeleteAssetHoldingsParams = WithRegistry & {
     accountAddress: string
     assetIds: string[]
     network: string
 }
 
 export async function deleteAssetHoldings({
-    db = getDatabase(),
+    registry,
     accountAddress,
     assetIds,
     network,
 }: DeleteAssetHoldingsParams): Promise<void> {
     if (assetIds.length === 0) return
 
-    const assetIdDecimals = assetIds.map(id => new Decimal(id))
+    const { accountAssetHoldings } = resolveRegistry(registry)
 
-    await db
-        .delete(AccountAssetHoldingsSchema)
-        .where(
-            and(
-                eq(AccountAssetHoldingsSchema.accountAddress, accountAddress),
-                eq(AccountAssetHoldingsSchema.network, network),
-                inArray(AccountAssetHoldingsSchema.assetId, assetIdDecimals),
-            ),
-        )
-        .run()
+    accountAssetHoldings.transact(() => {
+        for (const assetId of assetIds) {
+            accountAssetHoldings.delete(
+                accountAssetHoldingsKey({ network, accountAddress, assetId }),
+            )
+        }
+    })
 }
 
-type GetAllHoldingsForNetworkParams = {
-    db?: Database
+type GetAllAssetIdsForNetworkParams = WithRegistry & {
     network: string
 }
 
+/**
+ * Return every distinct asset id that appears in any holding for the
+ * given network. Used by SyncService to know which asset metadata rows
+ * to refresh. Infrequent (once per sync tick), so the O(holdings)
+ * scan is fine.
+ */
 export async function getAllAssetIdsForNetwork({
-    db = getDatabase(),
+    registry,
     network,
-}: GetAllHoldingsForNetworkParams): Promise<string[]> {
-    const rows = await db
-        .selectDistinct({
-            assetId: AccountAssetHoldingsSchema.assetId,
-        })
-        .from(AccountAssetHoldingsSchema)
-        .where(eq(AccountAssetHoldingsSchema.network, network))
-        .all()
-
-    return rows.map(r => r.assetId.toString())
+}: GetAllAssetIdsForNetworkParams): Promise<string[]> {
+    const { accountAssetHoldings } = resolveRegistry(registry)
+    const prefix = `${network}:`
+    const seen = new Set<string>()
+    for (const [, holding] of accountAssetHoldings.entriesWithPrefix(prefix)) {
+        seen.add(holding.assetId.toString())
+    }
+    return [...seen]
 }

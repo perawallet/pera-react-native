@@ -28,6 +28,8 @@ import {
 import {
     initializeDatabase,
     getDatabase,
+    bootstrapCollections,
+    fromKeyValueStorage,
 } from '@perawallet/wallet-core-database'
 import { seedAlgoAsset } from '@perawallet/wallet-core-assets'
 import { initializeSyncService } from '@perawallet/wallet-core-background'
@@ -98,7 +100,14 @@ const AppContent = () => {
                 provider.keyValueStorage.setItem(APP_INSTALLED_KEY, '1')
 
                 await initializeDatabase(provider.database)
-                await seedAlgoAsset(getDatabase())
+                bootstrapCollections({
+                    mmkv: fromKeyValueStorage(provider.keyValueStorage),
+                })
+                // Keep a reference to the legacy SQLite handle alive so
+                // domains that have not yet migrated to the collections
+                // layer continue to function.
+                getDatabase()
+                await seedAlgoAsset()
 
                 initializeSyncService({ queryClient })
 

@@ -10,10 +10,13 @@
  limitations under the License
  */
 
-import { and, eq, gte, inArray } from 'drizzle-orm'
-import { getDatabase, type Database } from '@perawallet/wallet-core-database'
+import {
+    getCollections,
+    nfdCacheKey,
+    type CollectionRegistry,
+    type NfdCacheRow as PersistedNfdCacheRow,
+} from '@perawallet/wallet-core-database'
 import type { NfdName } from '../models'
-import { NfdCacheSchema } from './schema'
 
 export type NfdCacheEntry = {
     address: string
@@ -25,13 +28,7 @@ export type NfdCacheRow = NfdCacheEntry & {
     updatedAt: number
 }
 
-function rowToEntry(row: {
-    address: string
-    name: string | null
-    image: string | null
-    source: string | null
-    updatedAt: number
-}): NfdCacheRow {
+function rowToEntry(row: PersistedNfdCacheRow): NfdCacheRow {
     return {
         address: row.address,
         name: row.name
@@ -45,148 +42,105 @@ function rowToEntry(row: {
     }
 }
 
-type UpsertNfdEntriesParams = {
-    db?: Database
+type WithRegistry = { registry?: CollectionRegistry }
+
+function resolveRegistry(registry: CollectionRegistry | undefined): CollectionRegistry {
+    return registry ?? getCollections()
+}
+
+type UpsertNfdEntriesParams = WithRegistry & {
     network: string
     entries: NfdCacheEntry[]
 }
 
 export async function upsertNfdEntries({
-    db = getDatabase(),
+    registry,
     network,
     entries,
 }: UpsertNfdEntriesParams): Promise<void> {
     if (entries.length === 0) return
 
+    const { nfdCache } = resolveRegistry(registry)
     const now = Date.now()
 
-    for (const entry of entries) {
-        const values = {
-            address: entry.address,
+    nfdCache.upsertMany(
+        entries.map<PersistedNfdCacheRow>(entry => ({
             network,
+            address: entry.address,
             name: entry.name?.name ?? null,
             image: entry.name?.image ?? null,
             source: entry.name?.source ?? null,
             updatedAt: now,
-        }
-
-        await db
-            .insert(NfdCacheSchema)
-            .values(values)
-            .onConflictDoUpdate({
-                target: [NfdCacheSchema.address, NfdCacheSchema.network],
-                set: {
-                    name: values.name,
-                    image: values.image,
-                    source: values.source,
-                    updatedAt: now,
-                },
-            })
-            .run()
-    }
+        })),
+    )
 }
 
-type GetNfdByAddressParams = {
-    db?: Database
+type GetNfdByAddressParams = WithRegistry & {
     address: string
     network: string
 }
 
 export async function getNfdByAddress({
-    db = getDatabase(),
+    registry,
     address,
     network,
 }: GetNfdByAddressParams): Promise<NfdCacheRow | null> {
-    const rows = await db
-        .select({
-            address: NfdCacheSchema.address,
-            name: NfdCacheSchema.name,
-            image: NfdCacheSchema.image,
-            source: NfdCacheSchema.source,
-            updatedAt: NfdCacheSchema.updatedAt,
-        })
-        .from(NfdCacheSchema)
-        .where(
-            and(
-                eq(NfdCacheSchema.address, address),
-                eq(NfdCacheSchema.network, network),
-            ),
-        )
-        .all()
-
-    return rows[0] ? rowToEntry(rows[0]) : null
+    const { nfdCache } = resolveRegistry(registry)
+    const row = nfdCache.get(nfdCacheKey({ network, address }))
+    return row ? rowToEntry(row) : null
 }
 
-type GetNfdsByAddressesParams = {
-    db?: Database
+type GetNfdsByAddressesParams = WithRegistry & {
     addresses: string[]
     network: string
 }
 
 export async function getNfdsByAddresses({
-    db = getDatabase(),
+    registry,
     addresses,
     network,
 }: GetNfdsByAddressesParams): Promise<NfdCacheRow[]> {
     if (addresses.length === 0) return []
 
-    const rows = await db
-        .select({
-            address: NfdCacheSchema.address,
-            name: NfdCacheSchema.name,
-            image: NfdCacheSchema.image,
-            source: NfdCacheSchema.source,
-            updatedAt: NfdCacheSchema.updatedAt,
-        })
-        .from(NfdCacheSchema)
-        .where(
-            and(
-                inArray(NfdCacheSchema.address, addresses),
-                eq(NfdCacheSchema.network, network),
-            ),
-        )
-        .all()
-
-    return rows.map(rowToEntry)
+    const { nfdCache } = resolveRegistry(registry)
+    const results: NfdCacheRow[] = []
+    for (const address of addresses) {
+        const row = nfdCache.get(nfdCacheKey({ network, address }))
+        if (row !== undefined) results.push(rowToEntry(row))
+    }
+    return results
 }
 
-type GetStaleOrMissingAddressesParams = {
-    db?: Database
+type GetStaleOrMissingAddressesParams = WithRegistry & {
     addresses: string[]
     network: string
     ttlMs: number
 }
 
 /**
- * Given a candidate set of addresses, returns those that are either not in
- * the cache at all or older than `ttlMs`. Used by the syncer to skip work
- * during steady-state polling.
+ * Given a candidate set of addresses, returns those that are either not
+ * in the cache at all or older than `ttlMs`. Used by the syncer to skip
+ * work during steady-state polling.
  *
- * The freshness predicate is pushed into SQL so we only round-trip the
- * matching addresses, not every cached row.
+ * Unlike the previous SQL-backed version, this runs entirely in memory:
+ * O(addresses.length) map lookups, no allocation beyond the result
+ * array. That's faster than the previous query for the common case
+ * where the caller hands us a short list (a single account's peers).
  */
 export async function getStaleOrMissingAddresses({
-    db = getDatabase(),
+    registry,
     addresses,
     network,
     ttlMs,
 }: GetStaleOrMissingAddressesParams): Promise<string[]> {
     if (addresses.length === 0) return []
 
+    const { nfdCache } = resolveRegistry(registry)
     const freshThreshold = Date.now() - ttlMs
 
-    const freshRows = await db
-        .select({ address: NfdCacheSchema.address })
-        .from(NfdCacheSchema)
-        .where(
-            and(
-                inArray(NfdCacheSchema.address, addresses),
-                eq(NfdCacheSchema.network, network),
-                gte(NfdCacheSchema.updatedAt, freshThreshold),
-            ),
-        )
-        .all()
-
-    const freshSet = new Set(freshRows.map(row => row.address))
-    return addresses.filter(addr => !freshSet.has(addr))
+    return addresses.filter(address => {
+        const row = nfdCache.get(nfdCacheKey({ network, address }))
+        if (row === undefined) return true
+        return row.updatedAt < freshThreshold
+    })
 }

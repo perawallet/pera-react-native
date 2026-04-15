@@ -13,11 +13,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
-    runMigrations,
-    migrations,
-    type Database,
+    bootstrapTestCollections,
+    resetRegistryForTest,
+    type CollectionRegistry,
 } from '@perawallet/wallet-core-database'
-import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import type { PeraAsset } from '../../models'
 import {
     upsertAssets,
@@ -28,18 +27,14 @@ import {
 } from '../repository'
 
 describe('asset repository', () => {
-    let db: Database
-    let teardown: () => void
+    let registry: CollectionRegistry
 
-    beforeEach(async () => {
-        const result = createTestDatabase()
-        db = result.db
-        teardown = result.teardown
-        await runMigrations(db, migrations)
+    beforeEach(() => {
+        registry = bootstrapTestCollections()
     })
 
     afterEach(() => {
-        teardown()
+        resetRegistryForTest()
     })
 
     const makeAsset = (overrides: Partial<PeraAsset> = {}): PeraAsset => ({
@@ -61,13 +56,13 @@ describe('asset repository', () => {
     describe('assets', () => {
         it('inserts and retrieves assets', async () => {
             await upsertAssets({
-                db,
+                registry,
                 items: [makeAsset()],
                 network: 'mainnet',
             })
 
             const result = await getAssetsByIds({
-                db,
+                registry,
                 assetIds: ['31566704'],
                 network: 'mainnet',
             })
@@ -82,18 +77,18 @@ describe('asset repository', () => {
 
         it('updates existing assets on conflict', async () => {
             await upsertAssets({
-                db,
+                registry,
                 items: [makeAsset({ name: 'Old Name' })],
                 network: 'mainnet',
             })
             await upsertAssets({
-                db,
+                registry,
                 items: [makeAsset({ name: 'New Name' })],
                 network: 'mainnet',
             })
 
             const result = await getAssetsByIds({
-                db,
+                registry,
                 assetIds: ['31566704'],
                 network: 'mainnet',
             })
@@ -104,7 +99,7 @@ describe('asset repository', () => {
 
         it('returns empty array for unknown IDs', async () => {
             const result = await getAssetsByIds({
-                db,
+                registry,
                 assetIds: ['999999'],
                 network: 'mainnet',
             })
@@ -114,7 +109,7 @@ describe('asset repository', () => {
 
         it('returns empty array for empty input', async () => {
             const result = await getAssetsByIds({
-                db,
+                registry,
                 assetIds: [],
                 network: 'mainnet',
             })
@@ -124,23 +119,23 @@ describe('asset repository', () => {
 
         it('isolates assets by network', async () => {
             await upsertAssets({
-                db,
+                registry,
                 items: [makeAsset({ assetId: '100' })],
                 network: 'mainnet',
             })
             await upsertAssets({
-                db,
+                registry,
                 items: [makeAsset({ assetId: '100', name: 'Testnet Asset' })],
                 network: 'testnet',
             })
 
             const mainnet = await getAssetsByIds({
-                db,
+                registry,
                 assetIds: ['100'],
                 network: 'mainnet',
             })
             const testnet = await getAssetsByIds({
-                db,
+                registry,
                 assetIds: ['100'],
                 network: 'testnet',
             })
@@ -162,10 +157,10 @@ describe('asset repository', () => {
                 },
             })
 
-            await upsertAssets({ db, items: [asset], network: 'mainnet' })
+            await upsertAssets({ registry, items: [asset], network: 'mainnet' })
 
             const result = await getAssetsByIds({
-                db,
+                registry,
                 assetIds: ['31566704'],
                 network: 'mainnet',
             })
@@ -181,10 +176,10 @@ describe('asset repository', () => {
                 makeAsset({ assetId: '3', name: 'Asset 3' }),
             ]
 
-            await upsertAssets({ db, items, network: 'mainnet' })
+            await upsertAssets({ registry, items, network: 'mainnet' })
 
             const result = await getAssetsByIds({
-                db,
+                registry,
                 assetIds: ['1', '2', '3'],
                 network: 'mainnet',
             })
@@ -193,10 +188,10 @@ describe('asset repository', () => {
         })
 
         it('does nothing for empty items', async () => {
-            await upsertAssets({ db, items: [], network: 'mainnet' })
+            await upsertAssets({ registry, items: [], network: 'mainnet' })
 
             const result = await getAssetsByIds({
-                db,
+                registry,
                 assetIds: ['31566704'],
                 network: 'mainnet',
             })
@@ -208,7 +203,7 @@ describe('asset repository', () => {
     describe('updateAssetPeraMetadata', () => {
         it('updates specific metadata fields without overwriting others', async () => {
             await upsertAssets({
-                db,
+                registry,
                 items: [
                     makeAsset({
                         peraMetadata: {
@@ -224,14 +219,14 @@ describe('asset repository', () => {
             })
 
             await updateAssetPeraMetadata({
-                db,
+                registry,
                 assetId: '31566704',
                 network: 'mainnet',
                 updates: { isFavorited: true },
             })
 
             const result = await getAssetsByIds({
-                db,
+                registry,
                 assetIds: ['31566704'],
                 network: 'mainnet',
             })
@@ -243,7 +238,7 @@ describe('asset repository', () => {
 
         it('updates isPriceAlertEnabled without overwriting isFavorited', async () => {
             await upsertAssets({
-                db,
+                registry,
                 items: [
                     makeAsset({
                         peraMetadata: {
@@ -258,14 +253,14 @@ describe('asset repository', () => {
             })
 
             await updateAssetPeraMetadata({
-                db,
+                registry,
                 assetId: '31566704',
                 network: 'mainnet',
                 updates: { isPriceAlertEnabled: true },
             })
 
             const result = await getAssetsByIds({
-                db,
+                registry,
                 assetIds: ['31566704'],
                 network: 'mainnet',
             })
@@ -276,14 +271,14 @@ describe('asset repository', () => {
 
         it('does nothing when asset does not exist', async () => {
             await updateAssetPeraMetadata({
-                db,
+                registry,
                 assetId: '999999',
                 network: 'mainnet',
                 updates: { isFavorited: true },
             })
 
             const result = await getAssetsByIds({
-                db,
+                registry,
                 assetIds: ['999999'],
                 network: 'mainnet',
             })
@@ -294,9 +289,8 @@ describe('asset repository', () => {
 
     describe('sync preserves device-specific fields', () => {
         it('preserves isFavorited and isPriceAlertEnabled when sync overwrites metadata', async () => {
-            // Initial sync stores asset with defaults
             await upsertAssets({
-                db,
+                registry,
                 items: [
                     makeAsset({
                         peraMetadata: {
@@ -310,17 +304,15 @@ describe('asset repository', () => {
                 network: 'mainnet',
             })
 
-            // User toggles favorite and price alert
             await updateAssetPeraMetadata({
-                db,
+                registry,
                 assetId: '31566704',
                 network: 'mainnet',
                 updates: { isFavorited: true, isPriceAlertEnabled: true },
             })
 
-            // Sync runs again with defaults (API doesn't return device-specific fields)
             await upsertAssets({
-                db,
+                registry,
                 items: [
                     makeAsset({
                         peraMetadata: {
@@ -335,12 +327,11 @@ describe('asset repository', () => {
             })
 
             const result = await getAssetsByIds({
-                db,
+                registry,
                 assetIds: ['31566704'],
                 network: 'mainnet',
             })
 
-            // Device-specific fields should be preserved from the toggle mutation
             expect(result[0].peraMetadata?.isFavorited).toBe(true)
             expect(result[0].peraMetadata?.isPriceAlertEnabled).toBe(true)
         })
@@ -349,7 +340,7 @@ describe('asset repository', () => {
     describe('asset prices', () => {
         it('inserts and retrieves prices', async () => {
             await upsertAssetPrices({
-                db,
+                registry,
                 prices: [
                     { assetId: '100', usdPrice: new Decimal('1.50') },
                     { assetId: '200', usdPrice: new Decimal('0.75') },
@@ -358,7 +349,7 @@ describe('asset repository', () => {
             })
 
             const result = await getAssetPricesByIds({
-                db,
+                registry,
                 assetIds: ['100', '200'],
                 network: 'mainnet',
             })
@@ -371,19 +362,19 @@ describe('asset repository', () => {
 
         it('updates existing prices on conflict', async () => {
             await upsertAssetPrices({
-                db,
+                registry,
                 prices: [{ assetId: '100', usdPrice: new Decimal('1.00') }],
                 network: 'mainnet',
             })
 
             await upsertAssetPrices({
-                db,
+                registry,
                 prices: [{ assetId: '100', usdPrice: new Decimal('2.00') }],
                 network: 'mainnet',
             })
 
             const result = await getAssetPricesByIds({
-                db,
+                registry,
                 assetIds: ['100'],
                 network: 'mainnet',
             })
@@ -394,13 +385,13 @@ describe('asset repository', () => {
 
         it('does nothing for empty prices', async () => {
             await upsertAssetPrices({
-                db,
+                registry,
                 prices: [],
                 network: 'mainnet',
             })
 
             const result = await getAssetPricesByIds({
-                db,
+                registry,
                 assetIds: ['100'],
                 network: 'mainnet',
             })

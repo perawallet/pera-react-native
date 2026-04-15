@@ -10,13 +10,21 @@
  limitations under the License
  */
 
-import type { Database } from '@perawallet/wallet-core-database'
+import type { CollectionRegistry } from '@perawallet/wallet-core-database'
 import { ALGO_ASSET } from '../models'
 import { upsertAssets } from './repository'
 
-export async function seedAlgoAsset(db: Database): Promise<void> {
+/**
+ * Seeds the ALGO asset into both mainnet and testnet. Called once during
+ * app bootstrap (after `bootstrapCollections`) so callers that read ALGO
+ * via the assets collections always get a hit, even before the first
+ * sync tick has run.
+ */
+export async function seedAlgoAsset(
+    registry?: CollectionRegistry,
+): Promise<void> {
     const items = [ALGO_ASSET]
 
-    await upsertAssets({ db, items, network: 'mainnet' })
-    await upsertAssets({ db, items, network: 'testnet' })
+    await upsertAssets({ registry, items, network: 'mainnet' })
+    await upsertAssets({ registry, items, network: 'testnet' })
 }

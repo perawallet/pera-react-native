@@ -27,10 +27,16 @@
     "drizzle-orm": "catalog:",
     "@perawallet/wallet-extension-platform": "workspace:*"
   },
+  "peerDependencies": {
+    "react": "catalog:"
+  },
   "devDependencies": {
     "better-sqlite3": "^11.0.0",
     "@types/better-sqlite3": "^7.6.0",
+    "@testing-library/react": "catalog:",
+    "@types/react": "catalog:",
     "drizzle-kit": "^0.30.0",
+    "react": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "^4.5.4",

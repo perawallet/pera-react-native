@@ -12,40 +12,35 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import {
-    runMigrations,
-    migrations,
-    type Database,
+    bootstrapTestCollections,
+    resetRegistryForTest,
+    type CollectionRegistry,
 } from '@perawallet/wallet-core-database'
-import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import { ALGO_ASSET_ID } from '../../models'
 import { getAssetsByIds } from '../repository'
 import { seedAlgoAsset } from '../seed'
 
 describe('seedAlgoAsset', () => {
-    let db: Database
-    let teardown: () => void
+    let registry: CollectionRegistry
 
-    beforeEach(async () => {
-        const result = createTestDatabase()
-        db = result.db
-        teardown = result.teardown
-        await runMigrations(db, migrations)
+    beforeEach(() => {
+        registry = bootstrapTestCollections()
     })
 
     afterEach(() => {
-        teardown()
+        resetRegistryForTest()
     })
 
     it('seeds ALGO into both mainnet and testnet', async () => {
-        await seedAlgoAsset(db)
+        await seedAlgoAsset(registry)
 
         const mainnet = await getAssetsByIds({
-            db,
+            registry,
             assetIds: [ALGO_ASSET_ID],
             network: 'mainnet',
         })
         const testnet = await getAssetsByIds({
-            db,
+            registry,
             assetIds: [ALGO_ASSET_ID],
             network: 'testnet',
         })
@@ -61,11 +56,11 @@ describe('seedAlgoAsset', () => {
     })
 
     it('is idempotent — running twice does not duplicate', async () => {
-        await seedAlgoAsset(db)
-        await seedAlgoAsset(db)
+        await seedAlgoAsset(registry)
+        await seedAlgoAsset(registry)
 
         const result = await getAssetsByIds({
-            db,
+            registry,
             assetIds: [ALGO_ASSET_ID],
             network: 'mainnet',
         })

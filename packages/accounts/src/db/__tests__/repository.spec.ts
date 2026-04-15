@@ -13,11 +13,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
-    runMigrations,
-    migrations,
-    type Database,
+    bootstrapTestCollections,
+    resetRegistryForTest,
+    type CollectionRegistry,
 } from '@perawallet/wallet-core-database'
-import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import {
     upsertAssets,
     PeraAssetType,
@@ -34,35 +33,33 @@ import {
     getAllAssetIdsForNetwork,
 } from '../repository'
 
-describe('account repository', () => {
-    let db: Database
-    let teardown: () => void
+const dec = (n: number | string): Decimal => new Decimal(n)
 
-    beforeEach(async () => {
-        const result = createTestDatabase()
-        db = result.db
-        teardown = result.teardown
-        await runMigrations(db, migrations)
+describe('account repository', () => {
+    let registry: CollectionRegistry
+
+    beforeEach(() => {
+        registry = bootstrapTestCollections()
     })
 
     afterEach(() => {
-        teardown()
+        resetRegistryForTest()
     })
 
     describe('holdings', () => {
         it('inserts and retrieves holdings', async () => {
             await refreshAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 holdings: [
-                    { assetId: '100', amount: 5000n },
-                    { assetId: '200', amount: 300n },
+                    { assetId: '100', amount: dec(5000) },
+                    { assetId: '200', amount: dec(300) },
                 ],
                 network: 'mainnet',
             })
 
             const result = await getAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
             })
@@ -73,50 +70,50 @@ describe('account repository', () => {
 
         it('replaces all holdings on upsert', async () => {
             await refreshAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 holdings: [
-                    { assetId: '100', amount: 5000n },
-                    { assetId: '200', amount: 300n },
+                    { assetId: '100', amount: dec(5000) },
+                    { assetId: '200', amount: dec(300) },
                 ],
                 network: 'mainnet',
             })
 
             await refreshAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
-                holdings: [{ assetId: '300', amount: 999n }],
+                holdings: [{ assetId: '300', amount: dec(999) }],
                 network: 'mainnet',
             })
 
             const result = await getAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
             })
 
             expect(result).toHaveLength(1)
             expect(result[0].assetId).toBe('300')
-            expect(result[0].amount).toEqual(new Decimal(999))
+            expect(result[0].amount).toEqual(dec(999))
         })
 
         it('handles empty holdings', async () => {
             await refreshAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
-                holdings: [{ assetId: '100', amount: 5000n }],
+                holdings: [{ assetId: '100', amount: dec(5000) }],
                 network: 'mainnet',
             })
 
             await refreshAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 holdings: [],
                 network: 'mainnet',
             })
 
             const result = await getAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
             })
@@ -126,48 +123,48 @@ describe('account repository', () => {
 
         it('isolates holdings by account and network', async () => {
             await refreshAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
-                holdings: [{ assetId: '100', amount: 10n }],
+                holdings: [{ assetId: '100', amount: dec(10) }],
                 network: 'mainnet',
             })
             await refreshAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR2',
-                holdings: [{ assetId: '200', amount: 20n }],
+                holdings: [{ assetId: '200', amount: dec(20) }],
                 network: 'mainnet',
             })
             await refreshAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
-                holdings: [{ assetId: '300', amount: 30n }],
+                holdings: [{ assetId: '300', amount: dec(30) }],
                 network: 'testnet',
             })
 
             expect(
                 await getAccountHoldings({
-                    db,
+                    registry,
                     accountAddress: 'ADDR1',
                     network: 'mainnet',
                 }),
             ).toHaveLength(1)
             expect(
                 await getAccountHoldings({
-                    db,
+                    registry,
                     accountAddress: 'ADDR2',
                     network: 'mainnet',
                 }),
             ).toHaveLength(1)
             expect(
                 await getAccountHoldings({
-                    db,
+                    registry,
                     accountAddress: 'ADDR1',
                     network: 'testnet',
                 }),
             ).toHaveLength(1)
             expect(
                 await getAccountHoldings({
-                    db,
+                    registry,
                     accountAddress: 'ADDR2',
                     network: 'testnet',
                 }),
@@ -176,7 +173,7 @@ describe('account repository', () => {
 
         it('returns empty array for unknown account', async () => {
             const result = await getAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'UNKNOWN',
                 network: 'mainnet',
             })
@@ -200,7 +197,7 @@ describe('account repository', () => {
             assetId,
             decimals: 0,
             creator: { address: 'CREATOR' },
-            totalSupply: new Decimal(1),
+            totalSupply: dec(1),
             peraMetadata: {
                 isDeleted: false,
                 verificationTier: 'unverified',
@@ -212,19 +209,19 @@ describe('account repository', () => {
 
         beforeEach(async () => {
             await refreshAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 holdings: [
-                    { assetId: '100', amount: new Decimal(50) },
-                    { assetId: '200', amount: new Decimal(0) },
-                    { assetId: '300', amount: new Decimal(1) },
-                    { assetId: '400', amount: new Decimal(0) },
-                    { assetId: '500', amount: new Decimal(0) },
+                    { assetId: '100', amount: dec(50) },
+                    { assetId: '200', amount: dec(0) },
+                    { assetId: '300', amount: dec(1) },
+                    { assetId: '400', amount: dec(0) },
+                    { assetId: '500', amount: dec(0) },
                 ],
                 network: 'mainnet',
             })
             await upsertAssets({
-                db,
+                registry,
                 items: [
                     makeAsset('100', PeraAssetType.standard_asset),
                     makeAsset('200', PeraAssetType.standard_asset),
@@ -237,7 +234,7 @@ describe('account repository', () => {
 
         const idsOf = async (filters: Record<string, unknown>) => {
             const rows = await getAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
                 ...filters,
@@ -265,7 +262,6 @@ describe('account repository', () => {
         })
 
         it('hideOptedInNfts excludes only zero-balance collectibles', async () => {
-            // Owned NFT '300' is kept, opted-in '400' is dropped, unknown '500' kept.
             expect(await idsOf({ hideOptedInNfts: true })).toEqual([
                 '100',
                 '200',
@@ -281,8 +277,6 @@ describe('account repository', () => {
         })
 
         it('combines hideZeroBalance with hideOptedInNfts', async () => {
-            // hideZeroBalance drops '200', '400', '500'; hideOptedInNfts is
-            // already covered by hideZeroBalance for collectibles.
             expect(
                 await idsOf({
                     hideZeroBalance: true,
@@ -303,65 +297,65 @@ describe('account repository', () => {
     describe('insertAssetHolding', () => {
         it('inserts a new holding with zero amount', async () => {
             await insertAssetHolding({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 assetId: '100',
                 network: 'mainnet',
             })
 
             const result = await getAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
             })
 
             expect(result).toHaveLength(1)
             expect(result[0].assetId).toBe('100')
-            expect(result[0].amount).toEqual(new Decimal(0))
+            expect(result[0].amount).toEqual(dec(0))
         })
 
         it('does not overwrite existing holding on conflict', async () => {
             await refreshAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
-                holdings: [{ assetId: '100', amount: 500n }],
+                holdings: [{ assetId: '100', amount: dec(500) }],
                 network: 'mainnet',
             })
 
             await insertAssetHolding({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 assetId: '100',
                 network: 'mainnet',
             })
 
             const result = await getAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
             })
 
             expect(result).toHaveLength(1)
-            expect(result[0].amount).toEqual(new Decimal(500))
+            expect(result[0].amount).toEqual(dec(500))
         })
 
         it('adds alongside existing holdings', async () => {
             await refreshAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
-                holdings: [{ assetId: '100', amount: 10n }],
+                holdings: [{ assetId: '100', amount: dec(10) }],
                 network: 'mainnet',
             })
 
             await insertAssetHolding({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 assetId: '200',
                 network: 'mainnet',
             })
 
             const result = await getAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
             })
@@ -374,25 +368,25 @@ describe('account repository', () => {
     describe('deleteAssetHoldings', () => {
         it('deletes specified asset holdings', async () => {
             await refreshAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 holdings: [
-                    { assetId: '100', amount: 0n },
-                    { assetId: '200', amount: 0n },
-                    { assetId: '300', amount: 0n },
+                    { assetId: '100', amount: dec(0) },
+                    { assetId: '200', amount: dec(0) },
+                    { assetId: '300', amount: dec(0) },
                 ],
                 network: 'mainnet',
             })
 
             await deleteAssetHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 assetIds: ['100', '200'],
                 network: 'mainnet',
             })
 
             const result = await getAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
             })
@@ -403,20 +397,20 @@ describe('account repository', () => {
 
         it('does not affect other accounts', async () => {
             await refreshAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
-                holdings: [{ assetId: '100', amount: 0n }],
+                holdings: [{ assetId: '100', amount: dec(0) }],
                 network: 'mainnet',
             })
             await refreshAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR2',
-                holdings: [{ assetId: '100', amount: 0n }],
+                holdings: [{ assetId: '100', amount: dec(0) }],
                 network: 'mainnet',
             })
 
             await deleteAssetHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 assetIds: ['100'],
                 network: 'mainnet',
@@ -424,14 +418,14 @@ describe('account repository', () => {
 
             expect(
                 await getAccountHoldings({
-                    db,
+                    registry,
                     accountAddress: 'ADDR1',
                     network: 'mainnet',
                 }),
             ).toHaveLength(0)
             expect(
                 await getAccountHoldings({
-                    db,
+                    registry,
                     accountAddress: 'ADDR2',
                     network: 'mainnet',
                 }),
@@ -440,20 +434,20 @@ describe('account repository', () => {
 
         it('does not affect other networks', async () => {
             await refreshAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
-                holdings: [{ assetId: '100', amount: 0n }],
+                holdings: [{ assetId: '100', amount: dec(0) }],
                 network: 'mainnet',
             })
             await refreshAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
-                holdings: [{ assetId: '100', amount: 0n }],
+                holdings: [{ assetId: '100', amount: dec(0) }],
                 network: 'testnet',
             })
 
             await deleteAssetHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 assetIds: ['100'],
                 network: 'mainnet',
@@ -461,14 +455,14 @@ describe('account repository', () => {
 
             expect(
                 await getAccountHoldings({
-                    db,
+                    registry,
                     accountAddress: 'ADDR1',
                     network: 'mainnet',
                 }),
             ).toHaveLength(0)
             expect(
                 await getAccountHoldings({
-                    db,
+                    registry,
                     accountAddress: 'ADDR1',
                     network: 'testnet',
                 }),
@@ -477,14 +471,14 @@ describe('account repository', () => {
 
         it('handles empty assetIds array', async () => {
             await refreshAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
-                holdings: [{ assetId: '100', amount: 0n }],
+                holdings: [{ assetId: '100', amount: dec(0) }],
                 network: 'mainnet',
             })
 
             await deleteAssetHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 assetIds: [],
                 network: 'mainnet',
@@ -492,7 +486,7 @@ describe('account repository', () => {
 
             expect(
                 await getAccountHoldings({
-                    db,
+                    registry,
                     accountAddress: 'ADDR1',
                     network: 'mainnet',
                 }),
@@ -503,75 +497,75 @@ describe('account repository', () => {
     describe('balances', () => {
         it('inserts a new balance', async () => {
             await upsertAccountBalance({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
-                algoBalance: 5000000n,
+                algoBalance: dec(5000000),
                 totalAssetsOptedIn: 3,
                 totalCreatedAssets: 1,
                 totalAppsOptedIn: 2,
-                minBalance: 100000n,
+                minBalance: dec(100000),
                 status: 'Online',
                 authAddress: null,
             })
 
             const result = await getAccountBalance({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
             })
 
             expect(result).toBeDefined()
-            expect(result!.algoBalance).toEqual(new Decimal(5000000))
+            expect(result!.algoBalance).toEqual(dec(5000000))
             expect(result!.totalAssetsOptedIn).toBe(3)
-            expect(result!.minBalance).toEqual(new Decimal(100000))
+            expect(result!.minBalance).toEqual(dec(100000))
             expect(result!.status).toBe('Online')
         })
 
         it('updates an existing balance on conflict', async () => {
             await upsertAccountBalance({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
-                algoBalance: 5000000n,
+                algoBalance: dec(5000000),
                 totalAssetsOptedIn: 3,
                 totalCreatedAssets: 1,
                 totalAppsOptedIn: 2,
-                minBalance: 100000n,
+                minBalance: dec(100000),
                 status: 'Online',
                 authAddress: null,
             })
 
             await upsertAccountBalance({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
-                algoBalance: 9000000n,
+                algoBalance: dec(9000000),
                 totalAssetsOptedIn: 5,
                 totalCreatedAssets: 2,
                 totalAppsOptedIn: 3,
-                minBalance: 200000n,
+                minBalance: dec(200000),
                 status: 'Offline',
                 authAddress: 'AUTH1',
             })
 
             const result = await getAccountBalance({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
             })
 
             expect(result).toBeDefined()
-            expect(result!.algoBalance).toEqual(new Decimal(9000000))
+            expect(result!.algoBalance).toEqual(dec(9000000))
             expect(result!.totalAssetsOptedIn).toBe(5)
-            expect(result!.minBalance).toEqual(new Decimal(200000))
+            expect(result!.minBalance).toEqual(dec(200000))
             expect(result!.status).toBe('Offline')
             expect(result!.authAddress).toBe('AUTH1')
         })
 
         it('returns undefined for unknown account', async () => {
             const result = await getAccountBalance({
-                db,
+                registry,
                 accountAddress: 'UNKNOWN',
                 network: 'mainnet',
             })
@@ -581,32 +575,32 @@ describe('account repository', () => {
 
         it('retrieves all balances for multiple addresses', async () => {
             await upsertAccountBalance({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 network: 'mainnet',
-                algoBalance: 1000n,
+                algoBalance: dec(1000),
                 totalAssetsOptedIn: 0,
                 totalCreatedAssets: 0,
                 totalAppsOptedIn: 0,
-                minBalance: 0n,
+                minBalance: dec(0),
                 status: 'Offline',
                 authAddress: null,
             })
             await upsertAccountBalance({
-                db,
+                registry,
                 accountAddress: 'ADDR2',
                 network: 'mainnet',
-                algoBalance: 2000n,
+                algoBalance: dec(2000),
                 totalAssetsOptedIn: 0,
                 totalCreatedAssets: 0,
                 totalAppsOptedIn: 0,
-                minBalance: 0n,
+                minBalance: dec(0),
                 status: 'Offline',
                 authAddress: null,
             })
 
             const result = await getAllAccountBalances({
-                db,
+                registry,
                 accountAddresses: ['ADDR1', 'ADDR2'],
                 network: 'mainnet',
             })
@@ -618,26 +612,26 @@ describe('account repository', () => {
     describe('getAllAssetIdsForNetwork', () => {
         it('returns distinct asset IDs across accounts', async () => {
             await refreshAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR1',
                 holdings: [
-                    { assetId: '100', amount: 10n },
-                    { assetId: '200', amount: 20n },
+                    { assetId: '100', amount: dec(10) },
+                    { assetId: '200', amount: dec(20) },
                 ],
                 network: 'mainnet',
             })
             await refreshAccountHoldings({
-                db,
+                registry,
                 accountAddress: 'ADDR2',
                 holdings: [
-                    { assetId: '200', amount: 30n },
-                    { assetId: '300', amount: 40n },
+                    { assetId: '200', amount: dec(30) },
+                    { assetId: '300', amount: dec(40) },
                 ],
                 network: 'mainnet',
             })
 
             const result = await getAllAssetIdsForNetwork({
-                db,
+                registry,
                 network: 'mainnet',
             })
 

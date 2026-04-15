@@ -31,6 +31,7 @@ const mockRemoveItem = vi.fn()
 const mockClearKeystore = vi.fn().mockResolvedValue(undefined)
 const mockDeleteDatabase = vi.fn().mockResolvedValue(undefined)
 const mockInitializeDatabase = vi.fn().mockResolvedValue(undefined)
+const mockResetAllCollections = vi.fn()
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
     clearDataStores: vi.fn(),
@@ -44,6 +45,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 vi.mock('@perawallet/wallet-core-database', () => ({
     deleteDatabase: (...args: unknown[]) => mockDeleteDatabase(...args),
     initializeDatabase: (...args: unknown[]) => mockInitializeDatabase(...args),
+    resetAllCollections: () => mockResetAllCollections(),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({

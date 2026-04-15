@@ -15,6 +15,7 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     deleteDatabase,
     initializeDatabase,
+    resetAllCollections,
 } from '@perawallet/wallet-core-database'
 import { useDeleteDeviceMutation } from '@perawallet/wallet-core-device'
 import { useKMS } from '@perawallet/wallet-core-kms'
@@ -99,6 +100,16 @@ export const useDeleteAllData = (): UseDeleteAllDataResult => {
             await initializeDatabase(getProvider().database)
         } catch (e) {
             logger.error('Failed to delete database', { error: e })
+        }
+
+        // 8. Wipe every TanStack-DB-style collection backed by MMKV.
+        // Collections persist independently of the SQLite file, so
+        // `deleteDatabase` does not touch them — they need their own
+        // reset hook so the app boots into a fully empty state.
+        try {
+            resetAllCollections()
+        } catch (e) {
+            logger.error('Failed to reset collections', { error: e })
         }
 
         clearAllStores({ skip: [ACCOUNTS_STORE_NAME] })

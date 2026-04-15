@@ -10,14 +10,29 @@
  limitations under the License
  */
 
-import { eq, and, desc, lt, sql } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
-import { getDatabase, type Database } from '@perawallet/wallet-core-database'
+import {
+    accountTransactionsKey,
+    accountTransactionsPrefix,
+    getCollections,
+    transactionsKey,
+    type AccountTransactionRow,
+    type CollectionRegistry,
+    type TransactionRow,
+} from '@perawallet/wallet-core-database'
 import type { TransactionHistoryItem } from '../models/types'
-import { TransactionsSchema, AccountTransactionsSchema } from './schema'
 
-function toDb(item: TransactionHistoryItem) {
+type WithRegistry = { registry?: CollectionRegistry }
+
+function resolveRegistry(
+    registry: CollectionRegistry | undefined,
+): CollectionRegistry {
+    return registry ?? getCollections()
+}
+
+function toRow(item: TransactionHistoryItem, network: string): TransactionRow {
     return {
+        network,
         id: item.id,
         txType: item.txType,
         sender: item.sender,
@@ -39,26 +54,11 @@ function toDb(item: TransactionHistoryItem) {
         interpretedMeaningJson: item.interpretedMeaning
             ? JSON.stringify(item.interpretedMeaning)
             : null,
+        updatedAt: Date.now(),
     }
 }
 
-function fromDb(row: {
-    id: string
-    txType: string
-    sender: string
-    receiver: string | null
-    confirmedRound: number
-    roundTime: number
-    fee: Decimal
-    groupId: string | null
-    amount: Decimal | null
-    closeTo: string | null
-    applicationId: Decimal | null
-    innerTransactionCount: number | null
-    assetJson: string | null
-    swapGroupDetailJson: string | null
-    interpretedMeaningJson: string | null
-}): TransactionHistoryItem {
+function fromRow(row: TransactionRow): TransactionHistoryItem {
     return {
         id: row.id,
         txType: row.txType as TransactionHistoryItem['txType'],
@@ -82,77 +82,86 @@ function fromDb(row: {
     }
 }
 
-type UpsertTransactionsParams = {
-    db?: Database
+function extractAssetIdFromAssetJson(assetJson: string | null): string | null {
+    if (!assetJson) return null
+    try {
+        const parsed = JSON.parse(assetJson) as { assetId?: number | string }
+        return parsed.assetId !== undefined ? String(parsed.assetId) : null
+    } catch {
+        return null
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Writes
+// ---------------------------------------------------------------------------
+
+type UpsertTransactionsParams = WithRegistry & {
     items: TransactionHistoryItem[]
     accountAddress: string
     network: string
 }
 
+/**
+ * Upsert a batch of transactions into both the `transactions` and
+ * `account_transactions` collections atomically.
+ *
+ * The sync service calls this once per sync tick per account; the
+ * write volume can be up to several hundred rows. Wrapping the writes
+ * in `transact` means:
+ *
+ *   (a) subscribers see a single commit (one re-render per tick
+ *       instead of one per row); and
+ *   (b) the adapter flushes a batched `putMany` rather than one
+ *       `set` per row.
+ */
 export async function upsertTransactions({
-    db = getDatabase(),
+    registry,
     items,
     accountAddress,
     network,
 }: UpsertTransactionsParams): Promise<void> {
     if (items.length === 0) return
 
-    const now = Date.now()
+    const { transactions, accountTransactions } = resolveRegistry(registry)
 
-    for (const item of items) {
-        const row = toDb(item)
+    transactions.transact(() => {
+        accountTransactions.transact(() => {
+            for (const item of items) {
+                const txRow = toRow(item, network)
+                transactions.upsert(txRow)
 
-        await db
-            .insert(TransactionsSchema)
-            .values({
-                ...row,
-                network,
-                updatedAt: now,
-            })
-            .onConflictDoUpdate({
-                target: TransactionsSchema.id,
-                set: {
-                    txType: row.txType,
-                    sender: row.sender,
-                    receiver: row.receiver,
-                    confirmedRound: row.confirmedRound,
-                    roundTime: row.roundTime,
-                    fee: row.fee,
-                    groupId: row.groupId,
-                    amount: row.amount,
-                    closeTo: row.closeTo,
-                    applicationId: row.applicationId,
-                    innerTransactionCount: row.innerTransactionCount,
-                    assetJson: row.assetJson,
-                    swapGroupDetailJson: row.swapGroupDetailJson,
-                    interpretedMeaningJson: row.interpretedMeaningJson,
-                    updatedAt: now,
-                },
-            })
-            .run()
-
-        const assetId = row.assetJson
-            ? ((
-                  JSON.parse(row.assetJson) as { assetId?: number }
-              ).assetId?.toString() ?? null)
-            : null
-
-        await db
-            .insert(AccountTransactionsSchema)
-            .values({
-                accountAddress,
-                transactionId: item.id,
-                network,
-                assetId: assetId ? new Decimal(assetId) : null,
-                roundTime: item.roundTime,
-            })
-            .onConflictDoNothing()
-            .run()
-    }
+                // `account_transactions` uses `onConflictDoNothing` in
+                // the SQL version — the bridge row is immutable once
+                // written, so re-upserting the same (network, account,
+                // txid) tuple is a no-op.
+                const bridgeKey = accountTransactionsKey({
+                    network,
+                    accountAddress,
+                    transactionId: item.id,
+                })
+                if (!accountTransactions.has(bridgeKey)) {
+                    const assetIdRaw = extractAssetIdFromAssetJson(
+                        txRow.assetJson,
+                    )
+                    accountTransactions.upsert({
+                        network,
+                        accountAddress,
+                        transactionId: item.id,
+                        assetId: assetIdRaw ? new Decimal(assetIdRaw) : null,
+                        roundTime: item.roundTime,
+                    })
+                }
+            }
+        })
+    })
 }
 
-type GetTransactionHistoryParams = {
-    db?: Database
+// ---------------------------------------------------------------------------
+// Reads
+// ---------------------------------------------------------------------------
+
+type GetTransactionHistoryParams = WithRegistry & {
     accountAddress: string
     network: string
     assetId?: string
@@ -160,94 +169,88 @@ type GetTransactionHistoryParams = {
     beforeRoundTime?: number
 }
 
+/**
+ * Paginated transaction history for one (network, account).
+ *
+ * Strategy (matches §3.2 of the migration plan): scan
+ * `account_transactions` by prefix, filter by optional assetId and
+ * beforeRoundTime cursor, sort descending by `roundTime` (denormalized
+ * onto the bridge row so we don't need to chase into `transactions`
+ * at sort time), take the top `limit`, then sync-lookup the full row
+ * from `transactions` for each of the resulting txids.
+ *
+ * Cost: O(account_transactions for this account) for the filter,
+ * O(filtered-set log filtered-set) for the sort, then O(limit) for
+ * the final join. At the expected depth (low thousands of rows per
+ * account) this is a sub-millisecond operation after hydration.
+ */
 export async function getTransactionHistory({
-    db = getDatabase(),
+    registry,
     accountAddress,
     network,
     assetId,
     limit = 25,
     beforeRoundTime,
 }: GetTransactionHistoryParams): Promise<TransactionHistoryItem[]> {
-    const conditions = [
-        eq(AccountTransactionsSchema.accountAddress, accountAddress),
-        eq(AccountTransactionsSchema.network, network),
-    ]
+    const { transactions, accountTransactions } = resolveRegistry(registry)
 
-    if (assetId !== undefined) {
-        conditions.push(
-            eq(AccountTransactionsSchema.assetId, new Decimal(assetId)),
-        )
+    const prefix = accountTransactionsPrefix({ network, accountAddress })
+    const assetIdStr = assetId
+
+    const candidates: AccountTransactionRow[] = []
+    for (const [, bridge] of accountTransactions.entriesWithPrefix(prefix)) {
+        if (
+            beforeRoundTime !== undefined &&
+            bridge.roundTime >= beforeRoundTime
+        ) {
+            continue
+        }
+        if (
+            assetIdStr !== undefined &&
+            (bridge.assetId === null || bridge.assetId.toString() !== assetIdStr)
+        ) {
+            continue
+        }
+        candidates.push(bridge)
     }
 
-    if (beforeRoundTime !== undefined) {
-        conditions.push(
-            lt(AccountTransactionsSchema.roundTime, beforeRoundTime),
+    candidates.sort((a, b) => b.roundTime - a.roundTime)
+
+    const results: TransactionHistoryItem[] = []
+    for (let i = 0; i < candidates.length && results.length < limit; i += 1) {
+        const bridge = candidates[i]
+        const txRow = transactions.get(
+            transactionsKey({ network, id: bridge.transactionId }),
         )
+        if (txRow !== undefined) results.push(fromRow(txRow))
     }
-
-    const rows = await db
-        .select({
-            id: TransactionsSchema.id,
-            txType: TransactionsSchema.txType,
-            sender: TransactionsSchema.sender,
-            receiver: TransactionsSchema.receiver,
-            confirmedRound: TransactionsSchema.confirmedRound,
-            roundTime: TransactionsSchema.roundTime,
-            fee: TransactionsSchema.fee,
-            groupId: TransactionsSchema.groupId,
-            amount: TransactionsSchema.amount,
-            closeTo: TransactionsSchema.closeTo,
-            applicationId: TransactionsSchema.applicationId,
-            innerTransactionCount: TransactionsSchema.innerTransactionCount,
-            assetJson: TransactionsSchema.assetJson,
-            swapGroupDetailJson: TransactionsSchema.swapGroupDetailJson,
-            interpretedMeaningJson: TransactionsSchema.interpretedMeaningJson,
-        })
-        .from(AccountTransactionsSchema)
-        .innerJoin(
-            TransactionsSchema,
-            and(
-                eq(
-                    AccountTransactionsSchema.transactionId,
-                    TransactionsSchema.id,
-                ),
-                eq(
-                    AccountTransactionsSchema.network,
-                    TransactionsSchema.network,
-                ),
-            ),
-        )
-        .where(and(...conditions))
-        .orderBy(desc(AccountTransactionsSchema.roundTime))
-        .limit(limit)
-        .all()
-
-    return rows.map(fromDb)
+    return results
 }
 
-type GetLatestTransactionRoundTimeParams = {
-    db?: Database
+type GetLatestTransactionRoundTimeParams = WithRegistry & {
     accountAddress: string
     network: string
 }
 
+/**
+ * Sync checkpoint: the largest `roundTime` we have persisted for this
+ * (network, account). Used by the background sync service to know the
+ * cursor to fetch newer transactions from.
+ *
+ * A single linear scan over the bridge collection's prefix is fine —
+ * this is called once per sync tick per account, not per render.
+ */
 export async function getLatestTransactionRoundTime({
-    db = getDatabase(),
+    registry,
     accountAddress,
     network,
 }: GetLatestTransactionRoundTimeParams): Promise<number | null> {
-    const rows = await db
-        .select({
-            maxRoundTime: sql<number>`MAX(${AccountTransactionsSchema.roundTime})`,
-        })
-        .from(AccountTransactionsSchema)
-        .where(
-            and(
-                eq(AccountTransactionsSchema.accountAddress, accountAddress),
-                eq(AccountTransactionsSchema.network, network),
-            ),
-        )
-        .all()
+    const { accountTransactions } = resolveRegistry(registry)
+    const prefix = accountTransactionsPrefix({ network, accountAddress })
 
-    return rows[0]?.maxRoundTime ?? null
+    let max: number | null = null
+    for (const [, bridge] of accountTransactions.entriesWithPrefix(prefix)) {
+        if (max === null || bridge.roundTime > max) max = bridge.roundTime
+    }
+    return max
 }

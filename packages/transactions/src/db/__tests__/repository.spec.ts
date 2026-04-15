@@ -13,11 +13,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import {
-    runMigrations,
-    migrations,
-    type Database,
+    bootstrapTestCollections,
+    resetRegistryForTest,
+    type CollectionRegistry,
 } from '@perawallet/wallet-core-database'
-import { createTestDatabase } from '@perawallet/wallet-core-database/test-utils'
 import type { TransactionHistoryItem } from '../../models/types'
 import {
     upsertTransactions,
@@ -26,18 +25,14 @@ import {
 } from '../repository'
 
 describe('transaction repository', () => {
-    let db: Database
-    let teardown: () => void
+    let registry: CollectionRegistry
 
-    beforeEach(async () => {
-        const result = createTestDatabase()
-        db = result.db
-        teardown = result.teardown
-        await runMigrations(db, migrations)
+    beforeEach(() => {
+        registry = bootstrapTestCollections()
     })
 
     afterEach(() => {
-        teardown()
+        resetRegistryForTest()
     })
 
     const makeTx = (
@@ -63,14 +58,14 @@ describe('transaction repository', () => {
 
     it('inserts and retrieves transactions', async () => {
         await upsertTransactions({
-            db,
+            registry,
             items: [makeTx()],
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
 
         const result = await getTransactionHistory({
-            db,
+            registry,
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
@@ -83,20 +78,20 @@ describe('transaction repository', () => {
 
     it('upserts duplicate transaction IDs without duplicating', async () => {
         await upsertTransactions({
-            db,
+            registry,
             items: [makeTx({ amount: new Decimal(100) })],
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
         await upsertTransactions({
-            db,
+            registry,
             items: [makeTx({ amount: new Decimal(200) })],
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
 
         const result = await getTransactionHistory({
-            db,
+            registry,
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
@@ -114,7 +109,7 @@ describe('transaction repository', () => {
         }
 
         await upsertTransactions({
-            db,
+            registry,
             items: [
                 makeTx({ id: 'TX_ASSET', asset }),
                 makeTx({ id: 'TX_NO_ASSET' }),
@@ -124,14 +119,14 @@ describe('transaction repository', () => {
         })
 
         const withAsset = await getTransactionHistory({
-            db,
+            registry,
             accountAddress: 'ACCT1',
             network: 'mainnet',
             assetId: '31566704',
         })
 
         const all = await getTransactionHistory({
-            db,
+            registry,
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
@@ -147,14 +142,14 @@ describe('transaction repository', () => {
         )
 
         await upsertTransactions({
-            db,
+            registry,
             items,
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
 
         const result = await getTransactionHistory({
-            db,
+            registry,
             accountAddress: 'ACCT1',
             network: 'mainnet',
             limit: 3,
@@ -165,7 +160,7 @@ describe('transaction repository', () => {
 
     it('orders by roundTime DESC', async () => {
         await upsertTransactions({
-            db,
+            registry,
             items: [
                 makeTx({ id: 'TX_OLD', roundTime: 1700000000 }),
                 makeTx({ id: 'TX_NEW', roundTime: 1700001000 }),
@@ -176,7 +171,7 @@ describe('transaction repository', () => {
         })
 
         const result = await getTransactionHistory({
-            db,
+            registry,
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
@@ -186,25 +181,25 @@ describe('transaction repository', () => {
 
     it('isolates transactions by network', async () => {
         await upsertTransactions({
-            db,
+            registry,
             items: [makeTx({ id: 'TX_MAIN' })],
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
         await upsertTransactions({
-            db,
+            registry,
             items: [makeTx({ id: 'TX_TEST' })],
             accountAddress: 'ACCT1',
             network: 'testnet',
         })
 
         const mainnet = await getTransactionHistory({
-            db,
+            registry,
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
         const testnet = await getTransactionHistory({
-            db,
+            registry,
             accountAddress: 'ACCT1',
             network: 'testnet',
         })
@@ -236,14 +231,14 @@ describe('transaction repository', () => {
         }
 
         await upsertTransactions({
-            db,
+            registry,
             items: [makeTx({ asset, swapGroupDetail, interpretedMeaning })],
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
 
         const result = await getTransactionHistory({
-            db,
+            registry,
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
@@ -255,7 +250,7 @@ describe('transaction repository', () => {
 
     it('supports beforeRoundTime pagination', async () => {
         await upsertTransactions({
-            db,
+            registry,
             items: [
                 makeTx({ id: 'TX1', roundTime: 1000 }),
                 makeTx({ id: 'TX2', roundTime: 2000 }),
@@ -266,7 +261,7 @@ describe('transaction repository', () => {
         })
 
         const result = await getTransactionHistory({
-            db,
+            registry,
             accountAddress: 'ACCT1',
             network: 'mainnet',
             beforeRoundTime: 2500,
@@ -277,7 +272,7 @@ describe('transaction repository', () => {
 
     it('returns the latest round time for an account', async () => {
         await upsertTransactions({
-            db,
+            registry,
             items: [
                 makeTx({ id: 'TX1', roundTime: 1000 }),
                 makeTx({ id: 'TX2', roundTime: 3000 }),
@@ -288,7 +283,7 @@ describe('transaction repository', () => {
         })
 
         const result = await getLatestTransactionRoundTime({
-            db,
+            registry,
             accountAddress: 'ACCT1',
             network: 'mainnet',
         })
@@ -298,7 +293,7 @@ describe('transaction repository', () => {
 
     it('returns null for an account with no transactions', async () => {
         const result = await getLatestTransactionRoundTime({
-            db,
+            registry,
             accountAddress: 'UNKNOWN',
             network: 'mainnet',
         })

@@ -10,404 +10,333 @@
  limitations under the License
  */
 
-import { eq, and, inArray } from 'drizzle-orm'
 import { Decimal } from 'decimal.js'
-import { getDatabase, type Database } from '@perawallet/wallet-core-database'
+import {
+    assetPricesKey,
+    assetsNodeKey,
+    assetsPeraKey,
+    getCollections,
+    type AssetPriceCollectionRow,
+    type AssetsNodeRow,
+    type AssetsPeraRow,
+    type CollectionRegistry,
+} from '@perawallet/wallet-core-database'
 import {
     DEFAULT_ASSET_METADATA,
     type PeraAsset,
     type PeraAssetMetadata,
 } from '../models'
-import { AssetsNodeSchema, AssetsPeraSchema, AssetPricesSchema } from './schema'
 
-function fromDb(row: {
-    assetId: Decimal
-    decimals: number
-    creatorAddress: string
-    totalSupply: Decimal
-    name: string | null
-    unitName: string | null
-    url: string | null
-    metadata: string | null
-    peraMetadataJson: string | null
-}): PeraAsset {
-    const peraMetadata: PeraAssetMetadata | undefined = row.peraMetadataJson
-        ? (JSON.parse(row.peraMetadataJson) as PeraAssetMetadata)
-        : undefined
+type WithRegistry = { registry?: CollectionRegistry }
 
-    return {
-        assetId: row.assetId.toString(),
-        decimals: row.decimals,
-        creator: { address: row.creatorAddress },
-        totalSupply: row.totalSupply,
-        name: row.name ?? undefined,
-        unitName: row.unitName ?? undefined,
-        url: row.url ?? undefined,
-        metadata: row.metadata ?? undefined,
-        peraMetadata,
+function resolveRegistry(registry: CollectionRegistry | undefined): CollectionRegistry {
+    return registry ?? getCollections()
+}
+
+function parseMetaJson(json: string | null): PeraAssetMetadata | undefined {
+    if (!json) return undefined
+    try {
+        return JSON.parse(json) as PeraAssetMetadata
+    } catch {
+        return undefined
     }
 }
 
-type UpsertNodeAssetsParams = {
-    db?: Database
+function rowsToPeraAsset(
+    node: AssetsNodeRow,
+    pera: AssetsPeraRow | undefined,
+): PeraAsset {
+    return {
+        assetId: node.assetId.toString(),
+        decimals: node.decimals,
+        creator: { address: node.creatorAddress },
+        totalSupply: node.totalSupply,
+        name: node.name ?? undefined,
+        unitName: node.unitName ?? undefined,
+        url: node.url ?? undefined,
+        metadata: node.metadata ?? undefined,
+        peraMetadata: parseMetaJson(pera?.peraMetadataJson ?? null),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Node-level asset writes
+// ---------------------------------------------------------------------------
+
+type UpsertNodeAssetsParams = WithRegistry & {
     items: PeraAsset[]
     network: string
 }
 
 export async function upsertNodeAssets({
-    db = getDatabase(),
+    registry,
     items,
     network,
 }: UpsertNodeAssetsParams): Promise<void> {
     if (items.length === 0) return
 
+    const { assetsNode } = resolveRegistry(registry)
     const now = Date.now()
 
-    for (const item of items) {
-        await db
-            .insert(AssetsNodeSchema)
-            .values({
-                assetId: new Decimal(item.assetId),
-                network,
-                decimals: item.decimals,
-                creatorAddress: item.creator.address,
-                totalSupply: item.totalSupply,
-                name: item.name ?? null,
-                unitName: item.unitName ?? null,
-                url: item.url ?? null,
-                metadata: item.metadata ?? null,
-                updatedAt: now,
-            })
-            .onConflictDoUpdate({
-                target: [AssetsNodeSchema.assetId, AssetsNodeSchema.network],
-                set: {
-                    decimals: item.decimals,
-                    creatorAddress: item.creator.address,
-                    totalSupply: item.totalSupply,
-                    name: item.name ?? null,
-                    unitName: item.unitName ?? null,
-                    url: item.url ?? null,
-                    metadata: item.metadata ?? null,
-                    updatedAt: now,
-                },
-            })
-            .run()
-    }
+    assetsNode.upsertMany(
+        items.map<AssetsNodeRow>(item => ({
+            network,
+            assetId: new Decimal(item.assetId),
+            decimals: item.decimals,
+            creatorAddress: item.creator.address,
+            totalSupply: item.totalSupply,
+            name: item.name ?? null,
+            unitName: item.unitName ?? null,
+            url: item.url ?? null,
+            metadata: item.metadata ?? null,
+            updatedAt: now,
+        })),
+    )
 }
 
-type UpsertPeraAssetsParams = {
-    db?: Database
+// ---------------------------------------------------------------------------
+// Pera-specific asset writes (preserves device-local fields)
+// ---------------------------------------------------------------------------
+
+type UpsertPeraAssetsParams = WithRegistry & {
     items: PeraAsset[]
     network: string
 }
 
+/**
+ * Batch upsert pera metadata, preserving device-local fields.
+ *
+ * `isFavorited` and `isPriceAlertEnabled` are set only by user toggles
+ * (see `updateAssetPeraMetadata`) and are absent from the sync API
+ * payload. We must not clobber them when the syncer writes a fresh row.
+ *
+ * Strategy: read the existing row first (sync map lookup) and merge the
+ * two device-local fields into the incoming payload before writing.
+ */
 export async function upsertPeraAssets({
-    db = getDatabase(),
+    registry,
     items,
     network,
 }: UpsertPeraAssetsParams): Promise<void> {
     if (items.length === 0) return
 
+    const { assetsPera } = resolveRegistry(registry)
     const now = Date.now()
-    const decimalIds = items.map(i => new Decimal(i.assetId))
 
-    // Read existing metadata to preserve device-specific fields (isFavorited, isPriceAlertEnabled)
-    // that are only set by toggle mutations and not returned by the sync API
-    const existingRows = await db
-        .select({
-            assetId: AssetsPeraSchema.assetId,
-            peraMetadataJson: AssetsPeraSchema.peraMetadataJson,
-        })
-        .from(AssetsPeraSchema)
-        .where(
-            and(
-                inArray(AssetsPeraSchema.assetId, decimalIds),
-                eq(AssetsPeraSchema.network, network),
-            ),
-        )
-        .all()
-
-    const existingMetaMap = new Map<string, PeraAssetMetadata>()
-    for (const row of existingRows) {
-        if (row.peraMetadataJson) {
-            existingMetaMap.set(
-                row.assetId.toString(),
-                JSON.parse(row.peraMetadataJson) as PeraAssetMetadata,
+    assetsPera.transact(() => {
+        for (const item of items) {
+            const meta = item.peraMetadata
+            const existingRow = assetsPera.get(
+                assetsPeraKey({ network, assetId: item.assetId }),
             )
-        }
-    }
+            const existingMeta = parseMetaJson(
+                existingRow?.peraMetadataJson ?? null,
+            )
 
-    for (const item of items) {
-        const meta = item.peraMetadata
-        const existing = existingMetaMap.get(item.assetId)
+            const mergedMeta: PeraAssetMetadata | undefined = meta
+                ? {
+                      ...meta,
+                      isFavorited:
+                          existingMeta?.isFavorited ?? meta.isFavorited,
+                      isPriceAlertEnabled:
+                          existingMeta?.isPriceAlertEnabled ??
+                          meta.isPriceAlertEnabled,
+                  }
+                : undefined
 
-        const mergedMeta = meta
-            ? {
-                  ...meta,
-                  isFavorited: existing?.isFavorited ?? meta.isFavorited,
-                  isPriceAlertEnabled:
-                      existing?.isPriceAlertEnabled ?? meta.isPriceAlertEnabled,
-              }
-            : undefined
-
-        const metaJson = mergedMeta ? JSON.stringify(mergedMeta) : null
-
-        await db
-            .insert(AssetsPeraSchema)
-            .values({
-                assetId: new Decimal(item.assetId),
+            assetsPera.upsert({
                 network,
+                assetId: new Decimal(item.assetId),
                 verificationTier: meta?.verificationTier ?? 'unverified',
                 isDeleted: meta?.isDeleted ?? false,
                 assetType: meta?.type ?? null,
-                peraMetadataJson: metaJson,
+                peraMetadataJson: mergedMeta ? JSON.stringify(mergedMeta) : null,
                 updatedAt: now,
             })
-            .onConflictDoUpdate({
-                target: [AssetsPeraSchema.assetId, AssetsPeraSchema.network],
-                set: {
-                    verificationTier: meta?.verificationTier ?? 'unverified',
-                    isDeleted: meta?.isDeleted ?? false,
-                    assetType: meta?.type ?? null,
-                    peraMetadataJson: metaJson,
-                    updatedAt: now,
-                },
-            })
-            .run()
-    }
+        }
+    })
 }
 
-type UpsertAssetsParams = {
-    db?: Database
+// ---------------------------------------------------------------------------
+// Unified upsert — writes both tables
+// ---------------------------------------------------------------------------
+
+type UpsertAssetsParams = WithRegistry & {
     items: PeraAsset[]
     network: string
 }
 
 export async function upsertAssets({
-    db = getDatabase(),
+    registry,
     items,
     network,
 }: UpsertAssetsParams): Promise<void> {
-    await upsertNodeAssets({ db, items, network })
-    await upsertPeraAssets({ db, items, network })
+    await upsertNodeAssets({ registry, items, network })
+    await upsertPeraAssets({ registry, items, network })
 }
 
-type GetAssetsByIdsParams = {
-    db?: Database
+// ---------------------------------------------------------------------------
+// Reads
+// ---------------------------------------------------------------------------
+
+type GetAssetsByIdsParams = WithRegistry & {
     assetIds: string[]
     network: string
 }
 
 export async function getAssetsByIds({
-    db = getDatabase(),
+    registry,
     assetIds,
     network,
 }: GetAssetsByIdsParams): Promise<PeraAsset[]> {
     if (assetIds.length === 0) return []
 
-    const decimalIds = assetIds.map(id => new Decimal(id))
-
-    const rows = await db
-        .select({
-            assetId: AssetsNodeSchema.assetId,
-            decimals: AssetsNodeSchema.decimals,
-            creatorAddress: AssetsNodeSchema.creatorAddress,
-            totalSupply: AssetsNodeSchema.totalSupply,
-            name: AssetsNodeSchema.name,
-            unitName: AssetsNodeSchema.unitName,
-            url: AssetsNodeSchema.url,
-            metadata: AssetsNodeSchema.metadata,
-            peraMetadataJson: AssetsPeraSchema.peraMetadataJson,
-        })
-        .from(AssetsNodeSchema)
-        .leftJoin(
-            AssetsPeraSchema,
-            and(
-                eq(AssetsNodeSchema.assetId, AssetsPeraSchema.assetId),
-                eq(AssetsNodeSchema.network, AssetsPeraSchema.network),
-            ),
-        )
-        .where(
-            and(
-                inArray(AssetsNodeSchema.assetId, decimalIds),
-                eq(AssetsNodeSchema.network, network),
-            ),
-        )
-        .all()
-
-    return rows.map(fromDb)
+    const { assetsNode, assetsPera } = resolveRegistry(registry)
+    const results: PeraAsset[] = []
+    for (const assetId of assetIds) {
+        const node = assetsNode.get(assetsNodeKey({ network, assetId }))
+        if (node === undefined) continue
+        const pera = assetsPera.get(assetsPeraKey({ network, assetId }))
+        results.push(rowsToPeraAsset(node, pera))
+    }
+    return results
 }
 
-type GetAssetByIdParams = {
-    db?: Database
+type GetAssetByIdParams = WithRegistry & {
     assetId: string
     network: string
 }
 
 export async function getAssetById({
-    db = getDatabase(),
+    registry,
     assetId,
     network,
 }: GetAssetByIdParams): Promise<PeraAsset | null> {
-    const results = await getAssetsByIds({ db, assetIds: [assetId], network })
+    const results = await getAssetsByIds({
+        registry,
+        assetIds: [assetId],
+        network,
+    })
     return results[0] ?? null
 }
 
-type GetAssetPeraMetadataParams = {
-    db?: Database
+type GetAssetPeraMetadataParams = WithRegistry & {
     assetId: string
     network: string
 }
 
 export async function getAssetPeraMetadata({
-    db = getDatabase(),
+    registry,
     assetId,
     network,
 }: GetAssetPeraMetadataParams): Promise<PeraAssetMetadata | null> {
-    const rows = await db
-        .select({ peraMetadataJson: AssetsPeraSchema.peraMetadataJson })
-        .from(AssetsPeraSchema)
-        .where(
-            and(
-                eq(AssetsPeraSchema.assetId, new Decimal(assetId)),
-                eq(AssetsPeraSchema.network, network),
-            ),
-        )
-        .all()
-
-    if (!rows[0]?.peraMetadataJson) return null
-    return JSON.parse(rows[0].peraMetadataJson) as PeraAssetMetadata
+    const { assetsPera } = resolveRegistry(registry)
+    const row = assetsPera.get(assetsPeraKey({ network, assetId }))
+    return parseMetaJson(row?.peraMetadataJson ?? null) ?? null
 }
 
-type UpdateAssetPeraMetadataParams = {
-    db?: Database
+// ---------------------------------------------------------------------------
+// Update asset metadata from the user side (favorites, price alerts)
+// ---------------------------------------------------------------------------
+
+type UpdateAssetPeraMetadataParams = WithRegistry & {
     assetId: string
     network: string
     updates: Partial<PeraAssetMetadata>
 }
 
+/**
+ * Read-merge-write for user-driven metadata toggles.
+ *
+ * Semantics mirror the old SQL path: start from defaults, layer the
+ * persisted metadata on top, then apply the incoming updates last so
+ * `updates` always wins. This is the place `isFavorited` /
+ * `isPriceAlertEnabled` get written — `upsertPeraAssets` (sync path)
+ * never touches them.
+ */
 export async function updateAssetPeraMetadata({
-    db = getDatabase(),
+    registry,
     assetId,
     network,
     updates,
 }: UpdateAssetPeraMetadataParams): Promise<void> {
-    const decimalId = new Decimal(assetId)
-    const now = Date.now()
-
-    const rows = await db
-        .select({ peraMetadataJson: AssetsPeraSchema.peraMetadataJson })
-        .from(AssetsPeraSchema)
-        .where(
-            and(
-                eq(AssetsPeraSchema.assetId, decimalId),
-                eq(AssetsPeraSchema.network, network),
-            ),
-        )
-        .all()
-
-    const existing: PeraAssetMetadata | undefined = rows[0]?.peraMetadataJson
-        ? (JSON.parse(rows[0].peraMetadataJson) as PeraAssetMetadata)
-        : undefined
+    const { assetsPera } = resolveRegistry(registry)
+    const key = assetsPeraKey({ network, assetId })
+    const existingRow = assetsPera.get(key)
+    const existingMeta = parseMetaJson(existingRow?.peraMetadataJson ?? null)
 
     const merged: PeraAssetMetadata = {
         ...DEFAULT_ASSET_METADATA,
-        ...existing,
+        ...existingMeta,
         ...updates,
     }
-    const metaJson = JSON.stringify(merged)
 
-    await db
-        .insert(AssetsPeraSchema)
-        .values({
-            assetId: decimalId,
-            network,
-            verificationTier: merged.verificationTier,
-            isDeleted: merged.isDeleted,
-            peraMetadataJson: metaJson,
-            updatedAt: now,
-        })
-        .onConflictDoUpdate({
-            target: [AssetsPeraSchema.assetId, AssetsPeraSchema.network],
-            set: {
-                peraMetadataJson: metaJson,
-                updatedAt: now,
-            },
-        })
-        .run()
+    assetsPera.upsert({
+        network,
+        assetId: new Decimal(assetId),
+        verificationTier: merged.verificationTier,
+        isDeleted: merged.isDeleted,
+        assetType: existingRow?.assetType ?? null,
+        peraMetadataJson: JSON.stringify(merged),
+        updatedAt: Date.now(),
+    })
 }
+
+// ---------------------------------------------------------------------------
+// Prices
+// ---------------------------------------------------------------------------
 
 export type AssetPriceRow = {
     assetId: string
     usdPrice: Decimal
 }
 
-type UpsertAssetPricesParams = {
-    db?: Database
+type UpsertAssetPricesParams = WithRegistry & {
     prices: AssetPriceRow[]
     network: string
 }
 
 export async function upsertAssetPrices({
-    db = getDatabase(),
+    registry,
     prices,
     network,
 }: UpsertAssetPricesParams): Promise<void> {
     if (prices.length === 0) return
 
+    const { assetPrices } = resolveRegistry(registry)
     const now = Date.now()
 
-    for (const price of prices) {
-        await db
-            .insert(AssetPricesSchema)
-            .values({
-                assetId: new Decimal(price.assetId),
-                network,
-                usdPrice: price.usdPrice,
-                updatedAt: now,
-            })
-            .onConflictDoUpdate({
-                target: [AssetPricesSchema.assetId, AssetPricesSchema.network],
-                set: {
-                    usdPrice: price.usdPrice,
-                    updatedAt: now,
-                },
-            })
-            .run()
-    }
+    assetPrices.upsertMany(
+        prices.map<AssetPriceCollectionRow>(price => ({
+            network,
+            assetId: new Decimal(price.assetId),
+            usdPrice: price.usdPrice,
+            updatedAt: now,
+        })),
+    )
 }
 
-type GetAssetPricesByIdsParams = {
-    db?: Database
+type GetAssetPricesByIdsParams = WithRegistry & {
     assetIds: string[]
     network: string
 }
 
 export async function getAssetPricesByIds({
-    db = getDatabase(),
+    registry,
     assetIds,
     network,
 }: GetAssetPricesByIdsParams): Promise<AssetPriceRow[]> {
     if (assetIds.length === 0) return []
 
-    const decimalIds = assetIds.map(id => new Decimal(id))
-
-    const rows = await db
-        .select({
-            assetId: AssetPricesSchema.assetId,
-            usdPrice: AssetPricesSchema.usdPrice,
+    const { assetPrices } = resolveRegistry(registry)
+    const results: AssetPriceRow[] = []
+    for (const assetId of assetIds) {
+        const row = assetPrices.get(assetPricesKey({ network, assetId }))
+        if (row === undefined) continue
+        results.push({
+            assetId: row.assetId.toString(),
+            usdPrice: row.usdPrice,
         })
-        .from(AssetPricesSchema)
-        .where(
-            and(
-                inArray(AssetPricesSchema.assetId, decimalIds),
-                eq(AssetPricesSchema.network, network),
-            ),
-        )
-        .all()
-
-    return rows.map(r => ({
-        assetId: r.assetId.toString(),
-        usdPrice: r.usdPrice,
-    }))
+    }
+    return results
 }

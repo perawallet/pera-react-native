@@ -10,38 +10,41 @@
  limitations under the License
  */
 
+export type {
+    CollectionKey,
+    MmkvLike,
+    PersistentAdapter,
+} from './adapter'
 export {
-    initializeDatabase,
-    getDatabase,
-    resetDatabase,
-    deleteDatabase,
-    type Database,
-} from './database'
-export { runMigrations, type MigrationConfig } from './migrator'
-export { default as migrations } from './migrations'
-export { decimalColumn, decimalSum, decimalMax, decimalMin } from './columns'
+    MmkvAdapter,
+    MemoryAdapter,
+    InMemoryMmkv,
+    encode,
+    decode,
+    fromKeyValueStorage,
+    type KeyValueStorageLike,
+} from './adapter'
 
-// Collections layer — reactive, MMKV-persisted collections that will
-// replace the Drizzle/SQLite stack. See `./collections/registry.ts` for
-// the public bootstrap API.
+export { Collection } from './collection'
+
 export {
     bootstrapCollections,
     bootstrapTestCollections,
     getCollections,
     resetAllCollections,
     resetRegistryForTest,
-    Collection,
-    MmkvAdapter,
-    MemoryAdapter,
-    InMemoryMmkv,
-    encode,
-    decode,
-    useCollectionQuery,
-    fromKeyValueStorage,
-    type KeyValueStorageLike,
+    type BootstrapOptions,
+    type CollectionRegistry,
+} from './registry'
+
+export {
     NFD_CACHE_COLLECTION_NAME,
     NFD_CACHE_SCHEMA_VERSION,
     nfdCacheKey,
+    type NfdCacheRow,
+} from './schemas/nfd-cache'
+
+export {
     ASSETS_NODE_COLLECTION_NAME,
     ASSETS_NODE_SCHEMA_VERSION,
     ASSETS_PERA_COLLECTION_NAME,
@@ -51,6 +54,12 @@ export {
     assetsNodeKey,
     assetsPeraKey,
     assetPricesKey,
+    type AssetsNodeRow,
+    type AssetsPeraRow,
+    type AssetPriceRow as AssetPriceCollectionRow,
+} from './schemas/assets'
+
+export {
     ACCOUNT_BALANCES_COLLECTION_NAME,
     ACCOUNT_BALANCES_SCHEMA_VERSION,
     ACCOUNT_ASSET_HOLDINGS_COLLECTION_NAME,
@@ -58,6 +67,11 @@ export {
     accountBalancesKey,
     accountAssetHoldingsKey,
     accountAssetHoldingsPrefix,
+    type AccountBalanceRow as AccountBalanceCollectionRow,
+    type AccountAssetHoldingRow,
+} from './schemas/accounts'
+
+export {
     TRANSACTIONS_COLLECTION_NAME,
     TRANSACTIONS_SCHEMA_VERSION,
     ACCOUNT_TRANSACTIONS_COLLECTION_NAME,
@@ -65,17 +79,8 @@ export {
     transactionsKey,
     accountTransactionsKey,
     accountTransactionsPrefix,
-    type BootstrapOptions,
-    type CollectionRegistry,
-    type CollectionKey,
-    type MmkvLike,
-    type PersistentAdapter,
-    type NfdCacheRow,
-    type AssetsNodeRow,
-    type AssetsPeraRow,
-    type AssetPriceCollectionRow,
-    type AccountBalanceCollectionRow,
-    type AccountAssetHoldingRow,
     type TransactionRow,
     type AccountTransactionRow,
-} from './collections'
+} from './schemas/transactions'
+
+export { useCollectionQuery } from './react'

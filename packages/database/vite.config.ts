@@ -45,6 +45,8 @@ export default defineConfig({
                 'drizzle-orm/sqlite-core',
                 'drizzle-orm/better-sqlite3',
                 'better-sqlite3',
+                'decimal.js',
+                'react',
                 '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-extension-provider',
             ],
