@@ -24,6 +24,7 @@ vi.mock('@hooks/useLanguage', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
+    DEFAULT_PRECISION: 2,
     formatNumber: (
         value: Decimal,
         maxPrecision: number,
@@ -41,8 +42,23 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
+    ALGO_ASSET: { decimals: 6 },
     formatAssetAmount: (amount: Decimal, asset: { unitName?: string }) =>
         `${amount.toString()} ${asset.unitName ?? ''}`.trim(),
+}))
+
+vi.mock('@perawallet/wallet-core-remote-config', () => ({
+    RemoteConfigKeys: {
+        swap_price_impact_low_threshold: 'swap_price_impact_low_threshold',
+        swap_price_impact_high_threshold: 'swap_price_impact_high_threshold',
+    },
+    useRemoteConfig: () => ({
+        getNumberValue: (key: string) => {
+            if (key === 'swap_price_impact_low_threshold') return 1
+            if (key === 'swap_price_impact_high_threshold') return 5
+            return 0
+        },
+    }),
 }))
 
 vi.mock('@components/core', () => ({
@@ -83,7 +99,6 @@ const createQuote = (overrides: Partial<SwapQuote> = {}): SwapQuote => ({
     priceImpact: new Decimal('0.5'),
     slippage: new Decimal('0.5'),
     peraFeeAmount: new Decimal('1000'),
-    exchangeFeeAmount: new Decimal('2000'),
     provider: 'tinyman',
     providerDisplayName: 'Tinyman',
     ...overrides,
@@ -98,7 +113,6 @@ describe('SwapQuoteDetails', () => {
         expect(screen.getByText(/swap.quote.price_impact/)).toBeDefined()
         expect(screen.getByText(/swap.quote.slippage_tolerance/)).toBeDefined()
         expect(screen.getByText(/swap.quote.pera_fee/)).toBeDefined()
-        expect(screen.getByText(/swap.quote.exchange_fee/)).toBeDefined()
         expect(screen.getByText(/swap.quote.provider/)).toBeDefined()
         expect(screen.getByText('Tinyman')).toBeDefined()
     })
@@ -113,7 +127,7 @@ describe('SwapQuoteDetails', () => {
         )
 
         const skeletons = screen.getAllByTestId('skeleton')
-        expect(skeletons.length).toBe(6)
+        expect(skeletons.length).toBe(5)
     })
 
     it('displays dash for missing optional fields', () => {
@@ -121,7 +135,6 @@ describe('SwapQuoteDetails', () => {
             priceImpact: undefined,
             slippage: undefined,
             peraFeeAmount: undefined,
-            exchangeFeeAmount: undefined,
             provider: undefined,
             providerDisplayName: undefined,
         })

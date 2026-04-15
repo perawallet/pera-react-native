@@ -71,7 +71,6 @@ export const quoteSchema = z.object({
     price: z.string().optional(),
     price_impact: z.string().optional(),
     pera_fee_amount: z.string().optional(),
-    exchange_fee_amount: z.string().optional(),
     transaction_fees: z.string().nullable().optional(),
 })
 

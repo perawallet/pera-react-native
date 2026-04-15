@@ -294,6 +294,8 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'jsdom',
+        pool: 'forks',
+        fileParallelism: false,
         setupFiles: ['./vitest.setup.ts'],
         server: {
             deps: {

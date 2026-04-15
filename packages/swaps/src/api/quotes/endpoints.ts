@@ -123,7 +123,6 @@ export const createQuotes = async (
         price: toOptionalDecimal(quote.price),
         priceImpact: toOptionalDecimal(quote.price_impact),
         peraFeeAmount: toOptionalDecimal(quote.pera_fee_amount),
-        exchangeFeeAmount: toOptionalDecimal(quote.exchange_fee_amount),
         transactionFees: toNullableDecimal(quote.transaction_fees),
     }))
 }

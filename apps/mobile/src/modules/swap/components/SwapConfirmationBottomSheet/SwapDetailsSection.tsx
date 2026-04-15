@@ -22,7 +22,6 @@ type SwapDetailsSectionProps = {
     rateDisplay: string
     minimumReceivedDisplay: string
     peraFeeDisplay: string
-    exchangeFeeDisplay: string
     priceImpactDisplay: string
     priceImpactStyle: object
 }
@@ -32,7 +31,6 @@ export const SwapDetailsSection = ({
     rateDisplay,
     minimumReceivedDisplay,
     peraFeeDisplay,
-    exchangeFeeDisplay,
     priceImpactDisplay,
     priceImpactStyle,
 }: SwapDetailsSectionProps) => {
@@ -74,12 +72,6 @@ export const SwapDetailsSection = ({
                 label={t('swap.quote.minimum_received')}
                 value={minimumReceivedDisplay}
                 valueStyle={styles.detailValue}
-            />
-            <DetailRow
-                label={t('swap.quote.exchange_fee')}
-                value={exchangeFeeDisplay}
-                valueStyle={styles.detailValue}
-                info={t('swap.info.exchange_fee')}
             />
             <DetailRow
                 label={t('swap.quote.pera_fee')}

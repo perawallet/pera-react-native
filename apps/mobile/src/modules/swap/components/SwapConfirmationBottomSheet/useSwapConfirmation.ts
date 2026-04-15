@@ -43,7 +43,6 @@ type UseSwapConfirmationResult = {
     rateDisplay: string
     minimumReceivedDisplay: string
     peraFeeDisplay: string
-    exchangeFeeDisplay: string
     hasHighPriceImpact: boolean
     priceImpactDisplay: string
     priceImpactStyle: object
@@ -118,14 +117,6 @@ export const useSwapConfirmation = ({
         return formatAssetAmount(quote.peraFeeAmount, quote.assetIn)
     }, [quote?.peraFeeAmount, quote?.assetIn])
 
-    const exchangeFeeDisplay = useMemo(() => {
-        if (!quote?.exchangeFeeAmount) return '-'
-        if (quote.exchangeFeeAmount.isZero()) {
-            return `0 ${quote.assetIn.unitName ?? ''}`.trim()
-        }
-        return formatAssetAmount(quote.exchangeFeeAmount, quote.assetIn)
-    }, [quote?.exchangeFeeAmount, quote?.assetIn])
-
     const hasHighPriceImpact = useMemo(
         () =>
             quote?.priceImpact?.greaterThanOrEqualTo(
@@ -159,7 +150,6 @@ export const useSwapConfirmation = ({
         rateDisplay,
         minimumReceivedDisplay,
         peraFeeDisplay,
-        exchangeFeeDisplay,
         hasHighPriceImpact,
         priceImpactDisplay,
         priceImpactStyle,

@@ -69,7 +69,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.linkPrimary,
     },
     swapButton: {
-        marginTop: theme.spacing.lg,
+        marginTop: theme.spacing.sm,
     },
     errorContainer: {
         paddingHorizontal: theme.spacing.lg,
