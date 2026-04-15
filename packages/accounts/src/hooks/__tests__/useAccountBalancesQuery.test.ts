@@ -24,11 +24,31 @@ import type { WalletAccount } from '../../models/accounts'
 // Mock DB layer
 const mockGetAccountBalance = vi.fn()
 const mockGetAccountHoldings = vi.fn()
+const mockFetchAndPersistAccount = vi.fn()
 
 vi.mock('../../db', () => ({
     getAccountBalance: (...args: unknown[]) => mockGetAccountBalance(...args),
     getAccountHoldings: (...args: unknown[]) => mockGetAccountHoldings(...args),
 }))
+
+vi.mock('../../sync/account-syncer', () => ({
+    fetchAndPersistAccount: (...args: unknown[]) =>
+        mockFetchAndPersistAccount(...args),
+}))
+
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const actual =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...actual,
+        logger: {
+            debug: vi.fn(),
+            info: vi.fn(),
+            warn: vi.fn(),
+            error: vi.fn(),
+        },
+    }
+})
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: vi.fn(() => ({ network: 'mainnet' })),
@@ -81,6 +101,7 @@ describe('useAccountBalances', () => {
         mockAssetPrices.clear()
         mockGetAccountBalance.mockReturnValue(undefined)
         mockGetAccountHoldings.mockReturnValue([])
+        mockFetchAndPersistAccount.mockResolvedValue(undefined)
     })
 
     it('returns empty data when no accounts provided', () => {
@@ -336,6 +357,72 @@ describe('useAccountBalances', () => {
         expect(asset999?.amount).toEqual(new Decimal(100)) // decimals: 0
         expect(asset999?.algoValue).toEqual(new Decimal(0)) // No price means 0 value
     })
+
+    it('falls back to fetchAndPersistAccount when the balance row is missing', async () => {
+        const account: WalletAccount = {
+            address: 'NEW_ADDR',
+            name: 'Freshly imported',
+            id: '1',
+            type: 'algo25',
+            canSign: true,
+        }
+
+        // First read: no row in DB. Second read (after fallback sync): row present.
+        mockGetAccountBalance
+            .mockReturnValueOnce(undefined)
+            .mockReturnValueOnce({
+                accountAddress: 'NEW_ADDR',
+                algoBalance: new Decimal('1.656'),
+                totalAssetsOptedIn: 0,
+                totalCreatedAssets: 0,
+                totalAppsOptedIn: 0,
+                authAddress: null,
+            })
+        mockFetchAndPersistAccount.mockResolvedValueOnce(undefined)
+
+        const { result } = renderHook(
+            () => useAccountBalancesQuery([account]),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        expect(mockFetchAndPersistAccount).toHaveBeenCalledWith(
+            'NEW_ADDR',
+            'mainnet',
+        )
+        const accountData = result.current.accountBalances.get('NEW_ADDR')
+        const algo = accountData?.assetBalances.find(b => b.assetId === '0')
+        expect(algo?.amount).toEqual(new Decimal('1.656'))
+    })
+
+    it('does not call fetchAndPersistAccount when the balance row is already present', async () => {
+        const account: WalletAccount = {
+            address: 'EXISTING',
+            name: 'Existing',
+            id: '1',
+            type: 'algo25',
+            canSign: true,
+        }
+
+        mockGetAccountBalance.mockReturnValue({
+            accountAddress: 'EXISTING',
+            algoBalance: new Decimal(0),
+            totalAssetsOptedIn: 0,
+            totalCreatedAssets: 0,
+            totalAppsOptedIn: 0,
+            authAddress: null,
+        })
+
+        const { result } = renderHook(
+            () => useAccountBalancesQuery([account]),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        expect(mockFetchAndPersistAccount).not.toHaveBeenCalled()
+    })
 })
 
 describe('useAccountAssetBalanceQuery', () => {
@@ -346,6 +433,7 @@ describe('useAccountAssetBalanceQuery', () => {
         mockAssetPrices.clear()
         mockGetAccountBalance.mockReturnValue(undefined)
         mockGetAccountHoldings.mockReturnValue([])
+        mockFetchAndPersistAccount.mockResolvedValue(undefined)
     })
 
     it('returns specific asset balance for an account', async () => {

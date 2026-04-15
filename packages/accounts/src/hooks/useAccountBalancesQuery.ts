@@ -13,6 +13,7 @@
 import { useQueries } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
+import { logger, type Network } from '@perawallet/wallet-core-shared'
 import type {
     AccountBalances,
     AccountBalancesWithTotals,
@@ -32,6 +33,7 @@ import {
     getAccountHoldings,
     type AccountHoldingsFilters,
 } from '../db'
+import { fetchAndPersistAccount } from '../sync/account-syncer'
 
 type AccountDbSnapshot = {
     algoBalance: Decimal
@@ -43,10 +45,32 @@ async function readAccountFromDb(
     network: string,
     filters?: AccountHoldingsFilters,
 ): Promise<AccountDbSnapshot> {
-    const balance = await getAccountBalance({
+    // If this account has no balance row yet the background sync either
+    // hasn't run or silently failed. Pull directly from the chain before
+    // reading so the UI recovers without waiting for the next poll cycle.
+    let balance = await getAccountBalance({
         accountAddress: address,
         network,
     })
+    if (!balance) {
+        try {
+            await fetchAndPersistAccount(address, network as Network)
+            balance = await getAccountBalance({
+                accountAddress: address,
+                network,
+            })
+        } catch (error) {
+            logger.warn('On-demand account fetch failed', {
+                address,
+                network,
+                error:
+                    error instanceof Error
+                        ? { message: error.message, stack: error.stack }
+                        : error,
+            })
+        }
+    }
+
     const holdings = await getAccountHoldings({
         accountAddress: address,
         network,
@@ -103,11 +127,17 @@ export const useAccountBalancesQuery = (
         })),
     })
 
+    // Always include ALGO in the prices query — holdings never contain ALGO,
+    // but we need its USD price to express per-asset and portfolio totals in
+    // ALGO-denominated terms.
     const assetIDs = results.flatMap(
         r => r.data?.holdings?.map(h => h.assetId) ?? [],
     )
     const { data: assets } = useAssetsQuery(assetIDs)
-    const { data: assetPrices } = useAssetPricesQuery(assetIDs)
+    const { data: assetPrices } = useAssetPricesQuery([
+        ALGO_ASSET_ID,
+        ...assetIDs,
+    ])
     const usdAlgoPrice = useMemo(
         () => assetPrices?.get(ALGO_ASSET_ID)?.usdPrice ?? new Decimal(0),
         [assetPrices],
@@ -200,7 +230,7 @@ export const useAccountBalancesQuery = (
             isRefetching,
             isError,
         }
-    }, [results, accounts, hasAccounts, assets, assetPrices])
+    }, [results, accounts, hasAccounts, assets, assetPrices, usdAlgoPrice])
 
     return {
         accountBalances,
