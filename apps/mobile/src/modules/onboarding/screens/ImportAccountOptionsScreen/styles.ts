@@ -23,7 +23,6 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.xl,
     },
     headerTitle: {
-        fontWeight: '600',
         paddingLeft: theme.spacing.xl,
     },
     scrollContent: {
