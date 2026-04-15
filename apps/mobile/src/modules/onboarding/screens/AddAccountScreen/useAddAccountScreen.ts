@@ -25,15 +25,7 @@ import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { type IconName } from '@components/core'
 import { useMultisigCreationStore } from '@modules/multisig/hooks/useMultisigCreation'
-
-export type AccountOption = {
-    testID: string
-    titleKey: string
-    descriptionKey: string
-    leftIcon: IconName
-    onPress: () => void
-    isDisabled?: boolean
-}
+import { type AccountOption } from '@modules/onboarding/types'
 
 export const useAddAccountScreen = () => {
     const navigation = useAppNavigation()

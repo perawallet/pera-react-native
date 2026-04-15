@@ -19,25 +19,17 @@ import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { DeeplinkType } from '@hooks/deeplink/types'
-
-export type ImportAccountOption = {
-    testID: string
-    titleKey: string
-    descriptionKey: string
-    leftIcon: IconName
-    onPress: () => void
-}
+import { type AccountOption } from '@modules/onboarding/types'
 
 export type UseImportAccountOptionsScreenResult = {
-    options: ImportAccountOption[]
-    handleClose: () => void
+    options: AccountOption[]
     isImportOptionsVisible: boolean
     handleCloseImportOptions: () => void
     handleHDWalletPress: () => void
     handleAlgo25Press: () => void
     isQRScannerVisible: boolean
     handleCloseQRScanner: () => void
-    handleQRScannerSuccess: (url: string) => void
+    handleQRScannerSuccess: (url: string, restartScanning?: () => void) => void
 }
 
 export const useImportAccountOptionsScreen =
@@ -75,7 +67,7 @@ export const useImportAccountOptionsScreen =
         )
 
         const handleQRScannerSuccess = useCallback(
-            (url: string) => {
+            (url: string, restartScanning?: () => void) => {
                 closeQRScanner()
 
                 const parsedDeeplink = parseDeeplink(url)
@@ -95,6 +87,7 @@ export const useImportAccountOptionsScreen =
                             ),
                             type: 'error',
                         })
+                        restartScanning?.()
                         return
                     }
 
@@ -110,6 +103,7 @@ export const useImportAccountOptionsScreen =
                     body: t('onboarding.add_account.qr_scan_invalid_body'),
                     type: 'error',
                 })
+                restartScanning?.()
             },
             [closeQRScanner, parseDeeplink, navigation, showToast, t],
         )
@@ -122,7 +116,7 @@ export const useImportAccountOptionsScreen =
             })
         }, [showToast, t])
 
-        const options: ImportAccountOption[] = useMemo(
+        const options: AccountOption[] = useMemo(
             () => [
                 {
                     testID: 'import_account_options_recover_wallet_button',
@@ -179,7 +173,6 @@ export const useImportAccountOptionsScreen =
 
         return {
             options,
-            handleClose: navigation.goBack,
             isImportOptionsVisible,
             handleCloseImportOptions: closeImportOptions,
             handleHDWalletPress,
