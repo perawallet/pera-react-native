@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
+import { PWScrollView, PWText, PWView } from '@components/core'
 import {
     ArbitraryDataSignRequest,
     PeraArbitraryDataMessage,
@@ -22,7 +22,6 @@ import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useStyles } from './ArbitraryDataSigningDetailsView.style'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { Decimal } from 'decimal.js'
-import { ScrollView } from 'react-native-gesture-handler'
 
 export type ArbitraryDataSigningDetailsViewProps = {
     request: ArbitraryDataSignRequest
@@ -47,7 +46,7 @@ export const ArbitraryDataSigningDetailsView = ({
                     {t('signing.arbitrary_data_details.description')}
                 </PWText>
             </PWView>
-            <ScrollView
+            <PWScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContainer}
             >
@@ -107,7 +106,7 @@ export const ArbitraryDataSigningDetailsView = ({
                         </PWText>
                     </KeyValueRow>
                 </PWView>
-            </ScrollView>
+            </PWScrollView>
         </PWView>
     )
 }

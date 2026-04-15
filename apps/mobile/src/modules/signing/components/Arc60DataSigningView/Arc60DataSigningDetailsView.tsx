@@ -10,13 +10,12 @@
  limitations under the License
  */
 
-import { PWText, PWView } from '@components/core'
+import { PWText, PWView, PWScrollView } from '@components/core'
 import type { Arc60SignRequest, Siwa } from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { KeyValueRow } from '@components/KeyValueRow'
 import { useLanguage } from '@hooks/useLanguage'
-import { ScrollView } from 'react-native-gesture-handler'
 import type { Arc60ParsedPayload } from './parseArc60ForDisplay'
 import { useStyles } from './Arc60DataSigningDetailsView.style'
 
@@ -85,7 +84,7 @@ export const Arc60DataSigningDetailsView = ({
                     {t('signing.arc60_view.details_description')}
                 </PWText>
             </PWView>
-            <ScrollView
+            <PWScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContainer}
             >
@@ -152,7 +151,7 @@ export const Arc60DataSigningDetailsView = ({
                         <PWText style={styles.errorText}>{parseError}</PWText>
                     </PWView>
                 )}
-            </ScrollView>
+            </PWScrollView>
         </PWView>
     )
 }

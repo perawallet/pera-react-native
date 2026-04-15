@@ -20,11 +20,12 @@ import {
     PWIcon,
     PWInput,
     PWLoadingOverlay,
+    PWScrollView,
     PWText,
     PWView,
 } from '@components/core'
 
-import { KeyboardAvoidingView, ScrollView } from 'react-native'
+import { KeyboardAvoidingView } from 'react-native'
 import { useStyles } from './styles'
 import { useImportAccountScreen } from './useImportAccountScreen'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
@@ -76,7 +77,7 @@ export const ImportAccountScreen = () => {
     return (
         <PWView style={styles.mainContainer}>
             <KeyboardAvoidingView style={styles.mainContainer}>
-                <ScrollView
+                <PWScrollView
                     style={styles.scrollContainer}
                     contentContainerStyle={styles.scrollView}
                     keyboardShouldPersistTaps='handled'
@@ -195,7 +196,7 @@ export const ImportAccountScreen = () => {
                             )
                         })}
                     </PWView>
-                </ScrollView>
+                </PWScrollView>
 
                 <PWView style={styles.footer}>
                     <PWButton
