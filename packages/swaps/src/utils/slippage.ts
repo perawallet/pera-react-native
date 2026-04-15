@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-swaps'
+import { Decimal } from 'decimal.js'
 
-export * from './hooks'
-export * from './models'
-export * from './api'
-export * from './utils'
+// The swap configuration UI collects slippage as a percent (e.g. "1" for 1%),
+// but the Pera Swap quotes API expects a decimal fraction (1% = "0.01").
+export const percentToApiSlippage = (percent: string): string =>
+    new Decimal(percent).div(100).toString()

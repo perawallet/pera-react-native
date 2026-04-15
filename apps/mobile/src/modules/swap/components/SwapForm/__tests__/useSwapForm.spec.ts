@@ -278,6 +278,36 @@ describe('useSwapForm', () => {
         expect(mockSetPreferredCurrency).toHaveBeenCalledWith('ALGO')
     })
 
+    it('converts stored slippage percent to decimal fraction when fetching quotes', async () => {
+        mockSlippage = '1'
+        mockCreateQuotes.mockResolvedValueOnce([])
+
+        const { result } = renderHook(() => useSwapForm())
+
+        await act(async () => {
+            result.current.handlePayAmountChange(new Decimal(2))
+        })
+
+        expect(mockCreateQuotes).toHaveBeenCalledWith(
+            expect.objectContaining({ slippage: '0.01' }),
+        )
+    })
+
+    it('omits slippage when none is set', async () => {
+        mockSlippage = null
+        mockCreateQuotes.mockResolvedValueOnce([])
+
+        const { result } = renderHook(() => useSwapForm())
+
+        await act(async () => {
+            result.current.handlePayAmountChange(new Decimal(2))
+        })
+
+        expect(mockCreateQuotes).toHaveBeenCalledWith(
+            expect.objectContaining({ slippage: undefined }),
+        )
+    })
+
     it('handleOpenConfirm resets swap execution state before opening the confirm modal', () => {
         const { result } = renderHook(() => useSwapForm())
 

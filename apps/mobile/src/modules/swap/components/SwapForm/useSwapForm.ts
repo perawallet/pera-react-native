@@ -24,6 +24,7 @@ import {
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import {
+    percentToApiSlippage,
     useCalculateSwapAmountMutation,
     useCreateQuotesMutation,
     usePrefetchProviders,
@@ -191,7 +192,10 @@ export const useSwapForm = (): UseSwapFormResult => {
                     asset_in_id: Number(fromAssetRef.current),
                     asset_out_id: Number(toAssetRef.current),
                     amount: amountInBaseUnits.toFixed(0),
-                    slippage: slippage ?? undefined,
+                    slippage:
+                        slippage !== null
+                            ? percentToApiSlippage(slippage)
+                            : undefined,
                     device: deviceId ?? null,
                 })
 

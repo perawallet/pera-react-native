@@ -28,5 +28,6 @@ export const useCreateQuotesMutation = () => {
             })
             return createQuotes(data, network, providers)
         },
+        throwOnError: false,
     })
 }

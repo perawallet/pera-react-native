@@ -10,9 +10,4 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-swaps'
-
-export * from './hooks'
-export * from './models'
-export * from './api'
-export * from './utils'
+export * from './slippage'
