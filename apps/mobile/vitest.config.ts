@@ -294,6 +294,8 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'jsdom',
+        pool: 'forks',
+        maxWorkers: 2,
         setupFiles: ['./vitest.setup.ts'],
         server: {
             deps: {
