@@ -10,13 +10,13 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
-import { Decimal } from 'decimal.js'
 import { PWSkeleton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { formatNumber } from '@perawallet/wallet-core-shared'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
-import { formatAssetAmount } from '@perawallet/wallet-core-assets'
+import {
+    useSwapQuoteDetails,
+    type PriceImpactLevel,
+} from './useSwapQuoteDetails'
 import { useStyles } from './styles'
 
 export type SwapQuoteDetailsProps = {
@@ -24,46 +24,28 @@ export type SwapQuoteDetailsProps = {
     isLoading?: boolean
 }
 
-const PRICE_IMPACT_LOW_THRESHOLD = new Decimal(1)
-const PRICE_IMPACT_HIGH_THRESHOLD = new Decimal(5)
-
 export const SwapQuoteDetails = ({
     quote,
     isLoading,
 }: SwapQuoteDetailsProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
+    const {
+        rateDisplay,
+        priceImpactDisplay,
+        priceImpactLevel,
+        slippageDisplay,
+        peraFeeDisplay,
+        exchangeFeeDisplay,
+        providerDisplay,
+    } = useSwapQuoteDetails(quote)
 
-    const priceImpactStyle = useMemo(() => {
-        if (!quote.priceImpact) return styles.value
-        if (quote.priceImpact.lessThan(PRICE_IMPACT_LOW_THRESHOLD))
-            return styles.priceImpactLow
-        if (quote.priceImpact.lessThan(PRICE_IMPACT_HIGH_THRESHOLD))
-            return styles.priceImpactMedium
-        return styles.priceImpactHigh
-    }, [quote.priceImpact, styles])
-
-    const formattedPeraFee = useMemo(() => {
-        if (!quote.peraFeeAmount) return '-'
-        return formatAssetAmount(quote.peraFeeAmount, quote.assetIn)
-    }, [quote.peraFeeAmount, quote.assetIn])
-
-    const formattedExchangeFee = useMemo(() => {
-        if (!quote.exchangeFeeAmount) return '-'
-        return formatAssetAmount(quote.exchangeFeeAmount, quote.assetIn)
-    }, [quote.exchangeFeeAmount, quote.assetIn])
-
-    const rateDisplay = useMemo(() => {
-        if (!quote.price) return '-'
-        const outDecimals = quote.assetOut.decimals ?? 6
-        const { sign, integer, fraction } = formatNumber(
-            quote.price,
-            outDecimals,
-            undefined,
-            2,
-        )
-        return `1 ${quote.assetIn.unitName ?? ''} ≈ ${sign}${integer}${fraction} ${quote.assetOut.unitName ?? ''}`
-    }, [quote.price, quote.assetIn, quote.assetOut])
+    const priceImpactStyleMap: Record<PriceImpactLevel, typeof styles.value> = {
+        none: styles.value,
+        low: styles.priceImpactLow,
+        medium: styles.priceImpactMedium,
+        high: styles.priceImpactHigh,
+    }
 
     return (
         <PWView
@@ -107,11 +89,9 @@ export const SwapQuoteDetails = ({
                 ) : (
                     <PWText
                         variant='body'
-                        style={priceImpactStyle}
+                        style={priceImpactStyleMap[priceImpactLevel]}
                     >
-                        {quote.priceImpact
-                            ? `${quote.priceImpact.toDecimalPlaces(2).toString()}%`
-                            : '-'}
+                        {priceImpactDisplay}
                     </PWText>
                 )}
             </PWView>
@@ -133,7 +113,7 @@ export const SwapQuoteDetails = ({
                         variant='body'
                         style={styles.value}
                     >
-                        {quote.slippage ? `${quote.slippage.toString()}%` : '-'}
+                        {slippageDisplay}
                     </PWText>
                 )}
             </PWView>
@@ -155,7 +135,7 @@ export const SwapQuoteDetails = ({
                         variant='body'
                         style={styles.value}
                     >
-                        {formattedPeraFee}
+                        {peraFeeDisplay}
                     </PWText>
                 )}
             </PWView>
@@ -177,7 +157,7 @@ export const SwapQuoteDetails = ({
                         variant='body'
                         style={styles.value}
                     >
-                        {formattedExchangeFee}
+                        {exchangeFeeDisplay}
                     </PWText>
                 )}
             </PWView>
@@ -199,7 +179,7 @@ export const SwapQuoteDetails = ({
                         variant='body'
                         style={styles.value}
                     >
-                        {quote.providerDisplayName ?? quote.provider ?? '-'}
+                        {providerDisplay}
                     </PWText>
                 )}
             </PWView>

@@ -1342,6 +1342,14 @@
             "slippage_tolerance": "The maximum difference between the expected price and the execution price. A higher tolerance increases the chance of a successful swap but may result in a less favorable rate.",
             "price_impact": "The difference between the market price and the estimated price due to trade size. Larger trades typically have a higher price impact.",
             "exchange_fee": "The fee charged by the decentralized exchange for facilitating this swap."
+        },
+        "provider": {
+            "title_auto": "Provider (Best price available)",
+            "title_manual": "Provider",
+            "change_title": "Change Provider",
+            "apply": "Apply",
+            "auto_label": "Auto",
+            "auto_description": "Best price available"
         }
     },
     "ledger": {

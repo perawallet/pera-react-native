@@ -43,6 +43,7 @@ import {
     useSwapExecution,
     type SwapExecutionStatus,
 } from '../../hooks/useSwapExecution'
+import { pickBestByAmountOut } from '../../hooks/swapQuoteHelpers'
 
 type ModalState = ReturnType<typeof useModalState>
 
@@ -56,18 +57,23 @@ type UseSwapFormResult = {
     isQuoteFetching: boolean
     isQuoteError: boolean
     selectedQuote: SwapQuote | null
+    allQuotes: SwapQuote[]
+    selectedProviderName: string | null
+    providerSelectionMode: 'auto' | 'manual'
     canSwap: boolean
     swapStatus: SwapExecutionStatus
     payAssetModal: ModalState
     receiveAssetModal: ModalState
     configModal: ModalState
     confirmModal: ModalState
+    providerModal: ModalState
     handlePayAmountChange: (amount: Decimal | null) => void
     handleSwapDirection: () => void
     handleMaxPress: () => void
     handlePayAssetSelected: (asset: AssetWithAccountBalance) => void
     handleReceiveAssetSelected: (asset: AssetWithAccountBalance) => void
     handleConfigApply: (result: SwapConfigurationResult) => void
+    handleProviderApply: (providerName: string | null) => void
     handleConfirmSwap: () => void
     handleOpenConfirm: () => void
     handleCloseConfirm: () => void
@@ -90,11 +96,15 @@ export const useSwapForm = (): UseSwapFormResult => {
         useCurrency()
     const [payAmount, setPayAmount] = useState<Decimal | null>(null)
     const [receiveAmount, setReceiveAmount] = useState<Decimal | null>(null)
-    const [selectedQuote, setSelectedQuote] = useState<SwapQuote | null>(null)
+    const [allQuotes, setAllQuotes] = useState<SwapQuote[]>([])
+    const [selectedProviderName, setSelectedProviderName] = useState<
+        string | null
+    >(null)
     const payAssetModal = useModalState()
     const receiveAssetModal = useModalState()
     const configModal = useModalState()
     const confirmModal = useModalState()
+    const providerModal = useModalState()
     const selectedAccount = useSelectedAccount()
     const deviceId = useDeviceID(network)
     const prefetchProviders = usePrefetchProviders()
@@ -162,8 +172,7 @@ export const useSwapForm = (): UseSwapFormResult => {
             debouncedPayAmount.isZero() ||
             debouncedPayAmount.isNeg()
         ) {
-            setReceiveAmount(null)
-            setSelectedQuote(null)
+            setAllQuotes([])
             return
         }
 
@@ -188,31 +197,10 @@ export const useSwapForm = (): UseSwapFormResult => {
 
                 if (cancelled) return
 
-                const best = result.reduce<SwapQuote | null>((prev, curr) => {
-                    if (!curr.amountOut) return prev
-                    if (!prev?.amountOut) return curr
-                    return curr.amountOut.greaterThan(prev.amountOut)
-                        ? curr
-                        : prev
-                }, null)
-
-                setSelectedQuote(best)
-
-                if (best?.amountOut) {
-                    const receiveDecimals = best.assetOut.decimals ?? 0
-                    setReceiveAmount(
-                        baseUnitsToDisplayUnits(
-                            best.amountOut,
-                            receiveDecimals,
-                        ),
-                    )
-                } else {
-                    setReceiveAmount(null)
-                }
+                setAllQuotes(result)
             } catch {
                 if (cancelled) return
-                setReceiveAmount(null)
-                setSelectedQuote(null)
+                setAllQuotes([])
             }
         }
 
@@ -222,6 +210,46 @@ export const useSwapForm = (): UseSwapFormResult => {
             cancelled = true
         }
     }, [debouncedPayAmount, slippage, selectedAccount, deviceId])
+
+    const bestQuote = useMemo(() => pickBestByAmountOut(allQuotes), [allQuotes])
+
+    // When a manually selected provider drops from the latest quote set, fall
+    // back to the best quote for display and reset selection state to null so
+    // providerSelectionMode reports 'auto'.
+    const selectedQuote = useMemo<SwapQuote | null>(() => {
+        if (selectedProviderName === null) return bestQuote
+        const match = allQuotes.find(
+            quote => quote.provider === selectedProviderName,
+        )
+        return match ?? bestQuote
+    }, [allQuotes, selectedProviderName, bestQuote])
+
+    const providerSelectionMode: 'auto' | 'manual' = useMemo(() => {
+        if (selectedProviderName === null) return 'auto'
+        const matchExists = allQuotes.some(
+            quote => quote.provider === selectedProviderName,
+        )
+        return matchExists ? 'manual' : 'auto'
+    }, [allQuotes, selectedProviderName])
+
+    useEffect(() => {
+        if (selectedProviderName === null) return
+        const matchExists = allQuotes.some(
+            quote => quote.provider === selectedProviderName,
+        )
+        if (!matchExists) setSelectedProviderName(null)
+    }, [allQuotes, selectedProviderName])
+
+    useEffect(() => {
+        if (!selectedQuote?.amountOut) {
+            setReceiveAmount(null)
+            return
+        }
+        const receiveDecimals = selectedQuote.assetOut.decimals ?? 0
+        setReceiveAmount(
+            baseUnitsToDisplayUnits(selectedQuote.amountOut, receiveDecimals),
+        )
+    }, [selectedQuote])
 
     const canSwap = useMemo(
         () =>
@@ -241,7 +269,8 @@ export const useSwapForm = (): UseSwapFormResult => {
         setToAsset(fromAsset)
         setPayAmount(receiveAmount)
         setReceiveAmount(payAmount)
-        setSelectedQuote(null)
+        setAllQuotes([])
+        setSelectedProviderName(null)
         resetQuoteMutation()
     }, [
         fromAsset,
@@ -288,7 +317,8 @@ export const useSwapForm = (): UseSwapFormResult => {
             setFromAsset(asset.assetId)
             setPayAmount(null)
             setReceiveAmount(null)
-            setSelectedQuote(null)
+            setAllQuotes([])
+            setSelectedProviderName(null)
             resetQuoteMutation()
         },
         [setFromAsset, resetQuoteMutation],
@@ -298,11 +328,16 @@ export const useSwapForm = (): UseSwapFormResult => {
         (asset: AssetWithAccountBalance) => {
             setToAsset(asset.assetId)
             setReceiveAmount(null)
-            setSelectedQuote(null)
+            setAllQuotes([])
+            setSelectedProviderName(null)
             resetQuoteMutation()
         },
         [setToAsset, resetQuoteMutation],
     )
+
+    const handleProviderApply = useCallback((providerName: string | null) => {
+        setSelectedProviderName(providerName)
+    }, [])
 
     const successCloseTimer = useRunAfterDelay()
 
@@ -329,7 +364,8 @@ export const useSwapForm = (): UseSwapFormResult => {
             )
             setPayAmount(null)
             setReceiveAmount(null)
-            setSelectedQuote(null)
+            setAllQuotes([])
+            setSelectedProviderName(null)
             resetQuoteMutation()
             confirmModal.close()
         }, SUCCESS_DISPLAY_MS)
@@ -385,18 +421,23 @@ export const useSwapForm = (): UseSwapFormResult => {
         isQuoteFetching,
         isQuoteError,
         selectedQuote,
+        allQuotes,
+        selectedProviderName,
+        providerSelectionMode,
         canSwap,
         swapStatus: swapExecution.status,
         payAssetModal,
         receiveAssetModal,
         configModal,
         confirmModal,
+        providerModal,
         handlePayAmountChange,
         handleSwapDirection,
         handleMaxPress,
         handlePayAssetSelected,
         handleReceiveAssetSelected,
         handleConfigApply,
+        handleProviderApply,
         handleConfirmSwap,
         handleOpenConfirm,
         handleCloseConfirm,

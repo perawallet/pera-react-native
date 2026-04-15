@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
     container: {
@@ -46,10 +47,9 @@ export const useStyles = makeStyles(theme => ({
     amountContainer: {
         flex: 1,
     },
-    amountText: {
-        color: theme.colors.textMain,
-    },
+    amountText: getTypography(theme, 'h2'),
     amountTextMuted: {
+        ...getTypography(theme, 'h2'),
         color: theme.colors.textGrayLighter,
     },
     amountInputContainer: {

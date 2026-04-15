@@ -113,7 +113,6 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                                     ? styles.amountText
                                     : styles.amountTextMuted
                             }
-                            variant='h2'
                             testID='swap-receive-amount'
                         >
                             {displayValue || '0.00'}

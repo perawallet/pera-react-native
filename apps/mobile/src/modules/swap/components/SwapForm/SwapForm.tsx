@@ -16,6 +16,8 @@ import { SwapAssetSelectionBottomSheet } from '../SwapAssetSelectionBottomSheet'
 import { SwapAmountSection } from '../SwapAmountSection'
 import { SwapConfigurationBottomSheet } from '../SwapConfigurationBottomSheet'
 import { SwapConfirmationBottomSheet } from '../SwapConfirmationBottomSheet'
+import { SwapProviderBottomSheet } from '../SwapProviderBottomSheet'
+import { SwapProviderRow } from '../SwapProviderRow'
 import { SwapFormControls } from './SwapFormControls'
 import { useSwapForm } from './useSwapForm'
 import { useStyles } from './styles'
@@ -33,18 +35,23 @@ export const SwapForm = () => {
         isQuoteFetching,
         isQuoteError,
         selectedQuote,
+        allQuotes,
+        selectedProviderName,
+        providerSelectionMode,
         canSwap,
         swapStatus,
         payAssetModal,
         receiveAssetModal,
         configModal,
         confirmModal,
+        providerModal,
         handlePayAmountChange,
         handleSwapDirection,
         handleMaxPress,
         handlePayAssetSelected,
         handleReceiveAssetSelected,
         handleConfigApply,
+        handleProviderApply,
         handleConfirmSwap,
         handleOpenConfirm,
         handleCloseConfirm,
@@ -79,6 +86,14 @@ export const SwapForm = () => {
                     />
                 </PWView>
 
+                {selectedQuote && (
+                    <SwapProviderRow
+                        quote={selectedQuote}
+                        selectionMode={providerSelectionMode}
+                        onPress={providerModal.open}
+                    />
+                )}
+
                 {isQuoteError && (
                     <PWView style={styles.errorContainer}>
                         <PWText
@@ -90,14 +105,16 @@ export const SwapForm = () => {
                     </PWView>
                 )}
 
-                <PWButton
-                    variant='primary'
-                    title={t('swap.form.swap')}
-                    onPress={handleOpenConfirm}
-                    isDisabled={!canSwap}
-                    style={styles.swapButton}
-                    testID='swap-button'
-                />
+                {selectedQuote && (
+                    <PWButton
+                        variant='primary'
+                        title={t('swap.form.swap')}
+                        onPress={handleOpenConfirm}
+                        isDisabled={!canSwap}
+                        style={styles.swapButton}
+                        testID='swap-button'
+                    />
+                )}
             </PWScrollView>
 
             <SwapAssetSelectionBottomSheet
@@ -126,6 +143,14 @@ export const SwapForm = () => {
                 onConfirm={handleConfirmSwap}
                 quote={selectedQuote}
                 swapStatus={swapStatus}
+            />
+
+            <SwapProviderBottomSheet
+                isVisible={providerModal.isOpen}
+                onClose={providerModal.close}
+                quotes={allQuotes}
+                selectedProviderName={selectedProviderName}
+                onApply={handleProviderApply}
             />
         </>
     )
