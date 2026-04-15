@@ -43,6 +43,8 @@ vi.mock('@components/core', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWText: vi.fn(({ children }: any) => <span>{children}</span>),
     PWIcon: vi.fn(() => <div />),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWScrollView: vi.fn(({ children }: any) => <div>{children}</div>),
 }))
 
 vi.mock('../useExpressSendScreen', () => ({
