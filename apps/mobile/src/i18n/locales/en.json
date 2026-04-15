@@ -736,6 +736,19 @@
             "create_joint_account_option_description": "Create a shared multisig account with multiple participants",
             "see_other_options": "See other options"
         },
+        "import_account_options": {
+            "title": "Import an\naccount",
+            "recover_wallet_title": "Recover a wallet",
+            "recover_wallet_description": "I want to recover an Algorand wallet",
+            "recover_qr_title": "Recover an account with QR code",
+            "recover_qr_description": "I want to recover an Algorand account using a QR code",
+            "pair_ledger_title": "Pair Ledger Device",
+            "pair_ledger_description": "I want to recover an Algorand account that is backed by my Ledger hardware wallet",
+            "pera_web_title": "Import from Pera Web",
+            "pera_web_description": "I want to import Algorand accounts from Pera Web",
+            "asb_title": "Algorand Secure Backup",
+            "asb_description": "I want to restore my accounts using an Algorand Secure Backup file and 12-word key"
+        },
         "select_hd_wallet": {
             "title": "Select Universal Wallet",
             "description": "Create your new account under a Universal Wallet you already have",

@@ -194,7 +194,7 @@ describe('AddAccountScreen', () => {
         expect(mockGoBack).toHaveBeenCalledTimes(1)
     })
 
-    it('opens ImportOptionsBottomSheet when Import Account is pressed', () => {
+    it('navigates to ImportAccountOptions when Import Account is pressed', () => {
         render(<AddAccountScreen />)
 
         const importButton = screen.getByText(
@@ -202,43 +202,20 @@ describe('AddAccountScreen', () => {
         )
         fireEvent.click(importButton)
 
-        expect(screen.getByText('onboarding.import_options.title')).toBeTruthy()
+        expect(mockPush).toHaveBeenCalledWith('ImportAccountOptions')
     })
 
-    it('navigates to ImportInfo when HD Wallet import option is selected', () => {
+    it('does not render Pair Ledger or Scan QR options on the main screen', () => {
         render(<AddAccountScreen />)
 
-        const importButton = screen.getByText(
-            'onboarding.add_account.import_account_option_title',
-        )
-        fireEvent.click(importButton)
-
-        const hdWalletOption = screen.getByText(
-            'onboarding.import_options.hd_wallet.title',
-        )
-        fireEvent.click(hdWalletOption)
-
-        expect(mockPush).toHaveBeenCalledWith('ImportInfo', {
-            accountType: 'hdWallet',
-        })
-    })
-
-    it('navigates to ImportInfo when Algo25 import option is selected', () => {
-        render(<AddAccountScreen />)
-
-        const importButton = screen.getByText(
-            'onboarding.add_account.import_account_option_title',
-        )
-        fireEvent.click(importButton)
-
-        const algo25Option = screen.getByText(
-            'onboarding.import_options.algo25.title',
-        )
-        fireEvent.click(algo25Option)
-
-        expect(mockPush).toHaveBeenCalledWith('ImportInfo', {
-            accountType: 'algo25',
-        })
+        expect(
+            screen.queryByText(
+                'onboarding.add_account.pair_ledger_option_title',
+            ),
+        ).toBeNull()
+        expect(
+            screen.queryByText('onboarding.add_account.scan_qr_option_title'),
+        ).toBeNull()
     })
 
     it('navigates to WatchInfo when Watch an Address is pressed', () => {
