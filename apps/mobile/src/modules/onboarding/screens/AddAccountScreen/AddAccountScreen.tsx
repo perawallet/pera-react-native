@@ -23,8 +23,6 @@ import {
     PWView,
 } from '@components/core'
 import { PanelButton } from '@components/PanelButton'
-import { ImportOptionsBottomSheet } from '../../components/ImportOptionsBottomSheet'
-import { QRScannerView } from '@components/QRScannerView'
 import { useAddAccountScreen } from './useAddAccountScreen'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
@@ -38,20 +36,13 @@ export const AddAccountScreen = () => {
     const insets = useSafeAreaInsets()
     const {
         isCreatingAccount,
-        isImportOptionsVisible,
         mainOptions,
         otherOptions,
         handleClose,
-        handleCloseImportOptions,
-        handleHDWalletPress,
-        handleAlgo25Press,
         handleTermsPress,
         handlePrivacyPress,
         isOtherOptionsVisible,
         handleToggleOtherOptions,
-        isQRScannerVisible,
-        handleCloseQRScanner,
-        handleQRScannerSuccess,
     } = useAddAccountScreen()
 
     return (
@@ -148,20 +139,6 @@ export const AddAccountScreen = () => {
                     </PWView>
                 </PWScrollView>
             </PWView>
-
-            <ImportOptionsBottomSheet
-                isVisible={isImportOptionsVisible}
-                onClose={handleCloseImportOptions}
-                onHDWalletPress={handleHDWalletPress}
-                onAlgo25Press={handleAlgo25Press}
-            />
-
-            <QRScannerView
-                isVisible={isQRScannerVisible}
-                onClose={handleCloseQRScanner}
-                onSuccess={handleQRScannerSuccess}
-                animationType='slide'
-            />
 
             <PWLoadingOverlay
                 isVisible={isCreatingAccount}

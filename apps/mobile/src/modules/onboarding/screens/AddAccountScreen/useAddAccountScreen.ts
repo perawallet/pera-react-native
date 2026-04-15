@@ -13,7 +13,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import {
-    resolveImportAccountType,
     useCreateAccount,
     useCreateNextHDAccount,
     useHDWalletGroups,
@@ -26,17 +25,7 @@ import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
 import { type IconName } from '@components/core'
 import { useMultisigCreationStore } from '@modules/multisig/hooks/useMultisigCreation'
-import { useDeepLink } from '@hooks/useDeepLink'
-import { DeeplinkType } from '@hooks/deeplink/types'
-
-export type AccountOption = {
-    testID: string
-    titleKey: string
-    descriptionKey: string
-    leftIcon: IconName
-    onPress: () => void
-    isDisabled?: boolean
-}
+import { type AccountOption } from '@modules/onboarding/types'
 
 export const useAddAccountScreen = () => {
     const navigation = useAppNavigation()
@@ -47,24 +36,11 @@ export const useAddAccountScreen = () => {
     const { showToast } = useToast()
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
-    const {
-        isOpen: isImportOptionsVisible,
-        open: openImportOptions,
-        close: closeImportOptions,
-    } = useModalState()
 
     const {
         isOpen: isCreatingAccount,
         open: openCreatingAccount,
         close: closeCreatingAccount,
-    } = useModalState()
-
-    const { parseDeeplink } = useDeepLink()
-
-    const {
-        isOpen: isQRScannerVisible,
-        open: openQRScanner,
-        close: closeQRScanner,
     } = useModalState()
 
     const resetMultisigCreation = useMultisigCreationStore(
@@ -110,15 +86,10 @@ export const useAddAccountScreen = () => {
         t,
     ])
 
-    const handleHDWalletPress = useCallback(() => {
-        closeImportOptions()
-        navigation.push('ImportInfo', { accountType: 'hdWallet' })
-    }, [closeImportOptions, navigation])
-
-    const handleAlgo25Press = useCallback(() => {
-        closeImportOptions()
-        navigation.push('ImportInfo', { accountType: 'algo25' })
-    }, [closeImportOptions, navigation])
+    const handleOpenImportAccountOptions = useCallback(
+        () => navigation.push('ImportAccountOptions'),
+        [navigation],
+    )
 
     const handleTermsPress = useCallback(
         () =>
@@ -137,49 +108,6 @@ export const useAddAccountScreen = () => {
         resetMultisigCreation()
         navigation.navigate('Multisig', { screen: 'CreateMultisig' })
     }, [navigation, resetMultisigCreation])
-
-    const handleQRScannerSuccess = useCallback(
-        (url: string) => {
-            closeQRScanner()
-
-            const parsedDeeplink = parseDeeplink(url)
-
-            if (parsedDeeplink?.type === DeeplinkType.RECOVER_ADDRESS) {
-                const result = resolveImportAccountType(parsedDeeplink.mnemonic)
-
-                if (!result.success) {
-                    showToast({
-                        title: t(
-                            'onboarding.add_account.qr_scan_invalid_mnemonic_title',
-                        ),
-                        body: t(
-                            'onboarding.add_account.qr_scan_invalid_mnemonic_body',
-                        ),
-                        type: 'error',
-                    })
-                    return
-                }
-
-                navigation.push('ImportAccount', {
-                    accountType: result.accountType,
-                    mnemonic: parsedDeeplink.mnemonic,
-                })
-                return
-            }
-
-            showToast({
-                title: t('onboarding.add_account.qr_scan_invalid_title'),
-                body: t('onboarding.add_account.qr_scan_invalid_body'),
-                type: 'error',
-            })
-        },
-        [closeQRScanner, parseDeeplink, navigation, showToast, t],
-    )
-
-    const handlePairLedger = useCallback(
-        () => navigation.push('LedgerInstructions'),
-        [navigation],
-    )
 
     const handleWatchAddress = useCallback(
         () => navigation.push('WatchInfo'),
@@ -266,31 +194,6 @@ export const useAddAccountScreen = () => {
                     isDisabled: isCreatingAccount,
                 },
                 {
-                    testID: 'add_account_import_button',
-                    titleKey:
-                        'onboarding.add_account.import_account_option_title',
-                    descriptionKey:
-                        'onboarding.add_account.import_account_option_description',
-                    leftIcon: 'fund' as IconName,
-                    onPress: openImportOptions,
-                },
-                {
-                    testID: 'add_account_pair_ledger_button',
-                    titleKey: 'onboarding.add_account.pair_ledger_option_title',
-                    descriptionKey:
-                        'onboarding.add_account.pair_ledger_option_description',
-                    leftIcon: 'wallet' as IconName,
-                    onPress: handlePairLedger,
-                },
-                {
-                    testID: 'add_account_scan_qr_button',
-                    titleKey: 'onboarding.add_account.scan_qr_option_title',
-                    descriptionKey:
-                        'onboarding.add_account.scan_qr_option_description',
-                    leftIcon: 'qr' as IconName,
-                    onPress: openQRScanner,
-                },
-                {
                     testID: 'add_account_create_joint_button',
                     titleKey:
                         'onboarding.add_account.create_joint_account_option_title',
@@ -299,16 +202,23 @@ export const useAddAccountScreen = () => {
                     leftIcon: 'person-menu' as IconName,
                     onPress: handleCreateJointAccount,
                 },
+                {
+                    testID: 'add_account_import_button',
+                    titleKey:
+                        'onboarding.add_account.import_account_option_title',
+                    descriptionKey:
+                        'onboarding.add_account.import_account_option_description',
+                    leftIcon: 'fund' as IconName,
+                    onPress: handleOpenImportAccountOptions,
+                },
             ].filter(Boolean) as AccountOption[],
         [
             hasHDWallet,
             handleAddAccount,
             handleCreateUniversalWallet,
             isCreatingAccount,
-            openImportOptions,
-            handlePairLedger,
-            openQRScanner,
             handleCreateJointAccount,
+            handleOpenImportAccountOptions,
         ],
     )
 
@@ -356,20 +266,12 @@ export const useAddAccountScreen = () => {
 
     return {
         isCreatingAccount,
-        isImportOptionsVisible,
         mainOptions,
         otherOptions,
         handleClose: navigation.goBack,
-        handleImportAccount: openImportOptions,
-        handleCloseImportOptions: closeImportOptions,
-        handleHDWalletPress,
-        handleAlgo25Press,
         handleTermsPress,
         handlePrivacyPress,
         isOtherOptionsVisible,
         handleToggleOtherOptions: () => setIsOtherOptionsVisible(prev => !prev),
-        isQRScannerVisible,
-        handleCloseQRScanner: closeQRScanner,
-        handleQRScannerSuccess,
     }
 }

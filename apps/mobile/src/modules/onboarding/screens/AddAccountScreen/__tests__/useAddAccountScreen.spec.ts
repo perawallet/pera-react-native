@@ -156,6 +156,9 @@ describe('useAddAccountScreen', () => {
             'add_account_create_universal_wallet_button',
         )
         expect(result.current.mainOptions[1]?.testID).toBe(
+            'add_account_create_joint_button',
+        )
+        expect(result.current.mainOptions[2]?.testID).toBe(
             'add_account_import_button',
         )
     })
@@ -247,64 +250,43 @@ describe('useAddAccountScreen', () => {
         expect(mockGoBack).toHaveBeenCalledTimes(1)
     })
 
-    it('handleImportAccount opens import options', () => {
+    it('import account option navigates to ImportAccountOptions', () => {
         const { result } = renderHook(() => useAddAccountScreen())
 
-        expect(result.current.isImportOptionsVisible).toBe(false)
+        const importOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_import_button',
+        )!
 
         act(() => {
-            result.current.handleImportAccount()
+            importOption.onPress()
         })
 
-        expect(result.current.isImportOptionsVisible).toBe(true)
+        expect(mockPush).toHaveBeenCalledWith('ImportAccountOptions')
     })
 
-    it('handleCloseImportOptions closes import options', () => {
+    it('mainOptions does not include pair ledger or scan qr options', () => {
         const { result } = renderHook(() => useAddAccountScreen())
 
-        act(() => {
-            result.current.handleImportAccount()
-        })
-        expect(result.current.isImportOptionsVisible).toBe(true)
-
-        act(() => {
-            result.current.handleCloseImportOptions()
-        })
-        expect(result.current.isImportOptionsVisible).toBe(false)
+        expect(
+            result.current.mainOptions.find(
+                o => o.testID === 'add_account_pair_ledger_button',
+            ),
+        ).toBeUndefined()
+        expect(
+            result.current.mainOptions.find(
+                o => o.testID === 'add_account_scan_qr_button',
+            ),
+        ).toBeUndefined()
     })
 
-    it('handleHDWalletPress closes import options and navigates to ImportInfo with hdWallet', () => {
+    it('mainOptions includes joint account option', () => {
         const { result } = renderHook(() => useAddAccountScreen())
 
-        act(() => {
-            result.current.handleImportAccount()
-        })
-
-        act(() => {
-            result.current.handleHDWalletPress()
-        })
-
-        expect(result.current.isImportOptionsVisible).toBe(false)
-        expect(mockPush).toHaveBeenCalledWith('ImportInfo', {
-            accountType: 'hdWallet',
-        })
-    })
-
-    it('handleAlgo25Press closes import options and navigates to ImportInfo with algo25', () => {
-        const { result } = renderHook(() => useAddAccountScreen())
-
-        act(() => {
-            result.current.handleImportAccount()
-        })
-
-        act(() => {
-            result.current.handleAlgo25Press()
-        })
-
-        expect(result.current.isImportOptionsVisible).toBe(false)
-        expect(mockPush).toHaveBeenCalledWith('ImportInfo', {
-            accountType: 'algo25',
-        })
+        expect(
+            result.current.mainOptions.find(
+                o => o.testID === 'add_account_create_joint_button',
+            ),
+        ).toBeDefined()
     })
 
     it('watch address option navigates to WatchInfo', () => {
