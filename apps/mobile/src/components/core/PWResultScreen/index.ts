@@ -10,6 +10,9 @@
  limitations under the License
  */
 
-export * from './usePreferences'
-export * from './useSettings'
-export * from './useTooltipSeen'
+export { PWResultScreen } from './PWResultScreen'
+export type {
+    PWResultScreenProps,
+    PWResultScreenVariant,
+    PWResultScreenAction,
+} from './PWResultScreen'

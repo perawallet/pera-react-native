@@ -10,6 +10,23 @@
  limitations under the License
  */
 
-export * from './usePreferences'
-export * from './useSettings'
-export * from './useTooltipSeen'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(theme => ({
+    container: {
+        padding: theme.spacing.xl,
+        gap: theme.spacing.md,
+    },
+    title: {
+        textAlign: 'left',
+    },
+    contentContainer: {
+        marginBottom: theme.spacing.md,
+    },
+    iconContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: theme.spacing.xl,
+        width: theme.spacing.xl,
+    },
+}))

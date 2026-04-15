@@ -10,6 +10,5 @@
  limitations under the License
  */
 
-export * from './usePreferences'
-export * from './useSettings'
-export * from './useTooltipSeen'
+export { PWTooltip } from './PWTooltip'
+export type { PWTooltipProps, PWTooltipVariant } from './PWTooltip'

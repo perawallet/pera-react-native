@@ -12,7 +12,7 @@
 
 import React from 'react'
 import { ActivityIndicator } from 'react-native'
-import { PWView, PWText, PWButton, PWIcon } from '@components/core'
+import { PWView, PWText, PWIcon, PWResultScreen } from '@components/core'
 
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
@@ -25,10 +25,30 @@ export const LedgerVerifyScreen = () => {
         currentIndex,
         totalAccounts,
         currentAddress,
-        error,
+        errorPreset,
         handleRetry,
+        handleTroubleshoot,
         t,
     } = useLedgerVerifyScreen()
+
+    if (errorPreset) {
+        return (
+            <PWResultScreen
+                variant='error'
+                title={errorPreset.title}
+                body={errorPreset.body}
+                primaryAction={{
+                    label: t('ledger.errors.retry'),
+                    onPress: handleRetry,
+                }}
+                secondaryAction={{
+                    label: t('ledger.errors.troubleshoot'),
+                    onPress: handleTroubleshoot,
+                }}
+                testID='ledger-verify-error'
+            />
+        )
+    }
 
     const isLoading =
         verificationState === 'connecting' || verificationState === 'verifying'
@@ -95,29 +115,6 @@ export const LedgerVerifyScreen = () => {
                         >
                             {t('ledger.verify.complete')}
                         </PWText>
-                    </>
-                )}
-
-                {verificationState === 'error' && error !== null && (
-                    <>
-                        <PWText
-                            variant='h2'
-                            style={styles.title}
-                        >
-                            {t('ledger.verify.error_title')}
-                        </PWText>
-                        <PWText
-                            variant='body'
-                            style={styles.errorText}
-                        >
-                            {error.message}
-                        </PWText>
-                        <PWButton
-                            testID='ledger_verify_retry_button'
-                            title={t('ledger.verify.retry')}
-                            onPress={handleRetry}
-                            variant='secondary'
-                        />
                     </>
                 )}
             </PWView>

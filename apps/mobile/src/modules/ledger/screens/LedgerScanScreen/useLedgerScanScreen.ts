@@ -23,6 +23,7 @@ type UseLedgerScanScreenResult = {
     error: Error | null
     handleDevicePress: (device: HardwareWalletDevice) => void
     handleRetry: () => void
+    handleTroubleshoot: () => void
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
@@ -55,12 +56,17 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         startScan()
     }, [startScan])
 
+    const handleTroubleshoot = useCallback(() => {
+        navigation.navigate('LedgerTroubleshooting')
+    }, [navigation])
+
     return {
         devices,
         isScanning,
         error,
         handleDevicePress,
         handleRetry,
+        handleTroubleshoot,
         t,
     }
 }

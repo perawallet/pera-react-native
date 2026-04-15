@@ -33,6 +33,7 @@ import {
     LedgerFetchAccountsScreen,
     LedgerSelectAccountsScreen,
     LedgerVerifyScreen,
+    LedgerTroubleshootingScreen,
 } from '@modules/ledger'
 import { AccountErrorBoundary } from '@modules/accounts/components/AccountErrorBoundary/AccountErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
@@ -94,6 +95,9 @@ const LedgerSelectAccountsScreenWithErrorBoundary = withAccountErrorBoundary(
 )
 const LedgerVerifyScreenWithErrorBoundary =
     withAccountErrorBoundary(LedgerVerifyScreen)
+const LedgerTroubleshootingScreenWithErrorBoundary = withAccountErrorBoundary(
+    LedgerTroubleshootingScreen,
+)
 
 const AddAccountStack = createNativeStackNavigator<AddAccountStackParamList>()
 
@@ -221,6 +225,13 @@ export const AddAccountStackNavigator = () => {
                 }}
                 layout={fullScreenLayout}
                 component={LedgerVerifyScreenWithErrorBoundary}
+            />
+            <AddAccountStack.Screen
+                name='LedgerTroubleshooting'
+                options={{
+                    title: '',
+                }}
+                component={LedgerTroubleshootingScreenWithErrorBoundary}
             />
         </AddAccountStack.Navigator>
     )
