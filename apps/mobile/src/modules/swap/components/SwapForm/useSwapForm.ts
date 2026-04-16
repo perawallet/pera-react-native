@@ -334,6 +334,7 @@ export const useSwapForm = (): UseSwapFormResult => {
             setFromAsset(asset.assetId)
             setReceiveAmount(null)
             setAllQuotes([])
+            setQuotedAmount(null)
             setSelectedProviderName(null)
             resetQuoteMutation()
         },
@@ -345,6 +346,7 @@ export const useSwapForm = (): UseSwapFormResult => {
             setToAsset(asset.assetId)
             setReceiveAmount(null)
             setAllQuotes([])
+            setQuotedAmount(null)
             setSelectedProviderName(null)
             resetQuoteMutation()
         },
@@ -406,9 +408,7 @@ export const useSwapForm = (): UseSwapFormResult => {
 
     const handleConfigApply = useCallback(
         (result: SwapConfigurationResult) => {
-            if (result.slippageTolerance !== null) {
-                setSlippage(result.slippageTolerance)
-            }
+            setSlippage(result.slippageTolerance)
 
             const isAlgoPreferred = preferredCurrency === 'ALGO'
             if (result.useLocalCurrency && isAlgoPreferred) {

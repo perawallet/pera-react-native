@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
+import { isAlgoAsset } from '@perawallet/wallet-core-assets'
 import { buildPrismUrl } from '@perawallet/wallet-core-shared'
 import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -19,14 +19,24 @@ import { PWIconSize, PWImage, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
 
+type AssetIconAsset = {
+    assetId: string | number
+    name?: string
+    unitName?: string
+    peraMetadata?: { logo?: string | null }
+}
+
 export type AssetIconProps = {
-    asset: PeraAsset
+    asset: AssetIconAsset
     size?: PWIconSize
+    /** Direct logo URL — used as-is, bypasses Prism optimization.
+     *  Takes precedence over `asset.peraMetadata?.logo`. */
+    logoUrl?: string
 } & SvgProps
 
 //TODO: we may want a few more "local" asset icons for popular icons (e.g. USDC, DEFLY, etc)
 export const AssetIcon = (props: AssetIconProps) => {
-    const { asset, size, style, ...rest } = props
+    const { asset, size, style, logoUrl, ...rest } = props
     const { theme } = useTheme()
     const [loadFailed, setLoadFailed] = useState(false)
 
@@ -56,8 +66,13 @@ export const AssetIcon = (props: AssetIconProps) => {
         setLoadFailed(true)
     }, [])
 
-    const logoUrl = asset.peraMetadata?.logo
-    const hasLogo = Boolean(logoUrl) && !loadFailed
+    const resolvedLogoUrl = useMemo(() => {
+        if (logoUrl) return logoUrl
+        const peraLogo = asset.peraMetadata?.logo
+        return peraLogo ? buildPrismUrl(peraLogo, iconSize) : null
+    }, [logoUrl, asset.peraMetadata?.logo, iconSize])
+
+    const hasLogo = Boolean(resolvedLogoUrl) && !loadFailed
 
     const initials = useMemo(() => {
         return (asset?.unitName ?? asset?.name ?? '?').slice(0, 2).toUpperCase()
@@ -65,7 +80,7 @@ export const AssetIcon = (props: AssetIconProps) => {
 
     const icon = useMemo(() => {
         if (!asset) return <></>
-        if (asset.assetId === ALGO_ASSET_ID)
+        if (isAlgoAsset(asset.assetId))
             return (
                 <AlgoAssetIcon
                     {...rest}
@@ -76,11 +91,10 @@ export const AssetIcon = (props: AssetIconProps) => {
             )
 
         if (hasLogo) {
-            const prismUrl = buildPrismUrl(logoUrl, iconSize)
             return (
                 <PWImage
                     resizeMode='contain'
-                    source={{ uri: prismUrl }}
+                    source={{ uri: resolvedLogoUrl! }}
                     style={styles.imageIcon}
                     onError={handleImageError}
                 />
@@ -100,7 +114,7 @@ export const AssetIcon = (props: AssetIconProps) => {
         styles.imageIcon,
         styles.initialsText,
         hasLogo,
-        logoUrl,
+        resolvedLogoUrl,
         handleImageError,
         initials,
     ])

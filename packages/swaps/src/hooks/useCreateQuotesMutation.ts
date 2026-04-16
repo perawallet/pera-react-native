@@ -28,6 +28,8 @@ export const useCreateQuotesMutation = () => {
             })
             return createQuotes(data, network, providers)
         },
+        // Errors are caught in the calling effect (useSwapForm); suppress
+        // TanStack Query re-throwing them as unhandled promise rejections.
         throwOnError: false,
     })
 }

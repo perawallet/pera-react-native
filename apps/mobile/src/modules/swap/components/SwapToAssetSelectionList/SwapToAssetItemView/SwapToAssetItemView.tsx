@@ -10,24 +10,22 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { useTheme } from '@rneui/themed'
 import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
-import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
+import { isAlgoAsset } from '@perawallet/wallet-core-assets'
 import {
     PWIcon,
-    PWImage,
     PWText,
     PWTouchableOpacity,
-    PWTouchableOpacityProps,
+    type PWTouchableOpacityProps,
     PWView,
 } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { CopyableText } from '@components/CopyableText'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
-import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
+import { AssetIcon } from '@modules/assets/components'
 import { useStyles } from './styles'
 
 export type SwapToAssetItemViewProps = {
@@ -42,68 +40,14 @@ export const SwapToAssetItemView = ({
     ...rest
 }: SwapToAssetItemViewProps) => {
     const styles = useStyles()
-    const { theme } = useTheme()
-    const iconSize = theme.spacing.xxl
-    const [logoLoadFailed, setLogoLoadFailed] = useState(false)
-
-    const handleImageError = useCallback(() => {
-        setLogoLoadFailed(true)
-    }, [])
 
     const assetIdStr = String(dexAsset.assetId)
-    const isAlgo = assetIdStr === ALGO_ASSET_ID
-
-    const initials = useMemo(
-        () =>
-            (dexAsset.unitName ?? dexAsset.name ?? '?')
-                .slice(0, 2)
-                .toUpperCase(),
-        [dexAsset.unitName, dexAsset.name],
-    )
+    const isAlgo = isAlgoAsset(dexAsset.assetId)
 
     const verificationIconName = useMemo(() => {
         if (isAlgo) return 'assets/trusted' as const
         return getVerificationIcon(dexAsset.verificationTier)
     }, [isAlgo, dexAsset.verificationTier])
-
-    const logoIcon = useMemo(() => {
-        if (isAlgo) {
-            return (
-                <AlgoAssetIcon
-                    style={styles.icon}
-                    width={iconSize}
-                    height={iconSize}
-                />
-            )
-        }
-        if (dexAsset.logo && !logoLoadFailed) {
-            return (
-                <PWImage
-                    resizeMode='contain'
-                    source={{ uri: dexAsset.logo }}
-                    style={styles.imageIcon}
-                    onError={handleImageError}
-                />
-            )
-        }
-        return (
-            <PWView style={styles.defaultAsset}>
-                <PWText
-                    variant='caption'
-                    style={styles.initialsText}
-                >
-                    {initials}
-                </PWText>
-            </PWView>
-        )
-    }, [
-        isAlgo,
-        dexAsset.logo,
-        logoLoadFailed,
-        handleImageError,
-        initials,
-        styles,
-    ])
 
     return (
         <PWTouchableOpacity
@@ -111,7 +55,11 @@ export const SwapToAssetItemView = ({
             {...rest}
             style={[styles.container, rest.style]}
         >
-            <PWView style={styles.iconContainer}>{logoIcon}</PWView>
+            <AssetIcon
+                asset={dexAsset}
+                logoUrl={dexAsset.logo}
+                size='lg'
+            />
             <PWView style={styles.dataContainer}>
                 <PWView style={styles.unitContainer}>
                     <PWView style={styles.row}>

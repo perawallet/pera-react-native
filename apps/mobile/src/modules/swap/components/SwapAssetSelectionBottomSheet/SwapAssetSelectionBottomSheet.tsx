@@ -16,7 +16,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { PWBottomSheet, PWIcon, PWText, PWToolbar } from '@components/core'
 import { AccountAssetSelectionList } from '@modules/assets/components/AccountAssetSelectionList'
 import { SwapToAssetSelectionList } from '../SwapToAssetSelectionList'
-import { isSwappableAsset } from '../../utils/isSwappableAsset'
+import { isSwappableAsset } from '@perawallet/wallet-core-swaps'
 import { useStyles } from './styles'
 
 const filterSwappable = (item: AssetWithAccountBalance) =>

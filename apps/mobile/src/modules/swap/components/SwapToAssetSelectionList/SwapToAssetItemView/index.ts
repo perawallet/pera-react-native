@@ -10,20 +10,5 @@
  limitations under the License
  */
 
-import { isCollectible, type PeraAsset } from '@perawallet/wallet-core-assets'
-
-const RUG_NINJA_CATEGORY_ID = 1
-
-const SWAPPABLE_VERIFICATION_TIERS = new Set(['verified', 'trusted'])
-
-export const isSwappableAsset = (asset: PeraAsset | undefined): boolean => {
-    if (!asset) return false
-    if (isCollectible(asset)) return false
-
-    const meta = asset.peraMetadata
-    const tier = meta?.verificationTier ?? ''
-    return (
-        SWAPPABLE_VERIFICATION_TIERS.has(tier) ||
-        meta?.category === RUG_NINJA_CATEGORY_ID
-    )
-}
+export { SwapToAssetItemView } from './SwapToAssetItemView'
+export type { SwapToAssetItemViewProps } from './SwapToAssetItemView'

@@ -254,6 +254,46 @@ describe('useSwapForm', () => {
         expect(mockCreateQuotes).toHaveBeenCalledTimes(2)
     })
 
+    it('handlePayAssetSelected marks isQuoteFetching true immediately after asset change', async () => {
+        mockCreateQuotes.mockResolvedValue([])
+
+        const { result } = renderHook(() => useSwapForm())
+
+        // Establish a quoted state
+        await act(async () => {
+            result.current.handlePayAmountChange(new Decimal(5))
+        })
+
+        // Synchronously change the from asset — quotedAmount should reset
+        act(() => {
+            result.current.handlePayAssetSelected({
+                assetId: '123',
+                amount: new Decimal(1000),
+            } as AssetWithAccountBalance)
+        })
+
+        expect(result.current.isQuoteFetching).toBe(true)
+    })
+
+    it('handleReceiveAssetSelected marks isQuoteFetching true immediately after asset change', async () => {
+        mockCreateQuotes.mockResolvedValue([])
+
+        const { result } = renderHook(() => useSwapForm())
+
+        await act(async () => {
+            result.current.handlePayAmountChange(new Decimal(5))
+        })
+
+        act(() => {
+            result.current.handleReceiveAssetSelected({
+                assetId: '456',
+                amount: new Decimal(0),
+            } as AssetWithAccountBalance)
+        })
+
+        expect(result.current.isQuoteFetching).toBe(true)
+    })
+
     it('handleReceiveAssetSelected clears receive amount and quote', () => {
         const { result } = renderHook(() => useSwapForm())
 
@@ -301,6 +341,20 @@ describe('useSwapForm', () => {
         })
 
         expect(mockSetSlippage).toHaveBeenCalledWith('1.5')
+    })
+
+    it('handleConfigApply clears slippage when slippageTolerance is null', () => {
+        const { result } = renderHook(() => useSwapForm())
+
+        act(() => {
+            result.current.handleConfigApply({
+                slippageTolerance: null,
+                balancePercentage: null,
+                useLocalCurrency: false,
+            })
+        })
+
+        expect(mockSetSlippage).toHaveBeenCalledWith(null)
     })
 
     it('handleConfigApply switches to local currency when useLocalCurrency is true and ALGO preferred', () => {
