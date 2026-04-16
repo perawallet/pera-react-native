@@ -159,19 +159,15 @@ export const useSwapForm = (): UseSwapFormResult => {
         !isQuoteError
     const isQuoteFetching = isQuoteLoading || isDebouncing || hasUnresolvedQuote
 
-    const fromAssetRef = useRef(fromAsset)
-    fromAssetRef.current = fromAsset
-    const toAssetRef = useRef(toAsset)
-    toAssetRef.current = toAsset
-    const payAssetDecimalsRef = useRef(payAsset?.decimals)
-    payAssetDecimalsRef.current = payAsset?.decimals
+    const payAssetDecimals = payAsset?.decimals
 
     useEffect(() => {
         if (
             !selectedAccount ||
             !debouncedPayAmount ||
             debouncedPayAmount.isZero() ||
-            debouncedPayAmount.isNeg()
+            debouncedPayAmount.isNeg() ||
+            payAssetDecimals === undefined
         ) {
             setAllQuotes([])
             return
@@ -179,7 +175,7 @@ export const useSwapForm = (): UseSwapFormResult => {
 
         const amountInBaseUnits = displayUnitsToBaseUnits(
             debouncedPayAmount,
-            payAssetDecimalsRef.current ?? 0,
+            payAssetDecimals,
         )
 
         let cancelled = false
@@ -189,8 +185,8 @@ export const useSwapForm = (): UseSwapFormResult => {
                 const result = await createQuotesRef.current({
                     swapper_address: selectedAccount.address,
                     swap_type: 'fixed-input',
-                    asset_in_id: Number(fromAssetRef.current),
-                    asset_out_id: Number(toAssetRef.current),
+                    asset_in_id: Number(fromAsset),
+                    asset_out_id: Number(toAsset),
                     amount: amountInBaseUnits.toFixed(0),
                     slippage:
                         slippage !== null
@@ -213,7 +209,15 @@ export const useSwapForm = (): UseSwapFormResult => {
         return () => {
             cancelled = true
         }
-    }, [debouncedPayAmount, slippage, selectedAccount, deviceId])
+    }, [
+        debouncedPayAmount,
+        slippage,
+        selectedAccount,
+        deviceId,
+        fromAsset,
+        toAsset,
+        payAssetDecimals,
+    ])
 
     const bestQuote = useMemo(() => pickBestByAmountOut(allQuotes), [allQuotes])
 
@@ -319,7 +323,6 @@ export const useSwapForm = (): UseSwapFormResult => {
     const handlePayAssetSelected = useCallback(
         (asset: AssetWithAccountBalance) => {
             setFromAsset(asset.assetId)
-            setPayAmount(null)
             setReceiveAmount(null)
             setAllQuotes([])
             setSelectedProviderName(null)

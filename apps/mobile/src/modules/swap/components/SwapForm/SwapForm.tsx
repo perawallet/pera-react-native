@@ -118,6 +118,7 @@ export const SwapForm = () => {
             </PWScrollView>
 
             <SwapAssetSelectionBottomSheet
+                variant='from'
                 isVisible={payAssetModal.isOpen}
                 onClose={payAssetModal.close}
                 onAssetSelected={handlePayAssetSelected}
@@ -125,10 +126,12 @@ export const SwapForm = () => {
             />
 
             <SwapAssetSelectionBottomSheet
+                variant='to'
                 isVisible={receiveAssetModal.isOpen}
                 onClose={receiveAssetModal.close}
                 onAssetSelected={handleReceiveAssetSelected}
                 excludeAssetId={payAssetId}
+                fromAssetId={payAssetId}
             />
 
             <SwapConfigurationBottomSheet

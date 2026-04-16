@@ -16,16 +16,43 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SwapAssetSelectionBottomSheet } from '../SwapAssetSelectionBottomSheet'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import type { AccountAssetSelectionListProps } from '@modules/assets/components/AccountAssetSelectionList'
+import type { SwapToAssetSelectionListProps } from '../../SwapToAssetSelectionList'
 
-let capturedOnAssetSelected: ((asset: AssetWithAccountBalance) => void) | null =
-    null
-let capturedExcludeAssetId: string | undefined = undefined
+let capturedFromOnAssetSelected:
+    | ((asset: AssetWithAccountBalance) => void)
+    | null = null
+let capturedFromExcludeAssetId: string | undefined = undefined
+let capturedFromFilterAsset:
+    | ((asset: AssetWithAccountBalance) => boolean)
+    | undefined = undefined
+
+let capturedToOnAssetSelected:
+    | ((asset: AssetWithAccountBalance) => void)
+    | null = null
+let capturedToExcludeAssetId: string | undefined = undefined
+let capturedToFromAssetId: string | undefined = undefined
+
+vi.mock('@perawallet/wallet-core-assets', () => ({
+    isCollectible: (asset: unknown) =>
+        (asset as { peraMetadata?: { type?: string } })?.peraMetadata?.type ===
+        'collectible',
+}))
 
 vi.mock('@modules/assets/components/AccountAssetSelectionList', () => ({
     AccountAssetSelectionList: (props: AccountAssetSelectionListProps) => {
-        capturedOnAssetSelected = props.onAssetSelected
-        capturedExcludeAssetId = props.excludeAssetId
+        capturedFromOnAssetSelected = props.onAssetSelected
+        capturedFromExcludeAssetId = props.excludeAssetId
+        capturedFromFilterAsset = props.filterAsset
         return <div data-testid='account-asset-selection-list' />
+    },
+}))
+
+vi.mock('../../SwapToAssetSelectionList', () => ({
+    SwapToAssetSelectionList: (props: SwapToAssetSelectionListProps) => {
+        capturedToOnAssetSelected = props.onAssetSelected
+        capturedToExcludeAssetId = props.excludeAssetId
+        capturedToFromAssetId = props.fromAssetId
+        return <div data-testid='swap-to-asset-selection-list' />
     },
 }))
 
@@ -64,92 +91,259 @@ vi.mock('@components/core', async () => ({
 describe('SwapAssetSelectionBottomSheet', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        capturedOnAssetSelected = null
-        capturedExcludeAssetId = undefined
+        capturedFromOnAssetSelected = null
+        capturedFromExcludeAssetId = undefined
+        capturedFromFilterAsset = undefined
+        capturedToOnAssetSelected = null
+        capturedToExcludeAssetId = undefined
+        capturedToFromAssetId = undefined
     })
 
-    it('renders when visible', () => {
-        render(
-            <SwapAssetSelectionBottomSheet
-                isVisible={true}
-                onClose={vi.fn()}
-                onAssetSelected={vi.fn()}
-            />,
-        )
+    describe('variant from', () => {
+        it('renders when visible', () => {
+            render(
+                <SwapAssetSelectionBottomSheet
+                    variant='from'
+                    isVisible={true}
+                    onClose={vi.fn()}
+                    onAssetSelected={vi.fn()}
+                />,
+            )
 
-        expect(screen.getByTestId('PWBottomSheet')).toBeTruthy()
-        expect(screen.getByTestId('account-asset-selection-list')).toBeTruthy()
+            expect(screen.getByTestId('PWBottomSheet')).toBeTruthy()
+            expect(
+                screen.getByTestId('account-asset-selection-list'),
+            ).toBeTruthy()
+        })
+
+        it('does not render when not visible', () => {
+            render(
+                <SwapAssetSelectionBottomSheet
+                    variant='from'
+                    isVisible={false}
+                    onClose={vi.fn()}
+                    onAssetSelected={vi.fn()}
+                />,
+            )
+
+            expect(screen.queryByTestId('PWBottomSheet')).toBeNull()
+        })
+
+        it('renders toolbar title', () => {
+            render(
+                <SwapAssetSelectionBottomSheet
+                    variant='from'
+                    isVisible={true}
+                    onClose={vi.fn()}
+                    onAssetSelected={vi.fn()}
+                />,
+            )
+
+            expect(screen.getByTestId('toolbar-title')).toBeTruthy()
+        })
+
+        it('calls onClose when close icon is pressed', () => {
+            const onClose = vi.fn()
+
+            render(
+                <SwapAssetSelectionBottomSheet
+                    variant='from'
+                    isVisible={true}
+                    onClose={onClose}
+                    onAssetSelected={vi.fn()}
+                />,
+            )
+
+            fireEvent.click(screen.getByTestId('close-icon'))
+
+            expect(onClose).toHaveBeenCalled()
+        })
+
+        it('forwards excludeAssetId to AccountAssetSelectionList', () => {
+            render(
+                <SwapAssetSelectionBottomSheet
+                    variant='from'
+                    isVisible={true}
+                    onClose={vi.fn()}
+                    onAssetSelected={vi.fn()}
+                    excludeAssetId='0'
+                />,
+            )
+
+            expect(capturedFromExcludeAssetId).toBe('0')
+        })
+
+        it('passes a swappable filter to AccountAssetSelectionList', () => {
+            render(
+                <SwapAssetSelectionBottomSheet
+                    variant='from'
+                    isVisible={true}
+                    onClose={vi.fn()}
+                    onAssetSelected={vi.fn()}
+                />,
+            )
+
+            expect(capturedFromFilterAsset).toBeTypeOf('function')
+
+            const collectible = {
+                asset: {
+                    peraMetadata: {
+                        verificationTier: 'verified',
+                        type: 'collectible',
+                    },
+                },
+            } as unknown as AssetWithAccountBalance
+            const verifiedAsa = {
+                asset: {
+                    peraMetadata: { verificationTier: 'verified' },
+                },
+            } as unknown as AssetWithAccountBalance
+
+            expect(capturedFromFilterAsset!(collectible)).toBe(false)
+            expect(capturedFromFilterAsset!(verifiedAsa)).toBe(true)
+        })
+
+        it('calls onAssetSelected and onClose when an asset is selected', () => {
+            const onAssetSelected = vi.fn()
+            const onClose = vi.fn()
+            const mockAsset = { assetId: '0' } as AssetWithAccountBalance
+
+            render(
+                <SwapAssetSelectionBottomSheet
+                    variant='from'
+                    isVisible={true}
+                    onClose={onClose}
+                    onAssetSelected={onAssetSelected}
+                />,
+            )
+
+            capturedFromOnAssetSelected!(mockAsset)
+
+            expect(onAssetSelected).toHaveBeenCalledWith(mockAsset)
+            expect(onClose).toHaveBeenCalled()
+        })
     })
 
-    it('does not render when not visible', () => {
-        render(
-            <SwapAssetSelectionBottomSheet
-                isVisible={false}
-                onClose={vi.fn()}
-                onAssetSelected={vi.fn()}
-            />,
-        )
+    describe('variant to', () => {
+        it('renders SwapToAssetSelectionList when visible and fromAssetId provided', () => {
+            render(
+                <SwapAssetSelectionBottomSheet
+                    variant='to'
+                    isVisible={true}
+                    onClose={vi.fn()}
+                    onAssetSelected={vi.fn()}
+                    fromAssetId='0'
+                />,
+            )
 
-        expect(screen.queryByTestId('PWBottomSheet')).toBeNull()
-    })
+            expect(screen.getByTestId('PWBottomSheet')).toBeTruthy()
+            expect(
+                screen.getByTestId('swap-to-asset-selection-list'),
+            ).toBeTruthy()
+            expect(
+                screen.queryByTestId('account-asset-selection-list'),
+            ).toBeNull()
+        })
 
-    it('renders toolbar title', () => {
-        render(
-            <SwapAssetSelectionBottomSheet
-                isVisible={true}
-                onClose={vi.fn()}
-                onAssetSelected={vi.fn()}
-            />,
-        )
+        it('falls back to AccountAssetSelectionList when fromAssetId is not provided', () => {
+            render(
+                <SwapAssetSelectionBottomSheet
+                    variant='to'
+                    isVisible={true}
+                    onClose={vi.fn()}
+                    onAssetSelected={vi.fn()}
+                />,
+            )
 
-        expect(screen.getByTestId('toolbar-title')).toBeTruthy()
-    })
+            expect(
+                screen.getByTestId('account-asset-selection-list'),
+            ).toBeTruthy()
+            expect(
+                screen.queryByTestId('swap-to-asset-selection-list'),
+            ).toBeNull()
+        })
 
-    it('calls onClose when close icon is pressed', () => {
-        const onClose = vi.fn()
+        it('does not render when not visible', () => {
+            render(
+                <SwapAssetSelectionBottomSheet
+                    variant='to'
+                    isVisible={false}
+                    onClose={vi.fn()}
+                    onAssetSelected={vi.fn()}
+                    fromAssetId='0'
+                />,
+            )
 
-        render(
-            <SwapAssetSelectionBottomSheet
-                isVisible={true}
-                onClose={onClose}
-                onAssetSelected={vi.fn()}
-            />,
-        )
+            expect(screen.queryByTestId('PWBottomSheet')).toBeNull()
+        })
 
-        fireEvent.click(screen.getByTestId('close-icon'))
+        it('renders toolbar title', () => {
+            render(
+                <SwapAssetSelectionBottomSheet
+                    variant='to'
+                    isVisible={true}
+                    onClose={vi.fn()}
+                    onAssetSelected={vi.fn()}
+                    fromAssetId='0'
+                />,
+            )
 
-        expect(onClose).toHaveBeenCalled()
-    })
+            expect(screen.getByTestId('toolbar-title')).toBeTruthy()
+        })
 
-    it('forwards excludeAssetId to AccountAssetSelectionList', () => {
-        render(
-            <SwapAssetSelectionBottomSheet
-                isVisible={true}
-                onClose={vi.fn()}
-                onAssetSelected={vi.fn()}
-                excludeAssetId='0'
-            />,
-        )
+        it('calls onClose when close icon is pressed', () => {
+            const onClose = vi.fn()
 
-        expect(capturedExcludeAssetId).toBe('0')
-    })
+            render(
+                <SwapAssetSelectionBottomSheet
+                    variant='to'
+                    isVisible={true}
+                    onClose={onClose}
+                    onAssetSelected={vi.fn()}
+                    fromAssetId='0'
+                />,
+            )
 
-    it('calls onAssetSelected and onClose when an asset is selected', () => {
-        const onAssetSelected = vi.fn()
-        const onClose = vi.fn()
-        const mockAsset = { assetId: '0' } as AssetWithAccountBalance
+            fireEvent.click(screen.getByTestId('close-icon'))
 
-        render(
-            <SwapAssetSelectionBottomSheet
-                isVisible={true}
-                onClose={onClose}
-                onAssetSelected={onAssetSelected}
-            />,
-        )
+            expect(onClose).toHaveBeenCalled()
+        })
 
-        capturedOnAssetSelected!(mockAsset)
+        it('forwards fromAssetId and excludeAssetId to SwapToAssetSelectionList', () => {
+            render(
+                <SwapAssetSelectionBottomSheet
+                    variant='to'
+                    isVisible={true}
+                    onClose={vi.fn()}
+                    onAssetSelected={vi.fn()}
+                    fromAssetId='31566704'
+                    excludeAssetId='0'
+                />,
+            )
 
-        expect(onAssetSelected).toHaveBeenCalledWith(mockAsset)
-        expect(onClose).toHaveBeenCalled()
+            expect(capturedToFromAssetId).toBe('31566704')
+            expect(capturedToExcludeAssetId).toBe('0')
+        })
+
+        it('calls onAssetSelected and onClose when an asset is selected', () => {
+            const onAssetSelected = vi.fn()
+            const onClose = vi.fn()
+            const mockAsset = { assetId: '31566704' } as AssetWithAccountBalance
+
+            render(
+                <SwapAssetSelectionBottomSheet
+                    variant='to'
+                    isVisible={true}
+                    onClose={onClose}
+                    onAssetSelected={onAssetSelected}
+                    fromAssetId='0'
+                />,
+            )
+
+            capturedToOnAssetSelected!(mockAsset)
+
+            expect(onAssetSelected).toHaveBeenCalledWith(mockAsset)
+            expect(onClose).toHaveBeenCalled()
+        })
     })
 })

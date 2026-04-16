@@ -50,6 +50,8 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
         mutateAsync: mockCalculateSwapAmount,
     }),
     usePrefetchProviders: () => vi.fn(),
+    percentToApiSlippage: (percent: string) =>
+        new Decimal(percent).div(100).toString(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -71,6 +73,15 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
                     name: 'Algorand',
                     unitName: 'ALGO',
                     decimals: 6,
+                },
+            ],
+            [
+                '123',
+                {
+                    assetId: '123',
+                    name: 'Test Asset',
+                    unitName: 'TEST',
+                    decimals: 2,
                 },
             ],
         ]),
@@ -178,7 +189,7 @@ describe('useSwapForm', () => {
         expect(mockResetQuoteMutation).toHaveBeenCalled()
     })
 
-    it('handlePayAssetSelected clears amounts and quote', () => {
+    it('handlePayAssetSelected preserves pay amount and clears receive amount and quote', () => {
         const { result } = renderHook(() => useSwapForm())
 
         act(() => {
@@ -193,10 +204,54 @@ describe('useSwapForm', () => {
         })
 
         expect(mockSetFromAsset).toHaveBeenCalledWith('123')
-        expect(result.current.payAmount).toBeNull()
+        expect(result.current.payAmount).toEqual(new Decimal(5))
         expect(result.current.receiveAmount).toBeNull()
         expect(result.current.selectedQuote).toBeNull()
         expect(mockResetQuoteMutation).toHaveBeenCalled()
+    })
+
+    it('handlePayAssetSelected triggers quote re-fetch when pay amount exists', async () => {
+        mockCreateQuotes.mockResolvedValue([])
+
+        const { result } = renderHook(() => useSwapForm())
+
+        await act(async () => {
+            result.current.handlePayAmountChange(new Decimal(5))
+        })
+
+        expect(mockCreateQuotes).toHaveBeenCalledTimes(1)
+
+        mockFromAsset = '123'
+        await act(async () => {
+            result.current.handlePayAssetSelected({
+                assetId: '123',
+                amount: new Decimal(1000),
+            } as AssetWithAccountBalance)
+        })
+
+        expect(mockCreateQuotes).toHaveBeenCalledTimes(2)
+    })
+
+    it('handleReceiveAssetSelected triggers quote re-fetch when pay amount exists', async () => {
+        mockCreateQuotes.mockResolvedValue([])
+
+        const { result } = renderHook(() => useSwapForm())
+
+        await act(async () => {
+            result.current.handlePayAmountChange(new Decimal(5))
+        })
+
+        expect(mockCreateQuotes).toHaveBeenCalledTimes(1)
+
+        mockToAsset = '456'
+        await act(async () => {
+            result.current.handleReceiveAssetSelected({
+                assetId: '456',
+                amount: new Decimal(0),
+            } as AssetWithAccountBalance)
+        })
+
+        expect(mockCreateQuotes).toHaveBeenCalledTimes(2)
     })
 
     it('handleReceiveAssetSelected clears receive amount and quote', () => {
@@ -205,7 +260,7 @@ describe('useSwapForm', () => {
         act(() => {
             result.current.handleReceiveAssetSelected({
                 assetId: '456',
-                amount: new Decimal(2000),
+                amount: new Decimal(0),
             } as AssetWithAccountBalance)
         })
 
