@@ -11,6 +11,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import { Keyboard } from 'react-native'
 import { Decimal } from 'decimal.js'
 import {
     AssetWithAccountBalance,
@@ -98,6 +99,7 @@ export const useSwapForm = (): UseSwapFormResult => {
     const [payAmount, setPayAmount] = useState<Decimal | null>(null)
     const [receiveAmount, setReceiveAmount] = useState<Decimal | null>(null)
     const [allQuotes, setAllQuotes] = useState<SwapQuote[]>([])
+    const [quotedAmount, setQuotedAmount] = useState<Decimal | null>(null)
     const [selectedProviderName, setSelectedProviderName] = useState<
         string | null
     >(null)
@@ -155,7 +157,7 @@ export const useSwapForm = (): UseSwapFormResult => {
         payAmount !== null &&
         !payAmount.isZero() &&
         !payAmount.isNeg() &&
-        receiveAmount === null &&
+        !isDecimalEqual(payAmount, quotedAmount) &&
         !isQuoteError
     const isQuoteFetching = isQuoteLoading || isDebouncing || hasUnresolvedQuote
 
@@ -170,6 +172,7 @@ export const useSwapForm = (): UseSwapFormResult => {
             payAssetDecimals === undefined
         ) {
             setAllQuotes([])
+            setQuotedAmount(null)
             return
         }
 
@@ -198,9 +201,12 @@ export const useSwapForm = (): UseSwapFormResult => {
                 if (cancelled) return
 
                 setAllQuotes(result)
+                setQuotedAmount(debouncedPayAmount)
+                Keyboard.dismiss()
             } catch {
                 if (cancelled) return
                 setAllQuotes([])
+                setQuotedAmount(null)
             }
         }
 

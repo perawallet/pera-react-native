@@ -14,6 +14,7 @@ import { Decimal } from 'decimal.js'
 import { PWInput, PWSkeleton, PWText, PWView } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { useLanguage } from '@hooks/useLanguage'
+import { isAlgoAsset } from '@perawallet/wallet-core-assets'
 import { SwapAssetSelector } from '../SwapAssetSelector'
 import { useStyles } from './styles'
 import { useSwapAmountSection } from './useSwapAmountSection'
@@ -48,6 +49,7 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
     const { theme } = useTheme()
     const styles = useStyles()
 
+    const isAlgo = isAlgoAsset(assetId)
     const onAmountChange = variant === 'pay' ? props.onAmountChange : undefined
     const {
         asset,
@@ -70,16 +72,25 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                         ? t('swap.form.you_pay')
                         : t('swap.form.you_receive')}
                 </PWText>
-                <CurrencyDisplay
-                    value={balance}
-                    currency={asset?.unitName ?? ''}
-                    precision={asset?.decimals ?? 0}
-                    minPrecision={2}
-                    prefix={t('swap.form.balance_label')}
-                    showSymbol={false}
-                    variant='body'
-                    style={styles.balance}
-                />
+                <PWView style={styles.balanceWrapper}>
+                    <PWText
+                        variant='body'
+                        style={styles.balance}
+                    >
+                        {t('swap.form.balance_label')}
+                    </PWText>
+                    <CurrencyDisplay
+                        value={balance ?? new Decimal(0)}
+                        currency={asset?.unitName ?? ''}
+                        precision={asset?.decimals ?? 0}
+                        minPrecision={
+                            balance === null || balance.equals(0) ? 0 : 2
+                        }
+                        symbolPosition={isAlgo ? 'start' : 'end'}
+                        variant='body'
+                        style={styles.balance}
+                    />
+                </PWView>
             </PWView>
 
             <PWView style={styles.inputRow}>
