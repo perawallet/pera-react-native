@@ -13,7 +13,6 @@
 export * from './useAccountAuthAddresses'
 export * from './useAccountBalancesQuery'
 export * from './useAccountInformationQuery'
-export * from './useResolveAccountStatus'
 export * from './usePortfolioTotals'
 export * from './useAccountBalancesHistoryQuery'
 export * from './useAccountsAssetBalanceHistoryQuery'

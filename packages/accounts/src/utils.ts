@@ -87,13 +87,25 @@ export const canSignWithAccount = (
     account: WalletAccount,
     accounts: WalletAccount[],
     authAddresses: AuthAddressLookup,
+    visited: Set<string> = new Set(),
 ): boolean => {
     if (hasSigningKeys(account)) return true
     const authAddress = authAddresses.get(account.address)
-    if (authAddress && authAddress !== account.address) {
+    if (
+        authAddress &&
+        authAddress !== account.address &&
+        !visited.has(authAddress)
+    ) {
         const authAccount = accounts.find(a => a.address === authAddress)
         if (authAccount) {
-            return canSignWithAccount(authAccount, accounts, authAddresses)
+            const nextVisited = new Set(visited)
+            nextVisited.add(account.address)
+            return canSignWithAccount(
+                authAccount,
+                accounts,
+                authAddresses,
+                nextVisited,
+            )
         }
     }
     return false

@@ -198,10 +198,12 @@ describe('useSearchAccountsScreen', () => {
         }
         const rekeyedAccounts = [
             {
-                id: 'rekeyed-1',
-                address: 'REKEYED_ADDRESS',
-                type: AccountTypes.watch,
-                rekeyAddress: 'MOCK_ADDRESS',
+                account: {
+                    id: 'rekeyed-1',
+                    address: 'REKEYED_ADDRESS',
+                    type: AccountTypes.watch,
+                },
+                authAddress: 'MOCK_ADDRESS',
             },
         ]
         mockDiscoverAccounts.mockResolvedValue([singleAccount])

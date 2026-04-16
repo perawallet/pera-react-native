@@ -306,6 +306,32 @@ describe('services/accounts/utils - account type checks', () => {
             true,
         )
     })
+
+    test('canSignWithAccount handles circular rekey chain without stack overflow', () => {
+        const accountA = {
+            id: '1',
+            type: 'watch',
+            address: 'ADDR_A',
+        } as any
+
+        const accountB = {
+            id: '2',
+            type: 'watch',
+            address: 'ADDR_B',
+        } as any
+
+        const accounts = [accountA, accountB]
+        const authAddresses = new Map<string, string | null>([
+            [accountA.address, 'ADDR_B'],
+            [accountB.address, 'ADDR_A'],
+        ])
+        expect(canSignWithAccount(accountA, accounts, authAddresses)).toBe(
+            false,
+        )
+        expect(canSignWithAccount(accountB, accounts, authAddresses)).toBe(
+            false,
+        )
+    })
 })
 
 describe('services/accounts/utils - resolveAccountStatus', () => {

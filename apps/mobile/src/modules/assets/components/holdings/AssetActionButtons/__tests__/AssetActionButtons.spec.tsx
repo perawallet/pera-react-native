@@ -198,7 +198,6 @@ describe('AssetActionButtons', () => {
             vi.mocked(useSelectedAccount).mockReturnValue({
                 address: 'REKEYED_ADDR',
                 type: 'watch',
-                rekeyAddress: 'AUTH_ADDR',
             } as unknown as WalletAccount)
             vi.mocked(isSigningAccount).mockReturnValue(true)
         })

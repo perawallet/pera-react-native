@@ -378,7 +378,6 @@ describe('AccountOverview', () => {
         const rekeyedAccount = {
             address: 'REKEYED_ADDR',
             type: 'watch',
-            rekeyAddress: 'AUTH_ADDR',
         } as unknown as WalletAccount
 
         beforeEach(async () => {

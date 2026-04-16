@@ -207,7 +207,6 @@ describe('AccountAssetList', () => {
             address: 'REKEYED_ADDR',
             name: 'Rekeyed Account',
             type: 'watch',
-            rekeyAddress: 'AUTH_ADDR',
         } as unknown as WalletAccount
 
         beforeEach(async () => {

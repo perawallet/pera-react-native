@@ -18,6 +18,7 @@ import {
     useSetAccounts,
     useSelectedAccountAddress,
     fetchAndPersistAccount,
+    seedAuthAddress,
     useAccountBalancesInvalidator,
     type DiscoveredRekeyedAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -122,10 +123,24 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
             setAccounts([...allAccounts, ...accountsToAdd])
             setSelectedAccountAddress(accountsToAdd[0].address)
 
-            // Eagerly fetch on-chain info for each newly-imported address
-            // so the auth address is persisted to the DB and the derived
-            // account status reflects the rekey relationship on first
-            // render. Failures fall back to the background sync.
+            // Seed the already-known auth addresses into the DB
+            // synchronously so the UI shows the correct rekeyed
+            // status immediately. The background sync will later
+            // fill in the full balance data.
+            Promise.allSettled(
+                discoveredToAdd.map(d =>
+                    seedAuthAddress({
+                        accountAddress: d.account.address,
+                        network,
+                        authAddress: d.authAddress,
+                    }),
+                ),
+            ).then(() => {
+                invalidateAccountBalances()
+            })
+
+            // Also kick off full on-chain fetches in the background
+            // to populate balances and holdings.
             Promise.allSettled(
                 accountsToAdd.map(acc =>
                     fetchAndPersistAccount(acc.address, network),

@@ -17,6 +17,7 @@ export {
     insertAssetHolding,
     deleteAssetHoldings,
     upsertAccountBalance,
+    seedAuthAddress,
     getAccountBalance,
     getAllAccountBalances,
     getAllAssetIdsForNetwork,

@@ -13,13 +13,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { getAllAccountBalances } from '../db'
+import type { AuthAddressLookup } from '../utils'
 import { getAccountAuthAddressesQueryKey } from './querykeys'
 import { useAllAccounts } from './useAllAccounts'
 
-export type AuthAddressMap = ReadonlyMap<string, string | null>
-
 type UseAccountAuthAddressesResult = {
-    authAddresses: AuthAddressMap
+    authAddresses: AuthAddressLookup
     isPending: boolean
     isFetched: boolean
 }
@@ -29,11 +28,11 @@ export const useAccountAuthAddresses = (): UseAccountAuthAddressesResult => {
     const accounts = useAllAccounts()
 
     const addresses = accounts.map(a => a.address)
-    const addressKey = addresses.join(',')
+    const addressKey = [...addresses].sort().join(',')
 
     const query = useQuery({
         queryKey: [...getAccountAuthAddressesQueryKey(network), { addressKey }],
-        queryFn: async (): Promise<AuthAddressMap> => {
+        queryFn: async (): Promise<AuthAddressLookup> => {
             if (addresses.length === 0) return new Map()
             const rows = await getAllAccountBalances({
                 accountAddresses: addresses,

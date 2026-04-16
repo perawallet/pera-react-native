@@ -52,6 +52,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useSelectedAccountAddress: vi.fn(),
     useAccountBalancesInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
     fetchAndPersistAccount: vi.fn().mockResolvedValue(undefined),
+    seedAuthAddress: vi.fn().mockResolvedValue(undefined),
     AccountTypes: {
         algo25: 'algo25',
     },

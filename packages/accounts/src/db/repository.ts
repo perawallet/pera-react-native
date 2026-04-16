@@ -283,6 +283,56 @@ export async function upsertAccountBalance({
         .run()
 }
 
+type SeedAuthAddressParams = {
+    db?: Database
+    accountAddress: string
+    network: string
+    authAddress: string
+}
+
+/**
+ * Seed an auth address into the DB without a full on-chain fetch.
+ * Used during import when the auth address is already known from
+ * discovery. If a row already exists, only the auth_address column
+ * is updated; otherwise a minimal placeholder row is inserted so
+ * the auth address is available before the background sync fills
+ * the rest.
+ */
+export async function seedAuthAddress({
+    db = getDatabase(),
+    accountAddress,
+    network,
+    authAddress,
+}: SeedAuthAddressParams): Promise<void> {
+    const now = Date.now()
+
+    await db
+        .insert(AccountBalancesSchema)
+        .values({
+            accountAddress,
+            network,
+            algoBalance: new Decimal(0),
+            totalAssetsOptedIn: 0,
+            totalCreatedAssets: 0,
+            totalAppsOptedIn: 0,
+            minBalance: new Decimal(0),
+            status: 'Offline',
+            authAddress,
+            updatedAt: now,
+        })
+        .onConflictDoUpdate({
+            target: [
+                AccountBalancesSchema.accountAddress,
+                AccountBalancesSchema.network,
+            ],
+            set: {
+                authAddress,
+                updatedAt: now,
+            },
+        })
+        .run()
+}
+
 type GetAccountBalanceParams = {
     db?: Database
     accountAddress: string
