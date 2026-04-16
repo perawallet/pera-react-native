@@ -61,6 +61,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountAssetBalanceQuery: () => ({
         data: { amount: new Decimal('5000000') },
     }),
+    useAccountBalancesInvalidator: () => ({
+        invalidate: vi.fn(),
+    }),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
