@@ -11,6 +11,10 @@
  */
 
 import { parseCoinbaseFormat } from '../coinbase-parser'
+import { DeeplinkType } from '../types'
+
+const TEST_ADDRESS =
+    '5CYNWZY5JO7RWAPEQLWOTDULMDSSKJ55PHXNRTGZXUR62B7PR7JIDJGHEA'
 
 describe('Coinbase Parser', () => {
     it('returns null for invalid scheme', () => {
@@ -25,7 +29,27 @@ describe('Coinbase Parser', () => {
         expect(parseCoinbaseFormat('algo:123/transfer')).toBeNull()
     })
 
-    it('returns null for malformed path', () => {
+    it('returns null for non-address without path', () => {
         expect(parseCoinbaseFormat('algo:123')).toBeNull()
+    })
+
+    it('parses valid address as ADDRESS_ACTIONS', () => {
+        const result = parseCoinbaseFormat(`algo:${TEST_ADDRESS}`)
+        expect(result).toEqual({
+            type: DeeplinkType.ADDRESS_ACTIONS,
+            sourceUrl: `algo:${TEST_ADDRESS}`,
+            address: TEST_ADDRESS,
+        })
+    })
+
+    it('parses asset transfer with ASSET_TRANSFER type and receiverAddress', () => {
+        const url = `algo:31566704/transfer?address=${TEST_ADDRESS}`
+        const result = parseCoinbaseFormat(url)
+        expect(result).toEqual({
+            type: DeeplinkType.ASSET_TRANSFER,
+            sourceUrl: url,
+            assetId: '31566704',
+            receiverAddress: TEST_ADDRESS,
+        })
     })
 })

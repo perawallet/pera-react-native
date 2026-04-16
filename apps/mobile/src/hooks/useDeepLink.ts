@@ -127,25 +127,17 @@ export const useDeepLink = () => {
                     break
 
                 case DeeplinkType.ALGO_TRANSFER:
-                    // TODO: We need to use a proper transaction construction method here and
-                    //navigate somewhere other than the qr code scanner.
-                    addSignRequest({
-                        id: generateOrderedUniqueId(),
-                        type: 'transactions',
-                        transport: 'algod',
-                        txs: [],
-                    })
+                    infoToast(
+                        'Algo Transfer',
+                        'Algo transfer screen not implemented yet',
+                    )
                     break
 
                 case DeeplinkType.ASSET_TRANSFER:
-                    // TODO: We need to use a proper transaction construction method here and
-                    //navigate somewhere other than the qr code scanner.
-                    addSignRequest({
-                        id: generateOrderedUniqueId(),
-                        type: 'transactions',
-                        transport: 'algod',
-                        txs: [],
-                    })
+                    infoToast(
+                        'Asset Transfer',
+                        'Asset transfer screen not implemented yet',
+                    )
                     break
 
                 case DeeplinkType.KEYREG:

@@ -10,15 +10,20 @@
  limitations under the License
  */
 
-import { CoinbaseAssetTransferDeeplink, DeeplinkType } from './types'
+import {
+    AddressActionsDeeplink,
+    AssetTransferDeeplink,
+    DeeplinkType,
+} from './types'
 import { normalizeUrl, parseQueryParams } from './utils'
+import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
 
 /**
  * Parse Coinbase format: algo:ASSET_ID/transfer?address=ADDRESS
  */
 export const parseCoinbaseFormat = (
     url: string,
-): CoinbaseAssetTransferDeeplink | null => {
+): AssetTransferDeeplink | AddressActionsDeeplink | null => {
     const normalizedUrl = normalizeUrl(url)
 
     if (!normalizedUrl.startsWith('algo:')) {
@@ -29,17 +34,28 @@ export const parseCoinbaseFormat = (
 
     const parts = normalizedUrl.split('/')
 
-    if (parts.length < 2) return null
+    if (parts.length < 2) {
+        const address = parts[0].replace('algo:', '')
+
+        if (isValidAlgorandAddress(address)) {
+            return {
+                type: DeeplinkType.ADDRESS_ACTIONS,
+                sourceUrl: url,
+                address,
+            }
+        }
+        return null
+    }
 
     const assetPart = parts[0].replace('algo:', '')
     const actionPart = parts[1].split('?')[0]
 
     if (actionPart === 'transfer' && params.address) {
         return {
-            type: DeeplinkType.COINBASE_ASSET_TRANSFER,
+            type: DeeplinkType.ASSET_TRANSFER,
             sourceUrl: url,
             assetId: assetPart,
-            address: params.address,
+            receiverAddress: params.address,
         }
     }
 

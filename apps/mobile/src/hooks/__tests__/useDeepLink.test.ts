@@ -89,8 +89,14 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     useWalletConnect: () => ({ connect: vi.fn() }),
 }))
 
+const mockInfoToast = vi.hoisted(() => vi.fn())
+
 vi.mock('../useToast', () => ({
-    useToast: vi.fn(() => ({ showToast: vi.fn(), errorToast: vi.fn() })),
+    useToast: vi.fn(() => ({
+        showToast: vi.fn(),
+        errorToast: vi.fn(),
+        infoToast: mockInfoToast,
+    })),
 }))
 
 vi.mock('react-native', () => ({
@@ -232,7 +238,10 @@ describe('useDeepLink', () => {
             )
         })
 
-        // Success case, addSignRequest should have been called
+        expect(mockInfoToast).toHaveBeenCalledWith(
+            'Algo Transfer',
+            'Algo transfer screen not implemented yet',
+        )
     })
 
     it('should handle ASSET_TRANSFER deeplink', async () => {
@@ -253,7 +262,10 @@ describe('useDeepLink', () => {
             )
         })
 
-        // Success case
+        expect(mockInfoToast).toHaveBeenCalledWith(
+            'Asset Transfer',
+            'Asset transfer screen not implemented yet',
+        )
     })
 
     it('should handle ASSET_OPT_IN deeplink', async () => {
