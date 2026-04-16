@@ -1425,10 +1425,36 @@
         },
         "errors": {
             "app_not_open": "The Algorand app is not open on your Ledger device.",
+            "app_not_open_title": "Open the Algorand app",
             "connection_lost": "Connection to the Ledger device was lost.",
+            "connection_lost_title": "Device disconnected",
             "user_rejected": "The operation was rejected on the Ledger device.",
+            "user_rejected_title": "Cancelled on device",
             "bluetooth_disabled": "Bluetooth is not enabled. Please enable Bluetooth and try again.",
-            "connection_failed": "Failed to connect to the Ledger device."
+            "bluetooth_disabled_title": "Bluetooth is off",
+            "connection_failed": "Failed to connect to the Ledger device.",
+            "connection_failed_title": "Connection failed",
+            "timeout": "Your Ledger device did not respond in time. Please try again.",
+            "timeout_title": "Request timed out",
+            "retry": "Try again",
+            "troubleshoot": "Troubleshoot"
+        },
+        "troubleshooting": {
+            "title": "Having trouble?",
+            "description": "If you are having issues pairing or using your Ledger device, check the steps below.",
+            "pairing_steps_title": "Pairing steps",
+            "pairing_step_1": "Enable Bluetooth on your phone and your Ledger device.",
+            "pairing_step_2": "Open the Algorand app on your Ledger device.",
+            "pairing_step_3": "If the Algorand app is not installed, install it from Ledger Live.",
+            "common_issues_title": "Common issues",
+            "issue_unlocked": "Your Ledger must be unlocked and nearby.",
+            "issue_bluetooth": "Make sure Bluetooth is enabled on both devices.",
+            "issue_permissions": "On Android, Pera needs Bluetooth scan and location permissions.",
+            "issue_unsupported": "Only Ledger Nano X is supported.",
+            "done": "Got it"
+        },
+        "scan_header": {
+            "having_issues": "Having issues?"
         },
         "status": {
             "disconnected": "Disconnected",

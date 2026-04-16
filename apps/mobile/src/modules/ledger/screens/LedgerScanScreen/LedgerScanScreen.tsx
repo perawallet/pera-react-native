@@ -21,8 +21,15 @@ import { useLedgerScanScreen } from './useLedgerScanScreen'
 
 export const LedgerScanScreen = () => {
     const styles = useStyles()
-    const { devices, isScanning, error, handleDevicePress, handleRetry, t } =
-        useLedgerScanScreen()
+    const {
+        devices,
+        isScanning,
+        error,
+        handleDevicePress,
+        handleRetry,
+        handleTroubleshoot,
+        t,
+    } = useLedgerScanScreen()
 
     const renderItem = ({ item }: { item: HardwareWalletDevice }) => (
         <LedgerDeviceItem
@@ -58,6 +65,12 @@ export const LedgerScanScreen = () => {
                         title={t('ledger.scan.retry')}
                         onPress={handleRetry}
                         variant='secondary'
+                    />
+                    <PWButton
+                        testID='ledger_scan_troubleshoot_button'
+                        title={t('ledger.scan_header.having_issues')}
+                        onPress={handleTroubleshoot}
+                        variant='link'
                     />
                 </>
             )}

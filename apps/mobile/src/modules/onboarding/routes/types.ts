@@ -58,6 +58,7 @@ export type OnboardingStackParamList = {
         deviceName: string
         selectedAccounts: LedgerAccount[]
     }
+    LedgerTroubleshooting: undefined
 }
 
 export type AddAccountStackParamList = {
@@ -104,4 +105,5 @@ export type AddAccountStackParamList = {
         deviceName: string
         selectedAccounts: LedgerAccount[]
     }
+    LedgerTroubleshooting: undefined
 }

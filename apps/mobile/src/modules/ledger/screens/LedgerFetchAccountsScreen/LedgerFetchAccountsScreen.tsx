@@ -12,7 +12,7 @@
 
 import React from 'react'
 import { ActivityIndicator } from 'react-native'
-import { PWView, PWText, PWButton } from '@components/core'
+import { PWView, PWText, PWResultView } from '@components/core'
 
 import { LedgerStatusIndicator } from '../../components/LedgerStatusIndicator'
 import { useStyles } from './styles'
@@ -20,18 +20,44 @@ import { useLedgerFetchAccountsScreen } from './useLedgerFetchAccountsScreen'
 
 export const LedgerFetchAccountsScreen = () => {
     const styles = useStyles()
-    const { connectionStatus, isDiscovering, progress, error, handleRetry, t } =
-        useLedgerFetchAccountsScreen()
+    const {
+        connectionStatus,
+        isDiscovering,
+        progress,
+        errorPreset,
+        handleRetry,
+        handleTroubleshoot,
+        t,
+    } = useLedgerFetchAccountsScreen()
 
     const isLoading =
         connectionStatus === 'connecting' ||
         connectionStatus === 'connected' ||
         isDiscovering
 
+    if (errorPreset) {
+        return (
+            <PWResultView
+                variant='error'
+                title={errorPreset.title}
+                body={errorPreset.body}
+                primaryAction={{
+                    label: t('ledger.errors.retry'),
+                    onPress: handleRetry,
+                }}
+                secondaryAction={{
+                    label: t('ledger.errors.troubleshoot'),
+                    onPress: handleTroubleshoot,
+                }}
+                testID='ledger-fetch-accounts-error'
+            />
+        )
+    }
+
     return (
         <PWView style={styles.container}>
             <PWView style={styles.content}>
-                {isLoading && !error && (
+                {isLoading && (
                     <>
                         <ActivityIndicator size='large' />
                         <PWText
@@ -57,29 +83,6 @@ export const LedgerFetchAccountsScreen = () => {
                         <PWView style={styles.statusContainer}>
                             <LedgerStatusIndicator status={connectionStatus} />
                         </PWView>
-                    </>
-                )}
-
-                {error && (
-                    <>
-                        <PWText
-                            variant='h2'
-                            style={styles.title}
-                        >
-                            {t('ledger.fetch_accounts.error_title')}
-                        </PWText>
-                        <PWText
-                            variant='body'
-                            style={styles.errorText}
-                        >
-                            {error.message}
-                        </PWText>
-                        <PWButton
-                            testID='ledger_fetch_accounts_retry_button'
-                            title={t('ledger.fetch_accounts.retry')}
-                            onPress={handleRetry}
-                            variant='secondary'
-                        />
                     </>
                 )}
             </PWView>

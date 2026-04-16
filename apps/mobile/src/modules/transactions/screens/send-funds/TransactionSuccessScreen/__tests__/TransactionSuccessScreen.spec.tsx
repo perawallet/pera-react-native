@@ -22,46 +22,27 @@ vi.mock('@hooks/useLanguage', () => ({
 }))
 
 vi.mock('@components/core', () => ({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWView: ({ children, style, ...rest }: any) => (
-        <div
-            style={style}
-            {...rest}
-        >
-            {children}
+    PWResultView: ({
+        title,
+        body,
+        linkAction,
+        primaryAction,
+        variant,
+    }: // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any) => (
+        <div data-variant={variant}>
+            <span>{title}</span>
+            {body && <span>{body}</span>}
+            {linkAction && (
+                <button onClick={linkAction.onPress}>{linkAction.label}</button>
+            )}
+            {primaryAction && (
+                <button onClick={primaryAction.onPress}>
+                    {primaryAction.label}
+                </button>
+            )}
         </div>
     ),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWText: ({ children, variant, ...rest }: any) => (
-        <span
-            data-variant={variant}
-            {...rest}
-        >
-            {children}
-        </span>
-    ),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWButton: ({ title, onPress }: any) => (
-        <button onClick={onPress}>{title}</button>
-    ),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWIcon: ({ name, variant }: any) => (
-        <div
-            data-testid={`icon-${name}`}
-            data-variant={variant}
-        />
-    ),
-}))
-
-vi.mock('../styles', () => ({
-    useStyles: () => ({
-        container: {},
-        content: {},
-        iconCircle: {},
-        title: {},
-        subtitle: {},
-        footer: {},
-    }),
 }))
 
 vi.mock('../useTransactionSuccessScreen', () => ({
@@ -82,10 +63,10 @@ describe('TransactionSuccessScreen', () => {
         })
     })
 
-    it('renders check icon', () => {
-        const { getByTestId } = render(<TransactionSuccessScreen />)
+    it('renders with success variant', () => {
+        const { container } = render(<TransactionSuccessScreen />)
 
-        expect(getByTestId('icon-check')).toBeTruthy()
+        expect(container.querySelector('[data-variant="success"]')).toBeTruthy()
     })
 
     it('renders payment title text', () => {
