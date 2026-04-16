@@ -60,6 +60,8 @@ export const SwapProviderRow = ({
                     <PWText
                         variant='body'
                         style={styles.rate}
+                        numberOfLines={1}
+                        ellipsizeMode='tail'
                     >
                         {rateDisplay}
                     </PWText>
