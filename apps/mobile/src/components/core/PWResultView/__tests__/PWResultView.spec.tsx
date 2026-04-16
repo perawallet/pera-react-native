@@ -13,12 +13,12 @@
 import { render, fireEvent, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { Text } from 'react-native'
-import { PWResultScreen } from '../PWResultScreen'
+import { PWResultView } from '../PWResultView'
 
-describe('PWResultScreen', () => {
+describe('PWResultView', () => {
     it('renders title and body for the error variant', () => {
         render(
-            <PWResultScreen
+            <PWResultView
                 variant='error'
                 title='Something went wrong'
                 body='Please try again.'
@@ -31,7 +31,7 @@ describe('PWResultScreen', () => {
 
     it('renders only title when body is omitted', () => {
         render(
-            <PWResultScreen
+            <PWResultView
                 variant='success'
                 title='Done'
             />,
@@ -43,7 +43,7 @@ describe('PWResultScreen', () => {
     it('invokes primaryAction.onPress when primary button is pressed', () => {
         const onPrimary = vi.fn()
         const { container } = render(
-            <PWResultScreen
+            <PWResultView
                 variant='error'
                 title='Oops'
                 primaryAction={{ label: 'Retry', onPress: onPrimary }}
@@ -51,7 +51,7 @@ describe('PWResultScreen', () => {
         )
 
         const primary = container.querySelector(
-            '[testid="pw-result-screen-primary"]',
+            '[testid="pw-result-view-primary"]',
         )
         expect(primary).toBeTruthy()
         fireEvent.click(primary!)
@@ -61,7 +61,7 @@ describe('PWResultScreen', () => {
     it('invokes secondaryAction.onPress when secondary button is pressed', () => {
         const onSecondary = vi.fn()
         const { container } = render(
-            <PWResultScreen
+            <PWResultView
                 variant='error'
                 title='Oops'
                 secondaryAction={{ label: 'Cancel', onPress: onSecondary }}
@@ -69,7 +69,7 @@ describe('PWResultScreen', () => {
         )
 
         const secondary = container.querySelector(
-            '[testid="pw-result-screen-secondary"]',
+            '[testid="pw-result-view-secondary"]',
         )
         fireEvent.click(secondary!)
         expect(onSecondary).toHaveBeenCalledTimes(1)
@@ -77,13 +77,13 @@ describe('PWResultScreen', () => {
 
     it('renders custom children between body and actions', () => {
         render(
-            <PWResultScreen
+            <PWResultView
                 variant='warning'
                 title='Heads up'
                 body='Double-check before continuing.'
             >
                 <Text>extra-content</Text>
-            </PWResultScreen>,
+            </PWResultView>,
         )
 
         expect(screen.getByText('extra-content')).toBeTruthy()
@@ -91,17 +91,17 @@ describe('PWResultScreen', () => {
 
     it('hides the footer when no actions are provided', () => {
         const { container } = render(
-            <PWResultScreen
+            <PWResultView
                 variant='error'
                 title='Oops'
             />,
         )
 
         expect(
-            container.querySelector('[testid="pw-result-screen-primary"]'),
+            container.querySelector('[testid="pw-result-view-primary"]'),
         ).toBeNull()
         expect(
-            container.querySelector('[testid="pw-result-screen-secondary"]'),
+            container.querySelector('[testid="pw-result-view-secondary"]'),
         ).toBeNull()
     })
 })

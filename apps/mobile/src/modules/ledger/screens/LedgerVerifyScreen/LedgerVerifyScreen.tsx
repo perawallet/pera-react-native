@@ -12,7 +12,7 @@
 
 import React from 'react'
 import { ActivityIndicator } from 'react-native'
-import { PWView, PWText, PWIcon, PWResultScreen } from '@components/core'
+import { PWView, PWText, PWIcon, PWResultView } from '@components/core'
 
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
@@ -33,7 +33,7 @@ export const LedgerVerifyScreen = () => {
 
     if (errorPreset) {
         return (
-            <PWResultScreen
+            <PWResultView
                 variant='error'
                 title={errorPreset.title}
                 body={errorPreset.body}

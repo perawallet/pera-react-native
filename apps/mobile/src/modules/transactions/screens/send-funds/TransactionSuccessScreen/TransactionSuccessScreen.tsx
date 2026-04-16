@@ -10,9 +10,8 @@
  limitations under the License
  */
 
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import { PWResultView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { useStyles } from './styles'
 import { useTransactionSuccessScreen } from './useTransactionSuccessScreen'
 
 const titleKey = {
@@ -32,43 +31,23 @@ const subtitleKey = {
 }
 
 export const TransactionSuccessScreen = () => {
-    const styles = useStyles()
     const { t } = useLanguage()
     const { handleDone, handleViewInExplorer, variant } =
         useTransactionSuccessScreen()
 
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.content}>
-                <PWView style={styles.iconCircle}>
-                    <PWIcon
-                        name='check'
-                        variant='white'
-                    />
-                </PWView>
-                <PWText
-                    variant='h3'
-                    style={styles.title}
-                >
-                    {t(titleKey[variant] ?? titleKey['payment'])}
-                </PWText>
-                <PWText style={styles.subtitle}>
-                    {t(subtitleKey[variant] ?? subtitleKey['payment'])}
-                </PWText>
-            </PWView>
-            <PWView style={styles.footer}>
-                <PWButton
-                    title={t('send_funds.success.view_in_explorer')}
-                    variant='link'
-                    paddingStyle='none'
-                    onPress={handleViewInExplorer}
-                />
-                <PWButton
-                    title={t('send_funds.success.done')}
-                    variant='primary'
-                    onPress={handleDone}
-                />
-            </PWView>
-        </PWView>
+        <PWResultView
+            variant='success'
+            title={t(titleKey[variant] ?? titleKey['payment'])}
+            body={t(subtitleKey[variant] ?? subtitleKey['payment'])}
+            linkAction={{
+                label: t('send_funds.success.view_in_explorer'),
+                onPress: handleViewInExplorer,
+            }}
+            primaryAction={{
+                label: t('send_funds.success.done'),
+                onPress: handleDone,
+            }}
+        />
     )
 }

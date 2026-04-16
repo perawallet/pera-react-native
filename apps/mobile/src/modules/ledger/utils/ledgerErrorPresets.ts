@@ -61,7 +61,7 @@ const KIND_BY_ERROR: Array<{
 
 /**
  * Maps a Ledger-domain error (or plain Error) to a user-facing preset for the
- * shared PWResultScreen. Falls back to generic "connection_failed" copy for
+ * shared PWResultView. Falls back to generic "connection_failed" copy for
  * anything we don't recognise so the UI is always actionable.
  */
 export const getLedgerErrorPreset = (

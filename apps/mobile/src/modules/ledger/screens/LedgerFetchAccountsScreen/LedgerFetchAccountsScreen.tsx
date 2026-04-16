@@ -12,7 +12,7 @@
 
 import React from 'react'
 import { ActivityIndicator } from 'react-native'
-import { PWView, PWText, PWResultScreen } from '@components/core'
+import { PWView, PWText, PWResultView } from '@components/core'
 
 import { LedgerStatusIndicator } from '../../components/LedgerStatusIndicator'
 import { useStyles } from './styles'
@@ -37,7 +37,7 @@ export const LedgerFetchAccountsScreen = () => {
 
     if (errorPreset) {
         return (
-            <PWResultScreen
+            <PWResultView
                 variant='error'
                 title={errorPreset.title}
                 body={errorPreset.body}

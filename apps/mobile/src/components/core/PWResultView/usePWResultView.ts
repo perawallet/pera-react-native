@@ -12,27 +12,27 @@
 
 import { useMemo } from 'react'
 import type { IconName } from '@components/core/PWIcon'
-import type { PWResultScreenVariant } from './PWResultScreen'
+import type { PWResultViewVariant } from './PWResultView'
 
-const VARIANT_ICON: Record<PWResultScreenVariant, IconName> = {
+const VARIANT_ICON: Record<PWResultViewVariant, IconName> = {
     error: 'cross',
     success: 'check',
     warning: 'info',
 }
 
-export type UsePWResultScreenParams = {
-    variant: PWResultScreenVariant
+export type UsePWResultViewParams = {
+    variant: PWResultViewVariant
     icon?: IconName
 }
 
-export type UsePWResultScreenResult = {
+export type UsePWResultViewResult = {
     iconName: IconName
 }
 
-export const usePWResultScreen = ({
+export const usePWResultView = ({
     variant,
     icon,
-}: UsePWResultScreenParams): UsePWResultScreenResult => {
+}: UsePWResultViewParams): UsePWResultViewResult => {
     const iconName = useMemo<IconName>(
         () => icon ?? VARIANT_ICON[variant],
         [icon, variant],

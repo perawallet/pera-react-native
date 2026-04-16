@@ -41,14 +41,17 @@ vi.mock('@hooks/useLanguage', () => ({
 
 vi.mock('@components/core', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWButton: vi.fn(({ title, onPress }: any) => (
-        <button onClick={onPress}>{title}</button>
-    )),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWView: vi.fn(({ children }: any) => <div>{children}</div>),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWText: vi.fn(({ children }: any) => <span>{children}</span>),
-    PWIcon: vi.fn(() => <div />),
+    PWResultView: ({ title, body, primaryAction }: any) => (
+        <div>
+            <span>{title}</span>
+            {body && <span>{body}</span>}
+            {primaryAction && (
+                <button onClick={primaryAction.onPress}>
+                    {primaryAction.label}
+                </button>
+            )}
+        </div>
+    ),
 }))
 
 describe('InsufficientBalanceScreen', () => {

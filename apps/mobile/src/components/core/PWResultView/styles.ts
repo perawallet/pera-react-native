@@ -11,11 +11,11 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import type { PWResultScreenVariant } from './PWResultScreen'
+import type { PWResultViewVariant } from './PWResultView'
 
 const ICON_CIRCLE_SIZE = 64
 
-type StyleProps = { variant: PWResultScreenVariant }
+type StyleProps = { variant: PWResultViewVariant }
 
 export const useStyles = makeStyles((theme, { variant }: StyleProps) => {
     const circleBackground =

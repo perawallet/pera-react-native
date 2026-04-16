@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-export { PWResultScreen } from './PWResultScreen'
+export { PWResultView } from './PWResultView'
 export type {
-    PWResultScreenProps,
-    PWResultScreenVariant,
-    PWResultScreenAction,
-} from './PWResultScreen'
+    PWResultViewProps,
+    PWResultViewVariant,
+    PWResultViewAction,
+} from './PWResultView'

@@ -16,19 +16,19 @@ import { PWIcon, IconName } from '@components/core/PWIcon'
 import { PWText } from '@components/core/PWText'
 import { PWView } from '@components/core/PWView'
 import { useStyles } from './styles'
-import { usePWResultScreen } from './usePWResultScreen'
+import { usePWResultView } from './usePWResultView'
 
-export type PWResultScreenVariant = 'error' | 'success' | 'warning'
+export type PWResultViewVariant = 'error' | 'success' | 'warning'
 
-export type PWResultScreenAction = {
+export type PWResultViewAction = {
     label: string
     onPress: () => void
     isLoading?: boolean
     isDisabled?: boolean
 }
 
-export type PWResultScreenProps = {
-    variant: PWResultScreenVariant
+export type PWResultViewProps = {
+    variant: PWResultViewVariant
     title: string
     body?: string
     /**
@@ -36,8 +36,13 @@ export type PWResultScreenProps = {
      * When omitted, a sensible default is picked per variant.
      */
     icon?: IconName
-    primaryAction?: PWResultScreenAction
-    secondaryAction?: PWResultScreenAction
+    primaryAction?: PWResultViewAction
+    secondaryAction?: PWResultViewAction
+    /**
+     * Optional link-style action rendered above the primary/secondary buttons
+     * (for example, "View in explorer").
+     */
+    linkAction?: PWResultViewAction
     /**
      * Optional extra content rendered between the body and the action buttons
      * (for example, a transaction amount summary).
@@ -46,18 +51,19 @@ export type PWResultScreenProps = {
     testID?: string
 }
 
-export const PWResultScreen = ({
+export const PWResultView = ({
     variant,
     title,
     body,
     icon,
     primaryAction,
     secondaryAction,
+    linkAction,
     children,
-    testID = 'pw-result-screen',
-}: PWResultScreenProps) => {
+    testID = 'pw-result-view',
+}: PWResultViewProps) => {
     const styles = useStyles({ variant })
-    const { iconName } = usePWResultScreen({ variant, icon })
+    const { iconName } = usePWResultView({ variant, icon })
 
     return (
         <PWView
@@ -81,8 +87,19 @@ export const PWResultScreen = ({
                 {!!body && <PWText style={styles.body}>{body}</PWText>}
                 {children}
             </PWView>
-            {(primaryAction || secondaryAction) && (
+            {(linkAction || primaryAction || secondaryAction) && (
                 <PWView style={styles.footer}>
+                    {linkAction && (
+                        <PWButton
+                            variant='link'
+                            paddingStyle='none'
+                            title={linkAction.label}
+                            onPress={linkAction.onPress}
+                            isLoading={linkAction.isLoading}
+                            isDisabled={linkAction.isDisabled}
+                            testID={`${testID}-link`}
+                        />
+                    )}
                     {primaryAction && (
                         <PWButton
                             variant='primary'
