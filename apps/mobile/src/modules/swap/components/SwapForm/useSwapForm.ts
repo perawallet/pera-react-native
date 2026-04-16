@@ -16,6 +16,7 @@ import { Decimal } from 'decimal.js'
 import {
     AssetWithAccountBalance,
     useAccountAssetBalanceQuery,
+    useAccountBalancesInvalidator,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
@@ -131,6 +132,8 @@ export const useSwapForm = (): UseSwapFormResult => {
     createQuotesRef.current = createQuotes
 
     const swapExecution = useSwapExecution()
+    const { invalidate: invalidateAccountBalances } =
+        useAccountBalancesInvalidator()
     const { successToast } = useToast()
     const { t } = useLanguage()
 
@@ -364,6 +367,8 @@ export const useSwapForm = (): UseSwapFormResult => {
         const success = await swapExecution.execute(selectedQuote.quoteIdStr)
         if (!success) return
 
+        invalidateAccountBalances()
+
         const fromUnit = selectedQuote.assetIn.unitName ?? ''
         const toUnit = selectedQuote.assetOut.unitName ?? ''
 
@@ -390,6 +395,7 @@ export const useSwapForm = (): UseSwapFormResult => {
         t,
         resetQuoteMutation,
         successCloseTimer,
+        invalidateAccountBalances,
     ])
 
     const handleOpenConfirm = useCallback(() => {
