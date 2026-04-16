@@ -29,7 +29,7 @@ describe('Deeplink Parser - Main Parser', () => {
         const result = parseDeeplink(
             `algo:31566704/transfer?address=${TEST_ADDRESS}`,
         )
-        expect(result?.type).toBe(DeeplinkType.COINBASE_ASSET_TRANSFER)
+        expect(result?.type).toBe(DeeplinkType.ASSET_TRANSFER)
     })
 
     it('routes to new format parser for /app/ URLs', () => {
