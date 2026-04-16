@@ -21,17 +21,6 @@ export default defineConfig({
         globals: true,
         environment: 'node',
         passWithNoTests: true,
-        coverage: {
-            provider: 'v8',
-            exclude: [
-                '**/node_modules/**',
-                '**/dist/**',
-                '**/__tests__/**',
-                '**/models/**',
-                '**/index.ts',
-                '**/*.config.ts',
-            ],
-        },
     },
     resolve: {
         conditions: ['default'],

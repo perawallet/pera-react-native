@@ -21,19 +21,6 @@ export default defineConfig({
         globals: true,
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],
-        coverage: {
-            provider: 'v8',
-            exclude: [
-                '**/node_modules/**',
-                '**/dist/**',
-                '**/__tests__/**',
-                '**/models/**',
-                '**/index.ts',
-                '**/endpoints.ts',
-                '**/*.config.ts',
-                '**/eslint.config.js',
-            ],
-        },
     },
     resolve: {
         conditions: ['default'],

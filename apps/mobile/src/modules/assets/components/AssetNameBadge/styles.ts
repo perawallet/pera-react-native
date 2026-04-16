@@ -10,14 +10,15 @@
  limitations under the License
  */
 
-import { defineConfig } from 'vitest/config'
+import { makeStyles } from '@rneui/themed'
 
-export default defineConfig({
-    test: {
-        globals: true,
-        environment: 'jsdom',
+export const useStyles = makeStyles(theme => ({
+    container: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
     },
-    resolve: {
-        conditions: ['default'],
+    name: {
+        flexShrink: 1,
     },
-})
+}))

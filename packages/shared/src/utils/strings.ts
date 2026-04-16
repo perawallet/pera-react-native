@@ -177,6 +177,21 @@ export const formatDatetime = (
     }).format(date)
 }
 
+export const getInitials = (label: string, maxLetters: number = 2): string => {
+    const words = label.trim().split(/\s+/)
+    if (words.length >= maxLetters) {
+        return words
+            .slice(0, maxLetters)
+            .map(w => w[0])
+            .join('')
+            .toUpperCase()
+    }
+    if (words.length === 1 && words[0].length > 0) {
+        return words[0][0].toUpperCase()
+    }
+    return '?'
+}
+
 export const formatTime = (totalSeconds: number): string => {
     const hours = Math.floor(totalSeconds / 3600)
     const minutes = Math.floor((totalSeconds % 3600) / 60)

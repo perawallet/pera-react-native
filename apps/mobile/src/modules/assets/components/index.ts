@@ -11,6 +11,7 @@
  */
 
 export * from './AssetFavoriteButton'
+export * from './AssetNameBadge'
 export * from './AssetNotificationButton'
 export * from './AssetTierChip'
 export * from './AssetTitle'

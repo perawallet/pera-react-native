@@ -11,7 +11,7 @@
  */
 
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
-import { buildPrismUrl } from '@perawallet/wallet-core-shared'
+import { buildPrismUrl, getInitials } from '@perawallet/wallet-core-shared'
 import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { SvgProps } from 'react-native-svg'
@@ -56,11 +56,13 @@ export const AssetIcon = (props: AssetIconProps) => {
         setLoadFailed(true)
     }, [])
 
-    const logoUrl = asset.peraMetadata?.logo
+    const logoUrl =
+        asset.peraMetadata?.logo ??
+        asset.peraMetadata?.collectible?.primaryImage
     const hasLogo = Boolean(logoUrl) && !loadFailed
 
     const initials = useMemo(() => {
-        return (asset?.unitName ?? asset?.name ?? '?').slice(0, 2).toUpperCase()
+        return getInitials(asset?.unitName ?? asset?.name ?? '')
     }, [asset?.unitName, asset?.name])
 
     const icon = useMemo(() => {

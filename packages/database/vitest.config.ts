@@ -16,17 +16,5 @@ export default defineConfig({
     test: {
         globals: true,
         setupFiles: ['./vitest.setup.ts'],
-        coverage: {
-            provider: 'v8',
-            all: true,
-            include: ['src/**/*.ts'],
-            exclude: [
-                'src/**/__tests__/**',
-                'src/**/index.ts',
-                'src/test-utils/**',
-                'src/migrations/**',
-                'src/schema/**',
-            ],
-        },
     },
 })

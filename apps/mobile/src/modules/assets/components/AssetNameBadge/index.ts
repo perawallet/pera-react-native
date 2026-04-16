@@ -10,14 +10,5 @@
  limitations under the License
  */
 
-import { defineConfig } from 'vitest/config'
-
-export default defineConfig({
-    test: {
-        globals: true,
-        environment: 'jsdom',
-    },
-    resolve: {
-        conditions: ['default'],
-    },
-})
+export { AssetNameBadge } from './AssetNameBadge'
+export type { AssetNameBadgeProps } from './AssetNameBadge'

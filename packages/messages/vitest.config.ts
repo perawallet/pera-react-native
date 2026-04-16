@@ -28,19 +28,6 @@ export default defineConfig({
             '**/usePreferences.test.ts',
             '**/useSettings.test.ts',
         ],
-        coverage: {
-            provider: 'v8',
-            exclude: [
-                '**/node_modules/**',
-                '**/dist/**',
-                '**/__tests__/**',
-                '**/models/**', // Type definitions and interfaces
-                '**/index.ts', // Re-export files
-                '**/endpoints.ts', // Raw API functions (tested via hooks)
-                '**/*.config.ts', // Configuration files (vite, vitest)
-                '**/eslint.config.js', // ESLint config
-            ],
-        },
     },
     resolve: {
         conditions: ['default'],

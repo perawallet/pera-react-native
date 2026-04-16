@@ -19,20 +19,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export default defineConfig({
     test: {
         globals: true,
-        coverage: {
-            provider: 'v8',
-            exclude: [
-                '**/node_modules/**',
-                '**/dist/**',
-                '**/*.test.ts',
-                '**/*.test.tsx',
-                '**/models/**', // Type definitions and interfaces
-                '**/index.ts', // Re-export files
-                '**/endpoints.ts', // Raw API functions (tested via hooks)
-                '**/*.config.ts', // Configuration files (vite, vitest)
-                '**/eslint.config.js', // ESLint config
-            ],
-        },
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],
     },

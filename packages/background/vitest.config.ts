@@ -20,17 +20,6 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'jsdom',
-        coverage: {
-            provider: 'v8',
-            exclude: [
-                '**/node_modules/**',
-                '**/dist/**',
-                '**/__tests__/**',
-                '**/models/**',
-                '**/index.ts',
-                '**/*.config.ts',
-            ],
-        },
     },
     resolve: {
         conditions: ['default'],
