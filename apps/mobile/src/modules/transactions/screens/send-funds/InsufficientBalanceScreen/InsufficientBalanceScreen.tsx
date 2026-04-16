@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import { PWResultView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     useNavigation,
@@ -19,11 +19,9 @@ import {
 } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
-import { useStyles } from './styles'
 import { useCallback } from 'react'
 
 export const InsufficientBalanceScreen = () => {
-    const styles = useStyles()
     const { t } = useLanguage()
     const navigation =
         useNavigation<StackNavigationProp<SendFundsStackParamList>>()
@@ -37,33 +35,16 @@ export const InsufficientBalanceScreen = () => {
     }, [navigation])
 
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.content}>
-                <PWView style={styles.iconCircle}>
-                    <PWIcon
-                        name='cross'
-                        variant='white'
-                    />
-                </PWView>
-                <PWText
-                    variant='h3'
-                    style={styles.title}
-                >
-                    {t('send_funds.insufficient_balance.title')}
-                </PWText>
-                <PWText style={styles.subtitle}>
-                    {t('send_funds.insufficient_balance.message', {
-                        amount: requiredBalance,
-                    })}
-                </PWText>
-            </PWView>
-            <PWView style={styles.footer}>
-                <PWButton
-                    title={t('send_funds.insufficient_balance.done')}
-                    variant='primary'
-                    onPress={handleDone}
-                />
-            </PWView>
-        </PWView>
+        <PWResultView
+            variant='error'
+            title={t('send_funds.insufficient_balance.title')}
+            body={t('send_funds.insufficient_balance.message', {
+                amount: requiredBalance,
+            })}
+            primaryAction={{
+                label: t('send_funds.insufficient_balance.done'),
+                onPress: handleDone,
+            }}
+        />
     )
 }

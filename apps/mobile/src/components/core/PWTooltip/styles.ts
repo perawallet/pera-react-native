@@ -12,36 +12,21 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const ICON_CIRCLE_SIZE = 64
-
 export const useStyles = makeStyles(theme => ({
     container: {
-        flex: 1,
-        paddingHorizontal: theme.spacing.md,
-    },
-    content: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    iconCircle: {
-        width: ICON_CIRCLE_SIZE,
-        height: ICON_CIRCLE_SIZE,
-        borderRadius: ICON_CIRCLE_SIZE / 2,
-        backgroundColor: theme.colors.negative,
-        justifyContent: 'center',
-        alignItems: 'center',
+        padding: theme.spacing.xl,
+        gap: theme.spacing.md,
     },
     title: {
-        marginTop: theme.spacing.xl,
+        textAlign: 'left',
     },
-    subtitle: {
-        marginTop: theme.spacing.sm,
-        color: theme.colors.textGray,
-        textAlign: 'center',
+    contentContainer: {
+        marginBottom: theme.spacing.md,
     },
-    footer: {
-        paddingBottom: theme.spacing.xl,
-        gap: theme.spacing.md,
+    iconContainer: {
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: theme.spacing.xl,
+        width: theme.spacing.xl,
     },
 }))

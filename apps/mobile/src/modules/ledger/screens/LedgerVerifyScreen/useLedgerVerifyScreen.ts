@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
+import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     useAccountsStore,
@@ -23,6 +24,10 @@ import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
 import { verifyLedgerAddress } from '@perawallet/wallet-core-ledger'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
+import {
+    getLedgerErrorPreset,
+    type LedgerErrorPreset,
+} from '@modules/ledger/utils'
 
 import { useLedgerConnection } from '../../hooks'
 
@@ -36,7 +41,9 @@ type UseLedgerVerifyScreenResult = {
     totalAccounts: number
     currentAddress: string | null
     error: Error | null
+    errorPreset: LedgerErrorPreset | null
     handleRetry: () => void
+    handleTroubleshoot: () => void
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
@@ -49,6 +56,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { exitAccountFlow } = useExitAccountFlow()
     const { connect, disconnect } = useLedgerConnection()
+    const navigation = useAppNavigation()
 
     const [verificationState, setVerificationState] =
         useState<VerificationState>('connecting')
@@ -126,13 +134,27 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         verifyAndSave()
     }, [verifyAndSave])
 
+    const handleTroubleshoot = useCallback(() => {
+        navigation.navigate('LedgerTroubleshooting')
+    }, [navigation])
+
+    const errorPreset = useMemo(
+        () =>
+            verificationState === 'error' && error !== null
+                ? getLedgerErrorPreset(error, t)
+                : null,
+        [error, verificationState, t],
+    )
+
     return {
         verificationState,
         currentIndex,
         totalAccounts: selectedAccounts.length,
         currentAddress,
         error,
+        errorPreset,
         handleRetry,
+        handleTroubleshoot,
         t,
     }
 }
