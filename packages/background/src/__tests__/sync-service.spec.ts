@@ -311,9 +311,8 @@ describe('SyncService', () => {
             round: null,
         })
 
-        const { fetchAndPersistAccount } = await import(
-            '@perawallet/wallet-core-accounts'
-        )
+        const { fetchAndPersistAccount } =
+            await import('@perawallet/wallet-core-accounts')
 
         vi.useRealTimers()
         service.start()
