@@ -23,7 +23,10 @@ type AssetIconAsset = {
     assetId: string | number
     name?: string
     unitName?: string
-    peraMetadata?: { logo?: string | null; collectible?: { primaryImage?: string | null } }
+    peraMetadata?: {
+        logo?: string | null
+        collectible?: { primaryImage?: string | null }
+    }
 }
 
 export type AssetIconProps = {
@@ -68,7 +71,8 @@ export const AssetIcon = (props: AssetIconProps) => {
 
     const resolvedLogoUrl = useMemo(() => {
         if (logoUrl) return logoUrl
-        const peraLogo = asset.peraMetadata?.logo ??
+        const peraLogo =
+            asset.peraMetadata?.logo ??
             asset.peraMetadata?.collectible?.primaryImage
         return peraLogo ? buildPrismUrl(peraLogo, iconSize) : null
     }, [logoUrl, asset.peraMetadata?.logo, iconSize])
