@@ -18,6 +18,7 @@ import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
     ALGO_ASSET_ID: 0,
+    isAlgoAsset: (assetId: string | number) => String(assetId) === '0',
     isCollectible: vi.fn(() => false),
     useAssetsQuery: vi.fn(() => ({
         data: new Map([
