@@ -22,23 +22,21 @@ import { useStyles } from './styles'
 const filterSwappable = (item: AssetWithAccountBalance) =>
     isSwappableAsset(item.asset)
 
-export type SwapAssetSelectionBottomSheetProps = {
-    variant: 'from' | 'to'
+type BaseProps = {
     isVisible: boolean
     onClose: () => void
     onAssetSelected: (asset: AssetWithAccountBalance) => void
     excludeAssetId?: string
-    fromAssetId?: string
 }
 
-export const SwapAssetSelectionBottomSheet = ({
-    variant,
-    isVisible,
-    onClose,
-    onAssetSelected,
-    excludeAssetId,
-    fromAssetId,
-}: SwapAssetSelectionBottomSheetProps) => {
+export type SwapAssetSelectionBottomSheetProps = BaseProps &
+    ({ variant: 'from' } | { variant: 'to'; fromAssetId: string })
+
+export const SwapAssetSelectionBottomSheet = (
+    props: SwapAssetSelectionBottomSheetProps,
+) => {
+    const { variant, isVisible, onClose, onAssetSelected, excludeAssetId } =
+        props
     const { t } = useLanguage()
     const styles = useStyles()
 
@@ -70,9 +68,9 @@ export const SwapAssetSelectionBottomSheet = ({
                 }
                 center={<PWText variant='h4'>{title}</PWText>}
             />
-            {variant === 'to' && fromAssetId ? (
+            {props.variant === 'to' ? (
                 <SwapToAssetSelectionList
-                    fromAssetId={fromAssetId}
+                    fromAssetId={props.fromAssetId}
                     onAssetSelected={handleAssetSelected}
                     isVisible={isVisible}
                     excludeAssetId={excludeAssetId}
