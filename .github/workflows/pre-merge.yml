@@ -158,4 +158,4 @@ jobs:
           key: build-artifacts-${{ runner.os }}-${{ github.sha }}
 
       - name: Test
-        run: pnpm run test:coverage
+        run: pnpm run test
