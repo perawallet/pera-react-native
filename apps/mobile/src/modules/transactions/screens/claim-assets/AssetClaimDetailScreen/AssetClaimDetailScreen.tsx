@@ -20,6 +20,7 @@ import {
     PWView,
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
+import { AssetNameBadge } from '@modules/assets/components'
 import { useLanguage } from '@hooks/useLanguage'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { RejectConfirmBottomSheet } from '@modules/transactions/components/claim-assets/RejectConfirmBottomSheet'
@@ -62,6 +63,12 @@ export const AssetClaimDetailScreen = () => {
         <PWView style={styles.container}>
             <PWScrollView contentContainerStyle={styles.scrollContent}>
                 <PWView style={styles.amountSection}>
+                    <AssetNameBadge
+                        name={request.asset.name ?? ''}
+                        verificationTier={
+                            request.asset.peraMetadata?.verificationTier
+                        }
+                    />
                     <CurrencyDisplay
                         variant='h2'
                         value={amount}
@@ -148,7 +155,7 @@ export const AssetClaimDetailScreen = () => {
                 </PWView>
             </PWScrollView>
 
-            {!request.microAlgoGainOnClaim.equals(5) && (
+            {!request.microAlgoGainOnClaim.isZero() && (
                 <>
                     <PWDivider style={styles.separator} />
                     <PWView style={styles.algoGainRow}>

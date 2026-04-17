@@ -38,7 +38,7 @@ export const SingleArbitrarySignRequestView = ({
         <PWView style={styles.container}>
             <PWView style={styles.messageContainer}>
                 <PWText
-                    variant='h1'
+                    variant='h2'
                     style={styles.body}
                 >
                     {t('signing.arbitrary_data_view.body')}

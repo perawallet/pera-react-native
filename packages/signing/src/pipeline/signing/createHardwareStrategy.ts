@@ -64,6 +64,18 @@ const validateAndExtract = (
         )
     }
 
+    if (group.data.type === 'arbitrary-data') {
+        throw new SigningError(
+            'Hardware wallet signing of arbitrary data is not supported',
+        )
+    }
+
+    if (group.data.type === 'arc60') {
+        throw new SigningError(
+            'Hardware wallet signing of ARC-60 requests is not supported',
+        )
+    }
+
     if (group.data.type !== 'transactions') {
         throw new HardwareWalletError('unsupported_data_type')
     }

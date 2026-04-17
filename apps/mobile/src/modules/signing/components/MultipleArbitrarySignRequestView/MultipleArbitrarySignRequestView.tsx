@@ -10,13 +10,12 @@
  limitations under the License
  */
 
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
 import type { PeraArbitraryDataMessage } from '@perawallet/wallet-core-signing'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
-import { ScrollView } from 'react-native-gesture-handler'
 
 export type MultipleArbitrarySignRequestViewProps = {
     requests: PeraArbitraryDataMessage[]
@@ -32,7 +31,7 @@ export const MultipleArbitrarySignRequestView = ({
     const accounts = useAllAccounts()
 
     return (
-        <ScrollView
+        <PWScrollView
             style={styles.container}
             contentContainerStyle={styles.contentContainer}
         >
@@ -62,6 +61,6 @@ export const MultipleArbitrarySignRequestView = ({
                     />
                 </PWView>
             ))}
-        </ScrollView>
+        </PWScrollView>
     )
 }

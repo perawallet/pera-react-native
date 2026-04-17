@@ -1072,6 +1072,28 @@
             "title": "Transaction Request FAQ",
             "body": "External applications, also called dApps, can initiate transaction requests independently from Pera Wallet. Please ensure you review these transactions carefully before approving and signing them.",
             "warning": "All transactions are irreversible. As these requests are outside Pera Wallet's control, never approve transactions from a dApp you don't know."
+        },
+        "arc60_view": {
+            "title": "Sign-in Request",
+            "description": "Sign in to {{domain}} using your wallet. The signature proves you control this account but does not authorise any on-chain action.",
+            "domain": "Domain",
+            "scope": "Scope",
+            "scope_auth": "Authentication",
+            "request_id": "Request ID",
+            "on_behalf_of": "Signing With",
+            "siwa_statement": "Statement",
+            "siwa_uri": "URI",
+            "siwa_version": "Version",
+            "siwa_chain_id": "Chain ID",
+            "siwa_nonce": "Nonce",
+            "siwa_issued_at": "Issued At",
+            "siwa_expiration": "Expires",
+            "siwa_not_before": "Not Before",
+            "siwa_resources": "Resources",
+            "siwa_invalid": "This sign-in request is malformed and cannot be signed.",
+            "show_details": "Show Details",
+            "details_title": "Sign-in Request Details",
+            "details_description": "Review the full metadata of this sign-in request before approving."
         }
     },
     "transactions": {
@@ -1304,6 +1326,8 @@
         },
         "asset_selection": {
             "title": "Select asset",
+            "swap_from_title": "Swap From",
+            "swap_to_title": "Swap To",
             "search_placeholder": "Search by name or ID",
             "no_results_title": "No Matching Assets",
             "no_results_body": "No assets matched your search term"

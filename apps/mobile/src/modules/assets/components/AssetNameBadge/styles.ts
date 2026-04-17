@@ -12,22 +12,13 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
-    return {
-        container: {
-            flex: 1,
-            minHeight: 500,
-        },
-        buttonContainer: {
-            flexDirection: 'row',
-            gap: theme.spacing.lg,
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingVertical: theme.spacing.sm,
-            paddingHorizontal: theme.spacing.xl,
-        },
-        button: {
-            flexGrow: 1,
-        },
-    }
-})
+export const useStyles = makeStyles(theme => ({
+    container: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.xs,
+    },
+    name: {
+        flexShrink: 1,
+    },
+}))

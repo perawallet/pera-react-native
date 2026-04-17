@@ -22,6 +22,8 @@ import type {
 import {
     createLocalKeyStrategy,
     type LocalSigningFunction,
+    type LocalArbitrarySigningFunction,
+    type LocalArc60SigningFunction,
 } from '../../../pipeline/signing/createLocalKeyStrategy'
 import { resolveAuthAccount } from '@perawallet/wallet-core-accounts'
 import { CannotSignError } from '../../../pipeline/errors'
@@ -31,6 +33,8 @@ export type LocalKeySignerActorInput = {
     allAccounts: WalletAccount[]
     authAddresses: AuthAddressLookup
     signTransactions: LocalSigningFunction
+    signArbitraryData: LocalArbitrarySigningFunction
+    signArc60: LocalArc60SigningFunction
 }
 
 /**
@@ -43,8 +47,19 @@ export const localKeySignerActor = fromPromise<
     SigningResult[],
     LocalKeySignerActorInput
 >(async ({ input }) => {
-    const { groups, allAccounts, authAddresses, signTransactions } = input
-    const strategy = createLocalKeyStrategy(signTransactions)
+    const {
+        groups,
+        allAccounts,
+        authAddresses,
+        signTransactions,
+        signArbitraryData,
+        signArc60,
+    } = input
+    const strategy = createLocalKeyStrategy({
+        signTransactions,
+        signArbitraryData,
+        signArc60,
+    })
 
     return Promise.all(
         groups.map(group => {

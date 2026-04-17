@@ -594,6 +594,7 @@ vi.mock('@components/core', () => {
 // Clean up after each test
 afterEach(() => {
     vi.clearAllMocks()
+    store.clear()
 })
 
 vi.mock('expo-image', () => {
@@ -1845,6 +1846,20 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     buildPrismUrl: vi.fn((url: string, width: number) =>
         url ? `${url}?width=${width}&quality=70` : undefined,
     ),
+    getInitials: vi.fn((label: string, maxLetters: number = 2) => {
+        const words = label.trim().split(/\s+/)
+        if (words.length >= maxLetters) {
+            return words
+                .slice(0, maxLetters)
+                .map((w: string) => w[0])
+                .join('')
+                .toUpperCase()
+        }
+        if (words.length === 1 && words[0].length > 0) {
+            return words[0][0].toUpperCase()
+        }
+        return '?'
+    }),
 }))
 
 // Mock @perawallet/wallet-core-projects
@@ -1915,6 +1930,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 vi.mock('@perawallet/wallet-core-assets', () => ({
     toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>
         Number(value) / Math.pow(10, asset.decimals),
+    isAlgoAsset: (assetId: string | number) => String(assetId) === '0',
     ALGO_ASSET_ID: '0',
     KNOWN_ASSET_IDS: {
         USDC: { mainnet: '31566704', testnet: '10458941' },

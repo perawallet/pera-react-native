@@ -16,7 +16,7 @@ import type {
 } from '@perawallet/wallet-core-accounts'
 import { isMultisigAccount } from '@perawallet/wallet-core-accounts'
 import type { SigningStrategy, SigningResult, SignerInfo } from '../types'
-import { NoLocalParticipantsError } from '../errors'
+import { NoLocalParticipantsError, SigningError } from '../errors'
 
 export interface CreateMultisigStrategyOptions {
     /** Get local participants for a multisig account */
@@ -60,6 +60,18 @@ export const createMultisigStrategy = (
         },
 
         sign: async (group, account, callbacks) => {
+            if (group.data.type === 'arbitrary-data') {
+                throw new SigningError(
+                    'Multisig signing of arbitrary data is not supported',
+                )
+            }
+
+            if (group.data.type === 'arc60') {
+                throw new SigningError(
+                    'Multisig signing of ARC-60 requests is not supported',
+                )
+            }
+
             const allAccounts = getAllAccounts()
             const authAddresses = getAuthAddresses()
             const localParticipants = getLocalParticipants(

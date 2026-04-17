@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { ScrollView } from 'react-native-gesture-handler'
 import {
     useNavigation,
     useRoute,
@@ -30,6 +29,7 @@ import { TransactionDisplay } from '@modules/transactions/components/Transaction
 import { GroupTransactionsPanel } from '@modules/transactions/components/transaction-details'
 import type { SigningStackParamList } from '@modules/signing/routes'
 import { useStyles } from './styles'
+import { PWScrollView } from '@components/core'
 
 type NavigationProp = StackNavigationProp<
     SigningStackParamList,
@@ -74,7 +74,7 @@ export const TransactionDetailsScreen = () => {
 
     if (transaction) {
         return (
-            <ScrollView contentContainerStyle={styles.contentContainer}>
+            <PWScrollView contentContainerStyle={styles.contentContainer}>
                 <TransactionDisplay
                     transaction={transaction}
                     onInnerTransactionsPress={handleInnerTransactionPress}
@@ -88,7 +88,7 @@ export const TransactionDetailsScreen = () => {
                         onGroupTransactionPress={handleGroupTransactionPress}
                     />
                 )}
-            </ScrollView>
+            </PWScrollView>
         )
     }
 

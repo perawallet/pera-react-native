@@ -10,11 +10,10 @@
  limitations under the License
  */
 
-import { PWDivider, PWView } from '@components/core'
+import { PWDivider, PWScrollView, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
-import { ScrollView } from 'react-native-gesture-handler'
 import { TransactionSummaryHeader } from '@modules/signing/components/TransactionSummaryHeader'
 import { FeeDisplay } from '@modules/signing/components/FeeDisplay'
 import { SigningWarnings } from '@modules/signing/components/SigningWarnings'
@@ -48,7 +47,7 @@ export const SingleTransactionScreen = () => {
     }
 
     return (
-        <ScrollView contentContainerStyle={styles.contentContainer}>
+        <PWScrollView contentContainerStyle={styles.contentContainer}>
             <PWView style={styles.container}>
                 <TransactionSummaryHeader
                     transaction={transaction}
@@ -68,6 +67,6 @@ export const SingleTransactionScreen = () => {
 
                 <SigningActionButtons />
             </PWView>
-        </ScrollView>
+        </PWScrollView>
     )
 }

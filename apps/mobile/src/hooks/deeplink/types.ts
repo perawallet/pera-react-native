@@ -35,7 +35,6 @@ export const DeeplinkType = {
     ACCOUNT_DETAIL: 'ACCOUNT_DETAIL',
     INTERNAL_BROWSER: 'INTERNAL_BROWSER',
     HOME: 'HOME',
-    COINBASE_ASSET_TRANSFER: 'COINBASE_ASSET_TRANSFER',
 } as const
 
 export type DeeplinkType = (typeof DeeplinkType)[keyof typeof DeeplinkType]
@@ -198,12 +197,6 @@ export interface HomeDeeplink extends ParsedDeeplink {
     type: typeof DeeplinkType.HOME
 }
 
-export interface CoinbaseAssetTransferDeeplink extends ParsedDeeplink {
-    type: typeof DeeplinkType.COINBASE_ASSET_TRANSFER
-    assetId: string
-    address: string
-}
-
 export type AnyParsedDeeplink =
     | AddContactDeeplink
     | EditContactDeeplink
@@ -229,4 +222,3 @@ export type AnyParsedDeeplink =
     | AccountDetailDeeplink
     | InternalBrowserDeeplink
     | HomeDeeplink
-    | CoinbaseAssetTransferDeeplink

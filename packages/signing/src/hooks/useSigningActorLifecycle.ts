@@ -24,6 +24,8 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useTransactionSigner } from './useTransactionSigner'
+import { useArbitraryDataSigner } from './useArbitraryDataSigner'
+import { useArc60Signer } from './useArc60Signer'
 import { useSigningStore } from '../store'
 import { createSigningMachine } from '../machine/createSigningMachine'
 import { signingMachine } from '../machine/signingMachine'
@@ -82,6 +84,8 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     )
 
     const { signTransactions } = useTransactionSigner()
+    const { signArbitraryData } = useArbitraryDataSigner()
+    const { signArc60 } = useArc60Signer()
     const { encodeTransaction, encodeSignedTransactions } =
         useTransactionEncoder()
     const algokit = useAlgorandClient()
@@ -101,6 +105,8 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     const buildDeps = useCallback(
         (): SigningMachineDeps => ({
             signTransactions,
+            signArbitraryData,
+            signArc60,
             createTransport: createTransportSelector({
                 algokit,
                 encodeSignedTransactions,
@@ -111,6 +117,8 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
         }),
         [
             signTransactions,
+            signArbitraryData,
+            signArc60,
             encodeTransaction,
             encodeSignedTransactions,
             algokit,

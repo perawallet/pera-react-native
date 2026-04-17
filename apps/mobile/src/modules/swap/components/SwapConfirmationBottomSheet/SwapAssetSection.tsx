@@ -45,7 +45,7 @@ export const SwapAssetSection = ({
                     )}
                     <PWView style={styles.amountTextContainer}>
                         <PWText
-                            variant='h2'
+                            variant='h3'
                             style={styles.assetAmount}
                         >
                             {amountDisplay}

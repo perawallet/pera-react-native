@@ -50,6 +50,8 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
         mutateAsync: mockCalculateSwapAmount,
     }),
     usePrefetchProviders: () => vi.fn(),
+    percentToApiSlippage: (percent: string) =>
+        new Decimal(percent).div(100).toString(),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -58,6 +60,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     }),
     useAccountAssetBalanceQuery: () => ({
         data: { amount: new Decimal('5000000') },
+    }),
+    useAccountBalancesInvalidator: () => ({
+        invalidate: vi.fn(),
     }),
 }))
 
@@ -71,6 +76,15 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
                     name: 'Algorand',
                     unitName: 'ALGO',
                     decimals: 6,
+                },
+            ],
+            [
+                '123',
+                {
+                    assetId: '123',
+                    name: 'Test Asset',
+                    unitName: 'TEST',
+                    decimals: 2,
                 },
             ],
         ]),
@@ -178,7 +192,7 @@ describe('useSwapForm', () => {
         expect(mockResetQuoteMutation).toHaveBeenCalled()
     })
 
-    it('handlePayAssetSelected clears amounts and quote', () => {
+    it('handlePayAssetSelected preserves pay amount and clears receive amount and quote', () => {
         const { result } = renderHook(() => useSwapForm())
 
         act(() => {
@@ -193,10 +207,94 @@ describe('useSwapForm', () => {
         })
 
         expect(mockSetFromAsset).toHaveBeenCalledWith('123')
-        expect(result.current.payAmount).toBeNull()
+        expect(result.current.payAmount).toEqual(new Decimal(5))
         expect(result.current.receiveAmount).toBeNull()
         expect(result.current.selectedQuote).toBeNull()
         expect(mockResetQuoteMutation).toHaveBeenCalled()
+    })
+
+    it('handlePayAssetSelected triggers quote re-fetch when pay amount exists', async () => {
+        mockCreateQuotes.mockResolvedValue([])
+
+        const { result } = renderHook(() => useSwapForm())
+
+        await act(async () => {
+            result.current.handlePayAmountChange(new Decimal(5))
+        })
+
+        expect(mockCreateQuotes).toHaveBeenCalledTimes(1)
+
+        mockFromAsset = '123'
+        await act(async () => {
+            result.current.handlePayAssetSelected({
+                assetId: '123',
+                amount: new Decimal(1000),
+            } as AssetWithAccountBalance)
+        })
+
+        expect(mockCreateQuotes).toHaveBeenCalledTimes(2)
+    })
+
+    it('handleReceiveAssetSelected triggers quote re-fetch when pay amount exists', async () => {
+        mockCreateQuotes.mockResolvedValue([])
+
+        const { result } = renderHook(() => useSwapForm())
+
+        await act(async () => {
+            result.current.handlePayAmountChange(new Decimal(5))
+        })
+
+        expect(mockCreateQuotes).toHaveBeenCalledTimes(1)
+
+        mockToAsset = '456'
+        await act(async () => {
+            result.current.handleReceiveAssetSelected({
+                assetId: '456',
+                amount: new Decimal(0),
+            } as AssetWithAccountBalance)
+        })
+
+        expect(mockCreateQuotes).toHaveBeenCalledTimes(2)
+    })
+
+    it('handlePayAssetSelected marks isQuoteFetching true immediately after asset change', async () => {
+        mockCreateQuotes.mockResolvedValue([])
+
+        const { result } = renderHook(() => useSwapForm())
+
+        // Establish a quoted state
+        await act(async () => {
+            result.current.handlePayAmountChange(new Decimal(5))
+        })
+
+        // Synchronously change the from asset — quotedAmount should reset
+        act(() => {
+            result.current.handlePayAssetSelected({
+                assetId: '123',
+                amount: new Decimal(1000),
+            } as AssetWithAccountBalance)
+        })
+
+        expect(result.current.isQuoteFetching).toBe(true)
+    })
+
+    it('handleReceiveAssetSelected marks isQuoteFetching true immediately after asset change', async () => {
+        mockCreateQuotes.mockResolvedValue([])
+
+        const { result } = renderHook(() => useSwapForm())
+
+        await act(async () => {
+            result.current.handlePayAmountChange(new Decimal(5))
+        })
+
+        act(() => {
+            result.current.handleReceiveAssetSelected({
+                assetId: '456',
+                amount: new Decimal(0),
+            } as AssetWithAccountBalance)
+        })
+
+        expect(result.current.isQuoteFetching).toBe(true)
     })
 
     it('handleReceiveAssetSelected clears receive amount and quote', () => {
@@ -205,7 +303,7 @@ describe('useSwapForm', () => {
         act(() => {
             result.current.handleReceiveAssetSelected({
                 assetId: '456',
-                amount: new Decimal(2000),
+                amount: new Decimal(0),
             } as AssetWithAccountBalance)
         })
 
@@ -248,6 +346,20 @@ describe('useSwapForm', () => {
         expect(mockSetSlippage).toHaveBeenCalledWith('1.5')
     })
 
+    it('handleConfigApply clears slippage when slippageTolerance is null', () => {
+        const { result } = renderHook(() => useSwapForm())
+
+        act(() => {
+            result.current.handleConfigApply({
+                slippageTolerance: null,
+                balancePercentage: null,
+                useLocalCurrency: false,
+            })
+        })
+
+        expect(mockSetSlippage).toHaveBeenCalledWith(null)
+    })
+
     it('handleConfigApply switches to local currency when useLocalCurrency is true and ALGO preferred', () => {
         mockPreferredCurrency = 'ALGO'
         const { result } = renderHook(() => useSwapForm())
@@ -276,6 +388,36 @@ describe('useSwapForm', () => {
         })
 
         expect(mockSetPreferredCurrency).toHaveBeenCalledWith('ALGO')
+    })
+
+    it('converts stored slippage percent to decimal fraction when fetching quotes', async () => {
+        mockSlippage = '1'
+        mockCreateQuotes.mockResolvedValueOnce([])
+
+        const { result } = renderHook(() => useSwapForm())
+
+        await act(async () => {
+            result.current.handlePayAmountChange(new Decimal(2))
+        })
+
+        expect(mockCreateQuotes).toHaveBeenCalledWith(
+            expect.objectContaining({ slippage: '0.01' }),
+        )
+    })
+
+    it('omits slippage when none is set', async () => {
+        mockSlippage = null
+        mockCreateQuotes.mockResolvedValueOnce([])
+
+        const { result } = renderHook(() => useSwapForm())
+
+        await act(async () => {
+            result.current.handlePayAmountChange(new Decimal(2))
+        })
+
+        expect(mockCreateQuotes).toHaveBeenCalledWith(
+            expect.objectContaining({ slippage: undefined }),
+        )
     })
 
     it('handleOpenConfirm resets swap execution state before opening the confirm modal', () => {

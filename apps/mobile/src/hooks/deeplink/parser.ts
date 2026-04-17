@@ -52,15 +52,15 @@ const parseUniversalLink = (url: string): AnyParsedDeeplink | null => {
 export const parseDeeplink = (url: string): AnyParsedDeeplink | null => {
     if (!url || typeof url !== 'string') return null
 
-    const normalizedUrl = normalizeUrl(url)
-
-    if (isValidAlgorandAddress(normalizedUrl)) {
+    if (isValidAlgorandAddress(url)) {
         return {
             type: DeeplinkType.ADDRESS_ACTIONS,
             sourceUrl: url,
             address: url,
         } as AddressActionsDeeplink
     }
+
+    const normalizedUrl = normalizeUrl(url)
 
     if (
         normalizedUrl.startsWith('wc:') ||

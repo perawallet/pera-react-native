@@ -30,6 +30,9 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import {
     type ArbitraryDataSignRequest,
+    type Arc60Metadata,
+    type Arc60SignRequest,
+    type Arc60StdSigData,
     type PeraArbitraryDataMessage,
     type PeraArbitraryDataSignResult,
     type TransactionSignRequest,
@@ -44,6 +47,7 @@ import {
     WalletConnectTransactionPayload,
 } from '../models'
 import { MAX_DATA_SIGN_REQUESTS } from '../constants'
+import { arc60PayloadSchema } from '../schema'
 import {
     canSignWithAccount,
     isHardwareWalletAccount,
@@ -99,8 +103,6 @@ const validateRequest = (
     return foundConnection
 }
 
-//TODO implement better error handling mechanism or maybe we just need to create a better
-// Error boundary in the app?
 const validateDataSignRequest = (
     connector: WalletConnect,
     accounts: WalletAccount[],
@@ -160,6 +162,87 @@ const validateDataSignRequest = (
     })
 }
 
+/**
+ * Validates an ARC-60 `algo_signData` payload before queueing it.
+ *
+ * Split into two layers:
+ *   1. Shape validation via {@link arc60PayloadSchema} — zod errors are
+ *      projected into `WalletConnectSignRequestError` with a field path
+ *      (e.g. `metadata.scope: Expected number, received string`).
+ *   2. Semantic checks — signer belongs to the session, is signable, and
+ *      is not a hardware wallet.
+ *
+ * Returns the parsed `Arc60StdSigData` / `Arc60Metadata` with
+ * `authenticatorData` already base64-decoded so the caller doesn't repeat it.
+ */
+const validateArc60Request = (
+    connector: WalletConnect,
+    accounts: WalletAccount[],
+    authAddresses: AuthAddressLookup,
+    connections: WalletConnectConnection[],
+    network: Network,
+    rawParams: unknown,
+    error: Error | null,
+): { stdSigData: Arc60StdSigData; metadata: Arc60Metadata } => {
+    const foundSession = validateRequest(connector, connections, network, error)
+
+    const parsed = arc60PayloadSchema.safeParse(rawParams)
+    if (!parsed.success) {
+        // z.prettifyError would be nicer but is zod 4+; join issues manually
+        // so the dApp gets a field-path breadcrumb.
+        const summary = parsed.error.issues
+            .map(i => `${i.path.join('.') || '(root)'}: ${i.message}`)
+            .join('; ')
+        throw new WalletConnectSignRequestError(
+            `Invalid ARC-60 sign request payload — ${summary}`,
+        )
+    }
+    const {
+        data,
+        signer,
+        domain,
+        authenticatorData,
+        requestId,
+        hdPath,
+        metadata,
+    } = parsed.data
+
+    if (!foundSession.session?.accounts.includes(signer)) {
+        throw new WalletConnectInvalidSessionError('Invalid signer')
+    }
+    const account = accounts.find(a => a.address === signer)
+    if (!account || !canSignWithAccount(account, accounts, authAddresses)) {
+        throw new WalletConnectInvalidSessionError('Invalid signer')
+    }
+    if (isHardwareWalletAccount(account)) {
+        throw new WalletConnectInvalidSessionError(
+            'Hardware wallet accounts are not supported',
+        )
+    }
+
+    let decodedAuthData: Uint8Array
+    try {
+        decodedAuthData = decodeFromBase64(authenticatorData)
+    } catch (decodeError) {
+        throw new WalletConnectSignRequestError(
+            'Invalid ARC-60 sign request payload — `authenticatorData` is not valid base64',
+            decodeError as Error,
+        )
+    }
+
+    return {
+        stdSigData: {
+            data,
+            signer,
+            domain,
+            authenticatorData: decodedAuthData,
+            requestId,
+            hdPath,
+        },
+        metadata,
+    }
+}
+
 export const useWalletConnectHandlers = () => {
     const connections = useWalletConnectStore(
         state => state.walletConnectConnections,
@@ -171,7 +254,67 @@ export const useWalletConnectHandlers = () => {
     const { authAddresses } = useAccountAuthAddresses()
     const signingAccounts = useSigningAccounts()
 
-    //TODO handle ARC-60 sign requests
+    const handleArc60SignData = useCallback(
+        (
+            connector: WalletConnect,
+            network: Network,
+            error: Error | null,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            payload: any,
+            onError: (error: Error) => void,
+        ) => {
+            const { stdSigData, metadata } = validateArc60Request(
+                connector,
+                accounts,
+                authAddresses,
+                connections,
+                network,
+                payload?.params,
+                error,
+            )
+
+            addSignRequest({
+                id: generateOrderedUniqueId(),
+                type: 'arc60',
+                transport: 'callback',
+                sourceType: 'walletconnect',
+                transportId: connector.clientId,
+                sourceMetadata: connector.session?.peerMeta,
+                stdSigData,
+                metadata,
+                approve: async (signed: PeraArbitraryDataSignResult[]) => {
+                    try {
+                        // ARC-60 produces a single signature; the WC bridge
+                        // mirrors the legacy `algo_signData` response shape
+                        // (array of base64 strings) for consistency.
+                        const result = signed.map(item =>
+                            encodeToBase64(item.signature),
+                        )
+                        await connector.approveRequest({
+                            id: payload.id,
+                            result,
+                        })
+                    } catch (err) {
+                        connector.rejectRequest({
+                            id: payload.id,
+                            error: err as Error,
+                        })
+                    }
+                },
+                reject: async () => {
+                    connector.rejectRequest({
+                        id: payload.id,
+                        error: new Error('User rejected'),
+                    })
+                },
+                error: async (err: Error) => {
+                    onError(new WalletConnectSignRequestError(err.message))
+                },
+            } as Arc60SignRequest)
+        },
+        [connections, accounts, authAddresses, addSignRequest],
+    )
+
     const handleSignData = useCallback(
         (
             connector: WalletConnect,
@@ -183,6 +326,23 @@ export const useWalletConnectHandlers = () => {
             onError: (error: Error) => void,
         ) => {
             const params = payload?.params
+
+            // ARC-60 (`StdSigData` + `Metadata`) is delivered as a single
+            // object with an `authenticatorData` field, distinguishing it
+            // from the legacy arbitrary-data shape (an array of
+            // `PeraArbitraryDataMessage`). Detect on either signal so dApps
+            // that omit one don't slip through.
+            const isArc60Payload =
+                params != null &&
+                !Array.isArray(params) &&
+                (params.authenticatorData != null ||
+                    params.metadata?.scope != null)
+
+            if (isArc60Payload) {
+                handleArc60SignData(connector, network, error, payload, onError)
+                return
+            }
+
             validateDataSignRequest(
                 connector,
                 accounts,
@@ -321,6 +481,7 @@ export const useWalletConnectHandlers = () => {
 
     return {
         handleSignData,
+        handleArc60SignData,
         handleSignTransaction,
     }
 }
