@@ -58,7 +58,7 @@ vi.mock('@hooks/useDebouncedValue', () => ({
 
 const mockAvailableAssets = [
     {
-        assetId: 31566704,
+        assetId: '31566704',
         name: 'USD Coin',
         unitName: 'USDC',
         decimals: 6,
@@ -66,7 +66,7 @@ const mockAvailableAssets = [
         logo: 'https://example.com/usdc.png',
     },
     {
-        assetId: 887406851,
+        assetId: '887406851',
         name: 'Wrapped SOL',
         unitName: 'wSOL',
         decimals: 8,
@@ -74,7 +74,7 @@ const mockAvailableAssets = [
         logo: null,
     },
     {
-        assetId: 0,
+        assetId: '0',
         name: 'Algo',
         unitName: 'ALGO',
         decimals: 6,
@@ -119,12 +119,12 @@ describe('useSwapToAssetSelectionList', () => {
         expect(result.current.items).toHaveLength(3)
 
         const usdc = result.current.items.find(
-            i => i.dexAsset.assetId === 31566704,
+            i => i.dexAsset.assetId === '31566704',
         )
         const wsol = result.current.items.find(
-            i => i.dexAsset.assetId === 887406851,
+            i => i.dexAsset.assetId === '887406851',
         )
-        const algo = result.current.items.find(i => i.dexAsset.assetId === 0)
+        const algo = result.current.items.find(i => i.dexAsset.assetId === '0')
 
         expect(usdc?.balance?.toString()).toBe('500')
         expect(wsol?.balance).toBeNull()
@@ -141,7 +141,7 @@ describe('useSwapToAssetSelectionList', () => {
         )
 
         expect(
-            result.current.items.every(i => i.dexAsset.assetId !== 31566704),
+            result.current.items.every(i => i.dexAsset.assetId !== '31566704'),
         ).toBe(true)
         expect(result.current.items).toHaveLength(2)
     })
@@ -238,7 +238,7 @@ describe('useSwapToAssetSelectionList', () => {
                 useSwapToAssetSelectionList(defaultParams),
             )
             const usdc = result.current.items.find(
-                i => i.dexAsset.assetId === 31566704,
+                i => i.dexAsset.assetId === '31566704',
             )!
 
             act(() => {
@@ -259,7 +259,7 @@ describe('useSwapToAssetSelectionList', () => {
                 useSwapToAssetSelectionList(defaultParams),
             )
             const usdc = result.current.items.find(
-                i => i.dexAsset.assetId === 31566704,
+                i => i.dexAsset.assetId === '31566704',
             )!
 
             act(() => {
@@ -276,7 +276,7 @@ describe('useSwapToAssetSelectionList', () => {
                 useSwapToAssetSelectionList(defaultParams),
             )
             const usdc = result.current.items.find(
-                i => i.dexAsset.assetId === 31566704,
+                i => i.dexAsset.assetId === '31566704',
             )!
 
             act(() => {
@@ -291,7 +291,7 @@ describe('useSwapToAssetSelectionList', () => {
                 useSwapToAssetSelectionList(defaultParams),
             )
             const wsol = result.current.items.find(
-                i => i.dexAsset.assetId === 887406851,
+                i => i.dexAsset.assetId === '887406851',
             )!
 
             act(() => {

@@ -114,9 +114,7 @@ export const SwapToAssetSelectionList = ({
                 data={listData}
                 renderItem={renderItem}
                 keyExtractor={item =>
-                    isSkeletonItem(item)
-                        ? item.id
-                        : String(item.dexAsset.assetId)
+                    isSkeletonItem(item) ? item.id : item.dexAsset.assetId
                 }
                 ItemSeparatorComponent={() => (
                     <PWView style={styles.separator} />

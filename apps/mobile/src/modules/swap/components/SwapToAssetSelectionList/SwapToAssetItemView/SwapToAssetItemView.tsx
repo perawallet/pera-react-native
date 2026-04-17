@@ -41,7 +41,6 @@ export const SwapToAssetItemView = ({
 }: SwapToAssetItemViewProps) => {
     const styles = useStyles()
 
-    const assetIdStr = String(dexAsset.assetId)
     const isAlgo = isAlgoAsset(dexAsset.assetId)
 
     const verificationIconName = useMemo(() => {
@@ -76,13 +75,13 @@ export const SwapToAssetItemView = ({
                             />
                         ) : null}
                     </PWView>
-                    <CopyableText copyValue={assetIdStr}>
+                    <CopyableText copyValue={dexAsset.assetId}>
                         <PWText
                             style={styles.secondaryUnit}
                             numberOfLines={1}
                         >
                             {dexAsset.unitName}
-                            {dexAsset.assetId !== 0 && ` - ${assetIdStr}`}
+                            {!isAlgo && ` - ${dexAsset.assetId}`}
                         </PWText>
                     </CopyableText>
                 </PWView>
@@ -98,7 +97,7 @@ export const SwapToAssetItemView = ({
                         />
                         <PreferredCurrencyDisplay
                             sourceAmount={balance}
-                            sourceAssetId={assetIdStr}
+                            sourceAssetId={dexAsset.assetId}
                             precision={2}
                             minPrecision={2}
                             showSymbol
