@@ -13,6 +13,7 @@
 import { defineConfig } from 'vitest/config'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -21,6 +22,7 @@ export default defineConfig({
         globals: true,
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],
+        coverage: coverageConfig,
     },
     resolve: {
         conditions: ['default'],

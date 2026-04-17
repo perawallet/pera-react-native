@@ -2,12 +2,15 @@
   "name": "@perawallet/wallet-core-devtools",
   "version": "0.0.0",
   "license": "MIT",
+  "type": "module",
   "exports": {
     "./tsconfig": "./tsconfig/vite.json",
-    "./tsconfig/vite.json": "./tsconfig/vite.json"
+    "./tsconfig/vite.json": "./tsconfig/vite.json",
+    "./vitest/coverage": "./vitest/coverage.js"
   },
   "files": [
-    "tsconfig"
+    "tsconfig",
+    "vitest"
   ],
   "publishConfig": {
     "access": "public"
