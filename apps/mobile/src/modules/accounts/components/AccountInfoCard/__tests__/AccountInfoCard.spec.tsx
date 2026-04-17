@@ -122,6 +122,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 const mockUseAccountInformationQuery = vi.fn()
 const mockUseHDWalletGroups = vi.fn()
+const mockUseAccountLogicalType = vi.fn()
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<
@@ -132,6 +133,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useAccountInformationQuery: (...args: unknown[]) =>
             mockUseAccountInformationQuery(...args),
         useHDWalletGroups: () => mockUseHDWalletGroups(),
+        useAccountLogicalType: (...args: unknown[]) =>
+            mockUseAccountLogicalType(...args),
     }
 })
 
@@ -179,6 +182,11 @@ describe('AccountInfoCard', () => {
                 },
             ],
             hasMultipleHDWallets: false,
+        })
+        mockUseAccountLogicalType.mockImplementation((address: string) => {
+            if (address === hdAccount.address) return 'HdKey'
+            if (address === watchAccount.address) return 'NoAuth'
+            return null
         })
     })
 

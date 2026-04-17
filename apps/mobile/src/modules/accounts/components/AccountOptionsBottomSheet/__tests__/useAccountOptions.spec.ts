@@ -33,6 +33,11 @@ const { mockAllAccounts } = vi.hoisted(() => ({
 const { mockUpdateAccount } = vi.hoisted(() => ({
     mockUpdateAccount: vi.fn(),
 }))
+const { mockUseAccountLogicalType } = vi.hoisted(() => ({
+    mockUseAccountLogicalType: vi.fn<(address?: string) => string | null>(
+        () => 'Algo25',
+    ),
+}))
 
 vi.mock('@hooks/useClipboard', () => ({
     useClipboard: () => ({
@@ -76,6 +81,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useRemoveAccountById: () => mockRemoveAccountById,
         useUpdateAccount: () => mockUpdateAccount,
         useAllAccounts: () => mockAllAccounts(),
+        useAccountLogicalType: (address?: string) =>
+            mockUseAccountLogicalType(address),
     }
 })
 
@@ -128,6 +135,22 @@ describe('useAccountOptions', () => {
         vi.clearAllMocks()
         mockIsAccountEnabled.mockReturnValue(true)
         mockAllAccounts.mockReturnValue([algo25Account, watchAccount])
+        mockUseAccountLogicalType.mockImplementation((address?: string) => {
+            switch (address) {
+                case algo25Account.address:
+                    return 'Algo25'
+                case watchAccount.address:
+                    return 'NoAuth'
+                case rekeyedAccount.address:
+                    return 'RekeyedAuth'
+                case rekeyedWatchAccount.address:
+                    return 'RekeyedAuth'
+                case hardwareAccount.address:
+                    return 'LedgerBle'
+                default:
+                    return null
+            }
+        })
     })
 
     describe('option visibility', () => {
@@ -185,7 +208,6 @@ describe('useAccountOptions', () => {
             expect(optionIds).toEqual([
                 'copy-address',
                 'show-address',
-                'view-passphrase',
                 'auth-address',
                 'undo-rekey',
                 'rekey-to-ledger',
@@ -196,7 +218,7 @@ describe('useAccountOptions', () => {
             ])
         })
 
-        it('shows rekey options but hides undo-rekey for a rekeyed watch account with auth in wallet', () => {
+        it('shows undo-rekey for a rekeyed watch account whose auth account we hold', () => {
             mockAllAccounts.mockReturnValue([
                 algo25Account,
                 rekeyedWatchAccount,
@@ -214,11 +236,11 @@ describe('useAccountOptions', () => {
             expect(optionIds).toContain('auth-address')
             expect(optionIds).toContain('rekey-to-ledger')
             expect(optionIds).toContain('rekey-to-standard')
-            expect(optionIds).not.toContain('undo-rekey')
+            expect(optionIds).toContain('undo-rekey')
             expect(optionIds).not.toContain('view-passphrase')
         })
 
-        it('hides passphrase and rekey for a hardware account', () => {
+        it('shows rekey options but hides passphrase for a hardware account', () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: hardwareAccount,
@@ -231,6 +253,8 @@ describe('useAccountOptions', () => {
             expect(optionIds).toEqual([
                 'copy-address',
                 'show-address',
+                'rekey-to-ledger',
+                'rekey-to-standard',
                 'rename-account',
                 'toggle-notifications',
                 'remove-account',

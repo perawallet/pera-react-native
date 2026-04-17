@@ -13,14 +13,12 @@
 import { useCallback, useMemo } from 'react'
 import {
     WalletAccount,
-    isAlgo25Account,
-    isHDWalletAccount,
-    isRekeyedAccount,
-    canSignWithAccount,
     hasSigningKeys,
+    isSigningLogicalType,
+    useAccountLogicalType,
+    useAllAccounts,
     useRemoveAccountById,
     useUpdateAccount,
-    useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { useNotificationPreferences } from '@perawallet/wallet-core-messages'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
@@ -73,6 +71,12 @@ export const useAccountOptions = ({
     const removeAccountById = useRemoveAccountById()
     const updateAccount = useUpdateAccount()
     const navigation = useAppNavigation()
+
+    const logicalType = useAccountLogicalType(account.address) ?? 'NoAuth'
+    const showPassphrase = logicalType === 'Algo25' || logicalType === 'HdKey'
+    const isRekeyed = logicalType === 'Rekeyed' || logicalType === 'RekeyedAuth'
+    const showUndoRekey = logicalType === 'RekeyedAuth'
+    const canSign = isSigningLogicalType(logicalType)
 
     const {
         isOpen: isRenameVisible,
@@ -244,7 +248,7 @@ export const useAccountOptions = ({
             onPress: handleShowAddress,
         })
 
-        if (isAlgo25Account(account) || isHDWalletAccount(account)) {
+        if (showPassphrase) {
             items.push({
                 id: 'view-passphrase',
                 icon: 'key',
@@ -253,7 +257,7 @@ export const useAccountOptions = ({
             })
         }
 
-        if (isRekeyedAccount(account)) {
+        if (isRekeyed) {
             items.push({
                 id: 'auth-address',
                 icon: 'account-rekeyed',
@@ -262,7 +266,7 @@ export const useAccountOptions = ({
             })
         }
 
-        if (isRekeyedAccount(account) && hasSigningKeys(account)) {
+        if (showUndoRekey) {
             items.push({
                 id: 'undo-rekey',
                 icon: 'undo',
@@ -271,7 +275,7 @@ export const useAccountOptions = ({
             })
         }
 
-        if (canSignWithAccount(account, accounts)) {
+        if (canSign) {
             items.push({
                 id: 'rekey-to-ledger',
                 icon: 'rekey',
@@ -314,7 +318,11 @@ export const useAccountOptions = ({
         return items
     }, [
         t,
-        account,
+        account.address,
+        showPassphrase,
+        isRekeyed,
+        showUndoRekey,
+        canSign,
         notificationsEnabled,
         handleCopyAddress,
         handleShowAddress,

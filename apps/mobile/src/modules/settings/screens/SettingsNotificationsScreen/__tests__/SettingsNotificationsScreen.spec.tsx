@@ -16,7 +16,7 @@ import { SettingsNotificationsScreen } from '../SettingsNotificationsScreen'
 import { useSettingsNotificationsScreen } from '../useSettingsNotificationsScreen'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    resolveAccountStatus: () => 'standard',
+    useAccountLogicalType: () => 'Algo25',
     useAllAccounts: () => [],
     getAccountDisplayName: (account: { name?: string }) =>
         account?.name ?? 'Account',

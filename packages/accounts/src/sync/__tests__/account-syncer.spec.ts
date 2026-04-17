@@ -1,0 +1,64 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Network } from '@perawallet/wallet-core-shared'
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    getAlgorandClient: vi.fn(() => ({
+        account: {
+            getInformation: vi.fn().mockResolvedValue({
+                balance: { microAlgos: 0n },
+                minBalance: { microAlgos: 0n },
+                totalAssetsOptedIn: 0,
+                totalCreatedAssets: 0,
+                totalAppsOptedIn: 0,
+                status: 'Offline',
+                authAddr: { toString: () => 'S' },
+                assets: [],
+            }),
+        },
+    })),
+}))
+
+vi.mock('../../db', () => ({
+    upsertAccountBalance: vi.fn(),
+    refreshAccountHoldings: vi.fn(),
+}))
+
+describe('fetchAndPersistAccount', () => {
+    let fetchAndPersistAccount: typeof import('../account-syncer').fetchAndPersistAccount
+    let useAccountsStore: typeof import('../../store').useAccountsStore
+
+    beforeEach(async () => {
+        vi.resetModules()
+        fetchAndPersistAccount = (await import('../account-syncer'))
+            .fetchAndPersistAccount
+        useAccountsStore = (await import('../../store')).useAccountsStore
+        useAccountsStore.getState().resetState()
+        useAccountsStore.getState().setAccounts([
+            {
+                type: 'watch',
+                address: 'A',
+            } as unknown as import('../../models').WalletAccount,
+        ])
+    })
+
+    it('mirrors the chain authAddr into the Zustand account', async () => {
+        await fetchAndPersistAccount('A', 'mainnet' as Network)
+
+        expect(
+            useAccountsStore.getState().accounts.find(a => a.address === 'A')
+                ?.rekeyAddress,
+        ).toBe('S')
+    })
+})

@@ -15,8 +15,8 @@ import {
     WalletAccount,
     HDWalletAccount,
     isHDWalletAccount,
-    isSigningAccount,
-    useAllAccounts,
+    isSigningLogicalType,
+    useAccountLogicalType,
     useHDWalletGroups,
     useAccountInformationQuery,
 } from '@perawallet/wallet-core-accounts'
@@ -55,30 +55,33 @@ export const useAccountInfoCard = ({
 
     const { hdWalletGroups } = useHDWalletGroups()
 
-    const allAccounts = useAllAccounts()
+    const logicalType = useAccountLogicalType(account.address) ?? 'NoAuth'
     const isHDWallet = isHDWalletAccount(account)
-    const showMinBalance = isSigningAccount(account, allAccounts)
+    const showMinBalance = isSigningLogicalType(logicalType)
 
     const handleToggleExpanded = useCallback(() => {
         setIsExpanded(prev => !prev)
     }, [])
 
     const accountTypeLabel = useMemo(() => {
-        switch (account.type) {
-            case 'hdWallet':
+        switch (logicalType) {
+            case 'HdKey':
                 return t('account_info.type_universal_wallet')
-            case 'algo25':
+            case 'Algo25':
                 return t('account_info.type_algo25')
-            case 'watch':
-                return t('account_info.type_watch')
-            case 'hardware':
+            case 'LedgerBle':
                 return t('account_info.type_ledger')
-            case 'multisig':
+            case 'Multisig':
                 return t('account_info.type_multisig')
+            case 'NoAuth':
+                return t('account_info.type_watch')
+            case 'Rekeyed':
+            case 'RekeyedAuth':
+                return t('account_info.type_rekeyed')
             default:
                 return t('account_info.type_unknown')
         }
-    }, [account.type, t])
+    }, [logicalType, t])
 
     const minBalanceAlgos = useMemo(() => {
         if (accountInfo?.minBalance == null) return null

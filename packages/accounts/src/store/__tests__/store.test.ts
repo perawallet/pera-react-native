@@ -256,4 +256,72 @@ describe('services/accounts/store', () => {
         expect(useAccountsStore.getState().accounts).toEqual([])
         expect(useAccountsStore.getState().selectedAccountAddress).toBeNull()
     })
+
+    describe('updateAccountRekeyAddress', () => {
+        test('sets rekeyAddress on the matching account', () => {
+            useAccountsStore.getState().setAccounts([
+                {
+                    type: 'watch',
+                    address: 'A',
+                } as unknown as WalletAccount,
+                {
+                    type: 'algo25',
+                    address: 'B',
+                    keyPairId: 'k',
+                } as unknown as WalletAccount,
+            ])
+
+            useAccountsStore.getState().updateAccountRekeyAddress('A', 'B')
+
+            const accounts = useAccountsStore.getState().accounts
+            const a = accounts.find(x => x.address === 'A')!
+            expect(a.rekeyAddress).toBe('B')
+            expect(
+                accounts.find(x => x.address === 'B')?.rekeyAddress,
+            ).toBeUndefined()
+        })
+
+        test('clears rekeyAddress when passed null', () => {
+            useAccountsStore.getState().setAccounts([
+                {
+                    type: 'algo25',
+                    address: 'A',
+                    keyPairId: 'k',
+                    rekeyAddress: 'B',
+                } as unknown as WalletAccount,
+            ])
+
+            useAccountsStore.getState().updateAccountRekeyAddress('A', null)
+            expect(
+                useAccountsStore.getState().accounts[0].rekeyAddress,
+            ).toBeUndefined()
+        })
+
+        test('is a no-op when the address is not in the store', () => {
+            useAccountsStore.getState().setAccounts([
+                {
+                    type: 'algo25',
+                    address: 'A',
+                    keyPairId: 'k',
+                } as unknown as WalletAccount,
+            ])
+            const before = useAccountsStore.getState().accounts
+            useAccountsStore.getState().updateAccountRekeyAddress('Z', 'Y')
+            expect(useAccountsStore.getState().accounts).toBe(before)
+        })
+
+        test('does not write when rekeyAddress is unchanged', () => {
+            useAccountsStore.getState().setAccounts([
+                {
+                    type: 'algo25',
+                    address: 'A',
+                    keyPairId: 'k',
+                    rekeyAddress: 'B',
+                } as unknown as WalletAccount,
+            ])
+            const before = useAccountsStore.getState().accounts
+            useAccountsStore.getState().updateAccountRekeyAddress('A', 'B')
+            expect(useAccountsStore.getState().accounts).toBe(before)
+        })
+    })
 })

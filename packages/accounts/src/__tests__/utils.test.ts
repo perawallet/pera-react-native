@@ -22,7 +22,6 @@ import {
     isSigningAccount,
     isRekeyedAccount,
     isWatchAccount,
-    resolveAccountStatus,
     resolveImportAccountType,
 } from '../utils'
 
@@ -296,99 +295,6 @@ describe('services/accounts/utils - account type checks', () => {
 
         const accounts = [rootAccount, middleAccount, leafAccount]
         expect(canSignWithAccount(leafAccount, accounts)).toBe(true)
-    })
-})
-
-describe('services/accounts/utils - resolveAccountStatus', () => {
-    test('returns standard for algo25 account', () => {
-        const account = {
-            type: 'algo25',
-            address: 'ADDR',
-            keyPairId: 'pk1',
-        } as any
-        expect(resolveAccountStatus(account, [])).toBe('standard')
-    })
-
-    test('returns hardware for hardware wallet account', () => {
-        const account = {
-            type: 'hardware',
-            address: 'ADDR',
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'test-device',
-                deviceName: 'Ledger Nano X',
-                accountIndex: 0,
-            },
-        } as any
-        expect(resolveAccountStatus(account, [])).toBe('hardware')
-    })
-
-    test('returns watch for watch account', () => {
-        const account = { type: 'watch', address: 'ADDR' } as any
-        expect(resolveAccountStatus(account, [])).toBe('watch')
-    })
-
-    test('returns hdWallet for hdWallet account', () => {
-        const account = {
-            type: 'hdWallet',
-            address: 'ADDR',
-            keyPairId: 'pk1',
-        } as any
-        expect(resolveAccountStatus(account, [])).toBe('hdWallet')
-    })
-
-    test('returns multisig for multisig account', () => {
-        const account = { type: 'multisig', address: 'ADDR' } as any
-        expect(resolveAccountStatus(account, [])).toBe('multisig')
-    })
-
-    test('returns noAuth for rekeyed account when auth account is not in wallet', () => {
-        const account = {
-            type: 'algo25',
-            address: 'ADDR',
-            rekeyAddress: 'UNKNOWN',
-            keyPairId: 'pk1',
-        } as any
-        expect(resolveAccountStatus(account, [])).toBe('noAuth')
-    })
-
-    test('returns rekeyedStandard for rekeyed account when auth is algo25', () => {
-        const authAccount = {
-            type: 'algo25',
-            address: 'AUTH',
-            keyPairId: 'pk2',
-        } as any
-        const account = {
-            type: 'algo25',
-            address: 'ADDR',
-            rekeyAddress: 'AUTH',
-            keyPairId: 'pk1',
-        } as any
-        expect(resolveAccountStatus(account, [authAccount])).toBe(
-            'rekeyedStandard',
-        )
-    })
-
-    test('returns rekeyedHardware for rekeyed account when auth is hardware wallet', () => {
-        const authAccount = {
-            type: 'hardware',
-            address: 'AUTH',
-            hardwareDetails: {
-                manufacturer: 'ledger',
-                deviceId: 'test-device',
-                deviceName: 'Ledger Nano X',
-                accountIndex: 0,
-            },
-        } as any
-        const account = {
-            type: 'algo25',
-            address: 'ADDR',
-            rekeyAddress: 'AUTH',
-            keyPairId: 'pk1',
-        } as any
-        expect(resolveAccountStatus(account, [authAccount])).toBe(
-            'rekeyedHardware',
-        )
     })
 })
 

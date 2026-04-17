@@ -84,6 +84,22 @@ export const useAccountsStore: UseBoundStore<
             setManualAccountOrder: (order: string[]) => {
                 set({ manualAccountOrder: order })
             },
+            updateAccountRekeyAddress: (
+                address: string,
+                rekeyAddress: string | null,
+            ) => {
+                const accounts = get().accounts
+                const idx = accounts.findIndex(a => a.address === address)
+                if (idx === -1) return
+
+                const current = accounts[idx]
+                const nextValue = rekeyAddress ?? undefined
+                if (current.rekeyAddress === nextValue) return
+
+                const next = [...accounts]
+                next[idx] = { ...current, rekeyAddress: nextValue }
+                set({ accounts: next })
+            },
             resetState: () => set(initialState),
         }),
         {

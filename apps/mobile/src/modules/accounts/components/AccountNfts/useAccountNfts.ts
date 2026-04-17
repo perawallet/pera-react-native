@@ -16,8 +16,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     useSelectedAccount,
     useAccountBalancesQuery,
-    useAllAccounts,
-    isSigningAccount,
+    useAccountLogicalType,
+    isSigningLogicalType,
 } from '@perawallet/wallet-core-accounts'
 import {
     useAssetsQuery,
@@ -104,7 +104,7 @@ const sortCollectibles = (
 
 export const useAccountNfts = (): UseAccountNftsResult => {
     const account = useSelectedAccount()
-    const allAccounts = useAllAccounts()
+    const logicalType = useAccountLogicalType(account?.address)
     const [searchFilter, setSearchFilter] = useState('')
 
     const sortMode = useCollectiblePreferencesStore(
@@ -139,8 +139,8 @@ export const useAccountNfts = (): UseAccountNftsResult => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
     const canOptIn = useMemo(
-        () => account !== null && isSigningAccount(account, allAccounts),
-        [account, allAccounts],
+        () => !!logicalType && isSigningLogicalType(logicalType),
+        [logicalType],
     )
 
     const { accountBalances, isPending } = useAccountBalancesQuery(

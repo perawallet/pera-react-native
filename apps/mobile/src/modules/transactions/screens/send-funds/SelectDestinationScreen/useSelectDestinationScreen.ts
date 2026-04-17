@@ -13,8 +13,9 @@
 import { useSendFunds } from '@modules/transactions/hooks'
 import { SendFundsStackParamList } from '@modules/transactions/routes/send-funds'
 import {
-    canSignWithAccount,
+    isSigningLogicalType,
     useAccountBalancesQuery,
+    useAllAccountLogicalTypes,
     useAllAccounts,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -27,6 +28,7 @@ export const useSelectDestinationScreen = () => {
     const { selectedAssetId, setDestination, setSendMode } = useSendFunds()
     const selectedAccount = useSelectedAccount()
     const accounts = useAllAccounts()
+    const logicalTypes = useAllAccountLogicalTypes()
     const { accountBalances } = useAccountBalancesQuery(accounts)
 
     const assetIDs = useMemo(
@@ -70,9 +72,9 @@ export const useSelectDestinationScreen = () => {
             }
 
             // Check if receiver is a local account we can sign for
-            const localAccount = accounts.find(a => a.address === address)
+            const localType = logicalTypes.get(address)
             const isLocalSignable =
-                localAccount && canSignWithAccount(localAccount, accounts)
+                !!localType && isSigningLogicalType(localType)
 
             if (isLocalSignable) {
                 // Express send: local account, we handle opt-in + transfer
@@ -86,7 +88,7 @@ export const useSelectDestinationScreen = () => {
         },
         [
             selectedAsset,
-            accounts,
+            logicalTypes,
             accountBalances,
             setSendMode,
             setDestination,

@@ -10,17 +10,12 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-accounts'
+import { useAllAccountLogicalTypes } from './useAllAccountLogicalTypes'
+import type { AccountLogicalType } from '../logical-type'
 
-export * from './constants'
-export * from './models'
-export * from './hooks'
-export * from './errors'
-export * from './utils'
-export * from './logical-type'
-export * from './bip44'
-export * from './account-discovery'
-export * from './db'
-
-export { useAccountsStore } from './store'
-export { fetchAndPersistAccount } from './sync/account-syncer'
+export const useAccountLogicalType = (
+    address: string | undefined | null,
+): AccountLogicalType | null => {
+    const map = useAllAccountLogicalTypes()
+    return address ? (map.get(address) ?? null) : null
+}

@@ -22,9 +22,9 @@ import {
 } from '@perawallet/wallet-core-assets'
 import {
     useSelectedAccount,
-    useAllAccounts,
+    useAccountLogicalType,
     useAccountAssetBalanceQuery,
-    isSigningAccount,
+    isSigningLogicalType,
     type AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
@@ -82,7 +82,7 @@ export const useCollectibleDetail = (
     )
     const account = useSelectedAccount()
     const { network } = useNetwork()
-    const allAccounts = useAllAccounts()
+    const logicalType = useAccountLogicalType(account?.address)
     const { t } = useLanguage()
     const { data: assetBalance } = useAccountAssetBalanceQuery(
         account ?? undefined,
@@ -98,7 +98,7 @@ export const useCollectibleDetail = (
     const [fullScreenInitialIndex, setFullScreenInitialIndex] = useState(0)
 
     const collectible = asset?.peraMetadata?.collectible
-    const isWatch = account ? !isSigningAccount(account, allAccounts) : true
+    const isWatch = !logicalType || !isSigningLogicalType(logicalType)
     const traits = collectible?.traits ?? []
     const media = collectible?.media ?? []
 
