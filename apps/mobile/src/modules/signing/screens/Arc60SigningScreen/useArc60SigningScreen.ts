@@ -14,17 +14,15 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import {
+    type Arc60ParsedPayload,
     type Arc60SignRequest,
+    parseArc60ForDisplay,
     useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
 import {
     useFindAccountByAddress,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    parseArc60ForDisplay,
-    type Arc60ParsedPayload,
-} from '@modules/signing/components/Arc60DataSigningView'
 import type { SigningStackParamList } from '@modules/signing/routes'
 
 type NavigationProp = StackNavigationProp<SigningStackParamList, 'Arc60Signing'>
@@ -71,11 +69,11 @@ export const useArc60SigningScreen = (): UseArc60SigningScreenResult => {
     const handleApprove = useCallback(() => {
         setIsApproving(true)
         pipeline.next()
-    }, [pipeline])
+    }, [pipeline.next])
 
     const handleReject = useCallback(() => {
         pipeline.fail()
-    }, [pipeline])
+    }, [pipeline.fail])
 
     const handleDetailsPress = useCallback(() => {
         navigation.navigate('Arc60SigningDetails')

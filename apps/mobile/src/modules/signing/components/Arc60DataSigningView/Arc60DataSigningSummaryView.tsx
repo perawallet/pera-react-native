@@ -11,11 +11,13 @@
  */
 
 import { PWButton, PWText, PWView } from '@components/core'
-import type { Arc60SignRequest } from '@perawallet/wallet-core-signing'
+import type {
+    Arc60ParsedPayload,
+    Arc60SignRequest,
+} from '@perawallet/wallet-core-signing'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useLanguage } from '@hooks/useLanguage'
-import type { Arc60ParsedPayload } from './parseArc60ForDisplay'
 import { useStyles } from './Arc60DataSigningSummaryView.style'
 
 export type Arc60DataSigningSummaryViewProps = {

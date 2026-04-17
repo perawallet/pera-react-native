@@ -14,18 +14,16 @@ import { useMemo } from 'react'
 import { PWView } from '@components/core'
 import {
     type Arc60SignRequest,
-    useSigningRequest,
+    parseArc60ForDisplay,
+    useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
-import {
-    Arc60DataSigningDetailsView,
-    parseArc60ForDisplay,
-} from '@modules/signing/components/Arc60DataSigningView'
+import { Arc60DataSigningDetailsView } from '@modules/signing/components/Arc60DataSigningView'
 import { useStyles } from './styles'
 
 export const Arc60SigningDetailsScreen = () => {
     const styles = useStyles()
-    const { currentRequest } = useSigningRequest()
+    const { currentRequest } = useSigningPipeline()
     const request = currentRequest as Arc60SignRequest | undefined
 
     const account = useFindAccountByAddress(request?.stdSigData.signer ?? '')

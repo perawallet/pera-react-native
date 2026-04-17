@@ -10,11 +10,8 @@
  limitations under the License
  */
 
-import {
-    type Siwa,
-    decodeArc60Data,
-    parseSiwa,
-} from '@perawallet/wallet-core-signing'
+import { decodeArc60Data } from './arc60'
+import { type Siwa, parseSiwa } from './siwa'
 
 export type Arc60ParsedPayload =
     | { type: 'siwa'; siwa: Siwa }
