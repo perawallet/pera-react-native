@@ -296,7 +296,7 @@ export default defineConfig({
         coverage: coverageConfig,
         globals: true,
         environment: 'jsdom',
-        pool: 'threads',
+        pool: 'forks',
         fileParallelism: false,
         setupFiles: ['./vitest.setup.ts'],
         server: {
