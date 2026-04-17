@@ -30,7 +30,10 @@ const baseSiwa = {
 
 describe('parseArc60ForDisplay', () => {
     test('returns parsed SIWA for a valid canonical base64 payload', () => {
-        const result = parseArc60ForDisplay(encodeJsonToBase64(baseSiwa), 'base64')
+        const result = parseArc60ForDisplay(
+            encodeJsonToBase64(baseSiwa),
+            'base64',
+        )
 
         expect(result.type).toBe('siwa')
         if (result.type !== 'siwa') return
