@@ -888,7 +888,11 @@
             "fee": "Fee",
             "current_balance": "Current Balance",
             "note": "Note",
-            "confirm_button": "Confirm transfer"
+            "confirm_button": "Confirm transfer",
+            "recipient_below_mbr": {
+                "title": "Amount Below Recipient Minimum",
+                "body": "The recipient needs at least {{min}} ALGO after this transaction to meet the Algorand minimum balance requirement."
+            }
         },
         "processing": {
             "title": "Sending the transaction",

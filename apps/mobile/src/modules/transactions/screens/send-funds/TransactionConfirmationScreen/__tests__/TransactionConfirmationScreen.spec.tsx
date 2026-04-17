@@ -149,6 +149,17 @@ vi.mock('../useTransactionConfirmationScreen', () => ({
     useTransactionConfirmationScreen: vi.fn(),
 }))
 
+vi.mock('../RecipientBelowMbrWarning', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    RecipientBelowMbrWarning: ({ minBalance }: any) => (
+        <div data-testid='recipient-below-mbr-warning'>{minBalance}</div>
+    ),
+}))
+
+vi.mock('../CloseAccountWarning', () => ({
+    CloseAccountWarning: () => <div data-testid='close-account-warning' />,
+}))
+
 const mockHandleConfirm = vi.fn()
 const mockOpenNote = vi.fn()
 const mockCloseNote = vi.fn()
@@ -402,5 +413,30 @@ describe('TransactionConfirmationScreen', () => {
         render(<TransactionConfirmationScreen />)
 
         expect(useTransactionConfirmationScreen).toHaveBeenCalledWith()
+    })
+
+    it('renders RecipientBelowMbrWarning when isRecipientBelowMbr is true', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(useTransactionConfirmationScreen as any).mockReturnValue({
+            ...defaultHookReturn,
+            isRecipientBelowMbr: true,
+            recipientMbrDisplay: '0.1',
+        })
+
+        const { getByTestId } = render(<TransactionConfirmationScreen />)
+
+        expect(getByTestId('recipient-below-mbr-warning')).toBeTruthy()
+    })
+
+    it('does not render RecipientBelowMbrWarning when isRecipientBelowMbr is false', () => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ;(useTransactionConfirmationScreen as any).mockReturnValue({
+            ...defaultHookReturn,
+            isRecipientBelowMbr: false,
+        })
+
+        const { queryByTestId } = render(<TransactionConfirmationScreen />)
+
+        expect(queryByTestId('recipient-below-mbr-warning')).toBeNull()
     })
 })
