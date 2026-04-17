@@ -13,6 +13,7 @@
 import { Decimal } from 'decimal.js'
 import { PWInput, PWSkeleton, PWText, PWView } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { isAlgoAsset } from '@perawallet/wallet-core-assets'
 import { SwapAssetSelector } from '../SwapAssetSelector'
@@ -141,6 +142,18 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                     assetId={assetId}
                     variant={variant}
                     onPress={onAssetPress}
+                />
+            </PWView>
+
+            <PWView style={styles.fiatValueContainer}>
+                <PreferredCurrencyDisplay
+                    sourceAmount={amount ?? new Decimal(0)}
+                    sourceAssetId={assetId}
+                    precision={2}
+                    minPrecision={2}
+                    showSymbol
+                    isLoading={isLoading}
+                    style={styles.fiatValue}
                 />
             </PWView>
         </PWView>

@@ -28,7 +28,7 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: theme.spacing.xl,
+        paddingHorizontal: theme.spacing.lg,
     },
     swapDirectionButton: {
         width: theme.spacing['3xl'],
@@ -46,27 +46,30 @@ export const useStyles = makeStyles(theme => ({
     maxRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        borderRadius: theme.spacing['3xl'],
+        borderRadius: theme.spacing.xxl,
         borderWidth: 1,
         borderColor: theme.colors.layerGray,
         backgroundColor: theme.colors.background,
     },
     maxIconContainer: {
         paddingVertical: theme.spacing.sm,
-        paddingHorizontal: theme.spacing.md,
+        paddingHorizontal: theme.spacing.sm,
+        alignItems: 'center',
     },
     maxDivider: {
         width: 1,
         alignSelf: 'stretch',
         backgroundColor: theme.colors.layerGray,
-        marginVertical: theme.spacing.md,
+        marginVertical: theme.spacing.sm,
     },
     maxButton: {
         paddingVertical: theme.spacing.sm,
-        paddingHorizontal: theme.spacing.md,
+        paddingHorizontal: theme.spacing.sm,
+        alignItems: 'center',
     },
     maxText: {
         color: theme.colors.linkPrimary,
+        lineHeight: theme.spacing.lg,
     },
     swapButton: {
         marginTop: theme.spacing.sm,
