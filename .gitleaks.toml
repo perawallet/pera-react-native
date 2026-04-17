@@ -58,10 +58,8 @@ paths = [
 [[allowlists]]
 description = "Build output and native artifacts — regenerated, not source"
 paths = [
-    '''^apps/.*/android/app/build/.*''',
-    '''^apps/.*/android/build/.*''',
-    '''^apps/.*/ios/build/.*''',
-    '''^apps/.*/ios/Pods/.*''',
+    '''^apps/.*/android/.*''',
+    '''^apps/.*/ios/.*''',
     '''^apps/.*/dist/.*''',
     '''^packages/.*/dist/.*''',
     '''^extensions/.*/dist/.*''',
