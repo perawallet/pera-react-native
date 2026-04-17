@@ -76,7 +76,7 @@ describe('useArbitraryDataSigner', () => {
             mockIsHDWalletAccount.mockReturnValue(true)
         })
 
-        test('calls session.signData with decoded bytes and no MX prefix', async () => {
+        test('calls session.signData with MX-prefixed bytes', async () => {
             const mockSignData = vi
                 .fn()
                 .mockResolvedValue(new Uint8Array([9, 8, 7]))
@@ -100,9 +100,10 @@ describe('useArbitraryDataSigner', () => {
                 derivationType: 9,
             })
 
-            // MX prefix must NOT be present
-            expect(dataArg[0]).not.toBe('M'.charCodeAt(0))
-            expect(dataArg[1]).not.toBe('X'.charCodeAt(0))
+            // dApps verifying via the legacy algo_signData spec expect
+            // signatures over `MX || data`, so the wallet must prepend it.
+            expect(dataArg[0]).toBe('M'.charCodeAt(0))
+            expect(dataArg[1]).toBe('X'.charCodeAt(0))
         })
 
         test('calls withHDSession with SIGNING_KEY_DOMAIN', async () => {

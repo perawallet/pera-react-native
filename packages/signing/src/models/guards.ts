@@ -30,4 +30,4 @@ export const isArbitraryDataRequest = (
 export const isArc60Request = (
     request: SignRequest,
 ): request is Arc60SignRequest =>
-    request.type === 'arc60' && 'structuredData' in request
+    request.type === 'arc60' && 'stdSigData' in request

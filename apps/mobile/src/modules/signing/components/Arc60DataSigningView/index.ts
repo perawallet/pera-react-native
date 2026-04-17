@@ -10,4 +10,5 @@
  limitations under the License
  */
 
-export { Arc60DataSigningView } from './Arc60DataSigningView'
+export { Arc60DataSigningSummaryView } from './Arc60DataSigningSummaryView'
+export { Arc60DataSigningDetailsView } from './Arc60DataSigningDetailsView'

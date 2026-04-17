@@ -27,6 +27,8 @@ import {
     GroupDetailScreen,
     ArbitraryDataSigningScreen,
     ArbitraryDataSigningDetailsScreen,
+    Arc60SigningScreen,
+    Arc60SigningDetailsScreen,
 } from '@modules/signing/screens'
 import { SettingsSecurityScreen } from '@modules/settings/screens/SettingsSecurityScreen'
 import { NavigationHeader } from '@components/NavigationHeader'
@@ -46,6 +48,10 @@ type InitialRouteConfig = {
 const getInitialRouteConfig = (request: SignRequest): InitialRouteConfig => {
     if (request.type === 'arbitrary-data') {
         return { name: 'ArbitraryDataSigning' }
+    }
+
+    if (request.type === 'arc60') {
+        return { name: 'Arc60Signing' }
     }
 
     const txRequest = request as TransactionSignRequest
@@ -108,12 +114,22 @@ export const SigningRoutes = ({ request }: SigningRoutesProps) => {
             <Stack.Screen
                 name='ArbitraryDataSigning'
                 component={ArbitraryDataSigningScreen}
-                options={{ title: 'signing.arbitrary_data_view.title' }}
+                options={{ headerShown: false }}
             />
             <Stack.Screen
                 name='ArbitraryDataSigningDetails'
                 component={ArbitraryDataSigningDetailsScreen}
                 options={{ title: 'signing.arbitrary_data_view.details_title' }}
+            />
+            <Stack.Screen
+                name='Arc60Signing'
+                component={Arc60SigningScreen}
+                options={{ headerShown: false }}
+            />
+            <Stack.Screen
+                name='Arc60SigningDetails'
+                component={Arc60SigningDetailsScreen}
+                options={{ title: 'signing.arc60_view.details_title' }}
             />
         </Stack.Navigator>
     )

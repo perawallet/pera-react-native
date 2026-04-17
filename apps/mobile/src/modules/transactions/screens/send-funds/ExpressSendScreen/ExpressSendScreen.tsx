@@ -10,9 +10,14 @@
  limitations under the License
  */
 
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import {
+    PWButton,
+    PWIcon,
+    PWScrollView,
+    PWText,
+    PWView,
+} from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { ScrollView } from 'react-native'
 import { useStyles } from './styles'
 import { useExpressSendScreen } from './useExpressSendScreen'
 
@@ -29,7 +34,7 @@ export const ExpressSendScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <ScrollView contentContainerStyle={styles.content}>
+            <PWScrollView contentContainerStyle={styles.content}>
                 <PWView style={styles.iconRow}>
                     <PWIcon
                         name='wallet'
@@ -79,7 +84,7 @@ export const ExpressSendScreen = () => {
                         <PWText style={styles.stepText}>{t(stepKey)}</PWText>
                     </PWView>
                 ))}
-            </ScrollView>
+            </PWScrollView>
 
             <PWView style={styles.footer}>
                 <PWButton

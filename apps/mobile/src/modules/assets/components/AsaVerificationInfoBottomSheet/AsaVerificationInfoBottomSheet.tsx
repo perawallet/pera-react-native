@@ -11,12 +11,12 @@
  */
 
 import { useCallback } from 'react'
-import { ScrollView } from 'react-native'
 import {
     PWBottomSheet,
     PWButton,
     PWIcon,
     PWImage,
+    PWScrollView,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -71,7 +71,7 @@ export const AsaVerificationInfoBottomSheet = ({
                     />
                 </PWTouchableOpacity>
 
-                <ScrollView style={styles.scrollContent}>
+                <PWScrollView style={styles.scrollContent}>
                     <PWImage
                         source={heroImage}
                         style={styles.heroImage}
@@ -96,7 +96,7 @@ export const AsaVerificationInfoBottomSheet = ({
                             {t('asa_verification_info.body_3')}
                         </PWText>
                     </PWView>
-                </ScrollView>
+                </PWScrollView>
 
                 <PWView style={styles.footer}>
                     <PWButton

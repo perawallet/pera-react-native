@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@babel/runtime": "catalog:",
+    "@noble/hashes": "^1.8.0",
     "@perawallet/wallet-core-accounts": "workspace:*",
     "@perawallet/wallet-core-hardware-wallet": "workspace:*",
     "@perawallet/wallet-core-ledger": "workspace:*",
@@ -28,11 +29,13 @@
     "@perawallet/wallet-core-shared": "workspace:*",
     "@perawallet/wallet-extension-provider": "workspace:*",
     "@tanstack/react-query": "catalog:",
+    "canonify": "^2.1.1",
     "decimal.js": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "xstate": "catalog:",
     "@xstate/react": "catalog:",
+    "zod": "catalog:",
     "zustand": "catalog:"
   },
   "devDependencies": {
