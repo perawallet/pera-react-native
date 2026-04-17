@@ -1,0 +1,71 @@
+name: SBOM
+
+# Generates a CycloneDX Software Bill of Materials for the resolved
+# dependency tree. Runs on every push to main and weekly so there's
+# always a recent SBOM available for vendor questionnaires, vulnerability
+# correlation, and SLSA evidence.
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Mondays 07:00 UTC — a day before Dependabot runs so the SBOM
+    # reflects the pre-bump state that Dependabot will diff against.
+    - cron: "0 7 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  generate:
+    name: Generate CycloneDX SBOM
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@a3252b78c470c02df07e9d59298aecedc3ccdd6d # v3.0.0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: ".tool-versions"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # cyclonedx-node-npm walks the installed tree rather than re-resolving,
+      # so output matches what was actually installed for this commit.
+      - name: Generate SBOM (JSON + XML)
+        run: |
+          mkdir -p sbom
+          pnpm dlx @cyclonedx/cyclonedx-npm@4.2.1 \
+            --output-format JSON \
+            --output-file sbom/bom.json \
+            --package-lock-only \
+            --spec-version 1.6
+          pnpm dlx @cyclonedx/cyclonedx-npm@4.2.1 \
+            --output-format XML \
+            --output-file sbom/bom.xml \
+            --package-lock-only \
+            --spec-version 1.6
+
+      - name: Summarize SBOM
+        run: |
+          echo "## SBOM summary" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Components: $(jq '.components | length' sbom/bom.json)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Spec version: $(jq -r '.specVersion' sbom/bom.json)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Serial: $(jq -r '.serialNumber' sbom/bom.json)" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: sbom-${{ github.sha }}
+          path: sbom/
+          retention-days: 90

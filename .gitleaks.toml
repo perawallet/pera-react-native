@@ -1,0 +1,87 @@
+# Gitleaks configuration for Pera Wallet.
+#
+# Scope: catch *real* accidentally-committed secrets (rotatable creds that
+# grant access to our infra, API servers, or signing material). Anything
+# in this file is a path or pattern that we've deliberately accepted as
+# non-sensitive — usually because it's a public client-side identifier,
+# test fixture, or generated code with incidental "key" substrings.
+
+[extend]
+# Keep the full default rule set; this config only adds allowlists.
+useDefault = true
+
+[[allowlists]]
+description = "Client-side Firebase config is public — restricted by package name + SHA-256 fingerprint, not secrecy. See https://firebase.google.com/docs/projects/api-keys"
+paths = [
+    '''.*google-services\.json$''',
+    '''.*GoogleService-Info\.plist$''',
+]
+
+[[allowlists]]
+description = "Lockfiles are hash digests, not secrets"
+paths = [
+    '''.*\.lock$''',
+    '''pnpm-lock\.yaml$''',
+    '''Podfile\.lock$''',
+    '''Gemfile\.lock$''',
+    '''yarn\.lock$''',
+    '''package-lock\.json$''',
+]
+
+[[allowlists]]
+description = "Test fixtures use literal strings like 'test-algod-key-456' or 'algo25-key-ADDR' as dummy identifiers; real credentials never live in test files"
+paths = [
+    '''.*__tests__/.*''',
+    '''.*\.test\.(ts|tsx|js|jsx)$''',
+    '''.*\.spec\.(ts|tsx|js|jsx)$''',
+    '''.*/mocks/.*''',
+    '''.*/__mocks__/.*''',
+]
+
+[[allowlists]]
+description = "Generated code from OpenAPI/schema tooling contains type names like 'AddParticipationKey' that trip the generic-api-key regex"
+paths = [
+    '''.*/src/api/generated/.*''',
+    '''^generated/.*''',
+]
+
+[[allowlists]]
+description = "Documentation and skill references are not runtime secrets"
+paths = [
+    '''.*\.md$''',
+    '''^docs/.*''',
+    '''^\.claude/.*''',
+    '''^\.opencode/.*''',
+    '''^\.github/.*\.md$''',
+]
+
+[[allowlists]]
+description = "Build output and native artifacts — regenerated, not source"
+paths = [
+    '''^apps/.*/android/app/build/.*''',
+    '''^apps/.*/android/build/.*''',
+    '''^apps/.*/ios/build/.*''',
+    '''^apps/.*/ios/Pods/.*''',
+    '''^apps/.*/dist/.*''',
+    '''^packages/.*/dist/.*''',
+    '''^extensions/.*/dist/.*''',
+    '''\.android\.bundle(\.map)?$''',
+    '''\.ios\.bundle(\.map)?$''',
+]
+
+[[allowlists]]
+description = "Placeholder values in env templates — real .env files are gitignored"
+paths = [
+    '''\.env\.example$''',
+    '''\.env\.template$''',
+    '''\.env\.sample$''',
+]
+
+[[allowlists]]
+description = "Algorand addresses are public keys (58-char base32); they identify accounts but grant no authority and often appear in test fixtures and docs"
+regexes = [
+    # Base32 Algorand account address (58 chars, A-Z 2-7)
+    '''\b[A-Z2-7]{58}\b''',
+    # Dummy ledger addresses used in tests
+    '''(LEDGER|UNKNOWN|TEST|DUMMY|MOCK|FAKE)ADDR[0-9A-Z]+''',
+]

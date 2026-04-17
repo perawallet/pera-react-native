@@ -1,0 +1,63 @@
+name: Scorecard
+
+# OpenSSF Scorecard — runs ~19 automated checks against the repo's
+# security posture (pinned deps, branch protection, token permissions,
+# dangerous-workflow patterns, etc.) and publishes the results to the
+# public Scorecard API so downstream consumers can verify posture
+# independently.
+#
+# Results are uploaded to the GitHub Security tab (same place CodeQL
+# reports) so triage happens in one dashboard.
+
+on:
+  branch_protection_rule:
+  schedule:
+    # Weekly — Tuesday 08:00 UTC, offset from Dependabot + SBOM so the
+    # findings reflect a quiescent tree rather than mid-merge state.
+    - cron: "0 8 * * 2"
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: read-all
+
+jobs:
+  analysis:
+    name: Scorecard analysis
+    runs-on: ubuntu-24.04
+    permissions:
+      # Upload SARIF to the code-scanning dashboard.
+      security-events: write
+      # Publish results to api.securityscorecards.dev via OIDC.
+      id-token: write
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          persist-credentials: false
+
+      - name: Run Scorecard
+        uses: ossf/scorecard-action@4eaacf0543bb3f2c246792bd56e8cdeffafb205a # v2.4.3
+        with:
+          results_file: results.sarif
+          results_format: sarif
+          # Public repo: surfaces the score on the public Scorecard API
+          # and unlocks the "OpenSSF Scorecard" badge. Flip to false if
+          # the repo ever goes private.
+          publish_results: true
+
+      # Retain the raw SARIF on the run for 14 days in case the Security
+      # tab upload is throttled or we need to diff findings offline.
+      - name: Upload SARIF artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: scorecard-results
+          path: results.sarif
+          retention-days: 14
+
+      - name: Upload to code-scanning dashboard
+        uses: github/codeql-action/upload-sarif@ce64ddcb0d8d890d2df4a9d1c04ff297367dea2a # v3.35.2
+        with:
+          sarif_file: results.sarif
