@@ -54,6 +54,8 @@ export type PWInputProps = {
     minimumFontScale?: number
 }
 
+const DEFAULT_MINIMUM_FONT_SCALE = 0.5
+
 export const PWInput = forwardRef<PWInputRef, PWInputProps>(
     (
         {
@@ -63,12 +65,18 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
             inputStyle,
             labelStyle,
             testID,
+            adjustsFontSizeToFit,
+            minimumFontScale,
             ...props
         },
         ref,
     ) => {
         const styles = useStyles({ variant })
         const inputRef = useRef<TextInput>(null)
+
+        const resolvedMinimumFontScale =
+            minimumFontScale ??
+            (adjustsFontSizeToFit ? DEFAULT_MINIMUM_FONT_SCALE : undefined)
 
         useImperativeHandle(
             ref,
@@ -88,6 +96,10 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 ref={inputRef as any}
                 {...props}
+                {...{
+                    adjustsFontSizeToFit,
+                    minimumFontScale: resolvedMinimumFontScale,
+                }}
                 {...getTestProps(testID)}
                 containerStyle={[styles.container, containerStyle]}
                 inputContainerStyle={[

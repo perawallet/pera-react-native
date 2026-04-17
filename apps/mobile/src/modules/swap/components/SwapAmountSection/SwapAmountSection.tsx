@@ -113,7 +113,6 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                             inputStyle={styles.amountInput}
                             numberOfLines={1}
                             adjustsFontSizeToFit
-                            minimumFontScale={0.5}
                             testID='swap-pay-input'
                         />
                     ) : isLoading ? (
@@ -130,7 +129,6 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                             }
                             numberOfLines={1}
                             adjustsFontSizeToFit
-                            minimumFontScale={0.5}
                             testID='swap-receive-amount'
                         >
                             {displayValue || '0.00'}
