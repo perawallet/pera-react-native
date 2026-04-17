@@ -21,7 +21,7 @@ export const useStyles = makeStyles(theme => ({
         height: theme.spacing.md,
     },
     listContent: {
-        paddingBottom: theme.spacing.xl,
+        paddingBottom: theme.spacing['3xl'],
     },
     item: {
         width: '100%',

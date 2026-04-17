@@ -18,5 +18,6 @@ const { height } = Dimensions.get('window')
 export const useStyles = makeStyles(() => ({
     container: {
         height: height * 0.8,
+        paddingBottom: 0,
     },
 }))
