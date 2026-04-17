@@ -33,6 +33,32 @@ jobs:
             extensions/*/node_modules
           key: node-modules-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
 
+  audit:
+    name: Audit
+    runs-on: ubuntu-latest
+    needs: setup
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: ".tool-versions"
+          cache: "pnpm"
+
+      # Fail the build on any moderate+ vulnerability in runtime deps.
+      # Dev-only advisories are reported but not blocking.
+      - name: pnpm audit (runtime)
+        run: pnpm audit --prod --audit-level=moderate
+
+      - name: pnpm audit (all, informational)
+        if: always()
+        run: pnpm audit --audit-level=low || true
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
