@@ -17,15 +17,11 @@ import {
     useAllAccounts,
     useSetAccounts,
     useSelectedAccountAddress,
-    fetchAndPersistAccount,
-    seedAuthAddress,
-    useAccountBalancesInvalidator,
     type DiscoveredRekeyedAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
-import { deferToNextCycle, logger } from '@perawallet/wallet-core-shared'
+import { deferToNextCycle } from '@perawallet/wallet-core-shared'
 
 type ImportRekeyedAddressesRouteProp = RouteProp<
     OnboardingStackParamList,
@@ -57,9 +53,6 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
     const { exitAccountFlow } = useExitAccountFlow()
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { setAccounts } = useSetAccounts()
-    const { network } = useNetwork()
-    const { invalidate: invalidateAccountBalances } =
-        useAccountBalancesInvalidator()
 
     const alreadyImportedAddresses = useMemo(() => {
         return new Set(allAccounts.map(acc => acc.address))
@@ -108,10 +101,9 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
     const [isImporting, setIsImporting] = useState(false)
 
     const handleContinue = useCallback(() => {
-        const discoveredToAdd = accounts.filter(acc =>
-            selectedAddresses.has(acc.account.address),
-        )
-        const accountsToAdd = discoveredToAdd.map(d => d.account)
+        const accountsToAdd = accounts
+            .filter(acc => selectedAddresses.has(acc.account.address))
+            .map(d => d.account)
 
         if (accountsToAdd.length === 0) {
             exitAccountFlow()
@@ -122,56 +114,6 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
         deferToNextCycle(() => {
             setAccounts([...allAccounts, ...accountsToAdd])
             setSelectedAccountAddress(accountsToAdd[0].address)
-
-            // Seed the already-known auth addresses into the DB
-            // synchronously so the UI shows the correct rekeyed
-            // status immediately. The background sync will later
-            // fill in the full balance data.
-            Promise.allSettled(
-                discoveredToAdd.map(d =>
-                    seedAuthAddress({
-                        accountAddress: d.account.address,
-                        network,
-                        authAddress: d.authAddress,
-                    }),
-                ),
-            ).then(() => {
-                invalidateAccountBalances()
-            })
-
-            // Also kick off full on-chain fetches in the background
-            // to populate balances and holdings.
-            Promise.allSettled(
-                accountsToAdd.map(acc =>
-                    fetchAndPersistAccount(acc.address, network),
-                ),
-            )
-                .then(results => {
-                    results.forEach((result, index) => {
-                        if (result.status === 'rejected') {
-                            logger.warn(
-                                'Failed to prefetch imported rekeyed account info',
-                                {
-                                    address: accountsToAdd[index].address,
-                                    network,
-                                    error:
-                                        result.reason instanceof Error
-                                            ? {
-                                                  message:
-                                                      result.reason.message,
-                                                  stack: result.reason.stack,
-                                              }
-                                            : result.reason,
-                                },
-                            )
-                        }
-                    })
-                    invalidateAccountBalances()
-                })
-                .catch(() => {
-                    // allSettled never rejects; guard kept for safety.
-                })
-
             exitAccountFlow()
             setIsImporting(false)
         })
@@ -182,8 +124,6 @@ export function useImportRekeyedAddressesScreen(): UseImportRekeyedAddressesScre
         exitAccountFlow,
         setSelectedAccountAddress,
         setAccounts,
-        network,
-        invalidateAccountBalances,
     ])
 
     const handleSkip = useCallback(() => {

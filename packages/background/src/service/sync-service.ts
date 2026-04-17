@@ -13,6 +13,7 @@
 import {
     useAccountsStore,
     getAllAssetIdsForNetwork,
+    getAllAccountBalances,
     invalidateAccountQueries,
     fetchAndPersistAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -119,6 +120,17 @@ export class SyncService {
         const addresses = accounts.map(a => a.address)
 
         if (addresses.length === 0) return []
+
+        // Addresses added to the store after the initial sync have no
+        // account_balances row yet. should-refresh would gate them on the
+        // next chain round, so short-circuit here to sync them immediately.
+        const existingRows = await getAllAccountBalances({
+            accountAddresses: addresses,
+            network: activeNetwork,
+        })
+        if (existingRows.length < addresses.length) {
+            return [activeNetwork]
+        }
 
         const { lastRefreshedRound, setLastRefreshedRound } =
             usePollingStore.getState()

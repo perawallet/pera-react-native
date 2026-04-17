@@ -11,7 +11,7 @@
  */
 
 import { renderHook, act } from '@testing-library/react'
-import { vi, describe, it, expect, beforeEach } from 'vitest'
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { useImportRekeyedAddressesScreen } from '../useImportRekeyedAddressesScreen'
 import { useRoute } from '@react-navigation/native'
 import {
@@ -50,16 +50,9 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(),
     useSetAccounts: vi.fn(),
     useSelectedAccountAddress: vi.fn(),
-    useAccountBalancesInvalidator: vi.fn(() => ({ invalidate: vi.fn() })),
-    fetchAndPersistAccount: vi.fn().mockResolvedValue(undefined),
-    seedAuthAddress: vi.fn().mockResolvedValue(undefined),
     AccountTypes: {
         algo25: 'algo25',
     },
-}))
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -72,7 +65,6 @@ vi.mock('@modules/onboarding/hooks', () => ({
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     deferToNextCycle: (cb: () => void) => setTimeout(cb, 0),
-    logger: { warn: vi.fn() },
 }))
 
 describe('useImportRekeyedAddressesScreen', () => {

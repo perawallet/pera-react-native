@@ -44,10 +44,6 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
             }
             return selector(state)
         },
-        useAccountBalancesInvalidator: () => ({
-            invalidate: vi.fn(),
-        }),
-        fetchAndPersistAccount: vi.fn().mockResolvedValue(undefined),
     }
 })
 

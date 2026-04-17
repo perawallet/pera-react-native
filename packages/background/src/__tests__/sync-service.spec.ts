@@ -21,6 +21,9 @@ const mockAccounts = [
 
 const mockSendShouldRefreshRequest = vi.fn()
 const mockSetLastRefreshedRound = vi.fn()
+const mockGetAllAccountBalances = vi.fn(() =>
+    Promise.resolve(mockAccounts.map(a => ({ accountAddress: a.address }))),
+)
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAccountsStore: {
@@ -29,6 +32,8 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     upsertAccountBalance: vi.fn(() => Promise.resolve()),
     refreshAccountHoldings: vi.fn(() => Promise.resolve()),
     getAllAssetIdsForNetwork: vi.fn(() => Promise.resolve(['123', '456'])),
+    getAllAccountBalances: (...args: unknown[]) =>
+        mockGetAllAccountBalances(...args),
     invalidateAccountQueries: vi.fn(),
     fetchAndPersistAccount: vi.fn(() => Promise.resolve()),
 }))
@@ -116,6 +121,9 @@ describe('SyncService', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         vi.useFakeTimers()
+        mockGetAllAccountBalances.mockResolvedValue(
+            mockAccounts.map(a => ({ accountAddress: a.address })),
+        )
         queryClient = new QueryClient()
         service = new SyncService({ queryClient })
     })
@@ -291,6 +299,38 @@ describe('SyncService', () => {
             Promise.resolve(),
         )
         service.stop()
+    })
+
+    it('short-circuits should-refresh when a store account has no balance row yet', async () => {
+        // Only ADDR1 has a row — ADDR2 was just added and has never synced.
+        mockGetAllAccountBalances.mockResolvedValue([
+            { accountAddress: 'ADDR1' },
+        ])
+        mockSendShouldRefreshRequest.mockResolvedValue({
+            refresh: false,
+            round: null,
+        })
+
+        const { fetchAndPersistAccount } = await import(
+            '@perawallet/wallet-core-accounts'
+        )
+
+        vi.useRealTimers()
+        service.start()
+
+        // First tick force-syncs; second tick should hit the short-circuit.
+        await new Promise(resolve => setTimeout(resolve, 50))
+        vi.mocked(fetchAndPersistAccount).mockClear()
+        await new Promise(resolve => setTimeout(resolve, 3100))
+
+        service.stop()
+        vi.useFakeTimers()
+
+        // should-refresh must NOT have been called on tick 2 (short-circuit)
+        // and a sync must have run for both addresses.
+        expect(mockSendShouldRefreshRequest).not.toHaveBeenCalled()
+        expect(fetchAndPersistAccount).toHaveBeenCalledWith('ADDR1', 'mainnet')
+        expect(fetchAndPersistAccount).toHaveBeenCalledWith('ADDR2', 'mainnet')
     })
 
     it('does not sync when no accounts exist', async () => {
