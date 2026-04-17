@@ -1,0 +1,104 @@
+version: 2
+updates:
+  # Workspace npm dependencies. Grouped by risk so one PR per ecosystem tier
+  # instead of dozens of noisy single-package PRs.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Europe/London
+    open-pull-requests-limit: 10
+    versioning-strategy: increase-if-necessary
+    labels:
+      - dependencies
+    groups:
+      types:
+        patterns:
+          - "@types/*"
+      tanstack:
+        patterns:
+          - "@tanstack/*"
+      babel:
+        patterns:
+          - "@babel/*"
+          - babel-*
+      expo:
+        patterns:
+          - expo
+          - expo-*
+          - "@expo/*"
+          - babel-preset-expo
+      react-native:
+        patterns:
+          - react-native
+          - react-native-*
+          - "@react-native/*"
+          - "@react-native-*"
+      react-navigation:
+        patterns:
+          - "@react-navigation/*"
+      firebase:
+        patterns:
+          - "@react-native-firebase/*"
+      algorand:
+        patterns:
+          - "@algorandfoundation/*"
+      vite-vitest:
+        patterns:
+          - vite
+          - vite-*
+          - vitest
+          - "@vitest/*"
+          - "@vitejs/*"
+      eslint-oxc:
+        patterns:
+          - eslint
+          - eslint-*
+          - typescript-eslint
+          - oxlint
+          - oxlint-*
+          - oxfmt
+      prod-minor-patch:
+        dependency-type: production
+        update-types:
+          - minor
+          - patch
+      dev-minor-patch:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Majors for framework-tier deps are migrations, not bumps — handled manually.
+      - dependency-name: react
+        update-types: [version-update:semver-major]
+      - dependency-name: react-native
+        update-types: [version-update:semver-major, version-update:semver-minor]
+      - dependency-name: react-dom
+        update-types: [version-update:semver-major]
+      - dependency-name: expo
+        update-types: [version-update:semver-major]
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      - dependency-name: eslint
+        update-types: [version-update:semver-major]
+
+  # Pin GitHub Actions by SHA; Dependabot rewrites the SHA and updates the
+  # trailing version comment so reviewers can see the human-readable bump.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Europe/London
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - ci
+    groups:
+      actions:
+        patterns:
+          - "*"

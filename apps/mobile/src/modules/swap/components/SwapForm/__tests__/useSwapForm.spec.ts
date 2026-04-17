@@ -54,10 +54,9 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
         new Decimal(percent).div(100).toString(),
 }))
 
+const mockSelectedAccount = { address: 'TESTADDRESS123' }
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useSelectedAccount: () => ({
-        address: 'TESTADDRESS123',
-    }),
+    useSelectedAccount: () => mockSelectedAccount,
     useAccountAssetBalanceQuery: () => ({
         data: { amount: new Decimal('5000000') },
     }),

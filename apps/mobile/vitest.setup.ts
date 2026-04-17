@@ -1894,6 +1894,7 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => ({
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
     useSwaps: vi.fn(),
+    isSwappableAsset: vi.fn(() => true),
 }))
 
 vi.mock('@perawallet/wallet-core-polling', () => ({

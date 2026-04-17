@@ -38,6 +38,27 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         'collectible',
 }))
 
+vi.mock('@perawallet/wallet-core-swaps', () => ({
+    isSwappableAsset: (asset: unknown) => {
+        const meta = (
+            asset as {
+                peraMetadata?: {
+                    type?: string
+                    verificationTier?: string
+                    category?: number
+                }
+            }
+        )?.peraMetadata
+        if (!meta) return false
+        if (meta.type === 'collectible') return false
+        return (
+            meta.verificationTier === 'verified' ||
+            meta.verificationTier === 'trusted' ||
+            meta.category === 1
+        )
+    },
+}))
+
 vi.mock('@modules/assets/components/AccountAssetSelectionList', () => ({
     AccountAssetSelectionList: (props: AccountAssetSelectionListProps) => {
         capturedFromOnAssetSelected = props.onAssetSelected
