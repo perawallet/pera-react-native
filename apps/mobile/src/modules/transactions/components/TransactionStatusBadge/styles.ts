@@ -35,7 +35,7 @@ export const useStyles = makeStyles(
             container: {
                 backgroundColor,
                 paddingHorizontal: theme.spacing.sm,
-                paddingVertical: theme.spacing.xs / 2,
+                paddingVertical: theme.spacing.xxs,
                 borderRadius: theme.spacing.xl,
                 alignItems: 'center',
                 justifyContent: 'center',
