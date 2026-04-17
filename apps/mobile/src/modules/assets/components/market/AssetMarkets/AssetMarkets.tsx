@@ -11,7 +11,6 @@
  */
 
 import { useEffect } from 'react'
-import { ScrollView } from 'react-native'
 import { formatDatetime } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import {
@@ -27,6 +26,7 @@ import { Decimal } from 'decimal.js'
 import {
     PWButton,
     PWIcon,
+    PWScrollView,
     PWSkeleton,
     PWText,
     PWTouchableOpacity,
@@ -125,7 +125,7 @@ export const AssetMarkets = ({
     }
 
     return (
-        <ScrollView
+        <PWScrollView
             style={styles.container}
             contentContainerStyle={styles.contentContainer}
             showsVerticalScrollIndicator={false}
@@ -258,6 +258,6 @@ export const AssetMarkets = ({
                     <Text style={styles.tagText}>{t('asset_details.markets.no_clawback')}</Text>
                 </PWView>}
             </PWView> */}
-        </ScrollView>
+        </PWScrollView>
     )
 }

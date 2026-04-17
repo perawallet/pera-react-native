@@ -45,7 +45,7 @@ describe('AssetIcon', () => {
             unitName: 'test',
         } as unknown as PeraAsset
         render(<AssetIcon asset={asset} />)
-        expect(screen.getByText('TE')).toBeTruthy()
+        expect(screen.getByText('T')).toBeTruthy()
     })
 
     it('uses asset name when unitName is not available', () => {
@@ -54,7 +54,7 @@ describe('AssetIcon', () => {
             name: 'myToken',
         } as unknown as PeraAsset
         render(<AssetIcon asset={asset} />)
-        expect(screen.getByText('MY')).toBeTruthy()
+        expect(screen.getByText('M')).toBeTruthy()
     })
 
     it('falls back to letter avatar on image load error', () => {
@@ -68,6 +68,6 @@ describe('AssetIcon', () => {
         const image = screen.getByTestId('PWImage')
         fireEvent.error(image)
 
-        expect(screen.getByText('FA')).toBeTruthy()
+        expect(screen.getByText('F')).toBeTruthy()
     })
 })

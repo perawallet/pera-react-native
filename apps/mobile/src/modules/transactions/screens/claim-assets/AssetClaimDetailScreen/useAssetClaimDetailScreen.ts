@@ -53,7 +53,10 @@ export const useAssetClaimDetailScreen =
         const account = accounts.find(acc => acc.address === accountAddress)
 
         const handleClaim = useCallback(() => {
-            if (request?.insufficientAlgoForClaiming) {
+            if (
+                request?.insufficientAlgoForClaiming &&
+                !request?.shouldUseFundsBeforeClaiming
+            ) {
                 showToast({
                     title: t('errors.transaction.title'),
                     body: t('messages.claim.insufficient_algo_claim'),
@@ -78,7 +81,10 @@ export const useAssetClaimDetailScreen =
         }, [])
 
         const handleRejectConfirm = useCallback(() => {
-            if (request?.insufficientAlgoForRejecting) {
+            if (
+                request?.insufficientAlgoForRejecting &&
+                !request?.shouldUseFundsBeforeRejecting
+            ) {
                 rejectModal.close()
                 showToast({
                     title: t('errors.transaction.title'),

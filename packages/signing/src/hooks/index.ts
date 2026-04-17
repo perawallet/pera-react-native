@@ -10,6 +10,8 @@
  limitations under the License
  */
 
+export * from './useArc60Signer'
+export * from './useArbitraryDataSigner'
 export * from './useBalanceValidation'
 export * from './useSigningPipeline'
 export * from './useSigningRequest'

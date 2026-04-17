@@ -43,21 +43,44 @@ export interface ArbitraryDataSignableData {
 }
 
 /**
- * Arc60 structured data for signing
+ * ARC-60 structured signing request payload (StdSigData).
+ *
+ * Per ARC-60, `data` is opaque to the signing primitive (it is shown to the
+ * user after decoding for review only). The wallet must verify that
+ * `authenticatorData[0:32] === sha256(utf8(domain))` before signing.
  */
-export interface Arc60SignableData {
-    type: 'arc60'
-    structuredData: Arc60Data
+export interface Arc60StdSigData {
+    /** Encoded payload — decoded for display, hashed for signing. */
+    data: string
+    /** Algorand address / Ed25519 public key of the signer. */
+    signer: string
+    /** Origin requesting the signature (URL / DID / identifier). */
+    domain: string
+    /** FIDO/WebAuthn authenticator data; first 32 bytes = sha256(domain). */
+    authenticatorData: Uint8Array
+    /** Optional unique request id (echoed by the dApp for replay-protection). */
+    requestId?: string
+    /** Optional BIP44 path the dApp expects the wallet to use. */
+    hdPath?: string
 }
 
 /**
- * Arc60 structured data format
+ * ARC-60 metadata accompanying a sign request.
  */
-export interface Arc60Data {
-    domain: string
-    message: Record<string, unknown>
-    primaryType: string
-    types: Record<string, Array<{ name: string; type: string }>>
+export interface Arc60Metadata {
+    /** ARC-60 scope; only `1` (AUTH) is defined today. */
+    scope: number
+    /** Encoding of `data` (e.g. 'base64'). */
+    encoding: string
+}
+
+/**
+ * ARC-60 signable data wrapper for the pipeline.
+ */
+export interface Arc60SignableData {
+    type: 'arc60'
+    stdSigData: Arc60StdSigData
+    metadata: Arc60Metadata
 }
 
 /**

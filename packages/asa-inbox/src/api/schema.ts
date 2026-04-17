@@ -120,6 +120,7 @@ export type Arc59AssetRequest = {
 export const mapArc59AssetRequest = (
     raw: Arc59AssetRequestResponse,
 ): Arc59AssetRequest => ({
+    id: raw.asset.asset_id.toString(),
     totalAmount: new Decimal(raw.total_amount),
     asset: {
         assetId: raw.asset.asset_id.toString(),

@@ -16,7 +16,7 @@ export const useStyles = makeStyles(theme => ({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.md,
+        gap: theme.spacing.lg,
         paddingHorizontal: theme.spacing.xl,
     },
     iconContainer: {
@@ -59,6 +59,9 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.xs,
         flex: 1,
+    },
+    unitNameText: {
+        color: theme.colors.textGray,
     },
     usdText: {
         color: theme.colors.textGray,

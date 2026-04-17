@@ -11,23 +11,13 @@
  */
 
 import { defineConfig } from 'vitest/config'
+import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
 
 export default defineConfig({
     test: {
+        coverage: coverageConfig,
         globals: true,
         environment: 'jsdom',
-        coverage: {
-            provider: 'v8',
-            exclude: [
-                '**/node_modules/**',
-                '**/dist/**',
-                '**/__tests__/**',
-                '**/models/**',
-                '**/index.ts',
-                '**/endpoints.ts',
-                '**/*.config.ts',
-            ],
-        },
     },
     resolve: {
         conditions: ['default'],

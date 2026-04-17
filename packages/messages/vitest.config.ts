@@ -11,6 +11,7 @@
  */
 
 import { defineConfig } from 'vitest/config'
+import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -18,6 +19,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
     test: {
+        coverage: coverageConfig,
         globals: true,
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],
@@ -28,19 +30,6 @@ export default defineConfig({
             '**/usePreferences.test.ts',
             '**/useSettings.test.ts',
         ],
-        coverage: {
-            provider: 'v8',
-            exclude: [
-                '**/node_modules/**',
-                '**/dist/**',
-                '**/__tests__/**',
-                '**/models/**', // Type definitions and interfaces
-                '**/index.ts', // Re-export files
-                '**/endpoints.ts', // Raw API functions (tested via hooks)
-                '**/*.config.ts', // Configuration files (vite, vitest)
-                '**/eslint.config.js', // ESLint config
-            ],
-        },
     },
     resolve: {
         conditions: ['default'],

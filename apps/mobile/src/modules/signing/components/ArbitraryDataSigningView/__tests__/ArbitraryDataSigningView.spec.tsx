@@ -30,6 +30,10 @@ vi.mock('@components/core', () => ({
     PWIcon: () => null,
 
     PWImage: () => null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    PWScrollView: ({ children, style }: any) => (
+        <div style={style}>{children}</div>
+    ),
     PWTabView: {
         createNavigator: () => ({
             // eslint-disable-next-line @typescript-eslint/no-explicit-any

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { PWIcon, PWImage, PWText, PWView } from '@components/core'
+import { PWScrollView, PWText, PWView } from '@components/core'
 import {
     ArbitraryDataSignRequest,
     PeraArbitraryDataMessage,
@@ -22,7 +22,6 @@ import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { useStyles } from './ArbitraryDataSigningDetailsView.style'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { Decimal } from 'decimal.js'
-import { ScrollView } from 'react-native-gesture-handler'
 
 export type ArbitraryDataSigningDetailsViewProps = {
     request: ArbitraryDataSignRequest
@@ -39,45 +38,15 @@ export const ArbitraryDataSigningDetailsView = ({
         account => account.address === dataMessage.signer,
     )
     const styles = useStyles()
-    const preferredIcon =
-        request.sourceMetadata?.icons?.find(
-            icon =>
-                icon.endsWith('.png') ||
-                icon.endsWith('.jpg') ||
-                icon.endsWith('.jpeg'),
-        ) ?? request.sourceMetadata?.icons?.at(0)
-    const unnamedSource = t('signing.arbitrary_data_details.unnamed')
 
     return (
         <PWView style={styles.container}>
             <PWView style={[styles.section, styles.titleSection]}>
-                {preferredIcon ? (
-                    <PWImage
-                        source={{ uri: preferredIcon }}
-                        style={styles.metadataIcon}
-                    />
-                ) : (
-                    <PWView style={styles.metadataIconContainer}>
-                        <PWIcon
-                            name='wallet-connect'
-                            variant='secondary'
-                            size='xl'
-                        />
-                    </PWView>
-                )}
-                <PWText
-                    variant='h3'
-                    style={styles.title}
-                >
-                    {t('signing.arbitrary_data_details.title', {
-                        name: request?.sourceMetadata?.name ?? unnamedSource,
-                    })}
-                </PWText>
                 <PWText style={styles.description}>
                     {t('signing.arbitrary_data_details.description')}
                 </PWText>
             </PWView>
-            <ScrollView
+            <PWScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContainer}
             >
@@ -137,7 +106,7 @@ export const ArbitraryDataSigningDetailsView = ({
                         </PWText>
                     </KeyValueRow>
                 </PWView>
-            </ScrollView>
+            </PWScrollView>
         </PWView>
     )
 }

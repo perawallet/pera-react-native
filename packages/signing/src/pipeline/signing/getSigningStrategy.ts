@@ -23,6 +23,8 @@ import { CannotSignError } from '../errors'
 import {
     createLocalKeyStrategy,
     type LocalSigningFunction,
+    type LocalArbitrarySigningFunction,
+    type LocalArc60SigningFunction,
 } from './createLocalKeyStrategy'
 import {
     createHardwareStrategy,
@@ -34,8 +36,14 @@ import { createMultisigStrategy } from './createMultisigStrategy'
  * Options for creating the signing strategy selector
  */
 export interface GetSigningStrategyOptions {
-    /** The signing function from useTransactionSigner */
+    /** Transaction signing function from useTransactionSigner */
     signTransactions: LocalSigningFunction
+
+    /** Arbitrary-data signing function from useArbitraryDataSigner */
+    signArbitraryData: LocalArbitrarySigningFunction
+
+    /** ARC-60 signing function from useArc60Signer */
+    signArc60: LocalArc60SigningFunction
 
     /** Get local participants for a multisig account */
     getLocalParticipants: (
@@ -63,7 +71,11 @@ export const createSigningStrategySelector = (
     account: WalletAccount,
     allAccounts: WalletAccount[],
 ) => SigningStrategy) => {
-    const localStrategy = createLocalKeyStrategy(options.signTransactions)
+    const localStrategy = createLocalKeyStrategy({
+        signTransactions: options.signTransactions,
+        signArbitraryData: options.signArbitraryData,
+        signArc60: options.signArc60,
+    })
     const hardwareStrategy = createHardwareStrategy({
         hardwareWalletRegistry: options.hardwareWalletRegistry,
         encodeTransaction: options.encodeTransaction,

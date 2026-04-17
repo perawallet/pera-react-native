@@ -11,22 +11,12 @@
  */
 
 import { defineConfig } from 'vitest/config'
+import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
 
 export default defineConfig({
     test: {
+        coverage: coverageConfig,
         globals: true,
         setupFiles: ['./vitest.setup.ts'],
-        coverage: {
-            provider: 'v8',
-            all: true,
-            include: ['src/**/*.ts'],
-            exclude: [
-                'src/**/__tests__/**',
-                'src/**/index.ts',
-                'src/test-utils/**',
-                'src/migrations/**',
-                'src/schema/**',
-            ],
-        },
     },
 })

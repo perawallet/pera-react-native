@@ -45,6 +45,13 @@ export const useArbitraryDataSigner = () => {
 
                     const signatures = await Promise.all(
                         toSign.map(async item => {
+                            // Match the legacy algo_signData spec: dApps verify
+                            // the signature against `MX || data`. The Algo25
+                            // branch already does this; HD must mirror it.
+                            const bytesToSign = concatBytes(
+                                new TextEncoder().encode('MX'),
+                                decodeFromBase64(item),
+                            )
                             return session.signData(
                                 {
                                     account: hdWalletDetails.account,
@@ -52,7 +59,7 @@ export const useArbitraryDataSigner = () => {
                                     derivationType:
                                         hdWalletDetails.derivationType,
                                 },
-                                decodeFromBase64(item),
+                                bytesToSign,
                             )
                         }),
                     )

@@ -17,6 +17,7 @@ export * from './models'
 export * from './hooks'
 export * from './errors'
 export * from './utils'
+export * from './bip44'
 export * from './account-discovery'
 export * from './db'
 
