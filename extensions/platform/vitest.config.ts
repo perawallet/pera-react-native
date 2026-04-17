@@ -20,20 +20,6 @@ export default defineConfig({
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],
         passWithNoTests: true,
-        coverage: {
-            provider: 'v8',
-            exclude: [
-                '**/node_modules/**',
-                '**/dist/**',
-                '**/__tests__/**',
-                '**/models/**', // Type definitions and interfaces
-                '**/index.ts', // Re-export files
-                '**/endpoints.ts', // Raw API functions (tested via hooks)
-                '**/*.config.ts', // Configuration files (vite, vitest)
-                '**/eslint.config.js', // ESLint config
-                '**/src/test-utils/**',
-            ],
-        },
     },
     resolve: {
         conditions: ['default'],

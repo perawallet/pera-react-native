@@ -522,6 +522,103 @@ describe('useWalletConnectHandlers', () => {
             ).toThrow(WalletConnectSignRequestError)
         })
 
+        it('throws WalletConnectSignRequestError when the payload has no data at all', () => {
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = { clientId: 'test-client-id' }
+
+            expect(() =>
+                result.current.handleSignData(
+                    connector as any,
+                    Networks.mainnet,
+                    null,
+                    { params: null },
+                    mockOnError,
+                ),
+            ).toThrow(WalletConnectSignRequestError)
+        })
+
+        it('throws WalletConnectSignRequestError when params is an empty array', () => {
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = { clientId: 'test-client-id' }
+
+            expect(() =>
+                result.current.handleSignData(
+                    connector as any,
+                    Networks.mainnet,
+                    null,
+                    { params: [] },
+                    mockOnError,
+                ),
+            ).toThrow(WalletConnectSignRequestError)
+        })
+    })
+
+    describe('handleSignData (ARC-60)', () => {
+        const arc60Payload = (overrides: Record<string, unknown> = {}) => ({
+            id: 42,
+            params: {
+                data: 'aGVsbG8=',
+                signer: 'addr1',
+                domain: 'example.com',
+                authenticatorData: 'YXV0aA==',
+                metadata: { scope: 1, encoding: 'utf-8' },
+                ...overrides,
+            },
+        })
+
+        it('routes to the ARC-60 handler and queues an arc60 sign request', () => {
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = { clientId: 'test-client-id' } as any
+
+            result.current.handleSignData(
+                connector,
+                Networks.mainnet,
+                null,
+                arc60Payload(),
+                mockOnError,
+            )
+
+            expect(mockAddSignRequest).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    type: 'arc60',
+                    transport: 'callback',
+                    sourceType: 'walletconnect',
+                }),
+            )
+        })
+
+        it('throws WalletConnectSignRequestError when the payload fails schema validation', () => {
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = { clientId: 'test-client-id' } as any
+
+            const bad = arc60Payload({ signer: '' })
+            expect(() =>
+                result.current.handleSignData(
+                    connector,
+                    Networks.mainnet,
+                    null,
+                    bad,
+                    mockOnError,
+                ),
+            ).toThrow(WalletConnectSignRequestError)
+        })
+
+        it('throws WalletConnectInvalidSessionError when ARC-60 signer is not in the session', () => {
+            const { result } = renderHook(() => useWalletConnectHandlers())
+            const connector = { clientId: 'test-client-id' } as any
+
+            const bad = arc60Payload({ signer: 'unknown-addr' })
+            expect(() =>
+                result.current.handleSignData(
+                    connector,
+                    Networks.mainnet,
+                    null,
+                    bad,
+                    mockOnError,
+                ),
+            ).toThrow(WalletConnectInvalidSessionError)
+        })
+
         it('should throw WalletConnectInvalidSessionError if signer is not in session', () => {
             const { result } = renderHook(() => useWalletConnectHandlers())
             const connector = { clientId: 'test-client-id' }

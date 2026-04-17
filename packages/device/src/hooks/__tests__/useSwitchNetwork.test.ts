@@ -281,4 +281,37 @@ describe('useSwitchNetwork', () => {
 
         expect(result.current.isSwitching).toBe(false)
     })
+
+    test('logs a warning when nullifying push token on the old network fails', async () => {
+        vi.resetModules()
+        mockNullifyPushToken.mockRejectedValue(new Error('nullify failed'))
+
+        const { logger } = await import('@perawallet/wallet-core-shared')
+        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+
+        const { useDeviceStore } = await import('../../store')
+        const { useSwitchNetwork } = await import('../useSwitchNetwork')
+
+        useDeviceStore.getState().resetState()
+        const { result: store } = renderHook(() => useDeviceStore())
+        act(() => {
+            store.current.setDeviceID('mainnet', 'mainnet-device-id')
+            store.current.setPushToken('fcm-token')
+        })
+
+        const { result } = renderHook(() => useSwitchNetwork())
+
+        await act(async () => {
+            await result.current.switchNetwork('testnet', ['ADDR1'])
+        })
+
+        // Give the fire-and-forget .catch a chance to run
+        await new Promise(resolve => setImmediate(resolve))
+
+        expect(warnSpy).toHaveBeenCalledWith(
+            'Failed to nullify push token on previous network',
+            expect.objectContaining({ error: expect.any(Error) }),
+        )
+        warnSpy.mockRestore()
+    })
 })

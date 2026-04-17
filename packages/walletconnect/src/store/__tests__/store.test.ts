@@ -14,13 +14,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
 const mockStorage = new Map<string, string>()
+const registerStoreMock = vi.hoisted(() => vi.fn())
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
     return {
         ...original,
-        registerStore: vi.fn(),
+        registerStore: registerStoreMock,
     }
 })
 
@@ -118,5 +119,26 @@ describe('WalletConnectStore', () => {
 
         expect(result.current.walletConnectConnections).toEqual([])
         expect(result.current.sessionRequests).toEqual([])
+    })
+
+    it('registers resetState and clearStorage callbacks', async () => {
+        const { useWalletConnectStore } = await import('../store')
+
+        const registration = registerStoreMock.mock.calls.at(-1)?.[0]
+        expect(registration?.name).toBe('wallet-connect-store')
+
+        act(() => {
+            useWalletConnectStore
+                .getState()
+                .setWalletConnectConnections([
+                    { session: { clientId: '1' } },
+                ] as any)
+        })
+        act(() => registration.resetState())
+        expect(
+            useWalletConnectStore.getState().walletConnectConnections,
+        ).toEqual([])
+
+        expect(() => registration.clearStorage()).not.toThrow()
     })
 })

@@ -151,5 +151,50 @@ describe('logging', () => {
                 logger.error('will still be logged')
             }).not.toThrow()
         })
+
+        test('forwards the caught Error directly when no extra context is provided', () => {
+            const errorReporter = vi.fn()
+            logger.setErrorReporter(errorReporter)
+
+            const original = new Error('boom')
+            logger.error(original)
+
+            expect(errorReporter).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    severity: 'error',
+                    error: original,
+                }),
+            )
+        })
+
+        test('preserves the original name and stack when reporting an Error with context', () => {
+            const errorReporter = vi.fn()
+            logger.setErrorReporter(errorReporter)
+
+            const original = new TypeError('oh no')
+            logger.error(original, { source: 'test' })
+
+            const reported = errorReporter.mock.calls[0]?.[0] as {
+                error: Error
+            }
+            expect(reported.error.name).toBe('TypeError')
+            expect(reported.error.message).toContain('oh no')
+            expect(reported.error.message).toContain('context:')
+        })
+
+        test('falls back to an "[unserializable context]" marker when JSON fails', () => {
+            const errorReporter = vi.fn()
+            logger.setErrorReporter(errorReporter)
+
+            const circular: Record<string, unknown> = {}
+            circular.self = circular
+
+            logger.error('still goes out', circular as never)
+
+            const reported = errorReporter.mock.calls[0]?.[0] as {
+                error: Error
+            }
+            expect(reported.error.message).toContain('[unserializable context]')
+        })
     })
 })

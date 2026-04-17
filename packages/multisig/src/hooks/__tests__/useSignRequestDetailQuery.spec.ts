@@ -262,37 +262,52 @@ describe('useSignRequestDetailQuery', () => {
         expect(mocks.getSignRequestDetail).toHaveBeenCalledTimes(1)
     })
 
-    test('handles all status types', async () => {
-        const statuses = [
-            'pending',
-            'ready',
-            'submitting',
-            'confirmed',
-            'failed',
-            'expired',
-            'declined',
-        ] as const
+    test('pollWhilePending schedules a refetch while status is pending/ready, and stops after', async () => {
+        mocks.getSignRequestDetail.mockResolvedValueOnce(
+            createSignRequestResponse('pending'),
+        )
+        mocks.getSignRequestDetail.mockResolvedValueOnce(
+            createSignRequestResponse('ready'),
+        )
+        mocks.getSignRequestDetail.mockResolvedValueOnce(
+            createSignRequestResponse('confirmed'),
+        )
 
-        for (const status of statuses) {
-            vi.clearAllMocks()
-            queryClient.clear()
-
-            mocks.getSignRequestDetail.mockResolvedValue(
-                createSignRequestResponse(status),
-            )
-
+        vi.useFakeTimers()
+        try {
             const { result } = renderHook(
                 () =>
                     useSignRequestDetailQuery({
                         network: 'mainnet',
-                        signRequestId: `sr-${status}`,
+                        signRequestId: 'sr-123',
+                        pollWhilePending: true,
                     }),
                 { wrapper },
             )
 
-            await waitFor(() => expect(result.current.isSuccess).toBe(true))
+            await vi.waitFor(() => expect(result.current.isSuccess).toBe(true))
+            expect(result.current.data?.status).toBe('pending')
 
-            expect(result.current.data?.status).toBe(status)
+            // Advance past one poll interval — triggers second fetch (ready)
+            await vi.advanceTimersByTimeAsync(5000)
+            await vi.waitFor(() =>
+                expect(result.current.data?.status).toBe('ready'),
+            )
+
+            // Advance again — triggers third fetch (confirmed), poll should stop
+            await vi.advanceTimersByTimeAsync(5000)
+            await vi.waitFor(() =>
+                expect(result.current.data?.status).toBe('confirmed'),
+            )
+
+            const callsAfterConfirmed =
+                mocks.getSignRequestDetail.mock.calls.length
+            await vi.advanceTimersByTimeAsync(10000)
+            expect(mocks.getSignRequestDetail).toHaveBeenCalledTimes(
+                callsAfterConfirmed,
+            )
+        } finally {
+            vi.useRealTimers()
         }
     })
 

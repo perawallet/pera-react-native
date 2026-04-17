@@ -209,7 +209,7 @@ jobs:
           key: build-artifacts-${{ runner.os }}-${{ github.sha }}
 
       - name: Test
-        run: pnpm run test
+        run: pnpm run test:coverage
 
   gitleaks:
     name: Secret Scan

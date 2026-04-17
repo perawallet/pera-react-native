@@ -14,7 +14,13 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { RNDatabaseService } from '../services/database'
 
 const mockCloseAsync = vi.fn()
-const mockDb = { closeAsync: mockCloseAsync }
+const mockRunAsync = vi.fn().mockResolvedValue(undefined)
+const mockGetAllAsync = vi.fn().mockResolvedValue([])
+const mockDb = {
+    closeAsync: mockCloseAsync,
+    runAsync: mockRunAsync,
+    getAllAsync: mockGetAllAsync,
+}
 const mockOpenDatabaseAsync = vi.fn().mockResolvedValue(mockDb)
 const mockDeleteDatabaseAsync = vi.fn().mockResolvedValue(undefined)
 
@@ -128,6 +134,47 @@ describe('RNDatabaseService', () => {
             await service.open('test.db')
 
             expect(mockOpenDatabaseAsync).toHaveBeenCalledTimes(2)
+        })
+    })
+
+    describe('drizzle proxy SQL execution', () => {
+        it('routes run() to runAsync and rewrites null params to NULL literals', async () => {
+            const { sql } = await import('drizzle-orm')
+            const db = await service.getDatabase('test.db')
+
+            await db.run(sql`INSERT INTO t VALUES (${'x'}, ${null}, ${42})`)
+
+            const [rewritten, params] = mockRunAsync.mock.calls.at(-1)!
+            expect(rewritten).toMatch(/NULL/)
+            expect(params).toEqual(['x', 42])
+        })
+
+        it('routes select() through getAllAsync and maps rows to value arrays', async () => {
+            mockGetAllAsync.mockResolvedValueOnce([
+                { id: 1, name: 'a' },
+                { id: 2, name: 'b' },
+            ])
+
+            const { sql } = await import('drizzle-orm')
+            const db = await service.getDatabase('test.db')
+
+            const rows = await db.all(sql`SELECT id, name FROM t`)
+
+            expect(mockGetAllAsync).toHaveBeenCalled()
+            expect(rows).toEqual([
+                [1, 'a'],
+                [2, 'b'],
+            ])
+        })
+
+        it('stringifies non-primitive, non-Uint8Array params before binding', async () => {
+            const { sql } = await import('drizzle-orm')
+            const db = await service.getDatabase('test.db')
+
+            await db.run(sql`INSERT INTO t VALUES (${{ nested: true }})`)
+
+            const [, params] = mockRunAsync.mock.calls.at(-1)!
+            expect(params[0]).toBe('[object Object]')
         })
     })
 })

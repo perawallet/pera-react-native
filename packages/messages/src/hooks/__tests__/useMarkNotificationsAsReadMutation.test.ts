@@ -15,6 +15,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform'
 import { useMarkNotificationsAsReadMutation } from '../useMarkNotificationsAsReadMutation'
 import { updateLastSeenNotification } from '../../api/notifications'
+import { useDeviceID } from '@perawallet/wallet-core-device'
 
 vi.mock('../../api/notifications', () => ({
     updateLastSeenNotification: vi.fn(),
@@ -77,6 +78,26 @@ describe('useMarkNotificationsAsReadMutation', () => {
                 'mainnet',
                 'test-device-id',
                 12345,
+            )
+        })
+    })
+
+    it('falls back to empty string when deviceID is null', async () => {
+        vi.mocked(useDeviceID).mockReturnValueOnce(null)
+        vi.mocked(updateLastSeenNotification).mockResolvedValue(undefined)
+
+        const { result } = renderHook(
+            () => useMarkNotificationsAsReadMutation(),
+            { wrapper: createWrapper() },
+        )
+
+        result.current.markAsRead(1)
+
+        await waitFor(() => {
+            expect(updateLastSeenNotification).toHaveBeenCalledWith(
+                'mainnet',
+                '',
+                1,
             )
         })
     })

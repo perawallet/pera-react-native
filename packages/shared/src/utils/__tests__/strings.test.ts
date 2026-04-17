@@ -13,7 +13,14 @@
 import { describe, test, expect } from 'vitest'
 import { encodeToBase64, decodeFromBase64 } from '../strings'
 import { hexToBytes, bytesToHex } from '../strings'
-import { formatCurrency, formatDatetime, formatRelativeTime } from '../strings'
+import {
+    formatCurrency,
+    formatDatetime,
+    formatRelativeTime,
+    formatRawNumberInput,
+    getInitials,
+    formatTime,
+} from '../strings'
 
 describe('utils/strings - base64 encoding', () => {
     test('encodeToBase64 encodes bytes correctly', () => {
@@ -284,5 +291,47 @@ describe('utils/strings - formatRelativeTime', () => {
     test('handles string datetime with timezone', () => {
         const pastTime = new Date(now - 2 * 60 * 60 * 1000).toISOString() // 2 hours ago
         expect(formatRelativeTime(pastTime, now)).toBe('2 hours ago')
+    })
+})
+
+describe('utils/strings - formatRawNumberInput', () => {
+    test('applies thousands separators to the integer portion', () => {
+        expect(formatRawNumberInput('1234567', 'en-US')).toBe('1,234,567')
+    })
+
+    test('preserves the fractional portion with a locale decimal separator', () => {
+        expect(formatRawNumberInput('1234.56', 'en-US')).toBe('1,234.56')
+    })
+
+    test('treats an empty integer part as zero', () => {
+        expect(formatRawNumberInput('.5', 'en-US')).toBe('0.5')
+    })
+})
+
+describe('utils/strings - getInitials', () => {
+    test('returns the first letter of the first N words', () => {
+        expect(getInitials('John Ronald Tolkien', 2)).toBe('JR')
+    })
+
+    test('returns a single letter when there is only one word', () => {
+        expect(getInitials('Madonna', 2)).toBe('M')
+    })
+
+    test('uppercases non-ASCII initials', () => {
+        expect(getInitials('élodie')).toBe('É')
+    })
+
+    test('returns ? when there are no usable words', () => {
+        expect(getInitials('   ')).toBe('?')
+    })
+})
+
+describe('utils/strings - formatTime', () => {
+    test('formats seconds as MM:SS when under an hour', () => {
+        expect(formatTime(125)).toBe('02:05')
+    })
+
+    test('formats with HH:MM:SS once an hour or more has elapsed', () => {
+        expect(formatTime(3661)).toBe('01:01:01')
     })
 })

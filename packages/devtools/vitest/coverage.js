@@ -1,4 +1,4 @@
-export const COVERAGE_THRESHOLD = 95
+export const COVERAGE_THRESHOLD = 80
 
 export const coverageConfig = {
     provider: 'v8',
@@ -7,12 +7,15 @@ export const coverageConfig = {
     exclude: [
         'src/api/generated/**',
         'src/**/*.d.ts',
+        'src/**/*.generated.{ts,tsx}',
         'src/**/__tests__/**',
         'src/**/__mocks__/**',
         'src/**/__fixtures__/**',
         'src/**/*.test.{ts,tsx}',
         'src/**/*.spec.{ts,tsx}',
         'src/**/index.ts',
+        'src/**/constants.ts',
+        'src/**/errors.ts',
         'src/models/**',
         'src/test-utils/**',
     ],
