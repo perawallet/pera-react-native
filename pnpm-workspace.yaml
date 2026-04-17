@@ -16,7 +16,7 @@ catalog:
   '@tanstack/react-query': ^5.90.7
   '@tanstack/react-query-persist-client': ^5.90.9
   '@tanstack/store': ^0.8.1
-  '@testing-library/react': 16.3.0
+  '@testing-library/react': 16.3.2
   '@types/react': ~19.2.14
   '@vitejs/plugin-react': 5.1.0
   '@vitest/coverage-v8': ^4.1.4
@@ -26,11 +26,11 @@ catalog:
   decimal.js: ^10.6.0
   drizzle-orm: ^0.45.2
   eslint: 9.39.1
-  eslint-plugin-unused-imports: 4.3.0
+  eslint-plugin-unused-imports: 4.4.1
   globals: 15.15.0
   oxfmt: ^0.41.0
-  react: 19.2.0
-  react-dom: 19.2.0
+  react: 19.2.5
+  react-dom: 19.2.5
   typescript: ^5.9.3
   typescript-eslint: 8.48.0
   util: ^0.12.5
@@ -78,7 +78,7 @@ overrides:
   picomatch@3: 3.0.1
   picomatch@4: 4.0.4
   protobufjs@7: 7.5.5
-  react-dom: 19.2.0
+  react-dom: 19.2.5
   react-native: 0.83.2
   react-native-nitro-modules: 0.35.0
   react-native-quick-crypto: ^1.0.17
