@@ -18,7 +18,8 @@
     "lint:copyright:check": "node tools/copyright-header.mjs --check",
     "format": "oxfmt \"**/*.{ts,tsx,md}\"",
     "generate:all-apis": "kubb generate --config backend-kubb.config.ts && kubb generate --config algod-kubb.config.ts && kubb generate --config indexer-kubb.config.ts",
-    "test": "bash tools/generate-config.sh && turbo run test -- --coverage",
+    "test": "bash tools/generate-config.sh && turbo run test",
+    "test:coverage": "bash tools/generate-config.sh && turbo run test -- --coverage",
     "generate:config": "bash tools/generate-config.sh",
     "bump-version": "bash tools/bump-version.sh"
   },

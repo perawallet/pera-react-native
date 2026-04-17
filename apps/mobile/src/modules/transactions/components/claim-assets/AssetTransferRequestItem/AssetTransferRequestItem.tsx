@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import { PWBadge, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { PWBadge, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import type { Arc59AssetRequest } from '@perawallet/wallet-core-asa-inbox'
 import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import { useStyles } from './styles'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
-import { AssetIcon } from '@modules/assets/components'
+import { AssetIcon, AssetNameBadge } from '@modules/assets/components'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { toWholeUnits } from '@perawallet/wallet-core-assets'
 import { useMemo } from 'react'
@@ -60,15 +60,11 @@ export const AssetTransferRequestItem = ({
             </PWView>
             <PWView style={styles.contentContainer}>
                 <PWView style={styles.topRow}>
-                    <PWView style={styles.nameRow}>
-                        <PWText
-                            variant='h4'
-                            style={styles.nameText}
-                            numberOfLines={1}
-                        >
-                            {asset.name}
-                        </PWText>
-                    </PWView>
+                    <AssetNameBadge
+                        name={asset.name ?? ''}
+                        verificationTier={asset.peraMetadata?.verificationTier}
+                        textStyle={styles.nameText}
+                    />
                     <CurrencyDisplay
                         value={amount}
                         currency={asset?.unitName ?? ''}

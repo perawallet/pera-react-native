@@ -33,6 +33,7 @@ export const useStyles = makeStyles(
         },
         innerContainer: {
             flex: 1,
+            paddingBottom: insets.bottom + theme.spacing.md,
         },
         hidden: {
             display: 'none',

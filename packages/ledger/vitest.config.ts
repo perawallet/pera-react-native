@@ -11,6 +11,7 @@
  */
 
 import { defineConfig } from 'vitest/config'
+import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
@@ -18,19 +19,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
     test: {
+        coverage: coverageConfig,
         globals: true,
         environment: 'node',
-        coverage: {
-            provider: 'v8',
-            exclude: [
-                '**/node_modules/**',
-                '**/dist/**',
-                '**/__tests__/**',
-                '**/models/**',
-                '**/index.ts',
-                '**/*.config.ts',
-            ],
-        },
     },
     resolve: {
         conditions: ['default'],

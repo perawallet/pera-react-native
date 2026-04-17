@@ -11,10 +11,12 @@
  */
 
 import { defineConfig } from 'vitest/config'
+import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage'
 import path from 'path'
 
 export default defineConfig({
     test: {
+        coverage: coverageConfig,
         globals: true,
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],
