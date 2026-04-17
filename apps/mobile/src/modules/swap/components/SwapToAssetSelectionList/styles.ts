@@ -13,28 +13,27 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        paddingHorizontal: theme.spacing.lg,
-        gap: theme.spacing.sm,
+    searchContainer: {
+        paddingHorizontal: theme.spacing.md,
+        marginBottom: theme.spacing.md,
     },
-    title: {
-        color: theme.colors.textGray,
+    separator: {
+        height: theme.spacing.md,
     },
-    row: {
+    listContent: {
+        paddingBottom: theme.spacing.xl,
+    },
+    item: {
+        width: '100%',
+        paddingHorizontal: theme.spacing.md,
+    },
+    skeletonRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        gap: theme.spacing.sm,
+        gap: theme.spacing.lg,
     },
-    right: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-        flexShrink: 1,
-        minWidth: 0,
-    },
-    rate: {
-        color: theme.colors.textMain,
-        flexShrink: 1,
+    skeletonData: {
+        flex: 1,
+        gap: theme.spacing.xs,
     },
 }))

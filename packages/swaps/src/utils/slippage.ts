@@ -10,17 +10,9 @@
  limitations under the License
  */
 
-export * from './useAssetsQuery'
-export * from './useAssetPricesQuery'
-export * from './useAssetPriceHistoryQuery'
-export * from './useSingleAssetDetailsQuery'
-export * from './useInvalidateAssetPrices'
-export * from './useToggleAssetFavoriteMutation'
-export * from './useToggleAssetPriceAlertMutation'
-export * from './useAssetSearchQuery'
-export * from './mappers'
-export {
-    invalidateAssetQueries,
-    isAssetQuery,
-    getAssetsQueryKey,
-} from './querykeys'
+import { Decimal } from 'decimal.js'
+
+// The swap configuration UI collects slippage as a percent (e.g. "1" for 1%),
+// but the Pera Swap quotes API expects a decimal fraction (1% = "0.01").
+export const percentToApiSlippage = (percent: string): string =>
+    new Decimal(percent).div(100).toString()

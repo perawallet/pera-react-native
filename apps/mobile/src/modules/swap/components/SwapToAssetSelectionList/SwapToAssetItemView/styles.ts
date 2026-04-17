@@ -14,27 +14,42 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        paddingHorizontal: theme.spacing.lg,
-        gap: theme.spacing.sm,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.lg,
     },
-    title: {
-        color: theme.colors.textGray,
-    },
-    row: {
+    dataContainer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        gap: theme.spacing.sm,
+        flexGrow: 1,
     },
-    right: {
+    unitContainer: {
+        gap: theme.spacing.xs / 2,
+        flexShrink: 1,
+    },
+    row: {
         flexDirection: 'row',
+        gap: theme.spacing.xs,
         alignItems: 'center',
-        gap: theme.spacing.sm,
         flexShrink: 1,
-        minWidth: 0,
     },
-    rate: {
-        color: theme.colors.textMain,
+    primaryUnit: {
         flexShrink: 1,
+    },
+    secondaryUnit: {
+        color: theme.colors.textGrayLighter,
+    },
+    amountContainer: {
+        gap: theme.spacing.xs / 2,
+        alignItems: 'flex-end',
+    },
+    primaryAmount: {
+        textAlign: 'right',
+    },
+    secondaryAmount: {
+        textAlign: 'right',
+        color: theme.colors.textGray,
+        alignSelf: 'flex-end',
     },
 }))

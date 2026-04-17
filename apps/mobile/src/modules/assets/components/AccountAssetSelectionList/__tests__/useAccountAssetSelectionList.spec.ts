@@ -123,6 +123,17 @@ describe('useAccountAssetSelectionList', () => {
         ).toBe(true)
     })
 
+    it('applies filterAsset predicate', () => {
+        const { result } = renderHook(() =>
+            useAccountAssetSelectionList({
+                filterAsset: item => item.assetId === '31566704',
+            }),
+        )
+
+        expect(result.current.filteredBalanceData).toHaveLength(1)
+        expect(result.current.filteredBalanceData[0].assetId).toBe('31566704')
+    })
+
     it('clears search when isVisible becomes false', () => {
         const { result, rerender } = renderHook(
             ({ isVisible }) => useAccountAssetSelectionList({ isVisible }),

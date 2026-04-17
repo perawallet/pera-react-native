@@ -11,24 +11,33 @@
  */
 
 import { useCallback } from 'react'
-import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
+import { type AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { PWBottomSheet, PWIcon, PWText, PWToolbar } from '@components/core'
 import { AccountAssetSelectionList } from '@modules/assets/components/AccountAssetSelectionList'
+import { SwapToAssetSelectionList } from '../SwapToAssetSelectionList'
+import { isSwappableAsset } from '@perawallet/wallet-core-swaps'
 import { useStyles } from './styles'
 
+const filterSwappable = (item: AssetWithAccountBalance) =>
+    isSwappableAsset(item.asset)
+
 export type SwapAssetSelectionBottomSheetProps = {
+    variant: 'from' | 'to'
     isVisible: boolean
     onClose: () => void
     onAssetSelected: (asset: AssetWithAccountBalance) => void
     excludeAssetId?: string
+    fromAssetId?: string
 }
 
 export const SwapAssetSelectionBottomSheet = ({
+    variant,
     isVisible,
     onClose,
     onAssetSelected,
     excludeAssetId,
+    fromAssetId,
 }: SwapAssetSelectionBottomSheetProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
@@ -40,6 +49,11 @@ export const SwapAssetSelectionBottomSheet = ({
         },
         [onAssetSelected, onClose],
     )
+
+    const title =
+        variant === 'from'
+            ? t('swap.asset_selection.swap_from_title')
+            : t('swap.asset_selection.swap_to_title')
 
     return (
         <PWBottomSheet
@@ -54,20 +68,37 @@ export const SwapAssetSelectionBottomSheet = ({
                         onPress={onClose}
                     />
                 }
-                center={
-                    <PWText variant='h4'>
-                        {t('swap.asset_selection.title')}
-                    </PWText>
-                }
+                center={<PWText variant='h4'>{title}</PWText>}
             />
-            <AccountAssetSelectionList
-                onAssetSelected={handleAssetSelected}
-                isVisible={isVisible}
-                excludeAssetId={excludeAssetId}
-                searchPlaceholder={t('swap.asset_selection.search_placeholder')}
-                emptyResultTitle={t('swap.asset_selection.no_results_title')}
-                emptyResultBody={t('swap.asset_selection.no_results_body')}
-            />
+            {variant === 'to' && fromAssetId ? (
+                <SwapToAssetSelectionList
+                    fromAssetId={fromAssetId}
+                    onAssetSelected={handleAssetSelected}
+                    isVisible={isVisible}
+                    excludeAssetId={excludeAssetId}
+                    searchPlaceholder={t(
+                        'swap.asset_selection.search_placeholder',
+                    )}
+                    emptyResultTitle={t(
+                        'swap.asset_selection.no_results_title',
+                    )}
+                    emptyResultBody={t('swap.asset_selection.no_results_body')}
+                />
+            ) : (
+                <AccountAssetSelectionList
+                    onAssetSelected={handleAssetSelected}
+                    isVisible={isVisible}
+                    excludeAssetId={excludeAssetId}
+                    filterAsset={filterSwappable}
+                    searchPlaceholder={t(
+                        'swap.asset_selection.search_placeholder',
+                    )}
+                    emptyResultTitle={t(
+                        'swap.asset_selection.no_results_title',
+                    )}
+                    emptyResultBody={t('swap.asset_selection.no_results_body')}
+                />
+            )}
         </PWBottomSheet>
     )
 }

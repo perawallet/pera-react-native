@@ -38,6 +38,10 @@ export const useStyles = makeStyles(theme => ({
     balance: {
         color: theme.colors.textGray,
     },
+    balanceWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
     inputRow: {
         flexDirection: 'row',
         alignItems: 'center',

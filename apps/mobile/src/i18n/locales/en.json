@@ -1304,6 +1304,8 @@
         },
         "asset_selection": {
             "title": "Select asset",
+            "swap_from_title": "Swap From",
+            "swap_to_title": "Swap To",
             "search_placeholder": "Search by name or ID",
             "no_results_title": "No Matching Assets",
             "no_results_body": "No assets matched your search term"
