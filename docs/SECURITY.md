@@ -30,13 +30,66 @@ Environment variables and API keys should be in `.env` files, not hardcoded.
 | Addresses          | Any storage        | Safe    |
 | Transaction hashes | Any storage        | Safe    |
 
-## Dependency Safety
+## Supply Chain
+
+Review dependency updates carefully — supply chain attacks are real. The
+repo has several layers of automated defense:
+
+### Freshness window
+
+`pnpm-workspace.yaml` sets `minimumReleaseAge: 10080` (7 days). Packages
+published in the last week are refused at install time. This is our
+primary defense against compromised-publish attacks, which are typically
+detected and yanked within hours to days. Exceptions live under
+`minimumReleaseAgeExclude` and must be justified in a comment (e.g. a
+security patch that we need before the window elapses).
+
+### Transitive-dep pins
+
+Vulnerable transitives we can't upgrade directly are pinned under
+`pnpm.overrides` in `pnpm-workspace.yaml`. Use per-major pins (`pkg@N: x.y.z`)
+— range-style overrides like `pkg@>=a <b` don't actually rewrite pnpm's
+resolution when the caller requests a narrower range.
+
+### Commands
 
 ```sh
-pnpm audit              # Check for vulnerabilities
+pnpm audit                            # Fails on any advisory
+pnpm audit --prod --audit-level=high  # What CI runs to block PRs
 ```
 
-Review dependency updates carefully. Supply chain attacks are real.
+### CI-enforced (see `.github/workflows/pre-merge.yml`)
+
+- **`pnpm audit`** — moderate+ advisories in prod deps block merge.
+- **Lockfile drift check** — `pnpm-lock.yaml` must be in sync with every
+  `package.json`.
+- **Gitleaks** — scans the PR diff for committed secrets. Local allowlist
+  lives in [`.gitleaks.toml`](../.gitleaks.toml); add a new entry rather
+  than disabling a rule globally.
+- **Pinned actions** — every GitHub Action is pinned to a full commit
+  SHA with a trailing version comment. Don't use floating tags
+  (`@v4`, `@main`) — Dependabot handles SHA bumps.
+- **Least-privilege permissions** — `contents: read` is the default;
+  jobs elevate only what they need. Every `actions/checkout` uses
+  `persist-credentials: false`.
+
+### Scheduled
+
+- **[CodeQL](../.github/workflows/codeql.yml)** — JS/TS static analysis
+  weekly + on PR; findings go to the Security tab.
+- **[OpenSSF Scorecard](../.github/workflows/scorecard.yml)** — weekly
+  posture score, published to the public Scorecard API.
+- **[SBOM](../.github/workflows/sbom.yml)** — CycloneDX SBOM generated
+  on every push to `main` and weekly; 90-day artifact retention.
+- **[Dependabot](../.github/dependabot.yml)** — weekly grouped updates
+  for npm and github-actions. Framework-tier majors (React, React Native,
+  Expo, TypeScript, ESLint) are ignored and bumped manually.
+
+### Pre-push (`tools/pre-push`)
+
+Gitleaks runs locally against the commits you're about to push. It
+soft-skips if `gitleaks` isn't installed — `brew install gitleaks`
+enables it. The authoritative scan is still the CI job.
 
 ## When in Doubt
 
