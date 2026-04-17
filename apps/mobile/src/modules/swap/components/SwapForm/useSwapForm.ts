@@ -11,10 +11,12 @@
  */
 
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
+import { Keyboard } from 'react-native'
 import { Decimal } from 'decimal.js'
 import {
     AssetWithAccountBalance,
     useAccountAssetBalanceQuery,
+    useAccountBalancesInvalidator,
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
@@ -24,6 +26,7 @@ import {
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
 import {
+    percentToApiSlippage,
     useCalculateSwapAmountMutation,
     useCreateQuotesMutation,
     usePrefetchProviders,
@@ -97,6 +100,7 @@ export const useSwapForm = (): UseSwapFormResult => {
     const [payAmount, setPayAmount] = useState<Decimal | null>(null)
     const [receiveAmount, setReceiveAmount] = useState<Decimal | null>(null)
     const [allQuotes, setAllQuotes] = useState<SwapQuote[]>([])
+    const [quotedAmount, setQuotedAmount] = useState<Decimal | null>(null)
     const [selectedProviderName, setSelectedProviderName] = useState<
         string | null
     >(null)
@@ -128,6 +132,8 @@ export const useSwapForm = (): UseSwapFormResult => {
     createQuotesRef.current = createQuotes
 
     const swapExecution = useSwapExecution()
+    const { invalidate: invalidateAccountBalances } =
+        useAccountBalancesInvalidator()
     const { successToast } = useToast()
     const { t } = useLanguage()
 
@@ -154,31 +160,28 @@ export const useSwapForm = (): UseSwapFormResult => {
         payAmount !== null &&
         !payAmount.isZero() &&
         !payAmount.isNeg() &&
-        receiveAmount === null &&
+        !isDecimalEqual(payAmount, quotedAmount) &&
         !isQuoteError
     const isQuoteFetching = isQuoteLoading || isDebouncing || hasUnresolvedQuote
 
-    const fromAssetRef = useRef(fromAsset)
-    fromAssetRef.current = fromAsset
-    const toAssetRef = useRef(toAsset)
-    toAssetRef.current = toAsset
-    const payAssetDecimalsRef = useRef(payAsset?.decimals)
-    payAssetDecimalsRef.current = payAsset?.decimals
+    const payAssetDecimals = payAsset?.decimals
 
     useEffect(() => {
         if (
             !selectedAccount ||
             !debouncedPayAmount ||
             debouncedPayAmount.isZero() ||
-            debouncedPayAmount.isNeg()
+            debouncedPayAmount.isNeg() ||
+            payAssetDecimals === undefined
         ) {
             setAllQuotes([])
+            setQuotedAmount(null)
             return
         }
 
         const amountInBaseUnits = displayUnitsToBaseUnits(
             debouncedPayAmount,
-            payAssetDecimalsRef.current ?? 0,
+            payAssetDecimals,
         )
 
         let cancelled = false
@@ -188,19 +191,25 @@ export const useSwapForm = (): UseSwapFormResult => {
                 const result = await createQuotesRef.current({
                     swapper_address: selectedAccount.address,
                     swap_type: 'fixed-input',
-                    asset_in_id: Number(fromAssetRef.current),
-                    asset_out_id: Number(toAssetRef.current),
+                    asset_in_id: Number(fromAsset),
+                    asset_out_id: Number(toAsset),
                     amount: amountInBaseUnits.toFixed(0),
-                    slippage: slippage ?? undefined,
+                    slippage:
+                        slippage !== null
+                            ? percentToApiSlippage(slippage)
+                            : undefined,
                     device: deviceId ?? null,
                 })
 
                 if (cancelled) return
 
                 setAllQuotes(result)
+                setQuotedAmount(debouncedPayAmount)
+                Keyboard.dismiss()
             } catch {
                 if (cancelled) return
                 setAllQuotes([])
+                setQuotedAmount(null)
             }
         }
 
@@ -209,7 +218,15 @@ export const useSwapForm = (): UseSwapFormResult => {
         return () => {
             cancelled = true
         }
-    }, [debouncedPayAmount, slippage, selectedAccount, deviceId])
+    }, [
+        debouncedPayAmount,
+        slippage,
+        selectedAccount,
+        deviceId,
+        fromAsset,
+        toAsset,
+        payAssetDecimals,
+    ])
 
     const bestQuote = useMemo(() => pickBestByAmountOut(allQuotes), [allQuotes])
 
@@ -315,9 +332,9 @@ export const useSwapForm = (): UseSwapFormResult => {
     const handlePayAssetSelected = useCallback(
         (asset: AssetWithAccountBalance) => {
             setFromAsset(asset.assetId)
-            setPayAmount(null)
             setReceiveAmount(null)
             setAllQuotes([])
+            setQuotedAmount(null)
             setSelectedProviderName(null)
             resetQuoteMutation()
         },
@@ -329,6 +346,7 @@ export const useSwapForm = (): UseSwapFormResult => {
             setToAsset(asset.assetId)
             setReceiveAmount(null)
             setAllQuotes([])
+            setQuotedAmount(null)
             setSelectedProviderName(null)
             resetQuoteMutation()
         },
@@ -350,6 +368,8 @@ export const useSwapForm = (): UseSwapFormResult => {
         if (!selectedQuote?.quoteIdStr) return
         const success = await swapExecution.execute(selectedQuote.quoteIdStr)
         if (!success) return
+
+        invalidateAccountBalances()
 
         const fromUnit = selectedQuote.assetIn.unitName ?? ''
         const toUnit = selectedQuote.assetOut.unitName ?? ''
@@ -377,6 +397,7 @@ export const useSwapForm = (): UseSwapFormResult => {
         t,
         resetQuoteMutation,
         successCloseTimer,
+        invalidateAccountBalances,
     ])
 
     const handleOpenConfirm = useCallback(() => {
@@ -387,9 +408,7 @@ export const useSwapForm = (): UseSwapFormResult => {
 
     const handleConfigApply = useCallback(
         (result: SwapConfigurationResult) => {
-            if (result.slippageTolerance !== null) {
-                setSlippage(result.slippageTolerance)
-            }
+            setSlippage(result.slippageTolerance)
 
             const isAlgoPreferred = preferredCurrency === 'ALGO'
             if (result.useLocalCurrency && isAlgoPreferred) {

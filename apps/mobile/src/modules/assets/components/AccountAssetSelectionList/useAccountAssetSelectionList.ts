@@ -22,6 +22,7 @@ import { useDebouncedValue } from '@hooks/useDebouncedValue'
 type UseAccountAssetSelectionListParams = {
     isVisible?: boolean
     excludeAssetId?: string
+    filterAsset?: (asset: AssetWithAccountBalance) => boolean
 }
 
 type UseAccountAssetSelectionListResult = {
@@ -34,6 +35,7 @@ type UseAccountAssetSelectionListResult = {
 export const useAccountAssetSelectionList = ({
     isVisible,
     excludeAssetId,
+    filterAsset,
 }: UseAccountAssetSelectionListParams): UseAccountAssetSelectionListResult => {
     const selectedAccount = useSelectedAccount()
     const { accountBalances } = useAccountBalancesQuery(
@@ -74,12 +76,14 @@ export const useAccountAssetSelectionList = ({
             ? filtered.filter(item => item.assetId !== excludeAssetId)
             : filtered
 
-        return [...excluded].sort((a, b) => {
+        const predicated = filterAsset ? excluded.filter(filterAsset) : excluded
+
+        return [...predicated].sort((a, b) => {
             if (a.assetId === ALGO_ASSET_ID) return -1
             if (b.assetId === ALGO_ASSET_ID) return 1
             return 0
         })
-    }, [balanceData, debouncedSearchFilter, excludeAssetId])
+    }, [balanceData, debouncedSearchFilter, excludeAssetId, filterAsset])
 
     return {
         filteredBalanceData,

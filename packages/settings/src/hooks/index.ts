@@ -12,3 +12,4 @@
 
 export * from './usePreferences'
 export * from './useSettings'
+export * from './useTooltipSeen'

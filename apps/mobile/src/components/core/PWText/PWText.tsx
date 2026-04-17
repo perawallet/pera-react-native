@@ -21,6 +21,8 @@ export type PWTextProps = {
     variant?: TypographyVariant
     numberOfLines?: number
     ellipsizeMode?: TextProps['ellipsizeMode']
+    adjustsFontSizeToFit?: TextProps['adjustsFontSizeToFit']
+    minimumFontScale?: TextProps['minimumFontScale']
     testID?: string
     onPress?: () => void
 }

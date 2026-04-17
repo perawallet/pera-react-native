@@ -19,4 +19,8 @@ export * from './useToggleAssetFavoriteMutation'
 export * from './useToggleAssetPriceAlertMutation'
 export * from './useAssetSearchQuery'
 export * from './mappers'
-export { invalidateAssetQueries, isAssetQuery } from './querykeys'
+export {
+    invalidateAssetQueries,
+    isAssetQuery,
+    getAssetsQueryKey,
+} from './querykeys'

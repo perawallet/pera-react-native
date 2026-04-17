@@ -1930,6 +1930,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 vi.mock('@perawallet/wallet-core-assets', () => ({
     toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>
         Number(value) / Math.pow(10, asset.decimals),
+    isAlgoAsset: (assetId: string | number) => String(assetId) === '0',
     ALGO_ASSET_ID: '0',
     KNOWN_ASSET_IDS: {
         USDC: { mainnet: '31566704', testnet: '10458941' },

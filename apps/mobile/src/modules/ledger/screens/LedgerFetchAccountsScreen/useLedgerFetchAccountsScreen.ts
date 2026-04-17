@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useEffect, useRef, useCallback, useState } from 'react'
+import { useEffect, useMemo, useRef, useCallback, useState } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
@@ -19,6 +19,10 @@ import type { LedgerConnectionStatus } from '@perawallet/wallet-core-ledger'
 import { connectAndDiscoverAccounts } from '@perawallet/wallet-core-ledger'
 import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
+import {
+    getLedgerErrorPreset,
+    type LedgerErrorPreset,
+} from '@modules/ledger/utils'
 
 type LedgerFetchAccountsRouteProp = RouteProp<
     AddAccountStackParamList,
@@ -30,7 +34,9 @@ type UseLedgerFetchAccountsScreenResult = {
     isDiscovering: boolean
     progress: { current: number; total: number | null }
     error: Error | null
+    errorPreset: LedgerErrorPreset | null
     handleRetry: () => void
+    handleTroubleshoot: () => void
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
@@ -120,12 +126,23 @@ export const useLedgerFetchAccountsScreen =
             run()
         }, [run])
 
+        const handleTroubleshoot = useCallback(() => {
+            navigation.navigate('LedgerTroubleshooting')
+        }, [navigation])
+
+        const errorPreset = useMemo(
+            () => (error ? getLedgerErrorPreset(error, t) : null),
+            [error, t],
+        )
+
         return {
             connectionStatus,
             isDiscovering,
             progress,
             error,
+            errorPreset,
             handleRetry,
+            handleTroubleshoot,
             t,
         }
     }

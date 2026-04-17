@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@babel/runtime": "catalog:",
+    "@perawallet/wallet-core-assets": "workspace:*",
     "@perawallet/wallet-core-blockchain": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
     "decimal.js": "catalog:",

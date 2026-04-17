@@ -49,6 +49,9 @@ export type PWInputProps = {
     testID?: string
     placeholderTextColor?: string
     InputComponent?: ComponentType<TextInputProps>
+    numberOfLines?: RNEInputProps['numberOfLines']
+    adjustsFontSizeToFit?: boolean
+    minimumFontScale?: number
 }
 
 export const PWInput = forwardRef<PWInputRef, PWInputProps>(

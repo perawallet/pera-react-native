@@ -9,12 +9,42 @@ catalogs:
     '@algorandfoundation/algokit-utils':
       specifier: ^10.0.0-alpha.29
       version: 10.0.0-alpha.40
+    '@algorandfoundation/react-native-keystore':
+      specifier: 1.0.0-canary.5
+      version: 1.0.0-canary.5
+    '@algorandfoundation/wallet-provider':
+      specifier: 1.0.0-canary.3
+      version: 1.0.0-canary.3
     '@algorandfoundation/xhd-wallet-api':
       specifier: ^2.0.0-canary.1
       version: 2.0.0-canary.1
     '@babel/runtime':
       specifier: ^7.28.4
       version: 7.28.6
+    '@kubb/cli':
+      specifier: ^4.5.8
+      version: 4.33.2
+    '@kubb/core':
+      specifier: ^4.5.8
+      version: 4.33.2
+    '@kubb/plugin-client':
+      specifier: ^4.5.8
+      version: 4.33.2
+    '@kubb/plugin-msw':
+      specifier: ^4.5.8
+      version: 4.33.2
+    '@kubb/plugin-oas':
+      specifier: ^4.5.8
+      version: 4.33.2
+    '@kubb/plugin-react-query':
+      specifier: ^4.5.8
+      version: 4.33.2
+    '@kubb/plugin-ts':
+      specifier: ^4.5.8
+      version: 4.33.2
+    '@kubb/plugin-zod':
+      specifier: ^4.5.8
+      version: 4.33.2
     '@tanstack/query-async-storage-persister':
       specifier: ^5.90.9
       version: 5.90.24
@@ -24,6 +54,9 @@ catalogs:
     '@tanstack/react-query-persist-client':
       specifier: ^5.90.9
       version: 5.90.24
+    '@tanstack/store':
+      specifier: ^0.8.1
+      version: 0.8.1
     '@testing-library/react':
       specifier: 16.3.0
       version: 16.3.0
@@ -33,9 +66,30 @@ catalogs:
     '@vitejs/plugin-react':
       specifier: 5.1.0
       version: 5.1.0
+    '@vitest/coverage-v8':
+      specifier: ^4.0.16
+      version: 4.0.18
+    '@xstate/react':
+      specifier: ^6.1.0
+      version: 6.1.0
+    before-after-hook:
+      specifier: ^4.0.0
+      version: 4.0.0
     bip39:
       specifier: ^3.1.0
       version: 3.1.0
+    decimal.js:
+      specifier: ^10.6.0
+      version: 10.6.0
+    drizzle-orm:
+      specifier: ^0.44.0
+      version: 0.44.7
+    eslint:
+      specifier: 9.39.1
+      version: 9.39.1
+    eslint-plugin-unused-imports:
+      specifier: 4.3.0
+      version: 4.3.0
     oxfmt:
       specifier: ^0.41.0
       version: 0.41.0
@@ -48,9 +102,18 @@ catalogs:
     util:
       specifier: ^0.12.5
       version: 0.12.5
+    uuid:
+      specifier: 13.0.0
+      version: 13.0.0
+    vite:
+      specifier: ^7.2.7
+      version: 7.3.1
     vitest:
       specifier: 4.0.16
       version: 4.0.16
+    xstate:
+      specifier: ^5.28.0
+      version: 5.28.0
     zod:
       specifier: ^4.1.12
       version: 4.3.6
@@ -2188,6 +2251,9 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.28.6
+      '@perawallet/wallet-core-assets':
+        specifier: workspace:*
+        version: link:../assets
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain

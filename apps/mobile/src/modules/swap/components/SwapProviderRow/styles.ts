@@ -30,8 +30,11 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.sm,
+        flexShrink: 1,
+        minWidth: 0,
     },
     rate: {
         color: theme.colors.textMain,
+        flexShrink: 1,
     },
 }))
