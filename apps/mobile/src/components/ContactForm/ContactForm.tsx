@@ -12,7 +12,12 @@
 
 import { type ReactNode } from 'react'
 import { ActivityIndicator, KeyboardAvoidingView } from 'react-native'
-import { type Control, Controller } from 'react-hook-form'
+import {
+    type Control,
+    Controller,
+    type FieldPath,
+    type FieldValues,
+} from 'react-hook-form'
 import { PWInput, PWScrollView, PWText, PWView } from '@components/core'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { AddressEntryField } from '@components/AddressEntryField'
@@ -21,9 +26,8 @@ import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
-type ContactFormProps = {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    control: Control<any>
+type ContactFormProps<T extends FieldValues> = {
+    control: Control<T>
     address: string
     nameLabel: string
     namePlaceholder?: string
@@ -38,7 +42,7 @@ type ContactFormProps = {
     children?: ReactNode
 }
 
-export const ContactForm = ({
+export const ContactForm = <T extends FieldValues>({
     control,
     address,
     nameLabel,
@@ -52,7 +56,7 @@ export const ContactForm = ({
     onAddressInputChange,
     rawAddressInput,
     children,
-}: ContactFormProps) => {
+}: ContactFormProps<T>) => {
     const styles = useStyles()
     const { t } = useLanguage()
 
@@ -68,7 +72,7 @@ export const ContactForm = ({
                 <PWView style={styles.formContainer}>
                     <Controller
                         control={control}
-                        name='name'
+                        name={'name' as FieldPath<T>}
                         render={({ field: { onChange, onBlur, value } }) => (
                             <PWInput
                                 onBlur={onBlur}
@@ -85,7 +89,7 @@ export const ContactForm = ({
                         <>
                             <Controller
                                 control={control}
-                                name='address'
+                                name={'address' as FieldPath<T>}
                                 render={({ field: { onBlur } }) => (
                                     <AddressEntryField
                                         allowQRCode
