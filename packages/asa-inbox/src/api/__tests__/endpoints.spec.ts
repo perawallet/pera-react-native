@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
-import { fetchArc59SendSummary } from '../endpoints'
+import { fetchArc59SendSummary, fetchArc59AssetRequests } from '../endpoints'
 import { queryClient } from '@perawallet/wallet-core-shared'
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
@@ -115,6 +115,73 @@ describe('fetchArc59SendSummary', () => {
 
         await expect(
             fetchArc59SendSummary('testnet', RECEIVER, ASSET_ID),
+        ).rejects.toThrow()
+    })
+})
+
+const validAssetRequest = {
+    total_amount: '1000',
+    asset: {
+        asset_id: 12345,
+        name: 'Test Asset',
+        logo: null,
+        unit_name: 'TEST',
+        fraction_decimals: 6,
+        usd_value: null,
+        verification_tier: 'trusted',
+        is_verified: true,
+        is_deleted: false,
+        creator: { address: 'CREATOR' },
+        type: 'standard_asset' as const,
+    },
+    algo_gain_on_claim: '0',
+    algo_gain_on_reject: '0',
+    senders: {
+        count: 1,
+        results: [
+            {
+                sender: { address: 'SENDER1', name: 'Alice' },
+                amount: '500',
+            },
+        ],
+    },
+    insufficient_algo_for_claiming: false,
+    insufficient_algo_for_rejecting: false,
+    should_use_funds_before_claiming: false,
+    should_use_funds_before_rejecting: false,
+}
+
+describe('fetchArc59AssetRequests', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    test('GETs /v1/asa-inboxes/requests/:address and maps each result', async () => {
+        ;(queryClient as Mock).mockResolvedValue({
+            data: { results: [validAssetRequest] },
+        })
+
+        const result = await fetchArc59AssetRequests('mainnet', 'ADDR1')
+
+        expect(queryClient).toHaveBeenCalledWith({
+            backend: 'pera',
+            network: 'mainnet',
+            method: 'GET',
+            url: '/v1/asa-inboxes/requests/ADDR1/',
+        })
+        expect(result).toHaveLength(1)
+        expect(result[0].id).toBe('12345')
+        expect(result[0].asset.assetId).toBe('12345')
+        expect(result[0].senders.results[0].sender.address).toBe('SENDER1')
+    })
+
+    test('throws when the response fails schema validation', async () => {
+        ;(queryClient as Mock).mockResolvedValue({
+            data: { results: [{ asset: 'wrong-shape' }] },
+        })
+
+        await expect(
+            fetchArc59AssetRequests('mainnet', 'ADDR1'),
         ).rejects.toThrow()
     })
 })

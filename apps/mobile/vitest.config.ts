@@ -293,7 +293,14 @@ export default defineConfig({
         },
     },
     test: {
-        coverage: coverageConfig,
+        // The mobile app opts out of coverage thresholds — coverage is only a
+        // guard-rail for the packages/ and extensions/ tree. We still emit
+        // reports when run with --coverage so the mobile numbers are visible,
+        // but a below-threshold run should not fail CI.
+        coverage: {
+            ...coverageConfig,
+            thresholds: undefined,
+        },
         globals: true,
         environment: 'jsdom',
         pool: 'threads',

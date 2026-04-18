@@ -10,83 +10,122 @@
  limitations under the License
  */
 
-import { describe, test, expect, beforeEach } from 'vitest'
+import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { MemoryKeyValueStorage } from '@test-utils'
 import { createRemoteConfigStore } from '../store'
 
-describe('remote-config/store', () => {
+const registerStoreMock = vi.hoisted(() => vi.fn())
+
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    const { createMockPersistStorage } = await vi.importActual<
+        typeof import('@perawallet/wallet-core-shared/test-utils')
+    >('@perawallet/wallet-core-shared/test-utils')
+    return {
+        ...original,
+        registerStore: registerStoreMock,
+        createPersistStorage: createMockPersistStorage,
+    }
+})
+
+describe('remote-config/store factory', () => {
     let storage: MemoryKeyValueStorage
 
     beforeEach(() => {
         storage = new MemoryKeyValueStorage()
     })
 
-    test('should initialize with default empty config overrides', () => {
+    test('initializes with empty config overrides', () => {
         const useStore = createRemoteConfigStore(storage)
-
         const { result } = renderHook(() => useStore())
 
         expect(result.current.configOverrides).toEqual({})
     })
 
-    test('should set config override', () => {
+    test('setConfigOverride stores string/boolean/number values', () => {
         const useStore = createRemoteConfigStore(storage)
-
         const { result } = renderHook(() => useStore())
 
         act(() => {
-            result.current.setConfigOverride('test_key', 'test_value')
+            result.current.setConfigOverride('str', 'v')
+            result.current.setConfigOverride('bool', true)
+            result.current.setConfigOverride('num', 123)
         })
 
-        expect(result.current.configOverrides['test_key']).toBe('test_value')
+        expect(result.current.configOverrides).toEqual({
+            str: 'v',
+            bool: true,
+            num: 123,
+        })
     })
 
-    test('should update existing config override', () => {
+    test('setConfigOverride replaces an existing key', () => {
         const useStore = createRemoteConfigStore(storage)
-
         const { result } = renderHook(() => useStore())
 
         act(() => {
-            result.current.setConfigOverride('test_key', 'initial_value')
+            result.current.setConfigOverride('k', 'first')
+            result.current.setConfigOverride('k', 'second')
         })
 
-        act(() => {
-            result.current.setConfigOverride('test_key', 'updated_value')
-        })
-
-        expect(result.current.configOverrides['test_key']).toBe('updated_value')
+        expect(result.current.configOverrides['k']).toBe('second')
     })
 
-    test('should remove config override when value is null', () => {
+    test('setConfigOverride(null) removes the key', () => {
         const useStore = createRemoteConfigStore(storage)
-
         const { result } = renderHook(() => useStore())
 
         act(() => {
-            result.current.setConfigOverride('test_key', 'test_value')
+            result.current.setConfigOverride('k', 'v')
+            result.current.setConfigOverride('k', null)
         })
 
-        expect(result.current.configOverrides['test_key']).toBe('test_value')
-
-        act(() => {
-            result.current.setConfigOverride('test_key', null)
-        })
-
-        expect(result.current.configOverrides['test_key']).toBeUndefined()
+        expect(result.current.configOverrides['k']).toBeUndefined()
     })
 
-    test('should handle boolean and number overrides', () => {
+    test('resetState returns to the initial empty state', () => {
         const useStore = createRemoteConfigStore(storage)
-
         const { result } = renderHook(() => useStore())
 
         act(() => {
-            result.current.setConfigOverride('bool_key', true)
-            result.current.setConfigOverride('number_key', 123)
+            result.current.setConfigOverride('k', 'v')
+            result.current.resetState()
         })
 
-        expect(result.current.configOverrides['bool_key']).toBe(true)
-        expect(result.current.configOverrides['number_key']).toBe(123)
+        expect(result.current.configOverrides).toEqual({})
+    })
+})
+
+describe('remote-config/store singleton', () => {
+    beforeEach(() => {
+        vi.resetModules()
+        registerStoreMock.mockReset()
+    })
+
+    test('registers a clearStorage and resetState callback', async () => {
+        const { useRemoteConfigStore } = await import('../store')
+
+        const registration = registerStoreMock.mock.calls.at(-1)?.[0]
+        expect(registration?.name).toBe('remote-config-store')
+
+        act(() => {
+            useRemoteConfigStore.getState().setConfigOverride('feature', true)
+        })
+        act(() => registration.resetState())
+        expect(useRemoteConfigStore.getState().configOverrides).toEqual({})
+        expect(() => registration.clearStorage()).not.toThrow()
+    })
+
+    test('setConfigOverride on the singleton logs and updates state', async () => {
+        const { useRemoteConfigStore } = await import('../store')
+
+        act(() => {
+            useRemoteConfigStore.getState().setConfigOverride('x', 1)
+            useRemoteConfigStore.getState().setConfigOverride('x', null)
+        })
+
+        expect(useRemoteConfigStore.getState().configOverrides).toEqual({})
     })
 })

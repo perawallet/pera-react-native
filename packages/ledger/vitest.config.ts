@@ -21,7 +21,7 @@ export default defineConfig({
     test: {
         coverage: coverageConfig,
         globals: true,
-        environment: 'node',
+        environment: 'jsdom',
     },
     resolve: {
         conditions: ['default'],

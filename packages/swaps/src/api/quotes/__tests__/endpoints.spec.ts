@@ -12,7 +12,11 @@
 
 import { describe, test, expect, vi, beforeEach, Mock } from 'vitest'
 import { queryClient } from '@perawallet/wallet-core-shared'
-import { createQuotes } from '../endpoints'
+import {
+    createQuotes,
+    calculatePeraFee,
+    calculateSwapAmount,
+} from '../endpoints'
 import type { CreateQuotesRequest } from '../schema'
 import type { SwapProviderItem } from '../../../models'
 
@@ -93,5 +97,83 @@ describe('createQuotes', () => {
 
         expect(result[0].provider).toBe('unknown-dex')
         expect(result[0].providerDisplayName).toBeUndefined()
+    })
+})
+
+describe('calculatePeraFee', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    test('POSTs /calculate-pera-fee/ and converts pera_fee_amount to Decimal', async () => {
+        ;(queryClient as Mock).mockResolvedValue({
+            data: { pera_fee_amount: 5000, pera_fee_asset_id: 0 },
+        })
+
+        const result = await calculatePeraFee(
+            {
+                address: 'ADDR',
+                asset_in_id: 0,
+                asset_out_id: 31566704,
+                amount_input: '1000000',
+            } as never,
+            'mainnet',
+        )
+
+        expect(queryClient).toHaveBeenCalledWith(
+            expect.objectContaining({
+                url: '/v1/dex-swap/calculate-pera-fee/',
+                method: 'POST',
+            }),
+        )
+        expect(result.peraFeeAmount?.toString()).toBe('5000')
+        expect(result.peraFeeAssetId).toBe(0)
+    })
+
+    test('returns peraFeeAmount undefined when the API omits the field', async () => {
+        ;(queryClient as Mock).mockResolvedValue({
+            data: { pera_fee_asset_id: 0 },
+        })
+
+        const result = await calculatePeraFee({} as never, 'mainnet')
+
+        expect(result.peraFeeAmount).toBeUndefined()
+    })
+})
+
+describe('calculateSwapAmount', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    test('POSTs /calculate-swap-amount/ and converts amount + pera_fee to Decimal', async () => {
+        ;(queryClient as Mock).mockResolvedValue({
+            data: {
+                amount: '1000000',
+                pera_fee: '5000',
+                pera_fee_asset_id: 0,
+            },
+        })
+
+        const result = await calculateSwapAmount({} as never, 'mainnet')
+
+        expect(queryClient).toHaveBeenCalledWith(
+            expect.objectContaining({
+                url: '/v1/dex-swap/calculate-swap-amount/',
+            }),
+        )
+        expect(result.amount?.toString()).toBe('1000000')
+        expect(result.peraFee?.toString()).toBe('5000')
+    })
+
+    test('returns undefined amounts when the API omits them', async () => {
+        ;(queryClient as Mock).mockResolvedValue({
+            data: { pera_fee_asset_id: 0 },
+        })
+
+        const result = await calculateSwapAmount({} as never, 'mainnet')
+
+        expect(result.amount).toBeUndefined()
+        expect(result.peraFee).toBeUndefined()
     })
 })

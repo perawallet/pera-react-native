@@ -172,6 +172,57 @@ describe('usePinCode', () => {
         expect(mockSetLockoutEndTime).toHaveBeenCalledWith(null)
     })
 
+    test('savePin also updates biometric storage when biometrics are enabled', async () => {
+        const setBiometricsCode = vi.fn()
+        const disableBiometrics = vi.fn()
+        const { useBiometrics } = await import('../useBiometrics')
+        vi.mocked(useBiometrics).mockReturnValue({
+            checkBiometricsEnabled: vi.fn().mockResolvedValue(true),
+            setBiometricsCode,
+            disableBiometrics,
+            checkBiometricsAvailable: vi.fn(),
+            enableBiometrics: vi.fn(),
+            authenticateWithBiometrics: vi.fn(),
+            isEnabled: true,
+            isAvailable: true,
+        })
+        setupMock({ failedAttempts: 0, lockoutEndTime: null })
+
+        const { result } = renderHook(() => usePinCode())
+
+        await act(async () => {
+            await result.current.savePin('123456')
+        })
+
+        expect(setBiometricsCode).toHaveBeenCalled()
+    })
+
+    test('savePin(null) removes the PIN and disables biometrics when enabled', async () => {
+        const setBiometricsCode = vi.fn()
+        const disableBiometrics = vi.fn()
+        const { useBiometrics } = await import('../useBiometrics')
+        vi.mocked(useBiometrics).mockReturnValue({
+            checkBiometricsEnabled: vi.fn().mockResolvedValue(true),
+            setBiometricsCode,
+            disableBiometrics,
+            checkBiometricsAvailable: vi.fn(),
+            enableBiometrics: vi.fn(),
+            authenticateWithBiometrics: vi.fn(),
+            isEnabled: true,
+            isAvailable: true,
+        })
+        setupMock({ failedAttempts: 0, lockoutEndTime: null })
+
+        const { result } = renderHook(() => usePinCode())
+
+        await act(async () => {
+            await result.current.savePin(null)
+        })
+
+        expect(mockRemoveItem).toHaveBeenCalledWith(PIN_STORAGE_KEY)
+        expect(disableBiometrics).toHaveBeenCalled()
+    })
+
     test('verifyPin returns true for correct PIN', async () => {
         setupMock({
             failedAttempts: 0,

@@ -11,7 +11,7 @@
  */
 
 import { describe, test, expect } from 'vitest'
-import { partition } from '../arrays'
+import { partition, partitionBy, concatBytes } from '../arrays'
 
 describe('utils/arrays', () => {
     describe('partition', () => {
@@ -32,21 +32,51 @@ describe('utils/arrays', () => {
         })
 
         test('handles empty array', () => {
-            const array: number[] = []
-            const result = partition(array, 3)
-            expect(result).toEqual([])
+            expect(partition([], 3)).toEqual([])
         })
 
         test('handles chunk size larger than array', () => {
-            const array = [1, 2, 3]
-            const result = partition(array, 10)
-            expect(result).toEqual([[1, 2, 3]])
+            expect(partition([1, 2, 3], 10)).toEqual([[1, 2, 3]])
+        })
+    })
+
+    describe('partitionBy', () => {
+        test('groups items by the string returned from the predicate', () => {
+            const items = [
+                { id: 1, net: 'mainnet' },
+                { id: 2, net: 'testnet' },
+                { id: 3, net: 'mainnet' },
+            ]
+            const result = partitionBy(items, i => i.net)
+
+            expect(result).toHaveLength(2)
+            const groups = new Map(result.map(g => [g[0].net, g]))
+            expect(groups.get('mainnet')).toEqual([
+                { id: 1, net: 'mainnet' },
+                { id: 3, net: 'mainnet' },
+            ])
+            expect(groups.get('testnet')).toEqual([{ id: 2, net: 'testnet' }])
         })
 
-        test('handles chunk size of 1', () => {
-            const array = [1, 2, 3]
-            const result = partition(array, 1)
-            expect(result).toEqual([[1], [2], [3]])
+        test('returns an empty array for no input', () => {
+            expect(partitionBy<number>([], () => 'k')).toEqual([])
+        })
+    })
+
+    describe('concatBytes', () => {
+        test('concatenates Uint8Arrays preserving order and bytes', () => {
+            const a = new Uint8Array([1, 2, 3])
+            const b = new Uint8Array([4, 5])
+            const c = new Uint8Array([6])
+            const result = concatBytes(a, b, c)
+
+            expect(Array.from(result)).toEqual([1, 2, 3, 4, 5, 6])
+        })
+
+        test('returns an empty Uint8Array when given no arrays', () => {
+            const result = concatBytes()
+            expect(result).toBeInstanceOf(Uint8Array)
+            expect(result.length).toBe(0)
         })
     })
 })

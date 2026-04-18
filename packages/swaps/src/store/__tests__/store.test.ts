@@ -10,8 +10,19 @@
  limitations under the License
  */
 
-import { describe, test, expect, beforeEach } from 'vitest'
+import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+
+const registerStoreMock = vi.hoisted(() => vi.fn())
+
+vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
+    return {
+        ...original,
+        registerStore: registerStoreMock,
+    }
+})
 
 import { useSwapsStore } from '../store'
 
@@ -91,5 +102,59 @@ describe('swaps/store', () => {
         expect(result.current.fromAsset).toBe('0')
         expect(result.current.toAsset).toBe('31566704')
         expect(result.current.slippage).toBe('2.5')
+    })
+
+    test('registers resetState and clearStorage with the store registry', () => {
+        const registration = registerStoreMock.mock.calls
+            .map(([r]) => r)
+            .find(r => r?.name === 'swaps-store')
+        expect(registration).toBeDefined()
+
+        act(() => {
+            useSwapsStore.getState().setFromAsset('999')
+        })
+        act(() => registration!.resetState())
+        expect(useSwapsStore.getState().fromAsset).toBe('0')
+        expect(() => registration!.clearStorage()).not.toThrow()
+    })
+
+    test('migrates v1 state by adding slippage: null', () => {
+        const migrate = useSwapsStore.persist.getOptions().migrate as (
+            state: unknown,
+            version: number,
+        ) => unknown
+
+        const v1 = { fromAsset: '0', toAsset: '31566704' }
+        const migrated = migrate(v1, 1) as { slippage: string | null }
+
+        expect(migrated.slippage).toBeNull()
+    })
+
+    test('migrates v2 state by stripping fromAsset and toAsset', () => {
+        const migrate = useSwapsStore.persist.getOptions().migrate as (
+            state: unknown,
+            version: number,
+        ) => unknown
+
+        const v2 = {
+            fromAsset: '0',
+            toAsset: '31566704',
+            slippage: '1.0',
+        }
+        const migrated = migrate(v2, 2) as Record<string, unknown>
+
+        expect(migrated.fromAsset).toBeUndefined()
+        expect(migrated.toAsset).toBeUndefined()
+        expect(migrated.slippage).toBe('1.0')
+    })
+
+    test('migrate returns state as-is for the current version', () => {
+        const migrate = useSwapsStore.persist.getOptions().migrate as (
+            state: unknown,
+            version: number,
+        ) => unknown
+
+        const current = { slippage: '2.0' }
+        expect(migrate(current, 3)).toBe(current)
     })
 })

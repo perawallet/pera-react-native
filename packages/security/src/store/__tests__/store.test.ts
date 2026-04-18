@@ -13,6 +13,8 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
+const registerStoreMock = vi.hoisted(() => vi.fn())
+
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
@@ -21,7 +23,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     >('@perawallet/wallet-core-shared/test-utils')
     return {
         ...original,
-        registerStore: vi.fn(),
+        registerStore: registerStoreMock,
         createPersistStorage: createMockPersistStorage,
     }
 })
@@ -153,5 +155,20 @@ describe('services/security/store', () => {
         expect(result.current.failedAttempts).toBe(0)
         expect(result.current.lockoutEndTime).toBeNull()
         expect(result.current.autoLockStartedAt).toBeNull()
+    })
+
+    test('registers resetState and clearStorage callbacks', async () => {
+        const { useSecurityStore } = await import('../store')
+
+        const registration = registerStoreMock.mock.calls.at(-1)?.[0]
+        expect(registration?.name).toBe('security-store')
+
+        act(() => {
+            useSecurityStore.getState().incrementFailedAttempts()
+        })
+        act(() => registration.resetState())
+        expect(useSecurityStore.getState().failedAttempts).toBe(0)
+
+        expect(() => registration.clearStorage()).not.toThrow()
     })
 })

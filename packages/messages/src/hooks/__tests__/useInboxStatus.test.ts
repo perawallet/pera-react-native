@@ -16,6 +16,7 @@ import { createWrapper } from '@perawallet/wallet-extension-platform'
 import { useInboxStatus } from '../useInboxStatus'
 import { fetchNotificationStatus } from '../../api/notifications'
 import { useInboxQuery } from '../useInboxQuery'
+import { useDeviceID } from '@perawallet/wallet-core-device'
 
 vi.mock('../../api/notifications', () => ({
     fetchNotificationStatus: vi.fn(),
@@ -63,5 +64,20 @@ describe('useInboxStatus', () => {
         expect(result.current.hasUnreadItems).toEqual(true)
         expect(result.current.hasUnreadNotifications).toEqual(true)
         expect(result.current.hasUnreadInboxItems).toBeFalsy()
+    })
+
+    it('skips the status fetch when deviceID is missing', async () => {
+        vi.mocked(useDeviceID).mockReturnValueOnce(null)
+        vi.mocked(fetchNotificationStatus).mockClear()
+        vi.mocked(useInboxQuery).mockReturnValue({
+            data: [],
+        } as unknown as ReturnType<typeof useInboxQuery>)
+
+        const { result } = renderHook(() => useInboxStatus(), {
+            wrapper: createWrapper(),
+        })
+
+        expect(fetchNotificationStatus).not.toHaveBeenCalled()
+        expect(result.current.hasUnreadNotifications).toBeUndefined()
     })
 })

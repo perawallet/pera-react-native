@@ -212,4 +212,24 @@ describe('RNDeviceInfoStorageService', () => {
             expect(locale).toBe('en-US@rg=ptzzzz')
         })
     })
+
+    describe('simple getters delegate to native modules', () => {
+        it('returns Device.osVersion / modelId and Application metadata', () => {
+            expect(service.getDeviceOSVersion()).toBe('15.0')
+            expect(service.getDeviceModelId()).toBe('iPhone13,2')
+            expect(service.getAppBuild()).toBe('1')
+            expect(service.getAppPackage()).toBe('com.algorand.android')
+            expect(service.getAppName()).toBe('Pera Wallet')
+        })
+
+        it('getDeviceCountry returns the first locale regionCode', () => {
+            expect(service.getDeviceCountry()).toBe('US')
+        })
+
+        it('getDeviceCountry falls back to US when no locale is available', async () => {
+            const { getLocales } = await import('expo-localization')
+            vi.mocked(getLocales).mockReturnValue([])
+            expect(service.getDeviceCountry()).toBe('US')
+        })
+    })
 })
