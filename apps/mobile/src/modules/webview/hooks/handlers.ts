@@ -37,21 +37,61 @@ export const JsonRpcErrorCode = {
     InvalidParams: -32602,
     InternalError: -32603,
     ServerErrorStart: -32000,
+    Unauthorized: -32001,
     ServerErrorEnd: -32099,
 } as const
 
 export type JsonRpcErrorCode =
     (typeof JsonRpcErrorCode)[keyof typeof JsonRpcErrorCode]
 
+export type RequireSecureContext = {
+    operation: string
+    messageId: string
+    sourceUrl: string | null
+    webview: WebView | null
+}
+
 export const requireSecure = (
     securedConnection: boolean,
+    context: RequireSecureContext,
     handler: () => void,
 ) => {
     if (!securedConnection) {
-        // we return silently since the caller shouldn't be here anyway
+        logger.warn('Blocked WebView bridge call from untrusted origin', {
+            operation: context.operation,
+            sourceUrl: context.sourceUrl,
+            messageId: context.messageId,
+        })
+        sendErrorToWebview(
+            context.messageId,
+            JsonRpcErrorCode.Unauthorized,
+            'Operation not permitted from this origin',
+            context.webview,
+        )
         return
     }
     handler()
+}
+
+export const isTrustedWebviewOrigin = (
+    url: string,
+    trusted: string[],
+): boolean => {
+    const candidate = safeOrigin(url)
+    if (!candidate) return false
+    return trusted.some(base => {
+        const baseOrigin = safeOrigin(base)
+        return baseOrigin !== null && baseOrigin === candidate
+    })
+}
+
+const safeOrigin = (url: string): string | null => {
+    try {
+        const origin = new URL(url).origin
+        return origin === 'null' ? null : origin
+    } catch {
+        return null
+    }
 }
 
 export const sendMessageToWebview = (
