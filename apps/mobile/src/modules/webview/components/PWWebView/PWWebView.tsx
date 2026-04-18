@@ -105,7 +105,6 @@ export const PWWebView = (props: PWWebViewProps) => {
             isTrustedWebviewOrigin(url, [
                 config.onrampBaseUrl,
                 config.discoverBaseUrl,
-                config.stakingBaseUrl,
             ]),
         [url],
     )
