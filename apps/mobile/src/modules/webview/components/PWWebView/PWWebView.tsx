@@ -35,6 +35,7 @@ import {
     useContextFingerprints,
     usePeraWebviewInterface,
 } from '@modules/webview/hooks'
+import { isTrustedWebviewOrigin } from '@modules/webview/hooks/handlers'
 import { useNotifyWebViewOnContextChange } from '@modules/webview/hooks/useNotifyWebViewOnContextChange'
 import { EmptyView } from '@components/EmptyView'
 import {
@@ -99,14 +100,15 @@ export const PWWebView = (props: PWWebViewProps) => {
         enablePeraConnect ? contextFingerprints : undefined,
     )
 
-    const isSecure = useMemo(() => {
-        // TODO: We ultimately want to replace this with a more SRI style security method
-        return (
-            url.startsWith(config.onrampBaseUrl) ||
-            url.startsWith(config.discoverBaseUrl) ||
-            url.startsWith(config.stakingBaseUrl)
-        )
-    }, [url])
+    const isSecure = useMemo(
+        () =>
+            isTrustedWebviewOrigin(url, [
+                config.onrampBaseUrl,
+                config.discoverBaseUrl,
+                config.stakingBaseUrl,
+            ]),
+        [url],
+    )
 
     const provider = usePeraProvider()
     const deviceInfo = provider.deviceInfo
@@ -126,6 +128,7 @@ export const PWWebView = (props: PWWebViewProps) => {
     const mobileInterface = usePeraWebviewInterface(
         webview.current,
         isSecure,
+        url,
         onCloseRequested,
         onBack,
     )

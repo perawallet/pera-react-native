@@ -69,7 +69,9 @@ export const peraConnectJS = `
                     const r = t.getElementsByClassName("pera-wallet-connect-modal-touch-screen-mode__launch-pera-wallet-button");
                     r && (e = r[0].getAttribute("href"));
                 }
-                e && window.peraRPC?.sendRNMessage('walletConnect', { uri: e });
+                if (e && (e.indexOf('wc:') === 0 || e.indexOf('perawallet-wc:') === 0)) {
+                    window.peraRPC?.sendRNMessage('walletConnect', { uri: e });
+                }
                 t.remove();
             }
         });

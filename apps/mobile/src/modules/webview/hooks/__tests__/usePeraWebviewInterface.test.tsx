@@ -48,6 +48,7 @@ vi.mock('react-native-notifier', () => ({
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: {
         debug: vi.fn(),
+        warn: vi.fn(),
         error: vi.fn(),
     },
     generateOrderedUniqueId: vi.fn(() => 'test-id'),
@@ -122,8 +123,9 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     useSigningRequest: () => ({ addSignRequest: mockAddSignRequest }),
 }))
 
+const mockConnect = vi.fn()
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
-    useWalletConnect: () => ({ connect: vi.fn() }),
+    useWalletConnect: () => ({ connect: mockConnect }),
 }))
 
 vi.mock('uuid', () => ({
@@ -154,10 +156,16 @@ vi.mock('@hooks/deeplink/parser', () => ({
     parseDeeplink: vi.fn(() => null),
 }))
 
-vi.mock('@hooks/deeplink/types', () => ({
-    DeeplinkType: {
-        WALLET_CONNECT: 'WALLET_CONNECT',
-    },
+vi.mock('@hooks/deeplink/walletconnect-parser', () => ({
+    parseWalletConnectUri: vi.fn((uri: string) =>
+        uri.startsWith('wc:') || uri.startsWith('perawallet-wc:')
+            ? {
+                  type: 'WALLET_CONNECT',
+                  sourceUrl: uri,
+                  uri: uri.replace('perawallet-wc:', 'wc:'),
+              }
+            : null,
+    ),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -210,7 +218,7 @@ describe('usePeraWebviewInterface', () => {
 
     it('should handle openSystemBrowser action', async () => {
         const { result } = renderHook(() =>
-            usePeraWebviewInterface(mockWebview, true),
+            usePeraWebviewInterface(mockWebview, true, null),
         )
 
         await act(async () => {
@@ -232,7 +240,7 @@ describe('usePeraWebviewInterface', () => {
     it('should handle openSystemBrowser action failure', async () => {
         ;(Linking.canOpenURL as Mock).mockResolvedValue(false)
         const { result } = renderHook(() =>
-            usePeraWebviewInterface(mockWebview, true),
+            usePeraWebviewInterface(mockWebview, true, null),
         )
 
         await act(async () => {
@@ -260,7 +268,7 @@ describe('usePeraWebviewInterface', () => {
 
     it('should handle canOpenURI action', async () => {
         const { result } = renderHook(() =>
-            usePeraWebviewInterface(mockWebview, true),
+            usePeraWebviewInterface(mockWebview, true, null),
         )
 
         await act(async () => {
@@ -287,7 +295,7 @@ describe('usePeraWebviewInterface', () => {
 
     it('should handle openNativeURI action', async () => {
         const { result } = renderHook(() =>
-            usePeraWebviewInterface(mockWebview, true),
+            usePeraWebviewInterface(mockWebview, true, null),
         )
 
         await act(async () => {
@@ -308,7 +316,7 @@ describe('usePeraWebviewInterface', () => {
 
     it('should handle getSettings action', () => {
         const { result } = renderHook(() =>
-            usePeraWebviewInterface(mockWebview, true),
+            usePeraWebviewInterface(mockWebview, true, null),
         )
 
         act(() => {
@@ -333,7 +341,7 @@ describe('usePeraWebviewInterface', () => {
 
     it('should handle getPublicSettings action', () => {
         const { result } = renderHook(() =>
-            usePeraWebviewInterface(mockWebview, true),
+            usePeraWebviewInterface(mockWebview, true, null),
         )
 
         act(() => {
@@ -355,7 +363,7 @@ describe('usePeraWebviewInterface', () => {
 
     it('should handle logAnalyticsEvent action', () => {
         const { result } = renderHook(() =>
-            usePeraWebviewInterface(mockWebview, true),
+            usePeraWebviewInterface(mockWebview, true, null),
         )
 
         act(() => {
@@ -373,7 +381,7 @@ describe('usePeraWebviewInterface', () => {
     it('should handle closeWebView action', () => {
         const mockOnClose = vi.fn()
         const { result } = renderHook(() =>
-            usePeraWebviewInterface(mockWebview, true, mockOnClose),
+            usePeraWebviewInterface(mockWebview, true, null, mockOnClose),
         )
 
         act(() => {
@@ -390,7 +398,7 @@ describe('usePeraWebviewInterface', () => {
 
     it('should handle notifyUser action', () => {
         const { result } = renderHook(() =>
-            usePeraWebviewInterface(mockWebview, true),
+            usePeraWebviewInterface(mockWebview, true, null),
         )
 
         act(() => {
@@ -407,7 +415,7 @@ describe('usePeraWebviewInterface', () => {
 
     it('should handle getAddresses action', () => {
         const { result } = renderHook(() =>
-            usePeraWebviewInterface(mockWebview, true),
+            usePeraWebviewInterface(mockWebview, true, null),
         )
 
         act(() => {
@@ -429,7 +437,7 @@ describe('usePeraWebviewInterface', () => {
 
     it('should handle onBackPressed action', () => {
         const { result } = renderHook(() =>
-            usePeraWebviewInterface(mockWebview, true),
+            usePeraWebviewInterface(mockWebview, true, null),
         )
 
         act(() => {
@@ -448,7 +456,7 @@ describe('usePeraWebviewInterface', () => {
         mockPushWebView.mockClear()
 
         const { result } = renderHook(() =>
-            usePeraWebviewInterface(mockWebview, true),
+            usePeraWebviewInterface(mockWebview, true, null),
         )
 
         act(() => {
@@ -467,7 +475,7 @@ describe('usePeraWebviewInterface', () => {
 
     it('should handle requestTransactionSigning action', async () => {
         const { result } = renderHook(() =>
-            usePeraWebviewInterface(mockWebview, true),
+            usePeraWebviewInterface(mockWebview, true, null),
         )
 
         const txns = [{}]
@@ -510,7 +518,7 @@ describe('usePeraWebviewInterface', () => {
 
     it('should handle requestTransactionSigning error', async () => {
         const { result } = renderHook(() =>
-            usePeraWebviewInterface(mockWebview, true),
+            usePeraWebviewInterface(mockWebview, true, null),
         )
 
         const txns = [{}]
@@ -547,7 +555,7 @@ describe('usePeraWebviewInterface', () => {
 
     it('should handle requestDataSigning action', async () => {
         const { result } = renderHook(() =>
-            usePeraWebviewInterface(mockWebview, true),
+            usePeraWebviewInterface(mockWebview, true, null),
         )
 
         const data = { data: 'AQID', message: 'Sign this', signer: 'addr1' }
@@ -593,7 +601,7 @@ describe('usePeraWebviewInterface', () => {
 
     it('should handle requestDataSigning error', async () => {
         const { result } = renderHook(() =>
-            usePeraWebviewInterface(mockWebview, true),
+            usePeraWebviewInterface(mockWebview, true, null),
         )
 
         const data = { data: 'AQID', signer: 'addr1' }
@@ -628,9 +636,13 @@ describe('usePeraWebviewInterface', () => {
     })
 
     describe('insecure connection handling', () => {
-        it('should silently return for getAddresses when connection is insecure', () => {
+        it('should send Unauthorized error for getAddresses when connection is insecure', () => {
             const { result } = renderHook(() =>
-                usePeraWebviewInterface(mockWebview, false),
+                usePeraWebviewInterface(
+                    mockWebview,
+                    false,
+                    'https://evil.com/',
+                ),
             )
 
             act(() => {
@@ -642,13 +654,23 @@ describe('usePeraWebviewInterface', () => {
                 })
             })
 
-            // Should not inject any message since connection is insecure
-            expect(mockWebview.injectJavaScript).not.toHaveBeenCalled()
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"code":-32001'),
+            )
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining(
+                    '"message":"Operation not permitted from this origin"',
+                ),
+            )
         })
 
-        it('should silently return for getSettings when connection is insecure', () => {
+        it('should send Unauthorized error for getSettings when connection is insecure', () => {
             const { result } = renderHook(() =>
-                usePeraWebviewInterface(mockWebview, false),
+                usePeraWebviewInterface(
+                    mockWebview,
+                    false,
+                    'https://evil.com/',
+                ),
             )
 
             act(() => {
@@ -660,12 +682,18 @@ describe('usePeraWebviewInterface', () => {
                 })
             })
 
-            expect(mockWebview.injectJavaScript).not.toHaveBeenCalled()
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"code":-32001'),
+            )
         })
 
-        it('should silently return for requestTransactionSigning when connection is insecure', () => {
+        it('should not enqueue sign request for requestTransactionSigning when connection is insecure', () => {
             const { result } = renderHook(() =>
-                usePeraWebviewInterface(mockWebview, false),
+                usePeraWebviewInterface(
+                    mockWebview,
+                    false,
+                    'https://evil.com/',
+                ),
             )
 
             act(() => {
@@ -678,13 +706,101 @@ describe('usePeraWebviewInterface', () => {
             })
 
             expect(mockAddSignRequest).not.toHaveBeenCalled()
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"code":-32001'),
+            )
+        })
+    })
+
+    describe('openWalletConnect handling', () => {
+        beforeEach(() => {
+            mockConnect.mockClear()
+        })
+
+        it('rejects non-WalletConnect URIs with InvalidParams', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(
+                    mockWebview,
+                    true,
+                    'https://discover-mobile-staging.perawallet.app/',
+                ),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: 'wc-invalid',
+                    jsonrpc: '2.0',
+                    method: 'walletConnect',
+                    params: { uri: 'https://evil.com' },
+                })
+            })
+
+            expect(mockConnect).not.toHaveBeenCalled()
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"code":-32602'),
+            )
+            expect(mockWebview.injectJavaScript).toHaveBeenCalledWith(
+                expect.stringContaining('"Invalid WalletConnect URI"'),
+            )
+        })
+
+        it('auto-connects for a trusted origin with a valid wc URI', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(
+                    mockWebview,
+                    true,
+                    'https://discover-mobile-staging.perawallet.app/',
+                ),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: 'wc-trusted',
+                    jsonrpc: '2.0',
+                    method: 'walletConnect',
+                    params: { uri: 'wc:topic@2?relay-protocol=irn' },
+                })
+            })
+
+            expect(mockConnect).toHaveBeenCalledWith({
+                connection: {
+                    uri: 'wc:topic@2?relay-protocol=irn',
+                    autoConnect: true,
+                },
+            })
+        })
+
+        it('shows the modal (autoConnect=false) for an untrusted origin with a valid wc URI', () => {
+            const { result } = renderHook(() =>
+                usePeraWebviewInterface(
+                    mockWebview,
+                    false,
+                    'https://evil.com/',
+                ),
+            )
+
+            act(() => {
+                result.current.handleMessage({
+                    id: 'wc-untrusted',
+                    jsonrpc: '2.0',
+                    method: 'walletConnect',
+                    params: { uri: 'wc:topic@2?relay-protocol=irn' },
+                })
+            })
+
+            expect(mockConnect).toHaveBeenCalledWith({
+                connection: {
+                    uri: 'wc:topic@2?relay-protocol=irn',
+                    autoConnect: false,
+                },
+            })
         })
     })
 
     describe('missing parameter validation', () => {
         it('should send error for pushWebView with missing url', () => {
             const { result } = renderHook(() =>
-                usePeraWebviewInterface(mockWebview, true),
+                usePeraWebviewInterface(mockWebview, true, null),
             )
 
             act(() => {
@@ -703,7 +819,7 @@ describe('usePeraWebviewInterface', () => {
 
         it('should send error for openSystemBrowser with missing url', () => {
             const { result } = renderHook(() =>
-                usePeraWebviewInterface(mockWebview, true),
+                usePeraWebviewInterface(mockWebview, true, null),
             )
 
             act(() => {
@@ -722,7 +838,7 @@ describe('usePeraWebviewInterface', () => {
 
         it('should send error for canOpenURI with missing uri', () => {
             const { result } = renderHook(() =>
-                usePeraWebviewInterface(mockWebview, true),
+                usePeraWebviewInterface(mockWebview, true, null),
             )
 
             act(() => {
@@ -741,7 +857,7 @@ describe('usePeraWebviewInterface', () => {
 
         it('should send error for openNativeURI with missing uri', () => {
             const { result } = renderHook(() =>
-                usePeraWebviewInterface(mockWebview, true),
+                usePeraWebviewInterface(mockWebview, true, null),
             )
 
             act(() => {
@@ -760,7 +876,7 @@ describe('usePeraWebviewInterface', () => {
 
         it('should send error for notifyUser with missing type', () => {
             const { result } = renderHook(() =>
-                usePeraWebviewInterface(mockWebview, true),
+                usePeraWebviewInterface(mockWebview, true, null),
             )
 
             act(() => {
@@ -779,7 +895,7 @@ describe('usePeraWebviewInterface', () => {
 
         it('should send error for requestTransactionSigning with missing params', () => {
             const { result } = renderHook(() =>
-                usePeraWebviewInterface(mockWebview, true),
+                usePeraWebviewInterface(mockWebview, true, null),
             )
 
             act(() => {
@@ -798,7 +914,7 @@ describe('usePeraWebviewInterface', () => {
 
         it('should send error for requestDataSigning with missing params', () => {
             const { result } = renderHook(() =>
-                usePeraWebviewInterface(mockWebview, true),
+                usePeraWebviewInterface(mockWebview, true, null),
             )
 
             act(() => {
@@ -817,7 +933,7 @@ describe('usePeraWebviewInterface', () => {
 
         it('should send error for logAnalyticsEvent with missing params', () => {
             const { result } = renderHook(() =>
-                usePeraWebviewInterface(mockWebview, true),
+                usePeraWebviewInterface(mockWebview, true, null),
             )
 
             act(() => {
@@ -842,7 +958,7 @@ describe('usePeraWebviewInterface', () => {
             })
 
             const { result } = renderHook(() =>
-                usePeraWebviewInterface(mockWebview, true),
+                usePeraWebviewInterface(mockWebview, true, null),
             )
 
             act(() => {
@@ -872,7 +988,7 @@ describe('usePeraWebviewInterface', () => {
             })
 
             const { result } = renderHook(() =>
-                usePeraWebviewInterface(mockWebview, true),
+                usePeraWebviewInterface(mockWebview, true, null),
             )
 
             act(() => {
@@ -903,7 +1019,7 @@ describe('usePeraWebviewInterface', () => {
     describe('unknown method handling', () => {
         it('should send error for unknown method', () => {
             const { result } = renderHook(() =>
-                usePeraWebviewInterface(mockWebview, true),
+                usePeraWebviewInterface(mockWebview, true, null),
             )
 
             act(() => {
@@ -935,7 +1051,7 @@ describe('usePeraWebviewInterface', () => {
 
         it('should return dark theme in getPublicSettings when dark mode is active', () => {
             const { result } = renderHook(() =>
-                usePeraWebviewInterface(mockWebview, true),
+                usePeraWebviewInterface(mockWebview, true, null),
             )
 
             act(() => {
@@ -954,7 +1070,7 @@ describe('usePeraWebviewInterface', () => {
 
         it('should return dark theme in getSettings when dark mode is active', () => {
             const { result } = renderHook(() =>
-                usePeraWebviewInterface(mockWebview, true),
+                usePeraWebviewInterface(mockWebview, true, null),
             )
 
             act(() => {
