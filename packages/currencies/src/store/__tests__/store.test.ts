@@ -13,6 +13,8 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
+const registerStoreMock = vi.fn()
+
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
@@ -21,33 +23,18 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     >('@perawallet/wallet-core-shared/test-utils')
     return {
         ...original,
-        registerStore: vi.fn(),
+        registerStore: registerStoreMock,
         createPersistStorage: createMockPersistStorage,
     }
 })
 
 describe('CurrenciesStore', () => {
     beforeEach(async () => {
-        vi.resetModules()
         const { useCurrenciesStore } = await import('../index')
         useCurrenciesStore.getState().resetState()
     })
 
-    test('should initialize with USD as default preferred currency', async () => {
-        const { useCurrenciesStore } = await import('../index')
-        const { result } = renderHook(() => useCurrenciesStore())
-
-        expect(result.current.preferredCurrency).toBe('USD')
-    })
-
-    test('should initialize with USD as default fallback currency', async () => {
-        const { useCurrenciesStore } = await import('../index')
-        const { result } = renderHook(() => useCurrenciesStore())
-
-        expect(result.current.fallbackCurrency).toBe('USD')
-    })
-
-    test('should update preferred currency', async () => {
+    test('setPreferredCurrency updates the store', async () => {
         const { useCurrenciesStore } = await import('../index')
         const { result } = renderHook(() => useCurrenciesStore())
 
@@ -58,7 +45,7 @@ describe('CurrenciesStore', () => {
         expect(result.current.preferredCurrency).toBe('EUR')
     })
 
-    test('should update fallback currency', async () => {
+    test('setFallbackCurrency updates the store', async () => {
         const { useCurrenciesStore } = await import('../index')
         const { result } = renderHook(() => useCurrenciesStore())
 
@@ -69,35 +56,7 @@ describe('CurrenciesStore', () => {
         expect(result.current.fallbackCurrency).toBe('GBP')
     })
 
-    test('should update to different currencies', async () => {
-        const { useCurrenciesStore } = await import('../index')
-        const { result } = renderHook(() => useCurrenciesStore())
-
-        act(() => {
-            result.current.setPreferredCurrency('GBP')
-        })
-        expect(result.current.preferredCurrency).toBe('GBP')
-
-        act(() => {
-            result.current.setPreferredCurrency('JPY')
-        })
-        expect(result.current.preferredCurrency).toBe('JPY')
-    })
-
-    test('should persist preferred currency across re-renders', async () => {
-        const { useCurrenciesStore } = await import('../index')
-        const { result, rerender } = renderHook(() => useCurrenciesStore())
-
-        act(() => {
-            result.current.setPreferredCurrency('CAD')
-        })
-
-        rerender()
-
-        expect(result.current.preferredCurrency).toBe('CAD')
-    })
-
-    test('should reset state to defaults', async () => {
+    test('resetState restores the initial USD defaults', async () => {
         const { useCurrenciesStore } = await import('../index')
         const { result } = renderHook(() => useCurrenciesStore())
 
@@ -105,9 +64,6 @@ describe('CurrenciesStore', () => {
             result.current.setPreferredCurrency('EUR')
             result.current.setFallbackCurrency('GBP')
         })
-
-        expect(result.current.preferredCurrency).toBe('EUR')
-        expect(result.current.fallbackCurrency).toBe('GBP')
 
         act(() => {
             result.current.resetState()
@@ -115,5 +71,21 @@ describe('CurrenciesStore', () => {
 
         expect(result.current.preferredCurrency).toBe('USD')
         expect(result.current.fallbackCurrency).toBe('USD')
+    })
+
+    test('registers clearStorage and resetState with the store registry', async () => {
+        await import('../index')
+
+        const registration = registerStoreMock.mock.calls.at(-1)?.[0]
+        expect(registration?.name).toBe('currencies-store')
+
+        const { useCurrenciesStore } = await import('../index')
+        act(() => {
+            useCurrenciesStore.getState().setPreferredCurrency('EUR')
+        })
+
+        act(() => registration.resetState())
+        expect(useCurrenciesStore.getState().preferredCurrency).toBe('USD')
+        expect(() => registration.clearStorage()).not.toThrow()
     })
 })

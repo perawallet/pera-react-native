@@ -10,11 +10,7 @@
  limitations under the License
  */
 
-import {
-    Networks,
-    queryClient,
-    type Network,
-} from '@perawallet/wallet-core-shared'
+import { queryClient, type Network } from '@perawallet/wallet-core-shared'
 import {
     currenciesListResponseSchema,
     currencyResponseSchema,
@@ -66,26 +62,4 @@ export const fetchCurrency = async (
 
     const validated = currencyResponseSchema.parse(response.data)
     return transformCurrencyToPrice(validated)
-}
-
-type AlgoUsdPriceResponse = {
-    usd_value?: string | null
-}
-
-export type FetchAlgoUsdPriceParams = {
-    signal?: AbortSignal
-}
-
-export const fetchAlgoUsdPrice = async (
-    params?: FetchAlgoUsdPriceParams,
-): Promise<string> => {
-    const response = await queryClient<AlgoUsdPriceResponse>({
-        backend: 'pera',
-        network: Networks.mainnet,
-        method: 'GET',
-        url: `/v1/public/assets/0`,
-        signal: params?.signal,
-    })
-
-    return response.data.usd_value ?? '0'
 }

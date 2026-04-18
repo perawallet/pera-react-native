@@ -161,4 +161,35 @@ describe('useInboxQuery', () => {
 
         expect(result.current.data).toEqual([])
     })
+
+    it('filters out asa_inbox items with no pending requests', async () => {
+        const mockResponse = {
+            joint_account_import_requests: [],
+            joint_account_sign_requests: [],
+            asa_inboxes: [
+                {
+                    address: 'ADDR1',
+                    inbox_address: 'INBOX1',
+                    request_count: 0,
+                },
+                {
+                    address: 'ADDR2',
+                    inbox_address: 'INBOX2',
+                    request_count: 2,
+                },
+            ],
+        }
+        vi.mocked(fetchInbox).mockResolvedValue(mockResponse)
+
+        const { result } = renderHook(() => useInboxQuery(), {
+            wrapper: createWrapper(),
+        })
+
+        await waitFor(() => {
+            expect(result.current.isPending).toBe(false)
+        })
+
+        expect(result.current.data).toHaveLength(1)
+        expect(result.current.data?.[0].type).toBe('asa_inbox')
+    })
 })

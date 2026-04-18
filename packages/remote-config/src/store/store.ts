@@ -27,28 +27,28 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 const STORE_NAME = 'remote-config-store'
 const TAG = '[RemoteConfigStore]'
 
-const initialState = {
-    configOverrides: {} as Record<string, string | boolean | number>,
-}
+const getInitialState = (): Pick<RemoteConfigStore, 'configOverrides'> => ({
+    configOverrides: {},
+})
 
 export const createRemoteConfigStore = (storage: StateStorage) =>
     create<RemoteConfigStore>()(
         persist(
             (set, get) => ({
-                ...initialState,
+                ...getInitialState(),
                 setConfigOverride: (
                     key: string,
                     value: string | boolean | number | null,
                 ) => {
-                    const configOverrides = get().configOverrides
+                    const configOverrides = { ...get().configOverrides }
                     if (value === null) {
                         delete configOverrides[key]
                     } else {
                         configOverrides[key] = value
                     }
-                    set({ configOverrides: { ...configOverrides } })
+                    set({ configOverrides })
                 },
-                resetState: () => set(initialState),
+                resetState: () => set(getInitialState()),
             }),
             {
                 name: STORE_NAME,
@@ -66,23 +66,23 @@ export const useRemoteConfigStore: UseBoundStore<
 > = create<RemoteConfigStore>()(
     persist(
         (set, get) => ({
-            ...initialState,
+            ...getInitialState(),
             setConfigOverride: (
                 key: string,
                 value: string | boolean | number | null,
             ) => {
                 logger.debug(`${TAG} setConfigOverride("${key}", ${value})`)
-                const configOverrides = get().configOverrides
+                const configOverrides = { ...get().configOverrides }
                 if (value === null) {
                     delete configOverrides[key]
                 } else {
                     configOverrides[key] = value
                 }
-                set({ configOverrides: { ...configOverrides } })
+                set({ configOverrides })
             },
             resetState: () => {
                 logger.debug(`${TAG} resetState() called`)
-                set(initialState)
+                set(getInitialState())
             },
         }),
         {

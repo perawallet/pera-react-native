@@ -222,6 +222,40 @@ describe('useBiometrics', () => {
         expect(success).toBe(false)
     })
 
+    test('enableBiometrics returns false when biometrics are not available', async () => {
+        mockGetItem.mockResolvedValue(new TextEncoder().encode('123456'))
+        mockCheckBiometricsAvailable.mockResolvedValue(false)
+
+        const { result } = await renderAndSettle()
+
+        let success: boolean = true
+        await act(async () => {
+            success = await result.current.enableBiometrics()
+        })
+
+        expect(success).toBe(false)
+        expect(mockAuthenticate).not.toHaveBeenCalled()
+    })
+
+    test('enableBiometrics returns false when the user declines authentication', async () => {
+        mockGetItem.mockResolvedValue(new TextEncoder().encode('123456'))
+        mockCheckBiometricsAvailable.mockResolvedValue(true)
+        mockAuthenticate.mockResolvedValue(false)
+
+        const { result } = await renderAndSettle()
+
+        let success: boolean = true
+        await act(async () => {
+            success = await result.current.enableBiometrics()
+        })
+
+        expect(success).toBe(false)
+        expect(mockSetItem).not.toHaveBeenCalledWith(
+            BIOMETRIC_STORAGE_KEY,
+            expect.any(Uint8Array),
+        )
+    })
+
     test('disableBiometrics removes biometric data and sets isEnabled to false', async () => {
         const biometricData = new TextEncoder().encode('123456')
         mockGetItem.mockResolvedValue(biometricData)

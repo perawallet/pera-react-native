@@ -18,14 +18,16 @@ import {
     addSignature,
     getSignRequestDetail,
     deleteImportInbox,
+    checkIsMultisigAddress,
 } from '../endpoints'
-import { queryClient } from '@perawallet/wallet-core-shared'
+import { queryClient, getHttpStatus } from '@perawallet/wallet-core-shared'
 
 vi.mock(import('@perawallet/wallet-core-shared'), async importOriginal => {
     const actual = await importOriginal()
     return {
         ...actual,
         queryClient: vi.fn(),
+        getHttpStatus: vi.fn(),
     }
 })
 
@@ -246,5 +248,41 @@ describe('deleteImportInbox', () => {
             method: 'DELETE',
             url: '/v1/joint-accounts/inbox/device-import/device-1/MSIG_ADDR/',
         })
+    })
+})
+
+describe('checkIsMultisigAddress', () => {
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    test('returns true when the detail lookup succeeds', async () => {
+        ;(queryClient as Mock).mockResolvedValue({
+            data: validAccountResponse,
+        })
+
+        await expect(
+            checkIsMultisigAddress('mainnet', 'MSIG_ADDR'),
+        ).resolves.toBe(true)
+    })
+
+    test('returns false when the detail lookup 404s', async () => {
+        const notFound = new Error('not found')
+        ;(queryClient as Mock).mockRejectedValue(notFound)
+        vi.mocked(getHttpStatus).mockReturnValue(404)
+
+        await expect(
+            checkIsMultisigAddress('mainnet', 'UNKNOWN'),
+        ).resolves.toBe(false)
+    })
+
+    test('rethrows non-404 errors', async () => {
+        const boom = new Error('server down')
+        ;(queryClient as Mock).mockRejectedValue(boom)
+        vi.mocked(getHttpStatus).mockReturnValue(500)
+
+        await expect(checkIsMultisigAddress('mainnet', 'ADDR')).rejects.toBe(
+            boom,
+        )
     })
 })

@@ -13,6 +13,8 @@
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 
+const registerStoreMock = vi.hoisted(() => vi.fn())
+
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const original =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
@@ -21,7 +23,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     >('@perawallet/wallet-core-shared/test-utils')
     return {
         ...original,
-        registerStore: vi.fn(),
+        registerStore: registerStoreMock,
         createPersistStorage: createMockPersistStorage,
     }
 })
@@ -73,5 +75,40 @@ describe('services/polling/store', () => {
             mainnet: null,
             testnet: 200,
         })
+    })
+
+    test('resetState reverts lastRefreshedRound to the initial defaults', async () => {
+        const { usePollingStore } = await import('../store')
+        const { result } = renderHook(() => usePollingStore())
+
+        act(() => {
+            result.current.setLastRefreshedRound('mainnet', 100)
+            result.current.setLastRefreshedRound('testnet', 200)
+        })
+        act(() => {
+            result.current.resetState()
+        })
+
+        expect(result.current.lastRefreshedRound).toEqual({
+            mainnet: null,
+            testnet: null,
+        })
+    })
+
+    test('registers resetState and clearStorage callbacks with the store registry', async () => {
+        const { usePollingStore } = await import('../store')
+
+        const registration = registerStoreMock.mock.calls.at(-1)?.[0]
+        expect(registration?.name).toBe('polling-store')
+
+        act(() => {
+            usePollingStore.getState().setLastRefreshedRound('mainnet', 42)
+        })
+        act(() => registration.resetState())
+        expect(usePollingStore.getState().lastRefreshedRound).toEqual({
+            mainnet: null,
+            testnet: null,
+        })
+        expect(() => registration.clearStorage()).not.toThrow()
     })
 })

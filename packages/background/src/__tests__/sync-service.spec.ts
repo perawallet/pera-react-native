@@ -107,6 +107,8 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         }
         return result
     },
+    calculateBackoff: (current: number, multiplier: number, max: number) =>
+        Math.min(current * multiplier, max),
 }))
 
 describe('SyncService', () => {
@@ -318,5 +320,101 @@ describe('SyncService', () => {
             ({ accounts: mockAccounts }) as ReturnType<
                 typeof import('@perawallet/wallet-core-accounts').useAccountsStore.getState
             >
+    })
+
+    it('falls back to force-syncing the active network when shouldRefresh errors before first sync', async () => {
+        mockSendShouldRefreshRequest.mockRejectedValue(
+            new Error('network down'),
+        )
+        const { fetchAndPersistAccount } =
+            await import('@perawallet/wallet-core-accounts')
+        const { usePollingStore } =
+            await import('@perawallet/wallet-core-polling')
+
+        // Pretend we already completed the initial force-sync so the next
+        // tick goes through checkShouldRefresh. lastRefreshedRound must be
+        // null so `neverSynced` is true when shouldRefresh throws.
+        vi.mocked(usePollingStore.getState).mockReturnValueOnce?.({
+            lastRefreshedRound: { mainnet: null, testnet: null },
+            setLastRefreshedRound: mockSetLastRefreshedRound,
+        } as never)
+
+        service.start()
+        vi.useRealTimers()
+        await new Promise(resolve => setTimeout(resolve, 50))
+        await new Promise(resolve => setTimeout(resolve, 3100))
+        service.stop()
+        vi.useFakeTimers()
+
+        // neverSynced + shouldRefresh throw => force-sync the active network
+        expect(mockSendShouldRefreshRequest).toHaveBeenCalled()
+        expect(fetchAndPersistAccount).toHaveBeenCalled()
+    })
+
+    it('rate-limited failures trigger backoff on the next tick', async () => {
+        const { fetchAndPersistAccount } =
+            await import('@perawallet/wallet-core-accounts')
+        const { logger } = await import('@perawallet/wallet-core-shared')
+
+        vi.mocked(fetchAndPersistAccount).mockRejectedValue(
+            new Error('HTTP 429 Too Many Requests'),
+        )
+
+        service.start()
+        vi.useRealTimers()
+        await new Promise(resolve => setTimeout(resolve, 50))
+        vi.useFakeTimers()
+        service.stop()
+
+        // 429 is filtered from logFailures, so no per-account warn
+        expect(logger.warn).toHaveBeenCalledWith(
+            'Sync tick failed',
+            expect.objectContaining({
+                error: expect.objectContaining({
+                    message: expect.stringContaining('Rate limited'),
+                }),
+            }),
+        )
+
+        vi.mocked(fetchAndPersistAccount).mockImplementation(() =>
+            Promise.resolve(),
+        )
+    })
+
+    it('logs non-429 failures for assets and transactions phases', async () => {
+        const { fetchAndPersistAssets } =
+            await import('@perawallet/wallet-core-assets')
+        const { fetchAndPersistTransactions } =
+            await import('@perawallet/wallet-core-transactions')
+        const { logger } = await import('@perawallet/wallet-core-shared')
+
+        vi.mocked(fetchAndPersistAssets).mockRejectedValueOnce(
+            new Error('asset fetch blew up'),
+        )
+        vi.mocked(fetchAndPersistTransactions).mockRejectedValueOnce(
+            new Error('tx fetch blew up'),
+        )
+
+        service.start()
+        vi.useRealTimers()
+        await new Promise(resolve => setTimeout(resolve, 50))
+        vi.useFakeTimers()
+        service.stop()
+
+        expect(logger.warn).toHaveBeenCalledWith(
+            'Sync step failed',
+            expect.objectContaining({ phase: 'asset-metadata-or-prices' }),
+        )
+        expect(logger.warn).toHaveBeenCalledWith(
+            'Sync step failed',
+            expect.objectContaining({ phase: 'transactions' }),
+        )
+
+        vi.mocked(fetchAndPersistAssets).mockImplementation(() =>
+            Promise.resolve(),
+        )
+        vi.mocked(fetchAndPersistTransactions).mockImplementation(() =>
+            Promise.resolve(),
+        )
     })
 })
