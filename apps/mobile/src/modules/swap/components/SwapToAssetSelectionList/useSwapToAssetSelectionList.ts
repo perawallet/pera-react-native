@@ -29,10 +29,11 @@ import {
     type DexSwapAsset,
 } from '@perawallet/wallet-core-swaps'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type AvailableAssetWithBalance = {
     dexAsset: DexSwapAsset
-    balance: Decimal | null
+    balance: Nullable<Decimal>
 }
 
 type UseSwapToAssetSelectionListParams = {

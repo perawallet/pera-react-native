@@ -17,6 +17,7 @@ import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseSettingsSecurityScreenResult = {
     isPinEnabled: boolean
@@ -25,7 +26,7 @@ type UseSettingsSecurityScreenResult = {
     isAdvancedSecurityEnabled: boolean
     isRekeySupportEnabled: boolean
     isAssetFreezeSupportEnabled: boolean
-    pinViewMode: PinEntryMode | null
+    pinViewMode: Nullable<PinEntryMode>
     handlePinToggle: (value: boolean) => void
     handleBiometricToggle: (value: boolean) => Promise<boolean>
     handleChangePinPress: () => void
@@ -50,9 +51,8 @@ export const useSettingsSecurityScreen =
         } = useBiometrics()
 
         const [isPinEnabled, setIsPinEnabled] = useState(false)
-        const [pinViewMode, setPinViewMode] = useState<PinEntryMode | null>(
-            null,
-        )
+        const [pinViewMode, setPinViewMode] =
+            useState<Nullable<PinEntryMode>>(null)
 
         const refreshPinState = useCallback(() => {
             checkPinEnabled().then(setIsPinEnabled)

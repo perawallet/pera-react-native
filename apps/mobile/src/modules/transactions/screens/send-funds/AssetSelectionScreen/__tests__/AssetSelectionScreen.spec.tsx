@@ -17,12 +17,14 @@ import { AssetSelectionScreen } from '../AssetSelectionScreen'
 import { useSendFunds } from '@modules/transactions/hooks'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import type { AccountAssetSelectionListProps } from '@modules/assets/components/AccountAssetSelectionList'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const mockNavigate = vi.fn()
 const mockSetSelectedAssetId = vi.fn()
 
-let capturedOnAssetSelected: ((asset: AssetWithAccountBalance) => void) | null =
-    null
+let capturedOnAssetSelected: Nullable<
+    (asset: AssetWithAccountBalance) => void
+> = null
 
 vi.mock('@react-navigation/native', async importOriginal => {
     const actual =

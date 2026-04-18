@@ -14,6 +14,7 @@ import { render } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
 import { InboxItem } from '../InboxItem'
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
     truncateAlgorandAddress: vi.fn(
@@ -23,7 +24,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => []),
-    getAccountDisplayName: vi.fn((account: { address: string } | null) =>
+    getAccountDisplayName: vi.fn((account: Nullable<{ address: string }>) =>
         account
             ? `${account.address.slice(0, 5)}...${account.address.slice(-5)}`
             : 'No Account',

@@ -12,10 +12,11 @@
 
 import { type ReactNode, useLayoutEffect } from 'react'
 import { useNavigation } from '@react-navigation/native'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseScreenHeaderOptions = {
-    left?: ReactNode | null
-    right?: ReactNode | null
+    left?: Nullable<ReactNode>
+    right?: Nullable<ReactNode>
     title?: ReactNode | string
     enabled?: boolean
 }

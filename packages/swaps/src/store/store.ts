@@ -13,7 +13,11 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { SwapsState } from '../models'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    registerStore,
+    type WithPersist,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'swaps-store'
@@ -23,7 +27,7 @@ const STORE_NAME = 'swaps-store'
 const initialState = {
     fromAsset: '0', // ALGO
     toAsset: '31566704', // USDC mainnet
-    slippage: null as string | null,
+    slippage: null as Nullable<string>,
 }
 
 export const useSwapsStore: UseBoundStore<
@@ -34,7 +38,7 @@ export const useSwapsStore: UseBoundStore<
             ...initialState,
             setFromAsset: (fromAsset: string) => set({ fromAsset }),
             setToAsset: (toAsset: string) => set({ toAsset }),
-            setSlippage: (slippage: string | null) => set({ slippage }),
+            setSlippage: (slippage: Nullable<string>) => set({ slippage }),
             resetState: () =>
                 set(state => ({
                     ...initialState,

@@ -12,6 +12,7 @@
 
 import { PeraAsset } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type AssetWithAccountBalance = {
     assetId: string
@@ -88,7 +89,7 @@ export type AccountAssetBalanceHistoryResponseItem = {
 }
 
 export type AccountAssetBalanceHistoryResponse = {
-    next: string | null
-    previous: string | null
+    next: Nullable<string>
+    previous: Nullable<string>
     results: AccountAssetBalanceHistoryResponseItem[]
 }

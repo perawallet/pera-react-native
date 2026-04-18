@@ -17,6 +17,7 @@ import {
 } from '@ledgerhq/devices'
 import { StatusCodes } from '@ledgerhq/errors'
 import type { LedgerDeviceModel } from './types'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Maps @ledgerhq/devices model IDs to our user-friendly LedgerDeviceModel names.
@@ -38,7 +39,7 @@ export const LEDGER_BLE_SERVICE_UUIDS: string[] = getBluetoothServiceUuids()
  * Returns 'nanoX' as the default if the UUID is unrecognized.
  */
 export const resolveDeviceModel = (
-    serviceUUIDs: string[] | null,
+    serviceUUIDs: Nullable<string[]>,
 ): LedgerDeviceModel => {
     if (!serviceUUIDs) return 'nanoX'
 

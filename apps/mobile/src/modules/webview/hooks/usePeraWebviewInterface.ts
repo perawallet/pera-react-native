@@ -48,6 +48,7 @@ import {
     encodeToBase64,
     generateOrderedUniqueId,
     logger,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { getAccountType } from './utils'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
@@ -65,7 +66,7 @@ type WebviewMessage = {
 }
 
 export const usePeraWebviewInterface = (
-    webview: WebView | null,
+    webview: Nullable<WebView>,
     securedConnection: boolean,
     onCloseRequested?: () => void,
     onBackRequested?: () => void,
@@ -289,7 +290,7 @@ export const usePeraWebviewInterface = (
                 if (!hadRequiredParams(['txns', 'metadata'], message)) {
                     return
                 }
-                const rawTxns = message.params!['txns'] as (string | null)[]
+                const rawTxns = message.params!['txns'] as Nullable<string>[]
                 const txns = decodeTransactions(
                     rawTxns
                         .filter((t): t is string => t !== null)

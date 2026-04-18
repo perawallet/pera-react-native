@@ -14,9 +14,10 @@ import { useQuery, UseQueryResult } from '@tanstack/react-query'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { fetchArc59AssetRequests, type Arc59AssetRequest } from '../api'
 import { getArc59AssetRequestsQueryKey } from './querykeys'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export const useArc59AssetRequestsQuery = (
-    address: string | null,
+    address: Nullable<string>,
 ): UseQueryResult<Arc59AssetRequest[], Error> => {
     const { network } = useNetwork()
 

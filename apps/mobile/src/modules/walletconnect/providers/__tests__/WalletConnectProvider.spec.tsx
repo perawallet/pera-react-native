@@ -14,6 +14,7 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { WalletConnectProvider } from '../WalletConnectProvider'
 import type { WalletConnectSessionRequest } from '@perawallet/wallet-core-walletconnect'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const mockInitWalletConnect = vi.fn()
 const mockShowToast = vi.fn()
@@ -102,7 +103,7 @@ vi.mock(
             request,
         }: {
             onClose: () => void
-            request: WalletConnectSessionRequest | null
+            request: Nullable<WalletConnectSessionRequest>
         }) =>
             request ? (
                 <div data-testid='SuccessSheet'>
@@ -122,7 +123,7 @@ vi.mock(
             onClose,
         }: {
             isVisible: boolean
-            error: Error | null
+            error: Nullable<Error>
             onClose: () => void
         }) =>
             isVisible ? (

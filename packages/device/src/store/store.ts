@@ -17,15 +17,16 @@ import {
     registerStore,
     type Network,
     type WithPersist,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'device-store'
 
 const objectToDeviceIDs = (
-    object: Record<string, string | null>,
-): Map<Network, string | null> => {
-    const map = new Map<Network, string | null>()
+    object: Record<string, Nullable<string>>,
+): Map<Network, Nullable<string>> => {
+    const map = new Map<Network, Nullable<string>>()
     Object.entries(object).forEach(([key, value]) => {
         map.set(key as Network, value)
     })
@@ -47,8 +48,8 @@ const rehydrateDeviceSlice = (
 }
 
 const initialState = {
-    deviceIDs: new Map<Network, string | null>(),
-    pushToken: null as string | null,
+    deviceIDs: new Map<Network, Nullable<string>>(),
+    pushToken: null as Nullable<string>,
 }
 
 export const useDeviceStore: UseBoundStore<
@@ -57,10 +58,10 @@ export const useDeviceStore: UseBoundStore<
     persist(
         (set, get) => ({
             ...initialState,
-            setPushToken: (token: string | null) => {
+            setPushToken: (token: Nullable<string>) => {
                 set({ pushToken: token })
             },
-            setDeviceID: (network: Network, id: string | null) => {
+            setDeviceID: (network: Network, id: Nullable<string>) => {
                 const deviceIDs = new Map(get().deviceIDs)
                 deviceIDs.set(network, id)
                 set({ deviceIDs })

@@ -36,7 +36,7 @@ import {
 } from '@perawallet/wallet-core-swaps'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { isDecimalEqual } from '@perawallet/wallet-core-shared'
+import { isDecimalEqual, type Nullable } from '@perawallet/wallet-core-shared'
 import { useModalState } from '@hooks/useModalState'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { useRunAfterDelay } from '@hooks/useRunAfterDelay'
@@ -53,15 +53,15 @@ type ModalState = ReturnType<typeof useModalState>
 type UseSwapFormResult = {
     payAssetId: string
     receiveAssetId: string
-    payAmount: Decimal | null
-    receiveAmount: Decimal | null
-    payBalance: Decimal | null
-    receiveBalance: Decimal | null
+    payAmount: Nullable<Decimal>
+    receiveAmount: Nullable<Decimal>
+    payBalance: Nullable<Decimal>
+    receiveBalance: Nullable<Decimal>
     isQuoteFetching: boolean
     isQuoteError: boolean
-    selectedQuote: SwapQuote | null
+    selectedQuote: Nullable<SwapQuote>
     allQuotes: SwapQuote[]
-    selectedProviderName: string | null
+    selectedProviderName: Nullable<string>
     providerSelectionMode: 'auto' | 'manual'
     canSwap: boolean
     swapStatus: SwapExecutionStatus
@@ -70,13 +70,13 @@ type UseSwapFormResult = {
     configModal: ModalState
     confirmModal: ModalState
     providerModal: ModalState
-    handlePayAmountChange: (amount: Decimal | null) => void
+    handlePayAmountChange: (amount: Nullable<Decimal>) => void
     handleSwapDirection: () => void
     handleMaxPress: () => void
     handlePayAssetSelected: (asset: AssetWithAccountBalance) => void
     handleReceiveAssetSelected: (asset: AssetWithAccountBalance) => void
     handleConfigApply: (result: SwapConfigurationResult) => void
-    handleProviderApply: (providerName: string | null) => void
+    handleProviderApply: (providerName: Nullable<string>) => void
     handleConfirmSwap: () => void
     handleOpenConfirm: () => void
     handleCloseConfirm: () => void
@@ -97,13 +97,12 @@ export const useSwapForm = (): UseSwapFormResult => {
     const { network } = useNetwork()
     const { preferredCurrency, setPreferredCurrency, fallbackCurrency } =
         useCurrency()
-    const [payAmount, setPayAmount] = useState<Decimal | null>(null)
-    const [receiveAmount, setReceiveAmount] = useState<Decimal | null>(null)
+    const [payAmount, setPayAmount] = useState<Nullable<Decimal>>(null)
+    const [receiveAmount, setReceiveAmount] = useState<Nullable<Decimal>>(null)
     const [allQuotes, setAllQuotes] = useState<SwapQuote[]>([])
-    const [quotedAmount, setQuotedAmount] = useState<Decimal | null>(null)
-    const [selectedProviderName, setSelectedProviderName] = useState<
-        string | null
-    >(null)
+    const [quotedAmount, setQuotedAmount] = useState<Nullable<Decimal>>(null)
+    const [selectedProviderName, setSelectedProviderName] =
+        useState<Nullable<string>>(null)
     const payAssetModal = useModalState()
     const receiveAssetModal = useModalState()
     const configModal = useModalState()
@@ -233,7 +232,7 @@ export const useSwapForm = (): UseSwapFormResult => {
     // When a manually selected provider drops from the latest quote set, fall
     // back to the best quote for display and reset selection state to null so
     // providerSelectionMode reports 'auto'.
-    const selectedQuote = useMemo<SwapQuote | null>(() => {
+    const selectedQuote = useMemo<Nullable<SwapQuote>>(() => {
         if (selectedProviderName === null) return bestQuote
         const match = allQuotes.find(
             quote => quote.provider === selectedProviderName,
@@ -277,7 +276,7 @@ export const useSwapForm = (): UseSwapFormResult => {
         [selectedQuote, payAmount, isQuoteFetching],
     )
 
-    const handlePayAmountChange = useCallback((amount: Decimal | null) => {
+    const handlePayAmountChange = useCallback((amount: Nullable<Decimal>) => {
         setPayAmount(amount)
     }, [])
 
@@ -353,9 +352,12 @@ export const useSwapForm = (): UseSwapFormResult => {
         [setToAsset, resetQuoteMutation],
     )
 
-    const handleProviderApply = useCallback((providerName: string | null) => {
-        setSelectedProviderName(providerName)
-    }, [])
+    const handleProviderApply = useCallback(
+        (providerName: Nullable<string>) => {
+            setSelectedProviderName(providerName)
+        },
+        [],
+    )
 
     const successCloseTimer = useRunAfterDelay()
 

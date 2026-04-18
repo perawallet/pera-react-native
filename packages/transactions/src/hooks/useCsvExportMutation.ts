@@ -11,7 +11,7 @@
  */
 
 import { useMutation } from '@tanstack/react-query'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import {
     fetchTransactionsCsv,
     CsvExportError,
@@ -57,11 +57,11 @@ export type UseCsvExportMutationResult = {
     /** Whether there was an error */
     isError: boolean
     /** The error if one occurred */
-    error: CsvExportError | null
+    error: Nullable<CsvExportError>
     /** Whether the export completed successfully */
     isSuccess: boolean
     /** The result if export succeeded */
-    result: CsvExportResult | null
+    result: Nullable<CsvExportResult>
     /** Reset mutation state */
     reset: () => void
 }

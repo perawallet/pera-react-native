@@ -25,6 +25,7 @@ import type { TransactionHistoryItem } from '@perawallet/wallet-core-transaction
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 import type { TransactionIconType } from '@modules/transactions/components/TransactionIcon'
 import { getTransactionIconType } from './utils'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type AmountDisplay = {
     /** Raw amount value for CurrencyDisplay */
@@ -45,7 +46,7 @@ export type UseTransactionListItemParams = {
 export type UseTransactionListItemResult = {
     iconType: TransactionIconType
     title: string
-    subtitle: string | null
+    subtitle: Nullable<string>
     amounts: AmountDisplay[]
     handlePress: () => void
 }

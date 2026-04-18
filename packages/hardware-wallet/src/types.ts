@@ -9,6 +9,7 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Identifies the hardware wallet manufacturer.
@@ -29,7 +30,7 @@ export type HardwareWalletDevice = {
     /** Device model identifier (manufacturer-specific, e.g. "nanoX", "stax") */
     model: string
     /** Signal strength in dBm, or null if unavailable */
-    rssi: number | null
+    rssi: Nullable<number>
 }
 
 /**

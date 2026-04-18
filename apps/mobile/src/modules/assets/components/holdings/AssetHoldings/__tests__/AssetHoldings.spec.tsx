@@ -20,6 +20,7 @@ import {
     AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
 import { Decimal } from 'decimal.js'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const mockAsset = {
     assetId: '123',
@@ -63,7 +64,7 @@ vi.mock('../../AssetActionButtons/AssetActionButtons', () => ({
     AssetActionButtons: ({
         assetHolding,
     }: {
-        assetHolding: AssetWithAccountBalance | null
+        assetHolding: Nullable<AssetWithAccountBalance>
     }) => (
         <div data-testid='action-buttons'>
             {assetHolding ? 'with-holding' : 'without-holding'}

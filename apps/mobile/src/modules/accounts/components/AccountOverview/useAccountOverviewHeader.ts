@@ -23,7 +23,7 @@ import {
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { useChartInteraction } from '@hooks/useChartInteraction'
-import { HistoryPeriod } from '@perawallet/wallet-core-shared'
+import { HistoryPeriod, type Nullable } from '@perawallet/wallet-core-shared'
 import { useAccountOverviewModal } from './AccountOverviewModalContext'
 
 export type UseAccountOverviewHeaderResult = {
@@ -32,12 +32,12 @@ export type UseAccountOverviewHeaderResult = {
     isPending: boolean
     period: HistoryPeriod
     setPeriod: (period: HistoryPeriod) => void
-    selectedPoint: AccountBalanceHistoryItem | null
+    selectedPoint: Nullable<AccountBalanceHistoryItem>
     hasBalance: boolean
     canSign: boolean
     togglePrivacyMode: () => void
     handleChartSelectionChange: (
-        selected: AccountBalanceHistoryItem | null,
+        selected: Nullable<AccountBalanceHistoryItem>,
     ) => void
 }
 
@@ -65,7 +65,7 @@ export const useAccountOverviewHeader = (
     }, [privacyMode, setPrivacyMode])
 
     const handleChartSelectionChange = useCallback(
-        (selected: AccountBalanceHistoryItem | null) => {
+        (selected: Nullable<AccountBalanceHistoryItem>) => {
             setSelectedPoint(selected)
             onScrollEnabledChange(!selected)
         },

@@ -11,11 +11,15 @@
  */
 
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
-import { DEFAULT_PRECISION, formatNumber } from '@perawallet/wallet-core-shared'
+import {
+    DEFAULT_PRECISION,
+    formatNumber,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 
-export const pickBestByAmountOut = (quotes: SwapQuote[]): SwapQuote | null =>
-    quotes.reduce<SwapQuote | null>((prev, curr) => {
+export const pickBestByAmountOut = (quotes: SwapQuote[]): Nullable<SwapQuote> =>
+    quotes.reduce<Nullable<SwapQuote>>((prev, curr) => {
         if (!curr.amountOut) return prev
         if (!prev?.amountOut) return curr
         return curr.amountOut.greaterThan(prev.amountOut) ? curr : prev

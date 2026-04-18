@@ -12,7 +12,11 @@
 
 import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
-import { formatCurrency, formatNumber } from '@perawallet/wallet-core-shared'
+import {
+    formatCurrency,
+    formatNumber,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import {
     useAssetsQuery,
@@ -27,7 +31,7 @@ import { useStyles } from './styles'
 const PRICE_IMPACT_HIGH_THRESHOLD = new Decimal(5)
 
 type UseSwapConfirmationParams = {
-    quote: SwapQuote | null
+    quote: Nullable<SwapQuote>
     swapStatus: SwapExecutionStatus
 }
 

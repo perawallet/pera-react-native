@@ -22,7 +22,7 @@ import { WebViewMessageEvent } from 'react-native-webview'
 import { useTheme } from '@rneui/themed'
 import { BottomSheetModal } from '@gorhom/bottom-sheet'
 import { buildModelViewerHtml } from './modelViewerHtml'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 
 type GradientColors = readonly [string, string, ...string[]]
 
@@ -32,8 +32,8 @@ type UseModelViewerBottomSheetParams = {
 }
 
 type UseModelViewerBottomSheetResult = {
-    sheetRef: RefObject<BottomSheetModal | null>
-    html: string | null
+    sheetRef: RefObject<Nullable<BottomSheetModal>>
+    html: Nullable<string>
     isLoading: boolean
     gradientColors: GradientColors
     handleMessage: (event: WebViewMessageEvent) => void

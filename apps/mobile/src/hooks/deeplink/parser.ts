@@ -22,11 +22,12 @@ import { parseAlgorandUri } from './algorand-parser'
 import { parseWalletConnectUri } from './walletconnect-parser'
 import { parseCoinbaseFormat } from './coinbase-parser'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Parse Universal Links: https://perawallet.app/...
  */
-const parseUniversalLink = (url: string): AnyParsedDeeplink | null => {
+const parseUniversalLink = (url: string): Nullable<AnyParsedDeeplink> => {
     const normalizedUrl = normalizeUrl(url)
 
     if (normalizedUrl.includes('/qr/perawallet/app/')) {
@@ -49,7 +50,7 @@ const parseUniversalLink = (url: string): AnyParsedDeeplink | null => {
 /**
  * Main deeplink parser - determines format and calls appropriate parser
  */
-export const parseDeeplink = (url: string): AnyParsedDeeplink | null => {
+export const parseDeeplink = (url: string): Nullable<AnyParsedDeeplink> => {
     if (!url || typeof url !== 'string') return null
 
     if (isValidAlgorandAddress(url)) {

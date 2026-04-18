@@ -11,7 +11,12 @@
  */
 
 import { Component, ErrorInfo, ReactNode } from 'react'
-import { AppError, ErrorCategory, logger } from '@perawallet/wallet-core-shared'
+import {
+    AppError,
+    ErrorCategory,
+    logger,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { EmptyView } from '@components/EmptyView'
 
 export interface BaseErrorBoundaryProps {
@@ -23,8 +28,8 @@ export interface BaseErrorBoundaryProps {
 }
 
 interface BaseErrorBoundaryState {
-    error: AppError | Error | null
-    errorInfo: ErrorInfo | null
+    error: Nullable<AppError | Error>
+    errorInfo: Nullable<ErrorInfo>
 }
 
 /**

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { BaseStoreState } from '@perawallet/wallet-core-shared'
+import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 
 export type Contact = {
     id?: string
@@ -22,8 +22,8 @@ export type Contact = {
 
 export type ContactsState = BaseStoreState & {
     contacts: Contact[]
-    selectedContact: Contact | null
-    setSelectedContact: (contact: Contact | null) => void
+    selectedContact: Nullable<Contact>
+    setSelectedContact: (contact: Nullable<Contact>) => void
     setContacts: (contacts: Contact[]) => void
     saveContact: (contact: Contact) => void
     deleteContact: (contact: Contact) => boolean

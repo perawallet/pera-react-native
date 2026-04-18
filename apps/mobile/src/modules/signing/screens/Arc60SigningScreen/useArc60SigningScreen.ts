@@ -24,16 +24,17 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type { SigningStackParamList } from '@modules/signing/routes'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type NavigationProp = StackNavigationProp<SigningStackParamList, 'Arc60Signing'>
 
 type UseArc60SigningScreenResult = {
-    request: Arc60SignRequest | null
+    request: Nullable<Arc60SignRequest>
     account: WalletAccount | undefined
-    parsed: Arc60ParsedPayload | null
+    parsed: Nullable<Arc60ParsedPayload>
     isPending: boolean
     canConfirm: boolean
-    error: Error | null
+    error: Nullable<Error>
     handleApprove: () => void
     handleReject: () => void
     handleDetailsPress: () => void

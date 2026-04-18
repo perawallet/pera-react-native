@@ -28,8 +28,9 @@ import { useStyles } from './styles'
 import { StyleProp, ViewStyle } from 'react-native'
 import { NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
-export const bottomSheetNotifier = createRef<NotifierRoot | null>()
+export const bottomSheetNotifier = createRef<Nullable<NotifierRoot>>()
 
 type DefaultPropsReturn = {
     snapPoints?: string[]

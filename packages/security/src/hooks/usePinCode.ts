@@ -20,21 +20,22 @@ import {
 } from '../constants'
 import { useBiometrics } from './useBiometrics'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UsePinCodeResult = {
     failedAttempts: number
-    lockoutEndTime: number | null
+    lockoutEndTime: Nullable<number>
     isLockedOut: boolean
     remainingLockoutSeconds: number
     checkAutoLock: () => Promise<boolean>
     checkPinEnabled: () => Promise<boolean>
-    savePin: (pin: string | null) => Promise<void>
+    savePin: (pin: Nullable<string>) => Promise<void>
     verifyPin: (pin: string) => Promise<boolean>
     handleFailedAttempt: () => void
     resetFailedAttempts: () => void
-    setLockoutEndTime: (date: number | null) => void
+    setLockoutEndTime: (date: Nullable<number>) => void
     getLockoutDuration: () => number
-    setAutoLockStartedAt: (date: number | null) => void
+    setAutoLockStartedAt: (date: Nullable<number>) => void
 }
 
 const encoder = new TextEncoder()
@@ -74,7 +75,7 @@ export const usePinCode = (): UsePinCodeResult => {
     }, [secureStorage, forceRefresh.current])
 
     const setIsPinEnabled = useCallback(
-        async (code: string | null): Promise<void> => {
+        async (code: Nullable<string>): Promise<void> => {
             if (code) {
                 await secureStorage.setItem(
                     PIN_STORAGE_KEY,
@@ -109,7 +110,7 @@ export const usePinCode = (): UsePinCodeResult => {
     }, [resetFailedAttemptsInStore])
 
     const savePin = useCallback(
-        async (pin: string | null) => {
+        async (pin: Nullable<string>) => {
             setIsPinEnabled(pin)
             if (await checkBiometricsEnabled()) {
                 if (pin) {

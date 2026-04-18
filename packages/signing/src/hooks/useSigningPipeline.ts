@@ -41,6 +41,7 @@ import {
     deriveEvent,
 } from './utils'
 import { useSigningRequest } from './useSigningRequest'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 // =============================================================================
 // Result type alias
@@ -118,14 +119,14 @@ export const useSigningPipeline = (
     // -------------------------------------------------------------------------
 
     const [stage, setStage] = useState<PipelineStage>('idle')
-    const [error, setError] = useState<Error | null>(null)
+    const [error, setError] = useState<Nullable<Error>>(null)
 
     // Keep onEvent in a ref so the subscription closure never goes stale
     const onEventRef = useRef(onEvent)
     onEventRef.current = onEvent
 
     // Track the previous stage to fire events only on transitions
-    const prevStageRef = useRef<PipelineStage | null>(null)
+    const prevStageRef = useRef<Nullable<PipelineStage>>(null)
 
     useEffect(() => {
         if (!currentActorRef) {

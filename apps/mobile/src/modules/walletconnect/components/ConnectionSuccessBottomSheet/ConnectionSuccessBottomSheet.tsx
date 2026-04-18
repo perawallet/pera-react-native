@@ -14,10 +14,11 @@ import { PWBottomSheet, PWButton, PWIcon, PWText } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { WalletConnectSessionRequest } from '@perawallet/wallet-core-walletconnect'
 import { useStyles } from './styles'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type ConnectionSuccessBottomSheetProps = {
     onClose: () => void
-    request: WalletConnectSessionRequest | null
+    request: Nullable<WalletConnectSessionRequest>
 }
 
 export const ConnectionSuccessBottomSheet = ({

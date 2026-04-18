@@ -14,6 +14,7 @@ import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { useRemoveAssetsScreen } from '../useRemoveAssetsScreen'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const mockAccount = { address: 'test-address', name: 'Test' }
 
@@ -34,7 +35,7 @@ const mockAssetBalances = [
 
 const { mockGetSelectedAccount } = vi.hoisted(() => ({
     mockGetSelectedAccount: vi.fn(
-        () => mockAccount as typeof mockAccount | null,
+        () => mockAccount as Nullable<typeof mockAccount>,
     ),
 }))
 

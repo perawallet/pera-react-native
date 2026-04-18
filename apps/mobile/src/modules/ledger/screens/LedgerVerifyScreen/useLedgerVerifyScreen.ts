@@ -30,6 +30,7 @@ import {
 } from '@modules/ledger/utils'
 
 import { useLedgerConnection } from '../../hooks'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type LedgerVerifyRouteProp = RouteProp<AddAccountStackParamList, 'LedgerVerify'>
 
@@ -39,9 +40,9 @@ type UseLedgerVerifyScreenResult = {
     verificationState: VerificationState
     currentIndex: number
     totalAccounts: number
-    currentAddress: string | null
-    error: Error | null
-    errorPreset: LedgerErrorPreset | null
+    currentAddress: Nullable<string>
+    error: Nullable<Error>
+    errorPreset: Nullable<LedgerErrorPreset>
     handleRetry: () => void
     handleTroubleshoot: () => void
     t: (key: string, options?: Record<string, unknown>) => string
@@ -61,7 +62,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const [verificationState, setVerificationState] =
         useState<VerificationState>('connecting')
     const [currentIndex, setCurrentIndex] = useState(0)
-    const [error, setError] = useState<Error | null>(null)
+    const [error, setError] = useState<Nullable<Error>>(null)
 
     const hasStartedRef = useRef(false)
 

@@ -12,6 +12,7 @@
 
 import { createContext, useContext } from 'react'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseAccountOverviewModalResult = {
     account: WalletAccount
@@ -22,7 +23,7 @@ export type UseAccountOverviewModalResult = {
 }
 
 export const AccountOverviewModalContext =
-    createContext<UseAccountOverviewModalResult | null>(null)
+    createContext<Nullable<UseAccountOverviewModalResult>>(null)
 
 export const useAccountOverviewModal = (): UseAccountOverviewModalResult => {
     const context = useContext(AccountOverviewModalContext)

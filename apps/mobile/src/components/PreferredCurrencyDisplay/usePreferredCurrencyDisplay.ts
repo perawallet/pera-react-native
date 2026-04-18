@@ -21,15 +21,16 @@ import {
     ALGO_ASSET_ID,
     ALGO_ASSET,
 } from '@perawallet/wallet-core-assets'
+import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 
 type UsePreferredCurrencyDisplayResult = {
     displayCurrency: string
-    convertedValue: Decimal | null
+    convertedValue: Nullable<Decimal>
     isPending: boolean
 }
 
 export const usePreferredCurrencyDisplay = (
-    sourceAmount: Decimal | null | undefined,
+    sourceAmount: Maybe<Decimal>,
     sourceAssetId: string,
     forceFallback?: boolean,
     preFetchedUsdPrice?: Decimal,

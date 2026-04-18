@@ -44,7 +44,7 @@ import {
     PWScrollView,
 } from '@components/core'
 import { LoadingView } from '@components/LoadingView'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { WebViewTitleBar } from './WebViewTitleBar'
 import { WebViewFooterBar } from './WebViewFooterBar'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
@@ -62,7 +62,7 @@ export type PWWebViewProps = {
     inBottomSheet?: boolean
     customJavaScript?: string
     onCustomMessage?: (data: unknown) => void
-    webviewRef?: React.RefObject<WebView | null>
+    webviewRef?: React.RefObject<Nullable<WebView>>
 } & WebViewProps
 
 const updateTheme = (mode: 'light' | 'dark') => {

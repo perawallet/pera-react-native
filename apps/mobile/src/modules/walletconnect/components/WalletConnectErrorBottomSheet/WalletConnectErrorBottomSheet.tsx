@@ -15,10 +15,11 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useMemo } from 'react'
 import { config } from '@perawallet/wallet-core-config'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type WalletConnectErrorBottomSheetProps = {
     isVisible: boolean
-    error: Error | null
+    error: Nullable<Error>
     onClose: () => void
 }
 

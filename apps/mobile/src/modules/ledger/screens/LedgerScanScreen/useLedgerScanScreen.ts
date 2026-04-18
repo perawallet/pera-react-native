@@ -16,11 +16,12 @@ import { useLanguage } from '@hooks/useLanguage'
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 
 import { useLedgerConnection } from '../../hooks'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseLedgerScanScreenResult = {
     devices: HardwareWalletDevice[]
     isScanning: boolean
-    error: Error | null
+    error: Nullable<Error>
     handleDevicePress: (device: HardwareWalletDevice) => void
     handleRetry: () => void
     handleTroubleshoot: () => void

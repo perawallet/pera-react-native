@@ -18,6 +18,7 @@ import {
     generateOrderedUniqueId,
     registerStore,
     type WithPersist,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
@@ -54,7 +55,7 @@ const STORE_NAME = 'signing-store'
 
 const initialState = {
     pendingSignRequests: [] as SignRequest[],
-    lastCompletedRequest: null as SignRequest | null,
+    lastCompletedRequest: null as Nullable<SignRequest>,
 }
 
 export const useSigningStore: UseBoundStore<
@@ -84,7 +85,7 @@ export const useSigningStore: UseBoundStore<
                 }
                 return remaining.length != existing.length
             },
-            setLastCompletedRequest: (request: SignRequest | null) => {
+            setLastCompletedRequest: (request: Nullable<SignRequest>) => {
                 set({ lastCompletedRequest: request })
             },
             resetState: () => set(initialState),

@@ -27,6 +27,7 @@ import {
 import { useTransactionSigner } from '@perawallet/wallet-core-signing'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { InvalidSendParamsError } from '../errors'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type BaseSendParams = {
     sendMode: 'normal' | 'express' | 'sendArc59' | 'claimArc59' | 'rejectArc59'
@@ -59,7 +60,7 @@ type SendExpressParams = {
 }
 
 type UseTransactionSendFlowParams = {
-    params: SendParams | null
+    params: Nullable<SendParams>
 }
 
 export const useTransactionSendFlow = () => {

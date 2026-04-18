@@ -22,6 +22,7 @@ import {
     useAccountBalancesInvalidator,
 } from '@perawallet/wallet-core-accounts'
 import { NonZeroBalanceError, CreatorCannotOptOutError } from '../errors'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type AssetOptOutParams = {
     sender: string
@@ -36,7 +37,7 @@ type UseAssetOptOutMutationResult = {
     ) => Promise<{ txIds: string[] }>
     isLoading: boolean
     isError: boolean
-    error: Error | null
+    error: Nullable<Error>
 }
 
 type ResolvedOptOutParams = {
@@ -51,7 +52,7 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
     const { network } = useNetwork()
     const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
     const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState<Error | null>(null)
+    const [error, setError] = useState<Nullable<Error>>(null)
 
     const resolveCreator = useCallback(
         async (params: AssetOptOutParams): Promise<ResolvedOptOutParams> => {

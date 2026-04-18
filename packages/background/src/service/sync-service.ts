@@ -33,6 +33,7 @@ import {
     logger,
     calculateBackoff,
     type Network,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
 import type { SyncServiceDeps } from '../models'
@@ -42,7 +43,7 @@ const MAX_BACKOFF_INTERVAL = 30000
 const BACKOFF_MULTIPLIER = 2
 
 export class SyncService {
-    private timer: ReturnType<typeof setTimeout> | null = null
+    private timer: Nullable<ReturnType<typeof setTimeout>> = null
     private running = false
     private hasCompletedInitialSync = false
     private currentInterval = POLL_INTERVAL

@@ -25,6 +25,7 @@ import { useToast } from '@hooks/useToast'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 import type { AddAssetBottomSheetVariant } from '@modules/assets/components/AddAssetBottomSheet'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseAddAssetScreenOptions = {
     variant?: AddAssetBottomSheetVariant
@@ -40,7 +41,7 @@ type UseAddAssetScreenResult = {
     hasNextPage: boolean
     fetchNextPage: () => void
     optedInAssetIds: Set<string>
-    optingInAssetId: string | null
+    optingInAssetId: Nullable<string>
     handleAddAsset: (assetId: string) => void
     t: (key: string, params?: Record<string, string | number>) => string
 }
@@ -51,7 +52,8 @@ export const useAddAssetScreen = (
     const { t } = useLanguage()
     const hasCollectible = options?.variant === 'collectible'
     const [searchQuery, setSearchQuery] = useState('')
-    const [optingInAssetId, setOptingInAssetId] = useState<string | null>(null)
+    const [optingInAssetId, setOptingInAssetId] =
+        useState<Nullable<string>>(null)
     const [recentlyOptedIn, setRecentlyOptedIn] = useState<Set<string>>(
         new Set(),
     )

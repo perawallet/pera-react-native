@@ -11,7 +11,7 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type {
     DataTransport,
     SignableGroup,
@@ -115,14 +115,14 @@ export type SigningMachineContext = {
      * Used for transport routing (e.g. detecting multisig propose vs algod).
      * Actors resolve the full WalletAccount from allAccounts when needed.
      */
-    signerAddress: string | null
+    signerAddress: Nullable<string>
 
     /**
      * Maps each unique signer address to its resolved signing type.
      * Populated in idle state. Used by the `signing` state to dispatch
      * each group to the correct actor sequentially.
      */
-    groupSignerTypes: GroupSignerTypeMap | null
+    groupSignerTypes: Nullable<GroupSignerTypeMap>
 
     /**
      * Tracks which signer types have already completed during sequential dispatch.
@@ -138,35 +138,35 @@ export type SigningMachineContext = {
      * Multiple groups can exist when a single request spans several atomic transaction groups
      * (e.g. a Multisig request with transactions from multiple groups).
      */
-    signableGroups: SignableGroup[] | null
+    signableGroups: Nullable<SignableGroup[]>
 
     /**
      * Analysis results from the `validating` state, one per signable group.
      * Each entry contains fees, warnings, risk level, and signable addresses
      * for the corresponding group in `signableGroups`.
      */
-    analyses: SignableAnalysis[] | null
+    analyses: Nullable<SignableAnalysis[]>
 
     /**
      * Signing results from the `signing` state, one per signable group.
      * Each entry contains signed data and signer info for the corresponding group.
      */
-    signingResults: SigningResult[] | null
+    signingResults: Nullable<SigningResult[]>
 
     /**
      * Transport result from the `transporting` state.
      * Contains txIds, callback result, or multisig proposal info.
      */
-    transportResult: TransportResult | null
+    transportResult: Nullable<TransportResult>
 
     /** Error captured when the machine enters the `failed` state. */
-    error: Error | null
+    error: Nullable<Error>
 
     /**
      * Which state the machine was in when the error occurred.
      * Used to determine the retry target when the user taps "Retry".
      */
-    failedDuringState: 'validating' | 'signing' | 'transporting' | null
+    failedDuringState: Nullable<'validating' | 'signing' | 'transporting'>
 
     /**
      * Runtime dependencies (KMS functions, AlgoKit client, etc).

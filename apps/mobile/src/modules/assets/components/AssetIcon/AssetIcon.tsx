@@ -11,7 +11,11 @@
  */
 
 import { isAlgoAsset } from '@perawallet/wallet-core-assets'
-import { buildPrismUrl, getInitials } from '@perawallet/wallet-core-shared'
+import {
+    buildPrismUrl,
+    getInitials,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { SvgProps } from 'react-native-svg'
@@ -24,8 +28,8 @@ type AssetIconAsset = {
     name?: string
     unitName?: string
     peraMetadata?: {
-        logo?: string | null
-        collectible?: { primaryImage?: string | null }
+        logo?: Nullable<string>
+        collectible?: { primaryImage?: Nullable<string> }
     }
 }
 

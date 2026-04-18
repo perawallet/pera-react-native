@@ -34,6 +34,7 @@ import {
 } from '../../../../accounts/components/AccountHistory/utils'
 import type { TransactionSection } from '../../../../accounts/components/AccountHistory/useAccountHistory'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseAssetTransactionListParams = {
     account: WalletAccount
@@ -45,7 +46,7 @@ export type UseAssetTransactionListResult = {
     isLoading: boolean
     isFetchingNextPage: boolean
     isError: boolean
-    error: Error | null
+    error: Nullable<Error>
     hasNextPage: boolean
     handleLoadMore: () => void
     handleRefresh: () => void

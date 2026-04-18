@@ -22,6 +22,7 @@ import {
     type AccountOnChainState,
     type BalanceValidationResult,
 } from '../utils/balance-validation'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseBalanceValidationParams = {
     transactions: PeraDisplayableTransaction[]
@@ -30,7 +31,7 @@ type UseBalanceValidationParams = {
 }
 
 type UseBalanceValidationResult = {
-    validation: BalanceValidationResult | null
+    validation: Nullable<BalanceValidationResult>
     isLoading: boolean
 }
 

@@ -16,6 +16,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'
 import { z } from 'zod'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export const arc59WarningMessageSchema = z.object({
     title: z.string(),
@@ -106,7 +107,7 @@ export type Arc59AssetRequest = {
     senders: {
         count: number
         results: Array<{
-            sender: { address: string; name: string | null }
+            sender: { address: string; name: Nullable<string> }
             /** Sender's amount, in base units */
             amount: Decimal
         }>

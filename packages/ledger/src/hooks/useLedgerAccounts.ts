@@ -13,12 +13,13 @@
 import { useState, useCallback } from 'react'
 import type { LedgerAccount, LedgerTransport } from '../types'
 import { discoverLedgerAccounts } from '../discovery'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseLedgerAccountsResult = {
     accounts: LedgerAccount[]
     isDiscovering: boolean
-    progress: { current: number; total: number | null }
-    error: Error | null
+    progress: { current: number; total: Nullable<number> }
+    error: Nullable<Error>
     discover: (transport: LedgerTransport) => Promise<LedgerAccount[]>
     retry: () => void
 }
@@ -33,12 +34,11 @@ export const useLedgerAccounts = (): UseLedgerAccountsResult => {
     const [isDiscovering, setIsDiscovering] = useState(false)
     const [progress, setProgress] = useState<{
         current: number
-        total: number | null
+        total: Nullable<number>
     }>({ current: 0, total: null })
-    const [error, setError] = useState<Error | null>(null)
-    const [lastTransport, setLastTransport] = useState<LedgerTransport | null>(
-        null,
-    )
+    const [error, setError] = useState<Nullable<Error>>(null)
+    const [lastTransport, setLastTransport] =
+        useState<Nullable<LedgerTransport>>(null)
 
     const discover = useCallback(
         async (transport: LedgerTransport): Promise<LedgerAccount[]> => {

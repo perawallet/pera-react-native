@@ -11,6 +11,7 @@
  */
 
 import { Decimal } from 'decimal.js'
+import type { Nullable } from './types'
 
 /**
  * Initializes the global Decimal.js configuration for the app.
@@ -39,8 +40,8 @@ initDecimalConfig()
  * Returns true if both are null, or both are non-null and numerically equal.
  */
 export const isDecimalEqual = (
-    a: Decimal | null,
-    b: Decimal | null,
+    a: Nullable<Decimal>,
+    b: Nullable<Decimal>,
 ): boolean => {
     if (a === b) return true
     if (a === null || b === null) return false

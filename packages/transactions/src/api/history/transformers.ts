@@ -22,13 +22,14 @@ import type {
     TransactionSwapGroupDetail,
     TransactionInterpretedMeaning,
 } from '../../models/types'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Transforms a swap group detail from API response format to domain format.
  */
 const transformSwapGroupDetail = (
     detail: TransactionHistoryItemApiResponse['swap_group_detail'],
-): TransactionSwapGroupDetail | null => {
+): Nullable<TransactionSwapGroupDetail> => {
     if (!detail) return null
     return {
         assetInId:
@@ -47,7 +48,7 @@ const transformSwapGroupDetail = (
  */
 const transformAssetSummary = (
     asset: TransactionHistoryItemApiResponse['asset'],
-): TransactionAssetSummary | null => {
+): Nullable<TransactionAssetSummary> => {
     if (!asset) return null
     return {
         assetId: Number(asset.asset_id),
@@ -62,7 +63,7 @@ const transformAssetSummary = (
  */
 const transformInterpretedMeaning = (
     meaning: TransactionHistoryItemApiResponse['interpreted_meaning'],
-): TransactionInterpretedMeaning | null => {
+): Nullable<TransactionInterpretedMeaning> => {
     if (!meaning) return null
     return {
         title: meaning.title ?? '',

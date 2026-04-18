@@ -33,6 +33,7 @@ import {
     OnCompletion,
     type Transaction as IndexerTransaction,
 } from '@algorandfoundation/algokit-utils/indexer-client'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export const mapIndexerTxToDisplayableTransaction = (
     tx: IndexerTransaction,
@@ -45,7 +46,7 @@ export const mapIndexerTxToDisplayableTransaction = (
 
 export const mapToDisplayableTransaction = (
     tx: PeraTransaction,
-): PeraDisplayableTransaction | null => {
+): Nullable<PeraDisplayableTransaction> => {
     if (tx.type === TransactionType.Unknown) {
         return null
     }

@@ -14,7 +14,7 @@ import type {
     PeraSignedTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { BaseStoreState } from '@perawallet/wallet-core-shared'
+import { BaseStoreState, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     Arc60Metadata,
     Arc60StdSigData,
@@ -122,10 +122,10 @@ export type SignRequest =
 
 export type SigningStore = BaseStoreState & {
     pendingSignRequests: SignRequest[]
-    lastCompletedRequest: SignRequest | null
+    lastCompletedRequest: Nullable<SignRequest>
     addSignRequest: (request: SignRequest) => boolean
     removeSignRequest: (request: SignRequest) => boolean
-    setLastCompletedRequest: (request: SignRequest | null) => void
+    setLastCompletedRequest: (request: Nullable<SignRequest>) => void
 }
 
 export type TransactionWarning = {
@@ -158,7 +158,7 @@ export type SigningPipelineEvent =
           /** The machine's analysis result (fees, warnings, risk level) */
           analysis: SignableAnalysis
           /** The signer type that will be used once approved */
-          signerType: ResolvedSignerType | null
+          signerType: Nullable<ResolvedSignerType>
       }
     | {
           type: 'signing_started'
@@ -174,7 +174,7 @@ export type SigningPipelineEvent =
           type: 'signing_failed'
           error: Error
           /** Which pipeline stage the failure occurred in */
-          failedDuringState: 'validating' | 'signing' | 'transporting' | null
+          failedDuringState: Nullable<'validating' | 'signing' | 'transporting'>
           isRetryable: boolean
       }
     /** Reserved for hardware wallet confirmation */

@@ -23,6 +23,7 @@ import {
     getLedgerErrorPreset,
     type LedgerErrorPreset,
 } from '@modules/ledger/utils'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type LedgerFetchAccountsRouteProp = RouteProp<
     AddAccountStackParamList,
@@ -32,9 +33,9 @@ type LedgerFetchAccountsRouteProp = RouteProp<
 type UseLedgerFetchAccountsScreenResult = {
     connectionStatus: LedgerConnectionStatus
     isDiscovering: boolean
-    progress: { current: number; total: number | null }
-    error: Error | null
-    errorPreset: LedgerErrorPreset | null
+    progress: { current: number; total: Nullable<number> }
+    error: Nullable<Error>
+    errorPreset: Nullable<LedgerErrorPreset>
     handleRetry: () => void
     handleTroubleshoot: () => void
     t: (key: string, options?: Record<string, unknown>) => string
@@ -53,13 +54,13 @@ export const useLedgerFetchAccountsScreen =
         const [isDiscovering, setIsDiscovering] = useState(false)
         const [progress, setProgress] = useState<{
             current: number
-            total: number | null
+            total: Nullable<number>
         }>({ current: 0, total: null })
-        const [error, setError] = useState<Error | null>(null)
+        const [error, setError] = useState<Nullable<Error>>(null)
 
         const hasStartedRef = useRef(false)
         const mountedRef = useRef(true)
-        const transportRef = useRef<HardwareWalletTransport | null>(null)
+        const transportRef = useRef<Nullable<HardwareWalletTransport>>(null)
 
         const run = useCallback(async () => {
             setError(null)

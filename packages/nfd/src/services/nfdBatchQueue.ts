@@ -11,7 +11,7 @@
  */
 
 import { BatchQueue } from '@perawallet/wallet-core-background/queue'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import { fetchAndPersistNfds } from '../sync/nfd-syncer'
 import { getNfdsByAddresses } from '../db'
 import type { NfdName } from '../models'
@@ -23,12 +23,12 @@ const NFD_BATCH_DELAY_MS = 100
  * concurrent address lookups (e.g. a transaction list mounting 20 rows
  * over a few render commits) into a single bulk-read HTTP call.
  */
-export const nfdBatchQueue = new BatchQueue<string, NfdName | null, Network>(
+export const nfdBatchQueue = new BatchQueue<string, Nullable<NfdName>, Network>(
     async (addresses, network) => {
         await fetchAndPersistNfds(addresses, network)
 
         const rows = await getNfdsByAddresses({ addresses, network })
-        const map = new Map<string, NfdName | null>()
+        const map = new Map<string, Nullable<NfdName>>()
         for (const row of rows) {
             map.set(row.address, row.name)
         }

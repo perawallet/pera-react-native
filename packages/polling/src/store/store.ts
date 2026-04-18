@@ -16,6 +16,7 @@ import {
     registerStore,
     type Network,
     type WithPersist,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import type { LastRefreshedRounds, PollingState } from '../models'
 import { getProvider } from '@perawallet/wallet-extension-provider'
@@ -35,7 +36,10 @@ export const usePollingStore: UseBoundStore<
     persist(
         set => ({
             ...initialState,
-            setLastRefreshedRound: (network: Network, round: number | null) => {
+            setLastRefreshedRound: (
+                network: Network,
+                round: Nullable<number>,
+            ) => {
                 set(state => ({
                     lastRefreshedRound: {
                         ...state.lastRefreshedRound,
@@ -55,7 +59,8 @@ export const usePollingStore: UseBoundStore<
             migrate: (persistedState: unknown, version: number) => {
                 const state = persistedState as Record<string, unknown>
                 if (version < 2) {
-                    const oldRound = state.lastRefreshedRound as number | null
+                    const oldRound =
+                        state.lastRefreshedRound as Nullable<number>
                     state.lastRefreshedRound = {
                         mainnet: oldRound,
                         testnet: null,

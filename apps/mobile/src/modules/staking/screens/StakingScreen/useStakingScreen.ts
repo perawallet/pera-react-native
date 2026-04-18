@@ -19,6 +19,7 @@ import {
 } from '@modules/staking/hooks'
 import type { StakingProject } from '@modules/staking/models'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseStakingScreenResult = {
     projects: StakingProject[]
@@ -48,7 +49,7 @@ export const useStakingScreen = (): UseStakingScreenResult => {
 
     const helpModal = useModalState()
     const disclaimerModal = useModalState()
-    const pendingProjectRef = useRef<StakingProject | null>(null)
+    const pendingProjectRef = useRef<Nullable<StakingProject>>(null)
 
     const openProject = useCallback(
         (project: StakingProject) => {

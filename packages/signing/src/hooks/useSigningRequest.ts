@@ -20,6 +20,7 @@ import {
     ErrorCategory,
     ErrorSeverity,
     generateOrderedUniqueId,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
     MAX_DATA_SIGN_REQUESTS,
@@ -32,9 +33,9 @@ import {
 
 type UseSigningRequestResult = {
     pendingSignRequests: SignRequest[]
-    lastCompletedRequest: SignRequest | null
+    lastCompletedRequest: Nullable<SignRequest>
     currentRequest: SignRequest | undefined
-    currentActorRef: AnyActorRef | null
+    currentActorRef: Nullable<AnyActorRef>
     addSignRequest: (request: SignRequest) => void
     removeSignRequest: (request: SignRequest) => void
     clearLastCompletedRequest: () => void

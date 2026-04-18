@@ -30,10 +30,11 @@ import {
 import { useSendFunds } from '@modules/transactions/hooks'
 import { useClipboard } from '@hooks/useClipboard'
 import { useToast } from '@hooks/useToast'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type AssetActionButtonsProps = {
     asset: PeraAsset
-    assetHolding?: AssetWithAccountBalance | null
+    assetHolding?: Nullable<AssetWithAccountBalance>
 }
 //TODO hook up missing actions
 export const AssetActionButtons = ({

@@ -27,10 +27,11 @@ import { CopyableText } from '@components/CopyableText'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
 import { AssetIcon } from '@modules/assets/components'
 import { useStyles } from './styles'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type SwapToAssetItemViewProps = {
     dexAsset: DexSwapAsset
-    balance: Decimal | null
+    balance: Nullable<Decimal>
 } & PWTouchableOpacityProps
 
 export const SwapToAssetItemView = ({

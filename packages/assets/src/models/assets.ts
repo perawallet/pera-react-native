@@ -14,6 +14,7 @@ import { Decimal } from 'decimal.js'
 import { type Network } from '@perawallet/wallet-core-config'
 
 import { type PeraCollectible } from './collectibles'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export const PeraAssetVerificationTier = {
     verified: 'verified',
@@ -78,7 +79,7 @@ export type PeraAssetMetadata = {
     isDeleted: boolean
     verificationTier: PeraAssetVerificationTier
     category?: number //TODO: Add category type
-    logo?: string | null
+    logo?: Nullable<string>
     readonly isVerified?: boolean
     readonly explorerUrl?: string
     collectible?: PeraCollectible
@@ -86,7 +87,7 @@ export type PeraAssetMetadata = {
     readonly labels?: PeraAssetLabel[]
     projectUrl?: string
     projectName?: string
-    readonly logoSvg?: string | null
+    readonly logoSvg?: Nullable<string>
     discordUrl?: string
     telegramUrl?: string
     twitterUsername?: string

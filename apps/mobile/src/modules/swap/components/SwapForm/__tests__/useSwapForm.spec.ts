@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { useSwapForm } from '../useSwapForm'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const mockSetFromAsset = vi.fn()
 const mockSetToAsset = vi.fn()
@@ -28,7 +29,7 @@ const mockSetPreferredCurrency = vi.fn()
 
 let mockFromAsset = '0'
 let mockToAsset = '31566704'
-let mockSlippage: string | null = null
+let mockSlippage: Nullable<string> = null
 let mockPreferredCurrency = 'ALGO'
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
@@ -123,7 +124,7 @@ vi.mock('@hooks/useDebouncedValue', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
-    isDecimalEqual: (a: Decimal | null, b: Decimal | null) => {
+    isDecimalEqual: (a: Nullable<Decimal>, b: Nullable<Decimal>) => {
         if (a === b) return true
         if (a === null || b === null) return false
         return a.equals(b)
