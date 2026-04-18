@@ -25,6 +25,7 @@ vi.mock('@perawallet/wallet-core-security', () => ({
 
 vi.mock('@modules/settings/hooks/useDeleteAllData', () => ({
     useDeleteAllData: vi.fn(),
+    clearAccountsStore: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
