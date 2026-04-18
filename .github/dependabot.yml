@@ -102,3 +102,9 @@ updates:
       actions:
         patterns:
           - "*"
+    ignore:
+      # pnpm/action-setup v6 ignores both `version:` input and `packageManager`
+      # field, always installing pnpm 11-rc, which corrupts pnpm 10 lockfiles
+      # in memory (pnpm/action-setup#225, #227, #228). Stay on v5 until fixed.
+      - dependency-name: pnpm/action-setup
+        update-types: [version-update:semver-major]
