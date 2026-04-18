@@ -12,7 +12,10 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { usePinCode } from '@perawallet/wallet-core-security'
-import { useDeleteAllData } from '@modules/settings/hooks/useDeleteAllData'
+import {
+    clearAccountsStore,
+    useDeleteAllData,
+} from '@modules/settings/hooks/useDeleteAllData'
 import { AppState, AppStateStatus } from 'react-native'
 import { logger } from '@perawallet/wallet-core-shared'
 import {
@@ -84,6 +87,12 @@ export const useAutoLockListener = (): UseAutoLockListenerResult => {
 
     const handleResetData = useCallback(async () => {
         await deleteAllData()
+        // deleteAllData skips the accounts store so the settings-flow success
+        // modal can render before the route tree switches to Onboarding.
+        // On the lock screen there is no success modal — clearing it here is
+        // what actually drops the user back to Onboarding instead of leaving
+        // them inside the app with their account list intact.
+        clearAccountsStore()
         setIsChecking(false)
         setIsLocked(false)
         setAutoLockStartedAt(null)
