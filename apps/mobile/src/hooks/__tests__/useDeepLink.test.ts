@@ -62,8 +62,10 @@ vi.mock('../deeplink/parser', () => ({
 vi.mock('@perawallet/wallet-core-shared', () => ({
     logger: {
         debug: vi.fn(),
+        warn: vi.fn(),
         error: vi.fn(),
     },
+    generateOrderedUniqueId: vi.fn(() => 'test-id'),
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
@@ -81,20 +83,31 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     },
 }))
 
+const { mockPushWebView } = vi.hoisted(() => ({
+    mockPushWebView: vi.fn(),
+}))
+
 vi.mock('@modules/webview/hooks', () => ({
-    useWebView: () => ({ pushWebView: vi.fn() }),
+    useWebView: () => ({ pushWebView: mockPushWebView }),
+}))
+
+vi.mock('@modules/webview/hooks/useWebViewStore', () => ({
+    useWebView: () => ({ pushWebView: mockPushWebView }),
 }))
 
 vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     useWalletConnect: () => ({ connect: vi.fn() }),
 }))
 
-const mockInfoToast = vi.hoisted(() => vi.fn())
+const { mockInfoToast, mockErrorToast } = vi.hoisted(() => ({
+    mockInfoToast: vi.fn(),
+    mockErrorToast: vi.fn(),
+}))
 
 vi.mock('../useToast', () => ({
     useToast: vi.fn(() => ({
         showToast: vi.fn(),
-        errorToast: vi.fn(),
+        errorToast: mockErrorToast,
         infoToast: mockInfoToast,
     })),
 }))
@@ -350,6 +363,59 @@ describe('useDeepLink', () => {
         })
     })
 
+    it('navigates DISCOVER_PATH deeplink with no path when path is omitted', async () => {
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.DISCOVER_PATH,
+        })
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/discover',
+                false,
+                'deeplink',
+            )
+        })
+
+        expect(mockNavigate).toHaveBeenCalledWith('TabBar', {
+            screen: 'Discover',
+            params: { path: undefined },
+        })
+        expect(mockErrorToast).not.toHaveBeenCalled()
+    })
+
+    it.each([
+        ['absolute-https', 'https://evil.com/phish'],
+        ['protocol-relative', '//evil.com/phish'],
+        ['javascript:', 'javascript:alert(1)'],
+        ['data:', 'data:text/html,<script>x</script>'],
+        ['empty', ''],
+    ])(
+        'blocks DISCOVER_PATH deeplink with %s path',
+        async (_label, unsafePath) => {
+            ;(parseDeeplink as Mock).mockReturnValue({
+                type: DeeplinkType.DISCOVER_PATH,
+                path: unsafePath,
+                sourceUrl: 'perawallet://app/discover-path/?path=...',
+            })
+            const mockOnError = vi.fn()
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet://app/discover-path/?path=...',
+                    false,
+                    'deeplink',
+                    mockOnError,
+                )
+            })
+
+            expect(mockNavigate).not.toHaveBeenCalled()
+            expect(mockErrorToast).toHaveBeenCalled()
+            expect(mockOnError).toHaveBeenCalled()
+        },
+    )
+
     it('should handle STAKING deeplink', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.STAKING,
@@ -431,22 +497,82 @@ describe('useDeepLink', () => {
         })
     })
 
-    it('should handle DISCOVER_BROWSER deeplink', async () => {
+    it.each([
+        ['javascript:', 'javascript:alert(1)'],
+        ['data:', 'data:text/html,<script>alert(1)</script>'],
+        ['file:', 'file:///etc/passwd'],
+        ['http:', 'http://example.com/'],
+        ['non-URL', 'not a url'],
+    ])(
+        'blocks DISCOVER_BROWSER deeplink with %s scheme',
+        async (_label, adversarialUrl) => {
+            ;(parseDeeplink as Mock).mockReturnValue({
+                type: DeeplinkType.DISCOVER_BROWSER,
+                url: adversarialUrl,
+                sourceUrl: 'perawallet://app/discover-browser/?url=...',
+            })
+            const mockOnError = vi.fn()
+            const { result } = renderHook(() => useDeepLink())
+
+            await act(async () => {
+                await result.current.handleDeepLink(
+                    'perawallet://app/discover-browser/?url=...',
+                    false,
+                    'deeplink',
+                    mockOnError,
+                )
+            })
+
+            expect(mockPushWebView).not.toHaveBeenCalled()
+            expect(mockErrorToast).toHaveBeenCalled()
+            expect(mockOnError).toHaveBeenCalled()
+        },
+    )
+
+    it('allows DISCOVER_BROWSER deeplink for a well-formed HTTPS URL', async () => {
         ;(parseDeeplink as Mock).mockReturnValue({
             type: DeeplinkType.DISCOVER_BROWSER,
-            url: 'https://example.com',
+            url: 'https://tinyman.org/',
+            sourceUrl: 'perawallet://app/discover-browser/?url=...',
+        })
+        const mockOnSuccess = vi.fn()
+        const { result } = renderHook(() => useDeepLink())
+
+        await act(async () => {
+            await result.current.handleDeepLink(
+                'perawallet://app/discover-browser/?url=...',
+                false,
+                'deeplink',
+                undefined,
+                mockOnSuccess,
+            )
+        })
+
+        expect(mockPushWebView).toHaveBeenCalledWith(
+            expect.objectContaining({ url: 'https://tinyman.org/' }),
+        )
+        expect(mockErrorToast).not.toHaveBeenCalled()
+        expect(mockOnSuccess).toHaveBeenCalled()
+    })
+
+    it('blocks INTERNAL_BROWSER deeplink with an unsafe URL', async () => {
+        ;(parseDeeplink as Mock).mockReturnValue({
+            type: DeeplinkType.INTERNAL_BROWSER,
+            url: 'javascript:alert(1)',
+            sourceUrl: 'perawallet://app/internal-browser/?url=...',
         })
         const { result } = renderHook(() => useDeepLink())
 
         await act(async () => {
             await result.current.handleDeepLink(
-                'perawallet://app/discover/browser?url=https://example.com',
+                'perawallet://app/internal-browser/?url=...',
                 false,
                 'deeplink',
             )
         })
 
-        // Success case
+        expect(mockPushWebView).not.toHaveBeenCalled()
+        expect(mockErrorToast).toHaveBeenCalled()
     })
 
     it('should handle HOME deeplink', async () => {

@@ -85,6 +85,28 @@ export const isTrustedWebviewOrigin = (
     })
 }
 
+export const isSafeBrowserUrl = (url: string): boolean => {
+    let parsed: URL
+    try {
+        parsed = new URL(url)
+    } catch {
+        return false
+    }
+    return parsed.protocol === 'https:'
+}
+
+const RELATIVE_PATH_BASE = 'https://perawallet.invalid/'
+
+export const isSafeRelativePath = (path: string): boolean => {
+    if (!path) return false
+    try {
+        const resolved = new URL(path, RELATIVE_PATH_BASE)
+        return resolved.origin === new URL(RELATIVE_PATH_BASE).origin
+    } catch {
+        return false
+    }
+}
+
 const safeOrigin = (url: string): string | null => {
     try {
         const origin = new URL(url).origin

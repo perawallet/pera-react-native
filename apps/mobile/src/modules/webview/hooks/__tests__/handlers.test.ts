@@ -12,6 +12,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
+    isSafeBrowserUrl,
+    isSafeRelativePath,
     isTrustedWebviewOrigin,
     JsonRpcErrorCode,
     requireSecure,
@@ -198,5 +200,71 @@ describe('isTrustedWebviewOrigin', () => {
                 [],
             ),
         ).toBe(false)
+    })
+})
+
+describe('isSafeBrowserUrl', () => {
+    it('accepts any well-formed HTTPS URL', () => {
+        expect(isSafeBrowserUrl('https://tinyman.org/')).toBe(true)
+        expect(
+            isSafeBrowserUrl('https://explorer.perawallet.app/asset/123/'),
+        ).toBe(true)
+        expect(isSafeBrowserUrl('https://example.com/path?q=1#hash')).toBe(true)
+    })
+
+    it('rejects HTTP URLs', () => {
+        expect(isSafeBrowserUrl('http://example.com/')).toBe(false)
+    })
+
+    it('rejects javascript: URLs', () => {
+        expect(isSafeBrowserUrl('javascript:alert(1)')).toBe(false)
+    })
+
+    it('rejects data: URLs', () => {
+        expect(isSafeBrowserUrl('data:text/html,<script>x</script>')).toBe(
+            false,
+        )
+    })
+
+    it('rejects file: URLs', () => {
+        expect(isSafeBrowserUrl('file:///etc/passwd')).toBe(false)
+    })
+
+    it('rejects malformed URLs without throwing', () => {
+        expect(isSafeBrowserUrl('not a url')).toBe(false)
+        expect(isSafeBrowserUrl('')).toBe(false)
+    })
+})
+
+describe('isSafeRelativePath', () => {
+    it('accepts simple relative paths', () => {
+        expect(isSafeRelativePath('main/markets')).toBe(true)
+        expect(isSafeRelativePath('section?filter=x')).toBe(true)
+        expect(isSafeRelativePath('some/page#anchor')).toBe(true)
+    })
+
+    it('accepts absolute paths anchored at the origin root', () => {
+        expect(isSafeRelativePath('/main/markets')).toBe(true)
+    })
+
+    it('rejects absolute URLs with an http(s) scheme', () => {
+        expect(isSafeRelativePath('https://evil.com/phish')).toBe(false)
+        expect(isSafeRelativePath('http://evil.com/')).toBe(false)
+    })
+
+    it('rejects protocol-relative URLs', () => {
+        expect(isSafeRelativePath('//evil.com/phish')).toBe(false)
+    })
+
+    it('rejects javascript: and other opaque schemes', () => {
+        expect(isSafeRelativePath('javascript:alert(1)')).toBe(false)
+        expect(isSafeRelativePath('data:text/html,<script>x</script>')).toBe(
+            false,
+        )
+        expect(isSafeRelativePath('file:///etc/passwd')).toBe(false)
+    })
+
+    it('rejects empty or missing paths', () => {
+        expect(isSafeRelativePath('')).toBe(false)
     })
 })
