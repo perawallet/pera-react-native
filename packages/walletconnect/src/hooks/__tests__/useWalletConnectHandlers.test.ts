@@ -783,6 +783,7 @@ describe('useWalletConnectHandlers', () => {
                         fee: 1000n,
                     }),
                 ],
+                rawTransactionsBase64: expect.any(Array),
                 sourceMetadata: undefined,
                 approve: expect.any(Function),
                 reject: expect.any(Function),

@@ -10,19 +10,28 @@
  limitations under the License
  */
 
+import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import type { Network } from '@perawallet/wallet-core-shared'
 import type {
     DataTransport,
     SigningResult,
     SourceMetadata,
     TransportResult,
 } from '../types'
-import { TransportError } from '../errors'
+import { NetworkChangedError, TransportError } from '../errors'
 
 /**
  * Creates a transport that sends signed data back to a WalletConnect dApp.
  * The dApp is responsible for submitting to the network.
+ *
+ * @param capturedNetwork - The network that was active when the signing actor
+ *   was created. The live network is re-checked before handing signed bytes
+ *   back to the dApp — if the user switched networks mid-flow we abort so the
+ *   dApp never receives signatures intended for the wrong chain.
  */
-export const createWalletConnectTransport = (): DataTransport => {
+export const createWalletConnectTransport = (
+    capturedNetwork: Network,
+): DataTransport => {
     return {
         send: async (
             result: SigningResult,
@@ -40,6 +49,11 @@ export const createWalletConnectTransport = (): DataTransport => {
                 throw new TransportError(
                     'No request ID provided for WalletConnect transport',
                 )
+            }
+
+            const liveNetwork = useNetworkStore.getState().network
+            if (liveNetwork !== capturedNetwork) {
+                throw new NetworkChangedError(capturedNetwork, liveNetwork)
             }
 
             try {

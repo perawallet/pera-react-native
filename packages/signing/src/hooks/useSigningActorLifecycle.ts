@@ -106,6 +106,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             createTransport: createTransportSelector({
                 algokit,
                 encodeSignedTransactions,
+                network,
             }),
             network,
             encodeTransaction,

@@ -72,6 +72,7 @@ export type TransactionSignRequest = {
      * Populated from ARC-0001 `signers` field in WalletConnect requests.
      */
     signerOverrides?: Map<number, string>
+    rawTransactionsBase64?: string[]
     approve?: (signedTxs: PeraSignedTransaction[]) => Promise<void>
     reject?: () => Promise<void>
     error?: (error: Error) => Promise<void>
