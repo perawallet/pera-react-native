@@ -68,6 +68,7 @@ export type PWBottomSheetProps = {
     size?: PWBottomSheetSize
     autoCreateContainer?: boolean
     testID?: string
+    enableCloseOnBackdropPress?: boolean
 } & PropsWithChildren
 
 export const PWBottomSheet = ({
@@ -82,6 +83,7 @@ export const PWBottomSheet = ({
     autoCreateContainer = true,
     testID,
     children,
+    enableCloseOnBackdropPress = true,
 }: PWBottomSheetProps) => {
     const bottomSheetModalRef = useRef<BottomSheetModal>(null)
     const insets = useSafeAreaInsets()
@@ -104,7 +106,7 @@ export const PWBottomSheet = ({
                 opacity={0.9}
                 disappearsOnIndex={-1}
                 appearsOnIndex={0}
-                pressBehavior='close'
+                pressBehavior={enableCloseOnBackdropPress ? 'close' : 'none'}
                 style={styles.backdrop}
             />
         ),

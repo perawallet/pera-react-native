@@ -54,6 +54,7 @@ export const SigningWarnings = ({ isGroup = false }: { isGroup?: boolean }) => {
                     leftIcon='info'
                     rightIcon='chevron-right'
                     variant='error'
+                    paddingStyle='dense'
                     style={styles.panelButton}
                 />
 

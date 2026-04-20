@@ -18,12 +18,13 @@ import type {
     AnalysisWarning,
     TransactionSummary,
 } from '../types'
-import { AnalysisError } from '../errors'
+import { AnalysisError, TransactionRoundTripError } from '../errors'
 import {
     type PeraTransaction,
     encodeAlgorandAddress,
     classifyPeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
+import { validateTransactionRoundTrip } from '../../utils/validateTransactionRoundTrip'
 
 /**
  * Creates the standard analyzer that provides basic analysis:
@@ -44,7 +45,15 @@ export const createStandardAnalyzer = (): DataAnalyzer => {
                     return createNonTransactionAnalysis(group, context)
                 }
 
-                const { transactions } = group.data
+                const { transactions, rawTransactionsBase64 } = group.data
+
+                if (rawTransactionsBase64) {
+                    validateTransactionRoundTrip(
+                        transactions,
+                        rawTransactionsBase64,
+                    )
+                }
+
                 const accountAddresses = new Set(
                     context.accounts.map(a => a.address),
                 )
@@ -80,6 +89,7 @@ export const createStandardAnalyzer = (): DataAnalyzer => {
                     riskLevel,
                 }
             } catch (error) {
+                if (error instanceof TransactionRoundTripError) throw error
                 throw new AnalysisError(
                     error instanceof Error ? error.message : String(error),
                     error instanceof Error ? error : undefined,

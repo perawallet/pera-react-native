@@ -28,6 +28,7 @@ export type PanelButtonProps = {
     description?: string
     titleWeight: 'h3' | 'h4'
     variant?: 'default' | 'error'
+    paddingStyle?: 'normal' | 'dense'
     onPress: () => void
 } & PWTouchableOpacityProps
 
@@ -63,20 +64,22 @@ export const PanelButton = (props: PanelButtonProps) => {
                     />
                 )}
                 <PWView style={themeStyle.textContainerStyle}>
-                    <PWText
-                        style={themeStyle.textStyle}
-                        variant={titleWeight}
-                        {...getTestProps(testID, 'text')}
-                    >
-                        {title}
-                    </PWText>
+                    <PWView style={themeStyle.titleContainerStyle}>
+                        <PWText
+                            style={themeStyle.textStyle}
+                            variant={titleWeight}
+                            {...getTestProps(testID, 'text')}
+                        >
+                            {title}
+                        </PWText>
+                        {rightIcon && <PWIcon name={rightIcon} />}
+                    </PWView>
                     {!!description && (
                         <PWText style={themeStyle.descriptionStyle}>
                             {description}
                         </PWText>
                     )}
                 </PWView>
-                {rightIcon && <PWIcon name={rightIcon} />}
             </PWView>
         </PWTouchableOpacity>
     )

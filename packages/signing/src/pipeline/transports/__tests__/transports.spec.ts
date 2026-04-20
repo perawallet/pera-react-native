@@ -16,13 +16,19 @@ import { createCallbackTransport } from '../createCallbackTransport'
 import { createWalletConnectTransport } from '../createWalletConnectTransport'
 import { createMultisigCosignTransport } from '../createMultisigCosignTransport'
 import { createMultisigProposeTransport } from '../createMultisigProposeTransport'
-import { TransportError } from '../../errors'
+import { NetworkChangedError, TransportError } from '../../errors'
 import type {
     SigningResult,
     SourceMetadata,
     SignedTransactionData,
     SignedArbitraryData,
 } from '../../types'
+
+const getNetworkMock = vi.fn(() => ({ network: 'testnet' }))
+
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetworkStore: { getState: () => getNetworkMock() },
+}))
 
 const transactionResult: SigningResult = {
     signedData: {
@@ -61,6 +67,7 @@ describe('createAlgodTransport', () => {
         const transport = createAlgodTransport(
             algokit,
             encodeSignedTransactions,
+            'testnet',
         )
 
         const result = await transport.send(transactionResult, {
@@ -76,6 +83,7 @@ describe('createAlgodTransport', () => {
         const transport = createAlgodTransport(
             algokit,
             encodeSignedTransactions,
+            'testnet',
         )
 
         const result = await transport.send(transactionResult, {
@@ -109,6 +117,7 @@ describe('createAlgodTransport', () => {
         const transport = createAlgodTransport(
             algokit,
             encodeSignedTransactions,
+            'testnet',
         )
 
         const result = await transport.send(signedWithId, {
@@ -127,6 +136,7 @@ describe('createAlgodTransport', () => {
         const transport = createAlgodTransport(
             algokit,
             encodeSignedTransactions,
+            'testnet',
         )
 
         await expect(
@@ -147,6 +157,7 @@ describe('createAlgodTransport', () => {
         const transport = createAlgodTransport(
             algokit,
             encodeSignedTransactions,
+            'testnet',
         )
 
         await expect(
@@ -165,11 +176,28 @@ describe('createAlgodTransport', () => {
         const transport = createAlgodTransport(
             algokit,
             encodeSignedTransactions,
+            'testnet',
         )
 
         await expect(
             transport.send(transactionResult, { type: 'local' }),
         ).rejects.toThrow(TransportError)
+    })
+
+    test('aborts with NetworkChangedError when live network differs from captured', async () => {
+        const algokit = makeAlgokit('TX1')
+        const transport = createAlgodTransport(
+            algokit,
+            encodeSignedTransactions,
+            'testnet',
+        )
+
+        getNetworkMock.mockReturnValueOnce({ network: 'mainnet' })
+
+        await expect(
+            transport.send(transactionResult, { type: 'local' }),
+        ).rejects.toBeInstanceOf(NetworkChangedError)
+        expect(algokit.client.algod.sendRawTransaction).not.toHaveBeenCalled()
     })
 })
 
@@ -260,7 +288,7 @@ describe('createCallbackTransport', () => {
 describe('createWalletConnectTransport', () => {
     test('calls approve and returns callback-sent with requestId', async () => {
         const approve = vi.fn().mockResolvedValue(undefined)
-        const transport = createWalletConnectTransport()
+        const transport = createWalletConnectTransport('testnet')
         const source: SourceMetadata = {
             type: 'walletconnect',
             requestId: 'wc-1',
@@ -274,7 +302,7 @@ describe('createWalletConnectTransport', () => {
     })
 
     test('throws when approve callback is missing', async () => {
-        const transport = createWalletConnectTransport()
+        const transport = createWalletConnectTransport('testnet')
 
         await expect(
             transport.send(transactionResult, { type: 'walletconnect' }),
@@ -283,7 +311,7 @@ describe('createWalletConnectTransport', () => {
 
     test('throws when requestId is missing', async () => {
         const approve = vi.fn()
-        const transport = createWalletConnectTransport()
+        const transport = createWalletConnectTransport('testnet')
 
         await expect(
             transport.send(transactionResult, {
@@ -296,7 +324,7 @@ describe('createWalletConnectTransport', () => {
     test('calls error callback when approve rejects', async () => {
         const approve = vi.fn().mockRejectedValue(new Error('reject'))
         const errorCb = vi.fn().mockResolvedValue(undefined)
-        const transport = createWalletConnectTransport()
+        const transport = createWalletConnectTransport('testnet')
 
         await expect(
             transport.send(transactionResult, {
@@ -311,7 +339,7 @@ describe('createWalletConnectTransport', () => {
 
     test('wraps non-Error rejections in TransportError', async () => {
         const approve = vi.fn().mockRejectedValue(42)
-        const transport = createWalletConnectTransport()
+        const transport = createWalletConnectTransport('testnet')
 
         await expect(
             transport.send(transactionResult, {
@@ -320,6 +348,22 @@ describe('createWalletConnectTransport', () => {
                 callbacks: { approve },
             }),
         ).rejects.toThrow(TransportError)
+    })
+
+    test('aborts with NetworkChangedError when live network differs from captured', async () => {
+        const approve = vi.fn().mockResolvedValue(undefined)
+        const transport = createWalletConnectTransport('testnet')
+
+        getNetworkMock.mockReturnValueOnce({ network: 'mainnet' })
+
+        await expect(
+            transport.send(transactionResult, {
+                type: 'walletconnect',
+                requestId: 'wc-1',
+                callbacks: { approve },
+            }),
+        ).rejects.toBeInstanceOf(NetworkChangedError)
+        expect(approve).not.toHaveBeenCalled()
     })
 })
 

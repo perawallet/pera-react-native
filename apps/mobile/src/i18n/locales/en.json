@@ -1072,6 +1072,10 @@
             "data_title": "Data Signing Successful",
             "data_body": "Your data has been signed successfully and sent to the requesting application."
         },
+        "signing_failed": {
+            "title": "Signing Failed",
+            "body": "This signing request could not be completed. The requesting application has been notified."
+        },
         "transaction_request_faq": {
             "title": "Transaction Request FAQ",
             "body": "External applications, also called dApps, can initiate transaction requests independently from Pera Wallet. Please ensure you review these transactions carefully before approving and signing them.",

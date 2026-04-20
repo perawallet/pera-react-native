@@ -13,6 +13,7 @@
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { isMultisigAccount } from '@perawallet/wallet-core-accounts'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import type { Network } from '@perawallet/wallet-core-shared'
 import type { DataTransport, SourceMetadata } from '../types'
 import {
     createAlgodTransport,
@@ -41,6 +42,14 @@ export interface CreateTransportSelectorOptions {
     algokit: AlgokitClientInterface
     /** Function to encode signed transactions */
     encodeSignedTransactions: (txns: PeraSignedTransaction[]) => Uint8Array[]
+    /**
+     * Network captured at actor creation. Transports that submit (algod) or
+     * hand signed bytes to an external caller (walletconnect / webview /
+     * deeplink) re-check the live network against this value at send time to
+     * avoid delivering signatures intended for a different chain if the user
+     * switched networks mid-flow.
+     */
+    network: Network
     /** Function to propose a multisig transaction (required only for multisig flows) */
     proposeSignRequest?: ProposeSignRequestFn
     /** Function to add signatures to an existing request (required only for multisig flows) */
@@ -63,7 +72,7 @@ export const createTransportSelector = (
             source.type === 'webview' ||
             source.type === 'deeplink'
         ) {
-            return createWalletConnectTransport()
+            return createWalletConnectTransport(options.network)
         }
 
         // Multisig co-sign adds signatures to existing request
@@ -99,6 +108,7 @@ export const createTransportSelector = (
         return createAlgodTransport(
             options.algokit,
             options.encodeSignedTransactions,
+            options.network,
         )
     }
 }
