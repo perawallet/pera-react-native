@@ -12,6 +12,7 @@
 
 import { useEffect } from 'react'
 import { usePushToken } from '@perawallet/wallet-core-device'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Hook that initializes the FCM token after bootstrap.
@@ -26,7 +27,7 @@ import { usePushToken } from '@perawallet/wallet-core-device'
  * // In App.tsx after bootstrap
  * useTokenListener(fcmToken)
  */
-export const useTokenListener = (token: string | null): void => {
+export const useTokenListener = (token: Nullable<string>): void => {
     const { setPushToken } = usePushToken()
 
     useEffect(() => {

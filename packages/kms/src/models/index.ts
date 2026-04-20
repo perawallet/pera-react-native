@@ -11,14 +11,14 @@
  */
 
 import { KeyPair } from './keys'
-import type { BaseStoreState } from '@perawallet/wallet-core-shared'
+import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 
 export * from './keys'
 export * from './session'
 
 export type KeyManagerState = BaseStoreState & {
     keys: Map<string, KeyPair>
-    getKey: (id: string) => KeyPair | null
+    getKey: (id: string) => Nullable<KeyPair>
     addKey: (key: KeyPair) => void
     removeKey: (id: string) => void
 }

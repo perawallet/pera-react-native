@@ -17,6 +17,7 @@ import {
     logger,
     Network,
     Networks,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import {
     WalletConnectInvalidNetworkError,
@@ -60,7 +61,7 @@ const validateRequest = (
     connector: WalletConnect,
     connections: WalletConnectConnection[],
     network: Network,
-    error: Error | null,
+    error: Nullable<Error>,
 ): WalletConnectConnection => {
     if (error) {
         logger.error(error)
@@ -107,7 +108,7 @@ const validateDataSignRequest = (
     connections: WalletConnectConnection[],
     network: Network,
     data: PeraArbitraryDataMessage[],
-    error: Error | null,
+    error: Nullable<Error>,
 ) => {
     const foundSession = validateRequest(connector, connections, network, error)
 
@@ -178,7 +179,7 @@ const validateArc60Request = (
     connections: WalletConnectConnection[],
     network: Network,
     rawParams: unknown,
-    error: Error | null,
+    error: Nullable<Error>,
 ): { stdSigData: Arc60StdSigData; metadata: Arc60Metadata } => {
     const foundSession = validateRequest(connector, connections, network, error)
 
@@ -253,7 +254,7 @@ export const useWalletConnectHandlers = () => {
         (
             connector: WalletConnect,
             network: Network,
-            error: Error | null,
+            error: Nullable<Error>,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             payload: any,
             onError: (error: Error) => void,
@@ -313,10 +314,10 @@ export const useWalletConnectHandlers = () => {
         (
             connector: WalletConnect,
             network: Network,
-            error: Error | null,
+            error: Nullable<Error>,
             //TODO type this correctly
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            payload: any | null,
+            payload: Nullable<any>,
             onError: (error: Error) => void,
         ) => {
             const params = payload?.params
@@ -391,8 +392,8 @@ export const useWalletConnectHandlers = () => {
         (
             connector: WalletConnect,
             network: Network,
-            error: Error | null,
-            payload: WalletConnectTransactionPayload | null,
+            error: Nullable<Error>,
+            payload: Nullable<WalletConnectTransactionPayload>,
             onError: (error: Error) => void,
         ) => {
             logger.debug('handleSignTransaction', { payload, network })
@@ -443,9 +444,9 @@ export const useWalletConnectHandlers = () => {
                 signerOverrides:
                     signerOverrides.size > 0 ? signerOverrides : undefined,
                 sourceMetadata: connector.session?.peerMeta,
-                approve: async (signed: (PeraSignedTransaction | null)[]) => {
+                approve: async (signed: Nullable<PeraSignedTransaction>[]) => {
                     // Reconstruct full-length response with null at skipped positions
-                    const result: (string | null)[] = new Array(
+                    const result: Nullable<string>[] = new Array(
                         paramOne.length,
                     ).fill(null)
                     signed.forEach((tx, i) => {

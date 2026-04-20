@@ -13,14 +13,15 @@
 import type { AssetSearchItem } from '@perawallet/wallet-core-assets'
 import type { IconName } from '@components/core'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseAssetSearchItemResult = {
     isCollectible: boolean
-    thumbnailUri: string | null
+    thumbnailUri: Nullable<string>
     displayName: string
     subtitle: string
     fallbackInitial: string
-    verificationIcon: IconName | null
+    verificationIcon: Nullable<IconName>
 }
 
 export const useAssetSearchItem = (

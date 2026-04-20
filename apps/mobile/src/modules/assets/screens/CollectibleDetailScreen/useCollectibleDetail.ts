@@ -39,6 +39,7 @@ import * as MediaLibrary from 'expo-media-library'
 import * as Haptics from 'expo-haptics'
 import { useModalState, type ModalState } from '@hooks/useModalState'
 import type { FullScreenMediaItem } from '@modules/assets/screens/FullScreenImageViewer/FullScreenImageViewer'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseCollectibleDetailResult = {
     asset: PeraAsset | undefined
@@ -53,7 +54,7 @@ type UseCollectibleDetailResult = {
     isOptedIn: boolean
     isOwned: boolean
     isOptedInNotOwned: boolean
-    assetBalance: AssetWithAccountBalance | null
+    assetBalance: Nullable<AssetWithAccountBalance>
     isOptingOut: boolean
     optOutModal: ModalState
     modelViewerModal: ModalState
@@ -92,7 +93,7 @@ export const useCollectibleDetail = (
     const sendFundsModal = useModalState()
     const optOutModal = useModalState()
     const modelViewerModal = useModalState()
-    const [modelViewerUrl, setModelViewerUrl] = useState<string | null>(null)
+    const [modelViewerUrl, setModelViewerUrl] = useState<Nullable<string>>(null)
     const { optOut, isLoading: isOptingOut } = useAssetOptOutMutation()
     const navigation = useNavigation()
     const [fullScreenInitialIndex, setFullScreenInitialIndex] = useState(0)

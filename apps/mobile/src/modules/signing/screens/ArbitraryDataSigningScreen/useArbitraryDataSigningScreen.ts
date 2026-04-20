@@ -19,6 +19,7 @@ import {
     useSigningPipeline,
 } from '@perawallet/wallet-core-signing'
 import type { SigningStackParamList } from '@modules/signing/routes'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type NavigationProp = StackNavigationProp<
     SigningStackParamList,
@@ -26,7 +27,7 @@ type NavigationProp = StackNavigationProp<
 >
 
 type UseArbitraryDataSigningScreenResult = {
-    request: ArbitraryDataSignRequest | null
+    request: Nullable<ArbitraryDataSignRequest>
     isSingleSignRequest: boolean
     isPending: boolean
     handleApprove: () => void

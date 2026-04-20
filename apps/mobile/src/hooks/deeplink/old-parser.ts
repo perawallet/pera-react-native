@@ -28,11 +28,14 @@ import {
     HomeDeeplink,
 } from './types'
 import { decodeBase64Param, normalizeUrl, parseQueryParams } from './utils'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Parse Perawallet old-style URIs: perawallet://ADDRESS?params
  */
-export const parsePerawalletUri = (url: string): AnyParsedDeeplink | null => {
+export const parsePerawalletUri = (
+    url: string,
+): Nullable<AnyParsedDeeplink> => {
     const normalizedUrl = normalizeUrl(url)
 
     if (!normalizedUrl.startsWith('perawallet://')) {

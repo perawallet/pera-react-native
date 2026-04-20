@@ -27,7 +27,7 @@ import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useDevice } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import { useNetworkStatus, useNetworkStatusListener } from '@modules/network'
 import { WebViewOverlay } from '@modules/webview'
 import { useCallback } from 'react'
@@ -43,7 +43,7 @@ import {
 import { getSyncService } from '@perawallet/wallet-core-background'
 
 export type RootComponentProps = {
-    fcmToken: string | null
+    fcmToken: Nullable<string>
 }
 
 const RootContentContainer = ({ fcmToken }: RootComponentProps) => {

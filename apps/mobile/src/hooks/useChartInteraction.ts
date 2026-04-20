@@ -11,13 +11,14 @@
  */
 
 import { useState, useCallback } from 'react'
-import { HistoryPeriod } from '@perawallet/wallet-core-shared'
+import { HistoryPeriod, type Nullable } from '@perawallet/wallet-core-shared'
 
 export function useChartInteraction<TDataPoint = unknown>(
     initialPeriod: HistoryPeriod = 'one-week',
 ) {
     const [period, setPeriod] = useState<HistoryPeriod>(initialPeriod)
-    const [selectedPoint, setSelectedPoint] = useState<TDataPoint | null>(null)
+    const [selectedPoint, setSelectedPoint] =
+        useState<Nullable<TDataPoint>>(null)
 
     const clearSelection = useCallback(() => {
         setSelectedPoint(null)

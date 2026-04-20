@@ -14,6 +14,7 @@ import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useCreateNextHDAccount } from '../useCreateNextHDAccount'
 import type { WalletAccount } from '../../models'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const mockCreateAccount = {
     createHdWalletAccount: vi.fn(),
@@ -69,7 +70,7 @@ describe('useCreateNextHDAccount', () => {
 
         const { result } = renderHook(() => useCreateNextHDAccount())
 
-        let account: WalletAccount | null = null
+        let account: Nullable<WalletAccount> = null
         await act(async () => {
             account = await result.current.createNextHDAccount()
         })

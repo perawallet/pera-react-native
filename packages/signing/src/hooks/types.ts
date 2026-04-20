@@ -24,6 +24,7 @@ import type {
     RequestStructure,
     TransactionListItem,
 } from '../utils/classification'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Configuration passed to useSigningPipeline.
@@ -51,7 +52,7 @@ export type SigningPipeline = {
     isRetryable: boolean
 
     /** The error if stage === 'failed', otherwise null. */
-    error: Error | null
+    error: Nullable<Error>
 
     // -------------------------------------------------------------------------
     // Display data — equivalent to useSigningRequestAnalysis output.

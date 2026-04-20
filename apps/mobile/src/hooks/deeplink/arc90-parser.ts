@@ -9,6 +9,7 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type Network = 'mainnet' | 'testnet' | 'betanet' | string
 
@@ -43,7 +44,7 @@ interface AssetQuery extends BaseParams {
 export const ALGORAND_SCHEME = 'algorand://'
 type AlgorandURI = PaymentTx | KeyRegTx | NoopTx | AppQuery | AssetQuery
 
-export function parseAlgorandURI(uri: string): AlgorandURI | null {
+export function parseAlgorandURI(uri: string): Nullable<AlgorandURI> {
     try {
         if (!uri.startsWith(ALGORAND_SCHEME)) return null
         const stripped = uri.slice(ALGORAND_SCHEME.length)

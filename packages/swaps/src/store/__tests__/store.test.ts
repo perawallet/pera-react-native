@@ -25,6 +25,7 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
 })
 
 import { useSwapsStore } from '../store'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 describe('swaps/store', () => {
     beforeEach(() => {
@@ -125,7 +126,7 @@ describe('swaps/store', () => {
         ) => unknown
 
         const v1 = { fromAsset: '0', toAsset: '31566704' }
-        const migrated = migrate(v1, 1) as { slippage: string | null }
+        const migrated = migrate(v1, 1) as { slippage: Nullable<string> }
 
         expect(migrated.slippage).toBeNull()
     })

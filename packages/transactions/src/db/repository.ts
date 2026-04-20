@@ -15,6 +15,7 @@ import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import type { TransactionHistoryItem } from '../models/types'
 import { TransactionsSchema, AccountTransactionsSchema } from './schema'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 function toDb(item: TransactionHistoryItem) {
     return {
@@ -46,18 +47,18 @@ function fromDb(row: {
     id: string
     txType: string
     sender: string
-    receiver: string | null
+    receiver: Nullable<string>
     confirmedRound: number
     roundTime: number
     fee: Decimal
-    groupId: string | null
-    amount: Decimal | null
-    closeTo: string | null
-    applicationId: Decimal | null
-    innerTransactionCount: number | null
-    assetJson: string | null
-    swapGroupDetailJson: string | null
-    interpretedMeaningJson: string | null
+    groupId: Nullable<string>
+    amount: Nullable<Decimal>
+    closeTo: Nullable<string>
+    applicationId: Nullable<Decimal>
+    innerTransactionCount: Nullable<number>
+    assetJson: Nullable<string>
+    swapGroupDetailJson: Nullable<string>
+    interpretedMeaningJson: Nullable<string>
 }): TransactionHistoryItem {
     return {
         id: row.id,
@@ -235,7 +236,7 @@ export async function getLatestTransactionRoundTime({
     db = getDatabase(),
     accountAddress,
     network,
-}: GetLatestTransactionRoundTimeParams): Promise<number | null> {
+}: GetLatestTransactionRoundTimeParams): Promise<Nullable<number>> {
     const rows = await db
         .select({
             maxRoundTime: sql<number>`MAX(${AccountTransactionsSchema.roundTime})`,

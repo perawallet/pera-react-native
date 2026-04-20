@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 import type { DevicePlatform } from '@perawallet/wallet-extension-platform'
 
@@ -36,8 +36,8 @@ export interface DeviceResponse {
 }
 
 export type DeviceState = BaseStoreState & {
-    pushToken: string | null
-    deviceIDs: Map<Network, string | null>
-    setPushToken: (token: string | null) => void
-    setDeviceID: (network: Network, id: string | null) => void
+    pushToken: Nullable<string>
+    deviceIDs: Map<Network, Nullable<string>>
+    setPushToken: (token: Nullable<string>) => void
+    setDeviceID: (network: Network, id: Nullable<string>) => void
 }

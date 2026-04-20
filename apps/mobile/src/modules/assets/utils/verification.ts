@@ -11,8 +11,9 @@
  */
 
 import type { IconName } from '@components/core'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
-const VERIFICATION_ICON_MAP: Record<string, IconName | null> = {
+const VERIFICATION_ICON_MAP: Record<string, Nullable<IconName>> = {
     verified: 'assets/verified',
     trusted: 'assets/trusted',
     suspicious: 'assets/suspicious',
@@ -21,6 +22,6 @@ const VERIFICATION_ICON_MAP: Record<string, IconName | null> = {
 
 export const getVerificationIcon = (
     verificationTier: string,
-): IconName | null => {
+): Nullable<IconName> => {
     return VERIFICATION_ICON_MAP[verificationTier] ?? null
 }

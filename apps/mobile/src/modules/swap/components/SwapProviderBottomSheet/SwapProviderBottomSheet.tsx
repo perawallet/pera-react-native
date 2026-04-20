@@ -25,13 +25,14 @@ import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import { ProviderSelectionItem } from './ProviderSelectionItem'
 import { useSwapProviderBottomSheet } from './useSwapProviderBottomSheet'
 import { useStyles } from './styles'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type SwapProviderBottomSheetProps = {
     isVisible: boolean
     onClose: () => void
     quotes: SwapQuote[]
-    selectedProviderName: string | null
-    onApply: (providerName: string | null) => void
+    selectedProviderName: Nullable<string>
+    onApply: (providerName: Nullable<string>) => void
 }
 
 export const SwapProviderBottomSheet = ({

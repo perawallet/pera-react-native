@@ -24,6 +24,7 @@ import {
 import { parseAlgorandURI } from './arc90-parser'
 // config and Networks removed because unused
 import { getNetworkConfig } from '@perawallet/wallet-core-config'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Parse Algorand URIs (algorand://) according to ARC-90
@@ -31,7 +32,7 @@ import { getNetworkConfig } from '@perawallet/wallet-core-config'
  *
  * Uses the custom ARC-90 parser implementation in arc90-parser.ts
  */
-export const parseAlgorandUri = (url: string): AnyParsedDeeplink | null => {
+export const parseAlgorandUri = (url: string): Nullable<AnyParsedDeeplink> => {
     const parsed = parseAlgorandURI(url)
 
     if (!parsed) {

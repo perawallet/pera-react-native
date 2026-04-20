@@ -14,7 +14,7 @@ import { useStyles } from './styles'
 import { LineChart } from 'react-native-gifted-charts'
 
 import { PWView } from '@components/core'
-import { HistoryPeriod } from '@perawallet/wallet-core-shared'
+import { HistoryPeriod, type Nullable } from '@perawallet/wallet-core-shared'
 import { useCallback, useMemo, useState } from 'react'
 import { useTheme } from '@rneui/themed'
 import { LoadingView } from '@components/LoadingView'
@@ -34,7 +34,7 @@ import { useLanguage } from '@hooks/useLanguage'
 export type AssetPriceChartProps = {
     asset: PeraAsset
     period: HistoryPeriod
-    onSelectionChanged: (item: AssetPriceHistoryItem | null) => void
+    onSelectionChanged: (item: Nullable<AssetPriceHistoryItem>) => void
 }
 
 export const AssetPriceChart = ({

@@ -32,6 +32,7 @@ import { bottomSheetNotifier } from '@components/core'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
+import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 
 export const useInputScreen = () => {
     const navigation =
@@ -40,15 +41,12 @@ export const useInputScreen = () => {
     const { selectedAssetId, setAmount, setIsCloseAccount } = useSendFunds()
 
     // we maintain state and a ref to improve performance while retaining reactivity
-    const [value, setValue] = useState<string | null>()
-    const valueRef = useRef<string | null | undefined>(value)
-    const setValueAndRef = useCallback(
-        (newValue: string | null | undefined) => {
-            valueRef.current = newValue
-            setValue(newValue)
-        },
-        [],
-    )
+    const [value, setValue] = useState<Nullable<string>>()
+    const valueRef = useRef<Maybe<string>>(value)
+    const setValueAndRef = useCallback((newValue: Maybe<string>) => {
+        valueRef.current = newValue
+        setValue(newValue)
+    }, [])
     const { showToast } = useToast()
     const { t } = useLanguage()
 

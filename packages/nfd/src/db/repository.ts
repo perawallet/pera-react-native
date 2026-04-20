@@ -14,11 +14,12 @@ import { and, eq, gte, inArray } from 'drizzle-orm'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import type { NfdName } from '../models'
 import { NfdCacheSchema } from './schema'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type NfdCacheEntry = {
     address: string
     /** null = negative cache (we looked, there's no NFD) */
-    name: NfdName | null
+    name: Nullable<NfdName>
 }
 
 export type NfdCacheRow = NfdCacheEntry & {
@@ -27,9 +28,9 @@ export type NfdCacheRow = NfdCacheEntry & {
 
 function rowToEntry(row: {
     address: string
-    name: string | null
-    image: string | null
-    source: string | null
+    name: Nullable<string>
+    image: Nullable<string>
+    source: Nullable<string>
     updatedAt: number
 }): NfdCacheRow {
     return {
@@ -96,7 +97,7 @@ export async function getNfdByAddress({
     db = getDatabase(),
     address,
     network,
-}: GetNfdByAddressParams): Promise<NfdCacheRow | null> {
+}: GetNfdByAddressParams): Promise<Nullable<NfdCacheRow>> {
     const rows = await db
         .select({
             address: NfdCacheSchema.address,

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { logger, AppError } from '@perawallet/wallet-core-shared'
+import { logger, AppError, type Nullable } from '@perawallet/wallet-core-shared'
 import WebView from 'react-native-webview'
 
 const MAX_ERROR_LENGTH = 200
@@ -119,7 +119,7 @@ const safeOrigin = (url: string): string | null => {
 export const sendMessageToWebview = (
     id: string,
     payload: unknown,
-    webview: WebView | null,
+    webview: Nullable<WebView>,
 ) => {
     const message = `window.postMessage(${JSON.stringify({
         id,
@@ -133,7 +133,7 @@ export const sendMessageToWebview = (
 export const sendNotificationToWebview = (
     method: string,
     params: unknown,
-    webview: WebView | null,
+    webview: Nullable<WebView>,
 ) => {
     const message = `window.postMessage(${JSON.stringify({
         jsonrpc: '2.0',
@@ -148,7 +148,7 @@ export const sendErrorToWebview = (
     id: string,
     code: JsonRpcErrorCode,
     error: Error | string,
-    webview: WebView | null,
+    webview: Nullable<WebView>,
 ) => {
     const message = `window.postMessage(${JSON.stringify({
         id,

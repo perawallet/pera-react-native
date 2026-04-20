@@ -11,6 +11,7 @@
  */
 
 import { config } from '@perawallet/wallet-core-config'
+import type { Nullable } from './types'
 
 /**
  * Log levels for controlling log output and error reporting
@@ -52,7 +53,7 @@ export type ErrorReporter = (payload: ErrorReportPayload) => void
 
 class Logger {
     private level: LogLevel = LogLevel.INFO // Default safe level
-    private errorReporter: ErrorReporter | null = null
+    private errorReporter: Nullable<ErrorReporter> = null
 
     constructor() {
         // Initialize level based on config
@@ -69,7 +70,7 @@ class Logger {
         this.level = level
     }
 
-    public setErrorReporter(reporter?: ErrorReporter | null) {
+    public setErrorReporter(reporter?: Nullable<ErrorReporter>) {
         this.errorReporter = reporter ?? null
     }
 

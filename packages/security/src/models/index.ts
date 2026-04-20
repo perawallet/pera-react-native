@@ -10,18 +10,18 @@
  limitations under the License
  */
 
-import { BaseStoreState } from '@perawallet/wallet-core-shared'
+import { BaseStoreState, type Nullable } from '@perawallet/wallet-core-shared'
 
 export type SecurityState = BaseStoreState & {
     failedAttempts: number
-    lockoutEndTime: number | null
-    autoLockStartedAt: number | null
+    lockoutEndTime: Nullable<number>
+    autoLockStartedAt: Nullable<number>
 
     incrementFailedAttempts: () => void
     setFailedAttempts: (count: number) => void
     resetFailedAttempts: () => void
-    setLockoutEndTime: (time: number | null) => void
-    setAutoLockStartedAt: (time: number | null) => void
+    setLockoutEndTime: (time: Nullable<number>) => void
+    setAutoLockStartedAt: (time: Nullable<number>) => void
 }
 
 export type PinEntryMode =

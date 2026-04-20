@@ -23,7 +23,11 @@ import { useLanguage } from '@hooks/useLanguage'
 
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { WealthChart } from '@components/WealthChart'
-import { formatDatetime, formatCurrency } from '@perawallet/wallet-core-shared'
+import {
+    formatDatetime,
+    formatCurrency,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useCallback, useMemo } from 'react'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
@@ -42,7 +46,7 @@ import { InfoButton } from '@components/InfoButton'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 
 export type PortfolioViewProps = {
-    onDataSelected?: (selected: AccountBalanceHistoryItem | null) => void
+    onDataSelected?: (selected: Nullable<AccountBalanceHistoryItem>) => void
 } & PWViewProps
 
 export const PortfolioView = (props: PortfolioViewProps) => {
@@ -92,7 +96,7 @@ export const PortfolioView = (props: PortfolioViewProps) => {
     }, [historyDataPoints])
 
     const chartSelectionChanged = useCallback(
-        (selected: AccountBalanceHistoryItem | null) => {
+        (selected: Nullable<AccountBalanceHistoryItem>) => {
             setSelectedPoint(selected)
             props.onDataSelected?.(selected)
         },

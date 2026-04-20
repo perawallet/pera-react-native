@@ -17,6 +17,7 @@ import { useState } from 'react'
 import { useLanguage } from '@hooks/useLanguage'
 import { parseDeeplink } from '@hooks/deeplink/parser'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type AddressEntryFieldProps = {
     allowQRCode?: boolean
@@ -24,7 +25,7 @@ export type AddressEntryFieldProps = {
     testID?: string
 } & PWInputProps
 
-export const extractAddressFromScannedUrl = (url: string): string | null => {
+export const extractAddressFromScannedUrl = (url: string): Nullable<string> => {
     if (isValidAlgorandAddress(url)) return url
 
     const parsed = parseDeeplink(url)

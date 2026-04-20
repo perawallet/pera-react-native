@@ -17,13 +17,14 @@ import { useBidali } from '../../hooks/useBidali'
 import { useBidaliTransport } from '../../hooks/useBidaliTransport'
 import type WebView from 'react-native-webview'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseBidaliWebViewScreenResult = {
     url: string
     bidaliProviderJS: string
     onClose?: () => void
     handleMessage: (data: unknown) => void
-    webviewRef: React.RefObject<WebView | null>
+    webviewRef: React.RefObject<Nullable<WebView>>
 }
 
 export const useBidaliWebViewScreen = (): UseBidaliWebViewScreenResult => {

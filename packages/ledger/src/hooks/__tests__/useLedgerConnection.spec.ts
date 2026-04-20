@@ -18,6 +18,7 @@ import type {
     HardwareWalletTransportProvider,
     HardwareWalletDevice,
 } from '@perawallet/wallet-core-hardware-wallet'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const makeProvider = () => {
     const stop = vi.fn()
@@ -115,7 +116,7 @@ describe('useLedgerConnection', () => {
 
         const { result } = renderHook(() => useLedgerConnection(provider))
 
-        let caught: Error | null = null
+        let caught: Nullable<Error> = null
         await act(async () => {
             try {
                 await result.current.connect('d1')

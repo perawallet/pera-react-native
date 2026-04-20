@@ -12,6 +12,7 @@
 
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { ParamListBase, RouteProp } from '@react-navigation/native'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const NAVIGATION_STACK_NAMES = new Set([
     'tabbar',
@@ -21,7 +22,7 @@ const NAVIGATION_STACK_NAMES = new Set([
     'home',
 ])
 
-let previousRouteName: string | null = null
+let previousRouteName: Nullable<string> = null
 export const resetPreviousRouteNameForTesting = () => {
     previousRouteName = null
 }

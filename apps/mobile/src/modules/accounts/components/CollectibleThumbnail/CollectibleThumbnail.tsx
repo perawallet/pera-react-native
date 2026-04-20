@@ -14,9 +14,10 @@ import React from 'react'
 import { StyleProp, ViewStyle, ImageStyle } from 'react-native'
 import { PWImage, PWView, PWIcon, PWIconSize } from '@components/core'
 import { NFT_NOT_OPTED_IN_OPACITY } from '@constants/ui'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 
 export type CollectibleThumbnailProps = {
-    thumbnailUrl: string | undefined | null
+    thumbnailUrl: Maybe<string>
     imageStyle: StyleProp<ImageStyle>
     placeholderStyle: StyleProp<ViewStyle>
     iconSize: PWIconSize

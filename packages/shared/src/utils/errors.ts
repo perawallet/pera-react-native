@@ -9,6 +9,7 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+import type { Maybe } from './types'
 
 /**
  * Extracts the HTTP status code from an error thrown by the ky HTTP client.
@@ -25,7 +26,7 @@ export const toError = (e: unknown): Error =>
     e instanceof Error ? e : new Error(String(e))
 
 /** Asserts a value is non-null, throwing a descriptive error if it is. */
-export function assertDefined<T>(value: T | null | undefined, name: string): T {
+export function assertDefined<T>(value: Maybe<T>, name: string): T {
     if (value == null) {
         throw new Error(`expected ${name} to be defined`)
     }

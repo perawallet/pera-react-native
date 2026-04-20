@@ -27,16 +27,17 @@ import type {
 import { fetchStakingProjectsInfo } from './endpoints'
 import { getStakingProjectsQueryKey } from './queryKeys'
 import { parseStakingProjectsConfig } from '../utils'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseStakingProjectsQueryResult = {
     data: StakingProject[]
     isLoading: boolean
     isError: boolean
-    error: Error | null
+    error: Nullable<Error>
     refetch: () => void
 }
 
-const parseTvlValue = (value?: string | null): Decimal => {
+const parseTvlValue = (value?: Nullable<string>): Decimal => {
     try {
         return new Decimal(value ?? '0')
     } catch {

@@ -33,6 +33,7 @@ import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useModalState, ModalState } from '@hooks/useModalState'
 import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { useToast } from '@hooks/useToast'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseAccountAssetListResult = {
     balances: AssetWithAccountBalance[]
@@ -46,7 +47,7 @@ type UseAccountAssetListResult = {
     sortSheetState: ModalState
     filterSheetState: ModalState
     optOutConfirmationState: ModalState
-    assetForOptOut: AssetWithAccountBalance | null
+    assetForOptOut: Nullable<AssetWithAccountBalance>
     isOptingOut: boolean
     setSearchFilter: (value: string) => void
     goToAssetScreen: (asset: AssetWithAccountBalance) => void
@@ -83,7 +84,7 @@ export const useAccountAssetList = ({
     const optOutConfirmationState = useModalState(false)
     const [searchFilter, setSearchFilter] = useState('')
     const [assetForOptOut, setAssetForOptOut] =
-        useState<AssetWithAccountBalance | null>(null)
+        useState<Nullable<AssetWithAccountBalance>>(null)
     const hideZeroBalance = useAssetPreferencesStore(
         state => state.hideZeroBalance,
     )

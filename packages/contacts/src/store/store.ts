@@ -17,6 +17,7 @@ import {
     generateOrderedUniqueId,
     registerStore,
     type WithPersist,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
@@ -24,7 +25,7 @@ const STORE_NAME = 'contacts-store'
 
 const initialState = {
     contacts: [] as Contact[],
-    selectedContact: null as Contact | null,
+    selectedContact: null as Nullable<Contact>,
 }
 
 export const useContactsStore: UseBoundStore<
@@ -33,7 +34,7 @@ export const useContactsStore: UseBoundStore<
     persist(
         (set, get) => ({
             ...initialState,
-            setSelectedContact: (contact: Contact | null) =>
+            setSelectedContact: (contact: Nullable<Contact>) =>
                 set({ selectedContact: contact }),
             setContacts: (contacts: Contact[]) => set({ contacts }),
             saveContact: (contact: Contact) => {

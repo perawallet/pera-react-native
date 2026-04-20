@@ -20,10 +20,11 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { AccountMenuProps } from './AccountMenu'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseAccountMenuResult = {
     sortedAccounts: WalletAccount[]
-    selectedAccountAddress: string | null
+    selectedAccountAddress: Nullable<string>
     sortMode: string
     handleTap: (acct: WalletAccount) => void
 }

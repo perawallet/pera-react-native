@@ -17,6 +17,8 @@ import { useMemo } from 'react'
 import {
     formatCurrency,
     formatRawNumberInput,
+    type Maybe,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 import AlgoIcon from '@assets/icons/algo.svg'
@@ -26,7 +28,7 @@ import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 export type CurrencyDisplayProps = {
     currency: string
-    value: Decimal | null | undefined
+    value: Maybe<Decimal>
     precision: number
     minPrecision?: number
     prefix?: string
@@ -35,7 +37,7 @@ export type CurrencyDisplayProps = {
     symbolPosition?: 'start' | 'end'
     isLoading?: boolean
     truncateToUnits?: boolean
-    rawValue?: string | null
+    rawValue?: Nullable<string>
     ignorePrivacyMode?: boolean
     variant?: 'body' | 'h1' | 'h2' | 'h3' | 'h4' | 'caption'
     style?: StyleProp<TextStyle>

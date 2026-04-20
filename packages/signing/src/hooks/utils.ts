@@ -11,7 +11,7 @@
  */
 
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
-import { AppError } from '@perawallet/wallet-core-shared'
+import { AppError, type Nullable } from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 
 import type {
@@ -53,14 +53,14 @@ export const deriveStage = (snapshot: MachineSnapshot): PipelineStage => {
     return 'idle'
 }
 
-export const isRetryableError = (error: Error | null): boolean => {
+export const isRetryableError = (error: Nullable<Error>): boolean => {
     if (!error || !(error instanceof AppError)) return false
     return error.metadata.retryable === true
 }
 
 export const derivePrimarySignerType = (
     context: SigningMachineContext,
-): ResolvedSignerType | null => {
+): Nullable<ResolvedSignerType> => {
     const { groupSignerTypes } = context
     if (!groupSignerTypes) return null
     const types = [...groupSignerTypes.values()]
@@ -82,7 +82,7 @@ export const derivePrimarySignerType = (
 export const deriveEvent = (
     snapshot: MachineSnapshot,
     stage: PipelineStage,
-): SigningPipelineEvent | null => {
+): Nullable<SigningPipelineEvent> => {
     switch (stage) {
         case 'awaiting_user': {
             const { analyses } = snapshot.context

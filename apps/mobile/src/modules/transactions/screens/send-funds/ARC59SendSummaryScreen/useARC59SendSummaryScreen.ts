@@ -27,7 +27,7 @@ import {
     toWholeUnits,
     useSingleAssetDetailsQuery,
 } from '@perawallet/wallet-core-assets'
-import { formatCurrency } from '@perawallet/wallet-core-shared'
+import { formatCurrency, type Nullable } from '@perawallet/wallet-core-shared'
 import { useSendFunds } from '@modules/transactions/hooks'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
 import LightHeaderImage from '@assets/images/asset-inbox-send-light.svg'
@@ -42,9 +42,9 @@ type UseARC59SendSummaryScreenResult = {
     isLoading: boolean
     isWarningVisible: boolean
     assetId: string
-    amount: Decimal | null
-    fee: Decimal | null
-    asset: PeraAsset | null
+    amount: Nullable<Decimal>
+    fee: Nullable<Decimal>
+    asset: Nullable<PeraAsset>
     HeaderImageComponent: FC<SvgProps>
     handleSend: () => void
     handleClose: () => void

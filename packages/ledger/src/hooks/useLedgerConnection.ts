@@ -18,6 +18,7 @@ import type {
     HardwareWalletConnectionStatus,
 } from '@perawallet/wallet-core-hardware-wallet'
 import { LEDGER_SCAN_TIMEOUT_MS } from '../constants'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseLedgerConnectionResult = {
     devices: HardwareWalletDevice[]
@@ -27,7 +28,7 @@ type UseLedgerConnectionResult = {
     stopScan: () => void
     connect: (deviceId: string) => Promise<HardwareWalletTransport>
     disconnect: () => Promise<void>
-    error: Error | null
+    error: Nullable<Error>
 }
 
 /**
@@ -43,11 +44,11 @@ export const useLedgerConnection = (
     const [devices, setDevices] = useState<HardwareWalletDevice[]>([])
     const [connectionStatus, setConnectionStatus] =
         useState<HardwareWalletConnectionStatus>('disconnected')
-    const [error, setError] = useState<Error | null>(null)
+    const [error, setError] = useState<Nullable<Error>>(null)
 
-    const stopScanRef = useRef<(() => void) | null>(null)
-    const scanTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const transportRef = useRef<HardwareWalletTransport | null>(null)
+    const stopScanRef = useRef<Nullable<() => void>>(null)
+    const scanTimeoutRef = useRef<Nullable<ReturnType<typeof setTimeout>>>(null)
+    const transportRef = useRef<Nullable<HardwareWalletTransport>>(null)
 
     const stopScan = useCallback(() => {
         stopScanRef.current?.()

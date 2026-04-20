@@ -17,6 +17,7 @@ import {
     logger,
     registerStore,
     type WithPersist,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
@@ -24,7 +25,7 @@ const STORE_NAME = 'accounts-store'
 
 const initialState = {
     accounts: [] as WalletAccount[],
-    selectedAccountAddress: null as string | null,
+    selectedAccountAddress: null as Nullable<string>,
     sortMode: 'manual' as AccountSortMode,
     manualAccountOrder: [] as string[],
 }
@@ -68,7 +69,7 @@ export const useAccountsStore: UseBoundStore<
                     .filter(addr => !prunedOrder.includes(addr))
                 set({ manualAccountOrder: [...prunedOrder, ...newAddresses] })
             },
-            setSelectedAccountAddress: (address: string | null) => {
+            setSelectedAccountAddress: (address: Nullable<string>) => {
                 const accounts = get().accounts
                 if (address && !accounts.find(a => a.address === address)) {
                     logger.warn(

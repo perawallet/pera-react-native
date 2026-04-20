@@ -23,10 +23,11 @@ import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { toWholeUnits } from '@perawallet/wallet-core-assets'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseAssetClaimDetailScreenResult = {
-    request: Arc59AssetRequest | null
-    receiverAccount: WalletAccount | null
+    request: Nullable<Arc59AssetRequest>
+    receiverAccount: Nullable<WalletAccount>
     isRejectSheetOpen: boolean
     amount: Decimal
     handleClaim: () => void

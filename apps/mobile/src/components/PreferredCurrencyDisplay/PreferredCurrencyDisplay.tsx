@@ -16,9 +16,10 @@ import {
     type CurrencyDisplayProps,
 } from '@components/CurrencyDisplay'
 import { usePreferredCurrencyDisplay } from './usePreferredCurrencyDisplay'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 
 export type PreferredCurrencyDisplayProps = {
-    sourceAmount: Decimal | null | undefined
+    sourceAmount: Maybe<Decimal>
     sourceAssetId: string
     forceFallback?: boolean
     usdPrice?: Decimal

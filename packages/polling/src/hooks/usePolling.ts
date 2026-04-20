@@ -14,6 +14,7 @@ import { useCallback, useState } from 'react'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { usePollingStore } from '../store'
 import { useShouldRefreshMutation } from './useShouldRefreshMutation'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const CACHE_CHECK_INTERVAL = 3000
 
@@ -27,9 +28,8 @@ export const usePolling = (options?: UsePollingOptions) => {
         state => state.setLastRefreshedRound,
     )
     const { mutateAsync } = useShouldRefreshMutation()
-    const [polling, setPolling] = useState<ReturnType<
-        typeof setInterval
-    > | null>(null)
+    const [polling, setPolling] =
+        useState<Nullable<ReturnType<typeof setInterval>>>(null)
 
     const doCheck = useCallback(async () => {
         try {

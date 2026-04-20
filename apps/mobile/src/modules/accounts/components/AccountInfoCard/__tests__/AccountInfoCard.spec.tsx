@@ -19,6 +19,7 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { Decimal } from 'decimal.js'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -65,7 +66,7 @@ vi.mock('@components/CurrencyDisplay', () => ({
         value,
         isLoading,
     }: {
-        value: Decimal | null
+        value: Nullable<Decimal>
         isLoading: boolean
     }) => (
         <span data-testid='currency-display'>

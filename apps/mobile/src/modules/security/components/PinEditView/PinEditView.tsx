@@ -21,9 +21,10 @@ import {
     PWView,
 } from '@components/core'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type PinEditViewProps = {
-    mode: PinEntryMode | null
+    mode: Nullable<PinEntryMode>
     onSuccess?: () => void
     onClose?: () => void
     testID?: string

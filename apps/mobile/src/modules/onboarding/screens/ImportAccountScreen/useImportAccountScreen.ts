@@ -28,7 +28,11 @@ import type { UseImportAccountScreenResult } from './types'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import { deferToNextCycle, logger } from '@perawallet/wallet-core-shared'
+import {
+    deferToNextCycle,
+    logger,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useModalState } from '@hooks/useModalState'
 import { useKeyboardHeight } from '@hooks/useKeyboardHeight'
 import { useDeepLink } from '@hooks/useDeepLink'
@@ -68,7 +72,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         close: handleCloseQRScanner,
     } = useModalState()
 
-    const inputRefs = useRef<(PWInputRef | null)[]>(
+    const inputRefs = useRef<Nullable<PWInputRef>[]>(
         new Array(mnemonicLength).fill(null),
     )
 
@@ -76,7 +80,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
         () =>
             Array.from(
                 { length: mnemonicLength },
-                (_, i) => (ref: PWInputRef | null) => {
+                (_, i) => (ref: Nullable<PWInputRef>) => {
                     inputRefs.current[i] = ref
                 },
             ),

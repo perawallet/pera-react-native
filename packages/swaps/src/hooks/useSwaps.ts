@@ -11,14 +11,15 @@
  */
 
 import { useSwapsStore } from '../store'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseSwapsResult = {
     fromAsset: string
     toAsset: string
-    slippage: string | null
+    slippage: Nullable<string>
     setFromAsset: (fromAsset: string) => void
     setToAsset: (toAsset: string) => void
-    setSlippage: (slippage: string | null) => void
+    setSlippage: (slippage: Nullable<string>) => void
 }
 
 export const useSwaps = (): UseSwapsResult => {

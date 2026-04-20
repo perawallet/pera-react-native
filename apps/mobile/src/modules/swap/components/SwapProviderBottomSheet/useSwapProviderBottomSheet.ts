@@ -14,7 +14,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Decimal } from 'decimal.js'
 import { formatAssetAmount } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { formatCurrency } from '@perawallet/wallet-core-shared'
+import { formatCurrency, type Nullable } from '@perawallet/wallet-core-shared'
 import {
     useProvidersQuery,
     type SwapQuote,
@@ -24,8 +24,8 @@ import { sortQuotesByAmountOutDesc } from '../../hooks/swapQuoteHelpers'
 type UseSwapProviderBottomSheetParams = {
     isVisible: boolean
     quotes: SwapQuote[]
-    selectedProviderName: string | null
-    onApply: (providerName: string | null) => void
+    selectedProviderName: Nullable<string>
+    onApply: (providerName: Nullable<string>) => void
     onClose: () => void
 }
 
@@ -38,9 +38,9 @@ export type SwapProviderRow = {
 }
 
 type UseSwapProviderBottomSheetResult = {
-    userSelection: string | null
+    userSelection: Nullable<string>
     rows: SwapProviderRow[]
-    handleSelect: (providerName: string | null) => void
+    handleSelect: (providerName: Nullable<string>) => void
     handleApply: () => void
 }
 
@@ -54,15 +54,14 @@ export const useSwapProviderBottomSheet = ({
     const { preferredCurrency, usdToPreferred } = useCurrency()
     const { data: providers } = useProvidersQuery()
 
-    const [userSelection, setUserSelection] = useState<string | null>(
-        selectedProviderName,
-    )
+    const [userSelection, setUserSelection] =
+        useState<Nullable<string>>(selectedProviderName)
 
     useEffect(() => {
         if (isVisible) setUserSelection(selectedProviderName)
     }, [isVisible, selectedProviderName])
 
-    const handleSelect = useCallback((providerName: string | null) => {
+    const handleSelect = useCallback((providerName: Nullable<string>) => {
         setUserSelection(providerName)
     }, [])
 

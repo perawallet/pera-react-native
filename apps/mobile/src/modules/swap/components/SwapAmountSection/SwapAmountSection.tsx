@@ -21,21 +21,22 @@ import { SwapAssetSelector } from '../SwapAssetSelector'
 import { useStyles } from './styles'
 import { useSwapAmountSection } from './useSwapAmountSection'
 import { useTheme } from '@rneui/themed'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type SwapAmountSectionPayProps = {
     variant: 'pay'
     assetId: string
-    balance: Decimal | null
-    amount: Decimal | null
-    onAmountChange: (amount: Decimal | null) => void
+    balance: Nullable<Decimal>
+    amount: Nullable<Decimal>
+    onAmountChange: (amount: Nullable<Decimal>) => void
     onAssetPress: () => void
 }
 
 type SwapAmountSectionReceiveProps = {
     variant: 'receive'
     assetId: string
-    balance: Decimal | null
-    amount: Decimal | null
+    balance: Nullable<Decimal>
+    amount: Nullable<Decimal>
     isLoading?: boolean
     onAssetPress: () => void
 }

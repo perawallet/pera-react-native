@@ -30,21 +30,22 @@ import {
 } from '../pinRecord'
 import { useBiometrics } from './useBiometrics'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UsePinCodeResult = {
     failedAttempts: number
-    lockoutEndTime: number | null
+    lockoutEndTime: Nullable<number>
     isLockedOut: boolean
     remainingLockoutSeconds: number
     checkAutoLock: () => Promise<boolean>
     checkPinEnabled: () => Promise<boolean>
-    savePin: (pin: string | null) => Promise<void>
+    savePin: (pin: Nullable<string>) => Promise<void>
     verifyPin: (pin: string) => Promise<boolean>
     handleFailedAttempt: () => Promise<void>
     resetFailedAttempts: () => Promise<void>
-    setLockoutEndTime: (date: number | null) => Promise<void>
+    setLockoutEndTime: (date: Nullable<number>) => Promise<void>
     getLockoutDuration: () => number
-    setAutoLockStartedAt: (date: number | null) => void
+    setAutoLockStartedAt: (date: Nullable<number>) => void
 }
 
 const encoder = new TextEncoder()
@@ -161,7 +162,7 @@ export const usePinCode = (): UsePinCodeResult => {
     )
 
     const savePin = useCallback(
-        async (pin: string | null) => {
+        async (pin: Nullable<string>) => {
             if (pin) {
                 const record = await createPinRecord(pin)
                 await writeRecord(record)

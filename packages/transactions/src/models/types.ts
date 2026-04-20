@@ -11,6 +11,7 @@
  */
 
 import { Decimal } from 'decimal.js'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Enumeration of all possible Algorand transaction types.
@@ -46,11 +47,11 @@ export type TransactionType =
  */
 export interface TransactionSwapGroupDetail {
     /** The asset ID being swapped from (input asset) */
-    assetInId: number | null
+    assetInId: Nullable<number>
     /** The ticker symbol/unit name of the input asset (e.g., "ALGO", "USDC") */
     assetInUnitName: string
     /** The asset ID being swapped to (output asset) */
-    assetOutId: number | null
+    assetOutId: Nullable<number>
     /** The ticker symbol/unit name of the output asset */
     assetOutUnitName: string
     /** The amount of input asset being swapped, in base units */
@@ -101,29 +102,29 @@ export interface TransactionHistoryItem {
     /** The sender's Algorand address */
     sender: string
     /** The receiver's Algorand address (may be null for certain transaction types) */
-    receiver: string | null
+    receiver: Nullable<string>
     /** The block round number when this transaction was confirmed */
     confirmedRound: number
     /** Unix timestamp (in seconds) when the transaction was confirmed */
     roundTime: number
     /** Details about a swap transaction group (only present for DEX swaps) */
-    swapGroupDetail: TransactionSwapGroupDetail | null
+    swapGroupDetail: Nullable<TransactionSwapGroupDetail>
     /** Human-readable interpretation of what this transaction represents */
-    interpretedMeaning: TransactionInterpretedMeaning | null
+    interpretedMeaning: Nullable<TransactionInterpretedMeaning>
     /** Transaction fee paid in microAlgos */
     fee: Decimal
     /** Group ID for atomic transactions */
-    groupId: string | null
+    groupId: Nullable<string>
     /** The amount transferred in base units */
-    amount: Decimal | null
+    amount: Nullable<Decimal>
     /** The close remainder to address */
-    closeTo: string | null
+    closeTo: Nullable<string>
     /** Asset details for asset-related transactions */
-    asset: TransactionAssetSummary | null
+    asset: Nullable<TransactionAssetSummary>
     /** Application ID for application call transactions (smart contracts) */
-    applicationId: string | null
+    applicationId: Nullable<string>
     /** Number of inner transactions if this is an application call */
-    innerTransactionCount: number | null
+    innerTransactionCount: Nullable<number>
 }
 
 /**
@@ -135,9 +136,9 @@ export interface TransactionPaginationState {
     /** Whether there are previous pages to fetch (backward pagination) */
     hasPreviousPage: boolean
     /** The URL for the next page (if hasNextPage is true) */
-    nextUrl: string | null
+    nextUrl: Nullable<string>
     /** The URL for the previous page (if hasPreviousPage is true) */
-    previousUrl: string | null
+    previousUrl: Nullable<string>
     /** Total number of transactions fetched in this response */
     totalFetched: number
 }

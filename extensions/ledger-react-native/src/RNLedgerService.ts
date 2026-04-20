@@ -23,7 +23,11 @@ import {
     classifyLedgerError,
     LedgerConnectionError,
 } from '@perawallet/wallet-core-ledger'
-import { hexToBytes, bytesToHex } from '@perawallet/wallet-core-shared'
+import {
+    hexToBytes,
+    bytesToHex,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import TransportBLE from '@ledgerhq/react-native-hw-transport-ble'
 import Algorand from '@ledgerhq/hw-app-algorand'
 
@@ -106,8 +110,8 @@ export class RNLedgerService implements HardwareWalletService {
                         descriptor: {
                             id: string
                             name: string
-                            serviceUUIDs: string[] | null
-                            rssi: number | null
+                            serviceUUIDs: Nullable<string[]>
+                            rssi: Nullable<number>
                         }
                     }) => {
                         if (event.type !== 'add') return

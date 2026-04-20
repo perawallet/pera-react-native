@@ -24,7 +24,7 @@ import {
     useUpdateSwapStatusMutation,
     type PrepareTransactionsResult,
 } from '@perawallet/wallet-core-swaps'
-import { logger } from '@perawallet/wallet-core-shared'
+import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
 import {
@@ -54,14 +54,14 @@ export type SwapExecutionError = {
 type UseSwapExecutionResult = {
     execute: (quoteIdStr: string) => Promise<boolean>
     status: SwapExecutionStatus
-    error: SwapExecutionError | null
+    error: Nullable<SwapExecutionError>
     txIds: string[]
     reset: () => void
 }
 
 export const useSwapExecution = (): UseSwapExecutionResult => {
     const [status, setStatus] = useState<SwapExecutionStatus>('idle')
-    const [error, setError] = useState<SwapExecutionError | null>(null)
+    const [error, setError] = useState<Nullable<SwapExecutionError>>(null)
     const [txIds, setTxIds] = useState<string[]>([])
 
     const { t } = useLanguage()

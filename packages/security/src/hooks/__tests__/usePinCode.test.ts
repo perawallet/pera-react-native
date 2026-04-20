@@ -19,6 +19,7 @@ import {
     MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
     INITIAL_LOCKOUT_SECONDS,
 } from '../../constants'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 import {
     PIN_RECORD_VERSION,
     createPinRecord,
@@ -69,8 +70,8 @@ describe('usePinCode', () => {
 
     const setupMock = (state: {
         failedAttempts: number
-        lockoutEndTime: number | null
-        autoLockStartedAt?: number | null
+        lockoutEndTime: Nullable<number>
+        autoLockStartedAt?: Nullable<number>
     }) => {
         vi.mocked(useSecurityStore).mockImplementation(
             (selector: (state: unknown) => unknown) => {

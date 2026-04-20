@@ -26,7 +26,10 @@ import {
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
 import { MIN_TXN_FEE } from '@perawallet/wallet-core-blockchain'
-import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
+import {
+    DEFAULT_PRECISION,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useClipboard } from '@hooks/useClipboard'
 import { useStyles } from './styles'
@@ -36,7 +39,7 @@ const MIN_FEE_WHOLE_UNITS = toWholeUnits(Number(MIN_TXN_FEE), ALGO_ASSET)
 export type OptOutConfirmationBottomSheetProps = {
     isVisible: boolean
     onClose: () => void
-    accountBalance: AssetWithAccountBalance | null
+    accountBalance: Nullable<AssetWithAccountBalance>
     accountAddress: string
     accountName: string
     onConfirmOptOut: () => void

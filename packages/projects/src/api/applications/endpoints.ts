@@ -14,6 +14,7 @@ import {
     queryClient,
     logger,
     type Network,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { HTTPError } from 'ky'
 import { ZodError } from 'zod'
@@ -32,7 +33,7 @@ export type FetchApplicationParams = {
 
 export const fetchApplication = async (
     params: FetchApplicationParams,
-): Promise<PeraApplication | null> => {
+): Promise<Nullable<PeraApplication>> => {
     const { applicationId, network, signal } = params
 
     try {

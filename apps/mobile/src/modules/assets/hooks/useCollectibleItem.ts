@@ -15,12 +15,13 @@ import { isPureNft } from '@perawallet/wallet-core-assets'
 import type { IconName } from '@components/core'
 import { getVerificationIcon } from '@modules/assets/utils/verification'
 import type { CollectibleItemProps } from '@modules/assets/types/collectible'
+import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 
 type UseCollectibleItemResult = {
-    thumbnailUrl: string | null | undefined
+    thumbnailUrl: Maybe<string>
     showAmount: boolean
     hasBalance: boolean
-    verificationIconName: IconName | null
+    verificationIconName: Nullable<IconName>
     title: string
     collectionName: string | undefined
 }
@@ -36,7 +37,7 @@ export const useCollectibleItem = ({
     const collectionName = collectible?.collection?.name
     const title = collectible?.title ?? asset.name ?? `#${asset.assetId}`
 
-    const verificationIconName = useMemo<IconName | null>(() => {
+    const verificationIconName = useMemo<Nullable<IconName>>(() => {
         const tier = asset.peraMetadata?.verificationTier
         return tier ? getVerificationIcon(tier) : null
     }, [asset.peraMetadata?.verificationTier])

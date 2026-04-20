@@ -24,6 +24,7 @@ import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from '@hooks/useLanguage'
 import { navigationRef } from '@routes/navigationRef'
 import { Decimal } from 'decimal.js'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseAccountInfoCardParams = {
     account: WalletAccount
@@ -34,7 +35,7 @@ type UseAccountInfoCardResult = {
     isExpanded: boolean
     handleToggleExpanded: () => void
     accountTypeLabel: string
-    minBalanceAlgos: Decimal | null
+    minBalanceAlgos: Nullable<Decimal>
     isMinBalanceLoading: boolean
     isHDWallet: boolean
     showMinBalance: boolean

@@ -13,8 +13,9 @@
 import { renderHook, act } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { useSwapConfigurationBottomSheet } from '../useSwapConfigurationBottomSheet'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
-let mockSlippage: string | null = null
+let mockSlippage: Nullable<string> = null
 let mockPreferredCurrency: string = 'ALGO'
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({

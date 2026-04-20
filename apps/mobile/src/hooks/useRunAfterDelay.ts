@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useEffect, useRef } from 'react'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseRunAfterDelayResult = {
     schedule: (callback: () => void, delayMs: number) => void
@@ -19,8 +20,8 @@ type UseRunAfterDelayResult = {
 }
 
 export const useRunAfterDelay = (): UseRunAfterDelayResult => {
-    const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-    const callbackRef = useRef<(() => void) | null>(null)
+    const timerRef = useRef<Nullable<ReturnType<typeof setTimeout>>>(null)
+    const callbackRef = useRef<Nullable<() => void>>(null)
 
     const cancel = useCallback(() => {
         if (timerRef.current) {

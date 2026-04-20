@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { BaseStoreState } from '@perawallet/wallet-core-shared'
+import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type {
     MultiSigAccount,
     JointAccountSignRequest,
@@ -46,12 +46,12 @@ export type PeraNotification = {
     url: string
     createdAt: Date
     isUnread?: boolean
-    icon?: NotificationIcon | null
+    icon?: Nullable<NotificationIcon>
 }
 
 export interface ASAInbox {
     address: string
-    inboxAddress: string | null
+    inboxAddress: Nullable<string>
     requestCount: number
 }
 

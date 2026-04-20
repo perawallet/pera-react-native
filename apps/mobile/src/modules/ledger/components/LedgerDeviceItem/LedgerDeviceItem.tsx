@@ -15,13 +15,16 @@ import { PWView, PWText, PWTouchableOpacity, PWIcon } from '@components/core'
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 
 import { useStyles } from './styles'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type LedgerDeviceItemProps = {
     device: HardwareWalletDevice
     onPress: (device: HardwareWalletDevice) => void
 }
 
-const getSignalLevel = (rssi: number | null): 'strong' | 'medium' | 'weak' => {
+const getSignalLevel = (
+    rssi: Nullable<number>,
+): 'strong' | 'medium' | 'weak' => {
     if (rssi === null) return 'weak'
     if (rssi >= -60) return 'strong'
     if (rssi >= -80) return 'medium'

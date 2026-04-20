@@ -14,9 +14,10 @@ import { useCallback, useMemo } from 'react'
 import { useAllAccounts } from './useAllAccounts'
 import { useCreateAccount } from './useCreateAccount'
 import { AccountTypes, HDWalletAccount, WalletAccount } from '../models'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseCreateNextHDAccountResult = {
-    createNextHDAccount: () => Promise<WalletAccount | null>
+    createNextHDAccount: () => Promise<Nullable<WalletAccount>>
     hasHDWallet: boolean
 }
 

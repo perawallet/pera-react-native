@@ -13,7 +13,11 @@
 import { useQueries } from '@tanstack/react-query'
 import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
-import { logger, type Network } from '@perawallet/wallet-core-shared'
+import {
+    logger,
+    type Network,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type {
     AccountBalances,
     AccountBalancesWithTotals,
@@ -252,7 +256,7 @@ export const useAccountAssetBalanceQuery = (
             !!account && assetId !== null && assetId !== undefined,
         )
 
-    const assetBalance = useMemo<AssetWithAccountBalance | null>(() => {
+    const assetBalance = useMemo<Nullable<AssetWithAccountBalance>>(() => {
         return (
             accountBalances
                 ?.get(account?.address ?? '')

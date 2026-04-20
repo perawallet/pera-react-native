@@ -11,12 +11,13 @@
  */
 
 import { useState, useCallback } from 'react'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export function useAsyncAction<TArgs extends unknown[], TReturn>(
     action: (...args: TArgs) => Promise<TReturn>,
 ) {
     const [isProcessing, setIsProcessing] = useState(false)
-    const [error, setError] = useState<Error | null>(null)
+    const [error, setError] = useState<Nullable<Error>>(null)
 
     const execute = useCallback(
         async (...args: TArgs): Promise<TReturn> => {

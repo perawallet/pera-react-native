@@ -19,6 +19,7 @@ import {
     useDeleteAllData,
 } from '@modules/settings/hooks/useDeleteAllData'
 import { AppState, type AppStateStatus } from 'react-native'
+import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 
 vi.mock('@perawallet/wallet-core-security', () => ({
     usePinCode: vi.fn(),
@@ -46,8 +47,9 @@ describe('useAutoLockListener', () => {
     const mockSetAutoLockStartedAt = vi.fn()
     const mockCheckPinEnabled = vi.fn()
     const mockDeleteAllData = vi.fn()
-    let appStateChangeHandler: ((nextAppState: AppStateStatus) => void) | null =
-        null
+    let appStateChangeHandler: Nullable<
+        (nextAppState: AppStateStatus) => void
+    > = null
 
     beforeEach(() => {
         vi.clearAllMocks()
@@ -72,7 +74,7 @@ describe('useAutoLockListener', () => {
 
     const getAppStateChangeHandler = () =>
         (AppState.addEventListener as Mock).mock.calls.at(-1)?.[1] as (
-            nextState: string | null | undefined,
+            nextState: Maybe<string>,
         ) => void
 
     it('should return initial state', () => {
@@ -236,7 +238,7 @@ describe('useAutoLockListener', () => {
     })
 
     it('should avoid overlapping foreground checks', async () => {
-        let resolveForegroundCheck: ((value: boolean) => void) | null = null
+        let resolveForegroundCheck: Nullable<(value: boolean) => void> = null
         mockCheckAutoLock.mockImplementation(
             () =>
                 new Promise<boolean>(resolve => {

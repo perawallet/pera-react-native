@@ -29,6 +29,7 @@ import {
 } from '../TransactionsFilterBottomSheet'
 import type { AppStackParamList } from '@routes/types'
 import { groupTransactionsByDate, getFilterTimes } from './utils'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Represents a section of transactions grouped by date.
@@ -55,7 +56,7 @@ export type UseAccountHistoryResult = {
     /** Whether there was an error */
     isError: boolean
     /** Error if one occurred */
-    error: Error | null
+    error: Nullable<Error>
     /** Whether there are more pages */
     hasNextPage: boolean
     /** Function to load more transactions */

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { BaseStoreState } from '@perawallet/wallet-core-shared'
+import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 
@@ -20,7 +20,7 @@ export type SettingsState = BaseStoreState & {
     privacyMode: boolean
     setTheme: (theme: ThemeMode) => void
     setPrivacyMode: (enabled: boolean) => void
-    getPreference: (key: string) => string | boolean | number | null
+    getPreference: (key: string) => Nullable<string | boolean | number>
     setPreference: (key: string, value: string | boolean | number) => void
     deletePreference: (key: string) => void
     clearAllPreferences: () => void
