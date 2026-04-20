@@ -11,3 +11,4 @@
  */
 
 export * from './useIsAccountBackedUp'
+export * from './useMarkBackupComplete'
