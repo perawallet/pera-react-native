@@ -97,6 +97,18 @@ updates:
       # Auto-bumping past the runtime LTS just produces red builds.
       - dependency-name: "@types/node"
         update-types: [version-update:semver-major]
+      # @rneui 5.0.0 migrates Button from TouchableOpacity to Pressable and
+      # reworks Avatar; that's a UI migration with visual regression risk, not
+      # a bump. Handle as a dedicated PR.
+      - dependency-name: "@rneui/base"
+        update-types: [version-update:semver-major]
+      - dependency-name: "@rneui/themed"
+        update-types: [version-update:semver-major]
+      # jsdom 29 rewrote CSSOM using a Proxy; array-index set traps return
+      # falsish and React DOM 19's setValueForStyle trips strict-mode throws.
+      # Stay on 27 until jsdom fixes the regression or React DOM changes.
+      - dependency-name: jsdom
+        update-types: [version-update:semver-major]
 
   # Pin GitHub Actions by SHA; Dependabot rewrites the SHA and updates the
   # trailing version comment so reviewers can see the human-readable bump.

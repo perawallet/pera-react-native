@@ -31,8 +31,8 @@
     "eslint-plugin-react-native": "^5.0.0",
     "eslint-plugin-unused-imports": "catalog:",
     "oxfmt": "catalog:",
-    "oxlint": "^1.54.0",
-    "oxlint-tsgolint": "^0.16.0",
+    "oxlint": "^1.59.0",
+    "oxlint-tsgolint": "^0.20.0",
     "turbo": "^2.7.2",
     "util": "catalog:",
     "vitest": "catalog:"
