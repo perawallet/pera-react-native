@@ -220,6 +220,9 @@ importers:
       '@perawallet/wallet-core-background':
         specifier: workspace:*
         version: link:../../packages/background
+      '@perawallet/wallet-core-backup':
+        specifier: workspace:*
+        version: link:../../packages/backup
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../../packages/blockchain
