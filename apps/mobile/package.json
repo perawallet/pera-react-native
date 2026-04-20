@@ -157,7 +157,7 @@
     "@welldone-software/why-did-you-render": "^10.0.1",
     "babel-plugin-module-resolver": "^5.0.2",
     "babel-preset-expo": "~55.0.12",
-    "jsdom": "^27.4.0",
+    "jsdom": "^29.0.2",
     "oxfmt": "catalog:",
     "react-dom": "catalog:",
     "react-native-svg-transformer": "^1.5.2",
