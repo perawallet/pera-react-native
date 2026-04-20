@@ -31,6 +31,18 @@ const mockRouteParams = vi.hoisted(() => ({
     current: undefined as Record<string, string | undefined> | undefined,
 }))
 
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
+    return {
+        ...actual,
+        useAccountsStore: vi.fn(() => ({})),
+        isSigningAccount: vi.fn(() => true),
+    }
+})
+
 vi.mock('@react-navigation/native', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@react-navigation/native')>()
