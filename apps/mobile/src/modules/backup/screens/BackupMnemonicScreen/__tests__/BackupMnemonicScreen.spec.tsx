@@ -52,7 +52,7 @@ vi.mock('../useBackupMnemonicScreen', () => ({
                 'echo',
                 'foxtrot',
             ])
-            mockNavigate('BackupVerification')
+            mockNavigate('BackupVerification', { address: 'ADDR' })
         },
     }),
 }))
@@ -92,6 +92,8 @@ describe('BackupMnemonicScreen', () => {
             'echo',
             'foxtrot',
         ])
-        expect(mockNavigate).toHaveBeenCalledWith('BackupVerification')
+        expect(mockNavigate).toHaveBeenCalledWith('BackupVerification', {
+            address: 'ADDR',
+        })
     })
 })

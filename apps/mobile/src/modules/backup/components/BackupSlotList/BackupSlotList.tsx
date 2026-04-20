@@ -28,7 +28,10 @@ export const BackupSlotList = ({
     return (
         <PWView style={styles.container}>
             {slots.map((word, i) => (
-                <PWView key={i} style={styles.slotRow}>
+                <PWView
+                    key={i}
+                    style={styles.slotRow}
+                >
                     <PWText style={styles.index}>{String(i + 1)}</PWText>
                     {word !== null ? (
                         <PWTouchableOpacity onPress={() => onTapSlot(i)}>

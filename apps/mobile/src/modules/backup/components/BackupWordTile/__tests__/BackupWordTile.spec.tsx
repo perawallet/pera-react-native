@@ -17,13 +17,23 @@ import { BackupWordTile } from '../BackupWordTile'
 
 describe('BackupWordTile', () => {
     test('renders word text', () => {
-        render(<BackupWordTile word='alpha' onPress={() => {}} />)
+        render(
+            <BackupWordTile
+                word='alpha'
+                onPress={() => {}}
+            />,
+        )
         expect(screen.getByText('alpha')).toBeTruthy()
     })
 
     test('calls onPress when tapped', () => {
         const onPress = vi.fn()
-        render(<BackupWordTile word='alpha' onPress={onPress} />)
+        render(
+            <BackupWordTile
+                word='alpha'
+                onPress={onPress}
+            />,
+        )
         fireEvent.click(screen.getByText('alpha'))
         expect(onPress).toHaveBeenCalledTimes(1)
     })

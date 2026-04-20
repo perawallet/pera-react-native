@@ -20,7 +20,7 @@ import {
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'
 
-const mockBackupReminderBannerHook = vi.fn(() => ({
+const mockBackupReminderBannerHook = vi.fn((_account: WalletAccount) => ({
     isVisible: false,
     onPress: vi.fn(),
 }))

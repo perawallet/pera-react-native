@@ -27,12 +27,12 @@ export const BackupInstructionsScreen = () => {
             <PWText style={styles.title}>
                 {t('backup.instructions.title')}
             </PWText>
-            <PWText style={styles.body}>
-                {t('backup.instructions.body')}
-            </PWText>
+            <PWText style={styles.body}>{t('backup.instructions.body')}</PWText>
             <PWView style={styles.warningRow}>
                 <PWIcon name='cross' />
-                <PWText>{t('backup.instructions.warning_no_screenshot')}</PWText>
+                <PWText>
+                    {t('backup.instructions.warning_no_screenshot')}
+                </PWText>
             </PWView>
             <PWView style={styles.warningRow}>
                 <PWIcon name='cross' />

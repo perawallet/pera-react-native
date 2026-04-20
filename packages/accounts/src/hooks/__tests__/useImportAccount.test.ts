@@ -296,9 +296,9 @@ describe('useImportAccount', () => {
             })
         })
 
-        expect(
-            useBackupStore.getState().backedUpKeyIds['ks-entropy-1'],
-        ).toBe(true)
+        expect(useBackupStore.getState().backedUpKeyIds['ks-entropy-1']).toBe(
+            true,
+        )
     })
 
     test('marks newly imported Algo25 account as backed up', async () => {
@@ -327,8 +327,6 @@ describe('useImportAccount', () => {
             })
         })
 
-        expect(useBackupStore.getState().backedUpKeyIds['ks-seed-1']).toBe(
-            true,
-        )
+        expect(useBackupStore.getState().backedUpKeyIds['ks-seed-1']).toBe(true)
     })
 })

@@ -16,9 +16,8 @@ import { render, screen, fireEvent } from '@test-utils/render'
 
 const mockNavigate = vi.fn()
 vi.mock('@react-navigation/native', async importOriginal => {
-    const original = await importOriginal<
-        typeof import('@react-navigation/native')
-    >()
+    const original =
+        await importOriginal<typeof import('@react-navigation/native')>()
     return {
         ...original,
         useNavigation: () => ({ navigate: mockNavigate }),
@@ -85,10 +84,12 @@ describe('BackupInstructionsScreen', () => {
         expect(screen.getByTestId('pin_modal')).toBeTruthy()
     })
 
-    test('successful PIN navigates to BackupMnemonic', () => {
+    test('successful PIN navigates to BackupMnemonic with address param', () => {
         render(<BackupInstructionsScreen />)
         fireEvent.click(screen.getByTestId('backup_instructions_reveal'))
         fireEvent.click(screen.getByTestId('pin_success'))
-        expect(mockNavigate).toHaveBeenCalledWith('BackupMnemonic')
+        expect(mockNavigate).toHaveBeenCalledWith('BackupMnemonic', {
+            address: 'ADDR',
+        })
     })
 })

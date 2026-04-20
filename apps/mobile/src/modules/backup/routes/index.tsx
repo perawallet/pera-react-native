@@ -11,26 +11,37 @@
  */
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
-import { Text } from 'react-native'
 
 import { BackupFlowProvider } from '../context'
+import { BackupInstructionsScreen } from '../screens/BackupInstructionsScreen'
+import { BackupMnemonicScreen } from '../screens/BackupMnemonicScreen'
+import { BackupVerificationScreen } from '../screens/BackupVerificationScreen'
+import { BackupSuccessScreen } from '../screens/BackupSuccessScreen'
 import type { BackupStackParamList } from './types'
 
 export type { BackupStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<BackupStackParamList>()
 
-// Placeholder component; real screens are wired in Task 19.
-const Placeholder = () => <Text>Backup flow — placeholder</Text>
-
 export const BackupStackNavigator = () => {
     return (
         <BackupFlowProvider>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
-                {/* Screens registered in Task 19 */}
                 <Stack.Screen
                     name='BackupInstructions'
-                    component={Placeholder}
+                    component={BackupInstructionsScreen}
+                />
+                <Stack.Screen
+                    name='BackupMnemonic'
+                    component={BackupMnemonicScreen}
+                />
+                <Stack.Screen
+                    name='BackupVerification'
+                    component={BackupVerificationScreen}
+                />
+                <Stack.Screen
+                    name='BackupSuccess'
+                    component={BackupSuccessScreen}
                 />
             </Stack.Navigator>
         </BackupFlowProvider>

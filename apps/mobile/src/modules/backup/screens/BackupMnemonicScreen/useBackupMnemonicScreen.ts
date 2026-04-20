@@ -132,7 +132,7 @@ type BackupMnemonicRouteParams = {
 }
 
 type BackupMnemonicNavigation = {
-    navigate: (name: string) => void
+    navigate: (name: string, params?: { address: string }) => void
 }
 
 export const useBackupMnemonicScreen = (): UseBackupMnemonicScreenResult => {
@@ -156,8 +156,10 @@ export const useBackupMnemonicScreen = (): UseBackupMnemonicScreenResult => {
 
     const onContinue = useCallback(() => {
         setWords(words)
-        navigation.navigate('BackupVerification')
-    }, [words, setWords, navigation])
+        if (address) {
+            navigation.navigate('BackupVerification', { address })
+        }
+    }, [words, setWords, navigation, address])
 
     return { words, isLoading, error, onContinue }
 }

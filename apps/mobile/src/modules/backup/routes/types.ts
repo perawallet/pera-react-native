@@ -12,7 +12,7 @@
 
 export type BackupStackParamList = {
     BackupInstructions: { address: string }
-    BackupMnemonic: undefined
-    BackupVerification: undefined
+    BackupMnemonic: { address: string }
+    BackupVerification: { address: string }
     BackupSuccess: undefined
 }

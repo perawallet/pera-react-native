@@ -12,21 +12,21 @@
 
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { RootStackParamList } from '@routes/types'
 
 export type UseBackupFlowLauncherResult = (account: WalletAccount) => void
 
 export const useBackupFlowLauncher = (): UseBackupFlowLauncherResult => {
-    const navigation = useNavigation()
+    const navigation =
+        useNavigation<NativeStackNavigationProp<RootStackParamList>>()
     return useCallback(
         (account: WalletAccount) => {
-            navigation.navigate(
-                'BackupWallet' as never,
-                {
-                    screen: 'BackupInstructions',
-                    params: { address: account.address },
-                } as never,
-            )
+            navigation.navigate('BackupWallet', {
+                screen: 'BackupInstructions',
+                params: { address: account.address },
+            })
         },
         [navigation],
     )

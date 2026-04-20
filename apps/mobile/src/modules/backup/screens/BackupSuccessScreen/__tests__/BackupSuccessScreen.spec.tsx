@@ -18,9 +18,8 @@ const mockPopToTop = vi.fn()
 const mockParentGoBack = vi.fn()
 
 vi.mock('@react-navigation/native', async importOriginal => {
-    const original = await importOriginal<
-        typeof import('@react-navigation/native')
-    >()
+    const original =
+        await importOriginal<typeof import('@react-navigation/native')>()
     return {
         ...original,
         useNavigation: () => ({

@@ -11,7 +11,7 @@
  */
 
 import { useCallback, useState } from 'react'
-import { useNavigation } from '@react-navigation/native'
+import { useNavigation, useRoute } from '@react-navigation/native'
 
 export type UseBackupInstructionsScreenResult = {
     isPinVisible: boolean
@@ -20,19 +20,32 @@ export type UseBackupInstructionsScreenResult = {
     handlePinVerified: () => void
 }
 
+type BackupInstructionsRouteParams = {
+    params?: {
+        address?: string
+    }
+}
+
+type BackupInstructionsNavigation = {
+    navigate: (name: string, params?: { address: string }) => void
+}
+
 export const useBackupInstructionsScreen =
     (): UseBackupInstructionsScreenResult => {
-        const navigation = useNavigation()
+        const navigation =
+            useNavigation() as unknown as BackupInstructionsNavigation
+        const route = useRoute() as unknown as BackupInstructionsRouteParams
+        const address = route.params?.address
         const [isPinVisible, setIsPinVisible] = useState(false)
 
         const openPin = useCallback(() => setIsPinVisible(true), [])
         const closePin = useCallback(() => setIsPinVisible(false), [])
         const handlePinVerified = useCallback(() => {
             setIsPinVisible(false)
-            ;(
-                navigation as unknown as { navigate: (name: string) => void }
-            ).navigate('BackupMnemonic')
-        }, [navigation])
+            if (address) {
+                navigation.navigate('BackupMnemonic', { address })
+            }
+        }, [navigation, address])
 
         return { isPinVisible, openPin, closePin, handlePinVerified }
     }
