@@ -34,8 +34,8 @@
     "@sbaiahmed1/react-native-biometrics": "^0.15.0",
     "drizzle-orm": "catalog:",
     "expo-sqlite": "~14.0.0",
-    "expo-application": "^7.0.8",
-    "expo-device": "^8.0.10",
+    "expo-application": "^55.0.14",
+    "expo-device": "^55.0.14",
     "expo-localization": "^55.0.13",
     "zustand": "catalog:"
   },
