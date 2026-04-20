@@ -25,7 +25,7 @@
     "@perawallet/wallet-extension-provider": "workspace:*",
     "@walletconnect/client": "1.8.0",
     "@walletconnect/types": "1.8.0",
-    "@walletconnect/utils": "1.8.0",
+    "@walletconnect/utils": "2.23.9",
     "react": "catalog:",
     "zod": "catalog:",
     "zustand": "catalog:"
