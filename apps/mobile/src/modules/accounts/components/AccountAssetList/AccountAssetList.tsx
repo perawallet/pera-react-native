@@ -39,6 +39,7 @@ import { AssetFilterBottomSheet } from '../AssetFilterBottomSheet'
 import { SwipeableAssetItem } from './SwipeableAssetItem'
 import { OptOutConfirmationBottomSheet } from './OptOutConfirmationBottomSheet'
 import { AddAssetBottomSheet } from '@modules/assets/components/AddAssetBottomSheet'
+import { BackupReminderBanner } from '../BackupReminderBanner'
 import { useAccountAssetList } from './useAccountAssetList'
 
 const TAB_AND_HEADER_HEIGHT = 100
@@ -131,6 +132,7 @@ export const AccountAssetList = ({
                     contentContainerStyle={styles.rootContainer}
                     ListHeaderComponent={
                         <PWView style={styles.headerContainer}>
+                            <BackupReminderBanner account={account} />
                             <ExpandablePanel isExpanded={headerState.isOpen}>
                                 {header}
                                 <PWView style={styles.titleBar}>

@@ -20,6 +20,16 @@ import {
 import { useAssetsQuery } from '@perawallet/wallet-core-assets'
 import { Decimal } from 'decimal.js'
 
+const mockBackupReminderBannerHook = vi.fn(() => ({
+    isVisible: false,
+    onPress: vi.fn(),
+}))
+
+vi.mock('../../BackupReminderBanner/useBackupReminderBanner', () => ({
+    useBackupReminderBanner: (account: WalletAccount) =>
+        mockBackupReminderBannerHook(account),
+}))
+
 const mockAccount = {
     address: 'test-address',
     name: 'Test Account',
@@ -225,6 +235,36 @@ describe('AccountAssetList', () => {
             expect(
                 screen.getByText('account_details.assets.title'),
             ).toBeTruthy()
+        })
+    })
+
+    describe('backup banner integration', () => {
+        beforeEach(() => {
+            mockBackupReminderBannerHook.mockReset()
+        })
+
+        it('renders backup reminder banner when hook reports visible', () => {
+            mockBackupReminderBannerHook.mockReturnValue({
+                isVisible: true,
+                onPress: vi.fn(),
+            })
+
+            render(<AccountAssetList account={mockAccount} />)
+
+            expect(screen.getByTestId('backup_reminder_banner')).toBeTruthy()
+        })
+
+        it('does not render backup reminder banner when hook reports hidden', () => {
+            mockBackupReminderBannerHook.mockReturnValue({
+                isVisible: false,
+                onPress: vi.fn(),
+            })
+
+            const { queryByTestId } = render(
+                <AccountAssetList account={mockAccount} />,
+            )
+
+            expect(queryByTestId('backup_reminder_banner')).toBeNull()
         })
     })
 
