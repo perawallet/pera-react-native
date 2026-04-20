@@ -30,7 +30,7 @@ catalog:
   eslint: 9.39.4
   eslint-plugin-unused-imports: 4.4.1
   globals: 15.15.0
-  oxfmt: ^0.41.0
+  oxfmt: ^0.45.0
   react: 19.2.5
   react-dom: 19.2.5
   typescript: ^5.9.3
