@@ -38,7 +38,7 @@ export const BackupWordTile = ({
             // react-native AccessibilityState has no `invalid` key. Surface the
             // error state via aria-invalid so assistive tech + web-based tests
             // can observe it.
-            // @ts-ignore — aria-invalid is a valid web attr, not typed on RN
+            // @ts-expect-error — aria-invalid is a valid web attr, not typed on RN
             aria-invalid={hasError ? true : undefined}
         >
             <PWText style={styles.container}>{word}</PWText>

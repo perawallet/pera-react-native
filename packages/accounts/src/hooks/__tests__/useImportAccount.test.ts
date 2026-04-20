@@ -272,5 +272,4 @@ describe('useImportAccount', () => {
             ).rejects.toThrow('Import failed')
         })
     })
-
 })
