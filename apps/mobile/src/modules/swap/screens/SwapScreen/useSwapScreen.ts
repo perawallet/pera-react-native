@@ -14,7 +14,6 @@ import { useEffect } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { useSwaps } from '@perawallet/wallet-core-swaps'
 import {
-    isWatchAccount,
     useSelectedAccount,
     useSelectedAccountAddress,
     useSigningAccounts,
@@ -32,7 +31,7 @@ export const useSwapScreen = () => {
     useEffect(() => {
         if (
             selectedAccount &&
-            isWatchAccount(selectedAccount) &&
+            !signingAccounts.some(a => a.address === selectedAccount.address) &&
             signingAccounts.length > 0
         ) {
             setSelectedAccountAddress(signingAccounts[0].address)

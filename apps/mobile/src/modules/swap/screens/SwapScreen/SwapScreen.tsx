@@ -15,7 +15,11 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { config } from '@perawallet/wallet-core-config'
 import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
-import { isWatchAccount, WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    isSigningAccount,
+    useAccountsStore,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import { useWebView } from '@modules/webview'
 import { useSwapIntroduction } from '@modules/swap/hooks'
@@ -23,11 +27,14 @@ import { SwapForm, SwapIntroduction } from '@modules/swap/components'
 import { useStyles } from './styles'
 import { useSwapScreen } from './useSwapScreen'
 
-const swapAccountFilter = (account: WalletAccount) => !isWatchAccount(account)
-
 export const SwapScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
+    const accounts = useAccountsStore(state => state.accounts)
+    const swapAccountFilter = useCallback(
+        (account: WalletAccount) => isSigningAccount(account, accounts),
+        [accounts],
+    )
     const { pushWebView } = useWebView()
     const { isIntroductionSeen, markIntroductionSeen } = useSwapIntroduction()
     const introModal = useModalState(!isIntroductionSeen)
