@@ -290,8 +290,8 @@ importers:
         specifier: workspace:*
         version: link:../../extensions/provider
       '@react-native-community/datetimepicker':
-        specifier: ^8.6.0
-        version: 8.6.0(expo@55.0.8)(react-native@0.83.2(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.5))(react@19.2.5)
+        specifier: ^9.1.0
+        version: 9.1.0(expo@55.0.8)(react-native@0.83.2(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.5))(react@19.2.5)
       '@react-native-community/netinfo':
         specifier: ^12.0.1
         version: 12.0.1(react-native@0.83.2(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.5))(react@19.2.5)
@@ -4648,8 +4648,8 @@ packages:
   '@protobufjs/utf8@1.1.0':
     resolution: {integrity: sha512-Vvn3zZrhQZkkBE8LSuW3em98c0FwgO4nxzv6OdSxPKJIEKY2bGbHn+mhGIPerzI4twdxaP8/0+06HBpwf345Lw==}
 
-  '@react-native-community/datetimepicker@8.6.0':
-    resolution: {integrity: sha512-yxPSqNfxgpGaqHQIpatqe6ykeBdU/1pdsk/G3x01mY2bpTflLpmVTLqFSJYd3MiZzxNZcMs/j1dQakUczSjcYA==}
+  '@react-native-community/datetimepicker@9.1.0':
+    resolution: {integrity: sha512-eadbnk+I2vxvW30iTAsm/qlCnMMAadkifIMYNEB2lzhxN/SvlKc7S2V4k5DyrwjdCbqdcMk3t9K6fnUMcAV34w==}
     peerDependencies:
       expo: '>=52.0.0'
       react: '*'
@@ -11868,7 +11868,7 @@ snapshots:
 
   '@protobufjs/utf8@1.1.0': {}
 
-  '@react-native-community/datetimepicker@8.6.0(expo@55.0.8)(react-native@0.83.2(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.5))(react@19.2.5)':
+  '@react-native-community/datetimepicker@9.1.0(expo@55.0.8)(react-native@0.83.2(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.5))(react@19.2.5)':
     dependencies:
       invariant: 2.2.4
       react: 19.2.5
