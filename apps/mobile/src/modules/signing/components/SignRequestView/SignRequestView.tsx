@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import {
-    SignRequest,
-    useSigningRequest,
-} from '@perawallet/wallet-core-signing'
+import { SignRequest, useSigningRequest } from '@perawallet/wallet-core-signing'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { SigningRoutes } from '@modules/signing/routes'

@@ -64,9 +64,7 @@ export const useSigningRequest = (): UseSigningRequestResult => {
     const setLastCompletedRequest = useSigningStore(
         state => state.setLastCompletedRequest,
     )
-    const lastFailedRequest = useSigningStore(
-        state => state.lastFailedRequest,
-    )
+    const lastFailedRequest = useSigningStore(state => state.lastFailedRequest)
     const setLastFailedRequest = useSigningStore(
         state => state.setLastFailedRequest,
     )

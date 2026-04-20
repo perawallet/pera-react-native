@@ -62,7 +62,9 @@ export const validateTransactionRoundTrip = (
     }
 
     for (let i = 0; i < transactions.length; i++) {
-        const rawBytes = stripTxPrefix(decodeFromBase64(rawTransactionsBase64[i]))
+        const rawBytes = stripTxPrefix(
+            decodeFromBase64(rawTransactionsBase64[i]),
+        )
         const reencoded = encodeTransactionRaw(transactions[i])
         if (!bytesEqual(reencoded, rawBytes)) {
             throw new TransactionRoundTripError(

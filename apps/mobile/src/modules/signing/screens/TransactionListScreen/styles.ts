@@ -63,5 +63,5 @@ export const useStyles = makeStyles(theme => ({
     },
     footerContainer: {
         paddingTop: theme.spacing.lg,
-    }
+    },
 }))

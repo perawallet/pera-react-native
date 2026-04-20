@@ -48,8 +48,11 @@ export const SingleTransactionScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <PWScrollView style={styles.scrollview} contentContainerStyle={styles.contentContainer}
-                        showsVerticalScrollIndicator={false}>
+            <PWScrollView
+                style={styles.scrollview}
+                contentContainerStyle={styles.contentContainer}
+                showsVerticalScrollIndicator={false}
+            >
                 <TransactionSummaryHeader
                     transaction={transaction}
                     metadata={request?.sourceMetadata}

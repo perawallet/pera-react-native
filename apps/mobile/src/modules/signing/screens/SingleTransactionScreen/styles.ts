@@ -29,5 +29,5 @@ export const useStyles = makeStyles(theme => ({
     },
     scrollview: {
         flexGrow: 1,
-    }
+    },
 }))
