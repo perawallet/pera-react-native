@@ -84,6 +84,19 @@ updates:
         update-types: [version-update:semver-major]
       - dependency-name: eslint
         update-types: [version-update:semver-major]
+      # WalletConnect is pinned to v1 on purpose — the whole @perawallet/wallet-core-walletconnect
+      # package targets the v1 protocol. v2 is a full protocol migration, not a dep bump.
+      - dependency-name: "@walletconnect/client"
+      - dependency-name: "@walletconnect/types"
+      - dependency-name: "@walletconnect/utils"
+      # @noble/hashes v2 is ESM-only and requires `.js` suffixes on subpath imports,
+      # which is a non-trivial migration for Metro + Vitest. Stay on v1 until we plan it.
+      - dependency-name: "@noble/hashes"
+        update-types: [version-update:semver-major]
+      # @types/node must track the Node runtime pinned in .tool-versions (currently 22).
+      # Auto-bumping past the runtime LTS just produces red builds.
+      - dependency-name: "@types/node"
+        update-types: [version-update:semver-major]
 
   # Pin GitHub Actions by SHA; Dependabot rewrites the SHA and updates the
   # trailing version comment so reviewers can see the human-readable bump.

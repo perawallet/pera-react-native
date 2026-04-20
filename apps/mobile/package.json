@@ -65,11 +65,11 @@
     "@perawallet/wallet-extension-provider": "workspace:*",
     "@react-native-community/datetimepicker": "^9.1.0",
     "@react-native-community/netinfo": "^12.0.1",
-    "@react-native-firebase/analytics": "^23.8.6",
-    "@react-native-firebase/app": "^23.8.6",
-    "@react-native-firebase/crashlytics": "^23.8.6",
-    "@react-native-firebase/messaging": "^23.8.6",
-    "@react-native-firebase/remote-config": "^23.8.6",
+    "@react-native-firebase/analytics": "^24.0.0",
+    "@react-native-firebase/app": "^24.0.0",
+    "@react-native-firebase/crashlytics": "^24.0.0",
+    "@react-native-firebase/messaging": "^24.0.0",
+    "@react-native-firebase/remote-config": "^24.0.0",
     "@react-navigation/bottom-tabs": "^7.9.0",
     "@react-navigation/elements": "^2.9.3",
     "@react-navigation/material-top-tabs": "^7.4.13",
@@ -170,7 +170,7 @@
     "vitest": "catalog:"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "packageManager": "pnpm@10.26.2+sha512.0e308ff2005fc7410366f154f625f6631ab2b16b1d2e70238444dd6ae9d630a8482d92a451144debc492416896ed16f7b114a86ec68b8404b2443869e68ffda6"
 }
