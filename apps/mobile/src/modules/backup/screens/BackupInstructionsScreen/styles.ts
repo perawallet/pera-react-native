@@ -18,10 +18,6 @@ export const useStyles = makeStyles(theme => ({
         padding: theme.spacing.lg,
         gap: theme.spacing.md,
     },
-    title: {
-        fontSize: 24,
-        fontWeight: '700',
-    },
     body: {
         color: theme.colors.textGray,
     },

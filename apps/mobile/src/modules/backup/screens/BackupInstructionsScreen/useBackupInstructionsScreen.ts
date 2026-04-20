@@ -11,7 +11,13 @@
  */
 
 import { useCallback, useState } from 'react'
-import { useNavigation, useRoute } from '@react-navigation/native'
+import {
+    useNavigation,
+    useRoute,
+    type RouteProp,
+} from '@react-navigation/native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { BackupStackParamList } from '../../routes/types'
 
 export type UseBackupInstructionsScreenResult = {
     isPinVisible: boolean
@@ -20,21 +26,17 @@ export type UseBackupInstructionsScreenResult = {
     handlePinVerified: () => void
 }
 
-type BackupInstructionsRouteParams = {
-    params?: {
-        address?: string
-    }
-}
-
-type BackupInstructionsNavigation = {
-    navigate: (name: string, params?: { address: string }) => void
-}
-
 export const useBackupInstructionsScreen =
     (): UseBackupInstructionsScreenResult => {
         const navigation =
-            useNavigation() as unknown as BackupInstructionsNavigation
-        const route = useRoute() as unknown as BackupInstructionsRouteParams
+            useNavigation<
+                NativeStackNavigationProp<
+                    BackupStackParamList,
+                    'BackupInstructions'
+                >
+            >()
+        const route =
+            useRoute<RouteProp<BackupStackParamList, 'BackupInstructions'>>()
         const address = route.params?.address
         const [isPinVisible, setIsPinVisible] = useState(false)
 

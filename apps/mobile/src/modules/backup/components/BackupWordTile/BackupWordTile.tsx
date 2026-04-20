@@ -17,7 +17,7 @@ export type BackupWordTileProps = {
     word: string
     onPress: () => void
     hasError?: boolean
-    disabled?: boolean
+    isDisabled?: boolean
     testID?: string
 }
 
@@ -25,20 +25,16 @@ export const BackupWordTile = ({
     word,
     onPress,
     hasError = false,
-    disabled = false,
+    isDisabled = false,
     testID,
 }: BackupWordTileProps) => {
-    const styles = useStyles({ hasError, disabled })
+    const styles = useStyles({ hasError, isDisabled })
     return (
         <PWTouchableOpacity
             onPress={onPress}
-            disabled={disabled}
+            disabled={isDisabled}
             testID={testID}
-            accessibilityState={{ disabled }}
-            // react-native AccessibilityState has no `invalid` key. Surface the
-            // error state via aria-invalid so assistive tech + web-based tests
-            // can observe it.
-            // @ts-expect-error — aria-invalid is a valid web attr, not typed on RN
+            accessibilityState={{ disabled: isDisabled }}
             aria-invalid={hasError ? true : undefined}
         >
             <PWText style={styles.container}>{word}</PWText>

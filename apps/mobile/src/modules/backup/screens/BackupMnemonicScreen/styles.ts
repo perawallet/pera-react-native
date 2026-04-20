@@ -18,10 +18,6 @@ export const useStyles = makeStyles(theme => ({
         padding: theme.spacing.lg,
         gap: theme.spacing.md,
     },
-    title: {
-        fontSize: 24,
-        fontWeight: '700',
-    },
     body: {
         color: theme.colors.textGray,
     },
@@ -38,12 +34,12 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.sm,
         paddingHorizontal: theme.spacing.md,
         backgroundColor: theme.colors.layerGrayLighter,
-        borderRadius: 12,
+        borderRadius: theme.borderRadius.md,
         gap: theme.spacing.sm,
     },
     wordIndex: {
         color: theme.colors.textGray,
-        minWidth: 20,
+        minWidth: theme.spacing.xl,
     },
     ctaRow: {
         marginTop: 'auto',

@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { create, type StoreApi, type UseBoundStore } from 'zustand'
+import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import { registerStore } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import type { BackupStore } from '../models'
 
@@ -22,9 +22,7 @@ const initialState = {
     backedUpKeyIds: {} as Record<string, boolean>,
 }
 
-export const useBackupStore: UseBoundStore<
-    WithPersist<StoreApi<BackupStore>, unknown>
-> = create<BackupStore>()(
+export const useBackupStore = create<BackupStore>()(
     persist(
         (set, get) => ({
             ...initialState,

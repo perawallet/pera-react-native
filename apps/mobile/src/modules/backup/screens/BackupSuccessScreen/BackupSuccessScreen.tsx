@@ -12,33 +12,41 @@
 
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { useBackupFlowWords } from '../../context'
+import type { BackupStackParamList } from '../../routes/types'
 import { useStyles } from './styles'
 
 export const BackupSuccessScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const navigation = useNavigation() as unknown as {
-        popToTop?: () => void
-        getParent?: () => { goBack: () => void } | undefined
-    }
+    const navigation =
+        useNavigation<
+            NativeStackNavigationProp<BackupStackParamList, 'BackupSuccess'>
+        >()
+    const { clearWords } = useBackupFlowWords()
 
     const onDone = useCallback(() => {
-        const parent = navigation.getParent?.()
-        if (parent && typeof parent.goBack === 'function') {
+        clearWords()
+        const parent = navigation.getParent()
+        if (parent) {
             parent.goBack()
             return
         }
-        if (typeof navigation.popToTop === 'function') {
-            navigation.popToTop()
-        }
-    }, [navigation])
+        navigation.popToTop()
+    }, [navigation, clearWords])
 
     return (
         <PWView style={styles.container}>
             <PWIcon name='check' />
-            <PWText style={styles.title}>{t('backup.success.title')}</PWText>
+            <PWText
+                variant='h1'
+                style={styles.title}
+            >
+                {t('backup.success.title')}
+            </PWText>
             <PWText style={styles.body}>{t('backup.success.body')}</PWText>
             <PWView style={styles.ctaRow}>
                 <PWButton

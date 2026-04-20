@@ -11,7 +11,12 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigation, useRoute } from '@react-navigation/native'
+import {
+    useNavigation,
+    useRoute,
+    type RouteProp,
+} from '@react-navigation/native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     useAccountsStore,
     AccountTypes,
@@ -23,6 +28,7 @@ import type {
 } from '@perawallet/wallet-core-accounts'
 import { useKMS } from '@perawallet/wallet-core-kms'
 import { useBackupFlowWords } from '../../context'
+import type { BackupStackParamList } from '../../routes/types'
 
 type MnemonicState = {
     mnemonic: string | null
@@ -125,19 +131,12 @@ export type UseBackupMnemonicScreenResult = {
     onContinue: () => void
 }
 
-type BackupMnemonicRouteParams = {
-    params?: {
-        address?: string
-    }
-}
-
-type BackupMnemonicNavigation = {
-    navigate: (name: string, params?: { address: string }) => void
-}
-
 export const useBackupMnemonicScreen = (): UseBackupMnemonicScreenResult => {
-    const navigation = useNavigation() as unknown as BackupMnemonicNavigation
-    const route = useRoute() as unknown as BackupMnemonicRouteParams
+    const navigation =
+        useNavigation<
+            NativeStackNavigationProp<BackupStackParamList, 'BackupMnemonic'>
+        >()
+    const route = useRoute<RouteProp<BackupStackParamList, 'BackupMnemonic'>>()
     const accounts = useAccountsStore(state => state.accounts)
     const address = route.params?.address
     const account = useMemo<WalletAccount | null>(() => {

@@ -12,7 +12,12 @@
 
 import { useCallback, useEffect, useMemo } from 'react'
 import * as Haptics from 'expo-haptics'
-import { useNavigation, useRoute } from '@react-navigation/native'
+import {
+    useNavigation,
+    useRoute,
+    type RouteProp,
+} from '@react-navigation/native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
     useAccountsStore,
     type WalletAccount,
@@ -20,6 +25,7 @@ import {
 import { useMarkBackupComplete } from '@perawallet/wallet-core-backup'
 import { useBackupFlowWords } from '../../context'
 import { useBackupVerification } from '../../hooks'
+import type { BackupStackParamList } from '../../routes/types'
 
 export type UseBackupVerificationScreenResult = {
     slots: (string | null)[]
@@ -33,22 +39,17 @@ export type UseBackupVerificationScreenResult = {
     hasAccount: boolean
 }
 
-type BackupVerificationRouteParams = {
-    params?: {
-        address?: string
-    }
-}
-
-type BackupVerificationNavigation = {
-    replace?: (name: string) => void
-    navigate: (name: string) => void
-}
-
 export const useBackupVerificationScreen =
     (): UseBackupVerificationScreenResult => {
         const navigation =
-            useNavigation() as unknown as BackupVerificationNavigation
-        const route = useRoute() as unknown as BackupVerificationRouteParams
+            useNavigation<
+                NativeStackNavigationProp<
+                    BackupStackParamList,
+                    'BackupVerification'
+                >
+            >()
+        const route =
+            useRoute<RouteProp<BackupStackParamList, 'BackupVerification'>>()
         const accounts = useAccountsStore(
             (state: { accounts: WalletAccount[] }) => state.accounts,
         )
@@ -66,11 +67,7 @@ export const useBackupVerificationScreen =
 
         const onSuccess = useCallback(() => {
             if (account) markBackupComplete(account)
-            if (typeof navigation.replace === 'function') {
-                navigation.replace('BackupSuccess')
-            } else {
-                navigation.navigate('BackupSuccess')
-            }
+            navigation.replace('BackupSuccess')
         }, [account, markBackupComplete, navigation])
 
         const verification = useBackupVerification(words, onSuccess)

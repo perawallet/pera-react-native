@@ -32,9 +32,7 @@ export const BackupMnemonicScreen = () => {
     if (error) {
         return (
             <PWView style={styles.errorBox}>
-                <PWText style={styles.title}>
-                    {t('backup.mnemonic.error_title')}
-                </PWText>
+                <PWText variant='h1'>{t('backup.mnemonic.error_title')}</PWText>
                 <PWText>{t('backup.mnemonic.error_body')}</PWText>
             </PWView>
         )
@@ -42,7 +40,7 @@ export const BackupMnemonicScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <PWText style={styles.title}>{t('backup.mnemonic.title')}</PWText>
+            <PWText variant='h1'>{t('backup.mnemonic.title')}</PWText>
             <PWText style={styles.body}>{t('backup.mnemonic.body')}</PWText>
             <PWView style={styles.grid}>
                 {words.map((word, i) => (

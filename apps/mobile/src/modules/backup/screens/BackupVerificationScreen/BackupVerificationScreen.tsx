@@ -33,9 +33,7 @@ export const BackupVerificationScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <PWText style={styles.title}>
-                {t('backup.verification.title')}
-            </PWText>
+            <PWText variant='h1'>{t('backup.verification.title')}</PWText>
             <PWText style={styles.body}>{t('backup.verification.body')}</PWText>
 
             <BackupSlotList

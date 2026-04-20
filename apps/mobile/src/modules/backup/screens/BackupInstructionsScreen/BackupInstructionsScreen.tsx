@@ -24,9 +24,7 @@ export const BackupInstructionsScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <PWText style={styles.title}>
-                {t('backup.instructions.title')}
-            </PWText>
+            <PWText variant='h1'>{t('backup.instructions.title')}</PWText>
             <PWText style={styles.body}>{t('backup.instructions.body')}</PWText>
             <PWView style={styles.warningRow}>
                 <PWIcon name='cross' />

@@ -20,8 +20,6 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.md,
     },
     title: {
-        fontSize: 24,
-        fontWeight: '700',
         textAlign: 'center',
     },
     body: {

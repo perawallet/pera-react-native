@@ -33,6 +33,16 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (k: string) => k }),
 }))
 
+const mockClearWords = vi.fn()
+
+vi.mock('../../../context', () => ({
+    useBackupFlowWords: () => ({
+        getWords: () => null,
+        setWords: vi.fn(),
+        clearWords: mockClearWords,
+    }),
+}))
+
 import { BackupSuccessScreen } from '../BackupSuccessScreen'
 
 describe('BackupSuccessScreen', () => {
@@ -46,9 +56,15 @@ describe('BackupSuccessScreen', () => {
     test('pressing Done dismisses the backup stack (goes back to parent)', () => {
         render(<BackupSuccessScreen />)
         fireEvent.click(screen.getByTestId('backup_success_done'))
-        // Either parent.goBack() or popToTop() is acceptable — we aim for dismissing the whole flow
         expect(
             mockPopToTop.mock.calls.length + mockParentGoBack.mock.calls.length,
         ).toBeGreaterThan(0)
+    })
+
+    test('pressing Done clears the in-flight mnemonic words from context', () => {
+        mockClearWords.mockReset()
+        render(<BackupSuccessScreen />)
+        fireEvent.click(screen.getByTestId('backup_success_done'))
+        expect(mockClearWords).toHaveBeenCalledTimes(1)
     })
 })
