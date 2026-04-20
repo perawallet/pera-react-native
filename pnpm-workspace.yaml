@@ -8,7 +8,7 @@ catalog:
   '@algorandfoundation/algokit-utils': ^10.0.0-beta.1
   '@algorandfoundation/keystore': 1.0.0-canary.12
   '@algorandfoundation/react-native-keystore': 1.0.0-canary.6
-  '@algorandfoundation/wallet-provider': 1.0.0-canary.3
+  '@algorandfoundation/wallet-provider': 1.0.0-canary.5
   '@algorandfoundation/xhd-wallet-api': ^2.0.0-canary.1
   '@babel/runtime': ^7.29.2
   '@noble/hashes': ^1.8.0

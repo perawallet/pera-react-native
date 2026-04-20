@@ -13,8 +13,8 @@ catalogs:
       specifier: 1.0.0-canary.6
       version: 1.0.0-canary.6
     '@algorandfoundation/wallet-provider':
-      specifier: 1.0.0-canary.3
-      version: 1.0.0-canary.3
+      specifier: 1.0.0-canary.5
+      version: 1.0.0-canary.5
     '@algorandfoundation/xhd-wallet-api':
       specifier: ^2.0.0-canary.1
       version: 2.0.0-canary.1
@@ -654,7 +654,7 @@ importers:
         version: 1.0.0-canary.12(@tanstack/store@0.8.1)(before-after-hook@4.0.0)
       '@algorandfoundation/wallet-provider':
         specifier: 'catalog:'
-        version: 1.0.0-canary.3
+        version: 1.0.0-canary.5
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.2
@@ -725,7 +725,7 @@ importers:
     dependencies:
       '@algorandfoundation/wallet-provider':
         specifier: 'catalog:'
-        version: 1.0.0-canary.3
+        version: 1.0.0-canary.5
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.2
@@ -819,7 +819,7 @@ importers:
         version: 1.0.0-canary.6(@tanstack/store@0.8.1)(before-after-hook@4.0.0)(expo-build-properties@55.0.13(expo@55.0.15))(expo@55.0.15)(react-native-nitro-modules@0.35.4(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.5))(react@19.2.5))(react-native-quick-base64@2.2.2(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.5))(react@19.2.5))(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.5))(react@19.2.5)
       '@algorandfoundation/wallet-provider':
         specifier: 'catalog:'
-        version: 1.0.0-canary.3
+        version: 1.0.0-canary.5
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.2
@@ -2467,8 +2467,8 @@ packages:
   '@algorandfoundation/react-native-keystore@1.0.0-canary.6':
     resolution: {integrity: sha512-44hpEdS4lPqMfT1cgUMRDEEd/iNz9z3Dhf2HRc7AD5cMSxDFUkrokYpRyLuDspaZVI1Q77okED5I26Mz/kWVpg==}
 
-  '@algorandfoundation/wallet-provider@1.0.0-canary.3':
-    resolution: {integrity: sha512-rw978gF+n2stEhy9ysppr9uUVo6YgmeoWtRo2/sXj4/7Qn5risTdsihBuqKJ2ecG1pxQ+14BmOHzwrxsOXIcRA==}
+  '@algorandfoundation/wallet-provider@1.0.0-canary.5':
+    resolution: {integrity: sha512-yXak4ze3uOdkSSyCkv4Qz4mm4FiqCKh3pDErZNBaIhkGCgWcboelgkEMQneBd0I/o9DwU2EfkHfRSZYxaJ11Rg==}
 
   '@algorandfoundation/xhd-wallet-api@2.0.0-canary.1':
     resolution: {integrity: sha512-U6rSWMO6FKDLvMxWtfKyW5ctqSy2NrONWTU/jOA+BX0SGru0GPXsxwzFdcPa5w+X055V/xVVsr8eA3xA+m/5jA==}
@@ -9454,7 +9454,7 @@ snapshots:
 
   '@algorandfoundation/keystore@1.0.0-canary.12(@tanstack/store@0.8.1)(before-after-hook@4.0.0)':
     dependencies:
-      '@algorandfoundation/wallet-provider': 1.0.0-canary.3
+      '@algorandfoundation/wallet-provider': 1.0.0-canary.5
       '@noble/hashes': 2.0.1
       '@scure/base': 2.0.0
       '@tanstack/store': 0.8.1
@@ -9481,7 +9481,7 @@ snapshots:
       - react-native-nitro-modules
       - react-native-quick-base64
 
-  '@algorandfoundation/wallet-provider@1.0.0-canary.3': {}
+  '@algorandfoundation/wallet-provider@1.0.0-canary.5': {}
 
   '@algorandfoundation/xhd-wallet-api@2.0.0-canary.1':
     dependencies:
