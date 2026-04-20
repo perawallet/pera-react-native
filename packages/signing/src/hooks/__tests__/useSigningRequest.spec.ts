@@ -18,7 +18,7 @@ import {
     MAX_TRANSACTION_SIGN_REQUESTS,
     MAX_DATA_SIGN_REQUESTS,
 } from '../../constants'
-import { AppError } from '@perawallet/wallet-core-shared'
+import { AppError, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     SignRequest,
     TransactionSignRequest,
@@ -96,7 +96,7 @@ vi.mock('../../machine/createSigningMachine')
  * Builds a mock actor whose subscriber callback can be triggered manually.
  */
 const makeMockActor = (requestId: string) => {
-    let subscriberCb: ((snapshot: unknown) => void) | null = null
+    let subscriberCb: Nullable<(snapshot: unknown) => void> = null
 
     const actor = {
         id: requestId,

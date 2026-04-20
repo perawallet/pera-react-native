@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { logger, AppError } from '@perawallet/wallet-core-shared'
+import { logger, AppError, type Nullable } from '@perawallet/wallet-core-shared'
 import WebView from 'react-native-webview'
 
 const MAX_ERROR_LENGTH = 200
@@ -85,6 +85,28 @@ export const isTrustedWebviewOrigin = (
     })
 }
 
+export const isSafeBrowserUrl = (url: string): boolean => {
+    let parsed: URL
+    try {
+        parsed = new URL(url)
+    } catch {
+        return false
+    }
+    return parsed.protocol === 'https:'
+}
+
+const RELATIVE_PATH_BASE = 'https://perawallet.invalid/'
+
+export const isSafeRelativePath = (path: string): boolean => {
+    if (!path) return false
+    try {
+        const resolved = new URL(path, RELATIVE_PATH_BASE)
+        return resolved.origin === new URL(RELATIVE_PATH_BASE).origin
+    } catch {
+        return false
+    }
+}
+
 const safeOrigin = (url: string): string | null => {
     try {
         const origin = new URL(url).origin
@@ -97,7 +119,7 @@ const safeOrigin = (url: string): string | null => {
 export const sendMessageToWebview = (
     id: string,
     payload: unknown,
-    webview: WebView | null,
+    webview: Nullable<WebView>,
 ) => {
     const message = `window.postMessage(${JSON.stringify({
         id,
@@ -111,7 +133,7 @@ export const sendMessageToWebview = (
 export const sendNotificationToWebview = (
     method: string,
     params: unknown,
-    webview: WebView | null,
+    webview: Nullable<WebView>,
 ) => {
     const message = `window.postMessage(${JSON.stringify({
         jsonrpc: '2.0',
@@ -126,7 +148,7 @@ export const sendErrorToWebview = (
     id: string,
     code: JsonRpcErrorCode,
     error: Error | string,
-    webview: WebView | null,
+    webview: Nullable<WebView>,
 ) => {
     const message = `window.postMessage(${JSON.stringify({
         id,

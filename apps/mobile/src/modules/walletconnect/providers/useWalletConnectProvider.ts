@@ -17,14 +17,16 @@ import {
     WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
 import { useCallback, useEffect, useState } from 'react'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export const useWalletConnectProvider = () => {
     const { sessionRequests, removeSessionRequest } =
         useWalletConnectSessionRequests()
     const nextRequest = sessionRequests.at(0)
     const [successRequest, setSuccessRequest] =
-        useState<WalletConnectSessionRequest | null>(null)
-    const [connectionError, setConnectionError] = useState<Error | null>(null)
+        useState<Nullable<WalletConnectSessionRequest>>(null)
+    const [connectionError, setConnectionError] =
+        useState<Nullable<Error>>(null)
     const { network } = useNetwork()
 
     const handleSigningError = useCallback((error: Error) => {

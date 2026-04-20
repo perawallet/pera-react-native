@@ -12,6 +12,18 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createActor, toPromise } from 'xstate'
+
+vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
+    const original =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-blockchain')
+        >()
+    return {
+        ...original,
+        useNetworkStore: { getState: () => ({ network: 'testnet' }) },
+    }
+})
+
 import { transportActor, type TransportActorInput } from '../transportActor'
 import { createTransportSelector } from '../../../../pipeline/transports/getTransport'
 import type { SigningResult, SourceMetadata } from '../../../../pipeline/types'
@@ -61,6 +73,7 @@ const makeInput = (
     createTransport: createTransportSelector({
         algokit: mockAlgokit,
         encodeSignedTransactions: mockEncodeSignedTransactions,
+        network: 'testnet',
     }),
     ...overrides,
 })
@@ -111,6 +124,7 @@ describe('transportActor', () => {
                 algokit: mockAlgokit,
                 encodeSignedTransactions: mockEncodeSignedTransactions,
                 addSignatures: mockAddSignatures,
+                network: 'testnet',
             }),
         })
         const actor = createActor(transportActor, { input })

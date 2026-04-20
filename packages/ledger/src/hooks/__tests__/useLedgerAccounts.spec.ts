@@ -21,6 +21,7 @@ vi.mock('../../discovery', () => ({
 
 import { useLedgerAccounts } from '../useLedgerAccounts'
 import type { LedgerTransport } from '../../types'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const makeTransport = () =>
     ({ mock: 'transport' }) as unknown as LedgerTransport
@@ -69,7 +70,7 @@ describe('useLedgerAccounts', () => {
 
         const { result } = renderHook(() => useLedgerAccounts())
 
-        let caught: Error | null = null
+        let caught: Nullable<Error> = null
         await act(async () => {
             try {
                 await result.current.discover(makeTransport())

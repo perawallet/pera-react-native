@@ -11,7 +11,7 @@
  */
 
 import { useInfiniteQuery } from '@tanstack/react-query'
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import { fetchTransactionHistory, fetchMoreTransactions } from '../api/history'
 import { transactionQueryKeys } from './querykeys'
 import type {
@@ -55,7 +55,7 @@ export type UseTransactionHistoryQueryResult = {
     /** Whether there was an error */
     isError: boolean
     /** The error if one occurred */
-    error: Error | null
+    error: Nullable<Error>
     /** Whether there are more pages to fetch */
     hasNextPage: boolean
     /** Function to fetch the next page */
@@ -97,7 +97,7 @@ export const useTransactionHistoryQuery = (
         queryFn: async ({
             pageParam,
         }: {
-            pageParam: { type: 'db' } | { type: 'api'; url: string } | null
+            pageParam: Nullable<{ type: 'db' } | { type: 'api'; url: string }>
         }): Promise<TransactionHistoryResult> => {
             // First page: read from DB
             if (pageParam === null || pageParam.type === 'db') {
@@ -185,10 +185,9 @@ export const useTransactionHistoryQuery = (
 
             return result
         },
-        initialPageParam: null as
-            | { type: 'db' }
-            | { type: 'api'; url: string }
-            | null,
+        initialPageParam: null as Nullable<
+            { type: 'db' } | { type: 'api'; url: string }
+        >,
         getNextPageParam: (
             lastPage: TransactionHistoryResult,
         ): { type: 'db' } | { type: 'api'; url: string } | undefined => {

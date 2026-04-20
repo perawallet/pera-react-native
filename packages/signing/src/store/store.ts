@@ -13,11 +13,12 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { PersistStorage } from 'zustand/middleware'
-import type { SigningStore, SignRequest } from '../models'
+import type { FailedSignRequest, SigningStore, SignRequest } from '../models'
 import {
     generateOrderedUniqueId,
     registerStore,
     type WithPersist,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
@@ -54,7 +55,8 @@ const STORE_NAME = 'signing-store'
 
 const initialState = {
     pendingSignRequests: [] as SignRequest[],
-    lastCompletedRequest: null as SignRequest | null,
+    lastCompletedRequest: null as Nullable<SignRequest>,
+    lastFailedRequest: null as Nullable<FailedSignRequest>,
 }
 
 export const useSigningStore: UseBoundStore<
@@ -84,8 +86,11 @@ export const useSigningStore: UseBoundStore<
                 }
                 return remaining.length != existing.length
             },
-            setLastCompletedRequest: (request: SignRequest | null) => {
+            setLastCompletedRequest: (request: Nullable<SignRequest>) => {
                 set({ lastCompletedRequest: request })
+            },
+            setLastFailedRequest: (failed: FailedSignRequest | null) => {
+                set({ lastFailedRequest: failed })
             },
             resetState: () => set(initialState),
         }),

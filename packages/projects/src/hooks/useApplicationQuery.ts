@@ -15,13 +15,16 @@ import { fetchApplication } from '../api/applications'
 import { projectQueryKeys } from './querykeys'
 import type { PeraApplication } from '../models/types'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseApplicationQueryParams = {
     applicationId: string
     isEnabled?: boolean
 }
 
-export type UseApplicationQueryResult = UseQueryResult<PeraApplication | null>
+export type UseApplicationQueryResult = UseQueryResult<
+    Nullable<PeraApplication>
+>
 
 export const useApplicationQuery = (
     params: UseApplicationQueryParams,

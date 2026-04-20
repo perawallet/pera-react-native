@@ -28,8 +28,9 @@ import { useStyles } from './styles'
 import { StyleProp, ViewStyle } from 'react-native'
 import { NotifierRoot, NotifierWrapper } from 'react-native-notifier'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
-export const bottomSheetNotifier = createRef<NotifierRoot | null>()
+export const bottomSheetNotifier = createRef<Nullable<NotifierRoot>>()
 
 type DefaultPropsReturn = {
     snapPoints?: string[]
@@ -68,6 +69,7 @@ export type PWBottomSheetProps = {
     size?: PWBottomSheetSize
     autoCreateContainer?: boolean
     testID?: string
+    enableCloseOnBackdropPress?: boolean
 } & PropsWithChildren
 
 export const PWBottomSheet = ({
@@ -82,6 +84,7 @@ export const PWBottomSheet = ({
     autoCreateContainer = true,
     testID,
     children,
+    enableCloseOnBackdropPress = true,
 }: PWBottomSheetProps) => {
     const bottomSheetModalRef = useRef<BottomSheetModal>(null)
     const insets = useSafeAreaInsets()
@@ -104,7 +107,7 @@ export const PWBottomSheet = ({
                 opacity={0.9}
                 disappearsOnIndex={-1}
                 appearsOnIndex={0}
-                pressBehavior='close'
+                pressBehavior={enableCloseOnBackdropPress ? 'close' : 'none'}
                 style={styles.backdrop}
             />
         ),

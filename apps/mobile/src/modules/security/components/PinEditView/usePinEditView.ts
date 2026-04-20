@@ -13,11 +13,12 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { usePinCode, useBiometrics } from '@perawallet/wallet-core-security'
 import { useLanguage } from '@hooks/useLanguage'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type PinEntryMode = 'setup' | 'confirm' | 'verify' | 'change_old'
 
 type UsePinEditViewParams = {
-    mode: PinEntryMode | null
+    mode: Nullable<PinEntryMode>
     onSuccess?: () => void
 }
 
@@ -45,7 +46,7 @@ export const usePinEditView = ({
     const { checkBiometricsEnabled, authenticateWithBiometrics } =
         useBiometrics()
 
-    const [currentMode, setCurrentMode] = useState<PinEntryMode | null>(mode)
+    const [currentMode, setCurrentMode] = useState<Nullable<PinEntryMode>>(mode)
     const [storedPin, setStoredPin] = useState<string>('')
     const [hasError, setHasError] = useState(false)
 

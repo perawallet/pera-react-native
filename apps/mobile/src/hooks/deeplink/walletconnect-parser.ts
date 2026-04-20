@@ -12,6 +12,7 @@
 
 import { DeeplinkType, WalletConnectDeeplink } from './types'
 import { normalizeUrl } from './utils'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Parse WalletConnect URIs: wc:// or perawallet-wc://
@@ -19,7 +20,7 @@ import { normalizeUrl } from './utils'
  */
 export const parseWalletConnectUri = (
     url: string,
-): WalletConnectDeeplink | null => {
+): Nullable<WalletConnectDeeplink> => {
     const normalizedUrl = normalizeUrl(url)
 
     if (

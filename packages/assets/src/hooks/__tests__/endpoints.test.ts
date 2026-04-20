@@ -12,12 +12,12 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { toggleAssetFavorite, toggleAssetPriceAlert } from '../../api'
-import { Networks } from '@perawallet/wallet-core-shared'
+import { Networks, type Nullable } from '@perawallet/wallet-core-shared'
 
 // Track the last queryClient call for assertions
 let lastQueryClientCall: any = null
-let mockResponse: { data: any; status: number } | null = null
-let mockError: Error | null = null
+let mockResponse: Nullable<{ data: any; status: number }> = null
+let mockError: Nullable<Error> = null
 
 // Mock the core shared module
 vi.mock('@perawallet/wallet-core-shared', async () => {

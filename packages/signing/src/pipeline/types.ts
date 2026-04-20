@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import type { Network } from '@perawallet/wallet-core-shared'
+import type { Network, Nullable } from '@perawallet/wallet-core-shared'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type {
     PeraTransaction,
@@ -318,7 +318,7 @@ export interface SigningCallbacks {
 export interface SignerInfo {
     address: string
     /** For multisig: base64 signatures per item */
-    signatures?: (string | null)[]
+    signatures?: Nullable<string>[]
 }
 
 /**

@@ -19,17 +19,18 @@ import {
     type PeraAssetMetadata,
 } from '../models'
 import { AssetsNodeSchema, AssetsPeraSchema, AssetPricesSchema } from './schema'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 function fromDb(row: {
     assetId: Decimal
     decimals: number
     creatorAddress: string
     totalSupply: Decimal
-    name: string | null
-    unitName: string | null
-    url: string | null
-    metadata: string | null
-    peraMetadataJson: string | null
+    name: Nullable<string>
+    unitName: Nullable<string>
+    url: Nullable<string>
+    metadata: Nullable<string>
+    peraMetadataJson: Nullable<string>
 }): PeraAsset {
     const peraMetadata: PeraAssetMetadata | undefined = row.peraMetadataJson
         ? (JSON.parse(row.peraMetadataJson) as PeraAssetMetadata)
@@ -248,7 +249,7 @@ export async function getAssetById({
     db = getDatabase(),
     assetId,
     network,
-}: GetAssetByIdParams): Promise<PeraAsset | null> {
+}: GetAssetByIdParams): Promise<Nullable<PeraAsset>> {
     const results = await getAssetsByIds({ db, assetIds: [assetId], network })
     return results[0] ?? null
 }
@@ -263,7 +264,7 @@ export async function getAssetPeraMetadata({
     db = getDatabase(),
     assetId,
     network,
-}: GetAssetPeraMetadataParams): Promise<PeraAssetMetadata | null> {
+}: GetAssetPeraMetadataParams): Promise<Nullable<PeraAssetMetadata>> {
     const rows = await db
         .select({ peraMetadataJson: AssetsPeraSchema.peraMetadataJson })
         .from(AssetsPeraSchema)

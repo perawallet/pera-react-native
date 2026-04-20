@@ -12,12 +12,12 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { fetchTransactionsCsv, CsvExportError } from '../endpoints'
-import { Networks } from '@perawallet/wallet-core-shared'
+import { Networks, type Nullable } from '@perawallet/wallet-core-shared'
 
 // Track the last queryClient call for assertions
 let lastQueryClientCall: any = null
-let mockGetResponse: { data: string; status: number } | null = null
-let mockGetError: Error | null = null
+let mockGetResponse: Nullable<{ data: string; status: number }> = null
+let mockGetError: Nullable<Error> = null
 
 // Mock the core shared module
 vi.mock('@perawallet/wallet-core-shared', async () => {

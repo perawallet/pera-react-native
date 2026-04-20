@@ -26,6 +26,7 @@ import {
     AlreadyOptedInError,
     InsufficientBalanceForOptInError,
 } from '../errors'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type AssetOptInParams = {
     sender: string
@@ -36,7 +37,7 @@ type UseAssetOptInMutationResult = {
     optIn: (params: AssetOptInParams) => Promise<{ txIds: string[] }>
     isLoading: boolean
     isError: boolean
-    error: Error | null
+    error: Nullable<Error>
 }
 
 export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
@@ -45,7 +46,7 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
     const { network } = useNetwork()
     const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
     const [isLoading, setIsLoading] = useState(false)
-    const [error, setError] = useState<Error | null>(null)
+    const [error, setError] = useState<Nullable<Error>>(null)
 
     const optIn = useCallback(
         async (params: AssetOptInParams): Promise<{ txIds: string[] }> => {

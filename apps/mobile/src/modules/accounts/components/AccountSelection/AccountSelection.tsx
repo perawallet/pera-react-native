@@ -38,6 +38,7 @@ export type AccountSelectionProps = {
     triggerTextProps?: PWTextProps
     closeIconPosition?: 'left' | 'right'
     hideDefaultHeader?: boolean
+    accountFilter?: (account: WalletAccount) => boolean
 } & TouchableOpacityProps
 
 export const AccountSelection = ({
@@ -48,6 +49,7 @@ export const AccountSelection = ({
     triggerTextProps,
     closeIconPosition,
     hideDefaultHeader,
+    accountFilter,
     ...props
 }: AccountSelectionProps) => {
     const styles = useStyles()
@@ -110,6 +112,7 @@ export const AccountSelection = ({
                 headerContent={headerContent}
                 closeIconPosition={closeIconPosition}
                 hideDefaultHeader={hideDefaultHeader}
+                accountFilter={accountFilter}
             />
             <AccountSortBottomSheet
                 isVisible={sortSheetState.isOpen}

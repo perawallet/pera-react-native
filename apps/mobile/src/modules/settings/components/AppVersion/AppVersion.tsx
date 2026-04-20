@@ -19,6 +19,7 @@ import { useToast } from '@hooks/useToast'
 import { Pressable } from 'react-native'
 import { PWText } from '@components/core'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const REQUIRED_TAPS = 10
 const NOTIFY_FROM_TAP_COUNT = 7
@@ -58,7 +59,7 @@ export const AppVersion = ({ enableSecretTaps }: AppVersionProps) => {
     const { t } = useLanguage()
 
     const tapCount = useRef(0)
-    const lastTapTime = useRef<number | null>(null)
+    const lastTapTime = useRef<Nullable<number>>(null)
 
     const handlePress = () => {
         const now = Date.now()

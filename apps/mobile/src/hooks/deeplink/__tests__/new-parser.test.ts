@@ -234,6 +234,35 @@ describe('Deeplink Parser - New Format', () => {
                 expect(result.url).toBe('https://tinyman.org/')
             }
         })
+
+        it.each([
+            ['javascript:alert(1)'],
+            ['data:text/html,<script>alert(1)</script>'],
+            ['http://example.com/'],
+            ['file:///etc/passwd'],
+        ])(
+            'decodes adversarial base64 URL %s verbatim so the caller can validate it',
+            payload => {
+                const encoded = btoa(payload)
+                const result = parseDeeplink(
+                    `perawallet://app/discover-browser/?url=${encoded}`,
+                )
+                expect(result?.type).toBe(DeeplinkType.DISCOVER_BROWSER)
+                if (result?.type === DeeplinkType.DISCOVER_BROWSER) {
+                    expect(result.url).toBe(payload)
+                }
+            },
+        )
+
+        it('returns the raw input when the url param is not valid base64', () => {
+            const result = parseDeeplink(
+                'perawallet://app/discover-browser/?url=not-valid-base64!',
+            )
+            expect(result?.type).toBe(DeeplinkType.DISCOVER_BROWSER)
+            if (result?.type === DeeplinkType.DISCOVER_BROWSER) {
+                expect(result.url).toBe('not-valid-base64!')
+            }
+        })
     })
 
     describe('Discover Path', () => {

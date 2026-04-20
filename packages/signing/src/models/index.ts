@@ -14,7 +14,7 @@ import type {
     PeraSignedTransaction,
     PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { BaseStoreState } from '@perawallet/wallet-core-shared'
+import { BaseStoreState, type Nullable } from '@perawallet/wallet-core-shared'
 import type {
     Arc60Metadata,
     Arc60StdSigData,
@@ -72,6 +72,7 @@ export type TransactionSignRequest = {
      * Populated from ARC-0001 `signers` field in WalletConnect requests.
      */
     signerOverrides?: Map<number, string>
+    rawTransactionsBase64?: string[]
     approve?: (signedTxs: PeraSignedTransaction[]) => Promise<void>
     reject?: () => Promise<void>
     error?: (error: Error) => Promise<void>
@@ -120,12 +121,19 @@ export type SignRequest =
     | ArbitraryDataSignRequest
     | Arc60SignRequest
 
+export type FailedSignRequest = {
+    request: SignRequest
+    error: Error
+}
+
 export type SigningStore = BaseStoreState & {
     pendingSignRequests: SignRequest[]
     lastCompletedRequest: SignRequest | null
+    lastFailedRequest: FailedSignRequest | null
     addSignRequest: (request: SignRequest) => boolean
     removeSignRequest: (request: SignRequest) => boolean
-    setLastCompletedRequest: (request: SignRequest | null) => void
+    setLastCompletedRequest: (request: Nullable<SignRequest>) => void
+    setLastFailedRequest: (failed: Nullable<FailedSignRequest>) => void
 }
 
 export type TransactionWarning = {
@@ -158,7 +166,7 @@ export type SigningPipelineEvent =
           /** The machine's analysis result (fees, warnings, risk level) */
           analysis: SignableAnalysis
           /** The signer type that will be used once approved */
-          signerType: ResolvedSignerType | null
+          signerType: Nullable<ResolvedSignerType>
       }
     | {
           type: 'signing_started'
@@ -174,7 +182,7 @@ export type SigningPipelineEvent =
           type: 'signing_failed'
           error: Error
           /** Which pipeline stage the failure occurred in */
-          failedDuringState: 'validating' | 'signing' | 'transporting' | null
+          failedDuringState: Nullable<'validating' | 'signing' | 'transporting'>
           isRetryable: boolean
       }
     /** Reserved for hardware wallet confirmation */

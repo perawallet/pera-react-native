@@ -17,13 +17,14 @@ import {
 } from './types'
 import { normalizeUrl, parseQueryParams } from './utils'
 import { isValidAlgorandAddress } from '@perawallet/wallet-core-blockchain'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Parse Coinbase format: algo:ASSET_ID/transfer?address=ADDRESS
  */
 export const parseCoinbaseFormat = (
     url: string,
-): AssetTransferDeeplink | AddressActionsDeeplink | null => {
+): Nullable<AssetTransferDeeplink | AddressActionsDeeplink> => {
     const normalizedUrl = normalizeUrl(url)
 
     if (!normalizedUrl.startsWith('algo:')) {

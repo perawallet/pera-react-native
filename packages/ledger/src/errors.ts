@@ -14,6 +14,7 @@ import {
     AppError,
     ErrorCategory,
     ErrorSeverity,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { LEDGER_STATUS_CODES } from './constants'
 
@@ -106,7 +107,7 @@ export class LedgerTimeoutError extends AppError {
  * Extract the APDU status code from a Ledger SDK error.
  * Ledger errors typically have a `statusCode` property.
  */
-const getStatusCode = (error: unknown): number | null => {
+const getStatusCode = (error: unknown): Nullable<number> => {
     if (
         error !== null &&
         typeof error === 'object' &&

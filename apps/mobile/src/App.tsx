@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { initDecimalConfig } from '@perawallet/wallet-core-shared'
+import {
+    initDecimalConfig,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
 // Initialize Decimal.js configuration before any other imports that may use it
 initDecimalConfig()
@@ -66,7 +69,7 @@ const updateQueryHeaders = () => {
 const AppContent = () => {
     const [persister, setPersister] = useState<Persister>()
     const [bootstrapped, setBootstrapped] = useState(false)
-    const [fcmToken, setFcmToken] = useState<string | null>(null)
+    const [fcmToken, setFcmToken] = useState<Nullable<string>>(null)
     const { t } = useLanguage()
     const provider = usePeraProvider()
 

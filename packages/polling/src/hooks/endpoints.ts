@@ -10,7 +10,11 @@
  limitations under the License
  */
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import {
+    queryClient,
+    type Network,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import type { ShouldRefreshResponse } from '../models'
 
 export const getShouldRefreshEndpoint = () => {
@@ -20,7 +24,7 @@ export const getShouldRefreshEndpoint = () => {
 export const sendShouldRefreshRequest = async (
     network: Network,
     addresses: string[],
-    lastRefreshedRound: number | null,
+    lastRefreshedRound: Nullable<number>,
 ) => {
     if (!addresses.length)
         return {

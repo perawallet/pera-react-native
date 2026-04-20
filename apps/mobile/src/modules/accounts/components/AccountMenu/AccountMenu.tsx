@@ -31,6 +31,7 @@ export type AccountMenuProps = {
     onOpenSort: () => void
     headerContent?: ReactNode
     hideDefaultHeader?: boolean
+    accountFilter?: (account: WalletAccount) => boolean
 }
 
 export const AccountMenu = (props: AccountMenuProps) => {

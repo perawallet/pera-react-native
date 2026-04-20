@@ -43,11 +43,14 @@ import {
     normalizeUrl,
     parseQueryParams,
 } from './utils'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Parse Perawallet new-style URIs: perawallet://app/path?params
  */
-export function parsePerawalletAppUri(url: string): AnyParsedDeeplink | null {
+export function parsePerawalletAppUri(
+    url: string,
+): Nullable<AnyParsedDeeplink> {
     const normalizedUrl = normalizeUrl(url)
 
     if (

@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import {
     useAllAccounts,
     useSelectedAccountAddress,
@@ -20,10 +20,11 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { AccountMenuProps } from './AccountMenu'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseAccountMenuResult = {
     sortedAccounts: WalletAccount[]
-    selectedAccountAddress: string | null
+    selectedAccountAddress: Nullable<string>
     sortMode: string
     handleTap: (acct: WalletAccount) => void
 }
@@ -40,8 +41,17 @@ export const useAccountMenu = (
     useEffect(() => {
         invalidate()
     }, [])
+
+    const filteredAccounts = useMemo(
+        () =>
+            props.accountFilter
+                ? accounts.filter(props.accountFilter)
+                : accounts,
+        [accounts, props.accountFilter],
+    )
+
     const { sortedAccounts, sortMode } = useSortedAccounts(
-        accounts,
+        filteredAccounts,
         accountBalances,
     )
 

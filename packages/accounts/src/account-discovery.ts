@@ -28,6 +28,7 @@ import {
 import {
     generateOrderedUniqueId,
     fetchAccountFastLookup,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 
 const ACCOUNT_GAP_LIMIT = 5
@@ -72,7 +73,7 @@ type ScanAccountKeysParams = {
 
 type ScanResult = {
     activeAccounts: HDWalletAccount[]
-    zeroAccount: HDWalletAccount | null
+    zeroAccount: Nullable<HDWalletAccount>
 }
 
 async function scanAccountKeys({
@@ -83,7 +84,7 @@ async function scanAccountKeys({
     derivationType,
 }: ScanAccountKeysParams): Promise<ScanResult> {
     const activeAccounts: HDWalletAccount[] = []
-    let zeroAccount: HDWalletAccount | null = null
+    let zeroAccount: Nullable<HDWalletAccount> = null
     let keyGap = 0
     let keyIdx = 0
 
@@ -156,7 +157,7 @@ export async function discoverAccounts({
     keyIndexGapLimit = KEY_INDEX_GAP_LIMIT,
 }: DiscoverAccountsParams): Promise<HDWalletAccount[]> {
     const foundAccounts: HDWalletAccount[] = []
-    let firstAccount: HDWalletAccount | null = null
+    let firstAccount: Nullable<HDWalletAccount> = null
 
     let accountGap = 0
     let accountIndex = 0

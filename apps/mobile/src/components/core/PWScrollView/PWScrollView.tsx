@@ -10,8 +10,9 @@
  limitations under the License
  */
 
-import { ScrollView, ScrollViewProps } from 'react-native'
 import { getTestProps } from '@utils/test-id-helper'
+import { ScrollViewProps } from 'react-native'
+import { ScrollView } from 'react-native-gesture-handler'
 
 export type PWScrollViewProps = ScrollViewProps & {
     testID?: string

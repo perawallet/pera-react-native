@@ -30,6 +30,7 @@
     "vite": "catalog:",
     "vite-plugin-dts": "^4.5.4",
     "vitest": "catalog:",
+    "@types/node": "^20.19.28",
     "@types/react": "catalog:",
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@testing-library/react": "catalog:"

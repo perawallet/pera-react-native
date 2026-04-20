@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import {
+    truncateAlgorandAddress,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     AccountTypes,
     HardwareWalletAccount,
@@ -24,7 +27,7 @@ import {
 import { MNEMONIC_WORD_COUNT } from './constants'
 import { RekeyTargetNotFoundError } from './errors'
 
-export const getAccountDisplayName = (account: WalletAccount | null) => {
+export const getAccountDisplayName = (account: Nullable<WalletAccount>) => {
     if (!account) return 'No Account'
     if (account.name) return account.name
     if (!account.address) return 'No Address Found'

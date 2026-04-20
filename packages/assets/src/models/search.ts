@@ -9,16 +9,17 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type AssetSearchItem = {
     assetId: string
-    name: string | null
-    unitName: string | null
-    logo: string | null
+    name: Nullable<string>
+    unitName: Nullable<string>
+    logo: Nullable<string>
     verificationTier: 'verified' | 'unverified' | 'suspicious'
-    usdValue: string | null
-    type: string | null
-    collectibleTitle: string | null
-    collectibleImage: string | null
-    collectionName: string | null
+    usdValue: Nullable<string>
+    type: Nullable<string>
+    collectibleTitle: Nullable<string>
+    collectibleImage: Nullable<string>
+    collectionName: Nullable<string>
 }

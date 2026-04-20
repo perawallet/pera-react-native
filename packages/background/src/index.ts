@@ -14,11 +14,12 @@ export { BatchQueue, type BatchExecutor } from './queue'
 
 import { SyncService } from './service'
 import type { SyncServiceDeps } from './models'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type { SyncServiceDeps } from './models'
 export { SyncService } from './service'
 
-let instance: SyncService | null = null
+let instance: Nullable<SyncService> = null
 
 export const initializeSyncService = (deps: SyncServiceDeps): SyncService => {
     if (instance !== null) {

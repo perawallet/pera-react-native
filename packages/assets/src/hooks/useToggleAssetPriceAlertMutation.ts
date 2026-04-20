@@ -13,7 +13,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toggleAssetPriceAlert } from '../api'
 import { getAssetDetailsQueryKey } from './querykeys'
-import { type Network, logger } from '@perawallet/wallet-core-shared'
+import {
+    type Network,
+    logger,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { type ToggleStatusResponse } from '../api/settings/endpoints'
 import { updateAssetPeraMetadata } from '../db'
 
@@ -30,7 +34,7 @@ type UseToggleAssetPriceAlertMutationResult = {
     ) => void
     isLoading: boolean
     isError: boolean
-    error: Error | null
+    error: Nullable<Error>
     isSuccess: boolean
 }
 

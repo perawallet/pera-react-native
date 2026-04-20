@@ -12,7 +12,11 @@
 
 import { Decimal } from 'decimal.js'
 
-import { queryClient, type Network } from '@perawallet/wallet-core-shared'
+import {
+    queryClient,
+    type Network,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import {
     calculatePeraFeeResponseSchema,
     calculateSwapAmountResponseSchema,
@@ -93,10 +97,10 @@ export const createQuotes = async (
         data,
     })
 
-    const toOptionalDecimal = (v?: string | null): Decimal | undefined =>
+    const toOptionalDecimal = (v?: Nullable<string>): Decimal | undefined =>
         v != null ? new Decimal(v) : undefined
 
-    const toNullableDecimal = (v?: string | null): Decimal | null =>
+    const toNullableDecimal = (v?: Nullable<string>): Nullable<Decimal> =>
         v != null ? new Decimal(v) : null
 
     const parsed = createQuotesResponseSchema.parse(response.data)

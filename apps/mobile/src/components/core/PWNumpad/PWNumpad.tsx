@@ -15,6 +15,7 @@ import { PWTouchableOpacity } from '@components/core/PWTouchableOpacity'
 import { PWText } from '@components/core/PWText'
 import { PWIcon } from '@components/core/PWIcon'
 import { useStyles } from './styles'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type NumpadKey =
     | '0'
@@ -36,14 +37,14 @@ export type PWNumpadProps = {
     isDisabled?: boolean
 }
 
-const NUMBER_NUMPAD_LAYOUT: (NumpadKey | null)[][] = [
+const NUMBER_NUMPAD_LAYOUT: Nullable<NumpadKey>[][] = [
     ['1', '2', '3'],
     ['4', '5', '6'],
     ['7', '8', '9'],
     ['.', '0', 'delete'],
 ]
 
-const PIN_NUMPAD_LAYOUT: (NumpadKey | null)[][] = [
+const PIN_NUMPAD_LAYOUT: Nullable<NumpadKey>[][] = [
     ['1', '2', '3'],
     ['4', '5', '6'],
     ['7', '8', '9'],
@@ -57,12 +58,12 @@ export const PWNumpad = ({
 }: PWNumpadProps) => {
     const styles = useStyles()
 
-    const handleKeyPress = (key: NumpadKey | null) => {
+    const handleKeyPress = (key: Nullable<NumpadKey>) => {
         if (!key || isDisabled) return
         onKeyPress(key)
     }
 
-    const renderKey = (key: NumpadKey | null, index: number) => {
+    const renderKey = (key: Nullable<NumpadKey>, index: number) => {
         if (key === null) {
             return (
                 <View

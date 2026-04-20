@@ -17,18 +17,19 @@ import { SwapAssetSelectionBottomSheet } from '../SwapAssetSelectionBottomSheet'
 import type { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import type { AccountAssetSelectionListProps } from '@modules/assets/components/AccountAssetSelectionList'
 import type { SwapToAssetSelectionListProps } from '../../SwapToAssetSelectionList'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
-let capturedFromOnAssetSelected:
-    | ((asset: AssetWithAccountBalance) => void)
-    | null = null
+let capturedFromOnAssetSelected: Nullable<
+    (asset: AssetWithAccountBalance) => void
+> = null
 let capturedFromExcludeAssetId: string | undefined = undefined
 let capturedFromFilterAsset:
     | ((asset: AssetWithAccountBalance) => boolean)
     | undefined = undefined
 
-let capturedToOnAssetSelected:
-    | ((asset: AssetWithAccountBalance) => void)
-    | null = null
+let capturedToOnAssetSelected: Nullable<
+    (asset: AssetWithAccountBalance) => void
+> = null
 let capturedToExcludeAssetId: string | undefined = undefined
 let capturedToFromAssetId: string | undefined = undefined
 

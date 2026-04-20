@@ -9,6 +9,7 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type NfdName = {
     /** The NFD name, e.g. "alice.algo" */
@@ -21,7 +22,7 @@ export type NfdName = {
 
 export type NfdBulkResult = {
     address: string
-    name: NfdName | null
+    name: Nullable<NfdName>
 }
 
 export type NfdSearchResult = {

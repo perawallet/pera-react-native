@@ -32,7 +32,11 @@ import {
     useSigningRequest,
     type TransactionSignRequest,
 } from '@perawallet/wallet-core-signing'
-import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
+import {
+    generateOrderedUniqueId,
+    logger,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import type WebView from 'react-native-webview'
 import { Decimal } from 'decimal.js'
@@ -48,7 +52,7 @@ type CurrencyInfo = {
 const getCurrencyInfo = (
     protocol: string,
     network: 'mainnet' | 'testnet',
-): CurrencyInfo | null => {
+): Nullable<CurrencyInfo> => {
     switch (protocol) {
         case 'algorand':
             return { assetId: ALGO_ASSET_ID, decimals: ALGO_ASSET.decimals }
@@ -124,7 +128,7 @@ const isBidaliRPC = (data: unknown): data is BidaliRPCMessage => {
 }
 
 const sendBidaliEvent = (
-    webviewRef: React.RefObject<WebView | null>,
+    webviewRef: React.RefObject<Nullable<WebView>>,
     event: 'paymentSent' | 'paymentCancelled',
 ) => {
     webviewRef.current?.injectJavaScript(
@@ -135,7 +139,7 @@ const sendBidaliEvent = (
 type UseBidaliTransportResult = {
     providerJS: string
     handleMessage: (data: unknown) => void
-    webviewRef: React.RefObject<WebView | null>
+    webviewRef: React.RefObject<Nullable<WebView>>
 }
 
 export const useBidaliTransport = (
@@ -146,7 +150,7 @@ export const useBidaliTransport = (
     const { t } = useLanguage()
     const algokit = useAlgorandClient()
     const { addSignRequest } = useSigningRequest()
-    const webviewRef = useRef<WebView | null>(null)
+    const webviewRef = useRef<Nullable<WebView>>(null)
 
     const providerJS = useMemo(() => {
         const balance = balances.get(account?.address ?? '')

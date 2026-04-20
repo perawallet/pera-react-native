@@ -21,6 +21,7 @@ import {
     logger,
     registerStore,
     type WithPersist,
+    type Nullable,
 } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
@@ -38,7 +39,7 @@ export const createRemoteConfigStore = (storage: StateStorage) =>
                 ...getInitialState(),
                 setConfigOverride: (
                     key: string,
-                    value: string | boolean | number | null,
+                    value: Nullable<string | boolean | number>,
                 ) => {
                     const configOverrides = { ...get().configOverrides }
                     if (value === null) {
@@ -69,7 +70,7 @@ export const useRemoteConfigStore: UseBoundStore<
             ...getInitialState(),
             setConfigOverride: (
                 key: string,
-                value: string | boolean | number | null,
+                value: Nullable<string | boolean | number>,
             ) => {
                 logger.debug(`${TAG} setConfigOverride("${key}", ${value})`)
                 const configOverrides = { ...get().configOverrides }

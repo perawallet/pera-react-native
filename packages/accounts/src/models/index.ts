@@ -11,19 +11,19 @@
  */
 
 import type { WalletAccount, AccountSortMode } from './accounts'
-import type { BaseStoreState } from '@perawallet/wallet-core-shared'
+import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 
 export * from './accounts'
 export * from './balances'
 
 export type AccountsState = BaseStoreState & {
     accounts: WalletAccount[]
-    selectedAccountAddress: string | null
+    selectedAccountAddress: Nullable<string>
     sortMode: AccountSortMode
     manualAccountOrder: string[]
-    getSelectedAccount: () => WalletAccount | null
+    getSelectedAccount: () => Nullable<WalletAccount>
     setAccounts: (accounts: WalletAccount[]) => void
-    setSelectedAccountAddress: (address: string | null) => void
+    setSelectedAccountAddress: (address: Nullable<string>) => void
     setSortMode: (mode: AccountSortMode) => void
     setManualAccountOrder: (order: string[]) => void
 }

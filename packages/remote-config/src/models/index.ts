@@ -9,12 +9,13 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type RemoteConfigStore = {
     configOverrides: Record<string, string | boolean | number>
     setConfigOverride: (
         key: string,
-        value: string | boolean | number | null,
+        value: Nullable<string | boolean | number>,
     ) => void
     resetState: () => void
 }

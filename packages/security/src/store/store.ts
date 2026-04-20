@@ -13,7 +13,11 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { SecurityState } from '../models'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    registerStore,
+    type WithPersist,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'security-store'
@@ -34,10 +38,12 @@ export const useSecurityStore: UseBoundStore<
                 set(state => ({
                     failedAttempts: state.failedAttempts + 1,
                 })),
+            setFailedAttempts: (count: number) =>
+                set({ failedAttempts: count }),
             resetFailedAttempts: () => set({ failedAttempts: 0 }),
-            setLockoutEndTime: (time: number | null) =>
+            setLockoutEndTime: (time: Nullable<number>) =>
                 set({ lockoutEndTime: time }),
-            setAutoLockStartedAt: (date: number | null) =>
+            setAutoLockStartedAt: (date: Nullable<number>) =>
                 set({ autoLockStartedAt: date }),
             resetState: () => set(initialState),
         }),
@@ -46,8 +52,6 @@ export const useSecurityStore: UseBoundStore<
             storage: createJSONStorage(() => getProvider().keyValueStorage),
             version: 1,
             partialize: state => ({
-                failedAttempts: state.failedAttempts,
-                lockoutEndTime: state.lockoutEndTime,
                 autoLockStartedAt: state.autoLockStartedAt,
             }),
         },

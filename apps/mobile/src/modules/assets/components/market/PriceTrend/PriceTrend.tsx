@@ -13,7 +13,11 @@
 import { View } from 'react-native'
 import { PWIcon, PWText } from '@components/core'
 import { useStyles } from './styles'
-import { formatCurrency, HistoryPeriod } from '@perawallet/wallet-core-shared'
+import {
+    formatCurrency,
+    HistoryPeriod,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { Decimal } from 'decimal.js'
 import { useMemo } from 'react'
 import {
@@ -25,7 +29,7 @@ import { useCurrency } from '@perawallet/wallet-core-currencies'
 export type PriceTrendProps = {
     assetId: string
     period: HistoryPeriod
-    selectedDataPoint?: AssetPriceHistoryItem | null
+    selectedDataPoint?: Nullable<AssetPriceHistoryItem>
     showAbsolute?: boolean
 }
 

@@ -11,7 +11,7 @@
  */
 
 import { useEffect } from 'react'
-import { formatDatetime } from '@perawallet/wallet-core-shared'
+import { formatDatetime, type Nullable } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import {
     AssetFavoriteButton,
@@ -103,7 +103,9 @@ export const AssetMarkets = ({
         })
     }
 
-    const handleDataPointSelection = (item: AssetPriceHistoryItem | null) => {
+    const handleDataPointSelection = (
+        item: Nullable<AssetPriceHistoryItem>,
+    ) => {
         setSelectedPoint(item)
     }
 

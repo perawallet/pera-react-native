@@ -11,12 +11,13 @@
  */
 
 import { Platform } from 'react-native'
+import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 
 const ACTIVE_STATE = 'active'
 const IOS_BACKGROUND_LIKE_STATES = new Set(['inactive', 'background'])
 
 export type AppStatePlatform = 'ios' | 'android'
-export type AppStateValue = string | null | undefined
+export type AppStateValue = Maybe<string>
 
 export type AppStateTransition = {
     didLeaveForeground: boolean
@@ -76,7 +77,7 @@ export const isBackgroundTransition = (
     return previousState !== 'background' && nextState === 'background'
 }
 
-export type PollingTransitionAction = 'start' | 'stop' | null
+export type PollingTransitionAction = Nullable<'start' | 'stop'>
 
 export const getPollingTransitionAction = (
     previousState: AppStateValue,

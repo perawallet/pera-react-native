@@ -9,6 +9,7 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export interface MultiSigAccount {
     customId: string
@@ -48,7 +49,7 @@ export interface JointAccountSignRequest {
     type: string
     createdAt: Date
     expectedExpireDatetime: Date
-    failReasonDisplay: string | null
+    failReasonDisplay: Nullable<string>
     jointAccount: MultiSigAccount
     transactionLists: TransactionList[]
 }

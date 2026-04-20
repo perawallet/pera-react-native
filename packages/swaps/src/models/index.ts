@@ -12,21 +12,21 @@
 
 import { Decimal } from 'decimal.js'
 
+import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type { MinimalAsset } from '@perawallet/wallet-core-assets'
-import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 
 export type SwapsState = BaseStoreState & {
     fromAsset: string
     toAsset: string
-    slippage: string | null
+    slippage: Nullable<string>
     setFromAsset: (fromAsset: string) => void
     setToAsset: (toAsset: string) => void
-    setSlippage: (slippage: string | null) => void
+    setSlippage: (slippage: Nullable<string>) => void
 }
 
 export type SwapConfigurationResult = {
-    balancePercentage: number | null
-    slippageTolerance: string | null
+    balancePercentage: Nullable<number>
+    slippageTolerance: Nullable<string>
     useLocalCurrency: boolean
 }
 
@@ -55,24 +55,24 @@ export interface DexSwapAsset extends MinimalAsset {
     logo?: string
     total?: string
     verificationTier: string
-    usdValue?: string | null
+    usdValue?: Nullable<string>
 }
 
 export interface SwapHistoryItem {
     id: number
-    idStr?: string | null
+    idStr?: Nullable<string>
     provider: SwapProvider
     status: SwapStatus
-    completedDatetime: string | null
-    transactionGroupId: string | null
+    completedDatetime: Nullable<string>
+    transactionGroupId: Nullable<string>
     assetIn: DexSwapAsset
     assetOut: DexSwapAsset
     /** Amount of input asset swapped, in base units */
     amountIn: Decimal
     /** Amount of output asset received, in base units */
     amountOut: Decimal
-    amountInUsdValue?: string | null
-    amountOutUsdValue?: string | null
+    amountInUsdValue?: Nullable<string>
+    amountOutUsdValue?: Nullable<string>
 }
 
 export interface SwapDistinctPairItem {
@@ -89,31 +89,31 @@ export interface SwapQuote {
     providerDisplayName?: string
     swapType?: SwapType
     swapperAddress?: string
-    device?: number | null
+    device?: Nullable<number>
     assetIn: DexSwapAsset
     assetOut: DexSwapAsset
     /** Amount of input asset, in base units */
     amountIn?: Decimal
     /** Amount of input asset with slippage applied, in base units */
     amountInWithSlippage?: Decimal
-    amountInUsdValue?: string | null
+    amountInUsdValue?: Nullable<string>
     /** Amount of output asset, in base units */
     amountOut?: Decimal
     /** Amount of output asset with slippage applied, in base units */
     amountOutWithSlippage?: Decimal
-    amountOutUsdValue?: string | null
+    amountOutUsdValue?: Nullable<string>
     slippage?: Decimal
     price?: Decimal
     priceImpact?: Decimal
     peraFeeAmount?: Decimal
-    transactionFees?: Decimal | null
+    transactionFees?: Nullable<Decimal>
 }
 
 export interface TransactionGroup {
     purpose?: TransactionGroupPurpose
     transactionGroupId?: string
-    transactions?: (string | null)[]
-    signedTransactions?: (string | null)[]
+    transactions?: Nullable<string>[]
+    signedTransactions?: Nullable<string>[]
 }
 
 export interface SwapProviderItem {

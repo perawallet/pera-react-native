@@ -15,6 +15,7 @@ import { Decimal } from 'decimal.js'
 import { getDatabase, type Database } from '@perawallet/wallet-core-database'
 import { AssetsPeraSchema, PeraAssetType } from '@perawallet/wallet-core-assets'
 import { AccountAssetHoldingsSchema, AccountBalancesSchema } from './schema'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type HoldingRow = {
     assetId: string
@@ -220,7 +221,7 @@ export type AccountBalanceRow = {
     totalAppsOptedIn: number
     minBalance: Decimal
     status: string
-    authAddress: string | null
+    authAddress: Nullable<string>
 }
 
 type UpsertAccountBalanceParams = {
@@ -233,7 +234,7 @@ type UpsertAccountBalanceParams = {
     totalAppsOptedIn: number
     minBalance: Decimal
     status: string
-    authAddress: string | null
+    authAddress: Nullable<string>
 }
 
 export async function upsertAccountBalance({

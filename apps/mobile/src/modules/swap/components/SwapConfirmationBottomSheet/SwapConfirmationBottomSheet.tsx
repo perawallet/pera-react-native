@@ -27,12 +27,13 @@ import { useSwapConfirmation } from './useSwapConfirmation'
 import { SwapAssetSection } from './SwapAssetSection'
 import { SwapDetailsSection } from './SwapDetailsSection'
 import { useStyles } from './styles'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type SwapConfirmationBottomSheetProps = {
     isVisible: boolean
     onClose: () => void
     onConfirm: () => void
-    quote: SwapQuote | null
+    quote: Nullable<SwapQuote>
     swapStatus: SwapExecutionStatus
 }
 

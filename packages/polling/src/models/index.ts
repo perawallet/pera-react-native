@@ -10,13 +10,17 @@
  limitations under the License
  */
 
-import { BaseStoreState, type Network } from '@perawallet/wallet-core-shared'
+import {
+    BaseStoreState,
+    type Network,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 
-export type LastRefreshedRounds = Record<Network, number | null>
+export type LastRefreshedRounds = Record<Network, Nullable<number>>
 
 export type PollingState = BaseStoreState & {
     lastRefreshedRound: LastRefreshedRounds
-    setLastRefreshedRound: (network: Network, round: number | null) => void
+    setLastRefreshedRound: (network: Network, round: Nullable<number>) => void
 }
 
 export type ShouldRefreshResponse = {

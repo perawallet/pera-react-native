@@ -9,6 +9,7 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+import type { Nullable } from '../utils/types'
 
 /**
  * Error severity levels
@@ -121,7 +122,7 @@ export class AppError extends Error {
 }
 
 /** Checks if an error has the retryable flag set. */
-export const isRetryableError = (error: Error | null): boolean => {
+export const isRetryableError = (error: Nullable<Error>): boolean => {
     if (!error || !(error instanceof AppError)) return false
     return error.metadata.retryable === true
 }

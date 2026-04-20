@@ -11,6 +11,7 @@
  */
 
 import type { PWInputRef } from '@components/core'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export type UseImportAccountScreenResult = {
     words: string[]
@@ -36,5 +37,5 @@ export type UseImportAccountScreenResult = {
     handleQRScannerSuccess: (url: string) => void
     suggestions: string[]
     handleSelectSuggestion: (word: string) => void
-    refCallbacks: ((ref: PWInputRef | null) => void)[]
+    refCallbacks: ((ref: Nullable<PWInputRef>) => void)[]
 }

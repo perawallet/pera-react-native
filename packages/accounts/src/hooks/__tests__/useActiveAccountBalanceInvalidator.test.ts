@@ -13,6 +13,7 @@
 import { renderHook } from '@testing-library/react'
 import { vi, describe, it, expect, beforeEach } from 'vitest'
 import { useActiveAccountBalanceInvalidator } from '../useActiveAccountBalanceInvalidator'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const mockInvalidateQueries = vi.fn()
 vi.mock('@tanstack/react-query', () => ({
@@ -21,7 +22,7 @@ vi.mock('@tanstack/react-query', () => ({
     }),
 }))
 
-let mockSelectedAddress: string | null = 'ABC123'
+let mockSelectedAddress: Nullable<string> = 'ABC123'
 vi.mock('../useSelectedAccountAddress', () => ({
     useSelectedAccountAddress: () => ({
         selectedAccountAddress: mockSelectedAddress,

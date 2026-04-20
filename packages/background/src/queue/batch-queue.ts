@@ -9,6 +9,7 @@
  See the License for the specific language governing permissions and
  limitations under the License
  */
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 /**
  * Executes a coalesced batch of keys for a given partition. Implementations
@@ -65,7 +66,7 @@ type Bucket<TKey, TResult, TPartition> = Map<
  */
 export class BatchQueue<TKey, TResult, TPartition = void> {
     private current: Bucket<TKey, TResult, TPartition> = new Map()
-    private timer: ReturnType<typeof setTimeout> | null = null
+    private timer: Nullable<ReturnType<typeof setTimeout>> = null
 
     /**
      * @param executor  How to fetch a batch. Receives the keys for one

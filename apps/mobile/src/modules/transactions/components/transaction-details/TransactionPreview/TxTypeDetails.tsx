@@ -24,7 +24,10 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PWText, PWView } from '@components/core'
-import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
+import {
+    DEFAULT_PRECISION,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
 
 const getInnerTransactionCount = (tx: PeraDisplayableTransaction): number => {
@@ -42,7 +45,7 @@ export const TxTypeDetails = ({ tx }: { tx: PeraDisplayableTransaction }) => {
         tx.assetTransferTransaction?.assetId?.toString() ?? '',
     )
 
-    let secondary: React.ReactNode | null = null
+    let secondary: Nullable<React.ReactNode> = null
 
     switch (txType) {
         case 'payment': {

@@ -23,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useLanguage } from '@hooks/useLanguage'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseRemoveAssetsScreenResult = {
     removableAssets: AssetWithAccountBalance[]
@@ -30,7 +31,7 @@ type UseRemoveAssetsScreenResult = {
     selectedAssetIds: Set<string>
     isAllSelected: boolean
     isRemoving: boolean
-    removeError: Error | null
+    removeError: Nullable<Error>
     handleToggleSelect: (assetId: string) => void
     handleToggleSelectAll: () => void
     handleRemoveSelected: () => void
@@ -42,7 +43,7 @@ export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
     const [selectedAssetIds, setSelectedAssetIds] = useState<Set<string>>(
         new Set(),
     )
-    const [removeError, setRemoveError] = useState<Error | null>(null)
+    const [removeError, setRemoveError] = useState<Nullable<Error>>(null)
 
     const selectedAccount = useAccountsStore(state =>
         state.getSelectedAccount(),

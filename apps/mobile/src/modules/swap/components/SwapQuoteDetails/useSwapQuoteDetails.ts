@@ -19,6 +19,7 @@ import {
 } from '@perawallet/wallet-core-remote-config'
 import type { SwapQuote } from '@perawallet/wallet-core-swaps'
 import { formatSwapRate } from '../../hooks/swapQuoteHelpers'
+import type { Maybe } from '@perawallet/wallet-core-shared'
 
 export type PriceImpactLevel = 'none' | 'low' | 'medium' | 'high'
 
@@ -32,7 +33,7 @@ type UseSwapQuoteDetailsResult = {
 }
 
 const getPriceImpactLevel = (
-    priceImpact: Decimal | null | undefined,
+    priceImpact: Maybe<Decimal>,
     lowThreshold: Decimal,
     highThreshold: Decimal,
 ): PriceImpactLevel => {
