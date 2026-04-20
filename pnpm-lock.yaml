@@ -992,8 +992,8 @@ importers:
         version: 4.3.6
     devDependencies:
       '@algorandfoundation/algokit-client-generator':
-        specifier: 7.0.0-alpha.6
-        version: 7.0.0-alpha.6(@algorandfoundation/algokit-utils@10.0.0-beta.1)
+        specifier: 7.0.0-beta.3
+        version: 7.0.0-beta.3(@algorandfoundation/algokit-utils@10.0.0-beta.1)
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*
         version: link:../devtools
@@ -2440,12 +2440,12 @@ packages:
   '@acemir/cssom@0.9.31':
     resolution: {integrity: sha512-ZnR3GSaH+/vJ0YlHau21FjfLYjMpYVIzTD8M8vIEQvIGxeOXyXdzCI140rrCY862p/C/BbzWsjc1dgnM9mkoTA==}
 
-  '@algorandfoundation/algokit-client-generator@7.0.0-alpha.6':
-    resolution: {integrity: sha512-ZwzX4EuMuPdTgSU+rNlwKywZeZ9m+/ovimmbyhMUJkVj1fGLK3PY08Rmk5hkdIKM83ntX9BUTPjenx2T+1KuaA==}
-    engines: {node: '>=20.0'}
+  '@algorandfoundation/algokit-client-generator@7.0.0-beta.3':
+    resolution: {integrity: sha512-M+lb4ewJTLadJVXX8YtWBZ0+tddkiaSx4cw2mRDHtO2L7B02YBdKzRArMxH7/cuBeBh1J74MenkrfDmi9mhSnQ==}
+    engines: {node: '>=24.0'}
     hasBin: true
     peerDependencies:
-      '@algorandfoundation/algokit-utils': ^10.0.0-alpha.25
+      '@algorandfoundation/algokit-utils': ^10.0.0-beta.1
 
   '@algorandfoundation/algokit-utils@10.0.0-beta.1':
     resolution: {integrity: sha512-ShiMGqUHdhpQAG0JCkhFnVN9NRDd4IwXAOW8yIY1xoG/1tjjbrS9qaSxIxmCPLhOgFrePFmT6Wc/PT9pMjs7pQ==}
@@ -9424,7 +9424,7 @@ snapshots:
 
   '@acemir/cssom@0.9.31': {}
 
-  '@algorandfoundation/algokit-client-generator@7.0.0-alpha.6(@algorandfoundation/algokit-utils@10.0.0-beta.1)':
+  '@algorandfoundation/algokit-client-generator@7.0.0-beta.3(@algorandfoundation/algokit-utils@10.0.0-beta.1)':
     dependencies:
       '@algorandfoundation/algokit-utils': 10.0.0-beta.1
       chalk: 5.6.2
