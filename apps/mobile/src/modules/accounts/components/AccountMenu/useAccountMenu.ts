@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import {
     useAllAccounts,
     useSelectedAccountAddress,
@@ -40,8 +40,17 @@ export const useAccountMenu = (
     useEffect(() => {
         invalidate()
     }, [])
+
+    const filteredAccounts = useMemo(
+        () =>
+            props.accountFilter
+                ? accounts.filter(props.accountFilter)
+                : accounts,
+        [accounts, props.accountFilter],
+    )
+
     const { sortedAccounts, sortMode } = useSortedAccounts(
-        accounts,
+        filteredAccounts,
         accountBalances,
     )
 

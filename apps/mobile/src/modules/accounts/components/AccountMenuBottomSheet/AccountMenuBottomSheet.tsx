@@ -26,6 +26,7 @@ export type AccountMenuBottomSheetProps = {
     headerContent?: ReactNode
     closeIconPosition?: 'left' | 'right'
     hideDefaultHeader?: boolean
+    accountFilter?: (account: WalletAccount) => boolean
 }
 
 export const AccountMenuBottomSheet = ({
@@ -38,6 +39,7 @@ export const AccountMenuBottomSheet = ({
     headerContent,
     closeIconPosition = 'right',
     hideDefaultHeader = false,
+    accountFilter,
 }: AccountMenuBottomSheetProps) => {
     const styles = useStyles()
 
@@ -68,6 +70,7 @@ export const AccountMenuBottomSheet = ({
                 onOpenSort={onOpenSort}
                 headerContent={headerContent}
                 hideDefaultHeader={hideDefaultHeader}
+                accountFilter={accountFilter}
             />
         </PWBottomSheet>
     )
