@@ -14,6 +14,7 @@ import { Decimal } from 'decimal.js'
 import {
     TransactionType,
     encodeTransaction,
+    encodeTransactionRaw,
 } from '@algorandfoundation/algokit-utils/transact'
 
 export * from './algorandClient'
@@ -103,4 +104,4 @@ export const algosToMicroAlgos = (
     return displayUnitsToBaseUnits(algos, 6)
 }
 
-export { TransactionType, encodeTransaction }
+export { TransactionType, encodeTransaction, encodeTransactionRaw }

@@ -121,12 +121,19 @@ export type SignRequest =
     | ArbitraryDataSignRequest
     | Arc60SignRequest
 
+export type FailedSignRequest = {
+    request: SignRequest
+    error: Error
+}
+
 export type SigningStore = BaseStoreState & {
     pendingSignRequests: SignRequest[]
     lastCompletedRequest: SignRequest | null
+    lastFailedRequest: FailedSignRequest | null
     addSignRequest: (request: SignRequest) => boolean
     removeSignRequest: (request: SignRequest) => boolean
     setLastCompletedRequest: (request: SignRequest | null) => void
+    setLastFailedRequest: (failed: FailedSignRequest | null) => void
 }
 
 export type TransactionWarning = {

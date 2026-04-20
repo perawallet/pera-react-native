@@ -11,12 +11,33 @@
  */
 
 import {
-    encodeTransaction,
+    encodeTransactionRaw,
     type PeraTransaction,
 } from '@perawallet/wallet-core-blockchain'
-import { encodeToBase64 } from '@perawallet/wallet-core-shared'
+import { decodeFromBase64 } from '@perawallet/wallet-core-shared'
 
 import { TransactionRoundTripError } from '../pipeline/errors'
+
+const TX_PREFIX = new Uint8Array([0x54, 0x58]) // "TX"
+
+const stripTxPrefix = (bytes: Uint8Array): Uint8Array => {
+    if (
+        bytes.length >= TX_PREFIX.length &&
+        bytes[0] === TX_PREFIX[0] &&
+        bytes[1] === TX_PREFIX[1]
+    ) {
+        return bytes.subarray(TX_PREFIX.length)
+    }
+    return bytes
+}
+
+const bytesEqual = (a: Uint8Array, b: Uint8Array): boolean => {
+    if (a.length !== b.length) return false
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false
+    }
+    return true
+}
 
 /**
  * Re-encodes each decoded transaction and compares the result to the
@@ -26,6 +47,9 @@ import { TransactionRoundTripError } from '../pipeline/errors'
  * a field (e.g. `rekeyTo`, `closeRemainderTo`) the user would approve a
  * transaction whose analysis/display does not reflect the bytes that will
  * actually be signed. A byte-for-byte mismatch aborts the signing request.
+ *
+ * Comparison is done on prefix-less msgpack bytes so the check mirrors
+ * `decodeTransaction`'s accept-either semantics for the "TX" domain separator.
  */
 export const validateTransactionRoundTrip = (
     transactions: PeraTransaction[],
@@ -38,8 +62,9 @@ export const validateTransactionRoundTrip = (
     }
 
     for (let i = 0; i < transactions.length; i++) {
-        const reencoded = encodeToBase64(encodeTransaction(transactions[i]))
-        if (reencoded !== rawTransactionsBase64[i]) {
+        const rawBytes = stripTxPrefix(decodeFromBase64(rawTransactionsBase64[i]))
+        const reencoded = encodeTransactionRaw(transactions[i])
+        if (!bytesEqual(reencoded, rawBytes)) {
             throw new TransactionRoundTripError(
                 `Transaction at index ${i} failed round-trip validation — decoded representation does not match raw bytes`,
             )

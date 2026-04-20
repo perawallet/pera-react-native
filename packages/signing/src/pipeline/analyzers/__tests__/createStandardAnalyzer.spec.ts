@@ -22,7 +22,7 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
         classifyPeraTransaction: (tx: { type?: string }) => tx.type ?? 'pay',
         encodeAlgorandAddress: (bytes: Uint8Array) =>
             `ENCODED_${Array.from(bytes).join('-')}`,
-        encodeTransaction: (tx: { _encoded?: Uint8Array }) =>
+        encodeTransactionRaw: (tx: { _encoded?: Uint8Array }) =>
             tx._encoded ?? new Uint8Array(),
     }
 })

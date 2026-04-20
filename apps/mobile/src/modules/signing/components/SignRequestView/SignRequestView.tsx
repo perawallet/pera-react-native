@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { SignRequest } from '@perawallet/wallet-core-signing'
+import {
+    SignRequest,
+    useSigningRequest,
+} from '@perawallet/wallet-core-signing'
 import { EmptyView } from '@components/EmptyView'
 import { useLanguage } from '@hooks/useLanguage'
 import { SigningRoutes } from '@modules/signing/routes'
@@ -21,6 +24,7 @@ import {
 import { PWButton, PWView } from '@components/core'
 import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { AppError, ErrorCategory } from '@perawallet/wallet-core-shared'
+import { config } from '@perawallet/wallet-core-config'
 import { useStyles } from './styles'
 
 export type SignRequestViewProps = {
@@ -54,6 +58,8 @@ const SignRequestErrorFallback = ({
 export const SignRequestView = ({ request }: SignRequestViewProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
+    const { lastFailedRequest, clearLastFailedRequest, removeSignRequest } =
+        useSigningRequest()
 
     const isSupported =
         request.type === 'transactions' ||
@@ -65,6 +71,38 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
             <EmptyView
                 title={t('signing.unknown_request_type.title')}
                 body={t('signing.unknown_request_type.body')}
+            />
+        )
+    }
+
+    // Render-time error boundaries don't catch the XState actor's async
+    // failures, so we key off lastFailedRequest (published to the store
+    // from useSigningActorLifecycle) to swap the signing routes for an
+    // inline error view. Dismiss stops the actor and clears the store.
+    const failureForThisRequest =
+        lastFailedRequest?.request.id === request.id ? lastFailedRequest : null
+
+    if (failureForThisRequest) {
+        const body =
+            config.debugEnabled && failureForThisRequest.error.message
+                ? failureForThisRequest.error.message
+                : t('signing.signing_failed.body')
+        const handleDismiss = () => {
+            clearLastFailedRequest()
+            removeSignRequest(request)
+        }
+        return (
+            <EmptyView
+                title={t('signing.signing_failed.title')}
+                body={body}
+                style={styles.errorView}
+                button={
+                    <PWButton
+                        title={t('common.done')}
+                        variant='primary'
+                        onPress={handleDismiss}
+                    />
+                }
             />
         )
     }

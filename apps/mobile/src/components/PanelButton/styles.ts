@@ -16,18 +16,23 @@ import { PanelButtonProps } from './PanelButton'
 export const useStyles = makeStyles((theme, props: PanelButtonProps) => {
     let backgroundColor = theme.colors.layerGrayLighter
     let color = theme.colors.textMain
+    let padding = theme.spacing.lg
     if (props.variant === 'error') {
         backgroundColor = theme.colors.suspiciousBannerBg
         color = theme.colors.alertNegative
     }
+
+    if (props.paddingStyle === 'dense') {
+        padding = theme.spacing.md
+    }
+
     return {
         buttonStyle: {
             backgroundColor,
             borderRadius: theme.spacing.lg,
             flexDirection: 'row',
             alignItems: 'flex-start',
-            paddingHorizontal: theme.spacing.lg,
-            paddingVertical: theme.spacing.lg,
+            padding,
             gap: theme.spacing.md,
         },
         textStyle: {
@@ -44,6 +49,12 @@ export const useStyles = makeStyles((theme, props: PanelButtonProps) => {
         textContainerStyle: {
             flex: 1,
             backgroundColor: 'transparent',
+        },
+        titleContainerStyle: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: theme.spacing.sm,
         },
     }
 })

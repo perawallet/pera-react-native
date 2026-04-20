@@ -12,9 +12,14 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(() => ({
+export const useStyles = makeStyles((theme) => ({
     container: {
         flex: 1,
         minHeight: 500,
+    },
+    errorView: {
+        flex: 1,
+        justifyContent: 'center',
+        padding: theme.spacing.xl,
     },
 }))

@@ -16,7 +16,7 @@ import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 import { validateTransactionRoundTrip } from '../validateTransactionRoundTrip'
 import { TransactionRoundTripError } from '../../pipeline/errors'
 
-const encodeTransactionMock = vi.fn<[PeraTransaction], Uint8Array>()
+const encodeTransactionRawMock = vi.fn<[PeraTransaction], Uint8Array>()
 
 vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
     const original =
@@ -25,11 +25,12 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
         >()
     return {
         ...original,
-        encodeTransaction: (tx: PeraTransaction) => encodeTransactionMock(tx),
+        encodeTransactionRaw: (tx: PeraTransaction) =>
+            encodeTransactionRawMock(tx),
     }
 })
 
-// Matches the encodeToBase64 shape: bytes [0x01, 0x02] => "AQI="
+// base64 "AQI=" decodes to [0x01, 0x02]; "AQ==" decodes to [0x01].
 const fullTx = { tag: 'full' } as unknown as PeraTransaction
 const fullBytes = new Uint8Array([0x01, 0x02])
 const fullBase64 = 'AQI='
@@ -38,13 +39,17 @@ const strippedTx = { tag: 'stripped' } as unknown as PeraTransaction
 const strippedBytes = new Uint8Array([0x01])
 const strippedBase64 = 'AQ=='
 
+// "VFgBAg==" decodes to [0x54, 0x58, 0x01, 0x02] — TX prefix + fullBytes.
+// decodeTransaction accepts either form, so the validator must too.
+const fullBase64WithPrefix = 'VFgBAg=='
+
 describe('validateTransactionRoundTrip', () => {
     beforeEach(() => {
-        encodeTransactionMock.mockReset()
+        encodeTransactionRawMock.mockReset()
     })
 
     test('passes when every decoded tx re-encodes to its original raw bytes', () => {
-        encodeTransactionMock.mockImplementation(tx =>
+        encodeTransactionRawMock.mockImplementation(tx =>
             tx === fullTx ? fullBytes : strippedBytes,
         )
 
@@ -56,10 +61,18 @@ describe('validateTransactionRoundTrip', () => {
         ).not.toThrow()
     })
 
+    test('passes when raw bytes include the TX domain-separator prefix', () => {
+        encodeTransactionRawMock.mockReturnValueOnce(fullBytes)
+
+        expect(() =>
+            validateTransactionRoundTrip([fullTx], [fullBase64WithPrefix]),
+        ).not.toThrow()
+    })
+
     test('throws when the decoder silently drops a field (mismatched bytes)', () => {
         // Simulate a decoder that dropped rekeyTo: re-encoding the decoded
         // object produces fewer bytes than the original raw bytes.
-        encodeTransactionMock.mockReturnValueOnce(strippedBytes)
+        encodeTransactionRawMock.mockReturnValueOnce(strippedBytes)
 
         expect(() =>
             validateTransactionRoundTrip([strippedTx], [fullBase64]),
@@ -67,7 +80,7 @@ describe('validateTransactionRoundTrip', () => {
     })
 
     test('mismatch message identifies the failing index', () => {
-        encodeTransactionMock.mockImplementation(tx =>
+        encodeTransactionRawMock.mockImplementation(tx =>
             tx === fullTx ? fullBytes : strippedBytes,
         )
 

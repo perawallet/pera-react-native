@@ -79,6 +79,9 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     const setLastCompletedRequest = useSigningStore(
         state => state.setLastCompletedRequest,
     )
+    const setLastFailedRequest = useSigningStore(
+        state => state.setLastFailedRequest,
+    )
 
     const { signTransactions } = useTransactionSigner()
     const { signArbitraryData } = useArbitraryDataSigner()
@@ -95,8 +98,10 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     // Stable refs so the actor subscription callback never becomes stale
     const removeSignRequestFromStoreRef = useRef(removeSignRequestFromStore)
     const setLastCompletedRequestRef = useRef(setLastCompletedRequest)
+    const setLastFailedRequestRef = useRef(setLastFailedRequest)
     removeSignRequestFromStoreRef.current = removeSignRequestFromStore
     setLastCompletedRequestRef.current = setLastCompletedRequest
+    setLastFailedRequestRef.current = setLastFailedRequest
 
     const buildDeps = useCallback(
         (): SigningMachineDeps => ({
@@ -141,32 +146,53 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
 
                 if (!isTerminal) return
 
+                const req = snapshot.context.request
+                // Non-headless failures stay in the queue so the signing sheet
+                // keeps rendering; the inline error view (driven by
+                // lastFailedRequest in the store) takes over the sheet
+                // content until the user dismisses via removeSignRequest.
+                const keepForInlineError =
+                    snapshot.matches('failed') && !req.headless
+
                 if (snapshot.matches('completed')) {
                     // The transport is responsible for invoking the request's
                     // approve callback (with the actual signed data) — see
                     // createCallbackTransport / createWalletConnectTransport.
-                    const { request: req } = snapshot.context
                     // Headless callers own the completion UI, same as the
                     // pre-sign review UI (see SignRequest.headless).
                     if (!req.headless) {
                         setLastCompletedRequestRef.current(req)
                     }
                 } else if (snapshot.matches('failed')) {
-                    const { request: req, error } = snapshot.context
-                    ;(req as { error?: (err: Error) => void }).error?.(
+                    const { error } = snapshot.context
+                    const normalizedError =
                         error instanceof Error
                             ? error
-                            : new Error('Signing failed'),
+                            : new Error('Signing failed')
+                    ;(req as { error?: (err: Error) => void }).error?.(
+                        normalizedError,
                     )
+                    // Publish failure to the store so signing UIs can render
+                    // an inline error view. Actor refs live in per-instance
+                    // maps (not shared state), so the store is the only
+                    // mechanism that reliably re-renders all subscribers.
+                    // Headless callers drive their own error UI.
+                    if (!req.headless) {
+                        setLastFailedRequestRef.current({
+                            request: req,
+                            error: normalizedError,
+                        })
+                    }
                 } else if (snapshot.matches('rejected')) {
-                    const { request: req } = snapshot.context
                     ;(req as { reject?: () => Promise<void> }).reject?.()
                 }
+
+                if (keepForInlineError) return
 
                 actorRefsMap.current.delete(actor.id)
                 // Removing from the store triggers pendingSignRequests to change,
                 // which fires the reactive effect below to start the next actor.
-                removeSignRequestFromStoreRef.current(snapshot.context.request)
+                removeSignRequestFromStoreRef.current(req)
             })
 
             actor.start()

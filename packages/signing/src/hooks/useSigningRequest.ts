@@ -14,7 +14,7 @@ import { useCallback } from 'react'
 import type { AnyActorRef } from 'xstate'
 import { useSigningStore } from '../store'
 import { useSigningActorLifecycle } from './useSigningActorLifecycle'
-import type { SignRequest } from '../models'
+import type { FailedSignRequest, SignRequest } from '../models'
 import {
     AppError,
     ErrorCategory,
@@ -33,11 +33,13 @@ import {
 type UseSigningRequestResult = {
     pendingSignRequests: SignRequest[]
     lastCompletedRequest: SignRequest | null
+    lastFailedRequest: FailedSignRequest | null
     currentRequest: SignRequest | undefined
     currentActorRef: AnyActorRef | null
     addSignRequest: (request: SignRequest) => void
     removeSignRequest: (request: SignRequest) => void
     clearLastCompletedRequest: () => void
+    clearLastFailedRequest: () => void
     signAndSendRequest: (request: SignRequest) => void
     rejectRequest: (request: SignRequest) => void
     /** Retries a failed request if its error is retryable. */
@@ -61,6 +63,12 @@ export const useSigningRequest = (): UseSigningRequestResult => {
     )
     const setLastCompletedRequest = useSigningStore(
         state => state.setLastCompletedRequest,
+    )
+    const lastFailedRequest = useSigningStore(
+        state => state.lastFailedRequest,
+    )
+    const setLastFailedRequest = useSigningStore(
+        state => state.setLastFailedRequest,
     )
 
     const { getActorRef, stopActor } = useSigningActorLifecycle()
@@ -125,6 +133,10 @@ export const useSigningRequest = (): UseSigningRequestResult => {
         setLastCompletedRequest(null)
     }, [setLastCompletedRequest])
 
+    const clearLastFailedRequest = useCallback(() => {
+        setLastFailedRequest(null)
+    }, [setLastFailedRequest])
+
     /**
      * Approves the current signing request — sends USER_APPROVED to its actor.
      * The actor handles signing and transport internally.
@@ -175,11 +187,13 @@ export const useSigningRequest = (): UseSigningRequestResult => {
     return {
         pendingSignRequests,
         lastCompletedRequest,
+        lastFailedRequest,
         currentRequest,
         currentActorRef,
         addSignRequest,
         removeSignRequest,
         clearLastCompletedRequest,
+        clearLastFailedRequest,
         signAndSendRequest,
         rejectRequest,
         retryRequest,

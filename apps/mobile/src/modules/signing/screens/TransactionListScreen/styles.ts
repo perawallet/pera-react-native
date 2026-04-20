@@ -61,4 +61,7 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.lg,
     },
+    footerContainer: {
+        paddingTop: theme.spacing.lg,
+    }
 }))
