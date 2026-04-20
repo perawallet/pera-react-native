@@ -29,7 +29,7 @@
     "@react-native-firebase/analytics": "^23.8.6",
     "@react-native-firebase/crashlytics": "^23.8.6",
     "@react-native-firebase/messaging": "^23.8.6",
-    "@react-native-firebase/remote-config": "^23.8.6",
+    "@react-native-firebase/remote-config": "^24.0.0",
     "@notifee/react-native": "^9.1.8",
     "@sbaiahmed1/react-native-biometrics": "^0.15.0",
     "drizzle-orm": "catalog:",
