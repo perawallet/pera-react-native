@@ -11,7 +11,8 @@
  */
 
 import { getTestProps } from '@utils/test-id-helper'
-import { ScrollView, ScrollViewProps } from 'react-native-gesture-handler'
+import { ScrollViewProps } from 'react-native'
+import { ScrollView } from 'react-native-gesture-handler'
 
 export type PWScrollViewProps = ScrollViewProps & {
     testID?: string
