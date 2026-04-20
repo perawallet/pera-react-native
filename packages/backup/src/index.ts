@@ -10,4 +10,7 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-backup'
+export * from './hooks'
+export * from './models'
+export * from './store'
+export * from './utils'
