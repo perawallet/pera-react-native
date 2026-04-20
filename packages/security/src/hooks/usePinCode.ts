@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useSecurityStore } from '../store'
 import {
     PIN_STORAGE_KEY,
@@ -18,6 +18,16 @@ import {
     INITIAL_LOCKOUT_SECONDS,
     AUTO_LOCK_TIMEOUT_MS,
 } from '../constants'
+import {
+    type PinRecord,
+    constantTimeStringEqual,
+    createPinRecord,
+    decodeLegacyPin,
+    isLegacyPinData,
+    parsePinRecord,
+    serializePinRecord,
+    verifyPinAgainstRecord,
+} from '../pinRecord'
 import { useBiometrics } from './useBiometrics'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
@@ -30,27 +40,37 @@ type UsePinCodeResult = {
     checkPinEnabled: () => Promise<boolean>
     savePin: (pin: string | null) => Promise<void>
     verifyPin: (pin: string) => Promise<boolean>
-    handleFailedAttempt: () => void
-    resetFailedAttempts: () => void
-    setLockoutEndTime: (date: number | null) => void
+    handleFailedAttempt: () => Promise<void>
+    resetFailedAttempts: () => Promise<void>
+    setLockoutEndTime: (date: number | null) => Promise<void>
     getLockoutDuration: () => number
     setAutoLockStartedAt: (date: number | null) => void
 }
 
 const encoder = new TextEncoder()
 
+const calculateLockoutSeconds = (failedAttempts: number): number => {
+    const lockoutBlock = Math.floor(
+        failedAttempts / MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
+    )
+    if (lockoutBlock === 0) return 0
+    return INITIAL_LOCKOUT_SECONDS * 2 ** (lockoutBlock - 1)
+}
+
 export const usePinCode = (): UsePinCodeResult => {
     const forceRefresh = useRef(0)
     const secureStorage = getProvider().secureStorage
     const failedAttempts = useSecurityStore(state => state.failedAttempts)
-    const incrementFailedAttempts = useSecurityStore(
-        state => state.incrementFailedAttempts,
+    const setFailedAttemptsInStore = useSecurityStore(
+        state => state.setFailedAttempts,
     )
     const resetFailedAttemptsInStore = useSecurityStore(
         state => state.resetFailedAttempts,
     )
     const lockoutEndTime = useSecurityStore(state => state.lockoutEndTime)
-    const setLockoutEndTime = useSecurityStore(state => state.setLockoutEndTime)
+    const setLockoutEndTimeInStore = useSecurityStore(
+        state => state.setLockoutEndTime,
+    )
     const autoLockStartedAt = useSecurityStore(state => state.autoLockStartedAt)
     const setAutoLockStartedAt = useSecurityStore(
         state => state.setAutoLockStartedAt,
@@ -68,102 +88,182 @@ export const usePinCode = (): UsePinCodeResult => {
         ? Math.max(0, Math.ceil((lockoutEndTime - Date.now()) / 1000))
         : 0
 
+    const loadRecord = useCallback(async (): Promise<PinRecord | null> => {
+        const data = await secureStorage.getItem(PIN_STORAGE_KEY)
+        if (!data) return null
+        return parsePinRecord(data)
+    }, [secureStorage])
+
+    const writeRecord = useCallback(
+        async (record: PinRecord): Promise<void> => {
+            await secureStorage.setItem(
+                PIN_STORAGE_KEY,
+                serializePinRecord(record),
+            )
+        },
+        [secureStorage],
+    )
+
+    // Hydrate in-memory lockout state from the authoritative secure record.
+    // The store is no longer persisted to MMKV for these fields, so clearing
+    // MMKV cannot reset the lockout counter.
+    useEffect(() => {
+        let cancelled = false
+        ;(async () => {
+            const record = await loadRecord()
+            if (cancelled || !record) return
+            setFailedAttemptsInStore(record.failedAttempts)
+            setLockoutEndTimeInStore(record.lockoutEndTime)
+        })()
+        return () => {
+            cancelled = true
+        }
+    }, [loadRecord, setFailedAttemptsInStore, setLockoutEndTimeInStore])
+
     const checkPinEnabled = useCallback(async (): Promise<boolean> => {
         const pinData = await secureStorage.getItem(PIN_STORAGE_KEY)
         return !!pinData
-    }, [secureStorage, forceRefresh.current])
+    }, [secureStorage])
 
-    const setIsPinEnabled = useCallback(
-        async (code: string | null): Promise<void> => {
-            if (code) {
-                await secureStorage.setItem(
-                    PIN_STORAGE_KEY,
-                    encoder.encode(code),
-                )
-                const isBiometricEnabled = await checkBiometricsEnabled()
-                if (isBiometricEnabled) {
-                    await setBiometricsCode(encoder.encode(code))
-                }
-            } else {
-                await secureStorage.removeItem(PIN_STORAGE_KEY)
-                disableBiometrics()
-            }
-            forceRefresh.current += 1
-            resetFailedAttempts()
-            setLockoutEndTime(null)
-        },
-        [secureStorage, encoder],
+    const getLockoutDuration = useCallback(
+        () => calculateLockoutSeconds(failedAttempts),
+        [failedAttempts],
     )
 
-    const getLockoutDuration = useCallback(() => {
-        const lockoutBlock = Math.floor(
-            failedAttempts / MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
-        )
-        if (lockoutBlock === 0) return 0
-        return INITIAL_LOCKOUT_SECONDS * Math.pow(2, lockoutBlock - 1)
-    }, [failedAttempts])
-
-    const resetFailedAttempts = useCallback(() => {
+    const resetFailedAttempts = useCallback(async () => {
         resetFailedAttemptsInStore()
-        setLockoutEndTime(null)
-    }, [resetFailedAttemptsInStore])
+        setLockoutEndTimeInStore(null)
+        const record = await loadRecord()
+        if (!record) return
+        if (record.failedAttempts === 0 && record.lockoutEndTime === null)
+            return
+        await writeRecord({
+            ...record,
+            failedAttempts: 0,
+            lockoutEndTime: null,
+        })
+    }, [
+        resetFailedAttemptsInStore,
+        setLockoutEndTimeInStore,
+        loadRecord,
+        writeRecord,
+    ])
+
+    const setLockoutEndTime = useCallback(
+        async (date: number | null) => {
+            setLockoutEndTimeInStore(date)
+            const record = await loadRecord()
+            if (!record) return
+            if (record.lockoutEndTime === date) return
+            await writeRecord({ ...record, lockoutEndTime: date })
+        },
+        [setLockoutEndTimeInStore, loadRecord, writeRecord],
+    )
 
     const savePin = useCallback(
         async (pin: string | null) => {
-            setIsPinEnabled(pin)
-            if (await checkBiometricsEnabled()) {
-                if (pin) {
+            if (pin) {
+                const record = await createPinRecord(pin)
+                await writeRecord(record)
+                setFailedAttemptsInStore(0)
+                setLockoutEndTimeInStore(null)
+                if (await checkBiometricsEnabled()) {
                     await setBiometricsCode(encoder.encode(pin))
-                } else {
+                }
+            } else {
+                await secureStorage.removeItem(PIN_STORAGE_KEY)
+                setFailedAttemptsInStore(0)
+                setLockoutEndTimeInStore(null)
+                if (await checkBiometricsEnabled()) {
                     await disableBiometrics()
                 }
             }
             forceRefresh.current += 1
-            resetFailedAttempts()
-            setLockoutEndTime(null)
         },
         [
             secureStorage,
-            setIsPinEnabled,
-            resetFailedAttempts,
-            setLockoutEndTime,
+            writeRecord,
+            setFailedAttemptsInStore,
+            setLockoutEndTimeInStore,
             checkBiometricsEnabled,
-            encoder,
+            setBiometricsCode,
+            disableBiometrics,
         ],
     )
 
     const verifyPin = useCallback(
         async (pin: string): Promise<boolean> => {
-            const storedPinData = await secureStorage.getItem(PIN_STORAGE_KEY)
-            if (!storedPinData) return false
+            const data = await secureStorage.getItem(PIN_STORAGE_KEY)
+            if (!data) return false
 
-            const storedPin = new TextDecoder().decode(storedPinData)
-            return pin === storedPin
+            // Legacy plaintext record: verify in constant time, then migrate
+            // by re-storing as a hashed record on success.
+            if (isLegacyPinData(data)) {
+                const storedPin = decodeLegacyPin(data)
+                const matched = constantTimeStringEqual(pin, storedPin)
+                if (matched) {
+                    const record = await createPinRecord(pin)
+                    await writeRecord(record)
+                    setFailedAttemptsInStore(0)
+                    setLockoutEndTimeInStore(null)
+                }
+                return matched
+            }
+
+            const record = parsePinRecord(data)
+            if (!record) return false
+            return verifyPinAgainstRecord(pin, record)
         },
-        [secureStorage],
+        [
+            secureStorage,
+            writeRecord,
+            setFailedAttemptsInStore,
+            setLockoutEndTimeInStore,
+        ],
     )
 
-    const handleFailedAttempt = useCallback(() => {
-        incrementFailedAttempts()
-        const newAttempts = failedAttempts + 1
-        const remainder = newAttempts % MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT
+    const handleFailedAttempt = useCallback(async () => {
+        const record = await loadRecord()
+        const currentAttempts = record?.failedAttempts ?? failedAttempts
+        const newAttempts = currentAttempts + 1
+        const triggerLockout =
+            newAttempts % MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT === 0
+        const newLockoutEndTime = triggerLockout
+            ? Date.now() +
+              INITIAL_LOCKOUT_SECONDS *
+                  2 **
+                      (Math.floor(
+                          newAttempts / MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
+                      ) -
+                          1) *
+                  1000
+            : (record?.lockoutEndTime ?? lockoutEndTime)
 
-        if (remainder === 0) {
-            const lockoutBlock = Math.floor(
-                newAttempts / MAX_PIN_ATTEMPTS_BEFORE_LOCKOUT,
-            )
-            const lockoutSeconds =
-                INITIAL_LOCKOUT_SECONDS * Math.pow(2, lockoutBlock - 1)
-            setLockoutEndTime(Date.now() + lockoutSeconds * 1000)
+        setFailedAttemptsInStore(newAttempts)
+        if (triggerLockout) setLockoutEndTimeInStore(newLockoutEndTime)
+
+        if (record) {
+            await writeRecord({
+                ...record,
+                failedAttempts: newAttempts,
+                lockoutEndTime: newLockoutEndTime,
+            })
         }
-    }, [incrementFailedAttempts, failedAttempts, setLockoutEndTime])
+    }, [
+        loadRecord,
+        writeRecord,
+        failedAttempts,
+        lockoutEndTime,
+        setFailedAttemptsInStore,
+        setLockoutEndTimeInStore,
+    ])
 
     const checkAutoLock = useCallback(async () => {
         if (!(await checkPinEnabled())) return false
         if (autoLockStartedAt == null) return false
         const elapsed = Date.now() - autoLockStartedAt
         return elapsed > AUTO_LOCK_TIMEOUT_MS
-    }, [autoLockStartedAt])
+    }, [autoLockStartedAt, checkPinEnabled])
 
     return {
         checkPinEnabled,

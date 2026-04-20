@@ -18,6 +18,7 @@ export type SecurityState = BaseStoreState & {
     autoLockStartedAt: number | null
 
     incrementFailedAttempts: () => void
+    setFailedAttempts: (count: number) => void
     resetFailedAttempts: () => void
     setLockoutEndTime: (time: number | null) => void
     setAutoLockStartedAt: (time: number | null) => void
