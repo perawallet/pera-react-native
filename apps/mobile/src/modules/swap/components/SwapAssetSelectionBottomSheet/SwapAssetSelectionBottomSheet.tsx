@@ -57,6 +57,8 @@ export const SwapAssetSelectionBottomSheet = (
         <PWBottomSheet
             isVisible={isVisible}
             onBackdropPress={onClose}
+            size='lg'
+            autoCreateContainer={false}
             innerContainerStyle={styles.container}
         >
             <PWToolbar
@@ -74,6 +76,7 @@ export const SwapAssetSelectionBottomSheet = (
                     onAssetSelected={handleAssetSelected}
                     isVisible={isVisible}
                     excludeAssetId={excludeAssetId}
+                    inBottomSheet
                     searchPlaceholder={t(
                         'swap.asset_selection.search_placeholder',
                     )}
@@ -88,6 +91,7 @@ export const SwapAssetSelectionBottomSheet = (
                     isVisible={isVisible}
                     excludeAssetId={excludeAssetId}
                     filterAsset={filterSwappable}
+                    inBottomSheet
                     searchPlaceholder={t(
                         'swap.asset_selection.search_placeholder',
                     )}

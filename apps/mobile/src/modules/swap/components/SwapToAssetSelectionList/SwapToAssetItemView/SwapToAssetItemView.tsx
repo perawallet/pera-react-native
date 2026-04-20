@@ -14,6 +14,7 @@ import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
 import { isAlgoAsset } from '@perawallet/wallet-core-assets'
+import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import {
     PWIcon,
     PWText,
@@ -91,15 +92,15 @@ export const SwapToAssetItemView = ({
                             currency={dexAsset.unitName ?? ''}
                             value={balance}
                             precision={dexAsset.decimals ?? 0}
-                            minPrecision={2}
+                            minPrecision={DEFAULT_PRECISION}
                             showSymbol
                             style={styles.primaryAmount}
                         />
                         <PreferredCurrencyDisplay
                             sourceAmount={balance}
                             sourceAssetId={dexAsset.assetId}
-                            precision={2}
-                            minPrecision={2}
+                            precision={DEFAULT_PRECISION}
+                            minPrecision={DEFAULT_PRECISION}
                             showSymbol
                             style={styles.secondaryAmount}
                         />

@@ -43,6 +43,7 @@ export type SwapToAssetSelectionListProps = {
     searchPlaceholder: string
     emptyResultTitle: string
     emptyResultBody: string
+    inBottomSheet?: boolean
 }
 
 export const SwapToAssetSelectionList = ({
@@ -53,6 +54,7 @@ export const SwapToAssetSelectionList = ({
     searchPlaceholder,
     emptyResultTitle,
     emptyResultBody,
+    inBottomSheet,
 }: SwapToAssetSelectionListProps) => {
     const styles = useStyles()
     const { theme } = useTheme()
@@ -113,6 +115,7 @@ export const SwapToAssetSelectionList = ({
             <PWFlatList
                 data={listData}
                 renderItem={renderItem}
+                inBottomSheet={inBottomSheet}
                 keyExtractor={item =>
                     isSkeletonItem(item) ? item.id : item.dexAsset.assetId
                 }

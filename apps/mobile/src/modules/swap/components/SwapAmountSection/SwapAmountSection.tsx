@@ -16,6 +16,7 @@ import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { isAlgoAsset } from '@perawallet/wallet-core-assets'
+import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { SwapAssetSelector } from '../SwapAssetSelector'
 import { useStyles } from './styles'
 import { useSwapAmountSection } from './useSwapAmountSection'
@@ -147,8 +148,8 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                 <PreferredCurrencyDisplay
                     sourceAmount={amount ?? new Decimal(0)}
                     sourceAssetId={assetId}
-                    precision={2}
-                    minPrecision={2}
+                    precision={DEFAULT_PRECISION}
+                    minPrecision={DEFAULT_PRECISION}
                     showSymbol
                     isLoading={isLoading}
                     style={styles.fiatValue}

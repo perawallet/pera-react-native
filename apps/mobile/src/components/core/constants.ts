@@ -10,10 +10,4 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(() => ({
-    container: {
-        paddingBottom: 0,
-    },
-}))
+export const DEFAULT_MINIMUM_FONT_SCALE = 0.5

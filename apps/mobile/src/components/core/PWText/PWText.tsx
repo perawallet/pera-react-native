@@ -14,8 +14,7 @@ import { Text as RNEText } from '@rneui/themed'
 import { useStyles } from './styles'
 import { StyleProp, TextStyle, TextProps } from 'react-native'
 import { TypographyVariant } from '@theme/typography'
-
-const DEFAULT_MINIMUM_FONT_SCALE = 0.5
+import { DEFAULT_MINIMUM_FONT_SCALE } from '../constants'
 
 export type PWTextProps = {
     children?: React.ReactNode
