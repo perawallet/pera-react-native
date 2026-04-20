@@ -35,10 +35,21 @@ export const parseWalletConnectUri = (
     // The actual WC URI is URL-encoded in the 'uri' query param
     const uriMatch = normalizedUrl.match(/[?&]uri=([^&]+)/)
     if (uriMatch) {
-        wcUri = decodeURIComponent(uriMatch[1])
+        try {
+            wcUri = decodeURIComponent(uriMatch[1])
+        } catch {
+            return null
+        }
     } else if (normalizedUrl.startsWith('perawallet-wc:')) {
         // Legacy format: perawallet-wc:topic@1?...  →  wc:topic@1?...
         wcUri = normalizedUrl.replace('perawallet-wc:', 'wc:')
+    }
+
+    // Re-validate after unwrap/rewrite so a wrapper like
+    // perawallet-wc://wc?uri=javascript%3Aalert(1) cannot smuggle through
+    // a non-wc scheme.
+    if (!wcUri.startsWith('wc:')) {
+        return null
     }
 
     return {

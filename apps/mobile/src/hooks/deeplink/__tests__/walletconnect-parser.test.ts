@@ -62,5 +62,31 @@ describe('WalletConnect Parser', () => {
             expect(result?.type).toBe(DeeplinkType.WALLET_CONNECT)
             expect(result?.uri).toBe('wc:test@1?bridge=test&key=test')
         })
+
+        it('rejects wrapper that unwraps to a non-wc scheme', () => {
+            // perawallet-wc://wc?uri=javascript%3Aalert(1) decodes to 'javascript:alert(1)'
+            expect(
+                parseWalletConnectUri(
+                    'perawallet-wc://wc?uri=javascript%3Aalert(1)',
+                ),
+            ).toBeNull()
+            expect(
+                parseWalletConnectUri('wc://wc?uri=https%3A%2F%2Fevil.example'),
+            ).toBeNull()
+        })
+
+        it('rejects wrapper with malformed percent-encoding', () => {
+            expect(
+                parseWalletConnectUri('perawallet-wc://wc?uri=%E0%A4%A'),
+            ).toBeNull()
+        })
+
+        it('unwraps a valid encoded wc: URI in the wrapper', () => {
+            const inner = 'wc:test@1?bridge=test&key=test'
+            const wrapped =
+                'perawallet-wc://wc?uri=' + encodeURIComponent(inner)
+            const result = parseWalletConnectUri(wrapped)
+            expect(result?.uri).toBe(inner)
+        })
     })
 })

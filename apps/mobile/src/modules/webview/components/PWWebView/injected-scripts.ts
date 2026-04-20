@@ -52,33 +52,98 @@ window.peraMobileInterface = {
 `
 
 export const peraConnectJS = `
-    function setupPeraConnectObserver(){
-        const e = new MutationObserver(() => {
-            const t = document.getElementById("pera-wallet-connect-modal-wrapper"),
-                  e = document.getElementById("pera-wallet-redirect-modal-wrapper");
-            if(e && e.remove(), t){
-                const o = t.getElementsByTagName("pera-wallet-connect-modal");
-                let e = "";
-                if(o && o[0] && o[0].shadowRoot){
-                    const a = o[0].shadowRoot
-                        .querySelector("pera-wallet-modal-touch-screen-mode")
-                        .shadowRoot
-                        .querySelector("#pera-wallet-connect-modal-touch-screen-mode-launch-pera-wallet-button");
-                    a && (e = a.getAttribute("href"));
-                } else {
-                    const r = t.getElementsByClassName("pera-wallet-connect-modal-touch-screen-mode__launch-pera-wallet-button");
-                    r && (e = r[0].getAttribute("href"));
-                }
-                if (e && (e.indexOf('wc:') === 0 || e.indexOf('perawallet-wc:') === 0)) {
-                    window.peraRPC?.sendRNMessage('walletConnect', { uri: e });
-                }
-                t.remove();
+    (function setupPeraConnect(){
+        // Cap forwarded URI length (real WC URIs are well under this; longer inputs are
+        // either malformed or a hostile page trying to overload the RPC bridge).
+        var MAX_URI_LENGTH = 4096;
+        // Drop the same URI if it's already been sent within this window.
+        var DEDUP_WINDOW_MS = 2000;
+        var lastUri = '';
+        var lastUriAt = 0;
+
+        function isWcUri(s) {
+            return typeof s === 'string'
+                && s.length > 0
+                && s.length <= MAX_URI_LENGTH
+                && (s.indexOf('wc:') === 0 || s.indexOf('perawallet-wc:') === 0);
+        }
+        function sendUri(uri) {
+            if (!isWcUri(uri)) return false;
+            var now = Date.now();
+            if (uri === lastUri && (now - lastUriAt) < DEDUP_WINDOW_MS) return true;
+            lastUri = uri;
+            lastUriAt = now;
+            try { window.peraRPC && window.peraRPC.sendRNMessage('walletConnect', { uri: uri }); } catch (_) {}
+            return true;
+        }
+        function extractUriFromConnectModal(wrapper) {
+            if (!wrapper) return null;
+            // Current (@perawallet/connect >=1.3): the wc URI is set as the 'uri' attribute
+            // on the <pera-wallet-connect-modal> custom element itself (with '&algorand=true' appended).
+            var modal = wrapper.querySelector('pera-wallet-connect-modal');
+            if (modal) {
+                var attr = modal.getAttribute('uri');
+                if (isWcUri(attr)) return attr;
+                // Legacy: a launch button nested inside touch-screen-mode shadow DOM.
+                try {
+                    if (modal.shadowRoot) {
+                        var touch = modal.shadowRoot.querySelector('pera-wallet-modal-touch-screen-mode');
+                        if (touch && touch.shadowRoot) {
+                            var btn = touch.shadowRoot.querySelector(
+                                '#pera-wallet-connect-modal-touch-screen-mode-launch-pera-wallet-button'
+                            );
+                            var href = btn && btn.getAttribute('href');
+                            if (isWcUri(href)) return href;
+                        }
+                    }
+                } catch (_) {}
             }
-        });
-        e.disconnect();
-        e.observe(document.body, { childList: true, subtree: true });
-    }
-    setupPeraConnectObserver();
+            // Legacy: class-based fallback (pre-shadow-DOM versions).
+            var legacy = wrapper.getElementsByClassName(
+                'pera-wallet-connect-modal-touch-screen-mode__launch-pera-wallet-button'
+            );
+            if (legacy && legacy[0]) {
+                var legacyHref = legacy[0].getAttribute('href');
+                if (isWcUri(legacyHref)) return legacyHref;
+            }
+            return null;
+        }
+        function processModals() {
+            // Redirect modal: its launch link has no wc URI (it just opens 'perawallet-wc://?browser=...'),
+            // and the SDK fires that window.open on insert anyway. Suppress it; window.open hook below
+            // catches the URI-bearing deep link from the connect path.
+            var redirect = document.getElementById('pera-wallet-redirect-modal-wrapper');
+            if (redirect) redirect.remove();
+
+            var connect = document.getElementById('pera-wallet-connect-modal-wrapper');
+            if (connect) {
+                var uri = extractUriFromConnectModal(connect);
+                if (sendUri(uri)) {
+                    connect.remove();
+                }
+            }
+        }
+
+        // Hook window.open: when @perawallet/connect detects it's running inside a webview
+        // it skips the modal entirely and calls window.open(perawallet-wc://wc?uri=<encoded>...)
+        // (iOS) or window.open('wc:...') (Android). This is the primary path inside Pera's webview.
+        try {
+            var originalOpen = window.open;
+            window.open = function(url) {
+                if (isWcUri(url) && sendUri(url)) {
+                    return null;
+                }
+                return originalOpen.apply(window, arguments);
+            };
+        } catch (_) {}
+
+        try {
+            var observer = new MutationObserver(processModals);
+            observer.observe(document.body, { childList: true, subtree: true });
+        } catch (_) {}
+        // Also run once in case the modal was inserted before the observer attached.
+        processModals();
+    })();
 `
 
 export const navigationJS = `
