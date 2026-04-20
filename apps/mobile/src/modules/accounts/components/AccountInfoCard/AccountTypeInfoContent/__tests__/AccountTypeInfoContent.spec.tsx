@@ -104,9 +104,7 @@ describe('AccountTypeInfoContent', () => {
             />,
         )
 
-        expect(
-            screen.getByText('account_type_info.no_auth_title'),
-        ).toBeTruthy()
+        expect(screen.getByText('account_type_info.no_auth_title')).toBeTruthy()
         expect(
             screen.getByText('account_type_info.no_auth_description'),
         ).toBeTruthy()
