@@ -11,33 +11,21 @@
  */
 
 import { useCallback } from 'react'
-import {
-    useAccountsStore,
-    type WalletAccount,
-} from '@perawallet/wallet-core-accounts'
+import { type WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useBackupStore } from '../store'
 import { getBackupKeyId } from '../utils'
 
 export type UseMarkBackupCompleteResult = (account: WalletAccount) => void
 
 export const useMarkBackupComplete = (): UseMarkBackupCompleteResult => {
-    const accounts = useAccountsStore(state => state.accounts)
-    const markMultipleBackedUp = useBackupStore(
-        state => state.markMultipleBackedUp,
-    )
+    const markBackedUp = useBackupStore(state => state.markBackedUp)
 
     return useCallback(
         (account: WalletAccount) => {
             const keyId = getBackupKeyId(account)
             if (keyId === null) return
-
-            const siblingKeyIds = accounts
-                .map(getBackupKeyId)
-                .filter((id): id is string => id === keyId)
-
-            const idsToMark = siblingKeyIds.length > 0 ? siblingKeyIds : [keyId]
-            markMultipleBackedUp(Array.from(new Set(idsToMark)))
+            markBackedUp(keyId)
         },
-        [accounts, markMultipleBackedUp],
+        [markBackedUp],
     )
 }
