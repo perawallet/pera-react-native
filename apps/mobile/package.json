@@ -113,7 +113,7 @@
     "react-native-advanced-input-mask": "^1.4.6",
     "react-native-ble-plx": "^3.2.1",
     "react-native-draggable-flatlist": "^4.0.3",
-    "react-native-error-boundary": "^2.0.0",
+    "react-native-error-boundary": "^3.1.0",
     "react-native-gesture-handler": "^2.28.0",
     "react-native-gifted-charts": "^1.4.65",
     "react-native-keychain": "^10.0.0",
