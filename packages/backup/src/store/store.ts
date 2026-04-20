@@ -14,7 +14,7 @@ import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import type { BackupState } from '../models'
+import type { BackupStore } from '../models'
 
 const STORE_NAME = 'backup-store'
 
@@ -23,8 +23,8 @@ const initialState = {
 }
 
 export const useBackupStore: UseBoundStore<
-    WithPersist<StoreApi<BackupState>, unknown>
-> = create<BackupState>()(
+    WithPersist<StoreApi<BackupStore>, unknown>
+> = create<BackupStore>()(
     persist(
         (set, get) => ({
             ...initialState,

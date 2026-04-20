@@ -14,7 +14,12 @@ import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 
 export type BackupState = BaseStoreState & {
     backedUpKeyIds: Record<string, boolean>
+}
+
+export type BackupActions = {
     markBackedUp: (keyId: string) => void
     markMultipleBackedUp: (keyIds: string[]) => void
     isBackedUp: (keyId: string | null | undefined) => boolean
 }
+
+export type BackupStore = BackupState & BackupActions
