@@ -12,6 +12,7 @@
 
 import { render, screen, fireEvent } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
+import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { AccountMenu } from '../AccountMenu'
 
 const mockInvalidate = vi.fn()
@@ -57,6 +58,25 @@ vi.mock('../../PortfolioView', () => ({
     PortfolioView: () => <div data-testid='PortfolioView' />,
 }))
 
+vi.mock('../../AccountWithBalance', () => ({
+    AccountWithBalance: ({ account }: { account: WalletAccount }) => (
+        <div data-testid={`account-${account.address}`}>{account.name}</div>
+    ),
+}))
+
+const mockAlgo25Account: WalletAccount = {
+    address: 'ALGO25ADDR',
+    name: 'Main Account',
+    type: 'algo25',
+    keyPairId: 'kp1',
+}
+
+const mockWatchAccount: WalletAccount = {
+    address: 'WATCHADDR',
+    name: 'Watch Account',
+    type: 'watch',
+}
+
 describe('AccountMenu', () => {
     it('renders account list and portfolio', () => {
         const onSelected = vi.fn()
@@ -100,5 +120,33 @@ describe('AccountMenu', () => {
         fireEvent.click(addButton)
 
         expect(onAddAccount).toHaveBeenCalledOnce()
+    })
+
+    it('filters out accounts when accountFilter is provided', async () => {
+        const allAccounts = [mockAlgo25Account, mockWatchAccount]
+
+        const { useAllAccounts, useSortedAccounts } =
+            await import('@perawallet/wallet-core-accounts')
+
+        vi.mocked(useAllAccounts).mockReturnValue(allAccounts)
+        vi.mocked(useSortedAccounts).mockImplementation(accounts => ({
+            sortedAccounts: accounts as WalletAccount[],
+            sortMode: 'manual',
+            setSortMode: vi.fn(),
+            manualAccountOrder: [],
+            setManualAccountOrder: vi.fn(),
+        }))
+
+        render(
+            <AccountMenu
+                onSelected={vi.fn()}
+                onAddAccount={vi.fn()}
+                onOpenSort={vi.fn()}
+                accountFilter={account => account.type !== 'watch'}
+            />,
+        )
+
+        expect(screen.getByTestId('account-ALGO25ADDR')).toBeTruthy()
+        expect(screen.queryByTestId('account-WATCHADDR')).toBeNull()
     })
 })

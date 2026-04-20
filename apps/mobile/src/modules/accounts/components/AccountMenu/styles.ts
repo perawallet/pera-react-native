@@ -18,7 +18,7 @@ export const useStyles = makeStyles(theme => {
             paddingTop: theme.spacing.md,
         },
         accountContainer: {
-            paddingBottom: theme.spacing.xl,
+            paddingBottom: theme.spacing['3xl'],
         },
         listSeparator: {
             height: theme.spacing.md,

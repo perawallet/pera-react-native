@@ -13,12 +13,31 @@
 import { useEffect } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { useSwaps } from '@perawallet/wallet-core-swaps'
+import {
+    isWatchAccount,
+    useSelectedAccount,
+    useSelectedAccountAddress,
+    useSigningAccounts,
+} from '@perawallet/wallet-core-accounts'
 import { SwapScreenParams } from '@modules/swap/routes/types'
 
 export const useSwapScreen = () => {
     const route =
         useRoute<RouteProp<{ Swap: SwapScreenParams | undefined }, 'Swap'>>()
     const { setFromAsset, setToAsset } = useSwaps()
+    const selectedAccount = useSelectedAccount()
+    const signingAccounts = useSigningAccounts()
+    const { setSelectedAccountAddress } = useSelectedAccountAddress()
+
+    useEffect(() => {
+        if (
+            selectedAccount &&
+            isWatchAccount(selectedAccount) &&
+            signingAccounts.length > 0
+        ) {
+            setSelectedAccountAddress(signingAccounts[0].address)
+        }
+    }, [selectedAccount, signingAccounts, setSelectedAccountAddress])
 
     useEffect(() => {
         const params = route.params

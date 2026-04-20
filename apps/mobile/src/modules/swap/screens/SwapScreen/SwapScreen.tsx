@@ -15,12 +15,15 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
 import { config } from '@perawallet/wallet-core-config'
 import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
+import { isWatchAccount, WalletAccount } from '@perawallet/wallet-core-accounts'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import { useWebView } from '@modules/webview'
 import { useSwapIntroduction } from '@modules/swap/hooks'
 import { SwapForm, SwapIntroduction } from '@modules/swap/components'
 import { useStyles } from './styles'
 import { useSwapScreen } from './useSwapScreen'
+
+const swapAccountFilter = (account: WalletAccount) => !isWatchAccount(account)
 
 export const SwapScreen = () => {
     const { t } = useLanguage()
@@ -53,6 +56,7 @@ export const SwapScreen = () => {
                 }
                 right={
                     <AccountSelection
+                        accountFilter={swapAccountFilter}
                         triggerStyle={styles.accountTrigger}
                         triggerIconProps={{ size: 'md' }}
                         triggerTextProps={{ variant: 'body' }}
