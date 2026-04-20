@@ -17,6 +17,7 @@ import { AccountIcon } from '../AccountIcon'
 import {
     AccountLogicalType,
     AccountLogicalTypes,
+    AccountTypes,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 
@@ -119,6 +120,36 @@ describe('AccountIcon', () => {
 
         expect(
             screen.getByTestId('icon-accounts/light/rekeyed-standard'),
+        ).toBeTruthy()
+    })
+
+    it('renders rekeyed-ledger icon when a hardware account is rekeyed', () => {
+        mockUseAccountLogicalType.mockReturnValue(AccountLogicalTypes.Rekeyed)
+        const hardwareAccount = {
+            address: 'addr',
+            type: AccountTypes.hardware,
+        } as WalletAccount
+
+        render(<AccountIcon account={hardwareAccount} />)
+
+        expect(
+            screen.getByTestId('icon-accounts/light/rekeyed-ledger'),
+        ).toBeTruthy()
+    })
+
+    it('renders rekeyed-ledger icon when a hardware account is RekeyedAuth', () => {
+        mockUseAccountLogicalType.mockReturnValue(
+            AccountLogicalTypes.RekeyedAuth,
+        )
+        const hardwareAccount = {
+            address: 'addr',
+            type: AccountTypes.hardware,
+        } as WalletAccount
+
+        render(<AccountIcon account={hardwareAccount} />)
+
+        expect(
+            screen.getByTestId('icon-accounts/light/rekeyed-ledger'),
         ).toBeTruthy()
     })
 

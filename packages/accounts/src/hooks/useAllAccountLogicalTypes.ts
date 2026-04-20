@@ -11,37 +11,26 @@
  */
 
 import { useMemo } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     deriveAccountLogicalType,
     type AccountLogicalType,
 } from '../logical-type'
 import { useAccountsStore } from '../store'
-import { useChainAuthAddressesQuery } from './useChainAuthAddressesQuery'
 
 export const useAllAccountLogicalTypes = (): Map<
     string,
     AccountLogicalType
 > => {
     const accounts = useAccountsStore(state => state.accounts)
-    const { network } = useNetwork()
-    const addresses = useMemo(() => accounts.map(a => a.address), [accounts])
-    const { chainAuthAddresses } = useChainAuthAddressesQuery({
-        addresses,
-        network,
-    })
 
     return useMemo(() => {
         const map = new Map<string, AccountLogicalType>()
         for (const account of accounts) {
-            const chainAuth = chainAuthAddresses.has(account.address)
-                ? (chainAuthAddresses.get(account.address) ?? null)
-                : undefined
             map.set(
                 account.address,
-                deriveAccountLogicalType(account, accounts, chainAuth),
+                deriveAccountLogicalType(account, accounts),
             )
         }
         return map
-    }, [accounts, chainAuthAddresses])
+    }, [accounts])
 }

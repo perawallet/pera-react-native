@@ -14,6 +14,7 @@ import { IconName, PWIcon } from '@components/core'
 
 import { useMemo } from 'react'
 import {
+    AccountTypes,
     useAccountLogicalType,
     type AccountLogicalType,
     type WalletAccount,
@@ -39,6 +40,19 @@ const iconNames = {
     NoAuth: `accounts/${THEME_TOKEN}/noauth-account`,
 } satisfies Record<AccountLogicalType, string>
 
+const resolveIconAsset = (
+    logicalType: AccountLogicalType,
+    account: WalletAccount,
+): string => {
+    const isRekeyedHardware =
+        (logicalType === 'Rekeyed' || logicalType === 'RekeyedAuth') &&
+        account.type === AccountTypes.hardware
+    if (isRekeyedHardware) {
+        return `accounts/${THEME_TOKEN}/rekeyed-ledger`
+    }
+    return iconNames[logicalType] ?? FALLBACK_ASSET
+}
+
 export const AccountIcon = (props: AccountIconProps) => {
     const { account, size = 'md', ...rest } = props
     const darkmode = useIsDarkMode()
@@ -48,7 +62,7 @@ export const AccountIcon = (props: AccountIconProps) => {
         if (!account || !logicalType) return <></>
 
         const theme = darkmode ? 'dark' : 'light'
-        const icon = iconNames[logicalType] ?? FALLBACK_ASSET
+        const icon = resolveIconAsset(logicalType, account)
         const iconName: IconName = icon.replaceAll(
             THEME_TOKEN,
             theme,

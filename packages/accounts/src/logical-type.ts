@@ -54,11 +54,9 @@ const baseTypeFor = (account: WalletAccount): AccountLogicalType => {
 }
 
 /**
- * Derives the logical type of `account` given the full wallet list and,
- * optionally, the current on-chain auth address for the account. When a chain
- * auth address is provided it takes precedence over `account.rekeyAddress`,
- * so a freshly-synced rekey on chain is reflected even if the stored wallet
- * record hasn't been refreshed yet.
+ * Derives the logical type of `account` given the full wallet list. The
+ * account's `rekeyAddress` is kept in sync by `fetchAndPersistAccount`, so
+ * it reflects the current on-chain auth address.
  *
  * Classification follows the Android `GetAccountTypeUseCase` rules with one
  * difference: the signing-capability check for the auth account is recursive
@@ -73,18 +71,14 @@ const baseTypeFor = (account: WalletAccount): AccountLogicalType => {
 export const deriveAccountLogicalType = (
     account: WalletAccount,
     accounts: WalletAccount[],
-    chainAuthAddress?: string | null,
 ): AccountLogicalType => {
-    const effectiveAuth =
-        chainAuthAddress === undefined
-            ? (account.rekeyAddress ?? null)
-            : chainAuthAddress
+    const authAddress = account.rekeyAddress ?? null
 
-    if (!effectiveAuth) {
+    if (!authAddress) {
         return baseTypeFor(account)
     }
 
-    const authAccount = accounts.find(a => a.address === effectiveAuth)
+    const authAccount = accounts.find(a => a.address === authAddress)
     const authCanSign = authAccount
         ? canSignAccount(authAccount, accounts)
         : false

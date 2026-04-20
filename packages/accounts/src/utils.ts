@@ -101,11 +101,7 @@ export const canSignWithAccount = (
 export const isSigningAccount = (
     account: WalletAccount,
     accounts: WalletAccount[],
-    chainAuthAddress?: string | null,
-): boolean =>
-    isSigningLogicalType(
-        deriveAccountLogicalType(account, accounts, chainAuthAddress),
-    )
+): boolean => isSigningLogicalType(deriveAccountLogicalType(account, accounts))
 
 /**
  * Resolve the auth account for a given account.

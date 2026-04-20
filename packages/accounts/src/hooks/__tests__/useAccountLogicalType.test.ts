@@ -11,38 +11,25 @@
  */
 
 import { renderHook } from '@testing-library/react'
-import { describe, expect, it, vi, beforeEach } from 'vitest'
+import { describe, expect, it, beforeEach } from 'vitest'
 import { useAccountLogicalType } from '../useAccountLogicalType'
 import { useAllAccountLogicalTypes } from '../useAllAccountLogicalTypes'
 import { AccountLogicalTypes } from '../../logical-type'
 import { useAccountsStore } from '../../store'
 import type { WalletAccount } from '../../models'
 
-vi.mock('../useChainAuthAddressesQuery', () => ({
-    useChainAuthAddressesQuery: () => ({
-        chainAuthAddresses: new Map<string, string | null>([
-            ['A', 'S'],
-            ['S', null],
-        ]),
-        isLoading: false,
-        isError: false,
-        error: null,
-        refetch: vi.fn(),
-    }),
-}))
-
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useNetwork: () => ({ network: 'mainnet' }),
-}))
-
 describe('useAccountLogicalType', () => {
     beforeEach(() => {
         useAccountsStore.getState().resetState()
     })
 
-    it('returns RekeyedAuth when chain auth maps to a signer in the store', () => {
+    it('returns RekeyedAuth when the stored rekeyAddress points to a signer in the store', () => {
         useAccountsStore.getState().setAccounts([
-            { type: 'watch', address: 'A' } as unknown as WalletAccount,
+            {
+                type: 'watch',
+                address: 'A',
+                rekeyAddress: 'S',
+            } as unknown as WalletAccount,
             {
                 type: 'algo25',
                 address: 'S',
@@ -80,7 +67,11 @@ describe('useAllAccountLogicalTypes', () => {
 
     it('returns a Map keyed by address', () => {
         useAccountsStore.getState().setAccounts([
-            { type: 'watch', address: 'A' } as unknown as WalletAccount,
+            {
+                type: 'watch',
+                address: 'A',
+                rekeyAddress: 'S',
+            } as unknown as WalletAccount,
             {
                 type: 'algo25',
                 address: 'S',

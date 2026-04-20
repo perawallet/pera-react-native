@@ -18,7 +18,6 @@ import {
     type HDWalletAccount,
     type HardwareWalletAccount,
     type MultiSigAccount,
-    type WalletAccount,
     type WatchAccount,
 } from '../models'
 
@@ -132,24 +131,6 @@ describe('deriveAccountLogicalType', () => {
         const rekeyed = watch('A', 'S')
         expect(deriveAccountLogicalType(rekeyed, [rekeyed, authWatch])).toBe(
             AccountLogicalTypes.NoAuth,
-        )
-    })
-
-    it('prefers the chain-provided authAddress over the stored rekeyAddress', () => {
-        const signer = algo25('S')
-        const stored: WalletAccount = {
-            ...algo25('A'),
-            rekeyAddress: undefined,
-        }
-        expect(deriveAccountLogicalType(stored, [stored, signer], 'S')).toBe(
-            AccountLogicalTypes.RekeyedAuth,
-        )
-    })
-
-    it('treats an empty chain authAddress as "not rekeyed" regardless of stored rekeyAddress', () => {
-        const stored: Algo25Account = { ...algo25('A'), rekeyAddress: 'S' }
-        expect(deriveAccountLogicalType(stored, [stored], null)).toBe(
-            AccountLogicalTypes.Algo25,
         )
     })
 })
