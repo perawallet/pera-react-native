@@ -17,12 +17,22 @@ import { useToast } from '@hooks/useToast'
 import { useSendFunds } from '@modules/transactions/hooks'
 import {
     useAccountAssetBalanceQuery,
+    useOnChainAccountInformationQuery,
     useSelectedAccount,
     type AssetWithAccountBalance,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useAssetsQuery, type PeraAsset } from '@perawallet/wallet-core-assets'
-import { useSuggestedParametersQuery } from '@perawallet/wallet-core-blockchain'
+import {
+    ALGO_ASSET,
+    ALGO_ASSET_ID,
+    toWholeUnits,
+    useAssetsQuery,
+    type PeraAsset,
+} from '@perawallet/wallet-core-assets'
+import {
+    displayUnitsToBaseUnits,
+    useSuggestedParametersQuery,
+} from '@perawallet/wallet-core-blockchain'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
@@ -45,6 +55,9 @@ type useTransactionConfirmationScreenResult = {
     handleConfirm: () => void
     isReady: boolean
     isCloseAccount: boolean
+    isRecipientBelowMbr: boolean
+    recipientMbrDisplay: string
+    isRecipientInfoPending: boolean
 }
 
 export const useTransactionConfirmationScreen =
@@ -86,7 +99,42 @@ export const useTransactionConfirmationScreen =
                 selectedAssetId,
             )
 
+        const isAlgoSend = selectedAssetId === ALGO_ASSET_ID
+        const {
+            data: recipientAccountInfo,
+            isPending: recipientAccountInfoPending,
+        } = useOnChainAccountInformationQuery(
+            isAlgoSend ? (destination ?? '') : '',
+        )
+        const isRecipientInfoPending =
+            isAlgoSend && !!destination && recipientAccountInfoPending
+
+        const { isRecipientBelowMbr, recipientMbrDisplay } = useMemo(() => {
+            const mbr = recipientAccountInfo?.minBalance ?? 0n
+            const mbrDisplay = toWholeUnits(mbr, ALGO_ASSET).toString()
+            if (!isAlgoSend || !amount || !recipientAccountInfo) {
+                return {
+                    isRecipientBelowMbr: false,
+                    recipientMbrDisplay: mbrDisplay,
+                }
+            }
+            const amountInMicroAlgos = BigInt(
+                displayUnitsToBaseUnits(amount, ALGO_ASSET.decimals).toString(),
+            )
+            const recipientBalanceAfter =
+                recipientAccountInfo.amount + amountInMicroAlgos
+            return {
+                isRecipientBelowMbr:
+                    recipientBalanceAfter < recipientAccountInfo.minBalance,
+                recipientMbrDisplay: mbrDisplay,
+            }
+        }, [isAlgoSend, amount, recipientAccountInfo])
+
         const handleConfirm = () => {
+            if (isRecipientInfoPending) {
+                return
+            }
+
             if (
                 !selectedAccount ||
                 !selectedAssetId ||
@@ -98,6 +146,25 @@ export const useTransactionConfirmationScreen =
                     {
                         title: t('errors.transaction.title'),
                         body: t('errors.transaction.body'),
+                        type: 'error',
+                    },
+                    {
+                        notifier: bottomSheetNotifier.current ?? undefined,
+                    },
+                )
+                return
+            }
+
+            if (isRecipientBelowMbr) {
+                showToast(
+                    {
+                        title: t(
+                            'send_funds.confirmation.recipient_below_mbr.title',
+                        ),
+                        body: t(
+                            'send_funds.confirmation.recipient_below_mbr.body',
+                            { min: recipientMbrDisplay },
+                        ),
                         type: 'error',
                     },
                     {
@@ -134,5 +201,8 @@ export const useTransactionConfirmationScreen =
             handleConfirm,
             isReady,
             isCloseAccount,
+            isRecipientBelowMbr,
+            recipientMbrDisplay,
+            isRecipientInfoPending,
         }
     }

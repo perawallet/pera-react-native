@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import type { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import {
     queryClient,
     type HistoryPeriod,
@@ -17,6 +18,15 @@ import {
 } from '@perawallet/wallet-core-shared'
 
 import { AccountBalanceHistoryResponse } from '../models'
+
+export type OnChainAccountInformationResponse = Awaited<
+    ReturnType<typeof fetchOnChainAccountInformation>
+>
+
+export const fetchOnChainAccountInformation = (
+    algokit: AlgorandClient,
+    address: string,
+) => algokit.client.algod.accountInformation(address)
 
 export const getAccountsBalanceHistoryEndpointPath = () => `/v1/wallet/wealth/`
 

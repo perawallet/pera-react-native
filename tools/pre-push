@@ -109,6 +109,24 @@ else
 fi
 rm "$I18N_LOG"
 
+# Secret scan. The CI job is authoritative; this catches obvious leaks
+# before they hit the network. Soft-skip if gitleaks isn't installed so
+# new contributors aren't blocked on install friction.
+echo "\n${YELLOW}Scanning for committed secrets...${NC}"
+if command -v gitleaks >/dev/null 2>&1; then
+    GITLEAKS_LOG=$(mktemp)
+    UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo "origin/main")
+    if gitleaks git --config=.gitleaks.toml --log-opts="${UPSTREAM}..HEAD" --redact > "$GITLEAKS_LOG" 2>&1; then
+        echo "${GREEN}✓ No secrets detected${NC}"
+    else
+        record_failure "Gitleaks" "$GITLEAKS_LOG" "${YELLOW}Remove the leaked secret, rotate it, and rewrite history before pushing.${NC}"
+    fi
+    rm "$GITLEAKS_LOG"
+else
+    echo "${YELLOW}⚠ gitleaks not installed — skipping local secret scan.${NC}"
+    echo "${YELLOW}  Install with 'brew install gitleaks' (CI will still check).${NC}"
+fi
+
 # Final Report
 if [ $EXIT_STATUS -ne 0 ]; then
     echo "\n${RED}Some pre-push checks failed:${NC}"

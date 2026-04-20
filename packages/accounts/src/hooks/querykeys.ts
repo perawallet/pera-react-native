@@ -40,6 +40,11 @@ export const getAccountBalancesHistoryQueryKey = (
     network: Network,
 ) => [MODULE_PREFIX, 'balance-history', { period, addresses, network }]
 
+export const getOnChainAccountInformationQueryKey = (
+    address: string,
+    network: Network,
+) => [MODULE_PREFIX, 'on-chain-account-information', { address, network }]
+
 export const getAccountAssetBalanceHistoryQueryKey = (
     network: Network,
     account_address: string,

@@ -44,15 +44,26 @@ export type CreatorAccount = {
     address: string
 }
 
-export type PeraAsset = {
+export type MinimalAsset = {
     assetId: string
+    name?: string
+    unitName?: string
+    decimals?: number
+}
+
+export type DisplayableAsset = MinimalAsset & {
+    peraMetadata?: {
+        logo?: string | null
+        collectible?: { primaryImage?: string | null }
+    }
+}
+
+export type PeraAsset = MinimalAsset & {
     decimals: number
     creator: CreatorAccount
     /** Total supply in base units (smallest indivisible unit of the asset) */
     totalSupply: Decimal
     metadata?: string
-    name?: string
-    unitName?: string
     url?: string
     peraMetadata?: PeraAssetMetadata
 }

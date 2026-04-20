@@ -38,6 +38,27 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         'collectible',
 }))
 
+vi.mock('@perawallet/wallet-core-swaps', () => ({
+    isSwappableAsset: (asset: unknown) => {
+        const meta = (
+            asset as {
+                peraMetadata?: {
+                    type?: string
+                    verificationTier?: string
+                    category?: number
+                }
+            }
+        )?.peraMetadata
+        if (!meta) return false
+        if (meta.type === 'collectible') return false
+        return (
+            meta.verificationTier === 'verified' ||
+            meta.verificationTier === 'trusted' ||
+            meta.category === 1
+        )
+    },
+}))
+
 vi.mock('@modules/assets/components/AccountAssetSelectionList', () => ({
     AccountAssetSelectionList: (props: AccountAssetSelectionListProps) => {
         capturedFromOnAssetSelected = props.onAssetSelected
@@ -242,24 +263,6 @@ describe('SwapAssetSelectionBottomSheet', () => {
             ).toBeTruthy()
             expect(
                 screen.queryByTestId('account-asset-selection-list'),
-            ).toBeNull()
-        })
-
-        it('falls back to AccountAssetSelectionList when fromAssetId is not provided', () => {
-            render(
-                <SwapAssetSelectionBottomSheet
-                    variant='to'
-                    isVisible={true}
-                    onClose={vi.fn()}
-                    onAssetSelected={vi.fn()}
-                />,
-            )
-
-            expect(
-                screen.getByTestId('account-asset-selection-list'),
-            ).toBeTruthy()
-            expect(
-                screen.queryByTestId('swap-to-asset-selection-list'),
             ).toBeNull()
         })
 

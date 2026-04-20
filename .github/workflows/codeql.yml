@@ -1,0 +1,48 @@
+name: CodeQL
+
+# Static analysis for JavaScript/TypeScript via GitHub's CodeQL engine.
+# Catches classes of bugs that ESLint/oxlint don't (taint tracking, XSS
+# sources-to-sinks, prototype pollution, unsafe deserialization, etc.).
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly full scan regardless of churn — CodeQL's database grows with
+    # new queries, so a dormant file can start flagging months later.
+    - cron: "0 8 * * 1"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [javascript-typescript]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
+        with:
+          languages: ${{ matrix.language }}
+          # `security-extended` adds checks beyond the default pack that
+          # have low false-positive rates. Use `security-and-quality` if
+          # the team wants style-tier findings too.
+          queries: security-extended
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
+        with:
+          category: "/language:${{ matrix.language }}"

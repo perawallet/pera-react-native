@@ -58,6 +58,7 @@ vi.mock('@shopify/flash-list', () => ({
 
 vi.mock('@perawallet/wallet-core-assets', async () => ({
     useAssetsQuery: vi.fn(() => ({ data: new Map() })),
+    isAlgoAsset: (assetId: string | number) => String(assetId) === '0',
     isCollectible: vi.fn(() => false),
     isAlgoAsset: vi.fn(() => false),
     toWholeUnits: (value: number | bigint, asset: { decimals: number }) =>

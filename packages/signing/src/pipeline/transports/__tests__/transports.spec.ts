@@ -1,0 +1,442 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, test, expect, vi } from 'vitest'
+import { createAlgodTransport } from '../createAlgodTransport'
+import { createCallbackTransport } from '../createCallbackTransport'
+import { createWalletConnectTransport } from '../createWalletConnectTransport'
+import { createMultisigCosignTransport } from '../createMultisigCosignTransport'
+import { createMultisigProposeTransport } from '../createMultisigProposeTransport'
+import { TransportError } from '../../errors'
+import type {
+    SigningResult,
+    SourceMetadata,
+    SignedTransactionData,
+    SignedArbitraryData,
+} from '../../types'
+
+const transactionResult: SigningResult = {
+    signedData: {
+        type: 'transactions',
+        signed: [{ txn: {} as never, blob: new Uint8Array() } as never],
+    } as SignedTransactionData,
+    signers: [{ address: 'ADDR' }],
+}
+
+const arbitraryResult: SigningResult = {
+    signedData: {
+        type: 'arbitrary-data',
+        signatures: [new Uint8Array([1])],
+    } as SignedArbitraryData,
+    signers: [{ address: 'ADDR' }],
+}
+
+// =============================================================================
+// createAlgodTransport
+// =============================================================================
+
+describe('createAlgodTransport', () => {
+    const makeAlgokit = (txid: string | string[] | undefined = 'TX_ID') => ({
+        client: {
+            algod: {
+                sendRawTransaction: vi.fn().mockResolvedValue({ txid }),
+            },
+        },
+    })
+    const encodeSignedTransactions = vi
+        .fn()
+        .mockReturnValue([new Uint8Array([1])])
+
+    test('submits tx group and returns txIds from response string', async () => {
+        const algokit = makeAlgokit('TX1')
+        const transport = createAlgodTransport(
+            algokit,
+            encodeSignedTransactions,
+        )
+
+        const result = await transport.send(transactionResult, {
+            type: 'local',
+        })
+
+        expect(result).toEqual({ type: 'submitted', txIds: ['TX1'] })
+        expect(algokit.client.algod.sendRawTransaction).toHaveBeenCalled()
+    })
+
+    test('submits tx group and returns txIds from response array', async () => {
+        const algokit = makeAlgokit(['TX1', 'TX2'])
+        const transport = createAlgodTransport(
+            algokit,
+            encodeSignedTransactions,
+        )
+
+        const result = await transport.send(transactionResult, {
+            type: 'local',
+        })
+
+        expect(result).toEqual({ type: 'submitted', txIds: ['TX1', 'TX2'] })
+    })
+
+    test('falls back to signedTxn.txn.txId() when response omits txid', async () => {
+        const txIdFn = vi.fn().mockReturnValue('COMPUTED_ID')
+        const signedWithId = {
+            signedData: {
+                type: 'transactions',
+                signed: [
+                    {
+                        txn: { txId: txIdFn },
+                        blob: new Uint8Array(),
+                    } as never,
+                ],
+            } as SignedTransactionData,
+            signers: [{ address: 'ADDR' }],
+        }
+        const algokit = {
+            client: {
+                algod: {
+                    sendRawTransaction: vi.fn().mockResolvedValue({}),
+                },
+            },
+        }
+        const transport = createAlgodTransport(
+            algokit,
+            encodeSignedTransactions,
+        )
+
+        const result = await transport.send(signedWithId, {
+            type: 'local',
+        })
+
+        expect(txIdFn).toHaveBeenCalled()
+        expect(result).toEqual({
+            type: 'submitted',
+            txIds: ['COMPUTED_ID'],
+        })
+    })
+
+    test('rejects non-transaction data with TransportError', async () => {
+        const algokit = makeAlgokit()
+        const transport = createAlgodTransport(
+            algokit,
+            encodeSignedTransactions,
+        )
+
+        await expect(
+            transport.send(arbitraryResult, { type: 'local' }),
+        ).rejects.toThrow('only supports transaction data')
+    })
+
+    test('wraps submission errors in TransportError', async () => {
+        const algokit = {
+            client: {
+                algod: {
+                    sendRawTransaction: vi
+                        .fn()
+                        .mockRejectedValue(new Error('algod down')),
+                },
+            },
+        }
+        const transport = createAlgodTransport(
+            algokit,
+            encodeSignedTransactions,
+        )
+
+        await expect(
+            transport.send(transactionResult, { type: 'local' }),
+        ).rejects.toThrow(TransportError)
+    })
+
+    test('wraps non-Error rejections in TransportError', async () => {
+        const algokit = {
+            client: {
+                algod: {
+                    sendRawTransaction: vi.fn().mockRejectedValue('boom'),
+                },
+            },
+        }
+        const transport = createAlgodTransport(
+            algokit,
+            encodeSignedTransactions,
+        )
+
+        await expect(
+            transport.send(transactionResult, { type: 'local' }),
+        ).rejects.toThrow(TransportError)
+    })
+})
+
+// =============================================================================
+// createCallbackTransport
+// =============================================================================
+
+describe('createCallbackTransport', () => {
+    test('calls approve and returns callback-sent', async () => {
+        const approve = vi.fn().mockResolvedValue(undefined)
+        const transport = createCallbackTransport()
+        const source: SourceMetadata = {
+            type: 'local',
+            transport: 'callback',
+            requestId: 'req-1',
+            callbacks: { approve },
+        }
+
+        const result = await transport.send(transactionResult, source)
+
+        expect(approve).toHaveBeenCalledWith(transactionResult)
+        expect(result).toEqual({ type: 'callback-sent', requestId: 'req-1' })
+    })
+
+    test('defaults requestId to empty string when not provided', async () => {
+        const approve = vi.fn().mockResolvedValue(undefined)
+        const transport = createCallbackTransport()
+        const source: SourceMetadata = {
+            type: 'local',
+            transport: 'callback',
+            callbacks: { approve },
+        }
+
+        const result = await transport.send(transactionResult, source)
+
+        if (result.type === 'callback-sent') {
+            expect(result.requestId).toBe('')
+        }
+    })
+
+    test('throws when approve callback is missing', async () => {
+        const transport = createCallbackTransport()
+        const source: SourceMetadata = {
+            type: 'local',
+            transport: 'callback',
+        }
+
+        await expect(transport.send(transactionResult, source)).rejects.toThrow(
+            'No approve callback',
+        )
+    })
+
+    test('forwards approve failures via error callback and throws TransportError', async () => {
+        const approve = vi.fn().mockRejectedValue(new Error('approve fail'))
+        const errorCb = vi.fn().mockResolvedValue(undefined)
+        const transport = createCallbackTransport()
+        const source: SourceMetadata = {
+            type: 'local',
+            transport: 'callback',
+            callbacks: { approve, error: errorCb },
+        }
+
+        await expect(transport.send(transactionResult, source)).rejects.toThrow(
+            TransportError,
+        )
+        expect(errorCb).toHaveBeenCalled()
+    })
+
+    test('wraps non-Error rejections in TransportError', async () => {
+        const approve = vi.fn().mockRejectedValue('string err')
+        const transport = createCallbackTransport()
+        const source: SourceMetadata = {
+            type: 'local',
+            transport: 'callback',
+            callbacks: { approve },
+        }
+
+        await expect(transport.send(transactionResult, source)).rejects.toThrow(
+            TransportError,
+        )
+    })
+})
+
+// =============================================================================
+// createWalletConnectTransport
+// =============================================================================
+
+describe('createWalletConnectTransport', () => {
+    test('calls approve and returns callback-sent with requestId', async () => {
+        const approve = vi.fn().mockResolvedValue(undefined)
+        const transport = createWalletConnectTransport()
+        const source: SourceMetadata = {
+            type: 'walletconnect',
+            requestId: 'wc-1',
+            callbacks: { approve },
+        }
+
+        const result = await transport.send(transactionResult, source)
+
+        expect(approve).toHaveBeenCalledWith(transactionResult)
+        expect(result).toEqual({ type: 'callback-sent', requestId: 'wc-1' })
+    })
+
+    test('throws when approve callback is missing', async () => {
+        const transport = createWalletConnectTransport()
+
+        await expect(
+            transport.send(transactionResult, { type: 'walletconnect' }),
+        ).rejects.toThrow('No approve callback')
+    })
+
+    test('throws when requestId is missing', async () => {
+        const approve = vi.fn()
+        const transport = createWalletConnectTransport()
+
+        await expect(
+            transport.send(transactionResult, {
+                type: 'walletconnect',
+                callbacks: { approve },
+            }),
+        ).rejects.toThrow('No request ID')
+    })
+
+    test('calls error callback when approve rejects', async () => {
+        const approve = vi.fn().mockRejectedValue(new Error('reject'))
+        const errorCb = vi.fn().mockResolvedValue(undefined)
+        const transport = createWalletConnectTransport()
+
+        await expect(
+            transport.send(transactionResult, {
+                type: 'walletconnect',
+                requestId: 'wc-1',
+                callbacks: { approve, error: errorCb },
+            }),
+        ).rejects.toThrow(TransportError)
+
+        expect(errorCb).toHaveBeenCalled()
+    })
+
+    test('wraps non-Error rejections in TransportError', async () => {
+        const approve = vi.fn().mockRejectedValue(42)
+        const transport = createWalletConnectTransport()
+
+        await expect(
+            transport.send(transactionResult, {
+                type: 'walletconnect',
+                requestId: 'wc-1',
+                callbacks: { approve },
+            }),
+        ).rejects.toThrow(TransportError)
+    })
+})
+
+// =============================================================================
+// createMultisigCosignTransport
+// =============================================================================
+
+describe('createMultisigCosignTransport', () => {
+    test('adds signatures and returns signatures-added result', async () => {
+        const addSignatures = vi.fn().mockResolvedValue({ status: 'ready' })
+        const transport = createMultisigCosignTransport(addSignatures)
+        const source: SourceMetadata = {
+            type: 'multisig-cosign',
+            signRequestId: 'mcs-1',
+        }
+
+        const result = await transport.send(transactionResult, source)
+
+        expect(addSignatures).toHaveBeenCalledWith({
+            signRequestId: 'mcs-1',
+            signers: transactionResult.signers,
+        })
+        expect(result).toEqual({
+            type: 'signatures-added',
+            signRequestId: 'mcs-1',
+            status: 'ready',
+        })
+    })
+
+    test('throws when signRequestId is missing', async () => {
+        const transport = createMultisigCosignTransport(vi.fn())
+
+        await expect(
+            transport.send(transactionResult, { type: 'multisig-cosign' }),
+        ).rejects.toThrow('Sign request ID is required')
+    })
+
+    test('wraps API errors in TransportError', async () => {
+        const addSignatures = vi.fn().mockRejectedValue(new Error('api fail'))
+        const transport = createMultisigCosignTransport(addSignatures)
+
+        await expect(
+            transport.send(transactionResult, {
+                type: 'multisig-cosign',
+                signRequestId: 'mcs-1',
+            }),
+        ).rejects.toThrow(TransportError)
+    })
+
+    test('wraps non-Error rejections in TransportError', async () => {
+        const addSignatures = vi.fn().mockRejectedValue('bad')
+        const transport = createMultisigCosignTransport(addSignatures)
+
+        await expect(
+            transport.send(transactionResult, {
+                type: 'multisig-cosign',
+                signRequestId: 'mcs-1',
+            }),
+        ).rejects.toThrow(TransportError)
+    })
+})
+
+// =============================================================================
+// createMultisigProposeTransport
+// =============================================================================
+
+describe('createMultisigProposeTransport', () => {
+    test('proposes and returns proposed result', async () => {
+        const proposeSignRequest = vi.fn().mockResolvedValue({
+            signRequestId: 'new-req',
+            status: 'pending',
+        })
+        const transport = createMultisigProposeTransport(proposeSignRequest)
+
+        const result = await transport.send(
+            transactionResult,
+            { type: 'local' },
+            'JOINT_ADDR',
+        )
+
+        expect(proposeSignRequest).toHaveBeenCalledWith({
+            jointAccountAddress: 'JOINT_ADDR',
+            signedData: transactionResult.signedData,
+            signers: transactionResult.signers,
+        })
+        expect(result).toEqual({
+            type: 'proposed',
+            signRequestId: 'new-req',
+            status: 'pending',
+        })
+    })
+
+    test('throws when jointAccountAddress is missing', async () => {
+        const transport = createMultisigProposeTransport(vi.fn())
+
+        await expect(
+            transport.send(transactionResult, { type: 'local' }),
+        ).rejects.toThrow('Joint account address is required')
+    })
+
+    test('wraps API errors in TransportError', async () => {
+        const proposeSignRequest = vi
+            .fn()
+            .mockRejectedValue(new Error('propose fail'))
+        const transport = createMultisigProposeTransport(proposeSignRequest)
+
+        await expect(
+            transport.send(transactionResult, { type: 'local' }, 'JOINT_ADDR'),
+        ).rejects.toThrow(TransportError)
+    })
+
+    test('wraps non-Error rejections in TransportError', async () => {
+        const proposeSignRequest = vi.fn().mockRejectedValue(123)
+        const transport = createMultisigProposeTransport(proposeSignRequest)
+
+        await expect(
+            transport.send(transactionResult, { type: 'local' }, 'JOINT_ADDR'),
+        ).rejects.toThrow(TransportError)
+    })
+})

@@ -39,6 +39,7 @@ export const SwapFormControls = ({
             <PWTouchableIcon
                 containerStyle={styles.swapDirectionButton}
                 name='swap'
+                size='sm'
                 style={styles.swapDirectionIcon}
                 onPress={onSwapPress}
             />
@@ -51,6 +52,7 @@ export const SwapFormControls = ({
                 >
                     <PWIcon
                         name='sliders'
+                        size='sm'
                         variant='link'
                     />
                 </PWTouchableOpacity>

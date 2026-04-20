@@ -120,14 +120,6 @@ See workspace definition in [`pnpm-workspace.yaml`](pnpm-workspace.yaml).
 - Linting: Oxlint via root config [`.oxlintrc.json`](.oxlintrc.json)
 - TypeScript project references via [`packages/devtools/tsconfig`](packages/devtools/tsconfig)
 
-Generate all API clients (using Kubb):
-
-```sh
-pnpm run generate:all-apis
-```
-
-This writes typed clients, zod schemas, msw mocks, and React Query hooks. Note that our code does not directly use this generated code (yet) as the OpenAPI specs are not up to scratch, but the generated code can be used for reference or inspiration.
-
 ## Common commands (root)
 
 ```sh

@@ -15,6 +15,7 @@ import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform'
 import { useNotificationsListQuery } from '../useNotificationsListQuery'
 import { fetchNotificationList } from '../../api/notifications'
+import { useDeviceID } from '@perawallet/wallet-core-device'
 
 vi.mock('../../api/notifications', () => ({
     fetchNotificationList: vi.fn(),
@@ -83,5 +84,42 @@ describe('useNotificationsListQuery', () => {
                 },
             },
         ])
+    })
+
+    it('maps a response with no icon to icon: null', async () => {
+        const mockResponse = {
+            count: 1,
+            next: null,
+            previous: null,
+            results: [
+                {
+                    id: '2',
+                    account_address: 'ADDR2',
+                    message: 'No icon',
+                    url: 'perawallet://',
+                    creation_datetime: new Date().toISOString(),
+                },
+            ],
+        }
+        vi.mocked(fetchNotificationList).mockResolvedValue(mockResponse)
+
+        const { result } = renderHook(() => useNotificationsListQuery(), {
+            wrapper: createWrapper(),
+        })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+        expect(result.current.data?.[0].icon).toBeNull()
+    })
+
+    it('does not fetch when deviceID is null', async () => {
+        vi.mocked(useDeviceID).mockReturnValueOnce(null)
+        vi.mocked(fetchNotificationList).mockClear()
+
+        renderHook(() => useNotificationsListQuery(), {
+            wrapper: createWrapper(),
+        })
+
+        expect(fetchNotificationList).not.toHaveBeenCalled()
     })
 })

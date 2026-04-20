@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { isAlgoAsset } from '@perawallet/wallet-core-assets'
+import {
+    isAlgoAsset,
+    type DisplayableAsset,
+} from '@perawallet/wallet-core-assets'
 import { buildPrismUrl, getInitials } from '@perawallet/wallet-core-shared'
 import AlgoAssetIcon from '@assets/icons/assets/algo.svg'
 import { useCallback, useEffect, useMemo, useState } from 'react'
@@ -19,18 +22,8 @@ import { PWIconSize, PWImage, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useTheme } from '@rneui/themed'
 
-type AssetIconAsset = {
-    assetId: string | number
-    name?: string
-    unitName?: string
-    peraMetadata?: {
-        logo?: string | null
-        collectible?: { primaryImage?: string | null }
-    }
-}
-
 export type AssetIconProps = {
-    asset: AssetIconAsset
+    asset: DisplayableAsset
     size?: PWIconSize
     /** Direct logo URL — used as-is, bypasses Prism optimization.
      *  Takes precedence over `asset.peraMetadata?.logo`. */

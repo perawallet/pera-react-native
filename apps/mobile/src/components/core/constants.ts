@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { fetchAlgoUsdPrice, type FetchAlgoUsdPriceParams } from './endpoints'
+export const DEFAULT_MINIMUM_FONT_SCALE = 0.5

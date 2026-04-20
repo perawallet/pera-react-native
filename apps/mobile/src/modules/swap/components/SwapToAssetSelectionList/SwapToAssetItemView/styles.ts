@@ -25,7 +25,7 @@ export const useStyles = makeStyles(theme => ({
         flexGrow: 1,
     },
     unitContainer: {
-        gap: theme.spacing.xs / 2,
+        gap: theme.spacing.xxs,
         flexShrink: 1,
     },
     row: {
@@ -41,7 +41,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGrayLighter,
     },
     amountContainer: {
-        gap: theme.spacing.xs / 2,
+        gap: theme.spacing.xxs,
         alignItems: 'flex-end',
     },
     primaryAmount: {

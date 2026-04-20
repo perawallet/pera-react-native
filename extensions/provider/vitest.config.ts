@@ -15,21 +15,16 @@ import { coverageConfig } from '@perawallet/wallet-core-devtools/vitest/coverage
 
 export default defineConfig({
     test: {
-        coverage: coverageConfig,
+        coverage: {
+            ...coverageConfig,
+            // test-platform.ts is a test-harness helper re-exported for
+            // downstream packages to build isolated providers in their own
+            // test suites. It has no production callers in this package.
+            exclude: [...coverageConfig.exclude, 'src/test-platform.ts'],
+        },
         globals: true,
         environment: 'jsdom',
         setupFiles: ['./vitest.setup.ts'],
-        coverage: {
-            provider: 'v8',
-            exclude: [
-                '**/node_modules/**',
-                '**/dist/**',
-                '**/__tests__/**',
-                '**/index.ts',
-                '**/*.config.ts',
-                '**/eslint.config.js',
-            ],
-        },
     },
     resolve: {
         conditions: ['default'],

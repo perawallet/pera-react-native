@@ -30,7 +30,7 @@
   "devDependencies": {
     "better-sqlite3": "^11.0.0",
     "@types/better-sqlite3": "^7.6.0",
-    "drizzle-kit": "^0.30.0",
+    "drizzle-kit": "^0.31.10",
     "typescript": "catalog:",
     "vite": "catalog:",
     "vite-plugin-dts": "^4.5.4",

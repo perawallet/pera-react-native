@@ -91,7 +91,6 @@ export const StakingDisclaimerSheet = ({
 
             <BottomSheetScrollView
                 onScroll={handleScroll}
-                scrollEventThrottle={16}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollViewContent}
             >

@@ -12,6 +12,7 @@
 
 import { Decimal } from 'decimal.js'
 
+import type { MinimalAsset } from '@perawallet/wallet-core-assets'
 import type { BaseStoreState } from '@perawallet/wallet-core-shared'
 
 export type SwapsState = BaseStoreState & {
@@ -50,13 +51,9 @@ export type SwapReason =
 
 export type SwapVersion = 'v1' | 'v2'
 
-export interface DexSwapAsset {
-    assetId: number
+export interface DexSwapAsset extends MinimalAsset {
     logo?: string
-    name?: string
-    unitName?: string
     total?: string
-    decimals?: number
     verificationTier: string
     usdValue?: string | null
 }

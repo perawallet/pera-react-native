@@ -51,8 +51,6 @@ export default defineConfig({
                 '@perawallet/wallet-core-config',
                 '@algorandfoundation/algokit-utils',
                 '@algorandfoundation/xhd-wallet-api',
-                '@kubb/core',
-                '@kubb/plugin-client',
                 'base32-encode',
                 'base64-js',
                 'bip39',

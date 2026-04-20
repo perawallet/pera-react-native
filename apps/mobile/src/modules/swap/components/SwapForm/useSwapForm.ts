@@ -277,9 +277,17 @@ export const useSwapForm = (): UseSwapFormResult => {
         [selectedQuote, payAmount, isQuoteFetching],
     )
 
-    const handlePayAmountChange = useCallback((amount: Decimal | null) => {
-        setPayAmount(amount)
-    }, [])
+    const handlePayAmountChange = useCallback(
+        (amount: Decimal | null) => {
+            setPayAmount(amount)
+            if (!isDecimalEqual(amount, quotedAmount)) {
+                setAllQuotes([])
+                setQuotedAmount(null)
+                setReceiveAmount(null)
+            }
+        },
+        [quotedAmount],
+    )
 
     const handleSwapDirection = useCallback(() => {
         setFromAsset(toAsset)
