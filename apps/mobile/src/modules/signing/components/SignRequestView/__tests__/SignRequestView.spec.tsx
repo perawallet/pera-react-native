@@ -10,10 +10,13 @@
  limitations under the License
  */
 
-import { render } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { fireEvent, render } from '@test-utils/render'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { SignRequestView } from '../SignRequestView'
-import { SignRequest } from '@perawallet/wallet-core-signing'
+import {
+    SignRequest,
+    type FailedSignRequest,
+} from '@perawallet/wallet-core-signing'
 
 vi.mock('@modules/signing/routes', () => ({
     SigningRoutes: ({ request }: { request: SignRequest }) => {
@@ -26,9 +29,35 @@ vi.mock('@modules/signing/routes', () => ({
     },
 }))
 
+const mockRemoveSignRequest = vi.fn()
+const mockClearLastFailedRequest = vi.fn()
+const signingRequestMock = {
+    lastFailedRequest: null as FailedSignRequest | null,
+}
+
+vi.mock('@perawallet/wallet-core-signing', async importOriginal => {
+    const original =
+        await importOriginal<typeof import('@perawallet/wallet-core-signing')>()
+    return {
+        ...original,
+        useSigningRequest: () => ({
+            removeSignRequest: mockRemoveSignRequest,
+            clearLastFailedRequest: mockClearLastFailedRequest,
+            lastFailedRequest: signingRequestMock.lastFailedRequest,
+        }),
+    }
+})
+
 describe('SigningView', () => {
+    beforeEach(() => {
+        signingRequestMock.lastFailedRequest = null
+        mockRemoveSignRequest.mockReset()
+        mockClearLastFailedRequest.mockReset()
+    })
+
     it('renders TransactionSigningView for transaction requests', () => {
         const request = {
+            id: 'tx-1',
             type: 'transactions',
             txs: [],
         } as unknown as SignRequest
@@ -39,6 +68,7 @@ describe('SigningView', () => {
 
     it('renders ArbitraryDataSigningView for arbitrary-data requests', () => {
         const request = {
+            id: 'data-1',
             type: 'arbitrary-data',
             data: [],
         } as unknown as SignRequest
@@ -49,6 +79,7 @@ describe('SigningView', () => {
 
     it('renders Arc60SigningView for arc60 requests', () => {
         const request = {
+            id: 'arc60-1',
             type: 'arc60',
         } as unknown as SignRequest
 
@@ -58,10 +89,60 @@ describe('SigningView', () => {
 
     it('renders empty view for unknown request types', () => {
         const request = {
+            id: 'unknown-1',
             type: 'unknown-type',
         } as unknown as SignRequest
 
         const { container } = render(<SignRequestView request={request} />)
         expect(container.textContent?.toLowerCase()).toContain('unknown')
+    })
+
+    it('renders inline failure view when request matches lastFailedRequest', () => {
+        const request = {
+            id: 'tx-1',
+            type: 'transactions',
+            txs: [],
+        } as unknown as SignRequest
+        signingRequestMock.lastFailedRequest = {
+            request,
+            error: new Error('bad things'),
+        }
+
+        const { container } = render(<SignRequestView request={request} />)
+        expect(container.textContent).toContain('signing.signing_failed.title')
+        expect(container.textContent).not.toContain('TransactionSigningView')
+    })
+
+    it('ignores a failure keyed to a different request id', () => {
+        const request = {
+            id: 'tx-1',
+            type: 'transactions',
+            txs: [],
+        } as unknown as SignRequest
+        signingRequestMock.lastFailedRequest = {
+            request: { ...request, id: 'tx-other' } as unknown as SignRequest,
+            error: new Error('stale'),
+        }
+
+        const { container } = render(<SignRequestView request={request} />)
+        expect(container.textContent).toContain('TransactionSigningView')
+    })
+
+    it('clears and removes the request on dismiss', () => {
+        const request = {
+            id: 'tx-1',
+            type: 'transactions',
+            txs: [],
+        } as unknown as SignRequest
+        signingRequestMock.lastFailedRequest = {
+            request,
+            error: new Error('bad things'),
+        }
+
+        const { getByText } = render(<SignRequestView request={request} />)
+        fireEvent.click(getByText('common.done'))
+
+        expect(mockClearLastFailedRequest).toHaveBeenCalled()
+        expect(mockRemoveSignRequest).toHaveBeenCalledWith(request)
     })
 })

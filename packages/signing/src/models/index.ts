@@ -72,6 +72,7 @@ export type TransactionSignRequest = {
      * Populated from ARC-0001 `signers` field in WalletConnect requests.
      */
     signerOverrides?: Map<number, string>
+    rawTransactionsBase64?: string[]
     approve?: (signedTxs: PeraSignedTransaction[]) => Promise<void>
     reject?: () => Promise<void>
     error?: (error: Error) => Promise<void>
@@ -120,12 +121,19 @@ export type SignRequest =
     | ArbitraryDataSignRequest
     | Arc60SignRequest
 
+export type FailedSignRequest = {
+    request: SignRequest
+    error: Error
+}
+
 export type SigningStore = BaseStoreState & {
     pendingSignRequests: SignRequest[]
-    lastCompletedRequest: Nullable<SignRequest>
+    lastCompletedRequest: SignRequest | null
+    lastFailedRequest: FailedSignRequest | null
     addSignRequest: (request: SignRequest) => boolean
     removeSignRequest: (request: SignRequest) => boolean
     setLastCompletedRequest: (request: Nullable<SignRequest>) => void
+    setLastFailedRequest: (failed: Nullable<FailedSignRequest>) => void
 }
 
 export type TransactionWarning = {

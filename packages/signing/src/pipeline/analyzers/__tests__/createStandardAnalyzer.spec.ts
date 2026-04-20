@@ -22,11 +22,13 @@ vi.mock('@perawallet/wallet-core-blockchain', async importOriginal => {
         classifyPeraTransaction: (tx: { type?: string }) => tx.type ?? 'pay',
         encodeAlgorandAddress: (bytes: Uint8Array) =>
             `ENCODED_${Array.from(bytes).join('-')}`,
+        encodeTransactionRaw: (tx: { _encoded?: Uint8Array }) =>
+            tx._encoded ?? new Uint8Array(),
     }
 })
 
 import { createStandardAnalyzer } from '../createStandardAnalyzer'
-import { AnalysisError } from '../../errors'
+import { AnalysisError, TransactionRoundTripError } from '../../errors'
 import type { AnalysisContext, SignableGroup } from '../../types'
 
 const ACCOUNT_A = 'ACCOUNT_A'
@@ -244,5 +246,65 @@ describe('createStandardAnalyzer', () => {
         await expect(
             analyzer.analyze(group, makeContext([ACCOUNT_A])),
         ).rejects.toThrow(AnalysisError)
+    })
+
+    test('passes round-trip check when re-encoded bytes match raw bytes', async () => {
+        const analyzer = createStandardAnalyzer()
+        const tx = makeTx({ sender: ACCOUNT_A, fee: 1000n }) as unknown as {
+            _encoded?: Uint8Array
+        }
+        tx._encoded = new Uint8Array([0x01, 0x02])
+
+        const group: SignableGroup = {
+            data: {
+                type: 'transactions',
+                transactions: [tx as never],
+                rawTransactionsBase64: ['AQI='], // matches [0x01, 0x02]
+                indicesToSign: [0],
+            },
+            source: { type: 'walletconnect' },
+            signerAddress: ACCOUNT_A,
+        }
+
+        await expect(
+            analyzer.analyze(group, makeContext([ACCOUNT_A])),
+        ).resolves.toBeDefined()
+    })
+
+    test('throws TransactionRoundTripError when decoder silently dropped a field', async () => {
+        const analyzer = createStandardAnalyzer()
+        // Decoder produced a shorter txn than the raw bytes — e.g., lost rekeyTo.
+        const droppedFieldTx = makeTx({
+            sender: ACCOUNT_A,
+            fee: 1000n,
+        }) as unknown as { _encoded?: Uint8Array }
+        droppedFieldTx._encoded = new Uint8Array([0x01]) // shorter than raw
+
+        const group: SignableGroup = {
+            data: {
+                type: 'transactions',
+                transactions: [droppedFieldTx as never],
+                rawTransactionsBase64: ['AQI='], // [0x01, 0x02]
+                indicesToSign: [0],
+            },
+            source: { type: 'walletconnect' },
+            signerAddress: ACCOUNT_A,
+        }
+
+        await expect(
+            analyzer.analyze(group, makeContext([ACCOUNT_A])),
+        ).rejects.toBeInstanceOf(TransactionRoundTripError)
+    })
+
+    test('skips round-trip check when rawTransactionsBase64 is absent (local source)', async () => {
+        const analyzer = createStandardAnalyzer()
+        const tx = makeTx({ sender: ACCOUNT_A, fee: 1000n })
+
+        // No rawTransactionsBase64 — internal request, no round-trip needed.
+        const group = makeGroup([tx])
+
+        await expect(
+            analyzer.analyze(group, makeContext([ACCOUNT_A])),
+        ).resolves.toBeDefined()
     })
 })

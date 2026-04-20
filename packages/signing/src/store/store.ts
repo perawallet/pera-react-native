@@ -13,7 +13,7 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type { PersistStorage } from 'zustand/middleware'
-import type { SigningStore, SignRequest } from '../models'
+import type { FailedSignRequest, SigningStore, SignRequest } from '../models'
 import {
     generateOrderedUniqueId,
     registerStore,
@@ -56,6 +56,7 @@ const STORE_NAME = 'signing-store'
 const initialState = {
     pendingSignRequests: [] as SignRequest[],
     lastCompletedRequest: null as Nullable<SignRequest>,
+    lastFailedRequest: null as Nullable<FailedSignRequest>,
 }
 
 export const useSigningStore: UseBoundStore<
@@ -87,6 +88,9 @@ export const useSigningStore: UseBoundStore<
             },
             setLastCompletedRequest: (request: Nullable<SignRequest>) => {
                 set({ lastCompletedRequest: request })
+            },
+            setLastFailedRequest: (failed: FailedSignRequest | null) => {
+                set({ lastFailedRequest: failed })
             },
             resetState: () => set(initialState),
         }),

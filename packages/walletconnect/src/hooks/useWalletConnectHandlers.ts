@@ -431,6 +431,7 @@ export const useWalletConnectHandlers = () => {
             }
 
             const signableTxns = indicesToSign.map(i => allTxnObjects[i])
+            const signableRawTxns = indicesToSign.map(i => paramOne[i].txn)
 
             addSignRequest({
                 id: generateOrderedUniqueId(),
@@ -439,6 +440,7 @@ export const useWalletConnectHandlers = () => {
                 sourceType: 'walletconnect',
                 transportId: connector.clientId,
                 txs: signableTxns,
+                rawTransactionsBase64: signableRawTxns,
                 signerOverrides:
                     signerOverrides.size > 0 ? signerOverrides : undefined,
                 sourceMetadata: connector.session?.peerMeta,

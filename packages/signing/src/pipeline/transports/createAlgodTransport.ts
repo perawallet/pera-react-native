@@ -10,13 +10,15 @@
  limitations under the License
  */
 
+import { useNetworkStore } from '@perawallet/wallet-core-blockchain'
+import type { Network } from '@perawallet/wallet-core-shared'
 import type {
     DataTransport,
     SigningResult,
     SourceMetadata,
     TransportResult,
 } from '../types'
-import { TransportError } from '../errors'
+import { NetworkChangedError, TransportError } from '../errors'
 import {
     submitSignedTransactionGroup,
     type AlgokitClientInterface,
@@ -37,10 +39,15 @@ export type {
  *
  * @param algokit - AlgorandClient instance for network access
  * @param encodeSignedTransactions - Function to encode signed transactions
+ * @param capturedNetwork - The network that was active when the signing actor
+ *   was created. Re-compared against the live network at submit time — if the
+ *   user switched networks mid-flow the transaction is aborted rather than
+ *   submitted to the wrong chain.
  */
 export const createAlgodTransport = (
     algokit: AlgokitClientInterface,
     encodeSignedTransactions: EncodeSignedTransactionsFn,
+    capturedNetwork: Network,
 ): DataTransport => {
     return {
         send: async (
@@ -53,6 +60,11 @@ export const createAlgodTransport = (
                 throw new TransportError(
                     'Algod transport only supports transaction data',
                 )
+            }
+
+            const liveNetwork = useNetworkStore.getState().network
+            if (liveNetwork !== capturedNetwork) {
+                throw new NetworkChangedError(capturedNetwork, liveNetwork)
             }
 
             const { signed } = result.signedData

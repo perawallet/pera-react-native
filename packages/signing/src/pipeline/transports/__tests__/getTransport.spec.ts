@@ -36,6 +36,7 @@ const baseOptions = () => ({
         client: { algod: { sendRawTransaction: vi.fn() } },
     },
     encodeSignedTransactions: vi.fn(),
+    network: 'testnet' as const,
 })
 
 describe('createTransportSelector', () => {

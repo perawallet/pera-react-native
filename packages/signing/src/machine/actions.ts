@@ -202,6 +202,7 @@ const buildSignableGroups = (
 
     if (isTransactionRequest(request)) {
         const knownAddresses = new Set(allAccounts.map(a => a.address))
+        const rawBytes = request.rawTransactionsBase64
 
         // Group transactions by sender, preserving original position
         const bySender = new Map<
@@ -227,6 +228,9 @@ const buildSignableGroups = (
                 type: 'transactions' as const,
                 transactions: txs,
                 indicesToSign: txs.map((_, i) => i),
+                ...(rawBytes && {
+                    rawTransactionsBase64: indices.map(i => rawBytes[i]),
+                }),
             },
             source,
             signerAddress: addr,

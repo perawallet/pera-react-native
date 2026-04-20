@@ -25,5 +25,6 @@ export const useStyles = makeStyles(theme => ({
     container: {
         paddingBottom: theme.spacing.lg,
         gap: theme.spacing.lg,
+        backgroundColor: theme.colors.background,
     },
 }))

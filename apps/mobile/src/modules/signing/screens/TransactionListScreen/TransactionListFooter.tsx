@@ -22,7 +22,7 @@ export const TransactionListFooter = () => {
     const { t } = useLanguage()
 
     return (
-        <>
+        <PWView style={styles.footerContainer}>
             <SigningWarnings isGroup />
 
             <PWView style={styles.feeContainer}>
@@ -30,6 +30,6 @@ export const TransactionListFooter = () => {
             </PWView>
 
             <SigningActionButtons />
-        </>
+        </PWView>
     )
 }

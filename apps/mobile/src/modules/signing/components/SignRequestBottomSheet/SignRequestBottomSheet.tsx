@@ -39,6 +39,8 @@ export function SignRequestBottomSheet() {
             isVisible={isVisible}
             size='lg'
             autoCreateContainer={false}
+            enablePanDownToClose={false}
+            enableCloseOnBackdropPress={false}
         >
             {!!nextRequest && <SignRequestView request={nextRequest} />}
         </PWBottomSheet>

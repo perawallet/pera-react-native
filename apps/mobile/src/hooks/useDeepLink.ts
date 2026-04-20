@@ -23,6 +23,10 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useWebView } from '@modules/webview/hooks/useWebViewStore'
+import {
+    isSafeBrowserUrl,
+    isSafeRelativePath,
+} from '@modules/webview/hooks/handlers'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 import { ALGORAND_SCHEME } from './deeplink/arc90-parser'
 import {
@@ -205,6 +209,21 @@ export const useDeepLink = () => {
 
                 case DeeplinkType.INTERNAL_BROWSER:
                 case DeeplinkType.DISCOVER_BROWSER:
+                    if (!isSafeBrowserUrl(parsedData.url)) {
+                        logger.warn(
+                            'Blocked deeplink WebView push for unsafe URL',
+                            {
+                                url: parsedData.url,
+                                sourceUrl: parsedData.sourceUrl,
+                            },
+                        )
+                        errorToast(
+                            t('errors.deeplink.invalid_url_title'),
+                            t('errors.deeplink.invalid_url_body'),
+                        )
+                        onError?.()
+                        return
+                    }
                     pushWebView({
                         id: generateOrderedUniqueId(),
                         url: parsedData.url,
@@ -212,6 +231,24 @@ export const useDeepLink = () => {
                     break
 
                 case DeeplinkType.DISCOVER_PATH:
+                    if (
+                        parsedData.path !== undefined &&
+                        !isSafeRelativePath(parsedData.path)
+                    ) {
+                        logger.warn(
+                            'Blocked DISCOVER_PATH deeplink with unsafe path',
+                            {
+                                path: parsedData.path,
+                                sourceUrl: parsedData.sourceUrl,
+                            },
+                        )
+                        errorToast(
+                            t('errors.deeplink.invalid_url_title'),
+                            t('errors.deeplink.invalid_url_body'),
+                        )
+                        onError?.()
+                        return
+                    }
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
                         screen: 'Discover',
                         params: { path: parsedData.path },

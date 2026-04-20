@@ -14,7 +14,6 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        marginVertical: theme.spacing.sm,
         gap: theme.spacing.xs,
     },
     title: {

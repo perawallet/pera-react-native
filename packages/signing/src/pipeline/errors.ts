@@ -173,3 +173,34 @@ export class InvalidSignableDataError extends PipelineError {
         })
     }
 }
+
+/**
+ * Decoded transactions do not round-trip to the original raw bytes.
+ * Indicates a decoder bug silently dropped or mutated a field — the
+ * analysis shown to the user would not match the bytes being signed.
+ */
+export class TransactionRoundTripError extends PipelineError {
+    constructor(reason: string) {
+        super(
+            `Transaction round-trip validation failed: ${reason}`,
+            undefined,
+            {
+                params: { reason },
+            },
+        )
+    }
+}
+
+/**
+ * The active network changed between actor creation and submission.
+ * Aborts rather than submitting signed bytes to the wrong chain.
+ */
+export class NetworkChangedError extends PipelineError {
+    constructor(expected: string, actual: string) {
+        super(
+            `Network changed during signing: expected ${expected} but active network is ${actual}`,
+            undefined,
+            { params: { expected, actual } },
+        )
+    }
+}

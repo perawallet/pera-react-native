@@ -38,6 +38,8 @@ export const useSecurityStore: UseBoundStore<
                 set(state => ({
                     failedAttempts: state.failedAttempts + 1,
                 })),
+            setFailedAttempts: (count: number) =>
+                set({ failedAttempts: count }),
             resetFailedAttempts: () => set({ failedAttempts: 0 }),
             setLockoutEndTime: (time: Nullable<number>) =>
                 set({ lockoutEndTime: time }),
@@ -50,8 +52,6 @@ export const useSecurityStore: UseBoundStore<
             storage: createJSONStorage(() => getProvider().keyValueStorage),
             version: 1,
             partialize: state => ({
-                failedAttempts: state.failedAttempts,
-                lockoutEndTime: state.lockoutEndTime,
                 autoLockStartedAt: state.autoLockStartedAt,
             }),
         },

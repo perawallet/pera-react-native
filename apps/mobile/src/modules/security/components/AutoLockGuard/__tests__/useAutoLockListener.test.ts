@@ -14,7 +14,10 @@ import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { useAutoLockListener } from '../useAutoLockListener'
 import { usePinCode } from '@perawallet/wallet-core-security'
-import { useDeleteAllData } from '@modules/settings/hooks/useDeleteAllData'
+import {
+    clearAccountsStore,
+    useDeleteAllData,
+} from '@modules/settings/hooks/useDeleteAllData'
 import { AppState, type AppStateStatus } from 'react-native'
 import type { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 
@@ -24,6 +27,7 @@ vi.mock('@perawallet/wallet-core-security', () => ({
 
 vi.mock('@modules/settings/hooks/useDeleteAllData', () => ({
     useDeleteAllData: vi.fn(),
+    clearAccountsStore: vi.fn(),
 }))
 
 vi.mock('react-native', () => ({
@@ -170,6 +174,7 @@ describe('useAutoLockListener', () => {
         })
 
         expect(mockDeleteAllData).toHaveBeenCalled()
+        expect(clearAccountsStore).toHaveBeenCalled()
         expect(result.current.isLocked).toBe(false)
         expect(result.current.isChecking).toBe(false)
         expect(mockSetAutoLockStartedAt).toHaveBeenCalledWith(null)

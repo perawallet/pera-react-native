@@ -47,8 +47,12 @@ export const SingleTransactionScreen = () => {
     }
 
     return (
-        <PWScrollView contentContainerStyle={styles.contentContainer}>
-            <PWView style={styles.container}>
+        <PWView style={styles.container}>
+            <PWScrollView
+                style={styles.scrollview}
+                contentContainerStyle={styles.contentContainer}
+                showsVerticalScrollIndicator={false}
+            >
                 <TransactionSummaryHeader
                     transaction={transaction}
                     metadata={request?.sourceMetadata}
@@ -64,9 +68,9 @@ export const SingleTransactionScreen = () => {
                 <SigningAccountDisplay transaction={transaction} />
 
                 <FeeDisplay transaction={transaction} />
+            </PWScrollView>
 
-                <SigningActionButtons />
-            </PWView>
-        </PWScrollView>
+            <SigningActionButtons />
+        </PWView>
     )
 }
