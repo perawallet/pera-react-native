@@ -18,6 +18,7 @@ catalog:
   '@tanstack/react-query-persist-client': ^5.90.9
   '@tanstack/store': ^0.8.1
   '@testing-library/react': 16.3.2
+  '@types/node': ^22.19.2
   '@types/react': ~19.2.14
   '@vitejs/plugin-react': 6.0.1
   '@vitest/coverage-v8': ^4.1.4
