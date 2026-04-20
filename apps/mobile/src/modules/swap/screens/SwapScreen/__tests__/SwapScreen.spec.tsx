@@ -38,7 +38,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useAccountsStore: vi.fn(() => ({})),
+        useAllAccounts: vi.fn(() => ({})),
         isSigningAccount: vi.fn(() => true),
     }
 })

@@ -17,7 +17,7 @@ import { config } from '@perawallet/wallet-core-config'
 import { PWIcon, PWText, PWToolbar, PWView } from '@components/core'
 import {
     isSigningAccount,
-    useAccountsStore,
+    useAllAccounts,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
@@ -30,7 +30,7 @@ import { useSwapScreen } from './useSwapScreen'
 export const SwapScreen = () => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const accounts = useAccountsStore(state => state.accounts)
+    const accounts = useAllAccounts()
     const swapAccountFilter = useCallback(
         (account: WalletAccount) => isSigningAccount(account, accounts),
         [accounts],
