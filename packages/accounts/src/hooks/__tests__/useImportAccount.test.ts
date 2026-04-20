@@ -15,7 +15,6 @@ import { renderHook, act } from '@testing-library/react'
 import { useImportAccount } from '../useImportAccount'
 import { useAccountsStore } from '../../store'
 import { KeyType } from '@perawallet/wallet-core-kms'
-import { useBackupStore } from '@perawallet/wallet-core-backup'
 
 const uuidSpies = vi.hoisted(() => ({ v7: vi.fn() }))
 
@@ -97,7 +96,6 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 describe('useImportAccount', () => {
     beforeEach(() => {
         useAccountsStore.setState({ accounts: [] })
-        useBackupStore.getState().resetState()
         vi.clearAllMocks()
         uuidSpies.v7.mockReset()
         kmsMock.getKey.mockReset()
@@ -275,58 +273,4 @@ describe('useImportAccount', () => {
         })
     })
 
-    test('marks newly imported HD wallet as backed up', async () => {
-        kmsMock.getKey.mockReturnValueOnce({
-            id: 'WALLET1',
-            type: KeyType.HDWalletRootKey,
-            publicKey: '',
-            keystoreKeyId: 'ks-root-1',
-        })
-
-        uuidSpies.v7
-            .mockImplementationOnce(() => 'WALLET1')
-            .mockImplementationOnce(() => 'ACC1')
-
-        const { result } = renderHook(() => useImportAccount())
-
-        await act(async () => {
-            await result.current({
-                mnemonic: 'test mnemonic',
-                type: 'hdWallet',
-            })
-        })
-
-        expect(useBackupStore.getState().backedUpKeyIds['ks-entropy-1']).toBe(
-            true,
-        )
-    })
-
-    test('marks newly imported Algo25 account as backed up', async () => {
-        kmsMock.createAlgo25Key.mockResolvedValueOnce({
-            keyPair: {
-                id: 'WALLET1',
-                type: KeyType.Algo25Key,
-                publicKey: 'ALGO25_PUBLIC_KEY',
-            },
-            seedKeyId: 'ks-seed-1',
-        })
-        kmsMock.getKey.mockReturnValueOnce({
-            id: 'WALLET1',
-            type: KeyType.Algo25Key,
-            publicKey: 'ALGO25_PUBLIC_KEY',
-        })
-
-        uuidSpies.v7.mockImplementationOnce(() => 'ACC1')
-
-        const { result } = renderHook(() => useImportAccount())
-
-        await act(async () => {
-            await result.current({
-                mnemonic: 'test mnemonic',
-                type: 'algo25',
-            })
-        })
-
-        expect(useBackupStore.getState().backedUpKeyIds['ks-seed-1']).toBe(true)
-    })
 })
