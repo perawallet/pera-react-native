@@ -375,7 +375,9 @@ export const usePeraWebviewInterface = (
                     if (!hadRequiredParams(['txns', 'metadata'], message)) {
                         return
                     }
-                    const rawTxns = message.params!['txns'] as (Nullable<string>)[]
+                    const rawTxns = message.params![
+                        'txns'
+                    ] as Nullable<string>[]
                     const txns = decodeTransactions(
                         rawTxns
                             .filter((t): t is string => t !== null)

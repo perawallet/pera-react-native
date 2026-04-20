@@ -10,11 +10,7 @@
  limitations under the License
  */
 
-import {
-    buildPrismUrl,
-    getInitials,
-    type Nullable,
-} from '@perawallet/wallet-core-shared'
+import { buildPrismUrl, getInitials } from '@perawallet/wallet-core-shared'
 import {
     isAlgoAsset,
     type DisplayableAsset,
