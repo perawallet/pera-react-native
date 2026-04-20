@@ -13,7 +13,12 @@
 import { Decimal } from 'decimal.js'
 import { formatNumber } from '@perawallet/wallet-core-shared'
 
-import { ALGO_ASSET_ID, PeraAsset, PeraAssetType } from './models'
+import {
+    ALGO_ASSET_ID,
+    type MinimalAsset,
+    PeraAsset,
+    PeraAssetType,
+} from './models'
 
 /**
  * Checks whether an asset id refers to the native ALGO asset.
@@ -108,7 +113,7 @@ export const formatCollectibleAmount = (
  */
 export const formatAssetAmount = (
     amount: Decimal | string,
-    asset: { decimals?: number; unitName?: string },
+    asset: Pick<MinimalAsset, 'decimals' | 'unitName'>,
 ): string => {
     const decimals = asset.decimals ?? 0
     const display = new Decimal(amount.toString()).div(

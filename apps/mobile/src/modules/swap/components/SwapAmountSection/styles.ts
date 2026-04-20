@@ -22,9 +22,9 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.layerGrayLighter,
         borderRadius: theme.spacing.xl,
         paddingHorizontal: theme.spacing.lg,
-        paddingTop: theme.spacing.xxl,
-        paddingBottom: theme.spacing.xl,
-        marginTop: theme.spacing['3xl'],
+        paddingTop: theme.spacing.xl,
+        paddingBottom: theme.spacing.md,
+        marginTop: theme.spacing.xl,
     },
     headerRow: {
         flexDirection: 'row',
@@ -50,6 +50,7 @@ export const useStyles = makeStyles(theme => ({
     },
     amountContainer: {
         flex: 1,
+        minHeight: getTypography(theme, 'h2').lineHeight,
     },
     amountText: getTypography(theme, 'h2'),
     amountTextMuted: {
@@ -66,5 +67,12 @@ export const useStyles = makeStyles(theme => ({
     },
     amountInput: {
         paddingLeft: 0,
+    },
+    fiatValueContainer: {
+        minHeight: getTypography(theme, 'body').lineHeight,
+        justifyContent: 'center' as const,
+    },
+    fiatValue: {
+        color: theme.colors.textGray,
     },
 }))

@@ -13,8 +13,10 @@
 import { Decimal } from 'decimal.js'
 import { PWInput, PWSkeleton, PWText, PWView } from '@components/core'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
+import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { useLanguage } from '@hooks/useLanguage'
 import { isAlgoAsset } from '@perawallet/wallet-core-assets'
+import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import { SwapAssetSelector } from '../SwapAssetSelector'
 import { useStyles } from './styles'
 import { useSwapAmountSection } from './useSwapAmountSection'
@@ -113,7 +115,6 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                             inputStyle={styles.amountInput}
                             numberOfLines={1}
                             adjustsFontSizeToFit
-                            minimumFontScale={0.5}
                             testID='swap-pay-input'
                         />
                     ) : isLoading ? (
@@ -130,7 +131,6 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                             }
                             numberOfLines={1}
                             adjustsFontSizeToFit
-                            minimumFontScale={0.5}
                             testID='swap-receive-amount'
                         >
                             {displayValue || '0.00'}
@@ -142,6 +142,18 @@ export const SwapAmountSection = (props: SwapAmountSectionProps) => {
                     assetId={assetId}
                     variant={variant}
                     onPress={onAssetPress}
+                />
+            </PWView>
+
+            <PWView style={styles.fiatValueContainer}>
+                <PreferredCurrencyDisplay
+                    sourceAmount={amount ?? new Decimal(0)}
+                    sourceAssetId={assetId}
+                    precision={DEFAULT_PRECISION}
+                    minPrecision={DEFAULT_PRECISION}
+                    showSymbol
+                    isLoading={isLoading}
+                    style={styles.fiatValue}
                 />
             </PWView>
         </PWView>

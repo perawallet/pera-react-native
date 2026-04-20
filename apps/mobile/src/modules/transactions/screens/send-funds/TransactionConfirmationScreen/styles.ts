@@ -41,5 +41,22 @@ export const useStyles = makeStyles(theme => {
         link: {
             color: theme.colors.linkPrimary,
         },
+        recipientMbrContainer: {
+            flexDirection: 'row' as const,
+            alignItems: 'flex-start' as const,
+            gap: theme.spacing.lg,
+            marginVertical: theme.spacing.xl,
+            backgroundColor: theme.colors.suspiciousBannerBg,
+            padding: theme.spacing.lg,
+            borderRadius: theme.spacing.sm,
+        },
+        recipientMbrMessageContainer: {
+            flexShrink: 1,
+            gap: theme.spacing.xs,
+        },
+        recipientMbrMessage: {
+            flexShrink: 1,
+            color: theme.colors.suspiciousBannerContent,
+        },
     }
 })

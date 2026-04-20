@@ -10,21 +10,4 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-type StyleProps = { hasPadding: boolean }
-
-export const useStyles = makeStyles((theme, { hasPadding }: StyleProps) => ({
-    searchContainer: {
-        paddingHorizontal: hasPadding ? theme.spacing.md : 0,
-        marginBottom: theme.spacing.md,
-    },
-    listContent: {
-        gap: theme.spacing.md,
-        paddingBottom: theme.spacing['3xl'],
-    },
-    item: {
-        width: '100%',
-        paddingHorizontal: hasPadding ? theme.spacing.md : 0,
-    },
-}))
+export const DEFAULT_MINIMUM_FONT_SCALE = 0.5

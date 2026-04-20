@@ -60,8 +60,8 @@ export const useSwapConfirmation = ({
     const selectedAccount = useSelectedAccount()
     const { preferredCurrency, usdToPreferred } = useCurrency()
 
-    const assetInId = quote?.assetIn.assetId?.toString()
-    const assetOutId = quote?.assetOut.assetId?.toString()
+    const assetInId = quote?.assetIn.assetId
+    const assetOutId = quote?.assetOut.assetId
     const { data: inAssets } = useAssetsQuery(assetInId ? [assetInId] : [])
     const { data: outAssets } = useAssetsQuery(assetOutId ? [assetOutId] : [])
     const inAsset = assetInId ? inAssets?.get(assetInId) : undefined

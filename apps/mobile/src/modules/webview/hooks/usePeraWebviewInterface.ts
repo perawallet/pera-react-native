@@ -55,7 +55,7 @@ import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { parseDeeplink } from '@hooks/deeplink/parser'
-import { DeeplinkType } from '@hooks/deeplink/types'
+import { parseWalletConnectUri } from '@hooks/deeplink/walletconnect-parser'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
 
 type WebviewMessage = {
@@ -68,6 +68,7 @@ type WebviewMessage = {
 export const usePeraWebviewInterface = (
     webview: Nullable<WebView>,
     securedConnection: boolean,
+    sourceUrl: string | null,
     onCloseRequested?: () => void,
     onBackRequested?: () => void,
 ) => {
@@ -109,90 +110,141 @@ export const usePeraWebviewInterface = (
 
     const pushWebView = useCallback(
         (message: WebviewMessage) => {
-            requireSecure(securedConnection, () => {
-                if (!hadRequiredParams(['url'], message)) {
-                    return
-                }
-                pushWebViewContext({
-                    url: message.params!.url as string,
-                    onCloseRequested,
-                    onBackRequested,
-                    id: message.id,
-                    enablePeraConnect: true,
-                })
-            })
+            requireSecure(
+                securedConnection,
+                {
+                    operation: 'pushWebView',
+                    messageId: message.id,
+                    sourceUrl,
+                    webview,
+                },
+                () => {
+                    if (!hadRequiredParams(['url'], message)) {
+                        return
+                    }
+                    pushWebViewContext({
+                        url: message.params!.url as string,
+                        onCloseRequested,
+                        onBackRequested,
+                        id: message.id,
+                        enablePeraConnect: true,
+                    })
+                },
+            )
         },
         [
             pushWebViewContext,
             securedConnection,
+            sourceUrl,
             onCloseRequested,
             onBackRequested,
-            t,
+            hadRequiredParams,
             webview,
         ],
     )
 
     const openSystemBrowser = useCallback(
         (message: WebviewMessage) => {
-            requireSecure(securedConnection, () => {
-                if (!hadRequiredParams(['url'], message)) {
-                    return
-                }
-                Linking.canOpenURL(message.params!.url as string).then(
-                    supported => {
-                        if (supported) {
-                            Linking.openURL(message.params?.url as string)
-                        } else {
-                            sendErrorToWebview(
-                                message.id,
-                                JsonRpcErrorCode.InvalidParams,
-                                t('errors.webview.unsupported_url', {
-                                    url: message.params?.url,
-                                }),
-                                webview,
-                            )
-                        }
-                    },
-                )
-            })
+            requireSecure(
+                securedConnection,
+                {
+                    operation: 'openSystemBrowser',
+                    messageId: message.id,
+                    sourceUrl,
+                    webview,
+                },
+                () => {
+                    if (!hadRequiredParams(['url'], message)) {
+                        return
+                    }
+                    Linking.canOpenURL(message.params!.url as string).then(
+                        supported => {
+                            if (supported) {
+                                Linking.openURL(message.params?.url as string)
+                            } else {
+                                sendErrorToWebview(
+                                    message.id,
+                                    JsonRpcErrorCode.InvalidParams,
+                                    t('errors.webview.unsupported_url', {
+                                        url: message.params?.url,
+                                    }),
+                                    webview,
+                                )
+                            }
+                        },
+                    )
+                },
+            )
         },
-        [securedConnection, t, webview],
+        [securedConnection, sourceUrl, hadRequiredParams, t, webview],
     )
 
     const canOpenURI = useCallback(
         (message: WebviewMessage) => {
-            requireSecure(securedConnection, () => {
-                if (!hadRequiredParams(['uri'], message)) {
-                    return
-                }
-                Linking.canOpenURL(message.params!.uri as string).then(
-                    supported => {
-                        sendMessageToWebview(message.id, { supported }, webview)
-                    },
-                )
-            })
+            requireSecure(
+                securedConnection,
+                {
+                    operation: 'canOpenURI',
+                    messageId: message.id,
+                    sourceUrl,
+                    webview,
+                },
+                () => {
+                    if (!hadRequiredParams(['uri'], message)) {
+                        return
+                    }
+                    Linking.canOpenURL(message.params!.uri as string).then(
+                        supported => {
+                            sendMessageToWebview(
+                                message.id,
+                                { supported },
+                                webview,
+                            )
+                        },
+                    )
+                },
+            )
         },
-        [securedConnection, t, webview],
+        [securedConnection, sourceUrl, hadRequiredParams, webview],
     )
 
     const openNativeURI = useCallback(
         (message: WebviewMessage) => {
-            requireSecure(securedConnection, () => {
-                if (!hadRequiredParams(['uri'], message)) {
-                    return
-                }
-                const uri = message.params!.uri as string
+            requireSecure(
+                securedConnection,
+                {
+                    operation: 'openNativeURI',
+                    messageId: message.id,
+                    sourceUrl,
+                    webview,
+                },
+                () => {
+                    if (!hadRequiredParams(['uri'], message)) {
+                        return
+                    }
+                    const uri = message.params!.uri as string
 
-                if (parseDeeplink(uri)) {
-                    handleDeepLink(uri, false, 'deeplink')
-                    return
-                }
+                    if (parseDeeplink(uri)) {
+                        handleDeepLink(uri, false, 'deeplink')
+                        return
+                    }
 
-                Linking.canOpenURL(uri)
-                    .then(supported => {
-                        if (supported) {
-                            Linking.openURL(uri)
-                        } else {
+                    Linking.canOpenURL(uri)
+                        .then(supported => {
+                            if (supported) {
+                                Linking.openURL(uri)
+                            } else {
+                                sendErrorToWebview(
+                                    message.id,
+                                    JsonRpcErrorCode.InvalidParams,
+                                    t('errors.webview.unsupported_url', {
+                                        url: uri,
+                                    }),
+                                    webview,
+                                )
+                            }
+                        })
+                        .catch(() => {
                             sendErrorToWebview(
                                 message.id,
                                 JsonRpcErrorCode.InvalidParams,
@@ -201,83 +253,108 @@ export const usePeraWebviewInterface = (
                                 }),
                                 webview,
                             )
-                        }
-                    })
-                    .catch(() => {
-                        sendErrorToWebview(
-                            message.id,
-                            JsonRpcErrorCode.InvalidParams,
-                            t('errors.webview.unsupported_url', {
-                                url: uri,
-                            }),
-                            webview,
-                        )
-                    })
-            })
+                        })
+                },
+            )
         },
-        [securedConnection, handleDeepLink, t, webview],
+        [
+            securedConnection,
+            sourceUrl,
+            hadRequiredParams,
+            handleDeepLink,
+            t,
+            webview,
+        ],
     )
 
     const notifyUser = useCallback(
         (message: WebviewMessage) => {
-            requireSecure(securedConnection, () => {
-                if (!hadRequiredParams(['type'], message)) {
-                    return
-                }
-                if (message.params?.type === 'message') {
-                    showToast({
-                        title: '',
-                        body: message.params?.message as string,
-                        type: 'info',
-                    })
-                }
-                //TODO add haptic (and maybe message.banner) support and maybe sound
-            })
+            requireSecure(
+                securedConnection,
+                {
+                    operation: 'notifyUser',
+                    messageId: message.id,
+                    sourceUrl,
+                    webview,
+                },
+                () => {
+                    if (!hadRequiredParams(['type'], message)) {
+                        return
+                    }
+                    if (message.params?.type === 'message') {
+                        showToast({
+                            title: '',
+                            body: message.params?.message as string,
+                            type: 'info',
+                        })
+                    }
+                    //TODO add haptic (and maybe message.banner) support and maybe sound
+                },
+            )
         },
-        [securedConnection, showToast],
+        [securedConnection, sourceUrl, webview, hadRequiredParams, showToast],
     )
 
     const getAddresses = useCallback(
         (message: WebviewMessage) => {
-            requireSecure(securedConnection, () => {
-                const payload = accounts.map(a => ({
-                    name: getAccountDisplayName(a),
-                    address: a.address,
-                    type: getAccountType(a),
-                }))
-                sendMessageToWebview(message.id, payload, webview)
-            })
+            requireSecure(
+                securedConnection,
+                {
+                    operation: 'getAddresses',
+                    messageId: message.id,
+                    sourceUrl,
+                    webview,
+                },
+                () => {
+                    const payload = accounts.map(a => ({
+                        name: getAccountDisplayName(a),
+                        address: a.address,
+                        type: getAccountType(a),
+                    }))
+                    sendMessageToWebview(message.id, payload, webview)
+                },
+            )
         },
-        [securedConnection, accounts, webview],
+        [securedConnection, sourceUrl, accounts, webview],
     )
 
     const getSettings = useCallback(
         (message: WebviewMessage) => {
-            requireSecure(securedConnection, () => {
-                const payload = {
-                    appName: deviceInfo.getAppName(),
-                    appPackageName: deviceInfo.getAppPackage(),
-                    appVersion: deviceInfo.getAppVersion(),
-                    clientType: deviceInfo.getDevicePlatform(),
-                    deviceId: deviceID,
-                    deviceVersion: deviceInfo.getDeviceModel(),
-                    deviceOSVersion: deviceInfo.getDevicePlatform(),
-                    deviceModel: deviceInfo.getDeviceModel(),
-                    theme,
-                    network,
-                    currency: preferredCurrency,
-                    region: deviceInfo.getDeviceCountry(),
-                    language: deviceInfo.getDeviceLocale(),
-                    protocolVersion: '3',
-                }
-                sendMessageToWebview(message.id, payload, webview)
-            })
+            requireSecure(
+                securedConnection,
+                {
+                    operation: 'getSettings',
+                    messageId: message.id,
+                    sourceUrl,
+                    webview,
+                },
+                () => {
+                    const payload = {
+                        appName: deviceInfo.getAppName(),
+                        appPackageName: deviceInfo.getAppPackage(),
+                        appVersion: deviceInfo.getAppVersion(),
+                        clientType: deviceInfo.getDevicePlatform(),
+                        deviceId: deviceID,
+                        deviceVersion: deviceInfo.getDeviceModel(),
+                        deviceOSVersion: deviceInfo.getDevicePlatform(),
+                        deviceModel: deviceInfo.getDeviceModel(),
+                        theme,
+                        network,
+                        currency: preferredCurrency,
+                        region: deviceInfo.getDeviceCountry(),
+                        language: deviceInfo.getDeviceLocale(),
+                        protocolVersion: '3',
+                    }
+                    sendMessageToWebview(message.id, payload, webview)
+                },
+            )
         },
         [
             deviceID,
             deviceInfo,
             preferredCurrency,
             securedConnection,
+            sourceUrl,
             theme,
             network,
             webview,
@@ -286,150 +363,172 @@ export const usePeraWebviewInterface = (
 
     const requestTransactionSigning = useCallback(
         (message: WebviewMessage) => {
-            requireSecure(securedConnection, () => {
-                if (!hadRequiredParams(['txns', 'metadata'], message)) {
-                    return
-                }
-                const rawTxns = message.params!['txns'] as Nullable<string>[]
-                const txns = decodeTransactions(
-                    rawTxns
-                        .filter((t): t is string => t !== null)
-                        .map(t => decodeFromBase64(t)),
-                )
-                const metadata = message.params![
-                    'metadata'
-                ] as SignRequestSource
-
-                try {
-                    addSignRequest({
-                        id: generateOrderedUniqueId(),
-                        type: 'transactions',
-                        transport: 'callback',
-                        txs: txns,
-                        transportId: message.id,
-                        sourceMetadata: metadata,
-                        approve: async (signed: PeraSignedTransaction[]) => {
-                            sendMessageToWebview(
-                                message.id,
-                                {
-                                    signedTxs: signed.map(s =>
-                                        encodeToBase64(
-                                            encodeSignedTransaction(s),
-                                        ),
-                                    ),
-                                },
-                                webview,
-                            )
-                        },
-                        reject: async () => {
-                            sendErrorToWebview(
-                                message.id,
-                                JsonRpcErrorCode.InternalError,
-                                'User rejected',
-                                webview,
-                            )
-                        },
-                        error: async (err: Error) =>
-                            sendErrorToWebview(
-                                message.id,
-                                JsonRpcErrorCode.InternalError,
-                                err,
-                                webview,
-                            ),
-                    } as TransactionSignRequest)
-                } catch (e) {
-                    sendErrorToWebview(
-                        message.id,
-                        JsonRpcErrorCode.InternalError,
-                        e as Error,
-                        webview,
+            requireSecure(
+                securedConnection,
+                {
+                    operation: 'requestTransactionSigning',
+                    messageId: message.id,
+                    sourceUrl,
+                    webview,
+                },
+                () => {
+                    if (!hadRequiredParams(['txns', 'metadata'], message)) {
+                        return
+                    }
+                    const rawTxns = message.params!['txns'] as (Nullable<string>)[]
+                    const txns = decodeTransactions(
+                        rawTxns
+                            .filter((t): t is string => t !== null)
+                            .map(t => decodeFromBase64(t)),
                     )
-                    showToast({
-                        title: t('errors.signing.title'),
-                        body: (e as Error).message,
-                        type: 'error',
-                    })
-                }
-            })
+                    const metadata = message.params![
+                        'metadata'
+                    ] as SignRequestSource
+
+                    try {
+                        addSignRequest({
+                            id: generateOrderedUniqueId(),
+                            type: 'transactions',
+                            transport: 'callback',
+                            txs: txns,
+                            transportId: message.id,
+                            sourceMetadata: metadata,
+                            approve: async (
+                                signed: PeraSignedTransaction[],
+                            ) => {
+                                sendMessageToWebview(
+                                    message.id,
+                                    {
+                                        signedTxs: signed.map(s =>
+                                            encodeToBase64(
+                                                encodeSignedTransaction(s),
+                                            ),
+                                        ),
+                                    },
+                                    webview,
+                                )
+                            },
+                            reject: async () => {
+                                sendErrorToWebview(
+                                    message.id,
+                                    JsonRpcErrorCode.InternalError,
+                                    'User rejected',
+                                    webview,
+                                )
+                            },
+                            error: async (err: Error) =>
+                                sendErrorToWebview(
+                                    message.id,
+                                    JsonRpcErrorCode.InternalError,
+                                    err,
+                                    webview,
+                                ),
+                        } as TransactionSignRequest)
+                    } catch (e) {
+                        sendErrorToWebview(
+                            message.id,
+                            JsonRpcErrorCode.InternalError,
+                            e as Error,
+                            webview,
+                        )
+                        showToast({
+                            title: t('errors.signing.title'),
+                            body: (e as Error).message,
+                            type: 'error',
+                        })
+                    }
+                },
+            )
         },
-        [securedConnection, sendErrorToWebview, sendMessageToWebview, webview],
+        [securedConnection, sourceUrl, webview],
     )
 
     //TODO handle arc60 here
     const requestDataSigning = useCallback(
         (message: WebviewMessage) => {
-            requireSecure(securedConnection, () => {
-                if (!hadRequiredParams(['data', 'metadata'], message)) {
-                    return
-                }
-                const data = message.params![
-                    'data'
-                ] as Partial<PeraArbitraryDataMessage>
-                const signer = data.signer
+            requireSecure(
+                securedConnection,
+                {
+                    operation: 'requestDataSigning',
+                    messageId: message.id,
+                    sourceUrl,
+                    webview,
+                },
+                () => {
+                    if (!hadRequiredParams(['data', 'metadata'], message)) {
+                        return
+                    }
+                    const data = message.params![
+                        'data'
+                    ] as Partial<PeraArbitraryDataMessage>
+                    const signer = data.signer
 
-                if (!signer) {
-                    sendErrorToWebview(
-                        message.id,
-                        JsonRpcErrorCode.InvalidParams,
-                        t('errors.webview.invalid_params', {
-                            params: 'signer',
-                        }),
-                        webview,
-                    )
-                    return
-                }
-                const metadata = message.params![
-                    'metadata'
-                ] as SignRequestSource
-                try {
-                    addSignRequest({
-                        id: generateOrderedUniqueId(),
-                        type: 'arbitrary-data',
-                        transport: 'callback',
-                        transportId: message.id,
-                        sourceMetadata: metadata,
-                        data: [data],
-                        approve: async (
-                            signed: PeraArbitraryDataSignResult[],
-                        ) => {
-                            sendMessageToWebview(
-                                message.id,
-                                signed.map(s => encodeToBase64(s.signature)),
-                                webview,
-                            )
-                        },
-                        reject: async () => {
-                            sendErrorToWebview(
-                                message.id,
-                                JsonRpcErrorCode.InternalError,
-                                'User rejected',
-                                webview,
-                            )
-                        },
-                        error: async (err: Error) =>
-                            sendErrorToWebview(
-                                message.id,
-                                JsonRpcErrorCode.InternalError,
-                                err,
-                                webview,
-                            ),
-                    } as ArbitraryDataSignRequest)
-                } catch (e) {
-                    sendErrorToWebview(
-                        message.id,
-                        JsonRpcErrorCode.InternalError,
-                        e as Error,
-                        webview,
-                    )
-                    showToast({
-                        title: t('errors.signing.title'),
-                        body: (e as Error).message,
-                        type: 'error',
-                    })
-                }
-            })
+                    if (!signer) {
+                        sendErrorToWebview(
+                            message.id,
+                            JsonRpcErrorCode.InvalidParams,
+                            t('errors.webview.invalid_params', {
+                                params: 'signer',
+                            }),
+                            webview,
+                        )
+                        return
+                    }
+                    const metadata = message.params![
+                        'metadata'
+                    ] as SignRequestSource
+                    try {
+                        addSignRequest({
+                            id: generateOrderedUniqueId(),
+                            type: 'arbitrary-data',
+                            transport: 'callback',
+                            transportId: message.id,
+                            sourceMetadata: metadata,
+                            data: [data],
+                            approve: async (
+                                signed: PeraArbitraryDataSignResult[],
+                            ) => {
+                                sendMessageToWebview(
+                                    message.id,
+                                    signed.map(s =>
+                                        encodeToBase64(s.signature),
+                                    ),
+                                    webview,
+                                )
+                            },
+                            reject: async () => {
+                                sendErrorToWebview(
+                                    message.id,
+                                    JsonRpcErrorCode.InternalError,
+                                    'User rejected',
+                                    webview,
+                                )
+                            },
+                            error: async (err: Error) =>
+                                sendErrorToWebview(
+                                    message.id,
+                                    JsonRpcErrorCode.InternalError,
+                                    err,
+                                    webview,
+                                ),
+                        } as ArbitraryDataSignRequest)
+                    } catch (e) {
+                        sendErrorToWebview(
+                            message.id,
+                            JsonRpcErrorCode.InternalError,
+                            e as Error,
+                            webview,
+                        )
+                        showToast({
+                            title: t('errors.signing.title'),
+                            body: (e as Error).message,
+                            type: 'error',
+                        })
+                    }
+                },
+            )
         },
-        [securedConnection, sendErrorToWebview, sendMessageToWebview, webview],
+        [securedConnection, sourceUrl, webview],
     )
 
     const getPublicSettings = useCallback(
@@ -452,20 +551,25 @@ export const usePeraWebviewInterface = (
             }
 
             const rawUri = message.params!.uri as string
-            const parsed = parseDeeplink(rawUri)
-            const wcUri =
-                parsed?.type === DeeplinkType.WALLET_CONNECT
-                    ? parsed.uri
-                    : rawUri
+            const parsed = parseWalletConnectUri(rawUri)
+            if (!parsed) {
+                sendErrorToWebview(
+                    message.id,
+                    JsonRpcErrorCode.InvalidParams,
+                    'Invalid WalletConnect URI',
+                    webview,
+                )
+                return
+            }
 
             connect({
                 connection: {
-                    uri: wcUri,
+                    uri: parsed.uri,
                     autoConnect: securedConnection,
                 },
             })
         },
-        [connect, securedConnection, webview],
+        [connect, securedConnection, hadRequiredParams, webview],
     )
 
     const onBackPressed = useCallback(() => {
@@ -474,17 +578,26 @@ export const usePeraWebviewInterface = (
 
     const logAnalyticsEvent = useCallback(
         (message: WebviewMessage) => {
-            requireSecure(securedConnection, () => {
-                if (!hadRequiredParams(['name', 'payload'], message)) {
-                    return
-                }
-                analytics.logEvent(
-                    message.params!.name as string,
-                    message.params!.payload,
-                )
-            })
+            requireSecure(
+                securedConnection,
+                {
+                    operation: 'logAnalyticsEvent',
+                    messageId: message.id,
+                    sourceUrl,
+                    webview,
+                },
+                () => {
+                    if (!hadRequiredParams(['name', 'payload'], message)) {
+                        return
+                    }
+                    analytics.logEvent(
+                        message.params!.name as string,
+                        message.params!.payload,
+                    )
+                },
+            )
         },
-        [analytics, securedConnection],
+        [analytics, securedConnection, sourceUrl, hadRequiredParams, webview],
     )
 
     const closeWebView = useCallback(() => {

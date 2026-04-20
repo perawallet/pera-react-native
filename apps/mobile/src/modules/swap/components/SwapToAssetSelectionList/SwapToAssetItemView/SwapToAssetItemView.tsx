@@ -14,6 +14,7 @@ import { useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
 import { isAlgoAsset } from '@perawallet/wallet-core-assets'
+import { DEFAULT_PRECISION } from '@perawallet/wallet-core-shared'
 import {
     PWIcon,
     PWText,
@@ -42,7 +43,6 @@ export const SwapToAssetItemView = ({
 }: SwapToAssetItemViewProps) => {
     const styles = useStyles()
 
-    const assetIdStr = String(dexAsset.assetId)
     const isAlgo = isAlgoAsset(dexAsset.assetId)
 
     const verificationIconName = useMemo(() => {
@@ -77,13 +77,13 @@ export const SwapToAssetItemView = ({
                             />
                         ) : null}
                     </PWView>
-                    <CopyableText copyValue={assetIdStr}>
+                    <CopyableText copyValue={dexAsset.assetId}>
                         <PWText
                             style={styles.secondaryUnit}
                             numberOfLines={1}
                         >
                             {dexAsset.unitName}
-                            {dexAsset.assetId !== 0 && ` - ${assetIdStr}`}
+                            {!isAlgo && ` - ${dexAsset.assetId}`}
                         </PWText>
                     </CopyableText>
                 </PWView>
@@ -93,15 +93,15 @@ export const SwapToAssetItemView = ({
                             currency={dexAsset.unitName ?? ''}
                             value={balance}
                             precision={dexAsset.decimals ?? 0}
-                            minPrecision={2}
+                            minPrecision={DEFAULT_PRECISION}
                             showSymbol
                             style={styles.primaryAmount}
                         />
                         <PreferredCurrencyDisplay
                             sourceAmount={balance}
-                            sourceAssetId={assetIdStr}
-                            precision={2}
-                            minPrecision={2}
+                            sourceAssetId={dexAsset.assetId}
+                            precision={DEFAULT_PRECISION}
+                            minPrecision={DEFAULT_PRECISION}
                             showSymbol
                             style={styles.secondaryAmount}
                         />

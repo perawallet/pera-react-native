@@ -11,12 +11,9 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { Dimensions } from 'react-native'
-
-const { height } = Dimensions.get('window')
 
 export const useStyles = makeStyles(() => ({
     container: {
-        height: height * 0.8,
+        paddingBottom: 0,
     },
 }))

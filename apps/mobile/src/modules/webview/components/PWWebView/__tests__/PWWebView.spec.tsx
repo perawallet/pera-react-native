@@ -26,18 +26,31 @@ vi.mock('../WebViewFooterBar', () => ({
     WebViewFooterBar: () => <div data-testid='footer-bar'>FooterBar</div>,
 }))
 
+const { mockUsePeraWebviewInterface } = vi.hoisted(() => ({
+    mockUsePeraWebviewInterface: vi.fn(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (..._args: any[]) => ({ handleMessage: vi.fn() }),
+    ),
+}))
+
 vi.mock('@modules/webview/hooks', () => ({
     useContextFingerprints: vi.fn(() => ({
         settings: 'light-USD-mainnet-en',
         accounts: 'addr1',
     })),
-    usePeraWebviewInterface: vi.fn(() => ({
-        handleMessage: vi.fn(),
-    })),
+    usePeraWebviewInterface: mockUsePeraWebviewInterface,
     useWebViewStore: vi.fn(selector => {
         const state = { removeWebView: vi.fn() }
         return selector ? selector(state) : state
     }),
+}))
+
+vi.mock('@perawallet/wallet-core-config', () => ({
+    config: {
+        onrampBaseUrl: 'https://onramp-mobile-staging.perawallet.app/',
+        discoverBaseUrl: 'https://discover-mobile-staging.perawallet.app/',
+        stakingBaseUrl: 'https://staking-mobile-staging.perawallet.app/',
+    },
 }))
 
 vi.mock('@perawallet/wallet-extension-provider', () => ({
@@ -120,5 +133,49 @@ describe('PWWebView', () => {
             />,
         )
         expect(container).toBeTruthy()
+    })
+
+    describe('origin trust boundary', () => {
+        const getInterfaceCallArgs = () =>
+            mockUsePeraWebviewInterface.mock.calls.at(-1)
+
+        it('marks a trusted origin as secure', () => {
+            mockUsePeraWebviewInterface.mockClear()
+            render(
+                <PWWebView
+                    url='https://discover-mobile-staging.perawallet.app/deep/path?q=1'
+                    enablePeraConnect={true}
+                />,
+            )
+            const args = getInterfaceCallArgs()
+            expect(args?.[1]).toBe(true)
+            expect(args?.[2]).toBe(
+                'https://discover-mobile-staging.perawallet.app/deep/path?q=1',
+            )
+        })
+
+        it('rejects a prefix-attack look-alike domain', () => {
+            mockUsePeraWebviewInterface.mockClear()
+            render(
+                <PWWebView
+                    url='https://discover-mobile-staging.perawallet.app.evil.com/'
+                    enablePeraConnect={true}
+                />,
+            )
+            const args = getInterfaceCallArgs()
+            expect(args?.[1]).toBe(false)
+        })
+
+        it('rejects a scheme downgrade', () => {
+            mockUsePeraWebviewInterface.mockClear()
+            render(
+                <PWWebView
+                    url='http://discover-mobile-staging.perawallet.app/'
+                    enablePeraConnect={true}
+                />,
+            )
+            const args = getInterfaceCallArgs()
+            expect(args?.[1]).toBe(false)
+        })
     })
 })

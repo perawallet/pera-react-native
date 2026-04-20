@@ -16,6 +16,7 @@ import { Input as RNEInput, InputProps as RNEInputProps } from '@rneui/themed'
 import { TypographyVariant } from '@theme/typography'
 import { useStyles } from './styles'
 import { getTestProps } from '@utils/test-id-helper'
+import { DEFAULT_MINIMUM_FONT_SCALE } from '../constants'
 
 export type PWInputRef = {
     focus: () => void
@@ -63,12 +64,18 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
             inputStyle,
             labelStyle,
             testID,
+            adjustsFontSizeToFit,
+            minimumFontScale,
             ...props
         },
         ref,
     ) => {
         const styles = useStyles({ variant })
         const inputRef = useRef<TextInput>(null)
+
+        const resolvedMinimumFontScale =
+            minimumFontScale ??
+            (adjustsFontSizeToFit ? DEFAULT_MINIMUM_FONT_SCALE : undefined)
 
         useImperativeHandle(
             ref,
@@ -88,6 +95,10 @@ export const PWInput = forwardRef<PWInputRef, PWInputProps>(
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 ref={inputRef as any}
                 {...props}
+                {...{
+                    adjustsFontSizeToFit,
+                    minimumFontScale: resolvedMinimumFontScale,
+                }}
                 {...getTestProps(testID)}
                 containerStyle={[styles.container, containerStyle]}
                 inputContainerStyle={[

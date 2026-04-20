@@ -33,6 +33,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { LoadingView } from '@components/LoadingView'
 import { useTransactionConfirmationScreen } from './useTransactionConfirmationScreen'
 import { CloseAccountWarning } from './CloseAccountWarning'
+import { RecipientBelowMbrWarning } from './RecipientBelowMbrWarning'
 
 export const TransactionConfirmationScreen = () => {
     const styles = useStyles()
@@ -54,6 +55,9 @@ export const TransactionConfirmationScreen = () => {
         handleConfirm,
         isReady,
         isCloseAccount,
+        isRecipientBelowMbr,
+        recipientMbrDisplay,
+        isRecipientInfoPending,
     } = useTransactionConfirmationScreen()
 
     if (!isReady) {
@@ -165,11 +169,18 @@ export const TransactionConfirmationScreen = () => {
             </KeyValueRow>
             <PWView style={styles.buttonContainer}>
                 {isCloseAccount && <CloseAccountWarning />}
+                {isRecipientBelowMbr && (
+                    <RecipientBelowMbrWarning
+                        minBalance={recipientMbrDisplay}
+                    />
+                )}
                 <PWButton
                     title={t('send_funds.confirmation.confirm_button')}
                     variant='primary'
                     testID='send_confirm_button'
                     onPress={handleConfirm}
+                    isDisabled={isRecipientBelowMbr || isRecipientInfoPending}
+                    isLoading={isRecipientInfoPending}
                 />
             </PWView>
 

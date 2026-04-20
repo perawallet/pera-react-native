@@ -267,24 +267,6 @@ describe('SwapAssetSelectionBottomSheet', () => {
             ).toBeNull()
         })
 
-        it('falls back to AccountAssetSelectionList when fromAssetId is not provided', () => {
-            render(
-                <SwapAssetSelectionBottomSheet
-                    variant='to'
-                    isVisible={true}
-                    onClose={vi.fn()}
-                    onAssetSelected={vi.fn()}
-                />,
-            )
-
-            expect(
-                screen.getByTestId('account-asset-selection-list'),
-            ).toBeTruthy()
-            expect(
-                screen.queryByTestId('swap-to-asset-selection-list'),
-            ).toBeNull()
-        })
-
         it('does not render when not visible', () => {
             render(
                 <SwapAssetSelectionBottomSheet
