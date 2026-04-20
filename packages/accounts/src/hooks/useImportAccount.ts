@@ -11,6 +11,7 @@
  */
 
 import { useKMS } from '@perawallet/wallet-core-kms'
+import { useBackupStore } from '@perawallet/wallet-core-backup'
 import { useCreateAccount } from './useCreateAccount'
 import { ImportAccountType } from '../models'
 
@@ -18,6 +19,7 @@ export const useImportAccount = () => {
     const { createHDWalletKey, createAlgo25Key } = useKMS()
     const { createAlgo25WalletAccount, createHdWalletAccount } =
         useCreateAccount()
+    const markBackedUp = useBackupStore(state => state.markBackedUp)
 
     return async ({
         mnemonic,
@@ -30,18 +32,22 @@ export const useImportAccount = () => {
             const { keyPair, entropyKeyId } = await createHDWalletKey({
                 mnemonic,
             })
-            return await createHdWalletAccount({
+            const account = await createHdWalletAccount({
                 walletId: keyPair.id,
                 entropyKeyId,
                 account: 0,
                 keyIndex: 0,
             })
+            markBackedUp(entropyKeyId)
+            return account
         } else {
             const { keyPair, seedKeyId } = await createAlgo25Key({ mnemonic })
-            return await createAlgo25WalletAccount({
+            const account = await createAlgo25WalletAccount({
                 id: keyPair.id,
                 seedKeyId,
             })
+            markBackedUp(seedKeyId)
+            return account
         }
     }
 }

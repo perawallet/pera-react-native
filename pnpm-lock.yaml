@@ -880,6 +880,9 @@ importers:
       '@perawallet/wallet-core-assets':
         specifier: workspace:*
         version: link:../assets
+      '@perawallet/wallet-core-backup':
+        specifier: workspace:*
+        version: link:../backup
       '@perawallet/wallet-core-blockchain':
         specifier: workspace:*
         version: link:../blockchain
