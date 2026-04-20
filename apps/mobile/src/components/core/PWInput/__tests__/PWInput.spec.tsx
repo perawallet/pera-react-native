@@ -43,4 +43,35 @@ describe('PWInput', () => {
         })
         expect(onChangeText).toHaveBeenCalledWith('hello')
     })
+
+    describe('minimumFontScale default', () => {
+        it('defaults minimumFontScale to 0.5 when adjustsFontSizeToFit is true', () => {
+            render(
+                <PWInput
+                    adjustsFontSizeToFit
+                    placeholder='test'
+                />,
+            )
+            const element = screen.getByPlaceholderText('test')
+            expect(element.getAttribute('minimumfontscale')).toBe('0.5')
+        })
+
+        it('allows overriding minimumFontScale when adjustsFontSizeToFit is true', () => {
+            render(
+                <PWInput
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
+                    placeholder='test-override'
+                />,
+            )
+            const element = screen.getByPlaceholderText('test-override')
+            expect(element.getAttribute('minimumfontscale')).toBe('0.7')
+        })
+
+        it('does not set minimumFontScale when adjustsFontSizeToFit is not set', () => {
+            render(<PWInput placeholder='test-no-adjust' />)
+            const element = screen.getByPlaceholderText('test-no-adjust')
+            expect(element.getAttribute('minimumfontscale')).toBeNull()
+        })
+    })
 })

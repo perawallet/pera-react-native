@@ -14,6 +14,7 @@ import { Text as RNEText } from '@rneui/themed'
 import { useStyles } from './styles'
 import { StyleProp, TextStyle, TextProps } from 'react-native'
 import { TypographyVariant } from '@theme/typography'
+import { DEFAULT_MINIMUM_FONT_SCALE } from '../constants'
 
 export type PWTextProps = {
     children?: React.ReactNode
@@ -33,10 +34,16 @@ export const PWText = ({
     variant = 'body',
     numberOfLines,
     ellipsizeMode,
+    adjustsFontSizeToFit,
+    minimumFontScale,
     onPress,
     ...props
 }: PWTextProps) => {
     const styles = useStyles({ variant })
+
+    const resolvedMinimumFontScale =
+        minimumFontScale ??
+        (adjustsFontSizeToFit ? DEFAULT_MINIMUM_FONT_SCALE : undefined)
 
     return (
         <RNEText
@@ -47,6 +54,8 @@ export const PWText = ({
             h4={variant === 'h4'}
             numberOfLines={numberOfLines}
             ellipsizeMode={ellipsizeMode}
+            adjustsFontSizeToFit={adjustsFontSizeToFit}
+            minimumFontScale={resolvedMinimumFontScale}
             onPress={onPress}
             {...props}
         >

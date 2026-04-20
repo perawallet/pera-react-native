@@ -192,6 +192,7 @@ declare module '@rneui/themed' {
     }
 
     export interface ThemeSpacing {
+        xxs: number
         xxl: number
         '3xl': number
         '4xl': number

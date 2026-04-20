@@ -82,7 +82,7 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
         },
         accountDisplaySubHeading: {
-            marginTop: theme.spacing.xs / 2,
+            marginTop: theme.spacing.xxs,
         },
         headerTitleContainer: {
             alignItems: 'center',

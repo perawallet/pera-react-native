@@ -26,4 +26,31 @@ describe('PWText', () => {
         // but checking render is sufficient for wrapper presence.
         expect(screen.getByText('Heading 1')).toBeTruthy()
     })
+
+    describe('minimumFontScale default', () => {
+        it('defaults minimumFontScale to 0.5 when adjustsFontSizeToFit is true', () => {
+            render(<PWText adjustsFontSizeToFit>Shrinkable</PWText>)
+            const element = screen.getByText('Shrinkable')
+            expect(element.getAttribute('minimumfontscale')).toBe('0.5')
+        })
+
+        it('allows overriding minimumFontScale when adjustsFontSizeToFit is true', () => {
+            render(
+                <PWText
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}
+                >
+                    Shrinkable
+                </PWText>,
+            )
+            const element = screen.getByText('Shrinkable')
+            expect(element.getAttribute('minimumfontscale')).toBe('0.7')
+        })
+
+        it('does not set minimumFontScale when adjustsFontSizeToFit is not set', () => {
+            render(<PWText>Normal</PWText>)
+            const element = screen.getByText('Normal')
+            expect(element.getAttribute('minimumfontscale')).toBeNull()
+        })
+    })
 })

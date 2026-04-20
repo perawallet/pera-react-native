@@ -165,14 +165,14 @@ vi.mock('@components/core', () => ({
 
 const createQuote = (overrides: Partial<SwapQuote> = {}): SwapQuote => ({
     assetIn: {
-        assetId: 0,
+        assetId: '0',
         name: 'Algorand',
         unitName: 'ALGO',
         decimals: 6,
         verificationTier: 'verified',
     },
     assetOut: {
-        assetId: 31566704,
+        assetId: '31566704',
         name: 'USDC',
         unitName: 'USDC',
         decimals: 6,

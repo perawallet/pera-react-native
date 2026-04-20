@@ -92,17 +92,17 @@ export const useSwapToAssetSelectionList = ({
             .filter(
                 asset =>
                     excludeAssetId === undefined ||
-                    String(asset.assetId) !== excludeAssetId,
+                    asset.assetId !== excludeAssetId,
             )
             .map(dexAsset => ({
                 dexAsset,
-                balance: balanceMap.get(String(dexAsset.assetId)) ?? null,
+                balance: balanceMap.get(dexAsset.assetId) ?? null,
             }))
     }, [availableAssets, balanceMap, excludeAssetId])
 
     const handleAssetSelected = useCallback(
         (item: AvailableAssetWithBalance) => {
-            const assetId = String(item.dexAsset.assetId)
+            const assetId = item.dexAsset.assetId
             // Seed the query cache so SwapAssetSelector can display the asset
             // immediately after selection, even for unowned assets that aren't
             // in the local asset database yet.
