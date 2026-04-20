@@ -10,4 +10,20 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-backup'
+import {
+    AccountTypes,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
+
+export const getBackupKeyId = (account: WalletAccount): string | null => {
+    switch (account.type) {
+        case AccountTypes.algo25:
+            return account.seedKeyId ?? account.keyPairId
+        case AccountTypes.hdWallet:
+            return account.entropyKeyId ?? account.keyPairId
+        case AccountTypes.multisig:
+        case AccountTypes.hardware:
+        case AccountTypes.watch:
+            return null
+    }
+}

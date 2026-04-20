@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-backup'
+export * from './getBackupKeyId'
