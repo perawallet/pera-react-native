@@ -10,76 +10,100 @@
  limitations under the License
  */
 
-import React from 'react'
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import React from 'react'
+
 import { useOnChainAccountInformationQuery } from '../useOnChainAccountInformationQuery'
 
-const mockAccountInformation = vi.fn()
-const mockAlgokit = {
-    client: { algod: { accountInformation: mockAccountInformation } },
-}
+const mockFetchOnChainAccountInformation = vi.hoisted(() => vi.fn())
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useAlgorandClient: () => mockAlgokit,
-    useNetwork: () => ({ network: 'mainnet' }),
+vi.mock('../endpoints', () => ({
+    fetchOnChainAccountInformation: mockFetchOnChainAccountInformation,
 }))
 
-const createWrapper = () => {
-    const queryClient = new QueryClient({
-        defaultOptions: { queries: { retry: false } },
-    })
-    return ({ children }: { children: React.ReactNode }) =>
-        React.createElement(
-            QueryClientProvider,
-            { client: queryClient },
-            children,
-        )
+vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: () => ({ network: 'mainnet' }),
+    useAlgorandClient: () => ({}),
+}))
+
+const mockAddress =
+    'TESTADDRESS123456789012345678901234567890123456789012345678'
+
+const mockResponse = {
+    address: mockAddress,
+    amount: 2_000_000n,
+    minBalance: 100_000n,
+    status: 'Online',
+    rewards: 0n,
+    assets: [{ assetId: 31566704n, amount: 500_000n, isFrozen: false }],
 }
 
 describe('useOnChainAccountInformationQuery', () => {
+    let queryClient: QueryClient
+    let wrapper: React.FC<{ children: React.ReactNode }>
+
     beforeEach(() => {
         vi.clearAllMocks()
-    })
-
-    it('does not run the query when address is empty', () => {
-        const { result } = renderHook(
-            () => useOnChainAccountInformationQuery(''),
-            {
-                wrapper: createWrapper(),
-            },
-        )
-
-        expect(result.current.isFetching).toBe(false)
-        expect(mockAccountInformation).not.toHaveBeenCalled()
-    })
-
-    it('fetches and maps on-chain account information', async () => {
-        mockAccountInformation.mockResolvedValue({
-            address: 'ADDR1',
-            amount: 1000n,
-            minBalance: 100n,
-            status: 'Online',
-            rewards: 0n,
-            assets: [{ assetId: 1n, amount: 5n, isFrozen: false }],
+        queryClient = new QueryClient({
+            defaultOptions: { queries: { retry: false } },
         })
+        wrapper = ({ children }) =>
+            React.createElement(
+                QueryClientProvider,
+                { client: queryClient },
+                children,
+            )
+    })
+
+    test('fetches and maps on-chain account information', async () => {
+        mockFetchOnChainAccountInformation.mockResolvedValue(mockResponse)
 
         const { result } = renderHook(
-            () => useOnChainAccountInformationQuery('ADDR1'),
-            { wrapper: createWrapper() },
+            () => useOnChainAccountInformationQuery(mockAddress),
+            { wrapper },
         )
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-        expect(mockAccountInformation).toHaveBeenCalledWith('ADDR1')
         expect(result.current.data).toEqual({
-            address: 'ADDR1',
-            amount: 1000n,
-            minBalance: 100n,
+            address: mockAddress,
+            amount: 2_000_000n,
+            minBalance: 100_000n,
             status: 'Online',
             rewards: 0n,
-            assets: [{ assetId: 1n, amount: 5n, isFrozen: false }],
+            assets: [{ assetId: 31566704n, amount: 500_000n, isFrozen: false }],
         })
+        expect(mockFetchOnChainAccountInformation).toHaveBeenCalledWith(
+            {},
+            mockAddress,
+        )
+    })
+
+    test('maps response with no assets to empty array', async () => {
+        mockFetchOnChainAccountInformation.mockResolvedValue({
+            ...mockResponse,
+            assets: undefined,
+        })
+
+        const { result } = renderHook(
+            () => useOnChainAccountInformationQuery(mockAddress),
+            { wrapper },
+        )
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+        expect(result.current.data?.assets).toEqual([])
+    })
+
+    test('is disabled when address is empty', () => {
+        const { result } = renderHook(
+            () => useOnChainAccountInformationQuery(''),
+            { wrapper },
+        )
+
+        expect(result.current.fetchStatus).toBe('idle')
+        expect(result.current.isPending).toBe(true)
     })
 })
