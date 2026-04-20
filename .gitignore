@@ -5,6 +5,7 @@ node_modules
 dist
 dist-ssr
 *.local
+.worktrees
 .env
 .env.staging
 .env.production
