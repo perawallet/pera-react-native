@@ -10,16 +10,13 @@
  limitations under the License
  */
 
-export * from './useSwaps'
-export * from './useAvailableAssetsQuery'
-export * from './useSwapHistoryQuery'
-export * from './useSwapHistoryInfiniteQuery'
-export * from './useDistinctPairsHistoryQuery'
-export * from './useProvidersQuery'
-export * from './usePrefetchProviders'
-export * from './useTopPairsQuery'
-export * from './useCreateQuotesMutation'
-export * from './useCalculatePeraFeeMutation'
-export * from './useCalculateSwapAmountMutation'
-export * from './usePrepareTransactionsMutation'
-export * from './useUpdateSwapStatusMutation'
+import { makeStyles } from '@rneui/themed'
+
+export const useStyles = makeStyles(() => ({
+    container: {
+        flex: 1,
+    },
+    listWrapper: {
+        flex: 1,
+    },
+}))

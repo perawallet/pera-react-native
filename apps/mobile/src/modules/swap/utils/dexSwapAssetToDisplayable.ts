@@ -10,16 +10,15 @@
  limitations under the License
  */
 
-export * from './useSwaps'
-export * from './useAvailableAssetsQuery'
-export * from './useSwapHistoryQuery'
-export * from './useSwapHistoryInfiniteQuery'
-export * from './useDistinctPairsHistoryQuery'
-export * from './useProvidersQuery'
-export * from './usePrefetchProviders'
-export * from './useTopPairsQuery'
-export * from './useCreateQuotesMutation'
-export * from './useCalculatePeraFeeMutation'
-export * from './useCalculateSwapAmountMutation'
-export * from './usePrepareTransactionsMutation'
-export * from './useUpdateSwapStatusMutation'
+import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
+import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
+
+export const dexSwapAssetToDisplayable = (
+    asset: DexSwapAsset,
+): DisplayableAsset => ({
+    assetId: asset.assetId,
+    name: asset.name,
+    unitName: asset.unitName,
+    decimals: asset.decimals,
+    peraMetadata: asset.logo ? { logo: asset.logo } : undefined,
+})

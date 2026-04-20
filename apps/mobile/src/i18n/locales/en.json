@@ -1393,6 +1393,27 @@
             "apply": "Apply",
             "auto_label": "Auto",
             "auto_description": "Best price available"
+        },
+        "history": {
+            "title": "Swap History",
+            "widget": {
+                "title": "Swap History",
+                "see_all": "See all",
+                "error": "Couldn't load swap history."
+            },
+            "list": {
+                "item": {
+                    "description": "Swapped {{amountIn}} {{unitIn}} for "
+                },
+                "empty": {
+                    "title": "No swaps yet",
+                    "body": "Your swap history will appear here."
+                },
+                "error": {
+                    "title": "Something went wrong",
+                    "body": "We couldn't load your swap history. Please try again."
+                }
+            }
         }
     },
     "ledger": {

@@ -10,16 +10,8 @@
  limitations under the License
  */
 
-export * from './useSwaps'
-export * from './useAvailableAssetsQuery'
-export * from './useSwapHistoryQuery'
-export * from './useSwapHistoryInfiniteQuery'
-export * from './useDistinctPairsHistoryQuery'
-export * from './useProvidersQuery'
-export * from './usePrefetchProviders'
-export * from './useTopPairsQuery'
-export * from './useCreateQuotesMutation'
-export * from './useCalculatePeraFeeMutation'
-export * from './useCalculateSwapAmountMutation'
-export * from './usePrepareTransactionsMutation'
-export * from './useUpdateSwapStatusMutation'
+import type { SwapStatus } from '@perawallet/wallet-core-swaps'
+
+const VISIBLE_SWAP_STATUSES_LIST: SwapStatus[] = ['completed', 'in_progress']
+
+export const VISIBLE_SWAP_STATUSES = VISIBLE_SWAP_STATUSES_LIST.join(',')

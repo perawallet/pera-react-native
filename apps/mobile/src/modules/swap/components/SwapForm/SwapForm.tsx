@@ -16,6 +16,7 @@ import { SwapAssetSelectionBottomSheet } from '../SwapAssetSelectionBottomSheet'
 import { SwapAmountSection } from '../SwapAmountSection'
 import { SwapConfigurationBottomSheet } from '../SwapConfigurationBottomSheet'
 import { SwapConfirmationBottomSheet } from '../SwapConfirmationBottomSheet'
+import { SwapPairHistoryWidget } from '../SwapPairHistoryWidget'
 import { SwapProviderBottomSheet } from '../SwapProviderBottomSheet'
 import { SwapProviderRow } from '../SwapProviderRow'
 import { SwapFormControls } from './SwapFormControls'
@@ -115,6 +116,8 @@ export const SwapForm = () => {
                         testID='swap-button'
                     />
                 )}
+
+                <SwapPairHistoryWidget />
             </PWScrollView>
 
             <SwapAssetSelectionBottomSheet
