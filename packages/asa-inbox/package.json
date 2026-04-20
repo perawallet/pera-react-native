@@ -34,7 +34,7 @@
     "@algorandfoundation/algokit-client-generator": "7.0.0-alpha.6",
     "@perawallet/wallet-core-devtools": "workspace:*",
     "@testing-library/react": "catalog:",
-    "@types/node": "^20.19.28",
+    "@types/node": "^25.6.0",
     "@types/react": "catalog:",
     "typescript": "catalog:",
     "vite": "catalog:",
