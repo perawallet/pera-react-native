@@ -5,6 +5,7 @@ node_modules
 dist
 dist-ssr
 *.local
+.worktrees
 .env
 .env.staging
 .env.production
@@ -47,3 +48,4 @@ opencode.json
 
 # Documentation
 docs/ui-automation-test-ids.md
+docs/superpowers

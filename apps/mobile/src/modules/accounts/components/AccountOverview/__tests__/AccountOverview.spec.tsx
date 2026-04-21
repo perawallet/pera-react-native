@@ -50,24 +50,31 @@ vi.mock('react-native-tab-view', () => ({
     SceneMap: () => null,
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAccountBalancesQuery: vi.fn(() => ({
-        portfolioAlgoValue: new Decimal('100'),
-        isPending: false,
-        accountBalances: new Map(),
-        isFetched: true,
-        isRefetching: false,
-        isError: false,
-    })),
-    usePortfolioTotals: vi.fn(() => ({
-        portfolioUsdValue: new Decimal('200'),
-        accountUsdValues: new Map(),
-        isPending: false,
-    })),
-    useSelectedAccount: vi.fn(() => undefined),
-    useAllAccounts: vi.fn(() => []),
-    isSigningAccount: vi.fn(() => true),
-}))
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
+    return {
+        ...actual,
+        useAccountBalancesQuery: vi.fn(() => ({
+            portfolioAlgoValue: new Decimal('100'),
+            isPending: false,
+            accountBalances: new Map(),
+            isFetched: true,
+            isRefetching: false,
+            isError: false,
+        })),
+        usePortfolioTotals: vi.fn(() => ({
+            portfolioUsdValue: new Decimal('200'),
+            accountUsdValues: new Map(),
+            isPending: false,
+        })),
+        useSelectedAccount: vi.fn(() => undefined),
+        useAllAccounts: vi.fn(() => []),
+        useAccountLogicalType: vi.fn(() => 'Algo25'),
+    }
+})
 
 vi.mock('@modules/transactions/hooks', () => ({
     useReceiveFunds: vi.fn(() => ({
@@ -377,9 +384,9 @@ describe('AccountOverview', () => {
         } as unknown as WalletAccount
 
         beforeEach(async () => {
-            const { isSigningAccount } =
+            const { useAccountLogicalType } =
                 await import('@perawallet/wallet-core-accounts')
-            vi.mocked(isSigningAccount).mockReturnValue(true)
+            vi.mocked(useAccountLogicalType).mockReturnValue('RekeyedAuth')
         })
 
         it('renders ButtonPanel with full actions when has balance', () => {
@@ -418,9 +425,9 @@ describe('AccountOverview', () => {
 
     describe('when account is a watch account', () => {
         beforeEach(async () => {
-            const { isSigningAccount } =
+            const { useAccountLogicalType } =
                 await import('@perawallet/wallet-core-accounts')
-            vi.mocked(isSigningAccount).mockReturnValue(false)
+            vi.mocked(useAccountLogicalType).mockReturnValue('NoAuth')
         })
 
         it('renders WatchAccountButtonPanel instead of ButtonPanel when has balance', () => {

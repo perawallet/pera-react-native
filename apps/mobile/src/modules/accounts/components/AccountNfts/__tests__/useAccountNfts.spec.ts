@@ -29,7 +29,7 @@ vi.mock('@hooks/useDebouncedValue', () => ({
 
 const mockUseSelectedAccount = vi.fn()
 const mockUseAccountBalancesQuery = vi.fn()
-const mockIsSigningAccount = vi.fn()
+const mockUseAccountLogicalType = vi.fn()
 const mockUseAllAccounts = vi.fn()
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
@@ -44,7 +44,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useAccountBalancesQuery: (...args: unknown[]) =>
             mockUseAccountBalancesQuery(...args),
         useAllAccounts: (...args: unknown[]) => mockUseAllAccounts(...args),
-        isSigningAccount: (...args: unknown[]) => mockIsSigningAccount(...args),
+        useAccountLogicalType: (...args: unknown[]) =>
+            mockUseAccountLogicalType(...args),
     }
 })
 
@@ -124,7 +125,7 @@ describe('useAccountNfts', () => {
         mockShowOptedIn = false
         mockUseSelectedAccount.mockReturnValue(mockAccount)
         mockUseAllAccounts.mockReturnValue([mockAccount])
-        mockIsSigningAccount.mockReturnValue(true)
+        mockUseAccountLogicalType.mockReturnValue('Algo25')
 
         mockUseAccountBalancesQuery.mockReturnValue({
             accountBalances: new Map([
@@ -358,14 +359,14 @@ describe('useAccountNfts', () => {
 
     describe('canOptIn', () => {
         it('returns true for signing accounts', () => {
-            mockIsSigningAccount.mockReturnValue(true)
+            mockUseAccountLogicalType.mockReturnValue('Algo25')
             const { result } = renderHook(() => useAccountNfts())
 
             expect(result.current.canOptIn).toBe(true)
         })
 
         it('returns false for non-signing accounts', () => {
-            mockIsSigningAccount.mockReturnValue(false)
+            mockUseAccountLogicalType.mockReturnValue('NoAuth')
             const { result } = renderHook(() => useAccountNfts())
 
             expect(result.current.canOptIn).toBe(false)

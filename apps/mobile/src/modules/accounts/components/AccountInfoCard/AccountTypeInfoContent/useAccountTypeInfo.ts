@@ -12,13 +12,10 @@
 
 import { useCallback, useMemo } from 'react'
 import {
-    WalletAccount,
-    isRekeyedAccount,
-    canSignWithAccount,
-    hasSigningKeys,
-    useAllAccounts,
-    resolveAccountStatus,
-    type AccountStatus,
+    isSigningLogicalType,
+    useAccountLogicalType,
+    type AccountLogicalType,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -45,43 +42,36 @@ type UseAccountTypeInfoResult = {
     handleLearnMore: () => void
 }
 
-const STATUS_I18N_MAP: Record<
-    AccountStatus,
-    { title: string; description: string }
-> = {
-    standard: {
+const I18N_MAP = {
+    Algo25: {
         title: 'account_type_info.standard_title',
         description: 'account_type_info.standard_description',
     },
-    hardware: {
-        title: 'account_type_info.ledger_title',
-        description: 'account_type_info.ledger_description',
-    },
-    watch: {
-        title: 'account_type_info.watch_title',
-        description: 'account_type_info.watch_description',
-    },
-    noAuth: {
-        title: 'account_type_info.no_auth_title',
-        description: 'account_type_info.no_auth_description',
-    },
-    rekeyedStandard: {
-        title: 'account_type_info.rekeyed_standard_title',
-        description: 'account_type_info.rekeyed_standard_description',
-    },
-    rekeyedHardware: {
-        title: 'account_type_info.rekeyed_ledger_title',
-        description: 'account_type_info.rekeyed_ledger_description',
-    },
-    hdWallet: {
+    HdKey: {
         title: 'account_type_info.hd_wallet_title',
         description: 'account_type_info.hd_wallet_description',
     },
-    multisig: {
+    LedgerBle: {
+        title: 'account_type_info.ledger_title',
+        description: 'account_type_info.ledger_description',
+    },
+    Multisig: {
         title: 'account_type_info.multisig_title',
         description: 'account_type_info.multisig_description',
     },
-}
+    Rekeyed: {
+        title: 'account_type_info.rekeyed_standard_title',
+        description: 'account_type_info.rekeyed_standard_description',
+    },
+    RekeyedAuth: {
+        title: 'account_type_info.rekeyed_standard_title',
+        description: 'account_type_info.rekeyed_standard_description',
+    },
+    NoAuth: {
+        title: 'account_type_info.no_auth_title',
+        description: 'account_type_info.no_auth_description',
+    },
+} satisfies Record<AccountLogicalType, { title: string; description: string }>
 
 export const useAccountTypeInfo = ({
     account,
@@ -90,15 +80,11 @@ export const useAccountTypeInfo = ({
     const { t } = useLanguage()
     const { showToast } = useToast()
     const { pushWebView } = useWebView()
-    const accounts = useAllAccounts()
+    const logicalType: AccountLogicalType =
+        useAccountLogicalType(account.address) ?? 'NoAuth'
 
-    const status = useMemo(
-        () => resolveAccountStatus(account, accounts),
-        [account, accounts],
-    )
-
-    const title = t(STATUS_I18N_MAP[status].title)
-    const description = t(STATUS_I18N_MAP[status].description)
+    const title = t(I18N_MAP[logicalType].title)
+    const description = t(I18N_MAP[logicalType].description)
 
     const notImplemented = useCallback(() => {
         showToast({
@@ -116,7 +102,7 @@ export const useAccountTypeInfo = ({
     const actions = useMemo(() => {
         const items: AccountTypeAction[] = []
 
-        if (canSignWithAccount(account, accounts)) {
+        if (isSigningLogicalType(logicalType)) {
             items.push({
                 id: 'rekey-to-ledger',
                 title: t('account_type_info.rekey_to_ledger'),
@@ -131,7 +117,7 @@ export const useAccountTypeInfo = ({
             })
         }
 
-        if (isRekeyedAccount(account) && hasSigningKeys(account)) {
+        if (logicalType === 'RekeyedAuth') {
             items.push({
                 id: 'undo-rekey',
                 title: t('account_type_info.undo_rekey'),
@@ -140,7 +126,7 @@ export const useAccountTypeInfo = ({
             })
         }
 
-        if (isRekeyedAccount(account)) {
+        if (logicalType === 'Rekeyed' || logicalType === 'RekeyedAuth') {
             items.push({
                 id: 'rescan-rekeyed',
                 title: t('account_type_info.rescan_rekeyed'),
@@ -150,7 +136,7 @@ export const useAccountTypeInfo = ({
         }
 
         return items
-    }, [account, accounts, t, notImplemented])
+    }, [logicalType, t, notImplemented])
 
     return {
         title,

@@ -26,4 +26,8 @@ export type AccountsState = BaseStoreState & {
     setSelectedAccountAddress: (address: Nullable<string>) => void
     setSortMode: (mode: AccountSortMode) => void
     setManualAccountOrder: (order: string[]) => void
+    updateAccountRekeyAddress: (
+        address: string,
+        rekeyAddress: string | null,
+    ) => void
 }

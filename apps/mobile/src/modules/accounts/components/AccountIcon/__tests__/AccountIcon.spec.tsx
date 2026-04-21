@@ -14,32 +14,45 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
 import { render, screen } from '@test-utils/render'
 import { AccountIcon } from '../AccountIcon'
-import { AccountStatus, WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    AccountLogicalType,
+    AccountLogicalTypes,
+    AccountTypes,
+    WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 
-const mockResolveAccountStatus = vi.fn<() => AccountStatus>(() => 'standard')
+const mockUseAccountLogicalType = vi.fn<() => AccountLogicalType | null>(
+    () => AccountLogicalTypes.Algo25,
+)
 
 vi.mock('@hooks/useIsDarkMode', () => ({
     useIsDarkMode: vi.fn(() => false),
 }))
 
-vi.mock('@perawallet/wallet-core-accounts', () => ({
-    resolveAccountStatus: (...args: unknown[]) =>
-        mockResolveAccountStatus(...(args as [])),
-    useAllAccounts: vi.fn(() => []),
-}))
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
+    const actual =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
+    return {
+        ...actual,
+        useAccountLogicalType: (...args: unknown[]) =>
+            mockUseAccountLogicalType(...(args as [])),
+    }
+})
 
 const account = { address: 'addr' } as WalletAccount
 
 describe('AccountIcon', () => {
     beforeEach(async () => {
         vi.clearAllMocks()
-        mockResolveAccountStatus.mockReturnValue('standard')
+        mockUseAccountLogicalType.mockReturnValue(AccountLogicalTypes.Algo25)
         const { useIsDarkMode } = await import('@hooks/useIsDarkMode')
         vi.mocked(useIsDarkMode).mockReturnValue(false)
     })
 
-    it('renders correct icon for HD wallet account', () => {
-        mockResolveAccountStatus.mockReturnValue('hdWallet')
+    it('renders correct icon for HdKey account', () => {
+        mockUseAccountLogicalType.mockReturnValue(AccountLogicalTypes.HdKey)
 
         render(<AccountIcon account={account} />)
 
@@ -48,8 +61,8 @@ describe('AccountIcon', () => {
         ).toBeTruthy()
     })
 
-    it('renders correct icon for standard account', () => {
-        mockResolveAccountStatus.mockReturnValue('standard')
+    it('renders correct icon for Algo25 account', () => {
+        mockUseAccountLogicalType.mockReturnValue(AccountLogicalTypes.Algo25)
 
         render(<AccountIcon account={account} />)
 
@@ -58,8 +71,8 @@ describe('AccountIcon', () => {
         ).toBeTruthy()
     })
 
-    it('renders correct icon for hardware wallet account', () => {
-        mockResolveAccountStatus.mockReturnValue('hardware')
+    it('renders correct icon for LedgerBle account', () => {
+        mockUseAccountLogicalType.mockReturnValue(AccountLogicalTypes.LedgerBle)
 
         render(<AccountIcon account={account} />)
 
@@ -68,18 +81,8 @@ describe('AccountIcon', () => {
         ).toBeTruthy()
     })
 
-    it('renders correct icon for watch account', () => {
-        mockResolveAccountStatus.mockReturnValue('watch')
-
-        render(<AccountIcon account={account} />)
-
-        expect(
-            screen.getByTestId('icon-accounts/light/watch-account'),
-        ).toBeTruthy()
-    })
-
-    it('renders correct icon for multisig account', () => {
-        mockResolveAccountStatus.mockReturnValue('multisig')
+    it('renders correct icon for Multisig account', () => {
+        mockUseAccountLogicalType.mockReturnValue(AccountLogicalTypes.Multisig)
 
         render(<AccountIcon account={account} />)
 
@@ -88,8 +91,8 @@ describe('AccountIcon', () => {
         ).toBeTruthy()
     })
 
-    it('renders correct icon for noAuth account', () => {
-        mockResolveAccountStatus.mockReturnValue('noAuth')
+    it('renders correct icon for NoAuth account', () => {
+        mockUseAccountLogicalType.mockReturnValue(AccountLogicalTypes.NoAuth)
 
         render(<AccountIcon account={account} />)
 
@@ -98,8 +101,8 @@ describe('AccountIcon', () => {
         ).toBeTruthy()
     })
 
-    it('renders correct icon for rekeyedStandard account', () => {
-        mockResolveAccountStatus.mockReturnValue('rekeyedStandard')
+    it('renders rekeyed-standard icon for Rekeyed account', () => {
+        mockUseAccountLogicalType.mockReturnValue(AccountLogicalTypes.Rekeyed)
 
         render(<AccountIcon account={account} />)
 
@@ -108,10 +111,42 @@ describe('AccountIcon', () => {
         ).toBeTruthy()
     })
 
-    it('renders correct icon for rekeyedHardware account', () => {
-        mockResolveAccountStatus.mockReturnValue('rekeyedHardware')
+    it('renders rekeyed-standard icon for RekeyedAuth account', () => {
+        mockUseAccountLogicalType.mockReturnValue(
+            AccountLogicalTypes.RekeyedAuth,
+        )
 
         render(<AccountIcon account={account} />)
+
+        expect(
+            screen.getByTestId('icon-accounts/light/rekeyed-standard'),
+        ).toBeTruthy()
+    })
+
+    it('renders rekeyed-ledger icon when a hardware account is rekeyed', () => {
+        mockUseAccountLogicalType.mockReturnValue(AccountLogicalTypes.Rekeyed)
+        const hardwareAccount = {
+            address: 'addr',
+            type: AccountTypes.hardware,
+        } as WalletAccount
+
+        render(<AccountIcon account={hardwareAccount} />)
+
+        expect(
+            screen.getByTestId('icon-accounts/light/rekeyed-ledger'),
+        ).toBeTruthy()
+    })
+
+    it('renders rekeyed-ledger icon when a hardware account is RekeyedAuth', () => {
+        mockUseAccountLogicalType.mockReturnValue(
+            AccountLogicalTypes.RekeyedAuth,
+        )
+        const hardwareAccount = {
+            address: 'addr',
+            type: AccountTypes.hardware,
+        } as WalletAccount
+
+        render(<AccountIcon account={hardwareAccount} />)
 
         expect(
             screen.getByTestId('icon-accounts/light/rekeyed-ledger'),
@@ -121,7 +156,7 @@ describe('AccountIcon', () => {
     it('renders correct icon in dark mode', async () => {
         const { useIsDarkMode } = await import('@hooks/useIsDarkMode')
         vi.mocked(useIsDarkMode).mockReturnValue(true)
-        mockResolveAccountStatus.mockReturnValue('hdWallet')
+        mockUseAccountLogicalType.mockReturnValue(AccountLogicalTypes.HdKey)
 
         render(<AccountIcon account={account} />)
 
@@ -136,8 +171,16 @@ describe('AccountIcon', () => {
         expect(container.innerHTML).not.toContain('icon-')
     })
 
+    it('renders nothing when logical type is null', () => {
+        mockUseAccountLogicalType.mockReturnValue(null)
+
+        const { container } = render(<AccountIcon account={account} />)
+
+        expect(container.innerHTML).not.toContain('icon-')
+    })
+
     it('passes size prop to PWIcon', () => {
-        mockResolveAccountStatus.mockReturnValue('standard')
+        mockUseAccountLogicalType.mockReturnValue(AccountLogicalTypes.Algo25)
 
         render(
             <AccountIcon

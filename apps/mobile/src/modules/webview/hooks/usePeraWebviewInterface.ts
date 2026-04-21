@@ -23,6 +23,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import {
     getAccountDisplayName,
+    useAllAccountLogicalTypes,
     useAllAccounts,
 } from '@perawallet/wallet-core-accounts'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
@@ -50,7 +51,6 @@ import {
     logger,
     type Nullable,
 } from '@perawallet/wallet-core-shared'
-import { getAccountType } from './utils'
 import { useWalletConnect } from '@perawallet/wallet-core-walletconnect'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useDeepLink } from '@hooks/useDeepLink'
@@ -74,6 +74,7 @@ export const usePeraWebviewInterface = (
 ) => {
     const { showToast } = useToast()
     const accounts = useAllAccounts()
+    const logicalTypes = useAllAccountLogicalTypes()
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
     const darkmode = useIsDarkMode()
@@ -309,7 +310,7 @@ export const usePeraWebviewInterface = (
                     const payload = accounts.map(a => ({
                         name: getAccountDisplayName(a),
                         address: a.address,
-                        type: getAccountType(a),
+                        type: logicalTypes.get(a.address) ?? 'NoAuth',
                     }))
                     sendMessageToWebview(message.id, payload, webview)
                 },

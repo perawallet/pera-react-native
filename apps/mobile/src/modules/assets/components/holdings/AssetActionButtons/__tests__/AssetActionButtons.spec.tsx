@@ -80,7 +80,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         ...actual,
         useSelectedAccount: vi.fn(() => ({ address: 'test-address' })),
         useAllAccounts: vi.fn(() => []),
-        isSigningAccount: vi.fn(() => true),
+        useAccountLogicalType: vi.fn(() => 'Algo25'),
     }
 })
 
@@ -188,14 +188,14 @@ describe('AssetActionButtons', () => {
 
     describe('when account is rekeyed with signing capability', () => {
         beforeEach(async () => {
-            const { useSelectedAccount, isSigningAccount } =
+            const { useSelectedAccount, useAccountLogicalType } =
                 await import('@perawallet/wallet-core-accounts')
             vi.mocked(useSelectedAccount).mockReturnValue({
                 address: 'REKEYED_ADDR',
                 type: 'watch',
                 rekeyAddress: 'AUTH_ADDR',
             } as unknown as WalletAccount)
-            vi.mocked(isSigningAccount).mockReturnValue(true)
+            vi.mocked(useAccountLogicalType).mockReturnValue('RekeyedAuth')
         })
 
         it('renders all action buttons including Swap, Buy, Send, Receive', () => {
@@ -222,9 +222,9 @@ describe('AssetActionButtons', () => {
 
     describe('when account is a watch account', () => {
         beforeEach(async () => {
-            const { isSigningAccount } =
+            const { useAccountLogicalType } =
                 await import('@perawallet/wallet-core-accounts')
-            vi.mocked(isSigningAccount).mockReturnValue(false)
+            vi.mocked(useAccountLogicalType).mockReturnValue('NoAuth')
         })
 
         it('renders only Copy Address and Receive buttons', () => {
