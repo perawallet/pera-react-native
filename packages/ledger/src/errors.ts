@@ -104,6 +104,25 @@ export class LedgerTimeoutError extends AppError {
 }
 
 /**
+ * The address returned by the Ledger device does not match the expected address.
+ * This prevents index mismatch attacks or device reordering.
+ */
+export class LedgerAddressMismatchError extends AppError {
+    constructor(expected: string, actual: string, originalError?: Error) {
+        super(
+            `Ledger address mismatch: expected ${expected} but got ${actual}`,
+            {
+                severity: ErrorSeverity.HIGH,
+                category: ErrorCategory.BLOCKCHAIN,
+                retryable: false,
+                params: { expected, actual },
+            },
+            originalError,
+        )
+    }
+}
+
+/**
  * Extract the APDU status code from a Ledger SDK error.
  * Ledger errors typically have a `statusCode` property.
  */

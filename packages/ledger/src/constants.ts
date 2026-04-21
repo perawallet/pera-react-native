@@ -94,6 +94,12 @@ export const LEDGER_SCAN_TIMEOUT_MS = 30_000
 export const LEDGER_CONFIRMATION_TIMEOUT_MS = 30_000
 
 /**
+ * Maximum time to wait for a BLE connection to the Ledger device.
+ * Matches the 10-second timeout used by native iOS.
+ */
+export const LEDGER_CONNECTION_TIMEOUT_MS = 10_000
+
+/**
  * Stop scanning for accounts after this many consecutive indices
  * return addresses with no on-chain presence.
  */
