@@ -67,6 +67,12 @@ export const useStyles = makeStyles(theme => ({
         borderBottomWidth: theme.borders.sm,
         borderBottomColor: theme.colors.layerGrayLighter,
     },
+    selectedItem: {
+        borderWidth: 2,
+        borderColor: theme.colors.positive,
+        borderRadius: 12,
+        backgroundColor: theme.colors.background,
+    },
     itemTextContainer: {
         flex: 1,
         paddingRight: theme.spacing.md,

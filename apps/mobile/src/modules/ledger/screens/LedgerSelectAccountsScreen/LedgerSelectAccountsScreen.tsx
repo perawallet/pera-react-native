@@ -47,7 +47,7 @@ export const LedgerSelectAccountsScreen = () => {
 
         return (
             <PWTouchableOpacity
-                style={styles.itemContainer}
+                style={[styles.itemContainer, isSelected && styles.selectedItem]}
                 onPress={() => toggleSelection(item.address)}
                 disabled={isImported}
             >
