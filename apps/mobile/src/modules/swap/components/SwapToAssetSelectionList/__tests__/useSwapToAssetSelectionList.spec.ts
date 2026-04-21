@@ -52,9 +52,15 @@ vi.mock('@perawallet/wallet-core-swaps', () => ({
     useAvailableAssetsQuery: mockUseAvailableAssetsQuery,
 }))
 
-vi.mock('@hooks/useDebouncedValue', () => ({
-    useDebouncedValue: (value: string) => value,
-}))
+vi.mock('@perawallet/wallet-core-shared', async () => {
+    const actual = await vi.importActual<object>(
+        '@perawallet/wallet-core-shared',
+    )
+    return {
+        ...actual,
+        useDebouncedValue: (value: unknown) => value,
+    }
+})
 
 const mockAvailableAssets = [
     {

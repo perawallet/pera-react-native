@@ -17,7 +17,7 @@ import {
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
-import { useDebouncedValue } from '@hooks/useDebouncedValue'
+import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 
 type UseAccountAssetSelectionListParams = {
     isVisible?: boolean

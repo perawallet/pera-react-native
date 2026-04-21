@@ -36,9 +36,12 @@ import {
 } from '@perawallet/wallet-core-swaps'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import { isDecimalEqual, type Nullable } from '@perawallet/wallet-core-shared'
+import {
+    isDecimalEqual,
+    useDebouncedValue,
+    type Nullable,
+} from '@perawallet/wallet-core-shared'
 import { useModalState } from '@hooks/useModalState'
-import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { useRunAfterDelay } from '@hooks/useRunAfterDelay'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'

@@ -119,16 +119,13 @@ vi.mock('@hooks/useModalState', () => ({
     }),
 }))
 
-vi.mock('@hooks/useDebouncedValue', () => ({
-    useDebouncedValue: (value: unknown) => value,
-}))
-
 vi.mock('@perawallet/wallet-core-shared', () => ({
     isDecimalEqual: (a: Nullable<Decimal>, b: Nullable<Decimal>) => {
         if (a === b) return true
         if (a === null || b === null) return false
         return a.equals(b)
     },
+    useDebouncedValue: (value: unknown) => value,
 }))
 
 vi.mock('../../../hooks/useSwapExecution', () => ({

@@ -1860,6 +1860,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         }
         return '?'
     }),
+    useDebouncedValue: <T>(value: T) => value,
 }))
 
 // Mock @perawallet/wallet-core-projects

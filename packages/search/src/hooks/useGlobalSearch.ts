@@ -18,13 +18,13 @@ import {
 import { useAssetSearchQuery } from '@perawallet/wallet-core-assets'
 import type { AssetSearchItem, PeraAsset } from '@perawallet/wallet-core-assets'
 import { useContacts } from '@perawallet/wallet-core-contacts'
+import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import {
     EMPTY_GLOBAL_SEARCH_RESULTS,
     SEARCH_SCOPES,
     type GlobalSearchResults,
     type SearchScope,
 } from '../models'
-import { useDebouncedValue } from './useDebouncedValue'
 
 const DEFAULT_DEBOUNCE_MS = 300
 const noop = () => {}

@@ -26,16 +26,14 @@ import { useModalState, type ModalState } from '@hooks/useModalState'
 
 const DEFAULT_SECTION_LIMIT = 5
 
-type SectionKind = 'accounts' | 'contacts' | 'assets'
-
 export type SearchRow =
-    | { type: 'section_header'; kind: SectionKind; key: string }
+    | { type: 'section_header'; kind: SearchScope; key: string }
     | { type: 'account'; account: WalletAccount; key: string }
     | { type: 'contact'; contact: Contact; key: string }
     | { type: 'asset'; asset: PeraAsset; key: string }
     | {
           type: 'show_more'
-          kind: SectionKind
+          kind: SearchScope
           hiddenCount: number
           key: string
       }
@@ -52,11 +50,11 @@ export type UseSearchScreenResult = {
     onAccountPress: (account: WalletAccount) => void
     onContactPress: (contact: Contact) => void
     onAssetPress: (asset: PeraAsset) => void
-    onExpandSection: (kind: SectionKind) => void
+    onExpandSection: (kind: SearchScope) => void
 }
 
 type SectionConfig = {
-    kind: SectionKind
+    kind: SearchScope
     items: Array<WalletAccount | Contact | PeraAsset>
     toRow: (item: never) => SearchRow
 }
@@ -81,10 +79,10 @@ export const useSearchScreen = (): UseSearchScreenResult => {
     const { setSelectedContact } = useContacts()
 
     const [expandedSections, setExpandedSections] = useState<
-        Record<SectionKind, boolean>
+        Record<SearchScope, boolean>
     >({ accounts: false, contacts: false, assets: false })
 
-    const onExpandSection = useCallback((kind: SectionKind) => {
+    const onExpandSection = useCallback((kind: SearchScope) => {
         setExpandedSections(prev => ({ ...prev, [kind]: true }))
     }, [])
 
