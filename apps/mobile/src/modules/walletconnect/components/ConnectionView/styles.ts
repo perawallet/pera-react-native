@@ -54,9 +54,16 @@ export const useStyles = makeStyles(theme => {
         permissionsContainer: {
             backgroundColor: theme.colors.layerGrayLighter,
             borderRadius: theme.spacing.lg,
-            gap: theme.spacing.md,
-            padding: theme.spacing.lg,
+            paddingHorizontal: theme.spacing.lg,
+            paddingBottom: theme.spacing.lg,
             width: '100%',
+        },
+        permissionsContent: {
+            gap: theme.spacing.md,
+            paddingTop: theme.spacing.md,
+        },
+        panelTitle: {
+            color: theme.colors.textGray,
         },
         accountSelectionContainer: {
             marginTop: theme.spacing.lg,
