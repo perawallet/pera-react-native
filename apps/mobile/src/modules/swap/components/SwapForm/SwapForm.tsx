@@ -19,6 +19,7 @@ import { SwapConfirmationBottomSheet } from '../SwapConfirmationBottomSheet'
 import { SwapPairHistoryWidget } from '../SwapPairHistoryWidget'
 import { SwapProviderBottomSheet } from '../SwapProviderBottomSheet'
 import { SwapProviderRow } from '../SwapProviderRow'
+import { SwapTopPairs } from '../SwapTopPairs'
 import { SwapFormControls } from './SwapFormControls'
 import { useSwapForm } from './useSwapForm'
 import { useStyles } from './styles'
@@ -118,6 +119,7 @@ export const SwapForm = () => {
                 )}
 
                 <SwapPairHistoryWidget />
+                <SwapTopPairs />
             </PWScrollView>
 
             <SwapAssetSelectionBottomSheet

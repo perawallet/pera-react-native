@@ -1415,6 +1415,11 @@
                     "body": "We couldn't load your swap history. Please try again."
                 }
             }
+        },
+        "top_pairs": {
+            "title": "Top 5 Swaps",
+            "volume_24h": "Volume (24H)",
+            "error": "Couldn't load top swaps"
         }
     },
     "ledger": {
