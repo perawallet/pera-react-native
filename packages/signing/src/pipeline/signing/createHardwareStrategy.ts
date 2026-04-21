@@ -33,6 +33,7 @@ import type {
     SigningCallbacks,
 } from '../types'
 import { CannotSignError, HardwareWalletError, SigningError } from '../errors'
+import { AppError } from '@perawallet/wallet-core-shared'
 import {
     LedgerConnectionError,
     LedgerAddressMismatchError,
@@ -206,7 +207,8 @@ const signTransactions = async (
 const classifyError = (error: unknown): never => {
     if (
         error instanceof CannotSignError ||
-        error instanceof HardwareWalletError
+        error instanceof HardwareWalletError ||
+        error instanceof AppError
     ) {
         throw error
     }
