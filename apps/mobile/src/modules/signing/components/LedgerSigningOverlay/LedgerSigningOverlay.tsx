@@ -19,6 +19,8 @@ import { useStyles } from './styles'
 type LedgerSigningOverlayProps = {
     isVisible: boolean
     status: 'connecting' | 'confirming' | 'error' | 'timeout'
+    currentTx?: number
+    totalTxs?: number
     onCancel: () => void
     onRetry?: () => void
 }
@@ -34,6 +36,8 @@ const STATUS_MESSAGE_KEYS: Record<LedgerSigningOverlayProps['status'], string> =
 export const LedgerSigningOverlay = ({
     isVisible,
     status,
+    currentTx,
+    totalTxs,
     onCancel,
     onRetry,
 }: LedgerSigningOverlayProps) => {
@@ -41,6 +45,11 @@ export const LedgerSigningOverlay = ({
     const { t } = useLanguage()
 
     const showRetry = status === 'error' || status === 'timeout'
+    const showProgress =
+        status === 'confirming' &&
+        typeof currentTx === 'number' &&
+        typeof totalTxs === 'number' &&
+        totalTxs > 1
 
     return (
         <PWBottomSheet
@@ -62,6 +71,15 @@ export const LedgerSigningOverlay = ({
                 <PWText style={styles.message}>
                     {t(STATUS_MESSAGE_KEYS[status])}
                 </PWText>
+
+                {showProgress && (
+                    <PWText style={styles.progress}>
+                        {t('ledger.signing.progress', {
+                            current: currentTx,
+                            total: totalTxs,
+                        })}
+                    </PWText>
+                )}
 
                 <PWView style={styles.actions}>
                     {showRetry && onRetry && (

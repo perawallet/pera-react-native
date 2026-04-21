@@ -38,4 +38,10 @@ export const useStyles = makeStyles(theme => ({
     retryButton: {
         marginBottom: theme.spacing.xs,
     },
+    progress: {
+        ...getTypography(theme, 'body'),
+        color: theme.colors.textMain,
+        textAlign: 'center',
+        marginTop: theme.spacing.sm,
+    },
 }))
