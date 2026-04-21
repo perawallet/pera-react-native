@@ -37,7 +37,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
             isPending: false,
         })),
         useAllAccounts: vi.fn(() => []),
-        isSigningAccount: vi.fn(() => true),
+        useAccountLogicalType: vi.fn(() => 'Algo25'),
     }
 })
 
@@ -207,9 +207,9 @@ describe('AccountAssetList', () => {
         } as unknown as WalletAccount
 
         beforeEach(async () => {
-            const { isSigningAccount } =
+            const { useAccountLogicalType } =
                 await import('@perawallet/wallet-core-accounts')
-            vi.mocked(isSigningAccount).mockReturnValue(true)
+            vi.mocked(useAccountLogicalType).mockReturnValue('RekeyedAuth')
         })
 
         it('renders Add Asset button', () => {
@@ -230,9 +230,9 @@ describe('AccountAssetList', () => {
 
     describe('when account is a watch account', () => {
         beforeEach(async () => {
-            const { isSigningAccount } =
+            const { useAccountLogicalType } =
                 await import('@perawallet/wallet-core-accounts')
-            vi.mocked(isSigningAccount).mockReturnValue(false)
+            vi.mocked(useAccountLogicalType).mockReturnValue('NoAuth')
         })
 
         it('hides Add Asset button for watch accounts', () => {

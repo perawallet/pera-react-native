@@ -13,6 +13,7 @@
 import { Decimal } from 'decimal.js'
 import { getAlgorandClient } from '@perawallet/wallet-core-blockchain'
 import { upsertAccountBalance, refreshAccountHoldings } from '../db'
+import { useAccountsStore } from '../store'
 import type { Network } from '@perawallet/wallet-core-shared'
 
 export async function fetchAndPersistAccount(
@@ -21,6 +22,8 @@ export async function fetchAndPersistAccount(
 ): Promise<void> {
     const algokit = getAlgorandClient(network)
     const info = await algokit.account.getInformation(address)
+
+    const authAddress = info.authAddr?.toString() ?? null
 
     await upsertAccountBalance({
         accountAddress: address,
@@ -35,8 +38,10 @@ export async function fetchAndPersistAccount(
             1_000_000,
         ),
         status: info.status ?? 'Offline',
-        authAddress: info.authAddr?.toString() ?? null,
+        authAddress,
     })
+
+    useAccountsStore.getState().updateAccountRekeyAddress(address, authAddress)
 
     const holdings = (info.assets ?? []).map(a => ({
         assetId: `${a.assetId}`,

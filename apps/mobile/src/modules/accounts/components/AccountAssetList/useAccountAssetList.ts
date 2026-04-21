@@ -14,9 +14,9 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
-    isSigningAccount,
+    isSigningLogicalType,
     useAccountBalancesQuery,
-    useAllAccounts,
+    useAccountLogicalType,
     useSortedAssetBalances,
     WalletAccount,
     AssetWithAccountBalance,
@@ -152,8 +152,8 @@ export const useAccountAssetList = ({
         })
     }, [sortedBalances, debouncedSearchFilter, assets])
 
-    const allAccounts = useAllAccounts()
-    const isWatch = !isSigningAccount(account, allAccounts)
+    const logicalType = useAccountLogicalType(account.address)
+    const isWatch = !logicalType || !isSigningLogicalType(logicalType)
 
     const goToAssetScreen = useCallback(
         (item: AssetWithAccountBalance) => {

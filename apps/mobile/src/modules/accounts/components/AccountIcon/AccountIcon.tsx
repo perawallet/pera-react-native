@@ -14,10 +14,10 @@ import { IconName, PWIcon } from '@components/core'
 
 import { useMemo } from 'react'
 import {
-    AccountStatus,
-    resolveAccountStatus,
-    useAllAccounts,
-    WalletAccount,
+    AccountTypes,
+    useAccountLogicalType,
+    type AccountLogicalType,
+    type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { SvgProps } from 'react-native-svg'
@@ -30,28 +30,39 @@ export type AccountIconProps = {
     size?: 'sm' | 'md' | 'lg' | 'xl'
 } & SvgProps
 
-const iconNames: Record<AccountStatus, string> = {
-    hdWallet: `accounts/${THEME_TOKEN}/hdwallet-account`,
-    hardware: `accounts/${THEME_TOKEN}/ledger-account`,
-    multisig: `accounts/${THEME_TOKEN}/multisig-account`,
-    noAuth: `accounts/${THEME_TOKEN}/noauth-account`,
-    rekeyedHardware: `accounts/${THEME_TOKEN}/rekeyed-ledger`,
-    rekeyedStandard: `accounts/${THEME_TOKEN}/rekeyed-standard`,
-    standard: `accounts/${THEME_TOKEN}/algo25-account`,
-    watch: `accounts/${THEME_TOKEN}/watch-account`,
+const iconNames = {
+    Algo25: `accounts/${THEME_TOKEN}/algo25-account`,
+    HdKey: `accounts/${THEME_TOKEN}/hdwallet-account`,
+    LedgerBle: `accounts/${THEME_TOKEN}/ledger-account`,
+    Multisig: `accounts/${THEME_TOKEN}/multisig-account`,
+    Rekeyed: `accounts/${THEME_TOKEN}/rekeyed-standard`,
+    RekeyedAuth: `accounts/${THEME_TOKEN}/rekeyed-standard`,
+    NoAuth: `accounts/${THEME_TOKEN}/noauth-account`,
+} satisfies Record<AccountLogicalType, string>
+
+const resolveIconAsset = (
+    logicalType: AccountLogicalType,
+    account: WalletAccount,
+): string => {
+    const isRekeyedHardware =
+        (logicalType === 'Rekeyed' || logicalType === 'RekeyedAuth') &&
+        account.type === AccountTypes.hardware
+    if (isRekeyedHardware) {
+        return `accounts/${THEME_TOKEN}/rekeyed-ledger`
+    }
+    return iconNames[logicalType] ?? FALLBACK_ASSET
 }
 
 export const AccountIcon = (props: AccountIconProps) => {
     const { account, size = 'md', ...rest } = props
     const darkmode = useIsDarkMode()
-    const accounts = useAllAccounts()
+    const logicalType = useAccountLogicalType(account?.address)
 
     const icon = useMemo(() => {
-        if (!account) return <></>
+        if (!account || !logicalType) return <></>
 
         const theme = darkmode ? 'dark' : 'light'
-        const accountStatus = resolveAccountStatus(account, accounts)
-        const icon = iconNames[accountStatus] ?? FALLBACK_ASSET
+        const icon = resolveIconAsset(logicalType, account)
         const iconName: IconName = icon.replaceAll(
             THEME_TOKEN,
             theme,
@@ -63,7 +74,7 @@ export const AccountIcon = (props: AccountIconProps) => {
                 size={size}
             />
         )
-    }, [account, rest])
+    }, [account, logicalType, darkmode, rest, size])
 
     return icon
 }

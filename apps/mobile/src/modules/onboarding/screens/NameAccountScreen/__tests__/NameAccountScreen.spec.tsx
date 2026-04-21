@@ -53,7 +53,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     }),
     getAccountDisplayName: (account: { name?: string }) =>
         account?.name ?? 'Account 1',
-    resolveAccountStatus: () => 'standard',
+    useAccountLogicalType: () => 'Algo25',
     isHDWalletAccount: () => false,
     isAlgo25Account: () => false,
     isLedgerAccount: () => false,

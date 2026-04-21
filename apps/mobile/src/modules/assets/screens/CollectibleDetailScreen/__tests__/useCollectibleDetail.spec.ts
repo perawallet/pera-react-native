@@ -90,6 +90,7 @@ const mockUseSingleAssetDetailsQuery = vi.fn()
 const mockUseSelectedAccount = vi.fn()
 const mockUseAllAccounts = vi.fn()
 const mockUseAccountAssetBalanceQuery = vi.fn()
+const mockUseAccountLogicalType = vi.fn(() => 'Algo25')
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
     const actual =
@@ -113,6 +114,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useAllAccounts: (...args: unknown[]) => mockUseAllAccounts(...args),
         useAccountAssetBalanceQuery: (...args: unknown[]) =>
             mockUseAccountAssetBalanceQuery(...args),
+        useAccountLogicalType: (...args: unknown[]) =>
+            mockUseAccountLogicalType(...(args as [])),
     }
 })
 

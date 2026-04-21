@@ -101,6 +101,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
             hdWalletDetails: { hdWalletAddress: 'addr1' },
         },
     ]),
+    useAllAccountLogicalTypes: vi.fn(() => new Map([['addr1', 'HdKey']])),
     useSelectedAccountAddress: vi.fn(() => ({
         setSelectedAccountAddress: vi.fn(),
     })),

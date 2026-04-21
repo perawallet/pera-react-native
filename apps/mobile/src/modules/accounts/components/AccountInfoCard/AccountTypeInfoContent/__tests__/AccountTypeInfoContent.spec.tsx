@@ -14,7 +14,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
 import { render, screen, fireEvent } from '@test-utils/render'
 import { AccountTypeInfoContent } from '../AccountTypeInfoContent'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    type AccountLogicalType,
+    type WalletAccount,
+} from '@perawallet/wallet-core-accounts'
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -47,7 +50,7 @@ vi.mock('@perawallet/wallet-core-config', () => ({
     },
 }))
 
-const mockUseAllAccounts = vi.fn()
+const mockUseAccountLogicalType = vi.fn<() => AccountLogicalType | null>()
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
         await importOriginal<
@@ -55,7 +58,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useAllAccounts: () => mockUseAllAccounts(),
+        useAccountLogicalType: () => mockUseAccountLogicalType(),
     }
 })
 
@@ -78,7 +81,7 @@ describe('AccountTypeInfoContent', () => {
 
     beforeEach(() => {
         vi.clearAllMocks()
-        mockUseAllAccounts.mockReturnValue([algo25Account, watchAccount])
+        mockUseAccountLogicalType.mockReturnValue('Algo25')
     })
 
     it('renders title and description for standard account', () => {
@@ -93,6 +96,7 @@ describe('AccountTypeInfoContent', () => {
     })
 
     it('renders title and description for watch account', () => {
+        mockUseAccountLogicalType.mockReturnValue('NoAuth')
         render(
             <AccountTypeInfoContent
                 {...defaultProps}
@@ -100,9 +104,9 @@ describe('AccountTypeInfoContent', () => {
             />,
         )
 
-        expect(screen.getByText('account_type_info.watch_title')).toBeTruthy()
+        expect(screen.getByText('account_type_info.no_auth_title')).toBeTruthy()
         expect(
-            screen.getByText('account_type_info.watch_description'),
+            screen.getByText('account_type_info.no_auth_description'),
         ).toBeTruthy()
     })
 
@@ -134,6 +138,7 @@ describe('AccountTypeInfoContent', () => {
     })
 
     it('does not render rekey actions for watch accounts', () => {
+        mockUseAccountLogicalType.mockReturnValue('NoAuth')
         render(
             <AccountTypeInfoContent
                 {...defaultProps}

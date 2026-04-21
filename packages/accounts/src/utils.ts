@@ -26,6 +26,7 @@ import {
 } from './models'
 import { MNEMONIC_WORD_COUNT } from './constants'
 import { RekeyTargetNotFoundError } from './errors'
+import { deriveAccountLogicalType, isSigningLogicalType } from './logical-type'
 
 export const getAccountDisplayName = (account: Nullable<WalletAccount>) => {
     if (!account) return 'No Account'
@@ -95,48 +96,15 @@ export const canSignWithAccount = (
     return false
 }
 
-export type AccountStatus =
-    | 'standard'
-    | 'hardware'
-    | 'watch'
-    | 'noAuth'
-    | 'rekeyedStandard'
-    | 'rekeyedHardware'
-    | 'hdWallet'
-    | 'multisig'
-
-export const resolveAccountStatus = (
-    account: WalletAccount,
-    accounts: WalletAccount[],
-): AccountStatus => {
-    if (isRekeyedAccount(account)) {
-        const authAccount = accounts.find(
-            a => a.address === account.rekeyAddress,
-        )
-        if (!authAccount) return 'noAuth'
-        if (isHardwareWalletAccount(authAccount)) return 'rekeyedHardware'
-        return 'rekeyedStandard'
-    }
-    if (isHDWalletAccount(account)) return 'hdWallet'
-    if (isMultisigAccount(account)) return 'multisig'
-    if (isWatchAccount(account)) return 'watch'
-    if (isHardwareWalletAccount(account)) return 'hardware'
-    if (isAlgo25Account(account)) return 'standard'
-    return 'standard'
-}
-
 /**
- * Returns true if the account can sign transactions based on its
- * derived account status. Returns false for true watch accounts and
- * rekeyed accounts whose auth account is not present in the wallet (noAuth).
+ * Returns true if the account can sign transactions in this wallet. Delegates
+ * to `deriveAccountLogicalType` — the single source of truth — so the result
+ * is consistent with UI classification and the webview bridge payload.
  */
 export const isSigningAccount = (
     account: WalletAccount,
     accounts: WalletAccount[],
-): boolean => {
-    const status = resolveAccountStatus(account, accounts)
-    return status !== 'watch' && status !== 'noAuth'
-}
+): boolean => isSigningLogicalType(deriveAccountLogicalType(account, accounts))
 
 /**
  * Resolve the auth account for a given account.

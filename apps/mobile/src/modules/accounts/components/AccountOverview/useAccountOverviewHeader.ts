@@ -14,9 +14,9 @@ import { useCallback, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
     AccountBalanceHistoryItem,
-    isSigningAccount,
+    isSigningLogicalType,
     useAccountBalancesQuery,
-    useAllAccounts,
+    useAccountLogicalType,
     usePortfolioTotals,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -45,7 +45,7 @@ export const useAccountOverviewHeader = (
     account: WalletAccount,
 ): UseAccountOverviewHeaderResult => {
     const { usdToPreferred } = useCurrency()
-    const allAccounts = useAllAccounts()
+    const logicalType = useAccountLogicalType(account.address)
     const { portfolioAlgoValue, accountBalances, isPending } =
         useAccountBalancesQuery(account ? [account] : [])
     const { portfolioUsdValue } = usePortfolioTotals(accountBalances)
@@ -80,7 +80,7 @@ export const useAccountOverviewHeader = (
         setPeriod,
         selectedPoint,
         hasBalance: portfolioAlgoValue.gt(0),
-        canSign: isSigningAccount(account, allAccounts),
+        canSign: !!logicalType && isSigningLogicalType(logicalType),
         togglePrivacyMode,
         handleChartSelectionChange,
     }
