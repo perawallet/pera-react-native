@@ -23,12 +23,10 @@ vi.mock('@modules/backup', () => ({
     useBackupFlowLauncher: () => mockLaunch,
 }))
 
-const mockIsBackedUp = vi.fn()
-const mockGetBackupKeyId = vi.fn()
+const mockRequiresBackup = vi.fn()
 vi.mock('@perawallet/wallet-core-backup', () => ({
-    useIsAccountBackedUp: (account: WalletAccount | null) =>
-        mockIsBackedUp(account),
-    getBackupKeyId: (account: WalletAccount) => mockGetBackupKeyId(account),
+    useRequiresBackup: (account: WalletAccount | null) =>
+        mockRequiresBackup(account),
 }))
 
 const mockBalancesQuery = vi.fn()
@@ -59,11 +57,6 @@ const accountHD: WalletAccount = {
     },
 }
 
-const accountWatch: WalletAccount = {
-    type: AccountTypes.watch,
-    address: 'WATCH1',
-}
-
 const balancesWith = (addr: string, algoBalance: Decimal) => ({
     accountBalances: new Map([
         [
@@ -79,14 +72,12 @@ const balancesWith = (addr: string, algoBalance: Decimal) => ({
 describe('useBackupReminderBanner', () => {
     beforeEach(() => {
         mockLaunch.mockReset()
-        mockIsBackedUp.mockReset()
-        mockGetBackupKeyId.mockReset()
+        mockRequiresBackup.mockReset()
         mockBalancesQuery.mockReset()
-        mockGetBackupKeyId.mockReturnValue('entropy-1')
     })
 
-    test('isVisible false when account is backed up', () => {
-        mockIsBackedUp.mockReturnValue(true)
+    test('isVisible false when account does not require backup', () => {
+        mockRequiresBackup.mockReturnValue(false)
         mockBalancesQuery.mockReturnValue(
             balancesWith(accountHD.address, new Decimal(1_000_000)),
         )
@@ -96,7 +87,7 @@ describe('useBackupReminderBanner', () => {
     })
 
     test('isVisible false when account balance is 0', () => {
-        mockIsBackedUp.mockReturnValue(false)
+        mockRequiresBackup.mockReturnValue(true)
         mockBalancesQuery.mockReturnValue(
             balancesWith(accountHD.address, new Decimal(0)),
         )
@@ -105,21 +96,8 @@ describe('useBackupReminderBanner', () => {
         expect(result.current.isVisible).toBe(false)
     })
 
-    test('isVisible false for watch account even with balance', () => {
-        mockIsBackedUp.mockReturnValue(true)
-        mockGetBackupKeyId.mockReturnValue(null)
-        mockBalancesQuery.mockReturnValue(
-            balancesWith(accountWatch.address, new Decimal(9_000_000)),
-        )
-
-        const { result } = renderHook(() =>
-            useBackupReminderBanner(accountWatch),
-        )
-        expect(result.current.isVisible).toBe(false)
-    })
-
-    test('isVisible true when unbacked HD account has balance > 0', () => {
-        mockIsBackedUp.mockReturnValue(false)
+    test('isVisible true when account requires backup and has balance > 0', () => {
+        mockRequiresBackup.mockReturnValue(true)
         mockBalancesQuery.mockReturnValue(
             balancesWith(accountHD.address, new Decimal(1)),
         )
@@ -129,7 +107,7 @@ describe('useBackupReminderBanner', () => {
     })
 
     test('onPress calls launcher with the account', () => {
-        mockIsBackedUp.mockReturnValue(false)
+        mockRequiresBackup.mockReturnValue(true)
         mockBalancesQuery.mockReturnValue(
             balancesWith(accountHD.address, new Decimal(5_000_000)),
         )

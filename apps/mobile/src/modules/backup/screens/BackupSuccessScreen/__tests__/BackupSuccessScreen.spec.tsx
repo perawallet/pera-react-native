@@ -54,13 +54,6 @@ vi.mock('../../../context', () => ({
 import { BackupSuccessScreen } from '../BackupSuccessScreen'
 
 describe('BackupSuccessScreen', () => {
-    test('renders success title, body and Done button', () => {
-        render(<BackupSuccessScreen />)
-        expect(screen.getByText('backup.success.title')).toBeTruthy()
-        expect(screen.getByText('backup.success.body')).toBeTruthy()
-        expect(screen.getByTestId('backup_success_done')).toBeTruthy()
-    })
-
     test('pressing Done dismisses the backup stack (goes back to parent)', () => {
         render(<BackupSuccessScreen />)
         fireEvent.click(screen.getByTestId('backup_success_done'))

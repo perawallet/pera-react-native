@@ -55,20 +55,6 @@ describe('backupStore', () => {
         expect(result.current.backedUpKeyIds).toEqual({ 'entropy-1': true })
     })
 
-    test('markMultipleBackedUp adds all ids in one update', async () => {
-        const { useBackupStore } = await import('../store')
-        const { result } = renderHook(() => useBackupStore())
-
-        act(() => {
-            result.current.markMultipleBackedUp(['seed-1', 'entropy-1'])
-        })
-
-        expect(result.current.backedUpKeyIds).toEqual({
-            'seed-1': true,
-            'entropy-1': true,
-        })
-    })
-
     test('isBackedUp returns false for unknown id', async () => {
         const { useBackupStore } = await import('../store')
         const { result } = renderHook(() => useBackupStore())

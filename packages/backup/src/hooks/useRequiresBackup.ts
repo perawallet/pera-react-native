@@ -14,15 +14,19 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { useBackupStore } from '../store'
 import { getBackupKeyId } from '../utils'
 
-export const useIsAccountBackedUp = (
+// Returns true only when the account owns a backup key and that key has not
+// yet been marked backed up. Accounts without a backup concept (watch,
+// hardware, multisig) and already-backed-up accounts both return false, so
+// consumers don't have to re-check the account type themselves.
+export const useRequiresBackup = (
     account: WalletAccount | null | undefined,
 ): boolean => {
     const backedUpKeyIds = useBackupStore(state => state.backedUpKeyIds)
 
-    if (!account) return true
+    if (!account) return false
 
     const keyId = getBackupKeyId(account)
-    if (keyId === null) return true
+    if (keyId === null) return false
 
-    return !!backedUpKeyIds[keyId]
+    return !backedUpKeyIds[keyId]
 }

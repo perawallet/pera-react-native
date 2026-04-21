@@ -10,23 +10,22 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import {
     useNavigation,
     useRoute,
     type RouteProp,
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { usePinCode } from '@perawallet/wallet-core-security'
 import type { BackupStackParamList } from '../../routes/types'
 
 export type UseBackupWriteDownScreenResult = {
-    isPinVisible: boolean
-    onContinue: () => Promise<void>
-    closePin: () => void
-    handlePinVerified: () => void
+    onContinue: () => void
 }
 
+// PIN gating lives on BackupMnemonicScreen itself so the mnemonic is never
+// pulled into memory without a fresh PIN verification, regardless of how the
+// screen is reached.
 export const useBackupWriteDownScreen = (): UseBackupWriteDownScreenResult => {
     const navigation =
         useNavigation<
@@ -34,30 +33,12 @@ export const useBackupWriteDownScreen = (): UseBackupWriteDownScreenResult => {
         >()
     const route = useRoute<RouteProp<BackupStackParamList, 'BackupWriteDown'>>()
     const address = route.params?.address
-    const { checkPinEnabled } = usePinCode()
-    const [isPinVisible, setIsPinVisible] = useState(false)
 
-    const navigateToMnemonic = useCallback(() => {
+    const onContinue = useCallback(() => {
         if (address) {
             navigation.navigate('BackupMnemonic', { address })
         }
     }, [navigation, address])
 
-    const onContinue = useCallback(async () => {
-        const isPinEnabled = await checkPinEnabled()
-        if (isPinEnabled) {
-            setIsPinVisible(true)
-        } else {
-            navigateToMnemonic()
-        }
-    }, [checkPinEnabled, navigateToMnemonic])
-
-    const closePin = useCallback(() => setIsPinVisible(false), [])
-
-    const handlePinVerified = useCallback(() => {
-        setIsPinVisible(false)
-        navigateToMnemonic()
-    }, [navigateToMnemonic])
-
-    return { isPinVisible, onContinue, closePin, handlePinVerified }
+    return { onContinue }
 }

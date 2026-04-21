@@ -45,7 +45,8 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...original,
-        useAccountsStore: (selector: any) => mockUseAccountsStore(selector),
+        useAccountsStore: (selector: (state: unknown) => unknown) =>
+            mockUseAccountsStore(selector),
     }
 })
 

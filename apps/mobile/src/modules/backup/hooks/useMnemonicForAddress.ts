@@ -28,18 +28,21 @@ export type UseMnemonicForAddressResult = {
 
 const DOMAIN = 'backup-flow'
 
-// The effect below intentionally depends only on `address` — KMS + accounts
-// are read through refs so new function/array identities from their source
-// hooks don't retrigger the fetch and cause a setState loop.
+// The effect below intentionally depends only on `address` and `enabled` — KMS
+// + account are read through refs so new function/object identities from their
+// source hooks don't retrigger the fetch and cause a setState loop. `enabled`
+// lets callers defer the fetch until an out-of-band gate (e.g. PIN verification)
+// has passed, so the mnemonic is never pulled into memory prematurely.
 export const useMnemonicForAddress = (
     address: string | undefined,
-    accounts: WalletAccount[],
+    account: WalletAccount | null,
+    enabled = true,
 ): UseMnemonicForAddressResult => {
     const kms = useKMS()
     const kmsRef = useRef(kms)
     kmsRef.current = kms
-    const accountsRef = useRef(accounts)
-    accountsRef.current = accounts
+    const accountRef = useRef(account)
+    accountRef.current = account
 
     const [state, setState] = useState<UseMnemonicForAddressResult>({
         mnemonic: null,
@@ -48,6 +51,11 @@ export const useMnemonicForAddress = (
     })
 
     useEffect(() => {
+        if (!enabled) {
+            setState({ mnemonic: null, error: null, isLoading: true })
+            return
+        }
+
         if (!address) {
             logger.error('BackupMnemonic: missing address in route params')
             setState({
@@ -58,13 +66,9 @@ export const useMnemonicForAddress = (
             return
         }
 
-        const account =
-            accountsRef.current.find(a => a.address === address) ?? null
-        if (!account) {
-            logger.error('BackupMnemonic: account not found for address', {
-                address,
-                knownAddresses: accountsRef.current.map(a => a.address),
-            })
+        const currentAccount = accountRef.current
+        if (!currentAccount || currentAccount.address !== address) {
+            logger.error('BackupMnemonic: account not found for address')
             setState({
                 mnemonic: null,
                 error: new Error('Account not found'),
@@ -80,8 +84,8 @@ export const useMnemonicForAddress = (
             const { getKeyOrThrow, withHDSession, withAlgo25Session } =
                 kmsRef.current
             try {
-                if (account.type === AccountTypes.hdWallet) {
-                    const hdAccount = account as HDWalletAccount
+                if (currentAccount.type === AccountTypes.hdWallet) {
+                    const hdAccount = currentAccount as HDWalletAccount
                     const key = getKeyOrThrow(hdAccount.keyPairId)
                     const mnemonic = await withHDSession(
                         key,
@@ -96,8 +100,8 @@ export const useMnemonicForAddress = (
                             isLoading: false,
                         })
                     }
-                } else if (account.type === AccountTypes.algo25) {
-                    const algoAccount = account as Algo25Account
+                } else if (currentAccount.type === AccountTypes.algo25) {
+                    const algoAccount = currentAccount as Algo25Account
                     const key = getKeyOrThrow(algoAccount.keyPairId)
                     const mnemonic = await withAlgo25Session(
                         key,
@@ -114,8 +118,7 @@ export const useMnemonicForAddress = (
                     }
                 } else if (!cancelled) {
                     logger.error('BackupMnemonic: unsupported account type', {
-                        accountType: account.type,
-                        address: account.address,
+                        accountType: currentAccount.type,
                     })
                     setState({
                         mnemonic: null,
@@ -127,8 +130,7 @@ export const useMnemonicForAddress = (
                 }
             } catch (err) {
                 logger.error('BackupMnemonic: failed to retrieve mnemonic', {
-                    address: account.address,
-                    accountType: account.type,
+                    accountType: currentAccount.type,
                     error: err instanceof Error ? err.message : String(err),
                     stack: err instanceof Error ? err.stack : undefined,
                 })
@@ -147,7 +149,7 @@ export const useMnemonicForAddress = (
             cancelled = true
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [address])
+    }, [address, enabled])
 
     return state
 }

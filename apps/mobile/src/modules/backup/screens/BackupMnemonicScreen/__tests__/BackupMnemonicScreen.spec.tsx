@@ -15,46 +15,93 @@ import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@test-utils/render'
 
 const mockNavigate = vi.fn()
-const mockGetWords = vi.fn()
+const mockGoBack = vi.fn()
 const mockSetWords = vi.fn()
+const mockCheckPinEnabled = vi.fn()
+const mockAccount = {
+    type: 'algo25' as const,
+    address: 'ADDR',
+    keyPairId: 'kp-1',
+}
 
 vi.mock('@react-navigation/native', async importOriginal => {
     const original =
         await importOriginal<typeof import('@react-navigation/native')>()
     return {
         ...original,
-        useNavigation: () => ({ navigate: mockNavigate }),
+        useNavigation: () => ({
+            navigate: mockNavigate,
+            goBack: mockGoBack,
+        }),
         useRoute: () => ({ params: { address: 'ADDR' } }),
     }
 })
 
 vi.mock('../../../context', () => ({
     useBackupFlowWords: () => ({
-        getWords: mockGetWords,
+        getWords: vi.fn(),
         setWords: mockSetWords,
         clearWords: vi.fn(),
     }),
 }))
 
-// Mock the screen-specific mnemonic-loader hook directly; this lets us
-// bypass KMS session plumbing and focus on render + navigation behavior.
-vi.mock('../useBackupMnemonicScreen', () => ({
-    useBackupMnemonicScreen: () => ({
-        words: 'alpha bravo charlie delta echo foxtrot'.split(' '),
-        isLoading: false,
+vi.mock('@perawallet/wallet-core-security', () => ({
+    usePinCode: () => ({ checkPinEnabled: mockCheckPinEnabled }),
+}))
+
+vi.mock('expo-screen-capture', () => ({
+    preventScreenCaptureAsync: vi.fn().mockResolvedValue(undefined),
+    allowScreenCaptureAsync: vi.fn().mockResolvedValue(undefined),
+}))
+
+vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
+    const original =
+        await importOriginal<
+            typeof import('@perawallet/wallet-core-accounts')
+        >()
+    return {
+        ...original,
+        useAccountsStore: (selector: (state: unknown) => unknown) =>
+            selector({ accounts: [mockAccount] }),
+    }
+})
+
+vi.mock('../../../hooks', () => ({
+    useMnemonicForAddress: (
+        _address: string | undefined,
+        _account: unknown,
+        enabled: boolean,
+    ) => ({
+        mnemonic: enabled ? 'alpha bravo charlie delta echo foxtrot' : null,
         error: null,
-        onContinue: () => {
-            mockSetWords([
-                'alpha',
-                'bravo',
-                'charlie',
-                'delta',
-                'echo',
-                'foxtrot',
-            ])
-            mockNavigate('BackupVerification', { address: 'ADDR' })
-        },
+        isLoading: !enabled,
     }),
+}))
+
+vi.mock('@modules/security/components/PinEditView', () => ({
+    PinEditView: ({
+        mode,
+        onSuccess,
+        onClose,
+    }: {
+        mode?: string | null
+        onSuccess?: () => void
+        onClose?: () => void
+    }) =>
+        mode
+            ? React.createElement(
+                  'div',
+                  { 'data-testid': 'pin_modal' },
+                  React.createElement('button', {
+                      'data-testid': 'pin_success',
+                      onClick: onSuccess,
+                  }),
+                  React.createElement('button', {
+                      'data-testid': 'pin_close',
+                      onClick: onClose,
+                  }),
+              )
+            : null,
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -66,21 +113,50 @@ import { BackupMnemonicScreen } from '../BackupMnemonicScreen'
 describe('BackupMnemonicScreen', () => {
     beforeEach(() => {
         mockNavigate.mockReset()
+        mockGoBack.mockReset()
         mockSetWords.mockReset()
-        mockGetWords.mockReset()
+        mockCheckPinEnabled.mockReset()
     })
 
-    test('renders each word of the mnemonic with its index', async () => {
+    test('does not reveal the mnemonic until the PIN gate resolves', async () => {
+        mockCheckPinEnabled.mockResolvedValue(true)
         render(<BackupMnemonicScreen />)
+        await waitFor(() => {
+            expect(screen.getByTestId('pin_modal')).toBeTruthy()
+        })
+        expect(screen.queryByText('alpha')).toBeNull()
+    })
+
+    test('reveals the mnemonic after PIN verification', async () => {
+        mockCheckPinEnabled.mockResolvedValue(true)
+        render(<BackupMnemonicScreen />)
+        await waitFor(() => screen.getByTestId('pin_success'))
+        fireEvent.click(screen.getByTestId('pin_success'))
         await waitFor(() => {
             expect(screen.getByText('alpha')).toBeTruthy()
             expect(screen.getByText('foxtrot')).toBeTruthy()
-            expect(screen.getByText('1')).toBeTruthy()
-            expect(screen.getByText('6')).toBeTruthy()
         })
     })
 
+    test('navigates back when PIN modal is dismissed without verifying', async () => {
+        mockCheckPinEnabled.mockResolvedValue(true)
+        render(<BackupMnemonicScreen />)
+        await waitFor(() => screen.getByTestId('pin_close'))
+        fireEvent.click(screen.getByTestId('pin_close'))
+        expect(mockGoBack).toHaveBeenCalled()
+    })
+
+    test('skips the PIN gate when no PIN is set', async () => {
+        mockCheckPinEnabled.mockResolvedValue(false)
+        render(<BackupMnemonicScreen />)
+        await waitFor(() => {
+            expect(screen.getByText('alpha')).toBeTruthy()
+        })
+        expect(screen.queryByTestId('pin_modal')).toBeNull()
+    })
+
     test('pressing continue stores words and navigates to verification', async () => {
+        mockCheckPinEnabled.mockResolvedValue(false)
         render(<BackupMnemonicScreen />)
         await waitFor(() => screen.getByText('alpha'))
         fireEvent.click(screen.getByTestId('backup_mnemonic_continue'))

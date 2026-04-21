@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export * from './useIsAccountBackedUp'
+export * from './useRequiresBackup'
 export * from './useMarkBackupComplete'

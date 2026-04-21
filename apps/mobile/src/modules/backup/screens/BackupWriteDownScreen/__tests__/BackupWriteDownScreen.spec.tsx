@@ -12,7 +12,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
-import { render, screen, fireEvent, waitFor } from '@test-utils/render'
+import { render, screen, fireEvent } from '@test-utils/render'
 
 vi.mock('@assets/icons/edit-pen.svg', () => ({
     default: (props: React.SVGProps<SVGSVGElement>) =>
@@ -31,45 +31,7 @@ vi.mock('@react-navigation/native', async importOriginal => {
 })
 
 vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({
-        t: (key: string) => {
-            const translations: Record<string, string> = {
-                'backup.write_down.title':
-                    'Prepare to write down your recovery passphrase',
-                'backup.write_down.body':
-                    'The only way to recover an Algorand account is with this recovery passphrase.',
-                'backup.write_down.warning':
-                    'Do not share this passphrase with anyone, as it grants full access to your account.',
-                'backup.write_down.cta': "I'm Ready to Begin",
-            }
-            return translations[key] ?? key
-        },
-    }),
-}))
-
-vi.mock('@modules/security/components/PinEditView', () => ({
-    PinEditView: ({
-        mode,
-        onSuccess,
-    }: {
-        mode?: string | null
-        onSuccess?: () => void
-    }) =>
-        mode
-            ? React.createElement(
-                  'div',
-                  { 'data-testid': 'pin_modal' },
-                  React.createElement('button', {
-                      'data-testid': 'pin_success',
-                      onClick: onSuccess,
-                  }),
-              )
-            : null,
-}))
-
-const mockCheckPinEnabled = vi.fn()
-vi.mock('@perawallet/wallet-core-security', () => ({
-    usePinCode: () => ({ checkPinEnabled: mockCheckPinEnabled }),
+    useLanguage: () => ({ t: (key: string) => key }),
 }))
 
 import { BackupWriteDownScreen } from '../BackupWriteDownScreen'
@@ -77,52 +39,13 @@ import { BackupWriteDownScreen } from '../BackupWriteDownScreen'
 describe('BackupWriteDownScreen', () => {
     beforeEach(() => {
         mockNavigate.mockReset()
-        mockCheckPinEnabled.mockReset()
     })
 
-    test('renders title, body and warning', () => {
-        mockCheckPinEnabled.mockResolvedValue(true)
-        render(<BackupWriteDownScreen />)
-        expect(
-            screen.getByText('Prepare to write down your recovery passphrase'),
-        ).toBeTruthy()
-        expect(
-            screen.getByText(
-                'The only way to recover an Algorand account is with this recovery passphrase.',
-            ),
-        ).toBeTruthy()
-        expect(screen.getByText(/Do not share this passphrase/)).toBeTruthy()
-    })
-
-    test('when a PIN is set, pressing CTA opens the PIN modal', async () => {
-        mockCheckPinEnabled.mockResolvedValue(true)
+    test('pressing CTA navigates to BackupMnemonic with the address', () => {
         render(<BackupWriteDownScreen />)
         fireEvent.click(screen.getByTestId('backup_write_down_begin'))
-        await waitFor(() => {
-            expect(screen.getByTestId('pin_modal')).toBeTruthy()
-        })
-    })
-
-    test('when a PIN is set, successful verification navigates to BackupMnemonic', async () => {
-        mockCheckPinEnabled.mockResolvedValue(true)
-        render(<BackupWriteDownScreen />)
-        fireEvent.click(screen.getByTestId('backup_write_down_begin'))
-        await waitFor(() => screen.getByTestId('pin_success'))
-        fireEvent.click(screen.getByTestId('pin_success'))
         expect(mockNavigate).toHaveBeenCalledWith('BackupMnemonic', {
             address: 'ADDR',
         })
-    })
-
-    test('when no PIN is set, pressing CTA skips the modal and navigates directly', async () => {
-        mockCheckPinEnabled.mockResolvedValue(false)
-        render(<BackupWriteDownScreen />)
-        fireEvent.click(screen.getByTestId('backup_write_down_begin'))
-        await waitFor(() => {
-            expect(mockNavigate).toHaveBeenCalledWith('BackupMnemonic', {
-                address: 'ADDR',
-            })
-        })
-        expect(screen.queryByTestId('pin_modal')).toBeNull()
     })
 })

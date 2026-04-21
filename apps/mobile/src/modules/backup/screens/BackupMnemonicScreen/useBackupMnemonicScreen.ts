@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
     useNavigation,
     useRoute,
@@ -18,6 +18,7 @@ import {
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
+import { usePinCode } from '@perawallet/wallet-core-security'
 import { useBackupFlowWords } from '../../context'
 import { useMnemonicForAddress } from '../../hooks'
 import type { BackupStackParamList } from '../../routes/types'
@@ -26,6 +27,10 @@ export type UseBackupMnemonicScreenResult = {
     words: string[]
     isLoading: boolean
     error: Error | null
+    isPinVisible: boolean
+    isPinGateResolved: boolean
+    handlePinVerified: () => void
+    handlePinClose: () => void
     onContinue: () => void
 }
 
@@ -35,12 +40,37 @@ export const useBackupMnemonicScreen = (): UseBackupMnemonicScreenResult => {
             NativeStackNavigationProp<BackupStackParamList, 'BackupMnemonic'>
         >()
     const route = useRoute<RouteProp<BackupStackParamList, 'BackupMnemonic'>>()
-    const accounts = useAccountsStore(state => state.accounts)
     const address = route.params?.address
+    const account = useAccountsStore(
+        state => state.accounts.find(a => a.address === address) ?? null,
+    )
+    const { checkPinEnabled } = usePinCode()
+    const [isPinGateResolved, setIsPinGateResolved] = useState(false)
+    const [isPinVisible, setIsPinVisible] = useState(false)
+
+    // Defense-in-depth: if any caller reaches this screen without going
+    // through BackupWriteDownScreen (e.g. future deep link, new navigation
+    // entry), re-check the PIN before exposing the mnemonic.
+    useEffect(() => {
+        let cancelled = false
+        ;(async () => {
+            const isPinEnabled = await checkPinEnabled()
+            if (cancelled) return
+            if (isPinEnabled) {
+                setIsPinVisible(true)
+            } else {
+                setIsPinGateResolved(true)
+            }
+        })()
+        return () => {
+            cancelled = true
+        }
+    }, [checkPinEnabled])
 
     const { mnemonic, error, isLoading } = useMnemonicForAddress(
         address,
-        accounts,
+        account,
+        isPinGateResolved,
     )
     const { setWords } = useBackupFlowWords()
 
@@ -49,6 +79,16 @@ export const useBackupMnemonicScreen = (): UseBackupMnemonicScreenResult => {
         [mnemonic],
     )
 
+    const handlePinVerified = useCallback(() => {
+        setIsPinVisible(false)
+        setIsPinGateResolved(true)
+    }, [])
+
+    const handlePinClose = useCallback(() => {
+        setIsPinVisible(false)
+        navigation.goBack()
+    }, [navigation])
+
     const onContinue = useCallback(() => {
         setWords(words)
         if (address) {
@@ -56,5 +96,14 @@ export const useBackupMnemonicScreen = (): UseBackupMnemonicScreenResult => {
         }
     }, [words, setWords, navigation, address])
 
-    return { words, isLoading, error, onContinue }
+    return {
+        words,
+        isLoading,
+        error,
+        isPinVisible,
+        isPinGateResolved,
+        handlePinVerified,
+        handlePinClose,
+        onContinue,
+    }
 }

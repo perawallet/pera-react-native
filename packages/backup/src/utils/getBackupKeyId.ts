@@ -14,16 +14,23 @@ import {
     AccountTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { logger } from '@perawallet/wallet-core-shared'
 
 export const getBackupKeyId = (account: WalletAccount): string | null => {
     switch (account.type) {
         case AccountTypes.algo25:
             return account.seedKeyId ?? account.keyPairId
         case AccountTypes.hdWallet:
-            return account.entropyKeyId ?? account.keyPairId
-        case AccountTypes.multisig:
-        case AccountTypes.hardware:
-        case AccountTypes.watch:
+            // HD siblings must share a single backup state keyed by entropyKeyId.
+            // Falling back to keyPairId would dedup each sibling separately.
+            if (!account.entropyKeyId) {
+                logger.warn(
+                    'getBackupKeyId: HD account is missing entropyKeyId; sibling dedup will be broken',
+                )
+                return account.keyPairId
+            }
+            return account.entropyKeyId
+        default:
             return null
     }
 }

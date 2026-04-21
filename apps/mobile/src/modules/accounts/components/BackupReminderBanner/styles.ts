@@ -29,10 +29,10 @@ export const useStyles = makeStyles(theme => ({
         marginHorizontal: theme.spacing.xs,
     },
     ctaButton: {
-        height: 36,
+        height: theme.spacing.xxl,
         paddingHorizontal: theme.spacing.md,
         borderRadius: theme.borderRadius.xs,
-        backgroundColor: 'rgba(255, 255, 255, 0.12)',
+        backgroundColor: theme.colors.bannerButton,
         justifyContent: 'center',
         alignItems: 'center',
     },

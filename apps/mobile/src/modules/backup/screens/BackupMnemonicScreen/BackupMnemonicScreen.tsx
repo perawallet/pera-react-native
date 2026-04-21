@@ -10,18 +10,69 @@
  limitations under the License
  */
 
+import { useEffect } from 'react'
 import { ActivityIndicator } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import {
+    preventScreenCaptureAsync,
+    allowScreenCaptureAsync,
+} from 'expo-screen-capture'
+import { logger } from '@perawallet/wallet-core-shared'
 import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { PinEditView } from '@modules/security/components/PinEditView'
 import { useBackupMnemonicScreen } from './useBackupMnemonicScreen'
 import { useStyles } from './styles'
+
+const SCREEN_CAPTURE_TAG = 'backup-mnemonic'
 
 export const BackupMnemonicScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const { t } = useLanguage()
-    const { words, isLoading, error, onContinue } = useBackupMnemonicScreen()
+    const {
+        words,
+        isLoading,
+        error,
+        isPinVisible,
+        isPinGateResolved,
+        handlePinVerified,
+        handlePinClose,
+        onContinue,
+    } = useBackupMnemonicScreen()
+
+    // Block screenshots and screen recordings while the mnemonic is on screen.
+    // Fails open (permission denied) rather than bricking the flow — logged so
+    // we notice in crash reports.
+    useEffect(() => {
+        void preventScreenCaptureAsync(SCREEN_CAPTURE_TAG).catch(err => {
+            logger.error('BackupMnemonic: failed to prevent screen capture', {
+                error: err instanceof Error ? err.message : String(err),
+            })
+        })
+        return () => {
+            void allowScreenCaptureAsync(SCREEN_CAPTURE_TAG).catch(err => {
+                logger.error(
+                    'BackupMnemonic: failed to re-allow screen capture',
+                    {
+                        error: err instanceof Error ? err.message : String(err),
+                    },
+                )
+            })
+        }
+    }, [])
+
+    if (!isPinGateResolved) {
+        return (
+            <PWView style={styles.root}>
+                <PinEditView
+                    mode={isPinVisible ? 'verify' : null}
+                    onSuccess={handlePinVerified}
+                    onClose={handlePinClose}
+                />
+            </PWView>
+        )
+    }
 
     if (isLoading) {
         return (

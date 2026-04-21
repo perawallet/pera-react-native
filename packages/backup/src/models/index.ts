@@ -18,7 +18,6 @@ export type BackupState = BaseStoreState & {
 
 export type BackupActions = {
     markBackedUp: (keyId: string) => void
-    markMultipleBackedUp: (keyIds: string[]) => void
     isBackedUp: (keyId: string | null | undefined) => boolean
 }
 

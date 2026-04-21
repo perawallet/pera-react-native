@@ -34,14 +34,6 @@ export const useBackupStore = create<BackupStore>()(
                     },
                 })
             },
-            markMultipleBackedUp: (keyIds: string[]) => {
-                const current = get().backedUpKeyIds
-                const next = { ...current }
-                for (const id of keyIds) {
-                    next[id] = true
-                }
-                set({ backedUpKeyIds: next })
-            },
             isBackedUp: (keyId: string | null | undefined) => {
                 if (!keyId) return false
                 return !!get().backedUpKeyIds[keyId]

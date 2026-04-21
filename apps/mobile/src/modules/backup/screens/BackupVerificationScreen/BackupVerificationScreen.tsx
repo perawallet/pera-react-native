@@ -10,9 +10,8 @@
  limitations under the License
  */
 
-import { ScrollView } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { BackupQuizItem } from '../../components/BackupQuizItem'
 import { useBackupVerificationScreen } from './useBackupVerificationScreen'
@@ -27,7 +26,7 @@ export const BackupVerificationScreen = () => {
 
     return (
         <PWView style={styles.root}>
-            <ScrollView
+            <PWScrollView
                 style={styles.scroll}
                 contentContainerStyle={styles.scrollContent}
             >
@@ -49,7 +48,7 @@ export const BackupVerificationScreen = () => {
                         />
                     ))}
                 </PWView>
-            </ScrollView>
+            </PWScrollView>
 
             <PWView style={styles.footer}>
                 <PWButton

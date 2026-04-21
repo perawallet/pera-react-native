@@ -10,16 +10,13 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { Decimal } from 'decimal.js'
 import {
     useAccountBalancesQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import {
-    useIsAccountBackedUp,
-    getBackupKeyId,
-} from '@perawallet/wallet-core-backup'
+import { useRequiresBackup } from '@perawallet/wallet-core-backup'
 import { useBackupFlowLauncher } from '@modules/backup'
 
 const ALGO_ASSET_ID = '0'
@@ -32,8 +29,9 @@ export type UseBackupReminderBannerResult = {
 export const useBackupReminderBanner = (
     account: WalletAccount,
 ): UseBackupReminderBannerResult => {
-    const isBackedUp = useIsAccountBackedUp(account)
-    const { accountBalances } = useAccountBalancesQuery([account])
+    const requiresBackup = useRequiresBackup(account)
+    const accountsForBalances = useMemo(() => [account], [account])
+    const { accountBalances } = useAccountBalancesQuery(accountsForBalances)
     const launch = useBackupFlowLauncher()
 
     const balanceEntry = accountBalances.get(account.address)
@@ -41,9 +39,7 @@ export const useBackupReminderBanner = (
         balanceEntry?.assetBalances.find(b => b.assetId === ALGO_ASSET_ID)
             ?.amount ?? new Decimal(0)
 
-    const keyId = getBackupKeyId(account)
-
-    const isVisible = !isBackedUp && keyId !== null && algoBalance.gt(0)
+    const isVisible = requiresBackup && algoBalance.gt(0)
 
     const onPress = useCallback(() => launch(account), [launch, account])
 

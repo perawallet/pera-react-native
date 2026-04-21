@@ -20,7 +20,7 @@ import {
 import {
     useBackupStore,
     useMarkBackupComplete,
-    useIsAccountBackedUp,
+    useRequiresBackup,
 } from '@perawallet/wallet-core-backup'
 
 const hd = (address: string, keyIndex: number): WalletAccount => ({
@@ -56,19 +56,19 @@ describe('Backup flow - HD sibling dedup', () => {
         useBackupStore.getState().resetState()
 
         let mark: ((acc: WalletAccount) => void) | undefined
-        const sibling1Backed: boolean[] = []
-        const sibling2Backed: boolean[] = []
+        const sibling1Requires: boolean[] = []
+        const sibling2Requires: boolean[] = []
 
         const Probe = () => {
             mark = useMarkBackupComplete()
-            sibling1Backed.push(useIsAccountBackedUp(accounts[1]))
-            sibling2Backed.push(useIsAccountBackedUp(accounts[2]))
+            sibling1Requires.push(useRequiresBackup(accounts[1]))
+            sibling2Requires.push(useRequiresBackup(accounts[2]))
             return null
         }
 
         const { rerender } = render(<Probe />)
-        expect(sibling1Backed.at(-1)).toBe(false)
-        expect(sibling2Backed.at(-1)).toBe(false)
+        expect(sibling1Requires.at(-1)).toBe(true)
+        expect(sibling2Requires.at(-1)).toBe(true)
 
         act(() => {
             mark?.(accounts[0])
@@ -78,7 +78,7 @@ describe('Backup flow - HD sibling dedup', () => {
         expect(useBackupStore.getState().isBackedUp('entropy-shared')).toBe(
             true,
         )
-        expect(sibling1Backed.at(-1)).toBe(true)
-        expect(sibling2Backed.at(-1)).toBe(true)
+        expect(sibling1Requires.at(-1)).toBe(false)
+        expect(sibling2Requires.at(-1)).toBe(false)
     })
 })

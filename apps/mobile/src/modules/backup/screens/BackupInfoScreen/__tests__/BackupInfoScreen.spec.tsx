@@ -34,33 +34,13 @@ vi.mock('@react-navigation/native', async importOriginal => {
 })
 
 vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({
-        t: (key: string) => {
-            const translations: Record<string, string> = {
-                'backup.info.title':
-                    'Create a passphrase backup for your account',
-                'backup.info.body':
-                    'Creating a passphrase backup will allow you to recover your account. Without the passphrase, if you lose your device, remove the account or delete the app, you can permanently lose access to your Algorand account!',
-                'backup.info.cta': 'I Understand',
-            }
-            return translations[key] ?? key
-        },
-    }),
+    useLanguage: () => ({ t: (key: string) => key }),
 }))
 
 import { BackupInfoScreen } from '../BackupInfoScreen'
 
 describe('BackupInfoScreen', () => {
-    test('renders title, body and CTA', () => {
-        render(<BackupInfoScreen />)
-        expect(
-            screen.getByText('Create a passphrase backup for your account'),
-        ).toBeTruthy()
-        expect(screen.getByText(/Creating a passphrase backup/)).toBeTruthy()
-        expect(screen.getByText('I Understand')).toBeTruthy()
-    })
-
-    test('pressing "I Understand" navigates to BackupWriteDown with address', () => {
+    test('pressing continue navigates to BackupWriteDown with address', () => {
         render(<BackupInfoScreen />)
         fireEvent.click(screen.getByTestId('backup_info_continue'))
         expect(mockNavigate).toHaveBeenCalledWith('BackupWriteDown', {

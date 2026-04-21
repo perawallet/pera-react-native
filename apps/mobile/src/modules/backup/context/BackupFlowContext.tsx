@@ -13,6 +13,7 @@
 import {
     createContext,
     useContext,
+    useEffect,
     useMemo,
     useRef,
     type PropsWithChildren,
@@ -42,6 +43,15 @@ export const BackupFlowProvider = ({ children }: PropsWithChildren) => {
         [],
     )
 
+    // Guarantee the in-flight mnemonic is purged whenever the backup stack
+    // unmounts, regardless of whether the user completed or abandoned the flow.
+    useEffect(
+        () => () => {
+            wordsRef.current = null
+        },
+        [],
+    )
+
     return (
         <BackupFlowContext.Provider value={value}>
             {children}
@@ -49,7 +59,7 @@ export const BackupFlowProvider = ({ children }: PropsWithChildren) => {
     )
 }
 
-export const useBackupFlowWords = () => {
+export const useBackupFlowWords = (): BackupFlowContextValue => {
     const ctx = useContext(BackupFlowContext)
     if (ctx === null) {
         throw new Error(

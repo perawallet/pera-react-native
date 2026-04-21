@@ -15,7 +15,6 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import EditPenImage from '@assets/icons/edit-pen.svg'
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { PinEditView } from '@modules/security/components/PinEditView'
 import { useBackupWriteDownScreen } from './useBackupWriteDownScreen'
 import { useStyles } from './styles'
 
@@ -24,8 +23,7 @@ export const BackupWriteDownScreen = () => {
     const styles = useStyles(insets)
     const { theme } = useTheme()
     const { t } = useLanguage()
-    const { isPinVisible, onContinue, closePin, handlePinVerified } =
-        useBackupWriteDownScreen()
+    const { onContinue } = useBackupWriteDownScreen()
 
     return (
         <PWView style={styles.root}>
@@ -70,12 +68,6 @@ export const BackupWriteDownScreen = () => {
                     testID='backup_write_down_begin'
                 />
             </PWView>
-
-            <PinEditView
-                mode={isPinVisible ? 'verify' : null}
-                onSuccess={handlePinVerified}
-                onClose={closePin}
-            />
         </PWView>
     )
 }

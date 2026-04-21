@@ -30,20 +30,18 @@ export const useImportAccount = () => {
             const { keyPair, entropyKeyId } = await createHDWalletKey({
                 mnemonic,
             })
-            const account = await createHdWalletAccount({
+            return await createHdWalletAccount({
                 walletId: keyPair.id,
                 entropyKeyId,
                 account: 0,
                 keyIndex: 0,
             })
-            return account
         } else {
             const { keyPair, seedKeyId } = await createAlgo25Key({ mnemonic })
-            const account = await createAlgo25WalletAccount({
+            return await createAlgo25WalletAccount({
                 id: keyPair.id,
                 seedKeyId,
             })
-            return account
         }
     }
 }

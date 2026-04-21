@@ -10,11 +10,12 @@
  limitations under the License
  */
 
-import { describe, test, expect } from 'vitest'
+import { describe, test, expect, vi } from 'vitest'
 import {
     AccountTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { logger } from '@perawallet/wallet-core-shared'
 import { getBackupKeyId } from '../getBackupKeyId'
 
 describe('getBackupKeyId', () => {
@@ -34,7 +35,8 @@ describe('getBackupKeyId', () => {
         expect(getBackupKeyId(account)).toBe('entropy-abc')
     })
 
-    test('falls back to keyPairId for HDWallet when entropyKeyId missing', () => {
+    test('falls back to keyPairId and warns for HDWallet when entropyKeyId missing', () => {
+        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
         const account: WalletAccount = {
             type: AccountTypes.hdWallet,
             address: 'ADDR_HD',
@@ -47,6 +49,8 @@ describe('getBackupKeyId', () => {
             },
         }
         expect(getBackupKeyId(account)).toBe('kp-1')
+        expect(warnSpy).toHaveBeenCalledOnce()
+        warnSpy.mockRestore()
     })
 
     test('returns seedKeyId for Algo25 accounts', () => {
