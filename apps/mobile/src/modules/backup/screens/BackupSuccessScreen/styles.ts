@@ -11,27 +11,35 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
+export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
+    root: {
         flex: 1,
-        padding: theme.spacing.lg,
-        alignItems: 'center',
-        gap: theme.spacing.md,
+        backgroundColor: theme.colors.background,
+        marginBottom: insets.bottom,
     },
-    iconWrapper: {
-        marginTop: theme.spacing.xxl,
-        marginBottom: theme.spacing.lg,
+    content: {
+        flex: 1,
+        justifyContent: 'flex-start',
+        alignItems: 'flex-start',
+        paddingHorizontal: theme.spacing.xl,
+        paddingTop: theme.spacing.xl,
+        gap: theme.spacing.lg,
+    },
+    image: {
+        width: 160,
+        height: 160,
     },
     title: {
-        textAlign: 'center',
+        textAlign: 'left',
     },
-    body: {
+    description: {
+        textAlign: 'left',
         color: theme.colors.textGray,
-        textAlign: 'center',
     },
-    ctaRow: {
-        alignSelf: 'stretch',
-        marginTop: 'auto',
+    footer: {
+        padding: theme.spacing.xl,
+        paddingBottom: theme.spacing.xxl,
     },
 }))

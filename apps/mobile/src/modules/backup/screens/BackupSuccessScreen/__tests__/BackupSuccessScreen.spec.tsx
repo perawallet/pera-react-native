@@ -14,6 +14,14 @@ import { describe, test, expect, vi } from 'vitest'
 import React from 'react'
 import { render, screen, fireEvent } from '@test-utils/render'
 
+vi.mock('@assets/icons/shield-check.svg', () => ({
+    default: (props: React.SVGProps<SVGSVGElement>) =>
+        React.createElement('div', {
+            ...props,
+            'data-testid': 'shield-check-svg',
+        }),
+}))
+
 const mockPopToTop = vi.fn()
 const mockParentGoBack = vi.fn()
 

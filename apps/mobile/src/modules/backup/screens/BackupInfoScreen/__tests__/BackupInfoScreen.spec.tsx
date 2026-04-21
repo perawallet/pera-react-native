@@ -10,8 +10,17 @@
  limitations under the License
  */
 
+import React from 'react'
 import { describe, test, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@test-utils/render'
+
+vi.mock('@assets/icons/shield-check.svg', () => ({
+    default: (props: React.SVGProps<SVGSVGElement>) =>
+        React.createElement('div', {
+            ...props,
+            'data-testid': 'shield-check-svg',
+        }),
+}))
 
 const mockNavigate = vi.fn()
 vi.mock('@react-navigation/native', async importOriginal => {

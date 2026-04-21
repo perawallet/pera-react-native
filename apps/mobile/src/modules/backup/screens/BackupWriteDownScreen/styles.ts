@@ -11,21 +11,46 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
+export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
+    root: {
         flex: 1,
-        padding: theme.spacing.lg,
-        gap: theme.spacing.md,
+        backgroundColor: theme.colors.background,
+        marginBottom: insets.bottom,
     },
-    body: {
+    content: {
+        flex: 1,
+        justifyContent: 'flex-start',
+        alignItems: 'flex-start',
+        paddingHorizontal: theme.spacing.xl,
+        paddingTop: theme.spacing.xl,
+        gap: theme.spacing.lg,
+    },
+    image: {
+        width: 160,
+        height: 160,
+    },
+    title: {
+        textAlign: 'left',
+    },
+    description: {
+        textAlign: 'left',
         color: theme.colors.textGray,
     },
-    warning: {
-        color: theme.colors.negative,
-        fontWeight: '500',
+    warningRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: theme.spacing.sm,
     },
-    ctaRow: {
-        marginTop: 'auto',
+    warning: {
+        flex: 1,
+        textAlign: 'left',
+        color: theme.colors.negative,
+    },
+    footer: {
+        padding: theme.spacing.xl,
+        paddingBottom: theme.spacing.xxl,
+        gap: theme.spacing.lg,
     },
 }))

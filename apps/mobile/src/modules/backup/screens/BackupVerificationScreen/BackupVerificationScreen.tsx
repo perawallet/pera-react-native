@@ -11,6 +11,7 @@
  */
 
 import { ScrollView } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { BackupQuizItem } from '../../components/BackupQuizItem'
@@ -18,30 +19,39 @@ import { useBackupVerificationScreen } from './useBackupVerificationScreen'
 import { useStyles } from './styles'
 
 export const BackupVerificationScreen = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const { t } = useLanguage()
     const { items, onSelect, onSubmit, isFilled } =
         useBackupVerificationScreen()
 
     return (
-        <PWView style={styles.container}>
-            <PWText variant='h1'>{t('backup.verification.title')}</PWText>
+        <PWView style={styles.root}>
             <ScrollView
                 style={styles.scroll}
                 contentContainerStyle={styles.scrollContent}
             >
-                {items.map((item, i) => (
-                    <BackupQuizItem
-                        key={`${item.position}-${i}`}
-                        position={item.position}
-                        options={item.options}
-                        selectedWord={item.selectedWord}
-                        onSelect={word => onSelect(i, word)}
-                        testID={`backup_verification_item_${i}`}
-                    />
-                ))}
+                <PWText
+                    variant='h1'
+                    style={styles.title}
+                >
+                    {t('backup.verification.title')}
+                </PWText>
+                <PWView style={styles.quizList}>
+                    {items.map((item, i) => (
+                        <BackupQuizItem
+                            key={`${item.position}-${i}`}
+                            position={item.position}
+                            options={item.options}
+                            selectedWord={item.selectedWord}
+                            onSelect={word => onSelect(i, word)}
+                            testID={`backup_verification_item_${i}`}
+                        />
+                    ))}
+                </PWView>
             </ScrollView>
-            <PWView style={styles.ctaRow}>
+
+            <PWView style={styles.footer}>
                 <PWButton
                     title={t('backup.verification.cta_next')}
                     variant='primary'

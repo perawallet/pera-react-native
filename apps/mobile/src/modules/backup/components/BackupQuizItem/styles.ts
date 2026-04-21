@@ -22,17 +22,18 @@ export const useStyles = makeStyles(theme => ({
     },
     optionGroup: {
         padding: theme.spacing.sm,
-        borderRadius: theme.borderRadius.sm,
-        backgroundColor: theme.colors.layerGrayLighter,
-        gap: theme.spacing.xs,
+        borderRadius: theme.borderRadius.xs,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGray,
+        gap: theme.spacing.sm,
     },
     option: {
-        minHeight: 44,
+        height: 44,
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: theme.spacing.md,
         borderRadius: theme.borderRadius.xs,
-        backgroundColor: theme.colors.systemElements,
+        backgroundColor: theme.colors.layerGrayLightest,
     },
     optionSelected: {
         backgroundColor: theme.colors.buttonPrimaryBg,

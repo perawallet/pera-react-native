@@ -11,51 +11,72 @@
  */
 
 import { ActivityIndicator } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBackupMnemonicScreen } from './useBackupMnemonicScreen'
 import { useStyles } from './styles'
 
 export const BackupMnemonicScreen = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const { t } = useLanguage()
     const { words, isLoading, error, onContinue } = useBackupMnemonicScreen()
 
     if (isLoading) {
         return (
-            <PWView style={styles.container}>
-                <ActivityIndicator />
+            <PWView style={styles.root}>
+                <PWView style={styles.loading}>
+                    <ActivityIndicator />
+                </PWView>
             </PWView>
         )
     }
 
     if (error) {
         return (
-            <PWView style={styles.errorBox}>
-                <PWText variant='h1'>{t('backup.mnemonic.error_title')}</PWText>
-                <PWText>{t('backup.mnemonic.error_body')}</PWText>
+            <PWView style={styles.root}>
+                <PWView style={styles.errorBox}>
+                    <PWText variant='h1'>
+                        {t('backup.mnemonic.error_title')}
+                    </PWText>
+                    <PWText>{t('backup.mnemonic.error_body')}</PWText>
+                </PWView>
             </PWView>
         )
     }
 
     return (
-        <PWView style={styles.container}>
-            <PWText variant='h1'>{t('backup.mnemonic.title')}</PWText>
-            <PWText style={styles.body}>{t('backup.mnemonic.body')}</PWText>
-            <PWView style={styles.grid}>
-                {words.map((word, i) => (
-                    <PWView
-                        key={`${i}-${word}`}
-                        style={styles.wordCell}
-                    >
-                        <PWText style={styles.wordIndex}>
-                            {String(i + 1)}.
-                        </PWText>
-                        <PWText style={styles.wordText}>{word}</PWText>
-                    </PWView>
-                ))}
+        <PWView style={styles.root}>
+            <PWView style={styles.content}>
+                <PWText
+                    variant='h1'
+                    style={styles.title}
+                >
+                    {t('backup.mnemonic.title')}
+                </PWText>
+                <PWText
+                    variant='h4'
+                    style={styles.description}
+                >
+                    {t('backup.mnemonic.body')}
+                </PWText>
+                <PWView style={styles.grid}>
+                    {words.map((word, i) => (
+                        <PWView
+                            key={`${i}-${word}`}
+                            style={styles.wordCell}
+                        >
+                            <PWText style={styles.wordIndex}>
+                                {String(i + 1)}
+                            </PWText>
+                            <PWText style={styles.wordText}>{word}</PWText>
+                        </PWView>
+                    ))}
+                </PWView>
             </PWView>
-            <PWView style={styles.ctaRow}>
+
+            <PWView style={styles.footer}>
                 <PWButton
                     title={t('backup.mnemonic.cta_continue')}
                     variant='primary'

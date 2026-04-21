@@ -13,14 +13,19 @@
 import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import { useTheme } from '@rneui/themed'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import ShieldCheckImage from '@assets/icons/shield-check.svg'
+import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBackupFlowWords } from '../../context'
 import type { BackupStackParamList } from '../../routes/types'
 import { useStyles } from './styles'
 
 export const BackupSuccessScreen = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
+    const { theme } = useTheme()
     const { t } = useLanguage()
     const navigation =
         useNavigation<
@@ -39,22 +44,29 @@ export const BackupSuccessScreen = () => {
     }, [navigation, clearWords])
 
     return (
-        <PWView style={styles.container}>
-            <PWView style={styles.iconWrapper}>
-                <PWIcon
-                    name='shield-check'
-                    variant='link'
-                    size='xxl'
+        <PWView style={styles.root}>
+            <PWView style={styles.content}>
+                <ShieldCheckImage
+                    style={styles.image}
+                    width={160}
+                    height={160}
+                    color={theme.colors.linkPrimary}
                 />
+                <PWText
+                    variant='h1'
+                    style={styles.title}
+                >
+                    {t('backup.success.title')}
+                </PWText>
+                <PWText
+                    variant='h4'
+                    style={styles.description}
+                >
+                    {t('backup.success.body')}
+                </PWText>
             </PWView>
-            <PWText
-                variant='h1'
-                style={styles.title}
-            >
-                {t('backup.success.title')}
-            </PWText>
-            <PWText style={styles.body}>{t('backup.success.body')}</PWText>
-            <PWView style={styles.ctaRow}>
+
+            <PWView style={styles.footer}>
                 <PWButton
                     title={t('backup.success.cta_done')}
                     variant='primary'

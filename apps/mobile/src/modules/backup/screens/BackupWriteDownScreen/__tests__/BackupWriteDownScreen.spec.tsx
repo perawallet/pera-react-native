@@ -14,6 +14,11 @@ import { describe, test, expect, vi } from 'vitest'
 import React from 'react'
 import { render, screen, fireEvent } from '@test-utils/render'
 
+vi.mock('@assets/icons/edit-pen.svg', () => ({
+    default: (props: React.SVGProps<SVGSVGElement>) =>
+        React.createElement('div', { ...props, 'data-testid': 'edit-pen-svg' }),
+}))
+
 const mockNavigate = vi.fn()
 vi.mock('@react-navigation/native', async importOriginal => {
     const original =

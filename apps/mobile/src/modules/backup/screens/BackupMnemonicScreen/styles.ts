@@ -11,28 +11,38 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { EdgeInsets } from 'react-native-safe-area-context'
 import { fontFamilies } from '@constants/fonts'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
+export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
+    root: {
         flex: 1,
-        padding: theme.spacing.lg,
-        gap: theme.spacing.md,
+        backgroundColor: theme.colors.background,
+        marginBottom: insets.bottom,
     },
-    body: {
+    content: {
+        flex: 1,
+        paddingHorizontal: theme.spacing.xl,
+        paddingTop: theme.spacing.xl,
+        gap: theme.spacing.lg,
+    },
+    title: {
+        textAlign: 'left',
+    },
+    description: {
+        textAlign: 'left',
         color: theme.colors.textGray,
     },
     grid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: theme.spacing.sm,
         marginTop: theme.spacing.md,
-        padding: theme.spacing.lg,
-        backgroundColor: theme.colors.layerGrayLighter,
-        borderRadius: theme.borderRadius.md,
+        padding: theme.spacing.xl,
+        backgroundColor: theme.colors.layerGrayLightest,
+        borderRadius: theme.borderRadius.sm,
     },
     wordCell: {
-        flexBasis: '46%',
+        flexBasis: '50%',
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: theme.spacing.xs,
@@ -40,18 +50,28 @@ export const useStyles = makeStyles(theme => ({
     },
     wordIndex: {
         fontFamily: fontFamilies.DMMONO[400],
+        fontSize: 13,
         color: theme.colors.textGray,
         minWidth: theme.spacing.xl,
+        textAlign: 'right',
     },
     wordText: {
         fontFamily: fontFamilies.DMMONO[400],
+        fontSize: 13,
         color: theme.colors.textMain,
     },
-    ctaRow: {
-        marginTop: 'auto',
+    footer: {
+        padding: theme.spacing.xl,
+        paddingBottom: theme.spacing.xxl,
+    },
+    loading: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     errorBox: {
-        padding: theme.spacing.md,
+        paddingHorizontal: theme.spacing.xl,
+        paddingTop: theme.spacing.xl,
         gap: theme.spacing.sm,
     },
 }))

@@ -11,21 +11,32 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { EdgeInsets } from 'react-native-safe-area-context'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
+export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
+    root: {
         flex: 1,
-        padding: theme.spacing.lg,
-        gap: theme.spacing.md,
+        backgroundColor: theme.colors.background,
+        marginBottom: insets.bottom,
     },
     scroll: {
         flex: 1,
     },
     scrollContent: {
-        gap: theme.spacing.xl,
-        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.xl,
+        paddingTop: theme.spacing.xl,
+        paddingBottom: theme.spacing.xl,
+        gap: theme.spacing.lg,
     },
-    ctaRow: {
-        gap: theme.spacing.sm,
+    title: {
+        textAlign: 'left',
+    },
+    quizList: {
+        marginTop: theme.spacing.md,
+        gap: theme.spacing.xxl,
+    },
+    footer: {
+        padding: theme.spacing.xl,
+        paddingBottom: theme.spacing.xxl,
     },
 }))

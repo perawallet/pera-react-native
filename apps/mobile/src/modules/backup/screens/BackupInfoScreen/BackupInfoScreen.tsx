@@ -10,26 +10,45 @@
  limitations under the License
  */
 
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import { useTheme } from '@rneui/themed'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import ShieldCheckImage from '@assets/icons/shield-check.svg'
+import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBackupInfoScreen } from './useBackupInfoScreen'
 import { useStyles } from './styles'
 
 export const BackupInfoScreen = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
+    const { theme } = useTheme()
     const { t } = useLanguage()
     const { onContinue } = useBackupInfoScreen()
 
     return (
-        <PWView style={styles.container}>
-            <PWIcon
-                name='shield-check'
-                variant='link'
-                size='xl'
-            />
-            <PWText variant='h1'>{t('backup.info.title')}</PWText>
-            <PWText style={styles.body}>{t('backup.info.body')}</PWText>
-            <PWView style={styles.ctaRow}>
+        <PWView style={styles.root}>
+            <PWView style={styles.content}>
+                <ShieldCheckImage
+                    style={styles.image}
+                    width={160}
+                    height={160}
+                    color={theme.colors.linkPrimary}
+                />
+                <PWText
+                    variant='h1'
+                    style={styles.title}
+                >
+                    {t('backup.info.title')}
+                </PWText>
+                <PWText
+                    variant='h4'
+                    style={styles.description}
+                >
+                    {t('backup.info.body')}
+                </PWText>
+            </PWView>
+
+            <PWView style={styles.footer}>
                 <PWButton
                     variant='primary'
                     title={t('backup.info.cta')}

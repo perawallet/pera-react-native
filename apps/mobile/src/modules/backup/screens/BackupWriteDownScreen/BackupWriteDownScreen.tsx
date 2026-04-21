@@ -10,6 +10,9 @@
  limitations under the License
  */
 
+import { useTheme } from '@rneui/themed'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import EditPenImage from '@assets/icons/edit-pen.svg'
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { PinEditView } from '@modules/security/components/PinEditView'
@@ -17,24 +20,49 @@ import { useBackupWriteDownScreen } from './useBackupWriteDownScreen'
 import { useStyles } from './styles'
 
 export const BackupWriteDownScreen = () => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
+    const { theme } = useTheme()
     const { t } = useLanguage()
     const { isPinVisible, openPin, closePin, handlePinVerified } =
         useBackupWriteDownScreen()
 
     return (
-        <PWView style={styles.container}>
-            <PWIcon
-                name='edit-pen'
-                variant='link'
-                size='xl'
-            />
-            <PWText variant='h1'>{t('backup.write_down.title')}</PWText>
-            <PWText style={styles.body}>{t('backup.write_down.body')}</PWText>
-            <PWText style={styles.warning}>
-                {t('backup.write_down.warning')}
-            </PWText>
-            <PWView style={styles.ctaRow}>
+        <PWView style={styles.root}>
+            <PWView style={styles.content}>
+                <EditPenImage
+                    style={styles.image}
+                    width={160}
+                    height={160}
+                    color={theme.colors.linkPrimary}
+                />
+                <PWText
+                    variant='h1'
+                    style={styles.title}
+                >
+                    {t('backup.write_down.title')}
+                </PWText>
+                <PWText
+                    variant='h4'
+                    style={styles.description}
+                >
+                    {t('backup.write_down.body')}
+                </PWText>
+            </PWView>
+
+            <PWView style={styles.footer}>
+                <PWView style={styles.warningRow}>
+                    <PWIcon
+                        name='info'
+                        variant='error'
+                    />
+                    <PWText
+                        variant='body'
+                        style={styles.warning}
+                    >
+                        {t('backup.write_down.warning')}
+                    </PWText>
+                </PWView>
                 <PWButton
                     variant='primary'
                     title={t('backup.write_down.cta')}
@@ -42,6 +70,7 @@ export const BackupWriteDownScreen = () => {
                     testID='backup_write_down_begin'
                 />
             </PWView>
+
             <PinEditView
                 mode={isPinVisible ? 'verify' : null}
                 onSuccess={handlePinVerified}
