@@ -14,10 +14,12 @@ import { makeStyles } from '@rneui/themed'
 
 type StyleProps = { surfaceColor: string }
 
+const CONTAINER_SIZE = 40
+
 export const useStyles = makeStyles((theme, { surfaceColor }: StyleProps) => ({
     container: {
-        width: theme.spacing.xxl + theme.spacing.xs,
-        height: theme.spacing.xxl + theme.spacing.xs,
+        width: CONTAINER_SIZE,
+        height: CONTAINER_SIZE,
         position: 'relative',
     },
     assetInIcon: {
