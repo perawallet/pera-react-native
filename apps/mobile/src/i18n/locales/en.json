@@ -1246,7 +1246,8 @@
     "walletconnect": {
         "request": {
             "title": "{{name}} wants to connect to your account",
-            "permissions_title": "REQUESTED PERMISSIONS",
+            "permissions_title_one": "Requested {{count}} permission",
+            "permissions_title_other": "Requested {{count}} permissions",
             "permissions_request_accounts": "View your wallet address & balances",
             "permissions_sign_transaction": "Request transaction signing",
             "permissions_sign_data": "Request arbitrary data signing",

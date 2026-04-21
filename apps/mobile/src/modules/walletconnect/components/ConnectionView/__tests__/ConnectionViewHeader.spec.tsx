@@ -69,6 +69,13 @@ vi.mock('@components/core', () => ({
     PWView: ({ children }: { children: React.ReactNode }) => (
         <div>{children}</div>
     ),
+    PWTouchableOpacity: ({
+        children,
+        onPress,
+    }: {
+        children: React.ReactNode
+        onPress?: () => void
+    }) => <button onClick={onPress}>{children}</button>,
 }))
 
 vi.mock('../../PermissionItem', () => ({
@@ -211,17 +218,16 @@ describe('ConnectionViewHeader', () => {
 
         render(<ConnectionViewHeader request={request} />)
 
-        // URL button should not be rendered - only the title text should appear
-        const buttons = screen.queryAllByRole('button')
-        const urlButton = buttons.find(b => b.textContent === '')
-        expect(urlButton).toBeUndefined()
+        expect(screen.queryByText(/^https?:\/\//)).toBeNull()
     })
 
-    test('displays permissions and accounts section titles', () => {
+    test('displays collapsed permissions title with count and accounts title', () => {
         render(<ConnectionViewHeader request={createRequest()} />)
 
         expect(
-            screen.getByText('walletconnect.request.permissions_title'),
+            screen.getByText(
+                'walletconnect.request.permissions_title:{"count":2}',
+            ),
         ).toBeDefined()
         expect(
             screen.getByText('walletconnect.request.accounts_title'),
