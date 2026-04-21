@@ -1490,6 +1490,8 @@
             "connection_failed_title": "Connection failed",
             "timeout": "Your Ledger device did not respond in time. Please try again.",
             "timeout_title": "Request timed out",
+            "address_mismatch": "The address on your Ledger device does not match the expected address. Please verify you selected the correct account.",
+            "address_mismatch_title": "Address Mismatch",
             "retry": "Try again",
             "troubleshoot": "Troubleshoot"
         },
