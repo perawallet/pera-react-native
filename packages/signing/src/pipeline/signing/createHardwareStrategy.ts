@@ -33,6 +33,32 @@ import type {
     SigningCallbacks,
 } from '../types'
 import { CannotSignError, HardwareWalletError, SigningError } from '../errors'
+import {
+    LedgerConnectionError,
+    LedgerAddressMismatchError,
+    LEDGER_CONNECTION_TIMEOUT_MS,
+} from '@perawallet/wallet-core-ledger'
+
+/**
+ * Wrap a promise with a timeout that rejects with a LedgerConnectionError.
+ */
+const withTimeout = <T>(
+    promise: Promise<T>,
+    ms: number,
+    operation: string,
+): Promise<T> => {
+    const timeout = new Promise<never>((_, reject) => {
+        const id = setTimeout(() => {
+            clearTimeout(id)
+            reject(
+                new LedgerConnectionError(
+                    `${operation} timed out after ${ms}ms`,
+                ),
+            )
+        }, ms)
+    })
+    return Promise.race([promise, timeout])
+}
 
 /**
  * Function to encode a transaction to raw bytes for the Ledger to sign.
@@ -99,11 +125,26 @@ const connectAndVerify = async (
     transportProvider: HardwareWalletTransportProvider,
     deviceId: string,
     accountIndex: number,
+    expectedAddress: string,
     callbacks?: SigningCallbacks,
 ): Promise<HardwareWalletTransport> => {
     callbacks?.onPhaseChange?.('connecting')
-    const transport = await transportProvider.connect(deviceId)
-    await transport.getAddress(accountIndex, false)
+    const transport = await withTimeout(
+        transportProvider.connect(deviceId),
+        LEDGER_CONNECTION_TIMEOUT_MS,
+        'Connect to Ledger',
+    )
+
+    // Re-fetch address from device and compare to expected address
+    // (prevents index mismatch attacks, matches native iOS behavior)
+    const fetchedAccount = await transport.getAddress(accountIndex, false)
+    if (fetchedAccount.address !== expectedAddress) {
+        throw new LedgerAddressMismatchError(
+            expectedAddress,
+            fetchedAccount.address,
+        )
+    }
+
     callbacks?.onPhaseChange?.('awaiting-approval')
     return transport
 }
@@ -208,6 +249,7 @@ export const createHardwareStrategy = (
                     transportProvider,
                     deviceId,
                     accountIndex,
+                    hwAccount.address,
                     callbacks,
                 )
 
