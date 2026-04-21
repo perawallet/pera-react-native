@@ -13,20 +13,17 @@
 import React from 'react'
 import { Decimal } from 'decimal.js'
 import { render, screen, fireEvent } from '@test-utils/render'
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import type { SwapHistoryItem } from '@perawallet/wallet-core-swaps'
 
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
-}))
-
-vi.mock('@modules/assets/components/AssetIcon', () => ({
-    AssetIcon: ({ asset }: { asset: { assetId: string } }) => (
-        <span data-testid={`asset-icon-${asset.assetId}`} />
-    ),
-}))
+const mockPushWebView = vi.fn()
+const mockFetchNextPage = vi.fn()
+const mockUseSwapHistoryInfiniteQuery = vi.fn()
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
+    useNetwork: () => ({
+        networkConfig: { explorerUrl: 'https://explorer.example' },
+    }),
     baseUnitsToDisplayUnits: (amount: Decimal, decimals: number) =>
         amount.div(new Decimal(10).pow(decimals)),
 }))
@@ -39,6 +36,26 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         fraction: '',
     }),
     formatDatetime: () => 'Jan 1, 2024',
+    generateUniqueId: () => 'uid',
+}))
+
+vi.mock('@perawallet/wallet-core-swaps', () => ({
+    useSwapHistoryInfiniteQuery: (...args: unknown[]) =>
+        mockUseSwapHistoryInfiniteQuery(...args),
+}))
+
+vi.mock('@modules/webview', () => ({
+    useWebView: () => ({ pushWebView: mockPushWebView }),
+}))
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({ t: (key: string) => key }),
+}))
+
+vi.mock('@modules/assets/components/AssetIcon', () => ({
+    AssetIcon: ({ asset }: { asset: { assetId: string } }) => (
+        <span data-testid={`asset-icon-${asset.assetId}`} />
+    ),
 }))
 
 import { SwapHistoryList } from '../SwapHistoryList'
@@ -67,16 +84,26 @@ const makeItem = (id: number): SwapHistoryItem => ({
 })
 
 describe('SwapHistoryList', () => {
+    beforeEach(() => {
+        mockPushWebView.mockReset()
+        mockFetchNextPage.mockReset()
+        mockUseSwapHistoryInfiniteQuery.mockReset()
+    })
+
     it('renders error empty state when error and no swaps', () => {
+        mockUseSwapHistoryInfiniteQuery.mockReturnValue({
+            swaps: [],
+            isLoading: false,
+            isError: true,
+            isFetchingNextPage: false,
+            hasNextPage: false,
+            fetchNextPage: mockFetchNextPage,
+        })
+
         render(
             <SwapHistoryList
-                swaps={[]}
-                isLoading={false}
-                isError={true}
-                isFetchingNextPage={false}
-                hasNextPage={false}
-                onItemPress={vi.fn()}
-                onEndReached={vi.fn()}
+                address='ADDRESS'
+                onClose={vi.fn()}
             />,
         )
 
@@ -84,39 +111,49 @@ describe('SwapHistoryList', () => {
     })
 
     it('renders empty state when no swaps and not loading', () => {
+        mockUseSwapHistoryInfiniteQuery.mockReturnValue({
+            swaps: [],
+            isLoading: false,
+            isError: false,
+            isFetchingNextPage: false,
+            hasNextPage: false,
+            fetchNextPage: mockFetchNextPage,
+        })
+
         render(
             <SwapHistoryList
-                swaps={[]}
-                isLoading={false}
-                isError={false}
-                isFetchingNextPage={false}
-                hasNextPage={false}
-                onItemPress={vi.fn()}
-                onEndReached={vi.fn()}
+                address='ADDRESS'
+                onClose={vi.fn()}
             />,
         )
 
         expect(screen.getByText('swap.history.list.empty.title')).toBeDefined()
     })
 
-    it('renders items and calls onItemPress when tapped', () => {
-        const onItemPress = vi.fn()
-        const item = makeItem(1)
+    it('renders items and invokes onClose + webview when tapped', () => {
+        const onClose = vi.fn()
+        mockUseSwapHistoryInfiniteQuery.mockReturnValue({
+            swaps: [makeItem(1)],
+            isLoading: false,
+            isError: false,
+            isFetchingNextPage: false,
+            hasNextPage: false,
+            fetchNextPage: mockFetchNextPage,
+        })
 
         render(
             <SwapHistoryList
-                swaps={[item]}
-                isLoading={false}
-                isError={false}
-                isFetchingNextPage={false}
-                hasNextPage={false}
-                onItemPress={onItemPress}
-                onEndReached={vi.fn()}
+                address='ADDRESS'
+                onClose={onClose}
             />,
         )
 
         fireEvent.click(screen.getByTestId('swap-history-item-1'))
 
-        expect(onItemPress).toHaveBeenCalledWith(item)
+        expect(onClose).toHaveBeenCalled()
+        expect(mockPushWebView).toHaveBeenCalledWith({
+            url: 'https://explorer.example/tx-group/group-1/',
+            id: 'uid',
+        })
     })
 })

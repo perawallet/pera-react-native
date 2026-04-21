@@ -25,9 +25,6 @@ export const useStyles = makeStyles(theme => ({
     title: {
         color: theme.colors.textMain,
     },
-    seeAllText: {
-        color: theme.colors.linkPrimary,
-    },
     listContent: {
         gap: theme.spacing.sm,
         paddingRight: theme.spacing.md,
@@ -43,7 +40,7 @@ export const useStyles = makeStyles(theme => ({
     },
     skeleton: {
         height: theme.spacing['3xl'],
-        width: theme.spacing['5xl'] + theme.spacing['3xl'],
+        width: theme.spacing['5xl'],
         borderRadius: theme.spacing.xl,
     },
     errorText: {

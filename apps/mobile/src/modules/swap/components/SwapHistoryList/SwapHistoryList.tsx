@@ -22,24 +22,14 @@ import { useSwapHistoryList } from './useSwapHistoryList'
 import { useStyles } from './styles'
 
 export type SwapHistoryListProps = {
-    swaps: SwapHistoryItem[]
-    isLoading: boolean
-    isError: boolean
-    isFetchingNextPage: boolean
-    hasNextPage: boolean
-    onItemPress: (item: SwapHistoryItem) => void
-    onEndReached: () => void
+    address: string
+    onClose: () => void
     inBottomSheet?: boolean
 }
 
 export const SwapHistoryList = ({
-    swaps,
-    isLoading,
-    isError,
-    isFetchingNextPage,
-    hasNextPage,
-    onItemPress,
-    onEndReached,
+    address,
+    onClose,
     inBottomSheet = false,
 }: SwapHistoryListProps) => {
     const styles = useStyles()
@@ -47,27 +37,24 @@ export const SwapHistoryList = ({
     const { theme } = useTheme()
 
     const {
+        swaps,
+        isLoading,
+        isFetchingNextPage,
         keyExtractor,
+        handleItemPress,
         handleEndReached,
         shouldShowErrorState,
         shouldShowEmptyState,
-    } = useSwapHistoryList({
-        swaps,
-        isLoading,
-        isError,
-        isFetchingNextPage,
-        hasNextPage,
-        onEndReached,
-    })
+    } = useSwapHistoryList({ address, onClose })
 
     const renderItem = useCallback(
         ({ item }: { item: SwapHistoryItem }) => (
             <SwapHistoryListItem
                 item={item}
-                onPress={onItemPress}
+                onPress={handleItemPress}
             />
         ),
-        [onItemPress],
+        [handleItemPress],
     )
 
     const ItemSeparator = useCallback(

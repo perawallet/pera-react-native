@@ -11,11 +11,11 @@
  */
 
 import { useCallback } from 'react'
-import { FlatList, type ListRenderItem } from 'react-native'
 import {
+    PWButton,
+    PWFlatList,
     PWSkeleton,
     PWText,
-    PWTouchableOpacity,
     PWView,
 } from '@components/core'
 import type { SwapDistinctPairItem } from '@perawallet/wallet-core-swaps'
@@ -42,8 +42,8 @@ export const SwapPairHistoryWidget = () => {
         handleHistorySheetClose,
     } = useSwapPairHistoryWidget()
 
-    const renderPair: ListRenderItem<SwapDistinctPairItem> = useCallback(
-        ({ item }) => (
+    const renderPair = useCallback(
+        ({ item }: { item: SwapDistinctPairItem }) => (
             <SwapPairChip
                 assetIn={item.assetIn}
                 assetOut={item.assetOut}
@@ -71,13 +71,10 @@ export const SwapPairHistoryWidget = () => {
                         {t('swap.history.widget.title')}
                     </PWText>
                 </PWView>
-                <FlatList
+                <PWSkeleton
+                    count={SKELETON_COUNT}
                     horizontal
-                    showsHorizontalScrollIndicator={false}
-                    data={Array.from({ length: SKELETON_COUNT })}
-                    keyExtractor={(_, i) => `skeleton-${i}`}
-                    contentContainerStyle={styles.listContent}
-                    renderItem={() => <PWSkeleton style={styles.skeleton} />}
+                    style={styles.skeleton}
                 />
             </PWView>
         )
@@ -111,19 +108,15 @@ export const SwapPairHistoryWidget = () => {
                     >
                         {t('swap.history.widget.title')}
                     </PWText>
-                    <PWTouchableOpacity
+                    <PWButton
+                        variant='link'
+                        paddingStyle='none'
+                        title={t('swap.history.widget.see_all')}
                         onPress={handleSeeAllPress}
                         testID='swap-pair-history-see-all'
-                    >
-                        <PWText
-                            variant='body'
-                            style={styles.seeAllText}
-                        >
-                            {t('swap.history.widget.see_all')}
-                        </PWText>
-                    </PWTouchableOpacity>
+                    />
                 </PWView>
-                <FlatList
+                <PWFlatList
                     horizontal
                     showsHorizontalScrollIndicator={false}
                     data={pairs}

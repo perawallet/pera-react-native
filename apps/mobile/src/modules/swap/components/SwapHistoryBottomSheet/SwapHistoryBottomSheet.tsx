@@ -19,7 +19,6 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { SwapHistoryList } from '@modules/swap/components/SwapHistoryList'
-import { useSwapHistoryBottomSheet } from './useSwapHistoryBottomSheet'
 import { useStyles } from './styles'
 
 export type SwapHistoryBottomSheetProps = {
@@ -35,15 +34,6 @@ export const SwapHistoryBottomSheet = ({
 }: SwapHistoryBottomSheetProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const {
-        swaps,
-        isLoading,
-        isError,
-        isFetchingNextPage,
-        hasNextPage,
-        handleItemPress,
-        handleEndReached,
-    } = useSwapHistoryBottomSheet({ address, onClose })
 
     return (
         <PWBottomSheet
@@ -68,13 +58,8 @@ export const SwapHistoryBottomSheet = ({
             />
             <PWView style={styles.listWrapper}>
                 <SwapHistoryList
-                    swaps={swaps}
-                    isLoading={isLoading}
-                    isError={isError}
-                    isFetchingNextPage={isFetchingNextPage}
-                    hasNextPage={hasNextPage}
-                    onItemPress={handleItemPress}
-                    onEndReached={handleEndReached}
+                    address={address}
+                    onClose={onClose}
                     inBottomSheet
                 />
             </PWView>
