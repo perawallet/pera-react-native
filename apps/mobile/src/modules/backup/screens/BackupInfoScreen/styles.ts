@@ -12,18 +12,16 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = { hasError: boolean; isDisabled: boolean }
-
-export const useStyles = makeStyles(
-    (theme, { hasError, isDisabled }: StyleProps) => ({
-        container: {
-            paddingVertical: theme.spacing.sm,
-            paddingHorizontal: theme.spacing.md,
-            backgroundColor: hasError
-                ? theme.colors.negativeLighter
-                : theme.colors.layerGrayLighter,
-            borderRadius: theme.borderRadius.md,
-            opacity: isDisabled ? 0.4 : 1,
-        },
-    }),
-)
+export const useStyles = makeStyles(theme => ({
+    container: {
+        flex: 1,
+        padding: theme.spacing.lg,
+        gap: theme.spacing.md,
+    },
+    body: {
+        color: theme.colors.textGray,
+    },
+    ctaRow: {
+        marginTop: 'auto',
+    },
+}))

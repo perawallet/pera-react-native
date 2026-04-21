@@ -11,8 +11,8 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import React from 'react'
 import { render, screen, fireEvent } from '@test-utils/render'
+import { within } from '@testing-library/react'
 import {
     AccountTypes,
     type WalletAccount,
@@ -21,6 +21,7 @@ import {
 const mockReplace = vi.fn()
 const mockNavigate = vi.fn()
 const mockMarkBackup = vi.fn()
+const mockShowToast = vi.fn()
 
 const account: WalletAccount = {
     type: AccountTypes.algo25,
@@ -28,6 +29,21 @@ const account: WalletAccount = {
     keyPairId: 'kp',
     seedKeyId: 'seed-1',
 }
+
+const WORDS = [
+    'alpha',
+    'bravo',
+    'charlie',
+    'delta',
+    'echo',
+    'foxtrot',
+    'golf',
+    'hotel',
+    'india',
+    'juliet',
+    'kilo',
+    'lima',
+]
 
 vi.mock('@react-navigation/native', async importOriginal => {
     const original =
@@ -58,7 +74,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 
 vi.mock('../../../context', () => ({
     useBackupFlowWords: () => ({
-        getWords: () => ['alpha', 'bravo'],
+        getWords: () => WORDS,
         setWords: vi.fn(),
         clearWords: vi.fn(),
     }),
@@ -70,43 +86,104 @@ vi.mock('expo-haptics', () => ({
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (k: string) => k }),
+    useLanguage: () => ({
+        t: (key: string, params?: Record<string, unknown>) => {
+            if (
+                key === 'backup.verification.select_word' &&
+                params?.number !== undefined
+            ) {
+                return `Select word #${params.number}`
+            }
+            return key
+        },
+    }),
+}))
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({ showToast: mockShowToast }),
 }))
 
 import { BackupVerificationScreen } from '../BackupVerificationScreen'
+
+type QuizItemInfo = {
+    itemIndex: number
+    position: number
+    correctWord: string
+    optionWords: string[]
+}
+
+const readQuizItems = (): QuizItemInfo[] => {
+    const labels = screen.getAllByText(/^Select word #\d+$/)
+    return labels.map((node, i) => {
+        const text = (node as HTMLElement).textContent ?? ''
+        const match = /#(\d+)/.exec(text)
+        const position = match ? Number(match[1]) - 1 : 0
+        const itemEl = screen.getByTestId(
+            `backup_verification_item_${i}`,
+        ) as HTMLElement
+        const optionButtons = within(itemEl).getAllByRole('button')
+        const optionWords = optionButtons.map(btn => {
+            const tid =
+                btn.getAttribute('data-testid') ?? btn.getAttribute('testid')
+            const m = /_option_(.+)$/.exec(tid ?? '')
+            return m ? m[1] : ''
+        })
+        return {
+            itemIndex: i,
+            position,
+            correctWord: WORDS[position],
+            optionWords,
+        }
+    })
+}
+
+const answerAllCorrect = () => {
+    readQuizItems().forEach(({ itemIndex, correctWord }) => {
+        fireEvent.click(
+            screen.getByTestId(
+                `backup_verification_item_${itemIndex}_option_${correctWord}`,
+            ),
+        )
+    })
+}
+
+const answerAllWrong = () => {
+    readQuizItems().forEach(({ itemIndex, correctWord, optionWords }) => {
+        const wrong = optionWords.find(w => w !== correctWord) ?? correctWord
+        fireEvent.click(
+            screen.getByTestId(
+                `backup_verification_item_${itemIndex}_option_${wrong}`,
+            ),
+        )
+    })
+}
 
 describe('BackupVerificationScreen', () => {
     beforeEach(() => {
         mockReplace.mockReset()
         mockNavigate.mockReset()
         mockMarkBackup.mockReset()
+        mockShowToast.mockReset()
     })
 
-    test('tapping Finish with correct order marks backup and navigates to success', () => {
+    test('submitting correct answers marks backup complete and navigates to success', () => {
         render(<BackupVerificationScreen />)
-
-        fireEvent.click(screen.getByText('alpha'))
-        fireEvent.click(screen.getByText('bravo'))
-        fireEvent.click(screen.getByTestId('backup_verification_finish'))
+        answerAllCorrect()
+        fireEvent.click(screen.getByTestId('backup_verification_next'))
 
         expect(mockMarkBackup).toHaveBeenCalledWith(account)
-        // accept either replace or navigate call — component implementation may use either
         const navCall = mockReplace.mock.calls[0] ?? mockNavigate.mock.calls[0]
         expect(navCall?.[0]).toBe('BackupSuccess')
     })
 
-    test('tapping Finish with wrong order shows error message and does NOT navigate', () => {
+    test('submitting wrong answers shows error toast and does NOT navigate', () => {
         render(<BackupVerificationScreen />)
-
-        fireEvent.click(screen.getByText('bravo'))
-        fireEvent.click(screen.getByText('alpha'))
-        fireEvent.click(screen.getByTestId('backup_verification_finish'))
+        answerAllWrong()
+        fireEvent.click(screen.getByTestId('backup_verification_next'))
 
         expect(mockMarkBackup).not.toHaveBeenCalled()
         expect(mockReplace).not.toHaveBeenCalled()
         expect(mockNavigate).not.toHaveBeenCalled()
-        expect(
-            screen.getByText('backup.verification.error_message'),
-        ).toBeTruthy()
+        expect(mockShowToast).toHaveBeenCalled()
     })
 })

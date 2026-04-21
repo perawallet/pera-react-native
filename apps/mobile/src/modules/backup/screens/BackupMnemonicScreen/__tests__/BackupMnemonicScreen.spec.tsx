@@ -75,8 +75,8 @@ describe('BackupMnemonicScreen', () => {
         await waitFor(() => {
             expect(screen.getByText('alpha')).toBeTruthy()
             expect(screen.getByText('foxtrot')).toBeTruthy()
-            expect(screen.getByText('1')).toBeTruthy()
-            expect(screen.getByText('6')).toBeTruthy()
+            expect(screen.getByText('1.')).toBeTruthy()
+            expect(screen.getByText('6.')).toBeTruthy()
         })
     })
 

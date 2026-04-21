@@ -40,7 +40,13 @@ export const BackupSuccessScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <PWIcon name='check' />
+            <PWView style={styles.iconWrapper}>
+                <PWIcon
+                    name='shield-check'
+                    variant='link'
+                    size='xxl'
+                />
+            </PWView>
             <PWText
                 variant='h1'
                 style={styles.title}

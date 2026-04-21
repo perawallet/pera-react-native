@@ -49,9 +49,9 @@ export const BackupMnemonicScreen = () => {
                         style={styles.wordCell}
                     >
                         <PWText style={styles.wordIndex}>
-                            {String(i + 1)}
+                            {String(i + 1)}.
                         </PWText>
-                        <PWText>{word}</PWText>
+                        <PWText style={styles.wordText}>{word}</PWText>
                     </PWView>
                 ))}
             </PWView>

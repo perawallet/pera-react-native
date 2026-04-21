@@ -24,7 +24,7 @@ export const useBackupFlowLauncher = (): UseBackupFlowLauncherResult => {
     return useCallback(
         (account: WalletAccount) => {
             navigation.navigate('BackupWallet', {
-                screen: 'BackupInstructions',
+                screen: 'BackupInfo',
                 params: { address: account.address },
             })
         },

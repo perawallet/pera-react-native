@@ -27,10 +27,8 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
         t: (key: string) => {
             const translations: Record<string, string> = {
-                'backup.banner.title': 'Back up your passphrase',
-                'backup.banner.body':
-                    "You could lose access to this account's funds forever if your device is lost or stolen.",
-                'backup.banner.cta': 'Back up now',
+                'backup.banner.text': 'You need to backup the passphrase',
+                'backup.banner.cta': 'Backup now',
             }
             return translations[key] ?? key
         },
@@ -54,12 +52,14 @@ describe('BackupReminderBanner', () => {
         expect(queryByTestId('backup_reminder_banner')).toBeNull()
     })
 
-    test('renders title, body and CTA when isVisible is true', () => {
+    test('renders warning text and CTA when isVisible is true', () => {
         mockUseHook.mockReturnValue({ isVisible: true, onPress: vi.fn() })
         render(<BackupReminderBanner account={account} />)
 
-        expect(screen.getByText('Back up your passphrase')).toBeTruthy()
-        expect(screen.getByText('Back up now')).toBeTruthy()
+        expect(
+            screen.getByText('You need to backup the passphrase'),
+        ).toBeTruthy()
+        expect(screen.getByText('Backup now')).toBeTruthy()
     })
 
     test('calls onPress when CTA is pressed', () => {

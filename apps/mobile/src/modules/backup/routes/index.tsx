@@ -13,7 +13,8 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 
 import { BackupFlowProvider } from '../context'
-import { BackupInstructionsScreen } from '../screens/BackupInstructionsScreen'
+import { BackupInfoScreen } from '../screens/BackupInfoScreen'
+import { BackupWriteDownScreen } from '../screens/BackupWriteDownScreen'
 import { BackupMnemonicScreen } from '../screens/BackupMnemonicScreen'
 import { BackupVerificationScreen } from '../screens/BackupVerificationScreen'
 import { BackupSuccessScreen } from '../screens/BackupSuccessScreen'
@@ -28,8 +29,12 @@ export const BackupStackNavigator = () => {
         <BackupFlowProvider>
             <Stack.Navigator screenOptions={{ headerShown: false }}>
                 <Stack.Screen
-                    name='BackupInstructions'
-                    component={BackupInstructionsScreen}
+                    name='BackupInfo'
+                    component={BackupInfoScreen}
+                />
+                <Stack.Screen
+                    name='BackupWriteDown'
+                    component={BackupWriteDownScreen}
                 />
                 <Stack.Screen
                     name='BackupMnemonic'

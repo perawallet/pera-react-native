@@ -11,4 +11,4 @@
  */
 
 export * from './useBackupFlowLauncher'
-export * from './useBackupVerification'
+export * from './useBackupQuiz'

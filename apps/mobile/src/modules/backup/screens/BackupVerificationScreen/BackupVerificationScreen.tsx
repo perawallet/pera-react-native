@@ -10,64 +10,44 @@
  limitations under the License
  */
 
+import { ScrollView } from 'react-native'
 import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
-import { BackupSlotList } from '../../components/BackupSlotList'
-import { BackupWordPool } from '../../components/BackupWordPool'
+import { BackupQuizItem } from '../../components/BackupQuizItem'
 import { useBackupVerificationScreen } from './useBackupVerificationScreen'
 import { useStyles } from './styles'
 
 export const BackupVerificationScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const {
-        slots,
-        poolWords,
-        onTapPoolWord,
-        onTapSlot,
-        onFinish,
-        onStartOver,
-        isFilled,
-        validationError,
-    } = useBackupVerificationScreen()
+    const { items, onSelect, onSubmit, isFilled } =
+        useBackupVerificationScreen()
 
     return (
         <PWView style={styles.container}>
             <PWText variant='h1'>{t('backup.verification.title')}</PWText>
-            <PWText style={styles.body}>{t('backup.verification.body')}</PWText>
-
-            <BackupSlotList
-                slots={slots}
-                onTapSlot={onTapSlot}
-                hasError={validationError}
-            />
-
-            <PWView style={styles.poolSection}>
-                <BackupWordPool
-                    words={poolWords}
-                    onTapWord={onTapPoolWord}
-                />
-            </PWView>
-
-            {validationError ? (
-                <PWText style={styles.errorText}>
-                    {t('backup.verification.error_message')}
-                </PWText>
-            ) : null}
-
+            <ScrollView
+                style={styles.scroll}
+                contentContainerStyle={styles.scrollContent}
+            >
+                {items.map((item, i) => (
+                    <BackupQuizItem
+                        key={`${item.position}-${i}`}
+                        position={item.position}
+                        options={item.options}
+                        selectedWord={item.selectedWord}
+                        onSelect={word => onSelect(i, word)}
+                        testID={`backup_verification_item_${i}`}
+                    />
+                ))}
+            </ScrollView>
             <PWView style={styles.ctaRow}>
                 <PWButton
-                    title={t('backup.verification.cta_finish')}
+                    title={t('backup.verification.cta_next')}
                     variant='primary'
                     isDisabled={!isFilled}
-                    onPress={onFinish}
-                    testID='backup_verification_finish'
-                />
-                <PWButton
-                    title={t('backup.verification.cta_start_over')}
-                    variant='secondary'
-                    onPress={onStartOver}
-                    testID='backup_verification_start_over'
+                    onPress={onSubmit}
+                    testID='backup_verification_next'
                 />
             </PWView>
         </PWView>

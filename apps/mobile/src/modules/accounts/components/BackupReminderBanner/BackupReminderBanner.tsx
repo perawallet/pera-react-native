@@ -11,7 +11,7 @@
  */
 
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useBackupReminderBanner } from './useBackupReminderBanner'
 import { useStyles } from './styles'
@@ -34,20 +34,19 @@ export const BackupReminderBanner = ({
             style={styles.container}
             testID='backup_reminder_banner'
         >
-            <PWView style={styles.icon}>
-                <PWIcon name='shield-check' />
-            </PWView>
-            <PWView style={styles.textBlock}>
-                <PWText style={styles.title}>{t('backup.banner.title')}</PWText>
-                <PWText style={styles.body}>{t('backup.banner.body')}</PWText>
-            </PWView>
-            <PWButton
-                variant='primary'
-                paddingStyle='dense'
-                title={t('backup.banner.cta')}
+            <PWIcon
+                name='info'
+                variant='white'
+                size='sm'
+            />
+            <PWText style={styles.text}>{t('backup.banner.text')}</PWText>
+            <PWTouchableOpacity
+                style={styles.ctaButton}
                 onPress={onPress}
                 testID='backup_reminder_banner_cta'
-            />
+            >
+                <PWText style={styles.ctaText}>{t('backup.banner.cta')}</PWText>
+            </PWTouchableOpacity>
         </PWView>
     )
 }

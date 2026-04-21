@@ -328,37 +328,37 @@
     },
     "backup": {
         "banner": {
-            "title": "Back up your passphrase",
-            "body": "You could lose access to this account's funds forever if your device is lost or stolen.",
-            "cta": "Back up now"
+            "text": "You need to backup the passphrase",
+            "cta": "Backup now"
         },
-        "instructions": {
-            "title": "Back up your passphrase",
-            "body": "Your recovery passphrase is the only way to access your funds if you lose this device. Write it down on paper, store it somewhere safe, and never share it with anyone.",
-            "warning_no_screenshot": "Do not screenshot.",
-            "warning_no_share": "Do not share with anyone.",
-            "warning_offline": "Store it offline.",
-            "cta_reveal": "Reveal passphrase",
-            "cta_cancel": "Cancel"
+        "info": {
+            "title": "Create a passphrase backup for your account",
+            "body": "Creating a passphrase backup will allow you to recover your account. Without the passphrase, if you lose your device, remove the account or delete the app, you can permanently lose access to your Algorand account!",
+            "cta": "I Understand"
+        },
+        "write_down": {
+            "title": "Prepare to write down your recovery passphrase",
+            "body": "The only way to recover an Algorand account is with this recovery passphrase.",
+            "warning": "Do not share this passphrase with anyone, as it grants full access to your account.",
+            "cta": "I'm Ready to Begin"
         },
         "mnemonic": {
-            "title": "Your recovery passphrase",
-            "body": "Write these words down in order.",
-            "cta_continue": "I've saved it",
+            "title": "Recovery Passphrase",
+            "body": "Make sure to record these words in the correct order, using the corresponding numbers.",
+            "cta_continue": "Next",
             "error_title": "Could not retrieve passphrase",
             "error_body": "Something went wrong. Please try again.",
             "error_cta": "Back"
         },
         "verification": {
-            "title": "Verify your passphrase",
-            "body": "Tap the words in the order you wrote them down.",
-            "cta_finish": "Finish",
-            "cta_start_over": "Start over",
-            "error_message": "That order doesn't match. Please try again."
+            "title": "Verify recovery passphrase backup",
+            "select_word": "Select word #{{number}}",
+            "cta_next": "Next",
+            "error_message": "Selected words are incorrect"
         },
         "success": {
-            "title": "Passphrase backed up",
-            "body": "Keep your recovery passphrase somewhere safe. You'll need it to recover your account.",
+            "title": "Passphrase Verified",
+            "body": "Keep this recovery passphrase in a secure location that is accessible only by you. Do not lose this recovery passphrase.",
             "cta_done": "Done"
         }
     },

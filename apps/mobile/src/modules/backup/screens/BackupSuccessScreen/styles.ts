@@ -19,6 +19,10 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         gap: theme.spacing.md,
     },
+    iconWrapper: {
+        marginTop: theme.spacing.xxl,
+        marginBottom: theme.spacing.lg,
+    },
     title: {
         textAlign: 'center',
     },

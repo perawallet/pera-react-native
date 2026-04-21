@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export * from './BackupSlotList'
+export * from './BackupQuizItem'

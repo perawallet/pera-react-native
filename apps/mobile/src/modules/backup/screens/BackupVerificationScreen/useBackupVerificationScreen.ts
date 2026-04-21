@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import * as Haptics from 'expo-haptics'
 import {
     useNavigation,
@@ -23,19 +23,17 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useMarkBackupComplete } from '@perawallet/wallet-core-backup'
+import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 import { useBackupFlowWords } from '../../context'
-import { useBackupVerification } from '../../hooks'
+import { useBackupQuiz, type BackupQuizItem } from '../../hooks'
 import type { BackupStackParamList } from '../../routes/types'
 
 export type UseBackupVerificationScreenResult = {
-    slots: (string | null)[]
-    poolWords: string[]
-    onTapPoolWord: (word: string, i: number) => void
-    onTapSlot: (i: number) => void
-    onFinish: () => void
-    onStartOver: () => void
+    items: BackupQuizItem[]
+    onSelect: (questionIdx: number, word: string) => void
+    onSubmit: () => void
     isFilled: boolean
-    validationError: boolean
     hasAccount: boolean
 }
 
@@ -64,31 +62,36 @@ export const useBackupVerificationScreen =
         const words = useMemo(() => getWords() ?? [], [getWords])
 
         const markBackupComplete = useMarkBackupComplete()
+        const { t } = useLanguage()
+        const { showToast } = useToast()
 
         const onSuccess = useCallback(() => {
             if (account) markBackupComplete(account)
             navigation.replace('BackupSuccess')
         }, [account, markBackupComplete, navigation])
 
-        const verification = useBackupVerification(words, onSuccess)
+        const onWrong = useCallback(() => {
+            void Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Error,
+            )
+            showToast({
+                title: t('backup.verification.error_message'),
+                body: '',
+                type: 'error',
+            })
+        }, [showToast, t])
 
-        useEffect(() => {
-            if (verification.validationError) {
-                void Haptics.notificationAsync(
-                    Haptics.NotificationFeedbackType.Error,
-                )
-            }
-        }, [verification.validationError])
+        const { items, onSelect, onSubmit, isFilled } = useBackupQuiz(
+            words,
+            onSuccess,
+            onWrong,
+        )
 
         return {
-            slots: verification.orderedSlots,
-            poolWords: verification.poolWords,
-            onTapPoolWord: verification.onTapPoolWord,
-            onTapSlot: verification.onTapSlot,
-            onFinish: verification.onFinish,
-            onStartOver: verification.onStartOver,
-            isFilled: verification.isFilled,
-            validationError: verification.validationError,
+            items,
+            onSelect,
+            onSubmit,
+            isFilled,
             hasAccount: account !== null,
         }
     }

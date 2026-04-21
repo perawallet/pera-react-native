@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { fontFamilies } from '@constants/fonts'
 
 export const useStyles = makeStyles(theme => ({
     container: {
@@ -26,20 +27,25 @@ export const useStyles = makeStyles(theme => ({
         flexWrap: 'wrap',
         gap: theme.spacing.sm,
         marginTop: theme.spacing.md,
-    },
-    wordCell: {
-        flexBasis: '48%',
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: theme.spacing.sm,
-        paddingHorizontal: theme.spacing.md,
+        padding: theme.spacing.lg,
         backgroundColor: theme.colors.layerGrayLighter,
         borderRadius: theme.borderRadius.md,
+    },
+    wordCell: {
+        flexBasis: '46%',
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: theme.spacing.xs,
         gap: theme.spacing.sm,
     },
     wordIndex: {
+        fontFamily: fontFamilies.DMMONO[400],
         color: theme.colors.textGray,
         minWidth: theme.spacing.xl,
+    },
+    wordText: {
+        fontFamily: fontFamilies.DMMONO[400],
+        color: theme.colors.textMain,
     },
     ctaRow: {
         marginTop: 'auto',

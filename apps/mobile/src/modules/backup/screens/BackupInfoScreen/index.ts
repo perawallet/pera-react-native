@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export * from './BackupWordPool'
+export * from './BackupInfoScreen'

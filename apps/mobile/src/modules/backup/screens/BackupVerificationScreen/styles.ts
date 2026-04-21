@@ -18,18 +18,14 @@ export const useStyles = makeStyles(theme => ({
         padding: theme.spacing.lg,
         gap: theme.spacing.md,
     },
-    body: {
-        color: theme.colors.textGray,
+    scroll: {
+        flex: 1,
     },
-    poolSection: {
-        marginTop: theme.spacing.md,
-    },
-    errorText: {
-        color: theme.colors.negative,
-        marginTop: theme.spacing.sm,
+    scrollContent: {
+        gap: theme.spacing.xl,
+        paddingVertical: theme.spacing.md,
     },
     ctaRow: {
-        marginTop: 'auto',
         gap: theme.spacing.sm,
     },
 }))

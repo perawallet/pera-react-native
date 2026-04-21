@@ -39,7 +39,7 @@ describe('useBackupFlowLauncher', () => {
         })
 
         expect(mockNavigate).toHaveBeenCalledWith('BackupWallet', {
-            screen: 'BackupInstructions',
+            screen: 'BackupInfo',
             params: { address: 'ADDR_1' },
         })
     })

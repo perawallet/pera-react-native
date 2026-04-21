@@ -14,20 +14,34 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        flex: 1,
-        padding: theme.spacing.lg,
-        gap: theme.spacing.md,
+        gap: theme.spacing.sm,
     },
-    body: {
+    label: {
         color: theme.colors.textGray,
+        textAlign: 'center',
     },
-    warningRow: {
-        flexDirection: 'row',
+    optionGroup: {
+        padding: theme.spacing.sm,
+        borderRadius: theme.borderRadius.sm,
+        backgroundColor: theme.colors.layerGrayLighter,
+        gap: theme.spacing.xs,
+    },
+    option: {
+        minHeight: 44,
+        justifyContent: 'center',
         alignItems: 'center',
-        gap: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.md,
+        borderRadius: theme.borderRadius.xs,
+        backgroundColor: theme.colors.systemElements,
     },
-    ctaRow: {
-        marginTop: 'auto',
-        gap: theme.spacing.sm,
+    optionSelected: {
+        backgroundColor: theme.colors.buttonPrimaryBg,
+    },
+    optionText: {
+        color: theme.colors.textMain,
+        fontWeight: '500',
+    },
+    optionTextSelected: {
+        color: theme.colors.buttonPrimaryText,
     },
 }))

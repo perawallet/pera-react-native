@@ -11,8 +11,8 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
-import React from 'react'
 import { render, screen, fireEvent, waitFor } from '@test-utils/render'
+import { within } from '@testing-library/react'
 import {
     AccountTypes,
     type WalletAccount,
@@ -26,7 +26,7 @@ const account: WalletAccount = {
     seedKeyId: 'seed-A',
 }
 
-const MNEMONIC_WORDS = ['alpha', 'bravo', 'charlie']
+const MNEMONIC_WORDS = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot']
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const original =
@@ -71,7 +71,21 @@ vi.mock('expo-haptics', () => ({
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (k: string) => k }),
+    useLanguage: () => ({
+        t: (key: string, params?: Record<string, unknown>) => {
+            if (
+                key === 'backup.verification.select_word' &&
+                params?.number !== undefined
+            ) {
+                return `Select word #${params.number}`
+            }
+            return key
+        },
+    }),
+}))
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({ showToast: vi.fn() }),
 }))
 
 import { BackupVerificationScreen } from '../screens/BackupVerificationScreen'
@@ -86,11 +100,22 @@ describe('Backup flow - Algo25 end-to-end outcome', () => {
     test('completing verification marks seedKeyId as backed up and navigates to success', async () => {
         render(<BackupVerificationScreen />)
 
-        for (const word of MNEMONIC_WORDS) {
-            fireEvent.click(screen.getByText(word))
-        }
+        const labels = screen.getAllByText(/^Select word #\d+$/)
+        labels.forEach((node, i) => {
+            const text = (node as HTMLElement).textContent ?? ''
+            const match = /#(\d+)/.exec(text)
+            const position = match ? Number(match[1]) - 1 : 0
+            const correctWord = MNEMONIC_WORDS[position]
+            const itemEl = screen.getByTestId(
+                `backup_verification_item_${i}`,
+            ) as HTMLElement
+            const correctBtn = within(itemEl).getByTestId(
+                `backup_verification_item_${i}_option_${correctWord}`,
+            )
+            fireEvent.click(correctBtn)
+        })
 
-        fireEvent.click(screen.getByTestId('backup_verification_finish'))
+        fireEvent.click(screen.getByTestId('backup_verification_next'))
 
         await waitFor(() => {
             expect(useBackupStore.getState().isBackedUp('seed-A')).toBe(true)

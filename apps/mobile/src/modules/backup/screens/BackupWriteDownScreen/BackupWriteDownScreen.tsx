@@ -13,39 +13,33 @@
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { PinEditView } from '@modules/security/components/PinEditView'
-import { useBackupInstructionsScreen } from './useBackupInstructionsScreen'
+import { useBackupWriteDownScreen } from './useBackupWriteDownScreen'
 import { useStyles } from './styles'
 
-export const BackupInstructionsScreen = () => {
+export const BackupWriteDownScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { isPinVisible, openPin, closePin, handlePinVerified } =
-        useBackupInstructionsScreen()
+        useBackupWriteDownScreen()
 
     return (
         <PWView style={styles.container}>
-            <PWText variant='h1'>{t('backup.instructions.title')}</PWText>
-            <PWText style={styles.body}>{t('backup.instructions.body')}</PWText>
-            <PWView style={styles.warningRow}>
-                <PWIcon name='cross' />
-                <PWText>
-                    {t('backup.instructions.warning_no_screenshot')}
-                </PWText>
-            </PWView>
-            <PWView style={styles.warningRow}>
-                <PWIcon name='cross' />
-                <PWText>{t('backup.instructions.warning_no_share')}</PWText>
-            </PWView>
-            <PWView style={styles.warningRow}>
-                <PWIcon name='check' />
-                <PWText>{t('backup.instructions.warning_offline')}</PWText>
-            </PWView>
+            <PWIcon
+                name='edit-pen'
+                variant='link'
+                size='xl'
+            />
+            <PWText variant='h1'>{t('backup.write_down.title')}</PWText>
+            <PWText style={styles.body}>{t('backup.write_down.body')}</PWText>
+            <PWText style={styles.warning}>
+                {t('backup.write_down.warning')}
+            </PWText>
             <PWView style={styles.ctaRow}>
                 <PWButton
                     variant='primary'
-                    title={t('backup.instructions.cta_reveal')}
+                    title={t('backup.write_down.cta')}
                     onPress={openPin}
-                    testID='backup_instructions_reveal'
+                    testID='backup_write_down_begin'
                 />
             </PWView>
             <PinEditView

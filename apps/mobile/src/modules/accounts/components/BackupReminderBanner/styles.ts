@@ -16,22 +16,27 @@ export const useStyles = makeStyles(theme => ({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: theme.colors.layerGrayLighter,
-        padding: theme.spacing.md,
-        borderRadius: theme.borderRadius.md,
-        gap: theme.spacing.md,
+        backgroundColor: theme.colors.negative,
+        paddingVertical: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.md,
+        borderRadius: theme.borderRadius.sm,
+        gap: theme.spacing.sm,
     },
-    icon: {
-        marginRight: theme.spacing.sm,
-    },
-    textBlock: {
+    text: {
         flex: 1,
-        gap: theme.spacing.xxs,
+        color: theme.colors.textWhite,
+        fontWeight: '500',
     },
-    title: {
-        fontWeight: '600',
+    ctaButton: {
+        height: 36,
+        paddingHorizontal: theme.spacing.md,
+        borderRadius: theme.borderRadius.xs,
+        backgroundColor: 'rgba(255, 255, 255, 0.16)',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    body: {
-        color: theme.colors.textGray,
+    ctaText: {
+        color: theme.colors.textWhite,
+        fontWeight: '500',
     },
 }))
