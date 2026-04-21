@@ -1475,7 +1475,8 @@
             "connect": "Connecting to your Ledger device...",
             "confirm": "Please review and approve the transaction on your Ledger device.",
             "timeout": "The transaction was not confirmed in time. Please try again.",
-            "cancel": "Cancel"
+            "cancel": "Cancel",
+            "progress": "Signing transaction {{current}} of {{total}}..."
         },
         "errors": {
             "app_not_open": "The Algorand app is not open on your Ledger device.",
@@ -1506,7 +1507,7 @@
             "issue_unlocked": "Your Ledger must be unlocked and nearby.",
             "issue_bluetooth": "Make sure Bluetooth is enabled on both devices.",
             "issue_permissions": "On Android, Pera needs Bluetooth scan and location permissions.",
-            "issue_unsupported": "Only Ledger Nano X is supported.",
+            "issue_unsupported": "Pera supports Ledger Nano X, Stax, Flex, and Nano Gen5.",
             "done": "Got it"
         },
         "scan_header": {
