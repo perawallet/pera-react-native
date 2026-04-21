@@ -24,7 +24,7 @@ export const BackupWriteDownScreen = () => {
     const styles = useStyles(insets)
     const { theme } = useTheme()
     const { t } = useLanguage()
-    const { isPinVisible, openPin, closePin, handlePinVerified } =
+    const { isPinVisible, onContinue, closePin, handlePinVerified } =
         useBackupWriteDownScreen()
 
     return (
@@ -66,7 +66,7 @@ export const BackupWriteDownScreen = () => {
                 <PWButton
                     variant='primary'
                     title={t('backup.write_down.cta')}
-                    onPress={openPin}
+                    onPress={onContinue}
                     testID='backup_write_down_begin'
                 />
             </PWView>

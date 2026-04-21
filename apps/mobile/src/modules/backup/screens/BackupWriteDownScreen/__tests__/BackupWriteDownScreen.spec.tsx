@@ -10,9 +10,9 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi } from 'vitest'
+import { describe, test, expect, vi, beforeEach } from 'vitest'
 import React from 'react'
-import { render, screen, fireEvent } from '@test-utils/render'
+import { render, screen, fireEvent, waitFor } from '@test-utils/render'
 
 vi.mock('@assets/icons/edit-pen.svg', () => ({
     default: (props: React.SVGProps<SVGSVGElement>) =>
@@ -67,10 +67,21 @@ vi.mock('@modules/security/components/PinEditView', () => ({
             : null,
 }))
 
+const mockCheckPinEnabled = vi.fn()
+vi.mock('@perawallet/wallet-core-security', () => ({
+    usePinCode: () => ({ checkPinEnabled: mockCheckPinEnabled }),
+}))
+
 import { BackupWriteDownScreen } from '../BackupWriteDownScreen'
 
 describe('BackupWriteDownScreen', () => {
+    beforeEach(() => {
+        mockNavigate.mockReset()
+        mockCheckPinEnabled.mockReset()
+    })
+
     test('renders title, body and warning', () => {
+        mockCheckPinEnabled.mockResolvedValue(true)
         render(<BackupWriteDownScreen />)
         expect(
             screen.getByText('Prepare to write down your recovery passphrase'),
@@ -83,18 +94,35 @@ describe('BackupWriteDownScreen', () => {
         expect(screen.getByText(/Do not share this passphrase/)).toBeTruthy()
     })
 
-    test('pressing "I\'m Ready to Begin" opens PIN modal', () => {
+    test('when a PIN is set, pressing CTA opens the PIN modal', async () => {
+        mockCheckPinEnabled.mockResolvedValue(true)
         render(<BackupWriteDownScreen />)
         fireEvent.click(screen.getByTestId('backup_write_down_begin'))
-        expect(screen.getByTestId('pin_modal')).toBeTruthy()
+        await waitFor(() => {
+            expect(screen.getByTestId('pin_modal')).toBeTruthy()
+        })
     })
 
-    test('successful PIN navigates to BackupMnemonic with address', () => {
+    test('when a PIN is set, successful verification navigates to BackupMnemonic', async () => {
+        mockCheckPinEnabled.mockResolvedValue(true)
         render(<BackupWriteDownScreen />)
         fireEvent.click(screen.getByTestId('backup_write_down_begin'))
+        await waitFor(() => screen.getByTestId('pin_success'))
         fireEvent.click(screen.getByTestId('pin_success'))
         expect(mockNavigate).toHaveBeenCalledWith('BackupMnemonic', {
             address: 'ADDR',
         })
+    })
+
+    test('when no PIN is set, pressing CTA skips the modal and navigates directly', async () => {
+        mockCheckPinEnabled.mockResolvedValue(false)
+        render(<BackupWriteDownScreen />)
+        fireEvent.click(screen.getByTestId('backup_write_down_begin'))
+        await waitFor(() => {
+            expect(mockNavigate).toHaveBeenCalledWith('BackupMnemonic', {
+                address: 'ADDR',
+            })
+        })
+        expect(screen.queryByTestId('pin_modal')).toBeNull()
     })
 })
