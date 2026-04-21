@@ -10,8 +10,14 @@
  limitations under the License
  */
 
-import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import {
+    createNativeStackNavigator,
+    NativeStackHeaderProps,
+} from '@react-navigation/native-stack'
 
+import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
+import { NavigationHeader } from '@components/NavigationHeader'
+import { safeAreaLayout } from '@layouts/index'
 import { BackupFlowProvider } from '../context'
 import { BackupInfoScreen } from '../screens/BackupInfoScreen'
 import { BackupWriteDownScreen } from '../screens/BackupWriteDownScreen'
@@ -27,7 +33,20 @@ const Stack = createNativeStackNavigator<BackupStackParamList>()
 export const BackupStackNavigator = () => {
     return (
         <BackupFlowProvider>
-            <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Navigator
+                screenOptions={{
+                    headerShown: true,
+                    header: (props: NativeStackHeaderProps) => (
+                        <NavigationHeader
+                            {...props}
+                            safeArea={false}
+                        />
+                    ),
+                    title: '',
+                    ...SCREEN_ANIMATION_CONFIG,
+                }}
+                layout={safeAreaLayout}
+            >
                 <Stack.Screen
                     name='BackupInfo'
                     component={BackupInfoScreen}
@@ -46,6 +65,7 @@ export const BackupStackNavigator = () => {
                 />
                 <Stack.Screen
                     name='BackupSuccess'
+                    options={{ headerShown: false }}
                     component={BackupSuccessScreen}
                 />
             </Stack.Navigator>
