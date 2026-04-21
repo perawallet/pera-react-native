@@ -156,6 +156,24 @@ describe('AccountAssetItemView', () => {
         expect(screen.queryByTestId('favorite-star-icon')).toBeNull()
     })
 
+    it('renders fallback labels for assets with no name or unit name', () => {
+        const accountBalance = {
+            assetId: 1170327836,
+            asset: {
+                assetId: 1170327836,
+                unitName: '',
+                name: '',
+                decimals: 0,
+            },
+            amount: '1',
+        } as unknown as AssetWithAccountBalance
+
+        render(<AccountAssetItemView accountBalance={accountBalance} />)
+
+        expect(screen.getByText('Asset #1170327836')).toBeTruthy()
+        expect(screen.getByText('1170327836')).toBeTruthy()
+    })
+
     it('renders skeleton placeholder when asset data is not available', async () => {
         const { useAssetsQuery } =
             await import('@perawallet/wallet-core-assets')
