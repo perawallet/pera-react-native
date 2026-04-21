@@ -55,6 +55,7 @@ export const LedgerDeviceItem = ({
             testID={`ledger_device_item_${device.id}`}
         >
             <PWView style={styles.iconContainer}>
+                {/* TODO: Add Ledger-specific icon asset from design team */}
                 <PWIcon
                     name='wallet'
                     size='md'
