@@ -10,21 +10,15 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import type { DisplayableAsset } from '@perawallet/wallet-core-assets'
+import type { DexSwapAsset } from '@perawallet/wallet-core-swaps'
 
-type StyleProps = {
-    horizontal: boolean
-    gap?: number
-}
-
-export const useStyles = makeStyles(
-    (theme, { horizontal, gap }: StyleProps) => ({
-        skeleton: {
-            borderWidth: 0,
-        },
-        container: {
-            flexDirection: horizontal ? 'row' : 'column',
-            gap: gap ?? theme.spacing.sm,
-        },
-    }),
-)
+export const dexSwapAssetToDisplayable = (
+    asset: DexSwapAsset,
+): DisplayableAsset => ({
+    assetId: asset.assetId,
+    name: asset.name,
+    unitName: asset.unitName,
+    decimals: asset.decimals,
+    peraMetadata: asset.logo ? { logo: asset.logo } : undefined,
+})
