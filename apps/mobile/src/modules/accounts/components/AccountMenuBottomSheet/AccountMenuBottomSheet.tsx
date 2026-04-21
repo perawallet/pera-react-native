@@ -21,6 +21,7 @@ export type AccountMenuBottomSheetProps = {
     onClose: () => void
     onDismiss?: () => void
     onOpenSort: () => void
+    onOpenSearch?: () => void
     onSelected: (account: WalletAccount) => void
     onAddAccount: () => void
     headerContent?: ReactNode
@@ -34,6 +35,7 @@ export const AccountMenuBottomSheet = ({
     onClose,
     onDismiss,
     onOpenSort,
+    onOpenSearch,
     onSelected,
     onAddAccount,
     headerContent,
@@ -50,6 +52,14 @@ export const AccountMenuBottomSheet = ({
         />
     )
 
+    const searchIcon = onOpenSearch ? (
+        <PWIcon
+            name='magnifying-glass'
+            onPress={onOpenSearch}
+            testID='account_menu_search_button'
+        />
+    ) : undefined
+
     return (
         <PWBottomSheet
             isVisible={isVisible}
@@ -60,9 +70,10 @@ export const AccountMenuBottomSheet = ({
             autoCreateContainer={false}
         >
             <PWToolbar
-                left={closeIconPosition === 'left' ? closeIcon : undefined}
-                right={closeIconPosition === 'right' ? closeIcon : undefined}
+                left={closeIconPosition === 'left' ? closeIcon : searchIcon}
+                right={closeIconPosition === 'right' ? closeIcon : searchIcon}
                 paddingStyle='dense'
+                style={styles.toolbar}
             />
             <AccountMenu
                 onSelected={onSelected}

@@ -821,6 +821,27 @@
         "developer_menu": "Developer Options",
         "messages": "Messages"
     },
+    "search": {
+        "title": "Search",
+        "screen_title": "Search Pera Wallet",
+        "placeholder": "Search...",
+        "empty_prompt_title": "Start typing to search",
+        "empty_prompt_body": "Search across your accounts, contacts, and assets",
+        "show_more": "Show {{count}} more",
+        "no_results_title": "No Results",
+        "no_results_body": "Try a different search term",
+        "sections": {
+            "accounts": "Accounts",
+            "contacts": "Contacts",
+            "assets": "Assets"
+        },
+        "filter": {
+            "title": "Search Options",
+            "accounts": "Include accounts",
+            "contacts": "Include contacts",
+            "assets": "Include assets"
+        }
+    },
     "security": {
         "pin": {
             "setup_title": "Choose your\n6-digit PIN",

@@ -26,6 +26,7 @@ import { useShouldPlayConfetti } from '@modules/onboarding/hooks'
 
 import { useStyles } from './styles'
 import { useModalState } from '@hooks/useModalState'
+import { useAppNavigation } from '@hooks/useAppNavigation'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import { QRScannerView } from '@components/QRScannerView'
 import { EmptyView } from '@components/EmptyView'
@@ -35,15 +36,11 @@ import { PromptContainer } from '@modules/prompts'
 import { AccountTabNavigator } from '@modules/accounts/components/AccountTabNavigator'
 import { NotificationsIcon } from '@modules/messages/components/NotificationsIcon'
 
-//TODO implement more menu
-//TODO figure out and implement banners/spot banners
-//TODO implement account info screen somewhere (see old app top right corner)
-//TODO implement rekey information && multisig information
-
 export const AccountScreen = () => {
     const styles = useStyles()
     const account = useSelectedAccount()
     const scannerState = useModalState()
+    const navigation = useAppNavigation()
     const { t } = useLanguage()
 
     const { shouldPlayConfetti, setShouldPlayConfetti } =
@@ -71,8 +68,21 @@ export const AccountScreen = () => {
                 icon: 'eye',
                 onPress: () => setPrivacyMode(!privacyMode),
             },
+            {
+                label: t('search.title'),
+                icon: 'magnifying-glass',
+                onPress: () =>
+                    navigation.navigate('Search', { screen: 'SearchHome' }),
+            },
         ],
-        [chartVisible, privacyMode, t, setPreference, setPrivacyMode],
+        [
+            chartVisible,
+            privacyMode,
+            t,
+            setPreference,
+            setPrivacyMode,
+            navigation,
+        ],
     )
 
     if (!account) {

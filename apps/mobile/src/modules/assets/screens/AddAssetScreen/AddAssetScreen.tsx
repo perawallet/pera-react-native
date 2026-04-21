@@ -12,13 +12,15 @@
 
 import React, { useCallback } from 'react'
 import { ActivityIndicator } from 'react-native'
-import { PWFlatList, PWIcon, PWInput, PWText, PWView } from '@components/core'
+import { PWFlatList, PWIcon, PWText, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { AssetSearchItem } from '@modules/assets/components/AssetSearchItem'
 import type { AssetSearchItem as AssetSearchItemType } from '@perawallet/wallet-core-assets'
 import type { AddAssetBottomSheetVariant } from '@modules/assets/components/AddAssetBottomSheet'
 import { useAddAssetScreen } from './useAddAssetScreen'
 import { useStyles } from './styles'
+import { LoadingView } from '@components/LoadingView'
+import { SearchInput } from '@components/SearchInput'
 
 type AddAssetScreenProps = {
     variant?: AddAssetBottomSheetVariant
@@ -78,7 +80,7 @@ export const AddAssetScreen = ({ variant = 'asset' }: AddAssetScreenProps) => {
                 </PWView>
             )}
             <PWView style={styles.searchContainer}>
-                <PWInput
+                <SearchInput
                     value={searchQuery}
                     onChangeText={handleSearchChange}
                     placeholder={
@@ -93,9 +95,11 @@ export const AddAssetScreen = ({ variant = 'asset' }: AddAssetScreenProps) => {
             </PWView>
 
             {isLoading ? (
-                <PWView style={styles.emptyContainer}>
-                    <ActivityIndicator />
-                </PWView>
+                <LoadingView
+                    variant='skeleton'
+                    count={5}
+                    style={styles.loadingContainer}
+                />
             ) : (
                 <PWFlatList
                     data={results}

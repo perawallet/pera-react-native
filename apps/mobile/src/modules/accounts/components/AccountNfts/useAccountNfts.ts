@@ -30,6 +30,8 @@ import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { type CollectibleDisplayItem } from '@modules/assets/types/collectible'
 import { useModalState } from '@hooks/useModalState'
 
+const SEARCH_DEBOUNCE_MS = 75
+
 type UseAccountNftsResult = {
     collectibles: CollectibleDisplayItem[]
     collectibleCount: number
@@ -38,6 +40,7 @@ type UseAccountNftsResult = {
     canOptIn: boolean
     galleryLayout: GalleryLayout
     searchFilter: string
+    debouncedSearchFilter: string
     sortMode: CollectibleSortMode
     showOptedIn: boolean
     isAddNftSheetVisible: boolean
@@ -163,7 +166,10 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         setSearchFilter('')
     }, [account?.address])
 
-    const debouncedSearchFilter = useDebouncedValue(searchFilter)
+    const debouncedSearchFilter = useDebouncedValue(
+        searchFilter,
+        SEARCH_DEBOUNCE_MS,
+    )
 
     const collectibles = useMemo(() => {
         if (!balanceData?.assetBalances.length || !assets) {
@@ -228,6 +234,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
         canOptIn,
         galleryLayout,
         searchFilter,
+        debouncedSearchFilter,
         sortMode,
         showOptedIn,
         isManageSheetVisible: manageSheetModel.isOpen,

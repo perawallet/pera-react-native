@@ -61,6 +61,7 @@ export const AccountNfts = () => {
         canOptIn,
         galleryLayout,
         searchFilter,
+        debouncedSearchFilter,
         sortMode,
         showOptedIn,
         isAddNftSheetVisible,
@@ -115,8 +116,84 @@ export const AccountNfts = () => {
                 <NftEmptyState onOptInPress={openAddNftSheet} />
             ) : (
                 <>
+                    <PWView style={styles.headerContainer}>
+                        <PWView style={styles.titleBar}>
+                            <PWText
+                                variant='body'
+                                style={styles.countText}
+                            >
+                                {t('account_details.nfts.count', {
+                                    count: collectibleCount,
+                                })}
+                            </PWText>
+                            <PWView style={styles.titleBarActions}>
+                                <PWTouchableOpacity
+                                    style={styles.manageButton}
+                                    onPress={openManageSheet}
+                                >
+                                    <PWIcon
+                                        name='sliders'
+                                        size='sm'
+                                        variant='link'
+                                    />
+                                    <PWText style={styles.manageText}>
+                                        {t('account_details.nfts.manage')}
+                                    </PWText>
+                                </PWTouchableOpacity>
+                                {canOptIn && (
+                                    <PWButton
+                                        icon='plus'
+                                        variant='helper'
+                                        paddingStyle='dense'
+                                        onPress={openAddNftSheet}
+                                    />
+                                )}
+                            </PWView>
+                        </PWView>
+                        <PWView style={styles.searchRow}>
+                            <PWView style={styles.searchInputContainer}>
+                                <SearchInput
+                                    value={searchFilter}
+                                    placeholder={t(
+                                        'account_details.nfts.search_placeholder',
+                                    )}
+                                    onChangeText={setSearchFilter}
+                                />
+                            </PWView>
+                            <PWView style={styles.layoutToggle}>
+                                <PWTouchableOpacity
+                                    style={[
+                                        styles.layoutToggleButton,
+                                        styles.layoutToggleButtonLeft,
+                                        isGrid &&
+                                            styles.layoutToggleButtonActive,
+                                    ]}
+                                    onPress={() => setGalleryLayout('grid')}
+                                >
+                                    <PWIcon
+                                        name='grid-view'
+                                        size='sm'
+                                    />
+                                </PWTouchableOpacity>
+                                <PWTouchableOpacity
+                                    style={[
+                                        styles.layoutToggleButton,
+                                        styles.layoutToggleButtonRight,
+                                        !isGrid &&
+                                            styles.layoutToggleButtonActive,
+                                    ]}
+                                    onPress={() => setGalleryLayout('list')}
+                                >
+                                    <PWIcon
+                                        name='list-view'
+                                        size='sm'
+                                    />
+                                </PWTouchableOpacity>
+                            </PWView>
+                        </PWView>
+                    </PWView>
                     <PWFlatList
-                        key={galleryLayout}
+                        key={`${galleryLayout}:${debouncedSearchFilter}`}
                         data={collectibles}
                         renderItem={renderItem}
                         numColumns={isGrid ? GRID_COLUMNS : 1}
@@ -127,89 +204,6 @@ export const AccountNfts = () => {
                                 : COLLECTIBLE_LIST_ITEM_SIZE
                         }
                         contentContainerStyle={styles.contentContainer}
-                        ListHeaderComponent={
-                            <PWView style={styles.headerContainer}>
-                                <PWView style={styles.titleBar}>
-                                    <PWText
-                                        variant='body'
-                                        style={styles.countText}
-                                    >
-                                        {t('account_details.nfts.count', {
-                                            count: collectibleCount,
-                                        })}
-                                    </PWText>
-                                    <PWView style={styles.titleBarActions}>
-                                        <PWTouchableOpacity
-                                            style={styles.manageButton}
-                                            onPress={openManageSheet}
-                                        >
-                                            <PWIcon
-                                                name='sliders'
-                                                size='sm'
-                                                variant='link'
-                                            />
-                                            <PWText style={styles.manageText}>
-                                                {t(
-                                                    'account_details.nfts.manage',
-                                                )}
-                                            </PWText>
-                                        </PWTouchableOpacity>
-                                        {canOptIn && (
-                                            <PWButton
-                                                icon='plus'
-                                                variant='helper'
-                                                paddingStyle='dense'
-                                                onPress={openAddNftSheet}
-                                            />
-                                        )}
-                                    </PWView>
-                                </PWView>
-                                <PWView style={styles.searchRow}>
-                                    <PWView style={styles.searchInputContainer}>
-                                        <SearchInput
-                                            placeholder={t(
-                                                'account_details.nfts.search_placeholder',
-                                            )}
-                                            onChangeText={setSearchFilter}
-                                        />
-                                    </PWView>
-                                    <PWView style={styles.layoutToggle}>
-                                        <PWTouchableOpacity
-                                            style={[
-                                                styles.layoutToggleButton,
-                                                styles.layoutToggleButtonLeft,
-                                                isGrid &&
-                                                    styles.layoutToggleButtonActive,
-                                            ]}
-                                            onPress={() =>
-                                                setGalleryLayout('grid')
-                                            }
-                                        >
-                                            <PWIcon
-                                                name='grid-view'
-                                                size='sm'
-                                            />
-                                        </PWTouchableOpacity>
-                                        <PWTouchableOpacity
-                                            style={[
-                                                styles.layoutToggleButton,
-                                                styles.layoutToggleButtonRight,
-                                                !isGrid &&
-                                                    styles.layoutToggleButtonActive,
-                                            ]}
-                                            onPress={() =>
-                                                setGalleryLayout('list')
-                                            }
-                                        >
-                                            <PWIcon
-                                                name='list-view'
-                                                size='sm'
-                                            />
-                                        </PWTouchableOpacity>
-                                    </PWView>
-                                </PWView>
-                            </PWView>
-                        }
                         ListEmptyComponent={
                             <EmptyView
                                 title={t('account_details.nfts.nomatch_title')}
