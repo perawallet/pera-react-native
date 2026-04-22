@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
     AccountTypes,
     type Algo25Account,
@@ -21,12 +21,24 @@ import { useKMS } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 
 export type UseMnemonicForAddressResult = {
-    mnemonic: string | null
+    /**
+     * UTF-8 encoded mnemonic. Caller must invoke `clearMnemonic()` as soon as
+     * the bytes are no longer needed — the underlying array is zeroed in place
+     * to purge the phrase from memory eagerly.
+     */
+    mnemonicBytes: Uint8Array | null
     error: Error | null
     isLoading: boolean
+    clearMnemonic: () => void
 }
 
 const DOMAIN = 'backup-flow'
+
+// Zero then drop — strings in JS are immutable so the only bytes we can
+// actually wipe are the Uint8Array we got from the session.
+const zero = (bytes: Uint8Array | null): void => {
+    if (bytes) bytes.fill(0)
+}
 
 // The effect below intentionally depends only on `address` and `enabled` — KMS
 // + account are read through refs so new function/object identities from their
@@ -44,22 +56,37 @@ export const useMnemonicForAddress = (
     const accountRef = useRef(account)
     accountRef.current = account
 
-    const [state, setState] = useState<UseMnemonicForAddressResult>({
-        mnemonic: null,
+    const [state, setState] = useState<{
+        mnemonicBytes: Uint8Array | null
+        error: Error | null
+        isLoading: boolean
+    }>({
+        mnemonicBytes: null,
         error: null,
         isLoading: true,
     })
 
+    const clearMnemonic = useCallback(() => {
+        setState(prev => {
+            zero(prev.mnemonicBytes)
+            return { mnemonicBytes: null, error: null, isLoading: false }
+        })
+    }, [])
+
     useEffect(() => {
         if (!enabled) {
-            setState({ mnemonic: null, error: null, isLoading: true })
+            setState({
+                mnemonicBytes: null,
+                error: null,
+                isLoading: true,
+            })
             return
         }
 
         if (!address) {
             logger.error('BackupMnemonic: missing address in route params')
             setState({
-                mnemonic: null,
+                mnemonicBytes: null,
                 error: new Error('Account not found'),
                 isLoading: false,
             })
@@ -70,7 +97,7 @@ export const useMnemonicForAddress = (
         if (!currentAccount || currentAccount.address !== address) {
             logger.error('BackupMnemonic: account not found for address')
             setState({
-                mnemonic: null,
+                mnemonicBytes: null,
                 error: new Error('Account not found'),
                 isLoading: false,
             })
@@ -78,7 +105,8 @@ export const useMnemonicForAddress = (
         }
 
         let cancelled = false
-        setState({ mnemonic: null, error: null, isLoading: true })
+        let fetchedBytes: Uint8Array | null = null
+        setState({ mnemonicBytes: null, error: null, isLoading: true })
 
         const run = async (): Promise<void> => {
             const { getKeyOrThrow, withHDSession, withAlgo25Session } =
@@ -87,48 +115,48 @@ export const useMnemonicForAddress = (
                 if (currentAccount.type === AccountTypes.hdWallet) {
                     const hdAccount = currentAccount as HDWalletAccount
                     const key = getKeyOrThrow(hdAccount.keyPairId)
-                    const mnemonic = await withHDSession(
+                    fetchedBytes = await withHDSession(
                         key,
                         DOMAIN,
                         async session => session.getMnemonic(),
                         hdAccount.entropyKeyId,
                     )
-                    if (!cancelled) {
-                        setState({
-                            mnemonic,
-                            error: null,
-                            isLoading: false,
-                        })
-                    }
                 } else if (currentAccount.type === AccountTypes.algo25) {
                     const algoAccount = currentAccount as Algo25Account
                     const key = getKeyOrThrow(algoAccount.keyPairId)
-                    const mnemonic = await withAlgo25Session(
+                    fetchedBytes = await withAlgo25Session(
                         key,
                         DOMAIN,
                         async session => session.getMnemonic(),
                         algoAccount.seedKeyId,
                     )
-                    if (!cancelled) {
-                        setState({
-                            mnemonic,
-                            error: null,
-                            isLoading: false,
-                        })
-                    }
-                } else if (!cancelled) {
+                } else {
                     logger.error('BackupMnemonic: unsupported account type', {
                         accountType: currentAccount.type,
                     })
-                    setState({
-                        mnemonic: null,
-                        error: new Error(
-                            'Account type does not support backup',
-                        ),
-                        isLoading: false,
-                    })
+                    if (!cancelled) {
+                        setState({
+                            mnemonicBytes: null,
+                            error: new Error(
+                                'Account type does not support backup',
+                            ),
+                            isLoading: false,
+                        })
+                    }
+                    return
                 }
+
+                if (cancelled) {
+                    zero(fetchedBytes)
+                    return
+                }
+                setState({
+                    mnemonicBytes: fetchedBytes,
+                    error: null,
+                    isLoading: false,
+                })
             } catch (err) {
+                zero(fetchedBytes)
                 logger.error('BackupMnemonic: failed to retrieve mnemonic', {
                     accountType: currentAccount.type,
                     error: err instanceof Error ? err.message : String(err),
@@ -136,7 +164,7 @@ export const useMnemonicForAddress = (
                 })
                 if (!cancelled) {
                     setState({
-                        mnemonic: null,
+                        mnemonicBytes: null,
                         error: err as Error,
                         isLoading: false,
                     })
@@ -147,9 +175,25 @@ export const useMnemonicForAddress = (
         void run()
         return () => {
             cancelled = true
+            // Zero anything that is still only held by this effect closure —
+            // setState above may have already published it, in which case the
+            // clearMnemonic/unmount paths take ownership instead.
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [address, enabled])
 
-    return state
+    // Final safety net: when the hook's host unmounts, purge any bytes we
+    // still hold in state so we don't leave a mnemonic lingering in a detached
+    // fiber.
+    useEffect(
+        () => () => {
+            setState(prev => {
+                zero(prev.mnemonicBytes)
+                return { mnemonicBytes: null, error: null, isLoading: false }
+            })
+        },
+        [],
+    )
+
+    return { ...state, clearMnemonic }
 }

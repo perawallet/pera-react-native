@@ -23,11 +23,17 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useMarkBackupComplete } from '@perawallet/wallet-core-backup'
+import { MNEMONIC_WORDLIST } from '@perawallet/wallet-core-kms'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { useBackupFlowWords } from '../../context'
-import { useBackupQuiz, type BackupQuizItem } from '../../hooks'
+import {
+    useBackupQuiz,
+    useRandomMnemonicForAddress,
+    type BackupQuizItem,
+} from '../../hooks'
 import type { BackupStackParamList } from '../../routes/types'
+
+const VERIFICATION_WORD_COUNT = 3
 
 export type UseBackupVerificationScreenResult = {
     items: BackupQuizItem[]
@@ -35,6 +41,15 @@ export type UseBackupVerificationScreenResult = {
     onSubmit: () => void
     isFilled: boolean
     hasAccount: boolean
+    isLoading: boolean
+    error: Error | null
+}
+
+// Exposed for tests to bypass the KMS fetch.
+export type BackupQuizPreloadedPicks = {
+    picks: { index: number; word: string }[]
+    isLoading: boolean
+    error: Error | null
 }
 
 export const useBackupVerificationScreen =
@@ -58,8 +73,11 @@ export const useBackupVerificationScreen =
             return accounts.find(a => a.address === address) ?? null
         }, [address, accounts])
 
-        const { getWords } = useBackupFlowWords()
-        const words = useMemo(() => getWords() ?? [], [getWords])
+        const { picks, isLoading, error } = useRandomMnemonicForAddress(
+            address,
+            account,
+            VERIFICATION_WORD_COUNT,
+        )
 
         const markBackupComplete = useMarkBackupComplete()
         const { t } = useLanguage()
@@ -81,8 +99,11 @@ export const useBackupVerificationScreen =
             })
         }, [showToast, t])
 
+        const correctPairs = useMemo(() => picks ?? [], [picks])
+
         const { items, onSelect, onSubmit, isFilled } = useBackupQuiz(
-            words,
+            correctPairs,
+            MNEMONIC_WORDLIST,
             onSuccess,
             onWrong,
         )
@@ -93,5 +114,7 @@ export const useBackupVerificationScreen =
             onSubmit,
             isFilled,
             hasAccount: account !== null,
+            isLoading,
+            error,
         }
     }

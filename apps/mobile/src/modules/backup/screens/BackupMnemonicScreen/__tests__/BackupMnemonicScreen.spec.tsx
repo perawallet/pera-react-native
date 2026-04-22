@@ -16,7 +16,7 @@ import { render, screen, fireEvent, waitFor } from '@test-utils/render'
 
 const mockNavigate = vi.fn()
 const mockGoBack = vi.fn()
-const mockSetWords = vi.fn()
+const mockClearMnemonic = vi.fn()
 const mockCheckPinEnabled = vi.fn()
 const mockAccount = {
     type: 'algo25' as const,
@@ -36,14 +36,6 @@ vi.mock('@react-navigation/native', async importOriginal => {
         useRoute: () => ({ params: { address: 'ADDR' } }),
     }
 })
-
-vi.mock('../../../context', () => ({
-    useBackupFlowWords: () => ({
-        getWords: vi.fn(),
-        setWords: mockSetWords,
-        clearWords: vi.fn(),
-    }),
-}))
 
 vi.mock('@perawallet/wallet-core-security', () => ({
     usePinCode: () => ({ checkPinEnabled: mockCheckPinEnabled }),
@@ -72,9 +64,12 @@ vi.mock('../../../hooks', () => ({
         _account: unknown,
         enabled: boolean,
     ) => ({
-        mnemonic: enabled ? 'alpha bravo charlie delta echo foxtrot' : null,
+        mnemonicBytes: enabled
+            ? new TextEncoder().encode('alpha bravo charlie delta echo foxtrot')
+            : null,
         error: null,
         isLoading: !enabled,
+        clearMnemonic: mockClearMnemonic,
     }),
 }))
 
@@ -114,7 +109,7 @@ describe('BackupMnemonicScreen', () => {
     beforeEach(() => {
         mockNavigate.mockReset()
         mockGoBack.mockReset()
-        mockSetWords.mockReset()
+        mockClearMnemonic.mockReset()
         mockCheckPinEnabled.mockReset()
     })
 
@@ -155,19 +150,12 @@ describe('BackupMnemonicScreen', () => {
         expect(screen.queryByTestId('pin_modal')).toBeNull()
     })
 
-    test('pressing continue stores words and navigates to verification', async () => {
+    test('pressing continue clears the mnemonic and navigates to verification', async () => {
         mockCheckPinEnabled.mockResolvedValue(false)
         render(<BackupMnemonicScreen />)
         await waitFor(() => screen.getByText('alpha'))
         fireEvent.click(screen.getByTestId('backup_mnemonic_continue'))
-        expect(mockSetWords).toHaveBeenCalledWith([
-            'alpha',
-            'bravo',
-            'charlie',
-            'delta',
-            'echo',
-            'foxtrot',
-        ])
+        expect(mockClearMnemonic).toHaveBeenCalledTimes(1)
         expect(mockNavigate).toHaveBeenCalledWith('BackupVerification', {
             address: 'ADDR',
         })

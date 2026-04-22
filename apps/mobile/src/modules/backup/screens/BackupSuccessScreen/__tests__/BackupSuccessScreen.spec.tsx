@@ -41,16 +41,6 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (k: string) => k }),
 }))
 
-const mockClearWords = vi.fn()
-
-vi.mock('../../../context', () => ({
-    useBackupFlowWords: () => ({
-        getWords: () => null,
-        setWords: vi.fn(),
-        clearWords: mockClearWords,
-    }),
-}))
-
 import { BackupSuccessScreen } from '../BackupSuccessScreen'
 
 describe('BackupSuccessScreen', () => {
@@ -60,12 +50,5 @@ describe('BackupSuccessScreen', () => {
         expect(
             mockPopToTop.mock.calls.length + mockParentGoBack.mock.calls.length,
         ).toBeGreaterThan(0)
-    })
-
-    test('pressing Done clears the in-flight mnemonic words from context', () => {
-        mockClearWords.mockReset()
-        render(<BackupSuccessScreen />)
-        fireEvent.click(screen.getByTestId('backup_success_done'))
-        expect(mockClearWords).toHaveBeenCalledTimes(1)
     })
 })

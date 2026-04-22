@@ -14,67 +14,45 @@ import { useCallback } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useTheme } from '@rneui/themed'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ShieldCheckImage from '@assets/icons/shield-check.svg'
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWInfoView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { ILLUSTRATION_SIZE } from '../../constants'
-import { useBackupFlowWords } from '../../context'
 import type { BackupStackParamList } from '../../routes/types'
-import { useStyles } from './styles'
 
 export const BackupSuccessScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
     const { theme } = useTheme()
     const { t } = useLanguage()
     const navigation =
         useNavigation<
             NativeStackNavigationProp<BackupStackParamList, 'BackupSuccess'>
         >()
-    const { clearWords } = useBackupFlowWords()
 
     const onDone = useCallback(() => {
-        clearWords()
         const parent = navigation.getParent()
         if (parent) {
             parent.goBack()
             return
         }
         navigation.popToTop()
-    }, [navigation, clearWords])
+    }, [navigation])
 
     return (
-        <PWView style={styles.root}>
-            <PWView style={styles.content}>
+        <PWInfoView
+            illustration={
                 <ShieldCheckImage
-                    style={styles.image}
                     width={ILLUSTRATION_SIZE}
                     height={ILLUSTRATION_SIZE}
                     color={theme.colors.linkPrimary}
                 />
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('backup.success.title')}
-                </PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t('backup.success.body')}
-                </PWText>
-            </PWView>
-
-            <PWView style={styles.footer}>
-                <PWButton
-                    title={t('backup.success.cta_done')}
-                    variant='primary'
-                    onPress={onDone}
-                    testID='backup_success_done'
-                />
-            </PWView>
-        </PWView>
+            }
+            title={t('backup.success.title')}
+            body={t('backup.success.body')}
+            primaryAction={{
+                label: t('backup.success.cta_done'),
+                onPress: onDone,
+                testID: 'backup_success_done',
+            }}
+        />
     )
 }

@@ -13,3 +13,4 @@
 export * from './useBackupFlowLauncher'
 export * from './useBackupQuiz'
 export * from './useMnemonicForAddress'
+export * from './useRandomMnemonicForAddress'

@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-// Umbrella package for all wallet backup concerns. Today it ships the
-// mnemonic-prompt subdomain only ("has the user written down their phrase?");
-// cloud backup will be added alongside it under its own subdomain.
-export * from './mnemonic'
+// The mnemonic subdomain covers the "has the user written down their recovery
+// phrase?" concern. A future cloud-backup subdomain will live alongside this
+// one under `backup/cloud/*` and share the umbrella package.
+export * from './hooks'
+export * from './models'
+export * from './store'
+export * from './utils'

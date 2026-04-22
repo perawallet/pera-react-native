@@ -328,7 +328,7 @@ describe('useAlgo25', () => {
 
             const { result } = renderHook(() => useAlgo25())
 
-            let mnemonic: string | undefined
+            let mnemonic: Uint8Array | undefined
             await act(async () => {
                 mnemonic = await result.current.withAlgo25Session(
                     mockKey,
@@ -340,7 +340,10 @@ describe('useAlgo25', () => {
                 )
             })
 
-            expect(mnemonic).toBe('recovered mnemonic words')
+            expect(ArrayBuffer.isView(mnemonic)).toBe(true)
+            expect(new TextDecoder().decode(mnemonic)).toBe(
+                'recovered mnemonic words',
+            )
             expect(mockKeyStoreExport).toHaveBeenCalledWith('ks-seed-1')
             expect(mockMnemonicFromSeed).toHaveBeenCalled()
         })
@@ -359,6 +362,43 @@ describe('useAlgo25', () => {
                     )
                 }),
             ).rejects.toThrow(KeyManagementError)
+        })
+
+        test('getRandomMnemonicWords returns the requested number of distinct {index, word} pairs', async () => {
+            const fakeSeed = new Uint8Array(32).fill(1)
+            mockKeyStoreExport
+                .mockResolvedValueOnce({
+                    privateKey: new Uint8Array(64).fill(1),
+                    publicKey: new Uint8Array(32).fill(2),
+                    metadata: {},
+                })
+                .mockResolvedValueOnce({
+                    privateKey: fakeSeed,
+                })
+            mockMnemonicFromSeed.mockReturnValue(
+                'one two three four five six seven eight nine ten eleven twelve',
+            )
+
+            const { result } = renderHook(() => useAlgo25())
+
+            let picks: { index: number; word: string }[] | undefined
+            await act(async () => {
+                picks = await result.current.withAlgo25Session(
+                    mockKey,
+                    'test-domain',
+                    async session => session.getRandomMnemonicWords(3),
+                    'ks-seed-1',
+                )
+            })
+
+            expect(picks).toHaveLength(3)
+            const uniqueIndexes = new Set(picks!.map(p => p.index))
+            expect(uniqueIndexes.size).toBe(3)
+            picks!.forEach(({ index, word }) => {
+                expect(index).toBeGreaterThanOrEqual(0)
+                expect(index).toBeLessThan(12)
+                expect(typeof word).toBe('string')
+            })
         })
 
         test('calls checkAccess with key and domain', async () => {

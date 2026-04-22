@@ -11,8 +11,8 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
+import type { MnemonicWordAtPosition } from '@perawallet/wallet-core-kms'
 
-const QUESTION_COUNT = 3
 const OPTIONS_PER_QUESTION = 3
 
 // Rejection-sample a uniform int in [0, max) from crypto.getRandomValues().
@@ -39,12 +39,6 @@ const shuffle = <T>(arr: T[]): T[] => {
     return copy
 }
 
-const pickRandomDistinctIndexes = (count: number, max: number): number[] => {
-    const effective = Math.min(count, max)
-    const pool = Array.from({ length: max }, (_, i) => i)
-    return shuffle(pool).slice(0, effective)
-}
-
 export type BackupQuizItem = {
     position: number
     correctWord: string
@@ -60,24 +54,19 @@ export type UseBackupQuizResult = {
     hasError: boolean
 }
 
-const buildQuestions = (correctWords: string[]): BackupQuizItem[] => {
-    if (correctWords.length < QUESTION_COUNT) return []
-    const positions = pickRandomDistinctIndexes(
-        QUESTION_COUNT,
-        correctWords.length,
-    ).sort((a, b) => a - b)
+const buildQuestions = (
+    correctPairs: MnemonicWordAtPosition[],
+    distractorPool: string[],
+): BackupQuizItem[] => {
+    const correctSet = new Set(correctPairs.map(p => p.word))
+    const pool = distractorPool.filter(w => !correctSet.has(w))
 
-    return positions.map(position => {
-        const correctWord = correctWords[position]
-        const distractorPool = correctWords.filter((_, i) => i !== position)
-        const distractors = shuffle(distractorPool).slice(
-            0,
-            OPTIONS_PER_QUESTION - 1,
-        )
-        const options = shuffle([correctWord, ...distractors])
+    return correctPairs.map(({ index, word }) => {
+        const distractors = shuffle(pool).slice(0, OPTIONS_PER_QUESTION - 1)
+        const options = shuffle([word, ...distractors])
         return {
-            position,
-            correctWord,
+            position: index,
+            correctWord: word,
             options,
             selectedWord: null,
         }
@@ -85,12 +74,13 @@ const buildQuestions = (correctWords: string[]): BackupQuizItem[] => {
 }
 
 export const useBackupQuiz = (
-    correctWords: string[],
+    correctPairs: MnemonicWordAtPosition[],
+    distractorPool: string[],
     onSuccess: () => void,
     onWrong?: () => void,
 ): UseBackupQuizResult => {
     const [items, setItems] = useState<BackupQuizItem[]>(() =>
-        buildQuestions(correctWords),
+        buildQuestions(correctPairs, distractorPool),
     )
     const [hasError, setHasError] = useState(false)
 
@@ -119,9 +109,9 @@ export const useBackupQuiz = (
             return
         }
         setHasError(true)
-        setItems(buildQuestions(correctWords))
+        setItems(buildQuestions(correctPairs, distractorPool))
         if (onWrong) onWrong()
-    }, [isFilled, items, correctWords, onSuccess, onWrong])
+    }, [isFilled, items, correctPairs, distractorPool, onSuccess, onWrong])
 
     return { items, onSelect, onSubmit, isFilled, hasError }
 }

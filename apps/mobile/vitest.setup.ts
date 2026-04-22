@@ -370,6 +370,47 @@ vi.mock('@components/core', () => {
             }),
         PWImage: (props: any) =>
             React.createElement('img', { ...props, 'data-testid': 'PWImage' }),
+        PWInfoView: ({
+            illustration,
+            title,
+            body,
+            footerExtras,
+            primaryAction,
+            secondaryAction,
+            testID = 'pw-info-view',
+        }: any) =>
+            React.createElement(
+                'div',
+                { 'data-testid': testID },
+                illustration,
+                title && React.createElement('h1', { key: 'title' }, title),
+                body && React.createElement('p', { key: 'body' }, body),
+                footerExtras,
+                primaryAction &&
+                    React.createElement(
+                        'button',
+                        {
+                            key: 'primary',
+                            onClick: primaryAction.onPress,
+                            disabled: primaryAction.isDisabled,
+                            'data-testid':
+                                primaryAction.testID ?? `${testID}-primary`,
+                        },
+                        primaryAction.label,
+                    ),
+                secondaryAction &&
+                    React.createElement(
+                        'button',
+                        {
+                            key: 'secondary',
+                            onClick: secondaryAction.onPress,
+                            disabled: secondaryAction.isDisabled,
+                            'data-testid':
+                                secondaryAction.testID ?? `${testID}-secondary`,
+                        },
+                        secondaryAction.label,
+                    ),
+            ),
         PWInput: ({ onChangeText, testID, ...props }: any) =>
             React.createElement('input', {
                 ...props,

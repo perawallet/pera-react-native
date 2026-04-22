@@ -11,52 +11,33 @@
  */
 
 import { useTheme } from '@rneui/themed'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ShieldCheckImage from '@assets/icons/shield-check.svg'
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWInfoView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { ILLUSTRATION_SIZE } from '../../constants'
 import { useBackupInfoScreen } from './useBackupInfoScreen'
-import { useStyles } from './styles'
 
 export const BackupInfoScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
     const { theme } = useTheme()
     const { t } = useLanguage()
     const { onContinue } = useBackupInfoScreen()
 
     return (
-        <PWView style={styles.root}>
-            <PWView style={styles.content}>
+        <PWInfoView
+            illustration={
                 <ShieldCheckImage
-                    style={styles.image}
                     width={ILLUSTRATION_SIZE}
                     height={ILLUSTRATION_SIZE}
                     color={theme.colors.linkPrimary}
                 />
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('backup.info.title')}
-                </PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t('backup.info.body')}
-                </PWText>
-            </PWView>
-
-            <PWView style={styles.footer}>
-                <PWButton
-                    variant='primary'
-                    title={t('backup.info.cta')}
-                    onPress={onContinue}
-                    testID='backup_info_continue'
-                />
-            </PWView>
-        </PWView>
+            }
+            title={t('backup.info.title')}
+            body={t('backup.info.body')}
+            primaryAction={{
+                label: t('backup.info.cta'),
+                onPress: onContinue,
+                testID: 'backup_info_continue',
+            }}
+        />
     )
 }

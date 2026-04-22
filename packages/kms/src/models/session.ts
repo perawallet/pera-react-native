@@ -16,11 +16,29 @@ export type HDDerivationParams = {
     derivationType: number
 }
 
+export type MnemonicWordAtPosition = {
+    index: number
+    word: string
+}
+
 export type KMSAlgo25Session = {
     signTransaction: (encodedTx: Uint8Array) => Promise<Uint8Array>
     signData: (data: Uint8Array) => Promise<Uint8Array>
     getPublicKey: () => Uint8Array
-    getMnemonic: () => Promise<string>
+    /**
+     * Returns the mnemonic as UTF-8 bytes. Callers should zero the array with
+     * `.fill(0)` as soon as they're done with it. JS strings are immutable so
+     * we expose bytes instead of a `string`, letting consumers purge the
+     * mnemonic from memory eagerly instead of waiting on GC.
+     */
+    getMnemonic: () => Promise<Uint8Array>
+    /**
+     * Returns `count` distinct {index, word} pairs sampled uniformly from the
+     * mnemonic. The full mnemonic never crosses the session boundary, so
+     * consumers that only need a handful of words (e.g. a verification quiz)
+     * don't need to receive — or store — the rest.
+     */
+    getRandomMnemonicWords: (count: number) => Promise<MnemonicWordAtPosition[]>
 }
 
 export type KMSHDWalletSession = {
@@ -33,5 +51,6 @@ export type KMSHDWalletSession = {
         params: HDDerivationParams,
         data: Uint8Array,
     ) => Promise<Uint8Array>
-    getMnemonic: () => Promise<string>
+    getMnemonic: () => Promise<Uint8Array>
+    getRandomMnemonicWords: (count: number) => Promise<MnemonicWordAtPosition[]>
 }

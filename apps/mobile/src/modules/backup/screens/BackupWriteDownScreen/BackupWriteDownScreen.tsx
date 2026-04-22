@@ -11,45 +11,31 @@
  */
 
 import { useTheme } from '@rneui/themed'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import EditPenImage from '@assets/icons/edit-pen.svg'
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import { PWIcon, PWInfoView, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { ILLUSTRATION_SIZE } from '../../constants'
 import { useBackupWriteDownScreen } from './useBackupWriteDownScreen'
 import { useStyles } from './styles'
 
 export const BackupWriteDownScreen = () => {
-    const insets = useSafeAreaInsets()
-    const styles = useStyles(insets)
+    const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
     const { onContinue } = useBackupWriteDownScreen()
 
     return (
-        <PWView style={styles.root}>
-            <PWView style={styles.content}>
+        <PWInfoView
+            illustration={
                 <EditPenImage
-                    style={styles.image}
                     width={ILLUSTRATION_SIZE}
                     height={ILLUSTRATION_SIZE}
                     color={theme.colors.linkPrimary}
                 />
-                <PWText
-                    variant='h1'
-                    style={styles.title}
-                >
-                    {t('backup.write_down.title')}
-                </PWText>
-                <PWText
-                    variant='h4'
-                    style={styles.description}
-                >
-                    {t('backup.write_down.body')}
-                </PWText>
-            </PWView>
-
-            <PWView style={styles.footer}>
+            }
+            title={t('backup.write_down.title')}
+            body={t('backup.write_down.body')}
+            footerExtras={
                 <PWView style={styles.warningRow}>
                     <PWIcon
                         name='info'
@@ -62,13 +48,12 @@ export const BackupWriteDownScreen = () => {
                         {t('backup.write_down.warning')}
                     </PWText>
                 </PWView>
-                <PWButton
-                    variant='primary'
-                    title={t('backup.write_down.cta')}
-                    onPress={onContinue}
-                    testID='backup_write_down_begin'
-                />
-            </PWView>
-        </PWView>
+            }
+            primaryAction={{
+                label: t('backup.write_down.cta'),
+                onPress: onContinue,
+                testID: 'backup_write_down_begin',
+            }}
+        />
     )
 }

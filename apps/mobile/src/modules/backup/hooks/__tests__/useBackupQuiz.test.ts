@@ -12,12 +12,16 @@
 
 import { describe, test, expect, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
+import type { MnemonicWordAtPosition } from '@perawallet/wallet-core-kms'
 import { useBackupQuiz } from '../useBackupQuiz'
 
-const WORDS = [
-    'alpha',
-    'bravo',
-    'charlie',
+const CORRECT_PAIRS: MnemonicWordAtPosition[] = [
+    { index: 3, word: 'alpha' },
+    { index: 7, word: 'bravo' },
+    { index: 11, word: 'charlie' },
+]
+
+const DISTRACTOR_POOL = [
     'delta',
     'echo',
     'foxtrot',
@@ -27,26 +31,29 @@ const WORDS = [
     'juliet',
     'kilo',
     'lima',
+    'mike',
+    'november',
 ]
 
 describe('useBackupQuiz', () => {
-    test('generates 3 distinct questions with 3 options each', () => {
+    test('generates one question per correct pair with 3 options each', () => {
         const { result } = renderHook(() =>
-            useBackupQuiz(WORDS, vi.fn(), vi.fn()),
+            useBackupQuiz(CORRECT_PAIRS, DISTRACTOR_POOL, vi.fn(), vi.fn()),
         )
-        expect(result.current.items).toHaveLength(3)
+        expect(result.current.items).toHaveLength(CORRECT_PAIRS.length)
         const positions = result.current.items.map(i => i.position)
-        expect(new Set(positions).size).toBe(3)
-        result.current.items.forEach(item => {
+        expect(positions).toEqual(CORRECT_PAIRS.map(p => p.index))
+        result.current.items.forEach((item, i) => {
             expect(item.options).toHaveLength(3)
             expect(item.options).toContain(item.correctWord)
+            expect(item.correctWord).toBe(CORRECT_PAIRS[i].word)
             expect(item.selectedWord).toBeNull()
         })
     })
 
     test('isFilled flips to true once every item has a selection', () => {
         const { result } = renderHook(() =>
-            useBackupQuiz(WORDS, vi.fn(), vi.fn()),
+            useBackupQuiz(CORRECT_PAIRS, DISTRACTOR_POOL, vi.fn(), vi.fn()),
         )
         expect(result.current.isFilled).toBe(false)
 
@@ -62,7 +69,7 @@ describe('useBackupQuiz', () => {
         const onSuccess = vi.fn()
         const onWrong = vi.fn()
         const { result } = renderHook(() =>
-            useBackupQuiz(WORDS, onSuccess, onWrong),
+            useBackupQuiz(CORRECT_PAIRS, DISTRACTOR_POOL, onSuccess, onWrong),
         )
         act(() => {
             result.current.items.forEach((item, i) =>
@@ -79,7 +86,7 @@ describe('useBackupQuiz', () => {
         const onSuccess = vi.fn()
         const onWrong = vi.fn()
         const { result } = renderHook(() =>
-            useBackupQuiz(WORDS, onSuccess, onWrong),
+            useBackupQuiz(CORRECT_PAIRS, DISTRACTOR_POOL, onSuccess, onWrong),
         )
         const originalItems = result.current.items
         act(() => {
@@ -95,17 +102,15 @@ describe('useBackupQuiz', () => {
         expect(onSuccess).not.toHaveBeenCalled()
         expect(onWrong).toHaveBeenCalledOnce()
         expect(result.current.hasError).toBe(true)
-        // Regeneration: every item's selectedWord should be reset to null.
         result.current.items.forEach(item => {
             expect(item.selectedWord).toBeNull()
         })
-        // Items are re-shuffled; identity check is sufficient.
         expect(result.current.items).not.toBe(originalItems)
     })
 
-    test('returns empty items when mnemonic is shorter than question count', () => {
+    test('returns empty items when no correct pairs are provided', () => {
         const { result } = renderHook(() =>
-            useBackupQuiz(['only', 'two'], vi.fn(), vi.fn()),
+            useBackupQuiz([], DISTRACTOR_POOL, vi.fn(), vi.fn()),
         )
         expect(result.current.items).toHaveLength(0)
         expect(result.current.isFilled).toBe(false)

@@ -19,7 +19,6 @@ import {
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useAccountsStore } from '@perawallet/wallet-core-accounts'
 import { usePinCode } from '@perawallet/wallet-core-security'
-import { useBackupFlowWords } from '../../context'
 import { useMnemonicForAddress } from '../../hooks'
 import type { BackupStackParamList } from '../../routes/types'
 
@@ -67,17 +66,17 @@ export const useBackupMnemonicScreen = (): UseBackupMnemonicScreenResult => {
         }
     }, [checkPinEnabled])
 
-    const { mnemonic, error, isLoading } = useMnemonicForAddress(
-        address,
-        account,
-        isPinGateResolved,
-    )
-    const { setWords } = useBackupFlowWords()
+    const { mnemonicBytes, error, isLoading, clearMnemonic } =
+        useMnemonicForAddress(address, account, isPinGateResolved)
 
-    const words = useMemo(
-        () => (mnemonic ? mnemonic.split(' ') : []),
-        [mnemonic],
-    )
+    // Decode-and-split happens per render, but JS strings are immutable so we
+    // can't wipe them — the real defense is clearing `mnemonicBytes` as soon
+    // as the user leaves this screen. The derived `words` array is dropped
+    // with the component.
+    const words = useMemo(() => {
+        if (!mnemonicBytes) return []
+        return new TextDecoder().decode(mnemonicBytes).split(' ')
+    }, [mnemonicBytes])
 
     const handlePinVerified = useCallback(() => {
         setIsPinVisible(false)
@@ -90,11 +89,13 @@ export const useBackupMnemonicScreen = (): UseBackupMnemonicScreenResult => {
     }, [navigation])
 
     const onContinue = useCallback(() => {
-        setWords(words)
-        if (address) {
-            navigation.navigate('BackupVerification', { address })
-        }
-    }, [words, setWords, navigation, address])
+        if (!address) return
+        // Zero the mnemonic bytes before navigating forward — the verification
+        // screen will independently pull only the N words it needs from the
+        // KMS, so we don't carry the full phrase through flow state.
+        clearMnemonic()
+        navigation.navigate('BackupVerification', { address })
+    }, [address, clearMnemonic, navigation])
 
     return {
         words,

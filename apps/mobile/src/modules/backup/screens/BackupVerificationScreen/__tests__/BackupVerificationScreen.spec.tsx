@@ -30,19 +30,10 @@ const account: WalletAccount = {
     seedKeyId: 'seed-1',
 }
 
-const WORDS = [
-    'alpha',
-    'bravo',
-    'charlie',
-    'delta',
-    'echo',
-    'foxtrot',
-    'golf',
-    'hotel',
-    'india',
-    'juliet',
-    'kilo',
-    'lima',
+const CORRECT_PAIRS = [
+    { index: 3, word: 'alpha' },
+    { index: 7, word: 'bravo' },
+    { index: 11, word: 'charlie' },
 ]
 
 vi.mock('@react-navigation/native', async importOriginal => {
@@ -59,6 +50,21 @@ vi.mock('@perawallet/wallet-core-backup', () => ({
     useMarkBackupComplete: () => mockMarkBackup,
 }))
 
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    MNEMONIC_WORDLIST: [
+        'delta',
+        'echo',
+        'foxtrot',
+        'golf',
+        'hotel',
+        'india',
+        'juliet',
+        'kilo',
+        'lima',
+        'mike',
+    ],
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const original =
         await importOriginal<
@@ -72,13 +78,21 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     }
 })
 
-vi.mock('../../../context', () => ({
-    useBackupFlowWords: () => ({
-        getWords: () => WORDS,
-        setWords: vi.fn(),
-        clearWords: vi.fn(),
-    }),
-}))
+vi.mock('../../../hooks', async importOriginal => {
+    const original = await importOriginal<typeof import('../../../hooks')>()
+    return {
+        ...original,
+        useRandomMnemonicForAddress: () => ({
+            picks: [
+                { index: 3, word: 'alpha' },
+                { index: 7, word: 'bravo' },
+                { index: 11, word: 'charlie' },
+            ],
+            isLoading: false,
+            error: null,
+        }),
+    }
+})
 
 vi.mock('expo-haptics', () => ({
     notificationAsync: vi.fn(),
@@ -118,6 +132,7 @@ const readQuizItems = (): QuizItemInfo[] => {
         const text = (node as HTMLElement).textContent ?? ''
         const match = /#(\d+)/.exec(text)
         const position = match ? Number(match[1]) - 1 : 0
+        const correctPair = CORRECT_PAIRS.find(p => p.index === position)
         const itemEl = screen.getByTestId(
             `backup_verification_item_${i}`,
         ) as HTMLElement
@@ -131,7 +146,7 @@ const readQuizItems = (): QuizItemInfo[] => {
         return {
             itemIndex: i,
             position,
-            correctWord: WORDS[position],
+            correctWord: correctPair?.word ?? '',
             optionWords,
         }
     })

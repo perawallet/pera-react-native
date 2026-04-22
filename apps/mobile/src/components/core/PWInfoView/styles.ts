@@ -11,8 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { EdgeInsets } from 'react-native-safe-area-context'
-import { ILLUSTRATION_SIZE } from '../../constants'
+import type { EdgeInsets } from 'react-native-safe-area-context'
 
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     root: {
@@ -28,10 +27,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         paddingTop: theme.spacing.xl,
         gap: theme.spacing.lg,
     },
-    image: {
-        width: ILLUSTRATION_SIZE,
-        height: ILLUSTRATION_SIZE,
-    },
     title: {
         textAlign: 'left',
     },
@@ -42,5 +37,6 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     footer: {
         padding: theme.spacing.xl,
         paddingBottom: theme.spacing.xxl,
+        gap: theme.spacing.lg,
     },
 }))

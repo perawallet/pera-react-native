@@ -10,4 +10,5 @@
  limitations under the License
  */
 
-export { BackupFlowProvider, useBackupFlowWords } from './BackupFlowContext'
+export { PWInfoView } from './PWInfoView'
+export type { PWInfoViewProps, PWInfoViewAction } from './PWInfoView'

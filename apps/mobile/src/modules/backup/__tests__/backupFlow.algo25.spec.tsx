@@ -26,7 +26,11 @@ const account: WalletAccount = {
     seedKeyId: 'seed-A',
 }
 
-const MNEMONIC_WORDS = ['alpha', 'bravo', 'charlie', 'delta', 'echo', 'foxtrot']
+const CORRECT_PAIRS = [
+    { index: 0, word: 'alpha' },
+    { index: 2, word: 'charlie' },
+    { index: 5, word: 'foxtrot' },
+]
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const original =
@@ -57,13 +61,36 @@ vi.mock('@react-navigation/native', async importOriginal => {
     }
 })
 
-vi.mock('../context', () => ({
-    useBackupFlowWords: () => ({
-        getWords: () => MNEMONIC_WORDS,
-        setWords: vi.fn(),
-        clearWords: vi.fn(),
-    }),
+vi.mock('@perawallet/wallet-core-kms', () => ({
+    MNEMONIC_WORDLIST: [
+        'bravo',
+        'delta',
+        'echo',
+        'golf',
+        'hotel',
+        'india',
+        'juliet',
+        'kilo',
+        'lima',
+        'mike',
+    ],
 }))
+
+vi.mock('../hooks', async importOriginal => {
+    const original = await importOriginal<typeof import('../hooks')>()
+    return {
+        ...original,
+        useRandomMnemonicForAddress: () => ({
+            picks: [
+                { index: 0, word: 'alpha' },
+                { index: 2, word: 'charlie' },
+                { index: 5, word: 'foxtrot' },
+            ],
+            isLoading: false,
+            error: null,
+        }),
+    }
+})
 
 vi.mock('expo-haptics', () => ({
     notificationAsync: vi.fn(),
@@ -105,12 +132,12 @@ describe('Backup flow - Algo25 end-to-end outcome', () => {
             const text = (node as HTMLElement).textContent ?? ''
             const match = /#(\d+)/.exec(text)
             const position = match ? Number(match[1]) - 1 : 0
-            const correctWord = MNEMONIC_WORDS[position]
+            const correctPair = CORRECT_PAIRS.find(p => p.index === position)
             const itemEl = screen.getByTestId(
                 `backup_verification_item_${i}`,
             ) as HTMLElement
             const correctBtn = within(itemEl).getByTestId(
-                `backup_verification_item_${i}_option_${correctWord}`,
+                `backup_verification_item_${i}_option_${correctPair?.word}`,
             )
             fireEvent.click(correctBtn)
         })
