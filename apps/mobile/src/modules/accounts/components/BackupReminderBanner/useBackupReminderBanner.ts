@@ -16,10 +16,9 @@ import {
     useAccountBalancesQuery,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 import { useRequiresBackup } from '@perawallet/wallet-core-backup'
 import { useBackupFlowLauncher } from '@modules/backup'
-
-const ALGO_ASSET_ID = '0'
 
 export type UseBackupReminderBannerResult = {
     isVisible: boolean

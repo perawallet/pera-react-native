@@ -12,6 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 import { EdgeInsets } from 'react-native-safe-area-context'
+import { ILLUSTRATION_SIZE } from '../../constants'
 
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     root: {
@@ -28,8 +29,8 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         gap: theme.spacing.lg,
     },
     image: {
-        width: 160,
-        height: 160,
+        width: ILLUSTRATION_SIZE,
+        height: ILLUSTRATION_SIZE,
     },
     title: {
         textAlign: 'left',

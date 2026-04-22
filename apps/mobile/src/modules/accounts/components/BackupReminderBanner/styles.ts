@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
     container: {
@@ -23,9 +24,9 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.sm,
     },
     text: {
+        ...getTypography(theme, 'body'),
         flex: 1,
         color: theme.colors.textWhite,
-        fontWeight: '500',
         marginHorizontal: theme.spacing.xs,
     },
     ctaButton: {
@@ -37,7 +38,7 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
     },
     ctaText: {
+        ...getTypography(theme, 'body'),
         color: theme.colors.textWhite,
-        fontWeight: '500',
     },
 }))

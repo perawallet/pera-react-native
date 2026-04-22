@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import EditPenImage from '@assets/icons/edit-pen.svg'
 import { PWButton, PWIcon, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { ILLUSTRATION_SIZE } from '../../constants'
 import { useBackupWriteDownScreen } from './useBackupWriteDownScreen'
 import { useStyles } from './styles'
 
@@ -30,8 +31,8 @@ export const BackupWriteDownScreen = () => {
             <PWView style={styles.content}>
                 <EditPenImage
                     style={styles.image}
-                    width={160}
-                    height={160}
+                    width={ILLUSTRATION_SIZE}
+                    height={ILLUSTRATION_SIZE}
                     color={theme.colors.linkPrimary}
                 />
                 <PWText

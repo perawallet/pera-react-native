@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ShieldCheckImage from '@assets/icons/shield-check.svg'
 import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { ILLUSTRATION_SIZE } from '../../constants'
 import { useBackupFlowWords } from '../../context'
 import type { BackupStackParamList } from '../../routes/types'
 import { useStyles } from './styles'
@@ -48,8 +49,8 @@ export const BackupSuccessScreen = () => {
             <PWView style={styles.content}>
                 <ShieldCheckImage
                     style={styles.image}
-                    width={160}
-                    height={160}
+                    width={ILLUSTRATION_SIZE}
+                    height={ILLUSTRATION_SIZE}
                     color={theme.colors.linkPrimary}
                 />
                 <PWText

@@ -27,6 +27,14 @@ type BackupFlowContextValue = {
 
 const BackupFlowContext = createContext<BackupFlowContextValue | null>(null)
 
+// Overwrite each slot before dropping the array so any existing string
+// references inside it are released immediately rather than waiting for GC.
+const purge = (arr: string[] | null): void => {
+    if (!arr) return
+    for (let i = 0; i < arr.length; i++) arr[i] = ''
+    arr.length = 0
+}
+
 export const BackupFlowProvider = ({ children }: PropsWithChildren) => {
     const wordsRef = useRef<string[] | null>(null)
 
@@ -34,9 +42,11 @@ export const BackupFlowProvider = ({ children }: PropsWithChildren) => {
         () => ({
             getWords: () => wordsRef.current,
             setWords: (words: string[]) => {
+                purge(wordsRef.current)
                 wordsRef.current = [...words]
             },
             clearWords: () => {
+                purge(wordsRef.current)
                 wordsRef.current = null
             },
         }),
@@ -47,6 +57,7 @@ export const BackupFlowProvider = ({ children }: PropsWithChildren) => {
     // unmounts, regardless of whether the user completed or abandoned the flow.
     useEffect(
         () => () => {
+            purge(wordsRef.current)
             wordsRef.current = null
         },
         [],

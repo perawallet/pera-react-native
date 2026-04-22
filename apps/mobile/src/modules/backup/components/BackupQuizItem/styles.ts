@@ -28,7 +28,7 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.sm,
     },
     option: {
-        height: 44,
+        height: theme.spacing['3xl'],
         justifyContent: 'center',
         alignItems: 'center',
         paddingHorizontal: theme.spacing.md,

@@ -15,10 +15,25 @@ import { useCallback, useMemo, useState } from 'react'
 const QUESTION_COUNT = 3
 const OPTIONS_PER_QUESTION = 3
 
+// Rejection-sample a uniform int in [0, max) from crypto.getRandomValues().
+// Math.random() is not cryptographically secure; this is a wallet app so we
+// prefer the CSRNG even for non-key-material randomness like quiz shuffling.
+const randomIntBelow = (max: number): number => {
+    if (max <= 0) return 0
+    const limit = Math.floor(0x100000000 / max) * max
+    const buf = new Uint32Array(1)
+    let value: number
+    do {
+        crypto.getRandomValues(buf)
+        value = buf[0]
+    } while (value >= limit)
+    return value % max
+}
+
 const shuffle = <T>(arr: T[]): T[] => {
     const copy = [...arr]
     for (let i = copy.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1))
+        const j = randomIntBelow(i + 1)
         ;[copy[i], copy[j]] = [copy[j], copy[i]]
     }
     return copy
