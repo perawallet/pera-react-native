@@ -20,6 +20,13 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
  * Used as a portable analog to Android's `BluetoothAdapter.bondedDevices` —
  * iOS has no equivalent API, so we record success at the app level.
  *
+ * Lives in apps/mobile (not packages/ledger) because the package graph has
+ * `wallet-extension-provider → wallet-extension-ledger-react-native →
+ * wallet-core-ledger`. Hosting a store that imports getProvider in the
+ * leaf ledger package would close that cycle. The state is purely UI
+ * (which devices have we shown pairing instructions to), so apps/mobile
+ * is the right home anyway.
+ *
  * The pairing-instructions bottom sheet is shown only on the first connect
  * attempt to a deviceId not in this set; once a connection succeeds the
  * deviceId is added and subsequent connects skip the sheet.

@@ -1558,15 +1558,9 @@ importers:
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
-      '@perawallet/wallet-extension-provider':
-        specifier: workspace:*
-        version: link:../../extensions/provider
       react:
         specifier: 'catalog:'
         version: 19.2.5
-      zustand:
-        specifier: 'catalog:'
-        version: 5.0.12(@types/react@19.2.14)(react@19.2.5)(use-sync-external-store@1.6.0(react@19.2.5))
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*

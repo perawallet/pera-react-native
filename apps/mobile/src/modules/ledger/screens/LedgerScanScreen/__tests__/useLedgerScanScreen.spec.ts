@@ -36,7 +36,7 @@ vi.mock('../../../hooks', () => ({
     }),
 }))
 
-import { useLedgerPairedDevicesStore } from '@perawallet/wallet-core-ledger'
+import { useLedgerPairedDevicesStore } from '../../../hooks/useLedgerPairedDevicesStore'
 import { useLedgerScanScreen } from '../useLedgerScanScreen'
 
 const makeDevice = (id: string): HardwareWalletDevice =>

@@ -14,9 +14,9 @@ import { useEffect, useCallback, useState } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
-import { useLedgerPairedDevicesStore } from '@perawallet/wallet-core-ledger'
 
 import { useLedgerConnection } from '../../hooks'
+import { useLedgerPairedDevicesStore } from '../../hooks/useLedgerPairedDevicesStore'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseLedgerScanScreenResult = {
