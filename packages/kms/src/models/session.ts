@@ -26,9 +26,9 @@ export type KMSAlgo25Session = {
     signData: (data: Uint8Array) => Promise<Uint8Array>
     getPublicKey: () => Uint8Array
     /**
-     * Returns the mnemonic as UTF-8 bytes. Callers should zero the array with
-     * `.fill(0)` as soon as they're done with it. JS strings are immutable so
-     * we expose bytes instead of a `string`, letting consumers purge the
+     * Returns the mnemonic as UTF-8 bytes. Callers should pass the array to
+     * `zeroBytes()` as soon as they're done with it. JS strings are immutable
+     * so we expose bytes instead of a `string`, letting consumers purge the
      * mnemonic from memory eagerly instead of waiting on GC.
      */
     getMnemonic: () => Promise<Uint8Array>

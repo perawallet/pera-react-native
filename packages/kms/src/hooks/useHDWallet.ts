@@ -25,6 +25,7 @@ import {
     generateHDMasterKey,
 } from '../crypto/hdwallet-utils'
 import { pickDistinctIndexes } from '../crypto/random'
+import { zeroBytes } from '../crypto/secure-memory'
 import type { KeyData, KeyId } from '@algorandfoundation/keystore'
 
 export type HDWalletKeyResult = {
@@ -77,9 +78,7 @@ export const useHDWallet = () => {
             throw e
         }
 
-        masterKey.seed.fill(0)
-        rootKey.fill(0)
-        entropyBytes.fill(0)
+        zeroBytes(masterKey.seed, rootKey, entropyBytes)
 
         const keyPair = makeKeyPair({
             id: keyId,

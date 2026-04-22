@@ -17,7 +17,7 @@ import {
     type HDWalletAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useKMS } from '@perawallet/wallet-core-kms'
+import { useKMS, zeroBytes } from '@perawallet/wallet-core-kms'
 import { logger } from '@perawallet/wallet-core-shared'
 
 export type UseMnemonicForAddressResult = {
@@ -33,12 +33,6 @@ export type UseMnemonicForAddressResult = {
 }
 
 const DOMAIN = 'backup-flow'
-
-// Zero then drop — strings in JS are immutable so the only bytes we can
-// actually wipe are the Uint8Array we got from the session.
-const zero = (bytes: Uint8Array | null): void => {
-    if (bytes) bytes.fill(0)
-}
 
 // The effect below intentionally depends only on `address` and `enabled` — KMS
 // + account are read through refs so new function/object identities from their
@@ -68,27 +62,29 @@ export const useMnemonicForAddress = (
 
     const clearMnemonic = useCallback(() => {
         setState(prev => {
-            zero(prev.mnemonicBytes)
+            zeroBytes(prev.mnemonicBytes)
             return { mnemonicBytes: null, error: null, isLoading: false }
         })
     }, [])
 
     useEffect(() => {
         if (!enabled) {
-            setState({
-                mnemonicBytes: null,
-                error: null,
-                isLoading: true,
+            setState(prev => {
+                zeroBytes(prev.mnemonicBytes)
+                return { mnemonicBytes: null, error: null, isLoading: true }
             })
             return
         }
 
         if (!address) {
             logger.error('BackupMnemonic: missing address in route params')
-            setState({
-                mnemonicBytes: null,
-                error: new Error('Account not found'),
-                isLoading: false,
+            setState(prev => {
+                zeroBytes(prev.mnemonicBytes)
+                return {
+                    mnemonicBytes: null,
+                    error: new Error('Account not found'),
+                    isLoading: false,
+                }
             })
             return
         }
@@ -96,17 +92,26 @@ export const useMnemonicForAddress = (
         const currentAccount = accountRef.current
         if (!currentAccount || currentAccount.address !== address) {
             logger.error('BackupMnemonic: account not found for address')
-            setState({
-                mnemonicBytes: null,
-                error: new Error('Account not found'),
-                isLoading: false,
+            setState(prev => {
+                zeroBytes(prev.mnemonicBytes)
+                return {
+                    mnemonicBytes: null,
+                    error: new Error('Account not found'),
+                    isLoading: false,
+                }
             })
             return
         }
 
         let cancelled = false
         let fetchedBytes: Uint8Array | null = null
-        setState({ mnemonicBytes: null, error: null, isLoading: true })
+        // Zero any bytes from a previous run before publishing the loading
+        // state — otherwise an `address`/`enabled` change would orphan the
+        // prior mnemonic in memory until GC.
+        setState(prev => {
+            zeroBytes(prev.mnemonicBytes)
+            return { mnemonicBytes: null, error: null, isLoading: true }
+        })
 
         const run = async (): Promise<void> => {
             const { getKeyOrThrow, withHDSession, withAlgo25Session } =
@@ -147,7 +152,7 @@ export const useMnemonicForAddress = (
                 }
 
                 if (cancelled) {
-                    zero(fetchedBytes)
+                    zeroBytes(fetchedBytes)
                     return
                 }
                 setState({
@@ -156,7 +161,7 @@ export const useMnemonicForAddress = (
                     isLoading: false,
                 })
             } catch (err) {
-                zero(fetchedBytes)
+                zeroBytes(fetchedBytes)
                 logger.error('BackupMnemonic: failed to retrieve mnemonic', {
                     accountType: currentAccount.type,
                     error: err instanceof Error ? err.message : String(err),
@@ -188,7 +193,7 @@ export const useMnemonicForAddress = (
     useEffect(
         () => () => {
             setState(prev => {
-                zero(prev.mnemonicBytes)
+                zeroBytes(prev.mnemonicBytes)
                 return { mnemonicBytes: null, error: null, isLoading: false }
             })
         },

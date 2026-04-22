@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { memo } from 'react'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { PWIcon, PWText, PWTouchableOpacity, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
@@ -20,7 +21,7 @@ type BackupReminderBannerProps = {
     account: WalletAccount
 }
 
-export const BackupReminderBanner = ({
+const BackupReminderBannerComponent = ({
     account,
 }: BackupReminderBannerProps) => {
     const styles = useStyles()
@@ -50,3 +51,11 @@ export const BackupReminderBanner = ({
         </PWView>
     )
 }
+
+// Memoized: this banner lives in the asset-list header and re-renders on every
+// parent render. Skipping when `account` reference is stable saves a Zustand
+// selector + TanStack subscription pass per render.
+export const BackupReminderBanner = memo(
+    BackupReminderBannerComponent,
+    (prev, next) => prev.account === next.account,
+)

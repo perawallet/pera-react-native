@@ -14,7 +14,7 @@
 // We never want `Math.random()` near wallet material; this helper is the one
 // place the KMS pulls randomness for non-key-material sampling (e.g. picking
 // mnemonic-word indices for a verification prompt).
-const uniformIntBelow = (max: number): number => {
+export const uniformIntBelow = (max: number): number => {
     if (max <= 0) return 0
     const limit = Math.floor(0x100000000 / max) * max
     const buf = new Uint32Array(1)

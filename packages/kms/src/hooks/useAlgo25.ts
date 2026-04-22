@@ -24,6 +24,7 @@ import { encodeAddress } from '@algorandfoundation/algokit-utils'
 import { useKMSService } from './useKMSServices'
 import { makeKeyPair } from '../utils'
 import { pickDistinctIndexes } from '../crypto/random'
+import { zeroBytes } from '../crypto/secure-memory'
 import type { KeyData, KeyId } from '@algorandfoundation/keystore'
 
 export type Algo25KeyResult = {
@@ -89,8 +90,7 @@ export const useAlgo25 = () => {
             throw e
         }
 
-        seed.fill(0)
-        naclKeyPair.secretKey.fill(0)
+        zeroBytes(seed, naclKeyPair.secretKey)
 
         const keyPair = makeKeyPair({
             id: keyId,
@@ -170,8 +170,7 @@ export const useAlgo25 = () => {
             try {
                 return await handler(session)
             } finally {
-                seed.fill(0)
-                naclKeyPair.secretKey.fill(0)
+                zeroBytes(seed, naclKeyPair.secretKey)
             }
         })
     }

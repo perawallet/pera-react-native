@@ -11,29 +11,17 @@
  */
 
 import { useCallback, useMemo, useState } from 'react'
-import type { MnemonicWordAtPosition } from '@perawallet/wallet-core-kms'
+import {
+    type MnemonicWordAtPosition,
+    uniformIntBelow,
+} from '@perawallet/wallet-core-kms'
 
 const OPTIONS_PER_QUESTION = 3
-
-// Rejection-sample a uniform int in [0, max) from crypto.getRandomValues().
-// Math.random() is not cryptographically secure; this is a wallet app so we
-// prefer the CSRNG even for non-key-material randomness like quiz shuffling.
-const randomIntBelow = (max: number): number => {
-    if (max <= 0) return 0
-    const limit = Math.floor(0x100000000 / max) * max
-    const buf = new Uint32Array(1)
-    let value: number
-    do {
-        crypto.getRandomValues(buf)
-        value = buf[0]
-    } while (value >= limit)
-    return value % max
-}
 
 const shuffle = <T>(arr: T[]): T[] => {
     const copy = [...arr]
     for (let i = copy.length - 1; i > 0; i--) {
-        const j = randomIntBelow(i + 1)
+        const j = uniformIntBelow(i + 1)
         ;[copy[i], copy[j]] = [copy[j], copy[i]]
     }
     return copy
@@ -60,9 +48,22 @@ const buildQuestions = (
 ): BackupQuizItem[] => {
     const correctSet = new Set(correctPairs.map(p => p.word))
     const pool = distractorPool.filter(w => !correctSet.has(w))
+    const distractorsPerQuestion = OPTIONS_PER_QUESTION - 1
+    // When the pool is large enough, draw one shuffled stream of unique
+    // distractors and split it across questions so the user can't infer
+    // "I saw `golf` as a distractor before, so it's a distractor here too".
+    // Falls back to per-question shuffle if the pool is too small.
+    const totalNeeded = correctPairs.length * distractorsPerQuestion
+    const useUniqueStream = pool.length >= totalNeeded
+    const stream = useUniqueStream ? shuffle(pool) : null
 
-    return correctPairs.map(({ index, word }) => {
-        const distractors = shuffle(pool).slice(0, OPTIONS_PER_QUESTION - 1)
+    return correctPairs.map(({ index, word }, questionIdx) => {
+        const distractors = stream
+            ? stream.slice(
+                  questionIdx * distractorsPerQuestion,
+                  (questionIdx + 1) * distractorsPerQuestion,
+              )
+            : shuffle(pool).slice(0, distractorsPerQuestion)
         const options = shuffle([word, ...distractors])
         return {
             position: index,

@@ -10,11 +10,15 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-kms'
-
-export * from './hooks/useKMS'
-export * from './models'
-export * from './errors'
-export { WORDLIST as MNEMONIC_WORDLIST } from './crypto/wordlist'
-export { uniformIntBelow, pickDistinctIndexes } from './crypto/random'
-export { zeroBytes } from './crypto/secure-memory'
+/**
+ * Zero one or more byte arrays in place. Use to purge sensitive material
+ * (mnemonics, seeds, key material) from memory eagerly instead of waiting on
+ * GC. Nullable buffers are skipped so callers don't need to null-guard.
+ */
+export const zeroBytes = (
+    ...buffers: Array<Uint8Array | null | undefined>
+): void => {
+    for (const buf of buffers) {
+        if (buf) buf.fill(0)
+    }
+}

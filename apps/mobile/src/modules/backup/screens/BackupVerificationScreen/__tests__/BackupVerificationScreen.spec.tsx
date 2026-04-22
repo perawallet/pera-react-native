@@ -63,6 +63,13 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
         'lima',
         'mike',
     ],
+    uniformIntBelow: (max: number) =>
+        max <= 0 ? 0 : Math.floor(Math.random() * max),
+    zeroBytes: (...buffers: Array<Uint8Array | null | undefined>) => {
+        for (const buf of buffers) {
+            if (buf) buf.fill(0)
+        }
+    },
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
