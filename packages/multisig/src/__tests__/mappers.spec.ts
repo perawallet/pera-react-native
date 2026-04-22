@@ -196,14 +196,14 @@ describe('mapSignRequest', () => {
 
         const result = mapSignRequest(response)
 
-        expect(result.jointAccount.customId).toBe('msig-1')
-        expect(result.jointAccount.address).toBe('MSIG_ADDR')
-        expect(result.jointAccount.threshold).toBe(2)
-        expect(result.jointAccount.participantAddresses).toEqual([
+        expect(result.multisigAccount.customId).toBe('msig-1')
+        expect(result.multisigAccount.address).toBe('MSIG_ADDR')
+        expect(result.multisigAccount.threshold).toBe(2)
+        expect(result.multisigAccount.participantAddresses).toEqual([
             'ADDR1',
             'ADDR2',
         ])
-        expect(result.jointAccount.createdAt).toBeInstanceOf(Date)
+        expect(result.multisigAccount.createdAt).toBeInstanceOf(Date)
     })
 
     test('maps transaction_lists using mapTransactionList', () => {

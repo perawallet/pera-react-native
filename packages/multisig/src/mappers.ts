@@ -16,7 +16,7 @@ import type {
     TransactionListResponse,
 } from './api/schema'
 import type {
-    JointAccountSignRequest,
+    MultisigSignRequest,
     MultiSigAccount,
     TransactionList,
 } from './models'
@@ -45,13 +45,13 @@ export const mapTransactionList = (
 
 export const mapSignRequest = (
     response: SignRequestResponse,
-): JointAccountSignRequest => ({
+): MultisigSignRequest => ({
     id: response.id,
     status: response.status,
     type: response.type,
     createdAt: new Date(response.creation_datetime),
     expectedExpireDatetime: new Date(response.expected_expire_datetime),
     failReasonDisplay: response.fail_reason_display,
-    jointAccount: mapMultiSigAccount(response.joint_account),
+    multisigAccount: mapMultiSigAccount(response.joint_account),
     transactionLists: response.transaction_lists.map(mapTransactionList),
 })

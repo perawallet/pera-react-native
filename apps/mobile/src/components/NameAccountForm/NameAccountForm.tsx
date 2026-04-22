@@ -33,6 +33,7 @@ export type NameAccountFormProps = {
     onFinish: () => void
     isLoading: boolean
     isDisabled?: boolean
+    errorMessage?: string
     children?: ReactNode
 }
 
@@ -46,6 +47,7 @@ export const NameAccountForm = ({
     onFinish,
     isLoading,
     isDisabled,
+    errorMessage,
     children,
 }: NameAccountFormProps) => {
     const styles = useStyles()
@@ -77,6 +79,7 @@ export const NameAccountForm = ({
                     autoFocus
                     autoCorrect={false}
                     testID='name_account_name_input'
+                    errorMessage={errorMessage}
                     rightIcon={
                         value ? (
                             <PWTouchableIcon

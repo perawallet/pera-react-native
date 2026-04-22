@@ -66,8 +66,10 @@ export const AddParticipantBottomSheet = ({
 
         if (multisigCheck.data?.isMultisig) {
             showToast({
-                title: t('multisig.add_participant.joint_account_error'),
-                body: t('multisig.add_participant.joint_account_error_body'),
+                title: t('multisig.add_participant.cannot_add_multisig_error'),
+                body: t(
+                    'multisig.add_participant.cannot_add_multisig_error_body',
+                ),
                 type: 'error',
             })
             setSelectedAddress('')

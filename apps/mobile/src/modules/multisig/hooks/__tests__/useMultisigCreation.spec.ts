@@ -37,7 +37,6 @@ describe('useMultisigCreationStore', () => {
             result.current.addParticipant({
                 address: 'ADDR1',
                 name: 'Account 1',
-                isLocal: true,
             })
         })
 
@@ -51,11 +50,9 @@ describe('useMultisigCreationStore', () => {
         act(() => {
             result.current.addParticipant({
                 address: 'ADDR1',
-                isLocal: true,
             })
             result.current.addParticipant({
                 address: 'ADDR2',
-                isLocal: false,
             })
         })
 
@@ -81,10 +78,10 @@ describe('useMultisigCreationStore', () => {
         const { result } = renderHook(() => useMultisigCreationStore())
 
         act(() => {
-            result.current.setAccountName('My Joint Account')
+            result.current.setAccountName('My Shared Account')
         })
 
-        expect(result.current.accountName).toBe('My Joint Account')
+        expect(result.current.accountName).toBe('My Shared Account')
     })
 
     it('resets state to initial values', () => {
@@ -93,7 +90,6 @@ describe('useMultisigCreationStore', () => {
         act(() => {
             result.current.addParticipant({
                 address: 'ADDR1',
-                isLocal: true,
             })
             result.current.setThreshold(5)
             result.current.setAccountName('Test')

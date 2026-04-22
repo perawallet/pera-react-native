@@ -46,6 +46,7 @@ import FunnelIcon from '@assets/icons/funnel.svg'
 import GearIcon from '@assets/icons/gear.svg'
 import GiftIcon from '@assets/icons/gift.svg'
 import GlobeIcon from '@assets/icons/globe.svg'
+import GroupUserIcon from '@assets/icons/group-user.svg'
 import HorizontalLineStackIcon from '@assets/icons/horizontal-line-stack.svg'
 import HouseIcon from '@assets/icons/house.svg'
 import InboxIcon from '@assets/icons/inbox.svg'
@@ -87,6 +88,7 @@ import ThumbDownIcon from '@assets/icons/thumb-down.svg'
 import ThumbUpIcon from '@assets/icons/thumb-up.svg'
 import TrashIcon from '@assets/icons/trash.svg'
 import TreeIcon from '@assets/icons/tree.svg'
+import WalletImportIcon from '@assets/icons/wallet-import.svg'
 import WalletAddIcon from '@assets/icons/wallet-add.svg'
 import WalletConnectIcon from '@assets/icons/wallet-connect.svg'
 import WalletWithAlgoIcon from '@assets/icons/wallet-with-algo.svg'
@@ -97,7 +99,7 @@ import TrustedAssetIcon from '@assets/icons/assets/trusted.svg'
 import UnlinkIcon from '@assets/icons/unlink.svg'
 import UndoIcon from '@assets/icons/undo.svg'
 import DarkAlgo25AccountIcon from '@assets/icons/accounts/dark/algo25-account.svg'
-import DarkHdWalletAccountIcon from '@assets/icons/accounts/dark/hdwallet-account.svg'
+import DarkHdWalletImportIcon from '@assets/icons/accounts/dark/hdwallet-account.svg'
 import DarkLedgerAccountIcon from '@assets/icons/accounts/dark/ledger-account.svg'
 import DarkMultisigAccountIcon from '@assets/icons/accounts/dark/multisig-account.svg'
 import DarkRekeyedStandardIcon from '@assets/icons/accounts/dark/rekeyed-standard.svg'
@@ -106,7 +108,7 @@ import DarkNoAuthIcon from '@assets/icons/accounts/dark/noauth-account.svg'
 import DarkUnknownAccountIcon from '@assets/icons/accounts/dark/unknown-account.svg'
 import DarkWatchAccountIcon from '@assets/icons/accounts/dark/watch-account.svg'
 import LightAlgo25AccountIcon from '@assets/icons/accounts/light/algo25-account.svg'
-import LightHdWalletAccountIcon from '@assets/icons/accounts/light/hdwallet-account.svg'
+import LightHdWalletImportIcon from '@assets/icons/accounts/light/hdwallet-account.svg'
 import LightLedgerAccountIcon from '@assets/icons/accounts/light/ledger-account.svg'
 import LightMultisigAccountIcon from '@assets/icons/accounts/light/multisig-account.svg'
 import LightRekeyedStandardIcon from '@assets/icons/accounts/light/rekeyed-standard.svg'
@@ -177,6 +179,7 @@ export const ICON_LIBRARY = {
     gear: GearIcon,
     gift: GiftIcon,
     globe: GlobeIcon,
+    'group-user': GroupUserIcon,
     'horizontal-line-stack': HorizontalLineStackIcon,
     house: HouseIcon,
     inbox: InboxIcon,
@@ -220,12 +223,13 @@ export const ICON_LIBRARY = {
     tree: TreeIcon,
     unlink: UnlinkIcon,
     undo: UndoIcon,
+    'wallet-import': WalletImportIcon,
     'wallet-add': WalletAddIcon,
     'wallet-connect': WalletConnectIcon,
     'wallet-with-algo': WalletWithAlgoIcon,
     wallet: WalletIcon,
     'accounts/dark/algo25-account': DarkAlgo25AccountIcon,
-    'accounts/dark/hdwallet-account': DarkHdWalletAccountIcon,
+    'accounts/dark/hdwallet-account': DarkHdWalletImportIcon,
     'accounts/dark/ledger-account': DarkLedgerAccountIcon,
     'accounts/dark/multisig-account': DarkMultisigAccountIcon,
     'accounts/dark/rekeyed-standard': DarkRekeyedStandardIcon,
@@ -234,7 +238,7 @@ export const ICON_LIBRARY = {
     'accounts/dark/unknown-account': DarkUnknownAccountIcon,
     'accounts/dark/watch-account': DarkWatchAccountIcon,
     'accounts/light/algo25-account': LightAlgo25AccountIcon,
-    'accounts/light/hdwallet-account': LightHdWalletAccountIcon,
+    'accounts/light/hdwallet-account': LightHdWalletImportIcon,
     'accounts/light/ledger-account': LightLedgerAccountIcon,
     'accounts/light/multisig-account': LightMultisigAccountIcon,
     'accounts/light/rekeyed-standard': LightRekeyedStandardIcon,
