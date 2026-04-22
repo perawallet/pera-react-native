@@ -22,6 +22,19 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
     }
 })
 
+// Shrink the Ledger timeouts for the timeout tests so they run with real
+// timers in under 100ms. Keeps the assertions simple (no fake-timer +
+// microtask-ordering quirks) while still exercising the real withTimeout
+// mechanics against real setTimeout.
+vi.mock('@perawallet/wallet-core-ledger', async () => {
+    const actual = await vi.importActual('@perawallet/wallet-core-ledger')
+    return {
+        ...actual,
+        LEDGER_CONNECTION_TIMEOUT_MS: 50,
+        LEDGER_CONFIRMATION_TIMEOUT_MS: 50,
+    }
+})
+
 import { createHardwareStrategy } from '../createHardwareStrategy'
 import type { EncodeTransactionFunction } from '../createHardwareStrategy'
 import type { AnalyzedSignableGroup } from '../../types'
@@ -35,6 +48,12 @@ import type {
     HardwareWalletRegistry,
 } from '@perawallet/wallet-core-hardware-wallet'
 import { createHardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
+import {
+    LedgerConnectionError,
+    LedgerAddressMismatchError,
+    LEDGER_CONNECTION_TIMEOUT_MS,
+    LEDGER_CONFIRMATION_TIMEOUT_MS,
+} from '@perawallet/wallet-core-ledger'
 
 const SIGNER_ADDRESS =
     'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
@@ -411,6 +430,138 @@ describe('createHardwareStrategy', () => {
             await expect(
                 strategy.sign(group, makeLedgerAccount()),
             ).rejects.toThrow('signing failed')
+        })
+
+        it('clears the connect timeout once the promise resolves', async () => {
+            vi.useFakeTimers({ shouldAdvanceTime: true })
+            try {
+                const strategy = createHardwareStrategy({
+                    hardwareWalletRegistry: mockRegistry,
+                    encodeTransaction,
+                })
+                const group = makeGroup([mockTransaction()], [0])
+
+                await strategy.sign(group, makeLedgerAccount())
+
+                // No leftover setTimeout from withTimeout — the timer must be
+                // cleared once connect resolves, otherwise the closure (and
+                // the rejection callback) leaks for the full timeout window.
+                expect(vi.getTimerCount()).toBe(0)
+            } finally {
+                vi.useRealTimers()
+            }
+        })
+
+        it('disconnects a transport that arrives after the connect timeout', async () => {
+            vi.useFakeTimers({ shouldAdvanceTime: true })
+            try {
+                const lateTransport = makeMockTransport()
+                let resolveConnect:
+                    | ((t: HardwareWalletTransport) => void)
+                    | undefined
+                const provider: HardwareWalletTransportProvider = {
+                    manufacturer: 'ledger',
+                    scan: () => () => {},
+                    connect: vi.fn().mockImplementation(
+                        () =>
+                            new Promise<HardwareWalletTransport>(resolve => {
+                                resolveConnect = resolve
+                            }),
+                    ),
+                    isSupported: vi.fn().mockResolvedValue(true),
+                }
+                const registry = makeRegistry(provider)
+                const strategy = createHardwareStrategy({
+                    hardwareWalletRegistry: registry,
+                    encodeTransaction,
+                })
+                const group = makeGroup([mockTransaction()], [0])
+
+                const signPromise = strategy.sign(group, makeLedgerAccount())
+                vi.advanceTimersByTime(LEDGER_CONNECTION_TIMEOUT_MS + 100)
+                await expect(signPromise).rejects.toThrow(LedgerConnectionError)
+
+                resolveConnect?.(lateTransport)
+                // Allow the late .then() to flush.
+                await Promise.resolve()
+                await Promise.resolve()
+
+                expect(lateTransport.disconnect).toHaveBeenCalled()
+            } finally {
+                vi.useRealTimers()
+            }
+        })
+
+        it('rejects with LedgerConnectionError when getAddress hangs past the timeout', async () => {
+            const transport: HardwareWalletTransport = {
+                getAddress: vi
+                    .fn()
+                    .mockImplementation(() => new Promise(() => {})),
+                signTransaction: vi.fn(),
+                disconnect: vi.fn().mockResolvedValue(undefined),
+            }
+            const provider = makeMockProvider(transport)
+            const registry = makeRegistry(provider)
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: registry,
+                encodeTransaction,
+            })
+            const group = makeGroup([mockTransaction()], [0])
+
+            await expect(
+                strategy.sign(group, makeLedgerAccount()),
+            ).rejects.toThrow(LedgerConnectionError)
+            expect(transport.disconnect).toHaveBeenCalled()
+        })
+
+        it('rejects with LedgerConnectionError when signTransaction hangs past the confirmation timeout', async () => {
+            const transport: HardwareWalletTransport = {
+                ...makeMockTransport(),
+                signTransaction: vi
+                    .fn()
+                    .mockImplementation(() => new Promise(() => {})),
+            }
+            const provider = makeMockProvider(transport)
+            const registry = makeRegistry(provider)
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: registry,
+                encodeTransaction,
+            })
+            const group = makeGroup([mockTransaction()], [0])
+
+            await expect(
+                strategy.sign(group, makeLedgerAccount()),
+            ).rejects.toThrow(LedgerConnectionError)
+            expect(transport.disconnect).toHaveBeenCalled()
+        })
+
+        it('passes the classified error (not the raw error) to onError', async () => {
+            const transport = {
+                ...makeMockTransport(),
+                signTransaction: vi
+                    .fn()
+                    .mockRejectedValue(new Error('BLE failure')),
+            }
+            const provider = makeMockProvider(transport)
+            const registry = makeRegistry(provider)
+            const strategy = createHardwareStrategy({
+                hardwareWalletRegistry: registry,
+                encodeTransaction,
+            })
+            const group = makeGroup([mockTransaction()], [0])
+            const onError = vi.fn()
+
+            // The thrown error is wrapped in SigningError. The onError
+            // callback must receive the same wrapped value — UI presets are
+            // keyed off typed errors; passing a raw Error would degrade the
+            // overlay status while the inline sheet shows the typed message.
+            await expect(
+                strategy.sign(group, makeLedgerAccount(), { onError }),
+            ).rejects.toThrow('BLE failure')
+
+            expect(onError).toHaveBeenCalledTimes(1)
+            const passed = onError.mock.calls[0][0] as Error
+            expect(passed.constructor.name).toBe('SigningError')
         })
 
         it('throws SigningError for arbitrary-data (hardware not supported)', async () => {

@@ -55,6 +55,10 @@ export const LedgerDeviceItem = ({
             testID={`ledger_device_item_${device.id}`}
         >
             <PWView style={styles.iconContainer}>
+                {/* TODO(PERA-ledger): swap generic wallet icon for the
+                    Ledger-specific asset (port from ic_ledger.xml on Android
+                    or icon-ledger-account on iOS) once the asset pipeline
+                    ships the vector. */}
                 <PWIcon
                     name='wallet'
                     size='md'
@@ -76,6 +80,10 @@ export const LedgerDeviceItem = ({
                 </PWText>
             </PWView>
 
+            {/* TODO(PERA-ledger): render signal-strength dot using the
+                resolved `signalLevel` (RSSI) instead of a single flat dot,
+                matching Android's item_scanned_ledger.xml layout
+                (strong / medium / weak colors + chevron). */}
             <PWView style={styles.signalContainer}>
                 <PWView style={styles.signalDot} />
             </PWView>

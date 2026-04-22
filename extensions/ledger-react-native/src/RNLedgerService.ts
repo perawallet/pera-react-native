@@ -146,6 +146,11 @@ export class RNLedgerService implements HardwareWalletService {
             },
 
             async connect(deviceId: string): Promise<LedgerTransport> {
+                // TODO(PERA-ledger): add pre-connect bonding/pairing check
+                // to match Android's LedgerBleOperationManager.isBondingRequired
+                // — if unbonded, route to LedgerTroubleshootingScreen with
+                // pairing instructions instead of surfacing a generic BLE
+                // error after connect fails.
                 try {
                     const bleTransport = await TransportBLE.open(deviceId)
                     const algorandApp = new Algorand(bleTransport)

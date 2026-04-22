@@ -54,13 +54,18 @@ export const LedgerSigningOverlay = ({
     return (
         <PWBottomSheet
             isVisible={isVisible}
-            onDismiss={onCancel}
+            enablePanDownToClose={false}
+            enableCloseOnBackdropPress={false}
         >
             <PWView style={styles.container}>
                 <PWText style={styles.title}>
                     {t('ledger.signing.title')}
                 </PWText>
 
+                {/* TODO(PERA-ledger): swap ActivityIndicator for a Lottie
+                    animation (port bluetooth_loading_animation.json from
+                    Android or dark-ledger/light-ledger JSON from iOS) to
+                    reach native parity on the signing overlay visual. */}
                 {!showRetry && (
                     <ActivityIndicator
                         size='large'

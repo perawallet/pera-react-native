@@ -385,5 +385,14 @@ describe('hardwareSignerActor', () => {
         expect(results).toHaveLength(1)
         expect(results[0].signedData.type).toBe('transactions')
         expect(results[0].signers[0].address).toBe(ADDR_B)
+
+        // The whole point of the rekey path: the signed transaction must
+        // carry an authAddress pointing back to the Ledger key so network
+        // validators accept it. Without this assertion the test only proves
+        // the happy path doesn't throw.
+        if (results[0].signedData.type === 'transactions') {
+            const signed = results[0].signedData.signed[0]
+            expect(signed.authAddress).toEqual({ address: ADDR_B })
+        }
     })
 })

@@ -20,16 +20,51 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import {
+    LedgerConnectionError,
+    LedgerTimeoutError,
+} from '@perawallet/wallet-core-ledger'
 import { useTransactionSigner } from './useTransactionSigner'
 import { useArbitraryDataSigner } from './useArbitraryDataSigner'
 import { useArc60Signer } from './useArc60Signer'
-import { useSigningStore } from '../store'
+import { useSigningStore, useHardwareSigningStore } from '../store'
 import { createSigningMachine } from '../machine/createSigningMachine'
 import { signingMachine } from '../machine/signingMachine'
 import { createTransportSelector } from '../pipeline/transports/getTransport'
 import { getNextQueuedRequest } from '../pipeline/queue'
 import type { SigningMachineDeps } from '../machine/context'
+import type { SigningCallbacks } from '../pipeline/types'
 import type { SignRequest } from '../models'
+
+const isTimeoutError = (error: Error): boolean =>
+    error instanceof LedgerTimeoutError ||
+    (error instanceof LedgerConnectionError && /timed out/.test(error.message))
+
+/**
+ * Build SigningCallbacks that drive the hardware-signing UI store.
+ * Bound to a specific request id so the overlay knows which actor to talk
+ * to when the user presses cancel/retry.
+ */
+const buildHardwareSigningCallbacks = (
+    requestId: string,
+): SigningCallbacks => ({
+    onPhaseChange: phase => {
+        const store = useHardwareSigningStore.getState()
+        if (phase === 'connecting') {
+            store.start(requestId)
+        } else if (phase === 'awaiting-approval') {
+            store.setStatus('confirming')
+        }
+    },
+    onProgress: (current, total) => {
+        useHardwareSigningStore.getState().setProgress(current, total)
+    },
+    onError: error => {
+        useHardwareSigningStore
+            .getState()
+            .setError(isTimeoutError(error) ? 'timeout' : 'error')
+    },
+})
 
 // =============================================================================
 // Helpers
@@ -104,7 +139,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     setLastFailedRequestRef.current = setLastFailedRequest
 
     const buildDeps = useCallback(
-        (): SigningMachineDeps => ({
+        (request: SignRequest): SigningMachineDeps => ({
             signTransactions,
             signArbitraryData,
             signArc60,
@@ -118,6 +153,11 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             // domain-separation prefix on-device, so we pass raw msgpack.
             encodeTransaction: encodeTransactionRaw,
             hardwareWalletRegistry: getProvider().hardwareWalletRegistry,
+            // Drives the LedgerSigningOverlay via useHardwareSigningStore.
+            // Only the hardware strategy emits these callbacks, so requests
+            // that resolve to local-key/multisig signers never touch the
+            // overlay state.
+            signingCallbacks: buildHardwareSigningCallbacks(request.id),
         }),
         [
             signTransactions,
@@ -138,7 +178,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
             const actor = createSigningMachine(
                 request,
                 allAccounts,
-                buildDeps(),
+                buildDeps(request),
             )
 
             actor.subscribe(snapshot => {
@@ -155,6 +195,14 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 // content until the user dismisses via removeSignRequest.
                 const keepForInlineError =
                     snapshot.matches('failed') && !req.headless
+
+                // Tear down the hardware overlay on any terminal transition
+                // for the matching request — success, rejection, or
+                // non-retryable failure (the inline error sheet takes over).
+                const hardwareStore = useHardwareSigningStore.getState()
+                if (hardwareStore.requestId === req.id) {
+                    hardwareStore.reset()
+                }
 
                 if (snapshot.matches('completed')) {
                     // The transport is responsible for invoking the request's

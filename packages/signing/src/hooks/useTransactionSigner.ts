@@ -36,7 +36,14 @@ import { getProvider } from '@perawallet/wallet-extension-provider'
 import { SIGNING_KEY_DOMAIN } from '../constants'
 import { signTransactionsOnHardwareWallet } from '../pipeline/signing/createHardwareStrategy'
 
-export const useTransactionSigner = () => {
+export type UseTransactionSignerResult = {
+    signTransactions: (
+        txnGroup: PeraTransaction[],
+        indexesToSign: number[],
+    ) => Promise<PeraSignedTransaction[]>
+}
+
+export const useTransactionSigner = (): UseTransactionSignerResult => {
     const accounts = useAccountsStore(state => state.accounts)
     const { getKeyOrThrow, withHDSession, withAlgo25Session } = useKMS()
     const { encodeTransaction, encodeTransactionRaw } = useTransactionEncoder()

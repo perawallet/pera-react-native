@@ -68,9 +68,9 @@ export const useStyles = makeStyles(theme => ({
         borderBottomColor: theme.colors.layerGrayLighter,
     },
     selectedItem: {
-        borderWidth: 2,
+        borderWidth: theme.borders.md,
         borderColor: theme.colors.positive,
-        borderRadius: 12,
+        borderRadius: theme.borderRadius.md,
     },
     itemTextContainer: {
         flex: 1,
@@ -78,7 +78,7 @@ export const useStyles = makeStyles(theme => ({
     },
     itemTitle: {
         color: theme.colors.textMain,
-        marginBottom: theme.borders.md,
+        marginBottom: theme.spacing.xxs,
     },
     itemSubtitle: {
         color: theme.colors.textGray,
