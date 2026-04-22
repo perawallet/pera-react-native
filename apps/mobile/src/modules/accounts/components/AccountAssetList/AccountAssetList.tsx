@@ -32,7 +32,6 @@ import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
 import { KeyboardAvoidingView } from 'react-native'
-import { ExpandablePanel } from '@components/ExpandablePanel'
 import { ManageAssetsBottomSheet } from '../ManageAssetsBottomSheet'
 import { AssetSortBottomSheet } from '../AssetSortBottomSheet'
 import { AssetFilterBottomSheet } from '../AssetFilterBottomSheet'
@@ -92,6 +91,11 @@ export const AccountAssetList = ({
         }
     }, [headerState.isOpen])
 
+    const handleSearchFocus = useCallback(() => {
+        listRef.current?.scrollToOffset({ offset: 0, animated: false })
+        headerState.close()
+    }, [headerState])
+
     const renderItem = useCallback(
         ({ item }: { item: AssetWithAccountBalance }) => {
             const isSwipeable =
@@ -138,45 +142,49 @@ export const AccountAssetList = ({
                     contentContainerStyle={styles.rootContainer}
                     ListHeaderComponent={
                         <PWView style={styles.headerContainer}>
-                            <ExpandablePanel isExpanded={headerState.isOpen}>
-                                {header}
-                                <PWView style={styles.titleBar}>
-                                    <PWText
-                                        style={styles.title}
-                                        variant='h4'
-                                    >
-                                        {t('account_details.assets.title')}
-                                    </PWText>
-                                    {!isWatch && (
-                                        <PWView
-                                            style={
-                                                styles.titleBarButtonContainer
-                                            }
+                            {headerState.isOpen && (
+                                <>
+                                    {header}
+                                    <PWView style={styles.titleBar}>
+                                        <PWText
+                                            style={styles.title}
+                                            variant='h4'
                                         >
-                                            <PWButton
-                                                icon='sliders'
-                                                variant='helper'
-                                                paddingStyle='dense'
-                                                onPress={manageSheetState.open}
-                                            />
-                                            <PWButton
-                                                icon='plus'
-                                                title={t(
-                                                    'account_details.assets.add_asset',
-                                                )}
-                                                variant='helper'
-                                                paddingStyle='dense'
-                                                onPress={
-                                                    addAssetSheetState.open
+                                            {t('account_details.assets.title')}
+                                        </PWText>
+                                        {!isWatch && (
+                                            <PWView
+                                                style={
+                                                    styles.titleBarButtonContainer
                                                 }
-                                            />
-                                        </PWView>
-                                    )}
-                                </PWView>
-                            </ExpandablePanel>
+                                            >
+                                                <PWButton
+                                                    icon='sliders'
+                                                    variant='helper'
+                                                    paddingStyle='dense'
+                                                    onPress={
+                                                        manageSheetState.open
+                                                    }
+                                                />
+                                                <PWButton
+                                                    icon='plus'
+                                                    title={t(
+                                                        'account_details.assets.add_asset',
+                                                    )}
+                                                    variant='helper'
+                                                    paddingStyle='dense'
+                                                    onPress={
+                                                        addAssetSheetState.open
+                                                    }
+                                                />
+                                            </PWView>
+                                        )}
+                                    </PWView>
+                                </>
+                            )}
                             <SearchInput
                                 ref={searchInputRef}
-                                onFocus={headerState.close}
+                                onFocus={handleSearchFocus}
                                 onBlur={headerState.open}
                                 placeholder={t(
                                     'account_details.assets.search_placeholder',
