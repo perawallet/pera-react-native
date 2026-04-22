@@ -32,21 +32,21 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-describe('backupStore', () => {
+describe('mnemonicBackupStore', () => {
     beforeEach(() => {
         vi.resetModules()
     })
 
     test('initial state has empty backedUpKeyIds', async () => {
-        const { useBackupStore } = await import('../store')
-        const { result } = renderHook(() => useBackupStore())
+        const { useMnemonicBackupStore } = await import('../store')
+        const { result } = renderHook(() => useMnemonicBackupStore())
 
         expect(result.current.backedUpKeyIds).toEqual({})
     })
 
     test('markBackedUp adds a key id to the record', async () => {
-        const { useBackupStore } = await import('../store')
-        const { result } = renderHook(() => useBackupStore())
+        const { useMnemonicBackupStore } = await import('../store')
+        const { result } = renderHook(() => useMnemonicBackupStore())
 
         act(() => {
             result.current.markBackedUp('entropy-1')
@@ -56,15 +56,15 @@ describe('backupStore', () => {
     })
 
     test('isBackedUp returns false for unknown id', async () => {
-        const { useBackupStore } = await import('../store')
-        const { result } = renderHook(() => useBackupStore())
+        const { useMnemonicBackupStore } = await import('../store')
+        const { result } = renderHook(() => useMnemonicBackupStore())
 
         expect(result.current.isBackedUp('unknown')).toBe(false)
     })
 
     test('isBackedUp returns true after markBackedUp', async () => {
-        const { useBackupStore } = await import('../store')
-        const { result } = renderHook(() => useBackupStore())
+        const { useMnemonicBackupStore } = await import('../store')
+        const { result } = renderHook(() => useMnemonicBackupStore())
 
         act(() => {
             result.current.markBackedUp('entropy-2')
@@ -74,16 +74,16 @@ describe('backupStore', () => {
     })
 
     test('isBackedUp returns false for null or undefined input', async () => {
-        const { useBackupStore } = await import('../store')
-        const { result } = renderHook(() => useBackupStore())
+        const { useMnemonicBackupStore } = await import('../store')
+        const { result } = renderHook(() => useMnemonicBackupStore())
 
         expect(result.current.isBackedUp(null)).toBe(false)
         expect(result.current.isBackedUp(undefined)).toBe(false)
     })
 
     test('resetState clears all backed-up ids', async () => {
-        const { useBackupStore } = await import('../store')
-        const { result } = renderHook(() => useBackupStore())
+        const { useMnemonicBackupStore } = await import('../store')
+        const { result } = renderHook(() => useMnemonicBackupStore())
 
         act(() => {
             result.current.markBackedUp('entropy-3')

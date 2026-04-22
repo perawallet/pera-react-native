@@ -20,7 +20,7 @@ import {
     MNEMONIC_WORD_COUNT,
     useImportAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useMarkBackupComplete } from '@perawallet/wallet-core-backup'
+import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { MNEMONIC_WORDLIST as WORDLIST } from '@perawallet/wallet-core-kms'
 import { config } from '@perawallet/wallet-core-config'
 
@@ -47,7 +47,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
     } = useRoute<RouteProp<OnboardingStackParamList, 'ImportAccount'>>()
     const navigation = useAppNavigation()
     const importAccount = useImportAccount()
-    const markBackupComplete = useMarkBackupComplete()
+    const markBackupComplete = useMarkMnemonicBackupComplete()
     const { showToast } = useToast()
     const { t } = useLanguage()
     const { parseDeeplink } = useDeepLink()

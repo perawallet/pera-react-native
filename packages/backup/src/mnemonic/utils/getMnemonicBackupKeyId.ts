@@ -16,7 +16,9 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { logger } from '@perawallet/wallet-core-shared'
 
-export const getBackupKeyId = (account: WalletAccount): string | null => {
+export const getMnemonicBackupKeyId = (
+    account: WalletAccount,
+): string | null => {
     switch (account.type) {
         case AccountTypes.algo25:
             return account.seedKeyId ?? account.keyPairId
@@ -25,7 +27,7 @@ export const getBackupKeyId = (account: WalletAccount): string | null => {
             // Falling back to keyPairId would dedup each sibling separately.
             if (!account.entropyKeyId) {
                 logger.warn(
-                    'getBackupKeyId: HD account is missing entropyKeyId; sibling dedup will be broken',
+                    'getMnemonicBackupKeyId: HD account is missing entropyKeyId; sibling dedup will be broken',
                 )
                 return account.keyPairId
             }

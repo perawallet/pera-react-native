@@ -16,9 +16,9 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { logger } from '@perawallet/wallet-core-shared'
-import { getBackupKeyId } from '../getBackupKeyId'
+import { getMnemonicBackupKeyId } from '../getMnemonicBackupKeyId'
 
-describe('getBackupKeyId', () => {
+describe('getMnemonicBackupKeyId', () => {
     test('returns entropyKeyId for HDWallet accounts', () => {
         const account: WalletAccount = {
             type: AccountTypes.hdWallet,
@@ -32,7 +32,7 @@ describe('getBackupKeyId', () => {
                 derivationType: 9,
             },
         }
-        expect(getBackupKeyId(account)).toBe('entropy-abc')
+        expect(getMnemonicBackupKeyId(account)).toBe('entropy-abc')
     })
 
     test('falls back to keyPairId and warns for HDWallet when entropyKeyId missing', () => {
@@ -48,7 +48,7 @@ describe('getBackupKeyId', () => {
                 derivationType: 9,
             },
         }
-        expect(getBackupKeyId(account)).toBe('kp-1')
+        expect(getMnemonicBackupKeyId(account)).toBe('kp-1')
         expect(warnSpy).toHaveBeenCalledOnce()
         warnSpy.mockRestore()
     })
@@ -60,7 +60,7 @@ describe('getBackupKeyId', () => {
             keyPairId: 'kp-2',
             seedKeyId: 'seed-xyz',
         }
-        expect(getBackupKeyId(account)).toBe('seed-xyz')
+        expect(getMnemonicBackupKeyId(account)).toBe('seed-xyz')
     })
 
     test('falls back to keyPairId for Algo25 when seedKeyId missing', () => {
@@ -69,7 +69,7 @@ describe('getBackupKeyId', () => {
             address: 'ADDR_25',
             keyPairId: 'kp-2',
         }
-        expect(getBackupKeyId(account)).toBe('kp-2')
+        expect(getMnemonicBackupKeyId(account)).toBe('kp-2')
     })
 
     test('returns null for multisig, hardware, watch', () => {
@@ -92,8 +92,8 @@ describe('getBackupKeyId', () => {
             type: AccountTypes.watch,
             address: 'ADDR_WATCH',
         }
-        expect(getBackupKeyId(multisig)).toBeNull()
-        expect(getBackupKeyId(hardware)).toBeNull()
-        expect(getBackupKeyId(watch)).toBeNull()
+        expect(getMnemonicBackupKeyId(multisig)).toBeNull()
+        expect(getMnemonicBackupKeyId(hardware)).toBeNull()
+        expect(getMnemonicBackupKeyId(watch)).toBeNull()
     })
 })

@@ -52,7 +52,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
-    useMarkBackupComplete: vi.fn(() => vi.fn()),
+    useMarkMnemonicBackupComplete: vi.fn(() => vi.fn()),
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({

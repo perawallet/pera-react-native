@@ -25,7 +25,7 @@ vi.mock('@modules/backup', () => ({
 
 const mockRequiresBackup = vi.fn()
 vi.mock('@perawallet/wallet-core-backup', () => ({
-    useRequiresBackup: (account: WalletAccount | null) =>
+    useRequiresMnemonicBackup: (account: WalletAccount | null) =>
         mockRequiresBackup(account),
 }))
 

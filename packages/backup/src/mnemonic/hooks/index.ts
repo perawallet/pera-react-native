@@ -10,5 +10,5 @@
  limitations under the License
  */
 
-export * from './useRequiresBackup'
-export * from './useMarkBackupComplete'
+export * from './useRequiresMnemonicBackup'
+export * from './useMarkMnemonicBackupComplete'

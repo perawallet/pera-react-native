@@ -12,20 +12,23 @@
 
 import { useCallback } from 'react'
 import { type WalletAccount } from '@perawallet/wallet-core-accounts'
-import { useBackupStore } from '../store'
-import { getBackupKeyId } from '../utils'
+import { useMnemonicBackupStore } from '../store'
+import { getMnemonicBackupKeyId } from '../utils'
 
-export type UseMarkBackupCompleteResult = (account: WalletAccount) => void
+export type UseMarkMnemonicBackupCompleteResult = (
+    account: WalletAccount,
+) => void
 
-export const useMarkBackupComplete = (): UseMarkBackupCompleteResult => {
-    const markBackedUp = useBackupStore(state => state.markBackedUp)
+export const useMarkMnemonicBackupComplete =
+    (): UseMarkMnemonicBackupCompleteResult => {
+        const markBackedUp = useMnemonicBackupStore(state => state.markBackedUp)
 
-    return useCallback(
-        (account: WalletAccount) => {
-            const keyId = getBackupKeyId(account)
-            if (keyId === null) return
-            markBackedUp(keyId)
-        },
-        [markBackedUp],
-    )
-}
+        return useCallback(
+            (account: WalletAccount) => {
+                const keyId = getMnemonicBackupKeyId(account)
+                if (keyId === null) return
+                markBackedUp(keyId)
+            },
+            [markBackedUp],
+        )
+    }

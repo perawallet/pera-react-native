@@ -36,14 +36,14 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
     }),
 }))
 
-describe('useRequiresBackup', () => {
+describe('useRequiresMnemonicBackup', () => {
     beforeEach(() => {
         vi.resetModules()
     })
 
     test('returns false when key id is already backed up', async () => {
-        const { useBackupStore } = await import('../../store')
-        const { useRequiresBackup } = await import('../useRequiresBackup')
+        const { useMnemonicBackupStore } = await import('../../store')
+        const { useRequiresMnemonicBackup } = await import('../useRequiresMnemonicBackup')
 
         const account: WalletAccount = {
             type: AccountTypes.algo25,
@@ -53,15 +53,15 @@ describe('useRequiresBackup', () => {
         }
 
         act(() => {
-            useBackupStore.getState().markBackedUp('seed-1')
+            useMnemonicBackupStore.getState().markBackedUp('seed-1')
         })
 
-        const { result } = renderHook(() => useRequiresBackup(account))
+        const { result } = renderHook(() => useRequiresMnemonicBackup(account))
         expect(result.current).toBe(false)
     })
 
     test('returns true when key id is not in the store', async () => {
-        const { useRequiresBackup } = await import('../useRequiresBackup')
+        const { useRequiresMnemonicBackup } = await import('../useRequiresMnemonicBackup')
 
         const account: WalletAccount = {
             type: AccountTypes.algo25,
@@ -70,26 +70,26 @@ describe('useRequiresBackup', () => {
             seedKeyId: 'seed-unbacked',
         }
 
-        const { result } = renderHook(() => useRequiresBackup(account))
+        const { result } = renderHook(() => useRequiresMnemonicBackup(account))
         expect(result.current).toBe(true)
     })
 
     test('returns false for accounts without a backup concept (watch)', async () => {
-        const { useRequiresBackup } = await import('../useRequiresBackup')
+        const { useRequiresMnemonicBackup } = await import('../useRequiresMnemonicBackup')
 
         const account: WalletAccount = {
             type: AccountTypes.watch,
             address: 'ADDR',
         }
 
-        const { result } = renderHook(() => useRequiresBackup(account))
+        const { result } = renderHook(() => useRequiresMnemonicBackup(account))
         expect(result.current).toBe(false)
     })
 
     test('returns false when account is null/undefined', async () => {
-        const { useRequiresBackup } = await import('../useRequiresBackup')
+        const { useRequiresMnemonicBackup } = await import('../useRequiresMnemonicBackup')
 
-        const { result } = renderHook(() => useRequiresBackup(null))
+        const { result } = renderHook(() => useRequiresMnemonicBackup(null))
         expect(result.current).toBe(false)
     })
 })

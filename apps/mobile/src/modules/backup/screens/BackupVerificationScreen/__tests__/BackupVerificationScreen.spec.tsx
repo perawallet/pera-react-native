@@ -47,7 +47,7 @@ vi.mock('@react-navigation/native', async importOriginal => {
 })
 
 vi.mock('@perawallet/wallet-core-backup', () => ({
-    useMarkBackupComplete: () => mockMarkBackup,
+    useMarkMnemonicBackupComplete: () => mockMarkBackup,
 }))
 
 vi.mock('@perawallet/wallet-core-kms', () => ({

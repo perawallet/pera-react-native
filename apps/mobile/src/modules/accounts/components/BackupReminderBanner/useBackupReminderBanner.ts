@@ -17,7 +17,7 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
-import { useRequiresBackup } from '@perawallet/wallet-core-backup'
+import { useRequiresMnemonicBackup } from '@perawallet/wallet-core-backup'
 import { useBackupFlowLauncher } from '@modules/backup'
 
 export type UseBackupReminderBannerResult = {
@@ -28,7 +28,7 @@ export type UseBackupReminderBannerResult = {
 export const useBackupReminderBanner = (
     account: WalletAccount,
 ): UseBackupReminderBannerResult => {
-    const requiresBackup = useRequiresBackup(account)
+    const requiresBackup = useRequiresMnemonicBackup(account)
     const accountsForBalances = useMemo(() => [account], [account])
     const { accountBalances } = useAccountBalancesQuery(accountsForBalances)
     const launch = useBackupFlowLauncher()

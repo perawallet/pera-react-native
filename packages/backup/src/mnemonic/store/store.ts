@@ -14,15 +14,15 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import { registerStore } from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import type { BackupStore } from '../models'
+import type { MnemonicBackupStore } from '../models'
 
-const STORE_NAME = 'backup-store'
+const STORE_NAME = 'mnemonic-backup-store'
 
 const initialState = {
     backedUpKeyIds: {} as Record<string, boolean>,
 }
 
-export const useBackupStore = create<BackupStore>()(
+export const useMnemonicBackupStore = create<MnemonicBackupStore>()(
     persist(
         (set, get) => ({
             ...initialState,
@@ -55,9 +55,9 @@ registerStore({
     name: STORE_NAME,
     clearStorage: () =>
         (
-            useBackupStore as unknown as {
+            useMnemonicBackupStore as unknown as {
                 persist: { clearStorage: () => void }
             }
         ).persist.clearStorage(),
-    resetState: () => useBackupStore.getState().resetState(),
+    resetState: () => useMnemonicBackupStore.getState().resetState(),
 })

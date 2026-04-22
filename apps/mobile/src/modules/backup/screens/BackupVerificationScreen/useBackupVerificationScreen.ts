@@ -22,7 +22,7 @@ import {
     useAccountsStore,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useMarkBackupComplete } from '@perawallet/wallet-core-backup'
+import { useMarkMnemonicBackupComplete } from '@perawallet/wallet-core-backup'
 import { MNEMONIC_WORDLIST } from '@perawallet/wallet-core-kms'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -79,7 +79,7 @@ export const useBackupVerificationScreen =
             VERIFICATION_WORD_COUNT,
         )
 
-        const markBackupComplete = useMarkBackupComplete()
+        const markBackupComplete = useMarkMnemonicBackupComplete()
         const { t } = useLanguage()
         const { showToast } = useToast()
 

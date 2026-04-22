@@ -50,16 +50,16 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     }
 })
 
-describe('useMarkBackupComplete', () => {
+describe('useMarkMnemonicBackupComplete', () => {
     beforeEach(() => {
         vi.resetModules()
         mockUseAccountsStore.mockReset()
     })
 
     test('marks the single key id when account is Algo25', async () => {
-        const { useBackupStore } = await import('../../store')
-        const { useMarkBackupComplete } =
-            await import('../useMarkBackupComplete')
+        const { useMnemonicBackupStore } = await import('../../store')
+        const { useMarkMnemonicBackupComplete } =
+            await import('../useMarkMnemonicBackupComplete')
 
         const account: WalletAccount = {
             type: AccountTypes.algo25,
@@ -70,20 +70,20 @@ describe('useMarkBackupComplete', () => {
 
         mockUseAccountsStore.mockReturnValue([account])
 
-        const { result } = renderHook(() => useMarkBackupComplete())
+        const { result } = renderHook(() => useMarkMnemonicBackupComplete())
         act(() => {
             result.current(account)
         })
 
-        expect(useBackupStore.getState().backedUpKeyIds).toEqual({
+        expect(useMnemonicBackupStore.getState().backedUpKeyIds).toEqual({
             'seed-1': true,
         })
     })
 
     test('marks all HD siblings sharing the same entropyKeyId', async () => {
-        const { useBackupStore } = await import('../../store')
-        const { useMarkBackupComplete } =
-            await import('../useMarkBackupComplete')
+        const { useMnemonicBackupStore } = await import('../../store')
+        const { useMarkMnemonicBackupComplete } =
+            await import('../useMarkMnemonicBackupComplete')
 
         const hdDetails = {
             account: 0,
@@ -115,20 +115,20 @@ describe('useMarkBackupComplete', () => {
 
         mockUseAccountsStore.mockReturnValue([a1, a2, a3])
 
-        const { result } = renderHook(() => useMarkBackupComplete())
+        const { result } = renderHook(() => useMarkMnemonicBackupComplete())
         act(() => {
             result.current(a1)
         })
 
-        expect(useBackupStore.getState().backedUpKeyIds).toEqual({
+        expect(useMnemonicBackupStore.getState().backedUpKeyIds).toEqual({
             'entropy-A': true,
         })
     })
 
     test('is a no-op for accounts without backup concept', async () => {
-        const { useBackupStore } = await import('../../store')
-        const { useMarkBackupComplete } =
-            await import('../useMarkBackupComplete')
+        const { useMnemonicBackupStore } = await import('../../store')
+        const { useMarkMnemonicBackupComplete } =
+            await import('../useMarkMnemonicBackupComplete')
 
         const account: WalletAccount = {
             type: AccountTypes.watch,
@@ -137,11 +137,11 @@ describe('useMarkBackupComplete', () => {
 
         mockUseAccountsStore.mockReturnValue([account])
 
-        const { result } = renderHook(() => useMarkBackupComplete())
+        const { result } = renderHook(() => useMarkMnemonicBackupComplete())
         act(() => {
             result.current(account)
         })
 
-        expect(useBackupStore.getState().backedUpKeyIds).toEqual({})
+        expect(useMnemonicBackupStore.getState().backedUpKeyIds).toEqual({})
     })
 })

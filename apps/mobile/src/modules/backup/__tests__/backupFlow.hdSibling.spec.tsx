@@ -18,9 +18,9 @@ import {
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
-    useBackupStore,
-    useMarkBackupComplete,
-    useRequiresBackup,
+    useMnemonicBackupStore,
+    useMarkMnemonicBackupComplete,
+    useRequiresMnemonicBackup,
 } from '@perawallet/wallet-core-backup'
 
 const hd = (address: string, keyIndex: number): WalletAccount => ({
@@ -53,16 +53,16 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
 
 describe('Backup flow - HD sibling dedup', () => {
     test('marking one HD account backed up flags every sibling sharing the entropy id', () => {
-        useBackupStore.getState().resetState()
+        useMnemonicBackupStore.getState().resetState()
 
         let mark: ((acc: WalletAccount) => void) | undefined
         const sibling1Requires: boolean[] = []
         const sibling2Requires: boolean[] = []
 
         const Probe = () => {
-            mark = useMarkBackupComplete()
-            sibling1Requires.push(useRequiresBackup(accounts[1]))
-            sibling2Requires.push(useRequiresBackup(accounts[2]))
+            mark = useMarkMnemonicBackupComplete()
+            sibling1Requires.push(useRequiresMnemonicBackup(accounts[1]))
+            sibling2Requires.push(useRequiresMnemonicBackup(accounts[2]))
             return null
         }
 
@@ -75,7 +75,7 @@ describe('Backup flow - HD sibling dedup', () => {
         })
 
         rerender(<Probe />)
-        expect(useBackupStore.getState().isBackedUp('entropy-shared')).toBe(
+        expect(useMnemonicBackupStore.getState().isBackedUp('entropy-shared')).toBe(
             true,
         )
         expect(sibling1Requires.at(-1)).toBe(false)

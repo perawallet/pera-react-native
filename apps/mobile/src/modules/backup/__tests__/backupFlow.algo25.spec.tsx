@@ -17,7 +17,7 @@ import {
     AccountTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { useBackupStore } from '@perawallet/wallet-core-backup'
+import { useMnemonicBackupStore } from '@perawallet/wallet-core-backup'
 
 const account: WalletAccount = {
     type: AccountTypes.algo25,
@@ -126,7 +126,7 @@ import { BackupVerificationScreen } from '../screens/BackupVerificationScreen'
 
 describe('Backup flow - Algo25 end-to-end outcome', () => {
     beforeEach(() => {
-        useBackupStore.getState().resetState()
+        useMnemonicBackupStore.getState().resetState()
         mockReplace.mockReset()
         mockNavigate.mockReset()
     })
@@ -152,7 +152,7 @@ describe('Backup flow - Algo25 end-to-end outcome', () => {
         fireEvent.click(screen.getByTestId('backup_verification_next'))
 
         await waitFor(() => {
-            expect(useBackupStore.getState().isBackedUp('seed-A')).toBe(true)
+            expect(useMnemonicBackupStore.getState().isBackedUp('seed-A')).toBe(true)
         })
 
         const allCalls = [...mockReplace.mock.calls, ...mockNavigate.mock.calls]
