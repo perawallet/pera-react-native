@@ -217,6 +217,13 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-ledger',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/ledger/src/index.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-security',
                 replacement: path.resolve(
                     __dirname,

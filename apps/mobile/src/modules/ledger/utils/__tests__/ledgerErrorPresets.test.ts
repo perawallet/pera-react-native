@@ -58,7 +58,10 @@ describe('getLedgerErrorPreset', () => {
     })
 
     it('maps LedgerAddressMismatchError to address_mismatch preset', () => {
-        const preset = getLedgerErrorPreset(new LedgerAddressMismatchError(), t)
+        const preset = getLedgerErrorPreset(
+            new LedgerAddressMismatchError('EXPECTED_ADDR', 'ACTUAL_ADDR'),
+            t,
+        )
         expect(preset.kind).toBe('address_mismatch')
         expect(preset.title).toBe('ledger.errors.address_mismatch_title')
         expect(preset.body).toBe('ledger.errors.address_mismatch')

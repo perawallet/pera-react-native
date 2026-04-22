@@ -33,12 +33,23 @@ import type {
     SigningCallbacks,
 } from '../types'
 import { CannotSignError, HardwareWalletError, SigningError } from '../errors'
-import { AppError } from '@perawallet/wallet-core-shared'
 import {
+    LedgerAppNotOpenError,
     LedgerConnectionError,
+    LedgerDisconnectedError,
+    LedgerTimeoutError,
+    LedgerUserRejectedError,
     LedgerAddressMismatchError,
     LEDGER_CONNECTION_TIMEOUT_MS,
 } from '@perawallet/wallet-core-ledger'
+
+const isClassifiedLedgerError = (error: unknown): boolean =>
+    error instanceof LedgerConnectionError ||
+    error instanceof LedgerAppNotOpenError ||
+    error instanceof LedgerUserRejectedError ||
+    error instanceof LedgerDisconnectedError ||
+    error instanceof LedgerTimeoutError ||
+    error instanceof LedgerAddressMismatchError
 
 /**
  * Wrap a promise with a timeout that rejects with a LedgerConnectionError.
@@ -136,8 +147,9 @@ const connectAndVerify = async (
         'Connect to Ledger',
     )
 
-    // Re-fetch address from device and compare to expected address
-    // (prevents index mismatch attacks, matches native iOS behavior)
+    // Re-fetch the address at the stored index and compare to the account's
+    // expected address. Catches silent drift when the on-device account order
+    // has changed since import (matches native iOS behavior).
     const fetchedAccount = await transport.getAddress(accountIndex, false)
     if (fetchedAccount.address !== expectedAddress) {
         throw new LedgerAddressMismatchError(
@@ -208,7 +220,7 @@ const classifyError = (error: unknown): never => {
     if (
         error instanceof CannotSignError ||
         error instanceof HardwareWalletError ||
-        error instanceof AppError
+        isClassifiedLedgerError(error)
     ) {
         throw error
     }

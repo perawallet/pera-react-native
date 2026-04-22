@@ -105,7 +105,8 @@ export class LedgerTimeoutError extends AppError {
 
 /**
  * The address returned by the Ledger device does not match the expected address.
- * This prevents index mismatch attacks or device reordering.
+ * Guards against signing with the wrong index if the on-device account order
+ * or selected app has changed since the account was imported.
  */
 export class LedgerAddressMismatchError extends AppError {
     constructor(expected: string, actual: string, originalError?: Error) {

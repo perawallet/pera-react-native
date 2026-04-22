@@ -71,7 +71,6 @@ export const useStyles = makeStyles(theme => ({
         borderWidth: 2,
         borderColor: theme.colors.positive,
         borderRadius: 12,
-        backgroundColor: theme.colors.background,
     },
     itemTextContainer: {
         flex: 1,

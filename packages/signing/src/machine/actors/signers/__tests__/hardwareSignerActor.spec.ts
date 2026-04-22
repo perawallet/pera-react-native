@@ -10,6 +10,10 @@
  limitations under the License
  */
 
+// Fixtures use repeated-character placeholders (e.g. 'AAAA...') that do not
+// pass Algorand's base32 checksum validation. createHardwareStrategy calls
+// Address.fromString on rekeyed auth addresses, so we stub it to accept any
+// string without checksum parsing.
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
     const actual = await vi.importActual('@perawallet/wallet-core-blockchain')
     return {
@@ -266,31 +270,33 @@ describe('hardwareSignerActor', () => {
     it('rejects with LedgerConnectionError when connection times out', async () => {
         vi.useFakeTimers({ shouldAdvanceTime: true })
 
-        const provider: HardwareWalletTransportProvider = {
-            manufacturer: 'ledger',
-            scan: () => () => {},
-            connect: vi.fn().mockImplementation(
-                () => new Promise(() => {}), // never resolves
-            ),
-            isSupported: vi.fn().mockResolvedValue(true),
+        try {
+            const provider: HardwareWalletTransportProvider = {
+                manufacturer: 'ledger',
+                scan: () => () => {},
+                connect: vi.fn().mockImplementation(
+                    () => new Promise(() => {}), // never resolves
+                ),
+                isSupported: vi.fn().mockResolvedValue(true),
+            }
+
+            const input: HardwareSignerActorInput = {
+                groups: [makeGroup(ADDR_A)],
+                allAccounts: [makeLedgerAccount(ADDR_A)],
+                hardwareWalletRegistry: makeRegistry(provider),
+                encodeTransaction: vi.fn(),
+            }
+
+            const actor = createActor(hardwareSignerActor, { input })
+            actor.start()
+
+            const promise = toPromise(actor)
+            vi.advanceTimersByTime(LEDGER_CONNECTION_TIMEOUT_MS + 100)
+
+            await expect(promise).rejects.toThrow(LedgerConnectionError)
+        } finally {
+            vi.useRealTimers()
         }
-
-        const input: HardwareSignerActorInput = {
-            groups: [makeGroup(ADDR_A)],
-            allAccounts: [makeLedgerAccount(ADDR_A)],
-            hardwareWalletRegistry: makeRegistry(provider),
-            encodeTransaction: vi.fn(),
-        }
-
-        const actor = createActor(hardwareSignerActor, { input })
-        actor.start()
-
-        const promise = toPromise(actor)
-        vi.advanceTimersByTime(LEDGER_CONNECTION_TIMEOUT_MS + 100)
-
-        await expect(promise).rejects.toThrow(LedgerConnectionError)
-
-        vi.useRealTimers()
     })
 
     it('rejects with LedgerUserRejectedError when user cancels on device', async () => {
