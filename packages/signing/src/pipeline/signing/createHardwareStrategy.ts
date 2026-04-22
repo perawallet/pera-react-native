@@ -89,10 +89,8 @@ export type HardwareStrategyOptions = {
 const validateAndExtract = (
     group: AnalyzedSignableGroup,
     account: WalletAccount,
-    registry?: HardwareWalletRegistry,
 ): {
     hwAccount: HardwareWalletAccount
-    transportProvider: HardwareWalletTransportProvider
     data: TransactionSignableData
 } => {
     if (!isHardwareWalletAccount(account)) {
@@ -118,16 +116,7 @@ const validateAndExtract = (
         throw new HardwareWalletError('unsupported_data_type')
     }
 
-    const hwAccount = account as HardwareWalletAccount
-    const transportProvider = registry?.getProvider(
-        hwAccount.hardwareDetails.manufacturer,
-    )
-
-    if (!transportProvider) {
-        throw new HardwareWalletError('transport_unavailable')
-    }
-
-    return { hwAccount, transportProvider, data: group.data }
+    return { hwAccount: account as HardwareWalletAccount, data: group.data }
 }
 
 /**
@@ -230,6 +219,69 @@ const classifyError = (error: unknown): never => {
     )
 }
 
+export type SignTransactionsOnHardwareWalletOptions = {
+    registry?: HardwareWalletRegistry
+    encodeTransaction: EncodeTransactionFunction
+    callbacks?: SigningCallbacks
+}
+
+/**
+ * Connect to the hardware device, verify the on-device address matches the
+ * account's expected address, sign the given transactions sequentially, then
+ * disconnect. Returns a parallel array where indices listed in `indicesToSign`
+ * are signed and all other entries are unsigned placeholders (`{ txn }` only).
+ *
+ * Shared between the XState-based signing pipeline and the algokit-based
+ * `useTransactionSigner` flow so both paths get identical Ledger behavior.
+ */
+export const signTransactionsOnHardwareWallet = async (
+    hwAccount: HardwareWalletAccount,
+    transactions: PeraTransaction[],
+    indicesToSign: number[],
+    options: SignTransactionsOnHardwareWalletOptions,
+): Promise<PeraSignedTransaction[]> => {
+    const { registry, encodeTransaction, callbacks } = options
+
+    const transportProvider = registry?.getProvider(
+        hwAccount.hardwareDetails.manufacturer,
+    )
+    if (!transportProvider) {
+        throw new HardwareWalletError('transport_unavailable')
+    }
+
+    const { deviceId, accountIndex } = hwAccount.hardwareDetails
+    let transport: HardwareWalletTransport | undefined
+
+    try {
+        transport = await connectAndVerify(
+            transportProvider,
+            deviceId,
+            accountIndex,
+            hwAccount.address,
+            callbacks,
+        )
+
+        return await signTransactions(
+            transport,
+            { type: 'transactions', transactions, indicesToSign },
+            hwAccount,
+            encodeTransaction,
+            callbacks,
+        )
+    } catch (error) {
+        callbacks?.onError?.(
+            error instanceof Error ? error : new Error(String(error)),
+        )
+        return classifyError(error)
+    } finally {
+        try {
+            await transport?.disconnect()
+        } catch {
+            // Swallow disconnect errors to preserve original error
+        }
+    }
+}
+
 /**
  * Creates a signing strategy for hardware wallets.
  * These accounts require device interaction with user prompts.
@@ -249,48 +301,23 @@ export const createHardwareStrategy = (
             account: WalletAccount,
             callbacks?: SigningCallbacks,
         ): Promise<SigningResult> => {
-            const { hwAccount, transportProvider, data } = validateAndExtract(
-                group,
-                account,
-                hardwareWalletRegistry,
-            )
+            const { hwAccount, data } = validateAndExtract(group, account)
 
-            const { deviceId, accountIndex } = hwAccount.hardwareDetails
-            let transport: HardwareWalletTransport | undefined
-
-            try {
-                transport = await connectAndVerify(
-                    transportProvider,
-                    deviceId,
-                    accountIndex,
-                    hwAccount.address,
-                    callbacks,
-                )
-
-                const signed = await signTransactions(
-                    transport,
-                    data,
-                    hwAccount,
+            const signed = await signTransactionsOnHardwareWallet(
+                hwAccount,
+                data.transactions,
+                data.indicesToSign,
+                {
+                    registry: hardwareWalletRegistry,
                     encodeTransaction,
                     callbacks,
-                )
+                },
+            )
 
-                return {
-                    signedData: { type: 'transactions', signed },
-                    signers: [{ address: account.address }],
-                    originalIndices: group.originalIndices,
-                }
-            } catch (error) {
-                callbacks?.onError?.(
-                    error instanceof Error ? error : new Error(String(error)),
-                )
-                return classifyError(error)
-            } finally {
-                try {
-                    await transport?.disconnect()
-                } catch {
-                    // Swallow disconnect errors to preserve original error
-                }
+            return {
+                signedData: { type: 'transactions', signed },
+                signers: [{ address: account.address }],
+                originalIndices: group.originalIndices,
             }
         },
     }

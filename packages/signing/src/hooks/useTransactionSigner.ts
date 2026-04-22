@@ -24,13 +24,17 @@ import {
 import {
     isAlgo25Account,
     isHDWalletAccount,
+    isHardwareWalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type {
     Algo25Account,
+    HardwareWalletAccount,
     HDWalletAccount,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+import { getProvider } from '@perawallet/wallet-extension-provider'
 import { SIGNING_KEY_DOMAIN } from '../constants'
+import { signTransactionsOnHardwareWallet } from '../pipeline/signing/createHardwareStrategy'
 
 export const useTransactionSigner = () => {
     const accounts = useAccountsStore(state => state.accounts)
@@ -116,6 +120,25 @@ export const useTransactionSigner = () => {
         [encodeTransaction, withAlgo25Session],
     )
 
+    const signHardwareWalletTransactions = useCallback(
+        async (
+            account: HardwareWalletAccount,
+            txns: PeraTransactionGroup,
+        ): Promise<PeraSignedTransaction[]> => {
+            const indicesToSign = txns.map((_, index) => index)
+            return signTransactionsOnHardwareWallet(
+                account,
+                txns,
+                indicesToSign,
+                {
+                    registry: getProvider().hardwareWalletRegistry,
+                    encodeTransaction,
+                },
+            )
+        },
+        [encodeTransaction],
+    )
+
     const signSingleAccountTransactions = useCallback(
         async (
             account: WalletAccount,
@@ -146,13 +169,20 @@ export const useTransactionSigner = () => {
                 return signAlgo25Transactions(account as Algo25Account, txns)
             }
 
-            //TODO: handle hardware accounts
+            if (isHardwareWalletAccount(account)) {
+                return signHardwareWalletTransactions(account, txns)
+            }
 
             return Promise.reject(
                 `Unsupported account type ${account.type} for ${account.address}`,
             )
         },
-        [accounts, signHDWalletTransactions, signAlgo25Transactions],
+        [
+            accounts,
+            signHDWalletTransactions,
+            signAlgo25Transactions,
+            signHardwareWalletTransactions,
+        ],
     )
 
     const signTransactions = useCallback(

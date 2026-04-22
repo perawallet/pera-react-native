@@ -30,6 +30,7 @@ vi.mock('@perawallet/wallet-core-kms', () => ({
 
 const mockIsHDWalletAccount = vi.fn()
 const mockIsAlgo25Account = vi.fn()
+const mockIsHardwareWalletAccount = vi.fn()
 
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
@@ -41,8 +42,23 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
             selector({ accounts: mockAccounts }),
         isHDWalletAccount: (acc: WalletAccount) => mockIsHDWalletAccount(acc),
         isAlgo25Account: (acc: WalletAccount) => mockIsAlgo25Account(acc),
+        isHardwareWalletAccount: (acc: WalletAccount) =>
+            mockIsHardwareWalletAccount(acc),
     }
 })
+
+const mockHardwareTransportProvider = {
+    connect: vi.fn(),
+}
+const mockHardwareWalletRegistry = {
+    getProvider: vi.fn(),
+}
+
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        hardwareWalletRegistry: mockHardwareWalletRegistry,
+    }),
+}))
 
 const encodeTransactionMock = vi.fn()
 
@@ -88,7 +104,18 @@ const rekeyedAccount = {
 
 const unsupportedAccount = {
     address: 'UNKNOWN_ADDR',
+    type: 'watch',
+} as unknown as WalletAccount
+
+const hardwareAccount = {
+    address: 'LEDGER_ADDR',
     type: 'hardware',
+    hardwareDetails: {
+        manufacturer: 'ledger',
+        deviceId: 'device-1',
+        deviceName: 'Ledger Nano X',
+        accountIndex: 0,
+    },
 } as unknown as WalletAccount
 
 const makeTxn = (senderAddr: string) =>
@@ -106,6 +133,9 @@ describe('useTransactionSigner', () => {
         mockWithAlgo25Session.mockReset()
         mockIsHDWalletAccount.mockReset().mockReturnValue(false)
         mockIsAlgo25Account.mockReset().mockReturnValue(false)
+        mockIsHardwareWalletAccount.mockReset().mockReturnValue(false)
+        mockHardwareTransportProvider.connect.mockReset()
+        mockHardwareWalletRegistry.getProvider.mockReset()
         encodeTransactionMock.mockReset().mockReturnValue(new Uint8Array([1]))
         mockAccounts = []
     })
@@ -219,8 +249,6 @@ describe('useTransactionSigner', () => {
 
     test('rejects for unsupported account type', async () => {
         mockAccounts = [unsupportedAccount]
-        mockIsAlgo25Account.mockReturnValue(false)
-        mockIsHDWalletAccount.mockReturnValue(false)
 
         const { result } = renderHook(() => useTransactionSigner())
         const txn = makeTxn('UNKNOWN_ADDR')
@@ -228,5 +256,60 @@ describe('useTransactionSigner', () => {
         await expect(
             result.current.signTransactions([txn], [0]),
         ).rejects.toContain('Unsupported account type')
+    })
+
+    test('signs hardware wallet transactions via hardware registry', async () => {
+        mockAccounts = [hardwareAccount]
+        mockIsHardwareWalletAccount.mockImplementation(
+            acc => acc.type === 'hardware',
+        )
+        const mockTransport = {
+            getAddress: vi.fn().mockResolvedValue({
+                address: 'LEDGER_ADDR',
+                publicKey: new Uint8Array(32),
+                accountIndex: 0,
+            }),
+            signTransaction: vi.fn().mockResolvedValue(new Uint8Array([0xaa])),
+            disconnect: vi.fn().mockResolvedValue(undefined),
+        }
+        mockHardwareTransportProvider.connect.mockResolvedValue(mockTransport)
+        mockHardwareWalletRegistry.getProvider.mockReturnValue(
+            mockHardwareTransportProvider,
+        )
+
+        const { result } = renderHook(() => useTransactionSigner())
+        const txn = makeTxn('LEDGER_ADDR')
+
+        const signed = await result.current.signTransactions([txn], [0])
+
+        expect(mockHardwareWalletRegistry.getProvider).toHaveBeenCalledWith(
+            'ledger',
+        )
+        expect(mockHardwareTransportProvider.connect).toHaveBeenCalledWith(
+            'device-1',
+        )
+        expect(mockTransport.getAddress).toHaveBeenCalledWith(0, false)
+        expect(mockTransport.signTransaction).toHaveBeenCalledWith(
+            0,
+            new Uint8Array([1]),
+        )
+        expect(mockTransport.disconnect).toHaveBeenCalled()
+        expect(signed).toHaveLength(1)
+        expect(signed[0].sig).toEqual(new Uint8Array([0xaa]))
+    })
+
+    test('rejects when hardware registry has no provider for manufacturer', async () => {
+        mockAccounts = [hardwareAccount]
+        mockIsHardwareWalletAccount.mockImplementation(
+            acc => acc.type === 'hardware',
+        )
+        mockHardwareWalletRegistry.getProvider.mockReturnValue(undefined)
+
+        const { result } = renderHook(() => useTransactionSigner())
+        const txn = makeTxn('LEDGER_ADDR')
+
+        await expect(
+            result.current.signTransactions([txn], [0]),
+        ).rejects.toThrow('transport_unavailable')
     })
 })
