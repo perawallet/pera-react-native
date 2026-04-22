@@ -61,6 +61,7 @@ vi.mock('@perawallet/wallet-extension-provider', () => ({
 }))
 
 const encodeTransactionMock = vi.fn()
+const encodeTransactionRawMock = vi.fn()
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
     const actual = await vi.importActual<object>(
@@ -70,6 +71,7 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
         ...actual,
         useTransactionEncoder: () => ({
             encodeTransaction: encodeTransactionMock,
+            encodeTransactionRaw: encodeTransactionRawMock,
         }),
         encodeAlgorandAddress: () => 'SENDER_PK',
         Address: { fromString: (addr: string) => ({ _addr: addr }) },
@@ -137,6 +139,9 @@ describe('useTransactionSigner', () => {
         mockHardwareTransportProvider.connect.mockReset()
         mockHardwareWalletRegistry.getProvider.mockReset()
         encodeTransactionMock.mockReset().mockReturnValue(new Uint8Array([1]))
+        encodeTransactionRawMock
+            .mockReset()
+            .mockReturnValue(new Uint8Array([0x99]))
         mockAccounts = []
     })
 
@@ -289,9 +294,13 @@ describe('useTransactionSigner', () => {
             'device-1',
         )
         expect(mockTransport.getAddress).toHaveBeenCalledWith(0, false)
+        // Ledger receives RAW msgpack (no "TX" domain-separation prefix) —
+        // the device adds the prefix on-device before hashing.
+        expect(encodeTransactionRawMock).toHaveBeenCalled()
+        expect(encodeTransactionMock).not.toHaveBeenCalled()
         expect(mockTransport.signTransaction).toHaveBeenCalledWith(
             0,
-            new Uint8Array([1]),
+            new Uint8Array([0x99]),
         )
         expect(mockTransport.disconnect).toHaveBeenCalled()
         expect(signed).toHaveLength(1)

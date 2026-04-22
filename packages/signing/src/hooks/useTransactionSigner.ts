@@ -39,7 +39,7 @@ import { signTransactionsOnHardwareWallet } from '../pipeline/signing/createHard
 export const useTransactionSigner = () => {
     const accounts = useAccountsStore(state => state.accounts)
     const { getKeyOrThrow, withHDSession, withAlgo25Session } = useKMS()
-    const { encodeTransaction } = useTransactionEncoder()
+    const { encodeTransaction, encodeTransactionRaw } = useTransactionEncoder()
 
     const signHDWalletTransactions = useCallback(
         async (
@@ -132,11 +132,11 @@ export const useTransactionSigner = () => {
                 indicesToSign,
                 {
                     registry: getProvider().hardwareWalletRegistry,
-                    encodeTransaction,
+                    encodeTransaction: encodeTransactionRaw,
                 },
             )
         },
-        [encodeTransaction],
+        [encodeTransactionRaw],
     )
 
     const signSingleAccountTransactions = useCallback(

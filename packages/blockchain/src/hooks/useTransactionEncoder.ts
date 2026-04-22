@@ -14,6 +14,7 @@ import { PeraSignedTransaction, PeraTransaction } from '../models'
 
 import {
     encodeTransaction,
+    encodeTransactionRaw,
     encodeSignedTransaction,
     encodeSignedTransactions,
     decodeSignedTransaction,
@@ -25,6 +26,9 @@ import {
 export const useTransactionEncoder = () => {
     return {
         encodeTransaction: (tx: PeraTransaction) => encodeTransaction(tx),
+        // Raw msgpack bytes without the "TX" domain-separation prefix.
+        // Hardware wallets (Ledger) add the prefix on-device before hashing.
+        encodeTransactionRaw: (tx: PeraTransaction) => encodeTransactionRaw(tx),
         encodeSignedTransaction: (tx: PeraSignedTransaction) =>
             encodeSignedTransaction(tx),
         encodeSignedTransactions: (txs: PeraSignedTransaction[]) =>

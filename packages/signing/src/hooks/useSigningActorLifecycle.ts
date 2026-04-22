@@ -86,7 +86,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
     const { signTransactions } = useTransactionSigner()
     const { signArbitraryData } = useArbitraryDataSigner()
     const { signArc60 } = useArc60Signer()
-    const { encodeTransaction, encodeSignedTransactions } =
+    const { encodeTransactionRaw, encodeSignedTransactions } =
         useTransactionEncoder()
     const algokit = useAlgorandClient()
     const { network } = useNetwork()
@@ -114,14 +114,16 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
                 network,
             }),
             network,
-            encodeTransaction,
+            // Hardware-wallet actor consumes this. Ledger adds the "TX"
+            // domain-separation prefix on-device, so we pass raw msgpack.
+            encodeTransaction: encodeTransactionRaw,
             hardwareWalletRegistry: getProvider().hardwareWalletRegistry,
         }),
         [
             signTransactions,
             signArbitraryData,
             signArc60,
-            encodeTransaction,
+            encodeTransactionRaw,
             encodeSignedTransactions,
             algokit,
             network,
