@@ -11,9 +11,10 @@
  */
 
 import React from 'react'
-import { ActivityIndicator } from 'react-native'
+import LottieView from 'lottie-react-native'
 import { PWBottomSheet, PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import bluetoothAnimation from '@assets/animations/ledger-bluetooth.json'
 import { useStyles } from './styles'
 
 type LedgerSigningOverlayProps = {
@@ -62,14 +63,13 @@ export const LedgerSigningOverlay = ({
                     {t('ledger.signing.title')}
                 </PWText>
 
-                {/* TODO(PERA-ledger): swap ActivityIndicator for a Lottie
-                    animation (port bluetooth_loading_animation.json from
-                    Android or dark-ledger/light-ledger JSON from iOS) to
-                    reach native parity on the signing overlay visual. */}
                 {!showRetry && (
-                    <ActivityIndicator
-                        size='large'
-                        style={styles.indicator}
+                    <LottieView
+                        autoPlay
+                        loop
+                        source={bluetoothAnimation}
+                        style={styles.lottie}
+                        testID='ledger-signing-overlay-lottie'
                     />
                 )}
 

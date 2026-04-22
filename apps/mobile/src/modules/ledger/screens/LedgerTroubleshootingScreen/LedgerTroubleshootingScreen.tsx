@@ -14,9 +14,6 @@ import { PWButton, PWScrollView, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useLedgerTroubleshootingScreen } from './useLedgerTroubleshootingScreen'
 
-// TODO(PERA-ledger): audit pairing_steps and common_issues copy against
-// native iOS Localizable.xcstrings and Android strings.xml; current
-// content was updated only for `issue_unsupported`.
 export const LedgerTroubleshootingScreen = () => {
     const styles = useStyles()
     const { pairingStepKeys, commonIssueKeys, handleDone, t } =

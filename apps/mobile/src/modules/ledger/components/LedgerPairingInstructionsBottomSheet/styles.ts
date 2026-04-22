@@ -11,40 +11,43 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        padding: theme.spacing.xl,
-        alignItems: 'center',
+        paddingHorizontal: theme.spacing.xl,
+        paddingTop: theme.spacing.lg,
+        paddingBottom: theme.spacing.xl,
     },
     title: {
-        ...getTypography(theme, 'h3'),
-        marginBottom: theme.spacing.lg,
+        marginBottom: theme.spacing.sm,
     },
-    lottie: {
-        // Matches Android dialog_ledger_loading.xml (164dp × 48dp).
-        width: 164,
-        height: 48,
-        marginVertical: theme.spacing.lg,
-    },
-    message: {
-        ...getTypography(theme, 'body'),
+    subtitle: {
         color: theme.colors.textGray,
-        textAlign: 'center',
         marginBottom: theme.spacing.xl,
     },
-    actions: {
-        width: '100%',
-        gap: theme.spacing.sm,
+    list: {
+        gap: theme.spacing.md,
+        marginBottom: theme.spacing.xl,
     },
-    retryButton: {
-        marginBottom: theme.spacing.xs,
+    listItem: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
     },
-    progress: {
-        ...getTypography(theme, 'body'),
+    stepCircle: {
+        width: theme.spacing.xxl,
+        height: theme.spacing.xxl,
+        borderRadius: theme.spacing.xxl / 2,
+        backgroundColor: theme.colors.layerGrayLighter,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: theme.spacing.md,
+    },
+    stepNumber: {
         color: theme.colors.textMain,
-        textAlign: 'center',
-        marginTop: theme.spacing.sm,
+        fontWeight: '600',
+    },
+    listItemText: {
+        flex: 1,
+        color: theme.colors.textMain,
     },
 }))

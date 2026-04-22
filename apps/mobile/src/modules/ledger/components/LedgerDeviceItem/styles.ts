@@ -12,20 +12,26 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = {
-    signalLevel: 'strong' | 'medium' | 'weak'
-}
+const ICON_CONTAINER_SIZE = 40
 
-export const useStyles = makeStyles((theme, { signalLevel }: StyleProps) => ({
+export const useStyles = makeStyles(theme => ({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: theme.spacing.md,
         paddingHorizontal: theme.spacing.lg,
-        borderBottomWidth: theme.borders.sm,
-        borderBottomColor: theme.colors.layerGrayLighter,
+        borderWidth: theme.borders.sm,
+        borderColor: theme.colors.layerGrayLighter,
+        borderRadius: theme.borderRadius.md,
+        marginBottom: theme.spacing.sm,
     },
     iconContainer: {
+        width: ICON_CONTAINER_SIZE,
+        height: ICON_CONTAINER_SIZE,
+        borderRadius: ICON_CONTAINER_SIZE / 2,
+        backgroundColor: theme.colors.layerGrayLighter,
+        alignItems: 'center',
+        justifyContent: 'center',
         marginRight: theme.spacing.md,
     },
     textContainer: {
@@ -37,21 +43,5 @@ export const useStyles = makeStyles((theme, { signalLevel }: StyleProps) => ({
     modelName: {
         color: theme.colors.textGray,
         marginTop: theme.spacing.xs,
-    },
-    signalContainer: {
-        marginLeft: theme.spacing.md,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    signalDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor:
-            signalLevel === 'strong'
-                ? theme.colors.positive
-                : signalLevel === 'medium'
-                  ? theme.colors.warning
-                  : theme.colors.textGray,
     },
 }))

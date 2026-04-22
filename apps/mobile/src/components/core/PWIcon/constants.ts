@@ -52,6 +52,7 @@ import InboxIcon from '@assets/icons/inbox.svg'
 import InflowIcon from '@assets/icons/inflow.svg'
 import InfoIcon from '@assets/icons/info.svg'
 import KeyIcon from '@assets/icons/key.svg'
+import LedgerIcon from '@assets/icons/ledger.svg'
 import ListArrowDownIcon from '@assets/icons/list-arrow-down.svg'
 import LockedIcon from '@assets/icons/locked.svg'
 import MagnifyingGlassIcon from '@assets/icons/magnifying-glass.svg'
@@ -183,6 +184,7 @@ export const ICON_LIBRARY = {
     inflow: InflowIcon,
     info: InfoIcon,
     key: KeyIcon,
+    ledger: LedgerIcon,
     'list-arrow-down': ListArrowDownIcon,
     locked: LockedIcon,
     'magnifying-glass': MagnifyingGlassIcon,

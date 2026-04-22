@@ -15,20 +15,10 @@ import { PWView, PWText, PWTouchableOpacity, PWIcon } from '@components/core'
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 
 import { useStyles } from './styles'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type LedgerDeviceItemProps = {
     device: HardwareWalletDevice
     onPress: (device: HardwareWalletDevice) => void
-}
-
-const getSignalLevel = (
-    rssi: Nullable<number>,
-): 'strong' | 'medium' | 'weak' => {
-    if (rssi === null) return 'weak'
-    if (rssi >= -60) return 'strong'
-    if (rssi >= -80) return 'medium'
-    return 'weak'
 }
 
 const MODEL_DISPLAY_NAMES: Record<string, string> = {
@@ -45,8 +35,7 @@ export const LedgerDeviceItem = ({
     device,
     onPress,
 }: LedgerDeviceItemProps) => {
-    const signalLevel = getSignalLevel(device.rssi)
-    const styles = useStyles({ signalLevel })
+    const styles = useStyles()
 
     return (
         <PWTouchableOpacity
@@ -55,13 +44,9 @@ export const LedgerDeviceItem = ({
             testID={`ledger_device_item_${device.id}`}
         >
             <PWView style={styles.iconContainer}>
-                {/* TODO(PERA-ledger): swap generic wallet icon for the
-                    Ledger-specific asset (port from ic_ledger.xml on Android
-                    or icon-ledger-account on iOS) once the asset pipeline
-                    ships the vector. */}
                 <PWIcon
-                    name='wallet'
-                    size='md'
+                    name='ledger'
+                    size='sm'
                 />
             </PWView>
 
@@ -80,13 +65,11 @@ export const LedgerDeviceItem = ({
                 </PWText>
             </PWView>
 
-            {/* TODO(PERA-ledger): render signal-strength dot using the
-                resolved `signalLevel` (RSSI) instead of a single flat dot,
-                matching Android's item_scanned_ledger.xml layout
-                (strong / medium / weak colors + chevron). */}
-            <PWView style={styles.signalContainer}>
-                <PWView style={styles.signalDot} />
-            </PWView>
+            <PWIcon
+                name='chevron-right'
+                size='sm'
+                variant='secondary'
+            />
         </PWTouchableOpacity>
     )
 }

@@ -38,10 +38,13 @@ export default defineConfig({
             external: [
                 'react',
                 'react/jsx-runtime',
+                'zustand',
+                'zustand/middleware',
                 '@ledgerhq/devices',
                 '@ledgerhq/errors',
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-core-hardware-wallet',
+                '@perawallet/wallet-extension-provider',
             ],
         },
     },

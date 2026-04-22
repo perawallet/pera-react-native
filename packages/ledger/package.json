@@ -23,7 +23,9 @@
     "@ledgerhq/errors": "^6.32.0",
     "@perawallet/wallet-core-hardware-wallet": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
-    "react": "catalog:"
+    "@perawallet/wallet-extension-provider": "workspace:*",
+    "react": "catalog:",
+    "zustand": "catalog:"
   },
   "devDependencies": {
     "@perawallet/wallet-core-devtools": "workspace:*",

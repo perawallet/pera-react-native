@@ -146,11 +146,12 @@ export class RNLedgerService implements HardwareWalletService {
             },
 
             async connect(deviceId: string): Promise<LedgerTransport> {
-                // TODO(PERA-ledger): add pre-connect bonding/pairing check
-                // to match Android's LedgerBleOperationManager.isBondingRequired
-                // — if unbonded, route to LedgerTroubleshootingScreen with
-                // pairing instructions instead of surfacing a generic BLE
-                // error after connect fails.
+                // The pairing/bonding pre-check happens at the UI layer
+                // (LedgerScanScreen + useLedgerPairedDevicesStore in
+                // packages/ledger). iOS doesn't expose bond state to apps,
+                // so the check is implemented as a "have we successfully
+                // paired with this deviceId before?" heuristic rather than
+                // calling Android's BluetoothAdapter.bondedDevices directly.
                 try {
                     const bleTransport = await TransportBLE.open(deviceId)
                     const algorandApp = new Algorand(bleTransport)

@@ -21,6 +21,16 @@ vi.mock('@hooks/useLanguage', () => ({
     }),
 }))
 
+vi.mock('lottie-react-native', () => ({
+    default: ({ testID }: { testID?: string }) => (
+        <div data-testid={testID ?? 'lottie-view'} />
+    ),
+}))
+
+vi.mock('@assets/animations/ledger-bluetooth.json', () => ({
+    default: {},
+}))
+
 describe('LedgerSigningOverlay', () => {
     const defaultProps = {
         isVisible: true,
@@ -103,6 +113,28 @@ describe('LedgerSigningOverlay', () => {
         )
 
         expect(screen.getByText('ledger.fetch_accounts.retry')).toBeTruthy()
+    })
+
+    it('renders the bluetooth Lottie animation while connecting', () => {
+        render(
+            <LedgerSigningOverlay
+                {...defaultProps}
+                status='connecting'
+            />,
+        )
+
+        expect(screen.getByTestId('ledger-signing-overlay-lottie')).toBeTruthy()
+    })
+
+    it('hides the Lottie animation in error state (replaced by retry UI)', () => {
+        render(
+            <LedgerSigningOverlay
+                {...defaultProps}
+                status='error'
+            />,
+        )
+
+        expect(screen.queryByTestId('ledger-signing-overlay-lottie')).toBeNull()
     })
 
     it('hides the retry button while connecting', () => {
