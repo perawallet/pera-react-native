@@ -69,6 +69,11 @@ export const AccountAssetItemView = ({
         [asset?.assetId],
     )
 
+    const isSuspicious = useMemo(() => {
+        const tier = asset?.peraMetadata?.verificationTier
+        return tier === 'suspicious'
+    }, [asset?.peraMetadata?.verificationTier])
+
     const verificationIconName = useMemo(() => {
         if (isAlgo) {
             return 'assets/trusted' as const
@@ -140,7 +145,11 @@ export const AccountAssetItemView = ({
                 <PWView style={styles.unitContainer}>
                     <PWView style={styles.row}>
                         <PWText
-                            style={styles.primaryUnit}
+                            style={
+                                isSuspicious
+                                    ? styles.suspiciousName
+                                    : styles.primaryUnit
+                            }
                             numberOfLines={1}
                         >
                             {displayName}
