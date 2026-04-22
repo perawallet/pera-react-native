@@ -75,9 +75,9 @@ describe('Backup flow - HD sibling dedup', () => {
         })
 
         rerender(<Probe />)
-        expect(useMnemonicBackupStore.getState().isBackedUp('entropy-shared')).toBe(
-            true,
-        )
+        expect(
+            useMnemonicBackupStore.getState().isBackedUp('entropy-shared'),
+        ).toBe(true)
         expect(sibling1Requires.at(-1)).toBe(false)
         expect(sibling2Requires.at(-1)).toBe(false)
     })

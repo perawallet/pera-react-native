@@ -152,7 +152,9 @@ describe('Backup flow - Algo25 end-to-end outcome', () => {
         fireEvent.click(screen.getByTestId('backup_verification_next'))
 
         await waitFor(() => {
-            expect(useMnemonicBackupStore.getState().isBackedUp('seed-A')).toBe(true)
+            expect(useMnemonicBackupStore.getState().isBackedUp('seed-A')).toBe(
+                true,
+            )
         })
 
         const allCalls = [...mockReplace.mock.calls, ...mockNavigate.mock.calls]

@@ -43,7 +43,8 @@ describe('useRequiresMnemonicBackup', () => {
 
     test('returns false when key id is already backed up', async () => {
         const { useMnemonicBackupStore } = await import('../../store')
-        const { useRequiresMnemonicBackup } = await import('../useRequiresMnemonicBackup')
+        const { useRequiresMnemonicBackup } =
+            await import('../useRequiresMnemonicBackup')
 
         const account: WalletAccount = {
             type: AccountTypes.algo25,
@@ -61,7 +62,8 @@ describe('useRequiresMnemonicBackup', () => {
     })
 
     test('returns true when key id is not in the store', async () => {
-        const { useRequiresMnemonicBackup } = await import('../useRequiresMnemonicBackup')
+        const { useRequiresMnemonicBackup } =
+            await import('../useRequiresMnemonicBackup')
 
         const account: WalletAccount = {
             type: AccountTypes.algo25,
@@ -75,7 +77,8 @@ describe('useRequiresMnemonicBackup', () => {
     })
 
     test('returns false for accounts without a backup concept (watch)', async () => {
-        const { useRequiresMnemonicBackup } = await import('../useRequiresMnemonicBackup')
+        const { useRequiresMnemonicBackup } =
+            await import('../useRequiresMnemonicBackup')
 
         const account: WalletAccount = {
             type: AccountTypes.watch,
@@ -87,7 +90,8 @@ describe('useRequiresMnemonicBackup', () => {
     })
 
     test('returns false when account is null/undefined', async () => {
-        const { useRequiresMnemonicBackup } = await import('../useRequiresMnemonicBackup')
+        const { useRequiresMnemonicBackup } =
+            await import('../useRequiresMnemonicBackup')
 
         const { result } = renderHook(() => useRequiresMnemonicBackup(null))
         expect(result.current).toBe(false)

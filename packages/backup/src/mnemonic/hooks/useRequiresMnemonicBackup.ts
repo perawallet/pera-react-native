@@ -21,9 +21,7 @@ import { getMnemonicBackupKeyId } from '../utils'
 export const useRequiresMnemonicBackup = (
     account: WalletAccount | null | undefined,
 ): boolean => {
-    const backedUpKeyIds = useMnemonicBackupStore(
-        state => state.backedUpKeyIds,
-    )
+    const backedUpKeyIds = useMnemonicBackupStore(state => state.backedUpKeyIds)
 
     if (!account) return false
 
