@@ -100,7 +100,7 @@ export const AccountAssetItemView = ({
         )
     }
 
-    if (!asset?.unitName) {
+    if (!asset) {
         return (
             <PWView style={[styles.container, rest.style]}>
                 <PWSkeleton
@@ -114,6 +114,16 @@ export const AccountAssetItemView = ({
             </PWView>
         )
     }
+
+    const displayName = isAlgo
+        ? 'Algo'
+        : asset.name || `Asset #${asset.assetId}`
+    const secondaryText =
+        asset.assetId === ALGO_ASSET_ID
+            ? asset.unitName
+            : asset.unitName
+              ? `${asset.unitName} - ${asset.assetId}`
+              : asset.assetId
 
     return (
         <PWTouchableOpacity
@@ -133,7 +143,7 @@ export const AccountAssetItemView = ({
                             style={styles.primaryUnit}
                             numberOfLines={1}
                         >
-                            {isAlgo ? 'Algo' : asset.name}
+                            {displayName}
                         </PWText>
                         {isFavorited ? (
                             <PWIcon
@@ -155,15 +165,13 @@ export const AccountAssetItemView = ({
                             style={styles.secondaryUnit}
                             numberOfLines={1}
                         >
-                            {asset.unitName}
-                            {asset.assetId !== ALGO_ASSET_ID &&
-                                ` - ${asset.assetId}`}
+                            {secondaryText}
                         </PWText>
                     </CopyableText>
                 </PWView>
                 <PWView style={styles.amountContainer}>
                     <CurrencyDisplay
-                        currency={asset.unitName}
+                        currency={asset.unitName ?? ''}
                         value={accountBalance.amount}
                         precision={asset.decimals}
                         minPrecision={2}
