@@ -105,14 +105,18 @@ export const useBackupReminderMnemonicScreen =
             }
         }, [isPinGateResolved, executeWithMnemonic])
 
+        // Overwrite each slot in the existing array before dereferencing so the
+        // previously decoded phrase doesn't linger in memory waiting on GC.
+        const clearWords = useCallback(() => {
+            setWords(previous => {
+                previous.fill('')
+                return []
+            })
+        }, [])
+
         // Clear the decoded words when the host unmounts so the phrase doesn't
         // linger on a detached fiber.
-        useEffect(
-            () => () => {
-                setWords([])
-            },
-            [],
-        )
+        useEffect(() => () => clearWords(), [clearWords])
 
         const handlePinVerified = useCallback(() => {
             setIsPinVisible(false)
@@ -126,12 +130,13 @@ export const useBackupReminderMnemonicScreen =
 
         const onContinue = useCallback(() => {
             if (!address) return
-            // Drop the decoded words before navigating forward — the verification
-            // screen pulls only the N words it needs from the KMS, so we don't
-            // carry the full phrase through flow state.
-            setWords([])
+            // Native-stack keeps this screen mounted after navigate(), so the
+            // unmount cleanup won't fire yet — clear eagerly here. The
+            // verification screen pulls only the N words it needs from the KMS,
+            // so we don't carry the full phrase through flow state.
+            clearWords()
             navigation.navigate('BackupVerification', { address })
-        }, [address, navigation])
+        }, [address, navigation, clearWords])
 
         return {
             words,
