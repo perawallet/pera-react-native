@@ -1,5 +1,7 @@
-import ts from 'typescript'
+import { readFile } from 'node:fs/promises'
 import { performance } from 'node:perf_hooks'
+import ts from 'typescript'
+import { filterSuppressed } from './utils/suppressions.js'
 import type {
     Check,
     CheckVisitor,
@@ -61,4 +63,46 @@ export function sharedWalk(
         }
         visit(sf)
     }
+}
+
+export interface ChunkResult {
+    violations: Violation[]
+    timings: Record<string, number>
+    parseMs: number
+    walkMs: number
+}
+
+function scriptKindFor(path: string): ts.ScriptKind {
+    return path.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS
+}
+
+export async function runChecksAgainstPaths(
+    paths: string[],
+    checks: Check[],
+): Promise<ChunkResult> {
+    const parseStart = performance.now()
+    const sourceFiles = await Promise.all(
+        paths.map(async path => {
+            const text = await readFile(path, 'utf8')
+            return ts.createSourceFile(
+                path,
+                text,
+                ts.ScriptTarget.Latest,
+                true,
+                scriptKindFor(path),
+            )
+        }),
+    )
+    const sources: SourceMap = new Map()
+    for (const sf of sourceFiles) sources.set(sf.fileName, sf)
+    const parseMs = performance.now() - parseStart
+
+    const walkStart = performance.now()
+    const timings: Record<string, number> = {}
+    const raw: Violation[] = []
+    sharedWalk(sources, checks, timings, raw)
+    const walkMs = performance.now() - walkStart
+
+    const violations = filterSuppressed(raw, sources)
+    return { violations, timings, parseMs, walkMs }
 }

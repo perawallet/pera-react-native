@@ -42,6 +42,9 @@ describe('formatHuman', () => {
             timingsMs: {},
             totalMs: 0,
             warnOnly: false,
+            parseMs: 0,
+            walkMs: 0,
+            workers: 0,
         }
         const output = formatHuman(summary, '/repo')
         expect(output).toContain('no violations')
@@ -71,6 +74,9 @@ describe('formatHuman', () => {
                 timingsMs: { 'sample-rule': 5 },
                 totalMs: 10,
                 warnOnly: true,
+                parseMs: 0,
+                walkMs: 0,
+                workers: 0,
             }
             const output = formatHuman(summary, '/repo')
             expect(output).toContain('warn-only, not blocking')
@@ -113,6 +119,9 @@ describe('formatHuman', () => {
                 timingsMs: { 'sample-rule': 5 },
                 totalMs: 10,
                 warnOnly: false,
+                parseMs: 0,
+                walkMs: 0,
+                workers: 0,
             }
             const output = formatHuman(summary, '/repo')
             // eslint-disable-next-line no-control-regex

@@ -6,6 +6,9 @@ export interface RunSummary {
     timingsMs: Record<string, number>
     totalMs: number
     warnOnly: boolean
+    parseMs: number
+    walkMs: number
+    workers: number
 }
 
 const ANSI = {
@@ -79,6 +82,9 @@ export function formatHuman(summary: RunSummary, repoRoot: string): string {
     )
     parts.push(`${footer}\n`)
     parts.push(`Per-check timings: ${formatTimings(summary.timingsMs)}\n`)
+    parts.push(
+        `Stage timings: parse=${summary.parseMs}ms walk=${summary.walkMs}ms workers=${summary.workers}\n`,
+    )
 
     return parts.join('')
 }
@@ -89,6 +95,8 @@ export function formatJson(summary: RunSummary, repoRoot: string): string {
         total: summary.violations.length,
         durationMs: summary.totalMs,
         warnOnly: summary.warnOnly,
+        workers: summary.workers,
+        stageMs: { parse: summary.parseMs, walk: summary.walkMs },
         timings: summary.timingsMs,
         violations: summary.violations.map(v => ({
             ...v,

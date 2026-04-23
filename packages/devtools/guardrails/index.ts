@@ -4,15 +4,10 @@ import { readdir } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { performance } from 'node:perf_hooks'
 import { parseArgs } from './utils/args.js'
-import { discoverSources, findRepoRoot } from './utils/discovery.js'
+import { discoverFilePaths, findRepoRoot } from './utils/discovery.js'
 import { formatHuman, formatJson, type RunSummary } from './utils/output.js'
-import { filterSuppressed } from './utils/suppressions.js'
-import type { Check, SourceMap, Violation } from './types.js'
-
-interface RunChecksResult {
-    violations: Violation[]
-    timingsMs: Record<string, number>
-}
+import { runChecksAgainstPaths } from './execute.js'
+import type { Check, Violation } from './types.js'
 
 function isCheck(value: unknown): value is Check {
     if (value === null || typeof value !== 'object') return false
@@ -22,6 +17,19 @@ function isCheck(value: unknown): value is Check {
         typeof candidate.visitors === 'object' &&
         candidate.visitors !== null
     )
+}
+
+function compareViolations(a: Violation, b: Violation): number {
+    if (a.ruleId !== b.ruleId) return a.ruleId < b.ruleId ? -1 : 1
+    if (a.file !== b.file) return a.file < b.file ? -1 : 1
+    if (a.line !== b.line) return a.line - b.line
+    return a.column - b.column
+}
+
+function roundTimings(timings: Record<string, number>): Record<string, number> {
+    const out: Record<string, number> = {}
+    for (const [id, ms] of Object.entries(timings)) out[id] = Math.round(ms)
+    return out
 }
 
 export async function loadChecks(checksDirUrl: URL): Promise<Check[]> {
@@ -47,38 +55,32 @@ export async function loadChecks(checksDirUrl: URL): Promise<Check[]> {
     return modules
 }
 
-export async function runChecks(
-    checks: Check[],
-    _sources: SourceMap,
-): Promise<RunChecksResult> {
-    const timingsMs: Record<string, number> = {}
-    for (const check of checks) {
-        timingsMs[check.id] = 0
-    }
-    return { violations: [], timingsMs }
-}
-
 async function main(): Promise<void> {
     const args = parseArgs(process.argv.slice(2))
     const started = performance.now()
 
     const repoRoot = findRepoRoot(import.meta.url)
-    const sources = await discoverSources(repoRoot)
+    const paths = await discoverFilePaths(repoRoot)
     const checks = await loadChecks(new URL('./checks/', import.meta.url))
-    const { violations, timingsMs } = await runChecks(checks, sources)
-    const filtered = filterSuppressed(violations, sources)
+
+    const { violations, timings, parseMs, walkMs } =
+        await runChecksAgainstPaths(paths, checks)
+    const sorted = [...violations].sort(compareViolations)
 
     const summary: RunSummary = {
-        violations: filtered,
-        timingsMs,
+        violations: sorted,
+        timingsMs: roundTimings(timings),
         totalMs: Math.round(performance.now() - started),
         warnOnly: args.warnOnly,
+        parseMs: Math.round(parseMs),
+        walkMs: Math.round(walkMs),
+        workers: 0,
     }
 
     const output = args.json
         ? formatJson(summary, repoRoot)
         : formatHuman(summary, repoRoot)
-    const exitCode = filtered.length === 0 || args.warnOnly ? 0 : 1
+    const exitCode = sorted.length === 0 || args.warnOnly ? 0 : 1
     await writeAndExit(output, exitCode)
 }
 

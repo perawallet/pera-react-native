@@ -54,11 +54,16 @@ describe('guardrails runner CLI', () => {
             total: number
             durationMs: number
             timings: Record<string, number>
+            workers: number
+            stageMs: { parse: number; walk: number }
         }
         expect(typeof payload.ok).toBe('boolean')
         expect(Number.isInteger(payload.total)).toBe(true)
         expect(payload.ok).toBe(payload.total === 0)
         expect(Number.isFinite(payload.durationMs)).toBe(true)
+        expect(Number.isInteger(payload.workers)).toBe(true)
+        expect(Number.isFinite(payload.stageMs.parse)).toBe(true)
+        expect(Number.isFinite(payload.stageMs.walk)).toBe(true)
         const timingKeys = Object.keys(payload.timings)
         expect(timingKeys).toEqual(
             expect.arrayContaining([
