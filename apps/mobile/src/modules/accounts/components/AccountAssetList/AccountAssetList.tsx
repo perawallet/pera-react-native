@@ -21,7 +21,7 @@ import type { PWFlatListRef } from '@components/core'
 import React, { useCallback, useEffect, useRef } from 'react'
 import { useStyles } from './styles'
 
-import { SearchInput } from '@components/SearchInput'
+import { SearchInput, type SearchInputRef } from '@components/SearchInput'
 import {
     WalletAccount,
     AssetWithAccountBalance,
@@ -54,6 +54,7 @@ export const AccountAssetList = ({
     header,
 }: AccountAssetListProps) => {
     const listRef = useRef<PWFlatListRef>(null)
+    const searchInputRef = useRef<SearchInputRef>(null)
     const styles = useStyles()
     const { t } = useLanguage()
 
@@ -84,6 +85,12 @@ export const AccountAssetList = ({
     useEffect(() => {
         listRef.current?.scrollToOffset({ offset: 0, animated: false })
     }, [account.address, assetSortMode])
+
+    useEffect(() => {
+        if (headerState.isOpen) {
+            searchInputRef.current?.blur()
+        }
+    }, [headerState.isOpen])
 
     const renderItem = useCallback(
         ({ item }: { item: AssetWithAccountBalance }) => {
@@ -140,18 +147,16 @@ export const AccountAssetList = ({
                                     >
                                         {t('account_details.assets.title')}
                                     </PWText>
-                                    {!isWatch && (
-                                        <PWView
-                                            style={
-                                                styles.titleBarButtonContainer
-                                            }
-                                        >
-                                            <PWButton
-                                                icon='sliders'
-                                                variant='helper'
-                                                paddingStyle='dense'
-                                                onPress={manageSheetState.open}
-                                            />
+                                    <PWView
+                                        style={styles.titleBarButtonContainer}
+                                    >
+                                        <PWButton
+                                            icon='sliders'
+                                            variant='helper'
+                                            paddingStyle='dense'
+                                            onPress={manageSheetState.open}
+                                        />
+                                        {!isWatch && (
                                             <PWButton
                                                 icon='plus'
                                                 title={t(
@@ -163,11 +168,12 @@ export const AccountAssetList = ({
                                                     addAssetSheetState.open
                                                 }
                                             />
-                                        </PWView>
-                                    )}
+                                        )}
+                                    </PWView>
                                 </PWView>
                             </ExpandablePanel>
                             <SearchInput
+                                ref={searchInputRef}
                                 onFocus={headerState.close}
                                 onBlur={headerState.open}
                                 placeholder={t(
@@ -178,24 +184,18 @@ export const AccountAssetList = ({
                         </PWView>
                     }
                     ListEmptyComponent={
-                        isPending ? null : (
+                        isPending ? (
+                            <LoadingView
+                                variant='skeleton'
+                                size='sm'
+                                count={8}
+                                style={styles.loading}
+                            />
+                        ) : (
                             <EmptyView
                                 title={getEmptyTitle()}
                                 body={getEmptyBody()}
                             />
-                        )
-                    }
-                    ListFooterComponent={
-                        isPending ? (
-                            <PWView>
-                                <LoadingView
-                                    variant='skeleton'
-                                    size='sm'
-                                    count={8}
-                                />
-                            </PWView>
-                        ) : (
-                            <PWView style={styles.footer} />
                         )
                     }
                 />

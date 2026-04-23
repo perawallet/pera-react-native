@@ -44,6 +44,11 @@ export const useStyles = makeStyles(theme => ({
     listContent: {
         paddingHorizontal: theme.spacing.md,
     },
+    loadingContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'flex-start',
+    },
     emptyContainer: {
         flex: 1,
         alignItems: 'center',

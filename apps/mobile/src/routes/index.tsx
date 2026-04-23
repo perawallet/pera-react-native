@@ -38,6 +38,7 @@ import { RootStackParamList } from './types'
 import { fullScreenLayout } from '@layouts/index'
 import { MessagesStackNavigator } from '@modules/messages/routes'
 import { MultisigStackNavigator } from '@modules/multisig'
+import { SearchStackNavigator } from '@modules/search'
 import { navigationRef } from './navigationRef'
 export type { RootStackParamList } from './types'
 
@@ -91,6 +92,10 @@ export const MainRoutes = () => {
                             <RootStack.Screen
                                 name='Contacts'
                                 component={ContactsStackNavigator}
+                            />
+                            <RootStack.Screen
+                                name='Search'
+                                component={SearchStackNavigator}
                             />
                             <RootStack.Screen
                                 name='AddAccount'

@@ -38,6 +38,10 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         })),
         useAllAccounts: vi.fn(() => []),
         useAccountLogicalType: vi.fn(() => 'Algo25'),
+        useOwnedAssets: vi.fn(() => ({
+            assets: [],
+            isLoading: false,
+        })),
     }
 })
 
@@ -85,6 +89,14 @@ vi.mock('@perawallet/wallet-core-assets', async () => ({
     useAssetPricesQuery: vi.fn(() => ({
         data: new Map(),
         isPending: false,
+    })),
+    useAssetSearchQuery: vi.fn(() => ({
+        results: [],
+        isLoading: false,
+        isError: false,
+        isFetchingNextPage: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
     })),
 }))
 

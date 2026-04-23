@@ -39,4 +39,10 @@ export const useStyles = makeStyles(theme => ({
         paddingRight: theme.spacing.xs,
         flexShrink: 1,
     },
+    suspiciousName: {
+        color: theme.colors.error,
+        lineHeight: theme.spacing.lg,
+        paddingRight: theme.spacing.xs,
+        flexShrink: 1,
+    },
 }))

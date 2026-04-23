@@ -11,6 +11,7 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { renderHook } from '@testing-library/react'
 
 const upsertAssetsMock = vi.hoisted(() => vi.fn())
 const getAssetsByIdsMock = vi.hoisted(() => vi.fn())
@@ -36,7 +37,11 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
-import { getAssetsFromDb, persistAssetsToDb } from '../useAssetsDb'
+import {
+    getAssetsFromDb,
+    persistAssetsToDb,
+    useAssetsDbSync,
+} from '../useAssetsDb'
 import type { PeraAsset } from '../../models'
 
 const makeAsset = (id: string): PeraAsset =>
@@ -105,5 +110,37 @@ describe('persistAssetsToDb', () => {
             'Failed to persist assets to database',
             expect.objectContaining({ error: expect.any(Error) }),
         )
+    })
+})
+
+describe('useAssetsDbSync', () => {
+    beforeEach(() => {
+        upsertAssetsMock.mockReset()
+        upsertAssetsMock.mockResolvedValue(undefined)
+    })
+
+    test('persists fetched assets when fetch completes with results', () => {
+        const fetched = new Map<string, PeraAsset>([['1', makeAsset('1')]])
+
+        renderHook(() => useAssetsDbSync(fetched, true, 'mainnet'))
+
+        expect(upsertAssetsMock).toHaveBeenCalledWith({
+            items: [makeAsset('1')],
+            network: 'mainnet',
+        })
+    })
+
+    test('does not persist while fetch is still pending', () => {
+        const fetched = new Map<string, PeraAsset>([['1', makeAsset('1')]])
+
+        renderHook(() => useAssetsDbSync(fetched, false, 'mainnet'))
+
+        expect(upsertAssetsMock).not.toHaveBeenCalled()
+    })
+
+    test('does not persist when the fetched Map is empty', () => {
+        renderHook(() => useAssetsDbSync(new Map(), true, 'mainnet'))
+
+        expect(upsertAssetsMock).not.toHaveBeenCalled()
     })
 })

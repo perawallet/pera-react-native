@@ -25,7 +25,7 @@ import {
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
-import { ALGO_ASSET, ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 
 export type WealthTrendProps = {
     account?: WalletAccount
@@ -78,10 +78,9 @@ export const WealthTrend = ({ account, period }: WealthTrendProps) => {
     ) : (
         <PWView style={styles.container}>
             <PreferredCurrencyDisplay
-                variant='h4'
                 sourceAmount={absolute}
                 sourceAssetId={ALGO_ASSET_ID}
-                precision={ALGO_ASSET.decimals}
+                precision={DEFAULT_PRECISION}
                 minPrecision={DEFAULT_PRECISION}
                 showSymbol
                 style={isPositive ? styles.itemUp : styles.itemDown}
@@ -95,10 +94,7 @@ export const WealthTrend = ({ account, period }: WealthTrendProps) => {
                         isPositive ? styles.trendIconUp : styles.trendIconDown
                     }
                 />
-                <PWText
-                    style={isPositive ? styles.itemUp : styles.itemDown}
-                    variant='h4'
-                >
+                <PWText style={isPositive ? styles.itemUp : styles.itemDown}>
                     {percentage.toFixed(2)}%
                 </PWText>
             </PWView>

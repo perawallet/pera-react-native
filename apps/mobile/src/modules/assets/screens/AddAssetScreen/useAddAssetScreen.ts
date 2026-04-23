@@ -15,14 +15,11 @@ import {
     useAccountBalancesQuery,
     useAccountsStore,
 } from '@perawallet/wallet-core-accounts'
-import {
-    useAssetSearchQuery,
-    type AssetSearchItem,
-} from '@perawallet/wallet-core-assets'
+import type { AssetSearchItem } from '@perawallet/wallet-core-assets'
+import { useGlobalSearch } from '@perawallet/wallet-core-search'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 import type { AddAssetBottomSheetVariant } from '@modules/assets/components/AddAssetBottomSheet'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -39,7 +36,7 @@ type UseAddAssetScreenResult = {
     isError: boolean
     isFetchingNextPage: boolean
     hasNextPage: boolean
-    fetchNextPage: () => void
+    fetchNextPage: Nullable<() => void>
     optedInAssetIds: Set<string>
     optingInAssetId: Nullable<string>
     handleAddAsset: (assetId: string) => void
@@ -51,15 +48,10 @@ export const useAddAssetScreen = (
 ): UseAddAssetScreenResult => {
     const { t } = useLanguage()
     const hasCollectible = options?.variant === 'collectible'
-    const [searchQuery, setSearchQuery] = useState('')
     const [optingInAssetId, setOptingInAssetId] =
         useState<Nullable<string>>(null)
     const [recentlyOptedIn, setRecentlyOptedIn] = useState<Set<string>>(
         new Set(),
-    )
-    const debouncedQuery = useDebouncedValue(
-        searchQuery.trim(),
-        SEARCH_DEBOUNCE_TIME,
     )
 
     const selectedAccount = useAccountsStore(state =>
@@ -72,13 +64,20 @@ export const useAddAssetScreen = (
     const { showToast } = useToast()
 
     const {
-        results,
+        value: searchQuery,
+        setValue: setSearchQuery,
+        results: searchResults,
         isLoading,
-        isError,
-        isFetchingNextPage,
-        hasNextPage,
-        fetchNextPage,
-    } = useAssetSearchQuery(debouncedQuery, { hasCollectible })
+        hasNextRemotePage: hasNextPage,
+        isFetchingNextRemotePage: isFetchingNextPage,
+        fetchNextRemotePage: fetchNextPage,
+    } = useGlobalSearch({
+        debounceMs: SEARCH_DEBOUNCE_TIME,
+        scopes: ['assets'],
+        remoteAssets: { hasCollectible },
+    })
+    const results = searchResults.remoteAssets
+    const isError = false
 
     // Build set of already opted-in asset IDs
     const optedInAssetIds = useMemo(() => {
@@ -98,9 +97,12 @@ export const useAddAssetScreen = (
         return ids
     }, [accountBalances, selectedAccount, recentlyOptedIn])
 
-    const handleSearchChange = useCallback((text: string) => {
-        setSearchQuery(text)
-    }, [])
+    const handleSearchChange = useCallback(
+        (text: string) => {
+            setSearchQuery(text)
+        },
+        [setSearchQuery],
+    )
 
     const handleAddAsset = useCallback(
         async (assetId: string) => {
