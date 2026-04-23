@@ -34,23 +34,37 @@ function runCli(extraArgs: string[] = []): {
 }
 
 describe('guardrails runner CLI', () => {
-    it('exits 0 with "no violations" human output when no checks exist', () => {
+    it('runs all loaded checks end-to-end and exits 0 or 1 with a summary line', () => {
         const { status, stdout } = runCli()
-        expect(status).toBe(0)
-        expect(stdout).toContain('no violations')
+        expect([0, 1]).toContain(status)
+        if (status === 0) {
+            expect(stdout).toContain('no violations')
+        } else {
+            expect(stdout).toMatch(/guardrail violation\(s\)/)
+        }
     }, 30_000)
 
-    it('emits valid JSON with ok=true when --json is passed', () => {
+    it('emits valid JSON with timings for every loaded check when --json is passed', () => {
         const { status, stdout } = runCli(['--json'])
-        expect(status).toBe(0)
+        expect([0, 1]).toContain(status)
         const payload = JSON.parse(stdout) as {
             ok: boolean
             total: number
+            durationMs: number
             timings: Record<string, number>
         }
-        expect(payload.ok).toBe(true)
-        expect(payload.total).toBe(0)
-        expect(payload.timings).toEqual({})
+        expect(typeof payload.ok).toBe('boolean')
+        expect(Number.isInteger(payload.total)).toBe(true)
+        expect(payload.ok).toBe(payload.total === 0)
+        expect(Number.isFinite(payload.durationMs)).toBe(true)
+        const timingKeys = Object.keys(payload.timings)
+        expect(timingKeys).toEqual(
+            expect.arrayContaining([
+                'no-numeric-sizes',
+                'no-typography-in-styles',
+                'no-primitive-rn-components',
+            ]),
+        )
     }, 30_000)
 
     it('exits 2 and reports unknown flag on stderr', () => {

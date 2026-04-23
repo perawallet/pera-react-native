@@ -63,21 +63,33 @@ export function resolveModuleBindings(
     return result
 }
 
+function unwrapParens(expr: ts.Expression): ts.Expression {
+    let current = expr
+    while (ts.isParenthesizedExpression(current)) {
+        current = current.expression
+    }
+    return current
+}
+
 function extractObjectLiteralFromCallback(
     callback: ts.ArrowFunction | ts.FunctionExpression,
 ): ts.ObjectLiteralExpression | null {
     const body = callback.body
-    if (ts.isObjectLiteralExpression(body)) {
-        return body
+    if (!ts.isBlock(body)) {
+        const unwrapped = unwrapParens(body)
+        if (ts.isObjectLiteralExpression(unwrapped)) {
+            return unwrapped
+        }
+        return null
     }
-    if (ts.isBlock(body)) {
-        for (const statement of body.statements) {
-            if (
-                ts.isReturnStatement(statement) &&
-                statement.expression &&
-                ts.isObjectLiteralExpression(statement.expression)
-            ) {
-                return statement.expression
+    for (const statement of body.statements) {
+        if (
+            ts.isReturnStatement(statement) &&
+            statement.expression
+        ) {
+            const unwrapped = unwrapParens(statement.expression)
+            if (ts.isObjectLiteralExpression(unwrapped)) {
+                return unwrapped
             }
         }
     }

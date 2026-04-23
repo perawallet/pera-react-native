@@ -93,8 +93,20 @@ async function main(): Promise<void> {
     const output = args.json
         ? formatJson(summary, repoRoot)
         : formatHuman(summary, repoRoot)
-    process.stdout.write(output)
-    process.exit(filtered.length === 0 ? 0 : 1)
+    await writeAndExit(output, filtered.length === 0 ? 0 : 1)
+}
+
+function writeAndExit(output: string, code: number): Promise<never> {
+    return new Promise(() => {
+        const flushed = process.stdout.write(output, () => {
+            process.exit(code)
+        })
+        if (!flushed) {
+            process.stdout.once('drain', () => {
+                process.exit(code)
+            })
+        }
+    })
 }
 
 main().catch((err: unknown) => {
