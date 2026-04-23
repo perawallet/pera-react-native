@@ -1,8 +1,9 @@
 #!/usr/bin/env tsx
 import { existsSync } from 'node:fs'
 import { readdir } from 'node:fs/promises'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { performance } from 'node:perf_hooks'
+import { isMainThread } from 'node:worker_threads'
 import { parseArgs } from './utils/args.js'
 import { discoverFilePaths, findRepoRoot } from './utils/discovery.js'
 import { formatHuman, formatJson, type RunSummary } from './utils/output.js'
@@ -97,9 +98,16 @@ function writeAndExit(output: string, code: number): Promise<never> {
     })
 }
 
-main().catch((err: unknown) => {
-    const message =
-        err instanceof Error ? (err.stack ?? err.message) : String(err)
-    process.stderr.write(`${message}\n`)
-    process.exit(2)
-})
+const isEntryPoint =
+    isMainThread &&
+    process.argv[1] !== undefined &&
+    import.meta.url === pathToFileURL(process.argv[1]).href
+
+if (isEntryPoint) {
+    main().catch((err: unknown) => {
+        const message =
+            err instanceof Error ? (err.stack ?? err.message) : String(err)
+        process.stderr.write(`${message}\n`)
+        process.exit(2)
+    })
+}

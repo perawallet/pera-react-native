@@ -25,7 +25,8 @@ const check: Check = {
             if (sf.fileName.includes(CORE_COMPONENTS_PATH)) return
             const decl = node as ts.ImportDeclaration
             const spec = decl.moduleSpecifier
-            if (!ts.isStringLiteral(spec) || spec.text !== 'react-native') return
+            if (!ts.isStringLiteral(spec) || spec.text !== 'react-native')
+                return
             const bindings = decl.importClause?.namedBindings
             if (!bindings || !ts.isNamedImports(bindings)) return
             for (const element of bindings.elements) {

@@ -2,7 +2,8 @@ import { spawnSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
+import { Worker } from 'node:worker_threads'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import ts from 'typescript'
 import { loadChecks } from '../index.js'
@@ -193,4 +194,36 @@ describe('loadChecks', () => {
             loadChecks(new URL(`${pathToFileURL(tmpDir).href}/`)),
         ).rejects.toThrow(/malformed\.check\.ts/)
     })
+})
+
+describe('worker bootstrap', () => {
+    it('parses, walks, and returns violations for a file chunk', async () => {
+        const workerUrl = new URL('../worker-entry.mjs', import.meta.url)
+        const checksDirHref = new URL('../checks/', import.meta.url).href
+        const repoRoot = findRepoRoot(import.meta.url)
+        const result = await new Promise<{
+            kind: string
+            result?: { violations: unknown[] }
+            message?: string
+        }>((resolve, reject) => {
+            const worker = new Worker(fileURLToPath(workerUrl), {
+                workerData: { checksDirHref },
+            })
+            worker.on('message', msg => {
+                resolve(msg)
+                worker.terminate()
+            })
+            worker.on('error', reject)
+            worker.on('exit', code => {
+                if (code !== 0 && code !== null) {
+                    reject(new Error(`worker exited ${code}`))
+                }
+            })
+            worker.postMessage({
+                paths: [join(repoRoot, 'apps/mobile/src/App.tsx')],
+            })
+        })
+        expect(result.kind).toBe('ok')
+        expect(Array.isArray(result.result?.violations)).toBe(true)
+    }, 30_000)
 })
