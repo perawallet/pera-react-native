@@ -156,7 +156,7 @@ describe('useAddAccountScreen', () => {
             'add_account_create_universal_wallet_button',
         )
         expect(result.current.mainOptions[1]?.testID).toBe(
-            'add_account_create_joint_button',
+            'add_account_create_multisig_button',
         )
         expect(result.current.mainOptions[2]?.testID).toBe(
             'add_account_import_button',
@@ -279,12 +279,12 @@ describe('useAddAccountScreen', () => {
         ).toBeUndefined()
     })
 
-    it('mainOptions includes joint account option', () => {
+    it('mainOptions includes shared account option', () => {
         const { result } = renderHook(() => useAddAccountScreen())
 
         expect(
             result.current.mainOptions.find(
-                o => o.testID === 'add_account_create_joint_button',
+                o => o.testID === 'add_account_create_multisig_button',
             ),
         ).toBeDefined()
     })

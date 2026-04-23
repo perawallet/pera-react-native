@@ -453,8 +453,8 @@ export interface DataTransport {
     send(
         result: SigningResult,
         source: SourceMetadata,
-        /** For multisig: the joint account address */
-        jointAccountAddress?: string,
+        /** For multisig: the multisig account address */
+        multisigAddress?: string,
     ): Promise<TransportResult>
 }
 

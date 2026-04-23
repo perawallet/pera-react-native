@@ -13,10 +13,14 @@
 import { useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useModalState } from '@hooks/useModalState'
-import { useMultisigCreationStore } from '../../hooks/useMultisigCreation'
+import {
+    useMultisigCreationStore,
+    type Participant,
+} from '../../hooks/useMultisigCreation'
 
 type UseSetThresholdScreenResult = {
     threshold: number
+    participants: Participant[]
     participantCount: number
     isBeforeCreateVisible: boolean
     handleIncrement: () => void
@@ -67,6 +71,7 @@ export const useSetThresholdScreen = (): UseSetThresholdScreenResult => {
 
     return {
         threshold,
+        participants,
         participantCount,
         isBeforeCreateVisible,
         handleIncrement,

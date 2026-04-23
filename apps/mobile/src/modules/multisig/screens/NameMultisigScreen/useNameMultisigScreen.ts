@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { useNavigation } from '@react-navigation/native'
 import {
     useAllAccounts,
     useSelectedAccountAddress,
@@ -34,11 +35,15 @@ import { useMultisigCreationStore } from '../../hooks/useMultisigCreation'
 type UseNameMultisigScreenResult = {
     accountName: string
     isCreating: boolean
+    isNameTaken: boolean
+    nameError: string | undefined
+    isFinishDisabled: boolean
     handleNameChange: (value: string) => void
     handleFinish: () => void
 }
 
 export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
+    const navigation = useNavigation()
     const participants = useMultisigCreationStore(state => state.participants)
     const threshold = useMultisigCreationStore(state => state.threshold)
     const resetState = useMultisigCreationStore(state => state.resetState)
@@ -61,9 +66,35 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
     )
     const [isCreating, setIsCreating] = useState(false)
 
+    const trimmedName = accountName.trim()
+    const normalizedName = trimmedName.toLowerCase()
+    const isNameTaken =
+        trimmedName !== '' &&
+        accounts.some(
+            a => (a.name ?? '').trim().toLowerCase() === normalizedName,
+        )
+    const nameError = isNameTaken
+        ? t('multisig.name.error_name_taken')
+        : undefined
+    const isFinishDisabled = isCreating || trimmedName === '' || isNameTaken
+
     const handleNameChange = useCallback((value: string) => {
         setAccountName(value)
     }, [])
+
+    useEffect(() => {
+        if (!isCreating) return
+
+        const unsubscribe = navigation.addListener('beforeRemove', e => {
+            e.preventDefault()
+        })
+        navigation.setOptions({ headerLeft: () => null })
+
+        return () => {
+            unsubscribe()
+            navigation.setOptions({ headerLeft: undefined })
+        }
+    }, [isCreating, navigation])
 
     const handleFinish = useCallback(async () => {
         if (isCreating) return
@@ -137,6 +168,9 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
     return {
         accountName,
         isCreating,
+        isNameTaken,
+        nameError,
+        isFinishDisabled,
         handleNameChange,
         handleFinish,
     }

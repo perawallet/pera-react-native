@@ -445,7 +445,7 @@ describe('createMultisigProposeTransport', () => {
         )
 
         expect(proposeSignRequest).toHaveBeenCalledWith({
-            jointAccountAddress: 'JOINT_ADDR',
+            multisigAddress: 'JOINT_ADDR',
             signedData: transactionResult.signedData,
             signers: transactionResult.signers,
         })
@@ -456,12 +456,12 @@ describe('createMultisigProposeTransport', () => {
         })
     })
 
-    test('throws when jointAccountAddress is missing', async () => {
+    test('throws when multisigAddress is missing', async () => {
         const transport = createMultisigProposeTransport(vi.fn())
 
         await expect(
             transport.send(transactionResult, { type: 'local' }),
-        ).rejects.toThrow('Joint account address is required')
+        ).rejects.toThrow('Multisig address is required')
     })
 
     test('wraps API errors in TransportError', async () => {

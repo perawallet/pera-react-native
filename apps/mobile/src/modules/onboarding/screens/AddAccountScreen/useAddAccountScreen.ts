@@ -104,7 +104,7 @@ export const useAddAccountScreen = () => {
             pushWebView({ url: config.privacyPolicyUrl, id: 'privacy-policy' }),
         [pushWebView],
     )
-    const handleCreateJointAccount = useCallback(() => {
+    const handleCreateMultisig = useCallback(() => {
         resetMultisigCreation()
         navigation.navigate('Multisig', { screen: 'CreateMultisig' })
     }, [navigation, resetMultisigCreation])
@@ -194,13 +194,13 @@ export const useAddAccountScreen = () => {
                     isDisabled: isCreatingAccount,
                 },
                 {
-                    testID: 'add_account_create_joint_button',
+                    testID: 'add_account_create_multisig_button',
                     titleKey:
-                        'onboarding.add_account.create_joint_account_option_title',
+                        'onboarding.add_account.create_multisig_option_title',
                     descriptionKey:
-                        'onboarding.add_account.create_joint_account_option_description',
-                    leftIcon: 'person-menu' as IconName,
-                    onPress: handleCreateJointAccount,
+                        'onboarding.add_account.create_multisig_option_description',
+                    leftIcon: 'group-user' as IconName,
+                    onPress: handleCreateMultisig,
                 },
                 {
                     testID: 'add_account_import_button',
@@ -208,7 +208,7 @@ export const useAddAccountScreen = () => {
                         'onboarding.add_account.import_account_option_title',
                     descriptionKey:
                         'onboarding.add_account.import_account_option_description',
-                    leftIcon: 'fund' as IconName,
+                    leftIcon: 'wallet-import' as IconName,
                     onPress: handleOpenImportAccountOptions,
                 },
             ].filter(Boolean) as AccountOption[],
@@ -217,7 +217,7 @@ export const useAddAccountScreen = () => {
             handleAddAccount,
             handleCreateUniversalWallet,
             isCreatingAccount,
-            handleCreateJointAccount,
+            handleCreateMultisig,
             handleOpenImportAccountOptions,
         ],
     )
