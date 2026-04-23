@@ -1,0 +1,32 @@
+// Template for a new guardrail check.
+// To enable: copy to `my-rule.check.ts` in this folder. The runner auto-discovers
+// any file ending in `.check.ts` and imports its default export as a `Check`.
+
+import type { Check, SourceMap, Violation } from '../types.js'
+
+const RULE_ID = 'my-rule'
+
+const check: Check = {
+    id: RULE_ID,
+    description: 'Short description of what this rule enforces.',
+
+    run(sources: SourceMap): Violation[] {
+        const violations: Violation[] = []
+
+        for (const sf of sources.values()) {
+            // Walk `sf` with helpers from `../utils/ast.js`
+            // and push Violation objects onto `violations`.
+            //
+            // Each violation must include:
+            //   file       — absolute path (use sf.fileName)
+            //   line, col  — 1-based (use getLineCol(sf, node.getStart(sf)))
+            //   ruleId     — this rule's id
+            //   message    — one-line summary of the problem
+            //   remediation — short fix instruction for the author
+        }
+
+        return violations
+    },
+}
+
+export default check
