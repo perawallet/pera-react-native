@@ -77,7 +77,7 @@ export const AccountSelection = ({
 
     const handleOpenSearch = useCallback(() => {
         accountMenuState.close()
-        navigation.navigate('Search', { screen: 'SearchHome' })
+        navigation.navigate('Search', { screen: 'SearchScreen' })
     }, [accountMenuState, navigation])
 
     const handleAccountMenuDismissed = useCallback(() => {

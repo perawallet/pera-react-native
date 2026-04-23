@@ -18,7 +18,7 @@ import {
 import { useAssetSearchQuery } from '@perawallet/wallet-core-assets'
 import type { AssetSearchItem, PeraAsset } from '@perawallet/wallet-core-assets'
 import { useContacts } from '@perawallet/wallet-core-contacts'
-import { useDebouncedValue } from '@perawallet/wallet-core-shared'
+import { Nullable, useDebouncedValue } from '@perawallet/wallet-core-shared'
 import {
     EMPTY_GLOBAL_SEARCH_RESULTS,
     SEARCH_SCOPES,
@@ -27,7 +27,6 @@ import {
 } from '../models'
 
 const DEFAULT_DEBOUNCE_MS = 300
-const noop = () => {}
 
 export type RemoteAssetsOptions = {
     /** Restrict remote asset results to collectibles (NFTs). */
@@ -55,7 +54,7 @@ export type UseGlobalSearchResult = {
     isLoading: boolean
     hasNextRemotePage: boolean
     isFetchingNextRemotePage: boolean
-    fetchNextRemotePage: () => void
+    fetchNextRemotePage: Nullable<() => void>
 }
 
 export const useGlobalSearch = (
@@ -185,6 +184,6 @@ export const useGlobalSearch = (
             : false,
         fetchNextRemotePage: shouldRunRemoteAssets
             ? remoteAssetQuery.fetchNextPage
-            : noop,
+            : null,
     }
 }

@@ -18,6 +18,7 @@ import { useShouldPlayConfetti } from '@modules/onboarding/hooks'
 
 import { useStyles } from './styles'
 import { useModalState } from '@hooks/useModalState'
+import { useAppNavigation } from '@hooks/useAppNavigation'
 import { AccountSelection } from '@modules/accounts/components/AccountSelection'
 import { QRScannerView } from '@components/QRScannerView'
 import { EmptyView } from '@components/EmptyView'
@@ -32,6 +33,7 @@ export const AccountScreen = () => {
     const styles = useStyles()
     const account = useSelectedAccount()
     const scannerState = useModalState()
+    const navigation = useAppNavigation()
     const { t } = useLanguage()
 
     const { shouldPlayConfetti, setShouldPlayConfetti } =
