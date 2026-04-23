@@ -52,7 +52,7 @@ export const AccountHeaderMenu = ({
                 label: t('search.title'),
                 icon: 'magnifying-glass',
                 onPress: () =>
-                    navigation.navigate('Search', { screen: 'SearchHome' }),
+                    navigation.navigate('Search', { screen: 'SearchScreen' }),
             },
         ],
         [
