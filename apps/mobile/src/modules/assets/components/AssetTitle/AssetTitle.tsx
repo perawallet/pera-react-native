@@ -36,6 +36,11 @@ export const AssetTitle = ({
         [asset.assetId],
     )
 
+    const isSuspicious = useMemo(
+        () => asset.peraMetadata?.verificationTier === 'suspicious',
+        [asset.peraMetadata?.verificationTier],
+    )
+
     return (
         <PWView style={styles.container}>
             <AssetIcon
@@ -46,7 +51,9 @@ export const AssetTitle = ({
                 <PWView style={styles.nameContainer}>
                     <PWText
                         variant={nameVariant}
-                        style={styles.name}
+                        style={
+                            isSuspicious ? styles.suspiciousName : styles.name
+                        }
                         numberOfLines={1}
                     >
                         {isAlgo ? 'Algo' : asset.name}
@@ -64,14 +71,12 @@ export const AssetTitle = ({
                                 size={'sm'}
                             />
                         )}
-                    {!isAlgo &&
-                        asset.peraMetadata?.verificationTier ===
-                            'suspicious' && (
-                            <PWIcon
-                                name='assets/suspicious'
-                                size={'sm'}
-                            />
-                        )}
+                    {!isAlgo && isSuspicious && (
+                        <PWIcon
+                            name='assets/suspicious'
+                            size={'sm'}
+                        />
+                    )}
                 </PWView>
                 {showId && (
                     <CopyableText copyValue={String(asset.assetId)}>
