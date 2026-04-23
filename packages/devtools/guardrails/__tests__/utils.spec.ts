@@ -4,6 +4,15 @@ import { parseArgs } from '../utils/args.js'
 import { formatHuman, type RunSummary } from '../utils/output.js'
 import { filterSuppressed } from '../utils/suppressions.js'
 import type { SourceMap, Violation } from '../types.js'
+import {
+    IN_PROCESS_THRESHOLD,
+    FILES_PER_WORKER,
+    MAX_WORKERS,
+    pickWorkerCount,
+    shouldForceWorkers,
+    shouldProfile,
+    readWorkerCountOverride,
+} from '../constants.js'
 
 describe('parseArgs', () => {
     it('returns defaults for no args', () => {
@@ -229,5 +238,37 @@ describe('filterSuppressed', () => {
 
         const filtered = filterSuppressed(violations, sources)
         expect(filtered).toHaveLength(1)
+    })
+})
+
+describe('guardrails constants', () => {
+    it('exposes the documented defaults', () => {
+        expect(IN_PROCESS_THRESHOLD).toBe(200)
+        expect(FILES_PER_WORKER).toBe(150)
+        expect(MAX_WORKERS).toBe(4)
+    })
+
+    it('pickWorkerCount respects cpu count, file count, and the max cap', () => {
+        expect(pickWorkerCount({ files: 0, cpus: 8 })).toBe(1)
+        expect(pickWorkerCount({ files: 300, cpus: 2 })).toBe(1)
+        expect(pickWorkerCount({ files: 300, cpus: 4 })).toBe(2)
+        expect(pickWorkerCount({ files: 900, cpus: 8 })).toBe(4)
+    })
+
+    it('readWorkerCountOverride parses valid integers and rejects noise', () => {
+        expect(readWorkerCountOverride('3')).toBe(3)
+        expect(readWorkerCountOverride(undefined)).toBeNull()
+        expect(readWorkerCountOverride('')).toBeNull()
+        expect(readWorkerCountOverride('abc')).toBeNull()
+        expect(readWorkerCountOverride('0')).toBeNull()
+    })
+
+    it('shouldForceWorkers / shouldProfile accept 1 and "true"', () => {
+        expect(shouldForceWorkers('1')).toBe(true)
+        expect(shouldForceWorkers('true')).toBe(true)
+        expect(shouldForceWorkers('')).toBe(false)
+        expect(shouldForceWorkers(undefined)).toBe(false)
+        expect(shouldProfile('1')).toBe(true)
+        expect(shouldProfile(undefined)).toBe(false)
     })
 })
