@@ -11,3 +11,5 @@
  */
 
 export { LedgerSigningOverlay } from './LedgerSigningOverlay'
+export { LedgerSigningOverlayContainer } from './LedgerSigningOverlayContainer'
+export { useLedgerSigningOverlay } from './useLedgerSigningOverlay'

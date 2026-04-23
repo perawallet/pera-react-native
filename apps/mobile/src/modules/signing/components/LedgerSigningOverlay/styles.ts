@@ -22,7 +22,10 @@ export const useStyles = makeStyles(theme => ({
         ...getTypography(theme, 'h3'),
         marginBottom: theme.spacing.lg,
     },
-    indicator: {
+    lottie: {
+        // Matches Android dialog_ledger_loading.xml (164dp × 48dp).
+        width: 164,
+        height: 48,
         marginVertical: theme.spacing.lg,
     },
     message: {
@@ -37,5 +40,11 @@ export const useStyles = makeStyles(theme => ({
     },
     retryButton: {
         marginBottom: theme.spacing.xs,
+    },
+    progress: {
+        ...getTypography(theme, 'body'),
+        color: theme.colors.textMain,
+        textAlign: 'center',
+        marginTop: theme.spacing.sm,
     },
 }))

@@ -20,7 +20,7 @@ vi.mock('../../discovery', () => ({
 }))
 
 import { useLedgerAccounts } from '../useLedgerAccounts'
-import type { LedgerTransport } from '../../types'
+import type { LedgerTransport } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const makeTransport = () =>

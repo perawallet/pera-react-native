@@ -25,6 +25,7 @@ import type {
     PeraSignedTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { Address } from '@perawallet/wallet-core-blockchain'
+import { withTimeout } from '@perawallet/wallet-core-shared'
 import type {
     SigningStrategy,
     AnalyzedSignableGroup,
@@ -33,6 +34,34 @@ import type {
     SigningCallbacks,
 } from '../types'
 import { CannotSignError, HardwareWalletError, SigningError } from '../errors'
+import {
+    LedgerAppNotOpenError,
+    LedgerConnectionError,
+    LedgerDisconnectedError,
+    LedgerTimeoutError,
+    LedgerUserRejectedError,
+    LedgerAddressMismatchError,
+    LEDGER_CONNECTION_TIMEOUT_MS,
+    LEDGER_CONFIRMATION_TIMEOUT_MS,
+} from '@perawallet/wallet-core-ledger'
+
+const isClassifiedLedgerError = (error: unknown): boolean =>
+    error instanceof LedgerConnectionError ||
+    error instanceof LedgerAppNotOpenError ||
+    error instanceof LedgerUserRejectedError ||
+    error instanceof LedgerDisconnectedError ||
+    error instanceof LedgerTimeoutError ||
+    error instanceof LedgerAddressMismatchError
+
+/**
+ * Factory for the `rejectWith` callback of the shared `withTimeout` helper,
+ * so Ledger call sites reject with a typed `LedgerConnectionError` rather
+ * than the generic `Error` the shared utility would otherwise produce.
+ */
+const ledgerTimeoutReason =
+    (operation: string) =>
+    (_op: string, ms: number): Error =>
+        new LedgerConnectionError(`${operation} timed out after ${ms}ms`)
 
 /**
  * Function to encode a transaction to raw bytes for the Ledger to sign.
@@ -51,10 +80,8 @@ export type HardwareStrategyOptions = {
 const validateAndExtract = (
     group: AnalyzedSignableGroup,
     account: WalletAccount,
-    registry?: HardwareWalletRegistry,
 ): {
     hwAccount: HardwareWalletAccount
-    transportProvider: HardwareWalletTransportProvider
     data: TransactionSignableData
 } => {
     if (!isHardwareWalletAccount(account)) {
@@ -80,30 +107,78 @@ const validateAndExtract = (
         throw new HardwareWalletError('unsupported_data_type')
     }
 
-    const hwAccount = account as HardwareWalletAccount
-    const transportProvider = registry?.getProvider(
-        hwAccount.hardwareDetails.manufacturer,
-    )
-
-    if (!transportProvider) {
-        throw new HardwareWalletError('transport_unavailable')
-    }
-
-    return { hwAccount, transportProvider, data: group.data }
+    return { hwAccount: account as HardwareWalletAccount, data: group.data }
 }
 
 /**
  * Connect to the hardware device and verify it is ready.
+ *
+ * If `connect` rejects via the timeout race, a late-arriving transport is
+ * disconnected as soon as it resolves so we don't leak an open BLE link
+ * (Android in particular won't reap an orphaned link until the OS times it
+ * out, which can block the next reconnect attempt).
+ *
+ * Threat-model note on the address re-fetch: this matches native iOS by
+ * verifying the on-device address at connect time. It does NOT re-verify
+ * before each subsequent transaction — for multi-tx sessions the device is
+ * trusted to remain on the same account between signs. Tightening this to a
+ * per-tx check is a future hardening.
  */
 const connectAndVerify = async (
     transportProvider: HardwareWalletTransportProvider,
     deviceId: string,
     accountIndex: number,
+    expectedAddress: string,
     callbacks?: SigningCallbacks,
 ): Promise<HardwareWalletTransport> => {
     callbacks?.onPhaseChange?.('connecting')
-    const transport = await transportProvider.connect(deviceId)
-    await transport.getAddress(accountIndex, false)
+    const connectPromise = transportProvider.connect(deviceId)
+    let transport: HardwareWalletTransport
+    try {
+        transport = await withTimeout(
+            connectPromise,
+            LEDGER_CONNECTION_TIMEOUT_MS,
+            'Connect to Ledger',
+            ledgerTimeoutReason('Connect to Ledger'),
+        )
+    } catch (error) {
+        connectPromise
+            .then(t => t.disconnect().catch(() => undefined))
+            .catch(() => undefined)
+        throw error
+    }
+
+    // Re-fetch the address at the stored index and compare to the account's
+    // expected address. Catches silent drift when the on-device account order
+    // has changed since import. Algorand addresses are canonical base32 with
+    // checksum, so a strict string compare is the right equality check (no
+    // case folding, no whitespace ambiguity).
+    //
+    // The verification is done once at connect time (matching native iOS).
+    // For multi-tx signing sessions the device is trusted to remain on the
+    // same account between signs; per-tx re-verification is a future
+    // hardening.
+    try {
+        const fetchedAccount = await withTimeout(
+            transport.getAddress(accountIndex, false),
+            LEDGER_CONNECTION_TIMEOUT_MS,
+            'Verify Ledger address',
+            ledgerTimeoutReason('Verify Ledger address'),
+        )
+        if (fetchedAccount.address !== expectedAddress) {
+            throw new LedgerAddressMismatchError(
+                expectedAddress,
+                fetchedAccount.address,
+            )
+        }
+    } catch (error) {
+        // Disconnect the (successfully connected) transport before surfacing
+        // the verification error — otherwise the outer finally won't see a
+        // transport handle and the BLE link leaks.
+        await transport.disconnect().catch(() => undefined)
+        throw error
+    }
+
     callbacks?.onPhaseChange?.('awaiting-approval')
     return transport
 }
@@ -137,9 +212,15 @@ const signTransactions = async (
         }
 
         const txnBytes = encodeTransaction(txn)
-        const signature = await transport.signTransaction(
-            accountIndex,
-            txnBytes,
+        // Sign-time timeout uses CONFIRMATION (30s) not CONNECTION (10s) —
+        // the user is reading the transaction on the device. The timeout
+        // exists so a dropped BLE link mid-confirmation doesn't hang the
+        // promise forever, not to bound the user's reading time.
+        const signature = await withTimeout(
+            transport.signTransaction(accountIndex, txnBytes),
+            LEDGER_CONFIRMATION_TIMEOUT_MS,
+            'Sign Ledger transaction',
+            ledgerTimeoutReason('Sign Ledger transaction'),
         )
 
         const senderAddress = txn.sender.toString()
@@ -160,19 +241,84 @@ const signTransactions = async (
 }
 
 /**
- * Classify and re-throw errors with proper types.
+ * Classify a raw error into a typed error that the UI presets understand.
+ * Returns the classified value rather than throwing, so the caller can pass
+ * the same value to both `onError` and `throw`.
  */
-const classifyError = (error: unknown): never => {
+const toClassifiedError = (error: unknown): Error => {
     if (
         error instanceof CannotSignError ||
-        error instanceof HardwareWalletError
+        error instanceof HardwareWalletError ||
+        isClassifiedLedgerError(error)
     ) {
-        throw error
+        return error as Error
     }
-    throw new SigningError(
+    return new SigningError(
         error instanceof Error ? error.message : String(error),
         error instanceof Error ? error : undefined,
     )
+}
+
+export type SignTransactionsOnHardwareWalletOptions = {
+    registry?: HardwareWalletRegistry
+    encodeTransaction: EncodeTransactionFunction
+    callbacks?: SigningCallbacks
+}
+
+/**
+ * Connect to the hardware device, verify the on-device address matches the
+ * account's expected address, sign the given transactions sequentially, then
+ * disconnect. Returns a parallel array where indices listed in `indicesToSign`
+ * are signed and all other entries are unsigned placeholders (`{ txn }` only).
+ *
+ * Shared between the XState-based signing pipeline and the algokit-based
+ * `useTransactionSigner` flow so both paths get identical Ledger behavior.
+ */
+export const signTransactionsOnHardwareWallet = async (
+    hwAccount: HardwareWalletAccount,
+    transactions: PeraTransaction[],
+    indicesToSign: number[],
+    options: SignTransactionsOnHardwareWalletOptions,
+): Promise<PeraSignedTransaction[]> => {
+    const { registry, encodeTransaction, callbacks } = options
+
+    const transportProvider = registry?.getProvider(
+        hwAccount.hardwareDetails.manufacturer,
+    )
+    if (!transportProvider) {
+        throw new HardwareWalletError('transport_unavailable')
+    }
+
+    const { deviceId, accountIndex } = hwAccount.hardwareDetails
+    let transport: HardwareWalletTransport | undefined
+
+    try {
+        transport = await connectAndVerify(
+            transportProvider,
+            deviceId,
+            accountIndex,
+            hwAccount.address,
+            callbacks,
+        )
+
+        return await signTransactions(
+            transport,
+            { type: 'transactions', transactions, indicesToSign },
+            hwAccount,
+            encodeTransaction,
+            callbacks,
+        )
+    } catch (error) {
+        const classified = toClassifiedError(error)
+        callbacks?.onError?.(classified)
+        throw classified
+    } finally {
+        try {
+            await transport?.disconnect()
+        } catch {
+            // Swallow disconnect errors to preserve original error
+        }
+    }
 }
 
 /**
@@ -194,47 +340,23 @@ export const createHardwareStrategy = (
             account: WalletAccount,
             callbacks?: SigningCallbacks,
         ): Promise<SigningResult> => {
-            const { hwAccount, transportProvider, data } = validateAndExtract(
-                group,
-                account,
-                hardwareWalletRegistry,
-            )
+            const { hwAccount, data } = validateAndExtract(group, account)
 
-            const { deviceId, accountIndex } = hwAccount.hardwareDetails
-            let transport: HardwareWalletTransport | undefined
-
-            try {
-                transport = await connectAndVerify(
-                    transportProvider,
-                    deviceId,
-                    accountIndex,
-                    callbacks,
-                )
-
-                const signed = await signTransactions(
-                    transport,
-                    data,
-                    hwAccount,
+            const signed = await signTransactionsOnHardwareWallet(
+                hwAccount,
+                data.transactions,
+                data.indicesToSign,
+                {
+                    registry: hardwareWalletRegistry,
                     encodeTransaction,
                     callbacks,
-                )
+                },
+            )
 
-                return {
-                    signedData: { type: 'transactions', signed },
-                    signers: [{ address: account.address }],
-                    originalIndices: group.originalIndices,
-                }
-            } catch (error) {
-                callbacks?.onError?.(
-                    error instanceof Error ? error : new Error(String(error)),
-                )
-                return classifyError(error)
-            } finally {
-                try {
-                    await transport?.disconnect()
-                } catch {
-                    // Swallow disconnect errors to preserve original error
-                }
+            return {
+                signedData: { type: 'transactions', signed },
+                signers: [{ address: account.address }],
+                originalIndices: group.originalIndices,
             }
         },
     }

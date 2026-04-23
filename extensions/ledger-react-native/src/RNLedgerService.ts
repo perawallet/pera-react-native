@@ -11,18 +11,6 @@
  */
 
 import type { HardwareWalletService } from '@perawallet/wallet-extension-platform'
-import type {
-    LedgerTransportProvider,
-    LedgerTransport,
-    LedgerDevice,
-    LedgerAccount,
-} from '@perawallet/wallet-core-ledger'
-import {
-    resolveDeviceModel,
-    buildLedgerAccountPath,
-    classifyLedgerError,
-    LedgerConnectionError,
-} from '@perawallet/wallet-core-ledger'
 import {
     hexToBytes,
     bytesToHex,
@@ -30,6 +18,14 @@ import {
 } from '@perawallet/wallet-core-shared'
 import TransportBLE from '@ledgerhq/react-native-hw-transport-ble'
 import Algorand from '@ledgerhq/hw-app-algorand'
+import type {
+    LedgerTransportProvider,
+    LedgerTransport,
+    LedgerDevice,
+    LedgerAccount,
+} from './types'
+import { classifyLedgerError, LedgerConnectionError } from './errors'
+import { resolveDeviceModel, buildLedgerAccountPath } from './constants'
 
 /**
  * Wraps a connected Ledger BLE transport + Algorand app instance
@@ -146,6 +142,13 @@ export class RNLedgerService implements HardwareWalletService {
             },
 
             async connect(deviceId: string): Promise<LedgerTransport> {
+                // The pairing/bonding pre-check happens in the business
+                // logic layer (`useLedgerPairing` + `useLedgerPairingStore`
+                // in `@perawallet/wallet-core-ledger`). iOS doesn't expose
+                // bond state to apps, so the check is implemented as a
+                // "have we successfully paired with this deviceId before?"
+                // heuristic instead of calling Android's
+                // BluetoothAdapter.bondedDevices directly.
                 try {
                     const bleTransport = await TransportBLE.open(deviceId)
                     const algorandApp = new Algorand(bleTransport)

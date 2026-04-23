@@ -12,8 +12,11 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { discoverLedgerAccounts } from '../discoverAccounts'
-import type { LedgerTransport, LedgerAccount } from '../../types'
-import { LedgerAppNotOpenError } from '../../errors'
+import type {
+    LedgerTransport,
+    LedgerAccount,
+} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+import { LedgerAppNotOpenError } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 
 const createMockAccount = (index: number): LedgerAccount => ({
     address: `ADDR_${index}`,

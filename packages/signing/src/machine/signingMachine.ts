@@ -33,6 +33,7 @@ import { localKeySignerActor } from './actors/signers/localKeySignerActor'
 import { hardwareSignerActor } from './actors/signers/hardwareSignerActor'
 import { multisigSignerActor } from './actors/signers/multisigSignerActor'
 import { transportActor } from './actors/transports/transportActor'
+import { LedgerUserRejectedError } from '@perawallet/wallet-core-ledger'
 import { resolveInitialContext, makeFailedContext } from './actions'
 
 /**
@@ -105,6 +106,8 @@ export const signingMachine = setup({
         isNextSignerMultisig: ({ context }) =>
             getNextPendingSignerType(context) === 'multisig',
         isRetryable: ({ context }) => isRetryableError(context.error),
+        isUserRejected: ({ context }) =>
+            context.error instanceof LedgerUserRejectedError,
         canRetryValidating: ({ context }) =>
             isRetryableError(context.error) &&
             context.failedDuringState === 'validating',
@@ -337,10 +340,17 @@ export const signingMachine = setup({
                             target: 'dispatching',
                             actions: 'appendHardwareResults',
                         },
-                        onError: {
-                            target: '#signingMachine.failed',
-                            actions: 'setSigningError',
-                        },
+                        onError: [
+                            {
+                                guard: 'isUserRejected',
+                                target: '#signingMachine.rejected',
+                                actions: 'setSigningError',
+                            },
+                            {
+                                target: '#signingMachine.failed',
+                                actions: 'setSigningError',
+                            },
+                        ],
                     },
                 },
 

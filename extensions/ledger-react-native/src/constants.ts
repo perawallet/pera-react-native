@@ -84,14 +84,29 @@ export const LEDGER_STATUS_CODES = {
 } as const
 
 /**
- * Maximum time to scan for BLE devices before showing a timeout message.
+ * Ledger timeouts and tuning parameters.
+ *
+ * These are compile-time constants chosen to match the native iOS/Android
+ * clients and the Ledger firmware's own timing envelope. Moving them to
+ * remote config was considered but deferred: they are safety-sensitive
+ * (too-short values strand users mid-sign; too-long values hang the UI
+ * on a dead BLE link) and changing them doesn't benefit from per-release
+ * overrides. If a production incident ever needs a hotfix here, promote
+ * them to `RemoteConfigKeys` with the current values as defaults — the
+ * hooks/pipeline call sites are small enough to rewire.
  */
+
+/** Maximum time to scan for BLE devices before showing a timeout message. */
 export const LEDGER_SCAN_TIMEOUT_MS = 30_000
 
-/**
- * Maximum time to wait for user confirmation on the Ledger device.
- */
+/** Maximum time to wait for user confirmation on the Ledger device. */
 export const LEDGER_CONFIRMATION_TIMEOUT_MS = 30_000
+
+/**
+ * Maximum time to wait for a BLE connection to the Ledger device.
+ * Matches the 10-second timeout used by native iOS.
+ */
+export const LEDGER_CONNECTION_TIMEOUT_MS = 10_000
 
 /**
  * Stop scanning for accounts after this many consecutive indices

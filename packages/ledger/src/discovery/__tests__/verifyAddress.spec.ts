@@ -12,8 +12,8 @@
 
 import { describe, it, expect, vi } from 'vitest'
 import { verifyLedgerAddress } from '../verifyAddress'
-import type { LedgerTransport } from '../../types'
-import { LedgerUserRejectedError } from '../../errors'
+import type { LedgerTransport } from '@perawallet/wallet-extension-ledger-react-native/protocol'
+import { LedgerUserRejectedError } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 
 describe('verifyLedgerAddress', () => {
     it('calls getAddress with verify=true', async () => {

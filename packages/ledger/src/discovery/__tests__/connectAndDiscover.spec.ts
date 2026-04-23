@@ -16,7 +16,7 @@ import type {
     LedgerTransport,
     LedgerTransportProvider,
     LedgerAccount,
-} from '../../types'
+} from '@perawallet/wallet-extension-ledger-react-native/protocol'
 
 const createMockAccount = (index: number): LedgerAccount => ({
     address: `ADDR_${index}`,

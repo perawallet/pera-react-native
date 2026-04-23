@@ -11,14 +11,17 @@
  */
 
 import React from 'react'
-import { ActivityIndicator } from 'react-native'
+import LottieView from 'lottie-react-native'
 import { PWBottomSheet, PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import bluetoothAnimation from '@assets/animations/ledger-bluetooth.json'
 import { useStyles } from './styles'
 
 type LedgerSigningOverlayProps = {
     isVisible: boolean
     status: 'connecting' | 'confirming' | 'error' | 'timeout'
+    currentTx?: number
+    totalTxs?: number
     onCancel: () => void
     onRetry?: () => void
 }
@@ -34,6 +37,8 @@ const STATUS_MESSAGE_KEYS: Record<LedgerSigningOverlayProps['status'], string> =
 export const LedgerSigningOverlay = ({
     isVisible,
     status,
+    currentTx,
+    totalTxs,
     onCancel,
     onRetry,
 }: LedgerSigningOverlayProps) => {
@@ -41,11 +46,17 @@ export const LedgerSigningOverlay = ({
     const { t } = useLanguage()
 
     const showRetry = status === 'error' || status === 'timeout'
+    const showProgress =
+        status === 'confirming' &&
+        typeof currentTx === 'number' &&
+        typeof totalTxs === 'number' &&
+        totalTxs > 1
 
     return (
         <PWBottomSheet
             isVisible={isVisible}
-            onDismiss={onCancel}
+            enablePanDownToClose={false}
+            enableCloseOnBackdropPress={false}
         >
             <PWView style={styles.container}>
                 <PWText style={styles.title}>
@@ -53,15 +64,27 @@ export const LedgerSigningOverlay = ({
                 </PWText>
 
                 {!showRetry && (
-                    <ActivityIndicator
-                        size='large'
-                        style={styles.indicator}
+                    <LottieView
+                        autoPlay
+                        loop
+                        source={bluetoothAnimation}
+                        style={styles.lottie}
+                        testID='ledger-signing-overlay-lottie'
                     />
                 )}
 
                 <PWText style={styles.message}>
                     {t(STATUS_MESSAGE_KEYS[status])}
                 </PWText>
+
+                {showProgress && (
+                    <PWText style={styles.progress}>
+                        {t('ledger.signing.progress', {
+                            current: currentTx,
+                            total: totalTxs,
+                        })}
+                    </PWText>
+                )}
 
                 <PWView style={styles.actions}>
                     {showRetry && onRetry && (

@@ -30,18 +30,21 @@ export default defineConfig({
     ],
     build: {
         lib: {
-            entry: resolve(__dirname, 'src/index.ts'),
+            entry: {
+                index: resolve(__dirname, 'src/index.ts'),
+                protocol: resolve(__dirname, 'src/protocol.ts'),
+            },
             formats: ['es'],
-            fileName: 'index',
         },
         rollupOptions: {
             external: [
+                '@ledgerhq/devices',
+                '@ledgerhq/errors',
                 '@ledgerhq/react-native-hw-transport-ble',
                 '@ledgerhq/hw-app-algorand',
                 '@ledgerhq/hw-transport',
                 'react-native-ble-plx',
                 '@perawallet/wallet-core-hardware-wallet',
-                '@perawallet/wallet-core-ledger',
                 '@perawallet/wallet-core-shared',
                 '@perawallet/wallet-extension-platform',
             ],

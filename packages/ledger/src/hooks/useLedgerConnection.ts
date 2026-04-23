@@ -17,7 +17,7 @@ import type {
     HardwareWalletTransportProvider,
     HardwareWalletConnectionStatus,
 } from '@perawallet/wallet-core-hardware-wallet'
-import { LEDGER_SCAN_TIMEOUT_MS } from '../constants'
+import { LEDGER_SCAN_TIMEOUT_MS } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseLedgerConnectionResult = {

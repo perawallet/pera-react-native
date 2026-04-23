@@ -13,6 +13,7 @@
 export * from './useArc60Signer'
 export * from './useArbitraryDataSigner'
 export * from './useBalanceValidation'
+export * from './useHardwareSigning'
 export * from './useSigningPipeline'
 export * from './useSigningRequest'
 export * from './useTransactionSigner'

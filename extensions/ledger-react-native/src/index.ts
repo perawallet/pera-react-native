@@ -14,3 +14,6 @@ export const name = '@perawallet/wallet-extension-ledger-react-native'
 
 export { WithLedgerExtension } from './extension'
 export { RNLedgerService } from './RNLedgerService'
+export * from './types'
+export * from './errors'
+export * from './constants'

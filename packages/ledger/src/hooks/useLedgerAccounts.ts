@@ -11,7 +11,10 @@
  */
 
 import { useState, useCallback } from 'react'
-import type { LedgerAccount, LedgerTransport } from '../types'
+import type {
+    LedgerAccount,
+    LedgerTransport,
+} from '@perawallet/wallet-extension-ledger-react-native/protocol'
 import { discoverLedgerAccounts } from '../discovery'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 

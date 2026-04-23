@@ -17,6 +17,7 @@ import {
     LedgerDisconnectedError,
     LedgerTimeoutError,
     LedgerUserRejectedError,
+    LedgerAddressMismatchError,
 } from '@perawallet/wallet-core-ledger'
 import { getLedgerErrorPreset } from '../ledgerErrorPresets'
 
@@ -54,6 +55,16 @@ describe('getLedgerErrorPreset', () => {
             t,
         )
         expect(preset.kind).toBe('connection_failed')
+    })
+
+    it('maps LedgerAddressMismatchError to address_mismatch preset', () => {
+        const preset = getLedgerErrorPreset(
+            new LedgerAddressMismatchError('EXPECTED_ADDR', 'ACTUAL_ADDR'),
+            t,
+        )
+        expect(preset.kind).toBe('address_mismatch')
+        expect(preset.title).toBe('ledger.errors.address_mismatch_title')
+        expect(preset.body).toBe('ledger.errors.address_mismatch')
     })
 
     it('falls back to connection_failed for plain Error', () => {

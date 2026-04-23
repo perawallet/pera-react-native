@@ -11,9 +11,12 @@
  */
 
 import { discoverAccounts } from '@perawallet/wallet-core-hardware-wallet'
-import type { LedgerAccount, LedgerTransport } from '../types'
-import { MAX_ACCOUNT_SCAN_GAP } from '../constants'
-import { classifyLedgerError } from '../errors'
+import type {
+    LedgerAccount,
+    LedgerTransport,
+} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+import { MAX_ACCOUNT_SCAN_GAP } from '@perawallet/wallet-extension-ledger-react-native/protocol'
+import { classifyLedgerError } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 
 export type DiscoverAccountsOptions = {
     /** The connected Ledger transport */

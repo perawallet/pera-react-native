@@ -38,7 +38,11 @@ import { RNLedgerService } from '../RNLedgerService'
 import {
     LedgerConnectionError,
     LedgerUserRejectedError,
-} from '@perawallet/wallet-core-ledger'
+    LedgerAppNotOpenError,
+    LedgerDisconnectedError,
+    LedgerTimeoutError,
+    classifyLedgerError,
+} from '../errors'
 
 describe('RNLedgerService', () => {
     beforeEach(() => {
@@ -288,5 +292,37 @@ describe('RNLedgerService', () => {
             .isSupported()
 
         expect(result).toBe(true)
+    })
+
+    describe('classifyLedgerError', () => {
+        test('classifies 0x6985 as LedgerUserRejectedError', () => {
+            const error = { statusCode: 0x6985 }
+            const classified = classifyLedgerError(error)
+            expect(classified).toBeInstanceOf(LedgerUserRejectedError)
+        })
+
+        test('classifies 0x6986 as LedgerUserRejectedError', () => {
+            const error = { statusCode: 0x6986 }
+            const classified = classifyLedgerError(error)
+            expect(classified).toBeInstanceOf(LedgerUserRejectedError)
+        })
+
+        test('classifies 0x6e00 as LedgerAppNotOpenError', () => {
+            const error = { statusCode: 0x6e00 }
+            const classified = classifyLedgerError(error)
+            expect(classified).toBeInstanceOf(LedgerAppNotOpenError)
+        })
+
+        test('classifies disconnect message as LedgerDisconnectedError', () => {
+            const error = new Error('Device disconnected')
+            const classified = classifyLedgerError(error)
+            expect(classified).toBeInstanceOf(LedgerDisconnectedError)
+        })
+
+        test('classifies timeout message as LedgerTimeoutError', () => {
+            const error = new Error('Connection timeout')
+            const classified = classifyLedgerError(error)
+            expect(classified).toBeInstanceOf(LedgerTimeoutError)
+        })
     })
 })

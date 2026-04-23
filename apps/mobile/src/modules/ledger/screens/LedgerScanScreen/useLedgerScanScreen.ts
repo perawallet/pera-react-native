@@ -14,15 +14,22 @@ import { useEffect, useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
+import { useLedgerPairing } from '@perawallet/wallet-core-ledger'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 import { useLedgerConnection } from '../../hooks'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseLedgerScanScreenResult = {
     devices: HardwareWalletDevice[]
     isScanning: boolean
     error: Nullable<Error>
+    /** Device awaiting pairing-instructions confirmation, if any. */
+    pendingPairingDevice: Nullable<HardwareWalletDevice>
     handleDevicePress: (device: HardwareWalletDevice) => void
+    /** Confirm the pairing instructions and proceed with the connection. */
+    handleConfirmPairing: () => void
+    /** Dismiss the pairing instructions without connecting. */
+    handleCancelPairing: () => void
     handleRetry: () => void
     handleTroubleshoot: () => void
     t: (key: string, options?: Record<string, unknown>) => string
@@ -33,6 +40,12 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     const navigation = useAppNavigation()
     const { devices, isScanning, startScan, stopScan, error } =
         useLedgerConnection()
+    const {
+        pendingPairingDevice,
+        requestPairing,
+        confirmPairing,
+        cancelPairing,
+    } = useLedgerPairing()
 
     useEffect(() => {
         startScan()
@@ -42,7 +55,7 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         }
     }, [startScan, stopScan])
 
-    const handleDevicePress = useCallback(
+    const proceedWithDevice = useCallback(
         (device: HardwareWalletDevice) => {
             stopScan()
             navigation.navigate('LedgerFetchAccounts', {
@@ -52,6 +65,21 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         },
         [stopScan, navigation],
     )
+
+    const handleDevicePress = useCallback(
+        (device: HardwareWalletDevice) => {
+            requestPairing(device, proceedWithDevice)
+        },
+        [requestPairing, proceedWithDevice],
+    )
+
+    const handleConfirmPairing = useCallback(() => {
+        confirmPairing(proceedWithDevice)
+    }, [confirmPairing, proceedWithDevice])
+
+    const handleCancelPairing = useCallback(() => {
+        cancelPairing()
+    }, [cancelPairing])
 
     const handleRetry = useCallback(() => {
         startScan()
@@ -65,7 +93,10 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
         devices,
         isScanning,
         error,
+        pendingPairingDevice,
         handleDevicePress,
+        handleConfirmPairing,
+        handleCancelPairing,
         handleRetry,
         handleTroubleshoot,
         t,

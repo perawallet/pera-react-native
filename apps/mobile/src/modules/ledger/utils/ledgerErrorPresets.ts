@@ -16,6 +16,7 @@ import {
     LedgerDisconnectedError,
     LedgerTimeoutError,
     LedgerUserRejectedError,
+    LedgerAddressMismatchError,
 } from '@perawallet/wallet-core-ledger'
 
 export type LedgerErrorPresetKind =
@@ -24,6 +25,7 @@ export type LedgerErrorPresetKind =
     | 'connection_lost'
     | 'timeout'
     | 'connection_failed'
+    | 'address_mismatch'
 
 export type LedgerErrorPreset = {
     kind: LedgerErrorPresetKind
@@ -52,6 +54,10 @@ const KIND_BY_ERROR: Array<{
     {
         match: error => error instanceof LedgerTimeoutError,
         kind: 'timeout',
+    },
+    {
+        match: error => error instanceof LedgerAddressMismatchError,
+        kind: 'address_mismatch',
     },
     {
         match: error => error instanceof LedgerConnectionError,
