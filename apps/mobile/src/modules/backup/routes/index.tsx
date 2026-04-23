@@ -19,10 +19,10 @@ import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { safeAreaLayout } from '@layouts/index'
 import { BackupInfoScreen } from '../screens/BackupInfoScreen'
-import { BackupWriteDownScreen } from '../screens/BackupWriteDownScreen'
-import { BackupMnemonicScreen } from '../screens/BackupMnemonicScreen'
+import { BackupReminderWriteDownScreen } from '../screens/BackupReminderWriteDownScreen'
+import { BackupReminderMnemonicScreen } from '../screens/BackupReminderMnemonicScreen'
 import { BackupVerificationScreen } from '../screens/BackupVerificationScreen'
-import { BackupSuccessScreen } from '../screens/BackupSuccessScreen'
+import { BackupReminderSuccessScreen } from '../screens/BackupReminderSuccessScreen'
 import type { BackupStackParamList } from './types'
 
 export type { BackupStackParamList } from './types'
@@ -51,11 +51,11 @@ export const BackupStackNavigator = () => {
             />
             <Stack.Screen
                 name='BackupWriteDown'
-                component={BackupWriteDownScreen}
+                component={BackupReminderWriteDownScreen}
             />
             <Stack.Screen
                 name='BackupMnemonic'
-                component={BackupMnemonicScreen}
+                component={BackupReminderMnemonicScreen}
             />
             <Stack.Screen
                 name='BackupVerification'
@@ -64,7 +64,7 @@ export const BackupStackNavigator = () => {
             <Stack.Screen
                 name='BackupSuccess'
                 options={{ headerShown: false }}
-                component={BackupSuccessScreen}
+                component={BackupReminderSuccessScreen}
             />
         </Stack.Navigator>
     )

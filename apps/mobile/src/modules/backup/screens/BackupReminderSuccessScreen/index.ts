@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export * from './BackupWriteDownScreen'
+export * from './BackupReminderSuccessScreen'

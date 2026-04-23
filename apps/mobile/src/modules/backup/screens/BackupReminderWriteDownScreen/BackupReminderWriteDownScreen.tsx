@@ -15,14 +15,14 @@ import EditPenImage from '@assets/icons/edit-pen.svg'
 import { PWIcon, PWInfoView, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { ILLUSTRATION_SIZE } from '../../constants'
-import { useBackupWriteDownScreen } from './useBackupWriteDownScreen'
+import { useBackupReminderWriteDownScreen } from './useBackupReminderWriteDownScreen'
 import { useStyles } from './styles'
 
-export const BackupWriteDownScreen = () => {
+export const BackupReminderWriteDownScreen = () => {
     const styles = useStyles()
     const { theme } = useTheme()
     const { t } = useLanguage()
-    const { onContinue } = useBackupWriteDownScreen()
+    const { onContinue } = useBackupReminderWriteDownScreen()
 
     return (
         <PWInfoView

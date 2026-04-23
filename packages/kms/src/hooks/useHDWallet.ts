@@ -10,10 +10,7 @@
  limitations under the License
  */
 
-import type {
-    KMSHDWalletSession,
-    MnemonicWordAtPosition,
-} from '../models/session'
+import type { KMSHDWalletSession } from '../models/session'
 import { fromSeed, KeyContext } from '@algorandfoundation/xhd-wallet-api'
 import { KeyPair, KeyType } from '../models'
 import { makeKeyPair } from '../utils'
@@ -24,7 +21,6 @@ import {
     entropyToMnemonic,
     generateHDMasterKey,
 } from '../crypto/hdwallet-utils'
-import { pickDistinctIndexes } from '../crypto/random'
 import { zeroBytes } from '../crypto/secure-memory'
 import type { KeyData, KeyId } from '@algorandfoundation/keystore'
 
@@ -178,15 +174,6 @@ export const useHDWallet = () => {
             getMnemonic: async () => {
                 const words = await resolveMnemonicWords()
                 return new TextEncoder().encode(words.join(' '))
-            },
-            getRandomMnemonicWords: async (
-                count: number,
-            ): Promise<MnemonicWordAtPosition[]> => {
-                const words = await resolveMnemonicWords()
-                const indexes = pickDistinctIndexes(count, words.length).sort(
-                    (a, b) => a - b,
-                )
-                return indexes.map(index => ({ index, word: words[index] }))
             },
         }
 

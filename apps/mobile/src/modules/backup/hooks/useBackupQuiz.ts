@@ -49,21 +49,17 @@ const buildQuestions = (
     const correctSet = new Set(correctPairs.map(p => p.word))
     const pool = distractorPool.filter(w => !correctSet.has(w))
     const distractorsPerQuestion = OPTIONS_PER_QUESTION - 1
-    // When the pool is large enough, draw one shuffled stream of unique
-    // distractors and split it across questions so the user can't infer
-    // "I saw `golf` as a distractor before, so it's a distractor here too".
-    // Falls back to per-question shuffle if the pool is too small.
-    const totalNeeded = correctPairs.length * distractorsPerQuestion
-    const useUniqueStream = pool.length >= totalNeeded
-    const stream = useUniqueStream ? shuffle(pool) : null
+    // Shuffle the pool once and draw a distinct slice per question. Always
+    // shuffling (even when the pool ends up smaller than total needed) keeps
+    // distractors from appearing in the wordlist order — otherwise the user
+    // could spot the correct word as the one that's in sequence.
+    const stream = shuffle(pool)
 
     return correctPairs.map(({ index, word }, questionIdx) => {
-        const distractors = stream
-            ? stream.slice(
-                  questionIdx * distractorsPerQuestion,
-                  (questionIdx + 1) * distractorsPerQuestion,
-              )
-            : shuffle(pool).slice(0, distractorsPerQuestion)
+        const distractors = stream.slice(
+            questionIdx * distractorsPerQuestion,
+            (questionIdx + 1) * distractorsPerQuestion,
+        )
         const options = shuffle([word, ...distractors])
         return {
             position: index,

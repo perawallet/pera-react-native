@@ -10,42 +10,45 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest'
+import { describe, test, expect, vi } from 'vitest'
 import React from 'react'
 import { render, screen, fireEvent } from '@test-utils/render'
 
-vi.mock('@assets/icons/edit-pen.svg', () => ({
+vi.mock('@assets/icons/shield-check.svg', () => ({
     default: (props: React.SVGProps<SVGSVGElement>) =>
-        React.createElement('div', { ...props, 'data-testid': 'edit-pen-svg' }),
+        React.createElement('div', {
+            ...props,
+            'data-testid': 'shield-check-svg',
+        }),
 }))
 
-const mockNavigate = vi.fn()
+const mockPopToTop = vi.fn()
+const mockParentGoBack = vi.fn()
+
 vi.mock('@react-navigation/native', async importOriginal => {
     const original =
         await importOriginal<typeof import('@react-navigation/native')>()
     return {
         ...original,
-        useNavigation: () => ({ navigate: mockNavigate }),
-        useRoute: () => ({ params: { address: 'ADDR' } }),
+        useNavigation: () => ({
+            popToTop: mockPopToTop,
+            getParent: () => ({ goBack: mockParentGoBack }),
+        }),
     }
 })
 
 vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: () => ({ t: (key: string) => key }),
+    useLanguage: () => ({ t: (k: string) => k }),
 }))
 
-import { BackupWriteDownScreen } from '../BackupWriteDownScreen'
+import { BackupReminderSuccessScreen } from '../BackupReminderSuccessScreen'
 
-describe('BackupWriteDownScreen', () => {
-    beforeEach(() => {
-        mockNavigate.mockReset()
-    })
-
-    test('pressing CTA navigates to BackupMnemonic with the address', () => {
-        render(<BackupWriteDownScreen />)
-        fireEvent.click(screen.getByTestId('backup_write_down_begin'))
-        expect(mockNavigate).toHaveBeenCalledWith('BackupMnemonic', {
-            address: 'ADDR',
-        })
+describe('BackupReminderSuccessScreen', () => {
+    test('pressing Done dismisses the backup stack (goes back to parent)', () => {
+        render(<BackupReminderSuccessScreen />)
+        fireEvent.click(screen.getByTestId('backup_success_done'))
+        expect(
+            mockPopToTop.mock.calls.length + mockParentGoBack.mock.calls.length,
+        ).toBeGreaterThan(0)
     })
 })

@@ -15,7 +15,6 @@ import { KeyManagementError } from '../errors'
 import { generateOrderedUniqueId, logger } from '@perawallet/wallet-core-shared'
 import { KeyType, KMSAlgo25Session } from '../models'
 import type { KeyPair } from '../models'
-import type { MnemonicWordAtPosition } from '../models/session'
 import {
     seedFromMnemonic,
     mnemonicFromSeed,
@@ -23,7 +22,6 @@ import {
 import { encodeAddress } from '@algorandfoundation/algokit-utils'
 import { useKMSService } from './useKMSServices'
 import { makeKeyPair } from '../utils'
-import { pickDistinctIndexes } from '../crypto/random'
 import { zeroBytes } from '../crypto/secure-memory'
 import type { KeyData, KeyId } from '@algorandfoundation/keystore'
 
@@ -151,19 +149,6 @@ export const useAlgo25 = () => {
                 getMnemonic: async () => {
                     const words = await resolveMnemonicWords()
                     return new TextEncoder().encode(words.join(' '))
-                },
-                getRandomMnemonicWords: async (
-                    count: number,
-                ): Promise<MnemonicWordAtPosition[]> => {
-                    const words = await resolveMnemonicWords()
-                    const indexes = pickDistinctIndexes(
-                        count,
-                        words.length,
-                    ).sort((a, b) => a - b)
-                    return indexes.map(index => ({
-                        index,
-                        word: words[index],
-                    }))
                 },
             }
 

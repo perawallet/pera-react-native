@@ -423,51 +423,6 @@ describe('useHDWallet', () => {
             expect(mockEntropyToMnemonic).toHaveBeenCalled()
         })
 
-        test('getRandomMnemonicWords returns the requested number of distinct {index, word} pairs', async () => {
-            const entropyBytes = Buffer.from('abcdef01', 'hex')
-            mockKeyStoreExport.mockResolvedValueOnce({
-                privateKey: new Uint8Array(entropyBytes),
-            })
-            mockEntropyToMnemonic.mockReturnValue(
-                'one two three four five six seven eight nine ten eleven twelve',
-            )
-
-            const { result } = renderHook(() => useHDWallet())
-
-            let picks: { index: number; word: string }[] | undefined
-            await act(async () => {
-                picks = await result.current.withHDSession(
-                    mockKey,
-                    'test-domain',
-                    async session => session.getRandomMnemonicWords(3),
-                    'ks-entropy-1',
-                )
-            })
-
-            expect(picks).toHaveLength(3)
-            const uniqueIndexes = new Set(picks!.map(p => p.index))
-            expect(uniqueIndexes.size).toBe(3)
-            picks!.forEach(({ index, word }) => {
-                expect(index).toBeGreaterThanOrEqual(0)
-                expect(index).toBeLessThan(12)
-                expect(typeof word).toBe('string')
-            })
-        })
-
-        test('getRandomMnemonicWords throws when no entropyKeyId is provided', async () => {
-            const { result } = renderHook(() => useHDWallet())
-
-            await expect(
-                act(async () => {
-                    await result.current.withHDSession(
-                        mockKey,
-                        'test-domain',
-                        async session => session.getRandomMnemonicWords(3),
-                    )
-                }),
-            ).rejects.toThrow(KeyManagementError)
-        })
-
         test('getMnemonic throws when no entropyKeyId is provided', async () => {
             const { result } = renderHook(() => useHDWallet())
 

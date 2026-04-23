@@ -32,13 +32,6 @@ export type KMSAlgo25Session = {
      * mnemonic from memory eagerly instead of waiting on GC.
      */
     getMnemonic: () => Promise<Uint8Array>
-    /**
-     * Returns `count` distinct {index, word} pairs sampled uniformly from the
-     * mnemonic. The full mnemonic never crosses the session boundary, so
-     * consumers that only need a handful of words (e.g. a verification quiz)
-     * don't need to receive — or store — the rest.
-     */
-    getRandomMnemonicWords: (count: number) => Promise<MnemonicWordAtPosition[]>
 }
 
 export type KMSHDWalletSession = {
@@ -52,5 +45,4 @@ export type KMSHDWalletSession = {
         data: Uint8Array,
     ) => Promise<Uint8Array>
     getMnemonic: () => Promise<Uint8Array>
-    getRandomMnemonicWords: (count: number) => Promise<MnemonicWordAtPosition[]>
 }

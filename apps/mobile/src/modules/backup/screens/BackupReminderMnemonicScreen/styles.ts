@@ -12,7 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 import { EdgeInsets } from 'react-native-safe-area-context'
-import { fontFamilies } from '@constants/fonts'
+import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     root: {
@@ -49,16 +49,13 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
         gap: theme.spacing.sm,
     },
     wordIndex: {
-        fontFamily: fontFamilies.DMMONO[400],
-        fontSize: 13,
+        ...getTypography(theme, 'mono'),
         color: theme.colors.textGray,
         minWidth: theme.spacing.xl,
         textAlign: 'right',
     },
     wordText: {
-        fontFamily: fontFamilies.DMMONO[400],
-        fontSize: 13,
-        color: theme.colors.textMain,
+        ...getTypography(theme, 'mono'),
     },
     footer: {
         padding: theme.spacing.xl,

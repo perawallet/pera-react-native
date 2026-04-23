@@ -16,7 +16,6 @@ import { render, screen, fireEvent, waitFor } from '@test-utils/render'
 
 const mockNavigate = vi.fn()
 const mockGoBack = vi.fn()
-const mockClearMnemonic = vi.fn()
 const mockCheckPinEnabled = vi.fn()
 const mockAccount = {
     type: 'algo25' as const,
@@ -58,19 +57,14 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     }
 })
 
+const MOCK_WORDS = 'alpha bravo charlie delta echo foxtrot'.split(' ')
+const stableExecuteWithMnemonic = async <T,>(
+    handler: (words: string[]) => T | Promise<T>,
+): Promise<T> => handler(MOCK_WORDS)
+const stableMnemonicHook = { executeWithMnemonic: stableExecuteWithMnemonic }
+
 vi.mock('../../../hooks', () => ({
-    useMnemonicForAddress: (
-        _address: string | undefined,
-        _account: unknown,
-        enabled: boolean,
-    ) => ({
-        mnemonicBytes: enabled
-            ? new TextEncoder().encode('alpha bravo charlie delta echo foxtrot')
-            : null,
-        error: null,
-        isLoading: !enabled,
-        clearMnemonic: mockClearMnemonic,
-    }),
+    useMnemonicForAddress: () => stableMnemonicHook,
 }))
 
 vi.mock('@modules/security/components/PinEditView', () => ({
@@ -103,19 +97,18 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (k: string) => k }),
 }))
 
-import { BackupMnemonicScreen } from '../BackupMnemonicScreen'
+import { BackupReminderMnemonicScreen } from '../BackupReminderMnemonicScreen'
 
-describe('BackupMnemonicScreen', () => {
+describe('BackupReminderMnemonicScreen', () => {
     beforeEach(() => {
         mockNavigate.mockReset()
         mockGoBack.mockReset()
-        mockClearMnemonic.mockReset()
         mockCheckPinEnabled.mockReset()
     })
 
     test('does not reveal the mnemonic until the PIN gate resolves', async () => {
         mockCheckPinEnabled.mockResolvedValue(true)
-        render(<BackupMnemonicScreen />)
+        render(<BackupReminderMnemonicScreen />)
         await waitFor(() => {
             expect(screen.getByTestId('pin_modal')).toBeTruthy()
         })
@@ -124,7 +117,7 @@ describe('BackupMnemonicScreen', () => {
 
     test('reveals the mnemonic after PIN verification', async () => {
         mockCheckPinEnabled.mockResolvedValue(true)
-        render(<BackupMnemonicScreen />)
+        render(<BackupReminderMnemonicScreen />)
         await waitFor(() => screen.getByTestId('pin_success'))
         fireEvent.click(screen.getByTestId('pin_success'))
         await waitFor(() => {
@@ -135,7 +128,7 @@ describe('BackupMnemonicScreen', () => {
 
     test('navigates back when PIN modal is dismissed without verifying', async () => {
         mockCheckPinEnabled.mockResolvedValue(true)
-        render(<BackupMnemonicScreen />)
+        render(<BackupReminderMnemonicScreen />)
         await waitFor(() => screen.getByTestId('pin_close'))
         fireEvent.click(screen.getByTestId('pin_close'))
         expect(mockGoBack).toHaveBeenCalled()
@@ -143,19 +136,18 @@ describe('BackupMnemonicScreen', () => {
 
     test('skips the PIN gate when no PIN is set', async () => {
         mockCheckPinEnabled.mockResolvedValue(false)
-        render(<BackupMnemonicScreen />)
+        render(<BackupReminderMnemonicScreen />)
         await waitFor(() => {
             expect(screen.getByText('alpha')).toBeTruthy()
         })
         expect(screen.queryByTestId('pin_modal')).toBeNull()
     })
 
-    test('pressing continue clears the mnemonic and navigates to verification', async () => {
+    test('pressing continue navigates to verification', async () => {
         mockCheckPinEnabled.mockResolvedValue(false)
-        render(<BackupMnemonicScreen />)
+        render(<BackupReminderMnemonicScreen />)
         await waitFor(() => screen.getByText('alpha'))
         fireEvent.click(screen.getByTestId('backup_mnemonic_continue'))
-        expect(mockClearMnemonic).toHaveBeenCalledTimes(1)
         expect(mockNavigate).toHaveBeenCalledWith('BackupVerification', {
             address: 'ADDR',
         })

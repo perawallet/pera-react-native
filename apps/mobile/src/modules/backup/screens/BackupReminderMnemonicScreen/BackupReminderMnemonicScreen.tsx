@@ -16,12 +16,12 @@ import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { usePreventScreenCapture } from '@hooks/usePreventScreenCapture'
 import { PinEditView } from '@modules/security/components/PinEditView'
-import { useBackupMnemonicScreen } from './useBackupMnemonicScreen'
+import { useBackupReminderMnemonicScreen } from './useBackupReminderMnemonicScreen'
 import { useStyles } from './styles'
 
 const SCREEN_CAPTURE_TAG = 'backup-mnemonic'
 
-export const BackupMnemonicScreen = () => {
+export const BackupReminderMnemonicScreen = () => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const { t } = useLanguage()
@@ -34,7 +34,7 @@ export const BackupMnemonicScreen = () => {
         handlePinVerified,
         handlePinClose,
         onContinue,
-    } = useBackupMnemonicScreen()
+    } = useBackupReminderMnemonicScreen()
 
     usePreventScreenCapture(SCREEN_CAPTURE_TAG)
 

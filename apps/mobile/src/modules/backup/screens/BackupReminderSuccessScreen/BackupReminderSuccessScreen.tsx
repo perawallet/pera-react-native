@@ -20,7 +20,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { ILLUSTRATION_SIZE } from '../../constants'
 import type { BackupStackParamList } from '../../routes/types'
 
-export const BackupSuccessScreen = () => {
+export const BackupReminderSuccessScreen = () => {
     const { theme } = useTheme()
     const { t } = useLanguage()
     const navigation =
