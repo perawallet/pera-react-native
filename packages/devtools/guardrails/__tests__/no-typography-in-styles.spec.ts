@@ -4,7 +4,8 @@ import { dirname, join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import ts from 'typescript'
 import check from '../checks/no-typography-in-styles.check.js'
-import type { SourceMap } from '../types.js'
+import { sharedWalk } from '../execute.js'
+import type { SourceMap, Violation } from '../types.js'
 
 const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), 'fixtures')
 
@@ -22,14 +23,20 @@ function loadFixture(name: string): SourceMap {
     return new Map([[filePath, sf]])
 }
 
+function run(sourceMap: SourceMap): Violation[] {
+    const violations: Violation[] = []
+    sharedWalk(sourceMap, [check], {}, violations)
+    return violations
+}
+
 describe('no-typography-in-styles check', () => {
-    it('produces no violations when typography comes from getTypography', async () => {
-        const violations = await check.run!(loadFixture('typography.good.tsx'))
+    it('produces no violations when typography comes from getTypography', () => {
+        const violations = run(loadFixture('typography.good.tsx'))
         expect(violations).toEqual([])
     })
 
-    it('flags direct typography properties inside makeStyles regardless of value', async () => {
-        const violations = await check.run!(loadFixture('typography.bad.tsx'))
+    it('flags direct typography properties inside makeStyles regardless of value', () => {
+        const violations = run(loadFixture('typography.bad.tsx'))
         expect(violations).toHaveLength(2)
         expect(violations.map(v => v.ruleId)).toEqual([
             'no-typography-in-styles',
@@ -45,7 +52,7 @@ describe('no-typography-in-styles check', () => {
         expect(violations[1].message).toContain('"fontWeight"')
     })
 
-    it('does not crash on files without makeStyles', async () => {
+    it('does not crash on files without makeStyles', () => {
         const filePath = '/virtual/plain.ts'
         const sf = ts.createSourceFile(
             filePath,
@@ -55,7 +62,7 @@ describe('no-typography-in-styles check', () => {
             ts.ScriptKind.TS,
         )
         const sources: SourceMap = new Map([[filePath, sf]])
-        const violations = await check.run!(sources)
+        const violations = run(sources)
         expect(violations).toEqual([])
     })
 })

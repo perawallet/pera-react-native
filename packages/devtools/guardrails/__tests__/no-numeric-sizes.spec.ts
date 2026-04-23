@@ -4,7 +4,8 @@ import { dirname, join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import ts from 'typescript'
 import check from '../checks/no-numeric-sizes.check.js'
-import type { SourceMap } from '../types.js'
+import { sharedWalk } from '../execute.js'
+import type { SourceMap, Violation } from '../types.js'
 
 const FIXTURES = join(dirname(fileURLToPath(import.meta.url)), 'fixtures')
 
@@ -22,16 +23,20 @@ function loadFixture(name: string): SourceMap {
     return new Map([[filePath, sf]])
 }
 
+function run(sourceMap: SourceMap): Violation[] {
+    const violations: Violation[] = []
+    sharedWalk(sourceMap, [check], {}, violations)
+    return violations
+}
+
 describe('no-numeric-sizes check', () => {
-    it('produces no violations for theme-token-only styles', async () => {
-        const violations = await check.run!(
-            loadFixture('numeric-sizes.good.ts'),
-        )
+    it('produces no violations for theme-token-only styles', () => {
+        const violations = run(loadFixture('numeric-sizes.good.ts'))
         expect(violations).toEqual([])
     })
 
-    it('flags literal numeric spacing values, skipping 0 and theme tokens', async () => {
-        const violations = await check.run!(loadFixture('numeric-sizes.bad.ts'))
+    it('flags literal numeric spacing values, skipping 0 and theme tokens', () => {
+        const violations = run(loadFixture('numeric-sizes.bad.ts'))
         expect(violations.map(v => v.ruleId)).toEqual([
             'no-numeric-sizes',
             'no-numeric-sizes',
@@ -66,7 +71,7 @@ describe('no-numeric-sizes check', () => {
         ])
     })
 
-    it('does not crash on files without makeStyles', async () => {
+    it('does not crash on files without makeStyles', () => {
         const filePath = '/virtual/plain.ts'
         const sf = ts.createSourceFile(
             filePath,
@@ -76,7 +81,7 @@ describe('no-numeric-sizes check', () => {
             ts.ScriptKind.TS,
         )
         const sources: SourceMap = new Map([[filePath, sf]])
-        const violations = await check.run!(sources)
+        const violations = run(sources)
         expect(violations).toEqual([])
     })
 })

@@ -4,9 +4,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import ts from 'typescript'
 import { loadChecks } from '../index.js'
+import { sharedWalk } from '../execute.js'
 import { findRepoRoot } from '../utils/discovery.js'
-import type { SourceMap } from '../types.js'
+import type { SourceMap, Violation } from '../types.js'
 
 const repoRoot = findRepoRoot(import.meta.url)
 
@@ -120,25 +122,19 @@ describe('loadChecks', () => {
         expect(checks).toEqual([])
     })
 
-    it('loads a valid check module and exposes its run function', async () => {
+    it('loads a valid check module and runs it through sharedWalk', async () => {
         const checkPath = join(tmpDir, 'sample.check.ts')
         writeFileSync(
             checkPath,
             [
+                "import ts from 'typescript'",
                 'const check = {',
                 "    id: 'sample-rule',",
                 "    description: 'sample',",
-                '    run() {',
-                '        return [',
-                '            {',
-                "                file: '/virtual/a.ts',",
-                '                line: 1,',
-                '                column: 1,',
-                "                ruleId: 'sample-rule',",
-                "                message: 'nope',",
-                "                remediation: 'fix it',",
-                '            },',
-                '        ]',
+                '    visitors: {',
+                '        [ts.SyntaxKind.SourceFile]: (_node, _sf, emit) => {',
+                "            emit({ line: 1, column: 1, message: 'nope', remediation: 'fix it' })",
+                '        },',
                 '    },',
                 '}',
                 'export default check',
@@ -152,8 +148,20 @@ describe('loadChecks', () => {
         expect(checks).toHaveLength(1)
         expect(checks[0].id).toBe('sample-rule')
 
-        const sources: SourceMap = new Map()
-        const violations = await checks[0]!.run!(sources)
+        const filePath = '/virtual/x.ts'
+        const sources: SourceMap = new Map([
+            [
+                filePath,
+                ts.createSourceFile(
+                    filePath,
+                    'const a = 1\n',
+                    ts.ScriptTarget.Latest,
+                    true,
+                ),
+            ],
+        ])
+        const violations: Violation[] = []
+        sharedWalk(sources, checks, {}, violations)
         expect(violations).toHaveLength(1)
         expect(violations[0].ruleId).toBe('sample-rule')
     })

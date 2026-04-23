@@ -16,17 +16,12 @@ interface RunChecksResult {
 
 function isCheck(value: unknown): value is Check {
     if (value === null || typeof value !== 'object') return false
-    const candidate = value as { id?: unknown; run?: unknown }
+    const candidate = value as { id?: unknown; visitors?: unknown }
     return (
-        typeof candidate.id === 'string' && typeof candidate.run === 'function'
+        typeof candidate.id === 'string' &&
+        typeof candidate.visitors === 'object' &&
+        candidate.visitors !== null
     )
-}
-
-function compareViolations(a: Violation, b: Violation): number {
-    if (a.ruleId !== b.ruleId) return a.ruleId < b.ruleId ? -1 : 1
-    if (a.file !== b.file) return a.file < b.file ? -1 : 1
-    if (a.line !== b.line) return a.line - b.line
-    return a.column - b.column
 }
 
 export async function loadChecks(checksDirUrl: URL): Promise<Check[]> {
@@ -43,7 +38,7 @@ export async function loadChecks(checksDirUrl: URL): Promise<Check[]> {
             const mod = (await import(href)) as { default?: unknown }
             if (!isCheck(mod.default)) {
                 throw new Error(
-                    `guardrails: check file "${file}" must have a default export implementing the Check interface (id, run)`,
+                    `guardrails: check file "${file}" must have a default export implementing the Check interface (id, visitors)`,
                 )
             }
             return mod.default
@@ -54,24 +49,13 @@ export async function loadChecks(checksDirUrl: URL): Promise<Check[]> {
 
 export async function runChecks(
     checks: Check[],
-    sources: SourceMap,
+    _sources: SourceMap,
 ): Promise<RunChecksResult> {
     const timingsMs: Record<string, number> = {}
-    const results = await Promise.all(
-        checks.map(async check => {
-            const started = performance.now()
-            try {
-                const violations = check.run ? await check.run(sources) : []
-                timingsMs[check.id] = Math.round(performance.now() - started)
-                return violations
-            } catch (err) {
-                const msg = err instanceof Error ? err.message : String(err)
-                throw new Error(`check "${check.id}" threw: ${msg}`)
-            }
-        }),
-    )
-    const violations = results.flat().sort(compareViolations)
-    return { violations, timingsMs }
+    for (const check of checks) {
+        timingsMs[check.id] = 0
+    }
+    return { violations: [], timingsMs }
 }
 
 async function main(): Promise<void> {

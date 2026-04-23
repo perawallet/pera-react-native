@@ -18,7 +18,6 @@ export type KindIndex = Map<ts.SyntaxKind, KindHandler[]>
 export function buildKindIndex(checks: Check[]): KindIndex {
     const index: KindIndex = new Map()
     for (const check of checks) {
-        if (!check.visitors) continue
         for (const [kindStr, visitor] of Object.entries(check.visitors)) {
             if (!visitor) continue
             const kind = Number(kindStr) as ts.SyntaxKind

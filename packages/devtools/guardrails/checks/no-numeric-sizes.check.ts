@@ -4,7 +4,7 @@ import {
     getLineCol,
     getMakeStylesBinding,
 } from '../utils/ast.js'
-import type { Check, SourceMap, Violation } from '../types.js'
+import type { Check } from '../types.js'
 
 const RULE_ID = 'no-numeric-sizes'
 
@@ -73,54 +73,40 @@ function describeLiteralValue(expr: ts.Expression): string | null {
     return null
 }
 
-function collectFromStyleEntry(
-    sf: ts.SourceFile,
-    styleEntry: ts.ObjectLiteralExpression,
-    out: Violation[],
-): void {
-    for (const prop of styleEntry.properties) {
-        if (!ts.isPropertyAssignment(prop)) continue
-        const name = getPropertyName(prop)
-        if (name === null) continue
-        if (!SPACING_PROPS.has(name)) continue
-        const value = describeLiteralValue(prop.initializer)
-        if (value === null) continue
-        const { line, column } = getLineCol(sf, prop.initializer.getStart(sf))
-        out.push({
-            file: sf.fileName,
-            line,
-            column,
-            ruleId: RULE_ID,
-            message: `numeric value ${value} for "${name}" — use a theme token`,
-            remediation: REMEDIATION,
-        })
-    }
-}
-
 const check: Check = {
     id: RULE_ID,
     description:
         'Disallow literal numeric spacing/sizing values in makeStyles objects. Require theme tokens.',
-    run(sources: SourceMap): Violation[] {
-        const violations: Violation[] = []
-        for (const sf of sources.values()) {
+    visitors: {
+        [ts.SyntaxKind.CallExpression]: (node, sf, emit) => {
+            const call = node as ts.CallExpression
             const binding = getMakeStylesBinding(sf)
-            if (!binding) continue
-            const walk = (node: ts.Node): void => {
-                if (
-                    ts.isCallExpression(node) &&
-                    ts.isIdentifier(node.expression) &&
-                    node.expression.text === binding
-                ) {
-                    descendMakeStylesCall(node, styleEntry => {
-                        collectFromStyleEntry(sf, styleEntry, violations)
+            if (!binding) return
+            if (
+                !ts.isIdentifier(call.expression) ||
+                call.expression.text !== binding
+            )
+                return
+            descendMakeStylesCall(call, styleEntry => {
+                for (const prop of styleEntry.properties) {
+                    if (!ts.isPropertyAssignment(prop)) continue
+                    const name = getPropertyName(prop)
+                    if (name === null || !SPACING_PROPS.has(name)) continue
+                    const value = describeLiteralValue(prop.initializer)
+                    if (value === null) continue
+                    const { line, column } = getLineCol(
+                        sf,
+                        prop.initializer.getStart(sf),
+                    )
+                    emit({
+                        line,
+                        column,
+                        message: `numeric value ${value} for "${name}" — use a theme token`,
+                        remediation: REMEDIATION,
                     })
                 }
-                ts.forEachChild(node, walk)
-            }
-            walk(sf)
-        }
-        return violations
+            })
+        },
     },
 }
 

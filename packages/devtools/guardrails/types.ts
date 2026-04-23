@@ -24,9 +24,5 @@ export type CheckVisitor = (
 export interface Check {
     id: string
     description: string
-    visitors?: Partial<Record<ts.SyntaxKind, CheckVisitor>>
-    /**
-     * Deprecated legacy entry-point. Remove in Task 3 once all checks migrate.
-     */
-    run?(sources: SourceMap): Violation[] | Promise<Violation[]>
+    visitors: Partial<Record<ts.SyntaxKind, CheckVisitor>>
 }
