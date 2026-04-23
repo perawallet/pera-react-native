@@ -45,7 +45,22 @@
         "add": "Add",
         "added": "Added",
         "no_results": "No assets found",
-        "opt_in_failed": "Failed to opt in",
+        "opt_in": {
+            "failed_title": "Failed to opt-in",
+            "failed_body": "There was an error trying to add the asset to your account",
+            "success_title": "Opt-in successful",
+            "success_body": "{{assetName}} was successfully opted-in and added to your account",
+            "success_body_generic": "Asset successfully opted-in and added to your account"
+        },
+        "confirmation": {
+            "title": "Adding Asset",
+            "account_label": "Account",
+            "fee_label": "Transaction Fee",
+            "description": "Before interacting with an asset, you must opt-in to it from your account. This prevents unauthorized asset transactions to be sent to you.",
+            "approve": "Approve",
+            "close": "Close",
+            "copy_id": "Copy ID"
+        },
         "collectible_title": "Opt-in to NFT",
         "collectible_note": "You need to opt-in to the NFT ASA ID to be able to transfer it to your wallet. Paste the ASA ID in the search bar.",
         "collectible_search_placeholder": "Search Asset ID or NFT name"

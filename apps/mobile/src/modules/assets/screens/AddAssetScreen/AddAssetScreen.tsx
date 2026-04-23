@@ -11,10 +11,11 @@
  */
 
 import React, { useCallback } from 'react'
-import { ActivityIndicator } from 'react-native'
+import { Platform, ActivityIndicator, KeyboardAvoidingView } from 'react-native'
 import { PWFlatList, PWIcon, PWText, PWView } from '@components/core'
 import { EmptyView } from '@components/EmptyView'
 import { AssetSearchItem } from '@modules/assets/components/AssetSearchItem'
+import { OptInConfirmationBottomSheet } from '@modules/assets/components/OptInConfirmationBottomSheet'
 import type { AssetSearchItem as AssetSearchItemType } from '@perawallet/wallet-core-assets'
 import type { AddAssetBottomSheetVariant } from '@modules/assets/components/AddAssetBottomSheet'
 import { useAddAssetScreen } from './useAddAssetScreen'
@@ -39,7 +40,12 @@ export const AddAssetScreen = ({ variant = 'asset' }: AddAssetScreenProps) => {
         fetchNextPage,
         optedInAssetIds,
         optingInAssetId,
-        handleAddAsset,
+        handleRequestAdd,
+        handleConfirmAdd,
+        handleCancelAdd,
+        pendingAssetId,
+        selectedAccountAddress,
+        selectedAccountName,
         t,
     } = useAddAssetScreen({ variant })
 
@@ -49,10 +55,10 @@ export const AddAssetScreen = ({ variant = 'asset' }: AddAssetScreenProps) => {
                 item={item}
                 isOptedIn={optedInAssetIds.has(item.assetId)}
                 isOptingIn={optingInAssetId === item.assetId}
-                onAdd={handleAddAsset}
+                onAdd={handleRequestAdd}
             />
         ),
-        [optedInAssetIds, optingInAssetId, handleAddAsset],
+        [optedInAssetIds, optingInAssetId, handleRequestAdd],
     )
 
     const handleEndReached = useCallback(() => {
@@ -62,71 +68,86 @@ export const AddAssetScreen = ({ variant = 'asset' }: AddAssetScreenProps) => {
     }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 
     return (
-        <PWView style={styles.container}>
-            {isCollectible && (
-                <PWView style={styles.noteContainer}>
-                    <PWIcon
-                        name='info'
-                        size='sm'
-                        variant='positive'
-                        style={styles.noteIcon}
+        <KeyboardAvoidingView
+            style={styles.keyboardView}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+            <PWView style={styles.container}>
+                {isCollectible && (
+                    <PWView style={styles.noteContainer}>
+                        <PWIcon
+                            name='info'
+                            size='sm'
+                            variant='positive'
+                            style={styles.noteIcon}
+                        />
+                        <PWText
+                            variant='body'
+                            style={styles.noteText}
+                        >
+                            {t('add_asset.collectible_note')}
+                        </PWText>
+                    </PWView>
+                )}
+                <PWView style={styles.searchContainer}>
+                    <SearchInput
+                        value={searchQuery}
+                        onChangeText={handleSearchChange}
+                        placeholder={
+                            isCollectible
+                                ? t('add_asset.collectible_search_placeholder')
+                                : t('add_asset.search_placeholder')
+                        }
+                        autoCapitalize='none'
+                        autoCorrect={false}
+                        autoFocus
                     />
-                    <PWText
-                        variant='body'
-                        style={styles.noteText}
-                    >
-                        {t('add_asset.collectible_note')}
-                    </PWText>
                 </PWView>
-            )}
-            <PWView style={styles.searchContainer}>
-                <SearchInput
-                    value={searchQuery}
-                    onChangeText={handleSearchChange}
-                    placeholder={
-                        isCollectible
-                            ? t('add_asset.collectible_search_placeholder')
-                            : t('add_asset.search_placeholder')
-                    }
-                    autoCapitalize='none'
-                    autoCorrect={false}
-                    autoFocus
-                />
-            </PWView>
 
-            {isLoading ? (
-                <LoadingView
-                    variant='skeleton'
-                    count={5}
-                    style={styles.loadingContainer}
-                />
-            ) : (
-                <PWFlatList
-                    data={results}
-                    renderItem={renderItem}
-                    keyExtractor={item => item.assetId}
-                    onEndReached={handleEndReached}
-                    onEndReachedThreshold={0.5}
-                    keyboardDismissMode='on-drag'
-                    contentContainerStyle={styles.listContainer}
-                    ListEmptyComponent={
-                        !isLoading ? (
-                            <EmptyView
-                                title={t('add_asset.no_results')}
-                                body=''
-                                icon='magnifying-glass'
-                            />
-                        ) : null
-                    }
-                    ListFooterComponent={
-                        isFetchingNextPage ? (
-                            <PWView style={styles.emptyContainer}>
-                                <ActivityIndicator />
-                            </PWView>
-                        ) : null
-                    }
-                />
-            )}
-        </PWView>
+                {isLoading ? (
+                    <LoadingView
+                        variant='skeleton'
+                        count={5}
+                        style={styles.loadingContainer}
+                    />
+                ) : (
+                    <PWFlatList
+                        data={results}
+                        renderItem={renderItem}
+                        keyExtractor={item => item.assetId}
+                        onEndReached={handleEndReached}
+                        onEndReachedThreshold={0.5}
+                        keyboardDismissMode='on-drag'
+                        contentContainerStyle={styles.listContainer}
+                        inBottomSheet
+                        ListEmptyComponent={
+                            !isLoading ? (
+                                <EmptyView
+                                    title={t('add_asset.no_results')}
+                                    body=''
+                                    icon='magnifying-glass'
+                                />
+                            ) : null
+                        }
+                        ListFooterComponent={
+                            isFetchingNextPage ? (
+                                <PWView style={styles.emptyContainer}>
+                                    <ActivityIndicator />
+                                </PWView>
+                            ) : null
+                        }
+                    />
+                )}
+            </PWView>
+            <OptInConfirmationBottomSheet
+                isVisible={pendingAssetId !== null}
+                onClose={handleCancelAdd}
+                onConfirmOptIn={handleConfirmAdd}
+                assetId={pendingAssetId}
+                accountAddress={selectedAccountAddress ?? ''}
+                accountName={selectedAccountName}
+                isLoading={optingInAssetId !== null}
+            />
+        </KeyboardAvoidingView>
     )
 }

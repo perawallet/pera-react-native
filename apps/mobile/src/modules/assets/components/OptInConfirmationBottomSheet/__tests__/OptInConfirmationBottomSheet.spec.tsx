@@ -1,0 +1,115 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { render, fireEvent, screen } from '@test-utils/render'
+import { OptInConfirmationBottomSheet } from '../OptInConfirmationBottomSheet'
+
+const mockCopyToClipboard = vi.fn()
+
+vi.mock('@hooks/useLanguage', () => ({
+    useLanguage: () => ({
+        t: (key: string) => key,
+    }),
+}))
+
+vi.mock('@hooks/useClipboard', () => ({
+    useClipboard: () => ({
+        copyToClipboard: mockCopyToClipboard,
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-assets', async () => {
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-assets')
+    >('@perawallet/wallet-core-assets')
+    return {
+        ...actual,
+        useAssetsQuery: () => ({
+            data: new Map([
+                [
+                    '2586029159',
+                    {
+                        assetId: '2586029159',
+                        name: '$WILLOW',
+                        unitName: 'WILLOW',
+                        decimals: 6,
+                        peraMetadata: {
+                            verificationTier: 'verified',
+                            isFavorited: false,
+                        },
+                    },
+                ],
+            ]),
+        }),
+    }
+})
+
+describe('OptInConfirmationBottomSheet', () => {
+    const baseProps = {
+        isVisible: true,
+        onClose: vi.fn(),
+        onConfirmOptIn: vi.fn(),
+        assetId: '2586029159',
+        accountAddress:
+            'DUGTEGP3UHOZD5SRPVAAW2VVOFOTRVYNMZ5ASVXZI675WWKQZQ5W37QWG4',
+        accountName: 'Main',
+    }
+
+    beforeEach(() => {
+        vi.clearAllMocks()
+    })
+
+    it('renders asset name, unit name, and asset id', () => {
+        render(<OptInConfirmationBottomSheet {...baseProps} />)
+
+        expect(screen.getByText('$WILLOW')).toBeTruthy()
+        expect(screen.getByText('WILLOW')).toBeTruthy()
+        expect(screen.getByText('2586029159')).toBeTruthy()
+    })
+
+    it('calls onConfirmOptIn when Approve is pressed', () => {
+        render(<OptInConfirmationBottomSheet {...baseProps} />)
+
+        fireEvent.click(screen.getByTestId('opt_in_confirm'))
+
+        expect(baseProps.onConfirmOptIn).toHaveBeenCalledTimes(1)
+    })
+
+    it('calls onClose when Close is pressed', () => {
+        render(<OptInConfirmationBottomSheet {...baseProps} />)
+
+        fireEvent.click(screen.getByTestId('opt_in_cancel'))
+
+        expect(baseProps.onClose).toHaveBeenCalledTimes(1)
+    })
+
+    it('copies the asset id when Copy ID is pressed', () => {
+        render(<OptInConfirmationBottomSheet {...baseProps} />)
+
+        fireEvent.click(screen.getByTestId('opt_in_copy_id'))
+
+        expect(mockCopyToClipboard).toHaveBeenCalledWith('2586029159')
+    })
+
+    it('does not render controls when assetId is missing', () => {
+        render(
+            <OptInConfirmationBottomSheet
+                {...baseProps}
+                assetId={null}
+            />,
+        )
+
+        expect(screen.queryByTestId('opt_in_confirm')).toBeNull()
+        expect(screen.queryByTestId('opt_in_cancel')).toBeNull()
+    })
+})
