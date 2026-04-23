@@ -60,6 +60,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             bottom: 0,
             left: 0,
             right: 0,
+            paddingHorizontal: theme.spacing.xl,
             backgroundColor: theme.colors.background,
         },
     }

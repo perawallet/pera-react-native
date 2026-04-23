@@ -33,11 +33,16 @@ export const QRScannerView = (props: QRScannerViewProps) => {
     const styles = useStyles(insets)
     const { t } = useLanguage()
 
-    const { device, codeScanner, scanningEnabled, permissionDenied } =
-        useQRScannerView({
-            isVisible: props.isVisible,
-            onSuccess: props.onSuccess,
-        })
+    const {
+        device,
+        codeScanner,
+        scanningEnabled,
+        permissionDenied,
+        hasPermission,
+    } = useQRScannerView({
+        isVisible: props.isVisible,
+        onSuccess: props.onSuccess,
+    })
 
     return (
         <Modal
@@ -45,7 +50,7 @@ export const QRScannerView = (props: QRScannerViewProps) => {
             visible={props.isVisible}
             animationType={props.animationType}
         >
-            {device == null || permissionDenied ? (
+            {device == null || permissionDenied || !hasPermission ? (
                 <>
                     <EmptyView
                         style={styles.emptyView}
