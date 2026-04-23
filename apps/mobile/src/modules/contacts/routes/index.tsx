@@ -17,7 +17,6 @@ import {
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { ContactListScreen } from '@modules/contacts/screens/ContactListScreen'
-import { ViewContactHeaderButtons } from '@modules/contacts/components/ViewContactHeaderButtons'
 import { ViewContactScreen } from '@modules/contacts/screens/ViewContactScreen'
 import { EditContactScreen } from '@modules/contacts/screens/EditContactScreen'
 import { fullScreenLayout } from '@layouts/index'
@@ -56,8 +55,7 @@ export const ContactsStackNavigator = () => {
             <ContactsStack.Screen
                 name='ViewContact'
                 options={{
-                    title: 'screens.view_contact',
-                    headerRight: () => <ViewContactHeaderButtons />,
+                    title: '',
                 }}
                 component={ViewContactScreen}
             />

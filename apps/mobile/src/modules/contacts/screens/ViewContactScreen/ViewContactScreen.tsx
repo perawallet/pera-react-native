@@ -10,28 +10,69 @@
  limitations under the License
  */
 
-import { EmptyView } from '@components/EmptyView'
-import { PWText, PWView } from '@components/core'
-import { useStyles } from './styles'
-import { ContactAvatar } from '@components/ContactAvatar'
-import { AddressDisplay } from '@components/AddressDisplay'
+import { useCallback, useState } from 'react'
 import { useContacts } from '@perawallet/wallet-core-contacts'
-import { useLanguage } from '@hooks/useLanguage'
 import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
-import { useMemo } from 'react'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+
+import { PWIcon, PWText, PWView } from '@components/core'
+import { ContactAvatar } from '@components/ContactAvatar'
+import { CopyableText } from '@components/CopyableText'
+import { EmptyView } from '@components/EmptyView'
+import { SHORT_ADDRESS_FORMAT } from '@constants/ui'
+import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useLanguage } from '@hooks/useLanguage'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { ContactQRBottomSheet } from '@modules/contacts/components/ContactQRBottomSheet'
+import { shareText } from '@utils/shareText'
+import { useStyles } from './styles'
 
 export const ViewContactScreen = () => {
     const { selectedContact } = useContacts()
     const styles = useStyles()
     const { t } = useLanguage()
+    const navigation = useAppNavigation()
+    const [qrVisible, setQrVisible] = useState(false)
 
     const { data: nfdNames } = useNfdForAddressQuery(
         selectedContact?.address ?? '',
-        {
-            enabled: !!selectedContact?.address,
-        },
+        { enabled: !!selectedContact?.address },
     )
-    const nfdName = useMemo(() => nfdNames?.at(0)?.name, [nfdNames])
+    const nfdName = nfdNames?.at(0)?.name
+
+    const goToEdit = useCallback(() => {
+        navigation.navigate('EditContact')
+    }, [navigation])
+
+    const handleShare = useCallback(async () => {
+        if (!selectedContact) return
+        try {
+            await shareText({
+                title: selectedContact.name,
+                message: selectedContact.address,
+            })
+        } catch {
+            // User cancelled — ignore.
+        }
+    }, [selectedContact])
+
+    useNavigationHeader({
+        enabled: true,
+        right: selectedContact ? (
+            <PWView style={styles.headerButtons}>
+                <PWIcon
+                    variant='primary'
+                    name='share'
+                    onPress={handleShare}
+                />
+                <PWIcon
+                    variant='primary'
+                    name='edit-pen'
+                    onPress={goToEdit}
+                />
+            </PWView>
+        ) : null,
+    })
 
     if (!selectedContact) {
         return (
@@ -45,36 +86,74 @@ export const ViewContactScreen = () => {
 
     return (
         <PWView style={styles.container}>
-            <PWView style={styles.avatar}>
+            <PWView style={styles.header}>
                 <ContactAvatar
                     contact={selectedContact}
-                    size='lg'
+                    size='xxl'
                 />
-            </PWView>
-            <PWView>
-                <PWText style={styles.label}>
-                    {t('contacts.view_contact.name_label')}
+                <PWText
+                    variant='h3'
+                    style={styles.name}
+                >
+                    {selectedContact.name}
                 </PWText>
-                <PWText style={styles.value}>{selectedContact.name}</PWText>
-            </PWView>
-            <PWView>
-                <PWText style={styles.label}>
-                    {t('contacts.view_contact.address_label')}
+                <PWText
+                    variant='body'
+                    style={styles.shortAddress}
+                >
+                    {truncateAlgorandAddress(
+                        selectedContact.address,
+                        SHORT_ADDRESS_FORMAT,
+                    )}
                 </PWText>
-                <AddressDisplay
-                    address={selectedContact.address}
-                    showCopy
-                    displayType='address-only'
-                />
+            </PWView>
+            <PWView style={styles.divider} />
+            <PWView style={styles.addressSection}>
+                <PWText
+                    variant='h4'
+                    style={styles.addressLabel}
+                >
+                    {t('contacts.view_contact.account_address')}
+                </PWText>
+                <PWView style={styles.addressRow}>
+                    <CopyableText
+                        copyValue={selectedContact.address}
+                        style={styles.addressTextWrapper}
+                    >
+                        <PWText
+                            variant='body'
+                            style={styles.fullAddress}
+                        >
+                            {selectedContact.address}
+                        </PWText>
+                    </CopyableText>
+                    <PWIcon
+                        name='qr'
+                        variant='primary'
+                        onPress={() => setQrVisible(true)}
+                    />
+                </PWView>
             </PWView>
             {nfdName && (
-                <PWView>
-                    <PWText style={styles.label}>
+                <PWView style={styles.addressSection}>
+                    <PWText
+                        variant='h4'
+                        style={styles.addressLabel}
+                    >
                         {t('contacts.view_contact.nfd_label')}
                     </PWText>
-                    <PWText style={styles.value}>{nfdName}</PWText>
+                    <PWText
+                        variant='body'
+                        style={styles.fullAddress}
+                    >
+                        {nfdName}
+                    </PWText>
                 </PWView>
             )}
+            <ContactQRBottomSheet
+                contact={qrVisible ? selectedContact : null}
+                onClose={() => setQrVisible(false)}
+            />
         </PWView>
     )
 }

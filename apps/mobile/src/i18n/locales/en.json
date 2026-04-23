@@ -489,6 +489,7 @@
             "no_contact_body": "Something appears to have gone wrong.  Couldn't find the contact specified",
             "name_label": "Name",
             "address_label": "Address",
+            "account_address": "Account Address",
             "nfd_label": "NFDomain"
         },
         "list": {
