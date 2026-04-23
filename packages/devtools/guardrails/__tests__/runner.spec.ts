@@ -227,3 +227,33 @@ describe('worker bootstrap', () => {
         expect(Array.isArray(result.result?.violations)).toBe(true)
     }, 30_000)
 })
+
+describe('guardrails runner CLI — worker path', () => {
+    it('runs with workers when GUARDRAILS_FORCE_WORKERS=1 and reports workers > 0', () => {
+        const repoRoot = findRepoRoot(import.meta.url)
+        const result = spawnSync(
+            'pnpm',
+            [
+                '--silent',
+                '--filter',
+                '@perawallet/wallet-core-devtools',
+                'guardrails',
+                '--json',
+            ],
+            {
+                cwd: repoRoot,
+                encoding: 'utf8',
+                env: { ...process.env, GUARDRAILS_FORCE_WORKERS: '1' },
+            },
+        )
+        expect([0, 1]).toContain(result.status)
+        const payload = JSON.parse(result.stdout) as {
+            workers: number
+            total: number
+            stageMs: { parse: number; walk: number }
+        }
+        expect(payload.workers).toBeGreaterThan(0)
+        expect(Number.isInteger(payload.total)).toBe(true)
+        expect(Number.isFinite(payload.stageMs.parse)).toBe(true)
+    }, 90_000)
+})
