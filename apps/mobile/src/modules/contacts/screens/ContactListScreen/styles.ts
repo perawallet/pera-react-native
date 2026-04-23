@@ -12,39 +12,83 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
+type StyleProps = {
+    listPaddingBottom?: number
+}
+
+export const useStyles = makeStyles((theme, props: StyleProps = {}) => {
+    const listPaddingBottom = props.listPaddingBottom ?? 0
     return {
-        container: {
-            backgroundColor: theme.colors.background,
-        },
         flex: {
             flex: 1,
         },
-        sectionHeader: {
-            color: theme.colors.textGray,
-            borderBottomColor: theme.colors.layerGrayLighter,
-            borderBottomWidth: theme.borders.sm,
-            paddingTop: theme.spacing.lg,
+        searchWrapper: {
+            paddingHorizontal: theme.spacing.xl,
+            paddingTop: theme.spacing.xl,
             paddingBottom: theme.spacing.sm,
-            marginBottom: theme.spacing.xs,
+        },
+        listContent: {
+            paddingHorizontal: theme.spacing.xl,
+            paddingTop: theme.spacing.xl,
+            paddingBottom: listPaddingBottom,
+            flexGrow: 1,
         },
         contactContainer: {
             flexDirection: 'row',
-            gap: theme.spacing.md,
+            gap: theme.spacing.lg,
             alignItems: 'center',
             paddingVertical: theme.spacing.lg,
-            paddingHorizontal: theme.spacing.sm,
         },
-        contactName: {},
-        search: {
-            borderRadius: theme.spacing.lg,
-            paddingHorizontal: theme.spacing.xs,
+        contactTextContainer: {
+            flex: 1,
+            gap: theme.spacing.xxs,
         },
-        empty: {
-            marginTop: theme.spacing.xl,
+        contactName: {
+            color: theme.colors.textMain,
+        },
+        // Uses the `body` typography variant at the callsite; overrides only
+        // the color.
+        contactAddress: {
+            color: theme.colors.textGrayLighter,
+        },
+        noMatch: {
             flex: 1,
             alignItems: 'center',
             justifyContent: 'center',
+            gap: theme.spacing.sm,
+            paddingHorizontal: theme.spacing.xl,
+        },
+        noMatchBody: {
+            color: theme.colors.textGray,
+            textAlign: 'center',
+        },
+        emptyState: {
+            flex: 1,
+            alignItems: 'center',
+            justifyContent: 'center',
+            paddingHorizontal: theme.spacing.xl,
+        },
+        emptyIconContainer: {
+            width: theme.spacing['5xl'],
+            height: theme.spacing['5xl'],
+            borderRadius: theme.spacing['3xl'],
+            backgroundColor: theme.colors.layerGrayLighter,
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginBottom: theme.spacing.xl,
+        },
+        emptyTitle: {
+            textAlign: 'center',
+            marginBottom: theme.spacing.sm,
+        },
+        emptyBody: {
+            color: theme.colors.textGray,
+            textAlign: 'center',
+            marginBottom: theme.spacing.xl,
+        },
+        emptyButton: {
+            minHeight: theme.spacing['3xl'],
+            borderRadius: theme.borderRadius.xs,
         },
     }
 })

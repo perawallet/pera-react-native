@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { ContactListHeaderButtons } from './ContactListHeaderButtons'
+export { ContactQRBottomSheet } from './ContactQRBottomSheet'

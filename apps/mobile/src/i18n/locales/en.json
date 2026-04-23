@@ -497,7 +497,10 @@
             "add_contact": "Add Contact",
             "search_placeholder": "Search for name or address",
             "no_matching_title": "No Matching Contacts",
-            "no_matching_body": "There aren't any matching contacts."
+            "no_matching_body": "There aren't any matching contacts.",
+            "qr_sheet_copy": "Copy Address",
+            "qr_sheet_share": "Share Address",
+            "qr_accessibility_label": "QR code for {{name}}"
         }
     },
     "errors": {
