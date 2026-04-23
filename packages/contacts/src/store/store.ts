@@ -36,28 +36,31 @@ export const useContactsStore: UseBoundStore<
             ...initialState,
             setSelectedContact: (contact: Nullable<Contact>) =>
                 set({ selectedContact: contact }),
-            setContacts: (contacts: Contact[]) => set({ contacts }),
             saveContact: (contact: Contact) => {
-                const existing = get().contacts ?? []
                 const newContact = {
                     ...contact,
                     id: contact.id ?? generateOrderedUniqueId(),
                 }
-                if (!existing.find(r => r.id === newContact.id)) {
-                    set({ contacts: [...existing, newContact] })
-                    return true
-                }
-                return false
+                set(state => {
+                    const existing = state.contacts ?? []
+                    const existingIndex = existing.findIndex(
+                        r => r.id === newContact.id,
+                    )
+                    if (existingIndex >= 0) {
+                        const updated = [...existing]
+                        updated[existingIndex] = newContact
+                        return { contacts: updated }
+                    }
+                    return { contacts: [...existing, newContact] }
+                })
+                return true
             },
             deleteContact: (contact: Contact) => {
                 const existing = get().contacts ?? []
                 const remaining = existing.filter(r => r.id !== contact.id)
-
-                if (remaining.length != existing.length) {
-                    set({ contacts: remaining })
-                }
-
-                return remaining.length != existing.length
+                if (remaining.length === existing.length) return false
+                set({ contacts: remaining })
+                return true
             },
             resetState: () => set(initialState),
         }),

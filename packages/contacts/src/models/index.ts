@@ -24,7 +24,6 @@ export type ContactsState = BaseStoreState & {
     contacts: Contact[]
     selectedContact: Nullable<Contact>
     setSelectedContact: (contact: Nullable<Contact>) => void
-    setContacts: (contacts: Contact[]) => void
-    saveContact: (contact: Contact) => void
+    saveContact: (contact: Contact) => boolean
     deleteContact: (contact: Contact) => boolean
 }

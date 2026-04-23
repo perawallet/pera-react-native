@@ -67,7 +67,7 @@ describe('ContactsStore', () => {
         expect(result.current.contacts[0].id).toBeTruthy()
     })
 
-    test('saveContact returns false for duplicate id', async () => {
+    test('saveContact updates an existing contact by id', async () => {
         const { useContactsStore } = await import('../index')
         const { result } = renderHook(() => useContactsStore())
         const contact: Contact = {
@@ -80,13 +80,17 @@ describe('ContactsStore', () => {
             result.current.saveContact(contact)
         })
 
-        let added: boolean | undefined
+        let saved: boolean | undefined
         act(() => {
-            added = result.current.saveContact(contact)
+            saved = result.current.saveContact({
+                ...contact,
+                name: 'Alice Updated',
+            })
         })
 
-        expect(added).toBe(false)
+        expect(saved).toBe(true)
         expect(result.current.contacts).toHaveLength(1)
+        expect(result.current.contacts[0]?.name).toBe('Alice Updated')
     })
 
     test('deleteContact removes an existing contact', async () => {
@@ -145,21 +149,6 @@ describe('ContactsStore', () => {
         expect(result.current.selectedContact).toBeNull()
     })
 
-    test('setContacts replaces the contacts list', async () => {
-        const { useContactsStore } = await import('../index')
-        const { result } = renderHook(() => useContactsStore())
-        const contacts: Contact[] = [
-            { id: '1', name: 'Alice', address: 'A' },
-            { id: '2', name: 'Bob', address: 'B' },
-        ]
-
-        act(() => {
-            result.current.setContacts(contacts)
-        })
-
-        expect(result.current.contacts).toEqual(contacts)
-    })
-
     test('registerStore wires clearStorage and resetState', async () => {
         await import('../index')
 
@@ -170,7 +159,7 @@ describe('ContactsStore', () => {
         act(() => {
             useContactsStore
                 .getState()
-                .setContacts([{ id: '1', name: 'Alice', address: 'A' }])
+                .saveContact({ id: '1', name: 'Alice', address: 'A' })
         })
         expect(useContactsStore.getState().contacts).toHaveLength(1)
 
