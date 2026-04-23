@@ -42,7 +42,7 @@ export const StakingHelpSheet = ({
             onBackdropPress={onClose}
             innerContainerStyle={styles.container}
             enablePanDownToClose
-            testID="staking-help-sheet"
+            testID='staking-help-sheet'
         >
             <PWToolbar
                 left={
@@ -50,10 +50,17 @@ export const StakingHelpSheet = ({
                         name='cross'
                         variant='secondary'
                         onPress={onClose}
-                        testID="staking-help-close-button"
+                        testID='staking-help-close-button'
                     />
                 }
-                center={<PWText variant='h4' testID="staking-help-title">{t('staking.help.title')}</PWText>}
+                center={
+                    <PWText
+                        variant='h4'
+                        testID='staking-help-title'
+                    >
+                        {t('staking.help.title')}
+                    </PWText>
+                }
                 paddingStyle='dense'
             />
 

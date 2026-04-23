@@ -80,9 +80,17 @@ export const StakingScreen = () => {
     )
 
     return (
-        <PWView style={styles.container} testID="staking-screen">
+        <PWView
+            style={styles.container}
+            testID='staking-screen'
+        >
             <StakingErrorBoundary t={t}>
-                <PWText style={styles.subtitle} testID="staking-subtitle">{t('staking.subtitle')}</PWText>
+                <PWText
+                    style={styles.subtitle}
+                    testID='staking-subtitle'
+                >
+                    {t('staking.subtitle')}
+                </PWText>
 
                 {isLoading && (
                     <LoadingView
@@ -112,22 +120,28 @@ export const StakingScreen = () => {
                 )}
 
                 {!isLoading && isError && (
-                    <PWView style={styles.errorContainer} testID="staking-error-container">
+                    <PWView
+                        style={styles.errorContainer}
+                        testID='staking-error-container'
+                    >
                         <PWText
                             variant='h4'
                             style={styles.errorTitle}
-                            testID="staking-error-title"
+                            testID='staking-error-title'
                         >
                             {t('staking.error_title')}
                         </PWText>
-                        <PWText style={styles.errorDescription} testID="staking-error-description">
+                        <PWText
+                            style={styles.errorDescription}
+                            testID='staking-error-description'
+                        >
                             {t('staking.error_description')}
                         </PWText>
                         <PWButton
                             variant='primary'
                             title={t('staking.retry')}
                             onPress={handleRetry}
-                            testID="staking-retry-button"
+                            testID='staking-retry-button'
                         />
                     </PWView>
                 )}
@@ -139,7 +153,7 @@ export const StakingScreen = () => {
                         keyExtractor={item => item.id}
                         style={styles.list}
                         contentContainerStyle={styles.listContentContainer}
-                        testID="staking-projects-list"
+                        testID='staking-projects-list'
                     />
                 )}
             </StakingErrorBoundary>

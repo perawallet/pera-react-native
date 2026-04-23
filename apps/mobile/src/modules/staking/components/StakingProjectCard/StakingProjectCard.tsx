@@ -71,7 +71,10 @@ export const StakingProjectCard = ({
                     <StakingTypeBadge type={project.type} />
                 </PWView>
 
-                <PWText style={styles.description} testID={`staking-project-description-${project.id}`}>
+                <PWText
+                    style={styles.description}
+                    testID={`staking-project-description-${project.id}`}
+                >
                     {project.description}
                 </PWText>
 
