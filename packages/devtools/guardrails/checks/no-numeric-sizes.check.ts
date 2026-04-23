@@ -78,7 +78,10 @@ function collectFromSourceFile(sf: ts.SourceFile, out: Violation[]): void {
             if (!SPACING_PROPS.has(name)) continue
             const value = describeLiteralValue(prop.initializer)
             if (value === null) continue
-            const { line, column } = getLineCol(sf, prop.initializer.getStart(sf))
+            const { line, column } = getLineCol(
+                sf,
+                prop.initializer.getStart(sf),
+            )
             out.push({
                 file: sf.fileName,
                 line,

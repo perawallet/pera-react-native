@@ -83,10 +83,7 @@ function extractObjectLiteralFromCallback(
         return null
     }
     for (const statement of body.statements) {
-        if (
-            ts.isReturnStatement(statement) &&
-            statement.expression
-        ) {
+        if (ts.isReturnStatement(statement) && statement.expression) {
             const unwrapped = unwrapParens(statement.expression)
             if (ts.isObjectLiteralExpression(unwrapped)) {
                 return unwrapped

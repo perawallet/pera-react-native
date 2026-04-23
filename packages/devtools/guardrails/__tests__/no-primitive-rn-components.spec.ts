@@ -29,12 +29,12 @@ function loadFixture(name: string): SourceMap {
 
 describe('no-primitive-rn-components check', () => {
     it('produces no violations when importing from @components/core', async () => {
-        const violations = await check.run(loadFixture('primitives.good.tsx'))
+        const violations = await check.run!(loadFixture('primitives.good.tsx'))
         expect(violations).toEqual([])
     })
 
     it('flags banned RN imports and ignores unrelated names', async () => {
-        const violations = await check.run(loadFixture('primitives.bad.tsx'))
+        const violations = await check.run!(loadFixture('primitives.bad.tsx'))
         expect(violations).toHaveLength(2)
         const names = violations.map(v => v.message)
         expect(names[0]).toContain("instead of Text from 'react-native'")
@@ -55,7 +55,7 @@ describe('no-primitive-rn-components check', () => {
             '/apps/mobile/src/components/core/PWSample/PWSample.tsx',
             text,
         )
-        const violations = await check.run(sources)
+        const violations = await check.run!(sources)
         expect(violations).toEqual([])
     })
 
@@ -65,7 +65,7 @@ describe('no-primitive-rn-components check', () => {
             filePath,
             "import { Text as MyText } from 'react-native'\nexport const C = () => <MyText />\n",
         )
-        const violations = await check.run(sources)
+        const violations = await check.run!(sources)
         expect(violations).toHaveLength(1)
         expect(violations[0].ruleId).toBe('no-primitive-rn-components')
         expect(violations[0].message).toContain('PWText')
@@ -73,11 +73,8 @@ describe('no-primitive-rn-components check', () => {
 
     it('does not crash on files without react-native imports', async () => {
         const filePath = '/virtual/plain.ts'
-        const sources = buildSource(
-            filePath,
-            'export const x = 1\n',
-        )
-        const violations = await check.run(sources)
+        const sources = buildSource(filePath, 'export const x = 1\n')
+        const violations = await check.run!(sources)
         expect(violations).toEqual([])
     })
 })

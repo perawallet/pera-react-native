@@ -16,22 +16,23 @@ pnpm lint:guardrails:json     # machine-readable JSON
 
 ## Flags
 
-| Flag | Effect |
-| ---- | ------ |
-| `--json`       | Emit JSON instead of the human report. |
-| `--warn-only`  | Still print violations, but exit `0` so the command does not fail the build. Intended for a phased rollout while existing violations are being worked through. |
+| Flag          | Effect                                                                                                                                                         |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--json`      | Emit JSON instead of the human report.                                                                                                                         |
+| `--warn-only` | Still print violations, but exit `0` so the command does not fail the build. Intended for a phased rollout while existing violations are being worked through. |
 
 ## Exit codes
 
-| Code | Meaning |
-| ---- | ------- |
-| `0`  | No violations, or violations exist but `--warn-only` was passed. |
-| `1`  | Violations exist and `--warn-only` was NOT passed. |
+| Code | Meaning                                                                               |
+| ---- | ------------------------------------------------------------------------------------- |
+| `0`  | No violations, or violations exist but `--warn-only` was passed.                      |
+| `1`  | Violations exist and `--warn-only` was NOT passed.                                    |
 | `2`  | Runtime error (a check threw, a file failed to parse, etc.). Stack printed to stderr. |
 
 ## Scope
 
 Checks scan:
+
 - `apps/mobile/src/**/*.{ts,tsx}`
 - `packages/*/src/**/*.{ts,tsx}`
 
@@ -39,10 +40,10 @@ Excluded: `__tests__/`, `*.spec.{ts,tsx}`, `*.test.{ts,tsx}`, `node_modules`, `d
 
 ## Current checks (Phase 1)
 
-| Rule | What it enforces |
-| ---- | ---------------- |
-| `no-numeric-sizes` | No literal numeric spacing/sizing (`padding: 12`, `borderRadius: 16`, `-16`, …) inside `makeStyles(...)` objects. `0` is allowed. Use `theme.spacing.*`, `theme.borderRadius.*`, or `theme.borders.*`. |
-| `no-typography-in-styles` | No direct `fontSize`, `fontFamily`, `fontWeight`, `lineHeight`, or `letterSpacing` inside `makeStyles(...)` objects. Use `getTypography(theme, variant)` from `@/theme/typography`, or `PWText` with a variant prop. |
+| Rule                         | What it enforces                                                                                                                                                                                                                                                |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `no-numeric-sizes`           | No literal numeric spacing/sizing (`padding: 12`, `borderRadius: 16`, `-16`, …) inside `makeStyles(...)` objects. `0` is allowed. Use `theme.spacing.*`, `theme.borderRadius.*`, or `theme.borders.*`.                                                          |
+| `no-typography-in-styles`    | No direct `fontSize`, `fontFamily`, `fontWeight`, `lineHeight`, or `letterSpacing` inside `makeStyles(...)` objects. Use `getTypography(theme, variant)` from `@/theme/typography`, or `PWText` with a variant prop.                                            |
 | `no-primitive-rn-components` | No `import { Text, View, ScrollView, FlatList, TouchableOpacity, Image, Switch } from 'react-native'` in app code. Use the PW-prefixed equivalents from `@components/core`. Files under `apps/mobile/src/components/core/` are exempt (those are the wrappers). |
 
 ## Output format

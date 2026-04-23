@@ -11,8 +11,22 @@ export interface Violation {
     remediation: string
 }
 
+export type EmitViolation = (
+    violation: Omit<Violation, 'ruleId' | 'file'>,
+) => void
+
+export type CheckVisitor = (
+    node: ts.Node,
+    sf: ts.SourceFile,
+    emit: EmitViolation,
+) => void
+
 export interface Check {
     id: string
     description: string
-    run(sources: SourceMap): Violation[] | Promise<Violation[]>
+    visitors?: Partial<Record<ts.SyntaxKind, CheckVisitor>>
+    /**
+     * Deprecated legacy entry-point. Remove in Task 3 once all checks migrate.
+     */
+    run?(sources: SourceMap): Violation[] | Promise<Violation[]>
 }

@@ -153,7 +153,7 @@ describe('loadChecks', () => {
         expect(checks[0].id).toBe('sample-rule')
 
         const sources: SourceMap = new Map()
-        const violations = await checks[0].run(sources)
+        const violations = await checks[0]!.run!(sources)
         expect(violations).toHaveLength(1)
         expect(violations[0].ruleId).toBe('sample-rule')
     })

@@ -61,7 +61,7 @@ export async function runChecks(
         checks.map(async check => {
             const started = performance.now()
             try {
-                const violations = await check.run(sources)
+                const violations = check.run ? await check.run(sources) : []
                 timingsMs[check.id] = Math.round(performance.now() - started)
                 return violations
             } catch (err) {

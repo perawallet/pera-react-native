@@ -24,12 +24,14 @@ function loadFixture(name: string): SourceMap {
 
 describe('no-numeric-sizes check', () => {
     it('produces no violations for theme-token-only styles', async () => {
-        const violations = await check.run(loadFixture('numeric-sizes.good.ts'))
+        const violations = await check.run!(
+            loadFixture('numeric-sizes.good.ts'),
+        )
         expect(violations).toEqual([])
     })
 
     it('flags literal numeric spacing values, skipping 0 and theme tokens', async () => {
-        const violations = await check.run(loadFixture('numeric-sizes.bad.ts'))
+        const violations = await check.run!(loadFixture('numeric-sizes.bad.ts'))
         expect(violations.map(v => v.ruleId)).toEqual([
             'no-numeric-sizes',
             'no-numeric-sizes',
@@ -47,8 +49,7 @@ describe('no-numeric-sizes check', () => {
             {
                 line: 4,
                 column: 22,
-                message:
-                    'numeric value 12 for "padding" — use a theme token',
+                message: 'numeric value 12 for "padding" — use a theme token',
             },
             {
                 line: 4,
@@ -75,7 +76,7 @@ describe('no-numeric-sizes check', () => {
             ts.ScriptKind.TS,
         )
         const sources: SourceMap = new Map([[filePath, sf]])
-        const violations = await check.run(sources)
+        const violations = await check.run!(sources)
         expect(violations).toEqual([])
     })
 })

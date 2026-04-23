@@ -24,18 +24,20 @@ function loadFixture(name: string): SourceMap {
 
 describe('no-typography-in-styles check', () => {
     it('produces no violations when typography comes from getTypography', async () => {
-        const violations = await check.run(loadFixture('typography.good.tsx'))
+        const violations = await check.run!(loadFixture('typography.good.tsx'))
         expect(violations).toEqual([])
     })
 
     it('flags direct typography properties inside makeStyles regardless of value', async () => {
-        const violations = await check.run(loadFixture('typography.bad.tsx'))
+        const violations = await check.run!(loadFixture('typography.bad.tsx'))
         expect(violations).toHaveLength(2)
         expect(violations.map(v => v.ruleId)).toEqual([
             'no-typography-in-styles',
             'no-typography-in-styles',
         ])
-        expect(violations.map(v => ({ line: v.line, column: v.column }))).toEqual([
+        expect(
+            violations.map(v => ({ line: v.line, column: v.column })),
+        ).toEqual([
             { line: 5, column: 9 },
             { line: 6, column: 9 },
         ])
@@ -53,7 +55,7 @@ describe('no-typography-in-styles check', () => {
             ts.ScriptKind.TS,
         )
         const sources: SourceMap = new Map([[filePath, sf]])
-        const violations = await check.run(sources)
+        const violations = await check.run!(sources)
         expect(violations).toEqual([])
     })
 })
