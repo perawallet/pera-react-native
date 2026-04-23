@@ -370,6 +370,47 @@ vi.mock('@components/core', () => {
             }),
         PWImage: (props: any) =>
             React.createElement('img', { ...props, 'data-testid': 'PWImage' }),
+        PWInfoView: ({
+            illustration,
+            title,
+            body,
+            footerExtras,
+            primaryAction,
+            secondaryAction,
+            testID = 'pw-info-view',
+        }: any) =>
+            React.createElement(
+                'div',
+                { 'data-testid': testID },
+                illustration,
+                title && React.createElement('h1', { key: 'title' }, title),
+                body && React.createElement('p', { key: 'body' }, body),
+                footerExtras,
+                primaryAction &&
+                    React.createElement(
+                        'button',
+                        {
+                            key: 'primary',
+                            onClick: primaryAction.onPress,
+                            disabled: primaryAction.isDisabled,
+                            'data-testid':
+                                primaryAction.testID ?? `${testID}-primary`,
+                        },
+                        primaryAction.label,
+                    ),
+                secondaryAction &&
+                    React.createElement(
+                        'button',
+                        {
+                            key: 'secondary',
+                            onClick: secondaryAction.onPress,
+                            disabled: secondaryAction.isDisabled,
+                            'data-testid':
+                                secondaryAction.testID ?? `${testID}-secondary`,
+                        },
+                        secondaryAction.label,
+                    ),
+            ),
         PWInput: ({ onChangeText, testID, ...props }: any) =>
             React.createElement('input', {
                 ...props,
@@ -1926,6 +1967,22 @@ vi.mock('@perawallet/wallet-core-background', () => ({
 
 vi.mock('@perawallet/wallet-core-kms', () => ({
     useKMS: vi.fn(),
+    uniformIntBelow: (max: number) =>
+        max <= 0 ? 0 : Math.floor(Math.random() * max),
+    pickDistinctIndexes: (count: number, poolSize: number) => {
+        const effective = Math.min(Math.max(count, 0), poolSize)
+        const pool = Array.from({ length: poolSize }, (_, i) => i)
+        for (let i = pool.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1))
+            ;[pool[i], pool[j]] = [pool[j], pool[i]]
+        }
+        return pool.slice(0, effective)
+    },
+    zeroBytes: (...buffers: Array<Uint8Array | null | undefined>) => {
+        for (const buf of buffers) {
+            if (buf) buf.fill(0)
+        }
+    },
 }))
 
 // Mock @perawallet/wallet-core-assets

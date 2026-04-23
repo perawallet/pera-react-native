@@ -14,11 +14,14 @@ import { useKeyManagerStore } from '../store'
 import { KeyPair, KeyType } from '../models'
 import type { HDDerivationParams } from '../models/session'
 import { InvalidKeyError, KeyNotFoundError } from '../errors'
+import { zeroBytes } from '../crypto/secure-memory'
 import { useAlgo25 } from './useAlgo25'
 export type { Algo25KeyResult } from './useAlgo25'
 import { useHDWallet } from './useHDWallet'
 export type { HDWalletKeyResult } from './useHDWallet'
 import { useKMSService } from './useKMSServices'
+
+export type ExecuteWithMnemonicHandler<T> = (words: string[]) => T | Promise<T>
 
 export const useKMS = () => {
     const keys = useKeyManagerStore(state => state.keys)
@@ -69,6 +72,40 @@ export const useKMS = () => {
         }
     }
 
+    // Runs `handler` with the mnemonic words decoded from the session, then
+    // zeroes the underlying bytes before returning. Callers never see the raw
+    // Uint8Array — only the word array, which is local to the handler call.
+    const executeWithMnemonic = async <T>(
+        keyId: string,
+        domain: string,
+        mnemonicKeyId: string,
+        handler: ExecuteWithMnemonicHandler<T>,
+    ): Promise<T> => {
+        const key = getKeyOrThrow(keyId)
+
+        const run = async (session: {
+            getMnemonic: () => Promise<Uint8Array>
+        }): Promise<T> => {
+            let bytes: Uint8Array | null = null
+            try {
+                bytes = await session.getMnemonic()
+                const words = new TextDecoder().decode(bytes).split(' ')
+                return await handler(words)
+            } finally {
+                zeroBytes(bytes)
+            }
+        }
+
+        switch (key.type) {
+            case KeyType.HDWalletRootKey:
+                return withHDSession(key, domain, run, mnemonicKeyId)
+            case KeyType.Algo25Key:
+                return withAlgo25Session(key, domain, run, mnemonicKeyId)
+            default:
+                throw new InvalidKeyError(key.id ?? 'unknown')
+        }
+    }
+
     const signDataWithKey = async (
         keyId: string,
         domain: string,
@@ -112,5 +149,6 @@ export const useKMS = () => {
         withExportedKey,
         signTransactionsWithKey,
         signDataWithKey,
+        executeWithMnemonic,
     }
 }

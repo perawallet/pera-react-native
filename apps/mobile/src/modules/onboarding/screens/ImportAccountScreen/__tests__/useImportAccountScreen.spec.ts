@@ -51,6 +51,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
     },
 }))
 
+vi.mock('@perawallet/wallet-core-backup', () => ({
+    useMarkMnemonicBackupComplete: vi.fn(() => vi.fn()),
+}))
+
 vi.mock('@perawallet/wallet-core-kms', () => ({
     MNEMONIC_WORDLIST: [
         'abandon',

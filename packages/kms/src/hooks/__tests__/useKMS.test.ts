@@ -396,6 +396,142 @@ describe('useKMS', () => {
         ).rejects.toThrow()
     })
 
+    it('should executeWithMnemonic via HD session and zero bytes after', async () => {
+        const key: KeyPair = {
+            id: 'hd-key',
+            publicKey: 'pub',
+            type: KeyType.HDWalletRootKey,
+        }
+        mockGetKey.mockReturnValue(key)
+        const capturedBytes: Uint8Array[] = []
+        mockWithHDSession.mockImplementation(
+            async (
+                _key: any,
+                _domain: string,
+                handler: any,
+                mnemonicKeyId: string,
+            ) => {
+                expect(mnemonicKeyId).toBe('entropy-1')
+                const bytes = new TextEncoder().encode('alpha bravo charlie')
+                capturedBytes.push(bytes)
+                return handler({
+                    getMnemonic: async () => bytes,
+                })
+            },
+        )
+
+        const { result } = renderHook(() => useKMS())
+
+        let received: string[] | undefined
+        await act(async () => {
+            received = await result.current.executeWithMnemonic(
+                'hd-key',
+                'backup-flow',
+                'entropy-1',
+                words => {
+                    return [...words]
+                },
+            )
+        })
+
+        expect(received).toEqual(['alpha', 'bravo', 'charlie'])
+        expect(capturedBytes[0].every(byte => byte === 0)).toBe(true)
+    })
+
+    it('should executeWithMnemonic via Algo25 session', async () => {
+        const key: KeyPair = {
+            id: 'algo-key',
+            publicKey: 'pub',
+            type: KeyType.Algo25Key,
+        }
+        mockGetKey.mockReturnValue(key)
+        mockWithAlgo25Session.mockImplementation(
+            async (
+                _key: any,
+                _domain: string,
+                handler: any,
+                mnemonicKeyId: string,
+            ) => {
+                expect(mnemonicKeyId).toBe('seed-1')
+                return handler({
+                    getMnemonic: async () =>
+                        new TextEncoder().encode('one two three'),
+                })
+            },
+        )
+
+        const { result } = renderHook(() => useKMS())
+
+        let received: string[] | undefined
+        await act(async () => {
+            received = await result.current.executeWithMnemonic(
+                'algo-key',
+                'backup-flow',
+                'seed-1',
+                words => [...words],
+            )
+        })
+
+        expect(received).toEqual(['one', 'two', 'three'])
+    })
+
+    it('should throw for executeWithMnemonic with unsupported key type', async () => {
+        const key: KeyPair = {
+            id: 'p256-key',
+            publicKey: 'pub',
+            type: KeyType.DeterministicP256Key,
+        }
+        mockGetKey.mockReturnValue(key)
+
+        const { result } = renderHook(() => useKMS())
+
+        await expect(
+            act(async () => {
+                await result.current.executeWithMnemonic(
+                    'p256-key',
+                    'backup-flow',
+                    'some-id',
+                    () => undefined,
+                )
+            }),
+        ).rejects.toThrow()
+    })
+
+    it('should zero mnemonic bytes even when handler throws', async () => {
+        const key: KeyPair = {
+            id: 'hd-key',
+            publicKey: 'pub',
+            type: KeyType.HDWalletRootKey,
+        }
+        mockGetKey.mockReturnValue(key)
+        let captured: Uint8Array | undefined
+        mockWithHDSession.mockImplementation(
+            async (_key: any, _domain: string, handler: any) => {
+                captured = new TextEncoder().encode('alpha bravo')
+                return handler({
+                    getMnemonic: async () => captured!,
+                })
+            },
+        )
+
+        const { result } = renderHook(() => useKMS())
+
+        await expect(
+            act(async () => {
+                await result.current.executeWithMnemonic(
+                    'hd-key',
+                    'backup-flow',
+                    'entropy-1',
+                    () => {
+                        throw new Error('boom')
+                    },
+                )
+            }),
+        ).rejects.toThrow('boom')
+
+        expect(captured!.every(byte => byte === 0)).toBe(true)
+    })
+
     it('should expose the keys map from the store', () => {
         const key: KeyPair = {
             id: 'test-key',

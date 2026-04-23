@@ -341,6 +341,42 @@
         "description": "Minimum balance is the minimum amount of Algo you have to keep in an account. It increases every time the account is opted in to a smart contract, ASA or NFT.",
         "close": "Close"
     },
+    "backup": {
+        "banner": {
+            "text": "You need to backup the passphrase",
+            "cta": "Backup now"
+        },
+        "info": {
+            "title": "Create a passphrase backup for your account",
+            "body": "Creating a passphrase backup will allow you to recover your account. Without the passphrase, if you lose your device, remove the account or delete the app, you can permanently lose access to your Algorand account!",
+            "cta": "I Understand"
+        },
+        "write_down": {
+            "title": "Prepare to write down your recovery passphrase",
+            "body": "The only way to recover an Algorand account is with this recovery passphrase.",
+            "warning": "Do not share this passphrase with anyone, as it grants full access to your account.",
+            "cta": "I'm Ready to Begin"
+        },
+        "mnemonic": {
+            "title": "Recovery Passphrase",
+            "body": "Make sure to record these words in the correct order, using the corresponding numbers.",
+            "cta_continue": "Next",
+            "error_title": "Could not retrieve passphrase",
+            "error_body": "Something went wrong. Please try again.",
+            "error_cta": "Back"
+        },
+        "verification": {
+            "title": "Verify recovery passphrase backup",
+            "select_word": "Select word #{{number}}",
+            "cta_next": "Next",
+            "error_message": "Selected words are incorrect"
+        },
+        "success": {
+            "title": "Passphrase Verified",
+            "body": "Keep this recovery passphrase in a secure location that is accessible only by you. Do not lose this recovery passphrase.",
+            "cta_done": "Done"
+        }
+    },
     "camera": {
         "no_camera_device_found": {
             "title": "No camera device found or missing permissions.",

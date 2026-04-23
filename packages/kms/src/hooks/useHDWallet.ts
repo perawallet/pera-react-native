@@ -21,6 +21,7 @@ import {
     entropyToMnemonic,
     generateHDMasterKey,
 } from '../crypto/hdwallet-utils'
+import { zeroBytes } from '../crypto/secure-memory'
 import type { KeyData, KeyId } from '@algorandfoundation/keystore'
 
 export type HDWalletKeyResult = {
@@ -73,9 +74,7 @@ export const useHDWallet = () => {
             throw e
         }
 
-        masterKey.seed.fill(0)
-        rootKey.fill(0)
-        entropyBytes.fill(0)
+        zeroBytes(masterKey.seed, rootKey, entropyBytes)
 
         const keyPair = makeKeyPair({
             id: keyId,
@@ -121,6 +120,22 @@ export const useHDWallet = () => {
             throw new KeyManagementError('Key does not have a keystore key ID')
         }
 
+        const resolveMnemonicWords = async (): Promise<string[]> => {
+            if (!entropyKeyId) {
+                throw new KeyManagementError('Entropy key ID not provided')
+            }
+            return withExportedKey(entropyKeyId, entropyKeyData => {
+                if (!entropyKeyData.privateKey) {
+                    throw new KeyManagementError(
+                        'Entropy key not found in keystore',
+                    )
+                }
+                return entropyToMnemonic(
+                    Buffer.from(entropyKeyData.privateKey),
+                ).split(' ')
+            })
+        }
+
         const session: KMSHDWalletSession = {
             getPublicKey: async params => {
                 const derivedKeyId = await generateDerivedKey(
@@ -157,19 +172,8 @@ export const useHDWallet = () => {
                 return keyStore.sign(derivedKeyId, data)
             },
             getMnemonic: async () => {
-                if (!entropyKeyId) {
-                    throw new KeyManagementError('Entropy key ID not provided')
-                }
-                return withExportedKey(entropyKeyId, entropyKeyData => {
-                    if (!entropyKeyData.privateKey) {
-                        throw new KeyManagementError(
-                            'Entropy key not found in keystore',
-                        )
-                    }
-                    return entropyToMnemonic(
-                        Buffer.from(entropyKeyData.privateKey),
-                    )
-                })
+                const words = await resolveMnemonicWords()
+                return new TextEncoder().encode(words.join(' '))
             },
         }
 

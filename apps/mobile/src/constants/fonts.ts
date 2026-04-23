@@ -19,4 +19,8 @@ export const fontFamilies = {
         600: isIOS() ? 'DMSans-SemiBold' : 'DMSansSemiBold',
         700: isIOS() ? 'DMSans-Bold' : 'DMSansBold',
     },
+    DMMONO: {
+        400: isIOS() ? 'DMMono-Regular' : 'DMMonoRegular',
+        500: isIOS() ? 'DMMono-Medium' : 'DMMonoMedium',
+    },
 }

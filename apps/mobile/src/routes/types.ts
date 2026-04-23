@@ -22,6 +22,7 @@ import { AccountStackParamsList } from '@modules/accounts/routes/types'
 import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockchain'
 import { MessagesStackParamList } from '@modules/messages/routes'
 import { MultisigStackParamList } from '@modules/multisig'
+import type { BackupStackParamList } from '@modules/backup/routes/types'
 import { SearchStackParamsList } from '@modules/search'
 
 export type RootStackParamList = {
@@ -33,6 +34,7 @@ export type RootStackParamList = {
     Contacts: NavigatorScreenParams<ContactsStackParamsList>
     Search: NavigatorScreenParams<SearchStackParamsList>
     Multisig: NavigatorScreenParams<MultisigStackParamList>
+    BackupWallet: NavigatorScreenParams<BackupStackParamList>
     Staking: undefined
     GroupTransactionList: {
         groupId: string
@@ -52,4 +54,5 @@ export type AppStackParamList = RootStackParamList &
     ContactsStackParamsList &
     AccountStackParamsList &
     MultisigStackParamList &
+    BackupStackParamList &
     SearchStackParamsList
