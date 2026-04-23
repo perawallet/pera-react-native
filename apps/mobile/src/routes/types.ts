@@ -23,6 +23,7 @@ import type { PeraDisplayableTransaction } from '@perawallet/wallet-core-blockch
 import { MessagesStackParamList } from '@modules/messages/routes'
 import { MultisigStackParamList } from '@modules/multisig'
 import type { BackupStackParamList } from '@modules/backup/routes/types'
+import { SearchStackParamsList } from '@modules/search'
 
 export type RootStackParamList = {
     Onboarding: NavigatorScreenParams<OnboardingStackParamList>
@@ -31,6 +32,7 @@ export type RootStackParamList = {
     Messages: NavigatorScreenParams<MessagesStackParamList>
     Settings: NavigatorScreenParams<SettingsStackParamsList>
     Contacts: NavigatorScreenParams<ContactsStackParamsList>
+    Search: NavigatorScreenParams<SearchStackParamsList>
     Multisig: NavigatorScreenParams<MultisigStackParamList>
     BackupWallet: NavigatorScreenParams<BackupStackParamList>
     Staking: undefined
@@ -52,4 +54,5 @@ export type AppStackParamList = RootStackParamList &
     ContactsStackParamsList &
     AccountStackParamsList &
     MultisigStackParamList &
-    BackupStackParamList
+    BackupStackParamList &
+    SearchStackParamsList

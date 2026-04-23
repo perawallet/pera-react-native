@@ -36,7 +36,7 @@ catalog:
   typescript: ^5.9.3
   typescript-eslint: 8.59.0
   util: ^0.12.5
-  uuid: 13.0.0
+  uuid: 14.0.0
   vite: ^8.0.8
   vitest: ^4.1.4
   xstate: ^5.28.0
@@ -60,7 +60,7 @@ onlyBuiltDependencies:
 overrides:
   '@algorandfoundation/keystore': 1.0.0-canary.12
   '@expo/dom-webview': ^55.0.5
-  '@xmldom/xmldom': 0.8.12
+  '@xmldom/xmldom': 0.8.13
   bn.js@4: 4.12.3
   brace-expansion@1: 1.1.13
   brace-expansion@2: 2.0.3
@@ -87,6 +87,7 @@ overrides:
   react-native-nitro-modules: 0.35.0
   react-native-quick-crypto: ^1.0.17
   react-native-quick-base64: ^2.2.2
+  uuid@<14: 14.0.0
   ws@>=7.0.0 <7.5.10: 7.5.10
   yaml@1: 1.10.3
   yaml@2: 2.8.3
@@ -100,5 +101,9 @@ supportedArchitectures:
 minimumReleaseAge: 10080
 # Security-mandated versions exempt from the freshness window.
 # protobufjs 7.5.5 is the only patched release for GHSA-xq3m-2v4x-88gg.
+# @xmldom/xmldom 0.8.13 patches GHSA-2v35-w6hq-6mfw, -f6ww-3ggp-fr8h, -x6wf-f3px-wcqx, -j759-j44w-7fr8.
+# uuid 14.0.0 patches GHSA-w5hq-g745-h8pq.
 minimumReleaseAgeExclude:
   - protobufjs
+  - '@xmldom/xmldom'
+  - uuid

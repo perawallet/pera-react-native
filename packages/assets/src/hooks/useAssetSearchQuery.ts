@@ -20,6 +20,8 @@ import type { Maybe } from '@perawallet/wallet-core-shared'
 
 type UseAssetSearchQueryOptions = {
     hasCollectible?: boolean
+    /** Skip the query entirely when false. Defaults to true. */
+    enabled?: boolean
 }
 
 type UseAssetSearchQueryResult = {
@@ -55,6 +57,7 @@ export const useAssetSearchQuery = (
 ): UseAssetSearchQueryResult => {
     const { network } = useNetwork()
     const hasCollectible = options?.hasCollectible ?? false
+    const enabled = options?.enabled ?? true
 
     const infiniteQuery = useInfiniteQuery({
         queryKey: getAssetSearchQueryKey(query, network, hasCollectible),
@@ -65,6 +68,7 @@ export const useAssetSearchQuery = (
                 cursor: pageParam,
                 hasCollectible,
             }),
+        enabled,
         initialPageParam: undefined as string | undefined,
         getNextPageParam: lastPage => extractCursor(lastPage.next),
     })

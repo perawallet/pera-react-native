@@ -10,9 +10,10 @@
  limitations under the License
  */
 
+import { forwardRef } from 'react'
 import { InputProps, useTheme } from '@rneui/themed'
 
-import { PWIcon, PWInput } from '@components/core'
+import { PWIcon, PWInput, type PWInputRef } from '@components/core'
 import { useStyles } from './styles'
 
 export type SearchInputProps = {} & Omit<
@@ -20,29 +21,36 @@ export type SearchInputProps = {} & Omit<
     'leftIcon' | 'rightIcon' | 'ref'
 >
 
-export const SearchInput = (props: SearchInputProps) => {
-    const styles = useStyles()
-    const { theme } = useTheme()
+export type SearchInputRef = PWInputRef
 
-    return (
-        <PWInput
-            {...props}
-            inputContainerStyle={[props.inputContainerStyle, styles.search]}
-            inputStyle={styles.input}
-            placeholder={props.placeholder ?? 'Search'}
-            placeholderTextColor={theme.colors.textGray}
-            leftIcon={
-                <PWIcon
-                    name='magnifying-glass'
-                    variant='secondary'
-                />
-            }
-            // @ts-expect-error - passed through to RN Input
-            clearButtonMode='while-editing'
-            selectTextOnFocus
-            autoComplete='off'
-            autoCapitalize='none'
-            autoCorrect={false}
-        />
-    )
-}
+export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(
+    (props, ref) => {
+        const styles = useStyles()
+        const { theme } = useTheme()
+
+        return (
+            <PWInput
+                ref={ref}
+                {...props}
+                inputContainerStyle={[props.inputContainerStyle, styles.search]}
+                inputStyle={styles.input}
+                placeholder={props.placeholder ?? 'Search'}
+                placeholderTextColor={theme.colors.textGray}
+                leftIcon={
+                    <PWIcon
+                        name='magnifying-glass'
+                        variant='secondary'
+                    />
+                }
+                // @ts-expect-error - passed through to RN Input
+                clearButtonMode='while-editing'
+                selectTextOnFocus
+                autoComplete='off'
+                autoCapitalize='none'
+                autoCorrect={false}
+            />
+        )
+    },
+)
+
+SearchInput.displayName = 'SearchInput'

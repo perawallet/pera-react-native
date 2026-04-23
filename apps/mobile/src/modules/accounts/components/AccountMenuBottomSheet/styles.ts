@@ -17,4 +17,7 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.background,
         overflow: 'hidden',
     },
+    toolbar: {
+        marginHorizontal: theme.spacing.sm,
+    },
 }))

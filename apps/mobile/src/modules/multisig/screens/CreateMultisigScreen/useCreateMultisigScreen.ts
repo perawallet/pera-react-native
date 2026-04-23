@@ -55,7 +55,7 @@ export const useCreateMultisigScreen = (): UseCreateMultisigScreenResult => {
     const handleAddAddress = useCallback(
         (address: string) => {
             if (participants.some(p => p.address === address)) return
-            addParticipant({ address, isLocal: false })
+            addParticipant({ address })
         },
         [addParticipant, participants],
     )

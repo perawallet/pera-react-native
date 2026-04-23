@@ -11,7 +11,7 @@
  */
 
 import { formatDatetime } from '@perawallet/wallet-core-shared'
-import { PWButton, PWText, PWView } from '@components/core'
+import { PWText, PWView } from '@components/core'
 import { AssetWealthChart } from '../AssetWealthChart/AssetWealthChart'
 import { ChartPeriodSelection } from '@components/ChartPeriodSelection'
 import { useEffect, useMemo } from 'react'
@@ -40,6 +40,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
+import { ExpandablePanel } from '@components/ExpandablePanel'
 
 export type AssetHoldingsProps = {
     account: WalletAccount
@@ -62,11 +63,8 @@ export const AssetHoldings = ({
         onSwipeEnabledChange?.(!selectedPoint)
     }, [selectedPoint, onSwipeEnabledChange])
 
-    const { getPreference, setPreference } = usePreferences()
+    const { getPreference } = usePreferences()
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
-    const toggleChartVisible = () => {
-        setPreference(UserPreferences.chartVisible, !chartVisible)
-    }
 
     const { data: assetHolding } = useAccountAssetBalanceQuery(
         account,
@@ -119,12 +117,6 @@ export const AssetHoldings = ({
                             precision={asset.decimals}
                             minPrecision={2}
                         />
-                        <PWButton
-                            icon='chart'
-                            variant={chartVisible ? 'secondary' : 'helper'}
-                            paddingStyle='dense'
-                            onPress={toggleChartVisible}
-                        />
                     </PWView>
 
                     <PWView style={styles.secondaryValueContainer}>
@@ -153,7 +145,7 @@ export const AssetHoldings = ({
                     </PWView>
                 </PWView>
 
-                {chartVisible && (
+                <ExpandablePanel isExpanded={chartVisible}>
                     <PWView style={styles.chartContainer}>
                         <AssetWealthChart
                             account={account}
@@ -166,7 +158,7 @@ export const AssetHoldings = ({
                             onChange={setPeriod}
                         />
                     </PWView>
-                )}
+                </ExpandablePanel>
 
                 <AssetActionButtons
                     asset={asset}

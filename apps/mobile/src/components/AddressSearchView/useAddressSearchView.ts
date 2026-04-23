@@ -23,7 +23,7 @@ import {
     useNfdSearchQuery,
     type NfdSearchResult,
 } from '@perawallet/wallet-core-nfd'
-import { useDebouncedValue } from '@hooks/useDebouncedValue'
+import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
 
 export type AddressSearchItem =

@@ -358,6 +358,55 @@ describe('useAccountBalances', () => {
         expect(asset999?.algoValue).toEqual(new Decimal(0)) // No price means 0 value
     })
 
+    it('emits zero amount and zero algoValue when asset metadata is not yet loaded', async () => {
+        // Regression: if we let `decimals` default to 0 when metadata hasn't
+        // loaded, the holding's base-unit amount leaks into algoValue and
+        // dominates the value-desc sort order. The row should instead carry
+        // zeroes until the metadata query resolves.
+        const account: WalletAccount = {
+            address: 'ADDR1',
+            name: 'Account 1',
+            id: '1',
+            type: 'algo25',
+            canSign: true,
+        }
+
+        // No entry in mockAssets for '456' — simulates metadata still loading.
+        mockAssetPrices.set('0', { usdPrice: new Decimal(2) })
+        mockAssetPrices.set('456', { usdPrice: new Decimal(10) })
+
+        mockGetAccountBalance.mockReturnValue({
+            accountAddress: 'ADDR1',
+            algoBalance: new Decimal(1),
+            totalAssetsOptedIn: 1,
+            totalCreatedAssets: 0,
+            totalAppsOptedIn: 0,
+            authAddress: null,
+        })
+        mockGetAccountHoldings.mockReturnValue([
+            { assetId: '456', amount: new Decimal(1_000_000) },
+        ])
+
+        const { result } = renderHook(
+            () => useAccountBalancesQuery([account]),
+            { wrapper: createWrapper() },
+        )
+
+        await waitFor(() => expect(result.current.isPending).toBe(false))
+
+        const accountData = result.current.accountBalances.get('ADDR1')
+        const unloaded = accountData?.assetBalances.find(
+            b => b.assetId === '456',
+        )
+        expect(unloaded).toBeDefined()
+        expect(unloaded?.amount).toEqual(new Decimal(0))
+        expect(unloaded?.algoValue).toEqual(new Decimal(0))
+        expect(unloaded?.asset).toBeUndefined()
+
+        // Portfolio total ignores the unscalable row — just the ALGO balance.
+        expect(result.current.portfolioAlgoValue).toEqual(new Decimal(1))
+    })
+
     it('falls back to fetchAndPersistAccount when the balance row is missing', async () => {
         const account: WalletAccount = {
             address: 'NEW_ADDR',

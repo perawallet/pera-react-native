@@ -23,7 +23,7 @@ import { TransportError } from '../errors'
  * Function type for proposing a multisig transaction to the backend
  */
 export type ProposeSignRequestFn = (params: {
-    jointAccountAddress: string
+    multisigAddress: string
     signedData: SigningResult['signedData']
     signers: SigningResult['signers']
 }) => Promise<{ signRequestId: string; status: SignRequestStatus }>
@@ -41,17 +41,17 @@ export const createMultisigProposeTransport = (
         send: async (
             result: SigningResult,
             _source: SourceMetadata,
-            jointAccountAddress?: string,
+            multisigAddress?: string,
         ): Promise<TransportResult> => {
-            if (!jointAccountAddress) {
+            if (!multisigAddress) {
                 throw new TransportError(
-                    'Joint account address is required for multisig propose transport',
+                    'Multisig address is required for multisig propose transport',
                 )
             }
 
             try {
                 const response = await proposeSignRequest({
-                    jointAccountAddress,
+                    multisigAddress,
                     signedData: result.signedData,
                     signers: result.signers,
                 })

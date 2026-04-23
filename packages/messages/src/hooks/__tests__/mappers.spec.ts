@@ -170,7 +170,7 @@ describe('mappers', () => {
 
             const result = mapSignRequest(response)
 
-            expect(result.jointAccount).toEqual({
+            expect(result.multisigAccount).toEqual({
                 customId: 'msig-1',
                 createdAt: new Date('2025-01-10T00:00:00Z'),
                 address: 'MSIG_ADDR',

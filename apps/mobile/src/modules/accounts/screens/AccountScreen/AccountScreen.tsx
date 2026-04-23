@@ -10,17 +10,9 @@
  limitations under the License
  */
 
-import {
-    PWDropdown,
-    PWDropdownItem,
-    PWIcon,
-    PWToolbar,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
-import { usePreferences, useSettings } from '@perawallet/wallet-core-settings'
+import { PWIcon, PWToolbar, PWTouchableOpacity, PWView } from '@components/core'
+import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
-import { useMemo } from 'react'
 import { useSelectedAccount } from '@perawallet/wallet-core-accounts'
 import { useShouldPlayConfetti } from '@modules/onboarding/hooks'
 
@@ -34,11 +26,7 @@ import { ConfettiAnimation } from '@modules/accounts/components/ConfettiAnimatio
 import { PromptContainer } from '@modules/prompts'
 import { AccountTabNavigator } from '@modules/accounts/components/AccountTabNavigator'
 import { NotificationsIcon } from '@modules/messages/components/NotificationsIcon'
-
-//TODO implement more menu
-//TODO figure out and implement banners/spot banners
-//TODO implement account info screen somewhere (see old app top right corner)
-//TODO implement rekey information && multisig information
+import { AccountHeaderMenu } from '@components/AccountHeaderMenu'
 
 export const AccountScreen = () => {
     const styles = useStyles()
@@ -49,31 +37,8 @@ export const AccountScreen = () => {
     const { shouldPlayConfetti, setShouldPlayConfetti } =
         useShouldPlayConfetti()
 
-    const { getPreference, setPreference } = usePreferences()
-    const { privacyMode, setPrivacyMode } = useSettings()
-
+    const { getPreference } = usePreferences()
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
-
-    const dropdownItems: PWDropdownItem[] = useMemo(
-        () => [
-            {
-                label: chartVisible
-                    ? t('portfolio.hide_chart')
-                    : t('portfolio.show_chart'),
-                icon: chartVisible ? 'text-document' : 'chart',
-                onPress: () =>
-                    setPreference(UserPreferences.chartVisible, !chartVisible),
-            },
-            {
-                label: privacyMode
-                    ? t('common.exit_stealth_mode')
-                    : t('common.enter_stealth_mode'),
-                icon: 'eye',
-                onPress: () => setPrivacyMode(!privacyMode),
-            },
-        ],
-        [chartVisible, privacyMode, t, setPreference, setPrivacyMode],
-    )
 
     if (!account) {
         return (
@@ -98,11 +63,7 @@ export const AccountScreen = () => {
                 left={<AccountSelection />}
                 right={
                     <PWView style={styles.iconBarSection}>
-                        <PWView testID='account_screen_dropdown'>
-                            <PWDropdown items={dropdownItems}>
-                                <PWIcon name='ellipsis' />
-                            </PWDropdown>
-                        </PWView>
+                        <AccountHeaderMenu testID='account_screen_dropdown' />
                         <PWTouchableOpacity
                             onPress={scannerState.open}
                             testID='account_screen_qr_scanner_button'

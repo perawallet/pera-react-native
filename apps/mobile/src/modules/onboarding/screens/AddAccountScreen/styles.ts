@@ -45,7 +45,7 @@ export const useStyles = makeStyles(theme => ({
         paddingBottom: theme.spacing['3xl'],
     },
     mainContainer: {
-        paddingHorizontal: theme.spacing.xl,
+        paddingHorizontal: theme.spacing.lg,
         flexDirection: 'column',
         gap: theme.spacing.md,
     },

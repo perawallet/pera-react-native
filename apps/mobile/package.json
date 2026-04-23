@@ -54,6 +54,7 @@
     "@perawallet/wallet-core-polling": "workspace:*",
     "@perawallet/wallet-core-projects": "workspace:*",
     "@perawallet/wallet-core-remote-config": "workspace:*",
+    "@perawallet/wallet-core-search": "workspace:*",
     "@perawallet/wallet-core-security": "workspace:*",
     "@perawallet/wallet-core-settings": "workspace:*",
     "@perawallet/wallet-core-shared": "workspace:*",
