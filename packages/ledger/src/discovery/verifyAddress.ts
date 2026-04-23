@@ -11,7 +11,10 @@
  */
 
 import { verifyAddress } from '@perawallet/wallet-core-hardware-wallet'
-import type { LedgerAccount, LedgerTransport } from '@perawallet/wallet-extension-ledger-react-native/protocol'
+import type {
+    LedgerAccount,
+    LedgerTransport,
+} from '@perawallet/wallet-extension-ledger-react-native/protocol'
 import { classifyLedgerError } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 
 /**

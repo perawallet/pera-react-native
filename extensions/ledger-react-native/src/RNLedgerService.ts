@@ -24,10 +24,7 @@ import type {
     LedgerDevice,
     LedgerAccount,
 } from './types'
-import {
-    classifyLedgerError,
-    LedgerConnectionError,
-} from './errors'
+import { classifyLedgerError, LedgerConnectionError } from './errors'
 import { resolveDeviceModel, buildLedgerAccountPath } from './constants'
 
 /**

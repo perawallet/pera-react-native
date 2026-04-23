@@ -41,9 +41,7 @@ type Actions = {
     isPaired: (deviceId: string) => boolean
     markPaired: (deviceId: string) => void
     forgetDevice: (deviceId: string) => void
-    setPendingPairingDevice: (
-        device: Nullable<HardwareWalletDevice>,
-    ) => void
+    setPendingPairingDevice: (device: Nullable<HardwareWalletDevice>) => void
     resetState: () => void
 }
 
