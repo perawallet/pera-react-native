@@ -7,18 +7,26 @@ Deterministic AST-based source-code checks for the Pera Wallet monorepo. Catches
 From the repo root:
 
 ```sh
-pnpm lint:guardrails          # human-readable output
+pnpm lint:guardrails          # human-readable output, exits 1 on violations
+pnpm lint:guardrails:warn     # human-readable output, exits 0 (warn-only)
 pnpm lint:guardrails:json     # machine-readable JSON
 ```
 
-`pnpm lint` now chains guardrails after `turbo run lint`, so `pnpm pre-push` and the CI lint job pick them up automatically.
+`pnpm lint` chains `pnpm lint:guardrails:warn` after `turbo run lint`, so pre-push and CI surface violations without blocking while the backlog is cleared. Once the codebase is clean, flip the chain to `pnpm lint:guardrails` to start blocking.
+
+## Flags
+
+| Flag | Effect |
+| ---- | ------ |
+| `--json`       | Emit JSON instead of the human report. |
+| `--warn-only`  | Still print violations, but exit `0` so the command does not fail the build. Intended for a phased rollout while existing violations are being worked through. |
 
 ## Exit codes
 
 | Code | Meaning |
 | ---- | ------- |
-| `0`  | No violations. |
-| `1`  | One or more violations. Fix or suppress them. |
+| `0`  | No violations, or violations exist but `--warn-only` was passed. |
+| `1`  | Violations exist and `--warn-only` was NOT passed. |
 | `2`  | Runtime error (a check threw, a file failed to parse, etc.). Stack printed to stderr. |
 
 ## Scope

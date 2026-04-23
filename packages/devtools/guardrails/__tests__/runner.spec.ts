@@ -72,6 +72,25 @@ describe('guardrails runner CLI', () => {
         expect(status).toBe(2)
         expect(stderr).toContain('unknown flag "--nope"')
     }, 30_000)
+
+    it('exits 0 with --warn-only even when violations exist', () => {
+        const { status, stdout } = runCli(['--warn-only'])
+        expect(status).toBe(0)
+        if (stdout.includes('guardrail violation(s)')) {
+            expect(stdout).toContain('warn-only, not blocking')
+        }
+    }, 30_000)
+
+    it('exposes warnOnly=true in JSON when combined with --json', () => {
+        const { status, stdout } = runCli(['--json', '--warn-only'])
+        expect(status).toBe(0)
+        const payload = JSON.parse(stdout) as {
+            ok: boolean
+            total: number
+            warnOnly: boolean
+        }
+        expect(payload.warnOnly).toBe(true)
+    }, 30_000)
 })
 
 describe('loadChecks', () => {

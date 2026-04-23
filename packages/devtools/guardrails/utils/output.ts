@@ -5,6 +5,7 @@ export interface RunSummary {
     violations: Violation[]
     timingsMs: Record<string, number>
     totalMs: number
+    warnOnly: boolean
 }
 
 const ANSI = {
@@ -69,9 +70,12 @@ export function formatHuman(summary: RunSummary, repoRoot: string): string {
         }
     }
 
+    const footerMarker = summary.warnOnly ? '⚠' : '✖'
+    const footerColor = summary.warnOnly ? ANSI.yellow : ANSI.red
+    const footerSuffix = summary.warnOnly ? ' — warn-only, not blocking' : ''
     const footer = paint(
-        ANSI.red,
-        `✖ ${summary.violations.length} guardrail violation(s) across ${groups.size} rule(s) (total ${summary.totalMs}ms)`,
+        footerColor,
+        `${footerMarker} ${summary.violations.length} guardrail violation(s) across ${groups.size} rule(s) (total ${summary.totalMs}ms)${footerSuffix}`,
     )
     parts.push(`${footer}\n`)
     parts.push(`Per-check timings: ${formatTimings(summary.timingsMs)}\n`)
@@ -84,6 +88,7 @@ export function formatJson(summary: RunSummary, repoRoot: string): string {
         ok: summary.violations.length === 0,
         total: summary.violations.length,
         durationMs: summary.totalMs,
+        warnOnly: summary.warnOnly,
         timings: summary.timingsMs,
         violations: summary.violations.map(v => ({
             ...v,

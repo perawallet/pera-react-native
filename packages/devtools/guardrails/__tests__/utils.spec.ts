@@ -6,12 +6,26 @@ import { filterSuppressed } from '../utils/suppressions.js'
 import type { SourceMap, Violation } from '../types.js'
 
 describe('parseArgs', () => {
-    it('returns { json: true } for --json', () => {
-        expect(parseArgs(['--json'])).toEqual({ json: true })
+    it('returns defaults for no args', () => {
+        expect(parseArgs([])).toEqual({ json: false, warnOnly: false })
     })
 
-    it('returns { json: false } for no args', () => {
-        expect(parseArgs([])).toEqual({ json: false })
+    it('recognises --json', () => {
+        expect(parseArgs(['--json'])).toEqual({ json: true, warnOnly: false })
+    })
+
+    it('recognises --warn-only', () => {
+        expect(parseArgs(['--warn-only'])).toEqual({
+            json: false,
+            warnOnly: true,
+        })
+    })
+
+    it('recognises --json and --warn-only together', () => {
+        expect(parseArgs(['--json', '--warn-only'])).toEqual({
+            json: true,
+            warnOnly: true,
+        })
     })
 
     it('throws on unknown flag', () => {
@@ -27,9 +41,52 @@ describe('formatHuman', () => {
             violations: [],
             timingsMs: {},
             totalMs: 0,
+            warnOnly: false,
         }
         const output = formatHuman(summary, '/repo')
         expect(output).toContain('no violations')
+    })
+
+    it('marks footer as warn-only and not blocking when warnOnly is true', () => {
+        const originalDescriptor = Object.getOwnPropertyDescriptor(
+            process.stdout,
+            'isTTY',
+        )
+        try {
+            Object.defineProperty(process.stdout, 'isTTY', {
+                value: false,
+                configurable: true,
+            })
+            const summary: RunSummary = {
+                violations: [
+                    {
+                        file: '/repo/src/a.ts',
+                        line: 1,
+                        column: 1,
+                        ruleId: 'sample-rule',
+                        message: 'nope',
+                        remediation: 'fix it',
+                    },
+                ],
+                timingsMs: { 'sample-rule': 5 },
+                totalMs: 10,
+                warnOnly: true,
+            }
+            const output = formatHuman(summary, '/repo')
+            expect(output).toContain('warn-only, not blocking')
+            expect(output).toContain('⚠')
+            expect(output).not.toContain('✖')
+        } finally {
+            if (originalDescriptor) {
+                Object.defineProperty(
+                    process.stdout,
+                    'isTTY',
+                    originalDescriptor,
+                )
+            } else {
+                delete (process.stdout as { isTTY?: boolean }).isTTY
+            }
+        }
     })
 
     it('does not emit ANSI codes when stdout is not a TTY', () => {
@@ -55,6 +112,7 @@ describe('formatHuman', () => {
                 ],
                 timingsMs: { 'sample-rule': 5 },
                 totalMs: 10,
+                warnOnly: false,
             }
             const output = formatHuman(summary, '/repo')
             // eslint-disable-next-line no-control-regex

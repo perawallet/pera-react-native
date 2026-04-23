@@ -88,12 +88,14 @@ async function main(): Promise<void> {
         violations: filtered,
         timingsMs,
         totalMs: Math.round(performance.now() - started),
+        warnOnly: args.warnOnly,
     }
 
     const output = args.json
         ? formatJson(summary, repoRoot)
         : formatHuman(summary, repoRoot)
-    await writeAndExit(output, filtered.length === 0 ? 0 : 1)
+    const exitCode = filtered.length === 0 || args.warnOnly ? 0 : 1
+    await writeAndExit(output, exitCode)
 }
 
 function writeAndExit(output: string, code: number): Promise<never> {
