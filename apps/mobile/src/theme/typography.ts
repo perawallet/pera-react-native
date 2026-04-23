@@ -18,6 +18,10 @@ export const getFontFamily = (weight: 400 | 500 | 600 | 700) => {
     return fontFamilies.DMSANS[weight]
 }
 
+export const getMonoFontFamily = (weight: 400 | 500) => {
+    return fontFamilies.DMMONO[weight]
+}
+
 export type TypographyVariant =
     | 'h1'
     | 'h2'
@@ -26,6 +30,7 @@ export type TypographyVariant =
     | 'body'
     | 'caption'
     | 'link'
+    | 'mono'
 
 export const getTypography = (
     theme: Theme,
@@ -80,6 +85,13 @@ export const getTypography = (
             lineHeight: 24,
             color: theme.colors.linkPrimary,
             fontWeight: 500,
+        },
+        mono: {
+            fontFamily: getMonoFontFamily(400),
+            fontSize: 13,
+            lineHeight: 24,
+            color: theme.colors.textMain,
+            fontWeight: 400,
         },
     }
 

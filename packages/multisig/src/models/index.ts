@@ -43,13 +43,13 @@ export interface TransactionList {
     responses: SignerResponse[]
 }
 
-export interface JointAccountSignRequest {
+export interface MultisigSignRequest {
     id: string
     status: SignRequestStatus
     type: string
     createdAt: Date
     expectedExpireDatetime: Date
     failReasonDisplay: Nullable<string>
-    jointAccount: MultiSigAccount
+    multisigAccount: MultiSigAccount
     transactionLists: TransactionList[]
 }

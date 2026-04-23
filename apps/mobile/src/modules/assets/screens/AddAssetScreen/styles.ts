@@ -20,6 +20,9 @@ export const useStyles = makeStyles(theme => ({
     listContainer: {
         flexGrow: 1,
     },
+    keyboardView: {
+        flexGrow: 1,
+    },
     searchContainer: {
         paddingHorizontal: theme.spacing.md,
         paddingVertical: theme.spacing.sm,

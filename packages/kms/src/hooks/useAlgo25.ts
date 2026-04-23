@@ -22,6 +22,7 @@ import {
 import { encodeAddress } from '@algorandfoundation/algokit-utils'
 import { useKMSService } from './useKMSServices'
 import { makeKeyPair } from '../utils'
+import { zeroBytes } from '../crypto/secure-memory'
 import type { KeyData, KeyId } from '@algorandfoundation/keystore'
 
 export type Algo25KeyResult = {
@@ -87,8 +88,7 @@ export const useAlgo25 = () => {
             throw e
         }
 
-        seed.fill(0)
-        naclKeyPair.secretKey.fill(0)
+        zeroBytes(seed, naclKeyPair.secretKey)
 
         const keyPair = makeKeyPair({
             id: keyId,
@@ -124,6 +124,22 @@ export const useAlgo25 = () => {
             const seed = keyData.privateKey.slice(0, 32)
             const naclKeyPair = nacl.sign.keyPair.fromSeed(seed)
 
+            const resolveMnemonicWords = async (): Promise<string[]> => {
+                if (!seedKeyId) {
+                    throw new KeyManagementError('Seed key ID not provided')
+                }
+                return withExportedKey(seedKeyId, seedKeyData => {
+                    if (!seedKeyData.privateKey) {
+                        throw new KeyManagementError(
+                            'Seed key not found in keystore',
+                        )
+                    }
+                    return mnemonicFromSeed(
+                        seedKeyData.privateKey.slice(0, 32),
+                    ).split(' ')
+                })
+            }
+
             const session: KMSAlgo25Session = {
                 signTransaction: async (encodedTx: Uint8Array) =>
                     nacl.sign.detached(encodedTx, naclKeyPair.secretKey),
@@ -131,27 +147,15 @@ export const useAlgo25 = () => {
                     nacl.sign.detached(data, naclKeyPair.secretKey),
                 getPublicKey: () => naclKeyPair.publicKey,
                 getMnemonic: async () => {
-                    if (!seedKeyId) {
-                        throw new KeyManagementError('Seed key ID not provided')
-                    }
-                    return withExportedKey(seedKeyId, seedKeyData => {
-                        if (!seedKeyData.privateKey) {
-                            throw new KeyManagementError(
-                                'Seed key not found in keystore',
-                            )
-                        }
-                        return mnemonicFromSeed(
-                            seedKeyData.privateKey.slice(0, 32),
-                        )
-                    })
+                    const words = await resolveMnemonicWords()
+                    return new TextEncoder().encode(words.join(' '))
                 },
             }
 
             try {
                 return await handler(session)
             } finally {
-                seed.fill(0)
-                naclKeyPair.secretKey.fill(0)
+                zeroBytes(seed, naclKeyPair.secretKey)
             }
         })
     }

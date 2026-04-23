@@ -403,7 +403,7 @@ describe('useHDWallet', () => {
 
             const { result } = renderHook(() => useHDWallet())
 
-            let mnemonic: string | undefined
+            let mnemonic: Uint8Array | undefined
             await act(async () => {
                 mnemonic = await result.current.withHDSession(
                     mockKey,
@@ -415,7 +415,10 @@ describe('useHDWallet', () => {
                 )
             })
 
-            expect(mnemonic).toBe('recovered mnemonic words')
+            expect(ArrayBuffer.isView(mnemonic)).toBe(true)
+            expect(new TextDecoder().decode(mnemonic)).toBe(
+                'recovered mnemonic words',
+            )
             expect(mockKeyStoreExport).toHaveBeenCalledWith('ks-entropy-1')
             expect(mockEntropyToMnemonic).toHaveBeenCalled()
         })

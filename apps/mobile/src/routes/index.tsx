@@ -38,6 +38,7 @@ import { RootStackParamList } from './types'
 import { fullScreenLayout } from '@layouts/index'
 import { MessagesStackNavigator } from '@modules/messages/routes'
 import { MultisigStackNavigator } from '@modules/multisig'
+import { BackupStackNavigator } from '@modules/backup'
 import { SearchStackNavigator } from '@modules/search'
 import { navigationRef } from './navigationRef'
 export type { RootStackParamList } from './types'
@@ -104,6 +105,11 @@ export const MainRoutes = () => {
                             <RootStack.Screen
                                 name='Multisig'
                                 component={MultisigStackNavigator}
+                            />
+                            <RootStack.Screen
+                                name='BackupWallet'
+                                component={BackupStackNavigator}
+                                options={{ headerShown: false }}
                             />
                             <RootStack.Screen
                                 name='Staking'

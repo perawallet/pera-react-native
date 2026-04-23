@@ -126,6 +126,13 @@ export default defineConfig({
                 ),
             },
             {
+                find: '@perawallet/wallet-core-backup',
+                replacement: path.resolve(
+                    __dirname,
+                    '../../packages/backup/src/index.ts',
+                ),
+            },
+            {
                 find: '@perawallet/wallet-core-assets',
                 replacement: path.resolve(
                     __dirname,

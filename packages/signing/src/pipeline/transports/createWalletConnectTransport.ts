@@ -36,7 +36,7 @@ export const createWalletConnectTransport = (
         send: async (
             result: SigningResult,
             source: SourceMetadata,
-            _jointAccountAddress?: string,
+            _multisigAddress?: string,
         ): Promise<TransportResult> => {
             // Verify we have callback functions
             if (!source.callbacks?.approve) {

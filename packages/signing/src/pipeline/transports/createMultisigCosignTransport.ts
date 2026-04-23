@@ -40,7 +40,7 @@ export const createMultisigCosignTransport = (
         send: async (
             result: SigningResult,
             source: SourceMetadata,
-            _jointAccountAddress?: string,
+            _multisigAddress?: string,
         ): Promise<TransportResult> => {
             if (!source.signRequestId) {
                 throw new TransportError(

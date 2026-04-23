@@ -328,7 +328,7 @@ describe('useAlgo25', () => {
 
             const { result } = renderHook(() => useAlgo25())
 
-            let mnemonic: string | undefined
+            let mnemonic: Uint8Array | undefined
             await act(async () => {
                 mnemonic = await result.current.withAlgo25Session(
                     mockKey,
@@ -340,7 +340,10 @@ describe('useAlgo25', () => {
                 )
             })
 
-            expect(mnemonic).toBe('recovered mnemonic words')
+            expect(ArrayBuffer.isView(mnemonic)).toBe(true)
+            expect(new TextDecoder().decode(mnemonic)).toBe(
+                'recovered mnemonic words',
+            )
             expect(mockKeyStoreExport).toHaveBeenCalledWith('ks-seed-1')
             expect(mockMnemonicFromSeed).toHaveBeenCalled()
         })

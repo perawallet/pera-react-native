@@ -45,7 +45,22 @@
         "add": "Add",
         "added": "Added",
         "no_results": "No assets found",
-        "opt_in_failed": "Failed to opt in",
+        "opt_in": {
+            "failed_title": "Failed to opt-in",
+            "failed_body": "There was an error trying to add the asset to your account",
+            "success_title": "Opt-in successful",
+            "success_body": "{{assetName}} was successfully opted-in and added to your account",
+            "success_body_generic": "Asset successfully opted-in and added to your account"
+        },
+        "confirmation": {
+            "title": "Adding Asset",
+            "account_label": "Account",
+            "fee_label": "Transaction Fee",
+            "description": "Before interacting with an asset, you must opt-in to it from your account. This prevents unauthorized asset transactions to be sent to you.",
+            "approve": "Approve",
+            "close": "Close",
+            "copy_id": "Copy ID"
+        },
         "collectible_title": "Opt-in to NFT",
         "collectible_note": "You need to opt-in to the NFT ASA ID to be able to transfer it to your wallet. Paste the ASA ID in the search bar.",
         "collectible_search_placeholder": "Search Asset ID or NFT name"
@@ -313,8 +328,8 @@
         "rekeyed_ledger_description": "Your account is rekeyed to an account on a Ledger hardware device. Transactions for this account must be authorized on the Ledger device.",
         "hd_wallet_title": "Wallet address",
         "hd_wallet_description": "Wallet that lets you derive new accounts, all using same key.",
-        "multisig_title": "Joint Account",
-        "multisig_description": "Create a new multi-sig account with enhanced security that requires multiple signers.",
+        "multisig_title": "Shared Account",
+        "multisig_description": "Create a shared account with enhanced security that requires multiple signers.",
         "learn_more": "Learn More",
         "rekey_to_ledger": "Rekey to Ledger",
         "rekey_to_standard": "Rekey to Standard",
@@ -325,6 +340,42 @@
         "title": "Minimum Balance",
         "description": "Minimum balance is the minimum amount of Algo you have to keep in an account. It increases every time the account is opted in to a smart contract, ASA or NFT.",
         "close": "Close"
+    },
+    "backup": {
+        "banner": {
+            "text": "You need to backup the passphrase",
+            "cta": "Backup now"
+        },
+        "info": {
+            "title": "Create a passphrase backup for your account",
+            "body": "Creating a passphrase backup will allow you to recover your account. Without the passphrase, if you lose your device, remove the account or delete the app, you can permanently lose access to your Algorand account!",
+            "cta": "I Understand"
+        },
+        "write_down": {
+            "title": "Prepare to write down your recovery passphrase",
+            "body": "The only way to recover an Algorand account is with this recovery passphrase.",
+            "warning": "Do not share this passphrase with anyone, as it grants full access to your account.",
+            "cta": "I'm Ready to Begin"
+        },
+        "mnemonic": {
+            "title": "Recovery Passphrase",
+            "body": "Make sure to record these words in the correct order, using the corresponding numbers.",
+            "cta_continue": "Next",
+            "error_title": "Could not retrieve passphrase",
+            "error_body": "Something went wrong. Please try again.",
+            "error_cta": "Back"
+        },
+        "verification": {
+            "title": "Verify recovery passphrase backup",
+            "select_word": "Select word #{{number}}",
+            "cta_next": "Next",
+            "error_message": "Selected words are incorrect"
+        },
+        "success": {
+            "title": "Passphrase Verified",
+            "body": "Keep this recovery passphrase in a secure location that is accessible only by you. Do not lose this recovery passphrase.",
+            "cta_done": "Done"
+        }
     },
     "camera": {
         "no_camera_device_found": {
@@ -560,8 +611,8 @@
             "empty_body": "You do not currently have any pending inbox messages",
             "asa_requests_one": "1 incoming asset",
             "asa_requests_other": "{{count}} incoming assets",
-            "joint_account_import": "Joint Account Import Request",
-            "joint_account_sign": "Joint Account Sign Request"
+            "joint_account_import": "Shared Account Import Request",
+            "joint_account_sign": "Shared Account Sign Request"
         },
         "claim": {
             "asset_transfer_requests_title": "Asset Transfer Requests",
@@ -585,16 +636,16 @@
     },
     "multisig": {
         "create": {
-            "title": "Create a\nJoint Account",
-            "description": "Choose the accounts that will jointly manage and sign transactions for this account.",
+            "title": "Create a\nShared Account",
+            "description": "Choose the accounts that will share control and sign transactions for this account.",
             "accounts_section": "Accounts",
             "accounts_subtitle": "You need add at least two accounts",
             "add_account": "Add Account"
         },
         "add_participant": {
             "title": "Add Account",
-            "joint_account_error": "Cannot add joint account",
-            "joint_account_error_body": "Joint accounts cannot be added as participants in another joint account."
+            "cannot_add_multisig_error": "Cannot add shared account",
+            "cannot_add_multisig_error_body": "Shared accounts cannot be added as participants in another shared account."
         },
         "threshold": {
             "title": "Set a Threshold",
@@ -603,9 +654,9 @@
             "required_signatures": "Threshold"
         },
         "before_you_create": {
-            "title": "Before You Create a Joint Account",
-            "warning_participants": "Once you create a joint account, you cannot change the participants.",
-            "warning_rekey": "Once you create a joint account, rekeying any of the participating accounts may result in losing access.",
+            "title": "Before You Create a Shared Account",
+            "warning_participants": "Once you create a shared account, you cannot change the participants.",
+            "warning_rekey": "Once you create a shared account, rekeying any of the participating accounts may result in losing access.",
             "learn_more": "Learn more",
             "proceed": "Proceed",
             "go_back": "Go Back and Edit"
@@ -613,11 +664,12 @@
         "name": {
             "title": "Name Your Account",
             "description": "Name your account to easily identify it while using the Pera Wallet. These names are stored locally, and can only be seen by you.",
-            "default_name": "Joint Account",
+            "default_name": "Shared Account",
             "finish_button": "Finish Account Creation",
-            "creating": "Creating joint account...",
+            "creating": "Creating shared account...",
             "error_title": "Failed to create account",
-            "error_message": "Something went wrong while creating the joint account: {{error}}"
+            "error_message": "Something went wrong while creating the shared account: {{error}}",
+            "error_name_taken": "An account with this name already exists."
         },
         "edit_participant": {
             "title": "Edit address",
@@ -732,8 +784,8 @@
             "terms_and_privacy": "By adding a wallet, you agree to Pera Wallet's <0>Terms and Conditions</0> and <1>Privacy Policy</1>",
             "pair_ledger_option_title": "Pair Ledger Device",
             "pair_ledger_option_description": "Connect a Ledger hardware wallet via Bluetooth to import accounts",
-            "create_joint_account_option_title": "Create a Joint Account",
-            "create_joint_account_option_description": "Create a shared multisig account with multiple participants",
+            "create_multisig_option_title": "Add Shared Account",
+            "create_multisig_option_description": "Create a new multi-sig account with enhanced security that requires multiple signers",
             "see_other_options": "See other options"
         },
         "import_account_options": {

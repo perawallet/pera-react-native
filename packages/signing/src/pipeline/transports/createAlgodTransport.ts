@@ -53,7 +53,7 @@ export const createAlgodTransport = (
         send: async (
             result: SigningResult,
             _source: SourceMetadata,
-            _jointAccountAddress?: string,
+            _multisigAddress?: string,
         ): Promise<TransportResult> => {
             // Only handle transaction data
             if (result.signedData.type !== 'transactions') {

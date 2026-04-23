@@ -39,7 +39,12 @@ type UseAddAssetScreenResult = {
     fetchNextPage: Nullable<() => void>
     optedInAssetIds: Set<string>
     optingInAssetId: Nullable<string>
-    handleAddAsset: (assetId: string) => void
+    handleRequestAdd: (assetId: string) => void
+    handleConfirmAdd: () => void
+    handleCancelAdd: () => void
+    pendingAssetId: Nullable<string>
+    selectedAccountAddress: Nullable<string>
+    selectedAccountName: string
     t: (key: string, params?: Record<string, string | number>) => string
 }
 
@@ -50,6 +55,7 @@ export const useAddAssetScreen = (
     const hasCollectible = options?.variant === 'collectible'
     const [optingInAssetId, setOptingInAssetId] =
         useState<Nullable<string>>(null)
+    const [pendingAssetId, setPendingAssetId] = useState<Nullable<string>>(null)
     const [recentlyOptedIn, setRecentlyOptedIn] = useState<Set<string>>(
         new Set(),
     )
@@ -104,35 +110,68 @@ export const useAddAssetScreen = (
         [setSearchQuery],
     )
 
-    const handleAddAsset = useCallback(
-        async (assetId: string) => {
+    const handleRequestAdd = useCallback(
+        (assetId: string) => {
             if (!selectedAccount || optingInAssetId !== null) {
                 return
             }
-
-            setOptingInAssetId(assetId)
-
-            try {
-                await optIn({
-                    sender: selectedAccount.address,
-                    assetId: BigInt(assetId),
-                })
-                setRecentlyOptedIn(prev => new Set([...prev, assetId]))
-            } catch (err) {
-                showToast({
-                    title: t('add_asset.opt_in_failed'),
-                    body:
-                        err instanceof Error
-                            ? err.message
-                            : t('add_asset.opt_in_failed'),
-                    type: 'error',
-                })
-            } finally {
-                setOptingInAssetId(null)
-            }
+            setPendingAssetId(assetId)
         },
-        [selectedAccount, optIn, optingInAssetId, showToast, t],
+        [selectedAccount, optingInAssetId],
     )
+
+    const handleCancelAdd = useCallback(() => {
+        setPendingAssetId(null)
+    }, [])
+
+    const handleConfirmAdd = useCallback(async () => {
+        if (!selectedAccount || !pendingAssetId || optingInAssetId !== null) {
+            return
+        }
+
+        const assetId = pendingAssetId
+        const pendingAsset = results.find(r => r.assetId === assetId)
+        const assetDisplayName =
+            pendingAsset?.unitName ?? pendingAsset?.name ?? null
+        setOptingInAssetId(assetId)
+        setPendingAssetId(null)
+
+        try {
+            await optIn({
+                sender: selectedAccount.address,
+                assetId: BigInt(assetId),
+            })
+            setRecentlyOptedIn(prev => new Set([...prev, assetId]))
+            showToast({
+                title: t('add_asset.opt_in.success_title'),
+                body: assetDisplayName
+                    ? t('add_asset.opt_in.success_body', {
+                          assetName: assetDisplayName,
+                      })
+                    : t('add_asset.opt_in.success_body_generic'),
+                type: 'success',
+            })
+        } catch (err) {
+            showToast({
+                title: t('add_asset.opt_in.failed_title'),
+                body:
+                    err instanceof Error
+                        ? err.message
+                        : t('add_asset.opt_in.failed_body'),
+                type: 'error',
+            })
+        } finally {
+            setOptingInAssetId(null)
+        }
+    }, [
+        selectedAccount,
+        pendingAssetId,
+        results,
+        optIn,
+        optingInAssetId,
+        showToast,
+        t,
+    ])
 
     return {
         searchQuery,
@@ -145,7 +184,13 @@ export const useAddAssetScreen = (
         fetchNextPage,
         optedInAssetIds,
         optingInAssetId,
-        handleAddAsset,
+        handleRequestAdd,
+        handleConfirmAdd,
+        handleCancelAdd,
+        pendingAssetId,
+        selectedAccountAddress: selectedAccount?.address ?? null,
+        selectedAccountName:
+            selectedAccount?.name ?? selectedAccount?.address ?? '',
         t,
     }
 }

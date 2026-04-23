@@ -171,12 +171,25 @@ export const useAccountBalancesQuery = (
 
             const assetBalances: AssetWithAccountBalance[] = []
             r.data?.holdings?.forEach(holding => {
+                const asset = assets.get(holding.assetId)
+                // Without asset metadata we can't scale base units to display
+                // units, so emit zeros until the metadata query resolves —
+                // otherwise the sort-by-value key is inflated by 10^decimals
+                // and dominates ordering.
+                if (!asset) {
+                    assetBalances.push({
+                        assetId: holding.assetId,
+                        asset: undefined,
+                        amount: new Decimal(0),
+                        algoValue: new Decimal(0),
+                    })
+                    return
+                }
                 const usdAssetPrice =
                     assetPrices?.get(holding.assetId)?.usdPrice ??
                     new Decimal(0)
-                const asset = assets.get(holding.assetId)
                 const assetAmount = holding.amount.div(
-                    new Decimal(10).pow(asset?.decimals ?? 0),
+                    new Decimal(10).pow(asset.decimals),
                 )
                 const usdAssetValue = assetAmount.times(usdAssetPrice)
                 const algoAssetValue = usdAlgoPrice.isZero()
@@ -185,7 +198,7 @@ export const useAccountBalancesQuery = (
                 algoValue = algoValue.plus(algoAssetValue)
                 assetBalances.push({
                     assetId: holding.assetId,
-                    asset: asset,
+                    asset,
                     amount: assetAmount,
                     algoValue: algoAssetValue,
                 })

@@ -15,7 +15,7 @@ import { sortInboxItems } from '../utils'
 import type {
     InboxItem,
     MultiSigAccount,
-    JointAccountSignRequest,
+    MultisigSignRequest,
     ASAInbox,
 } from '../models'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -33,15 +33,15 @@ const createMultiSigAccount = (
 })
 
 const createSignRequest = (
-    overrides: Partial<JointAccountSignRequest> = {},
-): JointAccountSignRequest => ({
+    overrides: Partial<MultisigSignRequest> = {},
+): MultisigSignRequest => ({
     id: 'sign-1',
     status: 'pending',
     type: 'transfer',
     createdAt: new Date('2025-01-20T00:00:00Z'),
     expectedExpireDatetime: new Date('2025-01-21T00:00:00Z'),
     failReasonDisplay: null,
-    jointAccount: createMultiSigAccount(),
+    multisigAccount: createMultiSigAccount(),
     transactionLists: [],
     ...overrides,
 })
@@ -53,7 +53,7 @@ const createASAInbox = (overrides: Partial<ASAInbox> = {}): ASAInbox => ({
     ...overrides,
 })
 
-const createJointAccountImportItem = (
+const createMultisigImportItem = (
     createdAt: Date,
     customId = 'msig-1',
 ): InboxItem => ({
@@ -62,10 +62,7 @@ const createJointAccountImportItem = (
     createdAt,
 })
 
-const createJointAccountSignItem = (
-    createdAt: Date,
-    id = 'sign-1',
-): InboxItem => ({
+const createMultisigSignItem = (createdAt: Date, id = 'sign-1'): InboxItem => ({
     type: 'joint_account_sign',
     data: createSignRequest({ createdAt, id }),
     createdAt,
@@ -88,10 +85,10 @@ describe('utils', () => {
         describe('type-based sorting', () => {
             it('should sort joint_account_import before joint_account_sign', () => {
                 const accounts = createMockAccounts(['ADDR1'])
-                const importItem = createJointAccountImportItem(
+                const importItem = createMultisigImportItem(
                     new Date('2025-01-10T00:00:00Z'),
                 )
-                const signItem = createJointAccountSignItem(
+                const signItem = createMultisigSignItem(
                     new Date('2025-01-20T00:00:00Z'),
                 )
 
@@ -102,7 +99,7 @@ describe('utils', () => {
 
             it('should sort joint_account_sign before asa_inbox', () => {
                 const accounts = createMockAccounts(['ADDR1'])
-                const signItem = createJointAccountSignItem(
+                const signItem = createMultisigSignItem(
                     new Date('2025-01-20T00:00:00Z'),
                 )
                 const asaItem = createASAInboxItem('ADDR1')
@@ -114,7 +111,7 @@ describe('utils', () => {
 
             it('should sort joint_account_import before asa_inbox', () => {
                 const accounts = createMockAccounts(['ADDR1'])
-                const importItem = createJointAccountImportItem(
+                const importItem = createMultisigImportItem(
                     new Date('2025-01-10T00:00:00Z'),
                 )
                 const asaItem = createASAInboxItem('ADDR1')
@@ -127,7 +124,7 @@ describe('utils', () => {
             it('should sort asa_inbox after joint_account_import', () => {
                 const accounts = createMockAccounts(['ADDR1'])
                 const asaItem = createASAInboxItem('ADDR1')
-                const importItem = createJointAccountImportItem(
+                const importItem = createMultisigImportItem(
                     new Date('2025-01-10T00:00:00Z'),
                 )
 
@@ -140,11 +137,11 @@ describe('utils', () => {
         describe('date-based sorting within same type', () => {
             it('should sort newer joint_account_import items first', () => {
                 const accounts = createMockAccounts(['ADDR1'])
-                const newerItem = createJointAccountImportItem(
+                const newerItem = createMultisigImportItem(
                     new Date('2025-01-20T00:00:00Z'),
                     'msig-newer',
                 )
-                const olderItem = createJointAccountImportItem(
+                const olderItem = createMultisigImportItem(
                     new Date('2025-01-10T00:00:00Z'),
                     'msig-older',
                 )
@@ -156,11 +153,11 @@ describe('utils', () => {
 
             it('should sort newer joint_account_sign items first', () => {
                 const accounts = createMockAccounts(['ADDR1'])
-                const newerItem = createJointAccountSignItem(
+                const newerItem = createMultisigSignItem(
                     new Date('2025-01-25T00:00:00Z'),
                     'sign-newer',
                 )
-                const olderItem = createJointAccountSignItem(
+                const olderItem = createMultisigSignItem(
                     new Date('2025-01-15T00:00:00Z'),
                     'sign-older',
                 )
@@ -172,10 +169,10 @@ describe('utils', () => {
 
             it('should sort older items after newer items', () => {
                 const accounts = createMockAccounts(['ADDR1'])
-                const olderItem = createJointAccountImportItem(
+                const olderItem = createMultisigImportItem(
                     new Date('2025-01-10T00:00:00Z'),
                 )
-                const newerItem = createJointAccountImportItem(
+                const newerItem = createMultisigImportItem(
                     new Date('2025-01-20T00:00:00Z'),
                 )
 
@@ -187,8 +184,8 @@ describe('utils', () => {
             it('should return 0 for items with identical createdAt', () => {
                 const accounts = createMockAccounts(['ADDR1'])
                 const sameDate = new Date('2025-01-15T00:00:00Z')
-                const item1 = createJointAccountImportItem(sameDate, 'msig-1')
-                const item2 = createJointAccountImportItem(sameDate, 'msig-2')
+                const item1 = createMultisigImportItem(sameDate, 'msig-1')
+                const item2 = createMultisigImportItem(sameDate, 'msig-2')
 
                 const result = sortInboxItems(item1, item2, accounts)
 
@@ -243,20 +240,20 @@ describe('utils', () => {
                 const accounts = createMockAccounts(['ADDR1', 'ADDR2', 'ADDR3'])
                 const items: InboxItem[] = [
                     createASAInboxItem('ADDR2'),
-                    createJointAccountSignItem(
+                    createMultisigSignItem(
                         new Date('2025-01-15T00:00:00Z'),
                         'sign-older',
                     ),
-                    createJointAccountImportItem(
+                    createMultisigImportItem(
                         new Date('2025-01-10T00:00:00Z'),
                         'import-older',
                     ),
                     createASAInboxItem('ADDR1'),
-                    createJointAccountSignItem(
+                    createMultisigSignItem(
                         new Date('2025-01-25T00:00:00Z'),
                         'sign-newer',
                     ),
-                    createJointAccountImportItem(
+                    createMultisigImportItem(
                         new Date('2025-01-20T00:00:00Z'),
                         'import-newer',
                     ),
@@ -277,12 +274,12 @@ describe('utils', () => {
                 )
 
                 expect(sorted[2].type).toBe('joint_account_sign')
-                expect((sorted[2].data as JointAccountSignRequest).id).toBe(
+                expect((sorted[2].data as MultisigSignRequest).id).toBe(
                     'sign-newer',
                 )
 
                 expect(sorted[3].type).toBe('joint_account_sign')
-                expect((sorted[3].data as JointAccountSignRequest).id).toBe(
+                expect((sorted[3].data as MultisigSignRequest).id).toBe(
                     'sign-older',
                 )
 

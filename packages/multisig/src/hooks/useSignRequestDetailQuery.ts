@@ -13,7 +13,7 @@
 import { useCallback } from 'react'
 import { useQuery, type UseQueryResult } from '@tanstack/react-query'
 import type { Network } from '@perawallet/wallet-core-shared'
-import type { JointAccountSignRequest } from '../models'
+import type { MultisigSignRequest } from '../models'
 import { getSignRequestDetail } from '../api/endpoints'
 import { mapSignRequest } from '../mappers'
 import { getSignRequestDetailQueryKey } from './querykeys'
@@ -33,7 +33,7 @@ export const useSignRequestDetailQuery = ({
     enabled = true,
     pollWhilePending = false,
 }: UseSignRequestDetailQueryParams): UseQueryResult<
-    JointAccountSignRequest,
+    MultisigSignRequest,
     Error
 > => {
     return useQuery({
