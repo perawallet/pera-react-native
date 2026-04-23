@@ -29,8 +29,7 @@ import {
 import { useDebouncedValue } from '@perawallet/wallet-core-shared'
 import { type CollectibleDisplayItem } from '@modules/assets/types/collectible'
 import { useModalState } from '@hooks/useModalState'
-
-const SEARCH_DEBOUNCE_MS = 75
+import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
 
 type UseAccountNftsResult = {
     collectibles: CollectibleDisplayItem[]
@@ -168,7 +167,7 @@ export const useAccountNfts = (): UseAccountNftsResult => {
 
     const debouncedSearchFilter = useDebouncedValue(
         searchFilter,
-        SEARCH_DEBOUNCE_MS,
+        SEARCH_DEBOUNCE_TIME_SHORT,
     )
 
     const collectibles = useMemo(() => {

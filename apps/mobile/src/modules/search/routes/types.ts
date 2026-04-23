@@ -11,5 +11,5 @@
  */
 
 export type SearchStackParamsList = {
-    SearchHome: undefined
+    SearchScreen: undefined
 }

@@ -38,7 +38,6 @@ export type AccountSelectionProps = {
     triggerTextProps?: PWTextProps
     closeIconPosition?: 'left' | 'right'
     hideDefaultHeader?: boolean
-    showSearch?: boolean
     accountFilter?: (account: WalletAccount) => boolean
 } & TouchableOpacityProps
 
@@ -77,7 +76,7 @@ export const AccountSelection = ({
 
     const handleOpenSearch = useCallback(() => {
         accountMenuState.close()
-        navigation.navigate('Search', { screen: 'SearchHome' })
+        navigation.navigate('Search', { screen: 'SearchScreen' })
     }, [accountMenuState, navigation])
 
     const handleAccountMenuDismissed = useCallback(() => {
