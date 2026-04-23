@@ -32,6 +32,7 @@ export type PWInputProps = {
     renderErrorMessage?: boolean
     secureTextEntry?: boolean
     keyboardType?: RNEInputProps['keyboardType']
+    returnKeyType?: RNEInputProps['returnKeyType']
     autoCapitalize?: RNEInputProps['autoCapitalize']
     autoCorrect?: boolean
     autoFocus?: boolean
@@ -53,6 +54,8 @@ export type PWInputProps = {
     numberOfLines?: RNEInputProps['numberOfLines']
     adjustsFontSizeToFit?: boolean
     minimumFontScale?: number
+    editable?: boolean
+    multiline?: boolean
 }
 
 export const PWInput = forwardRef<PWInputRef, PWInputProps>(

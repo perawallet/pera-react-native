@@ -478,7 +478,11 @@
             "save": "Save",
             "are_you_sure": "Are you sure?",
             "name_label": "Name",
-            "address_label": "Address"
+            "address_label": "Address",
+            "add_photo": "Add photo"
+        },
+        "add_contact": {
+            "duplicate_address_error": "Contact for this address already exists."
         },
         "view_contact": {
             "no_contact_title": "No contact found",

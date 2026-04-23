@@ -12,15 +12,18 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { Contact } from '@perawallet/wallet-core-contacts'
 import { AddressDisplay } from '../AddressDisplay'
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => []),
 }))
 
+const findContactsMock = vi.fn<() => Contact[]>(() => [])
+
 vi.mock('@perawallet/wallet-core-contacts', () => ({
     useContacts: vi.fn(() => ({
-        findContacts: vi.fn(() => []),
+        findContacts: findContactsMock,
     })),
 }))
 
@@ -37,6 +40,7 @@ vi.mock('@perawallet/wallet-core-nfd', () => ({
 describe('AddressDisplay', () => {
     beforeEach(() => {
         vi.clearAllMocks()
+        findContactsMock.mockReturnValue([])
         mockUseNfdForAddress.mockReturnValue({
             data: undefined,
             isPending: false,
@@ -85,5 +89,20 @@ describe('AddressDisplay', () => {
             expect.any(String),
             expect.objectContaining({ enabled: false }),
         )
+    })
+
+    it('renders the default contact avatar (person icon) for a matched contact without an image', () => {
+        findContactsMock.mockReturnValue([
+            {
+                id: 'test-id',
+                name: 'Alice',
+                address: 'A'.repeat(58),
+            },
+        ])
+
+        render(<AddressDisplay address={'A'.repeat(58)} />)
+
+        expect(screen.getByTestId('icon-person')).toBeTruthy()
+        expect(screen.getByText('Alice')).toBeTruthy()
     })
 })

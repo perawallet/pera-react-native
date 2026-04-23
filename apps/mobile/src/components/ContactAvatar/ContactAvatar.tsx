@@ -11,60 +11,39 @@
  */
 
 import { Contact } from '@perawallet/wallet-core-contacts'
-import { useTheme } from '@rneui/themed'
 import { PWIcon, PWIconSize, PWImage, PWView } from '@components/core'
-import { SvgProps } from 'react-native-svg'
 import { useStyles } from './styles'
+
+const placeholderIconSize = {
+    xs: 'xs',
+    sm: 'xs',
+    md: 'sm',
+    lg: 'md',
+    xl: 'lg',
+    xxl: 'xl',
+} as const satisfies Record<PWIconSize, PWIconSize>
 
 export type ContactAvatarProps = {
     size: PWIconSize
     contact?: Contact
-} & SvgProps
+}
 
-export const ContactAvatar = ({
-    size,
-    contact,
-    ...rest
-}: ContactAvatarProps) => {
-    const { theme } = useTheme()
-
-    const containerSizeMap: Record<PWIconSize, number> = {
-        xs: theme.spacing.lg,
-        sm: theme.spacing.xl,
-        md: theme.spacing.xxl,
-        lg: theme.spacing['3xl'],
-        xl: theme.spacing['4xl'],
-        xxl: theme.spacing['5xl'],
-    }
-
-    const sizeMap: Record<PWIconSize, number> = {
-        xs: theme.spacing.md,
-        sm: theme.spacing.lg,
-        md: theme.spacing.xl,
-        lg: theme.spacing.xxl,
-        xl: theme.spacing['3xl'],
-        xxl: theme.spacing['4xl'],
-    }
-    const dimensions = containerSizeMap[size]
-    const imageSize = sizeMap[size]
-    const styles = useStyles({ containerSize: dimensions, imageSize })
+export const ContactAvatar = ({ size, contact }: ContactAvatarProps) => {
+    const styles = useStyles({ size })
 
     return (
         <PWView style={styles.container}>
-            {!!contact?.image && (
+            {contact?.image ? (
                 <PWImage
                     source={{ uri: contact.image }}
                     style={styles.image}
-                    width={imageSize}
-                    height={imageSize}
+                    resizeMode='cover'
                 />
-            )}
-            {!contact?.image && (
+            ) : (
                 <PWIcon
-                    {...rest}
                     name='person'
-                    size={size}
-                    variant='secondary'
+                    size={placeholderIconSize[size]}
+                    variant='primary'
                 />
             )}
         </PWView>

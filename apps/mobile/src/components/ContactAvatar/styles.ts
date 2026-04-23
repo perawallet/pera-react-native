@@ -11,28 +11,35 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { PWIconSize } from '@components/core'
 
 type StyleProps = {
-    containerSize: number
-    imageSize: number
+    size: PWIconSize
 }
 
-export const useStyles = makeStyles(
-    (theme, { containerSize, imageSize }: StyleProps) => {
-        return {
-            container: {
-                width: containerSize,
-                height: containerSize,
-                borderRadius: containerSize,
-                overflow: 'hidden',
-                backgroundColor: theme.colors.layerGrayLighter,
-                alignItems: 'center',
-                justifyContent: 'center',
-            },
-            image: {
-                width: imageSize,
-                height: imageSize,
-            },
-        }
-    },
-)
+export const useStyles = makeStyles((theme, { size }: StyleProps) => {
+    const containerSize = {
+        xs: theme.spacing.lg,
+        sm: theme.spacing.xl,
+        md: theme.spacing.xxl,
+        lg: theme.spacing['3xl'],
+        xl: theme.spacing['4xl'],
+        xxl: theme.spacing['5xl'],
+    }[size]
+
+    return {
+        container: {
+            width: containerSize,
+            height: containerSize,
+            borderRadius: containerSize,
+            overflow: 'hidden',
+            backgroundColor: theme.colors.layerGrayLighter,
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        image: {
+            width: containerSize,
+            height: containerSize,
+        },
+    }
+})

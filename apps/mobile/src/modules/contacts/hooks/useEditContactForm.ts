@@ -1,0 +1,91 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useCallback, useMemo } from 'react'
+import { ParamListBase, useNavigation } from '@react-navigation/native'
+import { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { Contact, useContacts } from '@perawallet/wallet-core-contacts'
+
+import { useLanguage } from '@hooks/useLanguage'
+import { useModalState } from '@hooks/useModalState'
+import { useContactForm, UseContactFormResult } from './useContactForm'
+
+export type UseEditContactFormResult = UseContactFormResult & {
+    selectedContact: Contact | null
+    save: (data: Contact) => void
+    removeContact: () => void
+    confirmDelete: {
+        isOpen: boolean
+        open: () => void
+        close: () => void
+    }
+}
+
+export const useEditContactForm = (): UseEditContactFormResult => {
+    const {
+        saveContact,
+        deleteContact,
+        findContacts,
+        selectedContact,
+        setSelectedContact,
+    } = useContacts()
+    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
+    const { t } = useLanguage()
+    const confirmDelete = useModalState()
+    const form = useContactForm(selectedContact)
+
+    const save = useCallback(
+        (data: Contact) => {
+            if (!form.isValid) return
+
+            const duplicates = findContacts({
+                keyword: data.address,
+                matchAddress: true,
+                matchName: false,
+                matchNFD: false,
+            }).filter(c => c.id !== data.id)
+
+            if (duplicates.length) {
+                form.setError('address', {
+                    message: t('contacts.add_contact.duplicate_address_error'),
+                })
+                return
+            }
+
+            saveContact(data)
+            // Keep the saved contact as selected so ViewContact re-renders
+            // with the updated values when we pop back.
+            setSelectedContact(data)
+            navigation.goBack()
+        },
+        [form, findContacts, t, saveContact, setSelectedContact, navigation],
+    )
+
+    const removeContact = useCallback(() => {
+        if (selectedContact) {
+            deleteContact(selectedContact)
+            setSelectedContact(null)
+        }
+        navigation.replace('Contacts')
+    }, [selectedContact, deleteContact, setSelectedContact, navigation])
+
+    return useMemo(
+        () => ({
+            ...form,
+            selectedContact,
+            save,
+            removeContact,
+            confirmDelete,
+        }),
+        [form, selectedContact, save, removeContact, confirmDelete],
+    )
+}
