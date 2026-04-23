@@ -10,14 +10,14 @@
  limitations under the License
  */
 
-import { useEffect, useCallback, useState } from 'react'
+import { useEffect, useCallback } from 'react'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
+import { useLedgerPairing } from '@perawallet/wallet-core-ledger'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 import { useLedgerConnection } from '../../hooks'
-import { useLedgerPairedDevicesStore } from '../../hooks/useLedgerPairedDevicesStore'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type UseLedgerScanScreenResult = {
     devices: HardwareWalletDevice[]
@@ -40,12 +40,12 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
     const navigation = useAppNavigation()
     const { devices, isScanning, startScan, stopScan, error } =
         useLedgerConnection()
-
-    const isPaired = useLedgerPairedDevicesStore(state => state.isPaired)
-    const markPaired = useLedgerPairedDevicesStore(state => state.markPaired)
-
-    const [pendingPairingDevice, setPendingPairingDevice] =
-        useState<Nullable<HardwareWalletDevice>>(null)
+    const {
+        pendingPairingDevice,
+        requestPairing,
+        confirmPairing,
+        cancelPairing,
+    } = useLedgerPairing()
 
     useEffect(() => {
         startScan()
@@ -68,31 +68,18 @@ export const useLedgerScanScreen = (): UseLedgerScanScreenResult => {
 
     const handleDevicePress = useCallback(
         (device: HardwareWalletDevice) => {
-            // Skip the pairing-instructions sheet for devices the user has
-            // already paired with. Portable analog to Android's
-            // BluetoothAdapter.bondedDevices check — iOS has no equivalent
-            // API, so we record success at the app level (see
-            // useLedgerPairedDevicesStore).
-            if (isPaired(device.id)) {
-                proceedWithDevice(device)
-                return
-            }
-            setPendingPairingDevice(device)
+            requestPairing(device, proceedWithDevice)
         },
-        [isPaired, proceedWithDevice],
+        [requestPairing, proceedWithDevice],
     )
 
     const handleConfirmPairing = useCallback(() => {
-        if (!pendingPairingDevice) return
-        markPaired(pendingPairingDevice.id)
-        const device = pendingPairingDevice
-        setPendingPairingDevice(null)
-        proceedWithDevice(device)
-    }, [pendingPairingDevice, markPaired, proceedWithDevice])
+        confirmPairing(proceedWithDevice)
+    }, [confirmPairing, proceedWithDevice])
 
     const handleCancelPairing = useCallback(() => {
-        setPendingPairingDevice(null)
-    }, [])
+        cancelPairing()
+    }, [cancelPairing])
 
     const handleRetry = useCallback(() => {
         startScan()

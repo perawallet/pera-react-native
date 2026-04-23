@@ -11,8 +11,8 @@
  */
 
 import { verifyAddress } from '@perawallet/wallet-core-hardware-wallet'
-import type { LedgerAccount, LedgerTransport } from '../types'
-import { classifyLedgerError } from '../errors'
+import type { LedgerAccount, LedgerTransport } from '@perawallet/wallet-extension-ledger-react-native/protocol'
+import { classifyLedgerError } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 
 /**
  * Verify a Ledger account address on the device.

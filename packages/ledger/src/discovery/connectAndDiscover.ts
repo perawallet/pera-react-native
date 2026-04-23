@@ -14,7 +14,7 @@ import type {
     LedgerAccount,
     LedgerTransport,
     LedgerTransportProvider,
-} from '../types'
+} from '@perawallet/wallet-extension-ledger-react-native/protocol'
 import { discoverLedgerAccounts } from './discoverAccounts'
 
 export type ConnectAndDiscoverOptions = {

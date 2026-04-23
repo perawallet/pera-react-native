@@ -616,6 +616,12 @@ importers:
 
   extensions/ledger-react-native:
     dependencies:
+      '@ledgerhq/devices':
+        specifier: ^8.13.0
+        version: 8.13.0
+      '@ledgerhq/errors':
+        specifier: ^6.32.0
+        version: 6.32.0
       '@ledgerhq/hw-app-algorand':
         specifier: ^6.34.1
         version: 6.34.1
@@ -625,9 +631,6 @@ importers:
       '@perawallet/wallet-core-hardware-wallet':
         specifier: workspace:*
         version: link:../../packages/hardware-wallet
-      '@perawallet/wallet-core-ledger':
-        specifier: workspace:*
-        version: link:../../packages/ledger
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -1550,21 +1553,24 @@ importers:
       '@babel/runtime':
         specifier: 'catalog:'
         version: 7.29.2
-      '@ledgerhq/devices':
-        specifier: ^8.13.0
-        version: 8.13.0
-      '@ledgerhq/errors':
-        specifier: ^6.32.0
-        version: 6.32.0
       '@perawallet/wallet-core-hardware-wallet':
         specifier: workspace:*
         version: link:../hardware-wallet
       '@perawallet/wallet-core-shared':
         specifier: workspace:*
         version: link:../shared
+      '@perawallet/wallet-extension-ledger-react-native':
+        specifier: workspace:*
+        version: link:../../extensions/ledger-react-native
+      '@perawallet/wallet-extension-provider':
+        specifier: workspace:*
+        version: link:../../extensions/provider
       react:
         specifier: 'catalog:'
         version: 19.2.5
+      zustand:
+        specifier: 'catalog:'
+        version: 5.0.12(@types/react@19.2.14)(react@19.2.5)(use-sync-external-store@1.6.0(react@19.2.5))
     devDependencies:
       '@perawallet/wallet-core-devtools':
         specifier: workspace:*

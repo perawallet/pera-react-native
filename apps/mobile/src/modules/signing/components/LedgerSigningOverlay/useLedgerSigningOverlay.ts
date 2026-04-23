@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import {
-    useHardwareSigningStore,
+    useHardwareSigning,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 
@@ -28,39 +28,41 @@ export type UseLedgerSigningOverlayResult = {
 }
 
 /**
- * Connects the LedgerSigningOverlay UI to the hardware-signing store and
- * the active sign request. Cancel rejects the active actor (USER_REJECTED);
- * retry re-runs the failed stage (RETRY).
+ * UI adapter that combines the store-only `useHardwareSigning` hook with
+ * `useSigningRequest` to wire cancel/retry through to the signing machine.
+ *
+ * The hardware strategy rejects ARC-60 and arbitrary-data requests before
+ * any phase callback fires, so this overlay is Ledger-transaction-only
+ * even though the underlying hook is hardware-agnostic.
  */
 export const useLedgerSigningOverlay = (): UseLedgerSigningOverlayResult => {
-    const status = useHardwareSigningStore(state => state.status)
-    const currentTx = useHardwareSigningStore(state => state.currentTx)
-    const totalTxs = useHardwareSigningStore(state => state.totalTxs)
-    const requestId = useHardwareSigningStore(state => state.requestId)
-    const reset = useHardwareSigningStore(state => state.reset)
+    const {
+        isActive,
+        status,
+        currentTx,
+        totalTxs,
+        resolveActiveRequest,
+        dismiss,
+    } = useHardwareSigning()
     const { pendingSignRequests, rejectRequest, retryRequest } =
         useSigningRequest()
 
-    // Resolve the request from the queue by id rather than relying on
-    // pendingSignRequests[0] — guards against the queue having advanced
-    // before the overlay has dismissed.
-    const activeRequest = pendingSignRequests.find(r => r.id === requestId)
-
     const handleCancel = useCallback(() => {
+        const activeRequest = resolveActiveRequest(pendingSignRequests)
         if (activeRequest) {
             rejectRequest(activeRequest)
         }
-        reset()
-    }, [activeRequest, rejectRequest, reset])
+        dismiss()
+    }, [resolveActiveRequest, pendingSignRequests, rejectRequest, dismiss])
 
     const handleRetry = useCallback(() => {
+        const activeRequest = resolveActiveRequest(pendingSignRequests)
         if (activeRequest) {
             retryRequest(activeRequest)
         }
-    }, [activeRequest, retryRequest])
+    }, [resolveActiveRequest, pendingSignRequests, retryRequest])
 
-    const isVisible = status !== 'idle'
-    // Narrow: when isVisible is true the status is one of the overlay's
+    // Narrow: when isActive is true the status is one of the overlay's
     // accepted values. The presentational component is unmounted when not
     // visible so the cast is safe at runtime.
     const overlayStatus = (
@@ -68,10 +70,10 @@ export const useLedgerSigningOverlay = (): UseLedgerSigningOverlayResult => {
     ) as LedgerOverlayStatus
 
     return {
-        isVisible,
+        isVisible: isActive,
         status: overlayStatus,
-        currentTx: currentTx ?? undefined,
-        totalTxs: totalTxs ?? undefined,
+        currentTx,
+        totalTxs,
         onCancel: handleCancel,
         onRetry: handleRetry,
     }

@@ -36,7 +36,22 @@ vi.mock('../../../hooks', () => ({
     }),
 }))
 
-import { useLedgerPairedDevicesStore } from '../../../hooks/useLedgerPairedDevicesStore'
+const memoryStorage = new Map<string, string>()
+vi.mock('@perawallet/wallet-extension-provider', () => ({
+    getProvider: () => ({
+        keyValueStorage: {
+            getItem: (key: string) => memoryStorage.get(key) ?? null,
+            setItem: (key: string, value: string) => {
+                memoryStorage.set(key, value)
+            },
+            removeItem: (key: string) => {
+                memoryStorage.delete(key)
+            },
+        },
+    }),
+}))
+
+import { useLedgerPairingStore } from '@perawallet/wallet-core-ledger'
 import { useLedgerScanScreen } from '../useLedgerScanScreen'
 
 const makeDevice = (id: string): HardwareWalletDevice =>
@@ -50,14 +65,14 @@ const makeDevice = (id: string): HardwareWalletDevice =>
 
 describe('useLedgerScanScreen', () => {
     beforeEach(() => {
-        useLedgerPairedDevicesStore.getState().resetState()
+        useLedgerPairingStore.getState().resetState()
         mockNavigate.mockReset()
         mockStartScan.mockReset()
         mockStopScan.mockReset()
     })
 
     it('navigates straight to fetch-accounts when device was previously paired', () => {
-        useLedgerPairedDevicesStore.getState().markPaired('device-known')
+        useLedgerPairingStore.getState().markPaired('device-known')
 
         const { result } = renderHook(() => useLedgerScanScreen())
         act(() => {
@@ -90,9 +105,9 @@ describe('useLedgerScanScreen', () => {
             result.current.handleConfirmPairing()
         })
 
-        expect(
-            useLedgerPairedDevicesStore.getState().isPaired('device-new'),
-        ).toBe(true)
+        expect(useLedgerPairingStore.getState().isPaired('device-new')).toBe(
+            true,
+        )
         expect(mockNavigate).toHaveBeenCalledWith('LedgerFetchAccounts', {
             deviceId: 'device-new',
             deviceName: 'Fred Nano X',
@@ -109,9 +124,9 @@ describe('useLedgerScanScreen', () => {
             result.current.handleCancelPairing()
         })
 
-        expect(
-            useLedgerPairedDevicesStore.getState().isPaired('device-new'),
-        ).toBe(false)
+        expect(useLedgerPairingStore.getState().isPaired('device-new')).toBe(
+            false,
+        )
         expect(mockNavigate).not.toHaveBeenCalled()
         expect(result.current.pendingPairingDevice).toBeNull()
     })

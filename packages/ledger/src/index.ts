@@ -10,8 +10,41 @@
  limitations under the License
  */
 
-export * from './types'
-export * from './constants'
-export * from './errors'
+// Ledger types, errors, and protocol constants live in the Ledger
+// extension (platform implementation of the hardware-wallet interface).
+// Re-exported here so callers that depend on the business-logic package
+// get the full Ledger surface from a single `@perawallet/wallet-core-ledger`
+// import. `RNLedgerService` / `WithLedgerExtension` / `name` are extension
+// internals and stay out of this barrel.
+export type {
+    LedgerDeviceModel,
+    LedgerDevice,
+    LedgerAccount,
+    LedgerConnectionStatus,
+    LedgerTransport,
+    LedgerTransportProvider,
+} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+export {
+    LedgerAddressMismatchError,
+    LedgerAppNotOpenError,
+    LedgerConnectionError,
+    LedgerDisconnectedError,
+    LedgerTimeoutError,
+    LedgerUserRejectedError,
+    classifyLedgerError,
+} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+export {
+    ALGORAND_BIP44_PREFIX,
+    LEDGER_BLE_SERVICE_UUIDS,
+    LEDGER_CONFIRMATION_TIMEOUT_MS,
+    LEDGER_CONNECTION_TIMEOUT_MS,
+    LEDGER_SCAN_TIMEOUT_MS,
+    LEDGER_STATUS_CODES,
+    MAX_ACCOUNT_SCAN_GAP,
+    buildLedgerAccountPath,
+    resolveDeviceModel,
+} from '@perawallet/wallet-extension-ledger-react-native/protocol'
+
 export * from './discovery'
 export * from './hooks'
+export * from './store'

@@ -10,9 +10,11 @@
  limitations under the License
  */
 
-export { useLedgerAccounts } from './useLedgerAccounts'
-export { useLedgerConnection } from './useLedgerConnection'
-export {
-    useLedgerPairing,
-    type UseLedgerPairingResult,
-} from './useLedgerPairing'
+// Platform-agnostic Ledger protocol surface: types, errors, APDU codes,
+// timeout constants, classification helpers. Loaded by the business-logic
+// `@perawallet/wallet-core-ledger` package *without* pulling in
+// `@ledgerhq/react-native-hw-transport-ble` or other RN-only modules
+// (which carry Flow-typed source that vitest can't parse).
+export * from './types'
+export * from './errors'
+export * from './constants'

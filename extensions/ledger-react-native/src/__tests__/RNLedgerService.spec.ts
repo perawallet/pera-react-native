@@ -42,7 +42,7 @@ import {
     LedgerDisconnectedError,
     LedgerTimeoutError,
     classifyLedgerError,
-} from '@perawallet/wallet-core-ledger'
+} from '../errors'
 
 describe('RNLedgerService', () => {
     beforeEach(() => {

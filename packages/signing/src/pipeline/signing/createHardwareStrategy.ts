@@ -25,6 +25,7 @@ import type {
     PeraSignedTransaction,
 } from '@perawallet/wallet-core-blockchain'
 import { Address } from '@perawallet/wallet-core-blockchain'
+import { withTimeout } from '@perawallet/wallet-core-shared'
 import type {
     SigningStrategy,
     AnalyzedSignableGroup,
@@ -53,31 +54,14 @@ const isClassifiedLedgerError = (error: unknown): boolean =>
     error instanceof LedgerAddressMismatchError
 
 /**
- * Wrap a promise with a timeout that rejects with a LedgerConnectionError.
- *
- * The timer is cleared in `.finally()` so successful (or fast-failing) calls
- * don't leave a pending setTimeout pinning the rejection closure for the
- * full timeout window.
+ * Factory for the `rejectWith` callback of the shared `withTimeout` helper,
+ * so Ledger call sites reject with a typed `LedgerConnectionError` rather
+ * than the generic `Error` the shared utility would otherwise produce.
  */
-const withTimeout = <T>(
-    promise: Promise<T>,
-    ms: number,
-    operation: string,
-): Promise<T> => {
-    let timerId: ReturnType<typeof setTimeout> | undefined
-    return new Promise<T>((resolve, reject) => {
-        timerId = setTimeout(() => {
-            reject(
-                new LedgerConnectionError(
-                    `${operation} timed out after ${ms}ms`,
-                ),
-            )
-        }, ms)
-        promise.then(resolve, reject)
-    }).finally(() => {
-        if (timerId !== undefined) clearTimeout(timerId)
-    })
-}
+const ledgerTimeoutReason =
+    (operation: string) =>
+    (_op: string, ms: number): Error =>
+        new LedgerConnectionError(`${operation} timed out after ${ms}ms`)
 
 /**
  * Function to encode a transaction to raw bytes for the Ledger to sign.
@@ -155,6 +139,7 @@ const connectAndVerify = async (
             connectPromise,
             LEDGER_CONNECTION_TIMEOUT_MS,
             'Connect to Ledger',
+            ledgerTimeoutReason('Connect to Ledger'),
         )
     } catch (error) {
         connectPromise
@@ -178,6 +163,7 @@ const connectAndVerify = async (
             transport.getAddress(accountIndex, false),
             LEDGER_CONNECTION_TIMEOUT_MS,
             'Verify Ledger address',
+            ledgerTimeoutReason('Verify Ledger address'),
         )
         if (fetchedAccount.address !== expectedAddress) {
             throw new LedgerAddressMismatchError(
@@ -234,6 +220,7 @@ const signTransactions = async (
             transport.signTransaction(accountIndex, txnBytes),
             LEDGER_CONFIRMATION_TIMEOUT_MS,
             'Sign Ledger transaction',
+            ledgerTimeoutReason('Sign Ledger transaction'),
         )
 
         const senderAddress = txn.sender.toString()

@@ -69,3 +69,34 @@ export function deferToNextCycle<T>(
         }, finalDelay)
     })
 }
+
+/**
+ * Wrap a promise with a timeout. If the promise does not settle within
+ * `ms` milliseconds, the returned promise rejects with the value returned
+ * by `rejectWith(operation, ms)` (or a default `Error` if not provided).
+ *
+ * The timer is cleared when the underlying promise settles so fast-finishing
+ * calls don't leave a pending setTimeout pinning the rejection closure for
+ * the full timeout window. Callers are expected to handle cleanup of any
+ * late-resolving resource themselves — see the hardware-wallet strategy for
+ * an example that disconnects a BLE link that arrives after the timeout.
+ */
+export function withTimeout<T>(
+    promise: Promise<T>,
+    ms: number,
+    operation: string,
+    rejectWith?: (operation: string, ms: number) => Error,
+): Promise<T> {
+    let timerId: ReturnType<typeof setTimeout> | undefined
+    return new Promise<T>((resolve, reject) => {
+        timerId = setTimeout(() => {
+            const error = rejectWith
+                ? rejectWith(operation, ms)
+                : new Error(`${operation} timed out after ${ms}ms`)
+            reject(error)
+        }, ms)
+        promise.then(resolve, reject)
+    }).finally(() => {
+        if (timerId !== undefined) clearTimeout(timerId)
+    })
+}

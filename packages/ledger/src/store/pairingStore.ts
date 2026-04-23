@@ -12,45 +12,51 @@
 
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    registerStore,
+    type Nullable,
+    type WithPersist,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
+import type { HardwareWalletDevice } from '@perawallet/wallet-core-hardware-wallet'
 
 /**
- * Tracks which Ledger device IDs the user has successfully paired with.
- * Used as a portable analog to Android's `BluetoothAdapter.bondedDevices` —
- * iOS has no equivalent API, so we record success at the app level.
+ * Business-logic store for Ledger pairing state.
  *
- * Lives in apps/mobile (not packages/ledger) because the package graph has
- * `wallet-extension-provider → wallet-extension-ledger-react-native →
- * wallet-core-ledger`. Hosting a store that imports getProvider in the
- * leaf ledger package would close that cycle. The state is purely UI
- * (which devices have we shown pairing instructions to), so apps/mobile
- * is the right home anyway.
- *
- * The pairing-instructions bottom sheet is shown only on the first connect
- * attempt to a deviceId not in this set; once a connection succeeds the
- * deviceId is added and subsequent connects skip the sheet.
+ * - `pairedDeviceIds` (persisted): portable analog to Android's
+ *   `BluetoothAdapter.bondedDevices`. iOS has no equivalent API, so we
+ *   record "we have successfully paired with this deviceId before" at
+ *   the app level and skip the first-connect pairing sheet on repeats.
+ * - `pendingPairingDevice` (in-memory): the device currently awaiting
+ *   confirmation from the pairing-instructions sheet. Kept in the store
+ *   so the scan screen hook is free of transient UI state and the same
+ *   state can be driven by other entry points later.
  */
 type State = {
     pairedDeviceIds: string[]
+    pendingPairingDevice: Nullable<HardwareWalletDevice>
 }
 
 type Actions = {
     isPaired: (deviceId: string) => boolean
     markPaired: (deviceId: string) => void
     forgetDevice: (deviceId: string) => void
+    setPendingPairingDevice: (
+        device: Nullable<HardwareWalletDevice>,
+    ) => void
     resetState: () => void
 }
 
 type Store = State & Actions
 
-const STORE_NAME = 'ledger-paired-devices-store'
+const STORE_NAME = 'ledger-pairing-store'
 
 const initialState: State = {
     pairedDeviceIds: [],
+    pendingPairingDevice: null,
 }
 
-export const useLedgerPairedDevicesStore: UseBoundStore<
+export const useLedgerPairingStore: UseBoundStore<
     WithPersist<StoreApi<Store>, unknown>
 > = create<Store>()(
     persist(
@@ -69,12 +75,16 @@ export const useLedgerPairedDevicesStore: UseBoundStore<
                 if (next.length === existing.length) return
                 set({ pairedDeviceIds: next })
             },
+            setPendingPairingDevice: device =>
+                set({ pendingPairingDevice: device }),
             resetState: () => set(initialState),
         }),
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
             version: 1,
+            // pendingPairingDevice is live-session UI state only — persisting
+            // it would resurrect a dismissed sheet after an app restart.
             partialize: state => ({ pairedDeviceIds: state.pairedDeviceIds }),
         },
     ),
@@ -84,9 +94,9 @@ registerStore({
     name: STORE_NAME,
     clearStorage: () =>
         (
-            useLedgerPairedDevicesStore as unknown as {
+            useLedgerPairingStore as unknown as {
                 persist: { clearStorage: () => void }
             }
         ).persist.clearStorage(),
-    resetState: () => useLedgerPairedDevicesStore.getState().resetState(),
+    resetState: () => useLedgerPairingStore.getState().resetState(),
 })
