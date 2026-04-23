@@ -14,35 +14,36 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
+        marginTop: theme.spacing.xl,
+        gap: theme.spacing.md,
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    title: {
+        color: theme.colors.textMain,
+    },
+    listContent: {
+        gap: theme.spacing.sm,
+        paddingRight: theme.spacing.md,
+    },
+    chip: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: theme.spacing.sm,
+        paddingVertical: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.md,
+        borderRadius: theme.spacing.xl,
+        backgroundColor: theme.colors.layerGrayLightest,
     },
-    textContainer: {
-        alignItems: 'flex-start',
-        gap: theme.spacing.xs,
-        flexShrink: 1,
+    skeleton: {
+        height: theme.spacing['3xl'],
+        width: theme.spacing['5xl'],
+        borderRadius: theme.spacing.xl,
     },
-    nameContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
-        flexShrink: 1,
-    },
-    id: {
-        color: theme.colors.textGray,
-        lineHeight: theme.spacing.lg,
-    },
-    name: {
-        color: theme.colors.textMain,
-        lineHeight: theme.spacing.lg,
-        paddingRight: theme.spacing.xs,
-        flexShrink: 1,
-    },
-    suspiciousName: {
-        color: theme.colors.error,
-        lineHeight: theme.spacing.lg,
-        paddingRight: theme.spacing.xs,
-        flexShrink: 1,
+    errorText: {
+        color: theme.colors.negative,
     },
 }))

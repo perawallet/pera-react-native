@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
     container: {
@@ -24,9 +25,11 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
     },
     itemUp: {
+        ...getTypography(theme, 'h4'),
         color: theme.colors.buttonSquareIcon,
     },
     itemDown: {
+        ...getTypography(theme, 'h4'),
         color: theme.colors.alertNegative,
     },
     trendIconUp: {

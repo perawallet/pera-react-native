@@ -14,35 +14,36 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
+        flex: 1,
+    },
+    listContent: {
+        paddingHorizontal: theme.spacing.xl,
+        paddingBottom: theme.spacing.xl,
+    },
+    footer: {
+        paddingVertical: theme.spacing.md,
+    },
+    item: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: theme.spacing.sm,
+        paddingVertical: theme.spacing.md,
+        gap: theme.spacing.md,
     },
-    textContainer: {
-        alignItems: 'flex-start',
-        gap: theme.spacing.xs,
-        flexShrink: 1,
+    itemBody: {
+        flex: 1,
     },
-    nameContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
-        flexShrink: 1,
-    },
-    id: {
-        color: theme.colors.textGray,
-        lineHeight: theme.spacing.lg,
-    },
-    name: {
+    itemDescription: {
         color: theme.colors.textMain,
-        lineHeight: theme.spacing.lg,
-        paddingRight: theme.spacing.xs,
-        flexShrink: 1,
     },
-    suspiciousName: {
-        color: theme.colors.error,
-        lineHeight: theme.spacing.lg,
-        paddingRight: theme.spacing.xs,
-        flexShrink: 1,
+    itemDescriptionStrong: {
+        color: theme.colors.textMain,
+        fontWeight: '600',
+    },
+    itemDate: {
+        color: theme.colors.textGray,
+    },
+    itemSeparator: {
+        height: 1,
+        backgroundColor: theme.colors.layerGrayLighter,
     },
 }))

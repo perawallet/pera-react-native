@@ -26,12 +26,14 @@ export const useStyles = makeStyles(theme => {
             flexGrow: 1,
         },
         unitContainer: {
-            gap: theme.spacing.xxs,
             flexShrink: 1,
         },
         amountContainer: {
-            gap: theme.spacing.xxs,
             alignItems: 'flex-end',
+        },
+        suspiciousName: {
+            color: theme.colors.error,
+            flexShrink: 1,
         },
         primaryUnit: {
             flexShrink: 1,

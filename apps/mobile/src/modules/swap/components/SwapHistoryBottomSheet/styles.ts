@@ -12,19 +12,11 @@
 
 import { makeStyles } from '@rneui/themed'
 
-type StyleProps = {
-    horizontal: boolean
-    gap?: number
-}
-
-export const useStyles = makeStyles(
-    (theme, { horizontal, gap }: StyleProps) => ({
-        skeleton: {
-            borderWidth: 0,
-        },
-        container: {
-            flexDirection: horizontal ? 'row' : 'column',
-            gap: gap ?? theme.spacing.sm,
-        },
-    }),
-)
+export const useStyles = makeStyles(() => ({
+    container: {
+        flex: 1,
+    },
+    listWrapper: {
+        flex: 1,
+    },
+}))

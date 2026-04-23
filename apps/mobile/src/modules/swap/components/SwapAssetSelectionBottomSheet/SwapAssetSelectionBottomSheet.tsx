@@ -17,7 +17,6 @@ import { PWBottomSheet, PWIcon, PWText, PWToolbar } from '@components/core'
 import { AccountAssetSelectionList } from '@modules/assets/components/AccountAssetSelectionList'
 import { SwapToAssetSelectionList } from '../SwapToAssetSelectionList'
 import { isSwappableAsset } from '@perawallet/wallet-core-swaps'
-import { useStyles } from './styles'
 
 const filterSwappable = (item: AssetWithAccountBalance) =>
     isSwappableAsset(item.asset)
@@ -38,7 +37,6 @@ export const SwapAssetSelectionBottomSheet = (
     const { variant, isVisible, onClose, onAssetSelected, excludeAssetId } =
         props
     const { t } = useLanguage()
-    const styles = useStyles()
 
     const handleAssetSelected = useCallback(
         (asset: AssetWithAccountBalance) => {
@@ -59,7 +57,6 @@ export const SwapAssetSelectionBottomSheet = (
             onBackdropPress={onClose}
             size='lg'
             autoCreateContainer={false}
-            innerContainerStyle={styles.container}
         >
             <PWToolbar
                 left={

@@ -10,21 +10,8 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
+import type { SwapStatus } from '@perawallet/wallet-core-swaps'
 
-type StyleProps = {
-    horizontal: boolean
-    gap?: number
-}
+const VISIBLE_SWAP_STATUSES_LIST: SwapStatus[] = ['completed', 'in_progress']
 
-export const useStyles = makeStyles(
-    (theme, { horizontal, gap }: StyleProps) => ({
-        skeleton: {
-            borderWidth: 0,
-        },
-        container: {
-            flexDirection: horizontal ? 'row' : 'column',
-            gap: gap ?? theme.spacing.sm,
-        },
-    }),
-)
+export const VISIBLE_SWAP_STATUSES = VISIBLE_SWAP_STATUSES_LIST.join(',')

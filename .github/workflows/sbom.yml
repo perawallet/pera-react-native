@@ -47,12 +47,10 @@ jobs:
           pnpm dlx @cyclonedx/cyclonedx-npm@4.2.1 \
             --output-format JSON \
             --output-file sbom/bom.json \
-            --package-lock-only \
             --spec-version 1.6
           pnpm dlx @cyclonedx/cyclonedx-npm@4.2.1 \
             --output-format XML \
             --output-file sbom/bom.xml \
-            --package-lock-only \
             --spec-version 1.6
 
       - name: Summarize SBOM

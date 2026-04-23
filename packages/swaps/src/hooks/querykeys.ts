@@ -26,6 +26,16 @@ export const swapQueryKeys = {
         statuses: string | undefined,
         network: Network,
     ) => [MODULE_PREFIX, 'history', { address, statuses, network }] as const,
+    historyInfinite: (
+        address: string,
+        statuses: string | undefined,
+        network: Network,
+    ) =>
+        [
+            MODULE_PREFIX,
+            'history-infinite',
+            { address, statuses, network },
+        ] as const,
     distinctPairsHistory: (
         address: string,
         statuses: string | undefined,

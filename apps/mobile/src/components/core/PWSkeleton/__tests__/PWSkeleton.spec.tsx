@@ -10,14 +10,66 @@
  limitations under the License
  */
 
-import { render } from '@test-utils/render'
+import { render, screen } from '@test-utils/render'
 import { describe, it, expect } from 'vitest'
+import { PWView } from '../../PWView'
 import { PWSkeleton } from '../PWSkeleton'
 
 describe('PWSkeleton', () => {
-    it('renders correctly', () => {
-        render(<PWSkeleton />)
-        // RNE Skeleton might not have a testID by default, but we check if it renders without error
-        expect(true).toBeTruthy()
+    it('renders without crashing by default', () => {
+        expect(() => render(<PWSkeleton />)).not.toThrow()
+    })
+
+    it('does not wrap a single skeleton in a container', () => {
+        render(
+            <PWView testID='parent'>
+                <PWSkeleton />
+            </PWView>,
+        )
+
+        const parent = screen.getByTestId('parent')
+        expect(parent.childElementCount).toBe(1)
+    })
+
+    it('renders N skeletons inside a wrapper when count > 1', () => {
+        render(
+            <PWView testID='parent'>
+                <PWSkeleton count={3} />
+            </PWView>,
+        )
+
+        const parent = screen.getByTestId('parent')
+        expect(parent.childElementCount).toBe(1)
+
+        const wrapper = parent.firstElementChild as HTMLElement
+        expect(wrapper.childElementCount).toBe(3)
+    })
+
+    it('renders the same number of skeletons regardless of layout direction', () => {
+        const { rerender } = render(
+            <PWView testID='parent'>
+                <PWSkeleton
+                    count={4}
+                    horizontal
+                />
+            </PWView>,
+        )
+
+        const horizontalCount = (
+            screen.getByTestId('parent').firstElementChild as HTMLElement
+        ).childElementCount
+
+        rerender(
+            <PWView testID='parent'>
+                <PWSkeleton count={4} />
+            </PWView>,
+        )
+
+        const verticalCount = (
+            screen.getByTestId('parent').firstElementChild as HTMLElement
+        ).childElementCount
+
+        expect(horizontalCount).toBe(4)
+        expect(verticalCount).toBe(4)
     })
 })

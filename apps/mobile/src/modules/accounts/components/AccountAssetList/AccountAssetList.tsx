@@ -142,18 +142,16 @@ export const AccountAssetList = ({
                                     >
                                         {t('account_details.assets.title')}
                                     </PWText>
-                                    {!isWatch && (
-                                        <PWView
-                                            style={
-                                                styles.titleBarButtonContainer
-                                            }
-                                        >
-                                            <PWButton
-                                                icon='sliders'
-                                                variant='helper'
-                                                paddingStyle='dense'
-                                                onPress={manageSheetState.open}
-                                            />
+                                    <PWView
+                                        style={styles.titleBarButtonContainer}
+                                    >
+                                        <PWButton
+                                            icon='sliders'
+                                            variant='helper'
+                                            paddingStyle='dense'
+                                            onPress={manageSheetState.open}
+                                        />
+                                        {!isWatch && (
                                             <PWButton
                                                 icon='plus'
                                                 title={t(
@@ -165,8 +163,8 @@ export const AccountAssetList = ({
                                                     addAssetSheetState.open
                                                 }
                                             />
-                                        </PWView>
-                                    )}
+                                        )}
+                                    </PWView>
                                 </PWView>
                             </ExpandablePanel>
                             <SearchInput
