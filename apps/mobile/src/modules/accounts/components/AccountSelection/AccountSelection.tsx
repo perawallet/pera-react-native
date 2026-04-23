@@ -38,6 +38,7 @@ export type AccountSelectionProps = {
     triggerTextProps?: PWTextProps
     closeIconPosition?: 'left' | 'right'
     hideDefaultHeader?: boolean
+    showSearch?: boolean
     accountFilter?: (account: WalletAccount) => boolean
 } & TouchableOpacityProps
 

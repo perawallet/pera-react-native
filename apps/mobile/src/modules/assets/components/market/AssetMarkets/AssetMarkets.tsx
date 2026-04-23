@@ -24,10 +24,8 @@ import { AssetPriceChart } from '../AssetPriceChart/AssetPriceChart'
 import { useChartInteraction } from '@hooks/useChartInteraction'
 import { Decimal } from 'decimal.js'
 import {
-    PWButton,
     PWIcon,
     PWScrollView,
-    PWSkeleton,
     PWText,
     PWTouchableOpacity,
     PWView,
@@ -51,6 +49,8 @@ import {
 import { useCurrency } from '@perawallet/wallet-core-currencies'
 import { usePreferences } from '@perawallet/wallet-core-settings'
 import { UserPreferences } from '@constants/user-preferences'
+import { LoadingView } from '@components/LoadingView'
+import { ExpandablePanel } from '@components/ExpandablePanel'
 
 export type AssetMarketsProps = {
     asset: PeraAsset
@@ -60,11 +60,11 @@ export type AssetMarketsProps = {
 const Loading = () => {
     const styles = useStyles()
     return (
-        <PWView style={styles.loadingContainer}>
-            <PWSkeleton style={styles.skeleton} />
-            <PWSkeleton style={styles.skeleton} />
-            <PWSkeleton style={styles.skeleton} />
-        </PWView>
+        <LoadingView
+            style={styles.loadingContainer}
+            variant='skeleton'
+            count={3}
+        />
     )
 }
 
@@ -82,13 +82,10 @@ export const AssetMarkets = ({
     }, [selectedPoint, onSwipeEnabledChange])
 
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { getPreference, setPreference } = usePreferences()
+    const { getPreference } = usePreferences()
     const { t } = useLanguage()
 
     const chartVisible = !!getPreference(UserPreferences.chartVisible)
-    const toggleChartVisible = () => {
-        setPreference(UserPreferences.chartVisible, !chartVisible)
-    }
 
     const {
         data: assetDetails,
@@ -184,16 +181,10 @@ export const AssetMarkets = ({
                             )}
                         </PWView>
                     </PWView>
-                    <PWButton
-                        icon='chart'
-                        variant={chartVisible ? 'secondary' : 'helper'}
-                        paddingStyle='dense'
-                        onPress={toggleChartVisible}
-                    />
                 </PWView>
             </PWView>
 
-            {chartVisible && (
+            <ExpandablePanel isExpanded={chartVisible}>
                 <PWView style={styles.chartContainer}>
                     <AssetPriceChart
                         asset={asset}
@@ -205,7 +196,7 @@ export const AssetMarkets = ({
                         onChange={setPeriod}
                     />
                 </PWView>
-            )}
+            </ExpandablePanel>
 
             <PWTouchableOpacity
                 style={styles.discoverButton}
