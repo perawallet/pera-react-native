@@ -45,9 +45,9 @@ describe('useSetThresholdScreen', () => {
         })
         const store = useMultisigCreationStore.getState()
         store.resetState()
-        store.addParticipant({ address: 'ADDR1', isLocal: true })
-        store.addParticipant({ address: 'ADDR2', isLocal: false })
-        store.addParticipant({ address: 'ADDR3', isLocal: false })
+        store.addParticipant({ address: 'ADDR1' })
+        store.addParticipant({ address: 'ADDR2' })
+        store.addParticipant({ address: 'ADDR3' })
     })
 
     it('shows correct participant count', () => {

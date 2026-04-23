@@ -13,12 +13,12 @@
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 import type {
     MultiSigAccount,
-    JointAccountSignRequest,
+    MultisigSignRequest,
 } from '@perawallet/wallet-core-multisig'
 
 export type {
     MultiSigAccount,
-    JointAccountSignRequest,
+    MultisigSignRequest,
     SignRequestStatus,
     SignerResponse,
     TransactionList,
@@ -59,7 +59,7 @@ export type InboxItem =
     | { type: 'joint_account_import'; data: MultiSigAccount; createdAt: Date }
     | {
           type: 'joint_account_sign'
-          data: JointAccountSignRequest
+          data: MultisigSignRequest
           createdAt: Date
       }
     | { type: 'asa_inbox'; data: ASAInbox; createdAt: Date }

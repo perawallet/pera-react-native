@@ -16,13 +16,11 @@ import {
     useSelectedAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useResolvedAddress } from '@hooks/useResolvedAddress'
-import { useCallback, useState } from 'react'
+import { useState } from 'react'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useStyles } from './styles'
 import { AssetMarkets } from '@modules/assets/components/market/AssetMarkets'
 import { AssetHoldings } from '@modules/assets/components/holdings/AssetHoldings'
-import { AccountIcon } from '@modules/accounts/components/AccountIcon'
-import { useToast } from '@hooks/useToast'
 import { useSingleAssetDetailsQuery } from '@perawallet/wallet-core-assets'
 import { LoadingView } from '@components/LoadingView'
 import { useLanguage } from '@hooks/useLanguage'
@@ -30,6 +28,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { AccountStackParamsList } from '@modules/accounts/routes'
 import { PWView, PWText } from '@components/core'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { AccountHeaderMenu } from '@components/AccountHeaderMenu'
 
 export type AssetDetailsScreenProps = NativeStackScreenProps<
     AccountStackParamsList,
@@ -45,7 +44,6 @@ const Tab = createPWTabNavigator<AssetDetailsTabParamsList>()
 
 export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
     const assetId = route.params?.assetId
-    const { showToast } = useToast()
     const { t } = useLanguage()
 
     const insets = useSafeAreaInsets()
@@ -57,14 +55,6 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
         account?.address ?? '',
         { enabled: !!account?.address },
     )
-
-    const notImplemented = useCallback(() => {
-        showToast({
-            title: t('common.not_implemented.title'),
-            body: t('common.not_implemented.body'),
-            type: 'error',
-        })
-    }, [showToast, t])
 
     const [swipeEnabled, setSwipeEnabled] = useState(true)
 
@@ -87,10 +77,7 @@ export const AssetDetailsScreen = ({ route }: AssetDetailsScreenProps) => {
             </PWView>
         ),
         right: account ? (
-            <AccountIcon
-                account={account}
-                onPress={notImplemented}
-            />
+            <AccountHeaderMenu testID='asset_details_screen_dropdown' />
         ) : null,
     })
 

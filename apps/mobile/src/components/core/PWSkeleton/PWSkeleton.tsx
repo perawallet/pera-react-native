@@ -11,8 +11,9 @@
  */
 
 import { Skeleton as RNESkeleton } from '@rneui/themed'
-import { useStyles } from './styles'
 import { StyleProp, ViewStyle } from 'react-native'
+import { PWView } from '../PWView'
+import { useStyles } from './styles'
 
 export type PWSkeletonProps = {
     animation?: 'none' | 'pulse' | 'wave'
@@ -20,6 +21,9 @@ export type PWSkeletonProps = {
     width?: number
     style?: StyleProp<ViewStyle>
     circle?: boolean
+    count?: number
+    horizontal?: boolean
+    gap?: number
 }
 
 export const PWSkeleton = ({
@@ -28,18 +32,39 @@ export const PWSkeleton = ({
     width,
     style,
     circle,
+    count = 1,
+    horizontal = false,
+    gap,
     ...props
 }: PWSkeletonProps) => {
-    const styles = useStyles()
+    const styles = useStyles({ horizontal, gap })
+
+    if (count <= 1) {
+        return (
+            <RNESkeleton
+                style={[styles.skeleton, style]}
+                animation={animation}
+                height={height}
+                width={width}
+                circle={circle}
+                {...props}
+            />
+        )
+    }
 
     return (
-        <RNESkeleton
-            style={[styles.skeleton, style]}
-            animation={animation}
-            height={height}
-            width={width}
-            circle={circle}
-            {...props}
-        />
+        <PWView style={styles.container}>
+            {Array.from({ length: count }, (_, i) => (
+                <RNESkeleton
+                    key={i}
+                    style={[styles.skeleton, style]}
+                    animation={animation}
+                    height={height}
+                    width={width}
+                    circle={circle}
+                    {...props}
+                />
+            ))}
+        </PWView>
     )
 }

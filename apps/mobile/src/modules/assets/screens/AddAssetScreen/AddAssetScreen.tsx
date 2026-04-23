@@ -63,7 +63,7 @@ export const AddAssetScreen = ({ variant = 'asset' }: AddAssetScreenProps) => {
 
     const handleEndReached = useCallback(() => {
         if (hasNextPage && !isFetchingNextPage) {
-            fetchNextPage()
+            fetchNextPage?.()
         }
     }, [hasNextPage, isFetchingNextPage, fetchNextPage])
 

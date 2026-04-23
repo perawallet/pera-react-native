@@ -16,8 +16,14 @@ import { useNameMultisigScreen } from './useNameMultisigScreen'
 
 export const NameMultisigScreen = () => {
     const { t } = useLanguage()
-    const { accountName, isCreating, handleNameChange, handleFinish } =
-        useNameMultisigScreen()
+    const {
+        accountName,
+        isCreating,
+        nameError,
+        isFinishDisabled,
+        handleNameChange,
+        handleFinish,
+    } = useNameMultisigScreen()
 
     return (
         <NameAccountForm
@@ -29,7 +35,8 @@ export const NameMultisigScreen = () => {
             onChangeText={handleNameChange}
             onFinish={handleFinish}
             isLoading={isCreating}
-            isDisabled={isCreating || !accountName.trim()}
+            isDisabled={isFinishDisabled}
+            errorMessage={nameError}
         />
     )
 }

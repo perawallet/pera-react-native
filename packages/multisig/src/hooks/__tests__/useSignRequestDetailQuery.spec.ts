@@ -102,12 +102,12 @@ describe('useSignRequestDetailQuery', () => {
         expect(result.current.data?.id).toBe('sr-123')
         expect(result.current.data?.status).toBe('pending')
         expect(result.current.data?.type).toBe('async')
-        expect(result.current.data?.jointAccount.address).toBe('MSIG_ADDR')
+        expect(result.current.data?.multisigAccount.address).toBe('MSIG_ADDR')
         expect(result.current.data?.transactionLists).toHaveLength(1)
         expect(result.current.data?.createdAt).toBeInstanceOf(Date)
     })
 
-    test('maps nested jointAccount correctly', async () => {
+    test('maps nested multisigAccount correctly', async () => {
         mocks.getSignRequestDetail.mockResolvedValue(
             createSignRequestResponse('pending'),
         )
@@ -123,13 +123,14 @@ describe('useSignRequestDetailQuery', () => {
 
         await waitFor(() => expect(result.current.isSuccess).toBe(true))
 
-        expect(result.current.data?.jointAccount.customId).toBe('msig-1')
-        expect(result.current.data?.jointAccount.threshold).toBe(2)
-        expect(result.current.data?.jointAccount.participantAddresses).toEqual([
-            'ADDR1',
-            'ADDR2',
-        ])
-        expect(result.current.data?.jointAccount.createdAt).toBeInstanceOf(Date)
+        expect(result.current.data?.multisigAccount.customId).toBe('msig-1')
+        expect(result.current.data?.multisigAccount.threshold).toBe(2)
+        expect(
+            result.current.data?.multisigAccount.participantAddresses,
+        ).toEqual(['ADDR1', 'ADDR2'])
+        expect(result.current.data?.multisigAccount.createdAt).toBeInstanceOf(
+            Date,
+        )
     })
 
     test('maps transactionLists correctly', async () => {

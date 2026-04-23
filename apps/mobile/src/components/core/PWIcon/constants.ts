@@ -46,6 +46,7 @@ import FunnelIcon from '@assets/icons/funnel.svg'
 import GearIcon from '@assets/icons/gear.svg'
 import GiftIcon from '@assets/icons/gift.svg'
 import GlobeIcon from '@assets/icons/globe.svg'
+import GroupUserIcon from '@assets/icons/group-user.svg'
 import HorizontalLineStackIcon from '@assets/icons/horizontal-line-stack.svg'
 import HouseIcon from '@assets/icons/house.svg'
 import InboxIcon from '@assets/icons/inbox.svg'
@@ -87,6 +88,7 @@ import ThumbDownIcon from '@assets/icons/thumb-down.svg'
 import ThumbUpIcon from '@assets/icons/thumb-up.svg'
 import TrashIcon from '@assets/icons/trash.svg'
 import TreeIcon from '@assets/icons/tree.svg'
+import WalletImportIcon from '@assets/icons/wallet-import.svg'
 import WalletAddIcon from '@assets/icons/wallet-add.svg'
 import WalletConnectIcon from '@assets/icons/wallet-connect.svg'
 import WalletWithAlgoIcon from '@assets/icons/wallet-with-algo.svg'
@@ -177,6 +179,7 @@ export const ICON_LIBRARY = {
     gear: GearIcon,
     gift: GiftIcon,
     globe: GlobeIcon,
+    'group-user': GroupUserIcon,
     'horizontal-line-stack': HorizontalLineStackIcon,
     house: HouseIcon,
     inbox: InboxIcon,
@@ -220,6 +223,7 @@ export const ICON_LIBRARY = {
     tree: TreeIcon,
     unlink: UnlinkIcon,
     undo: UndoIcon,
+    'wallet-import': WalletImportIcon,
     'wallet-add': WalletAddIcon,
     'wallet-connect': WalletConnectIcon,
     'wallet-with-algo': WalletWithAlgoIcon,

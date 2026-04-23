@@ -10,10 +10,5 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(() => ({
-    container: {
-        paddingBottom: 0,
-    },
-}))
+export { SwapHistoryBottomSheet } from './SwapHistoryBottomSheet'
+export type { SwapHistoryBottomSheetProps } from './SwapHistoryBottomSheet'

@@ -36,7 +36,7 @@ type UseAddAssetScreenResult = {
     isError: boolean
     isFetchingNextPage: boolean
     hasNextPage: boolean
-    fetchNextPage: () => void
+    fetchNextPage: Nullable<() => void>
     optedInAssetIds: Set<string>
     optingInAssetId: Nullable<string>
     handleRequestAdd: (assetId: string) => void

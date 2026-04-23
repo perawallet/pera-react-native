@@ -328,8 +328,8 @@
         "rekeyed_ledger_description": "Your account is rekeyed to an account on a Ledger hardware device. Transactions for this account must be authorized on the Ledger device.",
         "hd_wallet_title": "Wallet address",
         "hd_wallet_description": "Wallet that lets you derive new accounts, all using same key.",
-        "multisig_title": "Joint Account",
-        "multisig_description": "Create a new multi-sig account with enhanced security that requires multiple signers.",
+        "multisig_title": "Shared Account",
+        "multisig_description": "Create a shared account with enhanced security that requires multiple signers.",
         "learn_more": "Learn More",
         "rekey_to_ledger": "Rekey to Ledger",
         "rekey_to_standard": "Rekey to Standard",
@@ -575,8 +575,8 @@
             "empty_body": "You do not currently have any pending inbox messages",
             "asa_requests_one": "1 incoming asset",
             "asa_requests_other": "{{count}} incoming assets",
-            "joint_account_import": "Joint Account Import Request",
-            "joint_account_sign": "Joint Account Sign Request"
+            "joint_account_import": "Shared Account Import Request",
+            "joint_account_sign": "Shared Account Sign Request"
         },
         "claim": {
             "asset_transfer_requests_title": "Asset Transfer Requests",
@@ -600,16 +600,16 @@
     },
     "multisig": {
         "create": {
-            "title": "Create a\nJoint Account",
-            "description": "Choose the accounts that will jointly manage and sign transactions for this account.",
+            "title": "Create a\nShared Account",
+            "description": "Choose the accounts that will share control and sign transactions for this account.",
             "accounts_section": "Accounts",
             "accounts_subtitle": "You need add at least two accounts",
             "add_account": "Add Account"
         },
         "add_participant": {
             "title": "Add Account",
-            "joint_account_error": "Cannot add joint account",
-            "joint_account_error_body": "Joint accounts cannot be added as participants in another joint account."
+            "cannot_add_multisig_error": "Cannot add shared account",
+            "cannot_add_multisig_error_body": "Shared accounts cannot be added as participants in another shared account."
         },
         "threshold": {
             "title": "Set a Threshold",
@@ -618,9 +618,9 @@
             "required_signatures": "Threshold"
         },
         "before_you_create": {
-            "title": "Before You Create a Joint Account",
-            "warning_participants": "Once you create a joint account, you cannot change the participants.",
-            "warning_rekey": "Once you create a joint account, rekeying any of the participating accounts may result in losing access.",
+            "title": "Before You Create a Shared Account",
+            "warning_participants": "Once you create a shared account, you cannot change the participants.",
+            "warning_rekey": "Once you create a shared account, rekeying any of the participating accounts may result in losing access.",
             "learn_more": "Learn more",
             "proceed": "Proceed",
             "go_back": "Go Back and Edit"
@@ -628,11 +628,12 @@
         "name": {
             "title": "Name Your Account",
             "description": "Name your account to easily identify it while using the Pera Wallet. These names are stored locally, and can only be seen by you.",
-            "default_name": "Joint Account",
+            "default_name": "Shared Account",
             "finish_button": "Finish Account Creation",
-            "creating": "Creating joint account...",
+            "creating": "Creating shared account...",
             "error_title": "Failed to create account",
-            "error_message": "Something went wrong while creating the joint account: {{error}}"
+            "error_message": "Something went wrong while creating the shared account: {{error}}",
+            "error_name_taken": "An account with this name already exists."
         },
         "edit_participant": {
             "title": "Edit address",
@@ -747,8 +748,8 @@
             "terms_and_privacy": "By adding a wallet, you agree to Pera Wallet's <0>Terms and Conditions</0> and <1>Privacy Policy</1>",
             "pair_ledger_option_title": "Pair Ledger Device",
             "pair_ledger_option_description": "Connect a Ledger hardware wallet via Bluetooth to import accounts",
-            "create_joint_account_option_title": "Create a Joint Account",
-            "create_joint_account_option_description": "Create a shared multisig account with multiple participants",
+            "create_multisig_option_title": "Add Shared Account",
+            "create_multisig_option_description": "Create a new multi-sig account with enhanced security that requires multiple signers",
             "see_other_options": "See other options"
         },
         "import_account_options": {
@@ -1282,7 +1283,8 @@
     "walletconnect": {
         "request": {
             "title": "{{name}} wants to connect to your account",
-            "permissions_title": "REQUESTED PERMISSIONS",
+            "permissions_title_one": "Requested {{count}} permission",
+            "permissions_title_other": "Requested {{count}} permissions",
             "permissions_request_accounts": "View your wallet address & balances",
             "permissions_sign_transaction": "Request transaction signing",
             "permissions_sign_data": "Request arbitrary data signing",
@@ -1429,6 +1431,32 @@
             "apply": "Apply",
             "auto_label": "Auto",
             "auto_description": "Best price available"
+        },
+        "history": {
+            "title": "Swap History",
+            "widget": {
+                "title": "Swap History",
+                "see_all": "See all",
+                "error": "Couldn't load swap history."
+            },
+            "list": {
+                "item": {
+                    "description": "Swapped {{amountIn}} {{unitIn}} for "
+                },
+                "empty": {
+                    "title": "No swaps yet",
+                    "body": "Your swap history will appear here."
+                },
+                "error": {
+                    "title": "Something went wrong",
+                    "body": "We couldn't load your swap history. Please try again."
+                }
+            }
+        },
+        "top_pairs": {
+            "title": "Top 5 Swaps",
+            "volume_24h": "Volume (24H)",
+            "error": "Couldn't load top swaps"
         }
     },
     "ledger": {

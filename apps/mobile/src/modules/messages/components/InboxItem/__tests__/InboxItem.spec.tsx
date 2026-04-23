@@ -92,7 +92,7 @@ describe('InboxItem', () => {
                 createdAt: new Date('2025-01-20T00:00:00Z'),
                 expectedExpireDatetime: new Date('2025-01-21T00:00:00Z'),
                 failReasonDisplay: null,
-                jointAccount: {
+                multisigAccount: {
                     customId: 'msig-1',
                     createdAt: new Date('2025-01-10T00:00:00Z'),
                     address: 'MSIG_ADDR',
@@ -153,7 +153,7 @@ describe('InboxItem', () => {
                 createdAt: new Date('2025-01-20T00:00:00Z'),
                 expectedExpireDatetime: new Date('2025-01-21T00:00:00Z'),
                 failReasonDisplay: null,
-                jointAccount: {
+                multisigAccount: {
                     customId: 'msig-1',
                     createdAt: new Date('2025-01-10T00:00:00Z'),
                     address: 'MSIG_ADDR',

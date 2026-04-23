@@ -32,7 +32,7 @@ export const createCallbackTransport = (): DataTransport => {
         send: async (
             result: SigningResult,
             source: SourceMetadata,
-            _jointAccountAddress?: string,
+            _multisigAddress?: string,
         ): Promise<TransportResult> => {
             if (!source.callbacks?.approve) {
                 throw new TransportError(

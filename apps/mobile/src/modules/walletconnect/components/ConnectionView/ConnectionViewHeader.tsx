@@ -28,6 +28,7 @@ import {
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { TitledExpandablePanel } from '@components/ExpandablePanel/TitledExpandablePanel'
 import { PermissionItem } from '../PermissionItem'
 
 export type ConnectionViewHeaderProps = {
@@ -116,20 +117,28 @@ export const ConnectionViewHeader = ({
                 )}
             </PWView>
 
-            <PWView style={styles.permissionsContainer}>
-                <PWText
-                    variant='h4'
-                    style={styles.permissionsTitle}
-                >
-                    {t('walletconnect.request.permissions_title')}
-                </PWText>
-                {request.permissions.map((permission, index) => (
-                    <PermissionItem
-                        key={index}
-                        permission={permission as AlgorandPermission}
-                    />
-                ))}
-            </PWView>
+            <TitledExpandablePanel
+                containerStyle={styles.permissionsContainer}
+                title={
+                    <PWText
+                        variant='h4'
+                        style={styles.panelTitle}
+                    >
+                        {t('walletconnect.request.permissions_title', {
+                            count: request.permissions.length,
+                        })}
+                    </PWText>
+                }
+            >
+                <PWView style={styles.permissionsContent}>
+                    {request.permissions.map((permission, index) => (
+                        <PermissionItem
+                            key={index}
+                            permission={permission as AlgorandPermission}
+                        />
+                    ))}
+                </PWView>
+            </TitledExpandablePanel>
 
             <PWView style={styles.accountSelectionContainer}>
                 <PWText

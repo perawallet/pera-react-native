@@ -28,7 +28,7 @@ const SearchStack = createNativeStackNavigator<SearchStackParamsList>()
 export const SearchStackNavigator = () => {
     return (
         <SearchStack.Navigator
-            initialRouteName='SearchHome'
+            initialRouteName='SearchScreen'
             screenOptions={{
                 headerShown: true,
                 header: (props: NativeStackHeaderProps) => (
@@ -40,7 +40,7 @@ export const SearchStackNavigator = () => {
             layout={fullScreenLayout}
         >
             <SearchStack.Screen
-                name='SearchHome'
+                name='SearchScreen'
                 options={{ title: 'search.screen_title' }}
                 component={SearchScreen}
             />
