@@ -9,7 +9,7 @@ export function parseArgs(argv: string[]): ParsedArgs {
             result.json = true
             continue
         }
-        throw new Error('unknown flag: ' + flag)
+        throw new Error(`guardrails: unknown flag "${flag}"`)
     }
     return result
 }

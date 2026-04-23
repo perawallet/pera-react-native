@@ -3,21 +3,27 @@ import type { SourceMap, Violation } from '../types.js'
 
 const FILE_DIRECTIVE = 'guardrails-ignore-file'
 const LINE_DIRECTIVE = 'guardrails-ignore-next-line'
+const DIRECTIVE_RE =
+    /(^|[^\w-])(guardrails-ignore-next-line|guardrails-ignore-file)(?=[\s:]|$)/m
 
 function parseRuleIds(raw: string): string[] {
-    return raw
+    // Strip trailing block-comment (`*/`) or HTML-comment (`-->`) terminators
+    // so they don't leak into the last rule id.
+    const cleaned = raw.replace(/(\*\/|-->)\s*$/, '')
+    return cleaned
         .split(/[\s,]+/)
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0)
+        .map(s => s.trim())
+        .filter(s => s.length > 0)
 }
 
 function extractDirectiveRules(
     commentText: string,
     directive: string,
 ): string[] {
-    const idx = commentText.indexOf(directive)
-    if (idx === -1) return []
-    const after = commentText.slice(idx + directive.length)
+    const match = DIRECTIVE_RE.exec(commentText)
+    if (!match) return []
+    if (match[2] !== directive) return []
+    const after = commentText.slice(match.index + match[0].length)
     return parseRuleIds(after)
 }
 
@@ -62,7 +68,7 @@ export function filterSuppressed(
         linesByPath.set(path, sf.getFullText().split('\n'))
     }
 
-    return violations.filter((violation) => {
+    return violations.filter(violation => {
         const fileSuppressions = fileSuppressionsByPath.get(violation.file)
         if (fileSuppressions && fileSuppressions.has(violation.ruleId)) {
             return false

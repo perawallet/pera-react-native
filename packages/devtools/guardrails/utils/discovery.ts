@@ -14,7 +14,9 @@ export function findRepoRoot(startFromFileUrl: string): string {
         }
         const parent = dirname(dir)
         if (parent === dir) {
-            throw new Error('guardrails: could not locate pnpm-workspace.yaml')
+            throw new Error(
+                `guardrails: could not locate pnpm-workspace.yaml starting from ${startFromFileUrl}`,
+            )
         }
         dir = parent
     }
@@ -46,9 +48,7 @@ export async function discoverSources(
         ignore: [...DEFAULT_IGNORE, ...(extraIgnore ?? [])],
     })
 
-    const contents = await Promise.all(
-        paths.map((p) => readFile(p, 'utf8')),
-    )
+    const contents = await Promise.all(paths.map(p => readFile(p, 'utf8')))
 
     const sources: SourceMap = new Map()
     for (let i = 0; i < paths.length; i += 1) {

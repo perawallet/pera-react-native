@@ -4,6 +4,6 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'node',
-        include: ['guardrails/**/__tests__/*.{test,spec}.ts?(x)'],
+        include: ['guardrails/**/__tests__/**/*.{test,spec}.ts'],
     },
 })

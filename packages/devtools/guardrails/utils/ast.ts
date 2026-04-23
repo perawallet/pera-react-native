@@ -18,15 +18,14 @@ function isImportFromModule(
     return spec.text === moduleSpecifier
 }
 
-function getNamedImports(
-    node: ts.ImportDeclaration,
-): ts.NamedImports | null {
+function getNamedImports(node: ts.ImportDeclaration): ts.NamedImports | null {
     const bindings = node.importClause?.namedBindings
     if (!bindings) return null
     if (!ts.isNamedImports(bindings)) return null
     return bindings
 }
 
+/** Returns the local identifier bound to the given imported name from `moduleSpecifier`, or null if not imported. */
 export function resolveNamedImport(
     sf: ts.SourceFile,
     moduleSpecifier: string,
@@ -46,6 +45,7 @@ export function resolveNamedImport(
     return null
 }
 
+/** Returns a map of local-identifier → imported-name for all named imports from `moduleSpecifier`. */
 export function resolveModuleBindings(
     sf: ts.SourceFile,
     moduleSpecifier: string,

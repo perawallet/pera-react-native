@@ -17,7 +17,11 @@ const ANSI = {
 
 function colorsDisabled(): boolean {
     const value = process.env.NO_COLOR
-    return value !== undefined && value !== ''
+    if (value !== undefined && value !== '') return true
+    // Treat missing stdout or missing isTTY as non-TTY (colors off).
+    const stdout = process.stdout as NodeJS.WriteStream | undefined
+    if (!stdout || stdout.isTTY !== true) return true
+    return false
 }
 
 function paint(code: string, text: string): string {
@@ -39,10 +43,9 @@ function groupByRule(violations: Violation[]): Map<string, Violation[]> {
 }
 
 function formatTimings(timingsMs: Record<string, number>): string {
-    const entries = Object.entries(timingsMs).map(
-        ([id, ms]) => `${id}: ${ms}ms`,
-    )
-    return `{${entries.join(', ')}}`
+    return Object.entries(timingsMs)
+        .map(([id, ms]) => `${id}=${ms}ms`)
+        .join(' ')
 }
 
 export function formatHuman(summary: RunSummary, repoRoot: string): string {
@@ -82,7 +85,7 @@ export function formatJson(summary: RunSummary, repoRoot: string): string {
         total: summary.violations.length,
         durationMs: summary.totalMs,
         timings: summary.timingsMs,
-        violations: summary.violations.map((v) => ({
+        violations: summary.violations.map(v => ({
             ...v,
             file: relative(repoRoot, v.file),
         })),
