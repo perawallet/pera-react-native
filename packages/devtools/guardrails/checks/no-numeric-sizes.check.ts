@@ -1,5 +1,9 @@
 import ts from 'typescript'
-import { forEachMakeStylesStyleObject, getLineCol } from '../utils/ast.js'
+import {
+    descendMakeStylesCall,
+    getLineCol,
+    getMakeStylesBinding,
+} from '../utils/ast.js'
 import type { Check, SourceMap, Violation } from '../types.js'
 
 const RULE_ID = 'no-numeric-sizes'
@@ -69,29 +73,28 @@ function describeLiteralValue(expr: ts.Expression): string | null {
     return null
 }
 
-function collectFromSourceFile(sf: ts.SourceFile, out: Violation[]): void {
-    forEachMakeStylesStyleObject(sf, styleEntry => {
-        for (const prop of styleEntry.properties) {
-            if (!ts.isPropertyAssignment(prop)) continue
-            const name = getPropertyName(prop)
-            if (name === null) continue
-            if (!SPACING_PROPS.has(name)) continue
-            const value = describeLiteralValue(prop.initializer)
-            if (value === null) continue
-            const { line, column } = getLineCol(
-                sf,
-                prop.initializer.getStart(sf),
-            )
-            out.push({
-                file: sf.fileName,
-                line,
-                column,
-                ruleId: RULE_ID,
-                message: `numeric value ${value} for "${name}" — use a theme token`,
-                remediation: REMEDIATION,
-            })
-        }
-    })
+function collectFromStyleEntry(
+    sf: ts.SourceFile,
+    styleEntry: ts.ObjectLiteralExpression,
+    out: Violation[],
+): void {
+    for (const prop of styleEntry.properties) {
+        if (!ts.isPropertyAssignment(prop)) continue
+        const name = getPropertyName(prop)
+        if (name === null) continue
+        if (!SPACING_PROPS.has(name)) continue
+        const value = describeLiteralValue(prop.initializer)
+        if (value === null) continue
+        const { line, column } = getLineCol(sf, prop.initializer.getStart(sf))
+        out.push({
+            file: sf.fileName,
+            line,
+            column,
+            ruleId: RULE_ID,
+            message: `numeric value ${value} for "${name}" — use a theme token`,
+            remediation: REMEDIATION,
+        })
+    }
 }
 
 const check: Check = {
@@ -101,7 +104,21 @@ const check: Check = {
     run(sources: SourceMap): Violation[] {
         const violations: Violation[] = []
         for (const sf of sources.values()) {
-            collectFromSourceFile(sf, violations)
+            const binding = getMakeStylesBinding(sf)
+            if (!binding) continue
+            const walk = (node: ts.Node): void => {
+                if (
+                    ts.isCallExpression(node) &&
+                    ts.isIdentifier(node.expression) &&
+                    node.expression.text === binding
+                ) {
+                    descendMakeStylesCall(node, styleEntry => {
+                        collectFromStyleEntry(sf, styleEntry, violations)
+                    })
+                }
+                ts.forEachChild(node, walk)
+            }
+            walk(sf)
         }
         return violations
     },

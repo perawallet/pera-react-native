@@ -63,6 +63,21 @@ export function resolveModuleBindings(
     return result
 }
 
+const makeStylesBindingCache = new WeakMap<ts.SourceFile, string | null>()
+
+/**
+ * Returns the local identifier name bound to `makeStyles` from `@rneui/themed`
+ * in the given SourceFile. Result is memoized per SourceFile.
+ */
+export function getMakeStylesBinding(sf: ts.SourceFile): string | null {
+    if (makeStylesBindingCache.has(sf)) {
+        return makeStylesBindingCache.get(sf) ?? null
+    }
+    const binding = resolveNamedImport(sf, '@rneui/themed', 'makeStyles')
+    makeStylesBindingCache.set(sf, binding)
+    return binding
+}
+
 function unwrapParens(expr: ts.Expression): ts.Expression {
     let current = expr
     while (ts.isParenthesizedExpression(current)) {
@@ -71,72 +86,41 @@ function unwrapParens(expr: ts.Expression): ts.Expression {
     return current
 }
 
-function extractObjectLiteralFromCallback(
+function getCallbackBodyObjectLiteral(
     callback: ts.ArrowFunction | ts.FunctionExpression,
 ): ts.ObjectLiteralExpression | null {
     const body = callback.body
     if (!ts.isBlock(body)) {
         const unwrapped = unwrapParens(body)
-        if (ts.isObjectLiteralExpression(unwrapped)) {
-            return unwrapped
-        }
-        return null
+        return ts.isObjectLiteralExpression(unwrapped) ? unwrapped : null
     }
     for (const statement of body.statements) {
         if (ts.isReturnStatement(statement) && statement.expression) {
             const unwrapped = unwrapParens(statement.expression)
-            if (ts.isObjectLiteralExpression(unwrapped)) {
-                return unwrapped
-            }
+            if (ts.isObjectLiteralExpression(unwrapped)) return unwrapped
         }
     }
     return null
 }
 
-function getMakeStylesCallback(
+/**
+ * Given a CallExpression that is confirmed to be `makeStyles(...)`, invoke cb
+ * for each top-level style-entry ObjectLiteralExpression inside the returned
+ * object. Example: `makeStyles(theme => ({ root: { padding: 12 } }))` yields
+ * the inner `{ padding: 12 }` once.
+ */
+export function descendMakeStylesCall(
     call: ts.CallExpression,
-): ts.ArrowFunction | ts.FunctionExpression | null {
-    const first = call.arguments[0]
-    if (!first) return null
-    if (ts.isArrowFunction(first) || ts.isFunctionExpression(first)) {
-        return first
-    }
-    return null
-}
-
-export function forEachMakeStylesStyleObject(
-    sf: ts.SourceFile,
-    cb: (
-        styleEntry: ts.ObjectLiteralExpression,
-        makeStylesCall: ts.CallExpression,
-    ) => void,
+    cb: (styleEntry: ts.ObjectLiteralExpression) => void,
 ): void {
-    const localName = resolveNamedImport(sf, '@rneui/themed', 'makeStyles')
-    if (!localName) return
-
-    const visit = (node: ts.Node): void => {
-        if (
-            ts.isCallExpression(node) &&
-            ts.isIdentifier(node.expression) &&
-            node.expression.text === localName
-        ) {
-            const callback = getMakeStylesCallback(node)
-            if (callback) {
-                const outer = extractObjectLiteralFromCallback(callback)
-                if (outer) {
-                    for (const prop of outer.properties) {
-                        if (
-                            ts.isPropertyAssignment(prop) &&
-                            ts.isObjectLiteralExpression(prop.initializer)
-                        ) {
-                            cb(prop.initializer, node)
-                        }
-                    }
-                }
-            }
-        }
-        ts.forEachChild(node, visit)
+    const [arg] = call.arguments
+    if (!arg) return
+    if (!ts.isArrowFunction(arg) && !ts.isFunctionExpression(arg)) return
+    const outer = getCallbackBodyObjectLiteral(arg)
+    if (!outer) return
+    for (const prop of outer.properties) {
+        if (!ts.isPropertyAssignment(prop)) continue
+        const value = prop.initializer
+        if (ts.isObjectLiteralExpression(value)) cb(value)
     }
-
-    visit(sf)
 }
