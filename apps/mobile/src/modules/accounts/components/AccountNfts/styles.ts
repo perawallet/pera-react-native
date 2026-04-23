@@ -25,12 +25,12 @@ export const useStyles = makeStyles(theme => ({
     headerContainer: {
         marginTop: theme.spacing.sm,
         marginBottom: theme.spacing.md,
+        paddingHorizontal: theme.spacing.md,
     },
     titleBar: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginTop: theme.spacing.lg,
         marginBottom: theme.spacing.sm,
     },
     countText: {

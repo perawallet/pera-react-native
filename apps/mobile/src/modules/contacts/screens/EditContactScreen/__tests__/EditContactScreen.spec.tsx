@@ -38,15 +38,12 @@ vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
 }))
 
-vi.mock('@hooks/useDebouncedValue', () => ({
-    useDebouncedValue: (value: string) => value,
-}))
-
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
     return {
         ...actual,
+        useDebouncedValue: (value: unknown) => value,
         truncateAlgorandAddress: (addr: string) =>
             addr.substring(0, 10) + '...',
     }

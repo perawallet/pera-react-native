@@ -1860,6 +1860,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
         }
         return '?'
     }),
+    useDebouncedValue: <T>(value: T) => value,
 }))
 
 // Mock @perawallet/wallet-core-projects
@@ -1982,6 +1983,14 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
         error: null,
         isSuccess: false,
     })),
+    useAssetSearchQuery: vi.fn(() => ({
+        results: [],
+        isLoading: false,
+        isError: false,
+        isFetchingNextPage: false,
+        hasNextPage: false,
+        fetchNextPage: vi.fn(),
+    })),
 }))
 
 // Mock @perawallet/wallet-core-settings
@@ -2067,6 +2076,10 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             multisig: 'multisig',
             watch: 'watch',
         },
+        useOwnedAssets: vi.fn(() => ({
+            assets: [],
+            isLoading: false,
+        })),
     }
 })
 

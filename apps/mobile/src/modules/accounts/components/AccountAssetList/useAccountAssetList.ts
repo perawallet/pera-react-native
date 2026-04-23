@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import {
@@ -29,11 +29,13 @@ import {
     type AssetPrices,
     type AssetSortMode,
 } from '@perawallet/wallet-core-assets'
+import { useGlobalSearch } from '@perawallet/wallet-core-search'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useModalState, ModalState } from '@hooks/useModalState'
-import { useDebouncedValue } from '@hooks/useDebouncedValue'
 import { useToast } from '@hooks/useToast'
+import { useState } from 'react'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { SEARCH_DEBOUNCE_TIME_SHORT } from '@constants/ui'
 
 type UseAccountAssetListResult = {
     balances: AssetWithAccountBalance[]
@@ -82,7 +84,15 @@ export const useAccountAssetList = ({
     const sortSheetState = useModalState(false)
     const filterSheetState = useModalState(false)
     const optOutConfirmationState = useModalState(false)
-    const [searchFilter, setSearchFilter] = useState('')
+    const {
+        value: searchFilter,
+        setValue: setSearchFilter,
+        results: searchResults,
+        isLoading,
+    } = useGlobalSearch({
+        scopes: ['assets'],
+        debounceMs: SEARCH_DEBOUNCE_TIME_SHORT,
+    })
     const [assetForOptOut, setAssetForOptOut] =
         useState<Nullable<AssetWithAccountBalance>>(null)
     const hideZeroBalance = useAssetPreferencesStore(
@@ -129,28 +139,22 @@ export const useAccountAssetList = ({
 
     useEffect(() => {
         setSearchFilter('')
-    }, [account.address])
+    }, [account.address, setSearchFilter])
 
-    const debouncedSearchFilter = useDebouncedValue(searchFilter)
+    const matchingAssetIds = useMemo(
+        () => new Set(searchResults.assets.map(a => a.assetId)),
+        [searchResults.assets],
+    )
 
     const balances = useMemo(() => {
         if (!sortedBalances.length) {
             return []
         }
-        const searchTerm = debouncedSearchFilter.toLowerCase()
-        if (!searchTerm) {
+        if (!searchFilter) {
             return sortedBalances
         }
-
-        return sortedBalances.filter(asset => {
-            const assetInfo = assets?.get(asset.assetId)
-            return (
-                (assetInfo?.unitName?.toLowerCase().includes(searchTerm) ||
-                    assetInfo?.name?.toLowerCase().includes(searchTerm)) ??
-                false
-            )
-        })
-    }, [sortedBalances, debouncedSearchFilter, assets])
+        return sortedBalances.filter(b => matchingAssetIds.has(b.assetId))
+    }, [sortedBalances, searchFilter, matchingAssetIds])
 
     const logicalType = useAccountLogicalType(account.address)
     const isWatch = !logicalType || !isSigningLogicalType(logicalType)
@@ -270,7 +274,7 @@ export const useAccountAssetList = ({
 
     return {
         balances,
-        isPending,
+        isPending: isPending || isLoading,
         isWatch,
         hideZeroBalance,
         assetSortMode,

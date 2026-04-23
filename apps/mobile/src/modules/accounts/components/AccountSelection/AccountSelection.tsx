@@ -74,6 +74,11 @@ export const AccountSelection = ({
         accountMenuState.close()
     }, [accountMenuState])
 
+    const handleOpenSearch = useCallback(() => {
+        accountMenuState.close()
+        navigation.navigate('Search', { screen: 'SearchScreen' })
+    }, [accountMenuState, navigation])
+
     const handleAccountMenuDismissed = useCallback(() => {
         if (pendingSort.current) {
             pendingSort.current = false
@@ -107,6 +112,7 @@ export const AccountSelection = ({
                 onClose={accountMenuState.close}
                 onDismiss={handleAccountMenuDismissed}
                 onOpenSort={handleOpenSort}
+                onOpenSearch={handleOpenSearch}
                 onSelected={handleSelected}
                 onAddAccount={handleAddAccount}
                 headerContent={headerContent}

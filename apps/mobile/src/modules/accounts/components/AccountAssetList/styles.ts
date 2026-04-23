@@ -71,4 +71,7 @@ export const useStyles = makeStyles(theme => ({
     footer: {
         marginVertical: theme.spacing.md,
     },
+    loading: {
+        justifyContent: 'flex-start',
+    },
 }))
