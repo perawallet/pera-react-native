@@ -135,7 +135,7 @@ export const ViewContactScreen = () => {
                 </PWView>
             </PWView>
             {nfdName && (
-                <PWView style={styles.addressSection}>
+                <PWView style={[styles.addressSection, styles.nfdSection]}>
                     <PWText
                         variant='h4'
                         style={styles.addressLabel}

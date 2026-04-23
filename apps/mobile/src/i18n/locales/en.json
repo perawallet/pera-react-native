@@ -473,13 +473,15 @@
     },
     "contacts": {
         "edit_contact": {
-            "delete_confirm": "Are you sure you want to delete this contact?",
-            "delete": "Delete",
-            "save": "Save",
-            "are_you_sure": "Are you sure?",
             "name_label": "Name",
             "address_label": "Address",
-            "add_photo": "Add photo"
+            "add_photo": "Add photo",
+            "done": "Done",
+            "delete_this": "Delete this contact",
+            "remove_title": "Delete contact",
+            "remove_message": "Are you sure you want to delete this contact?",
+            "remove_confirm": "Yes, delete contact",
+            "remove_cancel": "Keep it"
         },
         "add_contact": {
             "duplicate_address_error": "Contact for this address already exists."

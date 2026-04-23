@@ -45,6 +45,9 @@ export const useStyles = makeStyles(theme => ({
     addressSection: {
         gap: theme.spacing.sm,
     },
+    nfdSection: {
+        marginTop: theme.spacing.xl,
+    },
     addressLabel: {
         color: theme.colors.textMain,
     },
