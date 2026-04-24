@@ -12,12 +12,14 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { Contact } from '@perawallet/wallet-core-contacts'
+import {
+    type Contact,
+    DuplicateAddressError,
+} from '@perawallet/wallet-core-contacts'
 import { useAddContactForm } from '../useAddContactForm'
 
 const saveContactMock = vi.fn()
 const setSelectedContactMock = vi.fn()
-const findContactsMock = vi.fn<() => Contact[]>(() => [])
 const goBackMock = vi.fn()
 
 vi.mock('@perawallet/wallet-core-contacts', async () => {
@@ -28,7 +30,6 @@ vi.mock('@perawallet/wallet-core-contacts', async () => {
         ...actual,
         useContacts: vi.fn(() => ({
             saveContact: saveContactMock,
-            findContacts: findContactsMock,
             setSelectedContact: setSelectedContactMock,
             contacts: [],
             deleteContact: vi.fn(),
@@ -89,7 +90,7 @@ vi.mock('../useContactForm', () => ({
 describe('useAddContactForm', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        findContactsMock.mockReturnValue([])
+        saveContactMock.mockReset()
         formState.isValid = false
     })
 
@@ -105,13 +106,10 @@ describe('useAddContactForm', () => {
         expect(setErrorMock).not.toHaveBeenCalled()
     })
 
-    it('surfaces a duplicate-address error when findContacts returns matches', () => {
-        const existing: Contact = {
-            id: 'existing',
-            name: 'Alice',
-            address: 'ALICE123',
-        }
-        findContactsMock.mockReturnValue([existing])
+    it('surfaces a duplicate-address error when saveContact throws DuplicateAddressError', () => {
+        saveContactMock.mockImplementation(() => {
+            throw new DuplicateAddressError('ALICE123')
+        })
         formState.isValid = true
 
         const { result } = renderHook(() => useAddContactForm())
@@ -121,7 +119,6 @@ describe('useAddContactForm', () => {
             result.current.save(newContact)
         })
 
-        expect(saveContactMock).not.toHaveBeenCalled()
         expect(goBackMock).not.toHaveBeenCalled()
         expect(setErrorMock).toHaveBeenCalledWith(
             'address',
@@ -131,7 +128,24 @@ describe('useAddContactForm', () => {
         )
     })
 
-    it('saves and navigates back when form is valid and no duplicates', () => {
+    it('rethrows non-DuplicateAddressError errors', () => {
+        saveContactMock.mockImplementation(() => {
+            throw new Error('unexpected failure')
+        })
+        formState.isValid = true
+
+        const { result } = renderHook(() => useAddContactForm())
+        const newContact: Contact = { name: 'Bob', address: 'BOB999' }
+
+        expect(() => {
+            act(() => {
+                result.current.save(newContact)
+            })
+        }).toThrow('unexpected failure')
+        expect(goBackMock).not.toHaveBeenCalled()
+    })
+
+    it('saves and navigates back when form is valid and save succeeds', () => {
         formState.isValid = true
 
         const { result } = renderHook(() => useAddContactForm())

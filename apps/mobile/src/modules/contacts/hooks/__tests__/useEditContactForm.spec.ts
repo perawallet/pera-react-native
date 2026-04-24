@@ -12,13 +12,15 @@
 
 import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { Contact } from '@perawallet/wallet-core-contacts'
+import {
+    type Contact,
+    DuplicateAddressError,
+} from '@perawallet/wallet-core-contacts'
 import { useEditContactForm } from '../useEditContactForm'
 
 const saveContactMock = vi.fn()
 const deleteContactMock = vi.fn()
 const setSelectedContactMock = vi.fn()
-const findContactsMock = vi.fn<(...args: unknown[]) => Contact[]>(() => [])
 const goBackMock = vi.fn()
 const replaceMock = vi.fn()
 
@@ -40,7 +42,6 @@ vi.mock('@perawallet/wallet-core-contacts', async () => {
             selectedContact,
             setSelectedContact: setSelectedContactMock,
             contacts: [],
-            findContacts: findContactsMock,
         })),
     }
 })
@@ -96,7 +97,7 @@ vi.mock('../useContactForm', () => ({
 describe('useEditContactForm', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        findContactsMock.mockReturnValue([])
+        saveContactMock.mockReset()
         formState.isValid = false
     })
 
@@ -144,10 +145,10 @@ describe('useEditContactForm', () => {
     })
 
     describe('duplicate-address guard', () => {
-        it('excludes the current contact when checking duplicates (self-edit succeeds)', () => {
-            // findContacts returns the contact being edited — its own id must be
-            // filtered out so saving without changing the address still works.
-            findContactsMock.mockReturnValue([selectedContact])
+        it('saves successfully when editing the same contact without changing the address', () => {
+            // saveContact's internal duplicate check excludes the contact
+            // being updated (same id), so saving without an address change
+            // should succeed.
             formState.isValid = true
 
             const { result } = renderHook(() => useEditContactForm())
@@ -161,13 +162,10 @@ describe('useEditContactForm', () => {
             expect(goBackMock).toHaveBeenCalled()
         })
 
-        it('blocks save when another contact already uses the target address', () => {
-            const otherContact: Contact = {
-                id: 'other-id',
-                name: 'Bob',
-                address: 'BOB999',
-            }
-            findContactsMock.mockReturnValue([otherContact])
+        it('blocks save and surfaces a form error when saveContact throws DuplicateAddressError', () => {
+            saveContactMock.mockImplementation(() => {
+                throw new DuplicateAddressError('BOB999')
+            })
             formState.isValid = true
 
             const { result } = renderHook(() => useEditContactForm())
@@ -185,7 +183,6 @@ describe('useEditContactForm', () => {
                     message: expect.any(String),
                 }),
             )
-            expect(saveContactMock).not.toHaveBeenCalled()
             expect(goBackMock).not.toHaveBeenCalled()
         })
     })

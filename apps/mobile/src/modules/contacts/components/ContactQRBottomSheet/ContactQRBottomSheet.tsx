@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
 import QRCode from 'react-native-qrcode-svg'
 import { useWindowDimensions } from 'react-native'
 import { useTheme } from '@rneui/themed'
@@ -43,11 +44,11 @@ export const ContactQRBottomSheet = ({
     // generous breathing room on both phones and tablets.
     const qrSize = width - theme.spacing['5xl'] * 2
 
-    const handleCopy = () => {
+    const handleCopy = useCallback(() => {
         if (contact) copyToClipboard(contact.address)
-    }
+    }, [contact, copyToClipboard])
 
-    const handleShare = async () => {
+    const handleShare = useCallback(async () => {
         if (!contact) return
         try {
             await shareText({
@@ -57,7 +58,7 @@ export const ContactQRBottomSheet = ({
         } catch {
             // User cancelled — ignore.
         }
-    }
+    }, [contact])
 
     return (
         <PWBottomSheet

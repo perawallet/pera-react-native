@@ -582,6 +582,13 @@
             "unsupported_url": "Unsupported URL: {{url}}"
         }
     },
+    "image_picker": {
+        "permission_title": "Photo library access needed",
+        "permission_body": "Pera needs permission to access your photo library so you can pick a contact avatar. Open Settings to enable it.",
+        "open_settings": {
+            "label": "Open Settings"
+        }
+    },
     "menu": {
         "cards": "Cards",
         "title": "Menu",

@@ -31,8 +31,6 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'center',
         color: theme.colors.textMain,
     },
-    // Uses the `body` typography variant at the callsite; overrides only
-    // the color + alignment.
     shortAddress: {
         color: theme.colors.textGrayLighter,
         textAlign: 'center',
@@ -59,7 +57,6 @@ export const useStyles = makeStyles(theme => ({
     addressTextWrapper: {
         flex: 1,
     },
-    // Uses the `body` typography variant at the callsite.
     fullAddress: {
         color: theme.colors.textMain,
     },

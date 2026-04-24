@@ -11,19 +11,26 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Contact, useContacts } from '@perawallet/wallet-core-contacts'
+import { useNavigation } from '@react-navigation/native'
+import {
+    DuplicateAddressError,
+    useContacts,
+} from '@perawallet/wallet-core-contacts'
 
 import { useLanguage } from '@hooks/useLanguage'
-import { useContactForm, UseContactFormResult } from './useContactForm'
+import { useContactForm } from './useContactForm'
+
+import type { ParamListBase } from '@react-navigation/native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { Contact } from '@perawallet/wallet-core-contacts'
+import type { UseContactFormResult } from './useContactForm'
 
 export type UseAddContactFormResult = UseContactFormResult & {
     save: (data: Contact) => void
 }
 
 export const useAddContactForm = (): UseAddContactFormResult => {
-    const { saveContact, findContacts, setSelectedContact } = useContacts()
+    const { saveContact, setSelectedContact } = useContacts()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { t } = useLanguage()
     const form = useContactForm(null)
@@ -32,25 +39,24 @@ export const useAddContactForm = (): UseAddContactFormResult => {
         (data: Contact) => {
             if (!form.isValid) return
 
-            const duplicates = findContacts({
-                keyword: data.address,
-                matchAddress: true,
-                matchName: false,
-                matchNFD: false,
-            })
-
-            if (duplicates.length) {
-                form.setError('address', {
-                    message: t('contacts.add_contact.duplicate_address_error'),
-                })
-                return
+            try {
+                saveContact(data)
+            } catch (e) {
+                if (e instanceof DuplicateAddressError) {
+                    form.setError('address', {
+                        message: t(
+                            'contacts.add_contact.duplicate_address_error',
+                        ),
+                    })
+                    return
+                }
+                throw e
             }
 
-            saveContact(data)
             setSelectedContact(null)
             navigation.goBack()
         },
-        [findContacts, form, t, saveContact, setSelectedContact, navigation],
+        [form, t, saveContact, setSelectedContact, navigation],
     )
 
     return useMemo(() => ({ ...form, save }), [form, save])

@@ -13,6 +13,7 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { Contact } from '../../models'
+import { DuplicateAddressError } from '../../errors'
 
 const registerStoreMock = vi.fn()
 
@@ -65,6 +66,56 @@ describe('ContactsStore', () => {
 
         expect(result.current.contacts).toHaveLength(1)
         expect(result.current.contacts[0].id).toBeTruthy()
+    })
+
+    test('saveContact throws DuplicateAddressError when another contact uses that address', async () => {
+        const { useContactsStore } = await import('../index')
+        const { result } = renderHook(() => useContactsStore())
+
+        act(() => {
+            result.current.saveContact({
+                id: 'alice-id',
+                name: 'Alice',
+                address: 'SHARED_ADDRESS',
+            })
+        })
+
+        expect(() =>
+            result.current.saveContact({
+                id: 'bob-id',
+                name: 'Bob',
+                address: 'SHARED_ADDRESS',
+            }),
+        ).toThrow(DuplicateAddressError)
+        // Original contact unchanged.
+        expect(result.current.contacts).toHaveLength(1)
+        expect(result.current.contacts[0]?.name).toBe('Alice')
+    })
+
+    test('saveContact allows updating the same contact with its own address', async () => {
+        const { useContactsStore } = await import('../index')
+        const { result } = renderHook(() => useContactsStore())
+
+        act(() => {
+            result.current.saveContact({
+                id: 'alice-id',
+                name: 'Alice',
+                address: 'SHARED_ADDRESS',
+            })
+        })
+
+        act(() => {
+            // Same id, same address, new name — should succeed (it's the same
+            // row being updated, not a new duplicate).
+            result.current.saveContact({
+                id: 'alice-id',
+                name: 'Alice Updated',
+                address: 'SHARED_ADDRESS',
+            })
+        })
+
+        expect(result.current.contacts).toHaveLength(1)
+        expect(result.current.contacts[0]?.name).toBe('Alice Updated')
     })
 
     test('saveContact updates an existing contact by id', async () => {
