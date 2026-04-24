@@ -165,13 +165,14 @@ export const ContactForm = <T extends FieldValues>({
                             editable={Boolean(onAddressInputChange)}
                             autoCapitalize='none'
                             autoCorrect={false}
-                            multiline
                             rightIcon={
                                 onAddressInputChange ? (
-                                    <PWIcon
-                                        name='camera'
-                                        onPress={handleOpenScanner}
-                                    />
+                                    <PWView style={styles.scanIconWrapper}>
+                                        <PWIcon
+                                            name='camera'
+                                            onPress={handleOpenScanner}
+                                        />
+                                    </PWView>
                                 ) : undefined
                             }
                         />

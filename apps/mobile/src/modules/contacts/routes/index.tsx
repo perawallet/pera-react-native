@@ -19,6 +19,7 @@ import { NavigationHeader } from '@components/NavigationHeader'
 import { ContactListScreen } from '@modules/contacts/screens/ContactListScreen'
 import { ViewContactScreen } from '@modules/contacts/screens/ViewContactScreen'
 import { EditContactScreen } from '@modules/contacts/screens/EditContactScreen'
+import { AddContactScreen } from '@modules/contacts/screens/AddContactScreen'
 import { fullScreenLayout } from '@layouts/index'
 import { screenListeners } from '@routes/listeners'
 
@@ -71,7 +72,7 @@ export const ContactsStackNavigator = () => {
                 options={{
                     title: 'screens.add_contact',
                 }}
-                component={EditContactScreen}
+                component={AddContactScreen}
             />
         </ContactsStack.Navigator>
     )

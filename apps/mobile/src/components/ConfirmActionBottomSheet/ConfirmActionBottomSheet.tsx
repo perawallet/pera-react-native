@@ -77,7 +77,12 @@ export const ConfirmActionBottomSheet = ({
                 />
             )}
             <PWText variant='h3'>{title}</PWText>
-            <PWText style={styles.message}>{message}</PWText>
+            <PWText
+                variant='body'
+                style={styles.message}
+            >
+                {message}
+            </PWText>
             <PWView style={styles.actions}>
                 <PWButton
                     variant={confirmVariant}
