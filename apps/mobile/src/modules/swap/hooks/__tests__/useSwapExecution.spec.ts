@@ -66,20 +66,39 @@ vi.mock('@perawallet/wallet-core-signing', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-blockchain', () => ({
-    useTransactionEncoder: () => ({
-        decodeTransaction: mockDecodeTransaction,
-        decodeSignedTransaction: mockDecodeSignedTransaction,
-        encodeSignedTransactions: mockEncodeSignedTransactions,
-    }),
-    useAlgorandClient: () => ({
-        client: {
-            algod: {
-                sendRawTransaction: mockSendRawTransaction,
+vi.mock('@perawallet/wallet-core-blockchain', () => {
+    class MockAlgodError extends Error {
+        constructor(
+            public readonly code: string,
+            public readonly params: Record<string, unknown> = {},
+            public readonly originalError?: Error,
+        ) {
+            super(`[algod:${code}] ${originalError?.message ?? code}`)
+            this.name = 'AlgodError'
+        }
+    }
+    return {
+        useTransactionEncoder: () => ({
+            decodeTransaction: mockDecodeTransaction,
+            decodeSignedTransaction: mockDecodeSignedTransaction,
+            encodeSignedTransactions: mockEncodeSignedTransactions,
+        }),
+        useAlgorandClient: () => ({
+            client: {
+                algod: {
+                    sendRawTransaction: mockSendRawTransaction,
+                },
             },
-        },
-    }),
-}))
+        }),
+        AlgodError: MockAlgodError,
+        translateError: (err: unknown) =>
+            new MockAlgodError(
+                'unknown_node_error',
+                { raw: err instanceof Error ? err.message : String(err) },
+                err instanceof Error ? err : undefined,
+            ),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
     usePrepareTransactionsMutation: () => ({
