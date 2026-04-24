@@ -12,6 +12,8 @@
 
 import { makeStyles } from '@rneui/themed'
 
+const LOCKOUT_ICON_SIZE = 80
+
 export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
@@ -30,8 +32,8 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'center',
     },
     lockoutIconContainer: {
-        width: 80,
-        height: 80,
+        width: LOCKOUT_ICON_SIZE,
+        height: LOCKOUT_ICON_SIZE,
         borderRadius: theme.spacing.sm,
         backgroundColor: theme.colors.alertNegative,
         justifyContent: 'center',

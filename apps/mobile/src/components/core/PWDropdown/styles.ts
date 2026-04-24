@@ -12,6 +12,8 @@
 
 import { makeStyles } from '@rneui/themed'
 
+const DROPDOWN_MIN_WIDTH = 200
+
 export const useStyles = makeStyles(theme => ({
     overlay: {
         backgroundColor: 'transparent',
@@ -26,9 +28,9 @@ export const useStyles = makeStyles(theme => ({
         borderRadius: theme.spacing.xl,
         paddingVertical: theme.spacing.sm,
         paddingHorizontal: theme.spacing.md,
-        minWidth: 200,
+        minWidth: DROPDOWN_MIN_WIDTH,
         ...theme.shadows.md,
-        borderWidth: 1,
+        borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGray,
     },
     item: {

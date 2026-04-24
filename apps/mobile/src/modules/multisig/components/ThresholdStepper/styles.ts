@@ -20,11 +20,11 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xs,
     },
     button: {
-        width: 48,
-        height: 48,
+        width: theme.spacing['3xl'],
+        height: theme.spacing['3xl'],
     },
     valueContainer: {
-        minWidth: 48,
+        minWidth: theme.spacing['3xl'],
         alignItems: 'center',
         justifyContent: 'center',
     },

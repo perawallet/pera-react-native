@@ -28,8 +28,7 @@ import {
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
-import { useLanguage } from '@hooks/useLanguage'
-import { config } from '@perawallet/wallet-core-config'
+import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { logger } from '@perawallet/wallet-core-shared'
 
 export const useTransactionProcessingScreen = () => {
@@ -56,7 +55,7 @@ export const useTransactionProcessingScreen = () => {
     }, [selectedAssetId, assets])
     const selectedAccount = useSelectedAccount()
     const { showToast } = useToast()
-    const { t } = useLanguage()
+    const { getMessage } = useAlgodErrorMessage()
     const { invalidate: invalidateAccountBalances } =
         useAccountBalancesInvalidator()
 
@@ -90,12 +89,11 @@ export const useTransactionProcessingScreen = () => {
             })
             .catch(error => {
                 logger.error('Transaction failed', { error })
+                const { title, body } = getMessage(error)
                 showToast(
                     {
-                        title: t('transactions.processing_error.title'),
-                        body: config.debugEnabled
-                            ? `${error}`
-                            : t('transactions.processing_error.body'),
+                        title,
+                        body,
                         type: 'error',
                     },
                     {

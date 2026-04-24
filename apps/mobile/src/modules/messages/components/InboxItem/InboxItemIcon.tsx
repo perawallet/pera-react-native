@@ -34,7 +34,7 @@ export const InboxItemIcon = ({ item }: InboxItemIconProps) => {
                     <PWIcon
                         name='inbox'
                         variant='secondary'
-                        size='lg'
+                        size='md'
                     />
                 )
             }
@@ -51,7 +51,7 @@ export const InboxItemIcon = ({ item }: InboxItemIconProps) => {
                     <PWIcon
                         name='transactions/group'
                         variant='secondary'
-                        size='lg'
+                        size='md'
                     />
                 </PWView>
             )
@@ -61,7 +61,7 @@ export const InboxItemIcon = ({ item }: InboxItemIconProps) => {
                     <PWIcon
                         name='edit-pen'
                         variant='secondary'
-                        size='lg'
+                        size='md'
                     />
                 </PWView>
             )
@@ -71,7 +71,7 @@ export const InboxItemIcon = ({ item }: InboxItemIconProps) => {
                     <PWIcon
                         name='inbox'
                         variant='secondary'
-                        size='lg'
+                        size='md'
                     />
                 </PWView>
             )

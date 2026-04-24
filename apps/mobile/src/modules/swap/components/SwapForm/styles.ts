@@ -47,7 +47,7 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         borderRadius: theme.spacing.xxl,
-        borderWidth: 1,
+        borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGray,
         backgroundColor: theme.colors.background,
     },
@@ -57,7 +57,7 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
     },
     maxDivider: {
-        width: 1,
+        width: theme.borders.sm,
         alignSelf: 'stretch',
         backgroundColor: theme.colors.layerGray,
         marginVertical: theme.spacing.sm,

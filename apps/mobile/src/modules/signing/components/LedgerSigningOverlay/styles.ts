@@ -13,6 +13,9 @@
 import { makeStyles } from '@rneui/themed'
 import { getTypography } from '@theme/typography'
 
+const LOTTIE_WIDTH = 164
+const LOTTIE_HEIGHT = 48
+
 export const useStyles = makeStyles(theme => ({
     container: {
         padding: theme.spacing.xl,
@@ -24,8 +27,8 @@ export const useStyles = makeStyles(theme => ({
     },
     lottie: {
         // Matches Android dialog_ledger_loading.xml (164dp × 48dp).
-        width: 164,
-        height: 48,
+        width: LOTTIE_WIDTH,
+        height: LOTTIE_HEIGHT,
         marginVertical: theme.spacing.lg,
     },
     message: {

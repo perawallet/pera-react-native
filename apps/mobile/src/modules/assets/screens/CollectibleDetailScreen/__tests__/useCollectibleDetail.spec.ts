@@ -277,7 +277,7 @@ describe('useCollectibleDetail', () => {
         expect(mockShowToast).toHaveBeenCalledWith(
             expect.objectContaining({
                 type: 'error',
-                body: 'signing rejected',
+                body: expect.stringContaining('errors.algod'),
             }),
         )
         expect(mockGoBack).not.toHaveBeenCalled()

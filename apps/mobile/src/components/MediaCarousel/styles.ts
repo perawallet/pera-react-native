@@ -13,6 +13,9 @@
 import { makeStyles } from '@rneui/themed'
 import { ScaledSize } from 'react-native'
 
+const DOT_SIZE = 6
+const DOT_RADIUS = 3
+
 export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
     const maxWidth = dimensions.width - 2 * theme.spacing.lg
     const maxHeight = dimensions.width - 2 * theme.spacing.lg
@@ -83,9 +86,9 @@ export const useStyles = makeStyles((theme, dimensions: ScaledSize) => {
             marginTop: theme.spacing.sm,
         },
         dot: {
-            width: 6,
-            height: 6,
-            borderRadius: 3,
+            width: DOT_SIZE,
+            height: DOT_SIZE,
+            borderRadius: DOT_RADIUS,
             backgroundColor: theme.colors.layerGrayLighter,
         },
         dotActive: {
