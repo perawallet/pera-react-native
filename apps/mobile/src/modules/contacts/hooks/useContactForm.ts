@@ -11,18 +11,21 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-    Control,
-    FieldErrors,
-    useForm,
-    UseFormHandleSubmit,
-    UseFormSetError,
-} from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Contact, contactSchema } from '@perawallet/wallet-core-contacts'
+import { contactSchema } from '@perawallet/wallet-core-contacts'
 
 import { useImagePicker } from '@hooks/useImagePicker'
 import { useNfdResolve } from '@hooks/useNfdResolve'
+
+import type {
+    Control,
+    FieldErrors,
+    UseFormHandleSubmit,
+    UseFormSetError,
+} from 'react-hook-form'
+import type { Contact } from '@perawallet/wallet-core-contacts'
+import type { PermissionDeniedState } from '@hooks/useImagePicker'
 
 export type NfdState = {
     resolvedAddress: string
@@ -42,6 +45,11 @@ export type UseContactFormResult = {
     nfd: NfdState
     onAddressInputChange: (text: string) => void
     onPickImage: () => Promise<void>
+    /**
+     * State + handlers for the "photo library permission denied" bottom
+     * sheet. Pair with `<PhotoPermissionDeniedSheet />` at the screen root.
+     */
+    permissionDenied: PermissionDeniedState
 }
 
 /**
@@ -53,7 +61,7 @@ export type UseContactFormResult = {
 export const useContactForm = (
     initialContact: Contact | null,
 ): UseContactFormResult => {
-    const { pickFromGallery } = useImagePicker()
+    const { pickFromGallery, permissionDenied } = useImagePicker()
 
     const {
         control,
@@ -79,6 +87,7 @@ export const useContactForm = (
 
     useEffect(() => {
         if (isNfdResolved) {
+            setRawAddressInput(resolvedAddress)
             setValue('address', resolvedAddress, { shouldValidate: true })
         }
     }, [isNfdResolved, resolvedAddress, setValue])
@@ -116,6 +125,7 @@ export const useContactForm = (
             nfd,
             onAddressInputChange,
             onPickImage,
+            permissionDenied,
         }),
         [
             control,
@@ -128,6 +138,7 @@ export const useContactForm = (
             nfd,
             onAddressInputChange,
             onPickImage,
+            permissionDenied,
         ],
     )
 }
