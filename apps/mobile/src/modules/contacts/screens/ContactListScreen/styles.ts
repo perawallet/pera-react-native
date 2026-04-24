@@ -46,49 +46,13 @@ export const useStyles = makeStyles((theme, props: StyleProps = {}) => {
         contactName: {
             color: theme.colors.textMain,
         },
-        // Uses the `body` typography variant at the callsite; overrides only
-        // the color.
         contactAddress: {
             color: theme.colors.textGrayLighter,
-        },
-        noMatch: {
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: theme.spacing.sm,
-            paddingHorizontal: theme.spacing.xl,
-        },
-        noMatchBody: {
-            color: theme.colors.textGray,
-            textAlign: 'center',
-        },
-        emptyState: {
-            flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
-            paddingHorizontal: theme.spacing.xl,
-        },
-        emptyIconContainer: {
-            width: theme.spacing['5xl'],
-            height: theme.spacing['5xl'],
-            borderRadius: theme.spacing['3xl'],
-            backgroundColor: theme.colors.layerGrayLighter,
-            alignItems: 'center',
-            justifyContent: 'center',
-            marginBottom: theme.spacing.xl,
-        },
-        emptyTitle: {
-            textAlign: 'center',
-            marginBottom: theme.spacing.sm,
-        },
-        emptyBody: {
-            color: theme.colors.textGray,
-            textAlign: 'center',
-            marginBottom: theme.spacing.xl,
         },
         emptyButton: {
             minHeight: theme.spacing['3xl'],
             borderRadius: theme.borderRadius.xs,
+            marginTop: theme.spacing.xl,
         },
     }
 })
