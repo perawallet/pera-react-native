@@ -26,8 +26,7 @@ import {
     useTransactionSendFlow,
 } from '@perawallet/wallet-core-transactions'
 import type { MessagesStackParamList } from '@modules/messages/routes/types'
-import { useLanguage } from '@hooks/useLanguage'
-import { config } from '@perawallet/wallet-core-config'
+import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import {
     useAccountBalancesInvalidator,
     useFindAccountByAddress,
@@ -46,7 +45,7 @@ export const useClaimProcessingScreen = () => {
     const { assetRequests, accountAddress, setOnFinished } = useClaimAssets()
     const account = useFindAccountByAddress(accountAddress ?? '')
     const { showToast } = useToast()
-    const { t } = useLanguage()
+    const { getMessage } = useAlgodErrorMessage()
 
     const { remove: removeArc59Queries } = useArc59Invalidator()
     const { invalidate: invalidateInboxQueries } = useInboxInvalidator()
@@ -87,12 +86,11 @@ export const useClaimProcessingScreen = () => {
                 })
             })
             .catch(error => {
+                const { title, body } = getMessage(error)
                 showToast(
                     {
-                        title: t('arc59.processing_error.title'),
-                        body: config.debugEnabled
-                            ? `${error}`
-                            : t('arc59.processing_error.body'),
+                        title,
+                        body,
                         type: 'error',
                     },
                     {

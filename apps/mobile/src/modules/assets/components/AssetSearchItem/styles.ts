@@ -69,7 +69,7 @@ export const useStyles = makeStyles(theme => ({
         marginLeft: theme.spacing.sm,
     },
     separator: {
-        height: 1,
+        height: theme.borders.sm,
         backgroundColor: theme.colors.layerGrayLighter,
         marginLeft: ICON_SIZE + theme.spacing.sm + theme.spacing.lg,
     },

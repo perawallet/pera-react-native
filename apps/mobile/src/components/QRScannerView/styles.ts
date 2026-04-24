@@ -13,6 +13,8 @@
 import { makeStyles } from '@rneui/themed'
 import { EdgeInsets } from 'react-native-safe-area-context'
 
+const OVERLAY_TOP_OFFSET = -100
+
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
     return {
         container: {
@@ -32,7 +34,7 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             alignItems: 'center',
             zIndex: theme.zIndex.layer1,
             position: 'absolute',
-            top: -100,
+            top: OVERLAY_TOP_OFFSET,
             bottom: 0,
             left: 0,
             right: 0,

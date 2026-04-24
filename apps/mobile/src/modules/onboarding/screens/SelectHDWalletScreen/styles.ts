@@ -54,7 +54,7 @@ export const useStyles = makeStyles(theme => ({
     },
     walletSubtitle: {
         color: theme.colors.textGray,
-        marginTop: 2,
+        marginTop: theme.spacing.xxs,
     },
     balanceContainer: {
         gap: theme.spacing.xs,

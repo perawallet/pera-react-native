@@ -13,6 +13,8 @@
 import { makeStyles } from '@rneui/themed'
 import { CurrencyDisplayProps } from './CurrencyDisplay'
 
+const SKELETON_MAX_WIDTH = 150
+
 export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
     const variantSizes = {
         h1: theme.spacing.xxl,
@@ -34,7 +36,7 @@ export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
             backgroundColor: 'transparent',
         },
         skeleton: {
-            maxWidth: 150,
+            maxWidth: SKELETON_MAX_WIDTH,
             height: size,
         },
         textContainer: {
