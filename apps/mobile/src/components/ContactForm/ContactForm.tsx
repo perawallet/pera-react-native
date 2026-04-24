@@ -40,7 +40,6 @@ type ContactFormProps<T extends FieldValues> = {
     control: Control<T>
     address: string
     nameLabel: string
-    namePlaceholder?: string
     addressLabel: string
     nameError?: string
     addressError?: string
@@ -51,19 +50,12 @@ type ContactFormProps<T extends FieldValues> = {
     imageUri?: string
     onPickImage?: () => void
     children?: ReactNode
-    /**
-     * Accepted for call-site compatibility with screens not yet migrated
-     * to the new form. Editability is derived internally from whether
-     * `onAddressInputChange` is provided.
-     */
-    isAddressEditable?: boolean
 }
 
 export const ContactForm = <T extends FieldValues>({
     control,
     address,
     nameLabel,
-    namePlaceholder,
     addressLabel,
     nameError,
     addressError,
@@ -145,7 +137,6 @@ export const ContactForm = <T extends FieldValues>({
                     render={({ field: { onChange, onBlur, value } }) => (
                         <PWInput
                             label={nameLabel}
-                            placeholder={namePlaceholder}
                             value={value ?? ''}
                             onChangeText={onChange}
                             onBlur={onBlur}
@@ -174,13 +165,14 @@ export const ContactForm = <T extends FieldValues>({
                             editable={Boolean(onAddressInputChange)}
                             autoCapitalize='none'
                             autoCorrect={false}
-                            multiline
                             rightIcon={
                                 onAddressInputChange ? (
-                                    <PWIcon
-                                        name='camera'
-                                        onPress={handleOpenScanner}
-                                    />
+                                    <PWView style={styles.scanIconWrapper}>
+                                        <PWIcon
+                                            name='camera'
+                                            onPress={handleOpenScanner}
+                                        />
+                                    </PWView>
                                 ) : undefined
                             }
                         />

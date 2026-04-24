@@ -12,21 +12,25 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
-    bottomSheetActions: {
-        gap: theme.spacing.md,
-        width: '100%',
-    },
-    bottomSheetMessage: {
-        textAlign: 'center',
-        marginBottom: theme.spacing.md,
-    },
-    bottomSheetIcon: {
-        marginVertical: theme.spacing.md,
-    },
-    bottomSheetContainer: {
-        padding: theme.spacing.xl,
-        gap: theme.spacing.lg,
-        alignItems: 'center',
-    },
-}))
+type StyleProps = {
+    footerPaddingBottom: number
+}
+
+export const useStyles = makeStyles(
+    (theme, { footerPaddingBottom }: StyleProps) => ({
+        flex: {
+            flex: 1,
+        },
+        footer: {
+            paddingHorizontal: theme.spacing.xl,
+            paddingTop: theme.spacing.md,
+            paddingBottom: footerPaddingBottom,
+            backgroundColor: theme.colors.background,
+        },
+        footerButton: {
+            minHeight: theme.spacing['3xl'],
+            borderRadius: theme.borderRadius.xs,
+            opacity: 1,
+        },
+    }),
+)
