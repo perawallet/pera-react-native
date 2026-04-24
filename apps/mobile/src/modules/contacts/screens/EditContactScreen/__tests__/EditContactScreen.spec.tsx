@@ -31,7 +31,14 @@ vi.mock('@perawallet/wallet-core-contacts', async () => ({
 }))
 
 vi.mock('@hooks/useImagePicker', () => ({
-    useImagePicker: () => ({ pickFromGallery: vi.fn() }),
+    useImagePicker: () => ({
+        pickFromGallery: vi.fn(),
+        permissionDenied: {
+            isVisible: false,
+            close: vi.fn(),
+            openSettings: vi.fn(),
+        },
+    }),
 }))
 
 vi.mock('@hookform/resolvers/zod', () => ({
