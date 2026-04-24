@@ -476,6 +476,7 @@
             "name_label": "Name",
             "address_label": "Address",
             "add_photo": "Add photo",
+            "add_contact": "Add contact",
             "done": "Done",
             "delete_this": "Delete this contact",
             "remove_title": "Delete contact",

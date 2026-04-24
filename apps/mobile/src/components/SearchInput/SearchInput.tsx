@@ -13,8 +13,11 @@
 import { forwardRef } from 'react'
 import { InputProps, useTheme } from '@rneui/themed'
 
-import { PWIcon, PWInput, type PWInputRef } from '@components/core'
+import { PWInput, PWTouchableIcon } from '@components/core'
+import { PWIcon } from '@components/core/PWIcon'
 import { useStyles } from './styles'
+
+import type { PWInputRef } from '@components/core'
 
 export type SearchInputProps = {} & Omit<
     InputProps,
@@ -28,6 +31,8 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(
         const styles = useStyles()
         const { theme } = useTheme()
 
+        const hasValue = !!props.value && String(props.value).length > 0
+
         return (
             <PWInput
                 ref={ref}
@@ -39,11 +44,20 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(
                 leftIcon={
                     <PWIcon
                         name='magnifying-glass'
-                        variant='secondary'
+                        variant='primary'
                     />
                 }
+                rightIcon={
+                    hasValue ? (
+                        <PWTouchableIcon
+                            name='cross'
+                            variant='primary'
+                            size='md'
+                            onPress={() => props.onChangeText?.('')}
+                        />
+                    ) : undefined
+                }
                 // @ts-expect-error - passed through to RN Input
-                clearButtonMode='while-editing'
                 selectTextOnFocus
                 autoComplete='off'
                 autoCapitalize='none'

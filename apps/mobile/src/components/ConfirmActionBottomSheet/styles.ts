@@ -20,13 +20,13 @@ export const useStyles = makeStyles(theme => ({
     icon: {
         marginBottom: theme.spacing.lg,
     },
+    // Uses the `body` typography variant at the callsite; overrides only
+    // the color + alignment + surrounding spacing.
     message: {
         textAlign: 'center',
         paddingHorizontal: theme.spacing.lg,
         paddingVertical: theme.spacing.md,
         color: theme.colors.textGray,
-        fontSize: 15,
-        lineHeight: 24,
     },
     actions: {
         width: '100%',
