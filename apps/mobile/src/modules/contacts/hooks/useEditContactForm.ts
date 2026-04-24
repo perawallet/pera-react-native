@@ -11,13 +11,20 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { Contact, useContacts } from '@perawallet/wallet-core-contacts'
+import { useNavigation } from '@react-navigation/native'
+import {
+    DuplicateAddressError,
+    useContacts,
+} from '@perawallet/wallet-core-contacts'
 
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
-import { useContactForm, UseContactFormResult } from './useContactForm'
+import { useContactForm } from './useContactForm'
+
+import type { ParamListBase } from '@react-navigation/native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { Contact } from '@perawallet/wallet-core-contacts'
+import type { UseContactFormResult } from './useContactForm'
 
 export type UseEditContactFormResult = UseContactFormResult & {
     selectedContact: Contact | null
@@ -31,13 +38,8 @@ export type UseEditContactFormResult = UseContactFormResult & {
 }
 
 export const useEditContactForm = (): UseEditContactFormResult => {
-    const {
-        saveContact,
-        deleteContact,
-        findContacts,
-        selectedContact,
-        setSelectedContact,
-    } = useContacts()
+    const { saveContact, deleteContact, selectedContact, setSelectedContact } =
+        useContacts()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { t } = useLanguage()
     const confirmDelete = useModalState()
@@ -47,27 +49,26 @@ export const useEditContactForm = (): UseEditContactFormResult => {
         (data: Contact) => {
             if (!form.isValid) return
 
-            const duplicates = findContacts({
-                keyword: data.address,
-                matchAddress: true,
-                matchName: false,
-                matchNFD: false,
-            }).filter(c => c.id !== data.id)
-
-            if (duplicates.length) {
-                form.setError('address', {
-                    message: t('contacts.add_contact.duplicate_address_error'),
-                })
-                return
+            try {
+                saveContact(data)
+            } catch (e) {
+                if (e instanceof DuplicateAddressError) {
+                    form.setError('address', {
+                        message: t(
+                            'contacts.add_contact.duplicate_address_error',
+                        ),
+                    })
+                    return
+                }
+                throw e
             }
 
-            saveContact(data)
             // Keep the saved contact as selected so ViewContact re-renders
             // with the updated values when we pop back.
             setSelectedContact(data)
             navigation.goBack()
         },
-        [form, findContacts, t, saveContact, setSelectedContact, navigation],
+        [form, t, saveContact, setSelectedContact, navigation],
     )
 
     const removeContact = useCallback(() => {
