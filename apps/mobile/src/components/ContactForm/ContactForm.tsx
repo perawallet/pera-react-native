@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { type ReactNode, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useRef, useState } from 'react'
 import { ActivityIndicator } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
@@ -90,13 +90,19 @@ export const ContactForm = <T extends FieldValues>({
         />
     )
 
-    const handleScan = (url: string) => {
-        const scanned = extractAddressFromScannedUrl(url)
-        setScannerVisible(false)
-        if (scanned) {
-            onAddressInputChange?.(scanned)
-        }
-    }
+    const handleScan = useCallback(
+        (url: string) => {
+            const scanned = extractAddressFromScannedUrl(url)
+            setScannerVisible(false)
+            if (scanned) {
+                onAddressInputChange?.(scanned)
+            }
+        },
+        [onAddressInputChange],
+    )
+
+    const handleOpenScanner = useCallback(() => setScannerVisible(true), [])
+    const handleCloseScanner = useCallback(() => setScannerVisible(false), [])
 
     return (
         <PWScrollView
@@ -173,7 +179,7 @@ export const ContactForm = <T extends FieldValues>({
                                 onAddressInputChange ? (
                                     <PWIcon
                                         name='camera'
-                                        onPress={() => setScannerVisible(true)}
+                                        onPress={handleOpenScanner}
                                     />
                                 ) : undefined
                             }
@@ -211,7 +217,7 @@ export const ContactForm = <T extends FieldValues>({
                 <QRScannerView
                     isVisible={scannerVisible}
                     onSuccess={handleScan}
-                    onClose={() => setScannerVisible(false)}
+                    onClose={handleCloseScanner}
                     animationType='slide'
                     title={t('address_entry.scan_qr')}
                 />
