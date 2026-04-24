@@ -7,9 +7,9 @@ const DIRECTIVE_RE =
     /(^|[^\w-])(guardrails-ignore-next-line|guardrails-ignore-file)(?=[\s:]|$)/m
 
 function parseRuleIds(raw: string): string[] {
-    // Strip trailing block-comment (`*/`) or HTML-comment (`-->`) terminators
-    // so they don't leak into the last rule id.
-    const cleaned = raw.replace(/(\*\/|-->)\s*$/, '')
+    // Strip trailing block-comment (`*/`) or HTML-comment (`-->` / `--!>`)
+    // terminators so they don't leak into the last rule id.
+    const cleaned = raw.replace(/(\*\/|--!?>)\s*$/, '')
     return cleaned
         .split(/[\s,]+/)
         .map(s => s.trim())

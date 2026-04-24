@@ -23,11 +23,11 @@ pnpm lint:guardrails:json     # machine-readable JSON
 
 ## Environment overrides
 
-| Variable                     | Effect                                                                                                                                                 |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Variable                     | Effect                                                                                                                                                     |
+| ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `GUARDRAILS_FORCE_WORKERS=1` | Bypass the file-count threshold and always use the worker pool. Useful for benchmarking and for verifying the worker path end-to-end in integration tests. |
-| `GUARDRAILS_WORKERS=<N>`     | Cap the worker pool at `N` (positive integer). Otherwise the count is derived from CPU budget, file count, and `MAX_WORKERS`.                          |
-| `NO_COLOR=1`                 | Disable ANSI coloring in human output. Respected automatically when stdout is not a TTY.                                                               |
+| `GUARDRAILS_WORKERS=<N>`     | Cap the worker pool at `N` (positive integer). Otherwise the count is derived from CPU budget, file count, and `MAX_WORKERS`.                              |
+| `NO_COLOR=1`                 | Disable ANSI coloring in human output. Respected automatically when stdout is not a TTY.                                                                   |
 
 ## Exit codes
 
@@ -153,10 +153,10 @@ Target: **~1s, hard ceiling 2s** for the full codebase.
 
 **Current measurements** (Apple Silicon, cold):
 
-| Mode | Wall clock |
-| ---- | ---------- |
-| In-process (default, 3 simple checks, ~1800 files) | ~1.3s |
-| Workers forced (`GUARDRAILS_FORCE_WORKERS=1`, 4 workers) | ~1.6s |
+| Mode                                                     | Wall clock |
+| -------------------------------------------------------- | ---------- |
+| In-process (default, 3 simple checks, ~1800 files)       | ~1.3s      |
+| Workers forced (`GUARDRAILS_FORCE_WORKERS=1`, 4 workers) | ~1.6s      |
 
 Force-worker wall-clock improves dramatically once per-worker work dominates spawn cost (heavier checks, larger codebase).
 
