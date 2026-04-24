@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { forwardRef } from 'react'
+import { forwardRef, useCallback, useState } from 'react'
 import { InputProps, useTheme } from '@rneui/themed'
 
 import { PWInput, PWTouchableIcon } from '@components/core'
@@ -30,21 +30,40 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(
     (props, ref) => {
         const styles = useStyles()
         const { theme } = useTheme()
+        const { onChangeText, value } = props
+        const [internalValue, setInternalValue] = useState('')
+        const currentValue = value ?? internalValue
+        const hasValue = !!currentValue && String(currentValue).length > 0
 
-        const hasValue = !!props.value && String(props.value).length > 0
+        const handleChangeText = useCallback(
+            (text: string) => {
+                setInternalValue(text)
+                onChangeText?.(text)
+            },
+            [onChangeText],
+        )
+
+        const handleClear = useCallback(() => {
+            setInternalValue('')
+            onChangeText?.('')
+        }, [onChangeText])
 
         return (
             <PWInput
                 ref={ref}
                 {...props}
-                inputContainerStyle={[props.inputContainerStyle, styles.search]}
+                value={currentValue}
+                onChangeText={handleChangeText}
+                containerStyle={[styles.container, props.containerStyle]}
+                inputContainerStyle={[styles.search, props.inputContainerStyle]}
                 inputStyle={styles.input}
                 placeholder={props.placeholder ?? 'Search'}
                 placeholderTextColor={theme.colors.textGray}
+                renderErrorMessage={false}
                 leftIcon={
                     <PWIcon
                         name='magnifying-glass'
-                        variant='primary'
+                        variant='secondary'
                     />
                 }
                 rightIcon={
@@ -53,10 +72,11 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(
                             name='cross'
                             variant='primary'
                             size='md'
-                            onPress={() => props.onChangeText?.('')}
+                            onPress={handleClear}
                         />
                     ) : undefined
                 }
+                rightIconContainerStyle={styles.rightIconContainer}
                 // @ts-expect-error - passed through to RN Input
                 selectTextOnFocus
                 autoComplete='off'

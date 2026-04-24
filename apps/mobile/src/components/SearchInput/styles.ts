@@ -14,12 +14,22 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
     return {
+        container: {
+            paddingHorizontal: 0,
+        },
         search: {
-            borderRadius: theme.spacing.sm,
-            paddingHorizontal: theme.spacing.sm,
+            backgroundColor: theme.colors.layerGrayLighter,
+            borderRadius: theme.borderRadius.xs,
+            paddingHorizontal: theme.spacing.md,
         },
         input: {
-            color: theme.colors.textGray,
+            color: theme.colors.textMain,
+            paddingVertical: 0,
+        },
+        rightIconContainer: {
+            margin: 0,
+            marginLeft: theme.spacing.sm,
+            marginRight: 0,
         },
     }
 })

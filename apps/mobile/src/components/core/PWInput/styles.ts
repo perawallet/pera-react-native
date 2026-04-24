@@ -23,7 +23,6 @@ export const useStyles = makeStyles(
         inputContainer: {
             paddingHorizontal: theme.spacing.md,
             borderRadius: theme.borderRadius.xs,
-            borderBottomWidth: 0,
         },
         input: { ...getTypography(theme, variant), lineHeight: undefined },
         label: {},

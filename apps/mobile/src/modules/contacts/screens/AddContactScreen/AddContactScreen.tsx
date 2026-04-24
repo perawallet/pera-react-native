@@ -16,6 +16,7 @@ import { useTheme } from '@rneui/themed'
 
 import { PWButton, PWView } from '@components/core'
 import { ContactForm } from '@components/ContactForm'
+import { PhotoPermissionDeniedSheet } from '@components/PhotoPermissionDeniedSheet'
 import { useKeyboardHeight } from '@hooks/useKeyboardHeight'
 import { useLanguage } from '@hooks/useLanguage'
 import { useAddContactForm } from '@modules/contacts/hooks'
@@ -42,6 +43,7 @@ export const AddContactScreen = () => {
         nfd,
         onAddressInputChange,
         onPickImage,
+        permissionDenied,
         save,
     } = useAddContactForm()
 
@@ -73,6 +75,11 @@ export const AddContactScreen = () => {
                     style={styles.footerButton}
                 />
             </PWView>
+            <PhotoPermissionDeniedSheet
+                isVisible={permissionDenied.isVisible}
+                onClose={permissionDenied.close}
+                onOpenSettings={permissionDenied.openSettings}
+            />
         </KeyboardAvoidingView>
     )
 }
