@@ -72,7 +72,7 @@ export const ManageNftsBottomSheet = ({
                         name='list-arrow-down'
                         size='md'
                     />
-                    <PWText style={styles.menuLabel}>
+                    <PWText variant='body'>
                         {t('account_details.nfts.sort')}
                     </PWText>
                 </PWTouchableOpacity>
@@ -88,7 +88,7 @@ export const ManageNftsBottomSheet = ({
                         name='funnel'
                         size='md'
                     />
-                    <PWText style={styles.menuLabel}>
+                    <PWText variant='body'>
                         {t('account_details.nfts.filter')}
                     </PWText>
                 </PWTouchableOpacity>

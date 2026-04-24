@@ -28,6 +28,7 @@ export const KeyValueRow = (props: KeyValueRowProps) => {
             style={[rest.style, styles.container]}
         >
             <PWText
+                variant='bodyCompact'
                 style={styles.label}
                 {...titleProps}
             >

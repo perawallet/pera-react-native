@@ -11,7 +11,6 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getFontFamily } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
     container: {
@@ -20,9 +19,6 @@ export const useStyles = makeStyles(theme => ({
     contentContainer: {
         flex: 1,
         padding: theme.spacing.md,
-    },
-    rawTransactionText: {
-        fontFamily: getFontFamily(400),
     },
     scrollview: {
         paddingHorizontal: theme.spacing.xl,

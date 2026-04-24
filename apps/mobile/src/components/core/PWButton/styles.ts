@@ -12,7 +12,8 @@
 
 import { makeStyles } from '@rneui/themed'
 import { PWButtonProps } from './PWButton'
-import { getFontFamily } from '@theme/typography'
+
+const TITLE_LINE_HEIGHT = 15
 
 export const useStyles = makeStyles((theme, props: PWButtonProps) => {
     const variantStyles = {
@@ -78,6 +79,17 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
     const { paddingHorizontal, paddingVertical, minWidth } =
         paddingStyles[props.paddingStyle ?? 'normal']
 
+    const titleStyle = {
+        lineHeight: TITLE_LINE_HEIGHT,
+        flexWrap: 'nowrap' as const,
+        flexShrink: 1,
+        textAlign: 'center' as const,
+        verticalAlign: 'middle' as const,
+        justifyContent: 'center' as const,
+        padding: 0,
+        color,
+    }
+
     return {
         loadingStyle: {
             color,
@@ -95,17 +107,6 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
             opacity: props.isDisabled ? 0.7 : 1,
             backgroundColor,
         },
-        titleStyle: {
-            fontFamily: getFontFamily(500),
-            fontSize: 15,
-            lineHeight: 15,
-            flexWrap: 'nowrap',
-            flexShrink: 1,
-            textAlign: 'center',
-            verticalAlign: 'middle',
-            justifyContent: 'center',
-            padding: 0,
-            color,
-        },
+        titleStyle,
     }
 })

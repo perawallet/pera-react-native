@@ -33,10 +33,6 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'space-between',
         marginBottom: theme.spacing.sm,
     },
-    countText: {
-        color: theme.colors.textMain,
-        fontWeight: '500',
-    },
     titleBarActions: {
         flexDirection: 'row',
         gap: theme.spacing.sm,

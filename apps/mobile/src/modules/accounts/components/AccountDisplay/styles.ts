@@ -15,6 +15,10 @@ import { AccountDisplayProps } from './AccountDisplay'
 
 export const useStyles = makeStyles(
     (theme, { noBorder }: AccountDisplayProps) => {
+        const addressText = {
+            color: theme.colors.textGray,
+            lineHeight: theme.spacing.lg,
+        }
         return {
             container: {
                 flexDirection: 'row',
@@ -31,10 +35,7 @@ export const useStyles = makeStyles(
             text: {
                 color: theme.colors.textMain,
             },
-            addressText: {
-                color: theme.colors.textGray,
-                lineHeight: theme.spacing.lg,
-            },
+            addressText,
         }
     },
 )

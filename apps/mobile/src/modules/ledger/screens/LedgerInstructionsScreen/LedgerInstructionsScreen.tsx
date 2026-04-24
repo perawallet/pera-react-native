@@ -57,10 +57,7 @@ export const LedgerInstructionsScreen = () => {
                             style={styles.instructionItem}
                         >
                             <PWView style={styles.stepCircle}>
-                                <PWText
-                                    variant='body'
-                                    style={styles.stepNumber}
-                                >
+                                <PWText variant='bodySemibold'>
                                     {String(step)}
                                 </PWText>
                             </PWView>

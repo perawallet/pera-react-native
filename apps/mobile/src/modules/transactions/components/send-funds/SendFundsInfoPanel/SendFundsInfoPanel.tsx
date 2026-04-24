@@ -66,7 +66,12 @@ export const SendFundsInfoPanel = ({
                 <PWView style={styles.tipsContainer}>
                     <PWView style={styles.tip}>
                         <PWView style={styles.tipNumberContainer}>
-                            <PWText style={styles.tipNumber}>1</PWText>
+                            <PWText
+                                variant='h4'
+                                style={styles.tipNumber}
+                            >
+                                1
+                            </PWText>
                         </PWView>
                         <PWText style={styles.tipText}>
                             {t('send_funds.info.tip_1')}
@@ -74,7 +79,12 @@ export const SendFundsInfoPanel = ({
                     </PWView>
                     <PWView style={styles.tip}>
                         <PWView style={styles.tipNumberContainer}>
-                            <PWText style={styles.tipNumber}>2</PWText>
+                            <PWText
+                                variant='h4'
+                                style={styles.tipNumber}
+                            >
+                                2
+                            </PWText>
                         </PWView>
                         <PWText style={styles.tipText}>
                             <Trans
@@ -90,7 +100,10 @@ export const SendFundsInfoPanel = ({
                     </PWView>
                 </PWView>
                 <PWDivider color={theme.colors.layerGray} />
-                <PWText style={styles.postamble}>
+                <PWText
+                    variant='bodyCompact'
+                    style={styles.postamble}
+                >
                     <Trans
                         i18nKey='send_funds.info.more_info'
                         components={[

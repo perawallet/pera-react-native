@@ -81,12 +81,7 @@ export const SwapHistoryListItem = ({
                     style={styles.itemDescription}
                 >
                     {descriptionPrefix}
-                    <PWText
-                        variant='body'
-                        style={styles.itemDescriptionStrong}
-                    >
-                        {amountOutLabel}
-                    </PWText>
+                    <PWText variant='bodySemibold'>{amountOutLabel}</PWText>
                     {!!dateLabel && (
                         <PWText
                             variant='body'

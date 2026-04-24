@@ -54,7 +54,10 @@ export const NumberPad = memo(
                                     style={styles.key}
                                 >
                                     {!!key && (
-                                        <PWText style={styles.keyText}>
+                                        <PWText
+                                            variant='h1'
+                                            style={styles.keyText}
+                                        >
                                             {key}
                                         </PWText>
                                     )}

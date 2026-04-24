@@ -46,7 +46,6 @@ export const useStyles = makeStyles(theme => ({
     title: {
         flexShrink: 1,
         color: theme.colors.textMain,
-        lineHeight: theme.spacing.lg,
         marginHorizontal: theme.spacing.sm,
         textAlign: 'center',
     },

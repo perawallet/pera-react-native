@@ -13,6 +13,14 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
+    const url = {
+        color: theme.colors.textGray,
+        fontSize: theme.spacing.md,
+        textOverflow: 'ellipsis' as const,
+        overflow: 'hidden' as const,
+        flexWrap: 'nowrap' as const,
+        flexShrink: 1,
+    }
     return {
         flex: {
             flex: 1,
@@ -61,14 +69,7 @@ export const useStyles = makeStyles(theme => {
             flexShrink: 1,
             textAlign: 'center',
         },
-        url: {
-            color: theme.colors.textGray,
-            fontSize: theme.spacing.md,
-            textOverflow: 'ellipsis',
-            overflow: 'hidden',
-            flexWrap: 'nowrap',
-            flexShrink: 1,
-        },
+        url,
         footerBar: {
             flexDirection: 'row',
             alignItems: 'center',

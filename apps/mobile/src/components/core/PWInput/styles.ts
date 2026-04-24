@@ -17,14 +17,18 @@ type PWInputStyleProps = {
     variant: TypographyVariant
 }
 
-export const useStyles = makeStyles(
-    (theme, { variant }: PWInputStyleProps) => ({
+export const useStyles = makeStyles((theme, { variant }: PWInputStyleProps) => {
+    const input = {
+        ...getTypography(theme, variant),
+        lineHeight: undefined,
+    }
+    return {
         container: {},
         inputContainer: {
             paddingHorizontal: theme.spacing.xs,
             borderRadius: theme.borderRadius.xs,
         },
-        input: { ...getTypography(theme, variant), lineHeight: undefined },
+        input,
         label: {},
-    }),
-)
+    }
+})

@@ -46,6 +46,5 @@ export const useStyles = makeStyles(theme => ({
     },
     detailText: {
         marginLeft: theme.spacing.xl,
-        lineHeight: theme.spacing.lg,
     },
 }))

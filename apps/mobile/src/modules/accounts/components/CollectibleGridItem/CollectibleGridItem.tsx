@@ -77,7 +77,7 @@ export const CollectibleGridItem = ({
                 )}
                 <PWView style={styles.titleRow}>
                     <PWText
-                        variant='body'
+                        variant='bodyCompact'
                         style={styles.title}
                         numberOfLines={2}
                     >

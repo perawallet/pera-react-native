@@ -98,6 +98,7 @@ export const PWButton = ({
             )}
             {!!title && !isLoading && (
                 <PWText
+                    variant='h4'
                     style={styles.titleStyle}
                     numberOfLines={1}
                 >

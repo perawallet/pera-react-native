@@ -24,7 +24,7 @@ export const useStyles = makeStyles(theme => ({
         flexGrow: 1,
     },
     listHeader: {
-        alignItems: 'center' as const,
+        alignItems: 'center',
         gap: theme.spacing.md,
         paddingVertical: theme.spacing.xl,
     },
@@ -37,8 +37,8 @@ export const useStyles = makeStyles(theme => ({
         height: theme.spacing.sm,
     },
     groupPreviewContainer: {
-        flexDirection: 'row' as const,
-        alignItems: 'center' as const,
+        flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: theme.colors.layerGrayLighter,
         borderRadius: theme.spacing.lg,
         padding: theme.spacing.lg,
@@ -49,9 +49,6 @@ export const useStyles = makeStyles(theme => ({
     },
     groupPreviewContent: {
         flex: 1,
-    },
-    groupPreviewTitle: {
-        fontWeight: '600',
     },
     groupPreviewSubtitle: {
         color: theme.colors.textGray,

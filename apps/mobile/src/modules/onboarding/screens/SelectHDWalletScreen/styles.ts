@@ -12,64 +12,68 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: theme.spacing.xl,
-    },
-    title: {
-        marginBottom: theme.spacing.sm,
-        marginTop: theme.spacing.sm,
-    },
-    description: {
-        marginBottom: theme.spacing.xl,
-        color: theme.colors.textGray,
-    },
-    list: {
-        flex: 1,
-    },
-    listContent: {
-        paddingBottom: theme.spacing.xl,
-    },
-    walletItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: theme.spacing.lg,
-        borderBottomWidth: theme.borders.sm,
-        borderBottomColor: theme.colors.layerGrayLighter,
-    },
-    walletIconContainer: {
-        width: theme.spacing.xl + 2 * theme.spacing.sm,
-        height: theme.spacing.xl + 2 * theme.spacing.sm,
-        borderRadius: (theme.spacing.xl + 2 * theme.spacing.sm) / 2,
-        marginRight: theme.spacing.md,
-    },
-    walletTextContainer: {
-        flex: 1,
-        paddingRight: theme.spacing.md,
-    },
-    walletSubtitle: {
-        color: theme.colors.textGray,
-        marginTop: theme.spacing.xxs,
-    },
-    balanceContainer: {
-        gap: theme.spacing.xs,
-        alignItems: 'flex-end',
-    },
-    algoBalance: {
+export const useStyles = makeStyles(theme => {
+    const algoBalance = {
         lineHeight: theme.spacing.lg,
-    },
-    fiatBalance: {
+    }
+    const fiatBalance = {
         color: theme.colors.textGray,
         lineHeight: theme.spacing.md,
-    },
-    footer: {
-        paddingHorizontal: theme.spacing.xl,
-        paddingBottom: theme.spacing.xl,
-        paddingTop: theme.spacing.md,
-    },
-}))
+    }
+    return {
+        container: {
+            flex: 1,
+            backgroundColor: theme.colors.background,
+        },
+        content: {
+            flex: 1,
+            paddingHorizontal: theme.spacing.xl,
+        },
+        title: {
+            marginBottom: theme.spacing.sm,
+            marginTop: theme.spacing.sm,
+        },
+        description: {
+            marginBottom: theme.spacing.xl,
+            color: theme.colors.textGray,
+        },
+        list: {
+            flex: 1,
+        },
+        listContent: {
+            paddingBottom: theme.spacing.xl,
+        },
+        walletItem: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: theme.spacing.lg,
+            borderBottomWidth: theme.borders.sm,
+            borderBottomColor: theme.colors.layerGrayLighter,
+        },
+        walletIconContainer: {
+            width: theme.spacing.xl + 2 * theme.spacing.sm,
+            height: theme.spacing.xl + 2 * theme.spacing.sm,
+            borderRadius: (theme.spacing.xl + 2 * theme.spacing.sm) / 2,
+            marginRight: theme.spacing.md,
+        },
+        walletTextContainer: {
+            flex: 1,
+            paddingRight: theme.spacing.md,
+        },
+        walletSubtitle: {
+            color: theme.colors.textGray,
+            marginTop: theme.spacing.xxs,
+        },
+        balanceContainer: {
+            gap: theme.spacing.xs,
+            alignItems: 'flex-end',
+        },
+        algoBalance,
+        fiatBalance,
+        footer: {
+            paddingHorizontal: theme.spacing.xl,
+            paddingBottom: theme.spacing.xl,
+            paddingTop: theme.spacing.md,
+        },
+    }
+})

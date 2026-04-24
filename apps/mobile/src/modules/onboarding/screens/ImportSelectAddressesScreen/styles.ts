@@ -12,78 +12,82 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    },
-    content: {
-        flex: 1,
-        paddingHorizontal: theme.spacing.xl,
-    },
-    title: {
-        marginBottom: theme.spacing.sm,
-        marginTop: theme.spacing.sm,
-    },
-    description: {
-        marginBottom: theme.spacing.xl,
+const ITEM_SUBTITLE_FONT_SIZE = 12
+
+export const useStyles = makeStyles(theme => {
+    const itemSubtitle = {
         color: theme.colors.textGray,
-    },
-    headerRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: theme.spacing.md,
-        borderBottomWidth: theme.borders.sm,
-        borderBottomColor: theme.colors.layerGrayLighter,
-    },
-    headerCount: {
-        color: theme.colors.textGray,
-        fontWeight: '600',
-    },
-    selectAllContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    selectAllText: {
-        color: theme.colors.linkPrimary,
-        marginRight: theme.spacing.xs,
-    },
-    checkboxContainer: {
-        padding: 0,
-        margin: 0,
-        marginLeft: 0,
-        marginRight: 0,
-        backgroundColor: 'transparent',
-    },
-    listContent: {
-        paddingBottom: theme.spacing.xl,
-    },
-    itemContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: theme.spacing.md,
-        borderBottomWidth: theme.borders.sm,
-        borderBottomColor: theme.colors.layerGrayLighter,
-    },
-    itemTextContainer: {
-        flex: 1,
-        paddingRight: theme.spacing.md,
-    },
-    itemTitle: {
-        color: theme.colors.textMain,
-        marginBottom: theme.spacing.xxs,
-    },
-    itemSubtitle: {
-        color: theme.colors.textGray,
-        fontSize: 12,
-    },
-    footer: {
-        padding: theme.spacing.xl,
-        borderTopWidth: theme.borders.sm,
-        borderTopColor: theme.colors.layerGrayLighter,
-        backgroundColor: theme.colors.background,
-        paddingBottom: theme.spacing.xl + 20, // Extra padding for safe area logic usually handled by SafeAreaView but good to have buffer
-    },
-}))
+        fontSize: ITEM_SUBTITLE_FONT_SIZE,
+    }
+    return {
+        container: {
+            flex: 1,
+            backgroundColor: theme.colors.background,
+        },
+        content: {
+            flex: 1,
+            paddingHorizontal: theme.spacing.xl,
+        },
+        title: {
+            marginBottom: theme.spacing.sm,
+            marginTop: theme.spacing.sm,
+        },
+        description: {
+            marginBottom: theme.spacing.xl,
+            color: theme.colors.textGray,
+        },
+        headerRow: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingVertical: theme.spacing.md,
+            borderBottomWidth: theme.borders.sm,
+            borderBottomColor: theme.colors.layerGrayLighter,
+        },
+        headerCount: {
+            color: theme.colors.textGray,
+        },
+        selectAllContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+        },
+        selectAllText: {
+            color: theme.colors.linkPrimary,
+            marginRight: theme.spacing.xs,
+        },
+        checkboxContainer: {
+            padding: 0,
+            margin: 0,
+            marginLeft: 0,
+            marginRight: 0,
+            backgroundColor: 'transparent',
+        },
+        listContent: {
+            paddingBottom: theme.spacing.xl,
+        },
+        itemContainer: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingVertical: theme.spacing.md,
+            borderBottomWidth: theme.borders.sm,
+            borderBottomColor: theme.colors.layerGrayLighter,
+        },
+        itemTextContainer: {
+            flex: 1,
+            paddingRight: theme.spacing.md,
+        },
+        itemTitle: {
+            color: theme.colors.textMain,
+            marginBottom: theme.spacing.xxs,
+        },
+        itemSubtitle,
+        footer: {
+            padding: theme.spacing.xl,
+            borderTopWidth: theme.borders.sm,
+            borderTopColor: theme.colors.layerGrayLighter,
+            backgroundColor: theme.colors.background,
+            paddingBottom: theme.spacing.xl + 20, // Extra padding for safe area logic usually handled by SafeAreaView but good to have buffer
+        },
+    }
+})

@@ -12,44 +12,46 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        alignItems: 'flex-start',
-        gap: theme.spacing.md,
-        width: '100%',
-    },
-    idContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xl,
-    },
-    idTextContainer: {
-        alignItems: 'flex-start',
-        gap: theme.spacing.sm,
-    },
-    wrappedText: {
-        flexShrink: 1,
-        lineHeight: theme.spacing.lg,
-    },
-    blockContainer: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        justifyContent: 'space-between',
-        gap: theme.spacing.lg,
-        paddingHorizontal: theme.spacing.sm,
-    },
-    blockColumn: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: theme.spacing.sm,
-    },
-    blockTitle: {
-        color: theme.colors.textGray,
-    },
-    blockValue: {
-        color: theme.colors.textMain,
-    },
-    addressText: {
+export const useStyles = makeStyles(theme => {
+    const addressText = {
         lineHeight: theme.spacing.md,
-    },
-}))
+    }
+    return {
+        container: {
+            alignItems: 'flex-start',
+            gap: theme.spacing.md,
+            width: '100%' as const,
+        },
+        idContainer: {
+            flexDirection: 'row' as const,
+            alignItems: 'center' as const,
+            gap: theme.spacing.xl,
+        },
+        idTextContainer: {
+            alignItems: 'flex-start' as const,
+            gap: theme.spacing.sm,
+        },
+        wrappedText: {
+            flexShrink: 1,
+        },
+        blockContainer: {
+            flexDirection: 'row' as const,
+            alignItems: 'flex-start' as const,
+            justifyContent: 'space-between' as const,
+            gap: theme.spacing.lg,
+            paddingHorizontal: theme.spacing.sm,
+        },
+        blockColumn: {
+            flexDirection: 'row' as const,
+            alignItems: 'flex-start' as const,
+            gap: theme.spacing.sm,
+        },
+        blockTitle: {
+            color: theme.colors.textGray,
+        },
+        blockValue: {
+            color: theme.colors.textMain,
+        },
+        addressText,
+    }
+})

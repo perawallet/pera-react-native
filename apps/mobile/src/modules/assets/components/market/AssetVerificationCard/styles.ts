@@ -12,36 +12,41 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
-    wrapper: {
-        paddingVertical: theme.spacing.xl,
-        borderBottomWidth: theme.borders.sm,
-        borderBottomColor: theme.colors.divider,
-    },
-    container: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        gap: theme.spacing.md,
-        borderRadius: theme.spacing.sm,
-        padding: theme.spacing.xl,
-        marginBottom: theme.spacing.md,
-    },
-    content: {
-        flex: 1,
-        gap: theme.spacing.md,
-    },
-    icon: {
-        marginTop: theme.spacing.xs,
-    },
-    learnMoreContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: theme.spacing.sm,
-    },
-    learnMoreText: {
-        fontSize: 16,
-        fontWeight: '500',
+const LEARN_MORE_FONT_SIZE = 16
+
+export const useStyles = makeStyles(theme => {
+    const learnMoreText = {
+        fontSize: LEARN_MORE_FONT_SIZE,
+        fontWeight: '500' as const,
         color: theme.colors.linkPrimary,
         marginLeft: theme.spacing.xs,
-    },
-}))
+    }
+    return {
+        wrapper: {
+            paddingVertical: theme.spacing.xl,
+            borderBottomWidth: theme.borders.sm,
+            borderBottomColor: theme.colors.divider,
+        },
+        container: {
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            gap: theme.spacing.md,
+            borderRadius: theme.spacing.sm,
+            padding: theme.spacing.xl,
+            marginBottom: theme.spacing.md,
+        },
+        content: {
+            flex: 1,
+            gap: theme.spacing.md,
+        },
+        icon: {
+            marginTop: theme.spacing.xs,
+        },
+        learnMoreContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginTop: theme.spacing.sm,
+        },
+        learnMoreText,
+    }
+})

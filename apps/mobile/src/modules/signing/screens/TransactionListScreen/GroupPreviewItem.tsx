@@ -46,7 +46,7 @@ export const GroupPreviewItem = ({
                 size='sm'
             />
             <PWView style={styles.groupPreviewContent}>
-                <PWText style={styles.groupPreviewTitle}>
+                <PWText variant='bodySemibold'>
                     {t('transactions.group.group_number')}
                 </PWText>
                 <PWView style={styles.groupPreviewSubtitleContainer}>

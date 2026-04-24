@@ -42,10 +42,6 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'center',
         marginRight: theme.spacing.md,
     },
-    stepNumber: {
-        color: theme.colors.textMain,
-        fontWeight: '600',
-    },
     listItemText: {
         flex: 1,
         color: theme.colors.textMain,

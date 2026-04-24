@@ -14,7 +14,11 @@ import { makeStyles } from '@rneui/themed'
 import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => {
-    const bodyTypography = getTypography(theme, 'body')
+    const title = {
+        ...getTypography(theme, 'body'),
+        fontWeight: '600' as const,
+        textTransform: 'none' as const,
+    }
 
     return {
         externalContainer: {
@@ -62,12 +66,7 @@ export const useStyles = makeStyles(theme => {
             borderRadius: theme.spacing.xxl,
             ...theme.shadows.md,
         },
-        title: {
-            fontFamily: bodyTypography.fontFamily,
-            fontSize: bodyTypography.fontSize,
-            fontWeight: '600',
-            textTransform: 'none',
-        },
+        title,
         activeTitle: {
             color: theme.colors.textMain,
         },

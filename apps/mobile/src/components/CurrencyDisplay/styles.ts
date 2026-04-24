@@ -16,16 +16,20 @@ import { CurrencyDisplayProps } from './CurrencyDisplay'
 const SKELETON_MAX_WIDTH = 150
 
 export const useStyles = makeStyles((theme, props: CurrencyDisplayProps) => {
-    const variantSizes = {
+    const variantSizes: Record<string, number> = {
         h1: theme.spacing.xxl,
         h2: theme.spacing.xxl,
         h3: theme.spacing.xl,
         h4: theme.spacing.lg,
         body: theme.spacing.lg,
+        bodyCompact: theme.spacing.lg,
+        bodySemibold: theme.spacing.lg,
         caption: theme.spacing.md,
+        link: theme.spacing.lg,
+        mono: theme.spacing.lg,
     }
 
-    const size = variantSizes[props.variant ?? 'body']
+    const size = variantSizes[props.variant ?? 'body'] ?? theme.spacing.lg
 
     return {
         container: {

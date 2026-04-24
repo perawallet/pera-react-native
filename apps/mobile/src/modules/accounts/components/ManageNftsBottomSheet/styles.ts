@@ -26,8 +26,4 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.lg,
         paddingVertical: theme.spacing.lg,
     },
-    menuLabel: {
-        color: theme.colors.textMain,
-        fontWeight: '500',
-    },
 }))

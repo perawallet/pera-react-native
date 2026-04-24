@@ -64,7 +64,10 @@ export const TransactionRequestFAQBottomSheet = () => {
             <PWText style={styles.message}>
                 {t('signing.transaction_request_faq.body')}
             </PWText>
-            <PWText style={styles.warning}>
+            <PWText
+                variant='body'
+                style={styles.warning}
+            >
                 {t('signing.transaction_request_faq.warning')}
             </PWText>
             <PWButton

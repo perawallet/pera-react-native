@@ -108,7 +108,7 @@ export const LedgerSelectAccountsScreen = () => {
 
                 <PWView style={styles.headerRow}>
                     <PWText
-                        variant='body'
+                        variant='bodySemibold'
                         style={styles.headerCount}
                     >
                         {t('ledger.select_accounts.accounts_count', {

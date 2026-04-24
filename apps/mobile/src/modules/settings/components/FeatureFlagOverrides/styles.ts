@@ -13,6 +13,16 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
+    const flagTitle = {
+        margin: 0,
+        padding: 0,
+        lineHeight: theme.spacing.md,
+    }
+    const flagCaption = {
+        margin: 0,
+        padding: 0,
+        lineHeight: theme.spacing.md,
+    }
     return {
         container: {
             paddingHorizontal: theme.spacing.lg,
@@ -29,15 +39,7 @@ export const useStyles = makeStyles(theme => {
             justifyContent: 'space-between',
             alignItems: 'center',
         },
-        flagTitle: {
-            margin: 0,
-            padding: 0,
-            lineHeight: theme.spacing.md,
-        },
-        flagCaption: {
-            margin: 0,
-            padding: 0,
-            lineHeight: theme.spacing.md,
-        },
+        flagTitle,
+        flagCaption,
     }
 })
