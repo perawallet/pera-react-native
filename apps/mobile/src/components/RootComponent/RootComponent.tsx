@@ -12,7 +12,7 @@
 
 import { config } from '@perawallet/wallet-core-config'
 import { useEffect, useRef } from 'react'
-import { AppState, View } from 'react-native'
+import { AppState } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { MainRoutes } from '@routes/index'
@@ -78,9 +78,9 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
         <ErrorBoundary onError={showError}>
             <PWView style={styles.container}>
                 {isTestnet && (
-                    <View style={styles.testnetBar}>
+                    <PWView style={styles.testnetBar}>
                         <PWText style={styles.testnetText}>Testnet</PWText>
-                    </View>
+                    </PWView>
                 )}
 
                 {!hasInternet && (
