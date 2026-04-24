@@ -45,14 +45,15 @@ describe('ParticipantRow', () => {
         })
     })
 
-    it('renders truncated address when no name is resolvable', () => {
+    it('renders only the truncated address when no NFD, contact or local account matches', () => {
         const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'
         render(<ParticipantRow address={address} />)
 
-        expect(screen.getByText(/ABC/)).toBeTruthy()
+        const matches = screen.getAllByText(/ABC/)
+        expect(matches).toHaveLength(1)
     })
 
-    it('renders NFD name as primary with address as secondary', () => {
+    it('renders NFD name as primary with truncated address as secondary', () => {
         mockUseNfdForAddress.mockReturnValue({
             data: [{ name: 'alice.algo' }],
             isPending: false,
@@ -65,24 +66,44 @@ describe('ParticipantRow', () => {
         expect(screen.getByText(/ABC/)).toBeTruthy()
     })
 
-    it('renders contact name as primary when address matches a contact', () => {
-        mockFindContacts.mockReturnValue([
-            { name: 'Joseph', address: 'ABCDEFGHIJ' },
-        ])
+    it('renders truncated address as primary and contact name as secondary when the address matches a contact', () => {
+        const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'
+        mockFindContacts.mockReturnValue([{ name: 'Joseph', address }])
 
-        render(<ParticipantRow address='ABCDEFGHIJ1234567890' />)
+        render(<ParticipantRow address={address} />)
 
         expect(screen.getByText('Joseph')).toBeTruthy()
+        expect(screen.getByText(/ABC/)).toBeTruthy()
     })
 
-    it('renders account name as primary when address matches a local account', () => {
-        mockUseAllAccounts.mockReturnValue([
-            { name: 'My Wallet', address: 'ABCDEFGHIJ1234567890' },
-        ])
+    it('renders the "(You)" label when the address matches a local account', () => {
+        const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'
+        mockUseAllAccounts.mockReturnValue([{ name: 'My Wallet', address }])
 
-        render(<ParticipantRow address='ABCDEFGHIJ1234567890' />)
+        render(<ParticipantRow address={address} />)
 
-        expect(screen.getByText('My Wallet')).toBeTruthy()
+        expect(
+            screen.getByText('multisig.invitation.participant_address_you'),
+        ).toBeTruthy()
+        expect(screen.queryByText('My Wallet')).toBeNull()
+    })
+
+    it('prefers the "(You)" label over NFD and contact matches', () => {
+        const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'
+        mockUseAllAccounts.mockReturnValue([{ name: 'My Wallet', address }])
+        mockUseNfdForAddress.mockReturnValue({
+            data: [{ name: 'alice.algo' }],
+            isPending: false,
+        })
+        mockFindContacts.mockReturnValue([{ name: 'Joseph', address }])
+
+        render(<ParticipantRow address={address} />)
+
+        expect(
+            screen.getByText('multisig.invitation.participant_address_you'),
+        ).toBeTruthy()
+        expect(screen.queryByText('alice.algo')).toBeNull()
+        expect(screen.queryByText('Joseph')).toBeNull()
     })
 
     it('passes the given testID to the row', () => {

@@ -120,10 +120,11 @@ export const deleteImportInbox = async (
     deviceId: string,
     multisigAddress: string,
 ): Promise<void> => {
-    await queryClient<void>({
+    await queryClient<string>({
         backend: 'pera',
         network,
         method: 'DELETE',
         url: `/v1/joint-accounts/inbox/device-import/${deviceId}/${multisigAddress}/`,
+        responseType: 'text',
     })
 }

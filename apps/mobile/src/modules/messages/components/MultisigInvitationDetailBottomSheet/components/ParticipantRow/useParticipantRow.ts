@@ -18,8 +18,9 @@ import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { IconName } from '@components/core'
 import { useClipboard } from '@hooks/useClipboard'
 import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { useLanguage } from '@hooks/useLanguage'
 
-const LONG_ADDRESS_FORMAT = 20
+const LONG_ADDRESS_FORMAT = 12
 
 export type UseParticipantRowResult = {
     avatarIcon: IconName
@@ -31,13 +32,14 @@ export type UseParticipantRowResult = {
 export const useParticipantRow = (address: string): UseParticipantRowResult => {
     const isDarkMode = useIsDarkMode()
     const { copyToClipboard } = useClipboard()
+    const { t } = useLanguage()
 
     const accounts = useAllAccounts()
     const { findContacts } = useContacts()
     const { data: nfdNames } = useNfdForAddressQuery(address)
 
-    const account = useMemo(
-        () => accounts.find(a => a.address === address),
+    const isOwnAccount = useMemo(
+        () => accounts.some(a => a.address === address),
         [accounts, address],
     )
 
@@ -57,9 +59,16 @@ export const useParticipantRow = (address: string): UseParticipantRowResult => {
         address,
         LONG_ADDRESS_FORMAT,
     )
-    const resolvedName = nfdName ?? contact?.name ?? account?.name
-    const primaryText = resolvedName ?? truncatedAddress
-    const secondaryText = resolvedName ? truncatedAddress : undefined
+
+    const { primaryText, secondaryText } = resolveDisplayTexts({
+        isOwnAccount,
+        ownAccountLabel: t('multisig.invitation.participant_address_you', {
+            address: truncatedAddress,
+        }),
+        nfdName,
+        contactName: contact?.name,
+        truncatedAddress,
+    })
 
     const avatarIcon: IconName = isDarkMode
         ? 'accounts/dark/multisig-account'
@@ -75,4 +84,36 @@ export const useParticipantRow = (address: string): UseParticipantRowResult => {
         secondaryText,
         onCopy,
     }
+}
+
+type ResolveDisplayTextsArgs = {
+    isOwnAccount: boolean
+    ownAccountLabel: string
+    nfdName: string | undefined
+    contactName: string | undefined
+    truncatedAddress: string
+}
+
+type DisplayTexts = {
+    primaryText: string
+    secondaryText: string | undefined
+}
+
+const resolveDisplayTexts = ({
+    isOwnAccount,
+    ownAccountLabel,
+    nfdName,
+    contactName,
+    truncatedAddress,
+}: ResolveDisplayTextsArgs): DisplayTexts => {
+    if (isOwnAccount) {
+        return { primaryText: ownAccountLabel, secondaryText: undefined }
+    }
+    if (nfdName) {
+        return { primaryText: nfdName, secondaryText: truncatedAddress }
+    }
+    if (contactName) {
+        return { primaryText: truncatedAddress, secondaryText: contactName }
+    }
+    return { primaryText: truncatedAddress, secondaryText: undefined }
 }

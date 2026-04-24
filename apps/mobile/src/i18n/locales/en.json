@@ -750,6 +750,7 @@
             "accept_success": "Shared account added",
             "accept_error": "Could not add account. Please try again.",
             "already_added": "This shared account is already in your wallet",
+            "participant_address_you": "{{address}} (You)",
             "name": {
                 "screen_title": "Shared Account",
                 "title": "Name your shared account",
