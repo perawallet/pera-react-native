@@ -12,11 +12,13 @@
 
 import { makeStyles } from '@rneui/themed'
 
+const CONTAINER_MIN_HEIGHT = 500
+
 export const useStyles = makeStyles(theme => {
     return {
         container: {
             flex: 1,
-            minHeight: 500,
+            minHeight: CONTAINER_MIN_HEIGHT,
         },
         bodyContainer: {
             flexGrow: 1,

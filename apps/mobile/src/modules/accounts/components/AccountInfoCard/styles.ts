@@ -12,11 +12,17 @@
 
 import { makeStyles } from '@rneui/themed'
 
+const CONNECTOR_INDENT = 20
+const CONNECTOR_VERTICAL_HEIGHT = 32
+const CONNECTOR_HORIZONTAL_WIDTH = 22
+const SCAN_BUTTON_HEIGHT = 40
+const SCAN_BUTTON_INDENT = 56
+
 export const useStyles = makeStyles(theme => ({
     card: {
         borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGray,
-        borderRadius: 16,
+        borderRadius: theme.borderRadius.lg,
         paddingHorizontal: theme.spacing.xl,
         paddingVertical: theme.spacing.lg,
         gap: theme.spacing.lg,
@@ -61,16 +67,16 @@ export const useStyles = makeStyles(theme => ({
     connectorContainer: {
         flexDirection: 'row',
         alignItems: 'flex-end',
-        marginLeft: 20,
+        marginLeft: CONNECTOR_INDENT,
     },
     connectorVertical: {
         width: 0,
-        height: 32,
+        height: CONNECTOR_VERTICAL_HEIGHT,
         borderLeftWidth: theme.borders.sm,
         borderLeftColor: theme.colors.layerGray,
     },
     connectorHorizontal: {
-        width: 22,
+        width: CONNECTOR_HORIZONTAL_WIDTH,
         height: 0,
         borderTopWidth: theme.borders.sm,
         borderTopColor: theme.colors.layerGray,
@@ -93,12 +99,12 @@ export const useStyles = makeStyles(theme => ({
     scanButton: {
         backgroundColor: theme.colors.buttonSquareBg,
         borderRadius: theme.spacing.sm,
-        height: 40,
+        height: SCAN_BUTTON_HEIGHT,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: theme.spacing.sm,
-        marginLeft: 56,
+        marginLeft: SCAN_BUTTON_INDENT,
     },
     scanButtonText: {
         color: theme.colors.buttonSquareIcon,

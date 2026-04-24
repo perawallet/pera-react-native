@@ -21,6 +21,7 @@ import { useNetwork } from '../useNetwork'
 vi.mock('@algorandfoundation/algokit-utils', () => {
     const mockClient = {
         setDefaultSigner: vi.fn(),
+        registerErrorTransformer: vi.fn(),
     }
     return {
         AlgorandClient: {

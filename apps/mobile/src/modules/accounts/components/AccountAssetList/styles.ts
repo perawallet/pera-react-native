@@ -12,6 +12,8 @@
 
 import { makeStyles } from '@rneui/themed'
 
+const ACTION_BUTTON_SIZE = 40
+
 export const useStyles = makeStyles(theme => ({
     headerContainer: {
         marginTop: theme.spacing.sm,
@@ -48,8 +50,8 @@ export const useStyles = makeStyles(theme => ({
     manageButtonContainer: {
         backgroundColor: theme.colors.buttonSquareBg,
         borderRadius: theme.spacing.sm,
-        width: 40,
-        height: 40,
+        width: ACTION_BUTTON_SIZE,
+        height: ACTION_BUTTON_SIZE,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -60,7 +62,7 @@ export const useStyles = makeStyles(theme => ({
         borderRadius: theme.spacing.sm,
         gap: theme.spacing.sm,
         backgroundColor: theme.colors.buttonSquareBg,
-        height: 40,
+        height: ACTION_BUTTON_SIZE,
     },
     addButtonTitle: {
         color: theme.colors.buttonSquareIcon,

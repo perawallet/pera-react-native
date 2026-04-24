@@ -64,13 +64,17 @@ export const StakingProjectCard = ({
                     <PWText
                         variant='h4'
                         numberOfLines={1}
+                        testID={`staking-project-title-${project.id}`}
                     >
                         {project.title}
                     </PWText>
                     <StakingTypeBadge type={project.type} />
                 </PWView>
 
-                <PWText style={styles.description}>
+                <PWText
+                    style={styles.description}
+                    testID={`staking-project-description-${project.id}`}
+                >
                     {project.description}
                 </PWText>
 
