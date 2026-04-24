@@ -12,20 +12,20 @@
 
 import { describe, test, expect } from 'vitest'
 import { LogicError } from '@algorandfoundation/algokit-utils/types/logic-error'
-import { translateError } from '../translateError'
+import { toAlgodError } from '../toAlgodError'
 import { AlgodError } from '../AlgodError'
 import { AlgodErrorCode } from '../algodErrorCodes'
 
 const ADDR = 'GBFKIKHL55YJRTB4PSWXWQJDPHG6IHOLESWSWPPPR6HQ2N7H76RBI5JIT4'
 const TXID = 'X4CQTNNARMMELORLYBJY27776Z2453LLREFIZKJYVE3B5FJSL7HA'
 
-describe('translateError', () => {
+describe('toAlgodError', () => {
     test('parses overspend from a thrown Error', () => {
         const raw = new Error(
             `TransactionPool.Remember: transaction ${TXID}: ` +
                 `overspend (account ${ADDR}, data {AccountBaseData:{MicroAlgos:{Raw:199000}}}, tried to spend {201000})`,
         )
-        const e = translateError(raw)
+        const e = toAlgodError(raw)
 
         expect(e).toBeInstanceOf(AlgodError)
         expect(e.code).toBe(AlgodErrorCode.OVERSPEND)
@@ -40,12 +40,12 @@ describe('translateError', () => {
 
     test('is idempotent — AlgodError in, same AlgodError out', () => {
         const original = new AlgodError('duplicate_txn', { txId: TXID })
-        expect(translateError(original)).toBe(original)
+        expect(toAlgodError(original)).toBe(original)
     })
 
     test('falls back to unknown_node_error for unrecognized text and preserves raw', () => {
         const raw = new Error('some totally unfamiliar message')
-        const e = translateError(raw)
+        const e = toAlgodError(raw)
 
         expect(e.code).toBe(AlgodErrorCode.UNKNOWN_NODE_ERROR)
         expect(e.params).toEqual({ raw: 'some totally unfamiliar message' })
@@ -61,7 +61,7 @@ describe('translateError', () => {
             traces: [],
         }
         const logicErr = new LogicError(details, ['int 1', 'assert'], () => 2)
-        const e = translateError(logicErr)
+        const e = toAlgodError(logicErr)
 
         expect(e.code).toBe(AlgodErrorCode.LOGIC_ERROR)
         expect(e.params).toMatchObject({
@@ -79,7 +79,7 @@ describe('translateError', () => {
             url: 'https://algod.example/v2/transactions',
             body: { message: 'bad gateway' },
         })
-        const e = translateError(apiLike)
+        const e = toAlgodError(apiLike)
 
         expect(e.code).toBe(AlgodErrorCode.NETWORK_UNAVAILABLE)
         expect(e.params).toMatchObject({
@@ -89,21 +89,21 @@ describe('translateError', () => {
     })
 
     test('maps fetch-style TypeError to network_unavailable', () => {
-        const e = translateError(new TypeError('Network request failed'))
+        const e = toAlgodError(new TypeError('Network request failed'))
         expect(e.code).toBe(AlgodErrorCode.NETWORK_UNAVAILABLE)
     })
 
     test('handles non-Error thrown values (strings, undefined) without throwing', () => {
-        expect(translateError('a string error').code).toBe(
+        expect(toAlgodError('a string error').code).toBe(
             AlgodErrorCode.UNKNOWN_NODE_ERROR,
         )
-        expect(translateError(undefined).code).toBe(
+        expect(toAlgodError(undefined).code).toBe(
             AlgodErrorCode.UNKNOWN_NODE_ERROR,
         )
     })
 
     test('retryable flag reflects the code (network_unavailable=true, overspend=false)', () => {
-        const network = translateError(
+        const network = toAlgodError(
             Object.assign(new Error('upstream timeout'), {
                 status: 504,
                 url: 'https://algod.example/v2/transactions',
@@ -111,7 +111,7 @@ describe('translateError', () => {
         )
         expect(network.metadata.retryable).toBe(true)
 
-        const overspend = translateError(
+        const overspend = toAlgodError(
             new Error(
                 `overspend (account ${ADDR}, data {MicroAlgos:{Raw:100}}, tried to spend {200})`,
             ),

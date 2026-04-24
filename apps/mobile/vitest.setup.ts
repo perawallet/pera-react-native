@@ -2213,7 +2213,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
         NETWORK_UNAVAILABLE: 'network_unavailable',
         UNKNOWN_NODE_ERROR: 'unknown_node_error',
     },
-    translateError: vi.fn(
+    toAlgodError: vi.fn(
         (err: unknown) =>
             new MockAlgodError(
                 'unknown_node_error',

@@ -11,7 +11,7 @@
  */
 
 import { useCallback } from 'react'
-import { AlgodError, translateError } from '@perawallet/wallet-core-blockchain'
+import { AlgodError, toAlgodError } from '@perawallet/wallet-core-blockchain'
 import { useLanguage } from './useLanguage'
 
 type UseAlgodErrorMessageResult = {
@@ -32,7 +32,7 @@ const toInterpolationParams = (
 /**
  * Maps an algod/indexer error to a localized `{ title, body }` pair suitable
  * for the toast system. Accepts anything — raw Errors are routed through
- * `translateError` first.
+ * `toAlgodError` first.
  */
 export const useAlgodErrorMessage = (): UseAlgodErrorMessageResult => {
     const { t } = useLanguage()
@@ -40,7 +40,7 @@ export const useAlgodErrorMessage = (): UseAlgodErrorMessageResult => {
     const getMessage = useCallback(
         (err: unknown): { title: string; body: string } => {
             const algodError =
-                err instanceof AlgodError ? err : translateError(err)
+                err instanceof AlgodError ? err : toAlgodError(err)
             const params = toInterpolationParams(algodError.params)
             return {
                 title: t(`errors.algod.${algodError.code}.title`),

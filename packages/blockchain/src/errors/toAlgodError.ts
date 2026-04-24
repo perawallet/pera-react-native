@@ -19,7 +19,7 @@ import { parseAlgodMessage } from './parseAlgodMessage'
  * a structured {@link AlgodError}. Idempotent: passing an existing AlgodError
  * returns it unchanged. Never throws.
  */
-export const translateError = (err: unknown): AlgodError => {
+export const toAlgodError = (err: unknown): AlgodError => {
     if (err instanceof AlgodError) return err
     if (err instanceof LogicError) return fromLogicError(err)
 

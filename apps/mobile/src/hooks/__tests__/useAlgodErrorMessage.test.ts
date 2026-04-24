@@ -21,7 +21,7 @@ vi.mock('@hooks/useLanguage', () => ({
 }))
 
 // Use the real blockchain package — the hook relies on actual AlgodError
-// instanceof checks and translateError parsing, which the global mock in
+// instanceof checks and toAlgodError parsing, which the global mock in
 // vitest.setup.ts stubs out.
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
     const actual = await vi.importActual<
@@ -72,7 +72,7 @@ describe('useAlgodErrorMessage', () => {
         })
     })
 
-    test('translates raw Errors via translateError before rendering', () => {
+    test('translates raw Errors via toAlgodError before rendering', () => {
         const raw = new Error(
             `overspend (account ${ADDR}, data {AccountBaseData:{MicroAlgos:{Raw:100}}}, tried to spend {200})`,
         )

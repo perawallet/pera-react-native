@@ -17,7 +17,7 @@ import {
 } from '@perawallet/wallet-core-config'
 import { AlgorandClient } from '@algorandfoundation/algokit-utils'
 import { useNetworkStore } from '../store'
-import { translateError } from '../errors'
+import { toAlgodError } from '../errors'
 
 /**
  * Returns an instance of AlgorandClient for a specific network.
@@ -39,6 +39,6 @@ export const getAlgorandClient = (networkOverride?: Network) => {
     }
 
     const client = AlgorandClient.fromConfig({ algodConfig, indexerConfig })
-    client.registerErrorTransformer(async error => translateError(error))
+    client.registerErrorTransformer(async error => toAlgodError(error))
     return client
 }

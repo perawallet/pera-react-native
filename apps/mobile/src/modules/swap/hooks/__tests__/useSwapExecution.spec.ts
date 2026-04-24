@@ -91,7 +91,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => {
             },
         }),
         AlgodError: MockAlgodError,
-        translateError: (err: unknown) =>
+        toAlgodError: (err: unknown) =>
             new MockAlgodError(
                 'unknown_node_error',
                 { raw: err instanceof Error ? err.message : String(err) },

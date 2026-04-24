@@ -13,4 +13,4 @@
 export * from './BlockchainError'
 export * from './AlgodError'
 export * from './algodErrorCodes'
-export * from './translateError'
+export * from './toAlgodError'
