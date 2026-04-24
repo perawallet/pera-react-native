@@ -21,6 +21,14 @@ pnpm lint:guardrails:json     # machine-readable JSON
 | `--json`      | Emit JSON instead of the human report.                                                                                                                         |
 | `--warn-only` | Still print violations, but exit `0` so the command does not fail the build. Intended for a phased rollout while existing violations are being worked through. |
 
+## Environment overrides
+
+| Variable                     | Effect                                                                                                                                                 |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `GUARDRAILS_FORCE_WORKERS=1` | Bypass the file-count threshold and always use the worker pool. Useful for benchmarking and for verifying the worker path end-to-end in integration tests. |
+| `GUARDRAILS_WORKERS=<N>`     | Cap the worker pool at `N` (positive integer). Otherwise the count is derived from CPU budget, file count, and `MAX_WORKERS`.                          |
+| `NO_COLOR=1`                 | Disable ANSI coloring in human output. Respected automatically when stdout is not a TTY.                                                               |
+
 ## Exit codes
 
 | Code | Meaning                                                                               |
@@ -56,7 +64,12 @@ rule-id: 3 violation(s)
 ...
 ✖ 3 guardrail violation(s) across 1 rule(s) (total 312ms)
 Per-check timings: rule-id=4ms other-rule=2ms
+Stage timings: parse=245ms walk=37ms workers=0
 ```
+
+- `parse` — CPU-time reading + `ts.createSourceFile`-ing files, summed across workers (wall-clock is lower when workers > 0).
+- `walk` — CPU-time in the shared AST walker running all registered visitors.
+- `workers` — `0` for the in-process path, `N ≥ 1` for the worker pool.
 
 Violations are sorted by `(ruleId, file, line, column)` so output is stable across runs. ANSI colors disable automatically when stdout is not a TTY or when `NO_COLOR` is set.
 
@@ -84,26 +97,68 @@ The directive must appear as a standalone token, so `my-guardrails-ignore-next-l
 
 ## Adding a new check
 
-1. Copy `checks/_template.check.ts.example` to `checks/my-rule.check.ts`.
-2. Fill in `id`, `description`, and implement `run(sources: SourceMap): Violation[]`.
-3. Add a matching spec under `__tests__/`, with a fixture under `__tests__/fixtures/`.
-4. Run `pnpm --filter @perawallet/wallet-core-devtools test` to confirm.
-5. Run `pnpm lint:guardrails` from the repo root to see it fire against real code.
+Checks register kind-indexed visitors; the runner walks each file once and dispatches to every check registered for that node kind.
 
-That's it — the runner auto-discovers anything ending in `.check.ts` in the `checks/` folder. No registration, no manual wiring.
+1. Create `checks/my-rule.check.ts` with a default-exported `Check`:
 
-Helpers available in `utils/ast.ts`:
+    ```ts
+    import ts from 'typescript'
+    import type { Check } from '../types.js'
+
+    const check: Check = {
+        id: 'my-rule',
+        description: 'What this rule enforces.',
+        visitors: {
+            [ts.SyntaxKind.ImportDeclaration]: (node, sf, emit) => {
+                // Inspect `node` (narrowed by the SyntaxKind key) and call
+                // emit({ line, column, message, remediation }) on violations.
+                // `ruleId` and `file` are injected automatically.
+            },
+        },
+    }
+
+    export default check
+    ```
+
+2. Add a matching spec under `__tests__/`. Parse a fixture SourceFile, then run the check through the shared walker:
+
+    ```ts
+    import { sharedWalk } from '../execute.js'
+    import check from '../checks/my-rule.check.js'
+
+    const violations: Violation[] = []
+    sharedWalk(new Map([[sf.fileName, sf]]), [check], {}, violations)
+    ```
+
+3. `pnpm --filter @perawallet/wallet-core-devtools test`.
+4. `pnpm lint:guardrails` from the repo root.
+
+The runner auto-discovers anything ending in `.check.ts` in the `checks/` folder — no registration, no manual wiring.
+
+### Helpers in `utils/ast.ts`
 
 - `getLineCol(sf, pos)` — 1-based `{ line, column }`.
 - `resolveNamedImport(sf, moduleSpecifier, importedName)` — local binding for a named import.
 - `resolveModuleBindings(sf, moduleSpecifier)` — `Map<localName, importedName>` for all named imports from a module.
-- `forEachMakeStylesStyleObject(sf, cb)` — walks into each top-level style-entry object literal inside a `makeStyles(...)` call from `@rneui/themed`.
+- `getMakeStylesBinding(sf)` — memoized local binding of `makeStyles` from `@rneui/themed` (or `null` if not imported).
+- `descendMakeStylesCall(call, cb)` — given a confirmed `makeStyles(...)` `CallExpression`, yields each top-level style-entry object literal.
 
 ## Performance budget
 
-Target: **~1s, hard ceiling 2s** for the full codebase. Each check receives a pre-parsed `ts.SourceFile` map, so parse cost is paid once per run regardless of how many checks exist. Checks run in parallel via `Promise.all`.
+Target: **~1s, hard ceiling 2s** for the full codebase.
 
-Current cold-run timings (3 checks, ~800 source files): roughly 1s wall clock on Apple Silicon.
+**Architecture.** The runner discovers file paths only on the main thread, then either (a) reads + parses + walks in-process for small runs, or (b) farms file chunks to a `worker_threads` pool for large runs. Each worker runs the same `runChecksAgainstPaths` core, so behaviour is identical across modes. Checks share a single AST walk per file — registering a new visitor does not add another full sweep.
+
+**Worker threshold.** Workers engage when file count ≥ `IN_PROCESS_THRESHOLD` (currently `3000`), or any time `GUARDRAILS_FORCE_WORKERS=1` is set. At today's codebase size (~1825 first-party `.ts`/`.tsx` files) the default path is in-process because per-worker `tsx` registration (~200ms × 4 workers) overwhelms the parallelism win. The threshold sits above today's size so workers engage automatically once the codebase grows or individual checks become expensive enough to amortise the spawn cost.
+
+**Current measurements** (Apple Silicon, cold):
+
+| Mode | Wall clock |
+| ---- | ---------- |
+| In-process (default, 3 simple checks, ~1800 files) | ~1.3s |
+| Workers forced (`GUARDRAILS_FORCE_WORKERS=1`, 4 workers) | ~1.6s |
+
+Force-worker wall-clock improves dramatically once per-worker work dominates spawn cost (heavier checks, larger codebase).
 
 ## CI integration
 
