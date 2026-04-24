@@ -202,8 +202,15 @@ export const useDeepLink = () => {
                     break
 
                 case DeeplinkType.ASSET_INBOX:
-                    navigateToScreen(replaceCurrentScreen, 'Messages', {
-                        initialTab: 'Inbox',
+                    navigateToScreen(false, 'Messages', {
+                        screen: 'AssetTransferRequests',
+                        params: {
+                            item: {
+                                address: parsedData.address,
+                                inboxAddress: parsedData.address,
+                                requestCount: 1,
+                            },
+                        },
                     })
                     break
 

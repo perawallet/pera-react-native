@@ -11,12 +11,19 @@
       "default": "./vitest/coverage.js"
     }
   },
-  "files": [
-    "tsconfig",
-    "vitest"
-  ],
-  "publishConfig": {
-    "access": "public"
+  "files": ["tsconfig", "vitest", "guardrails"],
+  "scripts": {
+    "guardrails": "tsx guardrails/index.ts",
+    "test": "vitest run"
   },
-  "scripts": {}
+  "dependencies": {
+    "typescript": "catalog:",
+    "fast-glob": "catalog:"
+  },
+  "devDependencies": {
+    "tsx": "catalog:",
+    "vitest": "catalog:",
+    "@types/node": "catalog:"
+  },
+  "publishConfig": { "access": "public" }
 }

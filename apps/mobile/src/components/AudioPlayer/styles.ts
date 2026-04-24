@@ -13,6 +13,8 @@
 import { makeStyles } from '@rneui/themed'
 import { ScaledSize } from 'react-native'
 
+const TIME_LABEL_MIN_WIDTH = 44
+
 export const useStyles = makeStyles(
     (theme, { width, height }: Pick<ScaledSize, 'width' | 'height'>) => ({
         container: {
@@ -44,7 +46,7 @@ export const useStyles = makeStyles(
         },
         timeLabel: {
             color: theme.colors.white,
-            minWidth: 44,
+            minWidth: TIME_LABEL_MIN_WIDTH,
         },
         progressTrack: {
             flex: 1,

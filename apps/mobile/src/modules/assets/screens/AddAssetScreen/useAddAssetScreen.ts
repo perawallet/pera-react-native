@@ -18,6 +18,7 @@ import {
 import type { AssetSearchItem } from '@perawallet/wallet-core-assets'
 import { useGlobalSearch } from '@perawallet/wallet-core-search'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
+import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
@@ -68,6 +69,7 @@ export const useAddAssetScreen = (
     )
     const { optIn } = useAssetOptInMutation()
     const { showToast } = useToast()
+    const { getMessage } = useAlgodErrorMessage()
 
     const {
         value: searchQuery,
@@ -154,10 +156,7 @@ export const useAddAssetScreen = (
         } catch (err) {
             showToast({
                 title: t('add_asset.opt_in.failed_title'),
-                body:
-                    err instanceof Error
-                        ? err.message
-                        : t('add_asset.opt_in.failed_body'),
+                body: getMessage(err).body,
                 type: 'error',
             })
         } finally {
