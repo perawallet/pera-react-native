@@ -12,6 +12,9 @@
 
 import { makeStyles } from '@rneui/themed'
 
+const BACKGROUND_IMAGE_WIDTH = 116
+const BACKGROUND_IMAGE_HEIGHT = 124
+
 export const useStyles = makeStyles(theme => {
     return {
         titleContainer: {
@@ -51,8 +54,8 @@ export const useStyles = makeStyles(theme => {
         },
         backgroundImage: {
             marginTop: theme.spacing.lg,
-            width: 116,
-            height: 124,
+            width: BACKGROUND_IMAGE_WIDTH,
+            height: BACKGROUND_IMAGE_HEIGHT,
         },
     }
 })

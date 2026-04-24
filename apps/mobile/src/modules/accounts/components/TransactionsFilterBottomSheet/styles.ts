@@ -12,6 +12,9 @@
 
 import { makeStyles } from '@rneui/themed'
 
+const CHECK_ICON_RADIUS = 20
+const DATE_PICKER_HEIGHT = 200
+
 export const useStyles = makeStyles(theme => ({
     container: {
         backgroundColor: theme.colors.background,
@@ -25,7 +28,7 @@ export const useStyles = makeStyles(theme => ({
         paddingVertical: theme.spacing.md,
     },
     headerSpacer: {
-        width: 24,
+        width: theme.spacing.xl,
     },
     title: {
         fontSize: 17,
@@ -48,7 +51,7 @@ export const useStyles = makeStyles(theme => ({
         fontSize: 16,
         fontWeight: '500',
         color: theme.colors.textMain,
-        marginBottom: 2,
+        marginBottom: theme.spacing.xxs,
     },
     listSubtitle: {
         fontSize: 13,
@@ -56,8 +59,8 @@ export const useStyles = makeStyles(theme => ({
     },
     checkIcon: {
         backgroundColor: theme.colors.positive + '1A', // 10% opacity roughly
-        borderRadius: 20,
-        padding: 4,
+        borderRadius: CHECK_ICON_RADIUS,
+        padding: theme.spacing.xs,
     },
     customRangeContainer: {
         paddingHorizontal: theme.spacing.lg,
@@ -70,14 +73,14 @@ export const useStyles = makeStyles(theme => ({
     },
     dateInputWrapper: {
         flex: 1,
-        borderBottomWidth: 1,
+        borderBottomWidth: theme.borders.sm,
         borderBottomColor: theme.colors.layerGray,
         paddingBottom: theme.spacing.xs,
         marginHorizontal: theme.spacing.xs,
     },
     activeDateInput: {
         borderBottomColor: theme.colors.textMain,
-        borderBottomWidth: 2,
+        borderBottomWidth: theme.borders.md,
     },
     dateLabel: {
         fontSize: 13,
@@ -91,10 +94,10 @@ export const useStyles = makeStyles(theme => ({
     datePickerContainer: {
         alignItems: 'center',
         justifyContent: 'center',
-        height: 200,
+        height: DATE_PICKER_HEIGHT,
     },
     datePicker: {
-        height: 200,
+        height: DATE_PICKER_HEIGHT,
         width: '100%',
     },
     doneButton: {
