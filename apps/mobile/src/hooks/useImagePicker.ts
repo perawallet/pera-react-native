@@ -10,23 +10,43 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-import { Alert, Linking } from 'react-native'
+import { useCallback, useMemo, useState } from 'react'
+import { Linking } from 'react-native'
 import * as ImagePicker from 'expo-image-picker'
 
-import { useLanguage } from '@hooks/useLanguage'
+export type PermissionDeniedState = {
+    isVisible: boolean
+    close: () => void
+    openSettings: () => void
+}
 
 export type UseImagePickerResult = {
     pickFromGallery: () => Promise<string | null>
+    /**
+     * State + handlers for the "permission denied and not re-askable" bottom
+     * sheet. Pair with `<PhotoPermissionDeniedSheet />` at the screen root.
+     */
+    permissionDenied: PermissionDeniedState
 }
 
 /**
  * Returns a URI for an image the user picks from their photo library.
- * Handles the iOS/Android permission prompt and guides the user to
- * Settings if they've denied access.
+ * Handles the iOS/Android permission prompt. When permission has been
+ * denied permanently, surfaces a `permissionDenied` state the caller
+ * renders via `PhotoPermissionDeniedSheet`.
  */
 export const useImagePicker = (): UseImagePickerResult => {
-    const { t } = useLanguage()
+    const [permissionDeniedVisible, setPermissionDeniedVisible] =
+        useState(false)
+
+    const closePermissionDenied = useCallback(
+        () => setPermissionDeniedVisible(false),
+        [],
+    )
+    const openSettings = useCallback(() => {
+        setPermissionDeniedVisible(false)
+        Linking.openSettings()
+    }, [])
 
     const ensurePermission = useCallback(async () => {
         const current = await ImagePicker.getMediaLibraryPermissionsAsync()
@@ -34,22 +54,12 @@ export const useImagePicker = (): UseImagePickerResult => {
             return true
         }
         if (!current.canAskAgain) {
-            Alert.alert(
-                t('image_picker.permission_title'),
-                t('image_picker.permission_body'),
-                [
-                    { text: t('common.cancel.label'), style: 'cancel' },
-                    {
-                        text: t('image_picker.open_settings.label'),
-                        onPress: () => Linking.openSettings(),
-                    },
-                ],
-            )
+            setPermissionDeniedVisible(true)
             return false
         }
         const next = await ImagePicker.requestMediaLibraryPermissionsAsync()
         return next.granted
-    }, [t])
+    }, [])
 
     const pickFromGallery = useCallback(async () => {
         const granted = await ensurePermission()
@@ -70,5 +80,14 @@ export const useImagePicker = (): UseImagePickerResult => {
         return result.assets[0]?.uri ?? null
     }, [ensurePermission])
 
-    return { pickFromGallery }
+    const permissionDenied = useMemo<PermissionDeniedState>(
+        () => ({
+            isVisible: permissionDeniedVisible,
+            close: closePermissionDenied,
+            openSettings,
+        }),
+        [permissionDeniedVisible, closePermissionDenied, openSettings],
+    )
+
+    return { pickFromGallery, permissionDenied }
 }

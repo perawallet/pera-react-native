@@ -10,64 +10,44 @@
  limitations under the License
  */
 
-import { useCallback, useState } from 'react'
-import { useContacts } from '@perawallet/wallet-core-contacts'
-import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
-import { PWIcon, PWText, PWView } from '@components/core'
+import { PWText, PWTouchableIcon, PWView } from '@components/core'
+import { AddressDisplay } from '@components/AddressDisplay'
 import { ContactAvatar } from '@components/ContactAvatar'
-import { CopyableText } from '@components/CopyableText'
 import { EmptyView } from '@components/EmptyView'
 import { SHORT_ADDRESS_FORMAT } from '@constants/ui'
-import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { ContactQRBottomSheet } from '@modules/contacts/components/ContactQRBottomSheet'
-import { shareText } from '@utils/shareText'
+import { useViewContactScreen } from './useViewContactScreen'
 import { useStyles } from './styles'
 
 export const ViewContactScreen = () => {
-    const { selectedContact } = useContacts()
     const styles = useStyles()
     const { t } = useLanguage()
-    const navigation = useAppNavigation()
-    const [qrVisible, setQrVisible] = useState(false)
-
-    const { data: nfdNames } = useNfdForAddressQuery(
-        selectedContact?.address ?? '',
-        { enabled: !!selectedContact?.address },
-    )
-    const nfdName = nfdNames?.at(0)?.name
-
-    const goToEdit = useCallback(() => {
-        navigation.navigate('EditContact')
-    }, [navigation])
-
-    const handleShare = useCallback(async () => {
-        if (!selectedContact) return
-        try {
-            await shareText({
-                title: selectedContact.name,
-                message: selectedContact.address,
-            })
-        } catch {
-            // User cancelled — ignore.
-        }
-    }, [selectedContact])
+    const {
+        selectedContact,
+        nfdName,
+        qrVisible,
+        openQR,
+        closeQR,
+        goToEdit,
+        handleShare,
+    } = useViewContactScreen()
 
     useNavigationHeader({
         enabled: true,
         right: selectedContact ? (
             <PWView style={styles.headerButtons}>
-                <PWIcon
-                    variant='primary'
+                <PWTouchableIcon
                     name='share'
+                    variant='primary'
                     onPress={handleShare}
                 />
-                <PWIcon
-                    variant='primary'
+                <PWTouchableIcon
                     name='edit-pen'
+                    variant='primary'
                     onPress={goToEdit}
                 />
             </PWView>
@@ -116,21 +96,21 @@ export const ViewContactScreen = () => {
                     {t('contacts.view_contact.account_address')}
                 </PWText>
                 <PWView style={styles.addressRow}>
-                    <CopyableText
-                        copyValue={selectedContact.address}
+                    <AddressDisplay
+                        address={selectedContact.address}
+                        addressFormat='full'
+                        displayType='address-only'
+                        showCopy={false}
+                        textProps={{
+                            variant: 'body',
+                            style: styles.fullAddress,
+                        }}
                         style={styles.addressTextWrapper}
-                    >
-                        <PWText
-                            variant='body'
-                            style={styles.fullAddress}
-                        >
-                            {selectedContact.address}
-                        </PWText>
-                    </CopyableText>
-                    <PWIcon
+                    />
+                    <PWTouchableIcon
                         name='qr'
                         variant='primary'
-                        onPress={() => setQrVisible(true)}
+                        onPress={openQR}
                     />
                 </PWView>
             </PWView>
@@ -152,7 +132,7 @@ export const ViewContactScreen = () => {
             )}
             <ContactQRBottomSheet
                 contact={qrVisible ? selectedContact : null}
-                onClose={() => setQrVisible(false)}
+                onClose={closeQR}
             />
         </PWView>
     )

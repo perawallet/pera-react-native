@@ -16,6 +16,7 @@ import { Keyboard, KeyboardAvoidingView, Platform } from 'react-native'
 import { PWButton, PWView } from '@components/core'
 import { ConfirmActionBottomSheet } from '@components/ConfirmActionBottomSheet'
 import { ContactForm } from '@components/ContactForm'
+import { PhotoPermissionDeniedSheet } from '@components/PhotoPermissionDeniedSheet'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useEditContactForm } from '@modules/contacts/hooks'
@@ -37,6 +38,7 @@ export const EditContactScreen = () => {
         confirmDelete,
         onAddressInputChange,
         onPickImage,
+        permissionDenied,
         save,
         removeContact,
     } = useEditContactForm()
@@ -102,6 +104,11 @@ export const EditContactScreen = () => {
                 message={t('contacts.edit_contact.remove_message')}
                 confirmLabel={t('contacts.edit_contact.remove_confirm')}
                 cancelLabel={t('contacts.edit_contact.remove_cancel')}
+            />
+            <PhotoPermissionDeniedSheet
+                isVisible={permissionDenied.isVisible}
+                onClose={permissionDenied.close}
+                onOpenSettings={permissionDenied.openSettings}
             />
         </KeyboardAvoidingView>
     )

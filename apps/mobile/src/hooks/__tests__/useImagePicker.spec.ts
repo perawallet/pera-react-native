@@ -10,21 +10,16 @@
  limitations under the License
  */
 
-import { renderHook } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import * as ImagePicker from 'expo-image-picker'
+import { Linking } from 'react-native'
 import { useImagePicker } from '../useImagePicker'
 
 vi.mock('expo-image-picker', () => ({
     getMediaLibraryPermissionsAsync: vi.fn(),
     requestMediaLibraryPermissionsAsync: vi.fn(),
     launchImageLibraryAsync: vi.fn(),
-}))
-
-vi.mock('@hooks/useLanguage', () => ({
-    useLanguage: vi.fn(() => ({
-        t: (key: string) => key,
-    })),
 }))
 
 describe('useImagePicker', () => {
@@ -71,7 +66,7 @@ describe('useImagePicker', () => {
         expect(uri).toBeNull()
     })
 
-    it('returns null when permission is denied and not reprompt-able', async () => {
+    it('exposes the permission-denied state when permission is not reprompt-able', async () => {
         vi.mocked(
             ImagePicker.getMediaLibraryPermissionsAsync,
         ).mockResolvedValue({
@@ -82,9 +77,63 @@ describe('useImagePicker', () => {
         >)
 
         const { result } = renderHook(() => useImagePicker())
-        const uri = await result.current.pickFromGallery()
+        expect(result.current.permissionDenied.isVisible).toBe(false)
+
+        let uri: string | null = null
+        await act(async () => {
+            uri = await result.current.pickFromGallery()
+        })
 
         expect(uri).toBeNull()
         expect(ImagePicker.launchImageLibraryAsync).not.toHaveBeenCalled()
+        expect(result.current.permissionDenied.isVisible).toBe(true)
+    })
+
+    it('hides the permission-denied state when close is called', async () => {
+        vi.mocked(
+            ImagePicker.getMediaLibraryPermissionsAsync,
+        ).mockResolvedValue({
+            granted: false,
+            canAskAgain: false,
+        } as Awaited<
+            ReturnType<typeof ImagePicker.getMediaLibraryPermissionsAsync>
+        >)
+
+        const { result } = renderHook(() => useImagePicker())
+        await act(async () => {
+            await result.current.pickFromGallery()
+        })
+        expect(result.current.permissionDenied.isVisible).toBe(true)
+
+        act(() => {
+            result.current.permissionDenied.close()
+        })
+        expect(result.current.permissionDenied.isVisible).toBe(false)
+    })
+
+    it('invokes Linking.openSettings and hides the sheet when openSettings is called', async () => {
+        vi.mocked(
+            ImagePicker.getMediaLibraryPermissionsAsync,
+        ).mockResolvedValue({
+            granted: false,
+            canAskAgain: false,
+        } as Awaited<
+            ReturnType<typeof ImagePicker.getMediaLibraryPermissionsAsync>
+        >)
+        const openSettingsSpy = vi
+            .spyOn(Linking, 'openSettings')
+            .mockResolvedValue(undefined)
+
+        const { result } = renderHook(() => useImagePicker())
+        await act(async () => {
+            await result.current.pickFromGallery()
+        })
+
+        act(() => {
+            result.current.permissionDenied.openSettings()
+        })
+
+        expect(openSettingsSpy).toHaveBeenCalledTimes(1)
+        expect(result.current.permissionDenied.isVisible).toBe(false)
     })
 })

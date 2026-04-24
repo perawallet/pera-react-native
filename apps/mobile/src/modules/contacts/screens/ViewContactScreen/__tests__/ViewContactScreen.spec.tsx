@@ -89,7 +89,12 @@ describe('ViewContactScreen', () => {
             data: [{ name: 'alice.algo' }],
         })
         render(<ViewContactScreen />)
-        expect(screen.getByText('alice.algo')).toBeTruthy()
+        // AddressDisplay also consults NFD internally — `alice.algo` may
+        // appear twice (once from our NFD section, once inside AddressDisplay
+        // under the mocked response). We only care that the NFD label mounts.
+        expect(screen.getAllByText('alice.algo').length).toBeGreaterThanOrEqual(
+            1,
+        )
         expect(screen.getByText('contacts.view_contact.nfd_label')).toBeTruthy()
     })
 
@@ -100,7 +105,7 @@ describe('ViewContactScreen', () => {
 
     it('opens the QR sheet when the QR icon is pressed', () => {
         render(<ViewContactScreen />)
-        const qrIcon = screen.getByTestId('icon-qr')
+        const qrIcon = screen.getByTestId('touchable-icon-qr')
         fireEvent.click(qrIcon)
         // Contact is now passed into the QR sheet; the sheet renders the
         // contact name inside itself.
@@ -113,7 +118,7 @@ describe('ViewContactScreen', () => {
         render(<ViewContactScreen />)
         // Render the captured header-right subtree and click the edit icon.
         render(<>{capturedHeaderRight}</>)
-        fireEvent.click(screen.getByTestId('icon-edit-pen'))
+        fireEvent.click(screen.getByTestId('touchable-icon-edit-pen'))
         expect(mockNavigate).toHaveBeenCalledWith('EditContact')
     })
 
@@ -121,7 +126,7 @@ describe('ViewContactScreen', () => {
         mockShareText.mockResolvedValue(undefined)
         render(<ViewContactScreen />)
         render(<>{capturedHeaderRight}</>)
-        fireEvent.click(screen.getByTestId('icon-share'))
+        fireEvent.click(screen.getByTestId('touchable-icon-share'))
         expect(mockShareText).toHaveBeenCalledWith({
             title: CONTACT.name,
             message: CONTACT.address,
@@ -134,7 +139,7 @@ describe('ViewContactScreen', () => {
         render(<>{capturedHeaderRight}</>)
         // This must not throw — the screen's catch-all handles it.
         expect(() =>
-            fireEvent.click(screen.getByTestId('icon-share')),
+            fireEvent.click(screen.getByTestId('touchable-icon-share')),
         ).not.toThrow()
     })
 })

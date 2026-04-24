@@ -10,9 +10,17 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-contacts'
+/**
+ * Thrown by `saveContact` when a contact with the same address already
+ * exists (and is not the contact being updated). UI layers catch this and
+ * surface it as a form-level error.
+ */
+export class DuplicateAddressError extends Error {
+    readonly address: string
 
-export * from './errors'
-export * from './models'
-export * from './schema'
-export * from './hooks'
+    constructor(address: string) {
+        super(`A contact with address ${address} already exists`)
+        this.name = 'DuplicateAddressError'
+        this.address = address
+    }
+}
