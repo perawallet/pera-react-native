@@ -16,7 +16,7 @@ export const useStyles = makeStyles(theme => {
     return {
         container: {
             backgroundColor: theme.colors.layerGrayLightest,
-            borderWidth: 1,
+            borderWidth: theme.borders.sm,
             borderColor: theme.colors.layerGray,
             borderRadius: theme.spacing.lg,
             padding: theme.spacing.md,
@@ -75,7 +75,7 @@ export const useStyles = makeStyles(theme => {
             textAlign: 'right',
         },
         divider: {
-            height: 1,
+            height: theme.borders.sm,
             backgroundColor: theme.colors.layerGray,
             marginVertical: theme.spacing.md,
         },

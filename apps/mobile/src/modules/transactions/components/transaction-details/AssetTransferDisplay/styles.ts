@@ -41,7 +41,7 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.xs,
     },
     assetIcon: {
-        borderWidth: 1,
+        borderWidth: theme.borders.sm,
         borderColor: 'blue',
     },
     assetName: {

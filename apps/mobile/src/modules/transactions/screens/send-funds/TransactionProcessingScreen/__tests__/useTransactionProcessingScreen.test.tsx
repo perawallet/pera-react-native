@@ -198,11 +198,15 @@ describe('useTransactionProcessingScreen', () => {
         })
 
         expect(mockShowToast).toHaveBeenCalledWith(
-            {
-                title: 'Invalid transaction',
-                body: 'Something appears to have gone wrong with this transaction.',
+            expect.objectContaining({
+                title: expect.stringContaining(
+                    'errors.algod.unknown_node_error',
+                ),
+                body: expect.stringContaining(
+                    'errors.algod.unknown_node_error',
+                ),
                 type: 'error',
-            },
+            }),
             { notifier: undefined },
         )
         expect(mockGoBack).toHaveBeenCalled()

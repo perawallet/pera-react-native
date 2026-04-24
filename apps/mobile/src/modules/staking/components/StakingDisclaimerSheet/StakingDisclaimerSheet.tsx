@@ -72,6 +72,7 @@ export const StakingDisclaimerSheet = ({
             enablePanDownToClose
             size='lg'
             autoCreateContainer={false}
+            testID='staking-disclaimer-sheet'
         >
             <PWToolbar
                 left={
@@ -79,10 +80,14 @@ export const StakingDisclaimerSheet = ({
                         name='cross'
                         variant='secondary'
                         onPress={onClose}
+                        testID='staking-disclaimer-close-button'
                     />
                 }
                 center={
-                    <PWText variant='h4'>
+                    <PWText
+                        variant='h4'
+                        testID='staking-disclaimer-title'
+                    >
                         {t('staking.disclaimer.title')}
                     </PWText>
                 }
@@ -93,6 +98,7 @@ export const StakingDisclaimerSheet = ({
                 onScroll={handleScroll}
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={styles.scrollViewContent}
+                testID='staking-disclaimer-content'
             >
                 <PWText style={styles.emphasizedText}>
                     {t('staking.disclaimer.intro')}
@@ -140,6 +146,7 @@ export const StakingDisclaimerSheet = ({
                     onPress={onAccept}
                     isDisabled={!isScrolledToBottom}
                     style={styles.acceptButton}
+                    testID='staking-disclaimer-accept-button'
                 />
             </BottomSheetScrollView>
         </PWBottomSheet>

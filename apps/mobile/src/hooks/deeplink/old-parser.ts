@@ -93,6 +93,14 @@ export const parsePerawalletUri = (
         } as StakingDeeplink
     }
 
+    if (pathPart === 'asset-inbox') {
+        return {
+            type: DeeplinkType.ASSET_INBOX,
+            sourceUrl: url,
+            address: params.account,
+        } as AssetInboxDeeplink
+    }
+
     if (!pathPart && params.amount === '0' && params.asset) {
         return {
             type: DeeplinkType.ASSET_OPT_IN,

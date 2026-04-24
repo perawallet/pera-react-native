@@ -12,6 +12,8 @@
 
 import { makeStyles } from '@rneui/themed'
 
+const BUTTON_MIN_WIDTH = 200
+
 export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
@@ -27,6 +29,6 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'center',
     },
     button: {
-        minWidth: 200,
+        minWidth: BUTTON_MIN_WIDTH,
     },
 }))

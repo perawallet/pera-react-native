@@ -20,13 +20,13 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
             marginBottom: insets.bottom,
         },
         messageContainer: {
-            flex: 1,
+            flexGrow: 1,
             paddingVertical: theme.spacing.xl,
             paddingHorizontal: theme.spacing.md,
             gap: theme.spacing.xl,
         },
         emptyView: {
-            flex: 1,
+            flexGrow: 1,
             justifyContent: 'center',
             alignItems: 'center',
             marginBottom: insets.bottom,

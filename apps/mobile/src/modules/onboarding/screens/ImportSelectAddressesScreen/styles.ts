@@ -73,7 +73,7 @@ export const useStyles = makeStyles(theme => ({
     },
     itemTitle: {
         color: theme.colors.textMain,
-        marginBottom: 2,
+        marginBottom: theme.spacing.xxs,
     },
     itemSubtitle: {
         color: theme.colors.textGray,

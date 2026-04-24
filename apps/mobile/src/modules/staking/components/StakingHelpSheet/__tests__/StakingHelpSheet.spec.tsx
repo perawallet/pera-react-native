@@ -61,7 +61,7 @@ describe('StakingHelpSheet', () => {
             />,
         )
 
-        fireEvent.click(screen.getByTestId('icon-cross'))
+        fireEvent.click(screen.getByTestId('staking-help-close-button'))
 
         expect(onClose).toHaveBeenCalledTimes(1)
     })
