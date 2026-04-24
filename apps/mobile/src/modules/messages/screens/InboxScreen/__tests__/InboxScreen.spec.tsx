@@ -21,9 +21,12 @@ vi.mock('@modules/messages/components/InboxItem/InboxItem', () => ({
     ),
 }))
 
-vi.mock('@modules/messages/components/ClaimAssetsBottomSheet', () => ({
-    ClaimAssetsBottomSheet: () => null,
-}))
+vi.mock(
+    '@modules/messages/components/MultisigInvitationDetailBottomSheet',
+    () => ({
+        MultisigInvitationDetailBottomSheet: () => null,
+    }),
+)
 
 vi.mock('@perawallet/wallet-core-messages', () => ({
     useInboxQuery: vi.fn(() => ({
@@ -73,7 +76,7 @@ describe('InboxScreen', () => {
                     createdAt: new Date(0),
                 },
                 {
-                    type: 'joint_account_import',
+                    type: 'multisig_import',
                     data: {
                         customId: 'msig-1',
                         createdAt: new Date('2025-01-15T00:00:00Z'),
@@ -92,6 +95,6 @@ describe('InboxScreen', () => {
 
         const { getByText } = render(<InboxScreen />)
         expect(getByText('asa_inbox')).toBeTruthy()
-        expect(getByText('joint_account_import')).toBeTruthy()
+        expect(getByText('multisig_import')).toBeTruthy()
     })
 })

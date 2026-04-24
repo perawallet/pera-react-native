@@ -56,9 +56,9 @@ export interface ASAInbox {
 }
 
 export type InboxItem =
-    | { type: 'joint_account_import'; data: MultiSigAccount; createdAt: Date }
+    | { type: 'multisig_import'; data: MultiSigAccount; createdAt: Date }
     | {
-          type: 'joint_account_sign'
+          type: 'multisig_sign'
           data: MultisigSignRequest
           createdAt: Date
       }

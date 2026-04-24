@@ -29,29 +29,71 @@ vi.mock('@react-navigation/native', async importOriginal => {
 
 vi.mock('@perawallet/wallet-core-messages', () => ({
     useInboxStatus: vi.fn(() => ({
-        hasUnreadItems: false,
+        hasUnreadInboxItems: 0,
+        hasUnreadNotifications: false,
     })),
 }))
 
 describe('NotificationsIcon', () => {
-    it('renders inbox icon when there are no new notifications', () => {
+    it('renders inbox icon with no badge when nothing is unread', () => {
         const { getByTestId, queryByTestId } = render(<NotificationsIcon />)
         expect(getByTestId('icon-inbox')).toBeTruthy()
         expect(queryByTestId('notification-badge')).toBeNull()
+        expect(queryByTestId('notification-count-badge')).toBeNull()
     })
 
-    it('renders inbox-with-badge icon when there are new notifications', () => {
+    it('renders a dot badge when only notifications are unread', () => {
         vi.mocked(useInboxStatus).mockReturnValue({
-            hasUnreadItems: true,
+            hasUnreadInboxItems: 0,
+            hasUnreadNotifications: true,
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any)
 
-        const { getByTestId } = render(<NotificationsIcon />)
+        const { getByTestId, queryByTestId } = render(<NotificationsIcon />)
         expect(getByTestId('icon-inbox')).toBeTruthy()
         expect(getByTestId('notification-badge')).toBeTruthy()
+        expect(queryByTestId('notification-count-badge')).toBeNull()
     })
 
-    it('navigates to Messages screen with Notifications tab when pressed', () => {
+    it('renders a count badge with the inbox count when inbox has unread items', () => {
+        vi.mocked(useInboxStatus).mockReturnValue({
+            hasUnreadInboxItems: 3,
+            hasUnreadNotifications: false,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
+
+        const { getByTestId, queryByTestId, getByText } = render(
+            <NotificationsIcon />,
+        )
+        expect(getByTestId('notification-count-badge')).toBeTruthy()
+        expect(getByText('3')).toBeTruthy()
+        expect(queryByTestId('notification-badge')).toBeNull()
+    })
+
+    it('prefers the count badge over the dot when both inbox and notifications are unread', () => {
+        vi.mocked(useInboxStatus).mockReturnValue({
+            hasUnreadInboxItems: 2,
+            hasUnreadNotifications: true,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
+
+        const { getByTestId, queryByTestId } = render(<NotificationsIcon />)
+        expect(getByTestId('notification-count-badge')).toBeTruthy()
+        expect(queryByTestId('notification-badge')).toBeNull()
+    })
+
+    it('caps the displayed count at 9+', () => {
+        vi.mocked(useInboxStatus).mockReturnValue({
+            hasUnreadInboxItems: 250,
+            hasUnreadNotifications: false,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
+
+        const { getByText } = render(<NotificationsIcon />)
+        expect(getByText('9+')).toBeTruthy()
+    })
+
+    it('navigates to Messages screen when pressed', () => {
         const { getByRole } = render(<NotificationsIcon />)
 
         fireEvent.click(getByRole('button'))

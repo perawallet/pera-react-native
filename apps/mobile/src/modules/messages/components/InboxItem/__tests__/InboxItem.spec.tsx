@@ -20,6 +20,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     truncateAlgorandAddress: vi.fn(
         (addr: string) => `${addr.slice(0, 5)}...${addr.slice(-5)}`,
     ),
+    formatRelativeTime: vi.fn(() => 'just now'),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -44,8 +45,24 @@ describe('InboxItem', () => {
             createdAt: new Date(0),
         }
 
-        const { getByText } = render(<InboxItem item={item} />)
+        const { getByText, getByTestId } = render(<InboxItem item={item} />)
         expect(getByText('messages.inbox.asa_requests')).toBeTruthy()
+        expect(getByTestId('unread_indicator_dot')).toBeTruthy()
+    })
+
+    it('hides the unread dot for ASA inbox item with no pending requests', () => {
+        const item: InboxItemModel = {
+            type: 'asa_inbox',
+            data: {
+                address: 'TESTADDRESS123456789',
+                inboxAddress: null,
+                requestCount: 0,
+            },
+            createdAt: new Date(0),
+        }
+
+        const { queryByTestId } = render(<InboxItem item={item} />)
+        expect(queryByTestId('unread_indicator_dot')).toBeNull()
     })
 
     it('renders ASA inbox item with account display name', () => {
@@ -63,9 +80,9 @@ describe('InboxItem', () => {
         expect(getByText('No Account')).toBeTruthy()
     })
 
-    it('renders joint account import item', () => {
+    it('renders joint account import invitation with new layout', () => {
         const item: InboxItemModel = {
-            type: 'joint_account_import',
+            type: 'multisig_import',
             data: {
                 customId: 'msig-1',
                 createdAt: new Date('2025-01-15T00:00:00Z'),
@@ -77,14 +94,16 @@ describe('InboxItem', () => {
             createdAt: new Date('2025-01-15T00:00:00Z'),
         }
 
-        const { getByText } = render(<InboxItem item={item} />)
-        expect(getByText('messages.inbox.joint_account_import')).toBeTruthy()
-        expect(getByText('No Account')).toBeTruthy()
+        const { getByText, getByTestId } = render(<InboxItem item={item} />)
+        expect(getByText('messages.inbox.invitation_title_bold')).toBeTruthy()
+        expect(getByText('messages.inbox.view_invitation_details')).toBeTruthy()
+        expect(getByTestId('multisig_invitation_inbox_item')).toBeTruthy()
+        expect(getByTestId('unread_indicator_dot')).toBeTruthy()
     })
 
     it('renders joint account sign request item with status', () => {
         const item: InboxItemModel = {
-            type: 'joint_account_sign',
+            type: 'multisig_sign',
             data: {
                 id: '1',
                 status: 'pending',
@@ -105,9 +124,37 @@ describe('InboxItem', () => {
             createdAt: new Date('2025-01-20T00:00:00Z'),
         }
 
-        const { getByText } = render(<InboxItem item={item} />)
-        expect(getByText('messages.inbox.joint_account_sign')).toBeTruthy()
+        const { getByText, getByTestId } = render(<InboxItem item={item} />)
+        expect(getByText('messages.inbox.multisig_sign')).toBeTruthy()
         expect(getByText('pending')).toBeTruthy()
+        expect(getByTestId('unread_indicator_dot')).toBeTruthy()
+    })
+
+    it('hides the unread dot for a confirmed joint account sign request', () => {
+        const item: InboxItemModel = {
+            type: 'multisig_sign',
+            data: {
+                id: '2',
+                status: 'confirmed',
+                type: 'transfer',
+                createdAt: new Date('2025-01-20T00:00:00Z'),
+                expectedExpireDatetime: new Date('2025-01-21T00:00:00Z'),
+                failReasonDisplay: null,
+                multisigAccount: {
+                    customId: 'msig-1',
+                    createdAt: new Date('2025-01-10T00:00:00Z'),
+                    address: 'MSIG_ADDR',
+                    version: 1,
+                    threshold: 2,
+                    participantAddresses: ['ADDR1', 'ADDR2'],
+                },
+                transactionLists: [],
+            },
+            createdAt: new Date('2025-01-20T00:00:00Z'),
+        }
+
+        const { queryByTestId } = render(<InboxItem item={item} />)
+        expect(queryByTestId('unread_indicator_dot')).toBeNull()
     })
 
     it('renders correct icon for each item type', () => {
@@ -125,9 +172,9 @@ describe('InboxItem', () => {
         expect(getByTestId('icon-inbox')).toBeTruthy()
     })
 
-    it('renders group icon for joint account import', () => {
+    it('renders multisig-account avatar for joint account import', () => {
         const importItem: InboxItemModel = {
-            type: 'joint_account_import',
+            type: 'multisig_import',
             data: {
                 customId: 'msig-1',
                 createdAt: new Date('2025-01-15T00:00:00Z'),
@@ -140,12 +187,12 @@ describe('InboxItem', () => {
         }
 
         const { getByTestId } = render(<InboxItem item={importItem} />)
-        expect(getByTestId('icon-transactions/group')).toBeTruthy()
+        expect(getByTestId('icon-accounts/light/multisig-account')).toBeTruthy()
     })
 
     it('renders edit-pen icon for sign requests', () => {
         const signItem: InboxItemModel = {
-            type: 'joint_account_sign',
+            type: 'multisig_sign',
             data: {
                 id: '1',
                 status: 'ready',

@@ -99,8 +99,8 @@ describe('useInboxQuery', () => {
         const { data: inboxItems } = result.current
         expect(inboxItems).toHaveLength(3)
 
-        expect(inboxItems?.[0].type).toBe('joint_account_import')
-        expect(inboxItems?.[1].type).toBe('joint_account_sign')
+        expect(inboxItems?.[0].type).toBe('multisig_import')
+        expect(inboxItems?.[1].type).toBe('multisig_sign')
         expect(inboxItems?.[2].type).toBe('asa_inbox')
     })
 
@@ -130,8 +130,8 @@ describe('useInboxQuery', () => {
         })
 
         const importItem = result.current.data?.[0]
-        expect(importItem?.type).toBe('joint_account_import')
-        if (importItem?.type === 'joint_account_import') {
+        expect(importItem?.type).toBe('multisig_import')
+        if (importItem?.type === 'multisig_import') {
             expect(importItem.data.customId).toBe('msig-1')
             expect(importItem.data.createdAt).toEqual(
                 new Date('2025-01-15T00:00:00Z'),

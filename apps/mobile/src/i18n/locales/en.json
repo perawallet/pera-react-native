@@ -663,8 +663,11 @@
             "empty_body": "You do not currently have any pending inbox messages",
             "asa_requests_one": "1 incoming asset",
             "asa_requests_other": "{{count}} incoming assets",
-            "joint_account_import": "Shared Account Import Request",
-            "joint_account_sign": "Shared Account Sign Request"
+            "multisig_import": "Shared Account Import Request",
+            "multisig_sign": "Shared Account Sign Request",
+            "invitation_title_bold": "You've been invited",
+            "invitation_title_suffix": " to join a shared account ",
+            "view_invitation_details": "View invitation details"
         },
         "claim": {
             "asset_transfer_requests_title": "Asset Transfer Requests",
@@ -730,6 +733,31 @@
             "address_label": "Account Address",
             "remove": "Remove Address",
             "done": "Done"
+        },
+        "invitation": {
+            "sheet_title": "Shared Account",
+            "title": "Shared Account Invitation",
+            "number_of_accounts_label": "Number of accounts",
+            "you_included": "You included",
+            "threshold_label": "Threshold",
+            "threshold_description": "Minimum number of accounts \nrequired to confirm a transaction",
+            "accounts_heading": "Accounts ({{count}})",
+            "add_to_accounts": "Add to Accounts",
+            "ignore": "Ignore",
+            "copy_address": "Copy address",
+            "copied": "Address copied",
+            "ignore_error": "Could not ignore invitation. Please try again.",
+            "accept_success": "Shared account added",
+            "accept_error": "Could not add account. Please try again.",
+            "already_added": "This shared account is already in your wallet",
+            "name": {
+                "screen_title": "Shared Account",
+                "title": "Name your shared account",
+                "description": "Name your account to easily identify it while using the Pera Wallet. These names are stored locally, and can only be seen by you.",
+                "default_name": "Shared Account",
+                "finish_button": "Finish",
+                "saving": "Saving shared account..."
+            }
         }
     },
     "onboarding": {

@@ -26,4 +26,23 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    countBadge: {
+        position: 'absolute',
+        top: -theme.spacing.sm,
+        right: -theme.spacing.sm,
+        minWidth: theme.spacing.xl,
+        height: theme.spacing.xl,
+        paddingHorizontal: theme.spacing.xs,
+        borderRadius: theme.spacing.xl,
+        borderWidth: theme.borders.lg,
+        borderColor: theme.colors.background,
+        backgroundColor: theme.colors.alertNegative,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    countText: {
+        color: theme.colors.textWhite,
+        lineHeight: 14,
+        textAlign: 'center',
+    },
 }))

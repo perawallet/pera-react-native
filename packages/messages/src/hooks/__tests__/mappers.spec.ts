@@ -290,7 +290,7 @@ describe('mappers', () => {
             const result = mapInboxResponse(response)
 
             expect(result).toHaveLength(1)
-            expect(result[0].type).toBe('joint_account_import')
+            expect(result[0].type).toBe('multisig_import')
             expect(result[0].createdAt).toEqual(
                 new Date('2025-01-15T00:00:00Z'),
             )
@@ -332,7 +332,7 @@ describe('mappers', () => {
             const result = mapInboxResponse(response)
 
             expect(result).toHaveLength(1)
-            expect(result[0].type).toBe('joint_account_sign')
+            expect(result[0].type).toBe('multisig_sign')
             expect(result[0].createdAt).toEqual(
                 new Date('2025-01-20T00:00:00Z'),
             )
@@ -420,10 +420,10 @@ describe('mappers', () => {
 
             expect(result).toHaveLength(5)
             expect(
-                result.filter(item => item.type === 'joint_account_import'),
+                result.filter(item => item.type === 'multisig_import'),
             ).toHaveLength(2)
             expect(
-                result.filter(item => item.type === 'joint_account_sign'),
+                result.filter(item => item.type === 'multisig_sign'),
             ).toHaveLength(1)
             expect(
                 result.filter(item => item.type === 'asa_inbox'),

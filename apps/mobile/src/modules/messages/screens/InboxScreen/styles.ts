@@ -21,9 +21,11 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => {
         },
         messageContainer: {
             flexGrow: 1,
-            paddingVertical: theme.spacing.xl,
             paddingHorizontal: theme.spacing.md,
             gap: theme.spacing.xl,
+        },
+        listEdgeSpacer: {
+            height: theme.spacing.xl,
         },
         emptyView: {
             flexGrow: 1,

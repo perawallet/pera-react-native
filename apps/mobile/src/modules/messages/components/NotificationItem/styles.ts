@@ -59,17 +59,11 @@ export const useStyles = makeStyles(theme => {
             aspectRatio: 1,
             width: '100%',
             borderRadius: imageSize / 2,
+            overflow: 'hidden',
         },
-        unreadIndicatorContainer: {
-            width: theme.spacing.sm,
-        },
-        unreadIndicator: {
-            width: theme.spacing.sm,
-            height: theme.spacing.sm,
-            borderRadius: theme.spacing.sm / 2,
-            backgroundColor: theme.colors.buttonNewPrimaryBg,
-            position: 'absolute',
-            top: imageSize / 2,
+        unreadIndicatorWrapper: {
+            height: imageSize,
+            marginTop: theme.spacing.xs,
         },
     }
 })

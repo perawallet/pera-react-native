@@ -13,7 +13,7 @@
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { ASAInbox, InboxItem } from './models'
 
-const SORT_ORDER = ['joint_account_import', 'joint_account_sign', 'asa_inbox']
+const SORT_ORDER = ['multisig_import', 'multisig_sign', 'asa_inbox']
 
 export const sortInboxItems = (
     a: InboxItem,
