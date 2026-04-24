@@ -13,6 +13,7 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Contact, ContactsState } from '../models'
+import { DuplicateAddressError } from '../errors'
 import {
     generateOrderedUniqueId,
     registerStore,
@@ -41,18 +42,25 @@ export const useContactsStore: UseBoundStore<
                     ...contact,
                     id: contact.id ?? generateOrderedUniqueId(),
                 }
-                set(state => {
-                    const existing = state.contacts ?? []
-                    const existingIndex = existing.findIndex(
-                        r => r.id === newContact.id,
-                    )
-                    if (existingIndex >= 0) {
-                        const updated = [...existing]
-                        updated[existingIndex] = newContact
-                        return { contacts: updated }
-                    }
-                    return { contacts: [...existing, newContact] }
-                })
+                const existing = get().contacts ?? []
+                const duplicate = existing.find(
+                    c =>
+                        c.address === newContact.address &&
+                        c.id !== newContact.id,
+                )
+                if (duplicate) {
+                    throw new DuplicateAddressError(newContact.address)
+                }
+                const existingIndex = existing.findIndex(
+                    c => c.id === newContact.id,
+                )
+                if (existingIndex >= 0) {
+                    const updated = [...existing]
+                    updated[existingIndex] = newContact
+                    set({ contacts: updated })
+                } else {
+                    set({ contacts: [...existing, newContact] })
+                }
                 return true
             },
             deleteContact: (contact: Contact) => {

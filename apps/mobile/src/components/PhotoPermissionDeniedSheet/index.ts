@@ -10,9 +10,5 @@
  limitations under the License
  */
 
-export const name = '@perawallet/wallet-core-contacts'
-
-export * from './errors'
-export * from './models'
-export * from './schema'
-export * from './hooks'
+export { PhotoPermissionDeniedSheet } from './PhotoPermissionDeniedSheet'
+export type { PhotoPermissionDeniedSheetProps } from './PhotoPermissionDeniedSheet'

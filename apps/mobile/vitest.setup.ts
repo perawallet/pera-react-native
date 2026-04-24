@@ -1049,6 +1049,7 @@ vi.mock('react-native', () => {
         },
         Linking: {
             openURL: vi.fn(),
+            openSettings: vi.fn(),
             canOpenURL: vi.fn(),
             getInitialURL: vi.fn(),
             addEventListener: vi.fn(),
