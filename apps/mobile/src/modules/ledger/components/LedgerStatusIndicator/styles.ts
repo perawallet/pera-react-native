@@ -45,9 +45,9 @@ export const useStyles = makeStyles((theme, { status }: StyleProps) => {
             alignItems: 'center',
         },
         dot: {
-            width: 8,
-            height: 8,
-            borderRadius: 4,
+            width: theme.spacing.sm,
+            height: theme.spacing.sm,
+            borderRadius: theme.borderRadius.xs,
             backgroundColor: statusColor,
             marginRight: theme.spacing.xs,
         },

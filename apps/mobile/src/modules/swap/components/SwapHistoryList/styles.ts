@@ -43,7 +43,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGray,
     },
     itemSeparator: {
-        height: 1,
+        height: theme.borders.sm,
         backgroundColor: theme.colors.layerGrayLighter,
     },
 }))
