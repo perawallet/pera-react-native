@@ -1,4 +1,12 @@
-export const IN_PROCESS_THRESHOLD = 200
+/**
+ * Below this file count, the runner executes in-process. The worker pool
+ * costs ~200ms per worker for tsx registration; until a run amortises that
+ * across enough files (or CPU-heavy checks), the in-process path is faster.
+ * Set above the current codebase size so workers engage automatically as
+ * the codebase grows or as individual checks become more expensive.
+ * Use GUARDRAILS_FORCE_WORKERS=1 to bypass this in benchmarks / tests.
+ */
+export const IN_PROCESS_THRESHOLD = 3000
 export const FILES_PER_WORKER = 150
 export const MAX_WORKERS = 4
 

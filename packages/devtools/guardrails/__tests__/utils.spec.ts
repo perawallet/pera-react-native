@@ -243,7 +243,7 @@ describe('filterSuppressed', () => {
 
 describe('guardrails constants', () => {
     it('exposes the documented defaults', () => {
-        expect(IN_PROCESS_THRESHOLD).toBe(200)
+        expect(IN_PROCESS_THRESHOLD).toBe(3000)
         expect(FILES_PER_WORKER).toBe(150)
         expect(MAX_WORKERS).toBe(4)
     })
