@@ -20,7 +20,7 @@ export const useStyles = makeStyles(theme => ({
         padding: theme.spacing.lg,
         backgroundColor: theme.colors.layerGrayLighter,
         borderRadius: theme.spacing.lg,
-        borderWidth: 1,
+        borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGray,
     },
     content: {

@@ -12,6 +12,8 @@
 
 import { makeStyles } from '@rneui/themed'
 
+const HEADER_MIN_HEIGHT = 220
+
 export const useStyles = makeStyles(theme => {
     return {
         container: {
@@ -42,13 +44,13 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.sm,
         },
         icon: {
-            width: 24,
-            height: 24,
+            width: theme.spacing.xl,
+            height: theme.spacing.xl,
             backgroundColor: theme.colors.background,
         },
         iconLight: {
-            width: 24,
-            height: 24,
+            width: theme.spacing.xl,
+            height: theme.spacing.xl,
             backgroundColor: theme.colors.layerGray,
         },
         valueBarContainer: {
@@ -118,7 +120,7 @@ export const useStyles = makeStyles(theme => {
             textAlign: 'center',
         },
         headerContainer: {
-            minHeight: 220, // Fixed value to prevent "bouncing" on load
+            minHeight: HEADER_MIN_HEIGHT, // Fixed value to prevent "bouncing" on load
         },
     }
 })
