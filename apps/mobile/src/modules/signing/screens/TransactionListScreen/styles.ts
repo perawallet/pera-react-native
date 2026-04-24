@@ -44,7 +44,7 @@ export const useStyles = makeStyles(theme => ({
         padding: theme.spacing.lg,
         paddingVertical: theme.spacing.lg,
         gap: theme.spacing.md,
-        borderWidth: 1,
+        borderWidth: theme.borders.sm,
         borderColor: theme.colors.layerGray,
     },
     groupPreviewContent: {

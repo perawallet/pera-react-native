@@ -77,7 +77,7 @@ export const useStyles = makeStyles((theme, insets?: EdgeInsets) => ({
     },
     itemTitle: {
         color: theme.colors.textMain,
-        marginBottom: 2,
+        marginBottom: theme.spacing.xxs,
     },
     itemSubtitle: {
         color: theme.colors.textGray,

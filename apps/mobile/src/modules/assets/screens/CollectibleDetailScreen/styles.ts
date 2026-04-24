@@ -12,6 +12,8 @@
 
 import { makeStyles } from '@rneui/themed'
 
+const BIG_SKELETON_HEIGHT = 300
+
 export const useStyles = makeStyles(theme => ({
     container: {
         flex: 1,
@@ -104,7 +106,7 @@ export const useStyles = makeStyles(theme => ({
     },
     bigSkeleton: {
         width: '80%',
-        height: 300,
+        height: BIG_SKELETON_HEIGHT,
         borderRadius: theme.borderRadius.lg,
         marginBottom: theme.spacing.xl,
     },

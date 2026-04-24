@@ -12,6 +12,9 @@
 
 import { makeStyles } from '@rneui/themed'
 
+const HEADER_IMAGE_WIDTH = 137
+const HEADER_IMAGE_HEIGHT = 217
+
 export const useStyles = makeStyles(theme => ({
     rootContainer: {
         flex: 1,
@@ -37,8 +40,8 @@ export const useStyles = makeStyles(theme => ({
         alignSelf: 'flex-end',
     },
     headerImage: {
-        width: 137,
-        height: 217,
+        width: HEADER_IMAGE_WIDTH,
+        height: HEADER_IMAGE_HEIGHT,
         resizeMode: 'contain',
     },
     scrollContent: {

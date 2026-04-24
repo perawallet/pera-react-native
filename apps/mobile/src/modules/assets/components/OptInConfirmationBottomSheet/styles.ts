@@ -37,7 +37,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textGrayLighter,
     },
     divider: {
-        height: 1,
+        height: theme.borders.sm,
         backgroundColor: theme.colors.layerGrayLighter,
     },
     row: {
