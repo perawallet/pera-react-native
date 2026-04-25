@@ -30,4 +30,38 @@ describe('SearchInput', () => {
         })
         expect(onChangeText).toHaveBeenCalledWith('Algorand')
     })
+
+    // PWInput is mocked as a bare <input>; its `rightIcon` prop is stringified
+    // to an attribute rather than rendered, so we assert the clear button's
+    // presence/absence via the `righticon` attribute and exercise the
+    // onChange('') contract directly.
+    it('omits the clear button when there is no value', () => {
+        render(
+            <SearchInput
+                value=''
+                onChangeText={vi.fn()}
+                placeholder='Search coins'
+            />,
+        )
+        expect(
+            screen
+                .getByPlaceholderText('Search coins')
+                .getAttribute('righticon'),
+        ).toBeNull()
+    })
+
+    it('renders the clear button when the input has a value', () => {
+        render(
+            <SearchInput
+                value='alice'
+                onChangeText={vi.fn()}
+                placeholder='Search coins'
+            />,
+        )
+        expect(
+            screen
+                .getByPlaceholderText('Search coins')
+                .getAttribute('righticon'),
+        ).not.toBeNull()
+    })
 })

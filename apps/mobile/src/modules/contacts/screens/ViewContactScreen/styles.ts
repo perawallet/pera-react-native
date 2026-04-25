@@ -12,24 +12,52 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
-    return {
-        label: {
-            fontSize: 13,
-            color:
-                theme.mode === 'dark'
-                    ? theme.colors.textGrayLighter
-                    : theme.colors.textGray,
-            marginBottom: theme.spacing.xs,
-        },
-        avatar: {
-            alignItems: 'center',
-            marginVertical: theme.spacing.xl,
-        },
-        value: {},
-        container: {
-            padding: theme.spacing.xl,
-            gap: theme.spacing.md,
-        },
-    }
-})
+export const useStyles = makeStyles(theme => ({
+    container: {
+        flex: 1,
+        paddingHorizontal: theme.spacing.xl,
+        paddingTop: theme.spacing.xxl,
+    },
+    headerButtons: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.md,
+    },
+    header: {
+        alignItems: 'center',
+        gap: theme.spacing.sm,
+    },
+    name: {
+        textAlign: 'center',
+        color: theme.colors.textMain,
+    },
+    shortAddress: {
+        color: theme.colors.textGrayLighter,
+        textAlign: 'center',
+    },
+    divider: {
+        height: 1,
+        backgroundColor: theme.colors.layerGrayLighter,
+        marginVertical: theme.spacing.xl,
+    },
+    addressSection: {
+        gap: theme.spacing.sm,
+    },
+    nfdSection: {
+        marginTop: theme.spacing.xl,
+    },
+    addressLabel: {
+        color: theme.colors.textMain,
+    },
+    addressRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        gap: theme.spacing.md,
+    },
+    addressTextWrapper: {
+        flex: 1,
+    },
+    fullAddress: {
+        color: theme.colors.textMain,
+    },
+}))

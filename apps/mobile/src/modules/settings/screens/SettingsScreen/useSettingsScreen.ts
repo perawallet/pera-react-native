@@ -10,21 +10,28 @@
  limitations under the License
  */
 
-import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useWebView } from '@modules/webview'
-import { useModalState } from '@hooks/useModalState'
-import { useSettingsOptions } from './useSettingsOptions'
-import { SettingsStackParamsList } from '@modules/settings/routes'
+import { useCallback } from 'react'
+
 import {
     deferToNextCycle,
     generateUniqueId,
 } from '@perawallet/wallet-core-shared'
-import { clearAccountsStore } from '@modules/settings/hooks/useDeleteAllData'
-import { useCallback } from 'react'
+
+import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useModalState } from '@hooks/useModalState'
+import {
+    clearAccountsStore,
+    useDeleteAllData,
+} from '@modules/settings/hooks/useDeleteAllData'
+import { useWebView } from '@modules/webview'
+import { useSettingsOptions } from './useSettingsOptions'
+
+import type { SettingsStackParamsList } from '@modules/settings/routes'
 
 export const useSettingsScreen = () => {
     const navigation = useAppNavigation()
     const { pushWebView } = useWebView()
+    const { deleteAllData } = useDeleteAllData()
     const {
         isOpen: isDeleteModalOpen,
         open: openDeleteModal,
@@ -73,6 +80,12 @@ export const useSettingsScreen = () => {
         openSuccessModal()
     }, [openSuccessModal])
 
+    const handleDeleteAllAccounts = useCallback(async () => {
+        await deleteAllData()
+        closeDeleteModal()
+        handleDeleteSuccess()
+    }, [deleteAllData, closeDeleteModal, handleDeleteSuccess])
+
     const handleSuccessClose = useCallback(() => {
         closeSuccessModal()
         clearAccountsStore()
@@ -88,6 +101,7 @@ export const useSettingsScreen = () => {
         isDeleteModalOpen,
         openDeleteModal,
         closeDeleteModal,
+        handleDeleteAllAccounts,
         isSuccessModalOpen,
         handleDeleteSuccess,
         handleSuccessClose,
