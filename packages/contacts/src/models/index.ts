@@ -12,8 +12,12 @@
 
 import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
 
+/**
+ * `address` is the primary key. Two contacts cannot share the same
+ * address — `addContact` and `editContact` enforce this and throw
+ * `DuplicateAddressError`.
+ */
 export type Contact = {
-    id?: string
     name: string
     address: string
     image?: string
@@ -24,6 +28,18 @@ export type ContactsState = BaseStoreState & {
     contacts: Contact[]
     selectedContact: Nullable<Contact>
     setSelectedContact: (contact: Nullable<Contact>) => void
-    saveContact: (contact: Contact) => boolean
+    /**
+     * Insert a new contact. Throws `DuplicateAddressError` if a contact
+     * already exists at `contact.address`.
+     */
+    addContact: (contact: Contact) => boolean
+    /**
+     * Update the row at `previousAddress` with `contact`. Replaces the
+     * row regardless of which fields changed. Throws
+     * `DuplicateAddressError` if `contact.address` differs from
+     * `previousAddress` and is already used by another contact, and
+     * `ContactNotFoundError` if no contact exists at `previousAddress`.
+     */
+    editContact: (previousAddress: string, contact: Contact) => boolean
     deleteContact: (contact: Contact) => boolean
 }

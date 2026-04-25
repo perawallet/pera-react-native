@@ -76,7 +76,13 @@ export const useQRScannerView = ({
     })
 
     useEffect(() => {
-        if (hasPermission || !isVisible) return
+        if (hasPermission) {
+            // Permission may have been granted via Settings while the
+            // sheet was backgrounded — clear any stale denied flag.
+            setPermissionDenied(false)
+            return
+        }
+        if (!isVisible) return
         let active = true
         requestPermission().then(result => {
             if (!active) return

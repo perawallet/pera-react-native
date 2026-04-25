@@ -16,7 +16,8 @@ import { useEditParticipantScreen } from '../useEditParticipantScreen'
 import { useMultisigCreationStore } from '../../../hooks/useMultisigCreation'
 
 const mockGoBack = vi.fn()
-const mockSaveContact = vi.fn()
+const mockAddContact = vi.fn()
+const mockEditContact = vi.fn()
 const mockFindContacts = vi.fn(
     (): Array<{ address: string; name: string }> => [],
 )
@@ -40,7 +41,8 @@ vi.mock('@hooks/useAppNavigation', () => ({
 vi.mock('@perawallet/wallet-core-contacts', () => ({
     useContacts: () => ({
         findContacts: mockFindContacts,
-        saveContact: mockSaveContact,
+        addContact: mockAddContact,
+        editContact: mockEditContact,
     }),
 }))
 
@@ -91,7 +93,7 @@ describe('useEditParticipantScreen', () => {
         })
     })
 
-    it('handleDone saves contact, updates participant, and navigates back', async () => {
+    it('handleDone edits the existing contact, updates participant, and navigates back', async () => {
         mockFindContacts.mockReturnValue([{ address: 'ADDR1', name: 'Alice' }])
 
         const { result } = renderHook(() => useEditParticipantScreen())
@@ -104,10 +106,11 @@ describe('useEditParticipantScreen', () => {
             await result.current.handleDone()
         })
 
-        expect(mockSaveContact).toHaveBeenCalledWith({
+        expect(mockEditContact).toHaveBeenCalledWith('ADDR1', {
             name: 'Alice',
             address: 'ADDR1',
         })
+        expect(mockAddContact).not.toHaveBeenCalled()
         expect(
             useMultisigCreationStore
                 .getState()

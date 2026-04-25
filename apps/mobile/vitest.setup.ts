@@ -2150,15 +2150,20 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
         contacts: [],
         findContacts: vi.fn(() => []),
         addContact: vi.fn(),
-        removeContact: vi.fn(),
-        updateContact: vi.fn(),
+        editContact: vi.fn(),
+        deleteContact: vi.fn(),
+        selectedContact: null,
+        setSelectedContact: vi.fn(),
     })),
     useContactsStore: vi.fn(() => ({
         contacts: [],
         addContact: vi.fn(),
-        removeContact: vi.fn(),
-        updateContact: vi.fn(),
+        editContact: vi.fn(),
+        deleteContact: vi.fn(),
+        selectedContact: null,
+        setSelectedContact: vi.fn(),
     })),
+    DuplicateAddressError: class DuplicateAddressError extends Error {},
 }))
 
 // Mock @perawallet/wallet-core-currencies

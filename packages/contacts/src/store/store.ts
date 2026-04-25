@@ -13,9 +13,8 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Contact, ContactsState } from '../models'
-import { DuplicateAddressError } from '../errors'
+import { ContactNotFoundError, DuplicateAddressError } from '../errors'
 import {
-    generateOrderedUniqueId,
     registerStore,
     type WithPersist,
     type Nullable,
@@ -37,35 +36,38 @@ export const useContactsStore: UseBoundStore<
             ...initialState,
             setSelectedContact: (contact: Nullable<Contact>) =>
                 set({ selectedContact: contact }),
-            saveContact: (contact: Contact) => {
-                const newContact = {
-                    ...contact,
-                    id: contact.id ?? generateOrderedUniqueId(),
-                }
+            addContact: (contact: Contact) => {
                 const existing = get().contacts ?? []
-                const duplicate = existing.find(
-                    c =>
-                        c.address === newContact.address &&
-                        c.id !== newContact.id,
-                )
-                if (duplicate) {
-                    throw new DuplicateAddressError(newContact.address)
+                if (existing.some(c => c.address === contact.address)) {
+                    throw new DuplicateAddressError(contact.address)
                 }
-                const existingIndex = existing.findIndex(
-                    c => c.id === newContact.id,
-                )
-                if (existingIndex >= 0) {
-                    const updated = [...existing]
-                    updated[existingIndex] = newContact
-                    set({ contacts: updated })
-                } else {
-                    set({ contacts: [...existing, newContact] })
+                set({ contacts: [...existing, contact] })
+                return true
+            },
+            editContact: (previousAddress: string, contact: Contact) => {
+                const existing = get().contacts ?? []
+                if (
+                    contact.address !== previousAddress &&
+                    existing.some(c => c.address === contact.address)
+                ) {
+                    throw new DuplicateAddressError(contact.address)
                 }
+                const idx = existing.findIndex(
+                    c => c.address === previousAddress,
+                )
+                if (idx < 0) {
+                    throw new ContactNotFoundError(previousAddress)
+                }
+                const updated = [...existing]
+                updated[idx] = contact
+                set({ contacts: updated })
                 return true
             },
             deleteContact: (contact: Contact) => {
                 const existing = get().contacts ?? []
-                const remaining = existing.filter(r => r.id !== contact.id)
+                const remaining = existing.filter(
+                    c => c.address !== contact.address,
+                )
                 if (remaining.length === existing.length) return false
                 set({ contacts: remaining })
                 return true

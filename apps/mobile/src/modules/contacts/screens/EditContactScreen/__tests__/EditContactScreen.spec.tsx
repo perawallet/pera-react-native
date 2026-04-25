@@ -17,17 +17,15 @@ import { EditContactScreen } from '../EditContactScreen'
 
 vi.mock('@perawallet/wallet-core-contacts', async () => ({
     useContacts: vi.fn(() => ({
-        selectedContact: {
-            id: '1',
-            name: 'Alice',
-            address: 'A'.repeat(58),
-        },
-        saveContact: vi.fn(),
+        selectedContact: null,
+        addContact: vi.fn(),
+        editContact: vi.fn(),
         deleteContact: vi.fn(),
         findContacts: vi.fn(() => []),
         setSelectedContact: vi.fn(),
     })),
     contactSchema: {},
+    DuplicateAddressError: class extends Error {},
 }))
 
 vi.mock('@hooks/useImagePicker', () => ({

@@ -13,7 +13,7 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import type { Contact } from '../../models'
-import { DuplicateAddressError } from '../../errors'
+import { ContactNotFoundError, DuplicateAddressError } from '../../errors'
 
 const registerStoreMock = vi.fn()
 
@@ -36,158 +36,166 @@ describe('ContactsStore', () => {
         useContactsStore.getState().resetState()
     })
 
-    test('saveContact adds a contact', async () => {
-        const { useContactsStore } = await import('../index')
-        const { result } = renderHook(() => useContactsStore())
-        const contact: Contact = {
-            id: 'test-id',
-            name: 'Alice',
-            address: 'ALICE123',
-        }
+    describe('addContact', () => {
+        test('adds a new contact', async () => {
+            const { useContactsStore } = await import('../index')
+            const { result } = renderHook(() => useContactsStore())
+            const contact: Contact = { name: 'Alice', address: 'ALICE123' }
 
-        act(() => {
-            result.current.saveContact(contact)
-        })
-
-        expect(result.current.contacts).toHaveLength(1)
-        expect(result.current.contacts[0]).toEqual(contact)
-    })
-
-    test('saveContact generates an id when contact has none', async () => {
-        const { useContactsStore } = await import('../index')
-        const { result } = renderHook(() => useContactsStore())
-
-        act(() => {
-            result.current.saveContact({
-                name: 'Bob',
-                address: 'BOB456',
-            } as Contact)
-        })
-
-        expect(result.current.contacts).toHaveLength(1)
-        expect(result.current.contacts[0].id).toBeTruthy()
-    })
-
-    test('saveContact throws DuplicateAddressError when another contact uses that address', async () => {
-        const { useContactsStore } = await import('../index')
-        const { result } = renderHook(() => useContactsStore())
-
-        act(() => {
-            result.current.saveContact({
-                id: 'alice-id',
-                name: 'Alice',
-                address: 'SHARED_ADDRESS',
+            act(() => {
+                result.current.addContact(contact)
             })
+
+            expect(result.current.contacts).toHaveLength(1)
+            expect(result.current.contacts[0]).toEqual(contact)
         })
 
-        expect(() =>
-            result.current.saveContact({
-                id: 'bob-id',
-                name: 'Bob',
-                address: 'SHARED_ADDRESS',
-            }),
-        ).toThrow(DuplicateAddressError)
-        // Original contact unchanged.
-        expect(result.current.contacts).toHaveLength(1)
-        expect(result.current.contacts[0]?.name).toBe('Alice')
-    })
+        test('throws DuplicateAddressError when the address already exists', async () => {
+            const { useContactsStore } = await import('../index')
+            const { result } = renderHook(() => useContactsStore())
 
-    test('saveContact allows updating the same contact with its own address', async () => {
-        const { useContactsStore } = await import('../index')
-        const { result } = renderHook(() => useContactsStore())
-
-        act(() => {
-            result.current.saveContact({
-                id: 'alice-id',
-                name: 'Alice',
-                address: 'SHARED_ADDRESS',
+            act(() => {
+                result.current.addContact({
+                    name: 'Alice',
+                    address: 'SHARED_ADDRESS',
+                })
             })
-        })
 
-        act(() => {
-            // Same id, same address, new name — should succeed (it's the same
-            // row being updated, not a new duplicate).
-            result.current.saveContact({
-                id: 'alice-id',
-                name: 'Alice Updated',
-                address: 'SHARED_ADDRESS',
+            expect(() =>
+                result.current.addContact({
+                    name: 'Bob',
+                    address: 'SHARED_ADDRESS',
+                }),
+            ).toThrow(DuplicateAddressError)
+            expect(result.current.contacts).toHaveLength(1)
+            expect(result.current.contacts[0]?.name).toBe('Alice')
+        })
+    })
+
+    describe('editContact', () => {
+        test('updates the matched row when the address is unchanged', async () => {
+            const { useContactsStore } = await import('../index')
+            const { result } = renderHook(() => useContactsStore())
+
+            act(() => {
+                result.current.addContact({
+                    name: 'Alice',
+                    address: 'ALICE123',
+                })
             })
-        })
 
-        expect(result.current.contacts).toHaveLength(1)
-        expect(result.current.contacts[0]?.name).toBe('Alice Updated')
-    })
-
-    test('saveContact updates an existing contact by id', async () => {
-        const { useContactsStore } = await import('../index')
-        const { result } = renderHook(() => useContactsStore())
-        const contact: Contact = {
-            id: 'test-id',
-            name: 'Alice',
-            address: 'ALICE123',
-        }
-
-        act(() => {
-            result.current.saveContact(contact)
-        })
-
-        let saved: boolean | undefined
-        act(() => {
-            saved = result.current.saveContact({
-                ...contact,
-                name: 'Alice Updated',
+            act(() => {
+                result.current.editContact('ALICE123', {
+                    name: 'Alice Updated',
+                    address: 'ALICE123',
+                })
             })
+
+            expect(result.current.contacts).toHaveLength(1)
+            expect(result.current.contacts[0]?.name).toBe('Alice Updated')
         })
 
-        expect(saved).toBe(true)
-        expect(result.current.contacts).toHaveLength(1)
-        expect(result.current.contacts[0]?.name).toBe('Alice Updated')
+        test('renames the address when the new value is unused', async () => {
+            const { useContactsStore } = await import('../index')
+            const { result } = renderHook(() => useContactsStore())
+
+            act(() => {
+                result.current.addContact({
+                    name: 'Alice',
+                    address: 'ALICE123',
+                })
+            })
+
+            act(() => {
+                result.current.editContact('ALICE123', {
+                    name: 'Alice',
+                    address: 'ALICE_NEW',
+                })
+            })
+
+            expect(result.current.contacts).toHaveLength(1)
+            expect(result.current.contacts[0]?.address).toBe('ALICE_NEW')
+        })
+
+        test('throws DuplicateAddressError when renaming into an address used by another contact', async () => {
+            const { useContactsStore } = await import('../index')
+            const { result } = renderHook(() => useContactsStore())
+
+            act(() => {
+                result.current.addContact({
+                    name: 'Alice',
+                    address: 'ALICE123',
+                })
+            })
+            act(() => {
+                result.current.addContact({
+                    name: 'Bob',
+                    address: 'BOB456',
+                })
+            })
+
+            expect(() =>
+                result.current.editContact('ALICE123', {
+                    name: 'Alice',
+                    address: 'BOB456',
+                }),
+            ).toThrow(DuplicateAddressError)
+            expect(result.current.contacts).toHaveLength(2)
+        })
+
+        test('throws ContactNotFoundError when previousAddress matches no existing row', async () => {
+            const { useContactsStore } = await import('../index')
+            const { result } = renderHook(() => useContactsStore())
+
+            expect(() =>
+                result.current.editContact('MISSING', {
+                    name: 'Ghost',
+                    address: 'GHOST',
+                }),
+            ).toThrow(ContactNotFoundError)
+            expect(result.current.contacts).toHaveLength(0)
+        })
     })
 
-    test('deleteContact removes an existing contact', async () => {
-        const { useContactsStore } = await import('../index')
-        const { result } = renderHook(() => useContactsStore())
-        const contact: Contact = {
-            id: 'test-id',
-            name: 'Alice',
-            address: 'ALICE123',
-        }
+    describe('deleteContact', () => {
+        test('removes by address', async () => {
+            const { useContactsStore } = await import('../index')
+            const { result } = renderHook(() => useContactsStore())
+            const contact: Contact = { name: 'Alice', address: 'ALICE123' }
 
-        act(() => {
-            result.current.saveContact(contact)
+            act(() => {
+                result.current.addContact(contact)
+            })
+
+            let removed: boolean | undefined
+            act(() => {
+                removed = result.current.deleteContact(contact)
+            })
+
+            expect(removed).toBe(true)
+            expect(result.current.contacts).toHaveLength(0)
         })
 
-        let removed: boolean | undefined
-        act(() => {
-            removed = result.current.deleteContact(contact)
+        test('returns false when no contact matches the address', async () => {
+            const { useContactsStore } = await import('../index')
+            const { result } = renderHook(() => useContactsStore())
+
+            let removed: boolean | undefined
+            act(() => {
+                removed = result.current.deleteContact({
+                    name: 'Missing',
+                    address: 'MISSING',
+                })
+            })
+
+            expect(removed).toBe(false)
         })
-
-        expect(removed).toBe(true)
-        expect(result.current.contacts).toHaveLength(0)
-    })
-
-    test('deleteContact returns false when contact does not exist', async () => {
-        const { useContactsStore } = await import('../index')
-        const { result } = renderHook(() => useContactsStore())
-
-        let removed: boolean | undefined
-        act(() => {
-            removed = result.current.deleteContact({
-                id: 'missing',
-            } as Contact)
-        })
-
-        expect(removed).toBe(false)
     })
 
     test('setSelectedContact updates the selected contact', async () => {
         const { useContactsStore } = await import('../index')
         const { result } = renderHook(() => useContactsStore())
-        const contact: Contact = {
-            id: 'test-id',
-            name: 'Alice',
-            address: 'ALICE123',
-        }
+        const contact: Contact = { name: 'Alice', address: 'ALICE123' }
 
         act(() => {
             result.current.setSelectedContact(contact)
@@ -210,7 +218,7 @@ describe('ContactsStore', () => {
         act(() => {
             useContactsStore
                 .getState()
-                .saveContact({ id: '1', name: 'Alice', address: 'A' })
+                .addContact({ name: 'Alice', address: 'A' })
         })
         expect(useContactsStore.getState().contacts).toHaveLength(1)
 

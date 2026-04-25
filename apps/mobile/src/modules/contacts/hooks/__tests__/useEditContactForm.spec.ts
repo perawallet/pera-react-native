@@ -18,14 +18,13 @@ import {
 } from '@perawallet/wallet-core-contacts'
 import { useEditContactForm } from '../useEditContactForm'
 
-const saveContactMock = vi.fn()
+const editContactMock = vi.fn()
 const deleteContactMock = vi.fn()
 const setSelectedContactMock = vi.fn()
 const goBackMock = vi.fn()
 const replaceMock = vi.fn()
 
 const selectedContact: Contact = {
-    id: 'test-id',
     name: 'Alice',
     address: 'ALICE123',
 }
@@ -37,7 +36,7 @@ vi.mock('@perawallet/wallet-core-contacts', async () => {
     return {
         ...actual,
         useContacts: vi.fn(() => ({
-            saveContact: saveContactMock,
+            editContact: editContactMock,
             deleteContact: deleteContactMock,
             selectedContact,
             setSelectedContact: setSelectedContactMock,
@@ -97,7 +96,7 @@ vi.mock('../useContactForm', () => ({
 describe('useEditContactForm', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        saveContactMock.mockReset()
+        editContactMock.mockReset()
         formState.isValid = false
     })
 
@@ -140,15 +139,12 @@ describe('useEditContactForm', () => {
             result.current.save({ ...selectedContact, name: 'Updated' })
         })
 
-        expect(saveContactMock).not.toHaveBeenCalled()
+        expect(editContactMock).not.toHaveBeenCalled()
         expect(goBackMock).not.toHaveBeenCalled()
     })
 
     describe('duplicate-address guard', () => {
-        it('saves successfully when editing the same contact without changing the address', () => {
-            // saveContact's internal duplicate check excludes the contact
-            // being updated (same id), so saving without an address change
-            // should succeed.
+        it('forwards previousAddress so the store can identify the row being updated', () => {
             formState.isValid = true
 
             const { result } = renderHook(() => useEditContactForm())
@@ -158,12 +154,15 @@ describe('useEditContactForm', () => {
             })
 
             expect(setErrorMock).not.toHaveBeenCalled()
-            expect(saveContactMock).toHaveBeenCalledWith(selectedContact)
+            expect(editContactMock).toHaveBeenCalledWith(
+                selectedContact.address,
+                selectedContact,
+            )
             expect(goBackMock).toHaveBeenCalled()
         })
 
-        it('blocks save and surfaces a form error when saveContact throws DuplicateAddressError', () => {
-            saveContactMock.mockImplementation(() => {
+        it('blocks save and surfaces a form error when editContact throws DuplicateAddressError', () => {
+            editContactMock.mockImplementation(() => {
                 throw new DuplicateAddressError('BOB999')
             })
             formState.isValid = true
