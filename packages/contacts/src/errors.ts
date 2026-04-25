@@ -11,6 +11,7 @@
  */
 
 /**
+
  * Thrown by `addContact` when the address is already in use, or by
  * `editContact` when renaming into an address used by another contact.
  * UI layers catch this and surface it as a form-level error.
