@@ -115,6 +115,7 @@ export const AddParticipantBottomSheet = ({
                         <PWTouchableIcon
                             name='cross'
                             variant='primary'
+                            size='md'
                             onPress={onClose}
                         />
                     }

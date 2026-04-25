@@ -2326,6 +2326,15 @@ vi.mock('react-native-svg', () => {
     }
 })
 
+// Mock react-native-share (native module not resolvable in vitest)
+vi.mock('react-native-share', () => ({
+    default: {
+        open: vi.fn().mockResolvedValue({ success: true }),
+        shareSingle: vi.fn().mockResolvedValue({ success: true }),
+    },
+    Social: {},
+}))
+
 // Mock react-native-qrcode-svg (contains JSX in .js files)
 vi.mock('react-native-qrcode-svg', () => {
     const React = require('react')

@@ -62,6 +62,9 @@ export const useStyles = makeStyles(
             nfdStatusText: {
                 color: theme.colors.textGray,
             },
+            scanIconWrapper: {
+                marginLeft: theme.spacing.sm,
+            },
         }
     },
 )

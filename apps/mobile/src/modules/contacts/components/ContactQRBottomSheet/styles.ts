@@ -14,50 +14,39 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        flex: 1,
         paddingHorizontal: theme.spacing.xl,
-        paddingTop: theme.spacing.xxl,
-    },
-    headerButtons: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
     },
     header: {
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-    name: {
-        textAlign: 'center',
-        color: theme.colors.textMain,
-    },
-    shortAddress: {
-        color: theme.colors.textGrayLighter,
-        textAlign: 'center',
-    },
-    divider: {
-        height: 1,
-        backgroundColor: theme.colors.layerGrayLighter,
-        marginVertical: theme.spacing.xl,
-    },
-    addressSection: {
-        gap: theme.spacing.sm,
-    },
-    nfdSection: {
-        marginTop: theme.spacing.xl,
-    },
-    addressLabel: {
-        color: theme.colors.textMain,
-    },
-    addressRow: {
+        height: theme.spacing['3xl'],
         flexDirection: 'row',
-        alignItems: 'flex-start',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: theme.spacing.lg,
+    },
+    title: {
+        flex: 1,
+        textAlign: 'center',
+    },
+    qrSection: {
+        alignItems: 'center',
         gap: theme.spacing.md,
     },
-    addressTextWrapper: {
-        flex: 1,
+    shortAddress: {
+        textAlign: 'center',
     },
+    // Uses the `body` typography variant at the callsite; overrides only
+    // the color + alignment.
     fullAddress: {
-        color: theme.colors.textMain,
+        color: theme.colors.textGray,
+        textAlign: 'center',
+        paddingHorizontal: theme.spacing.xl,
+    },
+    actions: {
+        gap: theme.spacing.sm,
+        marginTop: theme.spacing.xl,
+    },
+    actionButton: {
+        minHeight: theme.spacing['3xl'],
+        borderRadius: theme.borderRadius.xs,
     },
 }))

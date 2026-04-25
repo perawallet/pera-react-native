@@ -12,39 +12,47 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
+type StyleProps = {
+    listPaddingBottom?: number
+}
+
+export const useStyles = makeStyles((theme, props: StyleProps = {}) => {
+    const listPaddingBottom = props.listPaddingBottom ?? 0
     return {
-        container: {
-            backgroundColor: theme.colors.background,
-        },
         flex: {
             flex: 1,
         },
-        sectionHeader: {
-            color: theme.colors.textGray,
-            borderBottomColor: theme.colors.layerGrayLighter,
-            borderBottomWidth: theme.borders.sm,
-            paddingTop: theme.spacing.lg,
+        searchWrapper: {
+            paddingHorizontal: theme.spacing.xl,
+            paddingTop: theme.spacing.xl,
             paddingBottom: theme.spacing.sm,
-            marginBottom: theme.spacing.xs,
+        },
+        listContent: {
+            paddingHorizontal: theme.spacing.xl,
+            paddingTop: theme.spacing.xl,
+            paddingBottom: listPaddingBottom,
+            flexGrow: 1,
         },
         contactContainer: {
             flexDirection: 'row',
-            gap: theme.spacing.md,
+            gap: theme.spacing.lg,
             alignItems: 'center',
             paddingVertical: theme.spacing.lg,
-            paddingHorizontal: theme.spacing.sm,
         },
-        contactName: {},
-        search: {
-            borderRadius: theme.spacing.lg,
-            paddingHorizontal: theme.spacing.xs,
-        },
-        empty: {
-            marginTop: theme.spacing.xl,
+        contactTextContainer: {
             flex: 1,
-            alignItems: 'center',
-            justifyContent: 'center',
+            gap: theme.spacing.xxs,
+        },
+        contactName: {
+            color: theme.colors.textMain,
+        },
+        contactAddress: {
+            color: theme.colors.textGrayLighter,
+        },
+        emptyButton: {
+            minHeight: theme.spacing['3xl'],
+            borderRadius: theme.borderRadius.xs,
+            marginTop: theme.spacing.xl,
         },
     }
 })

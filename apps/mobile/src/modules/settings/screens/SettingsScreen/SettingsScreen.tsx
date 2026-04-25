@@ -10,25 +10,26 @@
  limitations under the License
  */
 
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+
 import {
-    type IconName,
     PWButton,
     PWListItem,
+    PWScrollView,
     PWText,
     PWView,
-    PWScrollView,
 } from '@components/core'
-
-import { useStyles } from './styles'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { AppVersion } from '@modules/settings/components/AppVersion'
-import { useSettingsScreen } from './useSettingsScreen'
+import { ConfirmActionBottomSheet } from '@components/ConfirmActionBottomSheet'
 import { useLanguage } from '@hooks/useLanguage'
-import type { SettingsStackParamsList } from '@modules/settings/routes'
-import { RatingsBottomSheet } from '@modules/settings/components/RatingsBottomSheet/RatingsBottomSheet'
-import { DeleteAllConfirmBottomSheet } from '@modules/settings/components/DeleteAllConfirmBottomSheet/DeleteAllConfirmBottomSheet'
+import { AppVersion } from '@modules/settings/components/AppVersion'
 import { DeleteAllSuccessBottomSheet } from '@modules/settings/components/DeleteAllSuccessBottomSheet'
+import { RatingsBottomSheet } from '@modules/settings/components/RatingsBottomSheet/RatingsBottomSheet'
 import { getTestProps } from '@utils/test-id-helper'
+import { useSettingsScreen } from './useSettingsScreen'
+import { useStyles } from './styles'
+
+import type { IconName } from '@components/core'
+import type { SettingsStackParamsList } from '@modules/settings/routes'
 
 export type SettingsRouteName = keyof SettingsStackParamsList
 
@@ -42,8 +43,8 @@ export const SettingsScreen = () => {
         isDeleteModalOpen,
         openDeleteModal,
         closeDeleteModal,
+        handleDeleteAllAccounts,
         isSuccessModalOpen,
-        handleDeleteSuccess,
         handleSuccessClose,
         isRatingModalOpen,
         closeRatingModal,
@@ -85,10 +86,16 @@ export const SettingsScreen = () => {
                 {...getTestProps('settings_remove_all_accounts_button')}
             />
             <AppVersion enableSecretTaps />
-            <DeleteAllConfirmBottomSheet
-                isOpen={isDeleteModalOpen}
+            <ConfirmActionBottomSheet
+                isVisible={isDeleteModalOpen}
                 onClose={closeDeleteModal}
-                onSuccess={handleDeleteSuccess}
+                onConfirm={handleDeleteAllAccounts}
+                icon='trash'
+                iconVariant='error'
+                title={t('settings.main.remove_title')}
+                message={t('settings.main.remove_message')}
+                confirmLabel={t('settings.main.remove_confirm')}
+                cancelLabel={t('settings.main.remove_cancel')}
                 testID='settings_delete_all_confirm_bottom_sheet'
             />
             <DeleteAllSuccessBottomSheet

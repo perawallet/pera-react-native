@@ -10,10 +10,13 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useState } from 'react'
-import { useTheme } from '@rneui/themed'
-import { PWButton, PWDialog, PWText, PWView } from '@components/core'
+import { useCallback } from 'react'
+import { Keyboard, KeyboardAvoidingView, Platform } from 'react-native'
+
+import { PWButton, PWView } from '@components/core'
+import { ConfirmActionBottomSheet } from '@components/ConfirmActionBottomSheet'
 import { ContactForm } from '@components/ContactForm'
+import { PhotoPermissionDeniedSheet } from '@components/PhotoPermissionDeniedSheet'
 import {
     Contact,
     ContactNotFoundError,
@@ -27,8 +30,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useLanguage } from '@hooks/useLanguage'
-import { useModalState } from '@hooks/useModalState'
-import { useNfdResolve } from '@hooks/useNfdResolve'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { useEditContactForm } from '@modules/contacts/hooks'
+import { useStyles } from './styles'
 
 export const EditContactScreen = () => {
     const styles = useStyles()
@@ -46,25 +50,34 @@ export const EditContactScreen = () => {
     const isEditMode = !!selectedContact
 
     const {
+        selectedContact,
         control,
         handleSubmit,
-        setError,
-        setValue,
-        watch,
-        formState: { isValid, errors },
-    } = useForm({
-        resolver: zodResolver(contactSchema),
-        defaultValues: selectedContact ?? {},
+        errors,
+        isValid,
+        rawAddressInput,
+        imageUri,
+        nfd,
+        confirmDelete,
+        onAddressInputChange,
+        onPickImage,
+        permissionDenied,
+        save,
+        removeContact,
+    } = useEditContactForm()
+
+    useNavigationHeader({
+        enabled: true,
+        right: (
+            <PWButton
+                variant='link'
+                title={t('contacts.edit_contact.done')}
+                onPress={handleSubmit(save)}
+                isDisabled={!isValid}
+                paddingStyle='none'
+            />
+        ),
     })
-
-    const addressFieldValue = watch('address')
-    const [rawAddressInput, setRawAddressInput] = useState(
-        addressFieldValue ?? '',
-    )
-
-    const { resolvedAddress, isNfdResolved, isNfdResolving, nfdName } =
-        useNfdResolve(rawAddressInput, { enabled: !isEditMode })
-
     useEffect(() => {
         if (isNfdResolved) {
             setValue('address', resolvedAddress, { shouldValidate: true })
@@ -110,72 +123,60 @@ export const EditContactScreen = () => {
         navigation.goBack()
     }
 
-    const removeContact = () => {
-        if (!isEditMode) {
-            navigation.replace('Contacts')
-        } else {
-            deleteContact(selectedContact)
-            setSelectedContact(null)
-            navigation.replace('Contacts')
-        }
-    }
+    const openDeleteConfirm = useCallback(() => {
+        Keyboard.dismiss()
+        confirmDelete.open()
+    }, [confirmDelete])
 
     return (
-        <>
+        <KeyboardAvoidingView
+            style={styles.flex}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
             <ContactForm
                 control={control}
                 address={
-                    isNfdResolved
-                        ? resolvedAddress
+                    nfd.isNfdResolved
+                        ? nfd.resolvedAddress
                         : (selectedContact?.address ?? '')
                 }
                 nameLabel={t('contacts.edit_contact.name_label')}
                 addressLabel={t('contacts.edit_contact.address_label')}
                 nameError={errors.name?.message}
-                isAddressEditable={!isEditMode}
                 addressError={errors.address?.message}
-                nfdName={isNfdResolved ? nfdName : undefined}
-                isResolvingNfd={isNfdResolving}
-                onAddressInputChange={handleAddressInputChange}
+                nfdName={nfd.isNfdResolved ? nfd.nfdName : undefined}
+                isResolvingNfd={nfd.isNfdResolving}
+                onAddressInputChange={onAddressInputChange}
                 rawAddressInput={rawAddressInput}
+                imageUri={imageUri}
+                onPickImage={onPickImage}
             >
-                <PWView style={styles.buttonContainer}>
-                    {isEditMode && (
-                        <PWButton
-                            onPress={open}
-                            title={t('contacts.edit_contact.delete')}
-                            variant='destructive'
-                            minWidth={100}
-                        />
-                    )}
+                <PWView style={styles.deletePillWrapper}>
                     <PWButton
-                        onPress={handleSubmit(save)}
-                        title={t('contacts.edit_contact.save')}
-                        variant='primary'
-                        minWidth={100}
+                        onPress={openDeleteConfirm}
+                        title={t('contacts.edit_contact.delete_this')}
+                        variant='destructive'
+                        style={styles.deletePill}
+                        rounded
                     />
                 </PWView>
             </ContactForm>
-            <PWDialog
-                isVisible={isOpen}
-                onBackdropPress={close}
-            >
-                <PWDialog.Title
-                    title={t('contacts.edit_contact.are_you_sure')}
-                />
-                <PWText>{t('contacts.edit_contact.delete_confirm')}</PWText>
-                <PWDialog.Actions>
-                    <PWDialog.Button
-                        title={t('common.delete.label')}
-                        titleStyle={{ color: theme.colors.alertNegative }}
-                        onPress={removeContact}
-                    />
-                    <PWDialog.Button
-                        title={t('common.cancel.label')}
-                        onPress={close}
-                    />
-                </PWDialog.Actions>
-            </PWDialog>
-        </>
+            <ConfirmActionBottomSheet
+                isVisible={confirmDelete.isOpen}
+                onClose={confirmDelete.close}
+                onConfirm={removeContact}
+                icon='trash'
+                iconVariant='error'
+                title={t('contacts.edit_contact.remove_title')}
+                message={t('contacts.edit_contact.remove_message')}
+                confirmLabel={t('contacts.edit_contact.remove_confirm')}
+                cancelLabel={t('contacts.edit_contact.remove_cancel')}
+            />
+            <PhotoPermissionDeniedSheet
+                isVisible={permissionDenied.isVisible}
+                onClose={permissionDenied.close}
+                onOpenSettings={permissionDenied.openSettings}
+            />
+        </KeyboardAvoidingView>
     )
 }

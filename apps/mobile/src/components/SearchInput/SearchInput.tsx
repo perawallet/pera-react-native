@@ -10,11 +10,14 @@
  limitations under the License
  */
 
-import { forwardRef } from 'react'
+import { forwardRef, useCallback, useState } from 'react'
 import { InputProps, useTheme } from '@rneui/themed'
 
-import { PWIcon, PWInput, type PWInputRef } from '@components/core'
+import { PWInput, PWTouchableIcon } from '@components/core'
+import { PWIcon } from '@components/core/PWIcon'
 import { useStyles } from './styles'
+
+import type { PWInputRef } from '@components/core'
 
 export type SearchInputProps = {} & Omit<
     InputProps,
@@ -27,23 +30,54 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(
     (props, ref) => {
         const styles = useStyles()
         const { theme } = useTheme()
+        const { onChangeText, value } = props
+        const [internalValue, setInternalValue] = useState('')
+        const currentValue = value ?? internalValue
+        const hasValue = !!currentValue && String(currentValue).length > 0
+
+        const handleChangeText = useCallback(
+            (text: string) => {
+                setInternalValue(text)
+                onChangeText?.(text)
+            },
+            [onChangeText],
+        )
+
+        const handleClear = useCallback(() => {
+            setInternalValue('')
+            onChangeText?.('')
+        }, [onChangeText])
 
         return (
             <PWInput
                 ref={ref}
                 {...props}
-                inputContainerStyle={[props.inputContainerStyle, styles.search]}
+                value={currentValue}
+                onChangeText={handleChangeText}
+                containerStyle={[styles.container, props.containerStyle]}
+                inputContainerStyle={[styles.search, props.inputContainerStyle]}
                 inputStyle={styles.input}
                 placeholder={props.placeholder ?? 'Search'}
                 placeholderTextColor={theme.colors.textGray}
+                renderErrorMessage={false}
                 leftIcon={
                     <PWIcon
                         name='magnifying-glass'
                         variant='secondary'
                     />
                 }
+                rightIcon={
+                    hasValue ? (
+                        <PWTouchableIcon
+                            name='cross'
+                            variant='primary'
+                            size='md'
+                            onPress={handleClear}
+                        />
+                    ) : undefined
+                }
+                rightIconContainerStyle={styles.rightIconContainer}
                 // @ts-expect-error - passed through to RN Input
-                clearButtonMode='while-editing'
                 selectTextOnFocus
                 autoComplete='off'
                 autoCapitalize='none'

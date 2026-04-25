@@ -13,19 +13,17 @@
 import React, { ReactNode } from 'react'
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi } from 'vitest'
-import { EditContactScreen } from '../EditContactScreen'
+import { AddContactScreen } from '../AddContactScreen'
 
 vi.mock('@perawallet/wallet-core-contacts', async () => ({
     useContacts: vi.fn(() => ({
         selectedContact: null,
-        addContact: vi.fn(),
-        editContact: vi.fn(),
+        saveContact: vi.fn(),
         deleteContact: vi.fn(),
         findContacts: vi.fn(() => []),
         setSelectedContact: vi.fn(),
     })),
     contactSchema: {},
-    DuplicateAddressError: class extends Error {},
 }))
 
 vi.mock('@hooks/useImagePicker', () => ({
@@ -39,9 +37,7 @@ vi.mock('@hooks/useImagePicker', () => ({
     }),
 }))
 
-vi.mock('@hookform/resolvers/zod', () => ({
-    zodResolver: vi.fn(),
-}))
+vi.mock('@hookform/resolvers/zod', () => ({ zodResolver: vi.fn() }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     isValidAlgorandAddress: vi.fn(() => false),
@@ -51,49 +47,50 @@ vi.mock('@perawallet/wallet-core-nfd', () => ({
     useNfdSearchQuery: vi.fn(() => ({ data: [], isLoading: false })),
 }))
 
+vi.mock('@hooks/useDebouncedValue', () => ({
+    useDebouncedValue: (value: string) => value,
+}))
+
 vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     const actual =
         await importOriginal<typeof import('@perawallet/wallet-core-shared')>()
     return {
         ...actual,
-        useDebouncedValue: (value: unknown) => value,
         truncateAlgorandAddress: (addr: string) =>
             addr.substring(0, 10) + '...',
     }
 })
 
-vi.mock('react-hook-form', () => {
-    return {
-        useForm: () => ({
-            control: {},
-            handleSubmit: (fn: (data: unknown) => void) => fn,
-            setError: vi.fn(),
-            setValue: vi.fn(),
-            watch: vi.fn(() => ''),
-            formState: { isValid: true, errors: {} },
-        }),
-        Controller: ({
-            render,
-        }: {
-            render: (props: {
-                field: {
-                    onChange: () => void
-                    onBlur: () => void
-                    value: string
-                }
-            }) => ReactNode
-        }) =>
-            render({
-                field: { onChange: vi.fn(), onBlur: vi.fn(), value: '' },
-            }) as unknown as ReactNode,
-    }
-})
+vi.mock('react-hook-form', () => ({
+    useForm: () => ({
+        control: {},
+        handleSubmit: (fn: (data: unknown) => void) => fn,
+        setError: vi.fn(),
+        setValue: vi.fn(),
+        watch: vi.fn(() => ''),
+        formState: { isValid: false, errors: {} },
+    }),
+    Controller: ({
+        render,
+    }: {
+        render: (props: {
+            field: {
+                onChange: () => void
+                onBlur: () => void
+                value: string
+            }
+        }) => ReactNode
+    }) =>
+        render({
+            field: { onChange: vi.fn(), onBlur: vi.fn(), value: '' },
+        }) as unknown as ReactNode,
+}))
 
-describe('EditContactScreen', () => {
-    it('renders the delete pill', () => {
-        render(<EditContactScreen />)
+describe('AddContactScreen', () => {
+    it('renders the Add contact CTA', () => {
+        render(<AddContactScreen />)
         expect(
-            screen.getByText('contacts.edit_contact.delete_this'),
+            screen.getByText('contacts.edit_contact.add_contact'),
         ).toBeTruthy()
     })
 })

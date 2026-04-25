@@ -10,143 +10,192 @@
  limitations under the License
  */
 
-import { useMemo, useState } from 'react'
-import { SectionList } from 'react-native'
-import { useNavigation, ParamListBase } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-import { PWButton, PWText, PWTouchableOpacity, PWView } from '@components/core'
+import { useCallback } from 'react'
+import { KeyboardAvoidingView, Platform } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { Contact } from '@perawallet/wallet-core-contacts'
+import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 
-import { EmptyView } from '@components/EmptyView'
-import { useStyles } from './styles'
-import { Contact, useContacts } from '@perawallet/wallet-core-contacts'
+import {
+    PWButton,
+    PWFlatList,
+    PWIcon,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
 import { ContactAvatar } from '@components/ContactAvatar'
+import { EmptyView } from '@components/EmptyView'
 import { SearchInput } from '@components/SearchInput'
+import { SHORT_ADDRESS_FORMAT } from '@constants/ui'
+import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNavigationHeader } from '@hooks/useNavigationHeader'
+import { ContactQRBottomSheet } from '@modules/contacts/components/ContactQRBottomSheet'
+import { useContactListScreen } from './useContactListScreen'
+import { useStyles } from './styles'
 
-const contactSorter = (a: Contact, b: Contact) => a.name.localeCompare(b.name)
-
-type ContactSection = {
-    title: string
-    data: Contact[]
+type ContactRowProps = {
+    contact: Contact
+    onShowQR: (contact: Contact) => void
+    onSelect: (contact: Contact) => void
 }
 
-const SectionHeader = ({ title }: { title: string }) => {
+const ContactRow = ({ contact, onShowQR, onSelect }: ContactRowProps) => {
     const styles = useStyles()
-    return (
-        <PWText
-            variant='h3'
-            style={styles.sectionHeader}
-        >
-            {title}
-        </PWText>
+
+    const handlePress = useCallback(
+        () => onSelect(contact),
+        [contact, onSelect],
     )
-}
+    const handleShowQR = useCallback(
+        () => onShowQR(contact),
+        [contact, onShowQR],
+    )
 
-const ContactItem = ({ contact }: { contact: Contact }) => {
-    const { setSelectedContact } = useContacts()
-    const styles = useStyles()
-    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-
-    const viewContact = () => {
-        setSelectedContact(contact)
-        navigation.navigate('ViewContact')
-    }
     return (
         <PWTouchableOpacity
-            onPress={viewContact}
+            onPress={handlePress}
             style={styles.contactContainer}
         >
             <ContactAvatar
                 contact={contact}
                 size='md'
             />
-            <PWText style={styles.contactName}>{contact.name}</PWText>
+            <PWView style={styles.contactTextContainer}>
+                <PWText
+                    style={styles.contactName}
+                    numberOfLines={1}
+                    ellipsizeMode='tail'
+                >
+                    {contact.name}
+                </PWText>
+                <PWText
+                    variant='body'
+                    style={styles.contactAddress}
+                >
+                    {truncateAlgorandAddress(
+                        contact.address,
+                        SHORT_ADDRESS_FORMAT,
+                    )}
+                </PWText>
+            </PWView>
+            <PWIcon
+                name='qr'
+                variant='primary'
+                onPress={handleShowQR}
+            />
         </PWTouchableOpacity>
     )
 }
 
 export const ContactListScreen = () => {
-    const { findContacts, setSelectedContact } = useContacts()
-    const styles = useStyles()
-    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const [search, setSearch] = useState('')
+    const navigation = useAppNavigation()
     const { t } = useLanguage()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({ listPaddingBottom: Math.max(insets.bottom, 24) })
 
-    const groupedContacts = useMemo(() => {
-        const groups: Record<string, Contact[]> = {}
+    const onNavigateAddContact = useCallback(
+        () => navigation.navigate('AddContact'),
+        [navigation],
+    )
+    const onNavigateViewContact = useCallback(
+        () => navigation.navigate('ViewContact'),
+        [navigation],
+    )
 
-        findContacts({
-            keyword: search,
-            matchAddress: true,
-            matchName: true,
-        }).forEach(c => {
-            const initial = c.name.charAt(0).toUpperCase()
-            if (!groups[initial]) {
-                groups[initial] = [c]
-            } else {
-                groups[initial].push(c)
-            }
-        })
+    const {
+        allContactsCount,
+        contacts,
+        search,
+        onSearchChange,
+        qrContact,
+        isEmpty,
+        goToAddContact,
+        showQR,
+        closeQR,
+        selectContact,
+    } = useContactListScreen({ onNavigateAddContact, onNavigateViewContact })
 
-        const sectionedContacts: ContactSection[] = []
-        Object.entries(groups).forEach(e => {
-            sectionedContacts.push({
-                title: e[0],
-                data: e[1].sort(contactSorter),
-            })
-        })
+    useNavigationHeader({
+        enabled: true,
+        right: allContactsCount ? (
+            <PWIcon
+                name='plus'
+                onPress={goToAddContact}
+            />
+        ) : null,
+    })
 
-        return sectionedContacts.sort((a, b) => a.title.localeCompare(b.title))
-    }, [findContacts, search])
+    const renderItem = useCallback(
+        ({ item }: { item: Contact }) => (
+            <ContactRow
+                contact={item}
+                onShowQR={showQR}
+                onSelect={selectContact}
+            />
+        ),
+        [selectContact, showQR],
+    )
 
-    const goToAddContact = () => {
-        setSelectedContact(null)
-        navigation.navigate('AddContact')
-    }
+    const keyExtractor = useCallback((c: Contact) => c.id ?? c.address, [])
 
-    return (
-        <>
-            {!groupedContacts.length && !search.length && (
+    if (isEmpty) {
+        return (
+            <>
                 <EmptyView
+                    icon='contacts'
                     title={t('contacts.list.no_contacts_title')}
                     body={t('contacts.list.no_contacts_body')}
-                    icon='person'
                     button={
                         <PWButton
                             title={t('contacts.list.add_contact')}
                             onPress={goToAddContact}
                             variant='primary'
+                            style={styles.emptyButton}
                         />
                     }
                 />
-            )}
-            {(!!groupedContacts.length || search.length) && (
-                <PWView style={styles.flex}>
+                <ContactQRBottomSheet
+                    contact={qrContact}
+                    onClose={closeQR}
+                />
+            </>
+        )
+    }
+
+    return (
+        <>
+            <KeyboardAvoidingView
+                style={styles.flex}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            >
+                <PWView style={styles.searchWrapper}>
                     <SearchInput
                         placeholder={t('contacts.list.search_placeholder')}
-                        onChangeText={setSearch}
-                    />
-                    <SectionList
-                        sections={groupedContacts}
-                        contentContainerStyle={
-                            groupedContacts.length
-                                ? styles.container
-                                : styles.flex
-                        }
-                        renderSectionHeader={s => (
-                            <SectionHeader title={s.section.title} />
-                        )}
-                        renderItem={item => <ContactItem contact={item.item} />}
-                        ListEmptyComponent={
-                            <EmptyView
-                                title={t('contacts.list.no_matching_title')}
-                                body={t('contacts.list.no_matching_body')}
-                                icon='person'
-                            />
-                        }
+                        value={search}
+                        onChangeText={onSearchChange}
                     />
                 </PWView>
-            )}
+                <PWFlatList
+                    data={contacts}
+                    keyExtractor={keyExtractor}
+                    contentContainerStyle={styles.listContent}
+                    keyboardShouldPersistTaps='handled'
+                    keyboardDismissMode='interactive'
+                    renderItem={renderItem}
+                    ListEmptyComponent={
+                        <EmptyView
+                            title={t('contacts.list.no_matching_title')}
+                            body={t('contacts.list.no_matching_body')}
+                        />
+                    }
+                />
+            </KeyboardAvoidingView>
+            <ContactQRBottomSheet
+                contact={qrContact}
+                onClose={closeQR}
+            />
         </>
     )
 }

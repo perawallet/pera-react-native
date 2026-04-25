@@ -16,6 +16,7 @@ import { ContactListScreen } from '../ContactListScreen'
 
 vi.mock('@perawallet/wallet-core-contacts', async () => ({
     useContacts: vi.fn(() => ({
+        contacts: [],
         findContacts: vi.fn(() => []),
         setSelectedContact: vi.fn(),
     })),
