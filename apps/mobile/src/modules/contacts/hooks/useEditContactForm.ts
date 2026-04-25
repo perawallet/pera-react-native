@@ -13,6 +13,7 @@
 import { useCallback, useMemo } from 'react'
 import { useNavigation } from '@react-navigation/native'
 import {
+    ContactNotFoundError,
     DuplicateAddressError,
     useContacts,
 } from '@perawallet/wallet-core-contacts'
@@ -38,7 +39,7 @@ export type UseEditContactFormResult = UseContactFormResult & {
 }
 
 export const useEditContactForm = (): UseEditContactFormResult => {
-    const { saveContact, deleteContact, selectedContact, setSelectedContact } =
+    const { editContact, deleteContact, selectedContact, setSelectedContact } =
         useContacts()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { t } = useLanguage()
@@ -47,10 +48,10 @@ export const useEditContactForm = (): UseEditContactFormResult => {
 
     const save = useCallback(
         (data: Contact) => {
-            if (!form.isValid) return
+            if (!form.isValid || !selectedContact) return
 
             try {
-                saveContact(data)
+                editContact(selectedContact.address, data)
             } catch (e) {
                 if (e instanceof DuplicateAddressError) {
                     form.setError('address', {
@@ -58,6 +59,15 @@ export const useEditContactForm = (): UseEditContactFormResult => {
                             'contacts.add_contact.duplicate_address_error',
                         ),
                     })
+                    return
+                }
+                if (e instanceof ContactNotFoundError) {
+                    // The contact was removed (e.g. on another device)
+                    // between selection and save. Drop the stale
+                    // selection and pop back rather than reporting a
+                    // false success.
+                    setSelectedContact(null)
+                    navigation.goBack()
                     return
                 }
                 throw e
@@ -68,7 +78,7 @@ export const useEditContactForm = (): UseEditContactFormResult => {
             setSelectedContact(data)
             navigation.goBack()
         },
-        [form, t, saveContact, setSelectedContact, navigation],
+        [form, t, editContact, selectedContact, setSelectedContact, navigation],
     )
 
     const removeContact = useCallback(() => {

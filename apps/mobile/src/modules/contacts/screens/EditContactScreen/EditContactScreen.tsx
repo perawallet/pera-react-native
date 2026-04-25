@@ -16,6 +16,8 @@ import { PWButton, PWDialog, PWText, PWView } from '@components/core'
 import { ContactForm } from '@components/ContactForm'
 import {
     Contact,
+    ContactNotFoundError,
+    DuplicateAddressError,
     useContacts,
     contactSchema,
 } from '@perawallet/wallet-core-contacts'
@@ -32,8 +34,8 @@ export const EditContactScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
     const {
-        saveContact,
-        findContacts,
+        addContact,
+        editContact,
         deleteContact,
         selectedContact,
         setSelectedContact,
@@ -78,27 +80,34 @@ export const EditContactScreen = () => {
     )
 
     const save = (data: Contact) => {
-        if (!isEditMode) {
-            const matches = findContacts({
-                keyword: data.address,
-                matchAddress: true,
-                matchName: false,
-                matchNFD: false,
-            })
+        if (!isValid) return
 
-            if (matches?.length) {
+        try {
+            if (isEditMode && selectedContact) {
+                editContact(selectedContact.address, data)
+            } else {
+                addContact(data)
+            }
+        } catch (e) {
+            if (e instanceof DuplicateAddressError) {
                 setError('address', {
                     message: 'Contact for this address already exists.',
                 })
                 return
             }
+            if (e instanceof ContactNotFoundError) {
+                // The selected contact was removed before save landed
+                // (e.g. on another device). Drop the stale selection
+                // and pop back without reporting a false success.
+                setSelectedContact(null)
+                navigation.goBack()
+                return
+            }
+            throw e
         }
 
-        if (isValid) {
-            saveContact(data)
-            setSelectedContact(null)
-            navigation.goBack()
-        }
+        setSelectedContact(null)
+        navigation.goBack()
     }
 
     const removeContact = () => {

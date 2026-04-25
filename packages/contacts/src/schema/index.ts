@@ -13,7 +13,6 @@
 import { z } from 'zod'
 
 export const contactSchema = z.object({
-    id: z.string().optional(),
     name: z
         .string('Please enter a valid name')
         .min(1, { message: 'Please enter a valid name' }),

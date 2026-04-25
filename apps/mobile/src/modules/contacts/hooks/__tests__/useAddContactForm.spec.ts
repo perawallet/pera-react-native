@@ -18,7 +18,7 @@ import {
 } from '@perawallet/wallet-core-contacts'
 import { useAddContactForm } from '../useAddContactForm'
 
-const saveContactMock = vi.fn()
+const addContactMock = vi.fn()
 const setSelectedContactMock = vi.fn()
 const goBackMock = vi.fn()
 
@@ -29,7 +29,7 @@ vi.mock('@perawallet/wallet-core-contacts', async () => {
     return {
         ...actual,
         useContacts: vi.fn(() => ({
-            saveContact: saveContactMock,
+            addContact: addContactMock,
             setSelectedContact: setSelectedContactMock,
             contacts: [],
             deleteContact: vi.fn(),
@@ -90,7 +90,7 @@ vi.mock('../useContactForm', () => ({
 describe('useAddContactForm', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        saveContactMock.mockReset()
+        addContactMock.mockReset()
         formState.isValid = false
     })
 
@@ -101,13 +101,13 @@ describe('useAddContactForm', () => {
             result.current.save({ name: '', address: '' })
         })
 
-        expect(saveContactMock).not.toHaveBeenCalled()
+        expect(addContactMock).not.toHaveBeenCalled()
         expect(goBackMock).not.toHaveBeenCalled()
         expect(setErrorMock).not.toHaveBeenCalled()
     })
 
-    it('surfaces a duplicate-address error when saveContact throws DuplicateAddressError', () => {
-        saveContactMock.mockImplementation(() => {
+    it('surfaces a duplicate-address error when addContact throws DuplicateAddressError', () => {
+        addContactMock.mockImplementation(() => {
             throw new DuplicateAddressError('ALICE123')
         })
         formState.isValid = true
@@ -129,7 +129,7 @@ describe('useAddContactForm', () => {
     })
 
     it('rethrows non-DuplicateAddressError errors', () => {
-        saveContactMock.mockImplementation(() => {
+        addContactMock.mockImplementation(() => {
             throw new Error('unexpected failure')
         })
         formState.isValid = true
@@ -155,7 +155,7 @@ describe('useAddContactForm', () => {
             result.current.save(newContact)
         })
 
-        expect(saveContactMock).toHaveBeenCalledWith(newContact)
+        expect(addContactMock).toHaveBeenCalledWith(newContact)
         expect(setSelectedContactMock).toHaveBeenCalledWith(null)
         expect(goBackMock).toHaveBeenCalled()
     })

@@ -26,7 +26,8 @@ vi.mock('@perawallet/wallet-core-contacts', async () => {
         useContacts: vi.fn(() => ({
             contacts: [],
             findContacts: vi.fn(() => []),
-            saveContact: vi.fn(),
+            addContact: vi.fn(),
+            editContact: vi.fn(),
             deleteContact: vi.fn(),
             selectedContact: null,
             setSelectedContact: vi.fn(),
@@ -63,7 +64,6 @@ describe('useContactForm', () => {
 
     it('seeds initial values from the provided contact', () => {
         const contact: Contact = {
-            id: 'test-id',
             name: 'Alice',
             address: 'ALICE123',
         }

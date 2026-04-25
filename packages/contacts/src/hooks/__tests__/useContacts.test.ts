@@ -27,12 +27,14 @@ describe('useContacts', () => {
             { name: 'Alice', address: 'ALICE123' },
             { name: 'Bob', address: 'BOB456' },
         ]
-        const mockSaveContact = vi.fn()
+        const mockAddContact = vi.fn()
+        const mockEditContact = vi.fn()
         const mockDeleteContact = vi.fn()
 
         mockUseAppStore.mockReturnValue({
             contacts: mockContacts,
-            saveContact: mockSaveContact,
+            addContact: mockAddContact,
+            editContact: mockEditContact,
             deleteContact: mockDeleteContact,
         })
 
@@ -40,7 +42,8 @@ describe('useContacts', () => {
 
         expect(result.current.contacts).toEqual(mockContacts)
         expect(result.current.findContacts).toBeDefined()
-        expect(result.current.saveContact).toBe(mockSaveContact)
+        expect(result.current.addContact).toBe(mockAddContact)
+        expect(result.current.editContact).toBe(mockEditContact)
         expect(result.current.deleteContact).toBe(mockDeleteContact)
     })
 
@@ -52,7 +55,8 @@ describe('useContacts', () => {
 
         mockUseAppStore.mockReturnValue({
             contacts: mockContacts,
-            saveContact: vi.fn(),
+            addContact: vi.fn(),
+            editContact: vi.fn(),
             deleteContact: vi.fn(),
         })
 
@@ -70,7 +74,8 @@ describe('useContacts', () => {
 
         mockUseAppStore.mockReturnValue({
             contacts: mockContacts,
-            saveContact: vi.fn(),
+            addContact: vi.fn(),
+            editContact: vi.fn(),
             deleteContact: vi.fn(),
         })
 
@@ -88,7 +93,8 @@ describe('useContacts', () => {
 
         mockUseAppStore.mockReturnValue({
             contacts: mockContacts,
-            saveContact: vi.fn(),
+            addContact: vi.fn(),
+            editContact: vi.fn(),
             deleteContact: vi.fn(),
         })
 
@@ -106,7 +112,8 @@ describe('useContacts', () => {
 
         mockUseAppStore.mockReturnValue({
             contacts: mockContacts,
-            saveContact: vi.fn(),
+            addContact: vi.fn(),
+            editContact: vi.fn(),
             deleteContact: vi.fn(),
         })
 
@@ -124,7 +131,8 @@ describe('useContacts', () => {
 
         mockUseAppStore.mockReturnValue({
             contacts: mockContacts,
-            saveContact: vi.fn(),
+            addContact: vi.fn(),
+            editContact: vi.fn(),
             deleteContact: vi.fn(),
         })
 
@@ -145,7 +153,8 @@ describe('useContacts', () => {
 
         mockUseAppStore.mockReturnValue({
             contacts: mockContacts,
-            saveContact: vi.fn(),
+            addContact: vi.fn(),
+            editContact: vi.fn(),
             deleteContact: vi.fn(),
         })
 
@@ -167,7 +176,8 @@ describe('useContacts', () => {
 
         mockUseAppStore.mockReturnValue({
             contacts: mockContacts,
-            saveContact: vi.fn(),
+            addContact: vi.fn(),
+            editContact: vi.fn(),
             deleteContact: vi.fn(),
         })
 
@@ -188,7 +198,8 @@ describe('useContacts', () => {
 
         mockUseAppStore.mockReturnValue({
             contacts: mockContacts,
-            saveContact: vi.fn(),
+            addContact: vi.fn(),
+            editContact: vi.fn(),
             deleteContact: vi.fn(),
         })
 
@@ -206,7 +217,8 @@ describe('useContacts', () => {
 
         mockUseAppStore.mockReturnValue({
             contacts: mockContacts,
-            saveContact: vi.fn(),
+            addContact: vi.fn(),
+            editContact: vi.fn(),
             deleteContact: vi.fn(),
         })
 
@@ -225,7 +237,8 @@ describe('useContacts', () => {
 
         mockUseAppStore.mockReturnValue({
             contacts: mockContacts,
-            saveContact: vi.fn(),
+            addContact: vi.fn(),
+            editContact: vi.fn(),
             deleteContact: vi.fn(),
         })
 
@@ -244,7 +257,8 @@ describe('useContacts', () => {
 
         mockUseAppStore.mockReturnValue({
             contacts: mockContacts,
-            saveContact: vi.fn(),
+            addContact: vi.fn(),
+            editContact: vi.fn(),
             deleteContact: vi.fn(),
         })
 
@@ -260,7 +274,8 @@ describe('useContacts', () => {
 
         mockUseAppStore.mockReturnValue({
             contacts: [],
-            saveContact: vi.fn(),
+            addContact: vi.fn(),
+            editContact: vi.fn(),
             deleteContact: vi.fn(),
             selectedContact: mockContact,
             setSelectedContact: mockSetSelectedContact,
@@ -277,7 +292,8 @@ describe('useContacts', () => {
 
         mockUseAppStore.mockReturnValue({
             contacts: [],
-            saveContact: vi.fn(),
+            addContact: vi.fn(),
+            editContact: vi.fn(),
             deleteContact: vi.fn(),
             selectedContact: null,
             setSelectedContact: mockSetSelectedContact,

@@ -40,7 +40,7 @@ export const useEditParticipantScreen = (): UseEditParticipantScreenResult => {
         useRoute<RouteProp<MultisigStackParamList, 'EditParticipant'>>()
     const { address } = route.params
 
-    const { findContacts, saveContact } = useContacts()
+    const { findContacts, addContact, editContact } = useContacts()
     const removeParticipant = useMultisigCreationStore(
         state => state.removeParticipant,
     )
@@ -71,11 +71,23 @@ export const useEditParticipantScreen = (): UseEditParticipantScreenResult => {
     const onDone = useCallback(
         (data: EditParticipantFormValues) => {
             const nickname = data.name.trim()
-            saveContact({ name: nickname, address })
+            const contactData = { name: nickname, address }
+            if (existingContact) {
+                editContact(address, contactData)
+            } else {
+                addContact(contactData)
+            }
             updateParticipant(address, nickname)
             navigation.goBack()
         },
-        [address, saveContact, updateParticipant, navigation],
+        [
+            address,
+            existingContact,
+            addContact,
+            editContact,
+            updateParticipant,
+            navigation,
+        ],
     )
 
     const handleDone = handleSubmit(onDone)

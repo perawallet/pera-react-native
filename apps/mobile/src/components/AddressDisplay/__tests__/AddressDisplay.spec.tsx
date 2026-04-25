@@ -94,7 +94,6 @@ describe('AddressDisplay', () => {
     it('renders the default contact avatar (person icon) for a matched contact without an image', () => {
         findContactsMock.mockReturnValue([
             {
-                id: 'test-id',
                 name: 'Alice',
                 address: 'A'.repeat(58),
             },

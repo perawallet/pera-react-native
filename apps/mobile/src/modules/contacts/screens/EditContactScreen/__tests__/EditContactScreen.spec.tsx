@@ -18,12 +18,13 @@ import { EditContactScreen } from '../EditContactScreen'
 vi.mock('@perawallet/wallet-core-contacts', async () => ({
     useContacts: vi.fn(() => ({
         selectedContact: null,
-        saveContact: vi.fn(),
+        addContact: vi.fn(),
+        editContact: vi.fn(),
         deleteContact: vi.fn(),
         findContacts: vi.fn(() => []),
     })),
-    // Mock schema to avoid parsing issues if needed, but schema is usually an object.
     contactSchema: {},
+    DuplicateAddressError: class extends Error {},
 }))
 
 vi.mock('@hookform/resolvers/zod', () => ({

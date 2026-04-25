@@ -16,7 +16,8 @@ import { useContactsStore } from '../store'
 export const useContacts = () => {
     const {
         contacts,
-        saveContact,
+        addContact,
+        editContact,
         deleteContact,
         selectedContact,
         setSelectedContact,
@@ -54,7 +55,8 @@ export const useContacts = () => {
         contacts,
         setSelectedContact,
         findContacts,
-        saveContact,
+        addContact,
+        editContact,
         deleteContact,
     }
 }

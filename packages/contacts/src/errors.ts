@@ -11,9 +11,9 @@
  */
 
 /**
- * Thrown by `saveContact` when a contact with the same address already
- * exists (and is not the contact being updated). UI layers catch this and
- * surface it as a form-level error.
+ * Thrown by `addContact` when the address is already in use, or by
+ * `editContact` when renaming into an address used by another contact.
+ * UI layers catch this and surface it as a form-level error.
  */
 export class DuplicateAddressError extends Error {
     readonly address: string
@@ -21,6 +21,21 @@ export class DuplicateAddressError extends Error {
     constructor(address: string) {
         super(`A contact with address ${address} already exists`)
         this.name = 'DuplicateAddressError'
+        this.address = address
+    }
+}
+
+/**
+ * Thrown by `editContact` when no contact exists at `previousAddress`.
+ * Surfaces the case where the caller's `selectedContact` is stale (e.g.
+ * deleted on another device) so the UI doesn't silently report success.
+ */
+export class ContactNotFoundError extends Error {
+    readonly address: string
+
+    constructor(address: string) {
+        super(`No contact found at address ${address}`)
+        this.name = 'ContactNotFoundError'
         this.address = address
     }
 }

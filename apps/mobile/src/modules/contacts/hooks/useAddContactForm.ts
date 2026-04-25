@@ -30,7 +30,7 @@ export type UseAddContactFormResult = UseContactFormResult & {
 }
 
 export const useAddContactForm = (): UseAddContactFormResult => {
-    const { saveContact, setSelectedContact } = useContacts()
+    const { addContact, setSelectedContact } = useContacts()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
     const { t } = useLanguage()
     const form = useContactForm(null)
@@ -40,7 +40,7 @@ export const useAddContactForm = (): UseAddContactFormResult => {
             if (!form.isValid) return
 
             try {
-                saveContact(data)
+                addContact(data)
             } catch (e) {
                 if (e instanceof DuplicateAddressError) {
                     form.setError('address', {
@@ -56,7 +56,7 @@ export const useAddContactForm = (): UseAddContactFormResult => {
             setSelectedContact(null)
             navigation.goBack()
         },
-        [form, t, saveContact, setSelectedContact, navigation],
+        [form, t, addContact, setSelectedContact, navigation],
     )
 
     return useMemo(() => ({ ...form, save }), [form, save])
