@@ -49,23 +49,26 @@ export const useQRScannerView = ({
             try {
                 const url = codes.at(0)?.value
                 setScanningEnabled(false)
-                if (url) {
-                    if (isValidDeepLink(url)) {
-                        handleDeepLink(
-                            url,
-                            true,
-                            'qr',
-                            () => setScanningEnabled(true),
-                            () => {
-                                logger.debug(
-                                    'QRScannerView: Deep link handled successfully',
-                                    { url },
-                                )
-                                onSuccess(url, () => setScanningEnabled(true))
-                            },
-                        )
-                    }
+                if (!url) return
+                if (!isValidDeepLink(url)) {
+                    // Unrecognized code — re-arm the scanner so the user
+                    // can try again without closing the modal.
+                    setScanningEnabled(true)
+                    return
                 }
+                handleDeepLink(
+                    url,
+                    true,
+                    'qr',
+                    () => setScanningEnabled(true),
+                    () => {
+                        logger.debug(
+                            'QRScannerView: Deep link handled successfully',
+                            { url },
+                        )
+                        onSuccess(url, () => setScanningEnabled(true))
+                    },
+                )
             } catch (error) {
                 logger.error('QRScannerView: QR scanner error:', { error })
             }
@@ -73,14 +76,14 @@ export const useQRScannerView = ({
     })
 
     useEffect(() => {
-        if (!hasPermission && isVisible) {
-            requestPermission().then(result => {
-                if (!result) {
-                    setPermissionDenied(true)
-                } else {
-                    setPermissionDenied(false)
-                }
-            })
+        if (hasPermission || !isVisible) return
+        let active = true
+        requestPermission().then(result => {
+            if (!active) return
+            setPermissionDenied(!result)
+        })
+        return () => {
+            active = false
         }
     }, [isVisible, hasPermission, requestPermission])
 

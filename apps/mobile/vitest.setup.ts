@@ -971,18 +971,21 @@ vi.mock('react-native', () => {
                     )
                 },
             ),
-        TextInput: vi.fn().mockImplementation(({ testID, ...props }) =>
-            require('react').createElement(
-                'input',
-                {
-                    ...props,
-                    ...(testID
-                        ? { 'data-testid': testID, testid: testID }
-                        : {}),
-                },
-                props.children,
+        TextInput: vi
+            .fn()
+            .mockImplementation(({ testID, onChangeText, ...props }) =>
+                require('react').createElement(
+                    'input',
+                    {
+                        ...props,
+                        onChange: (e: any) => onChangeText?.(e.target.value),
+                        ...(testID
+                            ? { 'data-testid': testID, testid: testID }
+                            : {}),
+                    },
+                    props.children,
+                ),
             ),
-        ),
 
         Modal: vi.fn().mockImplementation((args: any) => {
             const {
@@ -1046,6 +1049,7 @@ vi.mock('react-native', () => {
         },
         Linking: {
             openURL: vi.fn(),
+            openSettings: vi.fn(),
             canOpenURL: vi.fn(),
             getInitialURL: vi.fn(),
             addEventListener: vi.fn(),
