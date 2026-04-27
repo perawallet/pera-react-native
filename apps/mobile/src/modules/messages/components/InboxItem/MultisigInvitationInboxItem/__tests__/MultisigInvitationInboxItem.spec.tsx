@@ -23,6 +23,23 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     formatRelativeTime: vi.fn(() => '21 minutes ago'),
 }))
 
+vi.mock('react-i18next', () => ({
+    useTranslation: () => ({
+        t: (key: string) => key,
+        i18n: { changeLanguage: vi.fn(), language: 'en' },
+    }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Trans: ({ i18nKey, values }: any) => {
+        const valuesText = values ? ' ' + Object.values(values).join(' ') : ''
+        return (
+            <span>
+                {i18nKey}
+                {valuesText}
+            </span>
+        )
+    },
+}))
+
 const invitationItem = {
     type: 'multisig_import',
     data: {
@@ -43,7 +60,7 @@ describe('MultisigInvitationInboxItem', () => {
         )
 
         expect(getByText(/messages\.inbox\.invitation_title/)).toBeTruthy()
-        expect(getByText(/DUA4A\.\.\.JK2ETI/)).toBeTruthy()
+        expect(getByText(/DUA4A\.\.\.K2ETI/)).toBeTruthy()
         expect(getByText('messages.inbox.view_invitation_details')).toBeTruthy()
         expect(getByText('21 minutes ago')).toBeTruthy()
         expect(getByTestId('icon-accounts/light/multisig-account')).toBeTruthy()

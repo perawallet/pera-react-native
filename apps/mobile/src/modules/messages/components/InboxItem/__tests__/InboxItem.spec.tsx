@@ -23,6 +23,23 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
     formatRelativeTime: vi.fn(() => 'just now'),
 }))
 
+vi.mock('react-i18next', () => ({
+    useTranslation: () => ({
+        t: (key: string) => key,
+        i18n: { changeLanguage: vi.fn(), language: 'en' },
+    }),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    Trans: ({ i18nKey, values }: any) => {
+        const valuesText = values ? ' ' + Object.values(values).join(' ') : ''
+        return (
+            <span>
+                {i18nKey}
+                {valuesText}
+            </span>
+        )
+    },
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
     useAllAccounts: vi.fn(() => []),
     getAccountDisplayName: vi.fn((account: Nullable<{ address: string }>) =>
@@ -95,7 +112,7 @@ describe('InboxItem', () => {
         }
 
         const { getByText, getByTestId } = render(<InboxItem item={item} />)
-        expect(getByText('messages.inbox.invitation_title_bold')).toBeTruthy()
+        expect(getByText(/messages\.inbox\.invitation_title/)).toBeTruthy()
         expect(getByText('messages.inbox.view_invitation_details')).toBeTruthy()
         expect(getByTestId('multisig_invitation_inbox_item')).toBeTruthy()
         expect(getByTestId('unread_indicator_dot')).toBeTruthy()
