@@ -13,10 +13,8 @@
 import { PWButton, PWIcon, PWImage, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
-import { Image } from 'react-native'
 
 import CardBackground from '@assets/images/card-background.png'
-const BACKGROUND_URI = Image.resolveAssetSource(CardBackground).uri
 
 export const CardPanel = () => {
     const styles = useStyles()
@@ -38,7 +36,7 @@ export const CardPanel = () => {
                 </PWView>
                 <PWView style={styles.cardImageContainer}>
                     <PWImage
-                        source={{ uri: BACKGROUND_URI }}
+                        source={CardBackground}
                         style={styles.backgroundImage}
                     />
                 </PWView>

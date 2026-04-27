@@ -11,7 +11,7 @@
  */
 
 import React, { useCallback, useRef } from 'react'
-import { GestureResponderEvent, View } from 'react-native'
+import { GestureResponderEvent } from 'react-native'
 import { PWIcon, PWSwipeable, PWSwipeableRef, PWView } from '@components/core'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
@@ -51,12 +51,12 @@ const SwipeableAssetItemInner = ({
 
     const renderRightActions = useCallback(() => {
         return (
-            <View style={styles.swipeAction}>
+            <PWView style={styles.swipeAction}>
                 <PWIcon
                     name='trash'
                     variant='white'
                 />
-            </View>
+            </PWView>
         )
     }, [styles.swipeAction])
 

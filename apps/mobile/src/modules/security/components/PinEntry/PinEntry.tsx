@@ -10,8 +10,13 @@
  limitations under the License
  */
 
-import { View } from 'react-native'
-import { PWText, PWNumpad, PWPinCircles, NumpadKey } from '@components/core'
+import {
+    PWText,
+    PWNumpad,
+    PWPinCircles,
+    PWView,
+    NumpadKey,
+} from '@components/core'
 import { usePinEntry } from './usePinEntry'
 import { useStyles } from './styles'
 import { PIN_LENGTH } from '@perawallet/wallet-core-security'
@@ -54,17 +59,17 @@ export const PinEntry = ({
     }, [title])
 
     return (
-        <View style={styles.container}>
-            <View style={styles.header}>
+        <PWView style={styles.container}>
+            <PWView style={styles.header}>
                 <PWText
                     variant='h1'
                     style={styles.title}
                 >
                     {title}
                 </PWText>
-            </View>
+            </PWView>
 
-            <View style={styles.circlesContainer}>
+            <PWView style={styles.circlesContainer}>
                 <PWPinCircles
                     length={PIN_LENGTH}
                     filledCount={pin.length}
@@ -74,15 +79,15 @@ export const PinEntry = ({
                         onErrorAnimationComplete?.()
                     }}
                 />
-            </View>
+            </PWView>
 
-            <View style={styles.numpadContainer}>
+            <PWView style={styles.numpadContainer}>
                 <PWNumpad
                     onKeyPress={handleNumpadKeyPress}
                     isDisabled={isDisabled}
                     mode='pin'
                 />
-            </View>
-        </View>
+            </PWView>
+        </PWView>
     )
 }

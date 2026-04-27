@@ -20,15 +20,10 @@ import { AccountMenuBottomSheet } from '@modules/accounts/components/AccountMenu
 import { AccountSortBottomSheet } from '@modules/accounts/components/AccountSortBottomSheet'
 import { useModalState } from '@hooks/useModalState'
 import { useAppNavigation } from '@hooks/useAppNavigation'
-import {
-    StyleProp,
-    TouchableOpacity,
-    TouchableOpacityProps,
-    ViewStyle,
-} from 'react-native'
+import { StyleProp, TouchableOpacityProps, ViewStyle } from 'react-native'
 import { AccountDisplay } from '../AccountDisplay'
 import { AccountIconProps } from '../AccountIcon'
-import { PWTextProps } from '@components/core'
+import { PWTextProps, PWTouchableOpacity } from '@components/core'
 
 export type AccountSelectionProps = {
     onSelected?: (account: WalletAccount) => void
@@ -94,7 +89,7 @@ export const AccountSelection = ({
 
     return (
         <>
-            <TouchableOpacity
+            <PWTouchableOpacity
                 {...props}
                 activeOpacity={0.8}
                 onPress={accountMenuState.open}
@@ -107,7 +102,7 @@ export const AccountSelection = ({
                     textProps={triggerTextProps}
                     noBorder
                 />
-            </TouchableOpacity>
+            </PWTouchableOpacity>
             <AccountMenuBottomSheet
                 isVisible={accountMenuState.isOpen}
                 onClose={accountMenuState.close}

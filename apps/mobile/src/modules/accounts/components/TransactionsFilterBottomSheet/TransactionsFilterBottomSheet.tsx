@@ -11,13 +11,13 @@
  */
 
 import React, { useState, useEffect } from 'react'
-import { View, TouchableOpacity } from 'react-native'
 import {
     PWBottomSheet,
     PWIcon,
     PWText,
     PWButton,
     PWTouchableOpacity,
+    PWView,
 } from '@components/core'
 import DateTimePicker, {
     DateTimePickerEvent,
@@ -139,16 +139,16 @@ export const TransactionsFilterBottomSheet = ({
 
     const renderMainView = () => (
         <>
-            <View style={styles.header}>
-                <View style={styles.headerSpacer} />
+            <PWView style={styles.header}>
+                <PWView style={styles.headerSpacer} />
                 <PWText
                     variant='h4'
                     style={styles.title}
                 >
                     {t('transactions.filter.title')}
                 </PWText>
-                <View style={styles.headerSpacer} />
-            </View>
+                <PWView style={styles.headerSpacer} />
+            </PWView>
 
             {[
                 {
@@ -196,7 +196,7 @@ export const TransactionsFilterBottomSheet = ({
                             size='lg'
                             style={styles.listIcon}
                         />
-                        <View style={styles.listContent}>
+                        <PWView style={styles.listContent}>
                             <PWText
                                 variant='h4'
                                 style={styles.listTitle}
@@ -211,15 +211,15 @@ export const TransactionsFilterBottomSheet = ({
                                     {subtitle}
                                 </PWText>
                             ) : null}
-                        </View>
+                        </PWView>
                         {isSelected && (
-                            <View style={styles.checkIcon}>
+                            <PWView style={styles.checkIcon}>
                                 <PWIcon
                                     name='check'
                                     size='lg'
                                     variant='positive'
                                 />
-                            </View>
+                            </PWView>
                         )}
                     </PWTouchableOpacity>
                 )
@@ -235,7 +235,7 @@ export const TransactionsFilterBottomSheet = ({
 
     const renderCustomRangeView = () => (
         <>
-            <View style={styles.header}>
+            <PWView style={styles.header}>
                 <PWTouchableOpacity onPress={() => setView('main')}>
                     <PWIcon
                         name='chevron-left'
@@ -248,19 +248,19 @@ export const TransactionsFilterBottomSheet = ({
                 >
                     {t('transactions.filter.custom_range')}
                 </PWText>
-                <TouchableOpacity onPress={handleApplyCustomRange}>
+                <PWTouchableOpacity onPress={handleApplyCustomRange}>
                     <PWText
                         variant='h4'
                         style={styles.doneButton}
                     >
                         {t('common.done')}
                     </PWText>
-                </TouchableOpacity>
-            </View>
+                </PWTouchableOpacity>
+            </PWView>
 
-            <View style={styles.customRangeContainer}>
-                <View style={styles.dateInputsContainer}>
-                    <TouchableOpacity
+            <PWView style={styles.customRangeContainer}>
+                <PWView style={styles.dateInputsContainer}>
+                    <PWTouchableOpacity
                         style={[
                             styles.dateInputWrapper,
                             activeDateInput === 'from' &&
@@ -280,8 +280,8 @@ export const TransactionsFilterBottomSheet = ({
                         >
                             {formatDate(customRange.from)}
                         </PWText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </PWTouchableOpacity>
+                    <PWTouchableOpacity
                         style={[
                             styles.dateInputWrapper,
                             activeDateInput === 'to' && styles.activeDateInput,
@@ -300,10 +300,10 @@ export const TransactionsFilterBottomSheet = ({
                         >
                             {formatDate(customRange.to)}
                         </PWText>
-                    </TouchableOpacity>
-                </View>
+                    </PWTouchableOpacity>
+                </PWView>
 
-                <View style={styles.datePickerContainer}>
+                <PWView style={styles.datePickerContainer}>
                     <DateTimePicker
                         value={
                             activeDateInput === 'from'
@@ -317,8 +317,8 @@ export const TransactionsFilterBottomSheet = ({
                         textColor={styles.dateValue.color as string}
                         themeVariant='light'
                     />
-                </View>
-            </View>
+                </PWView>
+            </PWView>
         </>
     )
 
