@@ -994,8 +994,6 @@
                 "current_auth_label": "Currently Rekeyed",
                 "fee_label": "Transaction Fee",
                 "cta": "Confirm",
-                "error_title": "Could not rekey account",
-                "error_body": "Something went wrong submitting the rekey transaction. Please try again.",
                 "replace_warning": {
                     "title": "Your previous rekey will be replaced",
                     "body": "{{currentAuth}} will no longer be authorized to sign transactions for {{source}}. Make sure you understand the implications before continuing.",

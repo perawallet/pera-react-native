@@ -18,7 +18,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
 import { useTransactionSigner } from '@perawallet/wallet-core-signing'
-import { useLanguage } from '@hooks/useLanguage'
+import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { useToast } from '@hooks/useToast'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useModalState } from '@hooks/useModalState'
@@ -53,8 +53,8 @@ export const useRekeyConfirmScreen = (): UseRekeyConfirmScreenResult => {
     const target = useFindAccountByAddress(targetAddress)
     const currentAuth = useFindAccountByAddress(source?.rekeyAddress ?? '')
 
-    const { t } = useLanguage()
     const { showToast } = useToast()
+    const { getMessage } = useAlgodErrorMessage()
     const { signTransactions } = useTransactionSigner()
     const algokit = useAlgorandClient(signTransactions)
     const { data: suggestedParams, isPending: feePending } =
@@ -81,19 +81,13 @@ export const useRekeyConfirmScreen = (): UseRekeyConfirmScreenResult => {
                 params: { sourceAddress: source.address },
             })
         } catch (error) {
-            // guardrails-ignore-next-line no-error-toast-in-catch reason: surface raw algod error message verbatim with localized title for diagnosability
-            showToast({
-                title: t('rekey.to_standard.confirm.error_title'),
-                body:
-                    error instanceof Error
-                        ? error.message
-                        : t('rekey.to_standard.confirm.error_body'),
-                type: 'error',
-            })
+            const { title, body } = getMessage(error)
+            // guardrails-ignore-next-line no-error-toast-in-catch reason: useAlgodErrorMessage already returns the localized title/body to surface
+            showToast({ title, body, type: 'error' })
         } finally {
             setIsSubmitting(false)
         }
-    }, [algokit, navigation, showToast, source, t, target])
+    }, [algokit, getMessage, navigation, showToast, source, target])
 
     const handleConfirmPress = useCallback(() => {
         if (hasPreviousRekey) {
