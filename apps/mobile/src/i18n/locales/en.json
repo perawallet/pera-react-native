@@ -1009,6 +1009,37 @@
                 "cta": "Done"
             }
         },
+        "to_ledger": {
+            "intro": {
+                "title": "Rekey to Ledger",
+                "body": "Back your standard account with a Ledger device for extra security.",
+                "learn_more": "Learn more",
+                "expect_label": "What to expect",
+                "expect_1": "Future transactions will be signed by your new Ledger Device.",
+                "expect_2": "This account will no longer be able to sign transactions.",
+                "expect_3": "Your account's public key, balances, and configuration will not change.",
+                "expect_4": "Make sure Bluetooth is enabled on your smartphone",
+                "cta": "Start Process"
+            },
+            "select": {
+                "title": "Select Ledger account",
+                "subtitle": "Choose the Ledger account you would like to rekey to. The account you select here will be responsible for signing all transactions for the source account.",
+                "empty": "No Ledger accounts found. Import a Ledger account first."
+            },
+            "confirm": {
+                "title": "Confirm rekeying",
+                "body": "You are about to rekey this account. It will no longer be able to sign transactions for itself.",
+                "learn_more": "Learn more",
+                "summary_label": "Summary of rekey",
+                "fee_label": "Transaction Fee",
+                "cta": "Confirm"
+            },
+            "success": {
+                "title": "Account successfully rekeyed",
+                "body": "The account <0>{{source}}</0> was successfully rekeyed.",
+                "cta": "Done"
+            }
+        },
         "undo": {
             "confirm": {
                 "title": "Undo rekey",

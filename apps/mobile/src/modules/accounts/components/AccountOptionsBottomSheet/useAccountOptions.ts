@@ -161,8 +161,12 @@ export const useAccountOptions = ({
     }, [onClose, navigation, account.address])
 
     const handleRekeyToLedger = useCallback(() => {
-        notImplemented()
-    }, [notImplemented])
+        onClose()
+        navigation.navigate('RekeyToLedger', {
+            screen: 'RekeyToLedgerIntro',
+            params: { sourceAddress: account.address },
+        })
+    }, [onClose, navigation, account.address])
 
     const handleRekeyToStandard = useCallback(() => {
         onClose()

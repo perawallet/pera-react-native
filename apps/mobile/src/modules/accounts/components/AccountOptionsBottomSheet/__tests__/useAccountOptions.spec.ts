@@ -668,7 +668,7 @@ describe('useAccountOptions', () => {
             expect(result.current.isPassphraseFlowVisible).toBe(false)
         })
 
-        it('shows not implemented toast for rekey-to-ledger', () => {
+        it('navigates to RekeyToLedger intro for rekey-to-ledger', () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: algo25Account,
@@ -685,10 +685,10 @@ describe('useAccountOptions', () => {
                 rekeyOption?.onPress()
             })
 
-            expect(mockShowToast).toHaveBeenCalledWith({
-                title: 'common.not_implemented.title',
-                body: 'common.not_implemented.body',
-                type: 'error',
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledWith('RekeyToLedger', {
+                screen: 'RekeyToLedgerIntro',
+                params: { sourceAddress: algo25Account.address },
             })
         })
 

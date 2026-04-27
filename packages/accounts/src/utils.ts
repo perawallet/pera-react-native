@@ -120,6 +120,22 @@ export const isEligibleRekeyTarget = (
 }
 
 /**
+ * True when `target` may be chosen as the new auth address for a "rekey to
+ * Ledger account" flow originating from `sourceAddress`. The target must be
+ * a hardware wallet account already imported in the wallet, not the source
+ * itself, and not already rekeyed away.
+ */
+export const isEligibleLedgerRekeyTarget = (
+    target: WalletAccount,
+    sourceAddress: string,
+): boolean => {
+    if (target.address === sourceAddress) return false
+    if (target.type !== AccountTypes.hardware) return false
+    if (target.rekeyAddress) return false
+    return true
+}
+
+/**
  * Returns true if the account can sign transactions in this wallet. Delegates
  * to `deriveAccountLogicalType` — the single source of truth — so the result
  * is consistent with UI classification and the webview bridge payload.

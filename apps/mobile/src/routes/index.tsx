@@ -39,6 +39,7 @@ import { fullScreenLayout } from '@layouts/index'
 import { MessagesStackNavigator } from '@modules/messages/routes'
 import { MultisigStackNavigator } from '@modules/multisig'
 import { BackupStackNavigator } from '@modules/backup'
+import { RekeyToLedgerStackNavigator } from '@modules/rekey/rekey-to-ledger'
 import { RekeyToStandardStackNavigator } from '@modules/rekey/rekey-to-standard'
 import { UndoRekeyStackNavigator } from '@modules/rekey/undo-rekey'
 import { SearchStackNavigator } from '@modules/search'
@@ -120,6 +121,10 @@ export const MainRoutes = () => {
                             <RootStack.Screen
                                 name='UndoRekey'
                                 component={UndoRekeyStackNavigator}
+                            />
+                            <RootStack.Screen
+                                name='RekeyToLedger'
+                                component={RekeyToLedgerStackNavigator}
                             />
                             <RootStack.Screen
                                 name='Staking'
