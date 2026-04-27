@@ -50,11 +50,16 @@ export const useRekeySelectTargetScreen =
         )
 
         const handleSelect = useCallback(
-            (_target: WalletAccount) => {
-                // TODO: navigate to RekeyToStandardConfirm once that screen lands.
-                navigation.goBack()
+            (target: WalletAccount) => {
+                navigation.navigate('RekeyToStandard', {
+                    screen: 'RekeyToStandardConfirm',
+                    params: {
+                        sourceAddress,
+                        targetAddress: target.address,
+                    },
+                })
             },
-            [navigation],
+            [navigation, sourceAddress],
         )
 
         return {

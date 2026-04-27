@@ -12,6 +12,7 @@
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { NavigationHeader } from '@components/NavigationHeader'
+import { RekeyConfirmScreen } from '../screens/RekeyConfirmScreen'
 import { RekeyIntroScreen } from '../screens/RekeyIntroScreen'
 import { RekeySelectTargetScreen } from '../screens/RekeySelectTargetScreen'
 
@@ -41,6 +42,11 @@ export const RekeyToStandardStackNavigator = () => {
             <Stack.Screen
                 name='RekeyToStandardSelectTarget'
                 component={RekeySelectTargetScreen}
+                options={{ title: '' }}
+            />
+            <Stack.Screen
+                name='RekeyToStandardConfirm'
+                component={RekeyConfirmScreen}
                 options={{ title: '' }}
             />
         </Stack.Navigator>
