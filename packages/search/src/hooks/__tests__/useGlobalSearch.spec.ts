@@ -191,6 +191,81 @@ describe('useGlobalSearch', () => {
         expect(lastCall?.[1]?.enabled).toBe(false)
     })
 
+    test('showOnEmptyQuery runs the remote search with no query and surfaces suggestions', () => {
+        mockAllAccounts.mockReturnValue([makeAccount('ALICE', 'Alice')])
+        mockFindContacts.mockReturnValue([])
+        setOwnedAssets([])
+        const suggestions = [
+            {
+                assetId: '31566704',
+                name: 'USD Coin',
+                unitName: 'USDC',
+                logo: null,
+                verificationTier: 'trusted',
+                usdValue: null,
+                type: 'standard_asset',
+                collectibleTitle: null,
+                collectibleImage: null,
+                collectionName: null,
+            },
+        ]
+        mockUseAssetSearchQuery.mockReturnValue({
+            results: suggestions,
+            isLoading: false,
+            isError: false,
+            isFetchingNextPage: false,
+            hasNextPage: false,
+            fetchNextPage: vi.fn(),
+        })
+
+        const { result } = renderHook(
+            () =>
+                useGlobalSearch({
+                    debounceMs: 0,
+                    scopes: ['assets'],
+                    remoteAssets: { showOnEmptyQuery: true },
+                }),
+            { wrapper: makeWrapper() },
+        )
+
+        const lastCall =
+            mockUseAssetSearchQuery.mock.calls[
+                mockUseAssetSearchQuery.mock.calls.length - 1
+            ]
+        expect(lastCall?.[0]).toBe('')
+        expect(lastCall?.[1]?.enabled).toBe(true)
+        expect(result.current.value).toBe('')
+        expect(result.current.results.remoteAssets).toEqual(suggestions)
+        expect(result.current.results.accounts).toEqual([])
+        expect(result.current.hasResults).toBe(true)
+    })
+
+    test('showOnEmptyQuery surfaces the remote loading state for the suggestion fetch', () => {
+        mockAllAccounts.mockReturnValue([])
+        mockFindContacts.mockReturnValue([])
+        setOwnedAssets([])
+        mockUseAssetSearchQuery.mockReturnValue({
+            results: [],
+            isLoading: true,
+            isError: false,
+            isFetchingNextPage: false,
+            hasNextPage: false,
+            fetchNextPage: vi.fn(),
+        })
+
+        const { result } = renderHook(
+            () =>
+                useGlobalSearch({
+                    debounceMs: 0,
+                    scopes: ['assets'],
+                    remoteAssets: { showOnEmptyQuery: true },
+                }),
+            { wrapper: makeWrapper() },
+        )
+
+        expect(result.current.isLoading).toBe(true)
+    })
+
     test('remoteAssets option surfaces backend search results', async () => {
         mockAllAccounts.mockReturnValue([])
         mockFindContacts.mockReturnValue([])

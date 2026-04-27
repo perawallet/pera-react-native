@@ -31,6 +31,10 @@ const DEFAULT_DEBOUNCE_MS = 300
 export type RemoteAssetsOptions = {
     /** Restrict remote asset results to collectibles (NFTs). */
     hasCollectible?: boolean
+    /** When true, run the remote asset search even with an empty query so
+     *  the backend returns a default suggestion list. Local sections
+     *  (accounts, contacts, owned assets) remain empty until the user types. */
+    showOnEmptyQuery?: boolean
 }
 
 export type UseGlobalSearchOptions = {
@@ -87,15 +91,22 @@ export const useGlobalSearch = (
         return allOwnedAssets.filter(assetFilter)
     }, [includesAssets, allOwnedAssets, assetFilter])
 
+    const showRemoteOnEmpty = remoteAssetsOptions?.showOnEmptyQuery ?? false
     const shouldRunRemoteAssets =
-        remoteAssetsEnabled && includesAssets && hasQuery
+        remoteAssetsEnabled && includesAssets && (hasQuery || showRemoteOnEmpty)
     const remoteAssetQuery = useAssetSearchQuery(debouncedValue, {
         hasCollectible: remoteAssetsOptions?.hasCollectible,
         enabled: shouldRunRemoteAssets,
     })
 
     const results = useMemo<GlobalSearchResults>(() => {
-        if (!hasQuery) return EMPTY_GLOBAL_SEARCH_RESULTS
+        if (!hasQuery) {
+            if (!shouldRunRemoteAssets) return EMPTY_GLOBAL_SEARCH_RESULTS
+            return {
+                ...EMPTY_GLOBAL_SEARCH_RESULTS,
+                remoteAssets: remoteAssetQuery.results ?? [],
+            }
+        }
 
         const lowered = debouncedValue.toLowerCase()
         const compare = (a: string, b: string) =>
@@ -174,8 +185,9 @@ export const useGlobalSearch = (
         results,
         hasResults,
         isLoading:
-            value.length > 0 &&
-            (isDebouncing || isOwnedAssetsLoading || isRemoteLoading),
+            (value.length > 0 &&
+                (isDebouncing || isOwnedAssetsLoading || isRemoteLoading)) ||
+            (value.length === 0 && showRemoteOnEmpty && isRemoteLoading),
         hasNextRemotePage: shouldRunRemoteAssets
             ? remoteAssetQuery.hasNextPage
             : false,
