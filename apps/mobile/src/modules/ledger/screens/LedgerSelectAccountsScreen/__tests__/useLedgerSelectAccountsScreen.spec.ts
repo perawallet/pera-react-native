@@ -22,7 +22,7 @@ const mockGetAddress = vi.fn()
 const mockDisconnectTransport = vi.fn()
 const mockConnect = vi.fn()
 const mockDisconnect = vi.fn()
-const mockShowError = vi.fn()
+const mockErrorToast = vi.fn()
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({ navigate: mockNavigate }),
@@ -42,9 +42,9 @@ vi.mock('@hooks/useLanguage', () => ({
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         showToast: vi.fn(),
-        showInfo: vi.fn(),
-        showError: mockShowError,
-        showSuccess: vi.fn(),
+        infoToast: vi.fn(),
+        errorToast: mockErrorToast,
+        successToast: vi.fn(),
     }),
 }))
 
@@ -105,7 +105,7 @@ describe('useLedgerSelectAccountsScreen', () => {
         mockDisconnectTransport.mockReset()
         mockConnect.mockReset()
         mockDisconnect.mockReset()
-        mockShowError.mockReset()
+        mockErrorToast.mockReset()
 
         const transport = buildTransport()
         mockConnect.mockResolvedValue(transport)
@@ -208,7 +208,7 @@ describe('useLedgerSelectAccountsScreen', () => {
             await result.current.handleFindAnother()
         })
 
-        expect(mockShowError).toHaveBeenCalledTimes(1)
+        expect(mockErrorToast).toHaveBeenCalledTimes(1)
         expect(result.current.accounts).toHaveLength(2)
         expect(result.current.isFetchingMore).toBe(false)
     })
@@ -222,9 +222,39 @@ describe('useLedgerSelectAccountsScreen', () => {
             await result.current.handleFindAnother()
         })
 
-        expect(mockShowError).toHaveBeenCalledTimes(1)
+        expect(mockErrorToast).toHaveBeenCalledTimes(1)
         expect(result.current.accounts).toHaveLength(2)
         expect(result.current.isFetchingMore).toBe(false)
+    })
+
+    it('does not surface a toast or setState if the screen unmounts during a fetch', async () => {
+        let rejectFetch: (reason: Error) => void = () => {}
+        mockGetAddress.mockImplementationOnce(
+            () =>
+                new Promise<HardwareWalletDerivedAccount>((_resolve, reject) => {
+                    rejectFetch = reject
+                }),
+        )
+
+        const { result, unmount } = renderHook(() =>
+            useLedgerSelectAccountsScreen(),
+        )
+
+        act(() => {
+            void result.current.handleFindAnother()
+        })
+
+        await waitFor(() => {
+            expect(result.current.isFetchingMore).toBe(true)
+        })
+
+        unmount()
+
+        await act(async () => {
+            rejectFetch(new Error('Connection lost'))
+        })
+
+        expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
     it('disconnects the transport on unmount after a successful tap', async () => {

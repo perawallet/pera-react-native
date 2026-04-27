@@ -10,13 +10,18 @@
  limitations under the License
  */
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
+import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
+import { useLedgerConnection } from '../../hooks'
+import { getLedgerErrorPreset } from '@modules/ledger/utils'
+import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type LedgerSelectAccountsRouteProp = RouteProp<
     AddAccountStackParamList,
@@ -30,20 +35,59 @@ type UseLedgerSelectAccountsScreenResult = {
     areAllImported: boolean
     canContinue: boolean
     alreadyImportedAddresses: Set<string>
+    isFetchingMore: boolean
     toggleSelection: (address: string) => void
     toggleSelectAll: () => void
     handleContinue: () => void
+    handleFindAnother: () => Promise<void>
     t: (key: string, options?: Record<string, unknown>) => string
 }
 
 export const useLedgerSelectAccountsScreen =
     (): UseLedgerSelectAccountsScreenResult => {
         const {
-            params: { deviceId, deviceName, accounts },
+            params: {
+                deviceId,
+                deviceName,
+                accounts: routeAccounts,
+            },
         } = useRoute<LedgerSelectAccountsRouteProp>()
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const allAccounts = useAllAccounts()
+        const { errorToast } = useToast()
+        const { connect } = useLedgerConnection()
+
+        const [accounts, setAccounts] =
+            useState<LedgerAccount[]>(routeAccounts)
+        const [isFetchingMore, setIsFetchingMore] = useState(false)
+        const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(
+            () => new Set(),
+        )
+
+        const transportRef =
+            useRef<Nullable<HardwareWalletTransport>>(null)
+        const inFlightRef = useRef(false)
+        const isMountedRef = useRef(true)
+        const accountsRef = useRef<LedgerAccount[]>(routeAccounts)
+
+        useEffect(() => {
+            isMountedRef.current = true
+            return () => {
+                isMountedRef.current = false
+            }
+        }, [])
+
+        useEffect(() => {
+            accountsRef.current = accounts
+        }, [accounts])
+
+        useEffect(() => {
+            return () => {
+                transportRef.current?.disconnect().catch(() => {})
+                transportRef.current = null
+            }
+        }, [])
 
         const alreadyImportedAddresses = useMemo(() => {
             return new Set(allAccounts.map(acc => acc.address))
@@ -54,10 +98,6 @@ export const useLedgerSelectAccountsScreen =
                 acc => !alreadyImportedAddresses.has(acc.address),
             )
         }, [accounts, alreadyImportedAddresses])
-
-        const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(
-            () => new Set(),
-        )
 
         const isAllSelected =
             newAccounts.length > 0 &&
@@ -104,6 +144,43 @@ export const useLedgerSelectAccountsScreen =
             })
         }, [accounts, selectedAddresses, deviceId, deviceName, navigation])
 
+        const handleFindAnother = useCallback(async () => {
+            if (inFlightRef.current) return
+            inFlightRef.current = true
+            setIsFetchingMore(true)
+            try {
+                if (!transportRef.current) {
+                    transportRef.current = await connect(deviceId)
+                }
+
+                const nextIndex =
+                    accountsRef.current.reduce(
+                        (max, acc) => Math.max(max, acc.accountIndex),
+                        -1,
+                    ) + 1
+
+                const next = await transportRef.current.getAddress(
+                    nextIndex,
+                    false,
+                )
+
+                if (!isMountedRef.current) return
+
+                setAccounts(prev => [...prev, next])
+            } catch (err) {
+                if (!isMountedRef.current) return
+                const error =
+                    err instanceof Error ? err : new Error(String(err))
+                const preset = getLedgerErrorPreset(error, t)
+                errorToast(preset.title, preset.body)
+            } finally {
+                inFlightRef.current = false
+                if (isMountedRef.current) {
+                    setIsFetchingMore(false)
+                }
+            }
+        }, [connect, deviceId, errorToast, t])
+
         const areAllImported = newAccounts.length === 0
         const canContinue = areAllImported || selectedAddresses.size > 0
 
@@ -114,9 +191,11 @@ export const useLedgerSelectAccountsScreen =
             areAllImported,
             canContinue,
             alreadyImportedAddresses,
+            isFetchingMore,
             toggleSelection,
             toggleSelectAll,
             handleContinue,
+            handleFindAnother,
             t,
         }
     }
