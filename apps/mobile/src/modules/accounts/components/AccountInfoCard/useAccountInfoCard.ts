@@ -13,7 +13,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import {
     WalletAccount,
-    HardwareWalletAccount,
     isHDWalletAccount,
     isLedgerAccount,
     isSigningLogicalType,
@@ -103,20 +102,14 @@ export const useAccountInfoCard = ({
         )
     }, [isHDWallet, hdWalletGroups, account.keyPairId])
 
-    const ledgerDeviceId = isLedger
-        ? (account as HardwareWalletAccount).hardwareDetails.deviceId
-        : null
-
     const ledgerDeviceGroup = useMemo(() => {
-        if (!isLedger) return null
+        if (!isLedgerAccount(account)) return null
         return (
-            ledgerDeviceGroups.find(g => g.deviceId === ledgerDeviceId) ?? null
+            ledgerDeviceGroups.find(
+                g => g.deviceId === account.hardwareDetails.deviceId,
+            ) ?? null
         )
-    }, [isLedger, ledgerDeviceGroups, ledgerDeviceId])
-
-    const ledgerDeviceName = isLedger
-        ? (account as HardwareWalletAccount).hardwareDetails.deviceName
-        : null
+    }, [account, ledgerDeviceGroups])
 
     const structureLabel = useMemo(() => {
         if (isHDWallet) {
@@ -124,11 +117,11 @@ export const useAccountInfoCard = ({
                 number: hdWalletGroupIndex + 1,
             })
         }
-        if (isLedger) {
-            return ledgerDeviceName ?? ''
+        if (isLedgerAccount(account)) {
+            return account.hardwareDetails.deviceName
         }
         return ''
-    }, [isHDWallet, isLedger, ledgerDeviceName, hdWalletGroupIndex, t])
+    }, [isHDWallet, account, hdWalletGroupIndex, t])
 
     const structureIcon: IconName = isLedger ? 'ledger' : 'wallet'
 
