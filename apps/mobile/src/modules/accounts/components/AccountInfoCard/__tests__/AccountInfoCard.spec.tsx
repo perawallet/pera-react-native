@@ -16,6 +16,7 @@ import { render, screen, fireEvent } from '@test-utils/render'
 import { AccountInfoCard } from '../AccountInfoCard'
 import {
     HDWalletAccount,
+    HardwareWalletAccount,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { Decimal } from 'decimal.js'
@@ -123,6 +124,7 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
 
 const mockUseAccountInformationQuery = vi.fn()
 const mockUseHDWalletGroups = vi.fn()
+const mockUseLedgerDeviceGroups = vi.fn()
 const mockUseAccountLogicalType = vi.fn()
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
     const actual =
@@ -134,6 +136,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         useAccountInformationQuery: (...args: unknown[]) =>
             mockUseAccountInformationQuery(...args),
         useHDWalletGroups: () => mockUseHDWalletGroups(),
+        useLedgerDeviceGroups: () => mockUseLedgerDeviceGroups(),
         useAccountLogicalType: (...args: unknown[]) =>
             mockUseAccountLogicalType(...args),
     }
@@ -167,6 +170,18 @@ const watchAccount: WalletAccount = {
     address: 'WATCHADDR1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ',
 }
 
+const ledgerAccount: HardwareWalletAccount = {
+    type: 'hardware',
+    address: 'LEDGERADDR1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    hardwareDetails: {
+        manufacturer: 'ledger',
+        deviceId: 'device-xyz',
+        deviceName: 'My Ledger',
+        accountIndex: 0,
+    },
+    name: 'Cold Wallet',
+}
+
 describe('AccountInfoCard', () => {
     beforeEach(() => {
         mockUseAccountInformationQuery.mockReturnValue({
@@ -184,8 +199,21 @@ describe('AccountInfoCard', () => {
             ],
             hasMultipleHDWallets: false,
         })
+        mockUseLedgerDeviceGroups.mockReturnValue({
+            ledgerDeviceGroups: [
+                {
+                    deviceId: 'device-xyz',
+                    deviceName: 'My Ledger',
+                    accounts: [ledgerAccount],
+                    firstAccount: ledgerAccount,
+                    accountCount: 1,
+                },
+            ],
+            hasMultipleLedgerDevices: false,
+        })
         mockUseAccountLogicalType.mockImplementation((address: string) => {
             if (address === hdAccount.address) return 'HdKey'
+            if (address === ledgerAccount.address) return 'LedgerBle'
             if (address === watchAccount.address) return 'NoAuth'
             return null
         })
@@ -305,5 +333,39 @@ describe('AccountInfoCard', () => {
         )
 
         expect(screen.queryByText('min_balance_info.description')).toBeNull()
+    })
+
+    it('shows wallet structure toggle for Ledger accounts', () => {
+        render(
+            <AccountInfoCard
+                account={ledgerAccount}
+                onClose={vi.fn()}
+            />,
+        )
+        expect(
+            screen.getByText('account_info.see_wallet_structure'),
+        ).toBeTruthy()
+    })
+
+    it('renders Ledger device name in expanded structure', () => {
+        render(
+            <AccountInfoCard
+                account={ledgerAccount}
+                onClose={vi.fn()}
+            />,
+        )
+        fireEvent.click(screen.getByText('account_info.see_wallet_structure'))
+        expect(screen.getByTestId('expandable-panel')).toBeTruthy()
+        expect(screen.getByText('My Ledger')).toBeTruthy()
+    })
+
+    it('renders account type label for Ledger account', () => {
+        render(
+            <AccountInfoCard
+                account={ledgerAccount}
+                onClose={vi.fn()}
+            />,
+        )
+        expect(screen.getByText('account_info.type_ledger')).toBeTruthy()
     })
 })
