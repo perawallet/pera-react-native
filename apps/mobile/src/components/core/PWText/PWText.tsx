@@ -48,10 +48,6 @@ export const PWText = ({
     return (
         <RNEText
             style={[styles.text, style]}
-            h1={variant === 'h1'}
-            h2={variant === 'h2'}
-            h3={variant === 'h3'}
-            h4={variant === 'h4'}
             numberOfLines={numberOfLines}
             ellipsizeMode={ellipsizeMode}
             adjustsFontSizeToFit={adjustsFontSizeToFit}
