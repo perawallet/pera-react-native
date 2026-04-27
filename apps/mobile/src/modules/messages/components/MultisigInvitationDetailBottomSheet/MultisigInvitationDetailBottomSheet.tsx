@@ -58,6 +58,8 @@ export const MultisigInvitationDetailBottomSheet = ({
         onClose,
     })
 
+    if (!renderedInvitation) return null
+
     return (
         <PWBottomSheet
             isVisible={invitation !== null}
@@ -67,88 +69,82 @@ export const MultisigInvitationDetailBottomSheet = ({
             autoCreateContainer={false}
             testID='multisig_invitation_detail_bottom_sheet'
         >
-            {renderedInvitation && (
-                <>
-                    <PWScrollView
-                        style={styles.scrollView}
-                        contentContainerStyle={styles.scrollContent}
+            <PWScrollView
+                style={styles.scrollView}
+                contentContainerStyle={styles.scrollContent}
+            >
+                <PWView style={styles.header}>
+                    <PWText
+                        variant='h4'
+                        style={styles.headerTitle}
                     >
-                        <PWView style={styles.header}>
-                            <PWText
-                                variant='h4'
-                                style={styles.headerTitle}
-                            >
-                                {t('multisig.invitation.sheet_title')}
-                            </PWText>
-                            <PWText
-                                style={styles.headerAddress}
-                                testID='multisig_invitation_sheet_address'
-                            >
-                                {truncateAlgorandAddress(
-                                    renderedInvitation.address,
-                                )}
-                            </PWText>
-                        </PWView>
+                        {t('multisig.invitation.sheet_title')}
+                    </PWText>
+                    <PWText
+                        style={styles.headerAddress}
+                        testID='multisig_invitation_sheet_address'
+                    >
+                        {truncateAlgorandAddress(renderedInvitation.address)}
+                    </PWText>
+                </PWView>
 
-                        <InvitationInfoCard
-                            threshold={renderedInvitation.threshold}
-                            totalParticipants={totalParticipants}
-                            isUserIncluded={isUserIncluded}
-                        />
+                <InvitationInfoCard
+                    threshold={renderedInvitation.threshold}
+                    totalParticipants={totalParticipants}
+                    isUserIncluded={isUserIncluded}
+                />
 
-                        <PWText
-                            variant='h4'
-                            style={styles.sectionHeading}
-                        >
-                            {t('multisig.invitation.accounts_heading', {
-                                count: totalParticipants,
-                            })}
-                        </PWText>
+                <PWText
+                    variant='h4'
+                    style={styles.sectionHeading}
+                >
+                    {t('multisig.invitation.accounts_heading', {
+                        count: totalParticipants,
+                    })}
+                </PWText>
 
-                        <PWView>
-                            {renderedInvitation.participantAddresses.map(
-                                (address, index, arr) => (
-                                    <AddressDisplay
-                                        key={address}
-                                        address={address}
-                                        addressFormat='medium'
-                                        iconName={participantIconName}
-                                        showSecondaryAddress
-                                        style={[
-                                            styles.participantRow,
-                                            index === arr.length - 1 &&
-                                                styles.participantRowLast,
-                                        ]}
-                                        testID={`participant_row_${address}`}
-                                    />
-                                ),
-                            )}
-                        </PWView>
-                    </PWScrollView>
+                <PWView>
+                    {renderedInvitation.participantAddresses.map(
+                        (address, index, arr) => (
+                            <AddressDisplay
+                                key={address}
+                                address={address}
+                                addressFormat='medium'
+                                iconName={participantIconName}
+                                showSecondaryAddress
+                                style={[
+                                    styles.participantRow,
+                                    index === arr.length - 1 &&
+                                        styles.participantRowLast,
+                                ]}
+                                testID={`participant_row_${address}`}
+                            />
+                        ),
+                    )}
+                </PWView>
+            </PWScrollView>
 
-                    <PWView style={styles.bottomBar}>
-                        <PWButton
-                            variant='secondary'
-                            title={t('multisig.invitation.ignore')}
-                            onPress={handleIgnore}
-                            isLoading={isIgnoring}
-                            isDisabled={isIgnoring}
-                            paddingStyle='dense'
-                            style={styles.bottomButton}
-                            testID='multisig_invitation_ignore_button'
-                        />
-                        <PWButton
-                            variant='primary'
-                            title={t('multisig.invitation.add_to_accounts')}
-                            onPress={handleAccept}
-                            isDisabled={isIgnoring}
-                            paddingStyle='dense'
-                            style={styles.bottomButton}
-                            testID='multisig_invitation_accept_button'
-                        />
-                    </PWView>
-                </>
-            )}
+            <PWView style={styles.bottomBar}>
+                <PWButton
+                    variant='secondary'
+                    title={t('multisig.invitation.ignore')}
+                    onPress={handleIgnore}
+                    isLoading={isIgnoring}
+                    isDisabled={isIgnoring}
+                    paddingStyle='dense'
+                    style={styles.bottomButton}
+                    testID='multisig_invitation_ignore_button'
+                />
+                <PWButton
+                    variant='primary'
+                    title={t('multisig.invitation.add_to_accounts')}
+                    onPress={handleAccept}
+                    isDisabled={isIgnoring}
+                    paddingStyle='dense'
+                    style={styles.bottomButton}
+                    testID='multisig_invitation_accept_button'
+                />
+            </PWView>
         </PWBottomSheet>
     )
 }

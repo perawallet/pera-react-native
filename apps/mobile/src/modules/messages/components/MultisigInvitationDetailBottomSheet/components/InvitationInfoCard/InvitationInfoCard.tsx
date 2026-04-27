@@ -33,10 +33,7 @@ export const InvitationInfoCard = ({
         <PWView style={styles.container}>
             <PWView style={styles.row}>
                 <PWView style={styles.rowLabels}>
-                    <PWText
-                        variant='h4'
-                        style={styles.rowLabel}
-                    >
+                    <PWText variant='h4'>
                         {t('multisig.invitation.number_of_accounts_label')}
                     </PWText>
                     {isUserIncluded && (
@@ -52,10 +49,7 @@ export const InvitationInfoCard = ({
             </PWView>
             <PWView style={styles.row}>
                 <PWView style={styles.rowLabels}>
-                    <PWText
-                        variant='h4'
-                        style={styles.rowLabel}
-                    >
+                    <PWText variant='h4'>
                         {t('multisig.invitation.threshold_label')}
                     </PWText>
                     <PWText style={styles.rowSubLabel}>
@@ -64,7 +58,6 @@ export const InvitationInfoCard = ({
                 </PWView>
                 <PWText
                     variant='h2'
-                    style={styles.thresholdValue}
                     testID='multisig_invitation_threshold_value'
                 >
                     {threshold}

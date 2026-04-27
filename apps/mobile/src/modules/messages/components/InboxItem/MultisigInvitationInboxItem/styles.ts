@@ -30,9 +30,6 @@ export const useStyles = makeStyles(theme => ({
         flexShrink: 1,
         flexWrap: 'wrap',
     },
-    titleBold: {
-        fontWeight: '600',
-    },
     cta: {
         alignSelf: 'flex-start',
         flexDirection: 'row',
@@ -42,9 +39,6 @@ export const useStyles = makeStyles(theme => ({
         paddingHorizontal: theme.spacing.md,
         borderRadius: theme.spacing.xl,
         backgroundColor: theme.colors.layerGrayLighter,
-    },
-    ctaText: {
-        fontWeight: '600',
     },
     timestamp: {
         color: theme.colors.textGray,

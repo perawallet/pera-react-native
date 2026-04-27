@@ -74,7 +74,7 @@ export const MultisigInvitationInboxItem = ({
                         components={[
                             <PWText
                                 key='bold'
-                                style={styles.titleBold}
+                                variant='bodySemibold'
                             />,
                         ]}
                     />
@@ -85,7 +85,7 @@ export const MultisigInvitationInboxItem = ({
                     disabled={!onPress}
                     testID='multisig_invitation_inbox_item_cta'
                 >
-                    <PWText style={styles.ctaText}>
+                    <PWText variant='bodySemibold'>
                         {t('messages.inbox.view_invitation_details')}
                     </PWText>
                     <PWIcon

@@ -29,13 +29,7 @@ export const useStyles = makeStyles(theme => ({
         flex: 1,
         gap: theme.spacing.xxs,
     },
-    rowLabel: {
-        fontWeight: '600',
-    },
     rowSubLabel: {
         color: theme.colors.textGray,
-    },
-    thresholdValue: {
-        fontWeight: '600',
     },
 }))

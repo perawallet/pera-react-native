@@ -30,7 +30,6 @@ export const useStyles = makeStyles(theme => {
         },
         secondaryText: {
             color: theme.colors.textGray,
-            lineHeight: theme.spacing.lg,
         },
     }
 })
