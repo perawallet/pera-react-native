@@ -55,8 +55,6 @@ describe('FindAnotherWalletRow', () => {
             />,
         )
 
-        expect(
-            screen.getByTestId('find-another-row-spinner'),
-        ).toBeTruthy()
+        expect(screen.getByTestId('find-another-row-spinner')).toBeTruthy()
     })
 })

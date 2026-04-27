@@ -165,7 +165,9 @@ describe('useLedgerSelectAccountsScreen', () => {
     })
 
     it('is a no-op while a fetch is in flight', async () => {
-        let resolveFetch: (value: HardwareWalletDerivedAccount) => void = () => {}
+        let resolveFetch: (
+            value: HardwareWalletDerivedAccount,
+        ) => void = () => {}
         mockGetAddress.mockImplementationOnce(
             () =>
                 new Promise<HardwareWalletDerivedAccount>(resolve => {
@@ -231,9 +233,11 @@ describe('useLedgerSelectAccountsScreen', () => {
         let rejectFetch: (reason: Error) => void = () => {}
         mockGetAddress.mockImplementationOnce(
             () =>
-                new Promise<HardwareWalletDerivedAccount>((_resolve, reject) => {
-                    rejectFetch = reject
-                }),
+                new Promise<HardwareWalletDerivedAccount>(
+                    (_resolve, reject) => {
+                        rejectFetch = reject
+                    },
+                ),
         )
 
         const { result, unmount } = renderHook(() =>

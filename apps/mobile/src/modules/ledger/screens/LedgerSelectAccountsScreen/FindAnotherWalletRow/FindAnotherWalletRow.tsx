@@ -39,9 +39,7 @@ export const FindAnotherWalletRow = ({
             <PWView style={styles.iconContainer}>
                 {isLoading ? (
                     <ActivityIndicator
-                        testID={
-                            testID ? `${testID}-spinner` : undefined
-                        }
+                        testID={testID ? `${testID}-spinner` : undefined}
                         size='small'
                     />
                 ) : (

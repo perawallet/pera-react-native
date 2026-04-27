@@ -46,11 +46,7 @@ type UseLedgerSelectAccountsScreenResult = {
 export const useLedgerSelectAccountsScreen =
     (): UseLedgerSelectAccountsScreenResult => {
         const {
-            params: {
-                deviceId,
-                deviceName,
-                accounts: routeAccounts,
-            },
+            params: { deviceId, deviceName, accounts: routeAccounts },
         } = useRoute<LedgerSelectAccountsRouteProp>()
         const { t } = useLanguage()
         const navigation = useAppNavigation()
@@ -58,15 +54,13 @@ export const useLedgerSelectAccountsScreen =
         const { errorToast } = useToast()
         const { connect } = useLedgerConnection()
 
-        const [accounts, setAccounts] =
-            useState<LedgerAccount[]>(routeAccounts)
+        const [accounts, setAccounts] = useState<LedgerAccount[]>(routeAccounts)
         const [isFetchingMore, setIsFetchingMore] = useState(false)
         const [selectedAddresses, setSelectedAddresses] = useState<Set<string>>(
             () => new Set(),
         )
 
-        const transportRef =
-            useRef<Nullable<HardwareWalletTransport>>(null)
+        const transportRef = useRef<Nullable<HardwareWalletTransport>>(null)
         const inFlightRef = useRef(false)
         const isMountedRef = useRef(true)
         const accountsRef = useRef<LedgerAccount[]>(routeAccounts)
