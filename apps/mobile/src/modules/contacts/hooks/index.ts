@@ -10,23 +10,8 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-export const useStyles = makeStyles(theme => ({
-    bottomSheetActions: {
-        gap: theme.spacing.md,
-        width: '100%',
-    },
-    bottomSheetMessage: {
-        textAlign: 'center',
-        marginBottom: theme.spacing.md,
-    },
-    bottomSheetIcon: {
-        marginVertical: theme.spacing.md,
-    },
-    bottomSheetContainer: {
-        padding: theme.spacing.xl,
-        gap: theme.spacing.lg,
-        alignItems: 'center',
-    },
-}))
+export { useAddContactForm } from './useAddContactForm'
+export type { UseAddContactFormResult } from './useAddContactForm'
+export { useEditContactForm } from './useEditContactForm'
+export type { UseEditContactFormResult } from './useEditContactForm'
+export type { UseContactFormResult, NfdState } from './useContactForm'

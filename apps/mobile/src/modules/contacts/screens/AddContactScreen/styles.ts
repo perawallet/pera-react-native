@@ -11,24 +11,26 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getTypography, TypographyVariant } from '@theme/typography'
 
-type PWInputStyleProps = {
-    variant: TypographyVariant
+type StyleProps = {
+    footerPaddingBottom: number
 }
 
-export const useStyles = makeStyles((theme, { variant }: PWInputStyleProps) => {
-    const input = {
-        ...getTypography(theme, variant),
-        lineHeight: undefined,
-    }
-    return {
-        container: {},
-        inputContainer: {
-            paddingHorizontal: theme.spacing.md,
-            borderRadius: theme.borderRadius.xs,
+export const useStyles = makeStyles(
+    (theme, { footerPaddingBottom }: StyleProps) => ({
+        flex: {
+            flex: 1,
         },
-        input,
-        label: {},
-    }
-})
+        footer: {
+            paddingHorizontal: theme.spacing.xl,
+            paddingTop: theme.spacing.md,
+            paddingBottom: footerPaddingBottom,
+            backgroundColor: theme.colors.background,
+        },
+        footerButton: {
+            minHeight: theme.spacing['3xl'],
+            borderRadius: theme.borderRadius.xs,
+            opacity: 1,
+        },
+    }),
+)

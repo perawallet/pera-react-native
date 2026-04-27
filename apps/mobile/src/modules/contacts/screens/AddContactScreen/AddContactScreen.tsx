@@ -10,23 +10,30 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
-import { Keyboard, KeyboardAvoidingView, Platform } from 'react-native'
+import { KeyboardAvoidingView, Platform } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useTheme } from '@rneui/themed'
 
 import { PWButton, PWView } from '@components/core'
-import { ConfirmActionBottomSheet } from '@components/ConfirmActionBottomSheet'
 import { ContactForm } from '@components/ContactForm'
 import { PhotoPermissionDeniedSheet } from '@components/PhotoPermissionDeniedSheet'
+import { useKeyboardHeight } from '@hooks/useKeyboardHeight'
 import { useLanguage } from '@hooks/useLanguage'
-import { useNavigationHeader } from '@hooks/useNavigationHeader'
-import { useEditContactForm } from '@modules/contacts/hooks'
+import { useAddContactForm } from '@modules/contacts/hooks'
 import { useStyles } from './styles'
 
-export const EditContactScreen = () => {
-    const styles = useStyles()
+export const AddContactScreen = () => {
     const { t } = useLanguage()
+    const { theme } = useTheme()
+    const { keyboardHeight } = useKeyboardHeight()
+    const insets = useSafeAreaInsets()
+    const footerPaddingBottom =
+        keyboardHeight > 0
+            ? theme.spacing.xxl
+            : Math.max(insets.bottom, theme.spacing.md)
+    const styles = useStyles({ footerPaddingBottom })
+
     const {
-        selectedContact,
         control,
         handleSubmit,
         errors,
@@ -34,31 +41,11 @@ export const EditContactScreen = () => {
         rawAddressInput,
         imageUri,
         nfd,
-        confirmDelete,
         onAddressInputChange,
         onPickImage,
         permissionDenied,
         save,
-        removeContact,
-    } = useEditContactForm()
-
-    useNavigationHeader({
-        enabled: true,
-        right: (
-            <PWButton
-                variant='link'
-                title={t('contacts.edit_contact.done')}
-                onPress={handleSubmit(save)}
-                isDisabled={!isValid}
-                paddingStyle='none'
-            />
-        ),
-    })
-
-    const openDeleteConfirm = useCallback(() => {
-        Keyboard.dismiss()
-        confirmDelete.open()
-    }, [confirmDelete])
+    } = useAddContactForm()
 
     return (
         <KeyboardAvoidingView
@@ -67,11 +54,7 @@ export const EditContactScreen = () => {
         >
             <ContactForm
                 control={control}
-                address={
-                    nfd.isNfdResolved
-                        ? nfd.resolvedAddress
-                        : (selectedContact?.address ?? '')
-                }
+                address={nfd.isNfdResolved ? nfd.resolvedAddress : ''}
                 nameLabel={t('contacts.edit_contact.name_label')}
                 addressLabel={t('contacts.edit_contact.address_label')}
                 nameError={errors.name?.message}
@@ -82,28 +65,16 @@ export const EditContactScreen = () => {
                 rawAddressInput={rawAddressInput}
                 imageUri={imageUri}
                 onPickImage={onPickImage}
-            >
-                <PWView style={styles.deletePillWrapper}>
-                    <PWButton
-                        onPress={openDeleteConfirm}
-                        title={t('contacts.edit_contact.delete_this')}
-                        variant='destructive'
-                        style={styles.deletePill}
-                        rounded
-                    />
-                </PWView>
-            </ContactForm>
-            <ConfirmActionBottomSheet
-                isVisible={confirmDelete.isOpen}
-                onClose={confirmDelete.close}
-                onConfirm={removeContact}
-                icon='trash'
-                iconVariant='error'
-                title={t('contacts.edit_contact.remove_title')}
-                message={t('contacts.edit_contact.remove_message')}
-                confirmLabel={t('contacts.edit_contact.remove_confirm')}
-                cancelLabel={t('contacts.edit_contact.remove_cancel')}
             />
+            <PWView style={styles.footer}>
+                <PWButton
+                    onPress={handleSubmit(save)}
+                    title={t('contacts.edit_contact.add_contact')}
+                    variant='primary'
+                    isDisabled={!isValid}
+                    style={styles.footerButton}
+                />
+            </PWView>
             <PhotoPermissionDeniedSheet
                 isVisible={permissionDenied.isVisible}
                 onClose={permissionDenied.close}

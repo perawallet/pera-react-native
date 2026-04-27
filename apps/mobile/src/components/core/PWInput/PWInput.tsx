@@ -32,16 +32,20 @@ export type PWInputProps = {
     renderErrorMessage?: boolean
     secureTextEntry?: boolean
     keyboardType?: RNEInputProps['keyboardType']
+    returnKeyType?: RNEInputProps['returnKeyType']
     autoCapitalize?: RNEInputProps['autoCapitalize']
+    autoComplete?: RNEInputProps['autoComplete']
     autoCorrect?: boolean
     autoFocus?: boolean
-    onFocus?: () => void
-    onBlur?: () => void
+    selectTextOnFocus?: boolean
+    onFocus?: RNEInputProps['onFocus']
+    onBlur?: RNEInputProps['onBlur']
     containerStyle?: RNEInputProps['containerStyle']
     inputContainerStyle?: RNEInputProps['inputContainerStyle']
     inputStyle?: RNEInputProps['inputStyle']
     cursorColor?: string
     rightIcon?: RNEInputProps['rightIcon']
+    rightIconContainerStyle?: RNEInputProps['rightIconContainerStyle']
     leftIcon?: RNEInputProps['leftIcon']
     onSubmitEditing?: () => void
     blurOnSubmit?: boolean
@@ -53,6 +57,8 @@ export type PWInputProps = {
     numberOfLines?: RNEInputProps['numberOfLines']
     adjustsFontSizeToFit?: boolean
     minimumFontScale?: number
+    editable?: boolean
+    multiline?: boolean
 }
 
 export const PWInput = forwardRef<PWInputRef, PWInputProps>(

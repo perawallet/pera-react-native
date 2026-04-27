@@ -17,25 +17,39 @@ import { render, screen } from '@test-utils/render'
 import { ContactAvatar } from '../ContactAvatar'
 
 describe('ContactAvatar', () => {
-    it('renders icon if contact has no image', () => {
+    it('renders the person placeholder icon when no contact is provided', () => {
         render(<ContactAvatar size='sm' />)
         expect(screen.getByTestId('icon-person')).toBeTruthy()
     })
 
-    it('renders placeholder if contact has image but it fails to load or exists', () => {
-        const contact = {
+    it('renders the person placeholder icon when the contact has no image', () => {
+        const contact: Contact = {
             name: 'John',
-            image: 'https://example.com/image.png',
             address: 'addr',
-        } as Contact
+        }
         render(
             <ContactAvatar
                 size='md'
                 contact={contact}
             />,
         )
-        // In our mock, Image renders as <img>.
-        // We can't easily check for img existence without more specific queries,
-        // but it renders without crash.
+        expect(screen.getByTestId('icon-person')).toBeTruthy()
+    })
+
+    it('renders the contact image when one is provided, not the fallback icon', () => {
+        const contact: Contact = {
+            name: 'John',
+            image: 'https://example.com/image.png',
+            address: 'addr',
+        }
+        render(
+            <ContactAvatar
+                size='md'
+                contact={contact}
+            />,
+        )
+        // PWImage mock in vitest.setup renders as <img>; when a valid image
+        // source is supplied we should NOT fall through to the placeholder.
+        expect(screen.queryByTestId('icon-person')).toBeNull()
     })
 })

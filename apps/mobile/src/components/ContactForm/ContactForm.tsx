@@ -10,35 +10,45 @@
  limitations under the License
  */
 
-import { type ReactNode } from 'react'
-import { ActivityIndicator, KeyboardAvoidingView } from 'react-native'
+import { type ReactNode, useCallback, useRef, useState } from 'react'
+import { ActivityIndicator } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
     type Control,
     Controller,
     type FieldPath,
     type FieldValues,
 } from 'react-hook-form'
-import { PWInput, PWScrollView, PWText, PWView } from '@components/core'
-import { ContactAvatar } from '@components/ContactAvatar'
-import { AddressEntryField } from '@components/AddressEntryField'
-import { AddressDisplay } from '@components/AddressDisplay'
-import { useStyles } from './styles'
-import { useLanguage } from '@hooks/useLanguage'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+
+import {
+    PWIcon,
+    PWInput,
+    type PWInputRef,
+    PWScrollView,
+    PWText,
+    PWTouchableOpacity,
+    PWView,
+} from '@components/core'
+import { ContactAvatar } from '@components/ContactAvatar'
+import { QRScannerView } from '@components/QRScannerView'
+import { extractAddressFromScannedUrl } from '@components/AddressEntryField/AddressEntryField'
+import { useLanguage } from '@hooks/useLanguage'
+import { useStyles } from './styles'
 
 type ContactFormProps<T extends FieldValues> = {
     control: Control<T>
     address: string
     nameLabel: string
-    namePlaceholder?: string
     addressLabel: string
     nameError?: string
-    isAddressEditable?: boolean
     addressError?: string
     nfdName?: string
     isResolvingNfd?: boolean
     onAddressInputChange?: (text: string) => void
     rawAddressInput?: string
+    imageUri?: string
+    onPickImage?: () => void
     children?: ReactNode
 }
 
@@ -46,104 +56,164 @@ export const ContactForm = <T extends FieldValues>({
     control,
     address,
     nameLabel,
-    namePlaceholder,
     addressLabel,
     nameError,
-    isAddressEditable,
     addressError,
     nfdName,
     isResolvingNfd,
     onAddressInputChange,
     rawAddressInput,
+    imageUri,
+    onPickImage,
     children,
 }: ContactFormProps<T>) => {
-    const styles = useStyles()
     const { t } = useLanguage()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles({
+        scrollPaddingBottom: Math.max(insets.bottom, 24),
+    })
+    const [scannerVisible, setScannerVisible] = useState(false)
+    const addressInputRef = useRef<PWInputRef>(null)
+
+    const renderAvatar = () => (
+        <ContactAvatar
+            size='xxl'
+            contact={{ name: '', address, image: imageUri }}
+        />
+    )
+
+    const handleScan = useCallback(
+        (url: string) => {
+            const scanned = extractAddressFromScannedUrl(url)
+            setScannerVisible(false)
+            if (scanned) {
+                onAddressInputChange?.(scanned)
+            }
+        },
+        [onAddressInputChange],
+    )
+
+    const handleOpenScanner = useCallback(() => setScannerVisible(true), [])
+    const handleCloseScanner = useCallback(() => setScannerVisible(false), [])
 
     return (
-        <KeyboardAvoidingView behavior='height'>
-            <PWScrollView style={styles.container}>
-                <PWView style={styles.avatar}>
-                    <ContactAvatar
-                        size='xl'
-                        contact={{ name: '', address }}
-                    />
-                </PWView>
-                <PWView style={styles.formContainer}>
-                    <Controller
-                        control={control}
-                        name={'name' as FieldPath<T>}
-                        render={({ field: { onChange, onBlur, value } }) => (
-                            <PWInput
-                                onBlur={onBlur}
-                                onChangeText={onChange}
-                                value={value}
-                                label={nameLabel}
-                                placeholder={namePlaceholder}
-                                errorMessage={nameError}
-                                autoCapitalize='none'
-                            />
-                        )}
-                    />
-                    {isAddressEditable && (
-                        <>
-                            <Controller
-                                control={control}
-                                name={'address' as FieldPath<T>}
-                                render={({ field: { onBlur } }) => (
-                                    <AddressEntryField
-                                        allowQRCode
-                                        label={addressLabel}
-                                        onBlur={onBlur}
-                                        onChangeText={
-                                            onAddressInputChange ?? (() => {})
-                                        }
-                                        value={rawAddressInput ?? ''}
-                                        errorMessage={addressError}
-                                    />
-                                )}
-                            />
-                            {isResolvingNfd && (
-                                <PWView style={styles.nfdStatus}>
-                                    <ActivityIndicator size='small' />
-                                    <PWText
-                                        variant='caption'
-                                        style={styles.nfdStatusText}
-                                    >
-                                        {t('address_entry.nfd_resolving')}
-                                    </PWText>
-                                </PWView>
-                            )}
-                            {nfdName && (
-                                <PWView style={styles.nfdStatus}>
-                                    <PWText
-                                        variant='caption'
-                                        style={styles.nfdStatusText}
-                                    >
-                                        {t('address_entry.nfd_resolved', {
-                                            name: nfdName,
-                                        })}
-                                        {' — '}
-                                        {truncateAlgorandAddress(address)}
-                                    </PWText>
-                                </PWView>
-                            )}
-                        </>
-                    )}
-                    {!isAddressEditable && (
-                        <PWView>
-                            <PWText style={styles.label}>{addressLabel}</PWText>
-                            <AddressDisplay
-                                address={address}
-                                addressFormat='full'
-                                showCopy={false}
-                                displayType='address-only'
+        <PWScrollView
+            style={styles.flex}
+            contentContainerStyle={styles.container}
+            keyboardShouldPersistTaps='handled'
+            keyboardDismissMode='interactive'
+        >
+            <PWView style={styles.avatarWrapper}>
+                {onPickImage ? (
+                    <PWTouchableOpacity
+                        onPress={onPickImage}
+                        style={styles.avatarTouchable}
+                    >
+                        {renderAvatar()}
+                        <PWView style={styles.avatarBadge}>
+                            <PWIcon
+                                name={imageUri ? 'pen-solid' : 'plus'}
+                                variant='buttonPrimary'
+                                size='md'
                             />
                         </PWView>
+                    </PWTouchableOpacity>
+                ) : (
+                    renderAvatar()
+                )}
+                {!!onPickImage && !imageUri && (
+                    <PWText
+                        variant='h3'
+                        style={styles.addPhotoLabel}
+                    >
+                        {t('contacts.edit_contact.add_photo')}
+                    </PWText>
+                )}
+            </PWView>
+            <PWView style={styles.formContainer}>
+                <Controller
+                    control={control}
+                    name={'name' as FieldPath<T>}
+                    render={({ field: { onChange, onBlur, value } }) => (
+                        <PWInput
+                            label={nameLabel}
+                            value={value ?? ''}
+                            onChangeText={onChange}
+                            onBlur={onBlur}
+                            errorMessage={nameError}
+                            autoCapitalize='none'
+                            autoCorrect={false}
+                            returnKeyType='next'
+                            blurOnSubmit={false}
+                            onSubmitEditing={() =>
+                                addressInputRef.current?.focus()
+                            }
+                        />
                     )}
-                    {children}
-                </PWView>
-            </PWScrollView>
-        </KeyboardAvoidingView>
+                />
+                <Controller
+                    control={control}
+                    name={'address' as FieldPath<T>}
+                    render={({ field: { onBlur } }) => (
+                        <PWInput
+                            ref={addressInputRef}
+                            label={addressLabel}
+                            value={rawAddressInput ?? address ?? ''}
+                            onChangeText={onAddressInputChange}
+                            onBlur={onBlur}
+                            errorMessage={addressError}
+                            editable={Boolean(onAddressInputChange)}
+                            autoCapitalize='none'
+                            autoCorrect={false}
+                            rightIcon={
+                                onAddressInputChange ? (
+                                    <PWView style={styles.scanIconWrapper}>
+                                        <PWIcon
+                                            name='camera'
+                                            onPress={handleOpenScanner}
+                                        />
+                                    </PWView>
+                                ) : undefined
+                            }
+                        />
+                    )}
+                />
+                {isResolvingNfd && (
+                    <PWView style={styles.nfdStatus}>
+                        <ActivityIndicator size='small' />
+                        <PWText
+                            variant='caption'
+                            style={styles.nfdStatusText}
+                        >
+                            {t('address_entry.nfd_resolving')}
+                        </PWText>
+                    </PWView>
+                )}
+                {nfdName && (
+                    <PWView style={styles.nfdStatus}>
+                        <PWText
+                            variant='caption'
+                            style={styles.nfdStatusText}
+                        >
+                            {t('address_entry.nfd_resolved', {
+                                name: nfdName,
+                            })}
+                            {' — '}
+                            {truncateAlgorandAddress(address)}
+                        </PWText>
+                    </PWView>
+                )}
+                {children}
+            </PWView>
+            {scannerVisible && (
+                <QRScannerView
+                    isVisible={scannerVisible}
+                    onSuccess={handleScan}
+                    onClose={handleCloseScanner}
+                    animationType='slide'
+                    title={t('address_entry.scan_qr')}
+                />
+            )}
+        </PWScrollView>
     )
 }
