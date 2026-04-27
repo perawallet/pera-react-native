@@ -103,18 +103,20 @@ export const useAccountInfoCard = ({
         )
     }, [isHDWallet, hdWalletGroups, account.keyPairId])
 
-    const ledgerDeviceId = isLedger ? (account as HardwareWalletAccount).hardwareDetails.deviceId : null
+    const ledgerDeviceId = isLedger
+        ? (account as HardwareWalletAccount).hardwareDetails.deviceId
+        : null
 
     const ledgerDeviceGroup = useMemo(() => {
         if (!isLedger) return null
         return (
-            ledgerDeviceGroups.find(
-                g => g.deviceId === ledgerDeviceId,
-            ) ?? null
+            ledgerDeviceGroups.find(g => g.deviceId === ledgerDeviceId) ?? null
         )
     }, [isLedger, ledgerDeviceGroups, ledgerDeviceId])
 
-    const ledgerDeviceName = isLedger ? (account as HardwareWalletAccount).hardwareDetails.deviceName : null
+    const ledgerDeviceName = isLedger
+        ? (account as HardwareWalletAccount).hardwareDetails.deviceName
+        : null
 
     const structureLabel = useMemo(() => {
         if (isHDWallet) {
