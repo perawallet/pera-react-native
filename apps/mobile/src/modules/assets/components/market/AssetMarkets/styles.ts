@@ -10,16 +10,13 @@
  limitations under the License
  */
 
+import { TextStyle } from 'react-native'
 import { makeStyles } from '@rneui/themed'
 import { getTypography } from '@theme/typography'
 
-const TAG_FONT_SIZE = 12
-
 export const useStyles = makeStyles(theme => {
-    const tagText = {
+    const tagText: TextStyle = {
         ...getTypography(theme, 'caption'),
-        fontSize: TAG_FONT_SIZE,
-        fontWeight: '500' as const,
         color: theme.colors.textMain,
         marginLeft: theme.spacing.xs,
     }

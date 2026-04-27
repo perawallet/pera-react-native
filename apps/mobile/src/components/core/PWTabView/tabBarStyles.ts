@@ -11,13 +11,14 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { TextStyle } from 'react-native'
 import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => {
-    const title = {
+    const title: TextStyle = {
         ...getTypography(theme, 'body'),
-        fontWeight: '600' as const,
-        textTransform: 'none' as const,
+        fontWeight: '600',
+        textTransform: 'none',
     }
 
     return {

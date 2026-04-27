@@ -12,17 +12,7 @@
 
 import { makeStyles } from '@rneui/themed'
 
-const TITLE_FONT_SIZE = 22
-
 export const useStyles = makeStyles(theme => {
-    const activeTitle = {
-        color: theme.colors.textMain,
-        fontSize: TITLE_FONT_SIZE,
-    }
-    const inactiveTitle = {
-        color: theme.colors.textGrayLighter,
-        fontSize: TITLE_FONT_SIZE,
-    }
     return {
         portfolioContainer: {
             paddingTop: theme.spacing.md,
@@ -75,7 +65,11 @@ export const useStyles = makeStyles(theme => {
             padding: 0,
             margin: 0,
         },
-        activeTitle,
-        inactiveTitle,
+        activeTitle: {
+            color: theme.colors.textMain,
+        },
+        inactiveTitle: {
+            color: theme.colors.textGrayLighter,
+        },
     }
 })
