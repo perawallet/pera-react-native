@@ -177,8 +177,7 @@ export const useLedgerSelectAccountsScreen =
 
         const areAllImported = newAccounts.length === 0
         const canContinue =
-            !isFetchingMore &&
-            (areAllImported || selectedAddresses.size > 0)
+            !isFetchingMore && (areAllImported || selectedAddresses.size > 0)
 
         return {
             accounts,
