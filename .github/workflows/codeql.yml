@@ -16,13 +16,18 @@ on:
 
 permissions:
   contents: read
-  security-events: write
 
 jobs:
   analyze:
     name: Analyze (${{ matrix.language }})
     runs-on: ubuntu-24.04
     timeout-minutes: 30
+    # Scoped to this job rather than top-level so the elevated
+    # `security-events: write` doesn't leak to any future sibling jobs.
+    permissions:
+      contents: read
+      security-events: write
+      actions: read
     strategy:
       fail-fast: false
       matrix:
