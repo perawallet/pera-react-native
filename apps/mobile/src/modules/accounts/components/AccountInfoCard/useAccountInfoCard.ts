@@ -13,11 +13,12 @@
 import { useCallback, useMemo, useState } from 'react'
 import {
     WalletAccount,
-    HDWalletAccount,
     isHDWalletAccount,
+    isLedgerAccount,
     isSigningLogicalType,
     useAccountLogicalType,
     useHDWalletGroups,
+    useLedgerDeviceGroups,
     useAccountInformationQuery,
 } from '@perawallet/wallet-core-accounts'
 import { microAlgosToAlgos } from '@perawallet/wallet-core-blockchain'
@@ -25,6 +26,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { navigationRef } from '@routes/navigationRef'
 import { Decimal } from 'decimal.js'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import type { IconName } from '@components/core'
 
 type UseAccountInfoCardParams = {
     account: WalletAccount
@@ -37,10 +39,11 @@ type UseAccountInfoCardResult = {
     accountTypeLabel: string
     minBalanceAlgos: Nullable<Decimal>
     isMinBalanceLoading: boolean
-    isHDWallet: boolean
     showMinBalance: boolean
-    walletLabel: string
-    walletAccounts: HDWalletAccount[]
+    showStructure: boolean
+    structureLabel: string
+    structureIcon: IconName
+    structureAccounts: WalletAccount[]
     handleScanAddresses: () => void
 }
 
@@ -55,10 +58,13 @@ export const useAccountInfoCard = ({
         useAccountInformationQuery(account.address)
 
     const { hdWalletGroups } = useHDWalletGroups()
+    const { ledgerDeviceGroups } = useLedgerDeviceGroups()
 
     const logicalType = useAccountLogicalType(account.address) ?? 'NoAuth'
     const isHDWallet = isHDWalletAccount(account)
+    const isLedger = isLedgerAccount(account)
     const showMinBalance = isSigningLogicalType(logicalType)
+    const showStructure = isHDWallet || isLedger
 
     const handleToggleExpanded = useCallback(() => {
         setIsExpanded(prev => !prev)
@@ -89,35 +95,74 @@ export const useAccountInfoCard = ({
         return microAlgosToAlgos(accountInfo.minBalance)
     }, [accountInfo?.minBalance])
 
-    const walletGroupIndex = useMemo(() => {
-        if (!isHDWallet) return 0
+    const hdWalletGroupIndex = useMemo(() => {
+        if (!isHDWallet) return -1
         return hdWalletGroups.findIndex(
             group => group.keyPairId === account.keyPairId,
         )
     }, [isHDWallet, hdWalletGroups, account.keyPairId])
 
-    const walletLabel = useMemo(() => {
-        return t('account_info.wallet_label', {
-            number: walletGroupIndex + 1,
-        })
-    }, [walletGroupIndex, t])
+    const ledgerDeviceGroup = useMemo(() => {
+        if (!isLedger) return null
+        return (
+            ledgerDeviceGroups.find(
+                g => g.deviceId === account.hardwareDetails.deviceId,
+            ) ?? null
+        )
+    }, [isLedger, ledgerDeviceGroups, account])
 
-    const walletAccounts = useMemo(() => {
-        if (!isHDWallet || walletGroupIndex < 0) return []
-        return hdWalletGroups[walletGroupIndex].accounts
-    }, [isHDWallet, walletGroupIndex, hdWalletGroups])
+    const structureLabel = useMemo(() => {
+        if (isHDWallet) {
+            return t('account_info.wallet_label', {
+                number: hdWalletGroupIndex + 1,
+            })
+        }
+        if (isLedger) {
+            return account.hardwareDetails.deviceName
+        }
+        return ''
+    }, [isHDWallet, isLedger, account, hdWalletGroupIndex, t])
+
+    const structureIcon: IconName = isLedger ? 'ledger' : 'wallet'
+
+    const structureAccounts = useMemo<WalletAccount[]>(() => {
+        if (isHDWallet && hdWalletGroupIndex >= 0) {
+            return hdWalletGroups[hdWalletGroupIndex].accounts
+        }
+        if (isLedger && ledgerDeviceGroup) {
+            return ledgerDeviceGroup.accounts
+        }
+        return []
+    }, [
+        isHDWallet,
+        hdWalletGroupIndex,
+        hdWalletGroups,
+        isLedger,
+        ledgerDeviceGroup,
+    ])
 
     const handleScanAddresses = useCallback(() => {
-        if (!isHDWalletAccount(account)) return
-
-        onClose()
-        navigationRef.navigate('AddAccount', {
-            screen: 'SearchAccounts',
-            params: {
-                account,
-                createIfEmpty: true,
-            },
-        })
+        if (isHDWalletAccount(account)) {
+            onClose()
+            navigationRef.navigate('AddAccount', {
+                screen: 'SearchAccounts',
+                params: {
+                    account,
+                    createIfEmpty: true,
+                },
+            })
+            return
+        }
+        if (isLedgerAccount(account)) {
+            onClose()
+            navigationRef.navigate('AddAccount', {
+                screen: 'LedgerFetchAccounts',
+                params: {
+                    deviceId: account.hardwareDetails.deviceId,
+                    deviceName: account.hardwareDetails.deviceName,
+                },
+            })
+        }
     }, [account, onClose])
 
     return {
@@ -126,10 +171,11 @@ export const useAccountInfoCard = ({
         accountTypeLabel,
         minBalanceAlgos,
         isMinBalanceLoading,
-        isHDWallet,
         showMinBalance,
-        walletLabel,
-        walletAccounts,
+        showStructure,
+        structureLabel,
+        structureIcon,
+        structureAccounts,
         handleScanAddresses,
     }
 }
