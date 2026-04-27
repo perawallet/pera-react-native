@@ -102,11 +102,16 @@ export const useRekeyConfirmScreen = (): UseRekeyConfirmScreenResult => {
         void submit()
     }, [submit, warning])
 
+    const feeMicroAlgos =
+        suggestedParams?.fee && suggestedParams.fee > 0n
+            ? suggestedParams.fee
+            : suggestedParams?.minFee
+
     return {
         source: source ?? null,
         target: target ?? null,
         currentAuth: currentAuth ?? null,
-        feeMicroAlgos: suggestedParams?.fee,
+        feeMicroAlgos,
         feePending,
         hasPreviousRekey,
         isSubmitting,

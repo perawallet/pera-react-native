@@ -322,6 +322,7 @@
         "type_watch": "Watch Account",
         "type_ledger": "Ledger Account",
         "type_multisig": "Shared Account ({{count}})",
+        "type_rekeyed": "Rekeyed Account",
         "type_unknown": "Unknown Account"
     },
     "account_type_info": {
@@ -990,21 +991,21 @@
             },
             "confirm": {
                 "title": "Confirm rekeying",
-                "body": "You are about to rekey this account to another authorized address. The new address will be able to sign transactions on its behalf.",
+                "body": "You are about to rekey this account to another authorized address. The new address will be able to sign transactions on its behalf. <0>Learn more</0>",
                 "summary_label": "Summary of rekey",
                 "current_auth_label": "Currently Rekeyed",
                 "fee_label": "Transaction Fee",
                 "cta": "Confirm",
                 "replace_warning": {
                     "title": "Your previous rekey will be replaced",
-                    "body": "{{currentAuth}} will no longer be authorized to sign transactions for {{source}}. Make sure you understand the implications before continuing.",
+                    "body": "<0>{{currentAuth}}</0> will no longer be authorized to sign transactions for <1>{{source}}</1>. Ensure you understand the implications of this before continuing. <2>Learn more</2>",
                     "confirm": "Confirm",
                     "cancel": "Cancel"
                 }
             },
             "success": {
                 "title": "Account successfully rekeyed",
-                "body": "The account {{source}} was successfully rekeyed.",
+                "body": "The account <0>{{source}}</0> was successfully rekeyed.",
                 "cta": "Done"
             }
         }

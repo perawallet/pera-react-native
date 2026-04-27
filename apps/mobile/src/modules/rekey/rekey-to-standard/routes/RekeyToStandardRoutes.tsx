@@ -35,10 +35,7 @@ export const RekeyToStandardStackNavigator = () => {
             <Stack.Screen
                 name='RekeyToStandardIntro'
                 component={RekeyIntroScreen}
-                options={{
-                    headerShown: false,
-                    statusBarStyle: 'light',
-                }}
+                options={{ title: '' }}
             />
             <Stack.Screen
                 name='RekeyToStandardSelectTarget'

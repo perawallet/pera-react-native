@@ -33,15 +33,37 @@ export const useStyles = makeStyles(theme => ({
     summarySection: {
         gap: theme.spacing.lg,
     },
+    spacer: {
+        flexGrow: 1,
+    },
     summaryLabel: {
         color: theme.colors.textGray,
-        textTransform: 'uppercase',
+    },
+    learnMore: {
+        color: theme.colors.linkPrimary,
     },
     summaryCard: {
         gap: theme.spacing.md,
     },
-    arrowRow: {
+    accountRow: {
+        flexDirection: 'row',
         alignItems: 'center',
+        gap: theme.spacing.md,
+    },
+    accountText: {
+        flexShrink: 1,
+    },
+    accountAddress: {
+        color: theme.colors.textGray,
+    },
+    arrowRow: {
+        width: theme.spacing.xxl,
+        alignItems: 'center',
+    },
+    currentAuthValue: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: theme.spacing.sm,
     },
     row: {
         flexDirection: 'row',

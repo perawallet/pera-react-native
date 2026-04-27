@@ -10,33 +10,71 @@
  limitations under the License
  */
 
-import { PWResultView, PWView } from '@components/core'
+import { Trans } from 'react-i18next'
+import { useTheme } from '@rneui/themed'
+import CheckIcon from '@assets/icons/check.svg'
+import { PWButton, PWText, PWView } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useRekeySuccessScreen } from './useRekeySuccessScreen'
 import { useStyles } from './styles'
 
 export const RekeySuccessScreen = () => {
     const styles = useStyles()
+    const { theme } = useTheme()
     const { t } = useLanguage()
     const { sourceName, handleDone } = useRekeySuccessScreen()
+
+    const checkSize = theme.spacing['5xl'] * 2
 
     return (
         <PWView
             style={styles.container}
             testID='rekey-to-standard-success-screen'
         >
-            <PWResultView
-                variant='success'
-                title={t('rekey.to_standard.success.title')}
-                body={t('rekey.to_standard.success.body', {
-                    source: sourceName,
-                })}
-                primaryAction={{
-                    label: t('rekey.to_standard.success.cta'),
-                    onPress: handleDone,
-                }}
-                testID='rekey-to-standard-success-view'
-            />
+            <PWView style={styles.content}>
+                <PWView style={styles.iconWrapper}>
+                    <CheckIcon
+                        width={checkSize}
+                        height={checkSize}
+                        color={theme.colors.textMain}
+                    />
+                </PWView>
+
+                <PWView style={styles.textBlock}>
+                    <PWText
+                        variant='h1'
+                        style={styles.title}
+                    >
+                        {t('rekey.to_standard.success.title')}
+                    </PWText>
+                    <PWText
+                        variant='bodyLarge'
+                        style={styles.body}
+                    >
+                        <Trans
+                            i18nKey='rekey.to_standard.success.body'
+                            values={{ source: sourceName }}
+                            components={[
+                                <PWText
+                                    key='source'
+                                    variant='h4'
+                                    style={styles.body}
+                                />,
+                            ]}
+                        />
+                    </PWText>
+                </PWView>
+            </PWView>
+
+            <PWView style={styles.footer}>
+                <PWButton
+                    variant='primary'
+                    title={t('rekey.to_standard.success.cta')}
+                    onPress={handleDone}
+                    style={styles.cta}
+                    testID='rekey-to-standard-success-done'
+                />
+            </PWView>
         </PWView>
     )
 }
