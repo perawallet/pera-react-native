@@ -178,16 +178,19 @@ export const useGlobalSearch = (
         results.remoteAssets.length > 0
 
     const isRemoteLoading = shouldRunRemoteAssets && remoteAssetQuery.isLoading
+    const hasUserQuery = value.length > 0
+    const isLoadingTypedQuery =
+        hasUserQuery &&
+        (isDebouncing || isOwnedAssetsLoading || isRemoteLoading)
+    const isLoadingEmptyQuerySuggestions =
+        !hasUserQuery && showRemoteOnEmpty && isRemoteLoading
 
     return {
         value,
         setValue,
         results,
         hasResults,
-        isLoading:
-            (value.length > 0 &&
-                (isDebouncing || isOwnedAssetsLoading || isRemoteLoading)) ||
-            (value.length === 0 && showRemoteOnEmpty && isRemoteLoading),
+        isLoading: isLoadingTypedQuery || isLoadingEmptyQuerySuggestions,
         hasNextRemotePage: shouldRunRemoteAssets
             ? remoteAssetQuery.hasNextPage
             : false,
