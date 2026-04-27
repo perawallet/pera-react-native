@@ -17,18 +17,6 @@ import { PWButton, PWView } from '@components/core'
 import { ConfirmActionBottomSheet } from '@components/ConfirmActionBottomSheet'
 import { ContactForm } from '@components/ContactForm'
 import { PhotoPermissionDeniedSheet } from '@components/PhotoPermissionDeniedSheet'
-import {
-    Contact,
-    ContactNotFoundError,
-    DuplicateAddressError,
-    useContacts,
-    contactSchema,
-} from '@perawallet/wallet-core-contacts'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { useStyles } from './styles'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useForm } from 'react-hook-form'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationHeader } from '@hooks/useNavigationHeader'
 import { useEditContactForm } from '@modules/contacts/hooks'
@@ -37,18 +25,6 @@ import { useStyles } from './styles'
 export const EditContactScreen = () => {
     const styles = useStyles()
     const { t } = useLanguage()
-    const {
-        addContact,
-        editContact,
-        deleteContact,
-        selectedContact,
-        setSelectedContact,
-    } = useContacts()
-    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { theme } = useTheme()
-    const { isOpen, open, close } = useModalState()
-    const isEditMode = !!selectedContact
-
     const {
         selectedContact,
         control,
@@ -78,50 +54,6 @@ export const EditContactScreen = () => {
             />
         ),
     })
-    useEffect(() => {
-        if (isNfdResolved) {
-            setValue('address', resolvedAddress, { shouldValidate: true })
-        }
-    }, [isNfdResolved, resolvedAddress, setValue])
-
-    const handleAddressInputChange = useCallback(
-        (text: string) => {
-            setRawAddressInput(text)
-            setValue('address', text, { shouldValidate: true })
-        },
-        [setValue],
-    )
-
-    const save = (data: Contact) => {
-        if (!isValid) return
-
-        try {
-            if (isEditMode && selectedContact) {
-                editContact(selectedContact.address, data)
-            } else {
-                addContact(data)
-            }
-        } catch (e) {
-            if (e instanceof DuplicateAddressError) {
-                setError('address', {
-                    message: 'Contact for this address already exists.',
-                })
-                return
-            }
-            if (e instanceof ContactNotFoundError) {
-                // The selected contact was removed before save landed
-                // (e.g. on another device). Drop the stale selection
-                // and pop back without reporting a false success.
-                setSelectedContact(null)
-                navigation.goBack()
-                return
-            }
-            throw e
-        }
-
-        setSelectedContact(null)
-        navigation.goBack()
-    }
 
     const openDeleteConfirm = useCallback(() => {
         Keyboard.dismiss()

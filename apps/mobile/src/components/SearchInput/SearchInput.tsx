@@ -11,18 +11,15 @@
  */
 
 import { forwardRef, useCallback, useState } from 'react'
-import { InputProps, useTheme } from '@rneui/themed'
+import { useTheme } from '@rneui/themed'
 
 import { PWInput, PWTouchableIcon } from '@components/core'
 import { PWIcon } from '@components/core/PWIcon'
 import { useStyles } from './styles'
 
-import type { PWInputRef } from '@components/core'
+import type { PWInputProps, PWInputRef } from '@components/core'
 
-export type SearchInputProps = {} & Omit<
-    InputProps,
-    'leftIcon' | 'rightIcon' | 'ref'
->
+export type SearchInputProps = Omit<PWInputProps, 'leftIcon' | 'rightIcon'>
 
 export type SearchInputRef = PWInputRef
 
@@ -77,7 +74,6 @@ export const SearchInput = forwardRef<SearchInputRef, SearchInputProps>(
                     ) : undefined
                 }
                 rightIconContainerStyle={styles.rightIconContainer}
-                // @ts-expect-error - passed through to RN Input
                 selectTextOnFocus
                 autoComplete='off'
                 autoCapitalize='none'

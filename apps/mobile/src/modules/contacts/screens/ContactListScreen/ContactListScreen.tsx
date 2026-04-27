@@ -138,7 +138,7 @@ export const ContactListScreen = () => {
         [selectContact, showQR],
     )
 
-    const keyExtractor = useCallback((c: Contact) => c.id ?? c.address, [])
+    const keyExtractor = useCallback((c: Contact) => c.address, [])
 
     if (isEmpty) {
         return (

@@ -28,7 +28,6 @@ vi.mock('@utils/shareText', () => ({
 
 describe('ContactQRBottomSheet', () => {
     const contact: Contact = {
-        id: 'test-id',
         name: 'Alice',
         address: 'ALICE123456789ABCDEFGHIJKLMNOPQRSTUVWXYZALICE12345ABC',
     }

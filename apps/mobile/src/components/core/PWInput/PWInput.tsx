@@ -34,15 +34,18 @@ export type PWInputProps = {
     keyboardType?: RNEInputProps['keyboardType']
     returnKeyType?: RNEInputProps['returnKeyType']
     autoCapitalize?: RNEInputProps['autoCapitalize']
+    autoComplete?: RNEInputProps['autoComplete']
     autoCorrect?: boolean
     autoFocus?: boolean
-    onFocus?: () => void
-    onBlur?: () => void
+    selectTextOnFocus?: boolean
+    onFocus?: RNEInputProps['onFocus']
+    onBlur?: RNEInputProps['onBlur']
     containerStyle?: RNEInputProps['containerStyle']
     inputContainerStyle?: RNEInputProps['inputContainerStyle']
     inputStyle?: RNEInputProps['inputStyle']
     cursorColor?: string
     rightIcon?: RNEInputProps['rightIcon']
+    rightIconContainerStyle?: RNEInputProps['rightIconContainerStyle']
     leftIcon?: RNEInputProps['leftIcon']
     onSubmitEditing?: () => void
     blurOnSubmit?: boolean
