@@ -16,11 +16,13 @@ import { ActivityIndicator } from 'react-native'
 import { EmptyView } from '@components/EmptyView'
 import { useStyles } from './styles'
 import { NotificationItem } from '@modules/messages/components/NotificationItem/NotificationItem'
-import { PWFlatList } from '@components/core'
+import { PWFlatList, PWView } from '@components/core'
 import { RefreshControl } from 'react-native-gesture-handler'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNotificationsScreen } from './useNotificationsScreen'
+
+const ESTIMATED_NOTIFICATION_ITEM_SIZE = 72
 
 const renderItem = ({ item }: { item: PeraNotification }) => {
     return <NotificationItem item={item} />
@@ -50,7 +52,10 @@ export const NotificationsScreen = () => {
             contentContainerStyle={styles.messageContainer}
             onEndReached={loadMoreItems}
             onEndReachedThreshold={0.1}
+            estimatedItemSize={ESTIMATED_NOTIFICATION_ITEM_SIZE}
+            waitForInitialLayout
             keyExtractor={keyExtractor}
+            ListHeaderComponent={<PWView style={styles.listEdgeSpacer} />}
             ListEmptyComponent={
                 <EmptyView
                     isLoading={isPending}
@@ -61,9 +66,12 @@ export const NotificationsScreen = () => {
                 />
             }
             ListFooterComponent={
-                isFetchingNextPage ? (
-                    <ActivityIndicator color={theme.colors.linkPrimary} />
-                ) : null
+                <>
+                    {isFetchingNextPage ? (
+                        <ActivityIndicator color={theme.colors.linkPrimary} />
+                    ) : null}
+                    <PWView style={styles.listEdgeSpacer} />
+                </>
             }
             refreshControl={
                 <RefreshControl

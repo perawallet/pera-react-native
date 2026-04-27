@@ -24,5 +24,12 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.md,
             alignItems: 'center',
         },
+        unifiedTextContainer: {
+            flex: 1,
+            justifyContent: 'center',
+        },
+        secondaryText: {
+            color: theme.colors.textGray,
+        },
     }
 })

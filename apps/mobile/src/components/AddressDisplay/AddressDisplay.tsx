@@ -10,7 +10,9 @@
  limitations under the License
  */
 
+import { ReactNode } from 'react'
 import {
+    IconName,
     PWIcon,
     PWText,
     PWTextProps,
@@ -18,30 +20,28 @@ import {
     PWView,
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
-import { useStyles } from './styles'
-import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
-import { useAllAccounts } from '@perawallet/wallet-core-accounts'
-import { useContacts } from '@perawallet/wallet-core-contacts'
-import { useNfdForAddressQuery } from '@perawallet/wallet-core-nfd'
-import { useClipboard } from '@hooks/useClipboard'
-
-import { SvgProps } from 'react-native-svg'
-import { useCallback, useMemo } from 'react'
 import { ContactAvatar } from '@components/ContactAvatar'
 import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
-import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { AccountIcon } from '@modules/accounts/components/AccountIcon'
+import { SvgProps } from 'react-native-svg'
+import { useStyles } from './styles'
+import {
+    useAddressDisplay,
+    type AddressDisplayType,
+    type AddressFormat,
+} from './useAddressDisplay'
 
 export type AddressDisplayProps = {
     address: string
-    addressFormat?: 'short' | 'long' | 'full'
-    displayType?: 'full' | 'simple' | 'address-only'
+    addressFormat?: AddressFormat
+    displayType?: AddressDisplayType
     showCopy?: boolean
     forceShowIcon?: boolean
+    iconName?: IconName
+    showSecondaryAddress?: boolean
     textProps?: PWTextProps
     iconProps?: SvgProps
 } & PWTouchableOpacityProps
-
-const LONG_ADDRESS_FORMAT = 20
 
 export const AddressDisplay = ({
     address,
@@ -49,112 +49,111 @@ export const AddressDisplay = ({
     displayType = 'full',
     showCopy = true,
     forceShowIcon = false,
+    iconName,
+    showSecondaryAddress = false,
     textProps,
     iconProps,
     ...rest
 }: AddressDisplayProps) => {
     const styles = useStyles()
-    const { copyToClipboard } = useClipboard()
-    const isDarkMode = useIsDarkMode()
-
-    const copyAddress = () => {
-        copyToClipboard(address)
-    }
-
-    const accounts = useAllAccounts()
-    const { findContacts } = useContacts()
-
-    const isAddressOnly = displayType === 'address-only'
-
-    const account = useMemo(() => {
-        if (displayType !== 'full') {
-            return null
-        }
-
-        return accounts.find(a => a.address === address)
-    }, [displayType, accounts, address])
-
-    const contact = useMemo(() => {
-        if (isAddressOnly) {
-            return null
-        }
-        return findContacts({
-            keyword: address,
-            matchAddress: true,
-            matchName: false,
-            matchNFD: true,
-        }).at(0)
-    }, [isAddressOnly, address, findContacts])
-
-    const { data: nfdNames } = useNfdForAddressQuery(address, {
-        enabled: !isAddressOnly && !account && !contact,
+    const {
+        account,
+        contact,
+        nfdName,
+        truncatedAddress,
+        fallbackIconName,
+        copyAddress,
+        unifiedLabels,
+    } = useAddressDisplay({
+        address,
+        addressFormat,
+        displayType,
+        showSecondaryAddress,
     })
 
-    const nfdName = useMemo(() => nfdNames?.at(0)?.name, [nfdNames])
+    const isUnifiedLayout = !!iconName || showSecondaryAddress
 
-    const truncatedAddress =
-        addressFormat === 'full'
-            ? address
-            : addressFormat === 'long'
-              ? truncateAlgorandAddress(address, LONG_ADDRESS_FORMAT)
-              : truncateAlgorandAddress(address)
+    let content: ReactNode
 
-    const renderAddressView = useCallback(() => {
-        if (account) {
-            return (
-                <AccountDisplay
-                    account={account}
-                    textProps={textProps}
-                    showChevron={false}
-                />
-            )
-        }
+    if (isUnifiedLayout) {
+        const { primary, secondary } = unifiedLabels
 
-        if (contact) {
-            return (
-                <PWView style={styles.contactContainer}>
-                    <ContactAvatar
-                        size='md'
-                        contact={contact}
-                    />
-                    <PWText {...textProps}>{contact.name}</PWText>
-                </PWView>
-            )
-        }
-
-        if (nfdName) {
-            return (
-                <PWView style={styles.contactContainer}>
-                    <PWIcon
-                        name={`accounts/${isDarkMode ? 'dark' : 'light'}/algo25-account`}
+        content = (
+            <>
+                {account ? (
+                    <AccountIcon
+                        account={account}
                         size='lg'
                     />
-                    <PWText {...textProps}>{nfdName}</PWText>
+                ) : (
+                    <PWIcon
+                        name={iconName ?? fallbackIconName}
+                        size='lg'
+                    />
+                )}
+                <PWView style={styles.unifiedTextContainer}>
+                    <PWText
+                        variant={textProps?.variant ?? 'h4'}
+                        numberOfLines={1}
+                        ellipsizeMode='middle'
+                        {...textProps}
+                    >
+                        {primary}
+                    </PWText>
+                    {!!secondary && (
+                        <PWText
+                            variant='caption'
+                            style={styles.secondaryText}
+                            numberOfLines={1}
+                            ellipsizeMode='middle'
+                        >
+                            {secondary}
+                        </PWText>
+                    )}
                 </PWView>
-            )
-        }
-
-        return (
+            </>
+        )
+    } else if (account) {
+        content = (
+            <AccountDisplay
+                account={account}
+                textProps={textProps}
+                showChevron={false}
+            />
+        )
+    } else if (contact) {
+        content = (
+            <PWView style={styles.contactContainer}>
+                <ContactAvatar
+                    size='md'
+                    contact={contact}
+                />
+                <PWText {...textProps}>{contact.name}</PWText>
+            </PWView>
+        )
+    } else if (nfdName) {
+        content = (
+            <PWView style={styles.contactContainer}>
+                <PWIcon
+                    name={fallbackIconName}
+                    size='lg'
+                />
+                <PWText {...textProps}>{nfdName}</PWText>
+            </PWView>
+        )
+    } else {
+        content = (
             <PWView style={styles.contactContainer}>
                 {forceShowIcon && (
                     <PWIcon
-                        name={`accounts/${isDarkMode ? 'dark' : 'light'}/algo25-account`}
+                        name={fallbackIconName}
                         size='lg'
                     />
                 )}
                 <PWText {...textProps}>{truncatedAddress}</PWText>
             </PWView>
         )
-    }, [
-        account,
-        contact,
-        nfdName,
-        isDarkMode,
-        forceShowIcon,
-        truncatedAddress,
-        textProps,
-        styles.contactContainer,
-    ])
+    }
 
     return (
         <CopyableText
@@ -162,8 +161,7 @@ export const AddressDisplay = ({
             copyValue={address}
             style={[styles.addressValueContainer, rest.style]}
         >
-            {renderAddressView()}
-
+            {content}
             {showCopy && (
                 <PWIcon
                     name='copy'

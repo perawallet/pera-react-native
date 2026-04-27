@@ -105,4 +105,22 @@ describe('NotificationItem', () => {
             mockNotification,
         )
     })
+
+    it('renders the unread dot when isUnread is true', () => {
+        const { getByTestId } = render(
+            <NotificationItem item={{ ...mockNotification, isUnread: true }} />,
+        )
+
+        expect(getByTestId('unread_indicator_dot')).toBeTruthy()
+    })
+
+    it('hides the unread dot when isUnread is false', () => {
+        const { queryByTestId } = render(
+            <NotificationItem
+                item={{ ...mockNotification, isUnread: false }}
+            />,
+        )
+
+        expect(queryByTestId('unread_indicator_dot')).toBeNull()
+    })
 })

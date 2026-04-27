@@ -238,7 +238,7 @@ describe('deleteImportInbox', () => {
     })
 
     test('calls queryClient with correct params', async () => {
-        ;(queryClient as Mock).mockResolvedValue({ data: undefined })
+        ;(queryClient as Mock).mockResolvedValue({ data: '' })
 
         await deleteImportInbox('testnet', 'device-1', 'MSIG_ADDR')
 
@@ -247,6 +247,7 @@ describe('deleteImportInbox', () => {
             network: 'testnet',
             method: 'DELETE',
             url: '/v1/joint-accounts/inbox/device-import/device-1/MSIG_ADDR/',
+            responseType: 'text',
         })
     })
 })

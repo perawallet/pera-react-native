@@ -57,13 +57,13 @@ const createMultisigImportItem = (
     createdAt: Date,
     customId = 'msig-1',
 ): InboxItem => ({
-    type: 'joint_account_import',
+    type: 'multisig_import',
     data: createMultiSigAccount({ createdAt, customId }),
     createdAt,
 })
 
 const createMultisigSignItem = (createdAt: Date, id = 'sign-1'): InboxItem => ({
-    type: 'joint_account_sign',
+    type: 'multisig_sign',
     data: createSignRequest({ createdAt, id }),
     createdAt,
 })
@@ -83,7 +83,7 @@ const createMockAccounts = (addresses: string[]): WalletAccount[] =>
 describe('utils', () => {
     describe('sortInboxItems', () => {
         describe('type-based sorting', () => {
-            it('should sort joint_account_import before joint_account_sign', () => {
+            it('should sort multisig_import before multisig_sign', () => {
                 const accounts = createMockAccounts(['ADDR1'])
                 const importItem = createMultisigImportItem(
                     new Date('2025-01-10T00:00:00Z'),
@@ -97,7 +97,7 @@ describe('utils', () => {
                 expect(result).toBeLessThan(0)
             })
 
-            it('should sort joint_account_sign before asa_inbox', () => {
+            it('should sort multisig_sign before asa_inbox', () => {
                 const accounts = createMockAccounts(['ADDR1'])
                 const signItem = createMultisigSignItem(
                     new Date('2025-01-20T00:00:00Z'),
@@ -109,7 +109,7 @@ describe('utils', () => {
                 expect(result).toBeLessThan(0)
             })
 
-            it('should sort joint_account_import before asa_inbox', () => {
+            it('should sort multisig_import before asa_inbox', () => {
                 const accounts = createMockAccounts(['ADDR1'])
                 const importItem = createMultisigImportItem(
                     new Date('2025-01-10T00:00:00Z'),
@@ -121,7 +121,7 @@ describe('utils', () => {
                 expect(result).toBeLessThan(0)
             })
 
-            it('should sort asa_inbox after joint_account_import', () => {
+            it('should sort asa_inbox after multisig_import', () => {
                 const accounts = createMockAccounts(['ADDR1'])
                 const asaItem = createASAInboxItem('ADDR1')
                 const importItem = createMultisigImportItem(
@@ -135,7 +135,7 @@ describe('utils', () => {
         })
 
         describe('date-based sorting within same type', () => {
-            it('should sort newer joint_account_import items first', () => {
+            it('should sort newer multisig_import items first', () => {
                 const accounts = createMockAccounts(['ADDR1'])
                 const newerItem = createMultisigImportItem(
                     new Date('2025-01-20T00:00:00Z'),
@@ -151,7 +151,7 @@ describe('utils', () => {
                 expect(result).toBeLessThan(0)
             })
 
-            it('should sort newer joint_account_sign items first', () => {
+            it('should sort newer multisig_sign items first', () => {
                 const accounts = createMockAccounts(['ADDR1'])
                 const newerItem = createMultisigSignItem(
                     new Date('2025-01-25T00:00:00Z'),
@@ -263,22 +263,22 @@ describe('utils', () => {
                     sortInboxItems(a, b, accounts),
                 )
 
-                expect(sorted[0].type).toBe('joint_account_import')
+                expect(sorted[0].type).toBe('multisig_import')
                 expect((sorted[0].data as MultiSigAccount).customId).toBe(
                     'import-newer',
                 )
 
-                expect(sorted[1].type).toBe('joint_account_import')
+                expect(sorted[1].type).toBe('multisig_import')
                 expect((sorted[1].data as MultiSigAccount).customId).toBe(
                     'import-older',
                 )
 
-                expect(sorted[2].type).toBe('joint_account_sign')
+                expect(sorted[2].type).toBe('multisig_sign')
                 expect((sorted[2].data as MultisigSignRequest).id).toBe(
                     'sign-newer',
                 )
 
-                expect(sorted[3].type).toBe('joint_account_sign')
+                expect(sorted[3].type).toBe('multisig_sign')
                 expect((sorted[3].data as MultisigSignRequest).id).toBe(
                     'sign-older',
                 )

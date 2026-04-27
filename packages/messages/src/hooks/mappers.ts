@@ -35,7 +35,7 @@ export const mapInboxResponse = (response: InboxResponse): InboxItem[] => {
     for (const importReq of response.joint_account_import_requests) {
         const data = mapMultiSigAccount(importReq)
         items.push({
-            type: 'joint_account_import',
+            type: 'multisig_import',
             data,
             createdAt: data.createdAt,
         })
@@ -44,7 +44,7 @@ export const mapInboxResponse = (response: InboxResponse): InboxItem[] => {
     for (const signReq of response.joint_account_sign_requests) {
         const data = mapSignRequest(signReq)
         items.push({
-            type: 'joint_account_sign',
+            type: 'multisig_sign',
             data,
             createdAt: data.createdAt,
         })

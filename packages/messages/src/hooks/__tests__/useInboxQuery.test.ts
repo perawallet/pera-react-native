@@ -10,9 +10,10 @@
  limitations under the License
  */
 
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { createWrapper } from '@perawallet/wallet-extension-platform'
+import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useInboxQuery } from '../useInboxQuery'
 import { fetchInbox } from '../../api/inbox'
 
@@ -38,7 +39,18 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
         { address: 'ADDR1', type: 'algo25' },
         { address: 'ADDR2', type: 'algo25' },
     ]),
+    useAllAccounts: vi.fn().mockReturnValue([
+        { address: 'ADDR1', type: 'algo25' },
+        { address: 'ADDR2', type: 'algo25' },
+    ]),
 }))
+
+beforeEach(() => {
+    vi.mocked(useAllAccounts).mockReturnValue([
+        { address: 'ADDR1', type: 'algo25' },
+        { address: 'ADDR2', type: 'algo25' },
+    ] as ReturnType<typeof useAllAccounts>)
+})
 
 describe('useInboxQuery', () => {
     it('should fetch inbox and map response to InboxItem array', async () => {
@@ -99,8 +111,8 @@ describe('useInboxQuery', () => {
         const { data: inboxItems } = result.current
         expect(inboxItems).toHaveLength(3)
 
-        expect(inboxItems?.[0].type).toBe('joint_account_import')
-        expect(inboxItems?.[1].type).toBe('joint_account_sign')
+        expect(inboxItems?.[0].type).toBe('multisig_import')
+        expect(inboxItems?.[1].type).toBe('multisig_sign')
         expect(inboxItems?.[2].type).toBe('asa_inbox')
     })
 
@@ -130,8 +142,8 @@ describe('useInboxQuery', () => {
         })
 
         const importItem = result.current.data?.[0]
-        expect(importItem?.type).toBe('joint_account_import')
-        if (importItem?.type === 'joint_account_import') {
+        expect(importItem?.type).toBe('multisig_import')
+        if (importItem?.type === 'multisig_import') {
             expect(importItem.data.customId).toBe('msig-1')
             expect(importItem.data.createdAt).toEqual(
                 new Date('2025-01-15T00:00:00Z'),
@@ -160,6 +172,75 @@ describe('useInboxQuery', () => {
         })
 
         expect(result.current.data).toEqual([])
+    })
+
+    it('filters out multisig_import items whose address is already a local account', async () => {
+        vi.mocked(useAllAccounts).mockReturnValue([
+            { address: 'ADDR1', type: 'algo25' },
+            { address: 'ADDR2', type: 'algo25' },
+            { address: 'MSIG_ADDR1', type: 'multisig' },
+        ] as ReturnType<typeof useAllAccounts>)
+
+        const mockResponse = {
+            joint_account_import_requests: [
+                {
+                    custom_id: 'msig-1',
+                    creation_datetime: '2025-01-15T00:00:00Z',
+                    address: 'MSIG_ADDR1',
+                    version: 1,
+                    threshold: 2,
+                    participant_addresses: ['ADDR1', 'ADDR2'],
+                },
+                {
+                    custom_id: 'msig-2',
+                    creation_datetime: '2025-01-16T00:00:00Z',
+                    address: 'MSIG_ADDR_NEW',
+                    version: 1,
+                    threshold: 2,
+                    participant_addresses: ['ADDR1', 'ADDR2'],
+                },
+            ],
+            joint_account_sign_requests: [
+                {
+                    id: '1',
+                    status: 'pending' as const,
+                    type: 'transfer',
+                    creation_datetime: '2025-01-20T00:00:00Z',
+                    expected_expire_datetime: '2025-01-21T00:00:00Z',
+                    fail_reason_display: null,
+                    joint_account: {
+                        custom_id: 'msig-1',
+                        creation_datetime: '2025-01-15T00:00:00Z',
+                        address: 'MSIG_ADDR1',
+                        version: 1,
+                        threshold: 2,
+                        participant_addresses: ['ADDR1', 'ADDR2'],
+                    },
+                    transaction_lists: [],
+                },
+            ],
+            asa_inboxes: [],
+        }
+        vi.mocked(fetchInbox).mockResolvedValue(mockResponse)
+
+        const { result } = renderHook(() => useInboxQuery(), {
+            wrapper: createWrapper(),
+        })
+
+        await waitFor(() => {
+            expect(result.current.isPending).toBe(false)
+        })
+
+        const inboxItems = result.current.data ?? []
+        const importItems = inboxItems.filter(i => i.type === 'multisig_import')
+        const signItems = inboxItems.filter(i => i.type === 'multisig_sign')
+
+        expect(importItems).toHaveLength(1)
+        expect(
+            importItems[0].type === 'multisig_import' &&
+                importItems[0].data.address,
+        ).toBe('MSIG_ADDR_NEW')
+        expect(signItems).toHaveLength(1)
     })
 
     it('filters out asa_inbox items with no pending requests', async () => {

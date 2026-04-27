@@ -20,4 +20,14 @@ describe('PWBadge', () => {
         render(<PWBadge value='Verified' />)
         expect(screen.getByText('Verified')).toBeTruthy()
     })
+
+    it('renders alert variant value correctly', () => {
+        render(
+            <PWBadge
+                variant='alert'
+                value='3'
+            />,
+        )
+        expect(screen.getByText('3')).toBeTruthy()
+    })
 })

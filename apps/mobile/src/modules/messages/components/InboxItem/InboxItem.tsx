@@ -10,16 +10,10 @@
  limitations under the License
  */
 
-import { PWText, PWTouchableOpacity, PWView } from '@components/core'
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
-import { useLanguage } from '@hooks/useLanguage'
-import {
-    getAccountDisplayName,
-    useAllAccounts,
-} from '@perawallet/wallet-core-accounts'
-import { useStyles } from './styles'
-import { InboxItemIcon } from './InboxItemIcon'
-import { useMemo } from 'react'
+import { AsaInboxItem } from './AsaInboxItem'
+import { MultisigInvitationInboxItem } from './MultisigInvitationInboxItem'
+import { MultisigSignInboxItem } from './MultisigSignInboxItem'
 
 export type InboxItemProps = {
     item: InboxItemModel
@@ -27,75 +21,27 @@ export type InboxItemProps = {
 }
 
 export const InboxItem = ({ item, onPress }: InboxItemProps) => {
-    const styles = useStyles()
-    const { t } = useLanguage()
-    const accounts = useAllAccounts()
-
-    const content = useMemo(() => {
-        switch (item.type) {
-            case 'asa_inbox': {
-                const account = accounts.find(
-                    acc => acc.address === item.data.address,
-                )
-                return (
-                    <>
-                        <PWText style={styles.titleText}>
-                            {t('messages.inbox.asa_requests', {
-                                count: item.data.requestCount,
-                            })}
-                        </PWText>
-                        <PWText
-                            variant='caption'
-                            style={styles.subtitleText}
-                        >
-                            {getAccountDisplayName(account ?? null)}
-                        </PWText>
-                    </>
-                )
-            }
-            case 'joint_account_import': {
-                const account = accounts.find(
-                    acc => acc.address === item.data.address,
-                )
-                return (
-                    <>
-                        <PWText style={styles.titleText}>
-                            {t('messages.inbox.joint_account_import')}
-                        </PWText>
-                        <PWText
-                            variant='caption'
-                            style={styles.subtitleText}
-                        >
-                            {getAccountDisplayName(account ?? null)}
-                        </PWText>
-                    </>
-                )
-            }
-            case 'joint_account_sign':
-                return (
-                    <>
-                        <PWText style={styles.titleText}>
-                            {t('messages.inbox.joint_account_sign')}
-                        </PWText>
-                        <PWText
-                            variant='caption'
-                            style={styles.subtitleText}
-                        >
-                            {item.data.status}
-                        </PWText>
-                    </>
-                )
-        }
-    }, [accounts, styles])
-
-    return (
-        <PWTouchableOpacity
-            style={styles.container}
-            onPress={onPress}
-            disabled={!onPress}
-        >
-            <InboxItemIcon item={item} />
-            <PWView style={styles.messageBox}>{content}</PWView>
-        </PWTouchableOpacity>
-    )
+    switch (item.type) {
+        case 'asa_inbox':
+            return (
+                <AsaInboxItem
+                    item={item}
+                    onPress={onPress}
+                />
+            )
+        case 'multisig_sign':
+            return (
+                <MultisigSignInboxItem
+                    item={item}
+                    onPress={onPress}
+                />
+            )
+        case 'multisig_import':
+            return (
+                <MultisigInvitationInboxItem
+                    item={item}
+                    onPress={onPress}
+                />
+            )
+    }
 }

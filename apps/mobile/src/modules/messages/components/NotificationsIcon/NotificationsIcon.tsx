@@ -12,21 +12,31 @@
 
 import { useInboxStatus } from '@perawallet/wallet-core-messages'
 import { SvgProps } from 'react-native-svg'
-import { PWIcon, PWTouchableOpacity, PWView } from '@components/core'
+import { PWBadge, PWIcon, PWTouchableOpacity, PWView } from '@components/core'
 import { ParamListBase, useNavigation } from '@react-navigation/native'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useStyles } from './styles'
 
 export type NotificationsIconProps = {} & SvgProps
 
+const MAX_INBOX_COUNT_DISPLAY = 9
+
 export const NotificationsIcon = (props: NotificationsIconProps) => {
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const { hasUnreadItems } = useInboxStatus()
+    const { hasUnreadInboxItems, hasUnreadNotifications } = useInboxStatus()
     const styles = useStyles()
 
     const goToNotifications = () => {
         navigation.navigate('Messages')
     }
+
+    const inboxCount = hasUnreadInboxItems ?? 0
+    const showCountBadge = inboxCount > 0
+    const showDotBadge = !showCountBadge && hasUnreadNotifications
+    const countLabel =
+        inboxCount > MAX_INBOX_COUNT_DISPLAY
+            ? `${MAX_INBOX_COUNT_DISPLAY}+`
+            : String(inboxCount)
 
     return (
         <PWTouchableOpacity
@@ -38,7 +48,18 @@ export const NotificationsIcon = (props: NotificationsIconProps) => {
                     name='inbox'
                     {...props}
                 />
-                {hasUnreadItems && (
+                {showCountBadge && (
+                    <PWView
+                        style={styles.countBadgePosition}
+                        testID='notification-count-badge'
+                    >
+                        <PWBadge
+                            variant='alert'
+                            value={countLabel}
+                        />
+                    </PWView>
+                )}
+                {showDotBadge && (
                     <PWView
                         style={styles.badge}
                         testID='notification-badge'

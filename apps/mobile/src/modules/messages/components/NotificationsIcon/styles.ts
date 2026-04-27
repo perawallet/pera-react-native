@@ -26,4 +26,9 @@ export const useStyles = makeStyles(theme => ({
         alignItems: 'center',
         justifyContent: 'center',
     },
+    countBadgePosition: {
+        position: 'absolute',
+        top: -theme.spacing.sm,
+        right: -theme.spacing.sm,
+    },
 }))

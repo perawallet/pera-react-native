@@ -17,6 +17,7 @@ import { deleteImportInbox } from '../api/endpoints'
 type UseDeleteImportInboxMutationParams = {
     network: Network
     deviceId: string
+    onSuccess?: () => void
 }
 
 type DeleteImportInboxInput = {
@@ -26,6 +27,7 @@ type DeleteImportInboxInput = {
 export const useDeleteImportInboxMutation = ({
     network,
     deviceId,
+    onSuccess,
 }: UseDeleteImportInboxMutationParams): UseMutationResult<
     void,
     Error,
@@ -34,5 +36,6 @@ export const useDeleteImportInboxMutation = ({
     return useMutation({
         mutationFn: ({ multisigAddress }: DeleteImportInboxInput) =>
             deleteImportInbox(network, deviceId, multisigAddress),
+        onSuccess,
     })
 }

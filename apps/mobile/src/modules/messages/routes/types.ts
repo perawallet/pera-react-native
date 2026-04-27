@@ -13,6 +13,15 @@
 import { ASAInbox } from '@perawallet/wallet-core-messages'
 import type { StackScreenProps } from '@react-navigation/stack'
 
+export type MultisigInvitationParam = {
+    customId: string
+    createdAt: string
+    address: string
+    version: number
+    threshold: number
+    participantAddresses: string[]
+}
+
 export type MessagesStackParamList = {
     MessagesHome: { initialTab?: 'Inbox' | 'Notifications' } | undefined
     AssetTransferRequests: {
@@ -28,6 +37,7 @@ export type MessagesStackParamList = {
         transactionId: string
         variant?: 'claim' | 'reject'
     }
+    MultisigInvitationName: { invitation: MultisigInvitationParam }
 }
 
 export type MessagesStackScreenProps<T extends keyof MessagesStackParamList> =

@@ -45,11 +45,6 @@ export const useStyles = makeStyles(theme => ({
     continueButton: {
         marginBottom: theme.spacing.sm,
     },
-    accountValueContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-    },
     summaryContainer: {
         flexGrow: 1,
         gap: theme.spacing.md,
@@ -57,9 +52,5 @@ export const useStyles = makeStyles(theme => ({
     keyValueLabel: {
         color: theme.colors.textMain,
         width: '50%',
-    },
-    peopleIcon: {
-        marginLeft: theme.spacing.sm,
-        marginRight: theme.spacing.sm,
     },
 }))

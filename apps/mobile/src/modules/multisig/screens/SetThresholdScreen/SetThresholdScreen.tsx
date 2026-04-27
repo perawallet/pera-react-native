@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { PWButton, PWIcon, PWText, PWView } from '@components/core'
+import { PWButton, PWText, PWView } from '@components/core'
+import { ParticipantCount } from '@components/ParticipantCount'
 import { useLanguage } from '@hooks/useLanguage'
 import { ThresholdStepper } from '../../components/ThresholdStepper'
 import { BeforeYouCreateBottomSheet } from '../../components/BeforeYouCreateBottomSheet'
@@ -62,15 +63,10 @@ export const SetThresholdScreen = () => {
                             title={t('multisig.threshold.number_of_accounts')}
                             titleProps={keyValueTitleProps}
                         >
-                            <PWView style={styles.accountValueContainer}>
-                                <PWIcon
-                                    name='people'
-                                    variant='secondary'
-                                    size='lg'
-                                    style={styles.peopleIcon}
-                                />
-                                <PWText variant='h1'>{participantCount}</PWText>
-                            </PWView>
+                            <ParticipantCount
+                                count={participantCount}
+                                size='h1'
+                            />
                         </KeyValueRow>
 
                         <KeyValueRow

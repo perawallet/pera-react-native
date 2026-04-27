@@ -25,6 +25,7 @@ import { TransactionSuccessScreen } from '@modules/transactions/screens/send-fun
 import { ClaimProcessingScreen } from '@modules/transactions/screens/claim-assets/ClaimProcessingScreen/ClaimProcessingScreen'
 import { MessagesStackParamList } from './types'
 import { MessagesScreen } from '../screens/MessagesScreen'
+import { MultisigInvitationNameScreen } from '../screens/MultisigInvitationNameScreen'
 
 const MessagesStack = createNativeStackNavigator<MessagesStackParamList>()
 
@@ -80,6 +81,12 @@ export const MessagesStackNavigator = () => {
                     headerShown: false,
                     gestureEnabled: false,
                 }}
+            />
+
+            <MessagesStack.Screen
+                name='MultisigInvitationName'
+                component={MultisigInvitationNameScreen}
+                options={{ title: 'multisig.invitation.name.screen_title' }}
             />
         </MessagesStack.Navigator>
     )

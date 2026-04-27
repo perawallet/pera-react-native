@@ -12,15 +12,18 @@
 
 import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
-import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
+import { type InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
 import { EmptyView } from '@components/EmptyView'
 import { PWFlatList, PWView } from '@components/core'
 import { RefreshControl } from 'react-native-gesture-handler'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { InboxItem } from '@modules/messages/components/InboxItem/InboxItem'
+import { MultisigInvitationDetailBottomSheet } from '@modules/messages/components/MultisigInvitationDetailBottomSheet'
 import { useStyles } from './styles'
 import { useInboxScreen } from './useInboxScreen'
+
+const ESTIMATED_INBOX_ITEM_SIZE = 72
 
 export const InboxScreen = () => {
     const insets = useSafeAreaInsets()
@@ -35,6 +38,8 @@ export const InboxScreen = () => {
         refetch,
         keyExtractor,
         handleInboxItemPress,
+        selectedInvitation,
+        closeInvitation,
     } = useInboxScreen()
 
     const renderItem = useCallback(
@@ -55,6 +60,8 @@ export const InboxScreen = () => {
                 style={styles.container}
                 contentContainerStyle={styles.messageContainer}
                 keyExtractor={keyExtractor}
+                ListHeaderComponent={<PWView style={styles.listEdgeSpacer} />}
+                ListFooterComponent={<PWView style={styles.listEdgeSpacer} />}
                 ListEmptyComponent={
                     <EmptyView
                         isLoading={isPending}
@@ -64,7 +71,8 @@ export const InboxScreen = () => {
                         body={t('messages.inbox.empty_body')}
                     />
                 }
-                estimatedItemSize={theme.spacing.xxl}
+                estimatedItemSize={ESTIMATED_INBOX_ITEM_SIZE}
+                waitForInitialLayout
                 refreshControl={
                     <RefreshControl
                         refreshing={isRefetching}
@@ -73,6 +81,10 @@ export const InboxScreen = () => {
                         progressBackgroundColor={theme.colors.background}
                     />
                 }
+            />
+            <MultisigInvitationDetailBottomSheet
+                invitation={selectedInvitation}
+                onClose={closeInvitation}
             />
         </PWView>
     )

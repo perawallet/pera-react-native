@@ -14,7 +14,7 @@ import { Badge, BadgeProps } from '@rneui/themed'
 import { useStyles } from './styles'
 
 export type PWBadgeProps = {
-    variant?: 'primary' | 'testnet' | 'secondary' | 'positive'
+    variant?: 'primary' | 'testnet' | 'secondary' | 'positive' | 'alert'
 } & BadgeProps
 
 export const PWBadge = ({

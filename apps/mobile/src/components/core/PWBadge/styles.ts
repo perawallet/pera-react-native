@@ -26,16 +26,25 @@ export const useStyles = makeStyles((theme, props: PWBadgeProps) => {
     } else if (variant === 'positive') {
         textColor = theme.colors.positive
         backgroundColor = theme.colors.buttonSquareBg
+    } else if (variant === 'alert') {
+        textColor = theme.colors.textWhite
+        backgroundColor = theme.colors.alertNegative
     }
+
+    const isAlert = variant === 'alert'
 
     return {
         container: {
-            paddingVertical: theme.spacing.xs,
-            paddingHorizontal: theme.spacing.sm,
+            paddingVertical: isAlert ? 0 : theme.spacing.xs,
+            paddingHorizontal: isAlert ? 0 : theme.spacing.sm,
+            minWidth: isAlert ? theme.spacing.xl : undefined,
             height: theme.spacing.xl,
             backgroundColor,
-            borderWidth: theme.borders.none,
-            borderRadius: theme.spacing['3xl'],
+            borderWidth: isAlert ? theme.borders.lg : theme.borders.none,
+            borderColor: isAlert ? theme.colors.background : undefined,
+            borderRadius: isAlert
+                ? theme.borderRadius.full
+                : theme.spacing['3xl'],
         },
         text: {
             color: textColor,

@@ -212,6 +212,50 @@ describe('useDeleteImportInboxMutation', () => {
         )
     })
 
+    test('invokes onSuccess on successful mutation', async () => {
+        mocks.deleteImportInbox.mockResolvedValue(undefined)
+        const onSuccess = vi.fn()
+
+        const { result } = renderHook(
+            () =>
+                useDeleteImportInboxMutation({
+                    network: 'mainnet',
+                    deviceId: 'device-123',
+                    onSuccess,
+                }),
+            { wrapper },
+        )
+
+        await act(async () => {
+            result.current.mutate({ multisigAddress: 'MSIG_ADDR' })
+        })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+        expect(onSuccess).toHaveBeenCalledTimes(1)
+    })
+
+    test('does not invoke onSuccess when mutation fails', async () => {
+        mocks.deleteImportInbox.mockRejectedValue(new Error('Delete failed'))
+        const onSuccess = vi.fn()
+
+        const { result } = renderHook(
+            () =>
+                useDeleteImportInboxMutation({
+                    network: 'mainnet',
+                    deviceId: 'device-123',
+                    onSuccess,
+                }),
+            { wrapper },
+        )
+
+        await act(async () => {
+            result.current.mutate({ multisigAddress: 'MSIG_ADDR' })
+        })
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+        expect(onSuccess).not.toHaveBeenCalled()
+    })
+
     test('works with different networks', async () => {
         mocks.deleteImportInbox.mockResolvedValue(undefined)
 

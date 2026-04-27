@@ -22,6 +22,7 @@ import { useStyles } from './styles'
 import { useMemo } from 'react'
 import { PeraNotification } from '@perawallet/wallet-core-messages'
 import { useNotificationPress } from '@modules/messages/hooks'
+import { UnreadIndicator } from '../UnreadIndicator'
 
 export type NotificationItemProps = {
     item: PeraNotification
@@ -66,8 +67,8 @@ export const NotificationItem = ({ item }: NotificationItemProps) => {
             onPress={() => handleNotificationPress(item)}
             style={styles.container}
         >
-            <PWView style={styles.unreadIndicatorContainer}>
-                {item.isUnread && <PWView style={styles.unreadIndicator} />}
+            <PWView style={styles.unreadIndicatorWrapper}>
+                <UnreadIndicator isUnread={item.isUnread ?? false} />
             </PWView>
             {image}
             <PWView style={styles.messageBox}>

@@ -199,7 +199,7 @@ export const useAddAccountScreen = () => {
                         'onboarding.add_account.create_multisig_option_title',
                     descriptionKey:
                         'onboarding.add_account.create_multisig_option_description',
-                    leftIcon: 'group-user' as IconName,
+                    leftIcon: 'people' as IconName,
                     onPress: handleCreateMultisig,
                 },
                 {

@@ -12,19 +12,22 @@
 
 import { render, screen } from '@test-utils/render'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import type { Contact } from '@perawallet/wallet-core-contacts'
 import { AddressDisplay } from '../AddressDisplay'
 
+const mockUseAllAccounts = vi.fn(() => [] as unknown[])
+const mockFindContacts = vi.fn(() => [] as unknown[])
+
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    useAllAccounts: vi.fn(() => []),
+    useAllAccounts: () => mockUseAllAccounts(),
+    useAccountLogicalType: () => 'Algo25',
+    AccountTypes: {
+        software: 'software',
+        hardware: 'hardware',
+    },
 }))
 
-const findContactsMock = vi.fn<() => Contact[]>(() => [])
-
 vi.mock('@perawallet/wallet-core-contacts', () => ({
-    useContacts: vi.fn(() => ({
-        findContacts: findContactsMock,
-    })),
+    useContacts: () => ({ findContacts: mockFindContacts }),
 }))
 
 const mockUseNfdForAddress = vi.fn(() => ({
@@ -40,7 +43,8 @@ vi.mock('@perawallet/wallet-core-nfd', () => ({
 describe('AddressDisplay', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        findContactsMock.mockReturnValue([])
+        mockUseAllAccounts.mockReturnValue([])
+        mockFindContacts.mockReturnValue([])
         mockUseNfdForAddress.mockReturnValue({
             data: undefined,
             isPending: false,
@@ -92,7 +96,7 @@ describe('AddressDisplay', () => {
     })
 
     it('renders the default contact avatar (person icon) for a matched contact without an image', () => {
-        findContactsMock.mockReturnValue([
+        mockFindContacts.mockReturnValue([
             {
                 name: 'Alice',
                 address: 'A'.repeat(58),
@@ -103,5 +107,114 @@ describe('AddressDisplay', () => {
 
         expect(screen.getByTestId('icon-person')).toBeTruthy()
         expect(screen.getByText('Alice')).toBeTruthy()
+    })
+
+    describe('unified layout', () => {
+        it('renders only the truncated address when no NFD, contact or local account matches', () => {
+            const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'
+            render(
+                <AddressDisplay
+                    address={address}
+                    iconName='accounts/light/multisig-account'
+                    showSecondaryAddress
+                />,
+            )
+
+            const matches = screen.getAllByText(/ABC/)
+            expect(matches).toHaveLength(1)
+        })
+
+        it('renders NFD name as primary with truncated address as secondary', () => {
+            mockUseNfdForAddress.mockReturnValue({
+                data: [{ name: 'alice.algo' }],
+                isPending: false,
+            })
+
+            const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'
+            render(
+                <AddressDisplay
+                    address={address}
+                    iconName='accounts/light/multisig-account'
+                    showSecondaryAddress
+                />,
+            )
+
+            expect(screen.getByText('alice.algo')).toBeTruthy()
+            expect(screen.getByText(/ABC/)).toBeTruthy()
+        })
+
+        it('renders truncated address as primary and contact name as secondary when the address matches a contact', () => {
+            const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'
+            mockFindContacts.mockReturnValue([{ name: 'Joseph', address }])
+
+            render(
+                <AddressDisplay
+                    address={address}
+                    iconName='accounts/light/multisig-account'
+                    showSecondaryAddress
+                />,
+            )
+
+            expect(screen.getByText('Joseph')).toBeTruthy()
+            expect(screen.getByText(/ABC/)).toBeTruthy()
+        })
+
+        it('renders the "(You)" label when the address matches a local account', () => {
+            const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'
+            mockUseAllAccounts.mockReturnValue([{ name: 'My Wallet', address }])
+
+            render(
+                <AddressDisplay
+                    address={address}
+                    iconName='accounts/light/multisig-account'
+                    showSecondaryAddress
+                />,
+            )
+
+            expect(screen.getByText('address_display.you_suffix')).toBeTruthy()
+            expect(screen.queryByText('My Wallet')).toBeNull()
+        })
+
+        it('prefers contact name over NFD when both match the same address', () => {
+            const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'
+            mockFindContacts.mockReturnValue([{ name: 'Joseph', address }])
+            mockUseNfdForAddress.mockReturnValue({
+                data: [{ name: 'alice.algo' }],
+                isPending: false,
+            })
+
+            render(
+                <AddressDisplay
+                    address={address}
+                    iconName='accounts/light/multisig-account'
+                    showSecondaryAddress
+                />,
+            )
+
+            expect(screen.getByText('Joseph')).toBeTruthy()
+            expect(screen.queryByText('alice.algo')).toBeNull()
+        })
+
+        it('prefers the "(You)" label over NFD and contact matches', () => {
+            const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'
+            mockUseAllAccounts.mockReturnValue([{ name: 'My Wallet', address }])
+            mockUseNfdForAddress.mockReturnValue({
+                data: [{ name: 'alice.algo' }],
+                isPending: false,
+            })
+            mockFindContacts.mockReturnValue([{ name: 'Joseph', address }])
+
+            render(
+                <AddressDisplay
+                    address={address}
+                    iconName='accounts/light/multisig-account'
+                    showSecondaryAddress
+                />,
+            )
+
+            expect(screen.getByText('address_display.you_suffix')).toBeTruthy()
+            expect(screen.queryByText('alice.algo')).toBeNull()
+            expect(screen.queryByText('Joseph')).toBeNull()
+        })
     })
 })
