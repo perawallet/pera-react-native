@@ -11,9 +11,13 @@
  */
 
 import { useCallback } from 'react'
+import { useRoute } from '@react-navigation/native'
 import { config } from '@perawallet/wallet-core-config'
 import { useWebView } from '@modules/webview'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+
+import type { RouteProp } from '@react-navigation/native'
+import type { RekeyToStandardStackParamList } from '../../routes/types'
 
 export type UseRekeyIntroScreenResult = {
     handleStartProcess: () => void
@@ -23,11 +27,18 @@ export type UseRekeyIntroScreenResult = {
 export const useRekeyIntroScreen = (): UseRekeyIntroScreenResult => {
     const navigation = useAppNavigation()
     const { pushWebView } = useWebView()
+    const route =
+        useRoute<
+            RouteProp<RekeyToStandardStackParamList, 'RekeyToStandardIntro'>
+        >()
+    const sourceAddress = route.params.sourceAddress
 
     const handleStartProcess = useCallback(() => {
-        // TODO: navigate to SelectTarget once that screen lands.
-        navigation.goBack()
-    }, [navigation])
+        navigation.navigate('RekeyToStandard', {
+            screen: 'RekeyToStandardSelectTarget',
+            params: { sourceAddress },
+        })
+    }, [navigation, sourceAddress])
 
     const handleLearnMore = useCallback(() => {
         pushWebView({ url: config.rekeyToStandardSupportUrl })

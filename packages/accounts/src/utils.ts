@@ -97,6 +97,29 @@ export const canSignWithAccount = (
 }
 
 /**
+ * True when `target` may be chosen as the new auth address for a "rekey to
+ * standard account" flow originating from `sourceAddress`. Mirrors Android
+ * `RekeyToStandardAccountSelectionPreviewUseCase.isAccountEligibleToRekey`:
+ * the target must be a standard signing account (algo25 / HD wallet),
+ * not the source itself, hold its own signing keys, and not already be
+ * rekeyed away.
+ */
+export const isEligibleRekeyTarget = (
+    target: WalletAccount,
+    sourceAddress: string,
+): boolean => {
+    if (target.address === sourceAddress) return false
+    if (
+        target.type !== AccountTypes.algo25 &&
+        target.type !== AccountTypes.hdWallet
+    )
+        return false
+    if (!hasSigningKeys(target)) return false
+    if (target.rekeyAddress) return false
+    return true
+}
+
+/**
  * Returns true if the account can sign transactions in this wallet. Delegates
  * to `deriveAccountLogicalType` — the single source of truth — so the result
  * is consistent with UI classification and the webview bridge payload.

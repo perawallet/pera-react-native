@@ -981,6 +981,11 @@
                 "expect_2": "This account will no longer be able to sign transactions.",
                 "expect_3": "Your account's public key, balances, and configuration will not change.",
                 "cta": "Start process"
+            },
+            "select": {
+                "title": "Select account",
+                "subtitle": "Choose the account you would like to rekey to. The account you select here will be responsible for signing all transactions for the source account.",
+                "empty": "No accounts found"
             }
         }
     },

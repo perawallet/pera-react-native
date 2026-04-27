@@ -13,6 +13,7 @@
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { RekeyIntroScreen } from '../screens/RekeyIntroScreen'
+import { RekeySelectTargetScreen } from '../screens/RekeySelectTargetScreen'
 
 import type { NativeStackHeaderProps } from '@react-navigation/native-stack'
 import type { RekeyToStandardStackParamList } from './types'
@@ -32,6 +33,14 @@ export const RekeyToStandardStackNavigator = () => {
             <Stack.Screen
                 name='RekeyToStandardIntro'
                 component={RekeyIntroScreen}
+                options={{
+                    headerShown: false,
+                    statusBarStyle: 'light',
+                }}
+            />
+            <Stack.Screen
+                name='RekeyToStandardSelectTarget'
+                component={RekeySelectTargetScreen}
                 options={{ title: '' }}
             />
         </Stack.Navigator>

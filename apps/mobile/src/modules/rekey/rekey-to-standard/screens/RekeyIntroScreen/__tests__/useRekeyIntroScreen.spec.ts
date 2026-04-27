@@ -14,10 +14,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useRekeyIntroScreen } from '../useRekeyIntroScreen'
 
-const mockGoBack = vi.fn()
+const mockNavigate = vi.fn()
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
-        goBack: mockGoBack,
+        navigate: mockNavigate,
+    }),
+}))
+
+vi.mock('@react-navigation/native', () => ({
+    useRoute: () => ({
+        params: { sourceAddress: 'SRC_ADDR' },
     }),
 }))
 
@@ -40,14 +46,17 @@ describe('useRekeyIntroScreen', () => {
         vi.clearAllMocks()
     })
 
-    it('handleStartProcess goes back to the previous screen (placeholder)', () => {
+    it('handleStartProcess navigates to the SelectTarget screen with the source address', () => {
         const { result } = renderHook(() => useRekeyIntroScreen())
 
         act(() => {
             result.current.handleStartProcess()
         })
 
-        expect(mockGoBack).toHaveBeenCalledTimes(1)
+        expect(mockNavigate).toHaveBeenCalledWith('RekeyToStandard', {
+            screen: 'RekeyToStandardSelectTarget',
+            params: { sourceAddress: 'SRC_ADDR' },
+        })
     })
 
     it('handleLearnMore opens the support article in the in-app webview', () => {
