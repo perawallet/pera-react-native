@@ -45,10 +45,10 @@ export const AccountInfoCard = ({ account, onClose }: AccountInfoCardProps) => {
         accountTypeLabel,
         minBalanceAlgos,
         isMinBalanceLoading,
-        isHDWallet,
         showMinBalance,
-        walletLabel,
-        walletAccounts,
+        showStructure,
+        structureLabel,
+        structureAccounts,
         handleScanAddresses,
     } = useAccountInfoCard({ account, onClose })
 
@@ -118,13 +118,13 @@ export const AccountInfoCard = ({ account, onClose }: AccountInfoCardProps) => {
                 </PWView>
             )}
 
-            {/* Wallet structure (HD wallets only) */}
-            {isHDWallet && (
+            {/* Wallet structure (HD wallets and Ledger devices) */}
+            {showStructure && (
                 <>
                     <ExpandablePanel isExpanded={isExpanded}>
                         <WalletStructureTree
-                            walletLabel={walletLabel}
-                            accounts={walletAccounts}
+                            walletLabel={structureLabel}
+                            accounts={structureAccounts}
                             onScanAddresses={handleScanAddresses}
                         />
                     </ExpandablePanel>

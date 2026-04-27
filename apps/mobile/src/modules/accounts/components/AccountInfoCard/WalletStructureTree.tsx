@@ -18,14 +18,14 @@ import {
     PWView,
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
-import { HDWalletAccount } from '@perawallet/wallet-core-accounts'
+import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { AccountIcon } from '../AccountIcon'
 type WalletStructureTreeProps = {
     walletLabel: string
-    accounts: HDWalletAccount[]
+    accounts: WalletAccount[]
     onScanAddresses: () => void
 }
 
