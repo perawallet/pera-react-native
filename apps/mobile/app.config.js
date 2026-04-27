@@ -84,6 +84,7 @@ module.exports = {
       NSBluetoothPeripheralUsageDescription: '$(PRODUCT_NAME) will use Bluetooth to communicate with Ledger X.',
       NSFaceIDUsageDescription: '$(PRODUCT_NAME) uses Face ID to secure access to your wallet.',
       NSPhotoLibraryAddUsageDescription: '$(PRODUCT_NAME) will save QR codes to your photo library.',
+      NSPhotoLibraryUsageDescription: '$(PRODUCT_NAME) needs access to your photo library so you can pick a contact photo.',
       NSLocationWhenInUseUsageDescription: '$(PRODUCT_NAME) needs access to your location for Bluetooth communication with Ledger devices.',
       LSApplicationQueriesSchemes: ['itms-apps'],
       UIRequiredDeviceCapabilities: ['arm64'],
@@ -235,6 +236,14 @@ module.exports = {
       {
         cameraPermissionText: 'Pera needs access to your camera to scan QR codes.',
         enableCodeScanner: true,
+      },
+    ],
+    // Image picker for contact photos
+    [
+      'expo-image-picker',
+      {
+        photosPermission: 'Pera needs access to your photo library so you can pick a contact photo.',
+        cameraPermission: 'Pera needs access to your camera.',
       },
     ],
     // Note: The following packages are autolinked and don't require config plugins:

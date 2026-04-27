@@ -10,20 +10,17 @@
  limitations under the License
  */
 
-import type { BaseStoreState, Nullable } from '@perawallet/wallet-core-shared'
+/**
+ * Thrown by `saveContact` when a contact with the same address already
+ * exists (and is not the contact being updated). UI layers catch this and
+ * surface it as a form-level error.
+ */
+export class DuplicateAddressError extends Error {
+    readonly address: string
 
-export type Contact = {
-    id?: string
-    name: string
-    address: string
-    image?: string
-    nfd?: string
-}
-
-export type ContactsState = BaseStoreState & {
-    contacts: Contact[]
-    selectedContact: Nullable<Contact>
-    setSelectedContact: (contact: Nullable<Contact>) => void
-    saveContact: (contact: Contact) => boolean
-    deleteContact: (contact: Contact) => boolean
+    constructor(address: string) {
+        super(`A contact with address ${address} already exists`)
+        this.name = 'DuplicateAddressError'
+        this.address = address
+    }
 }

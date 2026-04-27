@@ -31,6 +31,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { useGlobalSearch } from '@perawallet/wallet-core-search'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
+import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { useModalState, ModalState } from '@hooks/useModalState'
 import { useToast } from '@hooks/useToast'
 import { useState } from 'react'
@@ -130,6 +131,7 @@ export const useAccountAssetList = ({
     const { data: assetPrices } = useAssetPricesQuery(assetIDs)
     const { optOut, isLoading: isOptingOut } = useAssetOptOutMutation()
     const { showToast } = useToast()
+    const { getMessage } = useAlgodErrorMessage()
     const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
 
     const { sortedBalances, assetSortMode } = useSortedAssetBalances(
@@ -206,7 +208,7 @@ export const useAccountAssetList = ({
         } catch (err) {
             showToast({
                 title: t('asset_opt_out.error'),
-                body: err instanceof Error ? err.message : '',
+                body: getMessage(err).body,
                 type: 'error',
             })
         } finally {
@@ -221,6 +223,7 @@ export const useAccountAssetList = ({
         optOutConfirmationState,
         showToast,
         t,
+        getMessage,
     ])
 
     const handleCloseOptOut = useCallback(() => {
