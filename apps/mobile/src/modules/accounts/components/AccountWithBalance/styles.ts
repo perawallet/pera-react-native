@@ -25,7 +25,7 @@ export const useStyles = makeStyles((theme, { isHighlighted }: StyleProps) => {
             gap: theme.spacing.sm,
             width: '100%',
             backgroundColor: theme.colors.layerGrayLightest,
-            borderWidth: 1,
+            borderWidth: theme.borders.sm,
             borderColor: isHighlighted
                 ? theme.colors.buttonSquareIcon
                 : theme.colors.layerGray,

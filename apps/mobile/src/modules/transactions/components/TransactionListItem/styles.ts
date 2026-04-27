@@ -43,7 +43,7 @@ export const useStyles = makeStyles(theme => ({
     },
     subtitle: {
         color: theme.colors.textGray,
-        marginTop: 2,
+        marginTop: theme.spacing.xxs,
     },
     amount: {
         color: theme.colors.textMain,

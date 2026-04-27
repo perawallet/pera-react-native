@@ -45,7 +45,7 @@ export const useStyles = makeStyles(theme => ({
         textAlign: 'right',
     },
     divider: {
-        height: 1,
+        height: theme.borders.sm,
         backgroundColor: theme.colors.layerGrayLighter,
     },
     disclaimer: {

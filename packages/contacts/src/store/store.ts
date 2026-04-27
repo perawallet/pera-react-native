@@ -13,6 +13,7 @@
 import { create, type StoreApi, type UseBoundStore } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { Contact, ContactsState } from '../models'
+import { DuplicateAddressError } from '../errors'
 import {
     generateOrderedUniqueId,
     registerStore,
@@ -36,28 +37,38 @@ export const useContactsStore: UseBoundStore<
             ...initialState,
             setSelectedContact: (contact: Nullable<Contact>) =>
                 set({ selectedContact: contact }),
-            setContacts: (contacts: Contact[]) => set({ contacts }),
             saveContact: (contact: Contact) => {
-                const existing = get().contacts ?? []
                 const newContact = {
                     ...contact,
                     id: contact.id ?? generateOrderedUniqueId(),
                 }
-                if (!existing.find(r => r.id === newContact.id)) {
-                    set({ contacts: [...existing, newContact] })
-                    return true
+                const existing = get().contacts ?? []
+                const duplicate = existing.find(
+                    c =>
+                        c.address === newContact.address &&
+                        c.id !== newContact.id,
+                )
+                if (duplicate) {
+                    throw new DuplicateAddressError(newContact.address)
                 }
-                return false
+                const existingIndex = existing.findIndex(
+                    c => c.id === newContact.id,
+                )
+                if (existingIndex >= 0) {
+                    const updated = [...existing]
+                    updated[existingIndex] = newContact
+                    set({ contacts: updated })
+                } else {
+                    set({ contacts: [...existing, newContact] })
+                }
+                return true
             },
             deleteContact: (contact: Contact) => {
                 const existing = get().contacts ?? []
                 const remaining = existing.filter(r => r.id !== contact.id)
-
-                if (remaining.length != existing.length) {
-                    set({ contacts: remaining })
-                }
-
-                return remaining.length != existing.length
+                if (remaining.length === existing.length) return false
+                set({ contacts: remaining })
+                return true
             },
             resetState: () => set(initialState),
         }),

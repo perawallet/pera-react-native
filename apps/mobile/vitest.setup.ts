@@ -971,18 +971,21 @@ vi.mock('react-native', () => {
                     )
                 },
             ),
-        TextInput: vi.fn().mockImplementation(({ testID, ...props }) =>
-            require('react').createElement(
-                'input',
-                {
-                    ...props,
-                    ...(testID
-                        ? { 'data-testid': testID, testid: testID }
-                        : {}),
-                },
-                props.children,
+        TextInput: vi
+            .fn()
+            .mockImplementation(({ testID, onChangeText, ...props }) =>
+                require('react').createElement(
+                    'input',
+                    {
+                        ...props,
+                        onChange: (e: any) => onChangeText?.(e.target.value),
+                        ...(testID
+                            ? { 'data-testid': testID, testid: testID }
+                            : {}),
+                    },
+                    props.children,
+                ),
             ),
-        ),
 
         Modal: vi.fn().mockImplementation((args: any) => {
             const {
@@ -1046,6 +1049,7 @@ vi.mock('react-native', () => {
         },
         Linking: {
             openURL: vi.fn(),
+            openSettings: vi.fn(),
             canOpenURL: vi.fn(),
             getInitialURL: vi.fn(),
             addEventListener: vi.fn(),
@@ -2166,6 +2170,17 @@ vi.mock('@perawallet/wallet-core-currencies', () => ({
 }))
 
 // Mock @perawallet/wallet-core-blockchain
+class MockAlgodError extends Error {
+    constructor(
+        public readonly code: string,
+        public readonly params: Record<string, unknown> = {},
+        public readonly originalError?: Error,
+    ) {
+        super(`[algod:${code}] ${originalError?.message ?? code}`)
+        this.name = 'AlgodError'
+    }
+}
+
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     MIN_TXN_FEE: 1_000n,
     useAlgorandClient: vi.fn(),
@@ -2188,6 +2203,27 @@ vi.mock('@perawallet/wallet-core-blockchain', () => ({
                 resetState: vi.fn(),
             })),
         },
+    ),
+    // Error-translation exports. Tests that need the real parser should use
+    // `vi.importActual` in their own file (see useAlgodErrorMessage.test.ts).
+    AlgodError: MockAlgodError,
+    AlgodErrorCode: {
+        OVERSPEND: 'overspend',
+        BELOW_MIN_BALANCE: 'below_min_balance',
+        MISSING_OPT_IN: 'missing_opt_in',
+        DUPLICATE_TXN: 'duplicate_txn',
+        EXPIRED_TXN: 'expired_txn',
+        LOGIC_ERROR: 'logic_error',
+        NETWORK_UNAVAILABLE: 'network_unavailable',
+        UNKNOWN_NODE_ERROR: 'unknown_node_error',
+    },
+    toAlgodError: vi.fn(
+        (err: unknown) =>
+            new MockAlgodError(
+                'unknown_node_error',
+                { raw: err instanceof Error ? err.message : String(err) },
+                err instanceof Error ? err : undefined,
+            ),
     ),
 }))
 
