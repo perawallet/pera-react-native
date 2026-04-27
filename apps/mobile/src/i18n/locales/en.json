@@ -1348,6 +1348,15 @@
             "transfer": "Asset Transfer of {{asset}} to",
             "clawback": "Asset Clawback of {{asset}} from",
             "app_id": "Application ID: {{id}}"
+        },
+        "filter": {
+            "title": "Filter",
+            "all_time": "All Time",
+            "today": "Today",
+            "yesterday": "Yesterday",
+            "last_week": "Last Week",
+            "last_month": "Last Month",
+            "custom_range": "Custom Range"
         }
     },
     "tabbar": {

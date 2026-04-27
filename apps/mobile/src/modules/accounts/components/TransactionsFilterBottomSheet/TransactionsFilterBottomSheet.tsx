@@ -145,7 +145,7 @@ export const TransactionsFilterBottomSheet = ({
                     variant='h4'
                     style={styles.title}
                 >
-                    Filter
+                    {t('transactions.filter.title')}
                 </PWText>
                 <View style={styles.headerSpacer} />
             </View>
@@ -154,32 +154,32 @@ export const TransactionsFilterBottomSheet = ({
                 {
                     id: TransactionFilter.AllTime,
                     icon: 'text-document' as const,
-                    title: 'All Time',
+                    title: t('transactions.filter.all_time'),
                 },
                 {
                     id: TransactionFilter.Today,
                     icon: 'text-document' as const,
-                    title: 'Today',
+                    title: t('transactions.filter.today'),
                 },
                 {
                     id: TransactionFilter.Yesterday,
                     icon: 'text-document' as const,
-                    title: 'Yesterday',
+                    title: t('transactions.filter.yesterday'),
                 },
                 {
                     id: TransactionFilter.LastWeek,
                     icon: 'text-document' as const,
-                    title: 'Last Week',
+                    title: t('transactions.filter.last_week'),
                 },
                 {
                     id: TransactionFilter.LastMonth,
                     icon: 'text-document' as const,
-                    title: 'Last Month',
+                    title: t('transactions.filter.last_month'),
                 },
                 {
                     id: TransactionFilter.CustomRange,
                     icon: 'sliders' as const,
-                    title: 'Custom Range',
+                    title: t('transactions.filter.custom_range'),
                 },
             ].map(item => {
                 const isSelected = activeFilter === item.id
@@ -246,14 +246,14 @@ export const TransactionsFilterBottomSheet = ({
                     variant='h4'
                     style={styles.title}
                 >
-                    Custom Range
+                    {t('transactions.filter.custom_range')}
                 </PWText>
                 <TouchableOpacity onPress={handleApplyCustomRange}>
                     <PWText
                         variant='h4'
                         style={styles.doneButton}
                     >
-                        Done
+                        {t('common.done')}
                     </PWText>
                 </TouchableOpacity>
             </View>
@@ -272,7 +272,7 @@ export const TransactionsFilterBottomSheet = ({
                             variant='body'
                             style={styles.dateLabel}
                         >
-                            From
+                            {t('transactions.common.from')}
                         </PWText>
                         <PWText
                             variant='h4'
@@ -292,7 +292,7 @@ export const TransactionsFilterBottomSheet = ({
                             variant='body'
                             style={styles.dateLabel}
                         >
-                            To
+                            {t('transactions.common.to')}
                         </PWText>
                         <PWText
                             variant='h4'
