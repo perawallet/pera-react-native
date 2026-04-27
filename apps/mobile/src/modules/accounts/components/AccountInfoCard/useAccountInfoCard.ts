@@ -109,7 +109,7 @@ export const useAccountInfoCard = ({
                 g => g.deviceId === account.hardwareDetails.deviceId,
             ) ?? null
         )
-    }, [isLedger, ledgerDeviceGroups, account])
+    }, [isLedger, ledgerDeviceGroups, account.hardwareDetails?.deviceId])
 
     const structureLabel = useMemo(() => {
         if (isHDWallet) {
@@ -121,7 +121,7 @@ export const useAccountInfoCard = ({
             return account.hardwareDetails.deviceName
         }
         return ''
-    }, [isHDWallet, isLedger, account, hdWalletGroupIndex, t])
+    }, [isHDWallet, isLedger, account.hardwareDetails?.deviceName, hdWalletGroupIndex, t])
 
     const structureIcon: IconName = isLedger ? 'ledger' : 'wallet'
 
