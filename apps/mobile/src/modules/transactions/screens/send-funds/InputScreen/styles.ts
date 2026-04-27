@@ -11,9 +11,22 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getFontFamily } from '@theme/typography'
+
+const AMOUNT_LINE_HEIGHT = 40
 
 export const useStyles = makeStyles(theme => {
+    const h1 = {
+        fontSize: theme.spacing.xxl,
+        lineHeight: AMOUNT_LINE_HEIGHT,
+    }
+    const amount = {
+        color: theme.colors.textMain,
+        alignSelf: 'center' as const,
+    }
+    const amountPlaceholder = {
+        color: theme.colors.textGrayLighter,
+        alignSelf: 'center' as const,
+    }
     return {
         container: {
             flex: 1,
@@ -22,27 +35,16 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.lg,
             paddingBottom: theme.spacing.lg,
         },
-        h1: {
-            fontSize: theme.spacing.xxl,
-            lineHeight: 40,
-        },
+        h1,
         mainContentContainer: {
             flexGrow: 1,
             justifyContent: 'center',
             alignItems: 'center',
             gap: theme.spacing.lg,
-            width: '100%',
+            width: '100%' as const,
         },
-        amount: {
-            color: theme.colors.textMain,
-            fontFamily: getFontFamily(400),
-            alignSelf: 'center',
-        },
-        amountPlaceholder: {
-            color: theme.colors.textGrayLighter,
-            fontFamily: getFontFamily(400),
-            alignSelf: 'center',
-        },
+        amount,
+        amountPlaceholder,
         buttonContainer: {
             flexDirection: 'row',
             justifyContent: 'flex-start',

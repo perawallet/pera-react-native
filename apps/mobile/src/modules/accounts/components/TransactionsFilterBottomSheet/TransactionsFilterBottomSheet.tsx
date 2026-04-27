@@ -141,7 +141,12 @@ export const TransactionsFilterBottomSheet = ({
         <>
             <View style={styles.header}>
                 <View style={styles.headerSpacer} />
-                <PWText style={styles.title}>Filter</PWText>
+                <PWText
+                    variant='h4'
+                    style={styles.title}
+                >
+                    {t('transactions.filter.title')}
+                </PWText>
                 <View style={styles.headerSpacer} />
             </View>
 
@@ -149,32 +154,32 @@ export const TransactionsFilterBottomSheet = ({
                 {
                     id: TransactionFilter.AllTime,
                     icon: 'text-document' as const,
-                    title: 'All Time',
+                    title: t('transactions.filter.all_time'),
                 },
                 {
                     id: TransactionFilter.Today,
                     icon: 'text-document' as const,
-                    title: 'Today',
+                    title: t('transactions.filter.today'),
                 },
                 {
                     id: TransactionFilter.Yesterday,
                     icon: 'text-document' as const,
-                    title: 'Yesterday',
+                    title: t('transactions.filter.yesterday'),
                 },
                 {
                     id: TransactionFilter.LastWeek,
                     icon: 'text-document' as const,
-                    title: 'Last Week',
+                    title: t('transactions.filter.last_week'),
                 },
                 {
                     id: TransactionFilter.LastMonth,
                     icon: 'text-document' as const,
-                    title: 'Last Month',
+                    title: t('transactions.filter.last_month'),
                 },
                 {
                     id: TransactionFilter.CustomRange,
                     icon: 'sliders' as const,
-                    title: 'Custom Range',
+                    title: t('transactions.filter.custom_range'),
                 },
             ].map(item => {
                 const isSelected = activeFilter === item.id
@@ -192,11 +197,17 @@ export const TransactionsFilterBottomSheet = ({
                             style={styles.listIcon}
                         />
                         <View style={styles.listContent}>
-                            <PWText style={styles.listTitle}>
+                            <PWText
+                                variant='h4'
+                                style={styles.listTitle}
+                            >
                                 {item.title}
                             </PWText>
                             {subtitle ? (
-                                <PWText style={styles.listSubtitle}>
+                                <PWText
+                                    variant='body'
+                                    style={styles.listSubtitle}
+                                >
                                     {subtitle}
                                 </PWText>
                             ) : null}
@@ -231,9 +242,19 @@ export const TransactionsFilterBottomSheet = ({
                         size='xl'
                     />
                 </PWTouchableOpacity>
-                <PWText style={styles.title}>Custom Range</PWText>
+                <PWText
+                    variant='h4'
+                    style={styles.title}
+                >
+                    {t('transactions.filter.custom_range')}
+                </PWText>
                 <TouchableOpacity onPress={handleApplyCustomRange}>
-                    <PWText style={styles.doneButton}>Done</PWText>
+                    <PWText
+                        variant='h4'
+                        style={styles.doneButton}
+                    >
+                        {t('common.done')}
+                    </PWText>
                 </TouchableOpacity>
             </View>
 
@@ -247,8 +268,16 @@ export const TransactionsFilterBottomSheet = ({
                         ]}
                         onPress={() => setActiveDateInput('from')}
                     >
-                        <PWText style={styles.dateLabel}>From</PWText>
-                        <PWText style={styles.dateValue}>
+                        <PWText
+                            variant='body'
+                            style={styles.dateLabel}
+                        >
+                            {t('transactions.common.from')}
+                        </PWText>
+                        <PWText
+                            variant='h4'
+                            style={styles.dateValue}
+                        >
                             {formatDate(customRange.from)}
                         </PWText>
                     </TouchableOpacity>
@@ -259,8 +288,16 @@ export const TransactionsFilterBottomSheet = ({
                         ]}
                         onPress={() => setActiveDateInput('to')}
                     >
-                        <PWText style={styles.dateLabel}>To</PWText>
-                        <PWText style={styles.dateValue}>
+                        <PWText
+                            variant='body'
+                            style={styles.dateLabel}
+                        >
+                            {t('transactions.common.to')}
+                        </PWText>
+                        <PWText
+                            variant='h4'
+                            style={styles.dateValue}
+                        >
                             {formatDate(customRange.to)}
                         </PWText>
                     </TouchableOpacity>

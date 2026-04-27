@@ -104,7 +104,7 @@ export const ImportSelectAddressesScreen = () => {
 
                 <PWView style={styles.headerRow}>
                     <PWText
-                        variant='body'
+                        variant='bodySemibold'
                         style={styles.headerCount}
                     >
                         {t(

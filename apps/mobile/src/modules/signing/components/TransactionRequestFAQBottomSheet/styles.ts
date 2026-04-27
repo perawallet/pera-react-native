@@ -12,23 +12,26 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        padding: theme.spacing.xl,
-        gap: theme.spacing.xl,
-        alignItems: 'center',
-    },
-    icon: {
-        marginVertical: theme.spacing.md,
-    },
-    message: {
-        textAlign: 'center',
-    },
-    warning: {
-        textAlign: 'center',
-        fontWeight: 'bold',
-    },
-    button: {
-        marginVertical: theme.spacing.md,
-    },
-}))
+export const useStyles = makeStyles(theme => {
+    const warning = {
+        textAlign: 'center' as const,
+        fontWeight: 'bold' as const,
+    }
+    return {
+        container: {
+            padding: theme.spacing.xl,
+            gap: theme.spacing.xl,
+            alignItems: 'center',
+        },
+        icon: {
+            marginVertical: theme.spacing.md,
+        },
+        message: {
+            textAlign: 'center',
+        },
+        warning,
+        button: {
+            marginVertical: theme.spacing.md,
+        },
+    }
+})

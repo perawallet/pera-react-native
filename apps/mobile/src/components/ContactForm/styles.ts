@@ -25,7 +25,6 @@ export const useStyles = makeStyles(theme => {
             gap: theme.spacing.md,
         },
         label: {
-            fontSize: 13,
             color:
                 theme.mode === 'dark'
                     ? theme.colors.textGrayLighter

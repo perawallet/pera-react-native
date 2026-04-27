@@ -12,34 +12,29 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => {
-    return {
-        bulletList: {
-            gap: theme.spacing.sm,
-            paddingHorizontal: theme.spacing.md,
-        },
-        bulletText: {
-            color: theme.colors.textGray,
-            lineHeight: theme.spacing.lg,
-        },
-        container: {
-            gap: theme.spacing.md,
-            paddingHorizontal: theme.spacing.lg,
-        },
-        emphasizedText: {
-            color: theme.colors.textMain,
-            lineHeight: theme.spacing.lg,
-        },
-        paragraph: {
-            color: theme.colors.textGray,
-            lineHeight: theme.spacing.lg,
-        },
-        scrollViewContent: {
-            gap: theme.spacing.md,
-            paddingBottom: theme.spacing.lg,
-        },
-        acceptButton: {
-            marginVertical: theme.spacing.xl,
-        },
-    }
-})
+export const useStyles = makeStyles(theme => ({
+    bulletList: {
+        gap: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.md,
+    },
+    bulletText: {
+        color: theme.colors.textGray,
+    },
+    container: {
+        gap: theme.spacing.md,
+        paddingHorizontal: theme.spacing.lg,
+    },
+    emphasizedText: {
+        color: theme.colors.textMain,
+    },
+    paragraph: {
+        color: theme.colors.textGray,
+    },
+    scrollViewContent: {
+        gap: theme.spacing.md,
+        paddingBottom: theme.spacing.lg,
+    },
+    acceptButton: {
+        marginVertical: theme.spacing.xl,
+    },
+}))

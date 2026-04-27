@@ -12,37 +12,40 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        gap: theme.spacing.sm,
-    },
-    label: {
-        color: theme.colors.textGray,
-        textAlign: 'center',
-    },
-    optionGroup: {
-        padding: theme.spacing.sm,
-        borderRadius: theme.borderRadius.xs,
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        gap: theme.spacing.sm,
-    },
-    option: {
-        height: theme.spacing['3xl'],
-        justifyContent: 'center',
-        alignItems: 'center',
-        paddingHorizontal: theme.spacing.md,
-        borderRadius: theme.borderRadius.xs,
-        backgroundColor: theme.colors.layerGrayLightest,
-    },
-    optionSelected: {
-        backgroundColor: theme.colors.buttonPrimaryBg,
-    },
-    optionText: {
+export const useStyles = makeStyles(theme => {
+    const optionText = {
         color: theme.colors.textMain,
-        fontWeight: '500',
-    },
-    optionTextSelected: {
-        color: theme.colors.buttonPrimaryText,
-    },
-}))
+        fontWeight: '500' as const,
+    }
+    return {
+        container: {
+            gap: theme.spacing.sm,
+        },
+        label: {
+            color: theme.colors.textGray,
+            textAlign: 'center',
+        },
+        optionGroup: {
+            padding: theme.spacing.sm,
+            borderRadius: theme.borderRadius.xs,
+            borderWidth: theme.borders.sm,
+            borderColor: theme.colors.layerGray,
+            gap: theme.spacing.sm,
+        },
+        option: {
+            height: theme.spacing['3xl'],
+            justifyContent: 'center',
+            alignItems: 'center',
+            paddingHorizontal: theme.spacing.md,
+            borderRadius: theme.borderRadius.xs,
+            backgroundColor: theme.colors.layerGrayLightest,
+        },
+        optionSelected: {
+            backgroundColor: theme.colors.buttonPrimaryBg,
+        },
+        optionText,
+        optionTextSelected: {
+            color: theme.colors.buttonPrimaryText,
+        },
+    }
+})

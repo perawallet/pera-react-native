@@ -53,7 +53,10 @@ export const AppCallDetailsPanel = ({
                         <KeyValueRow
                             title={t('transactions.app_call.args_count')}
                         >
-                            <PWText style={styles.detailText}>
+                            <PWText
+                                variant='bodyCompact'
+                                style={styles.detailText}
+                            >
                                 {appCall.applicationArgs.length}
                             </PWText>
                         </KeyValueRow>
@@ -84,7 +87,10 @@ export const AppCallDetailsPanel = ({
                                 key={'foreign-app-' + appId.toString()}
                                 copyValue={appId.toString()}
                             >
-                                <PWText style={styles.detailText}>
+                                <PWText
+                                    variant='bodyCompact'
+                                    style={styles.detailText}
+                                >
                                     {appId.toString()}
                                 </PWText>
                             </CopyableText>
@@ -102,7 +108,10 @@ export const AppCallDetailsPanel = ({
                                 key={'foreign-asset-' + assetId.toString()}
                                 copyValue={assetId.toString()}
                             >
-                                <PWText style={styles.detailText}>
+                                <PWText
+                                    variant='bodyCompact'
+                                    style={styles.detailText}
+                                >
                                     {assetId.toString()}
                                 </PWText>
                             </CopyableText>
@@ -112,7 +121,10 @@ export const AppCallDetailsPanel = ({
 
                 {appCall.boxReferences && appCall.boxReferences.length > 0 && (
                     <KeyValueRow title={t('transactions.app_call.boxes')}>
-                        <PWText style={styles.detailText}>
+                        <PWText
+                            variant='bodyCompact'
+                            style={styles.detailText}
+                        >
                             {appCall.boxReferences.length}
                         </PWText>
                     </KeyValueRow>

@@ -12,73 +12,76 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
-    formContainer: {
-        paddingHorizontal: theme.spacing.sm,
-        paddingVertical: theme.spacing.lg,
-        gap: theme.spacing.md,
-    },
-    controlsRow: {
-        position: 'absolute',
-        top: '50%',
-        left: 0,
-        right: 0,
-        transform: [{ translateY: '-50%' }],
-        zIndex: theme.zIndex.layer1,
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: theme.spacing.lg,
-    },
-    swapDirectionButton: {
-        width: theme.spacing['3xl'],
-        height: theme.spacing.xxl,
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderRadius: theme.spacing.xxl,
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        backgroundColor: theme.colors.background,
-    },
-    swapDirectionIcon: {
-        transform: [{ rotate: '90deg' }],
-    },
-    maxRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        borderRadius: theme.spacing.xxl,
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-        backgroundColor: theme.colors.background,
-    },
-    maxIconContainer: {
-        paddingVertical: theme.spacing.sm,
-        paddingHorizontal: theme.spacing.sm,
-        alignItems: 'center',
-    },
-    maxDivider: {
-        width: theme.borders.sm,
-        alignSelf: 'stretch',
-        backgroundColor: theme.colors.layerGray,
-        marginVertical: theme.spacing.sm,
-    },
-    maxButton: {
-        paddingVertical: theme.spacing.sm,
-        paddingHorizontal: theme.spacing.sm,
-        alignItems: 'center',
-    },
-    maxText: {
+export const useStyles = makeStyles(theme => {
+    const maxText = {
         color: theme.colors.linkPrimary,
         lineHeight: theme.spacing.lg,
-    },
-    swapButton: {
-        marginTop: theme.spacing.sm,
-    },
-    errorContainer: {
-        paddingHorizontal: theme.spacing.lg,
-        paddingTop: theme.spacing.md,
-    },
-    errorText: {
-        color: theme.colors.negative,
-    },
-}))
+    }
+    return {
+        formContainer: {
+            paddingHorizontal: theme.spacing.sm,
+            paddingVertical: theme.spacing.lg,
+            gap: theme.spacing.md,
+        },
+        controlsRow: {
+            position: 'absolute',
+            top: '50%',
+            left: 0,
+            right: 0,
+            transform: [{ translateY: '-50%' }],
+            zIndex: theme.zIndex.layer1,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingHorizontal: theme.spacing.lg,
+        },
+        swapDirectionButton: {
+            width: theme.spacing['3xl'],
+            height: theme.spacing.xxl,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: theme.spacing.xxl,
+            borderWidth: theme.borders.sm,
+            borderColor: theme.colors.layerGray,
+            backgroundColor: theme.colors.background,
+        },
+        swapDirectionIcon: {
+            transform: [{ rotate: '90deg' }],
+        },
+        maxRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            borderRadius: theme.spacing.xxl,
+            borderWidth: theme.borders.sm,
+            borderColor: theme.colors.layerGray,
+            backgroundColor: theme.colors.background,
+        },
+        maxIconContainer: {
+            paddingVertical: theme.spacing.sm,
+            paddingHorizontal: theme.spacing.sm,
+            alignItems: 'center',
+        },
+        maxDivider: {
+            width: theme.borders.sm,
+            alignSelf: 'stretch',
+            backgroundColor: theme.colors.layerGray,
+            marginVertical: theme.spacing.sm,
+        },
+        maxButton: {
+            paddingVertical: theme.spacing.sm,
+            paddingHorizontal: theme.spacing.sm,
+            alignItems: 'center',
+        },
+        maxText,
+        swapButton: {
+            marginTop: theme.spacing.sm,
+        },
+        errorContainer: {
+            paddingHorizontal: theme.spacing.lg,
+            paddingTop: theme.spacing.md,
+        },
+        errorText: {
+            color: theme.colors.negative,
+        },
+    }
+})

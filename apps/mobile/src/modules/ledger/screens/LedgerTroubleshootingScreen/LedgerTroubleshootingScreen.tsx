@@ -51,10 +51,7 @@ export const LedgerTroubleshootingScreen = () => {
                             style={styles.listItem}
                         >
                             <PWView style={styles.stepCircle}>
-                                <PWText
-                                    variant='body'
-                                    style={styles.stepNumber}
-                                >
+                                <PWText variant='bodySemibold'>
                                     {String(index + 1)}
                                 </PWText>
                             </PWView>

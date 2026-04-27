@@ -118,10 +118,7 @@ export const AccountNfts = () => {
                 <>
                     <PWView style={styles.headerContainer}>
                         <PWView style={styles.titleBar}>
-                            <PWText
-                                variant='body'
-                                style={styles.countText}
-                            >
+                            <PWText variant='body'>
                                 {t('account_details.nfts.count', {
                                     count: collectibleCount,
                                 })}

@@ -55,10 +55,6 @@ export const useStyles = makeStyles(theme => ({
         justifyContent: 'center',
         marginRight: theme.spacing.md,
     },
-    stepNumber: {
-        color: theme.colors.textMain,
-        fontWeight: '600',
-    },
     bullet: {
         width: BULLET_SIZE,
         height: BULLET_SIZE,

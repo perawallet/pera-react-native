@@ -15,98 +15,91 @@ import { makeStyles } from '@rneui/themed'
 const CHECK_ICON_RADIUS = 20
 const DATE_PICKER_HEIGHT = 200
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        backgroundColor: theme.colors.background,
-        paddingBottom: theme.spacing.xl,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: theme.spacing.lg,
-        paddingVertical: theme.spacing.md,
-    },
-    headerSpacer: {
-        width: theme.spacing.xl,
-    },
-    title: {
-        fontSize: 17,
-        fontWeight: '600',
-        color: theme.colors.textMain,
-    },
-    listItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: theme.spacing.lg,
-        paddingHorizontal: theme.spacing.lg,
-    },
-    listIcon: {
-        marginRight: theme.spacing.md,
-    },
-    listContent: {
-        flex: 1,
-    },
-    listTitle: {
-        fontSize: 16,
-        fontWeight: '500',
-        color: theme.colors.textMain,
-        marginBottom: theme.spacing.xxs,
-    },
-    listSubtitle: {
-        fontSize: 13,
-        color: theme.colors.textGray,
-    },
-    checkIcon: {
-        backgroundColor: theme.colors.positive + '1A', // 10% opacity roughly
-        borderRadius: CHECK_ICON_RADIUS,
-        padding: theme.spacing.xs,
-    },
-    customRangeContainer: {
-        paddingHorizontal: theme.spacing.lg,
-    },
-    dateInputsContainer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        marginTop: theme.spacing.md,
-        marginBottom: theme.spacing.xl,
-    },
-    dateInputWrapper: {
-        flex: 1,
-        borderBottomWidth: theme.borders.sm,
-        borderBottomColor: theme.colors.layerGray,
-        paddingBottom: theme.spacing.xs,
-        marginHorizontal: theme.spacing.xs,
-    },
-    activeDateInput: {
-        borderBottomColor: theme.colors.textMain,
-        borderBottomWidth: theme.borders.md,
-    },
-    dateLabel: {
-        fontSize: 13,
-        color: theme.colors.textGray,
-        marginBottom: theme.spacing.xs,
-    },
-    dateValue: {
-        fontSize: 16,
-        color: theme.colors.textMain,
-    },
-    datePickerContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: DATE_PICKER_HEIGHT,
-    },
-    datePicker: {
-        height: DATE_PICKER_HEIGHT,
-        width: '100%',
-    },
-    doneButton: {
-        color: theme.colors.linkPrimary,
-        fontSize: 17,
-        fontWeight: '600',
-    },
-    closeButton: {
-        marginTop: theme.spacing.lg,
-        marginHorizontal: theme.spacing.lg,
-    },
-}))
+export const useStyles = makeStyles(theme => {
+    return {
+        container: {
+            backgroundColor: theme.colors.background,
+            paddingBottom: theme.spacing.xl,
+        },
+        header: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: theme.spacing.lg,
+            paddingVertical: theme.spacing.md,
+        },
+        headerSpacer: {
+            width: theme.spacing.xl,
+        },
+        title: {
+            color: theme.colors.textMain,
+        },
+        listItem: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            paddingVertical: theme.spacing.lg,
+            paddingHorizontal: theme.spacing.lg,
+        },
+        listIcon: {
+            marginRight: theme.spacing.md,
+        },
+        listContent: {
+            flex: 1,
+        },
+        listTitle: {
+            color: theme.colors.textMain,
+            marginBottom: theme.spacing.xxs,
+        },
+        listSubtitle: {
+            color: theme.colors.textGray,
+        },
+        checkIcon: {
+            backgroundColor: theme.colors.positive + '1A', // 10% opacity roughly
+            borderRadius: CHECK_ICON_RADIUS,
+            padding: theme.spacing.xs,
+        },
+        customRangeContainer: {
+            paddingHorizontal: theme.spacing.lg,
+        },
+        dateInputsContainer: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            marginTop: theme.spacing.md,
+            marginBottom: theme.spacing.xl,
+        },
+        dateInputWrapper: {
+            flex: 1,
+            borderBottomWidth: theme.borders.sm,
+            borderBottomColor: theme.colors.layerGray,
+            paddingBottom: theme.spacing.xs,
+            marginHorizontal: theme.spacing.xs,
+        },
+        activeDateInput: {
+            borderBottomColor: theme.colors.textMain,
+            borderBottomWidth: theme.borders.md,
+        },
+        dateLabel: {
+            color: theme.colors.textGray,
+            marginBottom: theme.spacing.xs,
+        },
+        dateValue: {
+            color: theme.colors.textMain,
+        },
+        datePickerContainer: {
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: DATE_PICKER_HEIGHT,
+        },
+        datePicker: {
+            height: DATE_PICKER_HEIGHT,
+            width: '100%' as const,
+        },
+        doneButton: {
+            color: theme.colors.linkPrimary,
+        },
+        closeButton: {
+            marginTop: theme.spacing.lg,
+            marginHorizontal: theme.spacing.lg,
+        },
+    }
+})

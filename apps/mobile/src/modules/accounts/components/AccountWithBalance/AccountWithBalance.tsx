@@ -50,7 +50,7 @@ export const AccountWithBalance = ({
                     value={accountBalances.get(account.address)?.algoValue}
                     precision={ALGO_ASSET.decimals}
                     minPrecision={2}
-                    style={styles.algoBalance}
+                    variant='bodyCompact'
                 />
 
                 <PreferredCurrencyDisplay
@@ -60,6 +60,7 @@ export const AccountWithBalance = ({
                     }
                     precision={2}
                     minPrecision={2}
+                    variant='bodyCompact'
                     style={styles.fiatBalance}
                 />
             </PWView>

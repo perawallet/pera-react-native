@@ -43,7 +43,6 @@ export const useStyles = makeStyles((theme, props: PanelButtonProps) => {
         descriptionStyle: {
             flexShrink: 1,
             backgroundColor: 'transparent',
-            lineHeight: theme.spacing.xl,
             color: theme.colors.textGray,
         },
         textContainerStyle: {

@@ -100,15 +100,24 @@ export const StakingDisclaimerSheet = ({
                 contentContainerStyle={styles.scrollViewContent}
                 testID='staking-disclaimer-content'
             >
-                <PWText style={styles.emphasizedText}>
+                <PWText
+                    variant='bodyCompact'
+                    style={styles.emphasizedText}
+                >
                     {t('staking.disclaimer.intro')}
                 </PWText>
 
-                <PWText style={styles.paragraph}>
+                <PWText
+                    variant='bodyCompact'
+                    style={styles.paragraph}
+                >
                     {t('staking.disclaimer.research_warning')}
                 </PWText>
 
-                <PWText style={styles.paragraph}>
+                <PWText
+                    variant='bodyCompact'
+                    style={styles.paragraph}
+                >
                     {t('staking.disclaimer.acknowledgment_prompt')}
                 </PWText>
 
@@ -116,6 +125,7 @@ export const StakingDisclaimerSheet = ({
                     {DISCLAIMER_BULLET_KEYS.map(key => (
                         <PWText
                             key={key}
+                            variant='bodyCompact'
                             style={styles.bulletText}
                         >
                             {`- ${t(key)}`}
@@ -123,11 +133,17 @@ export const StakingDisclaimerSheet = ({
                     ))}
                 </PWView>
 
-                <PWText style={styles.paragraph}>
+                <PWText
+                    variant='bodyCompact'
+                    style={styles.paragraph}
+                >
                     {t('staking.disclaimer.closing')}
                 </PWText>
 
-                <PWText style={styles.paragraph}>
+                <PWText
+                    variant='bodyCompact'
+                    style={styles.paragraph}
+                >
                     <Trans
                         i18nKey='staking.disclaimer.terms_agreement'
                         components={[

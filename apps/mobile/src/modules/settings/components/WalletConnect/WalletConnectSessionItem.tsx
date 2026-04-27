@@ -68,7 +68,10 @@ export const WalletConnectSessionItem = ({
                         value={`WCV${session?.version}`}
                     />
                 </PWView>
-                <PWText style={styles.sessionDate}>
+                <PWText
+                    variant='caption'
+                    style={styles.sessionDate}
+                >
                     {session.lastActiveAt
                         ? t('walletconnect.settings.last_active', {
                               date: formatDatetime(

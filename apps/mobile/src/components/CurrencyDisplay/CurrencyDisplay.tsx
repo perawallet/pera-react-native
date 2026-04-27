@@ -25,6 +25,7 @@ import AlgoIcon from '@assets/icons/algo.svg'
 import { useSettings } from '@perawallet/wallet-core-settings'
 import { StyleProp, TextStyle } from 'react-native'
 import { usePeraProvider } from '@perawallet/wallet-extension-provider'
+import { TypographyVariant } from '@theme/typography'
 
 export type CurrencyDisplayProps = {
     currency: string
@@ -39,7 +40,7 @@ export type CurrencyDisplayProps = {
     truncateToUnits?: boolean
     rawValue?: Nullable<string>
     ignorePrivacyMode?: boolean
-    variant?: 'body' | 'h1' | 'h2' | 'h3' | 'h4' | 'caption'
+    variant?: TypographyVariant
     style?: StyleProp<TextStyle>
 } & Omit<PWTextProps, 'children' | 'variant'>
 

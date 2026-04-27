@@ -26,6 +26,8 @@ describe('typography', () => {
             'h3',
             'h4',
             'body',
+            'bodyCompact',
+            'bodySemibold',
             'caption',
             'link',
         ]
@@ -78,6 +80,8 @@ describe('typography', () => {
                 'h3',
                 'h4',
                 'body',
+                'bodyCompact',
+                'bodySemibold',
                 'caption',
                 'link',
             ]

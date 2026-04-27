@@ -12,15 +12,18 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
-    container: {},
-    row: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-    caption: {
+export const useStyles = makeStyles(theme => {
+    const caption = {
         color: theme.colors.textGray,
         lineHeight: theme.spacing.md,
-    },
-}))
+    }
+    return {
+        container: {},
+        row: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.sm,
+        },
+        caption,
+    }
+})

@@ -39,7 +39,6 @@ export const useStyles = makeStyles(theme => ({
     },
     headerCount: {
         color: theme.colors.textGray,
-        fontWeight: '600',
     },
     selectAllContainer: {
         flexDirection: 'row',
@@ -74,10 +73,6 @@ export const useStyles = makeStyles(theme => ({
     itemTitle: {
         color: theme.colors.textMain,
         marginBottom: theme.spacing.xxs,
-    },
-    itemSubtitle: {
-        color: theme.colors.textGray,
-        fontSize: 12,
     },
     footer: {
         padding: theme.spacing.xl,

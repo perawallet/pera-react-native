@@ -35,10 +35,6 @@ export const useStyles = makeStyles(theme => ({
     itemDescription: {
         color: theme.colors.textMain,
     },
-    itemDescriptionStrong: {
-        color: theme.colors.textMain,
-        fontWeight: '600',
-    },
     itemDate: {
         color: theme.colors.textGray,
     },

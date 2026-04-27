@@ -53,6 +53,7 @@ export const WebViewTitleBar = ({
                     {title}
                 </PWText>
                 <PWText
+                    variant='caption'
                     numberOfLines={1}
                     style={styles.url}
                 >
