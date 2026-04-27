@@ -14,39 +14,8 @@ import { makeStyles } from '@rneui/themed'
 
 const CHECK_ICON_RADIUS = 20
 const DATE_PICKER_HEIGHT = 200
-const TITLE_FONT_SIZE = 17
-const LIST_TITLE_FONT_SIZE = 16
-const DATE_VALUE_FONT_SIZE = 16
-const DONE_BUTTON_FONT_SIZE = 17
 
 export const useStyles = makeStyles(theme => {
-    const title = {
-        fontSize: TITLE_FONT_SIZE,
-        fontWeight: '600' as const,
-        color: theme.colors.textMain,
-    }
-    const listTitle = {
-        fontSize: LIST_TITLE_FONT_SIZE,
-        fontWeight: '500' as const,
-        color: theme.colors.textMain,
-        marginBottom: theme.spacing.xxs,
-    }
-    const listSubtitle = {
-        color: theme.colors.textGray,
-    }
-    const dateLabel = {
-        color: theme.colors.textGray,
-        marginBottom: theme.spacing.xs,
-    }
-    const dateValue = {
-        fontSize: DATE_VALUE_FONT_SIZE,
-        color: theme.colors.textMain,
-    }
-    const doneButton = {
-        color: theme.colors.linkPrimary,
-        fontSize: DONE_BUTTON_FONT_SIZE,
-        fontWeight: '600' as const,
-    }
     return {
         container: {
             backgroundColor: theme.colors.background,
@@ -62,7 +31,9 @@ export const useStyles = makeStyles(theme => {
         headerSpacer: {
             width: theme.spacing.xl,
         },
-        title,
+        title: {
+            color: theme.colors.textMain,
+        },
         listItem: {
             flexDirection: 'row',
             alignItems: 'center',
@@ -75,8 +46,13 @@ export const useStyles = makeStyles(theme => {
         listContent: {
             flex: 1,
         },
-        listTitle,
-        listSubtitle,
+        listTitle: {
+            color: theme.colors.textMain,
+            marginBottom: theme.spacing.xxs,
+        },
+        listSubtitle: {
+            color: theme.colors.textGray,
+        },
         checkIcon: {
             backgroundColor: theme.colors.positive + '1A', // 10% opacity roughly
             borderRadius: CHECK_ICON_RADIUS,
@@ -102,8 +78,13 @@ export const useStyles = makeStyles(theme => {
             borderBottomColor: theme.colors.textMain,
             borderBottomWidth: theme.borders.md,
         },
-        dateLabel,
-        dateValue,
+        dateLabel: {
+            color: theme.colors.textGray,
+            marginBottom: theme.spacing.xs,
+        },
+        dateValue: {
+            color: theme.colors.textMain,
+        },
         datePickerContainer: {
             alignItems: 'center',
             justifyContent: 'center',
@@ -113,7 +94,9 @@ export const useStyles = makeStyles(theme => {
             height: DATE_PICKER_HEIGHT,
             width: '100%' as const,
         },
-        doneButton,
+        doneButton: {
+            color: theme.colors.linkPrimary,
+        },
         closeButton: {
             marginTop: theme.spacing.lg,
             marginHorizontal: theme.spacing.lg,

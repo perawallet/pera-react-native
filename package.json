@@ -48,6 +48,42 @@
     ],
     "patchedDependencies": {
       "expo-sqlite@14.0.6": "patches/expo-sqlite@14.0.6.patch"
+    },
+    "overrides": {
+      "@algorandfoundation/keystore": "1.0.0-canary.12",
+      "@expo/dom-webview": "^55.0.5",
+      "@xmldom/xmldom": "0.8.13",
+      "bn.js@4": "4.12.3",
+      "brace-expansion@1": "1.1.13",
+      "brace-expansion@2": "2.0.3",
+      "brace-expansion@3": "3.0.2",
+      "brace-expansion@4": "5.0.5",
+      "brace-expansion@5": "5.0.5",
+      "esbuild@<0.25.0": ">=0.25.0",
+      "flatted@3": "3.4.2",
+      "glob@>=10.2.0 <10.5.0": ">=10.5.0",
+      "happy-dom@<20.0.0": ">=20.0.0",
+      "happy-dom@>=19.0.0 <20.0.2": ">=20.0.2",
+      "js-yaml@<3.14.2": ">=3.14.2",
+      "js-yaml@>=4.0.0 <4.1.1": ">=4.1.1",
+      "lodash@4": "4.18.1",
+      "nanoid@<3.3.8": ">=3.3.8",
+      "node-fetch@<2.6.7": ">=2.6.7",
+      "node-forge@1": "1.4.0",
+      "picomatch@2": "2.3.2",
+      "picomatch@3": "3.0.1",
+      "picomatch@4": "4.0.4",
+      "protobufjs@7": "7.5.5",
+      "react-dom": "19.2.5",
+      "react-native": "0.83.4",
+      "react-native-nitro-modules": "0.35.0",
+      "react-native-quick-crypto": "^1.0.17",
+      "react-native-quick-base64": "^2.2.2",
+      "uuid@<14": "14.0.0",
+      "ws@>=7.0.0 <7.5.10": "7.5.10",
+      "yaml@1": "1.10.3",
+      "yaml@2": "2.8.3",
+      "postcss@<8.5.10": ">=8.5.10"
     }
   }
 }

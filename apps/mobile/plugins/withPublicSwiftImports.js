@@ -36,11 +36,18 @@ const withPublicSwiftImports = (config) => {
         'AppDelegate.swift'
       );
 
-      if (!fs.existsSync(appDelegatePath)) {
-        return modConfig;
+      // Read-then-catch rather than existsSync+read: avoids a check/use
+      // race (CodeQL js/file-system-race) and survives prebuild runs that
+      // haven't yet materialized the iOS project.
+      let contents;
+      try {
+        contents = fs.readFileSync(appDelegatePath, 'utf-8');
+      } catch (err) {
+        if (err.code === 'ENOENT') {
+          return modConfig;
+        }
+        throw err;
       }
-
-      let contents = fs.readFileSync(appDelegatePath, 'utf-8');
 
       // Replace bare `import X` with `public import X` at the top of the file,
       // but only for lines that don't already have an access level modifier

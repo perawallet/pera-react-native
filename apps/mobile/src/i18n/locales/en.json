@@ -510,6 +510,40 @@
             "invalid_transaction": "Invalid transaction: {{cause}}",
             "signing": "Failed to sign the transaction: {{cause}}"
         },
+        "algod": {
+            "overspend": {
+                "title": "Insufficient ALGO",
+                "body": "This account doesn't have enough ALGO to cover the transaction and keep its minimum balance. Add at least {{missing}} microALGO and try again."
+            },
+            "below_min_balance": {
+                "title": "Below minimum balance",
+                "body": "This transaction would leave the account below its required minimum balance of {{required}} microALGO."
+            },
+            "missing_opt_in": {
+                "title": "Asset not accepted",
+                "body": "The receiving account hasn't opted in to asset {{assetId}}. Ask the recipient to opt in, or send via the ASA Inbox."
+            },
+            "duplicate_txn": {
+                "title": "Already submitted",
+                "body": "This transaction has already been processed by the network."
+            },
+            "expired_txn": {
+                "title": "Transaction expired",
+                "body": "The transaction's validity window has passed. Please try submitting again."
+            },
+            "logic_error": {
+                "title": "Smart contract rejected the transaction",
+                "body": "The contract returned: {{msg}}"
+            },
+            "network_unavailable": {
+                "title": "Network unavailable",
+                "body": "Can't reach the Algorand network right now. Check your connection and try again."
+            },
+            "unknown_node_error": {
+                "title": "Transaction failed",
+                "body": "The network rejected the transaction. Please try again or contact support if the issue persists."
+            }
+        },
         "deeplink": {
             "invalid_url_title": "Invalid Link",
             "invalid_url_body": "The detected link does not appear to be valid. Please check the link and try again."
@@ -570,6 +604,13 @@
             "invalid_method": "Invalid method {{method}}",
             "invalid_params": "Invalid parameters. Missing: {{params}}",
             "unsupported_url": "Unsupported URL: {{url}}"
+        }
+    },
+    "image_picker": {
+        "permission_title": "Photo library access needed",
+        "permission_body": "Pera needs permission to access your photo library so you can pick a contact avatar. Open Settings to enable it.",
+        "open_settings": {
+            "label": "Open Settings"
         }
     },
     "menu": {
@@ -1307,6 +1348,15 @@
             "transfer": "Asset Transfer of {{asset}} to",
             "clawback": "Asset Clawback of {{asset}} from",
             "app_id": "Application ID: {{id}}"
+        },
+        "filter": {
+            "title": "Filter",
+            "all_time": "All Time",
+            "today": "Today",
+            "yesterday": "Yesterday",
+            "last_week": "Last Week",
+            "last_month": "Last Month",
+            "custom_range": "Custom Range"
         }
     },
     "tabbar": {

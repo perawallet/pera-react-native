@@ -28,6 +28,7 @@ import ChevronDownIcon from '@assets/icons/chevron-down.svg'
 import ChevronLeftIcon from '@assets/icons/chevron-left.svg'
 import ChevronRightIcon from '@assets/icons/chevron-right.svg'
 import CodeIcon from '@assets/icons/code.svg'
+import ContactsIcon from '@assets/icons/contacts.svg'
 import CopyIcon from '@assets/icons/copy.svg'
 import CrossIcon from '@assets/icons/cross.svg'
 import Cube3dIcon from '@assets/icons/cube-3d.svg'
@@ -66,6 +67,7 @@ import PersonKeyIcon from '@assets/icons/person-key.svg'
 import PersonMenuIcon from '@assets/icons/person-menu.svg'
 import PersonIcon from '@assets/icons/person.svg'
 import PauseIcon from '@assets/icons/pause.svg'
+import PenSolidIcon from '@assets/icons/pen-solid.svg'
 import PlayIcon from '@assets/icons/play.svg'
 import PlusWithBorderIcon from '@assets/icons/plus-with-border.svg'
 import PlusIcon from '@assets/icons/plus.svg'
@@ -158,6 +160,7 @@ export const ICON_LIBRARY = {
     'chevron-down': ChevronDownIcon,
     'chevron-left': ChevronLeftIcon,
     'chevron-right': ChevronRightIcon,
+    contacts: ContactsIcon,
     copy: CopyIcon,
     code: CodeIcon,
     cross: CrossIcon,
@@ -200,6 +203,7 @@ export const ICON_LIBRARY = {
     person: PersonIcon,
     'person-key': PersonKeyIcon,
     pause: PauseIcon,
+    'pen-solid': PenSolidIcon,
     play: PlayIcon,
     'plus-with-border': PlusWithBorderIcon,
     plus: PlusIcon,

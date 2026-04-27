@@ -11,6 +11,7 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { TextStyle } from 'react-native'
 import { PWButtonProps } from './PWButton'
 
 const TITLE_LINE_HEIGHT = 15
@@ -79,13 +80,13 @@ export const useStyles = makeStyles((theme, props: PWButtonProps) => {
     const { paddingHorizontal, paddingVertical, minWidth } =
         paddingStyles[props.paddingStyle ?? 'normal']
 
-    const titleStyle = {
+    const titleStyle: TextStyle = {
         lineHeight: TITLE_LINE_HEIGHT,
-        flexWrap: 'nowrap' as const,
+        flexWrap: 'nowrap',
         flexShrink: 1,
-        textAlign: 'center' as const,
-        verticalAlign: 'middle' as const,
-        justifyContent: 'center' as const,
+        textAlign: 'center',
+        verticalAlign: 'middle',
+        justifyContent: 'center',
         padding: 0,
         color,
     }

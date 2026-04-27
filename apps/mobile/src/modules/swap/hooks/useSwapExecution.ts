@@ -26,6 +26,7 @@ import {
 } from '@perawallet/wallet-core-swaps'
 import { logger, type Nullable } from '@perawallet/wallet-core-shared'
 import type { PeraSignedTransaction } from '@perawallet/wallet-core-blockchain'
+import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     buildGroupPlans,
@@ -65,6 +66,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
     const [txIds, setTxIds] = useState<string[]>([])
 
     const { t } = useLanguage()
+    const { getMessage } = useAlgodErrorMessage()
     const { addSignRequest } = useSigningRequest()
     const {
         decodeTransaction,
@@ -167,11 +169,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                     collectedTxIds.push(...ids)
                 }
             } catch (e) {
-                const message =
-                    e instanceof Error
-                        ? e.message
-                        : 'Failed to submit transactions'
-                setError({ phase: 'submission', message })
+                setError({ phase: 'submission', message: getMessage(e).body })
                 setStatus('error')
                 void reportSwapFailure(
                     updateSwapStatus,
@@ -214,6 +212,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
             encodeSignedTransactions,
             updateSwapStatus,
             t,
+            getMessage,
         ],
     )
 
