@@ -14,6 +14,10 @@ import { makeStyles } from '@rneui/themed'
 import { EdgeInsets } from 'react-native-safe-area-context'
 
 export const useStyles = makeStyles((theme, props: { insets: EdgeInsets }) => {
+    const tipNumber = {
+        fontSize: theme.spacing.lg,
+        color: theme.colors.textGray,
+    }
     return {
         container: {
             padding: theme.spacing.xl,
@@ -36,7 +40,6 @@ export const useStyles = makeStyles((theme, props: { insets: EdgeInsets }) => {
             marginVertical: theme.spacing.xl,
         },
         postamble: {
-            lineHeight: theme.spacing.lg,
             marginVertical: theme.spacing.lg,
         },
         tipsContainer: {
@@ -56,10 +59,7 @@ export const useStyles = makeStyles((theme, props: { insets: EdgeInsets }) => {
             width: theme.spacing.xxl,
             height: theme.spacing.xxl,
         },
-        tipNumber: {
-            fontSize: theme.spacing.lg,
-            color: theme.colors.textGray,
-        },
+        tipNumber,
         tipText: {
             flexWrap: 'wrap',
             flexShrink: 1,

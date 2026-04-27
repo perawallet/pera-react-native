@@ -12,29 +12,32 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.md,
-        padding: theme.spacing.lg,
-        backgroundColor: theme.colors.layerGrayLighter,
-        borderRadius: theme.spacing.lg,
-        borderWidth: theme.borders.sm,
-        borderColor: theme.colors.layerGray,
-    },
-    content: {
-        flexGrow: 1,
-    },
-    rightContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    primaryText: {
-        color: theme.colors.textMain,
-    },
-    secondaryText: {
+export const useStyles = makeStyles(theme => {
+    const secondaryText = {
         color: theme.colors.textGray,
         lineHeight: theme.spacing.lg,
-    },
-}))
+    }
+    return {
+        container: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.md,
+            padding: theme.spacing.lg,
+            backgroundColor: theme.colors.layerGrayLighter,
+            borderRadius: theme.spacing.lg,
+            borderWidth: theme.borders.sm,
+            borderColor: theme.colors.layerGray,
+        },
+        content: {
+            flexGrow: 1,
+        },
+        rightContent: {
+            flexDirection: 'row',
+            alignItems: 'center',
+        },
+        primaryText: {
+            color: theme.colors.textMain,
+        },
+        secondaryText,
+    }
+})

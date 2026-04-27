@@ -28,6 +28,8 @@ export type TypographyVariant =
     | 'h3'
     | 'h4'
     | 'body'
+    | 'bodyCompact'
+    | 'bodySemibold'
     | 'caption'
     | 'link'
     | 'mono'
@@ -71,6 +73,20 @@ export const getTypography = (
             lineHeight: 24,
             color: theme.colors.textMain,
             fontWeight: 400,
+        },
+        bodyCompact: {
+            fontFamily: getFontFamily(400),
+            fontSize: 13,
+            lineHeight: 16,
+            color: theme.colors.textMain,
+            fontWeight: 400,
+        },
+        bodySemibold: {
+            fontFamily: getFontFamily(600),
+            fontSize: 13,
+            lineHeight: 24,
+            color: theme.colors.textMain,
+            fontWeight: 600,
         },
         caption: {
             fontFamily: getFontFamily(400),

@@ -23,7 +23,10 @@ export const TabLabel = ({ i18nKey, active }: TabLabelProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
     return (
-        <PWText style={active ? styles.active : styles.inactive}>
+        <PWText
+            variant='caption'
+            style={active ? styles.active : styles.inactive}
+        >
             {t(i18nKey)}
         </PWText>
     )

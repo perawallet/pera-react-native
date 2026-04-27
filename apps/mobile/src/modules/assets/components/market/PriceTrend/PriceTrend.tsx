@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { View } from 'react-native'
-import { PWIcon, PWText } from '@components/core'
+import { PWIcon, PWText, PWView } from '@components/core'
 import { useStyles } from './styles'
 import {
     formatCurrency,
@@ -68,7 +67,7 @@ export const PriceTrend = ({
     const isPositive = changePercentage.greaterThanOrEqualTo(new Decimal(0))
 
     return (
-        <View style={styles.container}>
+        <PWView style={styles.container}>
             {showAbsolute && changeValue && (
                 <PWText
                     style={isPositive ? styles.itemUp : styles.itemDown}
@@ -84,7 +83,7 @@ export const PriceTrend = ({
                     )}
                 </PWText>
             )}
-            <View style={styles.percentageContainer}>
+            <PWView style={styles.percentageContainer}>
                 <PWIcon
                     name={isPositive ? 'arrow-up' : 'arrow-down'}
                     variant={isPositive ? 'helper' : 'error'}
@@ -99,7 +98,7 @@ export const PriceTrend = ({
                 >
                     {Decimal.abs(changePercentage).toFixed(2)}%
                 </PWText>
-            </View>
-        </View>
+            </PWView>
+        </PWView>
     )
 }

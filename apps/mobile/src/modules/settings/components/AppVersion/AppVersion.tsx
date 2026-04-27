@@ -40,7 +40,10 @@ const Version = () => {
     }, [getAppBuild])
 
     return (
-        <PWText style={styles.versionText}>
+        <PWText
+            variant='caption'
+            style={styles.versionText}
+        >
             {t('settings.main.version_footer', {
                 version: appVersion,
                 build: appBuild,

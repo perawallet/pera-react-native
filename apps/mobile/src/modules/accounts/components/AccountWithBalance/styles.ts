@@ -16,32 +16,26 @@ type StyleProps = {
     isHighlighted?: boolean
 }
 
-export const useStyles = makeStyles((theme, { isHighlighted }: StyleProps) => {
-    return {
-        container: {
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: theme.spacing.sm,
-            width: '100%',
-            backgroundColor: theme.colors.layerGrayLightest,
-            borderWidth: theme.borders.sm,
-            borderColor: isHighlighted
-                ? theme.colors.buttonSquareIcon
-                : theme.colors.layerGray,
-            borderRadius: theme.spacing.lg,
-            padding: theme.spacing.md,
-        },
-        balanceContainer: {
-            gap: theme.spacing.xs,
-            alignItems: 'flex-end',
-        },
-        algoBalance: {
-            lineHeight: theme.spacing.lg,
-        },
-        fiatBalance: {
-            color: theme.colors.textGray,
-            lineHeight: theme.spacing.lg,
-        },
-    }
-})
+export const useStyles = makeStyles((theme, { isHighlighted }: StyleProps) => ({
+    container: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: theme.spacing.sm,
+        width: '100%',
+        backgroundColor: theme.colors.layerGrayLightest,
+        borderWidth: theme.borders.sm,
+        borderColor: isHighlighted
+            ? theme.colors.buttonSquareIcon
+            : theme.colors.layerGray,
+        borderRadius: theme.spacing.lg,
+        padding: theme.spacing.md,
+    },
+    balanceContainer: {
+        gap: theme.spacing.xs,
+        alignItems: 'flex-end',
+    },
+    fiatBalance: {
+        color: theme.colors.textGray,
+    },
+}))

@@ -29,7 +29,6 @@ export const useStyles = makeStyles(theme => ({
     },
     wrappedText: {
         flexShrink: 1,
-        lineHeight: theme.spacing.lg,
     },
     blockContainer: {
         flexDirection: 'row',

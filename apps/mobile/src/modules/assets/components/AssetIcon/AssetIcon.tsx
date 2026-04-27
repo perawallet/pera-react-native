@@ -100,7 +100,12 @@ export const AssetIcon = (props: AssetIconProps) => {
         }
         return (
             <PWView style={styles.defaultAsset}>
-                <PWText style={styles.initialsText}>{initials}</PWText>
+                <PWText
+                    variant='body'
+                    style={styles.initialsText}
+                >
+                    {initials}
+                </PWText>
             </PWView>
         )
     }, [

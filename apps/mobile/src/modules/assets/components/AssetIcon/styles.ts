@@ -13,6 +13,10 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles((theme, resolvedSize: number) => {
+    const initialsText = {
+        color: theme.colors.textGray,
+        fontSize: resolvedSize * 0.35,
+    }
     return {
         container: {
             alignItems: 'center',
@@ -43,9 +47,6 @@ export const useStyles = makeStyles((theme, resolvedSize: number) => {
             borderWidth: theme.borders.sm,
             borderColor: theme.colors.layerGrayLighter,
         },
-        initialsText: {
-            color: theme.colors.textGray,
-            fontSize: resolvedSize * 0.35,
-        },
+        initialsText,
     }
 })

@@ -13,6 +13,10 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
+    const sessionDate = {
+        color: theme.colors.textGray,
+        fontSize: theme.spacing.md,
+    }
     return {
         sessionItem: {
             flexDirection: 'row',
@@ -40,10 +44,7 @@ export const useStyles = makeStyles(theme => {
             borderRadius: theme.spacing.xl,
             overflow: 'hidden',
         },
-        sessionDate: {
-            color: theme.colors.textGray,
-            fontSize: theme.spacing.md,
-        },
+        sessionDate,
         chevron: {
             alignSelf: 'center',
         },

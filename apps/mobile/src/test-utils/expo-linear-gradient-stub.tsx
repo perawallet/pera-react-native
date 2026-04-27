@@ -12,9 +12,12 @@
 
 // Test stub for expo-linear-gradient. The package's published build output
 // contains untransformed JSX that vitest's rollup parser can't handle, so
-// vitest.config.ts aliases the package to this file during tests.
+// vitest.config.ts aliases the package to this file during tests. Uses the
+// raw `View` intentionally — PWView relies on theme context that the
+// vitest environment doesn't set up for every test.
 
 import React from 'react'
+// guardrails-ignore-next-line no-primitive-rn-components
 import { View, ViewProps } from 'react-native'
 
 export const LinearGradient = (props: ViewProps) => <View {...props} />

@@ -17,18 +17,20 @@ import {
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
+    const active = {
+        color: theme.colors.textMain,
+        fontWeight: 'medium' as const,
+        fontSize: BOTTOM_TAB_LABEL_FONT_SIZE,
+        lineHeight: BOTTOM_TAB_LABEL_LINE_HEIGHT,
+    }
+    const inactive = {
+        color: theme.colors.textGray,
+        fontWeight: 'normal' as const,
+        fontSize: BOTTOM_TAB_LABEL_FONT_SIZE,
+        lineHeight: BOTTOM_TAB_LABEL_LINE_HEIGHT,
+    }
     return {
-        active: {
-            color: theme.colors.textMain,
-            fontWeight: 'medium',
-            fontSize: BOTTOM_TAB_LABEL_FONT_SIZE,
-            lineHeight: BOTTOM_TAB_LABEL_LINE_HEIGHT,
-        },
-        inactive: {
-            color: theme.colors.textGray,
-            fontWeight: 'normal',
-            fontSize: BOTTOM_TAB_LABEL_FONT_SIZE,
-            lineHeight: BOTTOM_TAB_LABEL_LINE_HEIGHT,
-        },
+        active,
+        inactive,
     }
 })

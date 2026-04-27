@@ -13,23 +13,19 @@
 import { makeStyles } from '@rneui/themed'
 import { KeyValueRowProps } from './KeyValueRow'
 
-export const useStyles = makeStyles((theme, props: KeyValueRowProps) => {
-    return {
-        container: {
-            flexDirection: 'row',
-            alignItems:
-                props.verticalAlignment === 'top' ? 'flex-start' : 'center',
-            flexWrap: 'nowrap',
-        },
-        label: {
-            color: theme.colors.textGray,
-            lineHeight: theme.spacing.lg,
-            width: '40%',
-        },
-        childContainer: {
-            alignItems: 'flex-start',
-            flexGrow: 1,
-            flexShrink: 1,
-        },
-    }
-})
+export const useStyles = makeStyles((theme, props: KeyValueRowProps) => ({
+    container: {
+        flexDirection: 'row',
+        alignItems: props.verticalAlignment === 'top' ? 'flex-start' : 'center',
+        flexWrap: 'nowrap',
+    },
+    label: {
+        color: theme.colors.textGray,
+        width: '40%',
+    },
+    childContainer: {
+        alignItems: 'flex-start',
+        flexGrow: 1,
+        flexShrink: 1,
+    },
+}))

@@ -12,47 +12,50 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        paddingVertical: theme.spacing.md,
-        gap: theme.spacing.md,
-    },
-    iconContainer: {
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    contentContainer: {
-        flex: 1,
-    },
-    mainRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-    },
-    titleContainer: {
-        flex: 1,
-        marginRight: theme.spacing.sm,
-    },
-    amountContainer: {
-        alignItems: 'flex-end',
-    },
-    title: {
+export const useStyles = makeStyles(theme => {
+    const amount = {
         color: theme.colors.textMain,
-    },
-    subtitle: {
-        color: theme.colors.textGray,
-        marginTop: theme.spacing.xxs,
-    },
-    amount: {
-        color: theme.colors.textMain,
-        fontWeight: '500',
-    },
-    amountPositive: {
-        color: theme.colors.positive,
-    },
-    amountNegative: {
-        color: theme.colors.negative,
-    },
-}))
+        fontWeight: '500' as const,
+    }
+    return {
+        container: {
+            flexDirection: 'row',
+            alignItems: 'flex-start',
+            paddingVertical: theme.spacing.md,
+            gap: theme.spacing.md,
+        },
+        iconContainer: {
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        contentContainer: {
+            flex: 1,
+        },
+        mainRow: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'flex-start',
+        },
+        titleContainer: {
+            flex: 1,
+            marginRight: theme.spacing.sm,
+        },
+        amountContainer: {
+            alignItems: 'flex-end',
+        },
+        title: {
+            color: theme.colors.textMain,
+        },
+        subtitle: {
+            color: theme.colors.textGray,
+            marginTop: theme.spacing.xxs,
+        },
+        amount,
+        amountPositive: {
+            color: theme.colors.positive,
+        },
+        amountNegative: {
+            color: theme.colors.negative,
+        },
+    }
+})

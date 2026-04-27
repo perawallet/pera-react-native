@@ -13,6 +13,9 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
+    const keyText = {
+        fontSize: theme.spacing.xl,
+    }
     return {
         container: {
             alignItems: 'center',
@@ -29,9 +32,6 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
             justifyContent: 'center',
         },
-        keyText: {
-            fontSize: theme.spacing.xl,
-            lineHeight: 40,
-        },
+        keyText,
     }
 })

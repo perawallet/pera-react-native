@@ -95,12 +95,7 @@ export const RawTransactionButton = ({
                     contentContainerStyle={styles.scrollview}
                     scrollEnabled
                 >
-                    <PWText
-                        variant='body'
-                        style={styles.rawTransactionText}
-                    >
-                        {rawText}
-                    </PWText>
+                    <PWText variant='mono'>{rawText}</PWText>
                 </BottomSheetScrollView>
             </PWBottomSheet>
         </>

@@ -20,7 +20,8 @@ initDecimalConfig()
 
 import React, { useEffect, useState } from 'react'
 import './i18n'
-import { Platform, Text } from 'react-native'
+import { Platform } from 'react-native'
+import { PWText } from '@components/core'
 import { QueryProvider, queryClient } from './providers/QueryProvider'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import { Persister } from '@tanstack/react-query-persist-client'
@@ -127,7 +128,7 @@ const AppContent = () => {
 
     return (
         <SafeAreaProvider>
-            {!bootstrapped && <Text>{t('common.loading.label')}</Text>}
+            {!bootstrapped && <PWText>{t('common.loading.label')}</PWText>}
             {bootstrapped && persister && (
                 <GestureHandlerRootView>
                     <NotifierWrapper>

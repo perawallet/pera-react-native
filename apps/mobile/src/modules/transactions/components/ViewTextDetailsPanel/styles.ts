@@ -11,8 +11,13 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => {
+    const buttonText = {
+        ...getTypography(theme, 'caption'),
+        fontSize: theme.spacing.md,
+    }
     return {
         container: {
             flex: 1,
@@ -28,9 +33,7 @@ export const useStyles = makeStyles(theme => {
             paddingHorizontal: theme.spacing.xl,
         },
         button: {},
-        buttonText: {
-            fontSize: theme.spacing.md,
-        },
+        buttonText,
         noteText: {
             marginBottom: theme.spacing.xl,
             paddingHorizontal: theme.spacing.xl,

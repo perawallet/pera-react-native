@@ -33,15 +33,4 @@ export const useStyles = makeStyles(theme => ({
     icon: {
         marginTop: theme.spacing.xs,
     },
-    learnMoreContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: theme.spacing.sm,
-    },
-    learnMoreText: {
-        fontSize: 16,
-        fontWeight: '500',
-        color: theme.colors.linkPrimary,
-        marginLeft: theme.spacing.xs,
-    },
 }))

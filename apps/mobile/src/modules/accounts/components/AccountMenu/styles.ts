@@ -67,11 +67,9 @@ export const useStyles = makeStyles(theme => {
         },
         activeTitle: {
             color: theme.colors.textMain,
-            fontSize: 22,
         },
         inactiveTitle: {
             color: theme.colors.textGrayLighter,
-            fontSize: 22,
         },
     }
 })

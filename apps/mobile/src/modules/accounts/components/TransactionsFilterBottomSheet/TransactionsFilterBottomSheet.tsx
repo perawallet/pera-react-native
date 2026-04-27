@@ -11,13 +11,13 @@
  */
 
 import React, { useState, useEffect } from 'react'
-import { View, TouchableOpacity } from 'react-native'
 import {
     PWBottomSheet,
     PWIcon,
     PWText,
     PWButton,
     PWTouchableOpacity,
+    PWView,
 } from '@components/core'
 import DateTimePicker, {
     DateTimePickerEvent,
@@ -139,42 +139,47 @@ export const TransactionsFilterBottomSheet = ({
 
     const renderMainView = () => (
         <>
-            <View style={styles.header}>
-                <View style={styles.headerSpacer} />
-                <PWText style={styles.title}>Filter</PWText>
-                <View style={styles.headerSpacer} />
-            </View>
+            <PWView style={styles.header}>
+                <PWView style={styles.headerSpacer} />
+                <PWText
+                    variant='h4'
+                    style={styles.title}
+                >
+                    {t('transactions.filter.title')}
+                </PWText>
+                <PWView style={styles.headerSpacer} />
+            </PWView>
 
             {[
                 {
                     id: TransactionFilter.AllTime,
                     icon: 'text-document' as const,
-                    title: 'All Time',
+                    title: t('transactions.filter.all_time'),
                 },
                 {
                     id: TransactionFilter.Today,
                     icon: 'text-document' as const,
-                    title: 'Today',
+                    title: t('transactions.filter.today'),
                 },
                 {
                     id: TransactionFilter.Yesterday,
                     icon: 'text-document' as const,
-                    title: 'Yesterday',
+                    title: t('transactions.filter.yesterday'),
                 },
                 {
                     id: TransactionFilter.LastWeek,
                     icon: 'text-document' as const,
-                    title: 'Last Week',
+                    title: t('transactions.filter.last_week'),
                 },
                 {
                     id: TransactionFilter.LastMonth,
                     icon: 'text-document' as const,
-                    title: 'Last Month',
+                    title: t('transactions.filter.last_month'),
                 },
                 {
                     id: TransactionFilter.CustomRange,
                     icon: 'sliders' as const,
-                    title: 'Custom Range',
+                    title: t('transactions.filter.custom_range'),
                 },
             ].map(item => {
                 const isSelected = activeFilter === item.id
@@ -191,24 +196,30 @@ export const TransactionsFilterBottomSheet = ({
                             size='lg'
                             style={styles.listIcon}
                         />
-                        <View style={styles.listContent}>
-                            <PWText style={styles.listTitle}>
+                        <PWView style={styles.listContent}>
+                            <PWText
+                                variant='h4'
+                                style={styles.listTitle}
+                            >
                                 {item.title}
                             </PWText>
                             {subtitle ? (
-                                <PWText style={styles.listSubtitle}>
+                                <PWText
+                                    variant='body'
+                                    style={styles.listSubtitle}
+                                >
                                     {subtitle}
                                 </PWText>
                             ) : null}
-                        </View>
+                        </PWView>
                         {isSelected && (
-                            <View style={styles.checkIcon}>
+                            <PWView style={styles.checkIcon}>
                                 <PWIcon
                                     name='check'
                                     size='lg'
                                     variant='positive'
                                 />
-                            </View>
+                            </PWView>
                         )}
                     </PWTouchableOpacity>
                 )
@@ -224,22 +235,32 @@ export const TransactionsFilterBottomSheet = ({
 
     const renderCustomRangeView = () => (
         <>
-            <View style={styles.header}>
+            <PWView style={styles.header}>
                 <PWTouchableOpacity onPress={() => setView('main')}>
                     <PWIcon
                         name='chevron-left'
                         size='xl'
                     />
                 </PWTouchableOpacity>
-                <PWText style={styles.title}>Custom Range</PWText>
-                <TouchableOpacity onPress={handleApplyCustomRange}>
-                    <PWText style={styles.doneButton}>Done</PWText>
-                </TouchableOpacity>
-            </View>
+                <PWText
+                    variant='h4'
+                    style={styles.title}
+                >
+                    {t('transactions.filter.custom_range')}
+                </PWText>
+                <PWTouchableOpacity onPress={handleApplyCustomRange}>
+                    <PWText
+                        variant='h4'
+                        style={styles.doneButton}
+                    >
+                        {t('common.done')}
+                    </PWText>
+                </PWTouchableOpacity>
+            </PWView>
 
-            <View style={styles.customRangeContainer}>
-                <View style={styles.dateInputsContainer}>
-                    <TouchableOpacity
+            <PWView style={styles.customRangeContainer}>
+                <PWView style={styles.dateInputsContainer}>
+                    <PWTouchableOpacity
                         style={[
                             styles.dateInputWrapper,
                             activeDateInput === 'from' &&
@@ -247,26 +268,42 @@ export const TransactionsFilterBottomSheet = ({
                         ]}
                         onPress={() => setActiveDateInput('from')}
                     >
-                        <PWText style={styles.dateLabel}>From</PWText>
-                        <PWText style={styles.dateValue}>
+                        <PWText
+                            variant='body'
+                            style={styles.dateLabel}
+                        >
+                            {t('transactions.common.from')}
+                        </PWText>
+                        <PWText
+                            variant='h4'
+                            style={styles.dateValue}
+                        >
                             {formatDate(customRange.from)}
                         </PWText>
-                    </TouchableOpacity>
-                    <TouchableOpacity
+                    </PWTouchableOpacity>
+                    <PWTouchableOpacity
                         style={[
                             styles.dateInputWrapper,
                             activeDateInput === 'to' && styles.activeDateInput,
                         ]}
                         onPress={() => setActiveDateInput('to')}
                     >
-                        <PWText style={styles.dateLabel}>To</PWText>
-                        <PWText style={styles.dateValue}>
+                        <PWText
+                            variant='body'
+                            style={styles.dateLabel}
+                        >
+                            {t('transactions.common.to')}
+                        </PWText>
+                        <PWText
+                            variant='h4'
+                            style={styles.dateValue}
+                        >
                             {formatDate(customRange.to)}
                         </PWText>
-                    </TouchableOpacity>
-                </View>
+                    </PWTouchableOpacity>
+                </PWView>
 
-                <View style={styles.datePickerContainer}>
+                <PWView style={styles.datePickerContainer}>
                     <DateTimePicker
                         value={
                             activeDateInput === 'from'
@@ -280,8 +317,8 @@ export const TransactionsFilterBottomSheet = ({
                         textColor={styles.dateValue.color as string}
                         themeVariant='light'
                     />
-                </View>
-            </View>
+                </PWView>
+            </PWView>
         </>
     )
 

@@ -12,37 +12,42 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-    textContainer: {
-        alignItems: 'flex-start',
-        gap: theme.spacing.xs,
-        flexShrink: 1,
-    },
-    nameContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.xs,
-        flexShrink: 1,
-    },
-    id: {
+export const useStyles = makeStyles(theme => {
+    const id = {
         color: theme.colors.textGray,
         lineHeight: theme.spacing.lg,
-    },
-    name: {
+    }
+    const name = {
         color: theme.colors.textMain,
         lineHeight: theme.spacing.lg,
         paddingRight: theme.spacing.xs,
         flexShrink: 1,
-    },
-    suspiciousName: {
+    }
+    const suspiciousName = {
         color: theme.colors.error,
         lineHeight: theme.spacing.lg,
         paddingRight: theme.spacing.xs,
         flexShrink: 1,
-    },
-}))
+    }
+    return {
+        container: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.sm,
+        },
+        textContainer: {
+            alignItems: 'flex-start',
+            gap: theme.spacing.xs,
+            flexShrink: 1,
+        },
+        nameContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.xs,
+            flexShrink: 1,
+        },
+        id,
+        name,
+        suspiciousName,
+    }
+})

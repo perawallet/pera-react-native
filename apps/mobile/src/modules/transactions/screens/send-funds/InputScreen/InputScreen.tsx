@@ -119,10 +119,11 @@ export const InputScreen = () => {
                     }
                     rawValue={cryptoValue ?? undefined}
                     ignorePrivacyMode
+                    variant='h1'
                     style={[
                         cryptoValue ? styles.amount : styles.amountPlaceholder,
                         styles.h1,
-                    ]} //h1Style doesn't seem to override fontfamily
+                    ]}
                     showSymbol={false}
                     minPrecision={2}
                 />
@@ -133,6 +134,7 @@ export const InputScreen = () => {
                     precision={6}
                     showSymbol
                     minPrecision={2}
+                    variant='h1'
                     style={styles.amountPlaceholder}
                 />
 

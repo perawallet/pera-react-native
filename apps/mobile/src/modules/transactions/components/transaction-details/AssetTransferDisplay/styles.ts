@@ -12,49 +12,50 @@
 
 import { makeStyles } from '@rneui/themed'
 
-export const useStyles = makeStyles(theme => ({
-    container: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: theme.spacing.lg,
-        paddingVertical: theme.spacing.lg,
-    },
-    detailRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: theme.spacing.md,
-        overflow: 'hidden',
-        flexWrap: 'nowrap',
-        flexShrink: 1,
-    },
-    detailContainer: {
-        paddingHorizontal: theme.spacing.sm,
-        gap: theme.spacing.lg,
-    },
-    divider: {
-        marginTop: theme.spacing.xs,
-        width: '100%',
-    },
-    assetContainer: {
-        justifyContent: 'center',
-        gap: theme.spacing.xs,
-    },
-    assetIcon: {
-        borderWidth: theme.borders.sm,
-        borderColor: 'blue',
-    },
-    assetName: {
-        lineHeight: theme.spacing.lg,
-    },
-    assetId: {
+export const useStyles = makeStyles(theme => {
+    const assetId = {
         color: theme.colors.textGray,
         lineHeight: theme.spacing.md,
-    },
-    amountPositive: {
-        color: theme.colors.positive,
-    },
-    amountNegative: {
-        color: theme.colors.negative,
-    },
-}))
+    }
+    return {
+        container: {
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: theme.spacing.lg,
+            paddingVertical: theme.spacing.lg,
+        },
+        detailRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: theme.spacing.md,
+            overflow: 'hidden',
+            flexWrap: 'nowrap',
+            flexShrink: 1,
+        },
+        detailContainer: {
+            paddingHorizontal: theme.spacing.sm,
+            gap: theme.spacing.lg,
+        },
+        divider: {
+            marginTop: theme.spacing.xs,
+            width: '100%',
+        },
+        assetContainer: {
+            justifyContent: 'center',
+            gap: theme.spacing.xs,
+        },
+        assetIcon: {
+            borderWidth: theme.borders.sm,
+            borderColor: 'blue',
+        },
+        assetName: {},
+        assetId,
+        amountPositive: {
+            color: theme.colors.positive,
+        },
+        amountNegative: {
+            color: theme.colors.negative,
+        },
+    }
+})
