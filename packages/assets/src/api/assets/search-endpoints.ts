@@ -36,8 +36,11 @@ export const searchAssets = async ({
     hasCollectible,
 }: SearchAssetsParams) => {
     const params: Record<string, string | number> = {
-        q: query,
         limit,
+    }
+
+    if (query.length > 0) {
+        params.q = query
     }
 
     if (cursor) {

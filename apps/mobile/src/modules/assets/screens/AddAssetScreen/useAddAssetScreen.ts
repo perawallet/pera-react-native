@@ -82,7 +82,7 @@ export const useAddAssetScreen = (
     } = useGlobalSearch({
         debounceMs: SEARCH_DEBOUNCE_TIME,
         scopes: ['assets'],
-        remoteAssets: { hasCollectible },
+        remoteAssets: { hasCollectible, showOnEmptyQuery: true },
     })
     const results = searchResults.remoteAssets
     const isError = false

@@ -211,4 +211,13 @@ describe('searchAssets', () => {
         expect(call.params).not.toHaveProperty('cursor')
         expect(call.params).not.toHaveProperty('has_collectible')
     })
+
+    test('omits q when query is empty so the backend returns suggestions', async () => {
+        queryClientMock.mockResolvedValue({ data: validSearchResponse })
+
+        await searchAssets({ query: '', network: 'mainnet' })
+
+        const call = queryClientMock.mock.calls[0][0]
+        expect(call.params).not.toHaveProperty('q')
+    })
 })
