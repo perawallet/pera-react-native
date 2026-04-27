@@ -42,7 +42,10 @@ import {
     usePeraProvider,
 } from '@perawallet/wallet-extension-provider'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { ThemeProvider } from '@rneui/themed'
 import { RootComponent } from '@components/RootComponent'
+import { getTheme } from '@theme/theme'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import * as SplashScreen from 'expo-splash-screen'
 
 // Keep the splash screen visible while we fetch resources
@@ -73,6 +76,8 @@ const AppContent = () => {
     const [fcmToken, setFcmToken] = useState<Nullable<string>>(null)
     const { t } = useLanguage()
     const provider = usePeraProvider()
+    const isDarkMode = useIsDarkMode()
+    const theme = getTheme(isDarkMode ? 'dark' : 'light')
 
     useEffect(() => {
         logger.setErrorReporter(
@@ -127,18 +132,20 @@ const AppContent = () => {
     }, [bootstrapped, provider])
 
     return (
-        <SafeAreaProvider>
-            {!bootstrapped && <PWText>{t('common.loading.label')}</PWText>}
-            {bootstrapped && persister && (
-                <GestureHandlerRootView>
-                    <NotifierWrapper>
-                        <QueryProvider persister={persister}>
-                            <RootComponent fcmToken={fcmToken} />
-                        </QueryProvider>
-                    </NotifierWrapper>
-                </GestureHandlerRootView>
-            )}
-        </SafeAreaProvider>
+        <ThemeProvider theme={theme}>
+            <SafeAreaProvider>
+                {!bootstrapped && <PWText>{t('common.loading.label')}</PWText>}
+                {bootstrapped && persister && (
+                    <GestureHandlerRootView>
+                        <NotifierWrapper>
+                            <QueryProvider persister={persister}>
+                                <RootComponent fcmToken={fcmToken} />
+                            </QueryProvider>
+                        </NotifierWrapper>
+                    </GestureHandlerRootView>
+                )}
+            </SafeAreaProvider>
+        </ThemeProvider>
     )
 }
 

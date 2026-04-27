@@ -15,7 +15,7 @@
 import { DefaultTheme } from '@react-navigation/native'
 import { createTheme } from '@rneui/themed'
 import { palette } from './colors'
-import { getFontFamily, getTypography } from './typography'
+import { getFontFamily } from './typography'
 
 export const getNavigationTheme = (mode: 'light' | 'dark' = 'light') => ({
     ...DefaultTheme,
@@ -598,13 +598,6 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
                     true: theme.colors.switchBg,
                 },
                 thumbColor: theme.colors.textWhite,
-            }),
-            Text: (_, theme) => ({
-                h1Style: getTypography(theme, 'h1'),
-                h2Style: getTypography(theme, 'h2'),
-                h3Style: getTypography(theme, 'h3'),
-                h4Style: getTypography(theme, 'h4'),
-                style: getTypography(theme, 'body'),
             }),
         },
     })
