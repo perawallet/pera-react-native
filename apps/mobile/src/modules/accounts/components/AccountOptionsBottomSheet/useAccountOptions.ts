@@ -81,7 +81,7 @@ export const useAccountOptions = ({
     const logicalType = useAccountLogicalType(account.address) ?? 'NoAuth'
     const showPassphrase = logicalType === 'Algo25' || logicalType === 'HdKey'
     const isRekeyed = logicalType === 'Rekeyed' || logicalType === 'RekeyedAuth'
-    const showUndoRekey = logicalType === 'RekeyedAuth'
+    const showUndoRekey = isRekeyed
     const isHdWallet = logicalType === 'HdKey'
     const canSign = isSigningLogicalType(logicalType)
     const isSharedAccount = isMultisigAccount(account)
@@ -153,8 +153,12 @@ export const useAccountOptions = ({
     }, [copyToClipboard, account.rekeyAddress, onClose])
 
     const handleUndoRekey = useCallback(() => {
-        notImplemented()
-    }, [notImplemented])
+        onClose()
+        navigation.navigate('UndoRekey', {
+            screen: 'UndoRekeyConfirm',
+            params: { sourceAddress: account.address },
+        })
+    }, [onClose, navigation, account.address])
 
     const handleRekeyToLedger = useCallback(() => {
         notImplemented()

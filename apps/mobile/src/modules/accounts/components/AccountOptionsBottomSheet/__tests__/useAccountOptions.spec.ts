@@ -761,7 +761,7 @@ describe('useAccountOptions', () => {
             expect(result.current.isExportShareVisible).toBe(true)
         })
 
-        it('shows not implemented toast for undo-rekey', () => {
+        it('navigates to UndoRekey confirm for undo-rekey', () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: rekeyedAccount,
@@ -778,10 +778,10 @@ describe('useAccountOptions', () => {
                 undoOption?.onPress()
             })
 
-            expect(mockShowToast).toHaveBeenCalledWith({
-                title: 'common.not_implemented.title',
-                body: 'common.not_implemented.body',
-                type: 'error',
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledWith('UndoRekey', {
+                screen: 'UndoRekeyConfirm',
+                params: { sourceAddress: rekeyedAccount.address },
             })
         })
 

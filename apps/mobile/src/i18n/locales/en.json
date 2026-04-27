@@ -1008,6 +1008,27 @@
                 "body": "The account <0>{{source}}</0> was successfully rekeyed.",
                 "cta": "Done"
             }
+        },
+        "undo": {
+            "confirm": {
+                "title": "Undo rekey",
+                "body": "You are about to undo this account's rekey operation. You will rekey the account back to itself using its authorized address. <0>Learn more</0>",
+                "summary_label": "Undo rekey",
+                "current_auth_label": "Currently Rekeyed",
+                "fee_label": "Transaction Fee",
+                "cta": "Continue"
+            },
+            "warning": {
+                "title": "Your previous rekey will be undone",
+                "body": "<0>{{currentAuth}}</0> will no longer be authorized to sign transactions for <1>{{source}}</1>. Ensure you understand the implications of this before continuing. <2>Learn more</2>",
+                "confirm": "Confirm",
+                "cancel": "Cancel"
+            },
+            "success": {
+                "title": "Rekey successfully undone",
+                "body": "The account <0>{{source}}</0> has been reverted to its original state",
+                "cta": "Done"
+            }
         }
     },
     "receive_funds": {

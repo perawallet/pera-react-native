@@ -40,6 +40,7 @@ import { MessagesStackNavigator } from '@modules/messages/routes'
 import { MultisigStackNavigator } from '@modules/multisig'
 import { BackupStackNavigator } from '@modules/backup'
 import { RekeyToStandardStackNavigator } from '@modules/rekey/rekey-to-standard'
+import { UndoRekeyStackNavigator } from '@modules/rekey/undo-rekey'
 import { SearchStackNavigator } from '@modules/search'
 import { navigationRef } from './navigationRef'
 export type { RootStackParamList } from './types'
@@ -115,6 +116,10 @@ export const MainRoutes = () => {
                             <RootStack.Screen
                                 name='RekeyToStandard'
                                 component={RekeyToStandardStackNavigator}
+                            />
+                            <RootStack.Screen
+                                name='UndoRekey'
+                                component={UndoRekeyStackNavigator}
                             />
                             <RootStack.Screen
                                 name='Staking'
