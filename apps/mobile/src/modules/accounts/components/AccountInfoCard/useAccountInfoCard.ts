@@ -121,7 +121,13 @@ export const useAccountInfoCard = ({
             return account.hardwareDetails.deviceName
         }
         return ''
-    }, [isHDWallet, isLedger, account.hardwareDetails?.deviceName, hdWalletGroupIndex, t])
+    }, [
+        isHDWallet,
+        isLedger,
+        account.hardwareDetails?.deviceName,
+        hdWalletGroupIndex,
+        t,
+    ])
 
     const structureIcon: IconName = isLedger ? 'ledger' : 'wallet'
 
