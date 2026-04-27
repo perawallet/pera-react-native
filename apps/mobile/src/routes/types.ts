@@ -24,6 +24,7 @@ import { MessagesStackParamList } from '@modules/messages/routes'
 import { MultisigStackParamList } from '@modules/multisig'
 import type { BackupStackParamList } from '@modules/backup/routes/types'
 import { SearchStackParamsList } from '@modules/search'
+import type { RekeyToStandardStackParamList } from '@modules/rekey/rekey-to-standard'
 
 export type RootStackParamList = {
     Onboarding: NavigatorScreenParams<OnboardingStackParamList>
@@ -35,6 +36,7 @@ export type RootStackParamList = {
     Search: NavigatorScreenParams<SearchStackParamsList>
     Multisig: NavigatorScreenParams<MultisigStackParamList>
     BackupWallet: NavigatorScreenParams<BackupStackParamList>
+    RekeyToStandard: NavigatorScreenParams<RekeyToStandardStackParamList>
     Staking: undefined
     GroupTransactionList: {
         groupId: string
@@ -55,4 +57,5 @@ export type AppStackParamList = RootStackParamList &
     AccountStackParamsList &
     MultisigStackParamList &
     BackupStackParamList &
+    RekeyToStandardStackParamList &
     SearchStackParamsList

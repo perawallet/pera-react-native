@@ -692,7 +692,7 @@ describe('useAccountOptions', () => {
             })
         })
 
-        it('shows not implemented toast for rekey-to-standard', () => {
+        it('navigates to RekeyToStandard intro for rekey-to-standard', () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: algo25Account,
@@ -709,10 +709,10 @@ describe('useAccountOptions', () => {
                 rekeyOption?.onPress()
             })
 
-            expect(mockShowToast).toHaveBeenCalledWith({
-                title: 'common.not_implemented.title',
-                body: 'common.not_implemented.body',
-                type: 'error',
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(mockNavigate).toHaveBeenCalledWith('RekeyToStandard', {
+                screen: 'RekeyToStandardIntro',
+                params: { sourceAddress: algo25Account.address },
             })
         })
 

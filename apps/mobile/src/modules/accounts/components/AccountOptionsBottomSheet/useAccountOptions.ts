@@ -154,8 +154,12 @@ export const useAccountOptions = ({
     }, [notImplemented])
 
     const handleRekeyToStandard = useCallback(() => {
-        notImplemented()
-    }, [notImplemented])
+        onClose()
+        navigation.navigate('RekeyToStandard', {
+            screen: 'RekeyToStandardIntro',
+            params: { sourceAddress: account.address },
+        })
+    }, [onClose, navigation, account.address])
 
     const handleRekeyToShared = useCallback(() => {
         notImplemented()

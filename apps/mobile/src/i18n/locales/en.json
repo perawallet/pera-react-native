@@ -970,6 +970,20 @@
             "pin_notnow": "Not now"
         }
     },
+    "rekey": {
+        "to_standard": {
+            "intro": {
+                "title": "Rekey to standard account",
+                "body": "Use another account's private key to sign transactions for this account.",
+                "learn_more": "Learn more",
+                "expect_label": "What to expect",
+                "expect_1": "Future transactions can only be signed by the delegated account.",
+                "expect_2": "This account will no longer be able to sign transactions.",
+                "expect_3": "Your account's public key, balances, and configuration will not change.",
+                "cta": "Start process"
+            }
+        }
+    },
     "receive_funds": {
         "account_selection": {
             "title": "Select Account"
