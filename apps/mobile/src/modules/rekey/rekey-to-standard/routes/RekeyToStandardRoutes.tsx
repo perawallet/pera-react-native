@@ -15,6 +15,7 @@ import { NavigationHeader } from '@components/NavigationHeader'
 import { RekeyConfirmScreen } from '../screens/RekeyConfirmScreen'
 import { RekeyIntroScreen } from '../screens/RekeyIntroScreen'
 import { RekeySelectTargetScreen } from '../screens/RekeySelectTargetScreen'
+import { RekeySuccessScreen } from '../screens/RekeySuccessScreen'
 
 import type { NativeStackHeaderProps } from '@react-navigation/native-stack'
 import type { RekeyToStandardStackParamList } from './types'
@@ -48,6 +49,11 @@ export const RekeyToStandardStackNavigator = () => {
                 name='RekeyToStandardConfirm'
                 component={RekeyConfirmScreen}
                 options={{ title: '' }}
+            />
+            <Stack.Screen
+                name='RekeyToStandardSuccess'
+                component={RekeySuccessScreen}
+                options={{ headerShown: false, gestureEnabled: false }}
             />
         </Stack.Navigator>
     )

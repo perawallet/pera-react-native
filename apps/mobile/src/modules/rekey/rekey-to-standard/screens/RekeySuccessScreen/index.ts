@@ -10,18 +10,4 @@
  limitations under the License
  */
 
-import type { NativeStackScreenProps } from '@react-navigation/native-stack'
-
-export type RekeyToStandardStackParamList = {
-    RekeyToStandardIntro: { sourceAddress: string }
-    RekeyToStandardSelectTarget: { sourceAddress: string }
-    RekeyToStandardConfirm: {
-        sourceAddress: string
-        targetAddress: string
-    }
-    RekeyToStandardSuccess: { sourceAddress: string }
-}
-
-export type RekeyToStandardScreenProps<
-    T extends keyof RekeyToStandardStackParamList,
-> = NativeStackScreenProps<RekeyToStandardStackParamList, T>
+export { RekeySuccessScreen } from './RekeySuccessScreen'

@@ -1002,6 +1002,11 @@
                     "confirm": "Confirm",
                     "cancel": "Cancel"
                 }
+            },
+            "success": {
+                "title": "Account successfully rekeyed",
+                "body": "The account {{source}} was successfully rekeyed.",
+                "cta": "Done"
             }
         }
     },

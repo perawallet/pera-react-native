@@ -76,8 +76,10 @@ export const useRekeyConfirmScreen = (): UseRekeyConfirmScreenResult => {
                 amount: 0n.microAlgo(),
                 rekeyTo: target.address,
             })
-            // TODO: navigate to RekeyToStandardSuccess once that screen lands.
-            navigation.goBack()
+            navigation.navigate('RekeyToStandard', {
+                screen: 'RekeyToStandardSuccess',
+                params: { sourceAddress: source.address },
+            })
         } catch (error) {
             // guardrails-ignore-next-line no-error-toast-in-catch reason: surface raw algod error message verbatim with localized title for diagnosability
             showToast({
