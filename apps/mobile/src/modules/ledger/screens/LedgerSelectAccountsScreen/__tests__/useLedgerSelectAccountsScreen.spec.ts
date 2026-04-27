@@ -261,6 +261,44 @@ describe('useLedgerSelectAccountsScreen', () => {
         expect(mockErrorToast).not.toHaveBeenCalled()
     })
 
+    it('blocks canContinue while a fetch is in flight', async () => {
+        let resolveFetch: (
+            value: HardwareWalletDerivedAccount,
+        ) => void = () => {}
+        mockGetAddress.mockImplementationOnce(
+            () =>
+                new Promise<HardwareWalletDerivedAccount>(resolve => {
+                    resolveFetch = resolve
+                }),
+        )
+
+        const { result } = renderHook(() => useLedgerSelectAccountsScreen())
+
+        act(() => {
+            result.current.toggleSelection('AAA111')
+        })
+
+        expect(result.current.canContinue).toBe(true)
+
+        act(() => {
+            void result.current.handleFindAnother()
+        })
+
+        await waitFor(() => {
+            expect(result.current.isFetchingMore).toBe(true)
+        })
+
+        expect(result.current.canContinue).toBe(false)
+
+        await act(async () => {
+            resolveFetch(buildAccount(2, 'CCC333'))
+        })
+
+        await waitFor(() => {
+            expect(result.current.canContinue).toBe(true)
+        })
+    })
+
     it('disconnects the transport on unmount after a successful tap', async () => {
         mockGetAddress.mockResolvedValueOnce(buildAccount(2, 'CCC333'))
 
