@@ -13,11 +13,13 @@
 import { useCallback, useMemo } from 'react'
 import {
     WalletAccount,
+    getAccountDisplayName,
     hasSigningKeys,
     isMultisigAccount,
     isSigningLogicalType,
     useAccountLogicalType,
     useAllAccounts,
+    useFindAccountByAddress,
     useRemoveAccountById,
     useUpdateAccount,
 } from '@perawallet/wallet-core-accounts'
@@ -83,6 +85,11 @@ export const useAccountOptions = ({
     const isHdWallet = logicalType === 'HdKey'
     const canSign = isSigningLogicalType(logicalType)
     const isSharedAccount = isMultisigAccount(account)
+
+    const authAccount = useFindAccountByAddress(account.rekeyAddress ?? '')
+    const authAccountName = authAccount
+        ? getAccountDisplayName(authAccount)
+        : undefined
 
     const {
         isOpen: isRenameVisible,
@@ -316,6 +323,11 @@ export const useAccountOptions = ({
                 id: 'undo-rekey',
                 icon: 'undo',
                 title: t('account_options.undo_rekey'),
+                subtitle: authAccountName
+                    ? t('account_options.undo_rekey_subtitle', {
+                          authAccount: authAccountName,
+                      })
+                    : undefined,
                 onPress: handleUndoRekey,
             })
         }
@@ -380,6 +392,7 @@ export const useAccountOptions = ({
     }, [
         t,
         account.address,
+        authAccountName,
         showPassphrase,
         isRekeyed,
         showUndoRekey,

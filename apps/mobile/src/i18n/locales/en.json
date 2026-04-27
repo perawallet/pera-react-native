@@ -281,6 +281,7 @@
         "view_passphrase_algo25": "View wallet passphrase",
         "auth_address": "Auth Account Address",
         "undo_rekey": "Undo Rekey",
+        "undo_rekey_subtitle": "Rekeyed to {{authAccount}}",
         "rekey_to_ledger": "Rekey to Ledger Account",
         "rekey_to_standard": "Rekey to Standard Account",
         "rekey_to_shared": "Rekey to Shared Account",
