@@ -74,7 +74,7 @@ const otherHardware: WalletAccount = {
     address: 'OTHER_HARDWARE_ADDR',
     type: 'hardware',
     hardwareDetails: {
-        manufacturer: 'other' as never,
+        manufacturer: 'other',
         deviceId: 'other-device',
         deviceName: 'Other Device',
         accountIndex: 0,
@@ -98,6 +98,23 @@ const watchAccount: WalletAccount = {
     id: 'watch-1',
     address: 'WATCH_ADDRESS',
     type: 'watch',
+}
+
+const algo25Account: WalletAccount = {
+    id: 'algo25-1',
+    address: 'ALGO25_ADDRESS',
+    type: 'algo25',
+    keyPairId: 'algo25-key-1',
+}
+
+const multisigAccount: WalletAccount = {
+    id: 'multisig-1',
+    address: 'MULTISIG_ADDRESS',
+    type: 'multisig',
+    multisigDetails: {
+        threshold: 2,
+        addresses: ['A', 'B', 'C'],
+    },
 }
 
 describe('useLedgerDeviceGroups', () => {
@@ -178,6 +195,8 @@ describe('useLedgerDeviceGroups', () => {
             ledgerDevice1Account0,
             hdAccount,
             watchAccount,
+            algo25Account,
+            multisigAccount,
         ])
         const { result } = renderHook(() => useLedgerDeviceGroups())
 
