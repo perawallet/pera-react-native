@@ -10,8 +10,7 @@
  limitations under the License
  */
 
-import { useState, useCallback, useEffect } from 'react'
-import { useNavigation } from '@react-navigation/native'
+import { useState, useCallback } from 'react'
 import {
     useAllAccounts,
     useSelectedAccountAddress,
@@ -25,6 +24,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNavigationLock } from '@hooks/useNavigationLock'
 import { useToast } from '@hooks/useToast'
 import {
     useShouldPlayConfetti,
@@ -43,7 +43,6 @@ type UseNameMultisigScreenResult = {
 }
 
 export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
-    const navigation = useNavigation()
     const participants = useMultisigCreationStore(state => state.participants)
     const threshold = useMultisigCreationStore(state => state.threshold)
     const resetState = useMultisigCreationStore(state => state.resetState)
@@ -65,6 +64,7 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
         t('multisig.name.default_name'),
     )
     const [isCreating, setIsCreating] = useState(false)
+    useNavigationLock(isCreating)
 
     const trimmedName = accountName.trim()
     const normalizedName = trimmedName.toLowerCase()
@@ -81,20 +81,6 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
     const handleNameChange = useCallback((value: string) => {
         setAccountName(value)
     }, [])
-
-    useEffect(() => {
-        if (!isCreating) return
-
-        const unsubscribe = navigation.addListener('beforeRemove', e => {
-            e.preventDefault()
-        })
-        navigation.setOptions({ headerLeft: () => null })
-
-        return () => {
-            unsubscribe()
-            navigation.setOptions({ headerLeft: undefined })
-        }
-    }, [isCreating, navigation])
 
     const handleFinish = useCallback(async () => {
         if (isCreating) return

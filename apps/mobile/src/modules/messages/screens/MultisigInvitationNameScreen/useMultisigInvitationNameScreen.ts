@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
     useNavigation,
     useRoute,
@@ -21,14 +21,16 @@ import {
     AccountTypes,
     useAccountsStore,
     useAllAccounts,
+    useSelectedAccountAddress,
     type MultiSigAccount,
 } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { useDeleteImportInboxMutation } from '@perawallet/wallet-core-multisig'
-import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
+import { useDeleteMultisigInvitationMutation } from '@perawallet/wallet-core-messages'
 import { useLanguage } from '@hooks/useLanguage'
+import { useNavigationLock } from '@hooks/useNavigationLock'
 import { useToast } from '@hooks/useToast'
+import { useShouldPlayConfetti } from '@modules/onboarding/hooks'
 import type { MessagesStackParamList } from '../../routes/types'
 
 type UseMultisigInvitationNameScreenResult = {
@@ -60,27 +62,40 @@ export const useMultisigInvitationNameScreen =
         const { errorToast, successToast } = useToast()
         const { network } = useNetwork()
         const deviceId = useDeviceID(network) ?? ''
-        const { invalidate } = useInboxInvalidator()
 
         const accounts = useAllAccounts()
         const setAccounts = useAccountsStore(state => state.setAccounts)
+        const { setSelectedAccountAddress } = useSelectedAccountAddress()
+        const { setShouldPlayConfetti } = useShouldPlayConfetti()
 
-        const deleteImportInboxMutation = useDeleteImportInboxMutation({
+        const deleteImportInboxMutation = useDeleteMultisigInvitationMutation({
             network,
             deviceId,
         })
 
-        const [accountName, setAccountName] = useState(
-            t('multisig.invitation.name.default_name'),
-        )
+        const [accountName, setAccountName] = useState(() => {
+            const baseName = t('multisig.invitation.name.default_name')
+            const taken = new Set(
+                accounts
+                    .filter(a => a.address !== invitation.address)
+                    .map(a => (a.name ?? '').trim().toLowerCase()),
+            )
+            if (!taken.has(baseName.toLowerCase())) return baseName
+            let n = 2
+            while (taken.has(`${baseName} ${n}`.toLowerCase())) n++
+            return `${baseName} ${n}`
+        })
         const [isSaving, setIsSaving] = useState(false)
+        const { allowProgrammaticNavigation } = useNavigationLock(isSaving)
 
         const trimmedName = accountName.trim()
         const normalizedName = trimmedName.toLowerCase()
         const isNameTaken =
             trimmedName !== '' &&
             accounts.some(
-                a => (a.name ?? '').trim().toLowerCase() === normalizedName,
+                a =>
+                    a.address !== invitation.address &&
+                    (a.name ?? '').trim().toLowerCase() === normalizedName,
             )
         const nameError = isNameTaken
             ? t('multisig.name.error_name_taken')
@@ -90,20 +105,6 @@ export const useMultisigInvitationNameScreen =
         const handleNameChange = useCallback((value: string) => {
             setAccountName(value)
         }, [])
-
-        useEffect(() => {
-            if (!isSaving) return
-
-            const unsubscribe = navigation.addListener('beforeRemove', e => {
-                e.preventDefault()
-            })
-            navigation.setOptions({ headerLeft: () => null })
-
-            return () => {
-                unsubscribe()
-                navigation.setOptions({ headerLeft: undefined })
-            }
-        }, [isSaving, navigation])
 
         const handleFinish = useCallback(async () => {
             if (isSaving) return
@@ -145,11 +146,13 @@ export const useMultisigInvitationNameScreen =
                 }
 
                 setAccounts([...accounts, newAccount])
-                invalidate()
+                setSelectedAccountAddress(invitation.address)
+                setShouldPlayConfetti(true)
                 successToast(
                     t('multisig.invitation.accept_success'),
                     trimmedName,
                 )
+                allowProgrammaticNavigation()
                 navigation.popToTop()
             } catch {
                 errorToast(
@@ -169,10 +172,12 @@ export const useMultisigInvitationNameScreen =
             trimmedName,
             deleteImportInboxMutation,
             setAccounts,
-            invalidate,
+            setSelectedAccountAddress,
+            setShouldPlayConfetti,
             successToast,
             errorToast,
             navigation,
+            allowProgrammaticNavigation,
             t,
         ])
 

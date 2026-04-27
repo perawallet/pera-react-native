@@ -11,18 +11,20 @@
  */
 
 import {
+    IconName,
     PWBottomSheet,
     PWButton,
     PWScrollView,
     PWText,
     PWView,
 } from '@components/core'
+import { AddressDisplay } from '@components/AddressDisplay'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useLanguage } from '@hooks/useLanguage'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { MultisigInvitationParam } from '../../routes/types'
 import { InvitationInfoCard } from './components/InvitationInfoCard'
-import { ParticipantRow } from './components/ParticipantRow'
 import { useMultisigInvitationDetailBottomSheet } from './useMultisigInvitationDetailBottomSheet'
 import { useStyles } from './styles'
 
@@ -38,6 +40,11 @@ export const MultisigInvitationDetailBottomSheet = ({
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
     const { t } = useLanguage()
+    const isDarkMode = useIsDarkMode()
+
+    const participantIconName: IconName = isDarkMode
+        ? 'accounts/dark/multisig-account'
+        : 'accounts/light/multisig-account'
 
     const {
         renderedInvitation,
@@ -61,8 +68,11 @@ export const MultisigInvitationDetailBottomSheet = ({
             testID='multisig_invitation_detail_bottom_sheet'
         >
             {renderedInvitation && (
-                <PWView style={styles.container}>
-                    <PWScrollView contentContainerStyle={styles.scrollContent}>
+                <>
+                    <PWScrollView
+                        style={styles.scrollView}
+                        contentContainerStyle={styles.scrollContent}
+                    >
                         <PWView style={styles.header}>
                             <PWText
                                 variant='h4'
@@ -98,10 +108,17 @@ export const MultisigInvitationDetailBottomSheet = ({
                         <PWView>
                             {renderedInvitation.participantAddresses.map(
                                 (address, index, arr) => (
-                                    <ParticipantRow
+                                    <AddressDisplay
                                         key={address}
                                         address={address}
-                                        isLast={index === arr.length - 1}
+                                        addressFormat='medium'
+                                        iconName={participantIconName}
+                                        showSecondaryAddress
+                                        style={[
+                                            styles.participantRow,
+                                            index === arr.length - 1 &&
+                                                styles.participantRowLast,
+                                        ]}
                                         testID={`participant_row_${address}`}
                                     />
                                 ),
@@ -130,7 +147,7 @@ export const MultisigInvitationDetailBottomSheet = ({
                             testID='multisig_invitation_accept_button'
                         />
                     </PWView>
-                </PWView>
+                </>
             )}
         </PWBottomSheet>
     )

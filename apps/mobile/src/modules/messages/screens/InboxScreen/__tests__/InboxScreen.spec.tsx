@@ -35,6 +35,7 @@ vi.mock('@perawallet/wallet-core-messages', () => ({
         isRefetching: false,
         refetch: vi.fn(),
     })),
+    useCleanupDuplicateMultisigInvitations: vi.fn(),
 }))
 
 describe('InboxScreen', () => {

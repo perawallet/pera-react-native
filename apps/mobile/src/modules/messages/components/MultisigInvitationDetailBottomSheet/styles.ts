@@ -14,7 +14,7 @@ import { makeStyles } from '@rneui/themed'
 import type { EdgeInsets } from 'react-native-safe-area-context'
 
 export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
-    container: {
+    scrollView: {
         flex: 1,
     },
     scrollContent: {
@@ -38,6 +38,16 @@ export const useStyles = makeStyles((theme, insets: EdgeInsets) => ({
     sectionHeading: {
         color: theme.colors.textGray,
         marginTop: theme.spacing.sm,
+    },
+    participantRow: {
+        gap: theme.spacing.md,
+        paddingVertical: theme.spacing.md,
+        paddingHorizontal: theme.spacing.lg,
+        borderBottomWidth: theme.borders.sm,
+        borderBottomColor: theme.colors.divider,
+    },
+    participantRowLast: {
+        borderBottomWidth: 0,
     },
     bottomBar: {
         flexDirection: 'row',

@@ -38,6 +38,7 @@ vi.mock('@hooks/useToast', () => ({
 
 vi.mock('@perawallet/wallet-core-messages', () => ({
     useInboxQuery: vi.fn(),
+    useCleanupDuplicateMultisigInvitations: vi.fn(),
 }))
 
 describe('useInboxScreen', () => {

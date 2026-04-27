@@ -13,7 +13,10 @@
 import { useCallback, useMemo } from 'react'
 import { useDeviceID } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { useSigningAccounts } from '@perawallet/wallet-core-accounts'
+import {
+    useAllAccounts,
+    useSigningAccounts,
+} from '@perawallet/wallet-core-accounts'
 import { useQuery, UseQueryResult } from '@tanstack/react-query'
 import { fetchInbox, type InboxResponse } from '../api/inbox'
 import type { InboxItem } from '../models'
@@ -24,9 +27,17 @@ import { sortInboxItems } from '../utils'
 export const useInboxQuery = (): UseQueryResult<InboxItem[], Error> => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
-    const accounts = useSigningAccounts()
+    const signingAccounts = useSigningAccounts()
+    const allAccounts = useAllAccounts()
 
-    const addresses = useMemo(() => accounts.map(a => a.address), [accounts])
+    const addresses = useMemo(
+        () => signingAccounts.map(a => a.address),
+        [signingAccounts],
+    )
+    const localAddresses = useMemo(
+        () => new Set(allAccounts.map(a => a.address)),
+        [allAccounts],
+    )
 
     return useQuery({
         queryKey: getInboxQueryKey(network, deviceID ?? '', addresses),
@@ -39,10 +50,13 @@ export const useInboxQuery = (): UseQueryResult<InboxItem[], Error> => {
                         if (item.type === 'asa_inbox') {
                             return item.data.requestCount > 0
                         }
+                        if (item.type === 'multisig_import') {
+                            return !localAddresses.has(item.data.address)
+                        }
                         return true
                     })
-                    .sort((a, b) => sortInboxItems(a, b, accounts)),
-            [accounts],
+                    .sort((a, b) => sortInboxItems(a, b, signingAccounts)),
+            [signingAccounts, localAddresses],
         ),
     })
 }

@@ -10,32 +10,23 @@
  limitations under the License
  */
 
-import { useMutation, type UseMutationResult } from '@tanstack/react-query'
+import { useDeleteImportInboxMutation } from '@perawallet/wallet-core-multisig'
 import type { Network } from '@perawallet/wallet-core-shared'
-import { deleteImportInbox } from '../api/endpoints'
+import { useInboxInvalidator } from './useInboxInvalidator'
 
-type UseDeleteImportInboxMutationParams = {
+type UseDeleteMultisigInvitationMutationParams = {
     network: Network
     deviceId: string
-    onSuccess?: () => void
 }
 
-type DeleteImportInboxInput = {
-    multisigAddress: string
-}
-
-export const useDeleteImportInboxMutation = ({
+export const useDeleteMultisigInvitationMutation = ({
     network,
     deviceId,
-    onSuccess,
-}: UseDeleteImportInboxMutationParams): UseMutationResult<
-    void,
-    Error,
-    DeleteImportInboxInput
-> => {
-    return useMutation({
-        mutationFn: ({ multisigAddress }: DeleteImportInboxInput) =>
-            deleteImportInbox(network, deviceId, multisigAddress),
-        onSuccess,
+}: UseDeleteMultisigInvitationMutationParams) => {
+    const { invalidate } = useInboxInvalidator()
+    return useDeleteImportInboxMutation({
+        network,
+        deviceId,
+        onSuccess: invalidate,
     })
 }

@@ -13,8 +13,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useDeviceID } from '@perawallet/wallet-core-device'
-import { useDeleteImportInboxMutation } from '@perawallet/wallet-core-multisig'
-import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
+import { useDeleteMultisigInvitationMutation } from '@perawallet/wallet-core-messages'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
@@ -44,9 +43,8 @@ export const useMultisigInvitationDetailBottomSheet = ({
     const { errorToast } = useToast()
     const { network } = useNetwork()
     const deviceId = useDeviceID(network) ?? ''
-    const { invalidate } = useInboxInvalidator()
     const accounts = useAllAccounts()
-    const deleteImportInboxMutation = useDeleteImportInboxMutation({
+    const deleteImportInboxMutation = useDeleteMultisigInvitationMutation({
         network,
         deviceId,
     })
@@ -85,7 +83,6 @@ export const useMultisigInvitationDetailBottomSheet = ({
             await deleteImportInboxMutation.mutateAsync({
                 multisigAddress: renderedInvitation.address,
             })
-            invalidate()
             onClose()
         } catch {
             errorToast(
@@ -100,7 +97,6 @@ export const useMultisigInvitationDetailBottomSheet = ({
         renderedInvitation,
         deviceId,
         deleteImportInboxMutation,
-        invalidate,
         onClose,
         errorToast,
         t,

@@ -40,9 +40,9 @@ vi.mock('../useMultisigInvitationDetailBottomSheet', () => ({
     useMultisigInvitationDetailBottomSheet: () => hookResult,
 }))
 
-vi.mock('../components/ParticipantRow', () => ({
+vi.mock('@components/AddressDisplay', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ParticipantRow: ({ address, testID }: any) => (
+    AddressDisplay: ({ address, testID }: any) => (
         <span data-testid={testID}>{address}</span>
     ),
 }))

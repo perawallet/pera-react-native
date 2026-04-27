@@ -14,6 +14,7 @@ import { useCallback, useState } from 'react'
 import {
     type ASAInbox,
     type InboxItem,
+    useCleanupDuplicateMultisigInvitations,
     useInboxQuery,
 } from '@perawallet/wallet-core-messages'
 import type { MultiSigAccount } from '@perawallet/wallet-core-multisig'
@@ -61,6 +62,7 @@ export const useInboxScreen = (): UseInboxScreenResult => {
         isRefetching,
         refetch,
     } = useInboxQuery()
+    useCleanupDuplicateMultisigInvitations()
     const { push } = useAppNavigation()
     const { errorToast } = useToast()
 

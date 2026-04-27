@@ -11,7 +11,6 @@
  */
 
 import { makeStyles } from '@rneui/themed'
-import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
     container: {
@@ -34,15 +33,6 @@ export const useStyles = makeStyles(theme => ({
         fontWeight: '600',
     },
     rowSubLabel: {
-        color: theme.colors.textGray,
-    },
-    rowValueGroup: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: theme.spacing.sm,
-    },
-    countValue: {
-        ...getTypography(theme, 'h2'),
         color: theme.colors.textGray,
     },
     thresholdValue: {

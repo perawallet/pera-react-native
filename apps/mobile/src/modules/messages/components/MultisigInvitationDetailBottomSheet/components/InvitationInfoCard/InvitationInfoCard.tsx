@@ -10,7 +10,8 @@
  limitations under the License
  */
 
-import { PWIcon, PWText, PWView } from '@components/core'
+import { PWText, PWView } from '@components/core'
+import { ParticipantCount } from '@components/ParticipantCount'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 
@@ -44,19 +45,10 @@ export const InvitationInfoCard = ({
                         </PWText>
                     )}
                 </PWView>
-                <PWView style={styles.rowValueGroup}>
-                    <PWIcon
-                        name='people'
-                        variant='secondary'
-                        size='lg'
-                    />
-                    <PWText
-                        style={styles.countValue}
-                        testID='multisig_invitation_participant_count'
-                    >
-                        {totalParticipants}
-                    </PWText>
-                </PWView>
+                <ParticipantCount
+                    count={totalParticipants}
+                    testID='multisig_invitation_participant_count'
+                />
             </PWView>
             <PWView style={styles.row}>
                 <PWView style={styles.rowLabels}>

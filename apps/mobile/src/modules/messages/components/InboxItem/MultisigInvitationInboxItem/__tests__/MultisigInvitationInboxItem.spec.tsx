@@ -42,8 +42,8 @@ describe('MultisigInvitationInboxItem', () => {
             <MultisigInvitationInboxItem item={invitationItem} />,
         )
 
-        expect(getByText('messages.inbox.invitation_title_bold')).toBeTruthy()
-        expect(getByText(/DUA4\.\.\.2ETI/)).toBeTruthy()
+        expect(getByText(/messages\.inbox\.invitation_title/)).toBeTruthy()
+        expect(getByText(/DUA4A\.\.\.JK2ETI/)).toBeTruthy()
         expect(getByText('messages.inbox.view_invitation_details')).toBeTruthy()
         expect(getByText('21 minutes ago')).toBeTruthy()
         expect(getByTestId('icon-accounts/light/multisig-account')).toBeTruthy()

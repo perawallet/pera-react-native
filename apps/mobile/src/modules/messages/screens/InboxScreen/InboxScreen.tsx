@@ -12,7 +12,7 @@
 
 import { useCallback } from 'react'
 import { useTheme } from '@rneui/themed'
-import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
+import { type InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
 import { EmptyView } from '@components/EmptyView'
 import { PWFlatList, PWView } from '@components/core'
 import { RefreshControl } from 'react-native-gesture-handler'

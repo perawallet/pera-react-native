@@ -10,5 +10,19 @@
  limitations under the License
  */
 
-export { ParticipantRow } from './ParticipantRow'
-export type { ParticipantRowProps } from './ParticipantRow'
+import { makeStyles } from '@rneui/themed'
+
+type StyleProps = {
+    size: 'h1' | 'h2'
+}
+
+export const useStyles = makeStyles((theme, { size }: StyleProps) => ({
+    container: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: size === 'h1' ? theme.spacing.md : theme.spacing.sm,
+    },
+    value: {
+        color: size === 'h2' ? theme.colors.textGray : theme.colors.textMain,
+    },
+}))

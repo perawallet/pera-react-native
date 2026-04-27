@@ -18,7 +18,8 @@ import type { MultisigInvitationParam } from '../../../routes/types'
 
 const mockMutateAsync = vi.fn()
 const mockSetAccounts = vi.fn()
-const mockInvalidate = vi.fn()
+const mockSetSelectedAccountAddress = vi.fn()
+const mockSetShouldPlayConfetti = vi.fn()
 const mockErrorToast = vi.fn()
 const mockSuccessToast = vi.fn()
 const mockPopToTop = vi.fn()
@@ -61,14 +62,19 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     return {
         ...actual,
         useAllAccounts: () => mockUseAllAccounts(),
+        useSelectedAccountAddress: () => ({
+            selectedAccountAddress: null,
+            setSelectedAccountAddress: mockSetSelectedAccountAddress,
+        }),
         useAccountsStore: (selector: (state: unknown) => unknown) =>
             selector({ setAccounts: mockSetAccounts }),
     }
 })
 
-vi.mock('@perawallet/wallet-core-multisig', () => ({
-    useDeleteImportInboxMutation: () => ({
-        mutateAsync: mockMutateAsync,
+vi.mock('@modules/onboarding/hooks', () => ({
+    useShouldPlayConfetti: () => ({
+        shouldPlayConfetti: false,
+        setShouldPlayConfetti: mockSetShouldPlayConfetti,
     }),
 }))
 
@@ -87,8 +93,8 @@ vi.mock('@perawallet/wallet-core-device', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-messages', () => ({
-    useInboxInvalidator: () => ({
-        invalidate: mockInvalidate,
+    useDeleteMultisigInvitationMutation: () => ({
+        mutateAsync: mockMutateAsync,
     }),
 }))
 
@@ -142,16 +148,61 @@ describe('useMultisigInvitationNameScreen', () => {
         expect(result.current.accountName).toBe('My Shared Wallet')
     })
 
-    it('derives isNameTaken when an existing account matches (case-insensitive, trimmed)', () => {
+    it('auto-suffixes default name when "Shared Account" already exists', () => {
         mockUseAllAccounts.mockReturnValue([
             { address: 'A', name: 'shared account' } as WalletAccount,
         ])
 
         const { result } = renderHook(() => useMultisigInvitationNameScreen())
 
+        expect(result.current.accountName).toBe('Shared Account 2')
+        expect(result.current.isNameTaken).toBe(false)
+        expect(result.current.nameError).toBeUndefined()
+        expect(result.current.isFinishDisabled).toBe(false)
+    })
+
+    it('auto-suffixes default name to next free integer when multiple defaults exist', () => {
+        mockUseAllAccounts.mockReturnValue([
+            { address: 'A', name: 'Shared Account' } as WalletAccount,
+            { address: 'B', name: 'shared account 2' } as WalletAccount,
+        ])
+
+        const { result } = renderHook(() => useMultisigInvitationNameScreen())
+
+        expect(result.current.accountName).toBe('Shared Account 3')
+        expect(result.current.isNameTaken).toBe(false)
+    })
+
+    it('fires isNameTaken when user types a colliding name (case-insensitive, trimmed)', () => {
+        mockUseAllAccounts.mockReturnValue([
+            { address: 'A', name: 'My Wallet' } as WalletAccount,
+        ])
+
+        const { result } = renderHook(() => useMultisigInvitationNameScreen())
+
+        act(() => {
+            result.current.handleNameChange('  my wallet  ')
+        })
+
         expect(result.current.isNameTaken).toBe(true)
         expect(result.current.nameError).toBe('multisig.name.error_name_taken')
         expect(result.current.isFinishDisabled).toBe(true)
+    })
+
+    it('does not flag isNameTaken when the colliding account is the invitation account itself (post-save re-render)', () => {
+        mockUseAllAccounts.mockReturnValue([
+            {
+                address: invitation.address,
+                name: 'Shared Account',
+            } as WalletAccount,
+        ])
+
+        const { result } = renderHook(() => useMultisigInvitationNameScreen())
+
+        expect(result.current.accountName).toBe('Shared Account')
+        expect(result.current.isNameTaken).toBe(false)
+        expect(result.current.nameError).toBeUndefined()
+        expect(result.current.isFinishDisabled).toBe(false)
     })
 
     it('isFinishDisabled is true when name is empty or whitespace', () => {
@@ -164,7 +215,7 @@ describe('useMultisigInvitationNameScreen', () => {
         expect(result.current.isFinishDisabled).toBe(true)
     })
 
-    it('handleFinish follows happy path: DELETE, setAccounts, invalidate, success toast, popToTop', async () => {
+    it('handleFinish follows happy path: DELETE, setAccounts, select new account, play confetti, success toast, popToTop', async () => {
         const existing = [{ address: 'X', name: 'Other' } as WalletAccount]
         mockUseAllAccounts.mockReturnValue(existing)
 
@@ -189,7 +240,8 @@ describe('useMultisigInvitationNameScreen', () => {
                 },
             }),
         ])
-        expect(mockInvalidate).toHaveBeenCalled()
+        expect(mockSetSelectedAccountAddress).toHaveBeenCalledWith('MSIG_ADDR')
+        expect(mockSetShouldPlayConfetti).toHaveBeenCalledWith(true)
         expect(mockSuccessToast).toHaveBeenCalled()
         expect(mockPopToTop).toHaveBeenCalled()
     })
@@ -226,7 +278,6 @@ describe('useMultisigInvitationNameScreen', () => {
 
         expect(mockErrorToast).toHaveBeenCalled()
         expect(mockSetAccounts).not.toHaveBeenCalled()
-        expect(mockInvalidate).not.toHaveBeenCalled()
         expect(mockPopToTop).not.toHaveBeenCalled()
         expect(result.current.isSaving).toBe(false)
     })

@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import { Trans } from 'react-i18next'
 import type { InboxItem as InboxItemModel } from '@perawallet/wallet-core-messages'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { formatRelativeTime } from '@perawallet/wallet-core-shared'
@@ -36,8 +37,6 @@ export type MultisigInvitationInboxItemProps = {
     onPress?: () => void
 }
 
-const TRUNCATED_ADDRESS_LENGTH = 8
-
 export const MultisigInvitationInboxItem = ({
     item,
     onPress,
@@ -50,10 +49,7 @@ export const MultisigInvitationInboxItem = ({
         ? 'accounts/dark/multisig-account'
         : 'accounts/light/multisig-account'
 
-    const truncatedAddress = truncateAlgorandAddress(
-        item.data.address,
-        TRUNCATED_ADDRESS_LENGTH,
-    )
+    const truncatedAddress = truncateAlgorandAddress(item.data.address)
     const relativeTime = formatRelativeTime(item.createdAt)
 
     return (
@@ -72,11 +68,16 @@ export const MultisigInvitationInboxItem = ({
             />
             <PWView style={styles.content}>
                 <PWText style={styles.title}>
-                    <PWText style={styles.titleBold}>
-                        {t('messages.inbox.invitation_title_bold')}
-                    </PWText>
-                    {t('messages.inbox.invitation_title_suffix')}
-                    {truncatedAddress}
+                    <Trans
+                        i18nKey='messages.inbox.invitation_title'
+                        values={{ address: truncatedAddress }}
+                        components={[
+                            <PWText
+                                key='bold'
+                                style={styles.titleBold}
+                            />,
+                        ]}
+                    />
                 </PWText>
                 <PWTouchableOpacity
                     style={styles.cta}

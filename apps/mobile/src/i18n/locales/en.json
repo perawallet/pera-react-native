@@ -97,6 +97,9 @@
         "confirm": "Remove",
         "cancel": "Cancel"
     },
+    "address_display": {
+        "you_suffix": "{{address}} (You)"
+    },
     "address_entry": {
         "scan_qr": "Scan QR Code",
         "address": "Address",
@@ -665,8 +668,7 @@
             "asa_requests_other": "{{count}} incoming assets",
             "multisig_import": "Shared Account Import Request",
             "multisig_sign": "Shared Account Sign Request",
-            "invitation_title_bold": "You've been invited",
-            "invitation_title_suffix": " to join a shared account ",
+            "invitation_title": "<0>You've been invited</0> to join a shared account {{address}}",
             "view_invitation_details": "View invitation details"
         },
         "claim": {
@@ -750,7 +752,6 @@
             "accept_success": "Shared account added",
             "accept_error": "Could not add account. Please try again.",
             "already_added": "This shared account is already in your wallet",
-            "participant_address_you": "{{address}} (You)",
             "name": {
                 "screen_title": "Shared Account",
                 "title": "Name your shared account",

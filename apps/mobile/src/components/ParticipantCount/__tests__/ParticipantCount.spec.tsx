@@ -10,24 +10,23 @@
  limitations under the License
  */
 
-import { describe, it, expect } from 'vitest'
-import React from 'react'
 import { render, screen } from '@test-utils/render'
-import { PWBadge } from '../PWBadge'
+import { describe, it, expect } from 'vitest'
+import { ParticipantCount } from '../ParticipantCount'
 
-describe('PWBadge', () => {
-    it('renders value correctly', () => {
-        render(<PWBadge value='Verified' />)
-        expect(screen.getByText('Verified')).toBeTruthy()
+describe('ParticipantCount', () => {
+    it('renders the count', () => {
+        render(<ParticipantCount count={4} />)
+        expect(screen.getByText('4')).toBeTruthy()
     })
 
-    it('renders alert variant value correctly', () => {
+    it('exposes the count under the provided testID', () => {
         render(
-            <PWBadge
-                variant='alert'
-                value='3'
+            <ParticipantCount
+                count={7}
+                testID='participant_count_value'
             />,
         )
-        expect(screen.getByText('3')).toBeTruthy()
+        expect(screen.getByTestId('participant_count_value')).toBeTruthy()
     })
 })
