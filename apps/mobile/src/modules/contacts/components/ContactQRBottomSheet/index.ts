@@ -10,21 +10,4 @@
  limitations under the License
  */
 
-import { PWIcon } from '@components/core'
-import { ParamListBase, useNavigation } from '@react-navigation/native'
-import { NativeStackNavigationProp } from '@react-navigation/native-stack'
-
-export const ViewContactHeaderButtons = () => {
-    const navigation = useNavigation<NativeStackNavigationProp<ParamListBase>>()
-    const goToAdd = () => {
-        navigation.navigate('EditContact')
-    }
-
-    return (
-        <PWIcon
-            variant='secondary'
-            name='edit-pen'
-            onPress={goToAdd}
-        />
-    )
-}
+export { ContactQRBottomSheet } from './ContactQRBottomSheet'

@@ -16,6 +16,7 @@ import { useSettingsScreen } from '../useSettingsScreen'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useWebView } from '@modules/webview'
 import { useModalState } from '@hooks/useModalState'
+import { useDeleteAllData } from '@modules/settings/hooks/useDeleteAllData'
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: vi.fn(),
@@ -27,6 +28,11 @@ vi.mock('@modules/webview', () => ({
 
 vi.mock('@hooks/useModalState', () => ({
     useModalState: vi.fn(),
+}))
+
+vi.mock('@modules/settings/hooks/useDeleteAllData', () => ({
+    useDeleteAllData: vi.fn(),
+    clearAccountsStore: vi.fn(),
 }))
 
 vi.mock('../useSettingsOptions', () => ({
@@ -50,6 +56,7 @@ describe('useSettingsScreen', () => {
     const mockPushWebView = vi.fn()
     const mockOpenModal = vi.fn()
     const mockCloseModal = vi.fn()
+    const mockDeleteAllData = vi.fn().mockResolvedValue(undefined)
 
     beforeEach(() => {
         vi.clearAllMocks()
@@ -63,6 +70,9 @@ describe('useSettingsScreen', () => {
             isOpen: false,
             open: mockOpenModal,
             close: mockCloseModal,
+        })
+        ;(useDeleteAllData as Mock).mockReturnValue({
+            deleteAllData: mockDeleteAllData,
         })
     })
 
@@ -125,5 +135,39 @@ describe('useSettingsScreen', () => {
         expect(mockOpenModal).toHaveBeenCalled()
         expect(mockPush).not.toHaveBeenCalled()
         expect(mockPushWebView).not.toHaveBeenCalled()
+    })
+
+    describe('handleDeleteAllAccounts', () => {
+        it('clears all data', async () => {
+            const { result } = renderHook(() => useSettingsScreen())
+
+            await act(async () => {
+                await result.current.handleDeleteAllAccounts()
+            })
+
+            expect(mockDeleteAllData).toHaveBeenCalledTimes(1)
+        })
+
+        it('closes the confirm modal after clearing data', async () => {
+            const { result } = renderHook(() => useSettingsScreen())
+
+            await act(async () => {
+                await result.current.handleDeleteAllAccounts()
+            })
+
+            expect(mockCloseModal).toHaveBeenCalled()
+        })
+
+        it('opens the success modal after clearing data', async () => {
+            const { result } = renderHook(() => useSettingsScreen())
+
+            await act(async () => {
+                await result.current.handleDeleteAllAccounts()
+            })
+
+            // The success modal's open() is the same `mockOpenModal` since all
+            // useModalState calls share the mock.
+            expect(mockOpenModal).toHaveBeenCalled()
+        })
     })
 })

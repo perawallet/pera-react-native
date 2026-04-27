@@ -257,7 +257,7 @@ export const getTheme = (mode: 'light' | 'dark' = 'light') =>
             layerGrayLightest: palette.gray[800],
 
             // Link
-            linkPrimary: palette.turquoise[600],
+            linkPrimary: palette.yellow[400],
             linkIcon: palette.gray[100],
 
             // Button Primary

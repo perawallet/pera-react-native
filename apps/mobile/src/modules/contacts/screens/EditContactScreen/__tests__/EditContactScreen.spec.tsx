@@ -18,12 +18,25 @@ import { EditContactScreen } from '../EditContactScreen'
 vi.mock('@perawallet/wallet-core-contacts', async () => ({
     useContacts: vi.fn(() => ({
         selectedContact: null,
-        saveContact: vi.fn(),
+        addContact: vi.fn(),
+        editContact: vi.fn(),
         deleteContact: vi.fn(),
         findContacts: vi.fn(() => []),
+        setSelectedContact: vi.fn(),
     })),
-    // Mock schema to avoid parsing issues if needed, but schema is usually an object.
     contactSchema: {},
+    DuplicateAddressError: class extends Error {},
+}))
+
+vi.mock('@hooks/useImagePicker', () => ({
+    useImagePicker: () => ({
+        pickFromGallery: vi.fn(),
+        permissionDenied: {
+            isVisible: false,
+            close: vi.fn(),
+            openSettings: vi.fn(),
+        },
+    }),
 }))
 
 vi.mock('@hookform/resolvers/zod', () => ({
@@ -77,8 +90,10 @@ vi.mock('react-hook-form', () => {
 })
 
 describe('EditContactScreen', () => {
-    it('renders correctly', () => {
+    it('renders the delete pill', () => {
         render(<EditContactScreen />)
-        expect(screen.getByText('contacts.edit_contact.save')).toBeTruthy()
+        expect(
+            screen.getByText('contacts.edit_contact.delete_this'),
+        ).toBeTruthy()
     })
 })

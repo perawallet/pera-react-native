@@ -37,6 +37,14 @@ export const SingleTransactionScreen = () => {
 
     const transaction = allTransactions[0]
 
+    // After signing completes, the actor clears the request from the store
+    // before the bottom sheet finishes animating closed. Suppressing the
+    // empty state when there's no request avoids a flash of "Invalid
+    // Transaction" during that teardown window.
+    if (!request) {
+        return null
+    }
+
     if (!transaction) {
         return (
             <EmptyView

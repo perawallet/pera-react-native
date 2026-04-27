@@ -17,10 +17,9 @@ import {
 import { SCREEN_ANIMATION_CONFIG } from '@constants/ui'
 import { NavigationHeader } from '@components/NavigationHeader'
 import { ContactListScreen } from '@modules/contacts/screens/ContactListScreen'
-import { ContactListHeaderButtons } from '@modules/contacts/components/ContactListHeaderButtons'
-import { ViewContactHeaderButtons } from '@modules/contacts/components/ViewContactHeaderButtons'
 import { ViewContactScreen } from '@modules/contacts/screens/ViewContactScreen'
 import { EditContactScreen } from '@modules/contacts/screens/EditContactScreen'
+import { AddContactScreen } from '@modules/contacts/screens/AddContactScreen'
 import { fullScreenLayout } from '@layouts/index'
 import { screenListeners } from '@routes/listeners'
 
@@ -51,15 +50,13 @@ export const ContactsStackNavigator = () => {
                 name='ContactsList'
                 options={{
                     title: 'screens.contacts',
-                    headerRight: () => <ContactListHeaderButtons />,
                 }}
                 component={ContactListScreen}
             />
             <ContactsStack.Screen
                 name='ViewContact'
                 options={{
-                    title: 'screens.view_contact',
-                    headerRight: () => <ViewContactHeaderButtons />,
+                    title: '',
                 }}
                 component={ViewContactScreen}
             />
@@ -75,7 +72,7 @@ export const ContactsStackNavigator = () => {
                 options={{
                     title: 'screens.add_contact',
                 }}
-                component={EditContactScreen}
+                component={AddContactScreen}
             />
         </ContactsStack.Navigator>
     )

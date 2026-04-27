@@ -25,7 +25,7 @@ export const useStyles = makeStyles((theme, { variant }: PWInputStyleProps) => {
     return {
         container: {},
         inputContainer: {
-            paddingHorizontal: theme.spacing.xs,
+            paddingHorizontal: theme.spacing.md,
             borderRadius: theme.borderRadius.xs,
         },
         input,

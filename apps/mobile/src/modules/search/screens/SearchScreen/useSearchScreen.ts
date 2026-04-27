@@ -103,7 +103,7 @@ export const useSearchScreen = (): UseSearchScreenResult => {
                 toRow: (contact: Contact) => ({
                     type: 'contact',
                     contact,
-                    key: `contact-${contact.id ?? contact.address}`,
+                    key: `contact-${contact.address}`,
                 }),
             },
             {

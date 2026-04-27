@@ -2150,15 +2150,20 @@ vi.mock('@perawallet/wallet-core-contacts', () => ({
         contacts: [],
         findContacts: vi.fn(() => []),
         addContact: vi.fn(),
-        removeContact: vi.fn(),
-        updateContact: vi.fn(),
+        editContact: vi.fn(),
+        deleteContact: vi.fn(),
+        selectedContact: null,
+        setSelectedContact: vi.fn(),
     })),
     useContactsStore: vi.fn(() => ({
         contacts: [],
         addContact: vi.fn(),
-        removeContact: vi.fn(),
-        updateContact: vi.fn(),
+        editContact: vi.fn(),
+        deleteContact: vi.fn(),
+        selectedContact: null,
+        setSelectedContact: vi.fn(),
     })),
+    DuplicateAddressError: class DuplicateAddressError extends Error {},
 }))
 
 // Mock @perawallet/wallet-core-currencies
@@ -2320,6 +2325,15 @@ vi.mock('react-native-svg', () => {
             React.createElement('clipPath', props, props.children),
     }
 })
+
+// Mock react-native-share (native module not resolvable in vitest)
+vi.mock('react-native-share', () => ({
+    default: {
+        open: vi.fn().mockResolvedValue({ success: true }),
+        shareSingle: vi.fn().mockResolvedValue({ success: true }),
+    },
+    Social: {},
+}))
 
 // Mock react-native-qrcode-svg (contains JSX in .js files)
 vi.mock('react-native-qrcode-svg', () => {

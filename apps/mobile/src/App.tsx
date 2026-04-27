@@ -21,7 +21,11 @@ initDecimalConfig()
 import React, { useEffect, useState } from 'react'
 import './i18n'
 import { Platform } from 'react-native'
+import { ThemeProvider } from '@rneui/themed'
 import { PWText } from '@components/core'
+import { useIsDarkMode } from '@hooks/useIsDarkMode'
+import { useLanguage } from '@hooks/useLanguage'
+import { getTheme } from '@theme/theme'
 import { QueryProvider, queryClient } from './providers/QueryProvider'
 import { createAsyncStoragePersister } from '@tanstack/query-async-storage-persister'
 import { Persister } from '@tanstack/react-query-persist-client'
@@ -53,7 +57,6 @@ SplashScreen.preventAutoHideAsync()
 
 import { NotifierWrapper } from 'react-native-notifier'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
-import { useLanguage } from '@hooks/useLanguage'
 import { logger, updateBackendHeaders } from '@perawallet/wallet-core-shared'
 
 const updateQueryHeaders = () => {
@@ -75,6 +78,8 @@ const AppContent = () => {
     const [bootstrapped, setBootstrapped] = useState(false)
     const [fcmToken, setFcmToken] = useState<Nullable<string>>(null)
     const { t } = useLanguage()
+    const isDarkMode = useIsDarkMode()
+    const bootstrapTheme = getTheme(isDarkMode ? 'dark' : 'light')
     const provider = usePeraProvider()
     const isDarkMode = useIsDarkMode()
     const theme = getTheme(isDarkMode ? 'dark' : 'light')
@@ -134,7 +139,11 @@ const AppContent = () => {
     return (
         <ThemeProvider theme={theme}>
             <SafeAreaProvider>
-                {!bootstrapped && <PWText>{t('common.loading.label')}</PWText>}
+                {!bootstrapped && (
+                    <ThemeProvider theme={bootstrapTheme}>
+                        <PWText>{t('common.loading.label')}</PWText>
+                    </ThemeProvider>
+                )}
                 {bootstrapped && persister && (
                     <GestureHandlerRootView>
                         <NotifierWrapper>

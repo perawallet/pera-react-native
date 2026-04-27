@@ -41,9 +41,6 @@ export const EditParticipantScreen = () => {
             control={control}
             address={address}
             nameLabel={t('multisig.edit_participant.nickname_label')}
-            namePlaceholder={t(
-                'multisig.edit_participant.nickname_placeholder',
-            )}
             addressLabel={t('multisig.edit_participant.address_label')}
         >
             <PWButton
