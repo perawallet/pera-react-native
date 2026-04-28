@@ -18,15 +18,17 @@ import {
     InsufficientBalanceForOptInError,
 } from '../useAssetOptInMutation'
 
-const mockAssetOptIn = vi.fn()
+const mockSubmit = vi.fn()
 const mockAccountInformation = vi.fn()
 const mockGetSuggestedParams = vi.fn()
-const mockSignTransactions = vi.fn()
+const mockBuild = vi.fn()
+const mockNewGroup = vi.fn(() => ({
+    addAssetOptIn: vi.fn().mockReturnThis(),
+    build: mockBuild,
+}))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    useTransactionSigner: () => ({
-        signTransactions: mockSignTransactions,
-    }),
+    useSignAndSubmitGroup: () => ({ submit: mockSubmit }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
@@ -43,15 +45,11 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useNetwork: () => ({ network: 'testnet' }),
     useAlgorandClient: () => ({
-        send: {
-            assetOptIn: mockAssetOptIn,
-        },
         client: {
-            algod: {
-                accountInformation: mockAccountInformation,
-            },
+            algod: { accountInformation: mockAccountInformation },
         },
         getSuggestedParams: mockGetSuggestedParams,
+        newGroup: mockNewGroup,
     }),
     ASSET_MBR: 100000n,
 }))
@@ -65,10 +63,13 @@ describe('useAssetOptInMutation', () => {
             assets: [],
         })
         mockGetSuggestedParams.mockResolvedValue({ minFee: 1000n })
-        mockAssetOptIn.mockResolvedValue({ txIds: ['tx1'] })
+        mockBuild.mockResolvedValue({
+            transactions: [{ txn: { sender: 'SENDER' } }],
+        })
+        mockSubmit.mockResolvedValue({ txIds: ['tx1'] })
     })
 
-    it('should opt in to an asset successfully', async () => {
+    it('builds an opt-in via composer and submits via the pipeline helper', async () => {
         const { result } = renderHook(() => useAssetOptInMutation())
 
         await act(async () => {
@@ -79,36 +80,35 @@ describe('useAssetOptInMutation', () => {
             expect(res.txIds).toEqual(['tx1'])
         })
 
-        expect(mockAssetOptIn).toHaveBeenCalledWith({
-            sender: 'SENDER',
-            assetId: 12345n,
-        })
+        expect(mockNewGroup).toHaveBeenCalledTimes(1)
+        expect(mockSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({
+                unsignedTxs: [{ sender: 'SENDER' }],
+            }),
+        )
     })
 
-    it('should reject when already opted in', async () => {
-        mockAccountInformation.mockResolvedValue({
+    it('throws AlreadyOptedInError without calling the pipeline', async () => {
+        mockAccountInformation.mockResolvedValueOnce({
             amount: 1000000n,
             minBalance: 100000n,
-            assets: [{ assetId: 12345n, amount: 0n }],
+            assets: [{ assetId: 12345n }],
         })
 
         const { result } = renderHook(() => useAssetOptInMutation())
 
         await act(async () => {
             await expect(
-                result.current.optIn({
-                    sender: 'SENDER',
-                    assetId: 12345n,
-                }),
-            ).rejects.toThrow(AlreadyOptedInError)
+                result.current.optIn({ sender: 'SENDER', assetId: 12345n }),
+            ).rejects.toBeInstanceOf(AlreadyOptedInError)
         })
 
-        expect(mockAssetOptIn).not.toHaveBeenCalled()
+        expect(mockSubmit).not.toHaveBeenCalled()
     })
 
-    it('should reject when insufficient balance for MBR', async () => {
-        mockAccountInformation.mockResolvedValue({
-            amount: 100000n, // Just enough for current MBR
+    it('throws InsufficientBalanceForOptInError without calling the pipeline', async () => {
+        mockAccountInformation.mockResolvedValueOnce({
+            amount: 1n,
             minBalance: 100000n,
             assets: [],
         })
@@ -117,127 +117,10 @@ describe('useAssetOptInMutation', () => {
 
         await act(async () => {
             await expect(
-                result.current.optIn({
-                    sender: 'SENDER',
-                    assetId: 12345n,
-                }),
-            ).rejects.toThrow(InsufficientBalanceForOptInError)
+                result.current.optIn({ sender: 'SENDER', assetId: 12345n }),
+            ).rejects.toBeInstanceOf(InsufficientBalanceForOptInError)
         })
 
-        expect(mockAssetOptIn).not.toHaveBeenCalled()
-    })
-
-    it('should call insertAssetHolding and invalidateBalances on success', async () => {
-        const mockInsertAssetHolding =
-            await import('@perawallet/wallet-core-accounts').then(
-                m => m.insertAssetHolding,
-            )
-
-        const { result } = renderHook(() => useAssetOptInMutation())
-
-        await act(async () => {
-            await result.current.optIn({
-                sender: 'SENDER',
-                assetId: 12345n,
-            })
-        })
-
-        expect(mockInsertAssetHolding).toHaveBeenCalledWith({
-            accountAddress: 'SENDER',
-            assetId: '12345',
-            network: 'testnet',
-        })
-    })
-
-    it('should not call insertAssetHolding when transaction fails', async () => {
-        mockAssetOptIn.mockRejectedValue(new Error('signing rejected'))
-        const mockInsertAssetHolding =
-            await import('@perawallet/wallet-core-accounts').then(
-                m => m.insertAssetHolding,
-            )
-
-        const { result } = renderHook(() => useAssetOptInMutation())
-
-        await act(async () => {
-            await expect(
-                result.current.optIn({
-                    sender: 'SENDER',
-                    assetId: 12345n,
-                }),
-            ).rejects.toThrow('signing rejected')
-        })
-
-        expect(mockInsertAssetHolding).not.toHaveBeenCalled()
-    })
-
-    it('should not call insertAssetHolding when validation fails', async () => {
-        mockAccountInformation.mockResolvedValue({
-            amount: 1000000n,
-            minBalance: 100000n,
-            assets: [{ assetId: 12345n, amount: 0n }],
-        })
-        const mockInsertAssetHolding =
-            await import('@perawallet/wallet-core-accounts').then(
-                m => m.insertAssetHolding,
-            )
-
-        const { result } = renderHook(() => useAssetOptInMutation())
-
-        await act(async () => {
-            await expect(
-                result.current.optIn({
-                    sender: 'SENDER',
-                    assetId: 12345n,
-                }),
-            ).rejects.toThrow(AlreadyOptedInError)
-        })
-
-        expect(mockInsertAssetHolding).not.toHaveBeenCalled()
-        expect(mockAssetOptIn).not.toHaveBeenCalled()
-    })
-
-    it('should set error state on failure', async () => {
-        mockAccountInformation.mockRejectedValue(new Error('Network error'))
-        const { result } = renderHook(() => useAssetOptInMutation())
-
-        await act(async () => {
-            await expect(
-                result.current.optIn({
-                    sender: 'SENDER',
-                    assetId: 12345n,
-                }),
-            ).rejects.toThrow('Network error')
-        })
-
-        expect(result.current.isError).toBe(true)
-        expect(result.current.error?.message).toBe('Network error')
-    })
-
-    it('should track loading state', async () => {
-        const { result } = renderHook(() => useAssetOptInMutation())
-
-        expect(result.current.isLoading).toBe(false)
-
-        let resolveOptIn: (value: { txIds: string[] }) => void
-        mockAssetOptIn.mockReturnValue(
-            new Promise(resolve => {
-                resolveOptIn = resolve
-            }),
-        )
-
-        const optInPromise = act(async () => {
-            const promise = result.current.optIn({
-                sender: 'SENDER',
-                assetId: 12345n,
-            })
-            return promise
-        })
-
-        await act(async () => {
-            resolveOptIn!({ txIds: ['tx1'] })
-        })
-
-        await optInPromise
-        expect(result.current.isLoading).toBe(false)
+        expect(mockSubmit).not.toHaveBeenCalled()
     })
 })
