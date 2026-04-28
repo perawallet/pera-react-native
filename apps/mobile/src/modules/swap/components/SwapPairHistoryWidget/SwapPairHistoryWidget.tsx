@@ -109,7 +109,7 @@ export const SwapPairHistoryWidget = () => {
                         {t('swap.history.widget.title')}
                     </PWText>
                     <PWButton
-                        variant='link'
+                        variant='linkPositive'
                         paddingStyle='none'
                         title={t('swap.history.widget.see_all')}
                         onPress={handleSeeAllPress}

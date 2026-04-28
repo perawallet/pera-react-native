@@ -32,6 +32,7 @@ export type TypographyVariant =
     | 'bodySemibold'
     | 'caption'
     | 'link'
+    | 'linkPositive'
     | 'mono'
 
 export const getTypography = (
@@ -100,6 +101,13 @@ export const getTypography = (
             fontSize: 13,
             lineHeight: 24,
             color: theme.colors.linkPrimary,
+            fontWeight: 500,
+        },
+        linkPositive: {
+            fontFamily: getFontFamily(500),
+            fontSize: 13,
+            lineHeight: 24,
+            color: theme.colors.positive,
             fontWeight: 500,
         },
         mono: {

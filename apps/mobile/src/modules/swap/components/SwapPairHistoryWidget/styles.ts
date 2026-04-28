@@ -21,7 +21,7 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: theme.spacing.sm,
+        paddingHorizontal: theme.spacing.md,
     },
     title: {
         color: theme.colors.textMain,
