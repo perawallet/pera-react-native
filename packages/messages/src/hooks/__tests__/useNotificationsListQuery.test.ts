@@ -122,4 +122,35 @@ describe('useNotificationsListQuery', () => {
 
         expect(fetchNotificationList).not.toHaveBeenCalled()
     })
+
+    it('passes only the cursor query param (not the full next URL) when fetching the next page', async () => {
+        const nextCursor = 'cD0xMjM0NTY3'
+        vi.mocked(fetchNotificationList).mockResolvedValueOnce({
+            count: 1,
+            next: `https://mobile-api.perawallet.app/v2/devices/test-device-id/notifications/?cursor=${nextCursor}&page_size=20`,
+            previous: null,
+            results: [],
+        })
+
+        const { result } = renderHook(() => useNotificationsListQuery(), {
+            wrapper: createWrapper(),
+        })
+
+        await waitFor(() => expect(result.current.isSuccess).toBe(true))
+
+        vi.mocked(fetchNotificationList).mockResolvedValueOnce({
+            count: 0,
+            next: null,
+            previous: null,
+            results: [],
+        })
+
+        await result.current.fetchNextPage()
+
+        expect(fetchNotificationList).toHaveBeenLastCalledWith(
+            'test-network',
+            'test-device-id',
+            nextCursor,
+        )
+    })
 })

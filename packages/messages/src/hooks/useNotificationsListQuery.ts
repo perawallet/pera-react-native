@@ -34,6 +34,15 @@ const mapNotificationResponseToNotification = (
     icon: response.icon ?? null,
 })
 
+const extractCursor = (url: string | null): string | undefined => {
+    if (!url) return undefined
+    try {
+        return new URL(url).searchParams.get('cursor') ?? undefined
+    } catch {
+        return undefined
+    }
+}
+
 export const useNotificationsListQuery = () => {
     const { network } = useNetwork()
     const deviceID = useDeviceID(network)
@@ -47,12 +56,8 @@ export const useNotificationsListQuery = () => {
                 pageParam as string | undefined,
             ),
         initialPageParam: '',
-        getNextPageParam: lastPage => {
-            return lastPage.next
-        },
-        getPreviousPageParam: firstPage => {
-            return firstPage.previous
-        },
+        getNextPageParam: lastPage => extractCursor(lastPage.next),
+        getPreviousPageParam: firstPage => extractCursor(firstPage.previous),
         enabled: !!deviceID?.length,
         select: useCallback((data: InfiniteData<NotificationsListResponse>) => {
             return data.pages.flatMap((p: NotificationsListResponse) =>
