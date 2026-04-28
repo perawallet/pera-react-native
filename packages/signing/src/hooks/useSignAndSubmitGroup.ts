@@ -1,0 +1,121 @@
+/*
+ Copyright 2022-2025 Pera Wallet, LDA
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License
+ */
+
+import { useCallback } from 'react'
+import {
+    useAlgorandClient,
+    useTransactionEncoder,
+} from '@perawallet/wallet-core-blockchain'
+import type {
+    PeraSignedTransaction,
+    PeraTransaction,
+} from '@perawallet/wallet-core-blockchain'
+import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
+import { submitSignedTransactionGroup } from '../pipeline/submission/submitSignedTransactionGroup'
+import type { TransactionSignRequest } from '../models'
+import { useSigningRequest } from './useSigningRequest'
+
+/**
+ * Thrown when the user dismisses the LedgerSigningOverlay or the in-app
+ * signing sheet for a `headless: true` request. Callers should treat this
+ * as a non-fatal cancellation rather than a backend failure.
+ */
+export class UserRejectedSigningError extends Error {
+    constructor() {
+        super('User rejected signing')
+        this.name = 'UserRejectedSigningError'
+    }
+}
+
+export type SignAndSubmitGroupSource = {
+    /** Short name shown in any sheet that renders pre-completion UI. */
+    name: string
+    /** Human-readable description for the same UI surfaces. */
+    description: string
+}
+
+export type SignAndSubmitGroupParams = {
+    /** Unsigned transactions, already grouped by the caller. */
+    unsignedTxs: PeraTransaction[]
+    /** Display metadata threaded through the pipeline. */
+    source: SignAndSubmitGroupSource
+}
+
+export type SignAndSubmitGroupResult = {
+    submit: (
+        params: SignAndSubmitGroupParams,
+    ) => Promise<{ txIds: string[] }>
+}
+
+/**
+ * Push a pre-built unsigned transaction group through the XState signing
+ * pipeline as a `headless: true`, `transport: 'callback'` request. Resolves
+ * with the algod txIds once the user approves and submission succeeds.
+ *
+ * Local-key accounts run validating → signing → completed without showing
+ * any sheet (headless skips the review state). Hardware-wallet accounts
+ * render the LedgerSigningOverlay automatically because the pipeline binds
+ * its phase callbacks for every actor.
+ */
+export const useSignAndSubmitGroup = (): SignAndSubmitGroupResult => {
+    const { addSignRequest } = useSigningRequest()
+    const algokit = useAlgorandClient()
+    const { encodeSignedTransactions } = useTransactionEncoder()
+
+    const submit = useCallback(
+        ({
+            unsignedTxs,
+            source,
+        }: SignAndSubmitGroupParams): Promise<{ txIds: string[] }> => {
+            if (unsignedTxs.length === 0) {
+                return Promise.resolve({ txIds: [] })
+            }
+            return new Promise((resolve, reject) => {
+                const request: TransactionSignRequest = {
+                    id: generateOrderedUniqueId(),
+                    type: 'transactions',
+                    transport: 'callback',
+                    sourceType: 'local',
+                    headless: true,
+                    txs: unsignedTxs,
+                    sourceMetadata: source,
+                    approve: async (signed: PeraSignedTransaction[]) => {
+                        try {
+                            const txIds = await submitSignedTransactionGroup(
+                                algokit,
+                                encodeSignedTransactions,
+                                signed,
+                            )
+                            resolve({ txIds })
+                        } catch (err) {
+                            reject(
+                                err instanceof Error
+                                    ? err
+                                    : new Error(String(err)),
+                            )
+                        }
+                    },
+                    reject: async () => {
+                        reject(new UserRejectedSigningError())
+                    },
+                    error: async (err: Error) => {
+                        reject(err)
+                    },
+                }
+                addSignRequest(request)
+            })
+        },
+        [addSignRequest, algokit, encodeSignedTransactions],
+    )
+
+    return { submit }
+}
