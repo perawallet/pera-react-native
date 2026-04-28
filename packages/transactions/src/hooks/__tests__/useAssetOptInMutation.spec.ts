@@ -26,20 +26,22 @@ const mockNewGroup = vi.fn(() => ({
     addAssetOptIn: vi.fn().mockReturnThis(),
     build: mockBuild,
 }))
+const mockInsertAssetHolding = vi.fn().mockResolvedValue(undefined)
+const mockFetchAndPersistAssets = vi.fn().mockResolvedValue(undefined)
+const mockInvalidate = vi.fn()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSignAndSubmitGroup: () => ({ submit: mockSubmit }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    insertAssetHolding: vi.fn().mockResolvedValue(undefined),
-    useAccountBalancesInvalidator: () => ({
-        invalidate: vi.fn(),
-    }),
+    insertAssetHolding: (...args: unknown[]) => mockInsertAssetHolding(...args),
+    useAccountBalancesInvalidator: () => ({ invalidate: mockInvalidate }),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
-    fetchAndPersistAssets: vi.fn().mockResolvedValue(undefined),
+    fetchAndPersistAssets: (...args: unknown[]) =>
+        mockFetchAndPersistAssets(...args),
 }))
 
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -86,6 +88,16 @@ describe('useAssetOptInMutation', () => {
                 unsignedTxs: [{ sender: 'SENDER' }],
             }),
         )
+        expect(mockInsertAssetHolding).toHaveBeenCalledWith({
+            accountAddress: 'SENDER',
+            assetId: '12345',
+            network: 'testnet',
+        })
+        expect(mockFetchAndPersistAssets).toHaveBeenCalledWith(
+            ['12345'],
+            'testnet',
+        )
+        expect(mockInvalidate).toHaveBeenCalledTimes(1)
     })
 
     it('throws AlreadyOptedInError without calling the pipeline', async () => {
@@ -122,5 +134,18 @@ describe('useAssetOptInMutation', () => {
         })
 
         expect(mockSubmit).not.toHaveBeenCalled()
+    })
+
+    it('does not run post-submit work when submit fails', async () => {
+        mockSubmit.mockRejectedValueOnce(new Error('user cancelled'))
+        const { result } = renderHook(() => useAssetOptInMutation())
+        await act(async () => {
+            await expect(
+                result.current.optIn({ sender: 'SENDER', assetId: 12345n }),
+            ).rejects.toThrow('user cancelled')
+        })
+        expect(mockInsertAssetHolding).not.toHaveBeenCalled()
+        expect(mockFetchAndPersistAssets).not.toHaveBeenCalled()
+        expect(mockInvalidate).not.toHaveBeenCalled()
     })
 })

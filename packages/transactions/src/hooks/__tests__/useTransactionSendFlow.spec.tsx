@@ -13,7 +13,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
-import { useTransactionSendFlow } from '../useTransactionSendFlow'
+import {
+    useTransactionSendFlow,
+    InvalidSendParamsError,
+} from '../useTransactionSendFlow'
 
 const mockSubmit = vi.fn()
 const mockBuildSendViaInbox = vi.fn()
@@ -241,5 +244,23 @@ describe('useTransactionSendFlow', () => {
                 },
             }),
         )
+    })
+
+    it('throws InvalidSendParamsError for an empty assetId string', async () => {
+        const { result } = renderHook(() => useTransactionSendFlow())
+        await act(async () => {
+            await expect(
+                result.current.execute({
+                    params: {
+                        sendMode: 'normal',
+                        sender: { address: 'A' } as any,
+                        receiver: 'B',
+                        asset: { assetId: '', decimals: 6 } as any,
+                        amount: new Decimal(1),
+                    },
+                }),
+            ).rejects.toBeInstanceOf(InvalidSendParamsError)
+        })
+        expect(mockSubmit).not.toHaveBeenCalled()
     })
 })

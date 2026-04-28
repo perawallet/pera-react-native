@@ -63,7 +63,11 @@ const SEND_SOURCE = {
     description: 'Send transaction',
 }
 
-export const useTransactionSendFlow = () => {
+type UseTransactionSendFlowResult = {
+    execute: (args: UseTransactionSendFlowParams) => Promise<string>
+}
+
+export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
     const algokit = useAlgorandClient()
     const { submit } = useSignAndSubmitGroup()
     const { buildSendViaInboxTxs } = useArc59SendTransaction()
@@ -118,6 +122,7 @@ export const useTransactionSendFlow = () => {
         async (params: SendTransactionParams): Promise<PeraTransaction[]> => {
             if (
                 !params.asset ||
+                params.asset.assetId === '' ||
                 !params.sender ||
                 !params.receiver ||
                 params.amount === undefined
@@ -165,6 +170,7 @@ export const useTransactionSendFlow = () => {
         async (params: SendTransactionParams): Promise<string> => {
             if (
                 !params.asset ||
+                params.asset.assetId === '' ||
                 !params.sender ||
                 !params.receiver ||
                 params.amount === undefined
@@ -277,8 +283,11 @@ export const useTransactionSendFlow = () => {
     return { execute }
 }
 
+export { InvalidSendParamsError } from '../errors'
+
 export type {
     SendTransactionParams,
     SendClaimParams,
     UseTransactionSendFlowParams,
+    UseTransactionSendFlowResult,
 }
