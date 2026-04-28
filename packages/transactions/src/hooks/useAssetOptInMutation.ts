@@ -26,8 +26,6 @@ import {
     AlreadyOptedInError,
     InsufficientBalanceForOptInError,
 } from '../errors'
-
-export { AlreadyOptedInError, InsufficientBalanceForOptInError }
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type AssetOptInParams = {
@@ -88,6 +86,10 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                     source: SOURCE,
                 })
 
+                // Add the new holding to local DB and ensure the asset's
+                // metadata is persisted before invalidating, so the UI can
+                // resolve the asset on its next render instead of waiting
+                // for the next sync poll.
                 const assetIdString = String(assetId)
                 await insertAssetHolding({
                     accountAddress: sender,
@@ -118,4 +120,5 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
     }
 }
 
+export { AlreadyOptedInError, InsufficientBalanceForOptInError } from '../errors'
 export type { AssetOptInParams, UseAssetOptInMutationResult }
