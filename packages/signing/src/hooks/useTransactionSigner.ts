@@ -24,17 +24,13 @@ import {
 import {
     isAlgo25Account,
     isHDWalletAccount,
-    isHardwareWalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import type {
     Algo25Account,
-    HardwareWalletAccount,
     HDWalletAccount,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { getProvider } from '@perawallet/wallet-extension-provider'
 import { SIGNING_KEY_DOMAIN } from '../constants'
-import { signTransactionsOnHardwareWallet } from '../pipeline/signing/createHardwareStrategy'
 
 export type UseTransactionSignerResult = {
     signTransactions: (
@@ -46,7 +42,7 @@ export type UseTransactionSignerResult = {
 export const useTransactionSigner = (): UseTransactionSignerResult => {
     const accounts = useAccountsStore(state => state.accounts)
     const { getKeyOrThrow, withHDSession, withAlgo25Session } = useKMS()
-    const { encodeTransaction, encodeTransactionRaw } = useTransactionEncoder()
+    const { encodeTransaction } = useTransactionEncoder()
 
     const signHDWalletTransactions = useCallback(
         async (
@@ -127,25 +123,6 @@ export const useTransactionSigner = (): UseTransactionSignerResult => {
         [encodeTransaction, withAlgo25Session],
     )
 
-    const signHardwareWalletTransactions = useCallback(
-        async (
-            account: HardwareWalletAccount,
-            txns: PeraTransactionGroup,
-        ): Promise<PeraSignedTransaction[]> => {
-            const indicesToSign = txns.map((_, index) => index)
-            return signTransactionsOnHardwareWallet(
-                account,
-                txns,
-                indicesToSign,
-                {
-                    registry: getProvider().hardwareWalletRegistry,
-                    encodeTransaction: encodeTransactionRaw,
-                },
-            )
-        },
-        [encodeTransactionRaw],
-    )
-
     const signSingleAccountTransactions = useCallback(
         async (
             account: WalletAccount,
@@ -176,20 +153,11 @@ export const useTransactionSigner = (): UseTransactionSignerResult => {
                 return signAlgo25Transactions(account as Algo25Account, txns)
             }
 
-            if (isHardwareWalletAccount(account)) {
-                return signHardwareWalletTransactions(account, txns)
-            }
-
             return Promise.reject(
                 `Unsupported account type ${account.type} for ${account.address}`,
             )
         },
-        [
-            accounts,
-            signHDWalletTransactions,
-            signAlgo25Transactions,
-            signHardwareWalletTransactions,
-        ],
+        [accounts, signHDWalletTransactions, signAlgo25Transactions],
     )
 
     const signTransactions = useCallback(
