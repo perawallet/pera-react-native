@@ -116,7 +116,7 @@ export const useSearchableList = <T>({
             naturalContentSize > 0
                 ? naturalContentSize
                 : headerHeight + itemCount * itemHeightEstimate
-        
+
         const previousItemCount = previousItemCountRef.current
         if (itemCount < previousItemCount) {
             const expectedLoss =
@@ -153,18 +153,12 @@ export const useSearchableList = <T>({
 
     const handleContentSizeChange = useCallback(
         (_width: number, height: number) => {
-            const natural = Math.max(
-                0,
-                height - searchFooterHeightRef.current,
-            )
+            const natural = Math.max(0, height - searchFooterHeightRef.current)
             setNaturalContentSize(prev => (prev === natural ? prev : natural))
             // Backstop: if a transient contentSize drop pushed scroll below
             // the pin offset while collapsed, snap back synchronously so the
             // user never sees the header peek.
-            if (
-                isCollapsedRef.current &&
-                headerHeightRef.current > 0
-            ) {
+            if (isCollapsedRef.current && headerHeightRef.current > 0) {
                 listRef.current?.scrollToOffset({
                     offset: headerHeightRef.current,
                     animated: false,
@@ -186,10 +180,7 @@ export const useSearchableList = <T>({
         (event: NativeSyntheticEvent<NativeScrollEvent>) => {
             onScroll?.(event)
             const headerH = headerHeightRef.current
-            if (
-                headerH > 0 &&
-                event.nativeEvent.contentOffset.y >= headerH
-            ) {
+            if (headerH > 0 && event.nativeEvent.contentOffset.y >= headerH) {
                 isCollapsedRef.current = true
             }
         },

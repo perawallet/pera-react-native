@@ -10,12 +10,7 @@
  limitations under the License
  */
 
-import React, {
-    createElement,
-    forwardRef,
-    useCallback,
-    useMemo,
-} from 'react'
+import React, { createElement, forwardRef, useCallback, useMemo } from 'react'
 import type { LegendListRenderItemProps } from '@legendapp/list'
 
 import { PWFlatList, PWView } from '@components/core'
