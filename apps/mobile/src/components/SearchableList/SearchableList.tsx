@@ -10,7 +10,12 @@
  limitations under the License
  */
 
-import React, { forwardRef, useCallback, useMemo } from 'react'
+import React, {
+    createElement,
+    forwardRef,
+    useCallback,
+    useMemo,
+} from 'react'
 import type { LegendListRenderItemProps } from '@legendapp/list'
 
 import { PWFlatList, PWView } from '@components/core'
@@ -152,28 +157,28 @@ const SearchableListInner = <T,>(
         ],
     )
 
-    const TypedFlatList = PWFlatList as React.ComponentType<
-        PWFlatListProps<AugmentedItem<T>> & React.RefAttributes<PWFlatListRef>
-    >
-
-    return (
-        <TypedFlatList
-            {...(listProps as PWFlatListProps<AugmentedItem<T>>)}
-            ref={listRef}
-            data={augmentedData}
-            renderItem={augmentedRenderItem}
-            keyExtractor={augmentedKeyExtractor}
-            ListHeaderComponent={augmentedHeader}
-            ListFooterComponent={augmentedFooter}
-            stickyIndices={[0]}
-            maintainVisibleContentPosition
-            onLayout={handleListLayout}
-            onContentSizeChange={handleContentSizeChange}
-            onScroll={handleScroll}
-            onScrollEndDrag={handleScrollEndDrag}
-            scrollEventThrottle={SCROLL_EVENT_THROTTLE}
-        />
-    )
+    // LegendList's data-mode prop type uses `children: never`, while React's
+    // intrinsic component types always add `children?: ReactNode` — so any
+    // structural cast at this boundary fails. The single `any` here is
+    // strictly to bridge that mismatch; everything we *write* (data,
+    // renderItem, keyExtractor, etc.) is properly typed above.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return createElement(PWFlatList as any, {
+        ...listProps,
+        ref: listRef,
+        data: augmentedData,
+        renderItem: augmentedRenderItem,
+        keyExtractor: augmentedKeyExtractor,
+        ListHeaderComponent: augmentedHeader,
+        ListFooterComponent: augmentedFooter,
+        stickyIndices: [0],
+        maintainVisibleContentPosition: true,
+        onLayout: handleListLayout,
+        onContentSizeChange: handleContentSizeChange,
+        onScroll: handleScroll,
+        onScrollEndDrag: handleScrollEndDrag,
+        scrollEventThrottle: SCROLL_EVENT_THROTTLE,
+    })
 }
 
 export const SearchableList = forwardRef(SearchableListInner) as <T>(
