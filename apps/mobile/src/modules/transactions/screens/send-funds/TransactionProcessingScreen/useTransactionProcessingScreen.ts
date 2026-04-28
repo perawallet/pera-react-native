@@ -25,6 +25,7 @@ import {
     SendTransactionParams,
     useTransactionSendFlow,
 } from '@perawallet/wallet-core-transactions'
+import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useNavigation } from '@react-navigation/native'
 import type { StackNavigationProp } from '@react-navigation/stack'
 import type { SendFundsStackParamList } from '../../../routes/send-funds/types'
@@ -88,6 +89,11 @@ export const useTransactionProcessingScreen = () => {
                 })
             })
             .catch(error => {
+                if (error instanceof UserRejectedSigningError) {
+                    // Silent navigation back — user already saw the overlay's cancel button.
+                    navigation.goBack()
+                    return
+                }
                 logger.error('Transaction failed', { error })
                 const { title, body } = getMessage(error)
                 showToast(

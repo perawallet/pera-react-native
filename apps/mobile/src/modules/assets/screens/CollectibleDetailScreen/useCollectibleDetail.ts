@@ -27,6 +27,7 @@ import {
     isSigningLogicalType,
     type AssetWithAccountBalance,
 } from '@perawallet/wallet-core-accounts'
+import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { useToast } from '@hooks/useToast'
@@ -156,6 +157,10 @@ export const useCollectibleDetail = (
                 navigation.goBack()
             }
         } catch (err) {
+            if (err instanceof UserRejectedSigningError) {
+                // User dismissed the LedgerSigningOverlay — overlay already went away; no toast.
+                return
+            }
             optOutModal.close()
             showToast({
                 title: t('asset_opt_out.error'),

@@ -21,6 +21,7 @@ import {
     useAssetsQuery,
     PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useLanguage } from '@hooks/useLanguage'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -145,6 +146,10 @@ export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
             await optOut(optOutParams)
             setSelectedAssetIds(new Set())
         } catch (err) {
+            if (err instanceof UserRejectedSigningError) {
+                // User dismissed the LedgerSigningOverlay — overlay already went away; no toast.
+                return
+            }
             setRemoveError(err instanceof Error ? err : new Error(String(err)))
         }
     }, [selectedAccount, selectedAssetIds, assets, optOut])

@@ -17,6 +17,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import type { AssetSearchItem } from '@perawallet/wallet-core-assets'
 import { useGlobalSearch } from '@perawallet/wallet-core-search'
+import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { useLanguage } from '@hooks/useLanguage'
@@ -154,6 +155,10 @@ export const useAddAssetScreen = (
                 type: 'success',
             })
         } catch (err) {
+            if (err instanceof UserRejectedSigningError) {
+                // User dismissed the LedgerSigningOverlay — overlay already went away; no toast.
+                return
+            }
             showToast({
                 title: t('add_asset.opt_in.failed_title'),
                 body: getMessage(err).body,

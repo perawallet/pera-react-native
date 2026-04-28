@@ -30,6 +30,7 @@ import {
     type AssetSortMode,
 } from '@perawallet/wallet-core-assets'
 import { useGlobalSearch } from '@perawallet/wallet-core-search'
+import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { useModalState, ModalState } from '@hooks/useModalState'
@@ -206,6 +207,10 @@ export const useAccountAssetList = ({
                 type: 'success',
             })
         } catch (err) {
+            if (err instanceof UserRejectedSigningError) {
+                // User dismissed the LedgerSigningOverlay — overlay already went away; no toast.
+                return
+            }
             showToast({
                 title: t('asset_opt_out.error'),
                 body: getMessage(err).body,
