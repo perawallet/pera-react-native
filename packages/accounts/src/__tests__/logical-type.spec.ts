@@ -120,18 +120,29 @@ describe('deriveAccountLogicalType', () => {
         )
     })
 
-    it('returns NoAuth when original was a watch account and auth is not in the wallet', () => {
+    it('returns Rekeyed when a watch account is rekeyed and auth is not in the wallet', () => {
         const a = watch('A', 'S')
         expect(deriveAccountLogicalType(a, [a])).toBe(
-            AccountLogicalTypes.NoAuth,
+            AccountLogicalTypes.Rekeyed,
         )
     })
 
-    it('returns NoAuth when auth account is in the wallet but cannot sign (watch → watch)', () => {
+    it('returns Rekeyed when auth account is in the wallet but cannot sign (watch → watch)', () => {
         const authWatch = watch('S')
         const rekeyed = watch('A', 'S')
         expect(deriveAccountLogicalType(rekeyed, [rekeyed, authWatch])).toBe(
-            AccountLogicalTypes.NoAuth,
+            AccountLogicalTypes.Rekeyed,
+        )
+    })
+
+    it('terminates when the rekey chain has a cycle (A → B → A)', () => {
+        const a: Algo25Account = { ...algo25('A'), rekeyAddress: 'B' }
+        const b: Algo25Account = { ...algo25('B'), rekeyAddress: 'A' }
+        // Neither has a usable signing key once rekeyed away; both are unsignable
+        const aNoKey = { ...a, keyPairId: '' } as Algo25Account
+        const bNoKey = { ...b, keyPairId: '' } as Algo25Account
+        expect(deriveAccountLogicalType(aNoKey, [aNoKey, bNoKey])).toBe(
+            AccountLogicalTypes.Rekeyed,
         )
     })
 })

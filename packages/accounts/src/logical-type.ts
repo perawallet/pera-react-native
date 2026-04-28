@@ -31,11 +31,14 @@ const canSignDirectly = (account: WalletAccount): boolean =>
 const canSignAccount = (
     account: WalletAccount,
     accounts: WalletAccount[],
+    visited: Set<string> = new Set(),
 ): boolean => {
     if (canSignDirectly(account)) return true
     if (!account.rekeyAddress) return false
+    if (visited.has(account.address)) return false
+    visited.add(account.address)
     const next = accounts.find(a => a.address === account.rekeyAddress)
-    return next ? canSignAccount(next, accounts) : false
+    return next ? canSignAccount(next, accounts, visited) : false
 }
 
 const baseTypeFor = (account: WalletAccount): AccountLogicalType => {
@@ -58,15 +61,18 @@ const baseTypeFor = (account: WalletAccount): AccountLogicalType => {
  * account's `rekeyAddress` is kept in sync by `fetchAndPersistAccount`, so
  * it reflects the current on-chain auth address.
  *
- * Classification follows the Android `GetAccountTypeUseCase` rules with one
- * difference: the signing-capability check for the auth account is recursive
- * across the rekey chain, not single-hop.
+ * Classification:
  *   1. If rekeyed and the auth account resolves (through the chain) to a
  *      signer we hold → RekeyedAuth.
- *   2. If rekeyed and the auth account cannot sign:
- *        - original was watch → NoAuth
- *        - otherwise          → Rekeyed
- *   3. Otherwise → map from stored account type.
+ *   2. If rekeyed but the chain doesn't terminate at a signer we hold →
+ *      Rekeyed. (Applies regardless of whether the original account was a
+ *      watch — what matters visually is that the account IS rekeyed; the
+ *      "can we sign?" answer surfaces at submission time via algod.)
+ *   3. Otherwise → map from stored account type. Watch accounts that are
+ *      not rekeyed still classify as NoAuth.
+ *
+ * The signing-capability check for the auth account is recursive across the
+ * rekey chain (not single-hop), with cycle protection.
  */
 export const deriveAccountLogicalType = (
     account: WalletAccount,
@@ -83,15 +89,9 @@ export const deriveAccountLogicalType = (
         ? canSignAccount(authAccount, accounts)
         : false
 
-    if (authCanSign) {
-        return AccountLogicalTypes.RekeyedAuth
-    }
-
-    if (account.type === AccountTypes.watch) {
-        return AccountLogicalTypes.NoAuth
-    }
-
-    return AccountLogicalTypes.Rekeyed
+    return authCanSign
+        ? AccountLogicalTypes.RekeyedAuth
+        : AccountLogicalTypes.Rekeyed
 }
 
 /**

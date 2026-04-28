@@ -64,7 +64,7 @@ export const useRekeyToLedgerConfirmScreen =
                 await algokit.send.payment({
                     sender: source.address,
                     receiver: source.address,
-                    amount: (0n).microAlgo(),
+                    amount: 0n.microAlgo(),
                     rekeyTo: target.address,
                 })
                 navigation.navigate('RekeyToLedger', {
@@ -73,6 +73,7 @@ export const useRekeyToLedgerConfirmScreen =
                 })
             } catch (error) {
                 const { title, body } = getMessage(error)
+                // guardrails-ignore-next-line no-error-toast-in-catch reason: useAlgodErrorMessage already returns the localized title/body to surface
                 showToast({ title, body, type: 'error' })
             } finally {
                 setIsSubmitting(false)
