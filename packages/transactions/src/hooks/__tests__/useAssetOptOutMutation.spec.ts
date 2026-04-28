@@ -27,6 +27,8 @@ const mockNewGroup = vi.fn(() => ({
     build: mockBuild,
 }))
 const mockFetchIndexerAssetDetails = vi.fn()
+const mockDeleteAssetHoldings = vi.fn().mockResolvedValue(undefined)
+const mockInvalidate = vi.fn()
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
     useSignAndSubmitGroup: () => ({ submit: mockSubmit }),
@@ -46,8 +48,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    deleteAssetHoldings: vi.fn().mockResolvedValue(undefined),
-    useAccountBalancesInvalidator: () => ({ invalidate: vi.fn() }),
+    deleteAssetHoldings: (...args: unknown[]) => mockDeleteAssetHoldings(...args),
+    useAccountBalancesInvalidator: () => ({ invalidate: mockInvalidate }),
 }))
 
 const baseAccount = {
@@ -90,7 +92,16 @@ describe('useAssetOptOutMutation', () => {
                 closeAssetTo: 'CREATOR',
             }),
         )
-        expect(mockSubmit).toHaveBeenCalledTimes(1)
+        expect(mockSubmit).toHaveBeenCalledWith({
+            unsignedTxs: [{ sender: 'SENDER' }],
+            source: { name: 'asset-opt-out', description: 'Opt out of an asset' },
+        })
+        expect(mockDeleteAssetHoldings).toHaveBeenCalledWith({
+            accountAddress: 'SENDER',
+            assetIds: ['12345'],
+            network: 'testnet',
+        })
+        expect(mockInvalidate).toHaveBeenCalledTimes(1)
     })
 
     it('opts out of multiple assets in a single grouped pipeline request', async () => {
@@ -120,7 +131,16 @@ describe('useAssetOptOutMutation', () => {
         })
 
         expect(mockAddAssetTransfer).toHaveBeenCalledTimes(2)
-        expect(mockSubmit).toHaveBeenCalledTimes(1)
+        expect(mockSubmit).toHaveBeenCalledWith({
+            unsignedTxs: [{ sender: 'SENDER' }, { sender: 'SENDER' }],
+            source: { name: 'asset-opt-out', description: 'Opt out of an asset' },
+        })
+        expect(mockDeleteAssetHoldings).toHaveBeenCalledWith({
+            accountAddress: 'SENDER',
+            assetIds: ['12345', '67890'],
+            network: 'testnet',
+        })
+        expect(mockInvalidate).toHaveBeenCalledTimes(1)
     })
 
     it('throws NonZeroBalanceError without calling the pipeline', async () => {
@@ -158,5 +178,23 @@ describe('useAssetOptOutMutation', () => {
         })
 
         expect(mockSubmit).not.toHaveBeenCalled()
+    })
+
+    it('does not call deleteAssetHoldings when submit fails', async () => {
+        mockSubmit.mockRejectedValueOnce(new Error('user cancelled'))
+        const { result } = renderHook(() => useAssetOptOutMutation())
+
+        await act(async () => {
+            await expect(
+                result.current.optOut({
+                    sender: 'SENDER',
+                    assetId: 12345n,
+                    creator: 'CREATOR',
+                }),
+            ).rejects.toThrow('user cancelled')
+        })
+
+        expect(mockDeleteAssetHoldings).not.toHaveBeenCalled()
+        expect(mockInvalidate).not.toHaveBeenCalled()
     })
 })
