@@ -59,7 +59,6 @@ export const SwapProviderBottomSheet = ({
         <PWBottomSheet
             isVisible={isVisible}
             onBackdropPress={onClose}
-            innerContainerStyle={styles.container}
         >
             <PWToolbar
                 left={
