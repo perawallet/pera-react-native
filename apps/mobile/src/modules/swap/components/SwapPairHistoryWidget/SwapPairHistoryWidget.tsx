@@ -122,6 +122,7 @@ export const SwapPairHistoryWidget = () => {
                     data={pairs}
                     renderItem={renderPair}
                     keyExtractor={keyExtractor}
+                    style={styles.list}
                     contentContainerStyle={styles.listContent}
                 />
             </PWView>
