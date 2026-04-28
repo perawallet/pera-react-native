@@ -699,6 +699,13 @@
             "accounts_subtitle": "You need add at least two accounts",
             "add_account": "Add Account"
         },
+        "introduction": {
+            "title": "Shared Account",
+            "bullet_1": "Enhanced security by requiring multiple approvals. Great for shared or high-value accounts.",
+            "bullet_2": "Assign signers and required approvals per transaction.",
+            "bullet_3": "Monitor activity and signer actions securely.",
+            "continue": "Continue"
+        },
         "add_participant": {
             "title": "Add Account",
             "cannot_add_multisig_error": "Cannot add shared account",
