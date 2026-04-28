@@ -11,10 +11,11 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { CHART_HEIGHT } from '@constants/ui'
 
 export const useStyles = makeStyles(theme => ({
     container: {
-        flex: 1,
+        height: CHART_HEIGHT,
         backgroundColor: theme.colors.background,
     },
 }))

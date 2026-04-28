@@ -46,12 +46,14 @@ export type AccountAssetListProps = {
     account: WalletAccount
     scrollEnabled?: boolean
     header?: React.ReactNode
+    isLoading?: boolean
 }
 
 export const AccountAssetList = ({
     account,
     scrollEnabled,
     header,
+    isLoading = false,
 }: AccountAssetListProps) => {
     const listRef = useRef<PWFlatListRef>(null)
     const searchInputRef = useRef<SearchInputRef>(null)
@@ -143,7 +145,10 @@ export const AccountAssetList = ({
                     contentContainerStyle={styles.rootContainer}
                     ListHeaderComponent={
                         <PWView style={styles.headerContainer}>
-                            <BackupReminderBanner account={account} />
+                            <BackupReminderBanner
+                                account={account}
+                                isLoading={isLoading}
+                            />
                             {headerState.isOpen && (
                                 <>
                                     {header}

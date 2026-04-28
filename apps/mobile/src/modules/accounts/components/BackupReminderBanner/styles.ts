@@ -14,6 +14,11 @@ import { makeStyles } from '@rneui/themed'
 import { getTypography } from '@theme/typography'
 
 export const useStyles = makeStyles(theme => ({
+    enterWrapper: {
+        // Clip while the entering animation grows height from 0; otherwise
+        // children overflow visibly during the animation.
+        overflow: 'hidden',
+    },
     container: {
         flexDirection: 'row',
         alignItems: 'center',

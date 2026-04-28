@@ -10,8 +10,8 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi } from 'vitest'
-import React from 'react'
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest'
+import React, { act } from 'react'
 import { render, screen, fireEvent } from '@test-utils/render'
 import {
     AccountTypes,
@@ -36,6 +36,7 @@ vi.mock('@hooks/useLanguage', () => ({
 }))
 
 import { BackupReminderBanner } from '../BackupReminderBanner'
+import { BACKUP_REMINDER_BANNER_REVEAL_DELAY } from '@constants/ui'
 
 const account: WalletAccount = {
     type: AccountTypes.algo25,
@@ -43,18 +44,41 @@ const account: WalletAccount = {
     keyPairId: 'kp',
 }
 
+const advancePastRevealDelay = () => {
+    act(() => {
+        vi.advanceTimersByTime(BACKUP_REMINDER_BANNER_REVEAL_DELAY)
+    })
+}
+
 describe('BackupReminderBanner', () => {
+    beforeEach(() => {
+        vi.useFakeTimers()
+    })
+
+    afterEach(() => {
+        vi.useRealTimers()
+    })
+
     test('renders nothing when isVisible is false', () => {
         mockUseHook.mockReturnValue({ isVisible: false, onPress: vi.fn() })
         const { queryByTestId } = render(
             <BackupReminderBanner account={account} />,
         )
+        advancePastRevealDelay()
         expect(queryByTestId('backup_reminder_banner')).toBeNull()
     })
 
-    test('renders warning text and CTA when isVisible is true', () => {
+    test('renders nothing before the reveal delay elapses', () => {
         mockUseHook.mockReturnValue({ isVisible: true, onPress: vi.fn() })
         render(<BackupReminderBanner account={account} />)
+
+        expect(screen.queryByTestId('backup_reminder_banner')).toBeNull()
+    })
+
+    test('renders warning text and CTA after the reveal delay', () => {
+        mockUseHook.mockReturnValue({ isVisible: true, onPress: vi.fn() })
+        render(<BackupReminderBanner account={account} />)
+        advancePastRevealDelay()
 
         expect(
             screen.getByText('You need to backup the passphrase'),
@@ -66,6 +90,7 @@ describe('BackupReminderBanner', () => {
         const onPress = vi.fn()
         mockUseHook.mockReturnValue({ isVisible: true, onPress })
         render(<BackupReminderBanner account={account} />)
+        advancePastRevealDelay()
 
         fireEvent.click(screen.getByTestId('backup_reminder_banner_cta'))
         expect(onPress).toHaveBeenCalledTimes(1)

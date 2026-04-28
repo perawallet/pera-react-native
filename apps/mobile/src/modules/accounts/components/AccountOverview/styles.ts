@@ -11,8 +11,10 @@
  */
 
 import { makeStyles } from '@rneui/themed'
+import { CHART_HEIGHT } from '@constants/ui'
 
-const HEADER_MIN_HEIGHT = 220
+const HEADER_HEIGHT = 412
+const SKELETON_BORDER_RADIUS = 8
 
 export const useStyles = makeStyles(theme => {
     return {
@@ -120,7 +122,66 @@ export const useStyles = makeStyles(theme => {
             textAlign: 'center',
         },
         headerContainer: {
-            minHeight: HEADER_MIN_HEIGHT, // Fixed value to prevent "bouncing" on load
+            // Fixed height so the page doesn't reflow as queries resolve and
+            // the skeleton overlay matches the loaded layout exactly.
+            height: HEADER_HEIGHT,
+        },
+        skeletonOverlay: {
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            // Solid background so internal mount animations (ExpandablePanel,
+            // LineChart, currency-display loading swap) running underneath
+            // are fully occluded until the overlay unmounts.
+            backgroundColor: theme.colors.background,
+        },
+        skeletonRoot: {
+            flex: 1,
+        },
+        skeletonBlock: {
+            backgroundColor: theme.colors.layerGrayLighter,
+            borderRadius: SKELETON_BORDER_RADIUS,
+        },
+        skeletonPrimaryValue: {
+            height: theme.spacing.xxl,
+            width: '50%',
+        },
+        skeletonSecondaryValue: {
+            height: theme.spacing.xl,
+            width: '35%',
+        },
+        skeletonTrend: {
+            height: theme.spacing.xl,
+            width: '20%',
+        },
+        skeletonChart: {
+            width: '100%',
+            height: CHART_HEIGHT,
+        },
+        skeletonPeriodRow: {
+            flexDirection: 'row',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: theme.spacing.sm,
+            marginTop: theme.spacing.xs,
+        },
+        skeletonPeriodButton: {
+            width: theme.spacing['3xl'],
+            height: theme.spacing.xl,
+        },
+        skeletonButtonRow: {
+            flexDirection: 'row',
+            justifyContent: 'center',
+            alignItems: 'center',
+            gap: theme.spacing.md,
+            marginTop: theme.spacing.xl,
+        },
+        skeletonActionButton: {
+            width: theme.spacing['4xl'],
+            height: theme.spacing['4xl'],
+            borderRadius: theme.spacing['3xl'],
         },
     }
 })

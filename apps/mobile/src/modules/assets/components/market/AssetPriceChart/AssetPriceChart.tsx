@@ -30,6 +30,7 @@ import {
     CHART_HEIGHT,
 } from '@constants/ui'
 import { useLanguage } from '@hooks/useLanguage'
+import { getChartYAxisRange } from '@utils/chart'
 
 export type AssetPriceChartProps = {
     asset: PeraAsset
@@ -61,16 +62,10 @@ export const AssetPriceChart = ({
         [data],
     )
 
-    const yAxisOffsets = useMemo(() => {
-        if (dataPoints.length === 0) return [-1, 1]
-        const minValue = Math.min(...dataPoints.map(p => p.value))
-        const maxValue = Math.max(...dataPoints.map(p => p.value))
-        if (minValue === 0 && maxValue === 0) {
-            return [-1, 1]
-        } else {
-            return [minValue - minValue / 10, maxValue + maxValue / 10]
-        }
-    }, [dataPoints])
+    const yAxisRange = useMemo(
+        () => getChartYAxisRange(dataPoints),
+        [dataPoints],
+    )
 
     const onFocus = useCallback(
         ({
@@ -103,18 +98,14 @@ export const AssetPriceChart = ({
         ],
     )
 
-    if (isPending) {
-        return (
-            <LoadingView
-                variant='circle'
-                size='lg'
-            />
-        )
-    }
-
     return (
         <PWView style={themeStyle.container}>
-            {!dataPoints?.length ? (
+            {isPending ? (
+                <LoadingView
+                    variant='circle'
+                    size='lg'
+                />
+            ) : !dataPoints?.length ? (
                 <EmptyView
                     title=''
                     body={t('asset_details.markets.chart_empty_body')}
@@ -132,8 +123,8 @@ export const AssetPriceChart = ({
                     areaChart
                     yAxisLabelWidth={1}
                     hideYAxisText
-                    yAxisOffset={yAxisOffsets[0]}
-                    maxValue={yAxisOffsets[1]}
+                    yAxisOffset={yAxisRange.yAxisOffset}
+                    maxValue={yAxisRange.maxValue}
                     initialSpacing={0}
                     endSpacing={0}
                     showStripOnFocus

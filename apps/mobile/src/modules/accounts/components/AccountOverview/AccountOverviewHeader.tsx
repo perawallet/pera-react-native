@@ -31,15 +31,18 @@ import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { PreferredCurrencyDisplay } from '@components/PreferredCurrencyDisplay'
 import { ExpandablePanel } from '@components/ExpandablePanel'
 import { useAccountOverviewHeader } from './useAccountOverviewHeader'
+import { AccountOverviewHeaderSkeleton } from './AccountOverviewHeaderSkeleton'
 
 export type AccountOverviewHeaderProps = {
     account: WalletAccount
     chartVisible: boolean
+    isLoading: boolean
 }
 
 export const AccountOverviewHeader = ({
     account,
     chartVisible,
+    isLoading,
 }: AccountOverviewHeaderProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -55,81 +58,84 @@ export const AccountOverviewHeader = ({
         handleChartSelectionChange,
     } = useAccountOverviewHeader(account)
 
-    return hasBalance || isPending ? (
+    // While loading we always render the primary layout underneath so its mount
+    // animations (ExpandablePanel, LineChart) run hidden by the opaque skeleton
+    // overlay. By the time the overlay unmounts, everything below is settled.
+    const showPrimary = hasBalance || isLoading
+
+    return (
         <PWView style={styles.headerContainer}>
-            <PWTouchableOpacity
-                onPress={togglePrivacyMode}
-                style={styles.valueBarContainer}
-            >
-                <PWView style={styles.valueBar}>
-                    <CurrencyDisplay
-                        variant='h1'
-                        value={
-                            selectedPoint
-                                ? new Decimal(selectedPoint.algoValue)
-                                : portfolioAlgoValue
-                        }
-                        currency='ALGO'
-                        precision={ALGO_ASSET.decimals}
-                        minPrecision={DEFAULT_PRECISION}
-                        style={styles.primaryCurrency}
-                        isLoading={isPending}
-                    />
-                </PWView>
-                <PWView style={styles.secondaryValueBar}>
-                    <PreferredCurrencyDisplay
-                        variant='h4'
-                        style={styles.valueTitle}
-                        sourceAmount={
-                            selectedPoint
-                                ? selectedPoint.algoValue
-                                : portfolioAlgoValue
-                        }
-                        sourceAssetId={ALGO_ASSET.assetId}
-                        precision={2}
-                        showSymbol
-                        prefix='≈ '
-                        isLoading={isPending}
-                    />
+            {showPrimary ? (
+                <>
+                    <PWTouchableOpacity
+                        onPress={togglePrivacyMode}
+                        style={styles.valueBarContainer}
+                    >
+                        <PWView style={styles.valueBar}>
+                            <CurrencyDisplay
+                                variant='h1'
+                                value={
+                                    selectedPoint
+                                        ? new Decimal(selectedPoint.algoValue)
+                                        : portfolioAlgoValue
+                                }
+                                currency='ALGO'
+                                precision={ALGO_ASSET.decimals}
+                                minPrecision={DEFAULT_PRECISION}
+                                style={styles.primaryCurrency}
+                                isLoading={isPending}
+                            />
+                        </PWView>
+                        <PWView style={styles.secondaryValueBar}>
+                            <PreferredCurrencyDisplay
+                                variant='h4'
+                                style={styles.valueTitle}
+                                sourceAmount={
+                                    selectedPoint
+                                        ? selectedPoint.algoValue
+                                        : portfolioAlgoValue
+                                }
+                                sourceAssetId={ALGO_ASSET.assetId}
+                                precision={2}
+                                showSymbol
+                                prefix='≈ '
+                                isLoading={isPending}
+                            />
 
-                    {!selectedPoint && (
-                        <WealthTrend
-                            account={account}
-                            period={period}
-                        />
-                    )}
-                    {selectedPoint && (
-                        <PWText
-                            variant='h4'
-                            style={styles.dateDisplay}
-                        >
-                            {formatDatetime(selectedPoint.datetime)}
-                        </PWText>
-                    )}
-                </PWView>
-            </PWTouchableOpacity>
+                            {!selectedPoint && (
+                                <WealthTrend
+                                    account={account}
+                                    period={period}
+                                />
+                            )}
+                            {selectedPoint && (
+                                <PWText
+                                    variant='h4'
+                                    style={styles.dateDisplay}
+                                >
+                                    {formatDatetime(selectedPoint.datetime)}
+                                </PWText>
+                            )}
+                        </PWView>
+                    </PWTouchableOpacity>
 
-            <ExpandablePanel isExpanded={chartVisible && !isPending}>
-                <PWView style={styles.chartContainer}>
-                    <WealthChart
-                        account={account}
-                        period={period}
-                        onSelectionChanged={handleChartSelectionChange}
-                    />
-                    <ChartPeriodSelection
-                        value={period}
-                        onChange={setPeriod}
-                    />
-                </PWView>
-            </ExpandablePanel>
+                    <ExpandablePanel isExpanded={chartVisible}>
+                        <PWView style={styles.chartContainer}>
+                            <WealthChart
+                                account={account}
+                                period={period}
+                                onSelectionChanged={handleChartSelectionChange}
+                            />
+                            <ChartPeriodSelection
+                                value={period}
+                                onChange={setPeriod}
+                            />
+                        </PWView>
+                    </ExpandablePanel>
 
-            <ExpandablePanel isExpanded={!isPending}>
-                {!canSign ? <WatchAccountButtonPanel /> : <ButtonPanel />}
-            </ExpandablePanel>
-        </PWView>
-    ) : (
-        <PWView style={styles.headerContainer}>
-            {!canSign ? (
+                    {!canSign ? <WatchAccountButtonPanel /> : <ButtonPanel />}
+                </>
+            ) : !canSign ? (
                 <WatchAccountButtonPanel />
             ) : (
                 <>
@@ -149,6 +155,12 @@ export const AccountOverviewHeader = ({
                     </PWView>
                     <NoFundsButtonPanel />
                 </>
+            )}
+
+            {isLoading && (
+                <PWView style={styles.skeletonOverlay}>
+                    <AccountOverviewHeaderSkeleton />
+                </PWView>
             )}
         </PWView>
     )
