@@ -127,6 +127,9 @@ export const createQuotes = async (
         price: toOptionalDecimal(quote.price),
         priceImpact: toOptionalDecimal(quote.price_impact),
         peraFeeAmount: toOptionalDecimal(quote.pera_fee_amount),
+        peraFeeAsset: quote.pera_fee_asset
+            ? transformDexSwapAsset(quote.pera_fee_asset)
+            : undefined,
         transactionFees: toNullableDecimal(quote.transaction_fees),
     }))
 }

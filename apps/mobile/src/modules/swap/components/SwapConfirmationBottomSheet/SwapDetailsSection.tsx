@@ -22,6 +22,7 @@ type SwapDetailsSectionProps = {
     rateDisplay: string
     minimumReceivedDisplay: string
     peraFeeDisplay: string
+    slippageDisplay: string
     priceImpactDisplay: string
     priceImpactStyle: object
 }
@@ -31,6 +32,7 @@ export const SwapDetailsSection = ({
     rateDisplay,
     minimumReceivedDisplay,
     peraFeeDisplay,
+    slippageDisplay,
     priceImpactDisplay,
     priceImpactStyle,
 }: SwapDetailsSectionProps) => {
@@ -58,7 +60,7 @@ export const SwapDetailsSection = ({
             </DetailRow>
             <DetailRow
                 label={t('swap.quote.slippage_tolerance')}
-                value={quote.slippage ? `${quote.slippage.toString()}%` : '-'}
+                value={slippageDisplay}
                 valueStyle={styles.detailValue}
                 info={t('swap.info.slippage_tolerance')}
             />

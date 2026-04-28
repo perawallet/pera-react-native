@@ -13,6 +13,12 @@
 import { Decimal } from 'decimal.js'
 
 // The swap configuration UI collects slippage as a percent (e.g. "1" for 1%),
-// but the Pera Swap quotes API expects a decimal fraction (1% = "0.01").
+// but the Pera Swap quotes API expects a decimal fraction on the request
+// (e.g. "0.01" for 1%, validated as <= 0.9999).
 export const percentToApiSlippage = (percent: string): string =>
     new Decimal(percent).div(100).toString()
+
+// Quotes return slippage as a decimal fraction (e.g. "0.01" for 1%) and
+// the UI needs to render it as a percent.
+export const apiSlippageToPercent = (slippage: Decimal): string =>
+    slippage.mul(100).toString()

@@ -59,6 +59,7 @@ export const SwapConfirmationBottomSheet = ({
         rateDisplay,
         minimumReceivedDisplay,
         peraFeeDisplay,
+        slippageDisplay,
         hasHighPriceImpact,
         priceImpactDisplay,
         priceImpactStyle,
@@ -136,6 +137,7 @@ export const SwapConfirmationBottomSheet = ({
                     rateDisplay={rateDisplay}
                     minimumReceivedDisplay={minimumReceivedDisplay}
                     peraFeeDisplay={peraFeeDisplay}
+                    slippageDisplay={slippageDisplay}
                     priceImpactDisplay={priceImpactDisplay}
                     priceImpactStyle={priceImpactStyle}
                 />

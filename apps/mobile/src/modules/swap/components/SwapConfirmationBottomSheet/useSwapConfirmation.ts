@@ -24,7 +24,10 @@ import {
     type PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { useCurrency } from '@perawallet/wallet-core-currencies'
-import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import {
+    apiSlippageToPercent,
+    type SwapQuote,
+} from '@perawallet/wallet-core-swaps'
 import type { SwapExecutionStatus } from '../../hooks/useSwapExecution'
 import { useStyles } from './styles'
 
@@ -47,6 +50,7 @@ type UseSwapConfirmationResult = {
     rateDisplay: string
     minimumReceivedDisplay: string
     peraFeeDisplay: string
+    slippageDisplay: string
     hasHighPriceImpact: boolean
     priceImpactDisplay: string
     priceImpactStyle: object
@@ -118,8 +122,16 @@ export const useSwapConfirmation = ({
 
     const peraFeeDisplay = useMemo(() => {
         if (!quote?.peraFeeAmount) return '-'
-        return formatAssetAmount(quote.peraFeeAmount, quote.assetIn)
-    }, [quote?.peraFeeAmount, quote?.assetIn])
+        return formatAssetAmount(
+            quote.peraFeeAmount,
+            quote.peraFeeAsset ?? quote.assetIn,
+        )
+    }, [quote?.peraFeeAmount, quote?.peraFeeAsset, quote?.assetIn])
+
+    const slippageDisplay = useMemo(() => {
+        if (!quote?.slippage) return '-'
+        return `${apiSlippageToPercent(quote.slippage)}%`
+    }, [quote?.slippage])
 
     const hasHighPriceImpact = useMemo(
         () =>
@@ -154,6 +166,7 @@ export const useSwapConfirmation = ({
         rateDisplay,
         minimumReceivedDisplay,
         peraFeeDisplay,
+        slippageDisplay,
         hasHighPriceImpact,
         priceImpactDisplay,
         priceImpactStyle,
