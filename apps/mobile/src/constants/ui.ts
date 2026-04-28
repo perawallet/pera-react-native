@@ -53,3 +53,6 @@ export const SEARCH_DEBOUNCE_TIME_SHORT = 75
 export const ASSET_LIST_ITEM_MIN_HEIGHT = 64
 
 export const NFT_NOT_OPTED_IN_OPACITY = 0.5
+
+export const SCROLL_EVENT_THROTTLE = 16
+export const DEFAULT_SNAP_THRESHOLD = 0.25

@@ -22,8 +22,13 @@ import {
     PeraAsset,
 } from '@perawallet/wallet-core-assets'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
+import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { useLanguage } from '@hooks/useLanguage'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useToast } from '@hooks/useToast'
+
+type UseRemoveAssetsScreenProps = {
+    onAfterRemove?: () => void
+}
 
 type UseRemoveAssetsScreenResult = {
     removableAssets: AssetWithAccountBalance[]
@@ -31,19 +36,21 @@ type UseRemoveAssetsScreenResult = {
     selectedAssetIds: Set<string>
     isAllSelected: boolean
     isRemoving: boolean
-    removeError: Nullable<Error>
     handleToggleSelect: (assetId: string) => void
     handleToggleSelectAll: () => void
     handleRemoveSelected: () => void
     t: (key: string, params?: Record<string, string | number>) => string
 }
 
-export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
+export const useRemoveAssetsScreen = ({
+    onAfterRemove,
+}: UseRemoveAssetsScreenProps = {}): UseRemoveAssetsScreenResult => {
     const { t } = useLanguage()
+    const { showToast } = useToast()
+    const { getMessage } = useAlgodErrorMessage()
     const [selectedAssetIds, setSelectedAssetIds] = useState<Set<string>>(
         new Set(),
     )
-    const [removeError, setRemoveError] = useState<Nullable<Error>>(null)
 
     const selectedAccount = useAccountsStore(state =>
         state.getSelectedAccount(),
@@ -124,8 +131,6 @@ export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
             return
         }
 
-        setRemoveError(null)
-
         const optOutParams = Array.from(selectedAssetIds).map(assetId => {
             const asset = assets.get(assetId)
             return {
@@ -144,10 +149,29 @@ export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
         try {
             await optOut(optOutParams)
             setSelectedAssetIds(new Set())
+            showToast({
+                title: t('asset_opt_out.success'),
+                body: '',
+                type: 'success',
+            })
+            onAfterRemove?.()
         } catch (err) {
-            setRemoveError(err instanceof Error ? err : new Error(String(err)))
+            showToast({
+                title: t('asset_opt_out.error'),
+                body: getMessage(err).body,
+                type: 'error',
+            })
         }
-    }, [selectedAccount, selectedAssetIds, assets, optOut])
+    }, [
+        selectedAccount,
+        selectedAssetIds,
+        assets,
+        optOut,
+        showToast,
+        t,
+        onAfterRemove,
+        getMessage,
+    ])
 
     return {
         removableAssets: filteredRemovableAssets,
@@ -155,7 +179,6 @@ export const useRemoveAssetsScreen = (): UseRemoveAssetsScreenResult => {
         selectedAssetIds,
         isAllSelected,
         isRemoving,
-        removeError,
         handleToggleSelect,
         handleToggleSelectAll,
         handleRemoveSelected,

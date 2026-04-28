@@ -18,6 +18,7 @@ export const useStyles = makeStyles(theme => ({
         backgroundColor: theme.colors.background,
     },
     listContent: {
+        flexGrow: 1,
         paddingHorizontal: theme.spacing.md,
     },
     itemContainer: {

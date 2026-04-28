@@ -45,7 +45,6 @@ type UseAccountAssetListResult = {
     hideZeroBalance: boolean
     assetSortMode: AssetSortMode
     searchFilter: string
-    headerState: ModalState
     manageSheetState: ModalState
     sortSheetState: ModalState
     filterSheetState: ModalState
@@ -80,7 +79,6 @@ export const useAccountAssetList = ({
     account,
     t,
 }: UseAccountAssetListParams): UseAccountAssetListResult => {
-    const headerState = useModalState(true)
     const manageSheetState = useModalState(false)
     const sortSheetState = useModalState(false)
     const filterSheetState = useModalState(false)
@@ -163,7 +161,6 @@ export const useAccountAssetList = ({
 
     const goToAssetScreen = useCallback(
         (item: AssetWithAccountBalance) => {
-            headerState.open()
             const assetInfo = assets?.get(item.assetId)
             if (assetInfo && isCollectible(assetInfo)) {
                 navigation.navigate('CollectibleDetails', {
@@ -175,7 +172,7 @@ export const useAccountAssetList = ({
                 })
             }
         },
-        [headerState, navigation, assets],
+        [navigation, assets],
     )
 
     const handleOptOut = useCallback(
@@ -282,7 +279,6 @@ export const useAccountAssetList = ({
         hideZeroBalance,
         assetSortMode,
         searchFilter,
-        headerState,
         manageSheetState,
         sortSheetState,
         filterSheetState,
