@@ -24,7 +24,8 @@ import {
     displayUnitsToBaseUnits,
     useAlgorandClient,
 } from '@perawallet/wallet-core-blockchain'
-import { useTransactionSigner } from '@perawallet/wallet-core-signing'
+import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import { useSignAndSubmitGroup } from '@perawallet/wallet-core-signing'
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { InvalidSendParamsError } from '../errors'
 import type { Nullable } from '@perawallet/wallet-core-shared'
@@ -52,26 +53,29 @@ type SendClaimParams = BaseSendParams & {
 
 type SendParams = SendTransactionParams | SendClaimParams
 
-type SendExpressParams = {
-    sender: string
-    receiver: string
-    assetId: bigint
-    amount: bigint
-}
-
 type UseTransactionSendFlowParams = {
     params: Nullable<SendParams>
 }
 
-export const useTransactionSendFlow = () => {
-    const { signTransactions } = useTransactionSigner()
-    const algokit = useAlgorandClient(signTransactions)
-    const { sendViaInbox } = useArc59SendTransaction(signTransactions)
-    const { claimAsset, rejectAsset } =
-        useArc59ClaimTransaction(signTransactions)
+const SEND_SOURCE = {
+    name: 'send-transaction',
+    description: 'Send transaction',
+}
 
-    const sendExpress = useCallback(
-        async (params: SendExpressParams): Promise<{ txIds: string[] }> => {
+export const useTransactionSendFlow = () => {
+    const algokit = useAlgorandClient()
+    const { submit } = useSignAndSubmitGroup()
+    const { buildSendViaInboxTxs } = useArc59SendTransaction()
+    const { buildClaimAssetTxs, buildRejectAssetTxs } =
+        useArc59ClaimTransaction()
+
+    const buildExpressTxs = useCallback(
+        async (params: {
+            sender: string
+            receiver: string
+            assetId: bigint
+            amount: bigint
+        }): Promise<PeraTransaction[]> => {
             const { sender, receiver, assetId, amount } = params
 
             // Look up receiver's current balance to determine funding needed
@@ -100,28 +104,20 @@ export const useTransactionSendFlow = () => {
             }
 
             composer
-                .addAssetOptIn({
-                    sender: receiver,
-                    assetId,
-                })
-                .addAssetTransfer({
-                    sender,
-                    receiver,
-                    amount,
-                    assetId,
-                })
+                .addAssetOptIn({ sender: receiver, assetId })
+                .addAssetTransfer({ sender, receiver, amount, assetId })
 
-            const result = await composer.send()
-            return { txIds: result.txIds }
+            const { transactions } = await composer.build()
+            return transactions.map(t => t.txn)
         },
         [algokit],
     )
 
-    const executeSend = useCallback(
-        async (params: SendTransactionParams): Promise<string> => {
+    const buildNormalTxs = useCallback(
+        async (params: SendTransactionParams): Promise<PeraTransaction[]> => {
             if (
                 !params.asset ||
-                !params.asset.assetId ||
+                params.asset.assetId == null ||
                 !params.sender ||
                 !params.receiver ||
                 params.amount == null
@@ -130,22 +126,67 @@ export const useTransactionSendFlow = () => {
             }
 
             const assetDecimals = params.asset?.decimals ?? 0
-
             const amountInBaseUnits = BigInt(
-                displayUnitsToBaseUnits(
-                    params.amount,
-                    assetDecimals ?? 0,
-                ).toString(),
+                displayUnitsToBaseUnits(params.amount, assetDecimals).toString(),
+            )
+
+            const composer = algokit.newGroup()
+            if (params.asset.assetId === ALGO_ASSET_ID) {
+                composer.addPayment({
+                    sender: params.sender.address,
+                    receiver: params.receiver,
+                    amount: params.isCloseAccount
+                        ? BigInt(0).microAlgo()
+                        : amountInBaseUnits.microAlgo(),
+                    ...(params.isCloseAccount && {
+                        closeRemainderTo: params.receiver,
+                    }),
+                    note: params.note,
+                })
+            } else {
+                composer.addAssetTransfer({
+                    sender: params.sender.address,
+                    receiver: params.receiver,
+                    amount: amountInBaseUnits,
+                    assetId: BigInt(params.asset.assetId),
+                    note: params.note,
+                })
+            }
+            const { transactions } = await composer.build()
+            return transactions.map(t => t.txn)
+        },
+        [algokit],
+    )
+
+    const executeSend = useCallback(
+        async (params: SendTransactionParams): Promise<string> => {
+            if (
+                !params.asset ||
+                params.asset.assetId == null ||
+                !params.sender ||
+                !params.receiver ||
+                params.amount == null
+            ) {
+                throw new InvalidSendParamsError()
+            }
+
+            const assetDecimals = params.asset?.decimals ?? 0
+            const amountInBaseUnits = BigInt(
+                displayUnitsToBaseUnits(params.amount, assetDecimals).toString(),
             )
             const assetId = BigInt(params.asset.assetId)
 
             switch (params.sendMode) {
                 case 'express': {
-                    const result = await sendExpress({
+                    const unsignedTxs = await buildExpressTxs({
                         sender: params.sender.address,
                         receiver: params.receiver,
                         assetId,
                         amount: amountInBaseUnits,
+                    })
+                    const result = await submit({
+                        unsignedTxs,
+                        source: SEND_SOURCE,
                     })
                     return result.txIds[result.txIds.length - 1]
                 }
@@ -153,44 +194,35 @@ export const useTransactionSendFlow = () => {
                     if (!params.arc59Summary) {
                         throw new InvalidSendParamsError()
                     }
-
-                    const result = await sendViaInbox({
+                    const unsignedTxs = await buildSendViaInboxTxs({
                         sender: params.sender.address,
                         receiver: params.receiver,
                         assetId,
                         amount: amountInBaseUnits,
                         summary: params.arc59Summary,
                     })
+                    const result = await submit({
+                        unsignedTxs,
+                        source: SEND_SOURCE,
+                    })
                     return result.txIds[result.txIds.length - 1]
                 }
                 case 'normal': {
-                    if (params.asset.assetId === ALGO_ASSET_ID) {
-                        const result = await algokit.send.payment({
-                            sender: params.sender.address,
-                            receiver: params.receiver,
-                            amount: params.isCloseAccount
-                                ? BigInt(0).microAlgo()
-                                : amountInBaseUnits.microAlgo(),
-                            ...(params.isCloseAccount && {
-                                closeRemainderTo: params.receiver,
-                            }),
-                            note: params.note,
-                        })
-                        return result.txIds[0]
-                    } else {
-                        const result = await algokit.send.assetTransfer({
-                            sender: params.sender.address,
-                            receiver: params.receiver,
-                            amount: amountInBaseUnits,
-                            assetId,
-                            note: params.note,
-                        })
-                        return result.txIds[0]
-                    }
+                    const unsignedTxs = await buildNormalTxs(params)
+                    const result = await submit({
+                        unsignedTxs,
+                        source: SEND_SOURCE,
+                    })
+                    return result.txIds[0]
                 }
             }
         },
-        [sendExpress, algokit, sendViaInbox],
+        [
+            buildExpressTxs,
+            buildSendViaInboxTxs,
+            buildNormalTxs,
+            submit,
+        ],
     )
 
     const executeArc59 = useCallback(
@@ -200,22 +232,30 @@ export const useTransactionSendFlow = () => {
             }
 
             if (params.sendMode === 'claimArc59') {
-                const result = await claimAsset({
+                const unsignedTxs = await buildClaimAssetTxs({
                     sender: params.sender.address,
                     assetId: BigInt(params.asset.assetId),
                     shouldClaimAlgo: params.shouldClaimAlgo,
                 })
+                const result = await submit({
+                    unsignedTxs,
+                    source: SEND_SOURCE,
+                })
                 return result.txIds[result.txIds.length - 1]
             } else {
-                const result = await rejectAsset({
+                const unsignedTxs = await buildRejectAssetTxs({
                     sender: params.sender.address,
                     assetId: BigInt(params.asset.assetId),
                     shouldClaimAlgo: params.shouldClaimAlgo,
+                })
+                const result = await submit({
+                    unsignedTxs,
+                    source: SEND_SOURCE,
                 })
                 return result.txIds[result.txIds.length - 1]
             }
         },
-        [claimAsset, rejectAsset],
+        [buildClaimAssetTxs, buildRejectAssetTxs, submit],
     )
 
     const execute = useCallback(
@@ -223,15 +263,13 @@ export const useTransactionSendFlow = () => {
             if (!params) {
                 throw new InvalidSendParamsError()
             }
-
             if (
                 params.sendMode === 'claimArc59' ||
                 params.sendMode === 'rejectArc59'
             ) {
                 return await executeArc59(params)
-            } else {
-                return await executeSend(params as SendTransactionParams)
             }
+            return await executeSend(params as SendTransactionParams)
         },
         [executeArc59, executeSend],
     )
