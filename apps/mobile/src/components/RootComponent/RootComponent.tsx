@@ -16,14 +16,11 @@ import { AppState } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet'
 import { MainRoutes } from '@routes/index'
-import { getTheme } from '@theme/theme'
-import { ThemeProvider } from '@rneui/themed'
 import { useStyles } from './styles'
 import { PWText, PWView } from '@components/core'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ErrorBoundary from 'react-native-error-boundary'
 import { useToast } from '@hooks/useToast'
-import { useIsDarkMode } from '@hooks/useIsDarkMode'
 import { useDevice } from '@perawallet/wallet-core-device'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
@@ -101,8 +98,6 @@ const RootContentContainer = ({ fcmToken }: RootComponentProps) => {
 }
 
 export const RootComponent = ({ fcmToken }: RootComponentProps) => {
-    const isDarkMode = useIsDarkMode()
-    const theme = getTheme(isDarkMode ? 'dark' : 'light')
     const { network } = useNetwork()
     const { registerDevice } = useDevice()
     const accounts = useAllAccounts()
@@ -177,15 +172,13 @@ export const RootComponent = ({ fcmToken }: RootComponentProps) => {
     }, [appStatePlatform, accounts, runSyncAction])
 
     return (
-        <ThemeProvider theme={theme}>
-            <BottomSheetModalProvider>
-                <AutoLockGuard>
-                    <WalletConnectProvider>
-                        <RootContentContainer fcmToken={fcmToken} />
-                    </WalletConnectProvider>
-                    <SigningOverlays />
-                </AutoLockGuard>
-            </BottomSheetModalProvider>
-        </ThemeProvider>
+        <BottomSheetModalProvider>
+            <AutoLockGuard>
+                <WalletConnectProvider>
+                    <RootContentContainer fcmToken={fcmToken} />
+                </WalletConnectProvider>
+                <SigningOverlays />
+            </AutoLockGuard>
+        </BottomSheetModalProvider>
     )
 }

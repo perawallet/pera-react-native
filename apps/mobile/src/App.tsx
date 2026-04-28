@@ -75,9 +75,9 @@ const AppContent = () => {
     const [bootstrapped, setBootstrapped] = useState(false)
     const [fcmToken, setFcmToken] = useState<Nullable<string>>(null)
     const { t } = useLanguage()
-    const isDarkMode = useIsDarkMode()
-    const bootstrapTheme = getTheme(isDarkMode ? 'dark' : 'light')
     const provider = usePeraProvider()
+    const isDarkMode = useIsDarkMode()
+    const theme = getTheme(isDarkMode ? 'dark' : 'light')
 
     useEffect(() => {
         logger.setErrorReporter(
@@ -132,22 +132,20 @@ const AppContent = () => {
     }, [bootstrapped, provider])
 
     return (
-        <SafeAreaProvider>
-            {!bootstrapped && (
-                <ThemeProvider theme={bootstrapTheme}>
-                    <PWText>{t('common.loading.label')}</PWText>
-                </ThemeProvider>
-            )}
-            {bootstrapped && persister && (
-                <GestureHandlerRootView>
-                    <NotifierWrapper>
-                        <QueryProvider persister={persister}>
-                            <RootComponent fcmToken={fcmToken} />
-                        </QueryProvider>
-                    </NotifierWrapper>
-                </GestureHandlerRootView>
-            )}
-        </SafeAreaProvider>
+        <ThemeProvider theme={theme}>
+            <SafeAreaProvider>
+                {!bootstrapped && <PWText>{t('common.loading.label')}</PWText>}
+                {bootstrapped && persister && (
+                    <GestureHandlerRootView>
+                        <NotifierWrapper>
+                            <QueryProvider persister={persister}>
+                                <RootComponent fcmToken={fcmToken} />
+                            </QueryProvider>
+                        </NotifierWrapper>
+                    </GestureHandlerRootView>
+                )}
+            </SafeAreaProvider>
+        </ThemeProvider>
     )
 }
 

@@ -11,6 +11,7 @@
  */
 
 import {
+    IconName,
     PWIcon,
     PWRoundIcon,
     PWText,
@@ -18,22 +19,25 @@ import {
     PWView,
 } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
-import { HDWalletAccount } from '@perawallet/wallet-core-accounts'
+import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { AccountIcon } from '../AccountIcon'
-type WalletStructureTreeProps = {
-    walletLabel: string
-    accounts: HDWalletAccount[]
+
+type AccountStructureTreeProps = {
+    label: string
+    icon: IconName
+    accounts: WalletAccount[]
     onScanAddresses: () => void
 }
 
-export const WalletStructureTree = ({
-    walletLabel,
+export const AccountStructureTree = ({
+    label,
+    icon,
     accounts,
     onScanAddresses,
-}: WalletStructureTreeProps) => {
+}: AccountStructureTreeProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
 
@@ -41,11 +45,11 @@ export const WalletStructureTree = ({
         <PWView style={styles.treeContainer}>
             <PWView style={styles.walletRow}>
                 <PWRoundIcon
-                    icon='wallet'
+                    icon={icon}
                     variant='secondary'
                     size='lg'
                 />
-                <PWText variant='body'>{walletLabel}</PWText>
+                <PWText variant='body'>{label}</PWText>
             </PWView>
 
             {accounts.map(account => (

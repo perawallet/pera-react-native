@@ -1625,7 +1625,8 @@
             "select_all": "Select all",
             "already_imported": "Already imported",
             "continue": "Continue",
-            "no_new_accounts": "All accounts on this device are already imported."
+            "no_new_accounts": "All accounts on this device are already imported.",
+            "find_another_wallet": "Find another wallet"
         },
         "verify": {
             "title": "Verify on Ledger",

@@ -25,7 +25,7 @@ import { useAccountInfoCard } from './useAccountInfoCard'
 import { AccountIcon } from '../AccountIcon'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { ExpandablePanel } from '@components/ExpandablePanel'
-import { WalletStructureTree } from './WalletStructureTree'
+import { AccountStructureTree } from './AccountStructureTree'
 import { InfoButton } from '@components/InfoButton'
 import { AccountTypeInfoContent } from './AccountTypeInfoContent'
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
@@ -45,10 +45,11 @@ export const AccountInfoCard = ({ account, onClose }: AccountInfoCardProps) => {
         accountTypeLabel,
         minBalanceAlgos,
         isMinBalanceLoading,
-        isHDWallet,
         showMinBalance,
-        walletLabel,
-        walletAccounts,
+        showStructure,
+        structureLabel,
+        structureIcon,
+        structureAccounts,
         handleScanAddresses,
     } = useAccountInfoCard({ account, onClose })
 
@@ -118,13 +119,14 @@ export const AccountInfoCard = ({ account, onClose }: AccountInfoCardProps) => {
                 </PWView>
             )}
 
-            {/* Wallet structure (HD wallets only) */}
-            {isHDWallet && (
+            {/* Wallet structure (HD wallets and Ledger devices) */}
+            {showStructure && (
                 <>
                     <ExpandablePanel isExpanded={isExpanded}>
-                        <WalletStructureTree
-                            walletLabel={walletLabel}
-                            accounts={walletAccounts}
+                        <AccountStructureTree
+                            label={structureLabel}
+                            icon={structureIcon}
+                            accounts={structureAccounts}
                             onScanAddresses={handleScanAddresses}
                         />
                     </ExpandablePanel>

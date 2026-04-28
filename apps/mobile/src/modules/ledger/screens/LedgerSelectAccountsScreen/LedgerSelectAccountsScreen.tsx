@@ -25,6 +25,7 @@ import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
 import { truncateAlgorandAddress } from '@perawallet/wallet-core-shared'
 import { useStyles } from './styles'
 import { useLedgerSelectAccountsScreen } from './useLedgerSelectAccountsScreen'
+import { FindAnotherWalletRow } from './FindAnotherWalletRow'
 
 export const LedgerSelectAccountsScreen = () => {
     const styles = useStyles()
@@ -35,9 +36,11 @@ export const LedgerSelectAccountsScreen = () => {
         areAllImported,
         canContinue,
         alreadyImportedAddresses,
+        isFetchingMore,
         toggleSelection,
         toggleSelectAll,
         handleContinue,
+        handleFindAnother,
         t,
     } = useLedgerSelectAccountsScreen()
 
@@ -87,6 +90,15 @@ export const LedgerSelectAccountsScreen = () => {
             </PWTouchableOpacity>
         )
     }
+
+    const renderFooter = () => (
+        <FindAnotherWalletRow
+            onPress={handleFindAnother}
+            isLoading={isFetchingMore}
+            label={t('ledger.select_accounts.find_another_wallet')}
+            testID='ledger_select_accounts_find_another'
+        />
+    )
 
     return (
         <PWView style={styles.container}>
@@ -144,6 +156,7 @@ export const LedgerSelectAccountsScreen = () => {
                     extraData={selectedAddresses}
                     contentContainerStyle={styles.listContent}
                     showsVerticalScrollIndicator={false}
+                    ListFooterComponent={renderFooter}
                 />
             </PWView>
 
