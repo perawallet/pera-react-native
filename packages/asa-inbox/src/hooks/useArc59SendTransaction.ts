@@ -11,12 +11,12 @@
  */
 
 import { useCallback } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { config } from '@perawallet/wallet-core-config'
 import {
     useAlgorandClient,
-    type PeraTransactionSigner,
+    useNetwork,
 } from '@perawallet/wallet-core-blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import { config } from '@perawallet/wallet-core-config'
 import type { Arc59SendSummaryResponse } from '../api'
 import { ARC59Client } from '../clients'
 
@@ -28,18 +28,18 @@ type SendViaInboxParams = {
     summary: Arc59SendSummaryResponse
 }
 
-type useArc59SendTransactionResult = {
-    sendViaInbox: (params: SendViaInboxParams) => Promise<{ txIds: string[] }>
+type UseArc59SendTransactionResult = {
+    buildSendViaInboxTxs: (
+        params: SendViaInboxParams,
+    ) => Promise<PeraTransaction[]>
 }
 
-export const useArc59SendTransaction = (
-    signer: PeraTransactionSigner,
-): useArc59SendTransactionResult => {
+export const useArc59SendTransaction = (): UseArc59SendTransactionResult => {
     const { isMainnet } = useNetwork()
-    const algokit = useAlgorandClient(signer)
+    const algokit = useAlgorandClient()
 
-    const sendViaInbox = useCallback(
-        async (params: SendViaInboxParams): Promise<{ txIds: string[] }> => {
+    const buildSendViaInboxTxs = useCallback(
+        async (params: SendViaInboxParams): Promise<PeraTransaction[]> => {
             const { sender, receiver, assetId, amount, summary } = params
             const arc59Config = isMainnet
                 ? config.arc59.mainnet
@@ -98,11 +98,11 @@ export const useArc59SendTransaction = (
                 }),
             )
 
-            const result = await composer.send()
-            return { txIds: result.txIds }
+            const { transactions } = await composer.build()
+            return transactions.map(t => t.txn)
         },
         [algokit, isMainnet],
     )
 
-    return { sendViaInbox }
+    return { buildSendViaInboxTxs }
 }

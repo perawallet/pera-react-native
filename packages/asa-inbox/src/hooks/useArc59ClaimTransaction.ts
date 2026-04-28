@@ -11,12 +11,12 @@
  */
 
 import { useCallback } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { config } from '@perawallet/wallet-core-config'
 import {
     useAlgorandClient,
-    type PeraTransactionSigner,
+    useNetwork,
 } from '@perawallet/wallet-core-blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import { config } from '@perawallet/wallet-core-config'
 import { ARC59Client } from '../clients'
 import {
     BASE_CLAIM_TX_COUNT,
@@ -37,132 +37,133 @@ type RejectParams = {
 }
 
 type UseArc59ClaimTransactionResult = {
-    claimAsset: (params: ClaimParams) => Promise<{ txIds: string[] }>
-    rejectAsset: (params: RejectParams) => Promise<{ txIds: string[] }>
+    buildClaimAssetTxs: (params: ClaimParams) => Promise<PeraTransaction[]>
+    buildRejectAssetTxs: (params: RejectParams) => Promise<PeraTransaction[]>
 }
 
-export const useArc59ClaimTransaction = (
-    signer: PeraTransactionSigner,
-): UseArc59ClaimTransactionResult => {
-    const { isMainnet } = useNetwork()
-    const algokit = useAlgorandClient(signer)
+export const useArc59ClaimTransaction =
+    (): UseArc59ClaimTransactionResult => {
+        const { isMainnet } = useNetwork()
+        const algokit = useAlgorandClient()
 
-    const isOptedInToAsset = useCallback(
-        async (address: string, assetId: bigint): Promise<boolean> => {
-            try {
-                const accountInfo =
-                    await algokit.client.algod.accountInformation(address)
-                return (accountInfo.assets ?? []).some(
-                    a => BigInt(a.assetId) === assetId,
-                )
-            } catch {
-                return false
-            }
-        },
-        [algokit],
-    )
+        const isOptedInToAsset = useCallback(
+            async (address: string, assetId: bigint): Promise<boolean> => {
+                try {
+                    const accountInfo =
+                        await algokit.client.algod.accountInformation(address)
+                    return (accountInfo.assets ?? []).some(
+                        a => BigInt(a.assetId) === assetId,
+                    )
+                } catch {
+                    return false
+                }
+            },
+            [algokit],
+        )
 
-    const claimAsset = useCallback(
-        async (params: ClaimParams): Promise<{ txIds: string[] }> => {
-            const { sender, assetId, shouldClaimAlgo } = params
-            const arc59Config = isMainnet
-                ? config.arc59.mainnet
-                : config.arc59.testnet
+        const buildClaimAssetTxs = useCallback(
+            async (params: ClaimParams): Promise<PeraTransaction[]> => {
+                const { sender, assetId, shouldClaimAlgo } = params
+                const arc59Config = isMainnet
+                    ? config.arc59.mainnet
+                    : config.arc59.testnet
 
-            const suggestedParams = await algokit.getSuggestedParams()
+                const suggestedParams = await algokit.getSuggestedParams()
 
-            const appClient = new ARC59Client({
-                appId: arc59Config.appId,
-                algorand: algokit,
-                defaultSender: sender,
-            })
-
-            const composer = algokit.newGroup()
-            const optedIn = await isOptedInToAsset(sender, assetId)
-
-            // Calculate main call fee dynamically
-            // Base: 3 * minFee (claim itself + 2 inner txns)
-            let claimFee = BigInt(BASE_CLAIM_TX_COUNT) * suggestedParams.minFee
-            if (shouldClaimAlgo)
-                claimFee += BigInt(CLAIM_ALGO_TX_COUNT) * suggestedParams.minFee
-            if (!optedIn) claimFee += suggestedParams.minFee
-
-            if (shouldClaimAlgo) {
-                composer.addAppCallMethodCall(
-                    await appClient.params.arc59_claimAlgo({
-                        args: [],
-                        staticFee: 0n.microAlgo(),
-                    }),
-                )
-            }
-
-            if (!optedIn) {
-                composer.addAssetOptIn({
-                    sender,
-                    assetId,
-                    staticFee: 0n.microAlgo(),
+                const appClient = new ARC59Client({
+                    appId: arc59Config.appId,
+                    algorand: algokit,
+                    defaultSender: sender,
                 })
-            }
 
-            composer.addAppCallMethodCall(
-                await appClient.params.arc59_claim({
-                    args: [assetId],
-                    staticFee: claimFee.microAlgo(),
-                }),
-            )
+                const composer = algokit.newGroup()
+                const optedIn = await isOptedInToAsset(sender, assetId)
 
-            const result = await composer.send()
-            return { txIds: result.txIds }
-        },
-        [algokit, isMainnet, isOptedInToAsset],
-    )
+                // Calculate main call fee dynamically
+                // Base: 3 * minFee (claim itself + 2 inner txns)
+                let claimFee =
+                    BigInt(BASE_CLAIM_TX_COUNT) * suggestedParams.minFee
+                if (shouldClaimAlgo)
+                    claimFee +=
+                        BigInt(CLAIM_ALGO_TX_COUNT) * suggestedParams.minFee
+                if (!optedIn) claimFee += suggestedParams.minFee
 
-    const rejectAsset = useCallback(
-        async (params: RejectParams): Promise<{ txIds: string[] }> => {
-            const { sender, assetId, shouldClaimAlgo } = params
-            const arc59Config = isMainnet
-                ? config.arc59.mainnet
-                : config.arc59.testnet
+                if (shouldClaimAlgo) {
+                    composer.addAppCallMethodCall(
+                        await appClient.params.arc59_claimAlgo({
+                            args: [],
+                            staticFee: 0n.microAlgo(),
+                        }),
+                    )
+                }
 
-            const suggestedParams = await algokit.getSuggestedParams()
-
-            const appClient = new ARC59Client({
-                appId: arc59Config.appId,
-                algorand: algokit,
-                defaultSender: sender,
-            })
-
-            const composer = algokit.newGroup()
-
-            // Calculate main call fee dynamically
-            // Base: 3 * minFee (reject itself + 2 inner txns)
-            let rejectFee =
-                BigInt(BASE_REJECT_TX_COUNT) * suggestedParams.minFee
-            if (shouldClaimAlgo)
-                rejectFee +=
-                    BigInt(CLAIM_ALGO_TX_COUNT) * suggestedParams.minFee
-
-            if (shouldClaimAlgo) {
-                composer.addAppCallMethodCall(
-                    await appClient.params.arc59_claimAlgo({
-                        args: [],
+                if (!optedIn) {
+                    composer.addAssetOptIn({
+                        sender,
+                        assetId,
                         staticFee: 0n.microAlgo(),
+                    })
+                }
+
+                composer.addAppCallMethodCall(
+                    await appClient.params.arc59_claim({
+                        args: [assetId],
+                        staticFee: claimFee.microAlgo(),
                     }),
                 )
-            }
 
-            composer.addAppCallMethodCall(
-                await appClient.params.arc59_reject({
-                    args: [assetId],
-                    staticFee: rejectFee.microAlgo(),
-                }),
-            )
+                const { transactions } = await composer.build()
+                return transactions.map(t => t.txn)
+            },
+            [algokit, isMainnet, isOptedInToAsset],
+        )
 
-            const result = await composer.send()
-            return { txIds: result.txIds }
-        },
-        [algokit, isMainnet],
-    )
+        const buildRejectAssetTxs = useCallback(
+            async (params: RejectParams): Promise<PeraTransaction[]> => {
+                const { sender, assetId, shouldClaimAlgo } = params
+                const arc59Config = isMainnet
+                    ? config.arc59.mainnet
+                    : config.arc59.testnet
 
-    return { claimAsset, rejectAsset }
-}
+                const suggestedParams = await algokit.getSuggestedParams()
+
+                const appClient = new ARC59Client({
+                    appId: arc59Config.appId,
+                    algorand: algokit,
+                    defaultSender: sender,
+                })
+
+                const composer = algokit.newGroup()
+
+                // Calculate main call fee dynamically
+                // Base: 3 * minFee (reject itself + 2 inner txns)
+                let rejectFee =
+                    BigInt(BASE_REJECT_TX_COUNT) * suggestedParams.minFee
+                if (shouldClaimAlgo)
+                    rejectFee +=
+                        BigInt(CLAIM_ALGO_TX_COUNT) * suggestedParams.minFee
+
+                if (shouldClaimAlgo) {
+                    composer.addAppCallMethodCall(
+                        await appClient.params.arc59_claimAlgo({
+                            args: [],
+                            staticFee: 0n.microAlgo(),
+                        }),
+                    )
+                }
+
+                composer.addAppCallMethodCall(
+                    await appClient.params.arc59_reject({
+                        args: [assetId],
+                        staticFee: rejectFee.microAlgo(),
+                    }),
+                )
+
+                const { transactions } = await composer.build()
+                return transactions.map(t => t.txn)
+            },
+            [algokit, isMainnet],
+        )
+
+        return { buildClaimAssetTxs, buildRejectAssetTxs }
+    }
