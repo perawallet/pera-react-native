@@ -226,6 +226,10 @@ export const useTransactionSendFlow = (): UseTransactionSendFlowResult => {
                     })
                     return result.txIds[0]
                 }
+                default: {
+                    params.sendMode satisfies never
+                    throw new InvalidSendParamsError()
+                }
             }
         },
         [buildExpressTxs, buildSendViaInboxTxs, buildNormalTxs, submit],
