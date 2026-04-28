@@ -13,9 +13,6 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        paddingBottom: theme.spacing.lg,
-    },
     applyText: {
         color: theme.colors.linkPrimary,
     },
