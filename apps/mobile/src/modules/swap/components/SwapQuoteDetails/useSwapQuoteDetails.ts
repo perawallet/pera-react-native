@@ -17,7 +17,10 @@ import {
     RemoteConfigKeys,
     useRemoteConfig,
 } from '@perawallet/wallet-core-remote-config'
-import type { SwapQuote } from '@perawallet/wallet-core-swaps'
+import {
+    apiSlippageToPercent,
+    type SwapQuote,
+} from '@perawallet/wallet-core-swaps'
 import { formatSwapRate } from '../../hooks/swapQuoteHelpers'
 import type { Maybe } from '@perawallet/wallet-core-shared'
 
@@ -71,10 +74,13 @@ export const useSwapQuoteDetails = (
                 highThreshold,
             ),
             slippageDisplay: quote.slippage
-                ? `${quote.slippage.toString()}%`
+                ? `${apiSlippageToPercent(quote.slippage)}%`
                 : '-',
             peraFeeDisplay: quote.peraFeeAmount
-                ? formatAssetAmount(quote.peraFeeAmount, quote.assetIn)
+                ? formatAssetAmount(
+                      quote.peraFeeAmount,
+                      quote.peraFeeAsset ?? quote.assetIn,
+                  )
                 : '-',
             providerDisplay: quote.providerDisplayName ?? quote.provider ?? '-',
         }),

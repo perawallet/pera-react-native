@@ -1938,10 +1938,15 @@ vi.mock('@perawallet/wallet-core-walletconnect', () => ({
     },
 }))
 
-vi.mock('@perawallet/wallet-core-swaps', () => ({
-    useSwaps: vi.fn(),
-    isSwappableAsset: vi.fn(() => true),
-}))
+vi.mock('@perawallet/wallet-core-swaps', async () => {
+    const { Decimal } = await import('decimal.js')
+    return {
+        useSwaps: vi.fn(),
+        isSwappableAsset: vi.fn(() => true),
+        apiSlippageToPercent: (slippage: InstanceType<typeof Decimal>) =>
+            slippage.mul(100).toString(),
+    }
+})
 
 vi.mock('@perawallet/wallet-core-polling', () => ({
     usePolling: vi.fn(),

@@ -387,7 +387,7 @@ describe('useSwapForm', () => {
         expect(mockSetPreferredCurrency).toHaveBeenCalledWith('ALGO')
     })
 
-    it('converts stored slippage percent to decimal fraction when fetching quotes', async () => {
+    it('converts stored slippage percent to decimal fraction', async () => {
         mockSlippage = '1'
         mockCreateQuotes.mockResolvedValueOnce([])
 

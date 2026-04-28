@@ -34,6 +34,7 @@ vi.mock('@perawallet/wallet-core-shared', () => ({
 
 vi.mock('@perawallet/wallet-core-swaps', () => ({
     useProvidersQuery: () => ({ data: undefined }),
+    apiSlippageToPercent: (slippage: Decimal) => slippage.mul(100).toString(),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
@@ -231,6 +232,54 @@ describe('SwapConfirmationBottomSheet', () => {
         expect(screen.getByText('swap.quote.price_impact')).toBeDefined()
         expect(screen.getByText('swap.quote.minimum_received')).toBeDefined()
         expect(screen.getByText('swap.quote.pera_fee')).toBeDefined()
+    })
+
+    it('renders slippage as a percent (5% from API fraction 0.05)', () => {
+        const quote = createQuote({ slippage: new Decimal('0.05') })
+        render(
+            <SwapConfirmationBottomSheet
+                {...defaultProps}
+                quote={quote}
+            />,
+        )
+
+        expect(screen.getByText('5%')).toBeDefined()
+    })
+
+    it('renders pera fee using peraFeeAsset when it differs from assetIn', () => {
+        const quote = createQuote({
+            peraFeeAmount: new Decimal('1000'),
+            peraFeeAsset: {
+                assetId: '31566704',
+                name: 'USDC',
+                unitName: 'USDC',
+                decimals: 6,
+                verificationTier: 'verified',
+            },
+        })
+        render(
+            <SwapConfirmationBottomSheet
+                {...defaultProps}
+                quote={quote}
+            />,
+        )
+
+        expect(screen.getByText('1000 USDC')).toBeDefined()
+    })
+
+    it('falls back to assetIn for pera fee when peraFeeAsset is absent', () => {
+        const quote = createQuote({
+            peraFeeAmount: new Decimal('1000'),
+            peraFeeAsset: undefined,
+        })
+        render(
+            <SwapConfirmationBottomSheet
+                {...defaultProps}
+                quote={quote}
+            />,
+        )
+
+        expect(screen.getByText('1000 ALGO')).toBeDefined()
     })
 
     it('shows high price impact warning when priceImpact >= 5', () => {
