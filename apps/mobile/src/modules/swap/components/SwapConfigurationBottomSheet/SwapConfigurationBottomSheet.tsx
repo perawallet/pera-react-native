@@ -86,7 +86,7 @@ export const SwapConfigurationBottomSheet = ({
                     }
                     right={
                         <PWButton
-                            variant='link'
+                            variant='linkPositive'
                             title={t('swap.configuration.apply')}
                             onPress={handleApply}
                             isDisabled={!isApplyEnabled}
