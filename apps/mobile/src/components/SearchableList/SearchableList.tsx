@@ -92,6 +92,7 @@ const SearchableListInner = <T,>(
         data,
         keyExtractor,
         snapThreshold,
+        itemHeightEstimate: listProps.estimatedItemSize,
         onScroll,
         onScrollEndDrag,
     })
@@ -132,8 +133,6 @@ const SearchableListInner = <T,>(
                     />
                 )
             }
-            // The sentinel only ever lives at index 0, so the rest of the
-            // data array is the caller's original list.
             return (
                 renderItem?.({
                     ...info,
@@ -167,6 +166,7 @@ const SearchableListInner = <T,>(
             ListHeaderComponent={augmentedHeader}
             ListFooterComponent={augmentedFooter}
             stickyIndices={[0]}
+            maintainVisibleContentPosition
             onLayout={handleListLayout}
             onContentSizeChange={handleContentSizeChange}
             onScroll={handleScroll}

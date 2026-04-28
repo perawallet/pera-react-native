@@ -13,6 +13,7 @@
 import {
     useCallback,
     useImperativeHandle,
+    useLayoutEffect,
     useMemo,
     useRef,
     useState,
@@ -27,6 +28,7 @@ import type { PWFlatListRef } from '@components/core'
 
 const SEARCH_SENTINEL = Symbol('SearchableList.search')
 const SEARCH_KEY = '__searchable_list_search__'
+const DEFAULT_ITEM_HEIGHT_ESTIMATE = 56
 
 export type SearchSentinel = typeof SEARCH_SENTINEL
 
@@ -40,6 +42,7 @@ type UseSearchableListParams<T> = {
     data: readonly T[] | null | undefined
     keyExtractor?: (item: T, index: number) => string
     snapThreshold: number
+    itemHeightEstimate?: number
     onScroll?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
     onScrollEndDrag?: (event: NativeSyntheticEvent<NativeScrollEvent>) => void
 }
@@ -70,41 +73,31 @@ export const useSearchableList = <T>({
     data,
     keyExtractor,
     snapThreshold,
+    itemHeightEstimate = DEFAULT_ITEM_HEIGHT_ESTIMATE,
     onScroll,
     onScrollEndDrag,
 }: UseSearchableListParams<T>): UseSearchableListResult<T> => {
     const listRef = useRef<PWFlatListRef>(null)
+    const [headerHeight, setHeaderHeight] = useState(0)
+    const [listLayoutHeight, setListLayoutHeight] = useState(0)
+    // Latest measured contentSize minus the spacer footer we set last —
+    // i.e. the natural (item-driven) content height.
+    const [naturalContentSize, setNaturalContentSize] = useState(0)
+    const searchFooterHeightRef = useRef(0)
+    // The sticky search bar's onFocus closure can outlive a re-render, so
+    // event handlers read these refs instead of state to always see the
+    // freshest measurement.
     const headerHeightRef = useRef(0)
     const listLayoutHeightRef = useRef(0)
-    const naturalContentSizeRef = useRef(0)
-    const searchFooterHeightRef = useRef(0)
-    const [searchFooterHeight, setSearchFooterHeight] = useState(0)
+    // Tracks the itemCount from the previous render. When the new count is
+    // lower we know data just shrunk and can pre-emptively grow the footer
+    // synchronously — before the native list sees the smaller contentSize
+    // and clamps scroll, which would otherwise expose the header.
+    const previousItemCountRef = useRef(0)
     // Latched once the header has been fully hidden (offset >= headerHeight).
     // Snap logic only kicks in once latched — while the header is still
     // expanded or partially expanded, the user scrolls freely.
     const isCollapsedRef = useRef(false)
-
-    const updateFooterIfNeeded = useCallback(() => {
-        const viewport = listLayoutHeightRef.current
-        const natural = naturalContentSizeRef.current
-        // Wait for both measurements before computing — otherwise we'd
-        // briefly add a viewport-sized footer and have to undo it.
-        if (viewport <= 0 || natural <= 0) {
-            return
-        }
-        // Pad just enough that contentSize == viewport + headerHeight, so the
-        // max scroll offset equals headerHeight — letting the sticky search
-        // bar pin to the top even when items don't fill the viewport, while
-        // never letting the user scroll past the search bar.
-        const desired = Math.max(
-            0,
-            viewport + headerHeightRef.current - natural,
-        )
-        if (searchFooterHeightRef.current !== desired) {
-            searchFooterHeightRef.current = desired
-            setSearchFooterHeight(desired)
-        }
-    }, [])
 
     useImperativeHandle(forwardedRef, () => ({
         scrollToOffset: params => listRef.current?.scrollToOffset(params),
@@ -112,37 +105,76 @@ export const useSearchableList = <T>({
         scrollToEnd: options => listRef.current?.scrollToEnd(options),
     }))
 
-    const handleHeaderLayout = useCallback(
-        (event: LayoutChangeEvent) => {
-            headerHeightRef.current = event.nativeEvent.layout.height
-            updateFooterIfNeeded()
-        },
-        [updateFooterIfNeeded],
-    )
+    const itemCount = data?.length ?? 0
 
-    const handleListLayout = useCallback(
-        (event: LayoutChangeEvent) => {
-            listLayoutHeightRef.current = event.nativeEvent.layout.height
-            updateFooterIfNeeded()
-        },
-        [updateFooterIfNeeded],
-    )
+    const searchFooterHeight = useMemo(() => {
+        if (listLayoutHeight <= 0) {
+            return 0
+        }
+        // Use the natural size is fwe can or estimate it
+        let natural =
+            naturalContentSize > 0
+                ? naturalContentSize
+                : headerHeight + itemCount * itemHeightEstimate
+        
+        const previousItemCount = previousItemCountRef.current
+        if (itemCount < previousItemCount) {
+            const expectedLoss =
+                (previousItemCount - itemCount) * itemHeightEstimate
+            natural = Math.max(0, natural - expectedLoss)
+        }
+        return Math.max(0, listLayoutHeight + headerHeight - natural)
+    }, [
+        listLayoutHeight,
+        headerHeight,
+        naturalContentSize,
+        itemCount,
+        itemHeightEstimate,
+    ])
+
+    // Mirror searchFooterHeight into a ref so handleContentSizeChange can
+    // recover the natural size without depending on render closures.
+    useLayoutEffect(() => {
+        searchFooterHeightRef.current = searchFooterHeight
+        previousItemCountRef.current = itemCount
+    }, [searchFooterHeight, itemCount])
+
+    const handleHeaderLayout = useCallback((event: LayoutChangeEvent) => {
+        const height = event.nativeEvent.layout.height
+        headerHeightRef.current = height
+        setHeaderHeight(height)
+    }, [])
+
+    const handleListLayout = useCallback((event: LayoutChangeEvent) => {
+        const height = event.nativeEvent.layout.height
+        listLayoutHeightRef.current = height
+        setListLayoutHeight(height)
+    }, [])
 
     const handleContentSizeChange = useCallback(
         (_width: number, height: number) => {
-            // Track the content size minus our spacer so updateFooterIfNeeded
-            // always reasons about the natural (item-driven) size, not the
-            // inflated size after we've added the spacer.
-            naturalContentSizeRef.current =
-                height - searchFooterHeightRef.current
-            updateFooterIfNeeded()
+            const natural = Math.max(
+                0,
+                height - searchFooterHeightRef.current,
+            )
+            setNaturalContentSize(prev => (prev === natural ? prev : natural))
+            // Backstop: if a transient contentSize drop pushed scroll below
+            // the pin offset while collapsed, snap back synchronously so the
+            // user never sees the header peek.
+            if (
+                isCollapsedRef.current &&
+                headerHeightRef.current > 0
+            ) {
+                listRef.current?.scrollToOffset({
+                    offset: headerHeightRef.current,
+                    animated: false,
+                })
+            }
         },
-        [updateFooterIfNeeded],
+        [],
     )
 
     const handleSearchFocus = useCallback(() => {
-        // Animate to the offset where the sticky search bar pins to the top
-        // — the list's native scroll animation provides the collapse motion.
         isCollapsedRef.current = true
         listRef.current?.scrollToOffset({
             offset: headerHeightRef.current,
@@ -153,10 +185,10 @@ export const useSearchableList = <T>({
     const handleScroll = useCallback(
         (event: NativeSyntheticEvent<NativeScrollEvent>) => {
             onScroll?.(event)
-            const headerHeight = headerHeightRef.current
+            const headerH = headerHeightRef.current
             if (
-                headerHeight > 0 &&
-                event.nativeEvent.contentOffset.y >= headerHeight
+                headerH > 0 &&
+                event.nativeEvent.contentOffset.y >= headerH
             ) {
                 isCollapsedRef.current = true
             }
@@ -170,15 +202,15 @@ export const useSearchableList = <T>({
             if (!isCollapsedRef.current) {
                 return
             }
-            const headerHeight = headerHeightRef.current
-            if (headerHeight <= 0) {
+            const headerH = headerHeightRef.current
+            if (headerH <= 0) {
                 return
             }
             const offset = event.nativeEvent.contentOffset.y
-            if (offset <= 0 || offset >= headerHeight) {
+            if (offset <= 0 || offset >= headerH) {
                 return
             }
-            const revealedFraction = (headerHeight - offset) / headerHeight
+            const revealedFraction = (headerH - offset) / headerH
             if (revealedFraction > snapThreshold) {
                 isCollapsedRef.current = false
                 listRef.current?.scrollToOffset({
@@ -187,7 +219,7 @@ export const useSearchableList = <T>({
                 })
             } else {
                 listRef.current?.scrollToOffset({
-                    offset: headerHeight,
+                    offset: headerH,
                     animated: true,
                 })
             }
