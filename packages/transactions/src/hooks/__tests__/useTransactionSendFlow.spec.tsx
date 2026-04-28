@@ -119,7 +119,12 @@ describe('useTransactionSendFlow', () => {
             })
         })
         expect(mockAddAssetTransfer).toHaveBeenCalled()
-        expect(mockSubmit).toHaveBeenCalledTimes(1)
+        expect(mockSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({
+                unsignedTxs: [TXN],
+                source: { name: 'send-transaction', description: 'Send transaction' },
+            }),
+        )
     })
 
     it('express send: includes funding payment when receiver is underfunded', async () => {
@@ -142,7 +147,12 @@ describe('useTransactionSendFlow', () => {
         expect(mockAddPayment).toHaveBeenCalled()
         expect(mockAddAssetOptIn).toHaveBeenCalled()
         expect(mockAddAssetTransfer).toHaveBeenCalled()
-        expect(mockSubmit).toHaveBeenCalledTimes(1)
+        expect(mockSubmit).toHaveBeenCalledWith(
+            expect.objectContaining({
+                unsignedTxs: [TXN],
+                source: { name: 'send-transaction', description: 'Send transaction' },
+            }),
+        )
     })
 
     it('sendArc59: delegates building to ARC-59 hook + submits via pipeline', async () => {

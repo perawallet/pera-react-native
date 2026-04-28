@@ -13,7 +13,8 @@
 import { useCallback } from 'react'
 
 import { Decimal } from 'decimal.js'
-import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
+import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
+import type { PeraAsset } from '@perawallet/wallet-core-assets'
 import type { Arc59SendSummaryResponse } from '@perawallet/wallet-core-asa-inbox'
 import {
     useArc59SendTransaction,
@@ -26,7 +27,7 @@ import {
 } from '@perawallet/wallet-core-blockchain'
 import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
 import { useSignAndSubmitGroup } from '@perawallet/wallet-core-signing'
-import { WalletAccount } from '@perawallet/wallet-core-accounts'
+import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { InvalidSendParamsError } from '../errors'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
@@ -117,10 +118,9 @@ export const useTransactionSendFlow = () => {
         async (params: SendTransactionParams): Promise<PeraTransaction[]> => {
             if (
                 !params.asset ||
-                params.asset.assetId == null ||
                 !params.sender ||
                 !params.receiver ||
-                params.amount == null
+                params.amount === undefined
             ) {
                 throw new InvalidSendParamsError()
             }
@@ -162,10 +162,9 @@ export const useTransactionSendFlow = () => {
         async (params: SendTransactionParams): Promise<string> => {
             if (
                 !params.asset ||
-                params.asset.assetId == null ||
                 !params.sender ||
                 !params.receiver ||
-                params.amount == null
+                params.amount === undefined
             ) {
                 throw new InvalidSendParamsError()
             }
