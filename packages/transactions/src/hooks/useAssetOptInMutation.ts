@@ -120,5 +120,8 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
     }
 }
 
-export { AlreadyOptedInError, InsufficientBalanceForOptInError } from '../errors'
+export {
+    AlreadyOptedInError,
+    InsufficientBalanceForOptInError,
+} from '../errors'
 export type { AssetOptInParams, UseAssetOptInMutationResult }

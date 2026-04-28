@@ -48,7 +48,8 @@ vi.mock('@perawallet/wallet-core-assets', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', () => ({
-    deleteAssetHoldings: (...args: unknown[]) => mockDeleteAssetHoldings(...args),
+    deleteAssetHoldings: (...args: unknown[]) =>
+        mockDeleteAssetHoldings(...args),
     useAccountBalancesInvalidator: () => ({ invalidate: mockInvalidate }),
 }))
 
@@ -94,7 +95,10 @@ describe('useAssetOptOutMutation', () => {
         )
         expect(mockSubmit).toHaveBeenCalledWith({
             unsignedTxs: [{ sender: 'SENDER' }],
-            source: { name: 'asset-opt-out', description: 'Opt out of an asset' },
+            source: {
+                name: 'asset-opt-out',
+                description: 'Opt out of an asset',
+            },
         })
         expect(mockDeleteAssetHoldings).toHaveBeenCalledWith({
             accountAddress: 'SENDER',
@@ -133,7 +137,10 @@ describe('useAssetOptOutMutation', () => {
         expect(mockAddAssetTransfer).toHaveBeenCalledTimes(2)
         expect(mockSubmit).toHaveBeenCalledWith({
             unsignedTxs: [{ sender: 'SENDER' }, { sender: 'SENDER' }],
-            source: { name: 'asset-opt-out', description: 'Opt out of an asset' },
+            source: {
+                name: 'asset-opt-out',
+                description: 'Opt out of an asset',
+            },
         })
         expect(mockDeleteAssetHoldings).toHaveBeenCalledWith({
             accountAddress: 'SENDER',

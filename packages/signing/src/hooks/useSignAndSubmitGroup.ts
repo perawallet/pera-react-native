@@ -51,9 +51,7 @@ export type SignAndSubmitGroupParams = {
 }
 
 export type SignAndSubmitGroupResult = {
-    submit: (
-        params: SignAndSubmitGroupParams,
-    ) => Promise<{ txIds: string[] }>
+    submit: (params: SignAndSubmitGroupParams) => Promise<{ txIds: string[] }>
 }
 
 /**

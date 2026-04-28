@@ -127,7 +127,10 @@ export const useTransactionSendFlow = () => {
 
             const assetDecimals = params.asset?.decimals ?? 0
             const amountInBaseUnits = BigInt(
-                displayUnitsToBaseUnits(params.amount, assetDecimals).toString(),
+                displayUnitsToBaseUnits(
+                    params.amount,
+                    assetDecimals,
+                ).toString(),
             )
 
             const composer = algokit.newGroup()
@@ -171,7 +174,10 @@ export const useTransactionSendFlow = () => {
 
             const assetDecimals = params.asset?.decimals ?? 0
             const amountInBaseUnits = BigInt(
-                displayUnitsToBaseUnits(params.amount, assetDecimals).toString(),
+                displayUnitsToBaseUnits(
+                    params.amount,
+                    assetDecimals,
+                ).toString(),
             )
             const assetId = BigInt(params.asset.assetId)
 
@@ -216,12 +222,7 @@ export const useTransactionSendFlow = () => {
                 }
             }
         },
-        [
-            buildExpressTxs,
-            buildSendViaInboxTxs,
-            buildNormalTxs,
-            submit,
-        ],
+        [buildExpressTxs, buildSendViaInboxTxs, buildNormalTxs, submit],
     )
 
     const executeArc59 = useCallback(

@@ -100,7 +100,10 @@ describe('useTransactionSendFlow', () => {
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({
                 unsignedTxs: [TXN],
-                source: { name: 'send-transaction', description: 'Send transaction' },
+                source: {
+                    name: 'send-transaction',
+                    description: 'Send transaction',
+                },
             }),
         )
     })
@@ -122,7 +125,10 @@ describe('useTransactionSendFlow', () => {
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({
                 unsignedTxs: [TXN],
-                source: { name: 'send-transaction', description: 'Send transaction' },
+                source: {
+                    name: 'send-transaction',
+                    description: 'Send transaction',
+                },
             }),
         )
     })
@@ -150,7 +156,10 @@ describe('useTransactionSendFlow', () => {
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({
                 unsignedTxs: [TXN],
-                source: { name: 'send-transaction', description: 'Send transaction' },
+                source: {
+                    name: 'send-transaction',
+                    description: 'Send transaction',
+                },
             }),
         )
     })
@@ -178,7 +187,10 @@ describe('useTransactionSendFlow', () => {
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({
                 unsignedTxs: [TXN],
-                source: { name: 'send-transaction', description: 'Send transaction' },
+                source: {
+                    name: 'send-transaction',
+                    description: 'Send transaction',
+                },
             }),
         )
     })
@@ -199,7 +211,10 @@ describe('useTransactionSendFlow', () => {
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({
                 unsignedTxs: [TXN],
-                source: { name: 'send-transaction', description: 'Send transaction' },
+                source: {
+                    name: 'send-transaction',
+                    description: 'Send transaction',
+                },
             }),
         )
     })
@@ -220,7 +235,10 @@ describe('useTransactionSendFlow', () => {
         expect(mockSubmit).toHaveBeenCalledWith(
             expect.objectContaining({
                 unsignedTxs: [TXN],
-                source: { name: 'send-transaction', description: 'Send transaction' },
+                source: {
+                    name: 'send-transaction',
+                    description: 'Send transaction',
+                },
             }),
         )
     })

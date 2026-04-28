@@ -34,7 +34,9 @@ vi.mock('../useSigningRequest', () => ({
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     useAlgorandClient: () => ({ client: { algod: {} } }),
     useTransactionEncoder: () => ({
-        encodeSignedTransactions: vi.fn(arr => arr.map(() => new Uint8Array([1]))),
+        encodeSignedTransactions: vi.fn(arr =>
+            arr.map(() => new Uint8Array([1])),
+        ),
     }),
 }))
 
@@ -43,7 +45,9 @@ vi.mock('../../pipeline/submission/submitSignedTransactionGroup', () => ({
         mockSubmitSignedTransactionGroup(...args),
 }))
 
-const fakeTxn = { sender: { toString: () => 'A' } } as unknown as PeraTransaction
+const fakeTxn = {
+    sender: { toString: () => 'A' },
+} as unknown as PeraTransaction
 
 describe('useSignAndSubmitGroup', () => {
     beforeEach(() => {
