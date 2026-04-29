@@ -22,11 +22,12 @@ import {
     type AugmentedItem,
 } from './useSearchableList'
 import { DEFAULT_SNAP_THRESHOLD, SCROLL_EVENT_THROTTLE } from '@constants/ui'
+import { Maybe } from '@perawallet/wallet-core-shared'
 
 type RenderItem<T> = (props: LegendListRenderItemProps<T>) => React.ReactNode
 
 const renderHeaderNode = (
-    component: React.ComponentType | React.ReactElement | null | undefined,
+    component: Maybe<React.ComponentType | React.ReactElement>,
 ): React.ReactNode => {
     if (component == null) {
         return null

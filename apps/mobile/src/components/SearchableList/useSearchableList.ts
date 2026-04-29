@@ -25,6 +25,7 @@ import {
 } from 'react-native'
 
 import type { PWFlatListRef } from '@components/core'
+import { Nullable } from '@perawallet/wallet-core-shared'
 
 const SEARCH_SENTINEL = Symbol('SearchableList.search')
 const SEARCH_KEY = '__searchable_list_search__'
@@ -48,7 +49,7 @@ type UseSearchableListParams<T> = {
 }
 
 type UseSearchableListResult<T> = {
-    listRef: React.RefObject<PWFlatListRef | null>
+    listRef: React.RefObject<Nullable<PWFlatListRef>>
     augmentedData: AugmentedItem<T>[]
     augmentedKeyExtractor: (item: AugmentedItem<T>, index: number) => string
     toUserIndex: (index: number) => number
