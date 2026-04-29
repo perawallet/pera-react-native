@@ -70,7 +70,10 @@ export const useLedgerFetchAccountsScreen =
 
             try {
                 const provider =
-                    getProvider().hardwareWalletRegistry.getProvider('ledger')!
+                    getProvider().hardwareWalletRegistry.getProvider(
+                        'ledger',
+                        'ble',
+                    )!
 
                 setIsDiscovering(true)
                 const result = await connectAndDiscoverAccounts({

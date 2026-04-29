@@ -107,6 +107,7 @@ const makeMockProvider = (
     transport: HardwareWalletTransport,
 ): HardwareWalletTransportProvider => ({
     manufacturer: 'ledger',
+    transportType: 'ble',
     scan: () => () => {},
     connect: vi.fn().mockResolvedValue(transport),
     isSupported: vi.fn().mockResolvedValue(true),
@@ -274,6 +275,7 @@ describe('hardwareSignerActor', () => {
         try {
             const provider: HardwareWalletTransportProvider = {
                 manufacturer: 'ledger',
+                transportType: 'ble',
                 scan: () => () => {},
                 connect: vi.fn().mockImplementation(
                     () => new Promise(() => {}), // never resolves

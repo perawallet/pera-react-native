@@ -290,6 +290,7 @@ describe('useTransactionSigner', () => {
 
         expect(mockHardwareWalletRegistry.getProvider).toHaveBeenCalledWith(
             'ledger',
+            'ble',
         )
         expect(mockHardwareTransportProvider.connect).toHaveBeenCalledWith(
             'device-1',

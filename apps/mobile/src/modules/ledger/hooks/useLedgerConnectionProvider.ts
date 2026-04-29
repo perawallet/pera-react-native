@@ -21,7 +21,7 @@ import { useLedgerConnection as useLedgerConnectionCore } from '@perawallet/wall
  */
 export const useLedgerConnection = () => {
     const provider = useMemo(
-        () => getProvider().hardwareWalletRegistry.getProvider('ledger')!,
+        () => getProvider().hardwareWalletRegistry.getProvider('ledger', 'ble')!,
         [],
     )
     return useLedgerConnectionCore(provider)
