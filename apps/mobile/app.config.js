@@ -258,6 +258,9 @@ module.exports = {
     // Custom plugin for Notifee local Maven repository (pnpm/monorepo fix)
     './plugins/withNotifeeMavenRepo',
 
+    // Custom plugin for Ledger USB intent-filter (Android USB host)
+    './plugins/withLedgerUsbAndroidManifest',
+
     // Custom plugin for local.properties SDK path (machine-specific fix)
     './plugins/withAndroidLocalProperties',
 
