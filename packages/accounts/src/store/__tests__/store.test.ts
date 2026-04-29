@@ -402,5 +402,49 @@ describe('services/accounts/store', () => {
                 'usb',
             )
         })
+
+        test('runs both v2 and v3 migrations for users coming from v1', async () => {
+            const { migrateState } = await import('../store')
+            const v1State = {
+                accounts: [
+                    {
+                        type: 'hardware',
+                        address: 'A',
+                        hardwareDetails: {
+                            manufacturer: 'ledger',
+                            deviceId: 'd',
+                            deviceName: 'Nano',
+                            accountIndex: 0,
+                        },
+                    },
+                ],
+                selectedAccountAddress: 'A',
+            }
+
+            const migrated = migrateState(v1State, 1) as {
+                accounts: Array<{ hardwareDetails: { transportType: string } }>
+                sortMode: string
+                manualAccountOrder: string[]
+            }
+
+            expect(migrated.sortMode).toBe('manual')
+            expect(migrated.manualAccountOrder).toEqual(['A'])
+            expect(migrated.accounts[0].hardwareDetails.transportType).toBe(
+                'ble',
+            )
+        })
+
+        test('does not throw when accounts is missing or not an array', async () => {
+            const { migrateState } = await import('../store')
+            // Object with no accounts key
+            expect(() => migrateState({ sortMode: 'manual' }, 2)).not.toThrow()
+            // Non-array accounts (corrupted state)
+            expect(() =>
+                migrateState({ accounts: 'oops' as unknown }, 2),
+            ).not.toThrow()
+            expect(() =>
+                migrateState({ accounts: null as unknown }, 2),
+            ).not.toThrow()
+        })
     })
 })

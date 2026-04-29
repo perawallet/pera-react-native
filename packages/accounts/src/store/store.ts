@@ -34,26 +34,33 @@ export const migrateState = (
     persistedState: unknown,
     version: number,
 ): AccountsState => {
+    // Mutates persistedState in place — Zustand's persist middleware
+    // owns this object and expects in-place updates.
     const state = persistedState as Record<string, unknown>
 
     if (version < 2) {
-        const accounts = (state.accounts ?? []) as WalletAccount[]
+        const raw = state.accounts
+        const accounts: WalletAccount[] = Array.isArray(raw)
+            ? (raw as WalletAccount[])
+            : []
         state.sortMode = 'manual'
         state.manualAccountOrder = accounts.map(a => a.address)
     }
 
     if (version < 3) {
-        const accounts = (state.accounts ?? []) as Array<
-            Record<string, unknown>
-        >
+        const raw = state.accounts
+        const accounts: Array<Record<string, unknown>> = Array.isArray(raw)
+            ? raw
+            : []
         for (const account of accounts) {
+            if (!account || typeof account !== 'object') continue
             if (account.type !== 'hardware') continue
-            const hardwareDetails = account.hardwareDetails as
-                | Record<string, unknown>
-                | undefined
-            if (!hardwareDetails) continue
-            if (hardwareDetails.transportType !== undefined) continue
-            hardwareDetails.transportType = 'ble'
+            const hardwareDetails = account.hardwareDetails
+            if (!hardwareDetails || typeof hardwareDetails !== 'object')
+                continue
+            const hd = hardwareDetails as Record<string, unknown>
+            if (hd.transportType !== undefined) continue
+            hd.transportType = 'ble'
         }
         state.accounts = accounts as unknown as WalletAccount[]
     }
