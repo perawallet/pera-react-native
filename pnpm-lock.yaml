@@ -667,6 +667,46 @@ importers:
         specifier: 'catalog:'
         version: 4.1.4(@types/node@22.19.17)(@vitest/coverage-v8@4.1.4)(jsdom@29.0.2(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@22.19.17)(typescript@5.9.3))(vite@8.0.8(@types/node@22.19.17)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
 
+  extensions/ledger-react-native-usb:
+    dependencies:
+      '@ledgerhq/errors':
+        specifier: ^6.32.0
+        version: 6.32.0
+      '@ledgerhq/hw-app-algorand':
+        specifier: ^6.34.1
+        version: 6.34.1
+      '@ledgerhq/react-native-hid':
+        specifier: ^6.39.1
+        version: 6.39.1(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.5))
+      '@perawallet/wallet-core-hardware-wallet':
+        specifier: workspace:*
+        version: link:../../packages/hardware-wallet
+      '@perawallet/wallet-core-shared':
+        specifier: workspace:*
+        version: link:../../packages/shared
+      '@perawallet/wallet-extension-ledger-react-native':
+        specifier: workspace:*
+        version: link:../ledger-react-native
+      '@perawallet/wallet-extension-platform':
+        specifier: workspace:*
+        version: link:../platform
+    devDependencies:
+      '@perawallet/wallet-core-devtools':
+        specifier: workspace:*
+        version: link:../../packages/devtools
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vite:
+        specifier: 'catalog:'
+        version: 8.0.8(@types/node@22.19.17)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3)
+      vite-plugin-dts:
+        specifier: ^4.5.4
+        version: 4.5.4(@types/node@22.19.17)(rollup@4.59.0)(typescript@5.9.3)(vite@8.0.8(@types/node@22.19.17)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.4(@types/node@22.19.17)(@vitest/coverage-v8@4.1.4)(jsdom@29.0.2(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@22.19.17)(typescript@5.9.3))(vite@8.0.8(@types/node@22.19.17)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
+
   extensions/platform:
     dependencies:
       '@algorandfoundation/keystore':
@@ -4444,8 +4484,14 @@ packages:
   '@ledgerhq/devices@8.13.0':
     resolution: {integrity: sha512-hgGn1kpe/rT0EJ0Qs7rG+1TXA4g6HN2t3dB4DndRTqVqC9aSSbME+ajA0QWLZisxOD3zkwvO4Q0mJ2zARAKyag==}
 
+  '@ledgerhq/devices@8.14.1':
+    resolution: {integrity: sha512-q6tOUO963tFPrsJtdzu5juC8xIAIRe6etLSZ+ZhwgUivTHNJbmFFBxMU3p19dwn8VaKRvbw0pxJv+qmokMYpRA==}
+
   '@ledgerhq/errors@6.32.0':
     resolution: {integrity: sha512-BjjvhLM6UXYUbhllqAduo9PSneLt9FXZ3TBEUFQ3MMSZOCHt0gAgDySLwul99R8fdYWkXBza4DYQjUNckpN2lg==}
+
+  '@ledgerhq/errors@6.34.0':
+    resolution: {integrity: sha512-l16K56FzPoXBMT5J4EpnIBmRLTYkpSyYj3z4er+rmbwq0t9dDG/UaRvFeBpwB2gqGcYWcue14qF9Wkuos/43eA==}
 
   '@ledgerhq/hw-app-algorand@6.34.1':
     resolution: {integrity: sha512-ey5N/76vKwvKN6MwkTB0UKHhKkOTDwLQ3xwoVCB26N0r4QpdLMVPkhhPKSYo0diAj+At7DUnbn56dx3/20JC6w==}
@@ -4453,8 +4499,19 @@ packages:
   '@ledgerhq/hw-transport@6.34.1':
     resolution: {integrity: sha512-Bg9Qk2vtm0m0cZn9prZV2Hbvh3b42KBh4uomO00derh+eiwsdg5AXBBptAJiREkew1RVtETRdWxrKchUJfeWvA==}
 
+  '@ledgerhq/hw-transport@6.35.1':
+    resolution: {integrity: sha512-YCkk9koo0FzCzHvLVpdrQ3+EQOPMpp/fSednHhk7AiaJC/c+pX6wKevUDp1MLcq7gUHbVOXyYYpqoW6A97w8OA==}
+
   '@ledgerhq/logs@6.16.0':
     resolution: {integrity: sha512-v/PLfb1dq1En35kkpbfRWp8jLYgbPUXxGhmd4pmvPSIe0nRGkNTomsZASmWQAv6pRonVGqHIBVlte7j1MBbOww==}
+
+  '@ledgerhq/logs@6.17.0':
+    resolution: {integrity: sha512-yra33g5q/AU7+PwAws+GaVpQGUuxnDREjVBnviJjcaJLVKuLzI4pnj8Bd3nY3fypM5k1yZEYKEXfUuGFUjP2+w==}
+
+  '@ledgerhq/react-native-hid@6.39.1':
+    resolution: {integrity: sha512-OQRAPxcSNfhpBzR1Xs1a84zSZyAW0s+TUK6CsjmmVj4GODTlC4jwCjTkLUkZK96sHFNJs7c32Z+NMmBCjpC2iQ==}
+    peerDependencies:
+      react-native: 0.83.4
 
   '@ledgerhq/react-native-hw-transport-ble@6.39.1':
     resolution: {integrity: sha512-oUIDsfOKPOLPXljfP6ibP1Apt9Ac4gMUul4OtCtpb4UeDi+iChDlnK5mUgdGaNAucN3MAv9IRQUO3Wi1+8pLoA==}
@@ -11824,7 +11881,16 @@ snapshots:
       rxjs: 7.8.2
       semver: 7.7.3
 
+  '@ledgerhq/devices@8.14.1':
+    dependencies:
+      '@ledgerhq/errors': 6.34.0
+      '@ledgerhq/logs': 6.17.0
+      rxjs: 7.8.2
+      semver: 7.7.3
+
   '@ledgerhq/errors@6.32.0': {}
+
+  '@ledgerhq/errors@6.34.0': {}
 
   '@ledgerhq/hw-app-algorand@6.34.1':
     dependencies:
@@ -11842,7 +11908,25 @@ snapshots:
       '@ledgerhq/logs': 6.16.0
       events: 3.3.0
 
+  '@ledgerhq/hw-transport@6.35.1':
+    dependencies:
+      '@ledgerhq/devices': 8.14.1
+      '@ledgerhq/errors': 6.34.0
+      '@ledgerhq/logs': 6.17.0
+      events: 3.3.0
+
   '@ledgerhq/logs@6.16.0': {}
+
+  '@ledgerhq/logs@6.17.0': {}
+
+  '@ledgerhq/react-native-hid@6.39.1(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.5))':
+    dependencies:
+      '@ledgerhq/devices': 8.14.1
+      '@ledgerhq/errors': 6.34.0
+      '@ledgerhq/hw-transport': 6.35.1
+      '@ledgerhq/logs': 6.17.0
+      react-native: 0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.5)
+      rxjs: 7.8.2
 
   '@ledgerhq/react-native-hw-transport-ble@6.39.1(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.5))(react@19.2.5)':
     dependencies:
@@ -13103,7 +13187,7 @@ snapshots:
       obug: 2.1.1
       std-env: 4.0.0
       tinyrainbow: 3.1.0
-      vitest: 4.1.4(@types/node@22.19.17)(@vitest/coverage-v8@4.1.4)(jsdom@29.0.2(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@22.19.17)(typescript@5.9.3))(vite@8.0.8(@types/node@22.19.17)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
+      vitest: 4.1.4(@types/node@22.19.17)(@vitest/coverage-v8@4.1.4)(jsdom@27.4.0(@noble/hashes@2.0.1))(msw@2.12.10(@types/node@22.19.17)(typescript@5.9.3))(vite@8.0.8(@types/node@22.19.17)(esbuild@0.27.3)(jiti@2.5.1)(terser@5.46.1)(tsx@4.21.0)(yaml@2.8.3))
 
   '@vitest/expect@4.1.4':
     dependencies:
