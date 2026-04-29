@@ -2128,7 +2128,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => {
             isPending: false,
         })),
         useFindAccountByAddress: vi.fn(() => null),
-        useTransactionSigner: vi.fn(() => ({
+        useLocalKeyTransactionSigner: vi.fn(() => ({
             signTransactions: vi.fn().mockResolvedValue([]),
         })),
         useArbitraryDataSigner: vi.fn(() => ({

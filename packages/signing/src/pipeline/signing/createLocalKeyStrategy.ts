@@ -29,7 +29,7 @@ import type {
 import { CannotSignError, SigningError } from '../errors'
 
 /**
- * Signing function type that matches useTransactionSigner's signTransactions
+ * Signing function type that matches useLocalKeyTransactionSigner's signTransactions
  */
 export type LocalSigningFunction = (
     txnGroup: PeraSignedTransaction['txn'][],

@@ -24,7 +24,7 @@ import {
     LedgerConnectionError,
     LedgerTimeoutError,
 } from '@perawallet/wallet-core-ledger'
-import { useTransactionSigner } from './useTransactionSigner'
+import { useLocalKeyTransactionSigner } from './useLocalKeyTransactionSigner'
 import { useArbitraryDataSigner } from './useArbitraryDataSigner'
 import { useArc60Signer } from './useArc60Signer'
 import { useSigningStore, useHardwareSigningStore } from '../store'
@@ -118,7 +118,7 @@ export const useSigningActorLifecycle = (): UseSigningActorLifecycleResult => {
         state => state.setLastFailedRequest,
     )
 
-    const { signTransactions } = useTransactionSigner()
+    const { signTransactions } = useLocalKeyTransactionSigner()
     const { signArbitraryData } = useArbitraryDataSigner()
     const { signArc60 } = useArc60Signer()
     const { encodeTransactionRaw, encodeSignedTransactions } =

@@ -70,7 +70,7 @@ export type TransportFactory = (
  * These are functions and clients that cannot be known at machine definition time.
  */
 export type SigningMachineDeps = {
-    /** KMS signing function from useTransactionSigner */
+    /** KMS signing function from useLocalKeyTransactionSigner */
     signTransactions: LocalSigningFunction
     /** KMS arbitrary-data signing function from useArbitraryDataSigner */
     signArbitraryData: LocalArbitrarySigningFunction
