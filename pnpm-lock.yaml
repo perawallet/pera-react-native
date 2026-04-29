@@ -889,6 +889,9 @@ importers:
       '@perawallet/wallet-extension-ledger-react-native':
         specifier: workspace:*
         version: link:../ledger-react-native
+      '@perawallet/wallet-extension-ledger-react-native-usb':
+        specifier: workspace:*
+        version: link:../ledger-react-native-usb
       '@perawallet/wallet-extension-platform':
         specifier: workspace:*
         version: link:../platform

@@ -23,6 +23,10 @@ vi.mock('@perawallet/wallet-extension-ledger-react-native', () => ({
     WithLedgerExtension: () => ({}),
 }))
 
+vi.mock('@perawallet/wallet-extension-ledger-react-native-usb', () => ({
+    WithLedgerUsbExtension: () => ({}),
+}))
+
 vi.mock('@tanstack/store', () => ({
     Store: class {
         constructor() {}

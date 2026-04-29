@@ -11,3 +11,6 @@
  */
 
 export const name = '@perawallet/wallet-extension-ledger-react-native-usb'
+
+export { WithLedgerUsbExtension } from './extension'
+export { RNLedgerUsbService } from './RNLedgerUsbService'

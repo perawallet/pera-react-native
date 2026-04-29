@@ -49,6 +49,7 @@ export default defineConfig({
                 '@perawallet/wallet-extension-platform',
                 '@perawallet/wallet-extension-platform-driver',
                 '@perawallet/wallet-extension-ledger-react-native',
+                '@perawallet/wallet-extension-ledger-react-native-usb',
                 '@perawallet/wallet-core-accounts',
                 '@perawallet/wallet-core-hardware-wallet',
                 '@perawallet/wallet-core-blockchain',
