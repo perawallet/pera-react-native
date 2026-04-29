@@ -97,6 +97,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                     deviceId,
                     deviceName,
                     accountIndex: acc.accountIndex,
+                    transportType: 'ble' as const,
                 },
             }))
 

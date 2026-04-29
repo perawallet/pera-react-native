@@ -30,6 +30,7 @@ const ledgerDevice1Account0: WalletAccount = {
         deviceId: 'device-1',
         deviceName: 'Cold Wallet',
         accountIndex: 0,
+        transportType: 'ble',
     },
 }
 
@@ -42,6 +43,7 @@ const ledgerDevice1Account2: WalletAccount = {
         deviceId: 'device-1',
         deviceName: 'Cold Wallet',
         accountIndex: 2,
+        transportType: 'ble',
     },
 }
 
@@ -54,6 +56,7 @@ const ledgerDevice1Account1: WalletAccount = {
         deviceId: 'device-1',
         deviceName: 'Cold Wallet',
         accountIndex: 1,
+        transportType: 'ble',
     },
 }
 
@@ -66,6 +69,7 @@ const ledgerDevice2Account0: WalletAccount = {
         deviceId: 'device-2',
         deviceName: 'Backup Ledger',
         accountIndex: 0,
+        transportType: 'ble',
     },
 }
 
@@ -78,6 +82,7 @@ const otherHardware: WalletAccount = {
         deviceId: 'other-device',
         deviceName: 'Other Device',
         accountIndex: 0,
+        transportType: 'ble',
     },
 }
 

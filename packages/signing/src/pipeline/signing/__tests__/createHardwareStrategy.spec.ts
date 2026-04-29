@@ -73,6 +73,7 @@ const makeLedgerAccount = (
             deviceId: 'device-1',
             deviceName: 'Nano X',
             accountIndex,
+            transportType: 'ble',
         },
     }) as HardwareWalletAccount
 

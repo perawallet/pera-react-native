@@ -86,6 +86,7 @@ describe('getMnemonicBackupKeyId', () => {
                 deviceId: 'd1',
                 deviceName: 'Ledger',
                 accountIndex: 0,
+                transportType: 'ble',
             },
         }
         const watch: WalletAccount = {

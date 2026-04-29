@@ -117,6 +117,7 @@ const hardwareAccount = {
         deviceId: 'device-1',
         deviceName: 'Ledger Nano X',
         accountIndex: 0,
+        transportType: 'ble',
     },
 } as unknown as WalletAccount
 

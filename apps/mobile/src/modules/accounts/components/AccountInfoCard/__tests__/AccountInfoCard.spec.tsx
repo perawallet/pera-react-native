@@ -178,6 +178,7 @@ const ledgerAccount: HardwareWalletAccount = {
         deviceId: 'device-xyz',
         deviceName: 'My Ledger',
         accountIndex: 0,
+        transportType: 'ble',
     },
     name: 'Cold Wallet',
 }
