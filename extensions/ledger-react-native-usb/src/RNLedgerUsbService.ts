@@ -158,24 +158,14 @@ export class RNLedgerUsbService implements HardwareWalletService {
 
             async connect(deviceId): Promise<HardwareWalletTransport> {
                 try {
-                    // TransportHID.open expects a DeviceObj at runtime, but
-                    // our platform interface gives us an opaque deviceId
-                    // string from the scan event. The native module accepts
-                    // either; we cast here to satisfy the typed signature.
+                    // TransportHID.open's typed signature expects a DeviceObj,
+                    // but the native module accepts a deviceId string at runtime.
                     const hidTransport = await TransportHID.open(
                         deviceId as unknown as Parameters<
                             typeof TransportHID.open
                         >[0],
                     )
-                    // hw-app-algorand pins @ledgerhq/hw-transport@6.34.1 while
-                    // react-native-hid pulls 6.35.1; the duplicate copies
-                    // produce nominally-distinct Transport types. The runtime
-                    // surface is identical, so we cast at the boundary.
-                    const algorandApp = new Algorand(
-                        hidTransport as unknown as ConstructorParameters<
-                            typeof Algorand
-                        >[0],
-                    )
+                    const algorandApp = new Algorand(hidTransport)
                     return createTransportWrapper(hidTransport, algorandApp)
                 } catch (error) {
                     throw classifyLedgerError(error)

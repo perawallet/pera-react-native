@@ -112,6 +112,8 @@ catalogs:
 overrides:
   '@algorandfoundation/keystore': 1.0.0-canary.12
   '@expo/dom-webview': ^55.0.5
+  '@ledgerhq/hw-transport': 6.35.1
+  '@ledgerhq/logs': 6.17.0
   '@xmldom/xmldom': 0.8.13
   bn.js@4: 4.12.3
   brace-expansion@1: 1.1.13
@@ -4502,14 +4504,8 @@ packages:
   '@ledgerhq/hw-app-algorand@6.34.1':
     resolution: {integrity: sha512-ey5N/76vKwvKN6MwkTB0UKHhKkOTDwLQ3xwoVCB26N0r4QpdLMVPkhhPKSYo0diAj+At7DUnbn56dx3/20JC6w==}
 
-  '@ledgerhq/hw-transport@6.34.1':
-    resolution: {integrity: sha512-Bg9Qk2vtm0m0cZn9prZV2Hbvh3b42KBh4uomO00derh+eiwsdg5AXBBptAJiREkew1RVtETRdWxrKchUJfeWvA==}
-
   '@ledgerhq/hw-transport@6.35.1':
     resolution: {integrity: sha512-YCkk9koo0FzCzHvLVpdrQ3+EQOPMpp/fSednHhk7AiaJC/c+pX6wKevUDp1MLcq7gUHbVOXyYYpqoW6A97w8OA==}
-
-  '@ledgerhq/logs@6.16.0':
-    resolution: {integrity: sha512-v/PLfb1dq1En35kkpbfRWp8jLYgbPUXxGhmd4pmvPSIe0nRGkNTomsZASmWQAv6pRonVGqHIBVlte7j1MBbOww==}
 
   '@ledgerhq/logs@6.17.0':
     resolution: {integrity: sha512-yra33g5q/AU7+PwAws+GaVpQGUuxnDREjVBnviJjcaJLVKuLzI4pnj8Bd3nY3fypM5k1yZEYKEXfUuGFUjP2+w==}
@@ -11883,7 +11879,7 @@ snapshots:
   '@ledgerhq/devices@8.13.0':
     dependencies:
       '@ledgerhq/errors': 6.32.0
-      '@ledgerhq/logs': 6.16.0
+      '@ledgerhq/logs': 6.17.0
       rxjs: 7.8.2
       semver: 7.7.3
 
@@ -11901,18 +11897,11 @@ snapshots:
   '@ledgerhq/hw-app-algorand@6.34.1':
     dependencies:
       '@ledgerhq/errors': 6.32.0
-      '@ledgerhq/hw-transport': 6.34.1
+      '@ledgerhq/hw-transport': 6.35.1
       bip32-path: 0.4.2
       hi-base32: 0.5.1
       js-sha512: 0.8.0
       tweetnacl: 1.0.3
-
-  '@ledgerhq/hw-transport@6.34.1':
-    dependencies:
-      '@ledgerhq/devices': 8.13.0
-      '@ledgerhq/errors': 6.34.0
-      '@ledgerhq/logs': 6.17.0
-      events: 3.3.0
 
   '@ledgerhq/hw-transport@6.35.1':
     dependencies:
@@ -11920,8 +11909,6 @@ snapshots:
       '@ledgerhq/errors': 6.34.0
       '@ledgerhq/logs': 6.17.0
       events: 3.3.0
-
-  '@ledgerhq/logs@6.16.0': {}
 
   '@ledgerhq/logs@6.17.0': {}
 
@@ -11938,8 +11925,8 @@ snapshots:
     dependencies:
       '@ledgerhq/devices': 8.13.0
       '@ledgerhq/errors': 6.32.0
-      '@ledgerhq/hw-transport': 6.34.1
-      '@ledgerhq/logs': 6.16.0
+      '@ledgerhq/hw-transport': 6.35.1
+      '@ledgerhq/logs': 6.17.0
       react-native-ble-plx: 3.4.0(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.5))(react@19.2.5)
       rxjs: 7.8.2
       uuid: 14.0.0
