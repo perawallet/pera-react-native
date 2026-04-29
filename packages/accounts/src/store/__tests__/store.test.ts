@@ -324,4 +324,83 @@ describe('services/accounts/store', () => {
             expect(useAccountsStore.getState().accounts).toBe(before)
         })
     })
+
+    describe('persisted-state migration v3', () => {
+        test('migrates v2 hardware accounts to add transportType: "ble"', async () => {
+            const { migrateState } = await import('../store')
+            const v2State = {
+                accounts: [
+                    {
+                        type: 'hardware',
+                        address: 'ALG_ABC',
+                        hardwareDetails: {
+                            manufacturer: 'ledger',
+                            deviceId: 'dev-1',
+                            deviceName: 'Nano X',
+                            accountIndex: 0,
+                        },
+                    },
+                ],
+                selectedAccountAddress: 'ALG_ABC',
+                sortMode: 'manual',
+                manualAccountOrder: ['ALG_ABC'],
+            }
+
+            const migrated = migrateState(v2State, 2) as {
+                accounts: Array<{
+                    hardwareDetails: { transportType: string }
+                }>
+            }
+
+            expect(migrated.accounts[0].hardwareDetails.transportType).toBe(
+                'ble',
+            )
+        })
+
+        test('leaves non-hardware accounts unchanged', async () => {
+            const { migrateState } = await import('../store')
+            const v2State = {
+                accounts: [
+                    { type: 'algo25', address: 'ALG_X', keyPairId: 'kp1' },
+                ],
+                selectedAccountAddress: 'ALG_X',
+                sortMode: 'manual',
+                manualAccountOrder: ['ALG_X'],
+            }
+
+            const migrated = migrateState(v2State, 2) as {
+                accounts: Array<Record<string, unknown>>
+            }
+            expect(migrated.accounts[0]).not.toHaveProperty('hardwareDetails')
+        })
+
+        test('preserves transportType when already present', async () => {
+            const { migrateState } = await import('../store')
+            const v3State = {
+                accounts: [
+                    {
+                        type: 'hardware',
+                        address: 'ALG_ABC',
+                        hardwareDetails: {
+                            manufacturer: 'ledger',
+                            deviceId: 'dev-1',
+                            deviceName: 'Nano X',
+                            accountIndex: 0,
+                            transportType: 'usb',
+                        },
+                    },
+                ],
+                selectedAccountAddress: 'ALG_ABC',
+                sortMode: 'manual',
+                manualAccountOrder: ['ALG_ABC'],
+            }
+
+            const migrated = migrateState(v3State, 3) as {
+                accounts: Array<{ hardwareDetails: { transportType: string } }>
+            }
+            expect(migrated.accounts[0].hardwareDetails.transportType).toBe(
+                'usb',
+            )
+        })
+    })
 })

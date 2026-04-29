@@ -30,6 +30,37 @@ const initialState = {
     manualAccountOrder: [] as string[],
 }
 
+export const migrateState = (
+    persistedState: unknown,
+    version: number,
+): AccountsState => {
+    const state = persistedState as Record<string, unknown>
+
+    if (version < 2) {
+        const accounts = (state.accounts ?? []) as WalletAccount[]
+        state.sortMode = 'manual'
+        state.manualAccountOrder = accounts.map(a => a.address)
+    }
+
+    if (version < 3) {
+        const accounts = (state.accounts ?? []) as Array<
+            Record<string, unknown>
+        >
+        for (const account of accounts) {
+            if (account.type !== 'hardware') continue
+            const hardwareDetails = account.hardwareDetails as
+                | Record<string, unknown>
+                | undefined
+            if (!hardwareDetails) continue
+            if (hardwareDetails.transportType !== undefined) continue
+            hardwareDetails.transportType = 'ble'
+        }
+        state.accounts = accounts as unknown as WalletAccount[]
+    }
+
+    return state as AccountsState
+}
+
 export const useAccountsStore: UseBoundStore<
     WithPersist<StoreApi<AccountsState>, unknown>
 > = create<AccountsState>()(
@@ -106,22 +137,14 @@ export const useAccountsStore: UseBoundStore<
         {
             name: STORE_NAME,
             storage: createJSONStorage(() => getProvider().keyValueStorage),
-            version: 2,
+            version: 3,
             partialize: state => ({
                 accounts: state.accounts,
                 selectedAccountAddress: state.selectedAccountAddress,
                 sortMode: state.sortMode,
                 manualAccountOrder: state.manualAccountOrder,
             }),
-            migrate: (persistedState: unknown, version: number) => {
-                const state = persistedState as Record<string, unknown>
-                if (version < 2) {
-                    const accounts = (state.accounts ?? []) as WalletAccount[]
-                    state.sortMode = 'manual'
-                    state.manualAccountOrder = accounts.map(a => a.address)
-                }
-                return state as AccountsState
-            },
+            migrate: migrateState,
         },
     ),
 )
