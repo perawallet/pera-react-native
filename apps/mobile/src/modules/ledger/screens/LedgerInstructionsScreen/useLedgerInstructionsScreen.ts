@@ -11,14 +11,21 @@
  */
 
 import { useCallback } from 'react'
+import { useRoute, type RouteProp } from '@react-navigation/native'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
+import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
 
 import { useBlePermissions } from '../../hooks'
 
+type LedgerInstructionsRouteParams = {
+    LedgerInstructions: { transportType?: LedgerTransportType } | undefined
+}
+
 type UseLedgerInstructionsScreenResult = {
     isChecking: boolean
+    transportType: LedgerTransportType
     handleContinue: () => void
     t: (key: string, options?: Record<string, unknown>) => string
 }
@@ -28,17 +35,24 @@ export const useLedgerInstructionsScreen =
         const { t } = useLanguage()
         const navigation = useAppNavigation()
         const { errorToast } = useToast()
+        const route =
+            useRoute<
+                RouteProp<LedgerInstructionsRouteParams, 'LedgerInstructions'>
+            >()
+        const transportType: LedgerTransportType =
+            route.params?.transportType ?? 'ble'
+
         const { hasPermissions, isChecking, requestPermissions } =
             useBlePermissions()
 
         const handleContinue = useCallback(async () => {
-            if (hasPermissions) {
+            // USB doesn't require BLE permissions; skip the BLE permission gate.
+            if (transportType === 'usb' || hasPermissions) {
                 navigation.navigate('LedgerScan')
                 return
             }
 
             const granted = await requestPermissions()
-
             if (granted) {
                 navigation.navigate('LedgerScan')
             } else {
@@ -47,10 +61,18 @@ export const useLedgerInstructionsScreen =
                     t('ledger.instructions.permission_required_message'),
                 )
             }
-        }, [hasPermissions, requestPermissions, navigation, t, errorToast])
+        }, [
+            transportType,
+            hasPermissions,
+            requestPermissions,
+            navigation,
+            t,
+            errorToast,
+        ])
 
         return {
             isChecking,
+            transportType,
             handleContinue,
             t,
         }

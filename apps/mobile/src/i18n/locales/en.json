@@ -1595,7 +1595,14 @@
             "step_3": "Keep your Ledger device nearby",
             "continue": "Continue",
             "permission_required_title": "Bluetooth Permission Required",
-            "permission_required_message": "Pera needs Bluetooth permission to communicate with your Ledger device. Please enable it in Settings."
+            "permission_required_message": "Pera needs Bluetooth permission to communicate with your Ledger device. Please enable it in Settings.",
+            "usb": {
+                "title": "Connect Ledger via USB",
+                "description": "Follow these steps to connect your Ledger device via USB:",
+                "step_1": "Plug your Ledger device into your phone with a USB cable",
+                "step_2": "Unlock your Ledger and open the Algorand app",
+                "step_3": "Allow USB access if your phone asks, then tap continue"
+            }
         },
         "scan": {
             "title": "Looking for Devices",
