@@ -111,7 +111,10 @@ export const AccountAssetList = ({
 
     const listHeader = (
         <PWView style={styles.headerContainer}>
-            <BackupReminderBanner account={account} />
+            <BackupReminderBanner
+                account={account}
+                isLoading={isLoading}
+            />
             {headerState.isOpen && (
                 <>
                     {header}
