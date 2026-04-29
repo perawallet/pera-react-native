@@ -32,27 +32,33 @@ type UseLedgerConnectionResult = {
 }
 
 /**
- * Hook that manages BLE scanning and connection to Ledger devices.
+ * Hook that manages scanning and connection to Ledger devices across
+ * multiple transport providers (BLE, USB). Devices from each provider
+ * are merged into a single device list. `connect()` routes to the
+ * provider that originally emitted the device.
  *
- * @param provider - The hardware wallet transport provider for Ledger devices.
- *   Callers obtain this from the hardware wallet registry, e.g.
- *   `getProvider().hardwareWalletRegistry.getProvider('ledger')`.
+ * Callers pass every Ledger transport provider whose `isSupported()`
+ * resolves to true (caller filters before passing in — see
+ * `apps/mobile/src/modules/ledger/hooks/useLedgerConnectionProvider.ts`).
  */
 export const useLedgerConnection = (
-    provider: HardwareWalletTransportProvider,
+    providers: HardwareWalletTransportProvider[],
 ): UseLedgerConnectionResult => {
     const [devices, setDevices] = useState<HardwareWalletDevice[]>([])
     const [connectionStatus, setConnectionStatus] =
         useState<HardwareWalletConnectionStatus>('disconnected')
     const [error, setError] = useState<Nullable<Error>>(null)
 
-    const stopScanRef = useRef<Nullable<() => void>>(null)
+    const stopScansRef = useRef<Array<() => void>>([])
     const scanTimeoutRef = useRef<Nullable<ReturnType<typeof setTimeout>>>(null)
     const transportRef = useRef<Nullable<HardwareWalletTransport>>(null)
+    const deviceProviderRef = useRef<
+        Map<string, HardwareWalletTransportProvider>
+    >(new Map())
 
     const stopScan = useCallback(() => {
-        stopScanRef.current?.()
-        stopScanRef.current = null
+        for (const stop of stopScansRef.current) stop()
+        stopScansRef.current = []
         if (scanTimeoutRef.current) {
             clearTimeout(scanTimeoutRef.current)
             scanTimeoutRef.current = null
@@ -64,33 +70,46 @@ export const useLedgerConnection = (
         setDevices([])
         setError(null)
         setConnectionStatus('scanning')
+        deviceProviderRef.current = new Map()
 
-        const seenIds = new Set<string>()
+        const seen = new Set<string>()
 
-        const stop = provider.scan(
-            (device: HardwareWalletDevice) => {
-                if (seenIds.has(device.id)) return
-                seenIds.add(device.id)
-                setDevices(prev => [...prev, device])
-            },
-            (err: Error) => {
-                setError(err)
-                stopScan()
-            },
+        stopScansRef.current = providers.map(provider =>
+            provider.scan(
+                (device: HardwareWalletDevice) => {
+                    const key = `${device.transportType}:${device.id}`
+                    if (seen.has(key)) return
+                    seen.add(key)
+                    deviceProviderRef.current.set(device.id, provider)
+                    setDevices(prev => [...prev, device])
+                },
+                (err: Error) => {
+                    setError(err)
+                    stopScan()
+                },
+            ),
         )
-
-        stopScanRef.current = stop
 
         scanTimeoutRef.current = setTimeout(() => {
             stopScan()
         }, LEDGER_SCAN_TIMEOUT_MS)
-    }, [stopScan, provider])
+    }, [stopScan, providers])
 
     const connect = useCallback(
         async (deviceId: string): Promise<HardwareWalletTransport> => {
             stopScan()
             setConnectionStatus('connecting')
             setError(null)
+
+            const provider = deviceProviderRef.current.get(deviceId)
+            if (!provider) {
+                const e = new Error(
+                    `No provider tracked for device id "${deviceId}"`,
+                )
+                setError(e)
+                setConnectionStatus('disconnected')
+                throw e
+            }
 
             try {
                 const transport = await provider.connect(deviceId)
@@ -105,7 +124,7 @@ export const useLedgerConnection = (
                 throw connectError
             }
         },
-        [stopScan, provider],
+        [stopScan],
     )
 
     const disconnect = useCallback(async () => {
@@ -114,14 +133,18 @@ export const useLedgerConnection = (
         setConnectionStatus('disconnected')
     }, [])
 
-    // Cleanup on unmount
     useEffect(() => {
         return () => {
-            stopScanRef.current?.()
-            if (scanTimeoutRef.current) {
-                clearTimeout(scanTimeoutRef.current)
+            for (const stop of stopScansRef.current) stop()
+            if (scanTimeoutRef.current) clearTimeout(scanTimeoutRef.current)
+            try {
+                const result = transportRef.current?.disconnect()
+                if (result && typeof result.catch === 'function') {
+                    result.catch(() => {})
+                }
+            } catch {
+                // ignore — disconnect should not throw during cleanup
             }
-            transportRef.current?.disconnect().catch(() => {})
         }
     }, [])
 
