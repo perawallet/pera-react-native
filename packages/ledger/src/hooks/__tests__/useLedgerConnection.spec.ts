@@ -94,9 +94,7 @@ describe('useLedgerConnection', () => {
         vi.useFakeTimers()
         try {
             const { provider, stop } = makeProvider()
-            const { result } = renderHook(() =>
-                useLedgerConnection([provider]),
-            )
+            const { result } = renderHook(() => useLedgerConnection([provider]))
 
             act(() => result.current.startScan())
             act(() => {
