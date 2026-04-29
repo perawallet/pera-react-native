@@ -18,7 +18,13 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 export type HardwareWalletManufacturer = 'ledger' | (string & {})
 
 /**
- * A discovered hardware wallet device during scanning (e.g. BLE).
+ * Identifies the wire transport used to reach a hardware wallet device.
+ * Currently 'ble' (Bluetooth) and 'usb' (Android USB host / HID).
+ */
+export type LedgerTransportType = 'ble' | 'usb'
+
+/**
+ * A discovered hardware wallet device during scanning.
  */
 export type HardwareWalletDevice = {
     /** Platform-specific device identifier */
@@ -27,6 +33,8 @@ export type HardwareWalletDevice = {
     name: string
     /** The manufacturer of this device */
     manufacturer: HardwareWalletManufacturer
+    /** The transport this device was discovered on */
+    transportType: LedgerTransportType
     /** Device model identifier (manufacturer-specific, e.g. "nanoX", "stax") */
     model: string
     /** Signal strength in dBm, or null if unavailable */
@@ -89,11 +97,14 @@ export type HardwareWalletTransport = {
 
 /**
  * Platform-agnostic provider for scanning and connecting to hardware wallet devices.
- * Each manufacturer registers one provider with the hardware wallet registry.
+ * Each (manufacturer, transportType) pair registers exactly one provider.
  */
 export type HardwareWalletTransportProvider = {
     /** Identifies which manufacturer this provider serves */
     manufacturer: HardwareWalletManufacturer
+
+    /** Identifies which wire transport this provider implements */
+    transportType: LedgerTransportType
 
     /**
      * Start scanning for devices.
