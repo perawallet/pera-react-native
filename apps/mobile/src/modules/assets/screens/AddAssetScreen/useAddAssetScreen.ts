@@ -39,7 +39,7 @@ type UseAddAssetScreenResult = {
     hasNextPage: boolean
     fetchNextPage: Nullable<() => void>
     optedInAssetIds: Set<string>
-    optingInAssetId: Nullable<string>
+    optingInAssetIds: Set<string>
     handleRequestAdd: (assetId: string) => void
     handleConfirmAdd: () => void
     handleCancelAdd: () => void
@@ -54,8 +54,9 @@ export const useAddAssetScreen = (
 ): UseAddAssetScreenResult => {
     const { t } = useLanguage()
     const hasCollectible = options?.variant === 'collectible'
-    const [optingInAssetId, setOptingInAssetId] =
-        useState<Nullable<string>>(null)
+    const [optingInAssetIds, setOptingInAssetIds] = useState<Set<string>>(
+        new Set(),
+    )
     const [pendingAssetId, setPendingAssetId] = useState<Nullable<string>>(null)
     const [recentlyOptedIn, setRecentlyOptedIn] = useState<Set<string>>(
         new Set(),
@@ -114,12 +115,12 @@ export const useAddAssetScreen = (
 
     const handleRequestAdd = useCallback(
         (assetId: string) => {
-            if (!selectedAccount || optingInAssetId !== null) {
+            if (!selectedAccount || optingInAssetIds.has(assetId)) {
                 return
             }
             setPendingAssetId(assetId)
         },
-        [selectedAccount, optingInAssetId],
+        [selectedAccount, optingInAssetIds],
     )
 
     const handleCancelAdd = useCallback(() => {
@@ -127,7 +128,11 @@ export const useAddAssetScreen = (
     }, [])
 
     const handleConfirmAdd = useCallback(async () => {
-        if (!selectedAccount || !pendingAssetId || optingInAssetId !== null) {
+        if (
+            !selectedAccount ||
+            !pendingAssetId ||
+            optingInAssetIds.has(pendingAssetId)
+        ) {
             return
         }
 
@@ -135,7 +140,11 @@ export const useAddAssetScreen = (
         const pendingAsset = results.find(r => r.assetId === assetId)
         const assetDisplayName =
             pendingAsset?.unitName ?? pendingAsset?.name ?? null
-        setOptingInAssetId(assetId)
+        setOptingInAssetIds(prev => {
+            const next = new Set(prev)
+            next.add(assetId)
+            return next
+        })
         setPendingAssetId(null)
 
         try {
@@ -160,16 +169,21 @@ export const useAddAssetScreen = (
                 type: 'error',
             })
         } finally {
-            setOptingInAssetId(null)
+            setOptingInAssetIds(prev => {
+                const next = new Set(prev)
+                next.delete(assetId)
+                return next
+            })
         }
     }, [
         selectedAccount,
         pendingAssetId,
         results,
         optIn,
-        optingInAssetId,
+        optingInAssetIds,
         showToast,
         t,
+        getMessage,
     ])
 
     return {
@@ -182,7 +196,7 @@ export const useAddAssetScreen = (
         hasNextPage,
         fetchNextPage,
         optedInAssetIds,
-        optingInAssetId,
+        optingInAssetIds,
         handleRequestAdd,
         handleConfirmAdd,
         handleCancelAdd,

@@ -10,18 +10,11 @@
  limitations under the License
  */
 
-import {
-    PWButton,
-    PWFlatList,
-    PWText,
-    PWTouchableOpacity,
-    PWView,
-} from '@components/core'
+import { PWButton, PWText, PWView } from '@components/core'
 import type { PWFlatListRef } from '@components/core'
 import React, { useCallback, useEffect, useRef } from 'react'
 import { useStyles } from './styles'
 
-import { SearchInput, type SearchInputRef } from '@components/SearchInput'
 import {
     WalletAccount,
     AssetWithAccountBalance,
@@ -30,6 +23,7 @@ import { ALGO_ASSET_ID } from '@perawallet/wallet-core-assets'
 
 import { EmptyView } from '@components/EmptyView'
 import { LoadingView } from '@components/LoadingView'
+import { SearchableList } from '@components/SearchableList'
 import { useLanguage } from '@hooks/useLanguage'
 import { KeyboardAvoidingView } from 'react-native'
 import { ManageAssetsBottomSheet } from '../ManageAssetsBottomSheet'
@@ -54,7 +48,6 @@ export const AccountAssetList = ({
     header,
 }: AccountAssetListProps) => {
     const listRef = useRef<PWFlatListRef>(null)
-    const searchInputRef = useRef<SearchInputRef>(null)
     const styles = useStyles()
     const { t } = useLanguage()
 
@@ -63,7 +56,6 @@ export const AccountAssetList = ({
         isPending,
         isWatch,
         assetSortMode,
-        headerState,
         manageSheetState,
         sortSheetState,
         filterSheetState,
@@ -83,19 +75,14 @@ export const AccountAssetList = ({
     } = useAccountAssetList({ account, t })
 
     useEffect(() => {
-        listRef.current?.scrollToOffset({ offset: 0, animated: false })
+        // Defer scrolling so it runs after FlashList re-renders with the new
+        // sorted/account data; scrolling synchronously while the list is
+        // recycling cells preserves the previous offset.
+        const handle = requestAnimationFrame(() => {
+            listRef.current?.scrollToOffset({ offset: 0, animated: true })
+        })
+        return () => cancelAnimationFrame(handle)
     }, [account.address, assetSortMode])
-
-    useEffect(() => {
-        if (headerState.isOpen) {
-            searchInputRef.current?.blur()
-        }
-    }, [headerState.isOpen])
-
-    const handleSearchFocus = useCallback(() => {
-        listRef.current?.scrollToOffset({ offset: 0, animated: false })
-        headerState.close()
-    }, [headerState])
 
     const renderItem = useCallback(
         ({ item }: { item: AssetWithAccountBalance }) => {
@@ -119,6 +106,38 @@ export const AccountAssetList = ({
         [renderItemProps],
     )
 
+    const listHeader = (
+        <PWView style={styles.headerContainer}>
+            <BackupReminderBanner account={account} />
+            {header}
+            <PWView style={styles.titleBar}>
+                <PWText
+                    style={styles.title}
+                    variant='h4'
+                >
+                    {t('account_details.assets.title')}
+                </PWText>
+                {!isWatch && (
+                    <PWView style={styles.titleBarButtonContainer}>
+                        <PWButton
+                            icon='sliders'
+                            variant='helper'
+                            paddingStyle='dense'
+                            onPress={manageSheetState.open}
+                        />
+                        <PWButton
+                            icon='plus'
+                            title={t('account_details.assets.add_asset')}
+                            variant='helper'
+                            paddingStyle='dense'
+                            onPress={addAssetSheetState.open}
+                        />
+                    </PWView>
+                )}
+            </PWView>
+        </PWView>
+    )
+
     return (
         <KeyboardAvoidingView
             keyboardVerticalOffset={TAB_AND_HEADER_HEIGHT}
@@ -126,92 +145,38 @@ export const AccountAssetList = ({
             behavior='padding'
             style={styles.keyboardAvoidingViewContainer}
         >
-            <PWTouchableOpacity
-                style={styles.keyboardAvoidingViewContainer}
-                onPress={headerState.open}
-            >
-                <PWFlatList
-                    ref={listRef}
-                    data={balances}
-                    renderItem={renderItem}
-                    scrollEnabled={scrollEnabled}
-                    keyExtractor={item => item.assetId}
-                    estimatedItemSize={72}
-                    recycleItems
-                    automaticallyAdjustKeyboardInsets
-                    keyboardDismissMode='interactive'
-                    contentContainerStyle={styles.rootContainer}
-                    ListHeaderComponent={
-                        <PWView style={styles.headerContainer}>
-                            <BackupReminderBanner account={account} />
-                            {headerState.isOpen && (
-                                <>
-                                    {header}
-                                    <PWView style={styles.titleBar}>
-                                        <PWText
-                                            style={styles.title}
-                                            variant='h4'
-                                        >
-                                            {t('account_details.assets.title')}
-                                        </PWText>
-                                        {!isWatch && (
-                                            <PWView
-                                                style={
-                                                    styles.titleBarButtonContainer
-                                                }
-                                            >
-                                                <PWButton
-                                                    icon='sliders'
-                                                    variant='helper'
-                                                    paddingStyle='dense'
-                                                    onPress={
-                                                        manageSheetState.open
-                                                    }
-                                                />
-                                                <PWButton
-                                                    icon='plus'
-                                                    title={t(
-                                                        'account_details.assets.add_asset',
-                                                    )}
-                                                    variant='helper'
-                                                    paddingStyle='dense'
-                                                    onPress={
-                                                        addAssetSheetState.open
-                                                    }
-                                                />
-                                            </PWView>
-                                        )}
-                                    </PWView>
-                                </>
-                            )}
-                            <SearchInput
-                                ref={searchInputRef}
-                                onFocus={handleSearchFocus}
-                                onBlur={headerState.open}
-                                placeholder={t(
-                                    'account_details.assets.search_placeholder',
-                                )}
-                                onChangeText={setSearchFilter}
-                            />
-                        </PWView>
-                    }
-                    ListEmptyComponent={
-                        isPending ? (
-                            <LoadingView
-                                variant='skeleton'
-                                size='sm'
-                                count={8}
-                                style={styles.loading}
-                            />
-                        ) : (
-                            <EmptyView
-                                title={getEmptyTitle()}
-                                body={getEmptyBody()}
-                            />
-                        )
-                    }
-                />
-            </PWTouchableOpacity>
+            <SearchableList
+                ref={listRef}
+                data={balances}
+                renderItem={renderItem}
+                scrollEnabled={scrollEnabled}
+                keyExtractor={item => item.assetId}
+                estimatedItemSize={72}
+                recycleItems
+                automaticallyAdjustKeyboardInsets
+                keyboardDismissMode='interactive'
+                contentContainerStyle={styles.rootContainer}
+                ListHeaderComponent={listHeader}
+                searchPlaceholder={t(
+                    'account_details.assets.search_placeholder',
+                )}
+                onSearchChange={setSearchFilter}
+                ListEmptyComponent={
+                    isPending ? (
+                        <LoadingView
+                            variant='skeleton'
+                            size='sm'
+                            count={8}
+                            style={styles.loading}
+                        />
+                    ) : (
+                        <EmptyView
+                            title={getEmptyTitle()}
+                            body={getEmptyBody()}
+                        />
+                    )
+                }
+            />
 
             <ManageAssetsBottomSheet
                 isVisible={manageSheetState.isOpen}
