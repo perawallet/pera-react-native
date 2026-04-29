@@ -12,12 +12,17 @@
 
 import { describe, it, expect } from 'vitest'
 import { createHardwareWalletRegistry } from '../registry'
-import type { HardwareWalletTransportProvider } from '../types'
+import type {
+    HardwareWalletTransportProvider,
+    LedgerTransportType,
+} from '../types'
 
 const makeProvider = (
     manufacturer: string,
+    transportType: LedgerTransportType,
 ): HardwareWalletTransportProvider => ({
     manufacturer,
+    transportType,
     scan: () => () => {},
     connect: async () => ({
         getAddress: async () => ({
@@ -36,49 +41,64 @@ describe('createHardwareWalletRegistry', () => {
         const registry = createHardwareWalletRegistry()
 
         expect(registry.getAllProviders()).toEqual([])
-        expect(registry.hasProvider('ledger')).toBe(false)
-        expect(registry.getProvider('ledger')).toBeUndefined()
+        expect(registry.hasProvider('ledger', 'ble')).toBe(false)
+        expect(registry.getProvider('ledger', 'ble')).toBeUndefined()
     })
 
-    it('registers and retrieves a provider', () => {
+    it('registers and retrieves a provider by (manufacturer, transportType)', () => {
         const registry = createHardwareWalletRegistry()
-        const provider = makeProvider('ledger')
+        const ble = makeProvider('ledger', 'ble')
 
-        registry.register(provider)
+        registry.register(ble)
 
-        expect(registry.hasProvider('ledger')).toBe(true)
-        expect(registry.getProvider('ledger')).toBe(provider)
+        expect(registry.hasProvider('ledger', 'ble')).toBe(true)
+        expect(registry.getProvider('ledger', 'ble')).toBe(ble)
+        expect(registry.hasProvider('ledger', 'usb')).toBe(false)
+    })
+
+    it('keeps BLE and USB providers for the same manufacturer side-by-side', () => {
+        const registry = createHardwareWalletRegistry()
+        const ble = makeProvider('ledger', 'ble')
+        const usb = makeProvider('ledger', 'usb')
+
+        registry.register(ble)
+        registry.register(usb)
+
+        expect(registry.getProvider('ledger', 'ble')).toBe(ble)
+        expect(registry.getProvider('ledger', 'usb')).toBe(usb)
+        expect(registry.getAllProviders()).toHaveLength(2)
+    })
+
+    it('replaces an existing (manufacturer, transportType) on duplicate register', () => {
+        const registry = createHardwareWalletRegistry()
+        const a = makeProvider('ledger', 'ble')
+        const b = makeProvider('ledger', 'ble')
+
+        registry.register(a)
+        registry.register(b)
+
+        expect(registry.getProvider('ledger', 'ble')).toBe(b)
         expect(registry.getAllProviders()).toHaveLength(1)
     })
 
-    it('replaces existing provider on duplicate register', () => {
+    it('getProvidersByManufacturer returns every provider for that manufacturer', () => {
         const registry = createHardwareWalletRegistry()
-        const provider1 = makeProvider('ledger')
-        const provider2 = makeProvider('ledger')
+        const ble = makeProvider('ledger', 'ble')
+        const usb = makeProvider('ledger', 'usb')
+        const trezor = makeProvider('trezor', 'usb')
 
-        registry.register(provider1)
-        registry.register(provider2)
-
-        expect(registry.getProvider('ledger')).toBe(provider2)
-        expect(registry.getAllProviders()).toHaveLength(1)
-    })
-
-    it('supports multiple manufacturers', () => {
-        const registry = createHardwareWalletRegistry()
-        const ledger = makeProvider('ledger')
-        const trezor = makeProvider('trezor')
-
-        registry.register(ledger)
+        registry.register(ble)
+        registry.register(usb)
         registry.register(trezor)
 
-        expect(registry.getAllProviders()).toHaveLength(2)
-        expect(registry.getProvider('ledger')).toBe(ledger)
-        expect(registry.getProvider('trezor')).toBe(trezor)
+        const ledgerProviders = registry.getProvidersByManufacturer('ledger')
+        expect(ledgerProviders).toHaveLength(2)
+        expect(ledgerProviders).toEqual(expect.arrayContaining([ble, usb]))
     })
 
     it('getAllProviders returns a new array (not internal reference)', () => {
         const registry = createHardwareWalletRegistry()
-        registry.register(makeProvider('ledger'))
+        registry.register(makeProvider('ledger', 'ble'))
 
         const providers1 = registry.getAllProviders()
         const providers2 = registry.getAllProviders()
