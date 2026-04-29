@@ -160,6 +160,7 @@ export const useAccountInfoCard = ({
                 params: {
                     deviceId: account.hardwareDetails.deviceId,
                     deviceName: account.hardwareDetails.deviceName,
+                    transportType: account.hardwareDetails.transportType,
                 },
             })
         }

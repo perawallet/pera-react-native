@@ -182,6 +182,7 @@ describe('useAccountInfoCard', () => {
             params: {
                 deviceId: 'device-abc',
                 deviceName: 'My Ledger',
+                transportType: 'ble',
             },
         })
     })

@@ -46,7 +46,12 @@ type UseLedgerSelectAccountsScreenResult = {
 export const useLedgerSelectAccountsScreen =
     (): UseLedgerSelectAccountsScreenResult => {
         const {
-            params: { deviceId, deviceName, accounts: routeAccounts },
+            params: {
+                deviceId,
+                deviceName,
+                transportType = 'ble',
+                accounts: routeAccounts,
+            },
         } = useRoute<LedgerSelectAccountsRouteProp>()
         const { t } = useLanguage()
         const navigation = useAppNavigation()
@@ -134,9 +139,17 @@ export const useLedgerSelectAccountsScreen =
             navigation.navigate('LedgerVerify', {
                 deviceId,
                 deviceName,
+                transportType,
                 selectedAccounts,
             })
-        }, [accounts, selectedAddresses, deviceId, deviceName, navigation])
+        }, [
+            accounts,
+            selectedAddresses,
+            deviceId,
+            deviceName,
+            transportType,
+            navigation,
+        ])
 
         const handleFindAnother = useCallback(async () => {
             if (inFlightRef.current) return

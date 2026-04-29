@@ -50,7 +50,12 @@ type UseLedgerVerifyScreenResult = {
 
 export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
     const {
-        params: { deviceId, deviceName, selectedAccounts },
+        params: {
+            deviceId,
+            deviceName,
+            transportType = 'ble',
+            selectedAccounts,
+        },
     } = useRoute<LedgerVerifyRouteProp>()
     const { t } = useLanguage()
     const { setAccounts } = useSetAccounts()
@@ -97,7 +102,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
                     deviceId,
                     deviceName,
                     accountIndex: acc.accountIndex,
-                    transportType: 'ble' as const,
+                    transportType,
                 },
             }))
 
@@ -118,6 +123,7 @@ export const useLedgerVerifyScreen = (): UseLedgerVerifyScreenResult => {
         disconnect,
         deviceId,
         deviceName,
+        transportType,
         selectedAccounts,
         setAccounts,
         setSelectedAccountAddress,

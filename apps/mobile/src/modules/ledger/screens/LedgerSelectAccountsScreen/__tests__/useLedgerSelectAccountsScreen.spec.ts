@@ -60,6 +60,7 @@ vi.mock('@react-navigation/native', () => ({
         params: {
             deviceId: 'device-1',
             deviceName: 'Fred Nano X',
+            transportType: 'ble',
             accounts: [
                 {
                     address: 'AAA111',

@@ -44,7 +44,7 @@ type UseLedgerFetchAccountsScreenResult = {
 export const useLedgerFetchAccountsScreen =
     (): UseLedgerFetchAccountsScreenResult => {
         const {
-            params: { deviceId, deviceName },
+            params: { deviceId, deviceName, transportType = 'ble' },
         } = useRoute<LedgerFetchAccountsRouteProp>()
         const { t } = useLanguage()
         const navigation = useAppNavigation()
@@ -101,6 +101,7 @@ export const useLedgerFetchAccountsScreen =
                 navigation.replace('LedgerSelectAccounts', {
                     deviceId,
                     deviceName,
+                    transportType,
                     accounts: result.accounts,
                 })
             } catch (err) {
@@ -111,7 +112,7 @@ export const useLedgerFetchAccountsScreen =
                 setConnectionStatus('disconnected')
                 setIsDiscovering(false)
             }
-        }, [deviceId, deviceName, navigation])
+        }, [deviceId, deviceName, transportType, navigation])
 
         useEffect(() => {
             mountedRef.current = true
