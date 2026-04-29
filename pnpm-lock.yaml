@@ -211,6 +211,9 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.2.2
         version: 5.2.2(react-hook-form@7.72.1(react@19.2.5))
+      '@ledgerhq/react-native-hid':
+        specifier: ^6.39.1
+        version: 6.39.1(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.5))
       '@legendapp/list':
         specifier: ^2.0.19
         version: 2.0.19(react-native@0.83.4(@babel/core@7.29.0)(@react-native/metro-config@0.85.0(@babel/core@7.29.0))(@types/react@19.2.14)(react@19.2.5))(react@19.2.5)
@@ -11907,8 +11910,8 @@ snapshots:
   '@ledgerhq/hw-transport@6.34.1':
     dependencies:
       '@ledgerhq/devices': 8.13.0
-      '@ledgerhq/errors': 6.32.0
-      '@ledgerhq/logs': 6.16.0
+      '@ledgerhq/errors': 6.34.0
+      '@ledgerhq/logs': 6.17.0
       events: 3.3.0
 
   '@ledgerhq/hw-transport@6.35.1':
