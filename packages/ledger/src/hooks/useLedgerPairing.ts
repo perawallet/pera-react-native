@@ -58,6 +58,13 @@ export const useLedgerPairing = (): UseLedgerPairingResult => {
             device: HardwareWalletDevice,
             onReady: (device: HardwareWalletDevice) => void,
         ) => {
+            // USB devices do not have a BLE-style bond — skip the pairing
+            // instructions sheet and proceed directly. The OS USB-permission
+            // dialog has already been handled before connect() runs.
+            if (device.transportType === 'usb') {
+                onReady(device)
+                return
+            }
             if (isPaired(device.id)) {
                 onReady(device)
                 return
