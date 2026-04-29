@@ -10,19 +10,47 @@
  limitations under the License
  */
 
-import { useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useLedgerConnection as useLedgerConnectionCore } from '@perawallet/wallet-core-ledger'
+import type { HardwareWalletTransportProvider } from '@perawallet/wallet-core-hardware-wallet'
 
 /**
- * App-level wrapper around the core useLedgerConnection hook
- * that resolves the Ledger transport provider from the app's
- * hardware wallet registry.
+ * App-level wrapper around the core useLedgerConnection hook.
+ * Resolves all Ledger transport providers from the registry, filters
+ * to the ones supported on this platform (BLE on iOS+Android, USB on
+ * Android only), and passes them to the core hook.
  */
 export const useLedgerConnection = () => {
-    const provider = useMemo(
-        () => getProvider().hardwareWalletRegistry.getProvider('ledger', 'ble')!,
+    const allLedgerProviders = useMemo<HardwareWalletTransportProvider[]>(
+        () =>
+            getProvider().hardwareWalletRegistry.getProvidersByManufacturer(
+                'ledger',
+            ),
         [],
     )
-    return useLedgerConnectionCore(provider)
+
+    const [supportedProviders, setSupportedProviders] = useState<
+        HardwareWalletTransportProvider[]
+    >([])
+
+    useEffect(() => {
+        let cancelled = false
+        Promise.all(
+            allLedgerProviders.map(async p => ({
+                provider: p,
+                supported: await p.isSupported(),
+            })),
+        ).then(results => {
+            if (cancelled) return
+            setSupportedProviders(
+                results.filter(r => r.supported).map(r => r.provider),
+            )
+        })
+        return () => {
+            cancelled = true
+        }
+    }, [allLedgerProviders])
+
+    return useLedgerConnectionCore(supportedProviders)
 }
