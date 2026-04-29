@@ -31,6 +31,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import { useNavigationLock } from '@hooks/useNavigationLock'
 import { useToast } from '@hooks/useToast'
 import { useShouldPlayConfetti } from '@modules/onboarding/hooks'
+import { getNextSharedAccountName } from '@modules/multisig/utils'
 import type { MessagesStackParamList } from '../../routes/types'
 
 type UseMultisigInvitationNameScreenResult = {
@@ -73,18 +74,13 @@ export const useMultisigInvitationNameScreen =
             deviceId,
         })
 
-        const [accountName, setAccountName] = useState(() => {
-            const baseName = t('multisig.invitation.name.default_name')
-            const taken = new Set(
-                accounts
-                    .filter(a => a.address !== invitation.address)
-                    .map(a => (a.name ?? '').trim().toLowerCase()),
-            )
-            if (!taken.has(baseName.toLowerCase())) return baseName
-            let n = 2
-            while (taken.has(`${baseName} ${n}`.toLowerCase())) n++
-            return `${baseName} ${n}`
-        })
+        const [accountName, setAccountName] = useState(() =>
+            getNextSharedAccountName(
+                accounts,
+                t('multisig.invitation.name.default_name'),
+                invitation.address,
+            ),
+        )
         const [isSaving, setIsSaving] = useState(false)
         const { allowProgrammaticNavigation } = useNavigationLock(isSaving)
 

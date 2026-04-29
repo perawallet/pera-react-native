@@ -10,19 +10,4 @@
  limitations under the License
  */
 
-import { makeStyles } from '@rneui/themed'
-
-type StyleProps = {
-    size: 'h1' | 'h2'
-}
-
-export const useStyles = makeStyles((theme, { size }: StyleProps) => ({
-    container: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: size === 'h1' ? theme.spacing.lg : theme.spacing.sm,
-    },
-    value: {
-        color: size === 'h2' ? theme.colors.textGray : theme.colors.textMain,
-    },
-}))
+export { getNextSharedAccountName } from './getNextSharedAccountName'

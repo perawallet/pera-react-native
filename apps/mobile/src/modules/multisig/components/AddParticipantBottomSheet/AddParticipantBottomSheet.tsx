@@ -141,6 +141,8 @@ export const AddParticipantBottomSheet = ({
                     excludeTypes={EXCLUDE_TYPES}
                     showAllContactsWhenEmpty
                     inBottomSheet
+                    showAccountBalance
+                    showAddIcon
                 />
             </PWView>
         </PWBottomSheet>

@@ -37,10 +37,45 @@ export const useStyles = makeStyles(theme => {
             alignItems: 'center',
             gap: theme.spacing.md,
         },
+        accountRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: theme.spacing.sm,
+            width: '100%',
+        },
+        accountDisplayInRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.md,
+            flexShrink: 1,
+        },
+        balanceContainer: {
+            gap: theme.spacing.xs,
+            alignItems: 'flex-end',
+        },
+        fiatBalance: {
+            color: theme.colors.textGray,
+        },
         nfdItem: {
             flexDirection: 'row',
             alignItems: 'center',
             gap: theme.spacing.md,
+        },
+        foreignRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: theme.spacing.sm,
+            width: '100%',
+        },
+        addIconButton: {
+            width: theme.spacing.xxl,
+            height: theme.spacing.xxl,
+            borderRadius: theme.borderRadius.sm,
+            backgroundColor: theme.colors.buttonSquareBg,
+            alignItems: 'center',
+            justifyContent: 'center',
         },
         nfdInfo: {
             flex: 1,

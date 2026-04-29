@@ -28,6 +28,10 @@ export const useStyles = makeStyles(theme => {
             flex: 1,
             justifyContent: 'center',
         },
+        addressTextStack: {
+            flexShrink: 1,
+            justifyContent: 'center',
+        },
         secondaryText: {
             color: theme.colors.textGray,
         },

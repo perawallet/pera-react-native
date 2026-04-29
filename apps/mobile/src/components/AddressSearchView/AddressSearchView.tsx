@@ -10,6 +10,9 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
+import { ActivityIndicator } from 'react-native'
+import type { AccountType } from '@perawallet/wallet-core-accounts'
 import {
     PWFlatList,
     PWIcon,
@@ -17,16 +20,12 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { useStyles } from './styles'
-
-import { useCallback } from 'react'
-import { ActivityIndicator } from 'react-native'
 import { AddressEntryField } from '@components/AddressEntryField'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { EmptyView } from '@components/EmptyView'
 import { AddressDisplay } from '@components/AddressDisplay'
 import { useLanguage } from '@hooks/useLanguage'
-import type { AccountType } from '@perawallet/wallet-core-accounts'
+import { AccountResultRow } from './AccountResultRow'
+import { useStyles } from './styles'
 import {
     useAddressSearchView,
     type AddressSearchItem,
@@ -38,6 +37,8 @@ export type AddressSearchViewProps = {
     excludeTypes?: AccountType[]
     showAllContactsWhenEmpty?: boolean
     inBottomSheet?: boolean
+    showAccountBalance?: boolean
+    showAddIcon?: boolean
 }
 
 export const AddressSearchView = ({
@@ -46,6 +47,8 @@ export const AddressSearchView = ({
     excludeTypes,
     showAllContactsWhenEmpty,
     inBottomSheet,
+    showAccountBalance = false,
+    showAddIcon = false,
 }: AddressSearchViewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
@@ -87,10 +90,9 @@ export const AddressSearchView = ({
                         <PWTouchableOpacity
                             onPress={() => onSelected(item.account.address)}
                         >
-                            <AccountDisplay
+                            <AccountResultRow
                                 account={item.account}
-                                showChevron={false}
-                                style={styles.accountDisplay}
+                                showBalance={showAccountBalance}
                             />
                         </PWTouchableOpacity>
                     )
@@ -98,31 +100,66 @@ export const AddressSearchView = ({
                     return (
                         <PWTouchableOpacity
                             onPress={() => onSelected(item.address)}
+                            style={showAddIcon ? styles.foreignRow : undefined}
                         >
                             <AddressDisplay
                                 address={item.address}
                                 showCopy={false}
                                 forceShowIcon
-                                style={styles.accountDisplay}
+                                style={
+                                    showAddIcon
+                                        ? styles.accountDisplayInRow
+                                        : styles.accountDisplay
+                                }
                             />
+                            {showAddIcon && (
+                                <PWView
+                                    style={styles.addIconButton}
+                                    testID='address-search-add-icon'
+                                >
+                                    <PWIcon
+                                        name='plus'
+                                        variant='helper'
+                                        size='sm'
+                                    />
+                                </PWView>
+                            )}
                         </PWTouchableOpacity>
                     )
                 case 'nfd':
                     return (
                         <PWTouchableOpacity
                             onPress={() => onSelected(item.nfd.address)}
-                            style={styles.nfdItem}
+                            style={
+                                showAddIcon ? styles.foreignRow : styles.nfdItem
+                            }
                         >
                             <AddressDisplay
                                 address={item.nfd.address}
                                 showCopy={false}
-                                style={styles.accountDisplay}
+                                style={
+                                    showAddIcon
+                                        ? styles.accountDisplayInRow
+                                        : styles.accountDisplay
+                                }
                             />
+                            {showAddIcon && (
+                                <PWView
+                                    style={styles.addIconButton}
+                                    testID='address-search-add-icon'
+                                >
+                                    <PWIcon
+                                        name='plus'
+                                        variant='helper'
+                                        size='sm'
+                                    />
+                                </PWView>
+                            )}
                         </PWTouchableOpacity>
                     )
             }
         },
-        [onSelected, styles, t],
+        [onSelected, styles, t, showAccountBalance, showAddIcon],
     )
 
     const keyExtractor = useCallback((item: AddressSearchItem) => item.key, [])

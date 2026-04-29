@@ -134,6 +134,26 @@ describe('AddressDisplay', () => {
         expect(screen.getByText('alice.algo')).toBeTruthy()
     })
 
+    it('renders the truncated address as a secondary line when an NFD resolves', () => {
+        mockUseNfdForAddress.mockReturnValue({
+            data: [{ name: 'alice.algo' }],
+            isPending: false,
+        })
+
+        render(<AddressDisplay address={'C'.repeat(58)} />)
+
+        expect(screen.getByText('alice.algo')).toBeTruthy()
+        expect(screen.getByText(/CCC/)).toBeTruthy()
+    })
+
+    it('renders only the truncated address when no NFD resolves for a foreign address', () => {
+        const address = 'D'.repeat(58)
+        render(<AddressDisplay address={address} />)
+
+        const matches = screen.getAllByText(/DDD/)
+        expect(matches).toHaveLength(1)
+    })
+
     describe('unified layout', () => {
         it('renders only the truncated address when no NFD, contact or local account matches', () => {
             const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'

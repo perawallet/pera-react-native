@@ -132,7 +132,6 @@ export const AddressDisplay = ({
             </PWView>
         )
     } else {
-        const label = nfdName ?? truncatedAddress
         const showAvatar = !!nfdName || forceShowIcon
         content = (
             <PWView style={styles.contactContainer}>
@@ -145,7 +144,21 @@ export const AddressDisplay = ({
                         />
                     </PWView>
                 )}
-                <PWText {...textProps}>{label}</PWText>
+                {nfdName ? (
+                    <PWView style={styles.addressTextStack}>
+                        <PWText {...textProps}>{nfdName}</PWText>
+                        <PWText
+                            variant='caption'
+                            style={styles.secondaryText}
+                            numberOfLines={1}
+                            ellipsizeMode='middle'
+                        >
+                            {truncatedAddress}
+                        </PWText>
+                    </PWView>
+                ) : (
+                    <PWText {...textProps}>{truncatedAddress}</PWText>
+                )}
             </PWView>
         )
     }

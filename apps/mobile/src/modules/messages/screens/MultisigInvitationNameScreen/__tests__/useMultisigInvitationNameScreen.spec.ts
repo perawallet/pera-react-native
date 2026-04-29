@@ -131,10 +131,10 @@ describe('useMultisigInvitationNameScreen', () => {
         mockAddListener.mockReturnValue(vi.fn())
     })
 
-    it('initializes with default name from i18n', () => {
+    it('initializes with auto-numbered default name (#1) when no shared accounts exist', () => {
         const { result } = renderHook(() => useMultisigInvitationNameScreen())
 
-        expect(result.current.accountName).toBe('Shared Account')
+        expect(result.current.accountName).toBe('Shared Account #1')
         expect(result.current.isSaving).toBe(false)
     })
 
@@ -148,28 +148,43 @@ describe('useMultisigInvitationNameScreen', () => {
         expect(result.current.accountName).toBe('My Shared Wallet')
     })
 
-    it('auto-suffixes default name when "Shared Account" already exists', () => {
+    it('increments default name based on existing multisig account count', () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: 'A', name: 'shared account' } as WalletAccount,
+            {
+                address: 'M1',
+                name: 'Coffee fund',
+                type: 'multisig',
+                multisigDetails: { threshold: 2, addresses: ['A', 'B'] },
+            } as WalletAccount,
         ])
 
         const { result } = renderHook(() => useMultisigInvitationNameScreen())
 
-        expect(result.current.accountName).toBe('Shared Account 2')
+        expect(result.current.accountName).toBe('Shared Account #2')
         expect(result.current.isNameTaken).toBe(false)
         expect(result.current.nameError).toBeUndefined()
         expect(result.current.isFinishDisabled).toBe(false)
     })
 
-    it('auto-suffixes default name to next free integer when multiple defaults exist', () => {
+    it('skips taken "#N" slots above the multisig count', () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: 'A', name: 'Shared Account' } as WalletAccount,
-            { address: 'B', name: 'shared account 2' } as WalletAccount,
+            {
+                address: 'M1',
+                name: 'Shared Account #1',
+                type: 'multisig',
+                multisigDetails: { threshold: 2, addresses: ['A', 'B'] },
+            } as WalletAccount,
+            {
+                address: 'M2',
+                name: 'shared account #2',
+                type: 'multisig',
+                multisigDetails: { threshold: 2, addresses: ['C', 'D'] },
+            } as WalletAccount,
         ])
 
         const { result } = renderHook(() => useMultisigInvitationNameScreen())
 
-        expect(result.current.accountName).toBe('Shared Account 3')
+        expect(result.current.accountName).toBe('Shared Account #3')
         expect(result.current.isNameTaken).toBe(false)
     })
 
@@ -189,17 +204,22 @@ describe('useMultisigInvitationNameScreen', () => {
         expect(result.current.isFinishDisabled).toBe(true)
     })
 
-    it('does not flag isNameTaken when the colliding account is the invitation account itself (post-save re-render)', () => {
+    it('excludes the invitation account itself from the count and the taken set (post-save re-render)', () => {
         mockUseAllAccounts.mockReturnValue([
             {
                 address: invitation.address,
-                name: 'Shared Account',
+                name: 'Shared Account #1',
+                type: 'multisig',
+                multisigDetails: {
+                    threshold: invitation.threshold,
+                    addresses: invitation.participantAddresses,
+                },
             } as WalletAccount,
         ])
 
         const { result } = renderHook(() => useMultisigInvitationNameScreen())
 
-        expect(result.current.accountName).toBe('Shared Account')
+        expect(result.current.accountName).toBe('Shared Account #1')
         expect(result.current.isNameTaken).toBe(false)
         expect(result.current.nameError).toBeUndefined()
         expect(result.current.isFinishDisabled).toBe(false)
@@ -233,7 +253,7 @@ describe('useMultisigInvitationNameScreen', () => {
             expect.objectContaining({
                 type: 'multisig',
                 address: 'MSIG_ADDR',
-                name: 'Shared Account',
+                name: 'Shared Account #1',
                 multisigDetails: {
                     threshold: 2,
                     addresses: ['ADDR1', 'ADDR2', 'ADDR3'],
