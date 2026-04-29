@@ -21,6 +21,7 @@ import {
 } from '../api/notifications'
 import type { PeraNotification } from '../models'
 import { getNotificationsListQueryKey } from './querykeys'
+import { Maybe, Nullable } from '@perawallet/wallet-core-shared'
 
 const mapNotificationResponseToNotification = (
     response: NotificationResponse,
@@ -34,7 +35,7 @@ const mapNotificationResponseToNotification = (
     icon: response.icon ?? null,
 })
 
-const extractCursor = (url: string | null): string | undefined => {
+const extractCursor = (url: Nullable<string>): Maybe<string> => {
     if (!url) return undefined
     try {
         return new URL(url).searchParams.get('cursor') ?? undefined
