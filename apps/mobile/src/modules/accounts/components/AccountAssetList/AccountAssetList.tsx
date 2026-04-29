@@ -123,18 +123,12 @@ export const AccountAssetList = ({
                             {t('account_details.assets.title')}
                         </PWText>
                         {!isWatch && (
-                            <PWView
-                                style={
-                                    styles.titleBarButtonContainer
-                                }
-                            >
+                            <PWView style={styles.titleBarButtonContainer}>
                                 <PWButton
                                     icon='sliders'
                                     variant='helper'
                                     paddingStyle='dense'
-                                    onPress={
-                                        manageSheetState.open
-                                    }
+                                    onPress={manageSheetState.open}
                                 />
                                 <PWButton
                                     icon='plus'
@@ -143,9 +137,7 @@ export const AccountAssetList = ({
                                     )}
                                     variant='helper'
                                     paddingStyle='dense'
-                                    onPress={
-                                        addAssetSheetState.open
-                                    }
+                                    onPress={addAssetSheetState.open}
                                 />
                             </PWView>
                         )}
@@ -166,38 +158,38 @@ export const AccountAssetList = ({
                 style={styles.keyboardAvoidingViewContainer}
                 onPress={headerState.open}
             >
-            <SearchableList
-                ref={listRef}
-                data={balances}
-                renderItem={renderItem}
-                scrollEnabled={scrollEnabled}
-                keyExtractor={item => item.assetId}
-                estimatedItemSize={72}
-                recycleItems
-                automaticallyAdjustKeyboardInsets
-                keyboardDismissMode='interactive'
-                contentContainerStyle={styles.rootContainer}
-                ListHeaderComponent={listHeader}
-                searchPlaceholder={t(
-                    'account_details.assets.search_placeholder',
-                )}
-                onSearchChange={setSearchFilter}
-                ListEmptyComponent={
-                    isPending ? (
-                        <LoadingView
-                            variant='skeleton'
-                            size='sm'
-                            count={8}
-                            style={styles.loading}
-                        />
-                    ) : (
-                        <EmptyView
-                            title={getEmptyTitle()}
-                            body={getEmptyBody()}
-                        />
-                    )
-                }
-            />
+                <SearchableList
+                    ref={listRef}
+                    data={balances}
+                    renderItem={renderItem}
+                    scrollEnabled={scrollEnabled}
+                    keyExtractor={item => item.assetId}
+                    estimatedItemSize={72}
+                    recycleItems
+                    automaticallyAdjustKeyboardInsets
+                    keyboardDismissMode='interactive'
+                    contentContainerStyle={styles.rootContainer}
+                    ListHeaderComponent={listHeader}
+                    searchPlaceholder={t(
+                        'account_details.assets.search_placeholder',
+                    )}
+                    onSearchChange={setSearchFilter}
+                    ListEmptyComponent={
+                        isPending ? (
+                            <LoadingView
+                                variant='skeleton'
+                                size='sm'
+                                count={8}
+                                style={styles.loading}
+                            />
+                        ) : (
+                            <EmptyView
+                                title={getEmptyTitle()}
+                                body={getEmptyBody()}
+                            />
+                        )
+                    }
+                />
             </PWTouchableOpacity>
 
             <ManageAssetsBottomSheet
