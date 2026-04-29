@@ -11,6 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
+import { Platform } from 'react-native'
 import { resolveImportAccountType } from '@perawallet/wallet-core-accounts'
 import { type IconName } from '@components/core'
 import { useAppNavigation } from '@hooks/useAppNavigation'
@@ -61,8 +62,13 @@ export const useImportAccountOptionsScreen =
             navigation.push('ImportInfo', { accountType: 'algo25' })
         }, [closeImportOptions, navigation])
 
-        const handlePairLedger = useCallback(
-            () => navigation.push('LedgerInstructions'),
+        const handlePairLedgerBle = useCallback(
+            () => navigation.push('LedgerInstructions', { transportType: 'ble' }),
+            [navigation],
+        )
+
+        const handlePairLedgerUsb = useCallback(
+            () => navigation.push('LedgerInstructions', { transportType: 'usb' }),
             [navigation],
         )
 
@@ -116,8 +122,8 @@ export const useImportAccountOptionsScreen =
             })
         }, [showToast, t])
 
-        const options: AccountOption[] = useMemo(
-            () => [
+        const options: AccountOption[] = useMemo(() => {
+            const allOptions: AccountOption[] = [
                 {
                     testID: 'import_account_options_recover_wallet_button',
                     titleKey:
@@ -143,8 +149,23 @@ export const useImportAccountOptionsScreen =
                     descriptionKey:
                         'onboarding.import_account_options.pair_ledger_description',
                     leftIcon: 'wallet' as IconName,
-                    onPress: handlePairLedger,
+                    onPress: handlePairLedgerBle,
                 },
+            ]
+
+            if (Platform.OS === 'android') {
+                allOptions.push({
+                    testID: 'import_account_options_pair_ledger_usb_button',
+                    titleKey:
+                        'onboarding.import_account_options.pair_ledger_usb_title',
+                    descriptionKey:
+                        'onboarding.import_account_options.pair_ledger_usb_description',
+                    leftIcon: 'wallet' as IconName,
+                    onPress: handlePairLedgerUsb,
+                })
+            }
+
+            allOptions.push(
                 {
                     testID: 'import_account_options_pera_web_button',
                     titleKey:
@@ -162,14 +183,16 @@ export const useImportAccountOptionsScreen =
                     leftIcon: 'shield-check' as IconName,
                     onPress: handleNotImplemented,
                 },
-            ],
-            [
-                openImportOptions,
-                openQRScanner,
-                handlePairLedger,
-                handleNotImplemented,
-            ],
-        )
+            )
+
+            return allOptions
+        }, [
+            openImportOptions,
+            openQRScanner,
+            handlePairLedgerBle,
+            handlePairLedgerUsb,
+            handleNotImplemented,
+        ])
 
         return {
             options,

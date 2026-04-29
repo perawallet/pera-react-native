@@ -42,7 +42,7 @@ export type OnboardingStackParamList = {
         account: WalletAccount
         createIfEmpty?: boolean
     }
-    LedgerInstructions: undefined
+    LedgerInstructions: { transportType?: LedgerTransportType } | undefined
     LedgerScan: undefined
     LedgerFetchAccounts: {
         deviceId: string
@@ -92,7 +92,7 @@ export type AddAccountStackParamList = {
         account: WalletAccount
         createIfEmpty?: boolean
     }
-    LedgerInstructions: undefined
+    LedgerInstructions: { transportType?: LedgerTransportType } | undefined
     LedgerScan: undefined
     LedgerFetchAccounts: {
         deviceId: string
