@@ -131,26 +131,32 @@ export const AddressDisplay = ({
                 <PWText {...textProps}>{contact.name}</PWText>
             </PWView>
         )
-    } else if (nfdName) {
+    } else {
+        const label = nfdName ?? truncatedAddress
+        const showAvatar = !!nfdName || forceShowIcon
         content = (
             <PWView style={styles.contactContainer}>
-                <PWIcon
-                    name={fallbackIconName}
-                    size='lg'
-                />
-                <PWText {...textProps}>{nfdName}</PWText>
+                {showAvatar && (
+                    <PWView style={styles.foreignAvatar}>
+                        <PWIcon
+                            name='person'
+                            size='sm'
+                            variant='white'
+                        />
+                    </PWView>
+                )}
+                <PWText {...textProps}>{label}</PWText>
             </PWView>
         )
-    } else {
-        content = (
-            <PWView style={styles.contactContainer}>
-                {forceShowIcon && (
-                    <PWIcon
-                        name={fallbackIconName}
-                        size='lg'
-                    />
-                )}
-                <PWText {...textProps}>{truncatedAddress}</PWText>
+    }
+
+    if (!showCopy) {
+        return (
+            <PWView
+                {...rest}
+                style={[styles.addressValueContainer, rest.style]}
+            >
+                {content}
             </PWView>
         )
     }
@@ -162,15 +168,13 @@ export const AddressDisplay = ({
             style={[styles.addressValueContainer, rest.style]}
         >
             {content}
-            {showCopy && (
-                <PWIcon
-                    name='copy'
-                    size='sm'
-                    variant='secondary'
-                    {...iconProps}
-                    onPress={copyAddress}
-                />
-            )}
+            <PWIcon
+                name='copy'
+                size='sm'
+                variant='secondary'
+                {...iconProps}
+                onPress={copyAddress}
+            />
         </CopyableText>
     )
 }

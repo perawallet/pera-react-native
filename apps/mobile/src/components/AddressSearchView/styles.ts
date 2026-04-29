@@ -29,7 +29,7 @@ export const useStyles = makeStyles(theme => {
         },
         contentContainer: {
             gap: theme.spacing.lg,
-            flex: 1,
+            flexGrow: 1,
         },
         title: {},
         accountDisplay: {

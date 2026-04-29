@@ -104,7 +104,7 @@
         "scan_qr": "Scan QR Code",
         "address": "Address",
         "contacts": "Contacts",
-        "my_accounts": "My Accounts",
+        "my_accounts": "Accounts",
         "no_accounts_found": "No Accounts Found",
         "no_accounts_body": "There are no matching accounts",
         "search_placeholder": "Account address, NFD name, or short name",

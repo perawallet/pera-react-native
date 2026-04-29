@@ -109,6 +109,31 @@ describe('AddressDisplay', () => {
         expect(screen.getByText('Alice')).toBeTruthy()
     })
 
+    it('renders a person icon avatar for a foreign address when forceShowIcon is set', () => {
+        const address = 'B'.repeat(58)
+
+        render(
+            <AddressDisplay
+                address={address}
+                forceShowIcon
+            />,
+        )
+
+        expect(screen.getByTestId('icon-person')).toBeTruthy()
+    })
+
+    it('renders a person icon avatar for an NFD-resolved foreign address', () => {
+        mockUseNfdForAddress.mockReturnValue({
+            data: [{ name: 'alice.algo' }],
+            isPending: false,
+        })
+
+        render(<AddressDisplay address={'C'.repeat(58)} />)
+
+        expect(screen.getByTestId('icon-person')).toBeTruthy()
+        expect(screen.getByText('alice.algo')).toBeTruthy()
+    })
+
     describe('unified layout', () => {
         it('renders only the truncated address when no NFD, contact or local account matches', () => {
             const address = 'ABCDEFGHIJ1234567890KLMNOPQRST'

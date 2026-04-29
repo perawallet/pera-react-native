@@ -60,7 +60,7 @@ export const CreateMultisigScreen = () => {
                             />
                         ))}
                         <PWButton
-                            variant='link'
+                            variant='linkPositive'
                             icon='plus'
                             title={t('multisig.create.add_account')}
                             onPress={handleOpenAddParticipant}

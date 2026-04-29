@@ -36,17 +36,25 @@ export type AddressSearchViewProps = {
     onSelected: (address: string) => void
     excludeAddress?: string
     excludeTypes?: AccountType[]
+    showAllContactsWhenEmpty?: boolean
+    inBottomSheet?: boolean
 }
 
 export const AddressSearchView = ({
     onSelected,
     excludeAddress,
     excludeTypes,
+    showAllContactsWhenEmpty,
+    inBottomSheet,
 }: AddressSearchViewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { value, setValue, matchingItems, hasResults, isNfdLoading } =
-        useAddressSearchView({ excludeAddress, excludeTypes })
+        useAddressSearchView({
+            excludeAddress,
+            excludeTypes,
+            showAllContactsWhenEmpty,
+        })
 
     const renderItem = useCallback(
         ({ item }: { item: AddressSearchItem }) => {
@@ -82,6 +90,19 @@ export const AddressSearchView = ({
                             <AccountDisplay
                                 account={item.account}
                                 showChevron={false}
+                                style={styles.accountDisplay}
+                            />
+                        </PWTouchableOpacity>
+                    )
+                case 'address':
+                    return (
+                        <PWTouchableOpacity
+                            onPress={() => onSelected(item.address)}
+                        >
+                            <AddressDisplay
+                                address={item.address}
+                                showCopy={false}
+                                forceShowIcon
                                 style={styles.accountDisplay}
                             />
                         </PWTouchableOpacity>
@@ -145,6 +166,7 @@ export const AddressSearchView = ({
                         emptyComponent()
                     )
                 }
+                inBottomSheet={inBottomSheet}
                 style={styles.list}
                 contentContainerStyle={styles.contentContainer}
             />
