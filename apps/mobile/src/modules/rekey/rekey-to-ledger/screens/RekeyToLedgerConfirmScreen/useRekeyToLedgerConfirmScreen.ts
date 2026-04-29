@@ -12,15 +12,13 @@
 
 import { useCallback, useState } from 'react'
 import { useRoute } from '@react-navigation/native'
-import {
-    useAlgorandClient,
-    useSuggestedParametersQuery,
-} from '@perawallet/wallet-core-blockchain'
+import { useSuggestedParametersQuery } from '@perawallet/wallet-core-blockchain'
 import { useFindAccountByAddress } from '@perawallet/wallet-core-accounts'
-import { useTransactionSigner } from '@perawallet/wallet-core-signing'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { useToast } from '@hooks/useToast'
+import { useLanguage } from '@hooks/useLanguage'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import { RekeyUserRejectedError, useSubmitRekey } from '../../../shared'
 
 import type { RouteProp } from '@react-navigation/native'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
@@ -47,10 +45,10 @@ export const useRekeyToLedgerConfirmScreen =
         const source = useFindAccountByAddress(sourceAddress)
         const target = useFindAccountByAddress(targetAddress)
 
+        const { t } = useLanguage()
         const { showToast } = useToast()
         const { getMessage } = useAlgodErrorMessage()
-        const { signTransactions } = useTransactionSigner()
-        const algokit = useAlgorandClient(signTransactions)
+        const { submitRekey } = useSubmitRekey()
         const { data: suggestedParams, isPending: feePending } =
             useSuggestedParametersQuery()
 
@@ -61,24 +59,31 @@ export const useRekeyToLedgerConfirmScreen =
 
             try {
                 setIsSubmitting(true)
-                await algokit.send.payment({
-                    sender: source.address,
-                    receiver: source.address,
-                    amount: 0n.microAlgo(),
-                    rekeyTo: target.address,
+                await submitRekey({
+                    sourceAddress: source.address,
+                    rekeyToAddress: target.address,
                 })
                 navigation.navigate('RekeyToLedger', {
                     screen: 'RekeyToLedgerSuccess',
                     params: { sourceAddress: source.address },
                 })
             } catch (error) {
+                if (error instanceof RekeyUserRejectedError) {
+                    // guardrails-ignore-next-line no-error-toast-in-catch reason: rejection is a user-facing cancellation, distinct from algod errors
+                    showToast({
+                        title: t('rekey.signing.user_rejected_title'),
+                        body: t('rekey.signing.user_rejected_body'),
+                        type: 'error',
+                    })
+                    return
+                }
                 const { title, body } = getMessage(error)
                 // guardrails-ignore-next-line no-error-toast-in-catch reason: useAlgodErrorMessage already returns the localized title/body to surface
                 showToast({ title, body, type: 'error' })
             } finally {
                 setIsSubmitting(false)
             }
-        }, [algokit, getMessage, navigation, showToast, source, target])
+        }, [submitRekey, getMessage, navigation, showToast, source, target, t])
 
         const feeMicroAlgos =
             suggestedParams?.fee && suggestedParams.fee > 0n

@@ -973,6 +973,12 @@
         }
     },
     "rekey": {
+        "signing": {
+            "source_name": "Rekey Account",
+            "source_description": "Rekey transaction",
+            "user_rejected_title": "Signing cancelled",
+            "user_rejected_body": "You cancelled the rekey signing. No changes were made."
+        },
         "to_standard": {
             "intro": {
                 "title": "Rekey to standard account",
