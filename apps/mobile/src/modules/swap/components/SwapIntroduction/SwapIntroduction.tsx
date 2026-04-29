@@ -18,6 +18,7 @@ import {
     PWView,
 } from '@components/core'
 import { Trans } from 'react-i18next'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useLanguage } from '@hooks/useLanguage'
 import { useWebView } from '@modules/webview'
 import { config } from '@perawallet/wallet-core-config'
@@ -36,7 +37,8 @@ export const SwapIntroduction = ({
     onStartSwapping,
     onClose,
 }: SwapIntroductionProps) => {
-    const styles = useStyles()
+    const insets = useSafeAreaInsets()
+    const styles = useStyles(insets)
     const { t } = useLanguage()
     const { pushWebView } = useWebView()
 

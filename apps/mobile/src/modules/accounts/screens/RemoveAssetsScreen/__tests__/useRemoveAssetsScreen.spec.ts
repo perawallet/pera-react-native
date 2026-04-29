@@ -80,6 +80,22 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (k: string) => k }),
 }))
 
+const { mockShowToast, mockGetMessage } = vi.hoisted(() => ({
+    mockShowToast: vi.fn(),
+    mockGetMessage: vi.fn((err: unknown) => ({
+        title: '',
+        body: err instanceof Error ? err.message : String(err),
+    })),
+}))
+
+vi.mock('@hooks/useToast', () => ({
+    useToast: () => ({ showToast: mockShowToast }),
+}))
+
+vi.mock('@hooks/useAlgodErrorMessage', () => ({
+    useAlgodErrorMessage: () => ({ getMessage: mockGetMessage }),
+}))
+
 describe('useRemoveAssetsScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
@@ -268,10 +284,11 @@ describe('useRemoveAssetsScreen', () => {
         expect(result.current.removableAssets[0].assetId).toBe('456')
     })
 
-    it('sets removeError when optOut rejects', async () => {
-        mockOptOut.mockRejectedValueOnce(new Error('Rate limited'))
-
-        const { result } = renderHook(() => useRemoveAssetsScreen())
+    it('shows success toast and invokes onAfterRemove after successful opt-out', async () => {
+        const onAfterRemove = vi.fn()
+        const { result } = renderHook(() =>
+            useRemoveAssetsScreen({ onAfterRemove }),
+        )
 
         act(() => {
             result.current.handleToggleSelect('123')
@@ -281,13 +298,22 @@ describe('useRemoveAssetsScreen', () => {
             await result.current.handleRemoveSelected()
         })
 
-        expect(result.current.removeError?.message).toBe('Rate limited')
+        expect(mockShowToast).toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'asset_opt_out.success',
+                type: 'success',
+            }),
+        )
+        expect(onAfterRemove).toHaveBeenCalledTimes(1)
     })
 
-    it('does not set removeError when user cancels the signing overlay', async () => {
-        mockOptOut.mockRejectedValueOnce(new UserRejectedSigningError())
+    it('shows error toast and skips onAfterRemove when optOut rejects', async () => {
+        mockOptOut.mockRejectedValueOnce(new Error('Rate limited'))
+        const onAfterRemove = vi.fn()
 
-        const { result } = renderHook(() => useRemoveAssetsScreen())
+        const { result } = renderHook(() =>
+            useRemoveAssetsScreen({ onAfterRemove }),
+        )
 
         act(() => {
             result.current.handleToggleSelect('123')
@@ -297,6 +323,35 @@ describe('useRemoveAssetsScreen', () => {
             await result.current.handleRemoveSelected()
         })
 
-        expect(result.current.removeError).toBeNull()
+        expect(mockShowToast).toHaveBeenCalledWith(
+            expect.objectContaining({
+                title: 'asset_opt_out.error',
+                body: 'Rate limited',
+                type: 'error',
+            }),
+        )
+        expect(onAfterRemove).not.toHaveBeenCalled()
+    })
+
+    it('does not show an error toast when user cancels the signing overlay', async () => {
+        mockOptOut.mockRejectedValueOnce(new UserRejectedSigningError())
+        const onAfterRemove = vi.fn()
+
+        const { result } = renderHook(() =>
+            useRemoveAssetsScreen({ onAfterRemove }),
+        )
+
+        act(() => {
+            result.current.handleToggleSelect('123')
+        })
+
+        await act(async () => {
+            await result.current.handleRemoveSelected()
+        })
+
+        expect(mockShowToast).not.toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'error' }),
+        )
+        expect(onAfterRemove).not.toHaveBeenCalled()
     })
 })

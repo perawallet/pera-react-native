@@ -21,13 +21,17 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        paddingHorizontal: theme.spacing.md,
     },
     title: {
         color: theme.colors.textMain,
     },
+    list: {
+        marginHorizontal: -theme.spacing.sm,
+    },
     listContent: {
         gap: theme.spacing.sm,
-        paddingRight: theme.spacing.md,
+        paddingHorizontal: theme.spacing.lg,
     },
     chip: {
         flexDirection: 'row',
@@ -35,7 +39,7 @@ export const useStyles = makeStyles(theme => ({
         gap: theme.spacing.sm,
         paddingVertical: theme.spacing.sm,
         paddingHorizontal: theme.spacing.md,
-        borderRadius: theme.spacing.xl,
+        borderRadius: theme.spacing.lg,
         backgroundColor: theme.colors.layerGrayLightest,
     },
     skeleton: {

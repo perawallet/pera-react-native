@@ -10,7 +10,7 @@
  limitations under the License
  */
 
-import React, { useCallback } from 'react'
+import React, { useCallback, useRef } from 'react'
 import {
     PWButton,
     PWCheckbox,
@@ -19,6 +19,7 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
+import type { PWFlatListRef } from '@components/core'
 import { AccountAssetItemView } from '@modules/assets/components/AssetItem/AccountAssetItemView'
 import { AssetWithAccountBalance } from '@perawallet/wallet-core-accounts'
 import { EmptyView } from '@components/EmptyView'
@@ -28,6 +29,17 @@ import { useStyles } from './styles'
 
 export const RemoveAssetsScreen = () => {
     const styles = useStyles()
+    const listRef = useRef<PWFlatListRef>(null)
+
+    const handleAfterRemove = useCallback(() => {
+        // Defer the scroll so it runs after FlashList re-renders with the
+        // shrunken dataset; scrolling synchronously while cells are being
+        // recycled produces a jittery animation.
+        requestAnimationFrame(() => {
+            listRef.current?.scrollToOffset({ offset: 0, animated: true })
+        })
+    }, [])
+
     const {
         removableAssets,
         selectedAssetIds,
@@ -37,7 +49,7 @@ export const RemoveAssetsScreen = () => {
         handleToggleSelectAll,
         handleRemoveSelected,
         t,
-    } = useRemoveAssetsScreen()
+    } = useRemoveAssetsScreen({ onAfterRemove: handleAfterRemove })
 
     useNavigationHeader({
         right: (
@@ -78,6 +90,7 @@ export const RemoveAssetsScreen = () => {
     return (
         <PWView style={styles.container}>
             <PWFlatList
+                ref={listRef}
                 data={removableAssets}
                 renderItem={renderItem}
                 keyExtractor={item => item.assetId}

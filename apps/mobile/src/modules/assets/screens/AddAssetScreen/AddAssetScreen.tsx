@@ -39,7 +39,7 @@ export const AddAssetScreen = ({ variant = 'asset' }: AddAssetScreenProps) => {
         hasNextPage,
         fetchNextPage,
         optedInAssetIds,
-        optingInAssetId,
+        optingInAssetIds,
         handleRequestAdd,
         handleConfirmAdd,
         handleCancelAdd,
@@ -54,11 +54,11 @@ export const AddAssetScreen = ({ variant = 'asset' }: AddAssetScreenProps) => {
             <AssetSearchItem
                 item={item}
                 isOptedIn={optedInAssetIds.has(item.assetId)}
-                isOptingIn={optingInAssetId === item.assetId}
+                isOptingIn={optingInAssetIds.has(item.assetId)}
                 onAdd={handleRequestAdd}
             />
         ),
-        [optedInAssetIds, optingInAssetId, handleRequestAdd],
+        [optedInAssetIds, optingInAssetIds, handleRequestAdd],
     )
 
     const handleEndReached = useCallback(() => {
@@ -146,7 +146,10 @@ export const AddAssetScreen = ({ variant = 'asset' }: AddAssetScreenProps) => {
                 assetId={pendingAssetId}
                 accountAddress={selectedAccountAddress ?? ''}
                 accountName={selectedAccountName}
-                isLoading={optingInAssetId !== null}
+                isLoading={
+                    pendingAssetId !== null &&
+                    optingInAssetIds.has(pendingAssetId)
+                }
             />
         </KeyboardAvoidingView>
     )

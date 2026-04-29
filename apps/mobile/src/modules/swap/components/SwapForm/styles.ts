@@ -14,7 +14,6 @@ import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => {
     const maxText = {
-        color: theme.colors.linkPrimary,
         lineHeight: theme.spacing.lg,
     }
     return {

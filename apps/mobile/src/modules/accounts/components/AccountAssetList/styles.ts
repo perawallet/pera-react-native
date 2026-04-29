@@ -15,10 +15,6 @@ import { makeStyles } from '@rneui/themed'
 const ACTION_BUTTON_SIZE = 40
 
 export const useStyles = makeStyles(theme => ({
-    headerContainer: {
-        marginTop: theme.spacing.sm,
-        marginBottom: theme.spacing.md,
-    },
     keyboardAvoidingViewContainer: {
         flexGrow: 1,
         backgroundColor: theme.colors.background,
@@ -26,6 +22,10 @@ export const useStyles = makeStyles(theme => ({
     rootContainer: {
         flexGrow: 1,
         paddingHorizontal: theme.spacing.md,
+    },
+    headerContainer: {
+        marginTop: theme.spacing.sm,
+        marginBottom: theme.spacing.md,
     },
     loadingContainer: {
         gap: theme.spacing.md,
