@@ -96,6 +96,7 @@ export class RNLedgerService implements HardwareWalletService {
         const { manufacturer } = this
         return {
             manufacturer,
+            transportType: 'ble' as const,
             scan(
                 onDevice: (device: LedgerDevice) => void,
                 onError?: (error: Error) => void,
@@ -122,6 +123,7 @@ export class RNLedgerService implements HardwareWalletService {
                                 name ||
                                 `Ledger ${model.charAt(0).toUpperCase() + model.slice(1)}`,
                             manufacturer: 'ledger',
+                            transportType: 'ble',
                             model,
                             rssi: rssi ?? null,
                         })

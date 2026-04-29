@@ -96,6 +96,7 @@ describe('RNLedgerService', () => {
                     id: 'd1',
                     name: 'My Nano',
                     manufacturer: 'ledger',
+                    transportType: 'ble',
                     rssi: -60,
                 }),
             )
