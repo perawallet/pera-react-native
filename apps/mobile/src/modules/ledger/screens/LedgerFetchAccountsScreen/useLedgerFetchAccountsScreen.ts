@@ -72,7 +72,7 @@ export const useLedgerFetchAccountsScreen =
                 const provider =
                     getProvider().hardwareWalletRegistry.getProvider(
                         'ledger',
-                        'ble',
+                        transportType,
                     )!
 
                 setIsDiscovering(true)
