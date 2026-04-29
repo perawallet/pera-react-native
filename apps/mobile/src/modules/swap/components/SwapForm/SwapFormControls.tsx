@@ -53,7 +53,7 @@ export const SwapFormControls = ({
                     <PWIcon
                         name='sliders'
                         size='sm'
-                        variant='link'
+                        variant='positive'
                     />
                 </PWTouchableOpacity>
                 <PWView style={styles.maxDivider} />
@@ -63,7 +63,7 @@ export const SwapFormControls = ({
                     testID='swap-max-button'
                 >
                     <PWText
-                        variant='link'
+                        variant='linkPositive'
                         style={styles.maxText}
                     >
                         {t('swap.form.max')}

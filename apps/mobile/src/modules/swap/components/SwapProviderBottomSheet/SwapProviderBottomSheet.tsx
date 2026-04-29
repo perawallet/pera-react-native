@@ -77,7 +77,7 @@ export const SwapProviderBottomSheet = ({
                         onPress={handleApply}
                         testID='swap-provider-apply'
                     >
-                        <PWText style={styles.applyText}>
+                        <PWText variant='linkPositive'>
                             {t('swap.provider.apply')}
                         </PWText>
                     </PWTouchableOpacity>
