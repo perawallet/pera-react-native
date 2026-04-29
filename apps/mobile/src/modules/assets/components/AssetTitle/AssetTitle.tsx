@@ -13,6 +13,7 @@
 import { ALGO_ASSET_ID, PeraAsset } from '@perawallet/wallet-core-assets'
 import { PWIcon, PWText, PWView } from '@components/core'
 import { CopyableText } from '@components/CopyableText'
+import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { AssetIcon } from '../AssetIcon'
 import { useMemo } from 'react'
@@ -30,6 +31,7 @@ export const AssetTitle = ({
     nameVariant = 'h4',
 }: AssetTitleProps) => {
     const styles = useStyles()
+    const { t } = useLanguage()
 
     const isAlgo = useMemo(
         () => asset.assetId === ALGO_ASSET_ID,
@@ -40,6 +42,8 @@ export const AssetTitle = ({
         () => asset.peraMetadata?.verificationTier === 'suspicious',
         [asset.peraMetadata?.verificationTier],
     )
+
+    const isDeleted = asset.peraMetadata?.isDeleted === true
 
     return (
         <PWView style={styles.container}>
@@ -78,15 +82,24 @@ export const AssetTitle = ({
                         />
                     )}
                 </PWView>
-                {showId && (
-                    <CopyableText copyValue={String(asset.assetId)}>
-                        <PWText
-                            variant='caption'
-                            style={styles.id}
-                        >
-                            {asset.assetId}
-                        </PWText>
-                    </CopyableText>
+                {isDeleted ? (
+                    <PWText
+                        variant='caption'
+                        style={styles.deletedLabel}
+                    >
+                        {t('asset.deleted_label')}
+                    </PWText>
+                ) : (
+                    showId && (
+                        <CopyableText copyValue={String(asset.assetId)}>
+                            <PWText
+                                variant='caption'
+                                style={styles.id}
+                            >
+                                {asset.assetId}
+                            </PWText>
+                        </CopyableText>
+                    )
                 )}
             </PWView>
         </PWView>

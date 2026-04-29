@@ -129,6 +129,9 @@
             "algo_gain": "You will receive {{amount}} ALGO in order to compensate the opt-in expenses."
         }
     },
+    "asset": {
+        "deleted_label": "(Deleted)"
+    },
     "asset_details": {
         "about": {
             "title": "About {{name}}",
