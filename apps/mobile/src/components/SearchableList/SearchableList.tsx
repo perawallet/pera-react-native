@@ -26,6 +26,13 @@ import { Maybe } from '@perawallet/wallet-core-shared'
 
 type RenderItem<T> = (props: LegendListRenderItemProps<T>) => React.ReactNode
 
+export type SearchableListSearchProps = {
+    value?: string
+    placeholder?: string
+    onChangeText?: (value: string) => void
+    onFocus: () => void
+}
+
 const renderHeaderNode = (
     component: Maybe<React.ComponentType | React.ReactElement>,
 ): React.ReactNode => {
@@ -41,12 +48,14 @@ const renderHeaderNode = (
 
 export type SearchableListProps<T> = Omit<
     PWFlatListProps<T>,
-    'stickyIndices' | 'renderItem'
+    'stickyIndices' | 'renderItem' | 'ListEmptyComponent'
 > & {
     renderItem?: RenderItem<T>
+    ListEmptyComponent?: Maybe<React.ComponentType | React.ReactElement>
     searchValue?: string
     searchPlaceholder?: string
     onSearchChange?: (value: string) => void
+    SearchInputComponent?: React.ComponentType<SearchableListSearchProps>
     /**
      * Fraction of the header (`ListHeaderComponent`) revealed during a drag
      * required to snap to fully expanded; otherwise snap to fully collapsed
@@ -61,6 +70,7 @@ const SearchableListInner = <T,>(
 ) => {
     const {
         ListHeaderComponent,
+        ListEmptyComponent,
         ListFooterComponent,
         data,
         renderItem,
@@ -68,6 +78,7 @@ const SearchableListInner = <T,>(
         searchValue,
         searchPlaceholder,
         onSearchChange,
+        SearchInputComponent = SearchInput,
         snapThreshold = DEFAULT_SNAP_THRESHOLD,
         onScroll,
         onScrollEndDrag,
@@ -107,32 +118,47 @@ const SearchableListInner = <T,>(
         [ListHeaderComponent, handleHeaderLayout],
     )
 
+    const isListEmpty = (data?.length ?? 0) === 0
+
     const augmentedFooter = useMemo(() => {
+        const emptyComponent = isListEmpty
+            ? renderHeaderNode(ListEmptyComponent)
+            : null
         const callerFooter = renderHeaderNode(ListFooterComponent)
-        if (searchFooterHeight <= 0 && callerFooter == null) {
+        if (
+            emptyComponent == null &&
+            callerFooter == null &&
+            searchFooterHeight <= 0
+        ) {
             return null
         }
         return (
             <>
+                {emptyComponent}
                 {callerFooter}
                 {searchFooterHeight > 0 && (
                     <PWView style={{ height: searchFooterHeight }} />
                 )}
             </>
         )
-    }, [ListFooterComponent, searchFooterHeight])
+    }, [
+        ListEmptyComponent,
+        ListFooterComponent,
+        isListEmpty,
+        searchFooterHeight,
+    ])
 
     const augmentedRenderItem = useCallback<RenderItem<AugmentedItem<T>>>(
         info => {
             if (isSearchSentinel(info.item)) {
-                return (
-                    <SearchInput
-                        value={searchValue}
-                        onFocus={handleSearchFocus}
-                        placeholder={searchPlaceholder}
-                        onChangeText={onSearchChange}
-                    />
-                )
+                const searchProps = {
+                    value: searchValue,
+                    onFocus: handleSearchFocus,
+                    placeholder: searchPlaceholder,
+                    onChangeText: onSearchChange,
+                }
+
+                return <SearchInputComponent {...searchProps} />
             }
             return (
                 renderItem?.({
@@ -148,6 +174,7 @@ const SearchableListInner = <T,>(
             searchValue,
             searchPlaceholder,
             onSearchChange,
+            SearchInputComponent,
             handleSearchFocus,
             toUserIndex,
         ],

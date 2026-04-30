@@ -20,11 +20,12 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { AddressEntryField } from '@components/AddressEntryField'
 import { EmptyView } from '@components/EmptyView'
 import { AddressDisplay } from '@components/AddressDisplay'
+import { SearchableList } from '@components/SearchableList'
 import { useLanguage } from '@hooks/useLanguage'
 import { AccountResultRow } from './AccountResultRow'
+import { AddressSearchInput } from './AddressSearchInput'
 import { useStyles } from './styles'
 import {
     useAddressSearchView,
@@ -174,36 +175,47 @@ export const AddressSearchView = ({
         [t],
     )
 
+    const listEmptyComponent = isNfdLoading ? (
+        <PWView style={styles.loadingContainer}>
+            <ActivityIndicator />
+        </PWView>
+    ) : (
+        emptyComponent()
+    )
+
+    if (inBottomSheet) {
+        return (
+            <PWView style={styles.container}>
+                <AddressSearchInput
+                    value={value}
+                    placeholder={t('address_entry.search_placeholder')}
+                    onChangeText={setValue}
+                    onFocus={() => undefined}
+                />
+                <PWFlatList
+                    data={hasResults ? matchingItems : []}
+                    renderItem={renderItem}
+                    keyExtractor={keyExtractor}
+                    ListEmptyComponent={listEmptyComponent}
+                    inBottomSheet
+                    style={styles.list}
+                    contentContainerStyle={styles.contentContainer}
+                />
+            </PWView>
+        )
+    }
+
     return (
         <PWView style={styles.container}>
-            <AddressEntryField
-                onChangeText={setValue}
-                value={value}
-                allowQRCode
-                onScanned={setValue}
-                placeholder={t('address_entry.search_placeholder')}
-                inputContainerStyle={styles.searchField}
-                leftIcon={
-                    <PWIcon
-                        variant='secondary'
-                        name='magnifying-glass'
-                    />
-                }
-            />
-            <PWFlatList
+            <SearchableList
                 data={hasResults ? matchingItems : []}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
-                ListEmptyComponent={
-                    isNfdLoading ? (
-                        <PWView style={styles.loadingContainer}>
-                            <ActivityIndicator />
-                        </PWView>
-                    ) : (
-                        emptyComponent()
-                    )
-                }
-                inBottomSheet={inBottomSheet}
+                searchValue={value}
+                searchPlaceholder={t('address_entry.search_placeholder')}
+                onSearchChange={setValue}
+                SearchInputComponent={AddressSearchInput}
+                ListEmptyComponent={listEmptyComponent}
                 style={styles.list}
                 contentContainerStyle={styles.contentContainer}
             />
