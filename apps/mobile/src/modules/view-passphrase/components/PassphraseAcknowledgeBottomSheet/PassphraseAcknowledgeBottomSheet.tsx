@@ -10,7 +10,6 @@
  limitations under the License
  */
 
-import { useEffect, useState } from 'react'
 import {
     PWBottomSheet,
     PWButton,
@@ -21,6 +20,7 @@ import {
     PWView,
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
+import { usePassphraseAcknowledgeBottomSheet } from './usePassphraseAcknowledgeBottomSheet'
 import { useStyles } from './styles'
 
 export type PassphraseAcknowledgeBottomSheetProps = {
@@ -45,26 +45,12 @@ export const PassphraseAcknowledgeBottomSheet = ({
 }: PassphraseAcknowledgeBottomSheetProps) => {
     const { t } = useLanguage()
     const styles = useStyles()
-    const [checked, setChecked] = useState<boolean[]>([
-        false,
-        false,
-        false,
-        false,
-    ])
-
-    useEffect(() => {
-        if (!isVisible) {
-            setChecked([false, false, false, false])
-        }
-    }, [isVisible])
-
-    const allChecked = checked.every(Boolean)
-
-    const handleToggle = (index: number) => {
-        setChecked(previous =>
-            previous.map((value, i) => (i === index ? !value : value)),
-        )
-    }
+    const { checked, allChecked, toggle } = usePassphraseAcknowledgeBottomSheet(
+        {
+            rowCount: ACKNOWLEDGE_ROW_KEYS.length,
+            isVisible,
+        },
+    )
 
     return (
         <PWBottomSheet
@@ -100,7 +86,7 @@ export const PassphraseAcknowledgeBottomSheet = ({
                             styles.row,
                             index !== 0 ? styles.separatorBorder : undefined,
                         ]}
-                        onPress={() => handleToggle(index)}
+                        onPress={() => toggle(index)}
                         testID={`${testID}_row_${index}`}
                     >
                         <PWText
@@ -111,7 +97,7 @@ export const PassphraseAcknowledgeBottomSheet = ({
                         </PWText>
                         <PWCheckbox
                             checked={checked[index]}
-                            onPress={() => handleToggle(index)}
+                            onPress={() => toggle(index)}
                         />
                     </PWTouchableOpacity>
                 ))}
