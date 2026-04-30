@@ -11,12 +11,12 @@
  */
 
 import { useCallback } from 'react'
-import { useNetwork } from '@perawallet/wallet-core-blockchain'
-import { config } from '@perawallet/wallet-core-config'
 import {
     useAlgorandClient,
-    type PeraTransactionSigner,
+    useNetwork,
 } from '@perawallet/wallet-core-blockchain'
+import type { PeraTransaction } from '@perawallet/wallet-core-blockchain'
+import { config } from '@perawallet/wallet-core-config'
 import { ARC59Client } from '../clients'
 import {
     BASE_CLAIM_TX_COUNT,
@@ -37,15 +37,13 @@ type RejectParams = {
 }
 
 type UseArc59ClaimTransactionResult = {
-    claimAsset: (params: ClaimParams) => Promise<{ txIds: string[] }>
-    rejectAsset: (params: RejectParams) => Promise<{ txIds: string[] }>
+    buildClaimAssetTxs: (params: ClaimParams) => Promise<PeraTransaction[]>
+    buildRejectAssetTxs: (params: RejectParams) => Promise<PeraTransaction[]>
 }
 
-export const useArc59ClaimTransaction = (
-    signer: PeraTransactionSigner,
-): UseArc59ClaimTransactionResult => {
+export const useArc59ClaimTransaction = (): UseArc59ClaimTransactionResult => {
     const { isMainnet } = useNetwork()
-    const algokit = useAlgorandClient(signer)
+    const algokit = useAlgorandClient()
 
     const isOptedInToAsset = useCallback(
         async (address: string, assetId: bigint): Promise<boolean> => {
@@ -62,8 +60,8 @@ export const useArc59ClaimTransaction = (
         [algokit],
     )
 
-    const claimAsset = useCallback(
-        async (params: ClaimParams): Promise<{ txIds: string[] }> => {
+    const buildClaimAssetTxs = useCallback(
+        async (params: ClaimParams): Promise<PeraTransaction[]> => {
             const { sender, assetId, shouldClaimAlgo } = params
             const arc59Config = isMainnet
                 ? config.arc59.mainnet
@@ -111,14 +109,14 @@ export const useArc59ClaimTransaction = (
                 }),
             )
 
-            const result = await composer.send()
-            return { txIds: result.txIds }
+            const { transactions } = await composer.build()
+            return transactions.map(t => t.txn)
         },
         [algokit, isMainnet, isOptedInToAsset],
     )
 
-    const rejectAsset = useCallback(
-        async (params: RejectParams): Promise<{ txIds: string[] }> => {
+    const buildRejectAssetTxs = useCallback(
+        async (params: RejectParams): Promise<PeraTransaction[]> => {
             const { sender, assetId, shouldClaimAlgo } = params
             const arc59Config = isMainnet
                 ? config.arc59.mainnet
@@ -158,11 +156,11 @@ export const useArc59ClaimTransaction = (
                 }),
             )
 
-            const result = await composer.send()
-            return { txIds: result.txIds }
+            const { transactions } = await composer.build()
+            return transactions.map(t => t.txn)
         },
         [algokit, isMainnet],
     )
 
-    return { claimAsset, rejectAsset }
+    return { buildClaimAssetTxs, buildRejectAssetTxs }
 }

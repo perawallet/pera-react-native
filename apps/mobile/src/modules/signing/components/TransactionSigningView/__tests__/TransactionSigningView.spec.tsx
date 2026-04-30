@@ -168,7 +168,7 @@ vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
         >()
     return {
         ...actual,
-        useTransactionSigner: vi.fn(() => ({
+        useLocalKeyTransactionSigner: vi.fn(() => ({
             signTransactions: vi.fn().mockResolvedValue([]),
         })),
         useAllAccounts: vi.fn(() => []),

@@ -271,8 +271,8 @@ export type SignTransactionsOnHardwareWalletOptions = {
  * disconnect. Returns a parallel array where indices listed in `indicesToSign`
  * are signed and all other entries are unsigned placeholders (`{ txn }` only).
  *
- * Shared between the XState-based signing pipeline and the algokit-based
- * `useTransactionSigner` flow so both paths get identical Ledger behavior.
+ * Used by the XState-based signing pipeline's hardware strategy. Local-key
+ * accounts sign through `useLocalKeyTransactionSigner` and never reach here.
  */
 export const signTransactionsOnHardwareWallet = async (
     hwAccount: HardwareWalletAccount,

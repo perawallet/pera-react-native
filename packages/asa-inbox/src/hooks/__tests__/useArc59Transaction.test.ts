@@ -58,7 +58,7 @@ vi.mock('../../clients', () => {
     }
 })
 
-const mockSigner = vi.fn().mockResolvedValue(['signed-tx'])
+const STUB_TXN = { sender: 'SENDER_ADDRESS' }
 
 const baseSummary = {
     is_arc59_opted_in: true,
@@ -82,7 +82,7 @@ describe('useArc59SendTransaction', () => {
     let mockComposer: {
         addPayment: Mock
         addAppCallMethodCall: Mock
-        send: Mock
+        build: Mock
     }
     let mockAlgokit: {
         newGroup: Mock
@@ -99,7 +99,9 @@ describe('useArc59SendTransaction', () => {
         mockComposer = {
             addPayment: vi.fn().mockReturnThis(),
             addAppCallMethodCall: vi.fn().mockReturnThis(),
-            send: vi.fn().mockResolvedValue({ txIds: ['tx1', 'tx2'] }),
+            build: vi
+                .fn()
+                .mockResolvedValue({ transactions: [{ txn: STUB_TXN }] }),
         }
 
         mockParamsOptRouterIn = vi
@@ -120,19 +122,19 @@ describe('useArc59SendTransaction', () => {
         ;(useNetwork as Mock).mockReturnValue({ isMainnet: false })
     })
 
-    test('returns sendViaInbox function', () => {
-        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
+    test('returns buildSendViaInboxTxs function', () => {
+        const { result } = renderHook(() => useArc59SendTransaction())
 
-        expect(result.current.sendViaInbox).toBeTypeOf('function')
+        expect(result.current.buildSendViaInboxTxs).toBeTypeOf('function')
     })
 
     test('uses testnet config when not on mainnet', async () => {
         ;(useNetwork as Mock).mockReturnValue({ isMainnet: false })
 
-        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction())
 
         await act(async () => {
-            await result.current.sendViaInbox(baseParams)
+            await result.current.buildSendViaInboxTxs(baseParams)
         })
 
         expect(arc59ClientConstructorArgs[0]).toEqual(
@@ -145,10 +147,10 @@ describe('useArc59SendTransaction', () => {
     test('uses mainnet config when on mainnet', async () => {
         ;(useNetwork as Mock).mockReturnValue({ isMainnet: true })
 
-        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction())
 
         await act(async () => {
-            await result.current.sendViaInbox(baseParams)
+            await result.current.buildSendViaInboxTxs(baseParams)
         })
 
         expect(arc59ClientConstructorArgs[0]).toEqual(
@@ -164,10 +166,10 @@ describe('useArc59SendTransaction', () => {
             summary: { ...baseSummary, is_arc59_opted_in: false },
         }
 
-        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction())
 
         await act(async () => {
-            await result.current.sendViaInbox(params)
+            await result.current.buildSendViaInboxTxs(params)
         })
 
         expect(mockParamsOptRouterIn).toHaveBeenCalledWith(
@@ -182,10 +184,10 @@ describe('useArc59SendTransaction', () => {
     })
 
     test('skips router opt-in when already opted in', async () => {
-        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction())
 
         await act(async () => {
-            await result.current.sendViaInbox(baseParams)
+            await result.current.buildSendViaInboxTxs(baseParams)
         })
 
         expect(mockParamsOptRouterIn).not.toHaveBeenCalled()
@@ -201,10 +203,10 @@ describe('useArc59SendTransaction', () => {
             },
         }
 
-        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction())
 
         await act(async () => {
-            await result.current.sendViaInbox(params)
+            await result.current.buildSendViaInboxTxs(params)
         })
 
         expect(mockComposer.addPayment).toHaveBeenCalledWith(
@@ -217,10 +219,10 @@ describe('useArc59SendTransaction', () => {
     })
 
     test('adds payment for MBR even when algo_fund_amount is 0', async () => {
-        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction())
 
         await act(async () => {
-            await result.current.sendViaInbox(baseParams)
+            await result.current.buildSendViaInboxTxs(baseParams)
         })
 
         // baseSummary has minimum_balance_requirement: 100000
@@ -241,20 +243,20 @@ describe('useArc59SendTransaction', () => {
             },
         }
 
-        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction())
 
         await act(async () => {
-            await result.current.sendViaInbox(params)
+            await result.current.buildSendViaInboxTxs(params)
         })
 
         expect(mockComposer.addPayment).not.toHaveBeenCalled()
     })
 
     test('adds arc59_sendAsset app call to the group', async () => {
-        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction())
 
         await act(async () => {
-            await result.current.sendViaInbox(baseParams)
+            await result.current.buildSendViaInboxTxs(baseParams)
         })
 
         expect(mockParamsSendAsset).toHaveBeenCalled()
@@ -262,10 +264,10 @@ describe('useArc59SendTransaction', () => {
     })
 
     test('creates asset transfer with correct params', async () => {
-        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction())
 
         await act(async () => {
-            await result.current.sendViaInbox(baseParams)
+            await result.current.buildSendViaInboxTxs(baseParams)
         })
 
         expect(
@@ -280,23 +282,24 @@ describe('useArc59SendTransaction', () => {
         )
     })
 
-    test('returns txIds from the composed group send', async () => {
-        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
+    test('returns PeraTransaction[] from the built group', async () => {
+        const { result } = renderHook(() => useArc59SendTransaction())
 
-        let txResult: { txIds: string[] } | undefined
+        let txResult: unknown
 
         await act(async () => {
-            txResult = await result.current.sendViaInbox(baseParams)
+            txResult = await result.current.buildSendViaInboxTxs(baseParams)
         })
 
-        expect(txResult).toEqual({ txIds: ['tx1', 'tx2'] })
+        expect(Array.isArray(txResult)).toBe(true)
+        expect(txResult).toEqual([STUB_TXN])
     })
 
     test('fetches suggested params before building transactions', async () => {
-        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction())
 
         await act(async () => {
-            await result.current.sendViaInbox(baseParams)
+            await result.current.buildSendViaInboxTxs(baseParams)
         })
 
         expect(mockAlgokit.getSuggestedParams).toHaveBeenCalledTimes(1)
@@ -308,10 +311,10 @@ describe('useArc59SendTransaction', () => {
             summary: { ...baseSummary, is_arc59_opted_in: false },
         }
 
-        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction())
 
         await act(async () => {
-            await result.current.sendViaInbox(params)
+            await result.current.buildSendViaInboxTxs(params)
         })
 
         expect(mockParamsOptRouterIn).toHaveBeenCalledWith(
@@ -322,10 +325,10 @@ describe('useArc59SendTransaction', () => {
     })
 
     test('uses suggestedParams.minFee * inner_tx_count for sendAsset extra fee', async () => {
-        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
+        const { result } = renderHook(() => useArc59SendTransaction())
 
         await act(async () => {
-            await result.current.sendViaInbox(baseParams)
+            await result.current.buildSendViaInboxTxs(baseParams)
         })
 
         const expectedFee = (
@@ -339,13 +342,13 @@ describe('useArc59SendTransaction', () => {
         )
     })
 
-    test('sends composer group after building', async () => {
-        const { result } = renderHook(() => useArc59SendTransaction(mockSigner))
+    test('calls composer.build() (not send) after composing transactions', async () => {
+        const { result } = renderHook(() => useArc59SendTransaction())
 
         await act(async () => {
-            await result.current.sendViaInbox(baseParams)
+            await result.current.buildSendViaInboxTxs(baseParams)
         })
 
-        expect(mockComposer.send).toHaveBeenCalledTimes(1)
+        expect(mockComposer.build).toHaveBeenCalledTimes(1)
     })
 })

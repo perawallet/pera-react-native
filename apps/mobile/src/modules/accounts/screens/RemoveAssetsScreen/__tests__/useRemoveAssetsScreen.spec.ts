@@ -15,6 +15,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { Decimal } from 'decimal.js'
 import { useRemoveAssetsScreen } from '../useRemoveAssetsScreen'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 
 const mockAccount = { address: 'test-address', name: 'Test' }
 
@@ -328,6 +329,28 @@ describe('useRemoveAssetsScreen', () => {
                 body: 'Rate limited',
                 type: 'error',
             }),
+        )
+        expect(onAfterRemove).not.toHaveBeenCalled()
+    })
+
+    it('does not show an error toast when user cancels the signing overlay', async () => {
+        mockOptOut.mockRejectedValueOnce(new UserRejectedSigningError())
+        const onAfterRemove = vi.fn()
+
+        const { result } = renderHook(() =>
+            useRemoveAssetsScreen({ onAfterRemove }),
+        )
+
+        act(() => {
+            result.current.handleToggleSelect('123')
+        })
+
+        await act(async () => {
+            await result.current.handleRemoveSelected()
+        })
+
+        expect(mockShowToast).not.toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'error' }),
         )
         expect(onAfterRemove).not.toHaveBeenCalled()
     })

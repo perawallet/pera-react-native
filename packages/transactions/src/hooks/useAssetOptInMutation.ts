@@ -16,7 +16,7 @@ import {
     useAlgorandClient,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
-import { useTransactionSigner } from '@perawallet/wallet-core-signing'
+import { useSignAndSubmitGroup } from '@perawallet/wallet-core-signing'
 import {
     insertAssetHolding,
     useAccountBalancesInvalidator,
@@ -40,9 +40,14 @@ type UseAssetOptInMutationResult = {
     error: Nullable<Error>
 }
 
+const SOURCE = {
+    name: 'asset-opt-in',
+    description: 'Opt in to an asset',
+}
+
 export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
-    const { signTransactions } = useTransactionSigner()
-    const algokit = useAlgorandClient(signTransactions)
+    const algokit = useAlgorandClient()
+    const { submit } = useSignAndSubmitGroup()
     const { network } = useNetwork()
     const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
     const [isLoading, setIsLoading] = useState(false)
@@ -55,7 +60,6 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
             setError(null)
 
             try {
-                // Check if already opted in
                 const accountInfo =
                     await algokit.client.algod.accountInformation(sender)
                 const isOptedIn = accountInfo.assets?.some(
@@ -65,7 +69,6 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                     throw new AlreadyOptedInError()
                 }
 
-                // Check balance covers MBR increase + fee
                 const suggestedParams = await algokit.getSuggestedParams()
                 const balanceNeeded =
                     accountInfo.minBalance + ASSET_MBR + suggestedParams.minFee
@@ -73,9 +76,14 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                     throw new InsufficientBalanceForOptInError()
                 }
 
-                const result = await algokit.send.assetOptIn({
-                    sender,
-                    assetId,
+                const composer = algokit.newGroup()
+                composer.addAssetOptIn({ sender, assetId })
+                const { transactions } = await composer.build()
+                const unsignedTxs = transactions.map(t => t.txn)
+
+                const { txIds } = await submit({
+                    unsignedTxs,
+                    source: SOURCE,
                 })
 
                 // Add the new holding to local DB and ensure the asset's
@@ -91,7 +99,7 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                 await fetchAndPersistAssets([assetIdString], network)
                 invalidateBalances()
 
-                return { txIds: result.txIds }
+                return { txIds }
             } catch (err) {
                 const error =
                     err instanceof Error ? err : new Error(String(err))
@@ -101,7 +109,7 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
                 setIsLoading(false)
             }
         },
-        [algokit, network, invalidateBalances],
+        [algokit, submit, network, invalidateBalances],
     )
 
     return {
@@ -112,4 +120,8 @@ export const useAssetOptInMutation = (): UseAssetOptInMutationResult => {
     }
 }
 
+export {
+    AlreadyOptedInError,
+    InsufficientBalanceForOptInError,
+} from '../errors'
 export type { AssetOptInParams, UseAssetOptInMutationResult }

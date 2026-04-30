@@ -52,7 +52,7 @@ vi.mock('@perawallet/wallet-core-accounts', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-signing', () => ({
-    useTransactionSigner: vi.fn(),
+    useLocalKeyTransactionSigner: vi.fn(),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', () => ({
