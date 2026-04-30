@@ -25,9 +25,10 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
+        paddingVertical: theme.spacing.sm,
     },
     scrollContent: {
-        gap: theme.spacing.sm,
+        gap: theme.spacing.lg,
     },
     grayText: {
         color: theme.colors.textGray,

@@ -29,6 +29,6 @@ export const useStyles = makeStyles((theme, { isLoading }: StyleProps) => ({
         justifyContent: 'center',
     },
     label: {
-        color: theme.colors.linkPrimary,
+        color: theme.colors.positive,
     },
 }))
