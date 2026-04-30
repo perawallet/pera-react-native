@@ -582,7 +582,30 @@ describe('useAccountOptions', () => {
             expect(mockOnShowAddress).toHaveBeenCalled()
         })
 
-        it('shows not implemented toast for view-passphrase', () => {
+        it('closes the options sheet and opens the passphrase flow when view-passphrase is pressed', () => {
+            const { result } = renderHook(() =>
+                useAccountOptions({
+                    account: algo25Account,
+                    onClose: mockOnClose,
+                    onShowAddress: mockOnShowAddress,
+                }),
+            )
+
+            expect(result.current.isPassphraseFlowVisible).toBe(false)
+
+            const passphraseOption = result.current.options.find(
+                o => o.id === 'view-passphrase',
+            )
+
+            act(() => {
+                passphraseOption?.onPress()
+            })
+
+            expect(mockOnClose).toHaveBeenCalled()
+            expect(result.current.isPassphraseFlowVisible).toBe(true)
+        })
+
+        it('hides the passphrase flow when handleClosePassphraseFlow is called', () => {
             const { result } = renderHook(() =>
                 useAccountOptions({
                     account: algo25Account,
@@ -599,12 +622,13 @@ describe('useAccountOptions', () => {
                 passphraseOption?.onPress()
             })
 
-            expect(mockShowToast).toHaveBeenCalledWith({
-                title: 'common.not_implemented.title',
-                body: 'common.not_implemented.body',
-                type: 'error',
+            expect(result.current.isPassphraseFlowVisible).toBe(true)
+
+            act(() => {
+                result.current.handleClosePassphraseFlow()
             })
-            expect(mockOnClose).toHaveBeenCalled()
+
+            expect(result.current.isPassphraseFlowVisible).toBe(false)
         })
 
         it('shows not implemented toast for rekey-to-ledger', () => {

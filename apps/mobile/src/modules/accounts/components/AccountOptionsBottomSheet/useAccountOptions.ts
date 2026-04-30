@@ -56,6 +56,8 @@ export type UseAccountOptionsResult = {
     isRemoveConfirmVisible: boolean
     handleCloseRemoveConfirm: () => void
     handleConfirmRemove: () => void
+    isPassphraseFlowVisible: boolean
+    handleClosePassphraseFlow: () => void
 }
 
 export const useAccountOptions = ({
@@ -76,6 +78,7 @@ export const useAccountOptions = ({
     const showPassphrase = logicalType === 'Algo25' || logicalType === 'HdKey'
     const isRekeyed = logicalType === 'Rekeyed' || logicalType === 'RekeyedAuth'
     const showUndoRekey = logicalType === 'RekeyedAuth'
+    const isHdWallet = logicalType === 'HdKey'
     const canSign = isSigningLogicalType(logicalType)
 
     const {
@@ -94,6 +97,12 @@ export const useAccountOptions = ({
         isOpen: isRemoveConfirmVisible,
         open: openRemoveConfirm,
         close: handleCloseRemoveConfirm,
+    } = useModalState()
+
+    const {
+        isOpen: isPassphraseFlowVisible,
+        open: openPassphraseFlow,
+        close: handleClosePassphraseFlow,
     } = useModalState()
 
     const notImplemented = useCallback(() => {
@@ -116,8 +125,9 @@ export const useAccountOptions = ({
     }, [onClose, onShowAddress])
 
     const handleViewPassphrase = useCallback(() => {
-        notImplemented()
-    }, [notImplemented])
+        onClose()
+        openPassphraseFlow()
+    }, [onClose, openPassphraseFlow])
 
     const handleAuthAddress = useCallback(() => {
         if (account.rekeyAddress) {
@@ -252,7 +262,7 @@ export const useAccountOptions = ({
             items.push({
                 id: 'view-passphrase',
                 icon: 'key',
-                title: t('account_options.view_passphrase'),
+                title: t(isHdWallet ? 'account_options.view_passphrase_hd' : 'account_options.view_passphrase_algo25'),
                 onPress: handleViewPassphrase,
             })
         }
@@ -347,5 +357,7 @@ export const useAccountOptions = ({
         isRemoveConfirmVisible,
         handleCloseRemoveConfirm,
         handleConfirmRemove,
+        isPassphraseFlowVisible,
+        handleClosePassphraseFlow,
     }
 }

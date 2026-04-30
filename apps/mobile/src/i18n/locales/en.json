@@ -274,7 +274,8 @@
     "account_options": {
         "copy_address": "Copy Address",
         "show_address": "Show Address",
-        "view_passphrase": "View root wallet passphrase",
+        "view_passphrase_hd": "View root wallet passphrase",
+        "view_passphrase_algo25": "View wallet passphrase",
         "auth_address": "Auth Account Address",
         "undo_rekey": "Undo Rekey",
         "rekey_to_ledger": "Rekey to Ledger Account",
@@ -343,6 +344,24 @@
         "title": "Minimum Balance",
         "description": "Minimum balance is the minimum amount of Algo you have to keep in an account. It increases every time the account is opted in to a smart contract, ASA or NFT.",
         "close": "Close"
+    },
+    "view_passphrase": {
+        "acknowledge": {
+            "title": "Keep it secret. Keep it safe.",
+            "description": "Confirm and acknowledge the following:",
+            "row_screen": "Nobody can see my screen.",
+            "row_share": "I risk losing all my funds if I share my Recovery Phrase with anyone.",
+            "row_lose": "My funds are permanently lost if I lose my Recovery Phrase and lose access to my wallet.",
+            "row_pera": "Pera employees will NEVER ask for my Recovery Phrase.",
+            "cta_reveal": "Reveal Passphrase",
+            "cta_cancel": "Cancel"
+        },
+        "screen": {
+            "title": "Passphrase",
+            "body": "Make sure to record these words in the correct order, using the corresponding numbers.",
+            "error_title": "Could not retrieve passphrase",
+            "error_body": "Something went wrong. Please try again."
+        }
     },
     "backup": {
         "banner": {
