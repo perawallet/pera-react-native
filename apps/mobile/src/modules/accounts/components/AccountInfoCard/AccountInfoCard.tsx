@@ -25,6 +25,8 @@ import { useAccountInfoCard } from './useAccountInfoCard'
 import { AccountIcon } from '../AccountIcon'
 import { CurrencyDisplay } from '@components/CurrencyDisplay'
 import { ExpandablePanel } from '@components/ExpandablePanel'
+import { AddressDisplay } from '@components/AddressDisplay'
+import { ParticipantCount } from '@components/ParticipantCount'
 import { AccountStructureTree } from './AccountStructureTree'
 import { InfoButton } from '@components/InfoButton'
 import { AccountTypeInfoContent } from './AccountTypeInfoContent'
@@ -47,9 +49,12 @@ export const AccountInfoCard = ({ account, onClose }: AccountInfoCardProps) => {
         isMinBalanceLoading,
         showMinBalance,
         showStructure,
+        showSharedAccountDetails,
+        sharedAccountDetails,
         structureLabel,
         structureIcon,
         structureAccounts,
+        handleSharedAccountDetails,
         handleScanAddresses,
     } = useAccountInfoCard({ account, onClose })
 
@@ -68,27 +73,125 @@ export const AccountInfoCard = ({ account, onClose }: AccountInfoCardProps) => {
     return (
         <PWView style={styles.card}>
             {/* Account type row */}
-            <PWView style={styles.infoRow}>
-                <PWText
-                    variant='body'
-                    style={styles.labelText}
+            {showSharedAccountDetails ? (
+                <PWTouchableOpacity
+                    onPress={handleSharedAccountDetails}
+                    style={styles.infoRow}
+                    testID='shared_account_details_button'
                 >
-                    {t('account_info.account_type')}
-                </PWText>
-                <PWView style={styles.infoRowValue}>
-                    <AccountIcon
-                        account={account}
-                        size='sm'
-                    />
-                    <PWText variant='h4'>{accountTypeLabel}</PWText>
-                    <InfoButton>
-                        <AccountTypeInfoContent
+                    <PWText
+                        variant='body'
+                        style={styles.labelText}
+                    >
+                        {t('account_info.account_type')}
+                    </PWText>
+                    <PWView style={styles.infoRowValue}>
+                        <AccountIcon
                             account={account}
-                            onClose={onClose}
+                            size='sm'
                         />
-                    </InfoButton>
+                        <PWText variant='h4'>{accountTypeLabel}</PWText>
+                        <Animated.View style={chevronStyle}>
+                            <PWIcon
+                                name='chevron-down'
+                                size='sm'
+                                variant='secondary'
+                            />
+                        </Animated.View>
+                    </PWView>
+                </PWTouchableOpacity>
+            ) : (
+                <PWView style={styles.infoRow}>
+                    <PWText
+                        variant='body'
+                        style={styles.labelText}
+                    >
+                        {t('account_info.account_type')}
+                    </PWText>
+                    <PWView style={styles.infoRowValue}>
+                        <AccountIcon
+                            account={account}
+                            size='sm'
+                        />
+                        <PWText variant='h4'>{accountTypeLabel}</PWText>
+                        <InfoButton>
+                            <AccountTypeInfoContent
+                                account={account}
+                                onClose={onClose}
+                            />
+                        </InfoButton>
+                    </PWView>
                 </PWView>
-            </PWView>
+            )}
+
+            {showSharedAccountDetails && sharedAccountDetails && (
+                <ExpandablePanel isExpanded={isExpanded}>
+                    <PWView
+                        style={styles.sharedAccountDetails}
+                        testID='shared_account_details_content'
+                    >
+                        <PWView
+                            style={styles.sharedAccountSummaryRow}
+                            testID='shared_account_participant_count_row'
+                        >
+                            <PWText
+                                variant='body'
+                                style={styles.labelText}
+                            >
+                                {t('multisig.detail.number_of_accounts')}
+                            </PWText>
+                            <PWView style={styles.sharedAccountSummaryValue}>
+                                <ParticipantCount
+                                    count={
+                                        sharedAccountDetails.participantCount
+                                    }
+                                    size='h2'
+                                    testID='shared_account_participant_count'
+                                />
+                            </PWView>
+                        </PWView>
+
+                        <PWView
+                            style={styles.sharedAccountSummaryRow}
+                            testID='shared_account_threshold_row'
+                        >
+                            <PWText
+                                variant='body'
+                                style={styles.labelText}
+                            >
+                                {t('multisig.detail.threshold')}
+                            </PWText>
+                            <PWView style={styles.sharedAccountSummaryValue}>
+                                <PWText
+                                    variant='h2'
+                                    testID='shared_account_threshold'
+                                >
+                                    {sharedAccountDetails.threshold}
+                                </PWText>
+                            </PWView>
+                        </PWView>
+
+                        <PWDivider />
+
+                        <PWView style={styles.sharedAccountParticipants}>
+                            <PWText variant='h4'>
+                                {t('multisig.detail.accounts_title', {
+                                    count: sharedAccountDetails.participantCount,
+                                })}
+                            </PWText>
+                            {sharedAccountDetails.addresses.map(address => (
+                                <AddressDisplay
+                                    key={address}
+                                    address={address}
+                                    forceShowIcon
+                                    style={styles.sharedAccountParticipant}
+                                    testID={`shared_account_participant_${address}`}
+                                />
+                            ))}
+                        </PWView>
+                    </PWView>
+                </ExpandablePanel>
+            )}
 
             {/* Min balance row */}
             {showMinBalance && (

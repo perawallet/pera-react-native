@@ -17,16 +17,20 @@ import { AccountInfoCard } from '../AccountInfoCard'
 import {
     HDWalletAccount,
     HardwareWalletAccount,
+    MultiSigAccount,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import { Decimal } from 'decimal.js'
 import type { Nullable } from '@perawallet/wallet-core-shared'
+
+const mockNavigate = vi.fn()
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
         t: (key: string, params?: Record<string, unknown>) => {
             if (params?.number != null)
                 return key.replace('{{number}}', String(params.number))
+            if (params?.count != null) return `${key} (${String(params.count)})`
             return key
         },
     }),
@@ -34,8 +38,14 @@ vi.mock('@hooks/useLanguage', () => ({
 
 vi.mock('@routes/navigationRef', () => ({
     navigationRef: {
-        navigate: vi.fn(),
+        navigate: (...args: unknown[]) => mockNavigate(...args),
     },
+}))
+
+vi.mock('@hooks/useAppNavigation', () => ({
+    useAppNavigation: () => ({
+        navigate: (...args: unknown[]) => mockNavigate(...args),
+    }),
 }))
 
 vi.mock('@hooks/useIsDarkMode', () => ({
@@ -44,9 +54,23 @@ vi.mock('@hooks/useIsDarkMode', () => ({
 
 vi.mock('@components/core', () => ({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWView: ({ children, style }: any) => <div style={style}>{children}</div>,
+    PWView: ({ children, style, testID }: any) => (
+        <div
+            style={style}
+            data-testid={testID}
+        >
+            {children}
+        </div>
+    ),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    PWText: ({ children, style }: any) => <span style={style}>{children}</span>,
+    PWText: ({ children, style, testID }: any) => (
+        <span
+            style={style}
+            data-testid={testID}
+        >
+            {children}
+        </span>
+    ),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     PWTouchableOpacity: ({ children, onPress, style, testID }: any) => (
         <button
@@ -60,6 +84,16 @@ vi.mock('@components/core', () => ({
     PWDivider: () => <hr />,
     PWIcon: () => null,
     PWRoundIcon: () => null,
+}))
+
+vi.mock('@components/AddressDisplay', () => ({
+    AddressDisplay: ({
+        address,
+        testID,
+    }: {
+        address: string
+        testID: string
+    }) => <div data-testid={testID}>{address}</div>,
 }))
 
 vi.mock('@components/CurrencyDisplay', () => ({
@@ -182,8 +216,19 @@ const ledgerAccount: HardwareWalletAccount = {
     name: 'Cold Wallet',
 }
 
+const multisigAccount: MultiSigAccount = {
+    type: 'multisig',
+    address: 'MULTISIGADDR1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+    name: 'Shared Account #1',
+    multisigDetails: {
+        threshold: 2,
+        addresses: ['PARTICIPANT_1', 'PARTICIPANT_2', 'PARTICIPANT_3'],
+    },
+}
+
 describe('AccountInfoCard', () => {
     beforeEach(() => {
+        vi.clearAllMocks()
         mockUseAccountInformationQuery.mockReturnValue({
             data: { minBalance: BigInt(6_095_000) },
             isLoading: false,
@@ -215,6 +260,7 @@ describe('AccountInfoCard', () => {
             if (address === hdAccount.address) return 'HdKey'
             if (address === ledgerAccount.address) return 'LedgerBle'
             if (address === watchAccount.address) return 'NoAuth'
+            if (address === multisigAccount.address) return 'Multisig'
             return null
         })
     })
@@ -367,5 +413,73 @@ describe('AccountInfoCard', () => {
             />,
         )
         expect(screen.getByText('account_info.type_ledger')).toBeTruthy()
+    })
+
+    it('renders shared account count for multisig accounts', () => {
+        render(
+            <AccountInfoCard
+                account={multisigAccount}
+                onClose={vi.fn()}
+            />,
+        )
+
+        expect(screen.getByText('account_info.type_multisig (3)')).toBeTruthy()
+    })
+
+    it('expands shared account details when multisig account type row is pressed', () => {
+        const onClose = vi.fn()
+        render(
+            <AccountInfoCard
+                account={multisigAccount}
+                onClose={onClose}
+            />,
+        )
+
+        expect(
+            screen.queryByTestId('shared_account_details_content'),
+        ).toBeNull()
+
+        fireEvent.click(screen.getByTestId('shared_account_details_button'))
+
+        expect(onClose).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+        expect(
+            screen.getByTestId('shared_account_details_content'),
+        ).toBeTruthy()
+        expect(
+            screen.getByText('multisig.detail.number_of_accounts'),
+        ).toBeTruthy()
+        expect(
+            screen.getByTestId('shared_account_participant_count').textContent,
+        ).toBe('3')
+        expect(screen.getByText('multisig.detail.threshold')).toBeTruthy()
+        expect(screen.getByTestId('shared_account_threshold').textContent).toBe(
+            '2',
+        )
+        expect(
+            screen.getByText('multisig.detail.accounts_title (3)'),
+        ).toBeTruthy()
+        expect(screen.getByText('PARTICIPANT_1')).toBeTruthy()
+        expect(screen.getByText('PARTICIPANT_2')).toBeTruthy()
+        expect(screen.getByText('PARTICIPANT_3')).toBeTruthy()
+    })
+
+    it('collapses shared account details when multisig account type row is pressed again', () => {
+        render(
+            <AccountInfoCard
+                account={multisigAccount}
+                onClose={vi.fn()}
+            />,
+        )
+
+        fireEvent.click(screen.getByTestId('shared_account_details_button'))
+        expect(
+            screen.getByTestId('shared_account_details_content'),
+        ).toBeTruthy()
+
+        fireEvent.click(screen.getByTestId('shared_account_details_button'))
+        expect(
+            screen.queryByTestId('shared_account_details_content'),
+        ).toBeNull()
     })
 })
