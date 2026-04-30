@@ -121,15 +121,6 @@ export const useAccountOptions = ({
         close: handleCloseExportShare,
     } = useModalState()
 
-    const notImplemented = useCallback(() => {
-        showToast({
-            title: t('common.not_implemented.title'),
-            body: t('common.not_implemented.body'),
-            type: 'error',
-        })
-        onClose()
-    }, [showToast, t, onClose])
-
     const handleCopyAddress = useCallback(() => {
         copyToClipboard(account.address)
         onClose()
@@ -188,6 +179,14 @@ export const useAccountOptions = ({
         onClose()
         openExportShare()
     }, [onClose, openExportShare])
+
+    const handleRescanRekeyed = useCallback(() => {
+        onClose()
+        navigation.navigate('RescanRekeyed', {
+            screen: 'RescanRekeyedSelect',
+            params: { sourceAddress: account.address },
+        })
+    }, [onClose, navigation, account.address])
 
     const handleOpenRename = useCallback(() => {
         onClose()
@@ -383,6 +382,22 @@ export const useAccountOptions = ({
             })
         }
 
+        // "Rescan Rekeyed Accounts" — surface for any account that we hold
+        // signing material for. Mirrors Android's gating on
+        // `registrationType.hasSignerDetails` in
+        // `DefaultAccountStatusAccountActionProcessor`. Watch / no-auth
+        // accounts wouldn't be useful entry points since there's no signing
+        // chain to follow back from.
+        if (hasSigningKeys(account)) {
+            items.push({
+                id: 'rescan-rekeyed',
+                icon: 'reload',
+                title: t('account_options.rescan_rekeyed'),
+                subtitle: t('account_options.rescan_rekeyed_subtitle'),
+                onPress: handleRescanRekeyed,
+            })
+        }
+
         items.push({
             id: 'rename-account',
             icon: 'edit-pen',
@@ -427,6 +442,7 @@ export const useAccountOptions = ({
         handleRekeyToStandard,
         handleRekeyToShared,
         handleExportShareAccount,
+        handleRescanRekeyed,
         handleOpenRename,
         handleToggleNotifications,
         handleOpenRemoveConfirm,

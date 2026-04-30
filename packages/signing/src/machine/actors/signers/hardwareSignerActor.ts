@@ -75,11 +75,7 @@ export const hardwareSignerActor = fromPromise<
             throw new HardwareWalletError('signer_not_found')
         }
 
-        const result = await strategy.sign(
-            group,
-            authAccount,
-            input.callbacks,
-        )
+        const result = await strategy.sign(group, authAccount, input.callbacks)
         results.push(result)
     }
 

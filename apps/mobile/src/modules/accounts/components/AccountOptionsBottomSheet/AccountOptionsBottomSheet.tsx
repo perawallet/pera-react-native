@@ -112,6 +112,7 @@ export const AccountOptionsBottomSheet = ({
             o.id === 'rekey-to-ledger' ||
             o.id === 'rekey-to-standard' ||
             o.id === 'rekey-to-shared' ||
+            o.id === 'rescan-rekeyed' ||
             o.id === 'export-share-account',
     )
 

@@ -27,6 +27,7 @@ import { SearchStackParamsList } from '@modules/search'
 import type { RekeyToLedgerStackParamList } from '@modules/rekey/rekey-to-ledger'
 import type { RekeyToSharedStackParamList } from '@modules/rekey/rekey-to-shared'
 import type { RekeyToStandardStackParamList } from '@modules/rekey/rekey-to-standard'
+import type { RescanRekeyedStackParamList } from '@modules/rekey/rescan-rekeyed'
 import type { UndoRekeyStackParamList } from '@modules/rekey/undo-rekey'
 
 export type RootStackParamList = {
@@ -42,6 +43,7 @@ export type RootStackParamList = {
     RekeyToStandard: NavigatorScreenParams<RekeyToStandardStackParamList>
     RekeyToLedger: NavigatorScreenParams<RekeyToLedgerStackParamList>
     RekeyToShared: NavigatorScreenParams<RekeyToSharedStackParamList>
+    RescanRekeyed: NavigatorScreenParams<RescanRekeyedStackParamList>
     UndoRekey: NavigatorScreenParams<UndoRekeyStackParamList>
     Staking: undefined
     GroupTransactionList: {

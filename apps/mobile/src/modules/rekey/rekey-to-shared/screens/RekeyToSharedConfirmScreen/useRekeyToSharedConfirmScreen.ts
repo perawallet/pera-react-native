@@ -79,6 +79,7 @@ export const useRekeyToSharedConfirmScreen =
                 })
             } catch (error) {
                 if (error instanceof RekeyUserRejectedError) {
+                    // guardrails-ignore-next-line no-error-toast-in-catch reason: rejection is a user-facing cancellation, distinct from algod errors
                     showToast({
                         title: t('rekey.signing.user_rejected_title'),
                         body: t('rekey.signing.user_rejected_body'),
@@ -87,6 +88,7 @@ export const useRekeyToSharedConfirmScreen =
                     return
                 }
                 const { title, body } = getMessage(error)
+                // guardrails-ignore-next-line no-error-toast-in-catch reason: useAlgodErrorMessage already returns the localized title/body to surface
                 showToast({ title, body, type: 'error' })
             } finally {
                 setIsSubmitting(false)

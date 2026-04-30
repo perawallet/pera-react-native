@@ -260,6 +260,20 @@ async function checkRekeyed(
     }
 }
 
+/**
+ * Public helper for the rescan-rekeyed flow: ask the indexer for every
+ * on-chain account whose auth-addr is `address`. Used to surface accounts
+ * the user could re-import as watch entries after a rekey was performed
+ * outside the wallet. Mirrors Android's `fetchRekeyedAddresses`.
+ */
+export async function fetchRekeyedAddresses(
+    address: string,
+): Promise<string[]> {
+    const algorandClient = getAlgorandClient()
+    const accounts = await checkRekeyed(algorandClient, address)
+    return accounts.map(a => a.address)
+}
+
 type ScanRekeyedKeysParams = {
     accountIdx: number
     keyIndexGapLimit: number

@@ -42,6 +42,7 @@ import { BackupStackNavigator } from '@modules/backup'
 import { RekeyToLedgerStackNavigator } from '@modules/rekey/rekey-to-ledger'
 import { RekeyToSharedStackNavigator } from '@modules/rekey/rekey-to-shared'
 import { RekeyToStandardStackNavigator } from '@modules/rekey/rekey-to-standard'
+import { RescanRekeyedStackNavigator } from '@modules/rekey/rescan-rekeyed'
 import { UndoRekeyStackNavigator } from '@modules/rekey/undo-rekey'
 import { SearchStackNavigator } from '@modules/search'
 import { navigationRef } from './navigationRef'
@@ -130,6 +131,10 @@ export const MainRoutes = () => {
                             <RootStack.Screen
                                 name='RekeyToShared'
                                 component={RekeyToSharedStackNavigator}
+                            />
+                            <RootStack.Screen
+                                name='RescanRekeyed'
+                                component={RescanRekeyedStackNavigator}
                             />
                             <RootStack.Screen
                                 name='Staking'

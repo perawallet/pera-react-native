@@ -39,7 +39,8 @@ export const RekeyToSharedIntroScreen = () => {
         [t],
     )
 
-    const { handleStartProcess, handleLearnMore } = useRekeyToSharedIntroScreen()
+    const { handleStartProcess, handleLearnMore } =
+        useRekeyToSharedIntroScreen()
 
     return (
         <PWView
