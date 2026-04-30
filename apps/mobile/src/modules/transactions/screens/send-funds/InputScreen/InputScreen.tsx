@@ -55,6 +55,7 @@ export const InputScreen = () => {
         isCloseAccountEligible,
         dismissCloseAccount,
         handleConfirmCloseAccount,
+        isCollectible,
     } = useInputScreen()
     const selectedAccount = useSelectedAccount()
     const { canSelectAsset, note, onFinished } = useSendFunds()
@@ -125,18 +126,22 @@ export const InputScreen = () => {
                         styles.h1,
                     ]}
                     showSymbol={false}
-                    minPrecision={2}
+                    minPrecision={asset.decimals ? 2 : 0}
                 />
-                <PreferredCurrencyDisplay
-                    sourceAmount={cryptoValue ? new Decimal(cryptoValue) : null}
-                    ignorePrivacyMode
-                    sourceAssetId={accountAssetBalance?.assetId ?? ''}
-                    precision={6}
-                    showSymbol
-                    minPrecision={2}
-                    variant='h1'
-                    style={styles.amountPlaceholder}
-                />
+                {!isCollectible && (
+                    <PreferredCurrencyDisplay
+                        sourceAmount={
+                            cryptoValue ? new Decimal(cryptoValue) : null
+                        }
+                        ignorePrivacyMode
+                        sourceAssetId={accountAssetBalance?.assetId ?? ''}
+                        precision={6}
+                        showSymbol
+                        minPrecision={2}
+                        variant='h1'
+                        style={styles.amountPlaceholder}
+                    />
+                )}
 
                 <PWView style={styles.buttonContainer}>
                     <PWButton

@@ -24,6 +24,7 @@ import { useLanguage } from '@hooks/useLanguage'
 import {
     ALGO_ASSET,
     ALGO_ASSET_ID,
+    isCollectible,
     toWholeUnits,
     useAssetsQuery,
 } from '@perawallet/wallet-core-assets'
@@ -221,6 +222,11 @@ export const useInputScreen = () => {
         navigation.navigate('SelectDestination')
     }, [maxAmount, navigation, setAmount, setValueAndRef])
 
+    const isCollectibleAsset = useMemo(
+        () => (asset ? isCollectible(asset) : false),
+        [asset],
+    )
+
     const assetDecimalsRef = useRef(asset?.decimals)
     assetDecimalsRef.current = asset?.decimals
 
@@ -279,7 +285,7 @@ export const useInputScreen = () => {
         dismissMaxExceeded,
         dismissCloseAccount,
         handleConfirmCloseAccount,
-
+        isCollectible: isCollectibleAsset,
         //exposed for testing only
         setCryptoValue: setValueAndRef,
         totalBalance,
