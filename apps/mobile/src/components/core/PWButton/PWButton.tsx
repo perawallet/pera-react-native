@@ -83,7 +83,7 @@ export const PWButton = ({
         <PWTouchableOpacity
             style={[styles.buttonStyle, style]}
             onPress={onPress}
-            disabled={isDisabled}
+            disabled={isDisabled || isLoading}
             {...getTestProps(testID)}
             {...props}
         >
