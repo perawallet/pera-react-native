@@ -12,7 +12,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toggleAssetFavorite } from '../api'
-import { getAssetDetailsQueryKey } from './querykeys'
+import { getAssetDetailsQueryKey, invalidateAssetQueries } from './querykeys'
 import {
     type Network,
     logger,
@@ -20,12 +20,18 @@ import {
 } from '@perawallet/wallet-core-shared'
 import { type ToggleStatusResponse } from '../api/settings/endpoints'
 import { updateAssetPeraMetadata } from '../db'
+import { DEFAULT_ASSET_METADATA, type PeraAsset } from '../models/assets'
 
 type UseToggleAssetFavoriteMutationParams = {
     assetID: string
     deviceId: string
     enabled: boolean
     network: Network
+}
+
+type ToggleAssetFavoriteMutationContext = {
+    previousData: PeraAsset | undefined
+    previousIsFavorited: boolean
 }
 
 type UseToggleAssetFavoriteMutationResult = {
@@ -43,30 +49,69 @@ export const useToggleAssetFavoriteMutation =
         const mutation = useMutation<
             ToggleStatusResponse,
             Error,
-            UseToggleAssetFavoriteMutationParams
+            UseToggleAssetFavoriteMutationParams,
+            ToggleAssetFavoriteMutationContext
         >({
             mutationFn: toggleAssetFavorite,
             throwOnError: false,
-            onError: error => {
+            onMutate: async variables => {
+                const queryKey = getAssetDetailsQueryKey(
+                    variables.assetID,
+                    true,
+                    variables.network,
+                )
+                await queryClient.cancelQueries({ queryKey })
+
+                const previousData =
+                    queryClient.getQueryData<PeraAsset>(queryKey)
+                const previousIsFavorited =
+                    previousData?.peraMetadata?.isFavorited ?? false
+
+                await updateAssetPeraMetadata({
+                    assetId: variables.assetID,
+                    network: variables.network,
+                    updates: { isFavorited: variables.enabled },
+                })
+
+                if (previousData) {
+                    queryClient.setQueryData<PeraAsset>(queryKey, {
+                        ...previousData,
+                        peraMetadata: {
+                            ...DEFAULT_ASSET_METADATA,
+                            ...previousData.peraMetadata,
+                            isFavorited: variables.enabled,
+                        },
+                    })
+                }
+
+                invalidateAssetQueries(queryClient)
+
+                return { previousData, previousIsFavorited }
+            },
+            onError: async (error, variables, context) => {
+                if (context) {
+                    await updateAssetPeraMetadata({
+                        assetId: variables.assetID,
+                        network: variables.network,
+                        updates: {
+                            isFavorited: context.previousIsFavorited,
+                        },
+                    })
+                    if (context.previousData) {
+                        queryClient.setQueryData(
+                            getAssetDetailsQueryKey(
+                                variables.assetID,
+                                true,
+                                variables.network,
+                            ),
+                            context.previousData,
+                        )
+                    }
+                    invalidateAssetQueries(queryClient)
+                }
                 logger.error('Failed to toggle asset favorite', {
                     source: 'useToggleAssetFavoriteMutation',
                     error,
-                })
-            },
-            onSuccess: (_data, variables) => {
-                void updateAssetPeraMetadata({
-                    assetId: variables.assetID,
-                    network: variables.network,
-                    updates: {
-                        isFavorited: variables.enabled,
-                    },
-                })
-                queryClient.invalidateQueries({
-                    queryKey: getAssetDetailsQueryKey(
-                        variables.assetID,
-                        true,
-                        variables.network,
-                    ),
                 })
             },
         })

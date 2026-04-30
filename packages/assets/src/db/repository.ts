@@ -19,7 +19,7 @@ import {
     type PeraAssetMetadata,
 } from '../models'
 import { AssetsNodeSchema, AssetsPeraSchema, AssetPricesSchema } from './schema'
-import type { Nullable } from '@perawallet/wallet-core-shared'
+import { type Nullable } from '@perawallet/wallet-core-shared'
 
 function fromDb(row: {
     assetId: Decimal
