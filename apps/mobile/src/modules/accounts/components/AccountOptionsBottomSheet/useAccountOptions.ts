@@ -177,8 +177,12 @@ export const useAccountOptions = ({
     }, [onClose, navigation, account.address])
 
     const handleRekeyToShared = useCallback(() => {
-        notImplemented()
-    }, [notImplemented])
+        onClose()
+        navigation.navigate('RekeyToShared', {
+            screen: 'RekeyToSharedIntro',
+            params: { sourceAddress: account.address },
+        })
+    }, [onClose, navigation, account.address])
 
     const handleExportShareAccount = useCallback(() => {
         onClose()
@@ -340,30 +344,37 @@ export const useAccountOptions = ({
             })
         }
 
-        if (canSign && !isSharedAccount) {
-            items.push({
-                id: 'rekey-to-ledger',
-                icon: 'rekey',
-                title: t('account_options.rekey_to_ledger'),
-                onPress: handleRekeyToLedger,
-            })
+        // Shared (multisig) accounts can only be rekeyed to another shared
+        // account — never to a Ledger or standard account. Mirrors Android's
+        // `DefaultAccountStatusAccountActionProcessor`, which surfaces
+        // `RekeyToJointAccount` for joint accounts and `RekeyToLedger` /
+        // `RekeyToStandard` for everything else.
+        if (canSign) {
+            if (isSharedAccount) {
+                items.push({
+                    id: 'rekey-to-shared',
+                    icon: 'rekey',
+                    title: t('account_options.rekey_to_shared'),
+                    onPress: handleRekeyToShared,
+                })
+            } else {
+                items.push({
+                    id: 'rekey-to-ledger',
+                    icon: 'rekey',
+                    title: t('account_options.rekey_to_ledger'),
+                    onPress: handleRekeyToLedger,
+                })
 
-            items.push({
-                id: 'rekey-to-standard',
-                icon: 'rekey',
-                title: t('account_options.rekey_to_standard'),
-                onPress: handleRekeyToStandard,
-            })
+                items.push({
+                    id: 'rekey-to-standard',
+                    icon: 'rekey',
+                    title: t('account_options.rekey_to_standard'),
+                    onPress: handleRekeyToStandard,
+                })
+            }
         }
 
         if (isSharedAccount) {
-            items.push({
-                id: 'rekey-to-shared',
-                icon: 'rekey',
-                title: t('account_options.rekey_to_shared'),
-                onPress: handleRekeyToShared,
-            })
-
             items.push({
                 id: 'export-share-account',
                 icon: 'share',
@@ -399,7 +410,7 @@ export const useAccountOptions = ({
         return items
     }, [
         t,
-        account.address,
+        account,
         authAccountName,
         showPassphrase,
         isRekeyed,

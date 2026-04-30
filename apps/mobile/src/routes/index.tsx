@@ -40,6 +40,7 @@ import { MessagesStackNavigator } from '@modules/messages/routes'
 import { MultisigStackNavigator } from '@modules/multisig'
 import { BackupStackNavigator } from '@modules/backup'
 import { RekeyToLedgerStackNavigator } from '@modules/rekey/rekey-to-ledger'
+import { RekeyToSharedStackNavigator } from '@modules/rekey/rekey-to-shared'
 import { RekeyToStandardStackNavigator } from '@modules/rekey/rekey-to-standard'
 import { UndoRekeyStackNavigator } from '@modules/rekey/undo-rekey'
 import { SearchStackNavigator } from '@modules/search'
@@ -125,6 +126,10 @@ export const MainRoutes = () => {
                             <RootStack.Screen
                                 name='RekeyToLedger'
                                 component={RekeyToLedgerStackNavigator}
+                            />
+                            <RootStack.Screen
+                                name='RekeyToShared'
+                                component={RekeyToSharedStackNavigator}
                             />
                             <RootStack.Screen
                                 name='Staking'

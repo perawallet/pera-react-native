@@ -109,7 +109,6 @@ export const AccountOptionsBottomSheet = ({
 
     const rekeyOptions = options.filter(
         o =>
-            o.id === 'undo-rekey' ||
             o.id === 'rekey-to-ledger' ||
             o.id === 'rekey-to-standard' ||
             o.id === 'rekey-to-shared' ||

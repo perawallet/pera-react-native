@@ -136,6 +136,23 @@ export const isEligibleLedgerRekeyTarget = (
 }
 
 /**
+ * True when `target` may be chosen as the new auth address for a "rekey to
+ * shared (multisig) account" flow originating from `sourceAddress`. Mirrors
+ * Android's joint-rekey rule: shared accounts can only be rekeyed to
+ * another shared account. The target must be a multisig account in the
+ * wallet, not the source itself, and not already rekeyed away.
+ */
+export const isEligibleSharedRekeyTarget = (
+    target: WalletAccount,
+    sourceAddress: string,
+): boolean => {
+    if (target.address === sourceAddress) return false
+    if (target.type !== AccountTypes.multisig) return false
+    if (target.rekeyAddress) return false
+    return true
+}
+
+/**
  * Returns true if the account can sign transactions in this wallet. Delegates
  * to `deriveAccountLogicalType` — the single source of truth — so the result
  * is consistent with UI classification and the webview bridge payload.

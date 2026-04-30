@@ -1015,14 +1015,50 @@
                 "cta": "Done"
             }
         },
+        "to_shared": {
+            "intro": {
+                "title": "Rekey to shared account",
+                "body": "Use another shared account's signers to authorize transactions for this account.",
+                "learn_more": "Learn more",
+                "expect_label": "What to expect",
+                "expect_1": "Future transactions will be signed by the chosen shared account's signers.",
+                "expect_2": "This account will no longer be able to sign transactions on its own.",
+                "expect_3": "Your account's public key, balances, and configuration will not change.",
+                "cta": "Start process"
+            },
+            "select": {
+                "title": "Select shared account",
+                "subtitle": "Choose the shared account you would like to rekey to. The account you select here will be responsible for signing all transactions for the source account.",
+                "empty": "No shared accounts found. Create a shared account first."
+            },
+            "confirm": {
+                "title": "Confirm rekeying",
+                "body": "You are about to rekey this shared account to another shared account. <0>Learn more</0>",
+                "summary_label": "Summary of rekey",
+                "current_auth_label": "Currently Rekeyed",
+                "fee_label": "Transaction Fee",
+                "cta": "Confirm",
+                "replace_warning": {
+                    "title": "Your previous rekey will be replaced",
+                    "body": "<0>{{currentAuth}}</0> will no longer be authorized to sign transactions for <1>{{source}}</1>. Ensure you understand the implications of this before continuing. <2>Learn more</2>",
+                    "confirm": "Confirm",
+                    "cancel": "Cancel"
+                }
+            },
+            "success": {
+                "title": "Account successfully rekeyed",
+                "body": "The account <0>{{source}}</0> was successfully rekeyed.",
+                "cta": "Done"
+            }
+        },
         "to_ledger": {
             "intro": {
                 "title": "Rekey to Ledger",
-                "body": "Back your standard account with a Ledger device for extra security.",
+                "body": "Change the ledger account signing for your wallet.",
                 "learn_more": "Learn more",
                 "expect_label": "What to expect",
                 "expect_1": "Future transactions will be signed by your new Ledger Device.",
-                "expect_2": "This account will no longer be able to sign transactions.",
+                "expect_2": "If you already have a Ledger device keyed to this account, your old Ledger will no longer be connected to it.",
                 "expect_3": "Your account's public key, balances, and configuration will not change.",
                 "expect_4": "Make sure Bluetooth is enabled on your smartphone",
                 "cta": "Start Process"
