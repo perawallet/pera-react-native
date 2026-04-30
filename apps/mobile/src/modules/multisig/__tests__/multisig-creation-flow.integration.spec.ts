@@ -185,7 +185,7 @@ describe('multisig creation flow', () => {
         expect(mockPush).toHaveBeenCalledWith('NameMultisig')
 
         const nameHook = renderHook(() => useNameMultisigScreen())
-        expect(nameHook.result.current.accountName).toBe('Shared Account')
+        expect(nameHook.result.current.accountName).toBe('Shared Account #1')
 
         await act(async () => {
             await nameHook.result.current.handleFinish()
@@ -205,7 +205,7 @@ describe('multisig creation flow', () => {
             expect.objectContaining({
                 type: 'multisig',
                 address: 'NEW_MULTISIG_ADDR',
-                name: 'Shared Account',
+                name: 'Shared Account #1',
                 multisigDetails: {
                     threshold: 2,
                     addresses: ['ADDR_A', 'ADDR_B'],
@@ -224,7 +224,7 @@ describe('multisig creation flow', () => {
 
     it('blocks finish when account name collides with existing account', async () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: 'EXISTING', name: 'Shared Account' } as WalletAccount,
+            { address: 'EXISTING', name: 'My Wallet' } as WalletAccount,
         ])
 
         const createHook = renderHook(() => useCreateMultisigScreen())
@@ -236,6 +236,10 @@ describe('multisig creation flow', () => {
         })
 
         const nameHook = renderHook(() => useNameMultisigScreen())
+
+        act(() => {
+            nameHook.result.current.handleNameChange('My Wallet')
+        })
 
         expect(nameHook.result.current.isNameTaken).toBe(true)
         expect(nameHook.result.current.isFinishDisabled).toBe(true)

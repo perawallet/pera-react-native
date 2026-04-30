@@ -28,8 +28,20 @@ export const useStyles = makeStyles(theme => {
             flex: 1,
             justifyContent: 'center',
         },
+        addressTextStack: {
+            flexShrink: 1,
+            justifyContent: 'center',
+        },
         secondaryText: {
             color: theme.colors.textGray,
+        },
+        foreignAvatar: {
+            width: theme.spacing.xxl,
+            height: theme.spacing.xxl,
+            borderRadius: theme.spacing.xxl,
+            backgroundColor: theme.colors.wallet1Icon,
+            alignItems: 'center',
+            justifyContent: 'center',
         },
     }
 })

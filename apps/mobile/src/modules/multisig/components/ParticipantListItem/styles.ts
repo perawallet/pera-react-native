@@ -17,7 +17,6 @@ export const useStyles = makeStyles(theme => ({
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: theme.spacing.md,
-        paddingHorizontal: theme.spacing.lg,
         gap: theme.spacing.md,
     },
     addressDisplay: {

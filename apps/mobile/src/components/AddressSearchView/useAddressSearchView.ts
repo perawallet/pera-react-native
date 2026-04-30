@@ -13,7 +13,6 @@
 import { useMemo, useState } from 'react'
 import { useContacts, type Contact } from '@perawallet/wallet-core-contacts'
 import {
-    AccountTypes,
     useAllAccounts,
     type AccountType,
     type WalletAccount,
@@ -31,10 +30,12 @@ export type AddressSearchItem =
     | { type: 'account'; account: WalletAccount; key: string }
     | { type: 'contact'; contact: Contact; key: string }
     | { type: 'nfd'; nfd: NfdSearchResult; key: string }
+    | { type: 'address'; address: string; key: string }
 
 type UseAddressSearchViewProps = {
     excludeAddress?: string
     excludeTypes?: AccountType[]
+    showAllContactsWhenEmpty?: boolean
 }
 
 type UseAddressSearchViewResult = {
@@ -50,6 +51,7 @@ export const useAddressSearchView = (
 ): UseAddressSearchViewResult => {
     const excludeAddress = props?.excludeAddress
     const excludeTypes = props?.excludeTypes
+    const showAllContactsWhenEmpty = props?.showAllContactsWhenEmpty ?? false
     const [value, setValue] = useState('')
     const { findContacts } = useContacts()
     const accounts = useAllAccounts()
@@ -81,30 +83,35 @@ export const useAddressSearchView = (
         () =>
             addressIsValid
                 ? []
-                : value.length
+                : value.length || showAllContactsWhenEmpty
                   ? findContacts({ keyword: value })
                   : [],
-        [value, findContacts, addressIsValid],
+        [value, findContacts, addressIsValid, showAllContactsWhenEmpty],
     )
 
     const matchingItems = useMemo(() => {
         const items: AddressSearchItem[] = []
 
         if (addressIsValid) {
+            const ownAccount = accounts.find(a => a.address === value)
             items.push({
                 type: 'section_header',
                 title: 'address_entry.address',
                 key: 'header-address',
             })
-            items.push({
-                type: 'account',
-                account: {
-                    type: AccountTypes.algo25,
+            if (ownAccount) {
+                items.push({
+                    type: 'account',
+                    account: ownAccount,
+                    key: `address-${value}-${items.length}`,
+                })
+            } else {
+                items.push({
+                    type: 'address',
                     address: value,
-                    keyPairId: '',
-                },
-                key: `address-${value}-${items.length}`,
-            })
+                    key: `address-${value}-${items.length}`,
+                })
+            }
         }
 
         if (nfdResults.length > 0) {
@@ -153,7 +160,14 @@ export const useAddressSearchView = (
         }
 
         return items
-    }, [addressIsValid, value, matchingAccounts, matchingContacts, nfdResults])
+    }, [
+        addressIsValid,
+        value,
+        accounts,
+        matchingAccounts,
+        matchingContacts,
+        nfdResults,
+    ])
 
     const hasResults = matchingItems.length > 0
 

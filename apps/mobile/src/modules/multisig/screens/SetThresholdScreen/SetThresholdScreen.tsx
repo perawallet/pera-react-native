@@ -63,10 +63,12 @@ export const SetThresholdScreen = () => {
                             title={t('multisig.threshold.number_of_accounts')}
                             titleProps={keyValueTitleProps}
                         >
-                            <ParticipantCount
-                                count={participantCount}
-                                size='h1'
-                            />
+                            <PWView style={styles.participantCount}>
+                                <ParticipantCount
+                                    count={participantCount}
+                                    size='h1'
+                                />
+                            </PWView>
                         </KeyValueRow>
 
                         <KeyValueRow
