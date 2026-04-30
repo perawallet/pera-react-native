@@ -47,21 +47,7 @@ vi.mock('@perawallet/wallet-core-accounts', async () => {
     }
 })
 
-const mockHardwareTransportProvider = {
-    connect: vi.fn(),
-}
-const mockHardwareWalletRegistry = {
-    getProvider: vi.fn(),
-}
-
-vi.mock('@perawallet/wallet-extension-provider', () => ({
-    getProvider: () => ({
-        hardwareWalletRegistry: mockHardwareWalletRegistry,
-    }),
-}))
-
 const encodeTransactionMock = vi.fn()
-const encodeTransactionRawMock = vi.fn()
 
 vi.mock('@perawallet/wallet-core-blockchain', async () => {
     const actual = await vi.importActual<object>(
@@ -71,14 +57,13 @@ vi.mock('@perawallet/wallet-core-blockchain', async () => {
         ...actual,
         useTransactionEncoder: () => ({
             encodeTransaction: encodeTransactionMock,
-            encodeTransactionRaw: encodeTransactionRawMock,
         }),
         encodeAlgorandAddress: () => 'SENDER_PK',
         Address: { fromString: (addr: string) => ({ _addr: addr }) },
     }
 })
 
-import { useTransactionSigner } from '../useTransactionSigner'
+import { useLocalKeyTransactionSigner } from '../useLocalKeyTransactionSigner'
 
 const hdAccount = {
     address: 'HD_ADDR',
@@ -129,7 +114,7 @@ const makeTxn = (senderAddr: string) =>
         },
     }) as never
 
-describe('useTransactionSigner', () => {
+describe('useLocalKeyTransactionSigner', () => {
     beforeEach(() => {
         mockGetKeyOrThrow.mockReset()
         mockWithHDSession.mockReset()
@@ -137,12 +122,7 @@ describe('useTransactionSigner', () => {
         mockIsHDWalletAccount.mockReset().mockReturnValue(false)
         mockIsAlgo25Account.mockReset().mockReturnValue(false)
         mockIsHardwareWalletAccount.mockReset().mockReturnValue(false)
-        mockHardwareTransportProvider.connect.mockReset()
-        mockHardwareWalletRegistry.getProvider.mockReset()
         encodeTransactionMock.mockReset().mockReturnValue(new Uint8Array([1]))
-        encodeTransactionRawMock
-            .mockReset()
-            .mockReturnValue(new Uint8Array([0x99]))
         mockAccounts = []
     })
 
@@ -156,7 +136,7 @@ describe('useTransactionSigner', () => {
             }),
         )
 
-        const { result } = renderHook(() => useTransactionSigner())
+        const { result } = renderHook(() => useLocalKeyTransactionSigner())
         const txn = makeTxn('HD_ADDR')
 
         const signed = await result.current.signTransactions([txn], [0])
@@ -176,7 +156,7 @@ describe('useTransactionSigner', () => {
             }),
         )
 
-        const { result } = renderHook(() => useTransactionSigner())
+        const { result } = renderHook(() => useLocalKeyTransactionSigner())
         const txn = makeTxn('ALGO25_ADDR')
 
         const signed = await result.current.signTransactions([txn], [0])
@@ -197,7 +177,7 @@ describe('useTransactionSigner', () => {
             }),
         )
 
-        const { result } = renderHook(() => useTransactionSigner())
+        const { result } = renderHook(() => useLocalKeyTransactionSigner())
         const txn = makeTxn('REKEYED_ADDR')
 
         const signed = await result.current.signTransactions([txn], [0])
@@ -217,7 +197,7 @@ describe('useTransactionSigner', () => {
             }),
         )
 
-        const { result } = renderHook(() => useTransactionSigner())
+        const { result } = renderHook(() => useLocalKeyTransactionSigner())
         const txn1 = makeTxn('ALGO25_ADDR')
         const txn2 = makeTxn('ALGO25_ADDR')
 
@@ -231,7 +211,7 @@ describe('useTransactionSigner', () => {
 
     test('skips transactions for accounts not in the wallet', async () => {
         mockAccounts = []
-        const { result } = renderHook(() => useTransactionSigner())
+        const { result } = renderHook(() => useLocalKeyTransactionSigner())
         const txn = makeTxn('UNKNOWN')
 
         const signed = await result.current.signTransactions([txn], [0])
@@ -245,7 +225,7 @@ describe('useTransactionSigner', () => {
         mockIsAlgo25Account.mockReturnValue(false)
         mockIsHDWalletAccount.mockReturnValue(false)
 
-        const { result } = renderHook(() => useTransactionSigner())
+        const { result } = renderHook(() => useLocalKeyTransactionSigner())
         const txn = makeTxn('REKEYED_ADDR')
 
         await expect(
@@ -256,7 +236,7 @@ describe('useTransactionSigner', () => {
     test('rejects for unsupported account type', async () => {
         mockAccounts = [unsupportedAccount]
 
-        const { result } = renderHook(() => useTransactionSigner())
+        const { result } = renderHook(() => useLocalKeyTransactionSigner())
         const txn = makeTxn('UNKNOWN_ADDR')
 
         await expect(
@@ -264,23 +244,14 @@ describe('useTransactionSigner', () => {
         ).rejects.toContain('Unsupported account type')
     })
 
-    test('signs hardware wallet transactions via hardware registry', async () => {
+    test('rejects hardware-wallet accounts — those go through the pipeline', async () => {
+        // Given a HardwareWalletAccount sender, signTransactions must NOT
+        // attempt to drive the BLE registry directly. The XState pipeline
+        // routes hardware signing through hardwareSignerActor; this hook is
+        // local-key only.
         mockAccounts = [hardwareAccount]
         mockIsHardwareWalletAccount.mockImplementation(
             acc => acc.type === 'hardware',
-        )
-        const mockTransport = {
-            getAddress: vi.fn().mockResolvedValue({
-                address: 'LEDGER_ADDR',
-                publicKey: new Uint8Array(32),
-                accountIndex: 0,
-            }),
-            signTransaction: vi.fn().mockResolvedValue(new Uint8Array([0xaa])),
-            disconnect: vi.fn().mockResolvedValue(undefined),
-        }
-        mockHardwareTransportProvider.connect.mockResolvedValue(mockTransport)
-        mockHardwareWalletRegistry.getProvider.mockReturnValue(
-            mockHardwareTransportProvider,
         )
 
         const { result } = renderHook(() => useTransactionSigner())
@@ -320,7 +291,7 @@ describe('useTransactionSigner', () => {
         const txn = makeTxn('LEDGER_ADDR')
 
         await expect(
-            result.current.signTransactions([txn], [0]),
-        ).rejects.toThrow('transport_unavailable')
+            result.current.signTransactions([makeTxn('LEDGER_ADDR')], [0]),
+        ).rejects.toContain('Unsupported account type')
     })
 })

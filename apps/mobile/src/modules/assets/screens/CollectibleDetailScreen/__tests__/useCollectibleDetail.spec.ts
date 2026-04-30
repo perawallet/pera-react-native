@@ -15,6 +15,7 @@ import { renderHook } from '@testing-library/react'
 import { Decimal } from 'decimal.js'
 import { useCollectibleDetail } from '../useCollectibleDetail'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 
 const mockCopyToClipboard = vi.fn()
 const mockShowToast = vi.fn()
@@ -279,6 +280,22 @@ describe('useCollectibleDetail', () => {
                 type: 'error',
                 body: expect.stringContaining('errors.algod'),
             }),
+        )
+        expect(mockGoBack).not.toHaveBeenCalled()
+    })
+
+    it('does not show an error toast when user cancels the signing overlay', async () => {
+        mockUseAccountAssetBalanceQuery.mockReturnValue({
+            data: { amount: new Decimal(0), algoValue: new Decimal(0) },
+        })
+        mockOptOut.mockRejectedValueOnce(new UserRejectedSigningError())
+
+        const { result } = renderHook(() => useCollectibleDetail('12345'))
+
+        await result.current.handleConfirmOptOut()
+
+        expect(mockShowToast).not.toHaveBeenCalledWith(
+            expect.objectContaining({ type: 'error' }),
         )
         expect(mockGoBack).not.toHaveBeenCalled()
     })

@@ -25,6 +25,7 @@ import {
     type AccountType,
 } from '@perawallet/wallet-core-accounts'
 import { useNetwork } from '@perawallet/wallet-core-blockchain'
+import { useContacts } from '@perawallet/wallet-core-contacts'
 import { useIsMultisigAddressQuery } from '@perawallet/wallet-core-multisig'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
@@ -48,17 +49,20 @@ export const AddParticipantBottomSheet = ({
     const { network } = useNetwork()
     const { showToast } = useToast()
     const accounts = useAllAccounts()
+    const { contacts } = useContacts()
     const [selectedAddress, setSelectedAddress] = useState('')
 
-    const isLocalAddress = useMemo(
-        () => accounts.some(a => a.address === selectedAddress),
-        [accounts, selectedAddress],
+    const isLocalEntity = useMemo(
+        () =>
+            accounts.some(a => a.address === selectedAddress) ||
+            contacts.some(c => c.address === selectedAddress),
+        [accounts, contacts, selectedAddress],
     )
 
     const multisigCheck = useIsMultisigAddressQuery({
         network,
         address: selectedAddress,
-        enabled: !!selectedAddress && !isLocalAddress,
+        enabled: !!selectedAddress && !isLocalEntity,
     })
 
     useEffect(() => {
@@ -91,14 +95,17 @@ export const AddParticipantBottomSheet = ({
 
     const handleSelected = useCallback(
         (address: string) => {
-            if (accounts.some(a => a.address === address)) {
+            const isLocal =
+                accounts.some(a => a.address === address) ||
+                contacts.some(c => c.address === address)
+            if (isLocal) {
                 onAddAddress(address)
                 onClose()
                 return
             }
             setSelectedAddress(address)
         },
-        [accounts, onAddAddress, onClose],
+        [accounts, contacts, onAddAddress, onClose],
     )
 
     return (
@@ -132,6 +139,10 @@ export const AddParticipantBottomSheet = ({
                 <AddressSearchView
                     onSelected={handleSelected}
                     excludeTypes={EXCLUDE_TYPES}
+                    showAllContactsWhenEmpty
+                    inBottomSheet
+                    showAccountBalance
+                    showAddIcon
                 />
             </PWView>
         </PWBottomSheet>

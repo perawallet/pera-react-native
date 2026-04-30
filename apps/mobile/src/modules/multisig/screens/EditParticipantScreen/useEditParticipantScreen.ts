@@ -10,26 +10,28 @@
  limitations under the License
  */
 
-import { useCallback } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
-import { useForm, type Control } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { z } from 'zod'
-import { useContacts } from '@perawallet/wallet-core-contacts'
+import type { Control } from 'react-hook-form'
+import {
+    ContactNotFoundError,
+    DuplicateAddressError,
+    useContacts,
+    type Contact,
+} from '@perawallet/wallet-core-contacts'
 import { useAppNavigation } from '@hooks/useAppNavigation'
+import type { PermissionDeniedState } from '@hooks/useImagePicker'
+import { useContactForm } from '@modules/contacts/hooks'
 import { useMultisigCreationStore } from '../../hooks/useMultisigCreation'
 import type { MultisigStackParamList } from '../../routes/types'
 
-const nicknameSchema = z.object({
-    name: z.string().min(1, { message: 'Please enter a nickname' }),
-})
-
-type EditParticipantFormValues = z.infer<typeof nicknameSchema>
-
 type UseEditParticipantScreenResult = {
     address: string
-    control: Control<EditParticipantFormValues>
+    control: Control<Contact>
+    imageUri: string | undefined
     isDoneDisabled: boolean
+    onPickImage: () => Promise<void>
+    permissionDenied: PermissionDeniedState
     handleDone: () => void
     handleRemove: () => void
 }
@@ -48,36 +50,58 @@ export const useEditParticipantScreen = (): UseEditParticipantScreenResult => {
         state => state.updateParticipant,
     )
 
-    const existingContacts = findContacts({
-        keyword: address,
-        matchAddress: true,
-        matchName: false,
-        matchNFD: false,
-    })
-    const existingContact = existingContacts.find(c => c.address === address)
+    const existingContact = useMemo(() => {
+        const matches = findContacts({
+            keyword: address,
+            matchAddress: true,
+            matchName: false,
+            matchNFD: false,
+        })
+        return matches.find(c => c.address === address) ?? null
+    }, [findContacts, address])
+
+    const initialContact: Contact = useMemo(
+        () => existingContact ?? { name: '', address },
+        [existingContact, address],
+    )
 
     const {
         control,
         handleSubmit,
-        formState: { isValid },
-    } = useForm<EditParticipantFormValues>({
-        resolver: zodResolver(nicknameSchema),
-        mode: 'onChange',
-        defaultValues: {
-            name: existingContact?.name ?? '',
-        },
-    })
+        setError,
+        isValid,
+        imageUri,
+        onPickImage,
+        permissionDenied,
+    } = useContactForm(initialContact)
 
     const onDone = useCallback(
-        (data: EditParticipantFormValues) => {
-            const nickname = data.name.trim()
-            const contactData = { name: nickname, address }
-            if (existingContact) {
-                editContact(address, contactData)
-            } else {
-                addContact(contactData)
+        (data: Contact) => {
+            const contactData: Contact = {
+                ...data,
+                name: data.name.trim(),
+                address,
             }
-            updateParticipant(address, nickname)
+
+            try {
+                if (existingContact) {
+                    editContact(address, contactData)
+                } else {
+                    addContact(contactData)
+                }
+            } catch (e) {
+                if (e instanceof DuplicateAddressError) {
+                    setError('address', { message: e.message })
+                    return
+                }
+                if (e instanceof ContactNotFoundError) {
+                    navigation.goBack()
+                    return
+                }
+                throw e
+            }
+
+            updateParticipant(address, contactData.name)
             navigation.goBack()
         },
         [
@@ -86,6 +110,7 @@ export const useEditParticipantScreen = (): UseEditParticipantScreenResult => {
             addContact,
             editContact,
             updateParticipant,
+            setError,
             navigation,
         ],
     )
@@ -100,7 +125,10 @@ export const useEditParticipantScreen = (): UseEditParticipantScreenResult => {
     return {
         address,
         control,
+        imageUri,
         isDoneDisabled: !isValid,
+        onPickImage,
+        permissionDenied,
         handleDone,
         handleRemove,
     }

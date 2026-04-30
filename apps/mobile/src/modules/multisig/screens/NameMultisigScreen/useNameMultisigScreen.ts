@@ -31,6 +31,7 @@ import {
     useExitAccountFlow,
 } from '@modules/onboarding/hooks'
 import { useMultisigCreationStore } from '../../hooks/useMultisigCreation'
+import { getNextSharedAccountName } from '../../utils'
 
 type UseNameMultisigScreenResult = {
     accountName: string
@@ -60,8 +61,8 @@ export const useNameMultisigScreen = (): UseNameMultisigScreenResult => {
         network,
     })
 
-    const [accountName, setAccountName] = useState(
-        t('multisig.name.default_name'),
+    const [accountName, setAccountName] = useState(() =>
+        getNextSharedAccountName(accounts, t('multisig.name.default_name')),
     )
     const [isCreating, setIsCreating] = useState(false)
     useNavigationLock(isCreating)

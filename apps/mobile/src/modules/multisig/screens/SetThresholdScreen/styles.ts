@@ -53,4 +53,7 @@ export const useStyles = makeStyles(theme => ({
         color: theme.colors.textMain,
         width: '50%',
     },
+    participantCount: {
+        marginLeft: theme.spacing.md,
+    },
 }))

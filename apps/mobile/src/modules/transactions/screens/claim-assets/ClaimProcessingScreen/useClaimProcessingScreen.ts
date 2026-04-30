@@ -25,6 +25,7 @@ import {
     SendClaimParams,
     useTransactionSendFlow,
 } from '@perawallet/wallet-core-transactions'
+import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import type { MessagesStackParamList } from '@modules/messages/routes/types'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import {
@@ -86,6 +87,11 @@ export const useClaimProcessingScreen = () => {
                 })
             })
             .catch(error => {
+                if (error instanceof UserRejectedSigningError) {
+                    // Silent navigation back — user already saw the overlay's cancel button.
+                    navigation.goBack()
+                    return
+                }
                 const { title, body } = getMessage(error)
                 showToast(
                     {

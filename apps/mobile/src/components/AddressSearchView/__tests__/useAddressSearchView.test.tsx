@@ -171,7 +171,7 @@ describe('useAddressSearchView', () => {
         expect(contactItems).toHaveLength(1)
     })
 
-    it('does not search contacts when value is empty', () => {
+    it('does not search contacts when value is empty by default', () => {
         const { result } = renderHook(() => useAddressSearchView())
 
         expect(
@@ -180,7 +180,37 @@ describe('useAddressSearchView', () => {
         expect(mockFindContacts).not.toHaveBeenCalled()
     })
 
-    it('returns section header and account item when address is valid', () => {
+    it('shows all contacts when value is empty and showAllContactsWhenEmpty is true', () => {
+        const contacts = [
+            { address: 'CONT123', name: 'Friend' },
+            { address: 'CONT456', name: 'Buddy' },
+        ]
+        mockFindContacts.mockReturnValue(contacts)
+
+        const { result } = renderHook(() =>
+            useAddressSearchView({ showAllContactsWhenEmpty: true }),
+        )
+
+        expect(mockFindContacts).toHaveBeenCalledWith({ keyword: '' })
+
+        const contactItems = itemsOfType(
+            result.current.matchingItems,
+            'contact',
+        )
+        const headers = itemsOfType(
+            result.current.matchingItems,
+            'section_header',
+        )
+
+        expect(contactItems).toHaveLength(2)
+        expect(headers).toEqual(
+            expect.arrayContaining([
+                expect.objectContaining({ title: 'address_entry.contacts' }),
+            ]),
+        )
+    })
+
+    it('returns section header and foreign address item when address is valid and not in wallet', () => {
         const accounts = [{ address: 'ABC123', name: 'Account 1' }]
         vi.mocked(useAllAccounts).mockReturnValue(
             accounts as unknown as ReturnType<typeof useAllAccounts>,
@@ -205,13 +235,38 @@ describe('useAddressSearchView', () => {
         )
         expect(result.current.matchingItems[1]).toEqual(
             expect.objectContaining({
-                type: 'account',
-                account: expect.objectContaining({
-                    address: 'VALID_58_CHAR_ADDRESS',
-                }),
+                type: 'address',
+                address: 'VALID_58_CHAR_ADDRESS',
             }),
         )
         expect(result.current.hasResults).toBe(true)
+    })
+
+    it('returns the matched wallet account when typed address is in user wallet', () => {
+        const accounts = [
+            { address: 'OWN_ADDRESS', name: 'My Account', type: 'algo25' },
+        ]
+        vi.mocked(useAllAccounts).mockReturnValue(
+            accounts as unknown as ReturnType<typeof useAllAccounts>,
+        )
+        vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
+
+        const { result } = renderHook(() => useAddressSearchView())
+
+        act(() => {
+            result.current.setValue('OWN_ADDRESS')
+        })
+
+        expect(result.current.matchingItems).toHaveLength(2)
+        expect(result.current.matchingItems[1]).toEqual(
+            expect.objectContaining({
+                type: 'account',
+                account: expect.objectContaining({
+                    address: 'OWN_ADDRESS',
+                    name: 'My Account',
+                }),
+            }),
+        )
     })
 
     it('shows all matching accounts when no value entered', () => {

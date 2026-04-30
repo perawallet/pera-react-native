@@ -27,6 +27,7 @@ import { useAddAccountScreen } from './useAddAccountScreen'
 import { useStyles } from './styles'
 import { useLanguage } from '@hooks/useLanguage'
 import { Trans } from 'react-i18next'
+import { MultisigIntroductionDialog } from '@modules/multisig/components/MultisigIntroductionDialog'
 
 import welcomeBackground from '@assets/images/welcome-background.webp'
 
@@ -41,6 +42,9 @@ export const AddAccountScreen = () => {
         handleClose,
         handleTermsPress,
         handlePrivacyPress,
+        isMultisigIntroductionVisible,
+        handleCloseMultisigIntroduction,
+        handleContinueMultisigIntroduction,
         isOtherOptionsVisible,
         handleToggleOtherOptions,
     } = useAddAccountScreen()
@@ -143,6 +147,12 @@ export const AddAccountScreen = () => {
             <PWLoadingOverlay
                 isVisible={isCreatingAccount}
                 title={t('onboarding.create_account.processing')}
+            />
+
+            <MultisigIntroductionDialog
+                isVisible={isMultisigIntroductionVisible}
+                onDismiss={handleCloseMultisigIntroduction}
+                onContinue={handleContinueMultisigIntroduction}
             />
         </>
     )

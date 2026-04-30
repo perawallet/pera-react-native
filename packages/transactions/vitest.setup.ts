@@ -10,6 +10,7 @@
  limitations under the License
  */
 
+import '@algorandfoundation/algokit-utils'
 import { vi } from 'vitest'
 
 const store = new Map<string, string>()

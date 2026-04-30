@@ -44,8 +44,8 @@ vi.mock('@perawallet/wallet-core-shared', async importOriginal => {
     }
 })
 
-vi.mock('../useTransactionSigner', () => ({
-    useTransactionSigner: vi.fn(() => ({
+vi.mock('../useLocalKeyTransactionSigner', () => ({
+    useLocalKeyTransactionSigner: vi.fn(() => ({
         signTransactions: vi.fn(),
     })),
 }))

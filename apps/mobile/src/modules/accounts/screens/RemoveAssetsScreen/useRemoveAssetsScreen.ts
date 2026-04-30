@@ -21,6 +21,7 @@ import {
     useAssetsQuery,
     PeraAsset,
 } from '@perawallet/wallet-core-assets'
+import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
 import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { useLanguage } from '@hooks/useLanguage'
@@ -156,6 +157,10 @@ export const useRemoveAssetsScreen = ({
             })
             onAfterRemove?.()
         } catch (err) {
+            if (err instanceof UserRejectedSigningError) {
+                // User dismissed the LedgerSigningOverlay — overlay already went away; no toast.
+                return
+            }
             showToast({
                 title: t('asset_opt_out.error'),
                 body: getMessage(err).body,

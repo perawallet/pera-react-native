@@ -20,7 +20,7 @@ export const useStyles = makeStyles((theme, { size }: StyleProps) => ({
     container: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: size === 'h1' ? theme.spacing.md : theme.spacing.sm,
+        gap: size === 'h1' ? theme.spacing.lg : theme.spacing.sm,
     },
     value: {
         color: size === 'h2' ? theme.colors.textGray : theme.colors.textMain,

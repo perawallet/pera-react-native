@@ -40,7 +40,7 @@ export const ParticipantListItem = ({
             <PWTouchableIcon
                 name='edit-pen'
                 size='md'
-                variant='link'
+                variant='positive'
                 onPress={() => onEdit(participant.address)}
                 testID={`participant_edit_${participant.address}`}
             />

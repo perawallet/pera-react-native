@@ -15,7 +15,7 @@ import {
     useAlgorandClient,
     useNetwork,
 } from '@perawallet/wallet-core-blockchain'
-import { useTransactionSigner } from '@perawallet/wallet-core-signing'
+import { useSignAndSubmitGroup } from '@perawallet/wallet-core-signing'
 import { fetchIndexerAssetDetails } from '@perawallet/wallet-core-assets'
 import {
     deleteAssetHoldings,
@@ -46,9 +46,14 @@ type ResolvedOptOutParams = {
     creator: string
 }
 
+const SOURCE = {
+    name: 'asset-opt-out',
+    description: 'Opt out of an asset',
+}
+
 export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
-    const { signTransactions } = useTransactionSigner()
-    const algokit = useAlgorandClient(signTransactions)
+    const algokit = useAlgorandClient()
+    const { submit } = useSignAndSubmitGroup()
     const { network } = useNetwork()
     const { invalidate: invalidateBalances } = useAccountBalancesInvalidator()
     const [isLoading, setIsLoading] = useState(false)
@@ -59,8 +64,6 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
             if (params.creator) {
                 return params as ResolvedOptOutParams
             }
-
-            // Fetch creator from indexer
             const assetDetails = await fetchIndexerAssetDetails(
                 String(params.assetId),
                 network,
@@ -103,51 +106,37 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
             setError(null)
 
             try {
-                // Resolve any missing creator addresses
                 const paramsList = await Promise.all(
                     rawList.map(resolveCreator),
                 )
 
-                // All params in a batch must share the same sender
                 const sender = paramsList[0].sender
 
-                // Fetch account info for validation
                 const accountInfo =
                     await algokit.client.algod.accountInformation(sender)
                 const assets = accountInfo.assets ?? []
 
-                // Validate all opt-outs before building transactions
                 for (const p of paramsList) {
                     validateOptOut(p, assets)
                 }
 
-                // Build and send transaction group
-                let txIds: string[]
-                if (paramsList.length === 1) {
-                    const p = paramsList[0]
-                    const result = await algokit.send.assetTransfer({
+                const composer = algokit.newGroup()
+                for (const p of paramsList) {
+                    composer.addAssetTransfer({
                         sender: p.sender,
                         receiver: p.sender,
                         assetId: p.assetId,
                         amount: 0n,
                         closeAssetTo: p.creator,
                     })
-                    txIds = result.txIds
-                } else {
-                    // Batch: use composer for atomic group
-                    const composer = algokit.newGroup()
-                    for (const p of paramsList) {
-                        composer.addAssetTransfer({
-                            sender: p.sender,
-                            receiver: p.sender,
-                            assetId: p.assetId,
-                            amount: 0n,
-                            closeAssetTo: p.creator,
-                        })
-                    }
-                    const result = await composer.send()
-                    txIds = result.txIds
                 }
+                const { transactions } = await composer.build()
+                const unsignedTxs = transactions.map(t => t.txn)
+
+                const { txIds } = await submit({
+                    unsignedTxs,
+                    source: SOURCE,
+                })
 
                 // Remove opted-out assets from local DB and refresh UI
                 await deleteAssetHoldings({
@@ -167,7 +156,7 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
                 setIsLoading(false)
             }
         },
-        [algokit, resolveCreator, network, invalidateBalances],
+        [algokit, resolveCreator, submit, network, invalidateBalances],
     )
 
     return {
@@ -178,4 +167,5 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
     }
 }
 
+export { NonZeroBalanceError, CreatorCannotOptOutError } from '../errors'
 export type { AssetOptOutParams, UseAssetOptOutMutationResult }

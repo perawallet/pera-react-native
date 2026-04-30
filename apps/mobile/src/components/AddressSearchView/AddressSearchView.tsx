@@ -10,6 +10,9 @@
  limitations under the License
  */
 
+import { useCallback } from 'react'
+import { ActivityIndicator } from 'react-native'
+import type { AccountType } from '@perawallet/wallet-core-accounts'
 import {
     PWFlatList,
     PWIcon,
@@ -17,16 +20,13 @@ import {
     PWTouchableOpacity,
     PWView,
 } from '@components/core'
-import { useStyles } from './styles'
-
-import { useCallback } from 'react'
-import { ActivityIndicator } from 'react-native'
-import { AddressEntryField } from '@components/AddressEntryField'
-import { AccountDisplay } from '@modules/accounts/components/AccountDisplay'
 import { EmptyView } from '@components/EmptyView'
 import { AddressDisplay } from '@components/AddressDisplay'
+import { SearchableList } from '@components/SearchableList'
 import { useLanguage } from '@hooks/useLanguage'
-import type { AccountType } from '@perawallet/wallet-core-accounts'
+import { AccountResultRow } from './AccountResultRow'
+import { AddressSearchInput } from './AddressSearchInput'
+import { useStyles } from './styles'
 import {
     useAddressSearchView,
     type AddressSearchItem,
@@ -36,17 +36,29 @@ export type AddressSearchViewProps = {
     onSelected: (address: string) => void
     excludeAddress?: string
     excludeTypes?: AccountType[]
+    showAllContactsWhenEmpty?: boolean
+    inBottomSheet?: boolean
+    showAccountBalance?: boolean
+    showAddIcon?: boolean
 }
 
 export const AddressSearchView = ({
     onSelected,
     excludeAddress,
     excludeTypes,
+    showAllContactsWhenEmpty,
+    inBottomSheet,
+    showAccountBalance = false,
+    showAddIcon = false,
 }: AddressSearchViewProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
     const { value, setValue, matchingItems, hasResults, isNfdLoading } =
-        useAddressSearchView({ excludeAddress, excludeTypes })
+        useAddressSearchView({
+            excludeAddress,
+            excludeTypes,
+            showAllContactsWhenEmpty,
+        })
 
     const renderItem = useCallback(
         ({ item }: { item: AddressSearchItem }) => {
@@ -79,29 +91,76 @@ export const AddressSearchView = ({
                         <PWTouchableOpacity
                             onPress={() => onSelected(item.account.address)}
                         >
-                            <AccountDisplay
+                            <AccountResultRow
                                 account={item.account}
-                                showChevron={false}
-                                style={styles.accountDisplay}
+                                showBalance={showAccountBalance}
                             />
+                        </PWTouchableOpacity>
+                    )
+                case 'address':
+                    return (
+                        <PWTouchableOpacity
+                            onPress={() => onSelected(item.address)}
+                            style={showAddIcon ? styles.foreignRow : undefined}
+                        >
+                            <AddressDisplay
+                                address={item.address}
+                                showCopy={false}
+                                forceShowIcon
+                                style={
+                                    showAddIcon
+                                        ? styles.accountDisplayInRow
+                                        : styles.accountDisplay
+                                }
+                            />
+                            {showAddIcon && (
+                                <PWView
+                                    style={styles.addIconButton}
+                                    testID='address-search-add-icon'
+                                >
+                                    <PWIcon
+                                        name='plus'
+                                        variant='helper'
+                                        size='sm'
+                                    />
+                                </PWView>
+                            )}
                         </PWTouchableOpacity>
                     )
                 case 'nfd':
                     return (
                         <PWTouchableOpacity
                             onPress={() => onSelected(item.nfd.address)}
-                            style={styles.nfdItem}
+                            style={
+                                showAddIcon ? styles.foreignRow : styles.nfdItem
+                            }
                         >
                             <AddressDisplay
                                 address={item.nfd.address}
                                 showCopy={false}
-                                style={styles.accountDisplay}
+                                style={
+                                    showAddIcon
+                                        ? styles.accountDisplayInRow
+                                        : styles.accountDisplay
+                                }
                             />
+                            {showAddIcon && (
+                                <PWView
+                                    style={styles.addIconButton}
+                                    testID='address-search-add-icon'
+                                >
+                                    <PWIcon
+                                        name='plus'
+                                        variant='helper'
+                                        size='sm'
+                                    />
+                                </PWView>
+                            )}
                         </PWTouchableOpacity>
                     )
             }
         },
-        [onSelected, styles, t],
+        [onSelected, styles, t, showAccountBalance, showAddIcon],
     )
 
     const keyExtractor = useCallback((item: AddressSearchItem) => item.key, [])
@@ -116,35 +175,47 @@ export const AddressSearchView = ({
         [t],
     )
 
+    const listEmptyComponent = isNfdLoading ? (
+        <PWView style={styles.loadingContainer}>
+            <ActivityIndicator />
+        </PWView>
+    ) : (
+        emptyComponent()
+    )
+
+    if (inBottomSheet) {
+        return (
+            <PWView style={styles.container}>
+                <AddressSearchInput
+                    value={value}
+                    placeholder={t('address_entry.search_placeholder')}
+                    onChangeText={setValue}
+                    onFocus={() => undefined}
+                />
+                <PWFlatList
+                    data={hasResults ? matchingItems : []}
+                    renderItem={renderItem}
+                    keyExtractor={keyExtractor}
+                    ListEmptyComponent={listEmptyComponent}
+                    inBottomSheet
+                    style={styles.list}
+                    contentContainerStyle={styles.contentContainer}
+                />
+            </PWView>
+        )
+    }
+
     return (
         <PWView style={styles.container}>
-            <AddressEntryField
-                onChangeText={setValue}
-                value={value}
-                allowQRCode
-                onScanned={setValue}
-                placeholder={t('address_entry.search_placeholder')}
-                inputContainerStyle={styles.searchField}
-                leftIcon={
-                    <PWIcon
-                        variant='secondary'
-                        name='magnifying-glass'
-                    />
-                }
-            />
-            <PWFlatList
+            <SearchableList
                 data={hasResults ? matchingItems : []}
                 renderItem={renderItem}
                 keyExtractor={keyExtractor}
-                ListEmptyComponent={
-                    isNfdLoading ? (
-                        <PWView style={styles.loadingContainer}>
-                            <ActivityIndicator />
-                        </PWView>
-                    ) : (
-                        emptyComponent()
-                    )
-                }
+                searchValue={value}
+                searchPlaceholder={t('address_entry.search_placeholder')}
+                onSearchChange={setValue}
+                SearchInputComponent={AddressSearchInput}
+                ListEmptyComponent={listEmptyComponent}
                 style={styles.list}
                 contentContainerStyle={styles.contentContainer}
             />

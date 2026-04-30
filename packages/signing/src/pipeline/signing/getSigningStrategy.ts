@@ -36,7 +36,7 @@ import { createMultisigStrategy } from './createMultisigStrategy'
  * Options for creating the signing strategy selector
  */
 export interface GetSigningStrategyOptions {
-    /** Transaction signing function from useTransactionSigner */
+    /** Transaction signing function from useLocalKeyTransactionSigner */
     signTransactions: LocalSigningFunction
 
     /** Arbitrary-data signing function from useArbitraryDataSigner */
