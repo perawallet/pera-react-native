@@ -57,10 +57,7 @@ vi.mock('@modules/security/components/PinEditView', () => ({
 // programmatic dismiss that happens when isVisible flips false during a
 // transition. Without this, the test would not catch the regression where a
 // transition leaks into a parent-level close.
-const useDismissCallbackOnHide = (
-    isVisible: boolean,
-    onClose: () => void,
-) => {
+const useDismissCallbackOnHide = (isVisible: boolean, onClose: () => void) => {
     const wasVisibleRef = React.useRef(false)
     React.useEffect(() => {
         if (wasVisibleRef.current && !isVisible) {

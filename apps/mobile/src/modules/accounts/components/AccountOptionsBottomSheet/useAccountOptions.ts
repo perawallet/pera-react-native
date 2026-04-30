@@ -262,7 +262,11 @@ export const useAccountOptions = ({
             items.push({
                 id: 'view-passphrase',
                 icon: 'key',
-                title: t(isHdWallet ? 'account_options.view_passphrase_hd' : 'account_options.view_passphrase_algo25'),
+                title: t(
+                    isHdWallet
+                        ? 'account_options.view_passphrase_hd'
+                        : 'account_options.view_passphrase_algo25',
+                ),
                 onPress: handleViewPassphrase,
             })
         }

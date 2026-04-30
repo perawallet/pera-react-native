@@ -96,7 +96,10 @@ export const PassphraseAcknowledgeBottomSheet = ({
                 {ACKNOWLEDGE_ROW_KEYS.map((key, index) => (
                     <PWTouchableOpacity
                         key={key}
-                        style={[styles.row, index !== 0 ? styles.separatorBorder : undefined ]}
+                        style={[
+                            styles.row,
+                            index !== 0 ? styles.separatorBorder : undefined,
+                        ]}
                         onPress={() => handleToggle(index)}
                         testID={`${testID}_row_${index}`}
                     >

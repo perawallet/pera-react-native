@@ -44,7 +44,7 @@ export const useStyles = makeStyles(theme => ({
     separatorBorder: {
         borderTopWidth: theme.borders.sm,
         borderTopColor: theme.colors.layerGrayLighter,
-        paddingTop: theme.spacing.md
+        paddingTop: theme.spacing.md,
     },
     rowText: {
         flex: 1,
