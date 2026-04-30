@@ -20,6 +20,9 @@ export const useStyles = makeStyles(theme => ({
     icon: {
         marginBottom: theme.spacing.lg,
     },
+    title: {
+        textAlign: 'center',
+    },
     message: {
         textAlign: 'center',
         paddingHorizontal: theme.spacing.lg,

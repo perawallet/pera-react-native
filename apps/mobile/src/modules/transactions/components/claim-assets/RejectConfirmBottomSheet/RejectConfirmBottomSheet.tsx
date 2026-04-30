@@ -67,7 +67,7 @@ export const RejectConfirmBottomSheet = ({
             enablePanDownToClose
         >
             <PWIcon
-                name='info'
+                name='warning'
                 variant='error'
                 size='xl'
                 style={styles.bottomSheetIcon}

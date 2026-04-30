@@ -46,7 +46,7 @@ export const RekeyGuardBottomSheet = (props: RekeyGuardBottomSheetProps) => {
             enablePanDownToClose
         >
             <PWIcon
-                name='info'
+                name='warning'
                 variant='error'
                 size='xxl'
                 style={styles.bottomSheetIcon}

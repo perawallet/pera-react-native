@@ -44,7 +44,7 @@ export const InsufficientBalancePanel = ({
             innerContainerStyle={styles.container}
         >
             <PWIcon
-                name='info'
+                name='warning'
                 size='xxl'
                 variant='error'
             />

@@ -65,7 +65,7 @@ export const ARC59WarningBottomSheet = ({
             enablePanDownToClose
         >
             <PWIcon
-                name='info'
+                name='warning'
                 variant='error'
                 size='xxl'
                 style={styles.icon}

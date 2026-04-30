@@ -38,7 +38,7 @@ export const BackupReminderWriteDownScreen = () => {
             footerExtras={
                 <PWView style={styles.warningRow}>
                     <PWIcon
-                        name='info'
+                        name='warning'
                         variant='error'
                     />
                     <PWText

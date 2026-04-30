@@ -100,6 +100,7 @@ import SuspiciousAssetIcon from '@assets/icons/assets/suspicious.svg'
 import TrustedAssetIcon from '@assets/icons/assets/trusted.svg'
 import UnlinkIcon from '@assets/icons/unlink.svg'
 import UndoIcon from '@assets/icons/undo.svg'
+import WarningIcon from '@assets/icons/warning.svg'
 import DarkAlgo25AccountIcon from '@assets/icons/accounts/dark/algo25-account.svg'
 import DarkHdWalletAccountIcon from '@assets/icons/accounts/dark/hdwallet-account.svg'
 import DarkLedgerAccountIcon from '@assets/icons/accounts/dark/ledger-account.svg'
@@ -227,6 +228,7 @@ export const ICON_LIBRARY = {
     tree: TreeIcon,
     unlink: UnlinkIcon,
     undo: UndoIcon,
+    warning: WarningIcon,
     'wallet-import': WalletImportIcon,
     'wallet-add': WalletAddIcon,
     'wallet-connect': WalletConnectIcon,

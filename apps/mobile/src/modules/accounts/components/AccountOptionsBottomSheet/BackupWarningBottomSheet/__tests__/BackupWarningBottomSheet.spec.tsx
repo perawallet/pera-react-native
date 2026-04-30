@@ -46,7 +46,7 @@ describe('BackupWarningBottomSheet', () => {
     it('renders icon, title, message, and action buttons when visible', () => {
         render(<BackupWarningBottomSheet {...defaultProps} />)
 
-        expect(screen.getByTestId('icon-info')).toBeTruthy()
+        expect(screen.getByTestId('icon-trash')).toBeTruthy()
         expect(
             screen.getByText('account_options.backup_warning_title'),
         ).toBeTruthy()

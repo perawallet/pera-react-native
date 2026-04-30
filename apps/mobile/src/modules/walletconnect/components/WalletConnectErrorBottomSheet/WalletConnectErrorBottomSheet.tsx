@@ -52,7 +52,7 @@ export const WalletConnectErrorBottomSheet = ({
             enablePanDownToClose
         >
             <PWIcon
-                name='info'
+                name='warning'
                 variant='error'
                 size='xl'
                 style={styles.icon}

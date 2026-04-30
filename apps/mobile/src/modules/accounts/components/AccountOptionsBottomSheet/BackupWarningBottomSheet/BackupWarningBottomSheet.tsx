@@ -41,12 +41,15 @@ export const BackupWarningBottomSheet = ({
             innerContainerStyle={styles.container}
         >
             <PWIcon
-                name='info'
+                name='trash'
                 variant='error'
                 size='xl'
                 style={styles.icon}
             />
-            <PWText variant='h3'>
+            <PWText
+                variant='h3'
+                style={styles.title}
+            >
                 {t('account_options.backup_warning_title')}
             </PWText>
             <PWText style={styles.message}>

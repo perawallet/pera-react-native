@@ -60,7 +60,7 @@ export const WatchInfoScreen = () => {
             <PWView style={styles.footer}>
                 <PWView style={styles.warningRow}>
                     <PWIcon
-                        name='info'
+                        name='warning'
                         variant='error'
                     />
                     <PWText
