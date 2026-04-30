@@ -54,7 +54,10 @@ export const MenuScreen = () => {
                     {t('menu.title')}
                 </PWText>
                 <PWView style={styles.iconBarColumn}>
-                    <PWTouchableOpacity onPress={scanner.open} testID='menu_button'>
+                    <PWTouchableOpacity
+                        onPress={scanner.open}
+                        testID='menu_button'
+                    >
                         <PWIcon
                             name='camera'
                             variant='primary'
