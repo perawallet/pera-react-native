@@ -12,7 +12,10 @@
 
 import { fromPromise } from 'xstate'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
-import { isHardwareWalletAccount } from '@perawallet/wallet-core-accounts'
+import {
+    isHardwareWalletAccount,
+    resolveAuthAccount,
+} from '@perawallet/wallet-core-accounts'
 import type { HardwareWalletRegistry } from '@perawallet/wallet-core-hardware-wallet'
 import type {
     AnalyzedSignableGroup,
@@ -57,13 +60,24 @@ export const hardwareSignerActor = fromPromise<
             a => a.address === group.signerAddress,
         )
 
-        if (!signerAccount || !isHardwareWalletAccount(signerAccount)) {
+        if (!signerAccount) {
+            throw new HardwareWalletError('signer_not_found')
+        }
+
+        // Follow the rekey chain — for a rekeyed account the actual signer
+        // is the auth account, which is what holds the Ledger keys/index.
+        // This matches localKeySignerActor's behavior so Ledger→Ledger
+        // rekeys (where source and auth are different Ledger accounts)
+        // sign with the AUTH device, not the now-unauthorized source.
+        const authAccount = resolveAuthAccount(signerAccount, allAccounts)
+
+        if (!isHardwareWalletAccount(authAccount)) {
             throw new HardwareWalletError('signer_not_found')
         }
 
         const result = await strategy.sign(
             group,
-            signerAccount,
+            authAccount,
             input.callbacks,
         )
         results.push(result)
