@@ -11,11 +11,13 @@
  */
 
 import { PWButton, PWImage, PWOverlay, PWText, PWView } from '@components/core'
+import { useTheme } from '@rneui/themed'
 import { useLanguage } from '@hooks/useLanguage'
 import { useStyles } from './styles'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import multisigIntroHero from '@assets/images/multisig-intro-hero.png'
+import multisigIntroHeroDark from '@assets/images/multisig-intro-hero-dark.png'
 
 type MultisigIntroductionDialogProps = {
     isVisible: boolean
@@ -36,7 +38,10 @@ export const MultisigIntroductionDialog = ({
 }: MultisigIntroductionDialogProps) => {
     const insets = useSafeAreaInsets()
     const styles = useStyles(insets)
+    const { theme } = useTheme()
     const { t } = useLanguage()
+    const heroImage =
+        theme.mode === 'dark' ? multisigIntroHeroDark : multisigIntroHero
 
     return (
         <PWOverlay
@@ -50,7 +55,7 @@ export const MultisigIntroductionDialog = ({
                 testID='multisig_introduction_dialog'
             >
                 <PWImage
-                    source={multisigIntroHero}
+                    source={heroImage}
                     style={styles.headerImage}
                     resizeMode='contain'
                 />
