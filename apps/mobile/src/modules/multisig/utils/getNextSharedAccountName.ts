@@ -20,13 +20,16 @@ export const getNextSharedAccountName = (
     baseName: string,
     excludeAddress?: string,
 ): string => {
-    const relevant = excludeAddress
-        ? accounts.filter(a => a.address !== excludeAddress)
-        : accounts
-    const taken = new Set(
-        relevant.map(a => (a.name ?? '').trim().toLowerCase()),
-    )
-    const sharedCount = relevant.filter(isMultisigAccount).length
+    const taken = new Set<string>()
+    let sharedCount = 0
+
+    for (const account of accounts) {
+        if (excludeAddress && account.address === excludeAddress) continue
+
+        taken.add((account.name ?? '').trim().toLowerCase())
+        if (isMultisigAccount(account)) sharedCount++
+    }
+
     let n = sharedCount + 1
     while (taken.has(`${baseName} #${n}`.toLowerCase())) n++
     return `${baseName} #${n}`
