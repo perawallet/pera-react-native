@@ -88,6 +88,21 @@ describe('PeraWalletProvider', () => {
         const singletonProvider = getProvider()
         expect(result.current).toBe(singletonProvider)
     })
+
+    it('preserves the cached providerRef across re-renders (does not re-resolve the singleton)', () => {
+        const { result, rerender } = renderHook(() => usePeraProvider(), {
+            wrapper: ({ children }) => (
+                <PeraWalletProvider>{children}</PeraWalletProvider>
+            ),
+        })
+
+        const first = result.current
+        rerender()
+        rerender()
+        // Same instance — covers the `providerRef.current !== null` branch
+        // on subsequent renders.
+        expect(result.current).toBe(first)
+    })
 })
 
 describe('usePeraProvider', () => {
