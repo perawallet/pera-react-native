@@ -184,6 +184,7 @@ export const AccountInfoCard = ({ account, onClose }: AccountInfoCardProps) => {
                                     key={address}
                                     address={address}
                                     forceShowIcon
+                                    textProps={{ variant: 'h4' }}
                                     style={styles.sharedAccountParticipant}
                                     testID={`shared_account_participant_${address}`}
                                 />
