@@ -18,6 +18,8 @@ import { useWalletConnectSessionRequests } from '../useWalletConnectSessionReque
 import { useWalletConnectHandlers } from '../useWalletConnectHandlers'
 import WalletConnect from '@walletconnect/client'
 import { PERA_CLIENT_META } from '../../constants'
+import { WalletConnectInvalidNetworkError } from '../../errors'
+import { AlgorandChainId } from '../../models'
 import { Networks } from '@perawallet/wallet-core-shared'
 
 // Mock dependencies
@@ -105,6 +107,7 @@ describe('useWalletConnect', () => {
     const mockAddSessionRequest = vi.fn()
     const mockHandleSignData = vi.fn()
     const mockHandleSignTransaction = vi.fn()
+    const mockSetConnectionError = vi.fn()
     let mockConnections: any[]
 
     beforeEach(() => {
@@ -116,6 +119,9 @@ describe('useWalletConnect', () => {
                 setWalletConnectConnections: mockSetConnections,
             }),
         )
+        ;(useWalletConnectStore as any).getState = () => ({
+            setConnectionError: mockSetConnectionError,
+        })
         ;(useWalletConnectSessionRequests as any).mockReturnValue({
             addSessionRequest: mockAddSessionRequest,
         })
@@ -286,6 +292,138 @@ describe('useWalletConnect', () => {
             })
         })
 
+        it('should reject session and surface invalid network error when chainId does not match active network', async () => {
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            const connection = { clientId: 'client-wrong-net' } as any
+
+            await act(async () => {
+                await result.current.connect({ connection })
+            })
+
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            const sessionRequestCallback =
+                mockConnectorInstance.on.mock.calls.find(
+                    (call: any) => call[0] === 'session_request',
+                )[1]
+
+            const payload = {
+                params: [
+                    {
+                        peerMeta: { name: 'Testnet App' },
+                        chainId: AlgorandChainId.testnet,
+                        permissions: ['perm1'],
+                    },
+                ],
+            }
+
+            act(() => {
+                sessionRequestCallback(null, payload)
+            })
+
+            expect(mockConnectorInstance.rejectSession).toHaveBeenCalledTimes(1)
+            expect(mockSetConnectionError).toHaveBeenCalledTimes(1)
+            expect(mockSetConnectionError.mock.calls[0][0]).toBeInstanceOf(
+                WalletConnectInvalidNetworkError,
+            )
+            expect(mockAddSessionRequest).not.toHaveBeenCalled()
+            expect(mockConnectorInstance.approveSession).not.toHaveBeenCalled()
+        })
+
+        it('should add session request when chainId matches active network', async () => {
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            const connection = { clientId: 'client-match-net' } as any
+
+            await act(async () => {
+                await result.current.connect({ connection })
+            })
+
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            const sessionRequestCallback =
+                mockConnectorInstance.on.mock.calls.find(
+                    (call: any) => call[0] === 'session_request',
+                )[1]
+
+            const payload = {
+                params: [
+                    {
+                        peerMeta: { name: 'Mainnet App' },
+                        chainId: AlgorandChainId.mainnet,
+                        permissions: ['perm1'],
+                    },
+                ],
+            }
+
+            act(() => {
+                sessionRequestCallback(null, payload)
+            })
+
+            expect(mockAddSessionRequest).toHaveBeenCalledWith({
+                peerMeta: { name: 'Mainnet App' },
+                chainId: AlgorandChainId.mainnet,
+                permissions: ['perm1'],
+                clientId: 'client-match-net',
+            })
+            expect(mockConnectorInstance.rejectSession).not.toHaveBeenCalled()
+            expect(mockSetConnectionError).not.toHaveBeenCalled()
+        })
+
+        it('should reject session and surface invalid network error during autoConnect when chainId does not match active network', async () => {
+            const { result } = renderHook(() =>
+                useWalletConnect(Networks.mainnet),
+            )
+            const connection = {
+                clientId: 'client-auto-wrong-net',
+                autoConnect: true,
+            } as any
+
+            ;(useWalletConnectStore as any).mockImplementation(
+                (selector: any) =>
+                    selector({
+                        walletConnectConnections: [connection],
+                        setWalletConnectConnections: mockSetConnections,
+                    }),
+            )
+
+            await act(async () => {
+                await result.current.connect({ connection })
+            })
+
+            const mockConnectorInstance = (WalletConnect as any).mock.results[0]
+                .value
+            const sessionRequestCallback =
+                mockConnectorInstance.on.mock.calls.find(
+                    (call: any) => call[0] === 'session_request',
+                )[1]
+
+            const payload = {
+                params: [
+                    {
+                        peerMeta: { name: 'Testnet App' },
+                        chainId: AlgorandChainId.testnet,
+                        permissions: ['perm1'],
+                    },
+                ],
+            }
+
+            act(() => {
+                sessionRequestCallback(null, payload)
+            })
+
+            expect(mockConnectorInstance.rejectSession).toHaveBeenCalledTimes(1)
+            expect(mockSetConnectionError).toHaveBeenCalledTimes(1)
+            expect(mockSetConnectionError.mock.calls[0][0]).toBeInstanceOf(
+                WalletConnectInvalidNetworkError,
+            )
+            expect(mockConnectorInstance.approveSession).not.toHaveBeenCalled()
+            expect(mockAddSessionRequest).not.toHaveBeenCalled()
+        })
+
         it('should trigger handleSignData on algo_signData event', async () => {
             const { result } = renderHook(() =>
                 useWalletConnect(Networks.mainnet),
@@ -314,7 +452,6 @@ describe('useWalletConnect', () => {
                 'mainnet',
                 error,
                 payload,
-                expect.any(Function),
             )
         })
 
@@ -346,7 +483,6 @@ describe('useWalletConnect', () => {
                 'mainnet',
                 error,
                 payload,
-                expect.any(Function),
             )
         })
 

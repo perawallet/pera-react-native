@@ -18,7 +18,10 @@ import type { Nullable } from '@perawallet/wallet-core-shared'
 
 const mockInitWalletConnect = vi.fn()
 const mockShowToast = vi.fn()
+const mockErrorToast = vi.fn()
 const mockRemoveSessionRequest = vi.fn()
+const mockSetConnectionError = vi.fn()
+let mockConnectionError: Error | null = null
 
 const mockRequest = {
     peerMeta: {
@@ -34,15 +37,38 @@ const mockRequest = {
 
 let mockSessionRequests: WalletConnectSessionRequest[] = []
 
-vi.mock('@perawallet/wallet-core-walletconnect', () => ({
-    useWalletConnect: () => ({
-        initWalletConnect: mockInitWalletConnect,
-    }),
-    useWalletConnectSessionRequests: () => ({
-        sessionRequests: mockSessionRequests,
-        removeSessionRequest: mockRemoveSessionRequest,
-    }),
-}))
+vi.mock('@perawallet/wallet-core-walletconnect', () => {
+    class MockWalletConnectInvalidNetworkError extends Error {
+        constructor(message?: string) {
+            super(message ?? 'wrong network')
+            this.name = 'WalletConnectInvalidNetworkError'
+            Object.setPrototypeOf(
+                this,
+                MockWalletConnectInvalidNetworkError.prototype,
+            )
+        }
+    }
+    return {
+        useWalletConnect: () => ({
+            initWalletConnect: mockInitWalletConnect,
+        }),
+        useWalletConnectSessionRequests: () => ({
+            sessionRequests: mockSessionRequests,
+            removeSessionRequest: mockRemoveSessionRequest,
+        }),
+        useWalletConnectStore: (
+            selector: (state: {
+                connectionError: Error | null
+                setConnectionError: typeof mockSetConnectionError
+            }) => unknown,
+        ) =>
+            selector({
+                connectionError: mockConnectionError,
+                setConnectionError: mockSetConnectionError,
+            }),
+        WalletConnectInvalidNetworkError: MockWalletConnectInvalidNetworkError,
+    }
+})
 
 vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({
@@ -53,6 +79,7 @@ vi.mock('@hooks/useLanguage', () => ({
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({
         showToast: mockShowToast,
+        errorToast: mockErrorToast,
     }),
 }))
 
@@ -154,6 +181,7 @@ describe('WalletConnectProvider', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockSessionRequests = []
+        mockConnectionError = null
     })
 
     test('renders children', () => {
@@ -254,7 +282,7 @@ describe('WalletConnectProvider', () => {
         expect(screen.queryByTestId('SuccessSheet')).toBeNull()
     })
 
-    test('shows error sheet when connection fails', () => {
+    test('writes connection error to store and removes request when ConnectionView fails', () => {
         mockSessionRequests = [mockRequest]
 
         render(
@@ -265,12 +293,14 @@ describe('WalletConnectProvider', () => {
 
         fireEvent.click(screen.getByText('mock-error'))
 
-        expect(screen.getByTestId('ErrorSheet')).toBeDefined()
-        expect(screen.getByText('Connection failed')).toBeDefined()
+        expect(mockSetConnectionError).toHaveBeenCalledWith(
+            expect.objectContaining({ message: 'Connection failed' }),
+        )
+        expect(mockRemoveSessionRequest).toHaveBeenCalledWith(mockRequest)
     })
 
-    test('hides connection view while error sheet is shown', () => {
-        mockSessionRequests = [mockRequest]
+    test('renders error bottom sheet when connectionError is set in the store', () => {
+        mockConnectionError = new Error('Sign request failed')
 
         render(
             <WalletConnectProvider>
@@ -278,13 +308,26 @@ describe('WalletConnectProvider', () => {
             </WalletConnectProvider>,
         )
 
-        fireEvent.click(screen.getByText('mock-error'))
+        expect(screen.getByTestId('ErrorSheet')).toBeDefined()
+        expect(screen.getByText('Sign request failed')).toBeDefined()
+    })
+
+    test('hides connection view when error bottom sheet is shown', () => {
+        mockSessionRequests = [mockRequest]
+        mockConnectionError = new Error('Sign request failed')
+
+        render(
+            <WalletConnectProvider>
+                <div />
+            </WalletConnectProvider>,
+        )
 
         expect(screen.queryByTestId('ConnectionView')).toBeNull()
     })
 
-    test('clears error sheet and removes request on close', () => {
+    test('clears error and removes session request when error sheet closes', () => {
         mockSessionRequests = [mockRequest]
+        mockConnectionError = new Error('Sign request failed')
 
         render(
             <WalletConnectProvider>
@@ -292,11 +335,9 @@ describe('WalletConnectProvider', () => {
             </WalletConnectProvider>,
         )
 
-        fireEvent.click(screen.getByText('mock-error'))
-        expect(screen.getByTestId('ErrorSheet')).toBeDefined()
-
         fireEvent.click(screen.getByText('mock-error-close'))
-        expect(screen.queryByTestId('ErrorSheet')).toBeNull()
+
+        expect(mockSetConnectionError).toHaveBeenCalledWith(null)
         expect(mockRemoveSessionRequest).toHaveBeenCalledWith(mockRequest)
     })
 })

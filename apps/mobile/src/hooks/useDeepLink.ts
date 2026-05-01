@@ -43,8 +43,8 @@ export const useDeepLink = () => {
     const { setSelectedAccountAddress } = useSelectedAccountAddress()
     const { pushWebView } = useWebView()
     const { network } = useNetwork()
-    const { connect } = useWalletConnect(network)
     const { t } = useLanguage()
+    const { connect } = useWalletConnect(network)
 
     const isValidDeepLink = (url: string): boolean => {
         if (isValidAlgorandAddress(url)) {

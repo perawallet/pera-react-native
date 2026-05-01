@@ -14,9 +14,10 @@ import { useNetwork } from '@perawallet/wallet-core-blockchain'
 import {
     useWalletConnect,
     useWalletConnectSessionRequests,
+    useWalletConnectStore,
     WalletConnectSessionRequest,
 } from '@perawallet/wallet-core-walletconnect'
-import { useCallback, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 export const useWalletConnectProvider = () => {
@@ -25,13 +26,13 @@ export const useWalletConnectProvider = () => {
     const nextRequest = sessionRequests.at(0)
     const [successRequest, setSuccessRequest] =
         useState<Nullable<WalletConnectSessionRequest>>(null)
-    const [connectionError, setConnectionError] =
-        useState<Nullable<Error>>(null)
     const { network } = useNetwork()
-
-    const handleSigningError = useCallback((error: Error) => {
-        setConnectionError(error)
-    }, [])
+    const connectionError = useWalletConnectStore(
+        state => state.connectionError,
+    )
+    const setConnectionError = useWalletConnectStore(
+        state => state.setConnectionError,
+    )
 
     const handleSuccess = (request: WalletConnectSessionRequest) => {
         setSuccessRequest(request)
@@ -45,6 +46,9 @@ export const useWalletConnectProvider = () => {
         if (error) {
             setConnectionError(error)
         }
+        if (nextRequest) {
+            removeSessionRequest(nextRequest)
+        }
     }
 
     const clearConnectionError = () => {
@@ -54,9 +58,7 @@ export const useWalletConnectProvider = () => {
         setConnectionError(null)
     }
 
-    const { initWalletConnect } = useWalletConnect(network, {
-        onError: handleSigningError,
-    })
+    const { initWalletConnect } = useWalletConnect(network)
 
     useEffect(() => {
         initWalletConnect()
