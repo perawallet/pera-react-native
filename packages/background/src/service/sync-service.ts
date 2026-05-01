@@ -253,4 +253,46 @@ export class SyncService {
         invalidateAssetQueries(this.deps.queryClient)
         invalidateTransactionQueries(this.deps.queryClient)
     }
+
+    /**
+     * Targeted refresh for a specific set of addresses on a specific network.
+     * Pulls fresh account info and recent transactions for each address from
+     * the indexer, persists to the local DB, and invalidates the related
+     * query caches so observers re-read the new state.
+     *
+     * Used by post-submission auto-refresh paths (see
+     * `submitAndAutoRefresh` in @perawallet/wallet-core-signing) to update
+     * sender/receiver balances as soon as a transaction confirms, without
+     * waiting for the next periodic tick. Failures are logged but never
+     * thrown — the periodic tick is the safety net.
+     */
+    async refreshAccounts(
+        addresses: string[],
+        network: Network,
+    ): Promise<void> {
+        if (addresses.length === 0) return
+
+        const accountResults = await Promise.allSettled(
+            addresses.map(a => fetchAndPersistAccount(a, network)),
+        )
+        const txResults = await Promise.allSettled(
+            addresses.map(a => fetchAndPersistTransactions(a, network)),
+        )
+
+        this.logFailures(
+            'refresh-accounts',
+            accountResults,
+            network,
+            i => addresses[i],
+        )
+        this.logFailures(
+            'refresh-transactions',
+            txResults,
+            network,
+            i => addresses[i],
+        )
+
+        invalidateAccountQueries(this.deps.queryClient)
+        invalidateTransactionQueries(this.deps.queryClient)
+    }
 }

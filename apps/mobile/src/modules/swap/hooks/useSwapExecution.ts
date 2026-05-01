@@ -16,7 +16,7 @@ import {
     useAlgorandClient,
 } from '@perawallet/wallet-core-blockchain'
 import {
-    submitSignedTransactionGroup,
+    submitAndAutoRefresh,
     useSigningRequest,
 } from '@perawallet/wallet-core-signing'
 import {
@@ -161,7 +161,7 @@ export const useSwapExecution = (): UseSwapExecutionResult => {
                 setStatus('submitting')
                 for (const signedGroup of allSignedGroups) {
                     if (signedGroup.length === 0) continue
-                    const ids = await submitSignedTransactionGroup(
+                    const ids = await submitAndAutoRefresh(
                         algorandClient,
                         encodeSignedTransactions,
                         signedGroup,

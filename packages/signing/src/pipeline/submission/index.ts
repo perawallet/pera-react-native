@@ -16,3 +16,13 @@ export type {
     EncodeSignedTransactionsFn,
 } from './types'
 export { submitSignedTransactionGroup } from './submitSignedTransactionGroup'
+export { extractAffectedWalletAddresses } from './extractAffectedWalletAddresses'
+export {
+    submitAndAutoRefresh,
+    submitAndAutoRefreshCore,
+    type SubmitAndAutoRefreshCoreInput,
+} from './submitAndAutoRefresh'
+export {
+    setOnConfirmedHandler,
+    type OnConfirmedHandler,
+} from './onConfirmedRegistry'

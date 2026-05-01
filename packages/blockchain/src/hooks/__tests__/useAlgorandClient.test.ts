@@ -81,7 +81,12 @@ describe('services/blockchain/hooks', () => {
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
-        expect(result.current.setDefaultSigner).not.toHaveBeenCalled()
+        // A throw-on-invocation default signer is registered so that
+        // composer.build() can attach a signer reference per transaction
+        // without requiring callers to wire one up. The placeholder is
+        // never actually called — real signing flows through the XState
+        // pipeline.
+        expect(result.current.setDefaultSigner).toHaveBeenCalledTimes(1)
     })
 
     test('returns fromConfig client for testnet', () => {
@@ -95,7 +100,18 @@ describe('services/blockchain/hooks', () => {
         const { result } = renderHook(() => useAlgorandClient())
 
         expect(AlgorandClient.fromConfig).toHaveBeenCalledTimes(1)
-        expect(result.current.setDefaultSigner).not.toHaveBeenCalled()
+        expect(result.current.setDefaultSigner).toHaveBeenCalledTimes(1)
+    })
+
+    test('placeholder signer throws if invoked', async () => {
+        const { result } = renderHook(() => useAlgorandClient())
+
+        const placeholderSigner = (result.current.setDefaultSigner as Mock).mock
+            .calls[0][0]
+
+        await expect(placeholderSigner([], [])).rejects.toThrow(
+            /Default algokit signer invoked/,
+        )
     })
 
     test('configures signer when provided', async () => {

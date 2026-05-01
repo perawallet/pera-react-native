@@ -23,6 +23,23 @@ import { encodeSignedTransactions } from '@algorandfoundation/algokit-utils/tran
 import { logger } from '@perawallet/wallet-core-shared'
 import { toAlgodError } from '../errors'
 
+/**
+ * Placeholder signer attached when no real signer is provided. algokit-utils'
+ * `composer.build()` requires a signer reference per transaction even when
+ * the caller does not intend to sign through algokit (signing now flows
+ * through the XState pipeline in `@perawallet/wallet-core-signing`). Build
+ * never invokes the signer — it just attaches the reference — so this
+ * placeholder is safe at build time and throws loudly if any unexpected
+ * call site tries to use it for actual signing.
+ */
+const throwIfInvokedSigner: PeraEncodedTransactionSigner = async () => {
+    throw new Error(
+        'Default algokit signer invoked, but signing should flow through ' +
+            'the XState pipeline (useSignAndSubmitGroup). Pass an explicit ' +
+            'signer to useAlgorandClient if you need algokit-side signing.',
+    )
+}
+
 export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
     const { networkConfig, network } = useNetwork()
 
@@ -53,6 +70,8 @@ export const useAlgorandClient = (signer?: PeraTransactionSigner) => {
                 }
             }
             client.setDefaultSigner(encodingSigner)
+        } else {
+            client.setDefaultSigner(throwIfInvokedSigner)
         }
         return client
     }, [network, signer])
