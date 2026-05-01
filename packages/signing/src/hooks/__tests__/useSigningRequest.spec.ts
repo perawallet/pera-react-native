@@ -13,6 +13,7 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useSigningRequest } from '../useSigningRequest'
+import { __resetSigningActorRegistryForTests } from '../useSigningActorLifecycle'
 import { useSigningStore } from '../../store'
 import {
     MAX_TRANSACTION_SIGN_REQUESTS,
@@ -146,6 +147,7 @@ describe('useSigningRequest', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         useSigningStore.getState().resetState()
+        __resetSigningActorRegistryForTests()
     })
 
     describe('queue management', () => {

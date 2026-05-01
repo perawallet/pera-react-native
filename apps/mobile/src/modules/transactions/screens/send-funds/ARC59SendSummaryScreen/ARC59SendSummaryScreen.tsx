@@ -71,20 +71,22 @@ export const ARC59SendSummaryScreen = () => {
 
                 <PWView style={styles.bottomContainer}>
                     <PWView style={styles.row}>
-                        {asset ? (
-                            <AssetTitle
-                                asset={asset}
-                                nameVariant='h3'
-                            />
-                        ) : (
-                            <PWText variant='h3'>{assetId}</PWText>
-                        )}
+                        <PWView style={styles.rowAssetContainer}>
+                            {asset ? (
+                                <AssetTitle
+                                    asset={asset}
+                                    nameVariant='h4'
+                                />
+                            ) : (
+                                <PWText variant='h4'>{assetId}</PWText>
+                            )}
+                        </PWView>
                         <CurrencyDisplay
                             value={amount}
                             currency={asset?.unitName ?? ''}
                             precision={asset?.decimals ?? DEFAULT_PRECISION}
                             minPrecision={DEFAULT_PRECISION}
-                            variant='h3'
+                            variant='h4'
                         />
                     </PWView>
 

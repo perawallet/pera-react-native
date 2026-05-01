@@ -98,7 +98,7 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 }))
 
 vi.mock('@perawallet/wallet-core-shared', () => ({
-    logger: { warn: vi.fn(), error: vi.fn() },
+    logger: { warn: vi.fn(), error: vi.fn(), info: vi.fn(), debug: vi.fn() },
     Networks: { mainnet: 'mainnet', testnet: 'testnet' },
     partition: (arr: unknown[], size: number) => {
         const result = []
