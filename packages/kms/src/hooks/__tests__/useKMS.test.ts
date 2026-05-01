@@ -15,6 +15,7 @@ import { renderHook, act } from '@testing-library/react'
 import type { Key } from '@algorandfoundation/keystore'
 import { useKMS } from '../useKMS'
 import { KeyPair, KeyType } from '../../models'
+import { InvalidKeyError } from '../../errors'
 
 // Source-of-truth keystore Key list mocked at the module that bridges to
 // the platform keystore. useKMS reads from this via useKeystoreKeys().
@@ -86,6 +87,21 @@ const seedAlgo25Root = (id: string): KeyPair => {
         keystoreKeyId: id,
         publicKey: '',
         type: KeyType.Algo25Key,
+    }) as unknown as KeyPair
+}
+
+const seedP256Root = (id: string): KeyPair => {
+    mockKeystoreKeys.push({
+        id,
+        type: 'hd-derived-p256',
+        algorithm: 'P256',
+        extractable: false,
+    } as Key)
+    return expect.objectContaining({
+        id,
+        keystoreKeyId: id,
+        publicKey: '',
+        type: KeyType.DeterministicP256Key,
     }) as unknown as KeyPair
 }
 
@@ -352,10 +368,8 @@ describe('useKMS', () => {
         ).rejects.toThrow()
     })
 
-    it('should throw for signTransactionsWithKey with unsupported key type', async () => {
-        // P256 keys aren't currently exposed as wallet roots; getKeyOrThrow
-        // throws KeyNotFound for an absent id, which is the same observable
-        // outcome as "unsupported key type".
+    it('should throw InvalidKeyError for signTransactionsWithKey when the key is a P256 wallet root (unsupported here)', async () => {
+        seedP256Root('p256-key')
         const { result } = renderHook(() => useKMS())
 
         await expect(
@@ -366,16 +380,31 @@ describe('useKMS', () => {
                     [new Uint8Array([1])],
                 )
             }),
-        ).rejects.toThrow()
+        ).rejects.toThrow(InvalidKeyError)
     })
 
-    it('should throw for signDataWithKey with unsupported key type', async () => {
+    it('should throw InvalidKeyError for signDataWithKey when the key is a P256 wallet root', async () => {
+        seedP256Root('p256-key')
         const { result } = renderHook(() => useKMS())
 
         await expect(
             act(async () => {
                 await result.current.signDataWithKey(
                     'p256-key',
+                    'test-domain',
+                    [new Uint8Array([1])],
+                )
+            }),
+        ).rejects.toThrow(InvalidKeyError)
+    })
+
+    it('should throw KeyNotFoundError for signTransactionsWithKey when no key exists with that id', async () => {
+        const { result } = renderHook(() => useKMS())
+
+        await expect(
+            act(async () => {
+                await result.current.signTransactionsWithKey(
+                    'missing-id',
                     'test-domain',
                     [new Uint8Array([1])],
                 )
@@ -448,7 +477,8 @@ describe('useKMS', () => {
         )
     })
 
-    it('should throw for executeWithMnemonic with unsupported key type', async () => {
+    it('should throw InvalidKeyError for executeWithMnemonic when the key is a P256 wallet root', async () => {
+        seedP256Root('p256-key')
         const { result } = renderHook(() => useKMS())
 
         await expect(
@@ -459,7 +489,39 @@ describe('useKMS', () => {
                     () => undefined,
                 )
             }),
-        ).rejects.toThrow()
+        ).rejects.toThrow(InvalidKeyError)
+    })
+
+    it('getKey returns null and triggers async keystore.remove when the key is expired', async () => {
+        // Seed an expired HD root with `pera.expiresAt` in the past.
+        const past = new Date(Date.now() - 60_000).toISOString()
+        mockKeystoreKeys.push({
+            id: 'expired-key',
+            type: 'hd-root-key',
+            algorithm: 'raw',
+            extractable: true,
+            metadata: { pera: { expiresAt: past } },
+        } as unknown as Key)
+
+        const { result } = renderHook(() => useKMS())
+
+        expect(result.current.getKey('expired-key')).toBeNull()
+        expect(mockKeyStoreRemove).toHaveBeenCalledWith('expired-key')
+    })
+
+    it('getKeyOrThrow throws when the key has expired', async () => {
+        const past = new Date(Date.now() - 60_000).toISOString()
+        mockKeystoreKeys.push({
+            id: 'expired-key',
+            type: 'hd-root-key',
+            algorithm: 'raw',
+            extractable: true,
+            metadata: { pera: { expiresAt: past } },
+        } as unknown as Key)
+
+        const { result } = renderHook(() => useKMS())
+
+        expect(() => result.current.getKeyOrThrow('expired-key')).toThrow()
     })
 
     it('should zero mnemonic bytes even when handler throws', async () => {
