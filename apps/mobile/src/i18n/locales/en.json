@@ -953,6 +953,7 @@
         "feature_flags": "Feature Flags",
         "dispenser": "Dispenser",
         "developer_menu": "Developer Options",
+        "manage_cache": "Manage Cache",
         "messages": "Messages"
     },
     "search": {
@@ -1153,6 +1154,12 @@
             },
             "debug_webview": "Test Webview API",
             "debug_dapp": "Test Dapp",
+            "manage_cache": "Manage Cache",
+            "refresh_cache": "Refresh cache",
+            "refresh_cache_success_title": "Cache refreshed",
+            "refresh_cache_success_body": "All accounts refetched and queries invalidated.",
+            "refresh_cache_error_title": "Refresh failed",
+            "refresh_cache_error_body": "Could not refresh cache. Check the logs for details.",
             "taps_to_notify": "Developer menu will enable in {{remaining}} taps",
             "developer_menu_enabled": "Developer menu enabled",
             "overridden": "Overridden",
