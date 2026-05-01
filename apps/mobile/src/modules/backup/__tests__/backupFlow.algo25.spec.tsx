@@ -23,7 +23,6 @@ const account: WalletAccount = {
     type: AccountTypes.algo25,
     address: 'ADDR_A',
     keyPairId: 'kp-A',
-    seedKeyId: 'seed-A',
 }
 
 const CORRECT_PAIRS = [
@@ -131,7 +130,7 @@ describe('Backup flow - Algo25 end-to-end outcome', () => {
         mockNavigate.mockReset()
     })
 
-    test('completing verification marks seedKeyId as backed up and navigates to success', async () => {
+    test('completing verification marks the wallet root as backed up and navigates to success', async () => {
         render(<BackupVerificationScreen />)
 
         const labels = screen.getAllByText(/^Select word #\d+$/)
@@ -152,7 +151,7 @@ describe('Backup flow - Algo25 end-to-end outcome', () => {
         fireEvent.click(screen.getByTestId('backup_verification_next'))
 
         await waitFor(() => {
-            expect(useMnemonicBackupStore.getState().isBackedUp('seed-A')).toBe(
+            expect(useMnemonicBackupStore.getState().isBackedUp('kp-A')).toBe(
                 true,
             )
         })

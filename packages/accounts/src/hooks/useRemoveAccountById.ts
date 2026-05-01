@@ -28,24 +28,28 @@ export const useRemoveAccountById = () => {
                 await deleteKey(account.keyPairId)
             }
 
-            if (isAlgo25Account(account) && account.seedKeyId) {
-                const sharedSeed = remaining.some(
+            // The seed/entropy keystore entries are siblings of the root key,
+            // named deterministically as `${keyPairId}-seed` and
+            // `${keyPairId}-entropy` (see useAlgo25.ts / useHDWallet.ts). Remove
+            // them only when no other account still references the same root.
+            if (isAlgo25Account(account)) {
+                const sharedRoot = remaining.some(
                     a =>
-                        isAlgo25Account(a) && a.seedKeyId === account.seedKeyId,
+                        isAlgo25Account(a) && a.keyPairId === account.keyPairId,
                 )
-                if (!sharedSeed) {
-                    await keyStore.remove(account.seedKeyId)
+                if (!sharedRoot) {
+                    await keyStore.remove(`${account.keyPairId}-seed`)
                 }
             }
 
-            if (isHDWalletAccount(account) && account.entropyKeyId) {
-                const sharedEntropy = remaining.some(
+            if (isHDWalletAccount(account)) {
+                const sharedRoot = remaining.some(
                     a =>
                         isHDWalletAccount(a) &&
-                        a.entropyKeyId === account.entropyKeyId,
+                        a.keyPairId === account.keyPairId,
                 )
-                if (!sharedEntropy) {
-                    await keyStore.remove(account.entropyKeyId)
+                if (!sharedRoot) {
+                    await keyStore.remove(`${account.keyPairId}-entropy`)
                 }
             }
         }

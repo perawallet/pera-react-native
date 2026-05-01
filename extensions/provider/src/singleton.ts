@@ -12,6 +12,7 @@
 
 import { Store } from '@tanstack/store'
 import Hook from 'before-after-hook'
+import type { HookCollection } from 'before-after-hook'
 import type { KeyStoreState } from '@algorandfoundation/keystore'
 import { clear as clearKeystoreStore } from '@algorandfoundation/react-native-keystore'
 import { PeraProvider } from './pera-provider'
@@ -47,6 +48,25 @@ export const getProvider = (): PeraProvider => {
     }
     return instance
 }
+
+/**
+ * Returns the keystore's reactive TanStack Store. The same instance is held by
+ * the {@link KeyStoreExtension}, so it reflects every keystore mutation
+ * (`import` / `generate` / `remove` / `clear`). Subscribe via `useSyncExternalStore`.
+ */
+export const getKeystoreStore = (): Store<KeyStoreState> => keystoreStore
+
+/**
+ * Returns the keystore's hook collection (`before-after-hook`). Wallet-domain
+ * packages register `before` / `after` / `wrap` / `error` hooks here to
+ * intercept keystore operations such as `sign`, `generate`, `remove`, etc.
+ *
+ * `wrap` lets a registrant fully replace an operation — used by the kms
+ * package to route signing for our custom `type: 'algo25'` keys through
+ * tweetnacl.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const getKeystoreHooks = (): HookCollection<any> => keystoreHooks
 
 /**
  * Sets the provider singleton. Must be called exactly once during app bootstrap.

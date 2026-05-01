@@ -48,7 +48,6 @@ const accountHD: WalletAccount = {
     type: AccountTypes.hdWallet,
     address: 'HD1',
     keyPairId: 'kp',
-    entropyKeyId: 'entropy-1',
     hdWalletDetails: {
         account: 0,
         change: 0,

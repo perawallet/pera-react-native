@@ -10,36 +10,66 @@
  limitations under the License
  */
 
-import { useKeyManagerStore } from '../store'
+import { useCallback, useMemo } from 'react'
 import { KeyPair, KeyType } from '../models'
 import type { HDDerivationParams } from '../models/session'
 import { InvalidKeyError, KeyNotFoundError } from '../errors'
 import { zeroBytes } from '../crypto/secure-memory'
+import { keystoreKeyToKeyPair } from '../utils'
 import { useAlgo25 } from './useAlgo25'
 export type { Algo25KeyResult } from './useAlgo25'
 import { useHDWallet } from './useHDWallet'
 export type { HDWalletKeyResult } from './useHDWallet'
 import { useKMSService } from './useKMSServices'
+import { useKeystoreKeys } from './useKeystoreState'
 
 export type ExecuteWithMnemonicHandler<T> = (words: string[]) => T | Promise<T>
 
 export const useKMS = () => {
-    const keys = useKeyManagerStore(state => state.keys)
-    const getKey = useKeyManagerStore(state => state.getKey)
+    const keystoreKeys = useKeystoreKeys()
     const { withAlgo25Session, createAlgo25Key } = useAlgo25()
     const { withHDSession, createHDWalletKey, generateDerivedKey } =
         useHDWallet()
     const { deleteKey, keyStore, withExportedKey } = useKMSService()
 
-    const getKeyOrThrow = (keyId: string): KeyPair => {
-        const key = getKey(keyId)
-
-        if (!key) {
-            throw new KeyNotFoundError(keyId)
+    // Wallet-domain view of the keystore: only wallet-root keys (HD roots,
+    // Algo25 roots, P256 roots), with `acl`/`createdAt`/`expiresAt` decoded
+    // out of `Key.metadata.pera`. HD-derived children, entropy, and seed
+    // entries are filtered by the adapter.
+    const keys = useMemo(() => {
+        const out = new Map<string, KeyPair>()
+        for (const k of keystoreKeys) {
+            const kp = keystoreKeyToKeyPair(k)
+            if (kp?.id) out.set(kp.id, kp)
         }
+        return out
+    }, [keystoreKeys])
 
-        return key
-    }
+    const getKey = useCallback(
+        (keyId: string): KeyPair | null => {
+            const kp = keys.get(keyId)
+            if (!kp) return null
+            if (kp.expiresAt && Date.now() > kp.expiresAt.getTime()) {
+                // Expired — fire-and-forget removal. The keystore mutation
+                // updates the reactive store, so the next render returns null.
+                void keyStore.remove(keyId)
+                return null
+            }
+            return kp
+        },
+        [keys, keyStore],
+    )
+
+    const getKeyOrThrow = useCallback(
+        (keyId: string): KeyPair => {
+            const key = getKey(keyId)
+            if (!key) {
+                throw new KeyNotFoundError(keyId)
+            }
+            return key
+        },
+        [getKey],
+    )
 
     const signTransactionsWithKey = async (
         keyId: string,
@@ -78,7 +108,6 @@ export const useKMS = () => {
     const executeWithMnemonic = async <T>(
         keyId: string,
         domain: string,
-        mnemonicKeyId: string,
         handler: ExecuteWithMnemonicHandler<T>,
     ): Promise<T> => {
         const key = getKeyOrThrow(keyId)
@@ -98,9 +127,9 @@ export const useKMS = () => {
 
         switch (key.type) {
             case KeyType.HDWalletRootKey:
-                return withHDSession(key, domain, run, mnemonicKeyId)
+                return withHDSession(key, domain, run)
             case KeyType.Algo25Key:
-                return withAlgo25Session(key, domain, run, mnemonicKeyId)
+                return withAlgo25Session(key, domain, run)
             default:
                 throw new InvalidKeyError(key.id ?? 'unknown')
         }

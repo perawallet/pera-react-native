@@ -10,4 +10,11 @@
  limitations under the License
  */
 
-export * from './store'
+/**
+ * Pera-specific keystore type for flat Algo25 (Ed25519) wallet keys. The
+ * platform keystore's KeyType union accepts arbitrary strings, so we use a
+ * dedicated value rather than overloading `'hd-derived-ed25519'` (which
+ * implies HD-derived semantics) or `'ecc'` (which the default importEd25519Key
+ * handler silently rewrites to).
+ */
+export const ALGO25_KEYSTORE_TYPE = 'algo25' as const

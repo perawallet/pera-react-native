@@ -19,6 +19,7 @@
   "dependencies": {
     "@algorandfoundation/algokit-utils": "catalog:",
     "@algorandfoundation/keystore": "catalog:",
+    "@algorandfoundation/react-native-keystore": "catalog:",
     "@algorandfoundation/xhd-wallet-api": "catalog:",
     "@babel/runtime": "catalog:",
     "@perawallet/wallet-extension-provider": "workspace:*",

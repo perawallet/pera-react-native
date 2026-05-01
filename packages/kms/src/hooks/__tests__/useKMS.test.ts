@@ -12,46 +12,43 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
+import type { Key } from '@algorandfoundation/keystore'
 import { useKMS } from '../useKMS'
 import { KeyPair, KeyType } from '../../models'
 
-const mockAddKey = vi.fn()
-const mockRemoveKey = vi.fn()
-const mockGetKey = vi.fn()
-const mockKeys = new Map<string, KeyPair>()
+// Source-of-truth keystore Key list mocked at the module that bridges to
+// the platform keystore. useKMS reads from this via useKeystoreKeys().
+let mockKeystoreKeys: Key[] = []
 
-vi.mock('../../store', () => ({
-    useKeyManagerStore: (selector: any) => {
-        const state = {
-            keys: mockKeys,
-            addKey: mockAddKey,
-            removeKey: mockRemoveKey,
-            getKey: mockGetKey,
-        }
-        return selector(state)
-    },
+vi.mock('../useKeystoreState', () => ({
+    useKeystoreKeys: () => mockKeystoreKeys,
 }))
 
 const mockDeleteKey = vi.fn()
+const mockKeyStoreRemove = vi.fn()
 vi.mock('../useKMSServices', () => ({
     useKMSService: () => ({
         deleteKey: (...args: any[]) => mockDeleteKey(...args),
+        keyStore: {
+            remove: (...args: any[]) => mockKeyStoreRemove(...args),
+        },
+        withExportedKey: vi.fn(),
+        checkAccess: vi.fn(),
     }),
 }))
 
 const mockCreateHDWalletKey = vi.fn()
 const mockWithHDSession = vi.fn()
-
 vi.mock('../useHDWallet', () => ({
     useHDWallet: () => ({
         createHDWalletKey: (...args: any[]) => mockCreateHDWalletKey(...args),
         withHDSession: (...args: any[]) => mockWithHDSession(...args),
+        generateDerivedKey: vi.fn(),
     }),
 }))
 
 const mockCreateAlgo25Key = vi.fn()
 const mockWithAlgo25Session = vi.fn()
-
 vi.mock('../useAlgo25', () => ({
     useAlgo25: () => ({
         createAlgo25Key: (...args: any[]) => mockCreateAlgo25Key(...args),
@@ -59,10 +56,43 @@ vi.mock('../useAlgo25', () => ({
     }),
 }))
 
+const seedHDRoot = (id: string): KeyPair => {
+    mockKeystoreKeys.push({
+        id,
+        type: 'hd-root-key',
+        algorithm: 'raw',
+        extractable: true,
+    } as Key)
+    // The shape `keystoreKeyToKeyPair` will produce — useful for assertions
+    // that need to match what `withHDSession`/`withAlgo25Session` were called
+    // with as their `key` argument.
+    return expect.objectContaining({
+        id,
+        keystoreKeyId: id,
+        publicKey: '',
+        type: KeyType.HDWalletRootKey,
+    }) as unknown as KeyPair
+}
+
+const seedAlgo25Root = (id: string): KeyPair => {
+    mockKeystoreKeys.push({
+        id,
+        type: 'algo25',
+        algorithm: 'EdDSA',
+        extractable: true,
+    } as Key)
+    return expect.objectContaining({
+        id,
+        keystoreKeyId: id,
+        publicKey: '',
+        type: KeyType.Algo25Key,
+    }) as unknown as KeyPair
+}
+
 describe('useKMS', () => {
     beforeEach(() => {
         vi.clearAllMocks()
-        mockKeys.clear()
+        mockKeystoreKeys = []
     })
 
     it('should delete a key via deleteKey from useKMSService', async () => {
@@ -82,7 +112,7 @@ describe('useKMS', () => {
                 publicKey: '',
                 type: KeyType.HDWalletRootKey,
             },
-            entropyKeyId: 'ks-entropy-1',
+            entropyKeyId: 'wallet-1-entropy',
         }
         mockCreateHDWalletKey.mockResolvedValue(mockResult)
 
@@ -125,33 +155,24 @@ describe('useKMS', () => {
     })
 
     it('should getKeyOrThrow and throw if not found', () => {
-        mockGetKey.mockReturnValue(null)
-
         const { result } = renderHook(() => useKMS())
 
         expect(() => result.current.getKeyOrThrow('missing-id')).toThrow()
     })
 
-    it('should getKeyOrThrow successfully when key exists', () => {
-        const key: KeyPair = {
-            id: 'test-id',
-            publicKey: 'pub',
-            type: KeyType.HDWalletRootKey,
-        }
-        mockGetKey.mockReturnValue(key)
+    it('should getKeyOrThrow successfully when key exists in the keystore', () => {
+        seedHDRoot('test-id')
 
         const { result } = renderHook(() => useKMS())
 
-        expect(result.current.getKeyOrThrow('test-id')).toEqual(key)
+        const kp = result.current.getKeyOrThrow('test-id')
+        expect(kp.id).toBe('test-id')
+        expect(kp.type).toBe(KeyType.HDWalletRootKey)
+        expect(kp.keystoreKeyId).toBe('test-id')
     })
 
-    it('should signTransactionsWithKey for multiple transactions', async () => {
-        const key: KeyPair = {
-            id: 'hd-key',
-            publicKey: 'pub',
-            type: KeyType.HDWalletRootKey,
-        }
-        mockGetKey.mockReturnValue(key)
+    it('should signTransactionsWithKey for multiple HD transactions', async () => {
+        const expectedKey = seedHDRoot('hd-key')
         let callCount = 0
         mockWithHDSession.mockImplementation(
             async (_key: any, _domain: string, handler: any) => {
@@ -177,6 +198,11 @@ describe('useKMS', () => {
         })
 
         expect(signed).toHaveLength(2)
+        expect(mockWithHDSession).toHaveBeenCalledWith(
+            expectedKey,
+            'test-domain',
+            expect.any(Function),
+        )
     })
 
     it('should not expose saveKey or executeWithKey', () => {
@@ -186,26 +212,18 @@ describe('useKMS', () => {
         expect(result.current).not.toHaveProperty('executeWithKey')
     })
 
-    it('should expose getKey from the store', () => {
-        const key: KeyPair = {
-            id: 'test-key',
-            publicKey: 'pub',
-            type: KeyType.Algo25Key,
-        }
-        mockGetKey.mockReturnValue(key)
+    it('should expose getKey from the keystore', () => {
+        seedAlgo25Root('test-key')
 
         const { result } = renderHook(() => useKMS())
 
-        expect(result.current.getKey('test-key')).toEqual(key)
+        const kp = result.current.getKey('test-key')
+        expect(kp?.id).toBe('test-key')
+        expect(kp?.type).toBe(KeyType.Algo25Key)
     })
 
     it('should signTransactionsWithKey using Algo25 session', async () => {
-        const key: KeyPair = {
-            id: 'algo-key',
-            publicKey: 'pub',
-            type: KeyType.Algo25Key,
-        }
-        mockGetKey.mockReturnValue(key)
+        const expectedKey = seedAlgo25Root('algo-key')
         let callCount = 0
         mockWithAlgo25Session.mockImplementation(
             async (_key: any, _domain: string, handler: any) => {
@@ -231,19 +249,14 @@ describe('useKMS', () => {
 
         expect(signed).toHaveLength(2)
         expect(mockWithAlgo25Session).toHaveBeenCalledWith(
-            key,
+            expectedKey,
             'test-domain',
             expect.any(Function),
         )
     })
 
     it('should throw for signTransactionsWithKey with HD key without derivationParams', async () => {
-        const key: KeyPair = {
-            id: 'hd-key',
-            publicKey: 'pub',
-            type: KeyType.HDWalletRootKey,
-        }
-        mockGetKey.mockReturnValue(key)
+        seedHDRoot('hd-key')
 
         const { result } = renderHook(() => useKMS())
 
@@ -259,12 +272,7 @@ describe('useKMS', () => {
     })
 
     it('should signDataWithKey using HD session', async () => {
-        const key: KeyPair = {
-            id: 'hd-key',
-            publicKey: 'pub',
-            type: KeyType.HDWalletRootKey,
-        }
-        mockGetKey.mockReturnValue(key)
+        const expectedKey = seedHDRoot('hd-key')
         let callCount = 0
         mockWithHDSession.mockImplementation(
             async (_key: any, _domain: string, handler: any) => {
@@ -291,19 +299,14 @@ describe('useKMS', () => {
 
         expect(signed).toHaveLength(2)
         expect(mockWithHDSession).toHaveBeenCalledWith(
-            key,
+            expectedKey,
             'test-domain',
             expect.any(Function),
         )
     })
 
     it('should signDataWithKey using Algo25 session', async () => {
-        const key: KeyPair = {
-            id: 'algo-key',
-            publicKey: 'pub',
-            type: KeyType.Algo25Key,
-        }
-        mockGetKey.mockReturnValue(key)
+        const expectedKey = seedAlgo25Root('algo-key')
         let callCount = 0
         mockWithAlgo25Session.mockImplementation(
             async (_key: any, _domain: string, handler: any) => {
@@ -329,19 +332,14 @@ describe('useKMS', () => {
 
         expect(signed).toHaveLength(2)
         expect(mockWithAlgo25Session).toHaveBeenCalledWith(
-            key,
+            expectedKey,
             'test-domain',
             expect.any(Function),
         )
     })
 
     it('should throw for signDataWithKey with HD key without derivationParams', async () => {
-        const key: KeyPair = {
-            id: 'hd-key',
-            publicKey: 'pub',
-            type: KeyType.HDWalletRootKey,
-        }
-        mockGetKey.mockReturnValue(key)
+        seedHDRoot('hd-key')
 
         const { result } = renderHook(() => useKMS())
 
@@ -355,13 +353,9 @@ describe('useKMS', () => {
     })
 
     it('should throw for signTransactionsWithKey with unsupported key type', async () => {
-        const key: KeyPair = {
-            id: 'p256-key',
-            publicKey: 'pub',
-            type: KeyType.DeterministicP256Key,
-        }
-        mockGetKey.mockReturnValue(key)
-
+        // P256 keys aren't currently exposed as wallet roots; getKeyOrThrow
+        // throws KeyNotFound for an absent id, which is the same observable
+        // outcome as "unsupported key type".
         const { result } = renderHook(() => useKMS())
 
         await expect(
@@ -376,13 +370,6 @@ describe('useKMS', () => {
     })
 
     it('should throw for signDataWithKey with unsupported key type', async () => {
-        const key: KeyPair = {
-            id: 'p256-key',
-            publicKey: 'pub',
-            type: KeyType.DeterministicP256Key,
-        }
-        mockGetKey.mockReturnValue(key)
-
         const { result } = renderHook(() => useKMS())
 
         await expect(
@@ -397,21 +384,10 @@ describe('useKMS', () => {
     })
 
     it('should executeWithMnemonic via HD session and zero bytes after', async () => {
-        const key: KeyPair = {
-            id: 'hd-key',
-            publicKey: 'pub',
-            type: KeyType.HDWalletRootKey,
-        }
-        mockGetKey.mockReturnValue(key)
+        const expectedKey = seedHDRoot('hd-key')
         const capturedBytes: Uint8Array[] = []
         mockWithHDSession.mockImplementation(
-            async (
-                _key: any,
-                _domain: string,
-                handler: any,
-                mnemonicKeyId: string,
-            ) => {
-                expect(mnemonicKeyId).toBe('entropy-1')
+            async (_key: any, _domain: string, handler: any) => {
                 const bytes = new TextEncoder().encode('alpha bravo charlie')
                 capturedBytes.push(bytes)
                 return handler({
@@ -427,7 +403,6 @@ describe('useKMS', () => {
             received = await result.current.executeWithMnemonic(
                 'hd-key',
                 'backup-flow',
-                'entropy-1',
                 words => {
                     return [...words]
                 },
@@ -436,23 +411,17 @@ describe('useKMS', () => {
 
         expect(received).toEqual(['alpha', 'bravo', 'charlie'])
         expect(capturedBytes[0].every(byte => byte === 0)).toBe(true)
+        expect(mockWithHDSession).toHaveBeenCalledWith(
+            expectedKey,
+            'backup-flow',
+            expect.any(Function),
+        )
     })
 
     it('should executeWithMnemonic via Algo25 session', async () => {
-        const key: KeyPair = {
-            id: 'algo-key',
-            publicKey: 'pub',
-            type: KeyType.Algo25Key,
-        }
-        mockGetKey.mockReturnValue(key)
+        const expectedKey = seedAlgo25Root('algo-key')
         mockWithAlgo25Session.mockImplementation(
-            async (
-                _key: any,
-                _domain: string,
-                handler: any,
-                mnemonicKeyId: string,
-            ) => {
-                expect(mnemonicKeyId).toBe('seed-1')
+            async (_key: any, _domain: string, handler: any) => {
                 return handler({
                     getMnemonic: async () =>
                         new TextEncoder().encode('one two three'),
@@ -467,22 +436,19 @@ describe('useKMS', () => {
             received = await result.current.executeWithMnemonic(
                 'algo-key',
                 'backup-flow',
-                'seed-1',
                 words => [...words],
             )
         })
 
         expect(received).toEqual(['one', 'two', 'three'])
+        expect(mockWithAlgo25Session).toHaveBeenCalledWith(
+            expectedKey,
+            'backup-flow',
+            expect.any(Function),
+        )
     })
 
     it('should throw for executeWithMnemonic with unsupported key type', async () => {
-        const key: KeyPair = {
-            id: 'p256-key',
-            publicKey: 'pub',
-            type: KeyType.DeterministicP256Key,
-        }
-        mockGetKey.mockReturnValue(key)
-
         const { result } = renderHook(() => useKMS())
 
         await expect(
@@ -490,7 +456,6 @@ describe('useKMS', () => {
                 await result.current.executeWithMnemonic(
                     'p256-key',
                     'backup-flow',
-                    'some-id',
                     () => undefined,
                 )
             }),
@@ -498,12 +463,7 @@ describe('useKMS', () => {
     })
 
     it('should zero mnemonic bytes even when handler throws', async () => {
-        const key: KeyPair = {
-            id: 'hd-key',
-            publicKey: 'pub',
-            type: KeyType.HDWalletRootKey,
-        }
-        mockGetKey.mockReturnValue(key)
+        seedHDRoot('hd-key')
         let captured: Uint8Array | undefined
         mockWithHDSession.mockImplementation(
             async (_key: any, _domain: string, handler: any) => {
@@ -521,7 +481,6 @@ describe('useKMS', () => {
                 await result.current.executeWithMnemonic(
                     'hd-key',
                     'backup-flow',
-                    'entropy-1',
                     () => {
                         throw new Error('boom')
                     },
@@ -532,17 +491,14 @@ describe('useKMS', () => {
         expect(captured!.every(byte => byte === 0)).toBe(true)
     })
 
-    it('should expose the keys map from the store', () => {
-        const key: KeyPair = {
-            id: 'test-key',
-            publicKey: 'pub',
-            type: KeyType.Algo25Key,
-        }
-        mockKeys.set('test-key', key)
+    it('should expose the keys map sourced from the keystore', () => {
+        seedAlgo25Root('test-key')
 
         const { result } = renderHook(() => useKMS())
 
         expect(result.current.keys.size).toBe(1)
-        expect(result.current.keys.get('test-key')).toEqual(key)
+        const kp = result.current.keys.get('test-key')
+        expect(kp?.id).toBe('test-key')
+        expect(kp?.type).toBe(KeyType.Algo25Key)
     })
 })

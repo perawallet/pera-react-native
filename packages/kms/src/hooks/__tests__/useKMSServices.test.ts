@@ -40,21 +40,6 @@ vi.mock('@algorandfoundation/keystore', () => ({
     clearKeyData: (...args: any[]) => mockClearKeyData(...args),
 }))
 
-const mockAddKey = vi.fn()
-const mockRemoveKey = vi.fn()
-const mockGetKey = vi.fn()
-
-vi.mock('../../store', () => ({
-    useKeyManagerStore: (selector: any) => {
-        const state = {
-            addKey: mockAddKey,
-            removeKey: mockRemoveKey,
-            getKey: mockGetKey,
-        }
-        return selector(state)
-    },
-}))
-
 vi.mock('@perawallet/wallet-core-shared', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-shared',
@@ -76,77 +61,15 @@ describe('useKMSService', () => {
         vi.clearAllMocks()
     })
 
-    describe('saveKey', () => {
-        test('adds key to store and returns it', async () => {
-            const key: KeyPair = {
-                id: 'key-1',
-                publicKey: 'TESTADDR',
-                type: KeyType.Algo25Key,
-                keystoreKeyId: 'ks-key-1',
-                createdAt: new Date(),
-            }
-
-            const { result } = renderHook(() => useKMSService())
-
-            let savedKey: KeyPair | undefined
-            await act(async () => {
-                savedKey = await result.current.saveKey(key)
-            })
-
-            expect(mockAddKey).toHaveBeenCalledWith(key)
-            expect(savedKey).toBe(key)
-        })
-    })
-
     describe('deleteKey', () => {
-        test('removes key from keystore extension and store', async () => {
-            const key: KeyPair = {
-                id: 'key-1',
-                publicKey: 'ADDR',
-                type: KeyType.Algo25Key,
-                keystoreKeyId: 'ks-key-1',
-            }
-            mockGetKey.mockReturnValue(key)
-
+        test('removes key from keystore by id', async () => {
             const { result } = renderHook(() => useKMSService())
 
             await act(async () => {
                 await result.current.deleteKey('key-1')
             })
 
-            expect(mockKeyStoreRemove).toHaveBeenCalledWith('ks-key-1')
-            expect(mockRemoveKey).toHaveBeenCalledWith('key-1')
-        })
-
-        test('does nothing when key is not found', async () => {
-            mockGetKey.mockReturnValue(null)
-
-            const { result } = renderHook(() => useKMSService())
-
-            await act(async () => {
-                await result.current.deleteKey('nonexistent')
-            })
-
-            expect(mockKeyStoreRemove).not.toHaveBeenCalled()
-            expect(mockRemoveKey).not.toHaveBeenCalled()
-        })
-
-        test('skips keystore removal when no keystoreKeyId', async () => {
-            const key: KeyPair = {
-                id: 'key-1',
-                publicKey: 'ADDR',
-                type: KeyType.Algo25Key,
-            }
-            mockGetKey.mockReturnValue(key)
-
-            const { result } = renderHook(() => useKMSService())
-
-            await act(async () => {
-                await result.current.deleteKey('key-1')
-            })
-
-            expect(mockKeyStoreRemove).not.toHaveBeenCalled()
-            expect(mockRemoveKey).toHaveBeenCalledWith('key-1')
+            expect(mockKeyStoreRemove).toHaveBeenCalledWith('key-1')
         })
     })
 

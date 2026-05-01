@@ -41,7 +41,7 @@ describe('useRequiresMnemonicBackup', () => {
         vi.resetModules()
     })
 
-    test('returns false when key id is already backed up', async () => {
+    test('returns false when wallet root is already backed up', async () => {
         const { useMnemonicBackupStore } = await import('../../store')
         const { useRequiresMnemonicBackup } =
             await import('../useRequiresMnemonicBackup')
@@ -49,27 +49,25 @@ describe('useRequiresMnemonicBackup', () => {
         const account: WalletAccount = {
             type: AccountTypes.algo25,
             address: 'ADDR',
-            keyPairId: 'kp',
-            seedKeyId: 'seed-1',
+            keyPairId: 'kp-backed',
         }
 
         act(() => {
-            useMnemonicBackupStore.getState().markBackedUp('seed-1')
+            useMnemonicBackupStore.getState().markBackedUp('kp-backed')
         })
 
         const { result } = renderHook(() => useRequiresMnemonicBackup(account))
         expect(result.current).toBe(false)
     })
 
-    test('returns true when key id is not in the store', async () => {
+    test('returns true when wallet root is not in the store', async () => {
         const { useRequiresMnemonicBackup } =
             await import('../useRequiresMnemonicBackup')
 
         const account: WalletAccount = {
             type: AccountTypes.algo25,
             address: 'ADDR',
-            keyPairId: 'kp',
-            seedKeyId: 'seed-unbacked',
+            keyPairId: 'kp-unbacked',
         }
 
         const { result } = renderHook(() => useRequiresMnemonicBackup(account))

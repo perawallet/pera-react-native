@@ -166,7 +166,6 @@ describe('useImportAccount', () => {
         expect(imported.address).toBeTruthy()
         expect(imported.type).toBe('hdWallet')
         expect(imported.keyPairId).toBe('WALLET1')
-        expect(imported.entropyKeyId).toBe('ks-entropy-1')
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
 
@@ -250,7 +249,6 @@ describe('useImportAccount', () => {
         expect(imported.address).toBe('ALGO25_PUBLIC_KEY')
         expect(imported.type).toBe('algo25')
         expect(imported.keyPairId).toBe('WALLET1')
-        expect(imported.seedKeyId).toBe('ks-seed-1')
         expect(useAccountsStore.getState().accounts).toHaveLength(1)
     })
 

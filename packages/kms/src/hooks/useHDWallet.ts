@@ -13,7 +13,7 @@
 import type { KMSHDWalletSession } from '../models/session'
 import { fromSeed, KeyContext } from '@algorandfoundation/xhd-wallet-api'
 import { KeyPair, KeyType } from '../models'
-import { makeKeyPair } from '../utils'
+import { makeKeyPair, peraMetadataFor } from '../utils'
 import { generateOrderedUniqueId } from '@perawallet/wallet-core-shared'
 import { KeyManagementError } from '../errors'
 import { useKMSService } from './useKMSServices'
@@ -30,7 +30,7 @@ export type HDWalletKeyResult = {
 }
 
 export const useHDWallet = () => {
-    const { saveKey, checkAccess, keyStore, withExportedKey } = useKMSService()
+    const { checkAccess, keyStore, withExportedKey } = useKMSService()
 
     const createHDWalletKey = async (params?: {
         id?: string
@@ -42,16 +42,23 @@ export const useHDWallet = () => {
         // Convert BIP39 seed to XHD root key (96 bytes: kL || kR || chainCode)
         const rootKey = fromSeed(masterKey.seed)
 
-        // Import root key into keystore without entropy in metadata
+        // Import root key into keystore. We force `id: keyId` (same id used for
+        // the entropy entry below) so the keystore record id matches our
+        // wallet-domain key id — making the keystore the single source of truth
+        // for `KeyPair` metadata via the `keystoreKeyToKeyPair` adapter.
         const keystoreKeyId = await keyStore.import(
             {
+                id: keyId,
                 type: 'hd-root-key',
                 algorithm: 'raw',
                 extractable: true,
                 keyUsages: ['deriveKey', 'deriveBits'],
                 privateKey: rootKey,
-                metadata: { name: keyId },
-            },
+                metadata: {
+                    name: keyId,
+                    ...peraMetadataFor({ createdAt: new Date() }),
+                },
+            } as unknown as Omit<KeyData, 'id'>,
             'raw',
         )
 
@@ -82,7 +89,7 @@ export const useHDWallet = () => {
             type: KeyType.HDWalletRootKey,
         })
 
-        return { keyPair: await saveKey(keyPair), entropyKeyId }
+        return { keyPair, entropyKeyId }
     }
 
     const generateDerivedKey = async (
@@ -110,7 +117,6 @@ export const useHDWallet = () => {
         key: KeyPair,
         domain: string,
         handler: (session: KMSHDWalletSession) => Promise<T>,
-        entropyKeyId?: string,
     ): Promise<T> => {
         checkAccess(key, domain)
 
@@ -120,10 +126,11 @@ export const useHDWallet = () => {
             throw new KeyManagementError('Key does not have a keystore key ID')
         }
 
+        // The entropy key id is deterministic from the root key id — it's set
+        // to `${key.id}-entropy` at creation time (see createHDWalletKey above).
+        const entropyKeyId = `${key.id}-entropy`
+
         const resolveMnemonicWords = async (): Promise<string[]> => {
-            if (!entropyKeyId) {
-                throw new KeyManagementError('Entropy key ID not provided')
-            }
             return withExportedKey(entropyKeyId, entropyKeyData => {
                 if (!entropyKeyData.privateKey) {
                     throw new KeyManagementError(

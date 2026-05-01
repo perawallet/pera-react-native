@@ -21,9 +21,16 @@ import {
 } from '@algorandfoundation/algokit-utils/algo25'
 import { encodeAddress } from '@algorandfoundation/algokit-utils'
 import { useKMSService } from './useKMSServices'
-import { makeKeyPair } from '../utils'
+import { makeKeyPair, peraMetadataFor } from '../utils'
 import { zeroBytes } from '../crypto/secure-memory'
+import { ALGO25_KEYSTORE_TYPE } from '../constants'
 import type { KeyData, KeyId } from '@algorandfoundation/keystore'
+
+// Algo25 sign is local: we export the seed and run tweetnacl in-process. The
+// platform keystore's default `sign` handler is HD-only (it requires a
+// `parentKeyId` parent) and would throw otherwise. Going through
+// `keyStore.sign` with a `wrap('sign')` hook is also possible but introduces
+// install-timing concerns; the local path is simpler and avoids them.
 
 export type Algo25KeyResult = {
     keyPair: KeyPair
@@ -31,7 +38,7 @@ export type Algo25KeyResult = {
 }
 
 export const useAlgo25 = () => {
-    const { saveKey, checkAccess, keyStore, withExportedKey } = useKMSService()
+    const { checkAccess, keyStore, withExportedKey } = useKMSService()
 
     const createAlgo25Key = async (params?: {
         id?: string
@@ -52,23 +59,42 @@ export const useAlgo25 = () => {
             throw e
         }
 
-        // Compute keypair for import into keystore
+        // Compute keypair so we can store the public key alongside the seed.
         const naclKeyPair = nacl.sign.keyPair.fromSeed(seed)
         const publicKey = encodeAddress(naclKeyPair.publicKey)
 
-        // Note: The KeyStoreAPI type omits 'id' from import(), but the
-        // hd-derived-ed25519 path in importEd25519Key requires it (no auto-generation).
-        const keystoreKeyId = await keyStore.import(
-            {
-                id: keyId,
-                type: 'hd-derived-ed25519',
-                algorithm: 'EdDSA',
-                extractable: true,
-                publicKey: naclKeyPair.publicKey,
-                privateKey: naclKeyPair.secretKey,
-            } as unknown as Omit<KeyData, 'id'>,
-            'raw',
-        )
+        // First-class Algo25 type: store via `commit()` directly because the
+        // default `keyStore.import` rejects unknown types in its switch
+        // statement. Signing is local (see withAlgo25Session below) — we never
+        // route Algo25 through `keyStore.sign`, which is HD-only.
+        // The privateKey is the 32-byte seed; nacl.sign.keyPair.fromSeed
+        // reproduces the keypair on demand.
+        // Lazy imports keep the kms package importable in test environments
+        // that don't have react-native-mmkv (which
+        // @algorandfoundation/react-native-keystore pulls in transitively).
+        try {
+            const [{ commit }, { getKeystoreStore }] = await Promise.all([
+                import('@algorandfoundation/react-native-keystore'),
+                import('@perawallet/wallet-extension-provider'),
+            ])
+            await commit({
+                store: getKeystoreStore(),
+                keyData: {
+                    id: keyId,
+                    type: ALGO25_KEYSTORE_TYPE,
+                    algorithm: 'EdDSA',
+                    format: 'raw',
+                    extractable: true,
+                    keyUsages: ['sign'],
+                    publicKey: naclKeyPair.publicKey,
+                    privateKey: new Uint8Array(seed),
+                    metadata: peraMetadataFor({ createdAt: new Date() }),
+                } as unknown as KeyData,
+            })
+        } catch (e) {
+            zeroBytes(seed, naclKeyPair.secretKey)
+            throw e
+        }
 
         // Import raw seed as a separate keystore key for mnemonic recovery
         let seedKeyId: KeyId
@@ -84,7 +110,7 @@ export const useAlgo25 = () => {
                 'raw',
             )
         } catch (e) {
-            await keyStore.remove(keystoreKeyId)
+            await keyStore.remove(keyId)
             throw e
         }
 
@@ -92,19 +118,18 @@ export const useAlgo25 = () => {
 
         const keyPair = makeKeyPair({
             id: keyId,
-            keystoreKeyId,
+            keystoreKeyId: keyId,
             publicKey,
             type: KeyType.Algo25Key,
         })
 
-        return { keyPair: await saveKey(keyPair), seedKeyId }
+        return { keyPair, seedKeyId }
     }
 
     const withAlgo25Session = async <T>(
         key: KeyPair,
         domain: string,
         handler: (session: KMSAlgo25Session) => Promise<T>,
-        seedKeyId?: string,
     ): Promise<T> => {
         checkAccess(key, domain)
 
@@ -114,20 +139,22 @@ export const useAlgo25 = () => {
             throw new KeyManagementError('Key does not have a keystore key ID')
         }
 
-        // Algo25 keys are standalone Ed25519 keys without a parent root key,
-        // so we export key material and sign locally with nacl
+        // The seed key id is deterministic from the root key id (see
+        // createAlgo25Key above). Used only for mnemonic recovery.
+        const seedKeyId = `${key.id}-seed`
+
+        // Algo25 root holds the 32-byte seed in privateKey. Export it once
+        // per session and reconstruct the keypair for both signing and
+        // public-key reads. Bytes are zeroed in the inner finally.
         return withExportedKey(keystoreKeyId, async keyData => {
             if (!keyData.privateKey) {
-                throw new KeyManagementError('Key not found in keystore')
+                throw new KeyManagementError('Algo25 key not found in keystore')
             }
 
             const seed = keyData.privateKey.slice(0, 32)
             const naclKeyPair = nacl.sign.keyPair.fromSeed(seed)
 
             const resolveMnemonicWords = async (): Promise<string[]> => {
-                if (!seedKeyId) {
-                    throw new KeyManagementError('Seed key ID not provided')
-                }
                 return withExportedKey(seedKeyId, seedKeyData => {
                     if (!seedKeyData.privateKey) {
                         throw new KeyManagementError(
