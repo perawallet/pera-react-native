@@ -23,7 +23,7 @@ import {
 } from '@perawallet/wallet-core-assets'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
-import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 
@@ -48,7 +48,7 @@ export const useRemoveAssetsScreen = ({
 }: UseRemoveAssetsScreenProps = {}): UseRemoveAssetsScreenResult => {
     const { t } = useLanguage()
     const { showToast } = useToast()
-    const { getMessage } = useAlgodErrorMessage()
+    const { showError } = useErrorToast()
     const [selectedAssetIds, setSelectedAssetIds] = useState<Set<string>>(
         new Set(),
     )
@@ -161,11 +161,7 @@ export const useRemoveAssetsScreen = ({
                 // User dismissed the LedgerSigningOverlay — overlay already went away; no toast.
                 return
             }
-            showToast({
-                title: t('asset_opt_out.error'),
-                body: getMessage(err).body,
-                type: 'error',
-            })
+            showError(err, t('asset_opt_out.error'))
         }
     }, [
         selectedAccount,
@@ -175,7 +171,7 @@ export const useRemoveAssetsScreen = ({
         showToast,
         t,
         onAfterRemove,
-        getMessage,
+        showError,
     ])
 
     return {

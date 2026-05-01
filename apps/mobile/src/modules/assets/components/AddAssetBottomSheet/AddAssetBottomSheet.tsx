@@ -19,7 +19,7 @@ import {
 } from '@components/core'
 import { useLanguage } from '@hooks/useLanguage'
 import { useModalState } from '@hooks/useModalState'
-import { AddAssetScreen } from '@modules/assets/screens/AddAssetScreen'
+import { AddAssetView } from '@modules/assets/components/AddAssetView'
 import { AsaVerificationInfoBottomSheet } from '@modules/assets/components/AsaVerificationInfoBottomSheet'
 import { useStyles } from './styles'
 
@@ -81,7 +81,7 @@ export const AddAssetBottomSheet = ({
                         />
                     </PWTouchableOpacity>
                 </PWView>
-                <AddAssetScreen variant={variant} />
+                <AddAssetView variant={variant} />
             </PWBottomSheet>
 
             <AsaVerificationInfoBottomSheet

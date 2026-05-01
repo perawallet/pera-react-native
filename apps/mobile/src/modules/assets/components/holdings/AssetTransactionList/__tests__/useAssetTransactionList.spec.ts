@@ -23,6 +23,7 @@ import { useToast } from '@hooks/useToast'
 import { TransactionFilter } from '../../../../../accounts/components/TransactionsFilterBottomSheet/types'
 import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 import type { PeraAsset } from '@perawallet/wallet-core-assets'
+import { useErrorToast } from '@hooks/useErrorToast'
 
 // Mock dependencies
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
@@ -36,6 +37,10 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
 
 vi.mock('@hooks/useToast', () => ({
     useToast: vi.fn(),
+}))
+
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: vi.fn(),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -98,6 +103,10 @@ describe('useAssetTransactionList', () => {
         vi.mocked(useNetwork).mockReturnValue(mockNetwork as any)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         vi.mocked(useToast).mockReturnValue({ showToast: mockShowToast } as any)
+        vi.mocked(useErrorToast).mockReturnValue({
+            showError: mockShowToast,
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        } as any)
 
         vi.mocked(useTransactionHistoryQuery).mockReturnValue({
             transactions: [],
@@ -598,8 +607,7 @@ describe('useAssetTransactionList', () => {
 
             expect(mockShowToast).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    type: 'error',
-                    body: 'Error: Share cancelled',
+                    message: 'Share cancelled',
                 }),
             )
         })
@@ -630,8 +638,7 @@ describe('useAssetTransactionList', () => {
 
             expect(mockShowToast).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    type: 'error',
-                    body: 'API Down',
+                    message: 'API Down',
                 }),
             )
         })

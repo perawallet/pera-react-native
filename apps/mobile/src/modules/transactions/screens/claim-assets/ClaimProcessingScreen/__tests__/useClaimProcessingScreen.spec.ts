@@ -45,18 +45,12 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     }),
 }))
 
-const { mockShowToast } = vi.hoisted(() => ({
-    mockShowToast: vi.fn(),
+const { mockShowError } = vi.hoisted(() => ({
+    mockShowError: vi.fn(),
 }))
 
-vi.mock('@hooks/useToast', () => ({
-    useToast: () => ({ showToast: mockShowToast }),
-}))
-
-vi.mock('@hooks/useAlgodErrorMessage', () => ({
-    useAlgodErrorMessage: () => ({
-        getMessage: (_err: unknown) => ({ title: 'Error', body: 'error body' }),
-    }),
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: () => ({ showError: mockShowError }),
 }))
 
 vi.mock('@perawallet/wallet-core-accounts', async importOriginal => {
@@ -128,20 +122,20 @@ describe('useClaimProcessingScreen', () => {
         await new Promise(resolve => setTimeout(resolve, 0))
 
         expect(mockGoBack).toHaveBeenCalled()
-        expect(mockShowToast).not.toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
-        )
+        expect(mockShowError).not.toHaveBeenCalled()
     })
 
     it('shows an error toast and navigates back when execution fails with a non-cancel error', async () => {
-        mockExecute.mockRejectedValueOnce(new Error('Network error'))
+        const executeError = new Error('Network error')
+        mockExecute.mockRejectedValueOnce(executeError)
 
         renderHook(() => useClaimProcessingScreen())
 
         await new Promise(resolve => setTimeout(resolve, 0))
 
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+        expect(mockShowError).toHaveBeenCalledWith(
+            executeError,
+            undefined,
             expect.anything(),
         )
         expect(mockGoBack).toHaveBeenCalled()

@@ -29,7 +29,7 @@ import {
 } from '@perawallet/wallet-core-accounts'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import { useAssetOptOutMutation } from '@perawallet/wallet-core-transactions'
-import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useToast } from '@hooks/useToast'
 import { useLanguage } from '@hooks/useLanguage'
 import { Decimal } from 'decimal.js'
@@ -112,7 +112,7 @@ export const useCollectibleDetail = (
     const isOwned = isOptedIn && assetAmount.greaterThan(0)
     const isOptedInNotOwned = isOptedIn && !isOwned
     const { showToast } = useToast()
-    const { getMessage } = useAlgodErrorMessage()
+    const { showError } = useErrorToast()
 
     const explorerUrl =
         collectible?.explorerUrl ?? asset?.peraMetadata?.explorerUrl
@@ -162,11 +162,7 @@ export const useCollectibleDetail = (
                 return
             }
             optOutModal.close()
-            showToast({
-                title: t('asset_opt_out.error'),
-                body: getMessage(err).body,
-                type: 'error',
-            })
+            showError(err, t('asset_opt_out.error'))
         }
     }, [
         account,
@@ -177,7 +173,7 @@ export const useCollectibleDetail = (
         optOutModal,
         showToast,
         t,
-        getMessage,
+        showError,
     ])
 
     const handleCopyImage = useCallback(async () => {

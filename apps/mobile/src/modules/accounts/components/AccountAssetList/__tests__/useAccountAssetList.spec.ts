@@ -74,18 +74,17 @@ vi.mock('@perawallet/wallet-core-transactions', () => ({
     }),
 }))
 
-const { mockShowToast } = vi.hoisted(() => ({
+const { mockShowToast, mockShowError } = vi.hoisted(() => ({
     mockShowToast: vi.fn(),
+    mockShowError: vi.fn(),
 }))
 
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: mockShowToast }),
 }))
 
-vi.mock('@hooks/useAlgodErrorMessage', () => ({
-    useAlgodErrorMessage: () => ({
-        getMessage: (_err: unknown) => ({ title: 'Error', body: 'error body' }),
-    }),
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: () => ({ showError: mockShowError }),
 }))
 
 vi.mock('@perawallet/wallet-core-assets', async importOriginal => {
@@ -145,13 +144,12 @@ describe('useAccountAssetList', () => {
             await result.current.handleConfirmOptOut()
         })
 
-        expect(mockShowToast).not.toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
-        )
+        expect(mockShowError).not.toHaveBeenCalled()
     })
 
     it('shows an error toast when opt-out fails with a non-cancel error', async () => {
-        mockOptOut.mockRejectedValueOnce(new Error('Network error'))
+        const optOutError = new Error('Network error')
+        mockOptOut.mockRejectedValueOnce(optOutError)
 
         const { result } = renderHook(() =>
             useAccountAssetList({ account: mockAccount, t: mockT }),
@@ -169,8 +167,9 @@ describe('useAccountAssetList', () => {
             await result.current.handleConfirmOptOut()
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
+        expect(mockShowError).toHaveBeenCalledWith(
+            optOutError,
+            'asset_opt_out.error',
         )
     })
 })

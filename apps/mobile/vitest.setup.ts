@@ -1134,6 +1134,7 @@ vi.mock('react-native-safe-area-context', () => {
         SafeAreaConsumer: vi
             .fn()
             .mockImplementation(({ children }) => children(inset)),
+        SafeAreaView: vi.fn().mockImplementation(({ children }) => children),
         useSafeAreaInsets: vi.fn().mockImplementation(() => inset),
         useSafeAreaFrame: vi.fn().mockImplementation(() => frame),
         initialWindowMetrics: { insets: inset, frame },

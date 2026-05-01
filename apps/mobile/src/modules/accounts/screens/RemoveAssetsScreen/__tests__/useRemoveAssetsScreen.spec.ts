@@ -80,20 +80,17 @@ vi.mock('@hooks/useLanguage', () => ({
     useLanguage: () => ({ t: (k: string) => k }),
 }))
 
-const { mockShowToast, mockGetMessage } = vi.hoisted(() => ({
+const { mockShowToast, mockShowError } = vi.hoisted(() => ({
     mockShowToast: vi.fn(),
-    mockGetMessage: vi.fn((err: unknown) => ({
-        title: '',
-        body: err instanceof Error ? err.message : String(err),
-    })),
+    mockShowError: vi.fn(),
 }))
 
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: mockShowToast }),
 }))
 
-vi.mock('@hooks/useAlgodErrorMessage', () => ({
-    useAlgodErrorMessage: () => ({ getMessage: mockGetMessage }),
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: () => ({ showError: mockShowError }),
 }))
 
 describe('useRemoveAssetsScreen', () => {
@@ -308,7 +305,8 @@ describe('useRemoveAssetsScreen', () => {
     })
 
     it('shows error toast and skips onAfterRemove when optOut rejects', async () => {
-        mockOptOut.mockRejectedValueOnce(new Error('Rate limited'))
+        const optOutError = new Error('Rate limited')
+        mockOptOut.mockRejectedValueOnce(optOutError)
         const onAfterRemove = vi.fn()
 
         const { result } = renderHook(() =>
@@ -323,12 +321,9 @@ describe('useRemoveAssetsScreen', () => {
             await result.current.handleRemoveSelected()
         })
 
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({
-                title: 'asset_opt_out.error',
-                body: 'Rate limited',
-                type: 'error',
-            }),
+        expect(mockShowError).toHaveBeenCalledWith(
+            optOutError,
+            'asset_opt_out.error',
         )
         expect(onAfterRemove).not.toHaveBeenCalled()
     })
@@ -349,9 +344,7 @@ describe('useRemoveAssetsScreen', () => {
             await result.current.handleRemoveSelected()
         })
 
-        expect(mockShowToast).not.toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
-        )
+        expect(mockShowError).not.toHaveBeenCalled()
         expect(onAfterRemove).not.toHaveBeenCalled()
     })
 })
