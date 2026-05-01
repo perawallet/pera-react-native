@@ -20,6 +20,7 @@ export const useStyles = makeStyles(theme => {
         searchField: {
             borderRadius: theme.spacing.sm,
             paddingHorizontal: theme.spacing.sm,
+            marginBottom: theme.spacing.xs
         },
         list: {
             flex: 1,

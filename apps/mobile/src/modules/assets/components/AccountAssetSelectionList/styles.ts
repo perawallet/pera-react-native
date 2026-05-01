@@ -20,6 +20,7 @@ export const useStyles = makeStyles((theme, { hasPadding }: StyleProps) => ({
         marginBottom: theme.spacing.md,
     },
     listContent: {
+        flexGrow: 1,
         gap: theme.spacing.md,
         paddingBottom: theme.spacing['3xl'],
     },
