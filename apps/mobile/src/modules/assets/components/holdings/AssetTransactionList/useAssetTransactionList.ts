@@ -47,10 +47,12 @@ export type UseAssetTransactionListResult = {
     isError: boolean
     error: Nullable<Error>
     hasNextPage: boolean
+    isEmpty: boolean
     handleLoadMore: () => void
     handleRefresh: () => void
     handleExportCsv: () => void
     isExportingCsv: boolean
+    isCsvExportVisible: boolean
     activeFilter: TransactionFilter
     customRange?: CustomDateRange
     handleApplyFilter: (
@@ -160,6 +162,15 @@ export const useAssetTransactionList = ({
         setIsFilterVisible(false)
     }, [])
 
+    const isEmpty = !isLoading && transactions.length === 0
+    // CSV export is only meaningful when there are transactions to export.
+    // The Pera export-history endpoint returns 404 for empty histories, so
+    // hiding the button avoids a guaranteed-failure user action. Gating on
+    // `transactions.length > 0` rather than `!isEmpty` also keeps the button
+    // hidden during the initial load (when results may still end up empty),
+    // avoiding a brief visible-then-gone flicker.
+    const isCsvExportVisible = transactions.length > 0
+
     return {
         sections,
         isLoading,
@@ -167,10 +178,12 @@ export const useAssetTransactionList = ({
         isError,
         error,
         hasNextPage,
+        isEmpty,
         handleLoadMore,
         handleRefresh,
         handleExportCsv,
         isExportingCsv,
+        isCsvExportVisible,
         activeFilter,
         customRange,
         handleApplyFilter: (

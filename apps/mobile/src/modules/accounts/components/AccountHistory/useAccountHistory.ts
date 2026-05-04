@@ -69,6 +69,8 @@ export type UseAccountHistoryResult = {
     handleExportCsv: () => void
     /** Whether CSV export is in progress */
     isExportingCsv: boolean
+    /** Whether the CSV export action should be offered to the user */
+    isCsvExportVisible: boolean
 
     /** Current active filter */
     activeFilter: TransactionFilter
@@ -186,6 +188,13 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
     )
 
     const isEmpty = !isLoading && transactions.length === 0
+    // CSV export is only meaningful when there are transactions to export.
+    // The Pera export-history endpoint returns 404 for empty histories, so
+    // hiding the button avoids a guaranteed-failure user action. Gating on
+    // `transactions.length > 0` rather than `!isEmpty` also keeps the button
+    // hidden during the initial load (when results may still end up empty),
+    // avoiding a brief visible-then-gone flicker.
+    const isCsvExportVisible = transactions.length > 0
 
     return {
         sections,
@@ -199,6 +208,7 @@ export const useAccountHistory = (): UseAccountHistoryResult => {
         isEmpty,
         handleExportCsv,
         isExportingCsv,
+        isCsvExportVisible,
         activeFilter,
         customRange,
         handleApplyFilter: (
