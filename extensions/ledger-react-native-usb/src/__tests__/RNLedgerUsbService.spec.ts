@@ -14,6 +14,7 @@ import { describe, test, expect, vi, beforeEach } from 'vitest'
 
 const transportListenMock = vi.hoisted(() => vi.fn())
 const transportOpenMock = vi.hoisted(() => vi.fn())
+const transportListMock = vi.hoisted(() => vi.fn())
 const transportIsSupportedMock = vi.hoisted(() => vi.fn())
 const transportCloseMock = vi.hoisted(() => vi.fn())
 const algorandGetAddressMock = vi.hoisted(() => vi.fn())
@@ -23,6 +24,7 @@ vi.mock('@ledgerhq/react-native-hid', () => ({
     default: {
         listen: transportListenMock,
         open: transportOpenMock,
+        list: transportListMock,
         isSupported: transportIsSupportedMock,
     },
 }))
@@ -43,31 +45,26 @@ const NANO_S_PLUS_DESCRIPTOR = {
     deviceName: 'Nano S Plus',
 }
 
-const wireListenMock = (): { emit: (event: unknown) => void } => {
-    let observer: { next: (event: unknown) => void } = { next: () => {} }
-    transportListenMock.mockImplementation(subscription => {
-        observer = subscription
-        return { unsubscribe: vi.fn() }
-    })
-    return { emit: event => observer.next(event) }
-}
-
-const scanThenConnect = async (descriptor: typeof NANO_S_PLUS_DESCRIPTOR) => {
-    const { emit } = wireListenMock()
-    const provider = new RNLedgerUsbService().createTransportProvider()
-    provider.scan(() => {})
-    emit({ type: 'add', descriptor })
-    return provider.connect(String(descriptor.deviceId))
+const connectToFirstDevice = async (
+    descriptor: typeof NANO_S_PLUS_DESCRIPTOR = NANO_S_PLUS_DESCRIPTOR,
+) => {
+    transportListMock.mockResolvedValue([descriptor])
+    return new RNLedgerUsbService()
+        .createTransportProvider()
+        .connect('ignored-by-usb')
 }
 
 describe('RNLedgerUsbService', () => {
     beforeEach(() => {
         transportListenMock.mockReset()
         transportOpenMock.mockReset()
+        transportListMock.mockReset()
+        transportListMock.mockResolvedValue([])
         transportIsSupportedMock.mockReset()
         transportCloseMock.mockReset()
         algorandGetAddressMock.mockReset()
         algorandSignMock.mockReset()
+        transportOpenMock.mockResolvedValue({ close: transportCloseMock })
     })
 
     test('declares manufacturer "ledger" and transportType "usb"', () => {
@@ -91,7 +88,6 @@ describe('RNLedgerUsbService', () => {
 
         observer.next({ type: 'add', descriptor: NANO_S_PLUS_DESCRIPTOR })
 
-        expect(onDevice).toHaveBeenCalledTimes(1)
         expect(onDevice).toHaveBeenCalledWith(
             expect.objectContaining({
                 manufacturer: 'ledger',
@@ -105,47 +101,48 @@ describe('RNLedgerUsbService', () => {
     })
 
     test('scan ignores non-"add" events', () => {
-        const { emit } = wireListenMock()
+        let observer: { next: (event: unknown) => void } = { next: () => {} }
+        transportListenMock.mockImplementation(subscription => {
+            observer = subscription
+            return { unsubscribe: vi.fn() }
+        })
 
         const onDevice = vi.fn()
         new RNLedgerUsbService().createTransportProvider().scan(onDevice)
 
-        emit({ type: 'remove', descriptor: { deviceId: 1 } })
+        observer.next({ type: 'remove', descriptor: { deviceId: 1 } })
         expect(onDevice).not.toHaveBeenCalled()
     })
 
-    test('connect forwards the original HID descriptor (not the id) to TransportHID.open', async () => {
-        transportOpenMock.mockResolvedValue({ close: transportCloseMock })
+    test('connect opens the first connected Ledger from the live device list', async () => {
+        const transport = await connectToFirstDevice()
 
-        const transport = await scanThenConnect(NANO_S_PLUS_DESCRIPTOR)
-
+        expect(transportListMock).toHaveBeenCalled()
         expect(transportOpenMock).toHaveBeenCalledWith(NANO_S_PLUS_DESCRIPTOR)
         expect(typeof transport.getAddress).toBe('function')
         expect(typeof transport.signTransaction).toBe('function')
         expect(typeof transport.disconnect).toBe('function')
     })
 
-    test('connect rejects when called before scan tracked the device', async () => {
-        wireListenMock()
+    test('connect rejects when no Ledger is connected over USB', async () => {
         const provider = new RNLedgerUsbService().createTransportProvider()
 
-        await expect(provider.connect('unknown-id')).rejects.toThrow(
-            /No HID descriptor/,
+        await expect(provider.connect('any-id')).rejects.toThrow(
+            /No Ledger connected over USB/,
         )
         expect(transportOpenMock).not.toHaveBeenCalled()
     })
 
     test('wrapped transport.getAddress delegates to AppAlgorand and returns public-key bytes', async () => {
-        transportOpenMock.mockResolvedValue({ close: transportCloseMock })
         algorandGetAddressMock.mockResolvedValue({
             address: 'ALG_ADDR',
             publicKey:
                 'aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899',
         })
 
-        const transport = await scanThenConnect(NANO_S_PLUS_DESCRIPTOR)
-
+        const transport = await connectToFirstDevice()
         const account = await transport.getAddress(0)
+
         expect(algorandGetAddressMock).toHaveBeenCalledWith(
             "44'/283'/0'/0/0",
             false,
@@ -156,25 +153,23 @@ describe('RNLedgerUsbService', () => {
     })
 
     test('wrapped transport.signTransaction returns signature bytes', async () => {
-        transportOpenMock.mockResolvedValue({ close: transportCloseMock })
         algorandSignMock.mockResolvedValue({
             signature: Buffer.from([1, 2, 3]),
         })
 
-        const transport = await scanThenConnect(NANO_S_PLUS_DESCRIPTOR)
-
+        const transport = await connectToFirstDevice()
         const sig = await transport.signTransaction(0, new Uint8Array([10]))
+
         expect(algorandSignMock).toHaveBeenCalled()
         expect(Array.from(sig)).toEqual([1, 2, 3])
     })
 
     test('wrapped transport.disconnect closes the underlying HID transport', async () => {
-        transportOpenMock.mockResolvedValue({ close: transportCloseMock })
         transportCloseMock.mockResolvedValue(undefined)
 
-        const transport = await scanThenConnect(NANO_S_PLUS_DESCRIPTOR)
-
+        const transport = await connectToFirstDevice()
         await transport.disconnect()
+
         expect(transportCloseMock).toHaveBeenCalled()
     })
 

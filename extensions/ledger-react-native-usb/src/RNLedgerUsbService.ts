@@ -116,10 +116,6 @@ export class RNLedgerUsbService implements HardwareWalletService {
 
     createTransportProvider(): HardwareWalletTransportProvider {
         const { manufacturer } = this
-        // Native HID.openDevice reads vendorId off a ReadableMap, so we must
-        // hand back the original descriptor — a bare id string is rejected.
-        const descriptorsById = new Map<string, LedgerHIDDescriptor>()
-
         return {
             manufacturer,
             transportType: 'usb',
@@ -134,18 +130,11 @@ export class RNLedgerUsbService implements HardwareWalletService {
                         descriptor: LedgerHIDDescriptor
                     }) => {
                         if (event.type !== 'add') return
-
                         const { deviceId, productId, deviceName } =
                             event.descriptor
                         const model = resolveModel(productId ?? null)
-                        const id = String(
-                            deviceId ?? productId ?? 'usb-ledger',
-                        )
-
-                        descriptorsById.set(id, event.descriptor)
-
                         onDevice({
-                            id,
+                            id: String(deviceId ?? productId ?? 'usb-ledger'),
                             name: deviceName || `Ledger ${model}`,
                             manufacturer: 'ledger',
                             transportType: 'usb',
@@ -155,31 +144,31 @@ export class RNLedgerUsbService implements HardwareWalletService {
                     },
                     error: (err: unknown) => {
                         if (!onError) return
-                        const classified =
+                        onError(
                             err instanceof Error
                                 ? classifyLedgerError(err)
-                                : new LedgerConnectionError(String(err))
-                        onError(classified)
+                                : new LedgerConnectionError(String(err)),
+                        )
                     },
                     complete: () => {},
                 })
-
                 return () => subscription.unsubscribe()
             },
 
-            async connect(deviceId): Promise<HardwareWalletTransport> {
-                const descriptor = descriptorsById.get(deviceId)
-                if (!descriptor) {
+            // Android USB device IDs are reassigned on replug and lost on app
+            // restart, so the deviceId stored on an imported account is not a
+            // stable handle. The native HID.openDevice looks the device up by
+            // vendorId only — so connecting just means opening whichever
+            // Ledger is currently plugged in.
+            async connect(): Promise<HardwareWalletTransport> {
+                const [device] = await TransportHID.list()
+                if (!device) {
                     throw new LedgerConnectionError(
-                        `No HID descriptor for device id "${deviceId}". Call scan() before connect().`,
+                        'No Ledger connected over USB.',
                     )
                 }
                 try {
-                    const hidTransport = await TransportHID.open(
-                        descriptor as unknown as Parameters<
-                            typeof TransportHID.open
-                        >[0],
-                    )
+                    const hidTransport = await TransportHID.open(device)
                     const algorandApp = new Algorand(hidTransport)
                     return createTransportWrapper(hidTransport, algorandApp)
                 } catch (error) {
