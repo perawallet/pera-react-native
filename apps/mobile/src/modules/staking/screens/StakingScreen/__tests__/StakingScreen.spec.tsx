@@ -138,6 +138,18 @@ describe('StakingScreen', () => {
         expect(handleHelpOpen).toHaveBeenCalledTimes(1)
     })
 
+    it('renders empty view when there are no projects to show', () => {
+        mockUseStakingScreen.mockReturnValue({
+            ...baseState,
+            projects: [],
+        })
+
+        render(<StakingScreen />)
+
+        expect(screen.getByTestId('staking-empty-view')).toBeTruthy()
+        expect(screen.queryByTestId('staking-projects-list')).toBeNull()
+    })
+
     it('renders projects and forwards project press action', () => {
         const handleProjectPress = vi.fn()
         const project = {

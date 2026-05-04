@@ -1502,6 +1502,8 @@
         "error_title": "Failed to load staking projects",
         "error_description": "Please try again in a moment.",
         "retry": "Retry",
+        "empty_title": "No staking projects available",
+        "empty_body": "There are no staking projects to show right now. Please check back later.",
         "disclaimer": {
             "title": "Terms of Service",
             "intro": "Pera Wallet gives you access to third-party staking services. When you use these services, you work directly with a provider that stakes your digital assets for transaction validation on the Algorand network.",

@@ -135,16 +135,23 @@ describe('useStakingProjectsQuery', () => {
         expect(result.current.error?.message).toBe('Failed')
     })
 
-    it('throws when remote config json is invalid', () => {
+    it('surfaces invalid remote config JSON as error state (does not crash)', async () => {
         mocks.getStringValue.mockReturnValue('not-json')
         mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
-        expect(() =>
-            renderHook(() => useStakingProjectsQuery(), { wrapper }),
-        ).toThrow('Invalid staking projects remote config JSON')
+        const { result } = renderHook(() => useStakingProjectsQuery(), {
+            wrapper,
+        })
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+
+        expect(result.current.data).toEqual([])
+        expect(result.current.error?.message).toBe(
+            'Invalid staking projects remote config JSON',
+        )
     })
 
-    it('throws when remote config schema is invalid', () => {
+    it('surfaces schema validation failures as error state (does not crash)', async () => {
         mocks.getStringValue.mockReturnValue(
             JSON.stringify([
                 {
@@ -159,9 +166,29 @@ describe('useStakingProjectsQuery', () => {
         )
         mocks.fetchStakingProjectsInfo.mockResolvedValue({})
 
-        expect(() =>
-            renderHook(() => useStakingProjectsQuery(), { wrapper }),
-        ).toThrow()
+        const { result } = renderHook(() => useStakingProjectsQuery(), {
+            wrapper,
+        })
+
+        await waitFor(() => expect(result.current.isError).toBe(true))
+
+        expect(result.current.data).toEqual([])
+        expect(result.current.error).toBeInstanceOf(Error)
+    })
+
+    it('returns empty list when remote config value is missing or empty', async () => {
+        mocks.getStringValue.mockReturnValue('')
+        mocks.fetchStakingProjectsInfo.mockResolvedValue({})
+
+        const { result } = renderHook(() => useStakingProjectsQuery(), {
+            wrapper,
+        })
+
+        await waitFor(() => expect(result.current.isLoading).toBe(false))
+
+        expect(result.current.data).toEqual([])
+        expect(result.current.isError).toBe(false)
+        expect(result.current.error).toBeNull()
     })
 
     it('uses the active network when fetching', async () => {
