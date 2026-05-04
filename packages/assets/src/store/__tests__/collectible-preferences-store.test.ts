@@ -68,7 +68,7 @@ describe('useCollectiblePreferencesStore', () => {
         expect(result.current.showWatchAccounts).toBe(true)
     })
 
-    test('resetState restores the titleAsc/grid/false defaults', async () => {
+    test('resetState restores the titleAsc/grid defaults with showOptedIn on', async () => {
         const { useCollectiblePreferencesStore } =
             await import('../collectible-preferences-store')
         const { result } = renderHook(() => useCollectiblePreferencesStore())
@@ -76,7 +76,7 @@ describe('useCollectiblePreferencesStore', () => {
         act(() => {
             result.current.setCollectibleSortMode('titleDesc')
             result.current.setGalleryLayout('list')
-            result.current.setShowOptedIn(true)
+            result.current.setShowOptedIn(false)
             result.current.setShowWatchAccounts(true)
         })
         act(() => {
@@ -86,7 +86,7 @@ describe('useCollectiblePreferencesStore', () => {
         expect(result.current).toMatchObject({
             collectibleSortMode: 'titleAsc',
             galleryLayout: 'grid',
-            showOptedIn: false,
+            showOptedIn: true,
             showWatchAccounts: false,
         })
     })
@@ -102,12 +102,10 @@ describe('useCollectiblePreferencesStore', () => {
         const registration = registrations.at(-1)?.[0]
 
         act(() => {
-            useCollectiblePreferencesStore.getState().setShowOptedIn(true)
+            useCollectiblePreferencesStore.getState().setShowOptedIn(false)
         })
         act(() => registration.resetState())
-        expect(useCollectiblePreferencesStore.getState().showOptedIn).toBe(
-            false,
-        )
+        expect(useCollectiblePreferencesStore.getState().showOptedIn).toBe(true)
 
         expect(() => registration.clearStorage()).not.toThrow()
     })

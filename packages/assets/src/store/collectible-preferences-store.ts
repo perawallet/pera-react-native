@@ -25,7 +25,7 @@ const STORE_NAME = 'collectible-preferences-store'
 const initialState = {
     collectibleSortMode: 'titleAsc' as CollectibleSortMode,
     galleryLayout: 'grid' as GalleryLayout,
-    showOptedIn: false,
+    showOptedIn: true,
     showWatchAccounts: false,
 }
 

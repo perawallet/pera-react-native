@@ -28,7 +28,7 @@ vi.mock('../useAccountNfts', () => ({
         galleryLayout: 'grid',
         searchFilter: '',
         sortMode: 'titleAsc',
-        showOptedIn: false,
+        showOptedIn: true,
         isManageSheetVisible: false,
         isSortSheetVisible: false,
         isFilterSheetVisible: false,
