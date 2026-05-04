@@ -184,30 +184,6 @@ describe('useAccountInfoCard', () => {
         })
     })
 
-    test('Multisig handleSharedAccountDetails toggles inline details', () => {
-        const onClose = vi.fn()
-        const { result } = renderHook(() =>
-            useAccountInfoCard({
-                account: multisigAccount,
-                onClose,
-            }),
-        )
-
-        act(() => {
-            result.current.handleSharedAccountDetails()
-        })
-
-        expect(result.current.isExpanded).toBe(true)
-        expect(onClose).not.toHaveBeenCalled()
-        expect(mockNavigate).not.toHaveBeenCalled()
-
-        act(() => {
-            result.current.handleSharedAccountDetails()
-        })
-
-        expect(result.current.isExpanded).toBe(false)
-    })
-
     test('HD wallet handleScanAddresses navigates to SearchAccounts', () => {
         const onClose = vi.fn()
         const { result } = renderHook(() =>

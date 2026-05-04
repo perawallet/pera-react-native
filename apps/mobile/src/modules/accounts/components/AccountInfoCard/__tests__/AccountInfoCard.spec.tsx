@@ -152,6 +152,23 @@ vi.mock('../AccountTypeInfoContent', () => ({
     ),
 }))
 
+vi.mock('../SharedAccountDetailsBottomSheet', () => ({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    SharedAccountDetailsBottomSheet: ({ isVisible, details }: any) =>
+        isVisible && details ? (
+            <div data-testid='shared_account_details_content'>
+                {details.addresses.map((address: string) => (
+                    <span
+                        key={address}
+                        data-testid={`shared_account_participant_${address}`}
+                    >
+                        {address}
+                    </span>
+                ))}
+            </div>
+        ) : null,
+}))
+
 vi.mock('@perawallet/wallet-core-blockchain', () => ({
     microAlgosToAlgos: (v: bigint) => new Decimal(Number(v) / 1_000_000),
 }))
@@ -426,7 +443,7 @@ describe('AccountInfoCard', () => {
         expect(screen.getByText('account_info.type_multisig (3)')).toBeTruthy()
     })
 
-    it('expands shared account details when multisig account type row is pressed', () => {
+    it('opens the shared account details bottom sheet when multisig account type row is pressed', () => {
         const onClose = vi.fn()
         render(
             <AccountInfoCard
@@ -446,40 +463,8 @@ describe('AccountInfoCard', () => {
         expect(
             screen.getByTestId('shared_account_details_content'),
         ).toBeTruthy()
-        expect(
-            screen.getByText('multisig.detail.number_of_accounts'),
-        ).toBeTruthy()
-        expect(
-            screen.getByTestId('shared_account_participant_count').textContent,
-        ).toBe('3')
-        expect(screen.getByText('multisig.detail.threshold')).toBeTruthy()
-        expect(screen.getByTestId('shared_account_threshold').textContent).toBe(
-            '2',
-        )
-        expect(
-            screen.getByText('multisig.detail.accounts_title (3)'),
-        ).toBeTruthy()
         expect(screen.getByText('PARTICIPANT_1')).toBeTruthy()
         expect(screen.getByText('PARTICIPANT_2')).toBeTruthy()
         expect(screen.getByText('PARTICIPANT_3')).toBeTruthy()
-    })
-
-    it('collapses shared account details when multisig account type row is pressed again', () => {
-        render(
-            <AccountInfoCard
-                account={multisigAccount}
-                onClose={vi.fn()}
-            />,
-        )
-
-        fireEvent.click(screen.getByTestId('shared_account_details_button'))
-        expect(
-            screen.getByTestId('shared_account_details_content'),
-        ).toBeTruthy()
-
-        fireEvent.click(screen.getByTestId('shared_account_details_button'))
-        expect(
-            screen.queryByTestId('shared_account_details_content'),
-        ).toBeNull()
     })
 })

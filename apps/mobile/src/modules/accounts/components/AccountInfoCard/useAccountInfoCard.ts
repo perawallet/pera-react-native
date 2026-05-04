@@ -29,7 +29,7 @@ import { Decimal } from 'decimal.js'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 
-type SharedAccountDetails = {
+export type SharedAccountDetails = {
     participantCount: number
     threshold: number
     addresses: string[]
@@ -53,7 +53,6 @@ type UseAccountInfoCardResult = {
     structureLabel: string
     structureIcon: IconName
     structureAccounts: WalletAccount[]
-    handleSharedAccountDetails: () => void
     handleScanAddresses: () => void
 }
 
@@ -191,12 +190,6 @@ export const useAccountInfoCard = ({
         }
     }, [account, onClose])
 
-    const handleSharedAccountDetails = useCallback(() => {
-        if (!isMultisig) return
-
-        setIsExpanded(prev => !prev)
-    }, [isMultisig])
-
     return {
         isExpanded,
         handleToggleExpanded,
@@ -210,7 +203,6 @@ export const useAccountInfoCard = ({
         structureLabel,
         structureIcon,
         structureAccounts,
-        handleSharedAccountDetails,
         handleScanAddresses,
     }
 }

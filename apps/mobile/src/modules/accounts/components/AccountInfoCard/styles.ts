@@ -112,25 +112,4 @@ export const useStyles = makeStyles(theme => ({
     minBalanceDescription: {
         color: theme.colors.textGray,
     },
-    sharedAccountDetails: {
-        gap: theme.spacing.lg,
-    },
-    sharedAccountSummaryRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: theme.spacing.lg,
-    },
-    sharedAccountSummaryValue: {
-        flex: 1,
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        alignItems: 'flex-end',
-    },
-    sharedAccountParticipants: {
-        gap: theme.spacing.md,
-    },
-    sharedAccountParticipant: {
-        paddingVertical: theme.spacing.xs,
-    },
 }))

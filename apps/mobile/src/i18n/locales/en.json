@@ -765,6 +765,7 @@
             "done": "Done"
         },
         "detail": {
+            "title": "Shared account details",
             "number_of_accounts": "Number of accounts",
             "threshold": "Threshold",
             "accounts_title": "Accounts ({{count}})"

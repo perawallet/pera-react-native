@@ -13,32 +13,33 @@
 import { makeStyles } from '@rneui/themed'
 
 export const useStyles = makeStyles(theme => ({
-    container: {
-        paddingVertical: theme.spacing.xxl,
-    },
-    accountInfoContainer: {
+    scrollContent: {
         paddingHorizontal: theme.spacing.xl,
-        marginBottom: theme.spacing.sm,
+        paddingBottom: theme.spacing.xxl,
     },
-    divider: {
-        marginVertical: theme.spacing.sm,
-        marginHorizontal: theme.spacing.xl,
-        backgroundColor: 'yellow',
+    details: {
+        gap: theme.spacing.lg,
+        marginTop: theme.spacing.lg,
     },
-    optionRow: {
+    summaryRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: theme.spacing.lg,
-        paddingHorizontal: theme.spacing.xl,
+        justifyContent: 'space-between',
         gap: theme.spacing.lg,
     },
-    optionTextContainer: {
-        flexDirection: 'column',
+    summaryValue: {
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'flex-end',
     },
-    optionSubtitle: {
+    participants: {
+        gap: theme.spacing.md,
+    },
+    participant: {
+        paddingVertical: theme.spacing.xs,
+    },
+    labelText: {
         color: theme.colors.textGray,
-    },
-    dangerText: {
-        color: theme.colors.negative,
     },
 }))
