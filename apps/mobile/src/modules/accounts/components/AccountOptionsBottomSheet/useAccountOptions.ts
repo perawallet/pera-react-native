@@ -14,6 +14,7 @@ import { useCallback, useMemo } from 'react'
 import {
     WalletAccount,
     hasSigningKeys,
+    isMultisigAccount,
     isSigningLogicalType,
     useAccountLogicalType,
     useAllAccounts,
@@ -58,6 +59,8 @@ export type UseAccountOptionsResult = {
     handleConfirmRemove: () => void
     isPassphraseFlowVisible: boolean
     handleClosePassphraseFlow: () => void
+    isExportShareVisible: boolean
+    handleCloseExportShare: () => void
 }
 
 export const useAccountOptions = ({
@@ -80,6 +83,7 @@ export const useAccountOptions = ({
     const showUndoRekey = logicalType === 'RekeyedAuth'
     const isHdWallet = logicalType === 'HdKey'
     const canSign = isSigningLogicalType(logicalType)
+    const isSharedAccount = isMultisigAccount(account)
 
     const {
         isOpen: isRenameVisible,
@@ -103,6 +107,12 @@ export const useAccountOptions = ({
         isOpen: isPassphraseFlowVisible,
         open: openPassphraseFlow,
         close: handleClosePassphraseFlow,
+    } = useModalState()
+
+    const {
+        isOpen: isExportShareVisible,
+        open: openExportShare,
+        close: handleCloseExportShare,
     } = useModalState()
 
     const notImplemented = useCallback(() => {
@@ -147,6 +157,15 @@ export const useAccountOptions = ({
     const handleRekeyToStandard = useCallback(() => {
         notImplemented()
     }, [notImplemented])
+
+    const handleRekeyToShared = useCallback(() => {
+        notImplemented()
+    }, [notImplemented])
+
+    const handleExportShareAccount = useCallback(() => {
+        onClose()
+        openExportShare()
+    }, [onClose, openExportShare])
 
     const handleOpenRename = useCallback(() => {
         onClose()
@@ -289,7 +308,7 @@ export const useAccountOptions = ({
             })
         }
 
-        if (canSign) {
+        if (canSign && !isSharedAccount) {
             items.push({
                 id: 'rekey-to-ledger',
                 icon: 'rekey',
@@ -302,6 +321,22 @@ export const useAccountOptions = ({
                 icon: 'rekey',
                 title: t('account_options.rekey_to_standard'),
                 onPress: handleRekeyToStandard,
+            })
+        }
+
+        if (isSharedAccount) {
+            items.push({
+                id: 'rekey-to-shared',
+                icon: 'rekey',
+                title: t('account_options.rekey_to_shared'),
+                onPress: handleRekeyToShared,
+            })
+
+            items.push({
+                id: 'export-share-account',
+                icon: 'share',
+                title: t('account_options.export_share_account'),
+                onPress: handleExportShareAccount,
             })
         }
 
@@ -337,6 +372,7 @@ export const useAccountOptions = ({
         isRekeyed,
         showUndoRekey,
         canSign,
+        isSharedAccount,
         notificationsEnabled,
         handleCopyAddress,
         handleShowAddress,
@@ -345,6 +381,8 @@ export const useAccountOptions = ({
         handleUndoRekey,
         handleRekeyToLedger,
         handleRekeyToStandard,
+        handleRekeyToShared,
+        handleExportShareAccount,
         handleOpenRename,
         handleToggleNotifications,
         handleOpenRemoveConfirm,
@@ -363,5 +401,7 @@ export const useAccountOptions = ({
         handleConfirmRemove,
         isPassphraseFlowVisible,
         handleClosePassphraseFlow,
+        isExportShareVisible,
+        handleCloseExportShare,
     }
 }

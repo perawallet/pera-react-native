@@ -12,6 +12,7 @@
 
 import { useCallback, useMemo, useState } from 'react'
 import {
+    AccountTypes,
     WalletAccount,
     isHDWalletAccount,
     isLedgerAccount,
@@ -28,6 +29,12 @@ import { Decimal } from 'decimal.js'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 import type { IconName } from '@components/core'
 
+export type SharedAccountDetails = {
+    participantCount: number
+    threshold: number
+    addresses: string[]
+}
+
 type UseAccountInfoCardParams = {
     account: WalletAccount
     onClose: () => void
@@ -41,6 +48,8 @@ type UseAccountInfoCardResult = {
     isMinBalanceLoading: boolean
     showMinBalance: boolean
     showStructure: boolean
+    showSharedAccountDetails: boolean
+    sharedAccountDetails: Nullable<SharedAccountDetails>
     structureLabel: string
     structureIcon: IconName
     structureAccounts: WalletAccount[]
@@ -60,11 +69,23 @@ export const useAccountInfoCard = ({
     const { hdWalletGroups } = useHDWalletGroups()
     const { ledgerDeviceGroups } = useLedgerDeviceGroups()
 
-    const logicalType = useAccountLogicalType(account.address) ?? 'NoAuth'
     const isHDWallet = isHDWalletAccount(account)
     const isLedger = isLedgerAccount(account)
+    const isMultisig = account.type === AccountTypes.multisig
+    const logicalType =
+        useAccountLogicalType(account.address) ??
+        (isMultisig ? 'Multisig' : 'NoAuth')
     const showMinBalance = isSigningLogicalType(logicalType)
     const showStructure = isHDWallet || isLedger
+    const sharedAccountDetails = useMemo<Nullable<SharedAccountDetails>>(() => {
+        if (!isMultisig) return null
+
+        return {
+            participantCount: account.multisigDetails.addresses.length,
+            threshold: account.multisigDetails.threshold,
+            addresses: account.multisigDetails.addresses,
+        }
+    }, [account, isMultisig])
 
     const handleToggleExpanded = useCallback(() => {
         setIsExpanded(prev => !prev)
@@ -79,7 +100,11 @@ export const useAccountInfoCard = ({
             case 'LedgerBle':
                 return t('account_info.type_ledger')
             case 'Multisig':
-                return t('account_info.type_multisig')
+                return t('account_info.type_multisig', {
+                    count: isMultisig
+                        ? account.multisigDetails.addresses.length
+                        : 0,
+                })
             case 'NoAuth':
                 return t('account_info.type_watch')
             case 'Rekeyed':
@@ -88,7 +113,7 @@ export const useAccountInfoCard = ({
             default:
                 return t('account_info.type_unknown')
         }
-    }, [logicalType, t])
+    }, [account, isMultisig, logicalType, t])
 
     const minBalanceAlgos = useMemo(() => {
         if (accountInfo?.minBalance == null) return null
@@ -173,6 +198,8 @@ export const useAccountInfoCard = ({
         isMinBalanceLoading,
         showMinBalance,
         showStructure,
+        showSharedAccountDetails: isMultisig,
+        sharedAccountDetails,
         structureLabel,
         structureIcon,
         structureAccounts,

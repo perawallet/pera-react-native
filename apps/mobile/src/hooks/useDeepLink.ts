@@ -37,6 +37,11 @@ import { useLanguage } from './useLanguage'
 
 type LinkSource = 'qr' | 'deeplink'
 
+export type BuildDeeplinkInput = {
+    type: typeof DeeplinkType.SHARED_ACCOUNT_IMPORT
+    address: string
+}
+
 export const useDeepLink = () => {
     const { showToast, errorToast, infoToast } = useToast()
     const { addSignRequest } = useSigningRequest()
@@ -70,6 +75,15 @@ export const useDeepLink = () => {
 
     const buildAccountDeeplink = (account: WalletAccount) => {
         return `${ALGORAND_SCHEME}${account.address}`
+    }
+
+    const buildDeeplink = (input: BuildDeeplinkInput): string => {
+        switch (input.type) {
+            case DeeplinkType.SHARED_ACCOUNT_IMPORT: {
+                const encodedAddress = encodeURIComponent(input.address)
+                return `perawallet://app/shared-account-import/?address=${encodedAddress}`
+            }
+        }
     }
 
     const handleDeepLink = async (
@@ -308,6 +322,14 @@ export const useDeepLink = () => {
                     })
                     break
 
+                case DeeplinkType.SHARED_ACCOUNT_IMPORT:
+                    // TODO(multisig PR 1): navigate to shared-account import flow
+                    infoToast(
+                        'Shared Account Import',
+                        'Shared account import not implemented yet',
+                    )
+                    break
+
                 case DeeplinkType.HOME:
                 default:
                     navigateToScreen(replaceCurrentScreen, 'TabBar', {
@@ -334,5 +356,6 @@ export const useDeepLink = () => {
         handleDeepLink,
         parseDeeplink,
         buildAccountDeeplink,
+        buildDeeplink,
     }
 }

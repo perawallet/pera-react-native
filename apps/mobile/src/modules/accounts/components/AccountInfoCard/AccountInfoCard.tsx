@@ -20,6 +20,7 @@ import {
 import { WalletAccount } from '@perawallet/wallet-core-accounts'
 import { ALGO_ASSET } from '@perawallet/wallet-core-assets'
 import { useLanguage } from '@hooks/useLanguage'
+import { useModalState } from '@hooks/useModalState'
 import { useStyles } from './styles'
 import { useAccountInfoCard } from './useAccountInfoCard'
 import { AccountIcon } from '../AccountIcon'
@@ -28,6 +29,7 @@ import { ExpandablePanel } from '@components/ExpandablePanel'
 import { AccountStructureTree } from './AccountStructureTree'
 import { InfoButton } from '@components/InfoButton'
 import { AccountTypeInfoContent } from './AccountTypeInfoContent'
+import { SharedAccountDetailsBottomSheet } from './SharedAccountDetailsBottomSheet'
 import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated'
 import { EXPANDABLE_PANEL_ANIMATION_DURATION } from '@constants/ui'
 
@@ -39,6 +41,7 @@ export type AccountInfoCardProps = {
 export const AccountInfoCard = ({ account, onClose }: AccountInfoCardProps) => {
     const styles = useStyles()
     const { t } = useLanguage()
+    const sharedDetailsState = useModalState()
     const {
         isExpanded,
         handleToggleExpanded,
@@ -47,6 +50,8 @@ export const AccountInfoCard = ({ account, onClose }: AccountInfoCardProps) => {
         isMinBalanceLoading,
         showMinBalance,
         showStructure,
+        showSharedAccountDetails,
+        sharedAccountDetails,
         structureLabel,
         structureIcon,
         structureAccounts,
@@ -68,27 +73,54 @@ export const AccountInfoCard = ({ account, onClose }: AccountInfoCardProps) => {
     return (
         <PWView style={styles.card}>
             {/* Account type row */}
-            <PWView style={styles.infoRow}>
-                <PWText
-                    variant='body'
-                    style={styles.labelText}
+            {showSharedAccountDetails ? (
+                <PWTouchableOpacity
+                    onPress={sharedDetailsState.open}
+                    style={styles.infoRow}
+                    testID='shared_account_details_button'
                 >
-                    {t('account_info.account_type')}
-                </PWText>
-                <PWView style={styles.infoRowValue}>
-                    <AccountIcon
-                        account={account}
-                        size='sm'
-                    />
-                    <PWText variant='h4'>{accountTypeLabel}</PWText>
-                    <InfoButton>
-                        <AccountTypeInfoContent
+                    <PWText
+                        variant='body'
+                        style={styles.labelText}
+                    >
+                        {t('account_info.account_type')}
+                    </PWText>
+                    <PWView style={styles.infoRowValue}>
+                        <AccountIcon
                             account={account}
-                            onClose={onClose}
+                            size='sm'
                         />
-                    </InfoButton>
+                        <PWText variant='h4'>{accountTypeLabel}</PWText>
+                        <PWIcon
+                            name='chevron-right'
+                            size='sm'
+                            variant='secondary'
+                        />
+                    </PWView>
+                </PWTouchableOpacity>
+            ) : (
+                <PWView style={styles.infoRow}>
+                    <PWText
+                        variant='body'
+                        style={styles.labelText}
+                    >
+                        {t('account_info.account_type')}
+                    </PWText>
+                    <PWView style={styles.infoRowValue}>
+                        <AccountIcon
+                            account={account}
+                            size='sm'
+                        />
+                        <PWText variant='h4'>{accountTypeLabel}</PWText>
+                        <InfoButton>
+                            <AccountTypeInfoContent
+                                account={account}
+                                onClose={onClose}
+                            />
+                        </InfoButton>
+                    </PWView>
                 </PWView>
-            </PWView>
+            )}
 
             {/* Min balance row */}
             {showMinBalance && (
@@ -155,6 +187,14 @@ export const AccountInfoCard = ({ account, onClose }: AccountInfoCardProps) => {
                         </PWTouchableOpacity>
                     </PWView>
                 </>
+            )}
+
+            {sharedAccountDetails && (
+                <SharedAccountDetailsBottomSheet
+                    isVisible={sharedDetailsState.isOpen}
+                    onClose={sharedDetailsState.close}
+                    details={sharedAccountDetails}
+                />
             )}
         </PWView>
     )
