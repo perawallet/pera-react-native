@@ -18,8 +18,18 @@ import {
     AccountLogicalType,
     AccountLogicalTypes,
     AccountTypes,
+    MultiSigAccount,
     WalletAccount,
 } from '@perawallet/wallet-core-accounts'
+
+const buildMultisigAccount = (signerCount: number): MultiSigAccount => ({
+    address: 'multisig-addr',
+    type: AccountTypes.multisig,
+    multisigDetails: {
+        threshold: 2,
+        addresses: Array.from({ length: signerCount }, (_, i) => `signer-${i}`),
+    },
+})
 
 const mockUseAccountLogicalType = vi.fn<() => AccountLogicalType | null>(
     () => AccountLogicalTypes.Algo25,
@@ -192,5 +202,81 @@ describe('AccountIcon', () => {
         expect(
             screen.getByTestId('icon-accounts/light/algo25-account'),
         ).toBeTruthy()
+    })
+
+    it('renders participant count badge for a multisig account', () => {
+        mockUseAccountLogicalType.mockReturnValue(AccountLogicalTypes.Multisig)
+        const multisigAccount = buildMultisigAccount(3)
+
+        render(
+            <AccountIcon
+                account={multisigAccount}
+                size='lg'
+            />,
+        )
+
+        expect(screen.getByTestId('account-icon-badge')).toBeTruthy()
+        expect(screen.getByText('3')).toBeTruthy()
+    })
+
+    it('does not render badge for non-multisig accounts', () => {
+        mockUseAccountLogicalType.mockReturnValue(AccountLogicalTypes.Algo25)
+
+        render(
+            <AccountIcon
+                account={account}
+                size='lg'
+            />,
+        )
+
+        expect(screen.queryByTestId('account-icon-badge')).toBeNull()
+    })
+
+    it.each(['sm', 'md'] as const)(
+        'does not render badge for size %s',
+        size => {
+            mockUseAccountLogicalType.mockReturnValue(
+                AccountLogicalTypes.Multisig,
+            )
+            const multisigAccount = buildMultisigAccount(3)
+
+            render(
+                <AccountIcon
+                    account={multisigAccount}
+                    size={size}
+                />,
+            )
+
+            expect(screen.queryByTestId('account-icon-badge')).toBeNull()
+        },
+    )
+
+    it('renders 99+ when participant count exceeds 99', () => {
+        mockUseAccountLogicalType.mockReturnValue(AccountLogicalTypes.Multisig)
+        const multisigAccount = buildMultisigAccount(200)
+
+        render(
+            <AccountIcon
+                account={multisigAccount}
+                size='lg'
+            />,
+        )
+
+        expect(screen.getByText('99+')).toBeTruthy()
+    })
+
+    it.each(['lg', 'xl'] as const)('renders badge for size %s', size => {
+        mockUseAccountLogicalType.mockReturnValue(AccountLogicalTypes.Multisig)
+        const multisigAccount = buildMultisigAccount(5)
+
+        render(
+            <AccountIcon
+                account={multisigAccount}
+                size={size}
+            />,
+        )
+
+        expect(screen.getByTestId('account-icon-badge')).toBeTruthy()
+        expect(screen.getByText('5')).toBeTruthy()
     })
 })
