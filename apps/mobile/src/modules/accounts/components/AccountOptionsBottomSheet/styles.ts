@@ -23,7 +23,6 @@ export const useStyles = makeStyles(theme => ({
     divider: {
         marginVertical: theme.spacing.sm,
         marginHorizontal: theme.spacing.xl,
-        backgroundColor: 'yellow',
     },
     optionRow: {
         flexDirection: 'row',

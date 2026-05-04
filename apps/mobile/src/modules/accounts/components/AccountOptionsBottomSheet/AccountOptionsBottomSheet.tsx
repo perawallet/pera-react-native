@@ -167,7 +167,6 @@ export const AccountOptionsBottomSheet = ({
                             </PWView>
                         </>
                     )}
-                    <PWDivider style={styles.divider} />
 
                     <PWDivider style={styles.divider} />
                     <PWView>
