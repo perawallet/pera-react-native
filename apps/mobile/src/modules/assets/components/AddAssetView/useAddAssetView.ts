@@ -18,8 +18,12 @@ import {
 import type { AssetSearchItem } from '@perawallet/wallet-core-assets'
 import { useGlobalSearch } from '@perawallet/wallet-core-search'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
-import { useAssetOptInMutation } from '@perawallet/wallet-core-transactions'
-import { useErrorToast } from '@hooks/useErrorToast'
+import {
+    AlreadyOptedInError,
+    InsufficientBalanceForOptInError,
+    useAssetOptInMutation,
+} from '@perawallet/wallet-core-transactions'
+import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
 import { SEARCH_DEBOUNCE_TIME } from '@constants/ui'
@@ -71,7 +75,7 @@ export const useAddAssetView = (
     )
     const { optIn } = useAssetOptInMutation()
     const { showToast } = useToast()
-    const { showError } = useErrorToast()
+    const { getMessage } = useAlgodErrorMessage()
 
     const {
         value: searchQuery,
@@ -168,7 +172,25 @@ export const useAddAssetView = (
                 // User dismissed the LedgerSigningOverlay — overlay already went away; no toast.
                 return
             }
-            showError(err, t('add_asset.opt_in.failed_title'))
+            // Client-side opt-in errors (already opted in / insufficient
+            // balance) carry their own meaning; map them directly so the
+            // user doesn't see the generic "network rejected" fallback
+            // useAlgodErrorMessage falls back to for unrecognized errors.
+            const resolveBody = (error: unknown): string => {
+                if (error instanceof AlreadyOptedInError) {
+                    return t('add_asset.opt_in.already_opted_in_body')
+                }
+                if (error instanceof InsufficientBalanceForOptInError) {
+                    return t('add_asset.opt_in.insufficient_balance_body')
+                }
+                return getMessage(error).body
+            }
+            // guardrails-ignore-next-line no-error-toast-in-catch reason: opt-in error mapping picks a typed body per-cause; useErrorToast can't carry that mapping
+            showToast({
+                title: t('add_asset.opt_in.failed_title'),
+                body: resolveBody(err),
+                type: 'error',
+            })
         } finally {
             setOptingInAssetIds(prev => {
                 const next = new Set(prev)
@@ -184,7 +206,7 @@ export const useAddAssetView = (
         optingInAssetIds,
         showToast,
         t,
-        showError,
+        getMessage,
     ])
 
     return {

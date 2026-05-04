@@ -48,6 +48,8 @@
         "opt_in": {
             "failed_title": "Failed to opt-in",
             "failed_body": "There was an error trying to add the asset to your account",
+            "already_opted_in_body": "Your account is already opted in to this asset.",
+            "insufficient_balance_body": "Your account doesn't have enough ALGO to cover the minimum balance increase and transaction fee for opting in.",
             "success_title": "Opt-in successful",
             "success_body": "{{assetName}} was successfully opted-in and added to your account",
             "success_body_generic": "Asset successfully opted-in and added to your account"
