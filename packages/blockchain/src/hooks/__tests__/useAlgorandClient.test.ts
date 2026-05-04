@@ -104,9 +104,7 @@ describe('services/blockchain/hooks', () => {
 
         const placeholder = (result.current.setDefaultSigner as Mock).mock
             .calls[0][0]
-        await expect(placeholder()).rejects.toThrow(
-            /should not be invoked/,
-        )
+        await expect(placeholder()).rejects.toThrow(/should not be invoked/)
     })
 
     test('sets a 1000-round default validity window so hardware-wallet users can confirm on-device before expiry', () => {
