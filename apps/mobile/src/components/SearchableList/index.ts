@@ -11,4 +11,7 @@
  */
 
 export { SearchableList } from './SearchableList'
-export type { SearchableListProps } from './SearchableList'
+export type {
+    SearchableListProps,
+    SearchableListSearchProps,
+} from './SearchableList'

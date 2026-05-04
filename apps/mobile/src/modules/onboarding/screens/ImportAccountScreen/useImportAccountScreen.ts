@@ -262,6 +262,7 @@ export function useImportAccountScreen(): UseImportAccountScreenResult {
                 })
             } catch (e) {
                 logger.error('Import account failed', { error: e })
+                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized import_account.failed_body preserved; raw error not surfaced to user
                 showToast({
                     title: t('onboarding.import_account.failed_title'),
                     body: t('onboarding.import_account.failed_body'),

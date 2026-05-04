@@ -19,13 +19,15 @@ import {
     PWView,
 } from '@components/core'
 import { WalletAccount, isWatchAccount } from '@perawallet/wallet-core-accounts'
+import { ViewPassphraseFlow } from '@modules/view-passphrase'
 import { useStyles } from './styles'
 import { AccountOption, useAccountOptions } from './useAccountOptions'
 import { RenameAccountBottomSheet } from './RenameAccountBottomSheet'
 import { BackupWarningBottomSheet } from './BackupWarningBottomSheet'
 import { RemoveAccountConfirmBottomSheet } from './RemoveAccountConfirmBottomSheet'
 import { AccountInfoCard } from '../AccountInfoCard'
-import { BottomSheetView } from '@gorhom/bottom-sheet'
+import { ExportShareAccountBottomSheet } from '@modules/multisig/components/ExportShareAccountBottomSheet'
+import { BottomSheetScrollView } from '@gorhom/bottom-sheet'
 
 export type AccountOptionsBottomSheetProps = {
     isVisible: boolean
@@ -91,6 +93,10 @@ export const AccountOptionsBottomSheet = ({
         isRemoveConfirmVisible,
         handleCloseRemoveConfirm,
         handleConfirmRemove,
+        isPassphraseFlowVisible,
+        handleClosePassphraseFlow,
+        isExportShareVisible,
+        handleCloseExportShare,
     } = useAccountOptions({ account, onClose, onShowAddress })
 
     const generalOptions = options.filter(
@@ -105,7 +111,9 @@ export const AccountOptionsBottomSheet = ({
         o =>
             o.id === 'undo-rekey' ||
             o.id === 'rekey-to-ledger' ||
-            o.id === 'rekey-to-standard',
+            o.id === 'rekey-to-standard' ||
+            o.id === 'rekey-to-shared' ||
+            o.id === 'export-share-account',
     )
 
     const managementOptions = options.filter(
@@ -122,8 +130,12 @@ export const AccountOptionsBottomSheet = ({
                 onBackdropPress={onClose}
                 enablePanDownToClose
                 autoCreateContainer={false}
+                size='lg'
             >
-                <BottomSheetView style={styles.container}>
+                <BottomSheetScrollView
+                    contentContainerStyle={styles.container}
+                    showsVerticalScrollIndicator={false}
+                >
                     <PWView style={styles.accountInfoContainer}>
                         <AccountInfoCard
                             account={account}
@@ -166,7 +178,7 @@ export const AccountOptionsBottomSheet = ({
                             />
                         ))}
                     </PWView>
-                </BottomSheetView>
+                </BottomSheetScrollView>
             </PWBottomSheet>
 
             <RenameAccountBottomSheet
@@ -187,6 +199,18 @@ export const AccountOptionsBottomSheet = ({
                 isWatchAccount={isWatchAccount(account)}
                 onClose={handleCloseRemoveConfirm}
                 onConfirm={handleConfirmRemove}
+            />
+
+            <ViewPassphraseFlow
+                isVisible={isPassphraseFlowVisible}
+                address={account.address}
+                onClose={handleClosePassphraseFlow}
+            />
+
+            <ExportShareAccountBottomSheet
+                isVisible={isExportShareVisible}
+                onClose={handleCloseExportShare}
+                accountAddress={account.address}
             />
         </>
     )

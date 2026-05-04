@@ -33,6 +33,7 @@ import { AssetNameBadge } from '@modules/assets/components/AssetNameBadge'
 import { useLanguage } from '@hooks/useLanguage'
 import { useClipboard } from '@hooks/useClipboard'
 import { useStyles } from './styles'
+import { SafeAreaView } from 'react-native-safe-area-context'
 
 const MIN_FEE_WHOLE_UNITS = toWholeUnits(Number(MIN_TXN_FEE), ALGO_ASSET)
 
@@ -81,110 +82,112 @@ export const OptInConfirmationBottomSheet = ({
             innerContainerStyle={styles.container}
             size='auto'
         >
-            <PWHeader
-                leftIcon='cross'
-                onLeftPress={onClose}
-                title={t('add_asset.confirmation.title')}
-            />
+            <SafeAreaView edges={['bottom']}>
+                <PWHeader
+                    leftIcon='cross'
+                    onLeftPress={onClose}
+                    title={t('add_asset.confirmation.title')}
+                />
 
-            <PWView style={styles.body}>
-                <PWView style={styles.assetNameRow}>
-                    <AssetNameBadge
-                        name={assetDisplayName}
-                        verificationTier={verificationTier}
-                        isFavorited={isFavorited}
-                        textVariant='h3'
-                    />
-                </PWView>
-                {!!unitName && (
-                    <PWView style={styles.unitNameRow}>
+                <PWView style={styles.body}>
+                    <PWView style={styles.assetNameRow}>
+                        <AssetNameBadge
+                            name={assetDisplayName}
+                            verificationTier={verificationTier}
+                            isFavorited={isFavorited}
+                            textVariant='h3'
+                        />
+                    </PWView>
+                    {!!unitName && (
+                        <PWView style={styles.unitNameRow}>
+                            <PWText
+                                variant='body'
+                                style={styles.unitName}
+                            >
+                                {unitName}
+                            </PWText>
+                        </PWView>
+                    )}
+
+                    <PWView style={styles.divider} />
+
+                    <PWView style={styles.row}>
                         <PWText
                             variant='body'
-                            style={styles.unitName}
+                            style={styles.rowLabel}
                         >
-                            {unitName}
+                            {assetId}
                         </PWText>
+                        <PWButton
+                            title={t('add_asset.confirmation.copy_id')}
+                            variant='secondary'
+                            paddingStyle='dense'
+                            onPress={handleCopyId}
+                            testID='opt_in_copy_id'
+                            rounded
+                        />
                     </PWView>
-                )}
 
-                <PWView style={styles.divider} />
+                    <PWView style={styles.divider} />
 
-                <PWView style={styles.row}>
+                    <PWView style={styles.row}>
+                        <PWText
+                            variant='body'
+                            style={styles.rowLabel}
+                        >
+                            {t('add_asset.confirmation.account_label')}
+                        </PWText>
+                        <AddressDisplay
+                            address={accountAddress}
+                            showCopy={false}
+                        />
+                    </PWView>
+
+                    <PWView style={styles.divider} />
+
+                    <PWView style={styles.row}>
+                        <PWText
+                            variant='body'
+                            style={styles.rowLabel}
+                        >
+                            {t('add_asset.confirmation.fee_label')}
+                        </PWText>
+                        <CurrencyDisplay
+                            currency='ALGO'
+                            precision={ALGO_ASSET.decimals}
+                            minPrecision={DEFAULT_PRECISION}
+                            value={MIN_FEE_WHOLE_UNITS}
+                            showSymbol
+                            style={styles.rowValue}
+                        />
+                    </PWView>
+
                     <PWText
                         variant='body'
-                        style={styles.rowLabel}
+                        style={styles.description}
                     >
-                        {assetId}
+                        {t('add_asset.confirmation.description')}
                     </PWText>
-                    <PWButton
-                        title={t('add_asset.confirmation.copy_id')}
-                        variant='secondary'
-                        paddingStyle='dense'
-                        onPress={handleCopyId}
-                        testID='opt_in_copy_id'
-                        rounded
-                    />
+
+                    <PWView style={styles.buttonContainer}>
+                        <PWButton
+                            title={t('add_asset.confirmation.approve')}
+                            variant='primary'
+                            onPress={onConfirmOptIn}
+                            isLoading={isLoading}
+                            isDisabled={isLoading}
+                            testID='opt_in_confirm'
+                        />
+                        <PWButton
+                            title={t('add_asset.confirmation.close')}
+                            variant='secondary'
+                            onPress={onClose}
+                            isDisabled={isLoading}
+                            testID='opt_in_cancel'
+                        />
+                    </PWView>
                 </PWView>
-
-                <PWView style={styles.divider} />
-
-                <PWView style={styles.row}>
-                    <PWText
-                        variant='body'
-                        style={styles.rowLabel}
-                    >
-                        {t('add_asset.confirmation.account_label')}
-                    </PWText>
-                    <AddressDisplay
-                        address={accountAddress}
-                        showCopy={false}
-                    />
-                </PWView>
-
-                <PWView style={styles.divider} />
-
-                <PWView style={styles.row}>
-                    <PWText
-                        variant='body'
-                        style={styles.rowLabel}
-                    >
-                        {t('add_asset.confirmation.fee_label')}
-                    </PWText>
-                    <CurrencyDisplay
-                        currency='ALGO'
-                        precision={ALGO_ASSET.decimals}
-                        minPrecision={DEFAULT_PRECISION}
-                        value={MIN_FEE_WHOLE_UNITS}
-                        showSymbol
-                        style={styles.rowValue}
-                    />
-                </PWView>
-
-                <PWText
-                    variant='body'
-                    style={styles.description}
-                >
-                    {t('add_asset.confirmation.description')}
-                </PWText>
-
-                <PWView style={styles.buttonContainer}>
-                    <PWButton
-                        title={t('add_asset.confirmation.approve')}
-                        variant='primary'
-                        onPress={onConfirmOptIn}
-                        isLoading={isLoading}
-                        isDisabled={isLoading}
-                        testID='opt_in_confirm'
-                    />
-                    <PWButton
-                        title={t('add_asset.confirmation.close')}
-                        variant='secondary'
-                        onPress={onClose}
-                        isDisabled={isLoading}
-                        testID='opt_in_cancel'
-                    />
-                </PWView>
-            </PWView>
+            </SafeAreaView>
         </PWBottomSheet>
     )
 }

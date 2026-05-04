@@ -10,7 +10,10 @@
  limitations under the License
  */
 
-import { KeyPair } from './models'
+import type { Key } from '@algorandfoundation/keystore'
+import { encodeAddress } from '@algorandfoundation/algokit-utils'
+import { KeyType, type AccessControl, type KeyPair } from './models'
+import { ALGO25_KEYSTORE_TYPE } from './constants'
 
 export const makeKeyPair = (source: Partial<KeyPair>): KeyPair => {
     return {
@@ -23,3 +26,61 @@ export const makeKeyPair = (source: Partial<KeyPair>): KeyPair => {
         acl: source.acl ?? [],
     }
 }
+
+// Pera-domain extras (acl, timestamps) round-trip through the keystore Key's
+// `metadata` field under this namespace so they don't collide with
+// keystore-defined fields like `parentKeyId`, `path`, `account`, `index`.
+const PERA_META_KEY = 'pera'
+
+type PeraMetadata = {
+    acl?: AccessControl[]
+    createdAt?: string // ISO 8601 — Dates aren't JSON-safe
+    expiresAt?: string
+}
+
+const keystoreTypeToWalletType: Record<string, KeyType> = {
+    'hd-root-key': KeyType.HDWalletRootKey,
+    [ALGO25_KEYSTORE_TYPE]: KeyType.Algo25Key,
+    'hd-derived-p256': KeyType.DeterministicP256Key,
+}
+
+/**
+ * Maps a keystore Key into our wallet-domain KeyPair shape. Returns null for
+ * keystore entries that aren't wallet-roots (HD-derived children of an HD
+ * root, raw entropy/seed entries, etc.).
+ */
+export const keystoreKeyToKeyPair = (key: Key): KeyPair | null => {
+    const walletType = keystoreTypeToWalletType[key.type]
+    if (!walletType) return null
+
+    const pera = (key.metadata?.[PERA_META_KEY] ?? {}) as PeraMetadata
+    const publicKey =
+        walletType === KeyType.Algo25Key && key.publicKey
+            ? encodeAddress(new Uint8Array(key.publicKey))
+            : ''
+
+    return {
+        id: key.id,
+        keystoreKeyId: key.id,
+        publicKey,
+        type: walletType,
+        acl: pera.acl ?? [],
+        createdAt: pera.createdAt ? new Date(pera.createdAt) : new Date(),
+        expiresAt: pera.expiresAt ? new Date(pera.expiresAt) : undefined,
+    }
+}
+
+/**
+ * Builds the keystore-metadata payload that carries Pera-domain extras
+ * through `keyStore.import` / `keyStore.generate`. Pass the result spread
+ * into the `metadata` argument alongside any keystore-defined fields.
+ */
+export const peraMetadataFor = (
+    keyPair: Pick<KeyPair, 'acl' | 'createdAt' | 'expiresAt'>,
+): { [PERA_META_KEY]: PeraMetadata } => ({
+    [PERA_META_KEY]: {
+        acl: keyPair.acl,
+        createdAt: (keyPair.createdAt ?? new Date()).toISOString(),
+        expiresAt: keyPair.expiresAt?.toISOString(),
+    },
+})

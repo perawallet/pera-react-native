@@ -16,8 +16,8 @@ import { BaseErrorBoundary } from '@components/BaseErrorBoundary'
 import { useLanguage } from '@hooks/useLanguage'
 import { EmptyView } from '@components/EmptyView'
 import { PWButton, bottomSheetNotifier } from '@components/core'
-import { useToast } from '@hooks/useToast'
 import { WalletConnectError } from '@perawallet/wallet-core-walletconnect'
+import { useErrorToast } from '@hooks/useErrorToast'
 
 export interface WalletConnectErrorBoundaryProps {
     children: ReactNode
@@ -61,19 +61,12 @@ const WalletConnectErrorFallback = ({
 export const WalletConnectErrorBoundary: React.FC<
     WalletConnectErrorBoundaryProps
 > = ({ children, t }) => {
-    const { showToast } = useToast()
+    const { showError } = useErrorToast()
     const handleError = (error: Error) => {
         if (error instanceof WalletConnectError) {
-            showToast(
-                {
-                    title: t('errors.walletconnect.title'),
-                    body: t(error.message),
-                    type: 'error',
-                },
-                {
-                    notifier: bottomSheetNotifier.current ?? undefined,
-                },
-            )
+            showError(error, undefined, {
+                notifier: bottomSheetNotifier.current ?? undefined,
+            })
         }
     }
 

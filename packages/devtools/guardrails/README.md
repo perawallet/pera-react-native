@@ -48,11 +48,12 @@ Excluded: `__tests__/`, `*.spec.{ts,tsx}`, `*.test.{ts,tsx}`, `node_modules`, `d
 
 ## Current checks (Phase 1)
 
-| Rule                         | What it enforces                                                                                                                                                                                                                                                |
-| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `no-numeric-sizes`           | No literal numeric spacing/sizing (`padding: 12`, `borderRadius: 16`, `-16`, …) inside `makeStyles(...)` objects. `0` is allowed. Use `theme.spacing.*`, `theme.borderRadius.*`, or `theme.borders.*`.                                                          |
-| `no-typography-in-styles`    | No direct `fontSize`, `fontFamily`, `fontWeight`, `lineHeight`, or `letterSpacing` inside `makeStyles(...)` objects. Use `getTypography(theme, variant)` from `@/theme/typography`, or `PWText` with a variant prop.                                            |
-| `no-primitive-rn-components` | No `import { Text, View, ScrollView, FlatList, TouchableOpacity, Image, Switch } from 'react-native'` in app code. Use the PW-prefixed equivalents from `@components/core`. Files under `apps/mobile/src/components/core/` are exempt (those are the wrappers). |
+| Rule                         | What it enforces                                                                                                                                                                                                                                                                              |
+| ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `no-numeric-sizes`           | No literal numeric spacing/sizing (`padding: 12`, `borderRadius: 16`, `-16`, …) inside `makeStyles(...)` objects. `0` is allowed. Use `theme.spacing.*`, `theme.borderRadius.*`, or `theme.borders.*`.                                                                                        |
+| `no-typography-in-styles`    | No direct `fontSize`, `fontFamily`, `fontWeight`, `lineHeight`, or `letterSpacing` inside `makeStyles(...)` objects. Use `getTypography(theme, variant)` from `@/theme/typography`, or `PWText` with a variant prop.                                                                          |
+| `no-primitive-rn-components` | No `import { Text, View, ScrollView, FlatList, TouchableOpacity, Image, Switch } from 'react-native'` in app code. Use the PW-prefixed equivalents from `@components/core`. Files under `apps/mobile/src/components/core/` are exempt (those are the wrappers).                               |
+| `no-error-toast-in-catch`    | No `showToast({ type: 'error', ... })` inside a `catch` clause or `.catch(...)` handler. Use `showError(err, fallbackTitle)` from `useErrorToast`. Static error toasts outside catch scopes (e.g. validation messages) are still allowed. `apps/mobile/src/hooks/useErrorToast.ts` is exempt. |
 
 ## Output format
 

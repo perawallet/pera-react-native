@@ -32,6 +32,12 @@ const mockCreateAlgo25WalletAccount = vi.fn()
 const mockCreateNextHDAccount = vi.fn()
 const mockUseAllAccounts = vi.fn((): WalletAccount[] => [])
 
+const mockResetMultisigCreation = vi.fn()
+vi.mock('@modules/multisig/hooks/useMultisigCreation', () => ({
+    useMultisigCreationStore: (selector: (state: unknown) => unknown) =>
+        selector({ resetState: mockResetMultisigCreation }),
+}))
+
 vi.mock('@perawallet/wallet-core-accounts', async () => {
     const actual = await vi.importActual<object>(
         '@perawallet/wallet-core-accounts',
@@ -203,6 +209,36 @@ describe('AddAccountScreen', () => {
         fireEvent.click(importButton)
 
         expect(mockPush).toHaveBeenCalledWith('ImportAccountOptions')
+    })
+
+    it('opens shared account introduction before navigating to CreateMultisig', () => {
+        render(<AddAccountScreen />)
+
+        const multisigButton = screen.getByText(
+            'onboarding.add_account.create_multisig_option_title',
+        )
+        fireEvent.click(multisigButton)
+
+        expect(screen.getByTestId('multisig_introduction_dialog')).toBeTruthy()
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('continues from shared account introduction to CreateMultisig', () => {
+        render(<AddAccountScreen />)
+
+        const multisigButton = screen.getByText(
+            'onboarding.add_account.create_multisig_option_title',
+        )
+        fireEvent.click(multisigButton)
+
+        fireEvent.click(
+            screen.getByTestId('multisig_introduction_continue_button'),
+        )
+
+        expect(mockResetMultisigCreation).toHaveBeenCalledTimes(1)
+        expect(mockNavigate).toHaveBeenCalledWith('Multisig', {
+            screen: 'CreateMultisig',
+        })
     })
 
     it('does not render Pair Ledger or Scan QR options on the main screen', () => {

@@ -17,12 +17,20 @@ import type { WalletAccount } from '@perawallet/wallet-core-accounts'
 
 const mockGoBack = vi.fn()
 const mockPush = vi.fn()
+const mockNavigate = vi.fn()
 
 vi.mock('@hooks/useAppNavigation', () => ({
     useAppNavigation: () => ({
         goBack: mockGoBack,
         push: mockPush,
+        navigate: mockNavigate,
     }),
+}))
+
+const mockResetMultisigCreation = vi.fn()
+vi.mock('@modules/multisig/hooks/useMultisigCreation', () => ({
+    useMultisigCreationStore: (selector: (state: unknown) => unknown) =>
+        selector({ resetState: mockResetMultisigCreation }),
 }))
 
 const mockCreateHdWalletAccount = vi.fn()
@@ -287,6 +295,66 @@ describe('useAddAccountScreen', () => {
                 o => o.testID === 'add_account_create_multisig_button',
             ),
         ).toBeDefined()
+    })
+
+    it('shared account option opens introduction dialog without navigating', () => {
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const multisigOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_create_multisig_button',
+        )!
+
+        expect(result.current.isMultisigIntroductionVisible).toBe(false)
+
+        act(() => {
+            multisigOption.onPress()
+        })
+
+        expect(result.current.isMultisigIntroductionVisible).toBe(true)
+        expect(mockResetMultisigCreation).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('closing shared account introduction hides dialog without navigating', () => {
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const multisigOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_create_multisig_button',
+        )!
+
+        act(() => {
+            multisigOption.onPress()
+        })
+
+        act(() => {
+            result.current.handleCloseMultisigIntroduction()
+        })
+
+        expect(result.current.isMultisigIntroductionVisible).toBe(false)
+        expect(mockResetMultisigCreation).not.toHaveBeenCalled()
+        expect(mockNavigate).not.toHaveBeenCalled()
+    })
+
+    it('continuing shared account introduction resets state and navigates to CreateMultisig', () => {
+        const { result } = renderHook(() => useAddAccountScreen())
+
+        const multisigOption = result.current.mainOptions.find(
+            o => o.testID === 'add_account_create_multisig_button',
+        )!
+
+        act(() => {
+            multisigOption.onPress()
+        })
+
+        act(() => {
+            result.current.handleContinueMultisigIntroduction()
+        })
+
+        expect(result.current.isMultisigIntroductionVisible).toBe(false)
+        expect(mockResetMultisigCreation).toHaveBeenCalledTimes(1)
+        expect(mockNavigate).toHaveBeenCalledWith('Multisig', {
+            screen: 'CreateMultisig',
+        })
     })
 
     it('watch address option navigates to WatchInfo', () => {

@@ -19,7 +19,6 @@ import {
 } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { bottomSheetNotifier } from '@components/core'
-import { useToast } from '@hooks/useToast'
 import { useClaimAssets } from '@modules/transactions/hooks'
 import {
     SendClaimParams,
@@ -27,7 +26,6 @@ import {
 } from '@perawallet/wallet-core-transactions'
 import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 import type { MessagesStackParamList } from '@modules/messages/routes/types'
-import { useAlgodErrorMessage } from '@hooks/useAlgodErrorMessage'
 import {
     useAccountBalancesInvalidator,
     useFindAccountByAddress,
@@ -35,6 +33,7 @@ import {
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useArc59Invalidator } from '@perawallet/wallet-core-asa-inbox'
 import { useInboxInvalidator } from '@perawallet/wallet-core-messages'
+import { useErrorToast } from '@hooks/useErrorToast'
 
 export const useClaimProcessingScreen = () => {
     const navigation =
@@ -45,8 +44,7 @@ export const useClaimProcessingScreen = () => {
     const { mode, assetIndex, shouldClaimAlgo } = route.params
     const { assetRequests, accountAddress, setOnFinished } = useClaimAssets()
     const account = useFindAccountByAddress(accountAddress ?? '')
-    const { showToast } = useToast()
-    const { getMessage } = useAlgodErrorMessage()
+    const { showError } = useErrorToast()
 
     const { remove: removeArc59Queries } = useArc59Invalidator()
     const { invalidate: invalidateInboxQueries } = useInboxInvalidator()
@@ -92,17 +90,9 @@ export const useClaimProcessingScreen = () => {
                     navigation.goBack()
                     return
                 }
-                const { title, body } = getMessage(error)
-                showToast(
-                    {
-                        title,
-                        body,
-                        type: 'error',
-                    },
-                    {
-                        notifier: bottomSheetNotifier.current ?? undefined,
-                    },
-                )
+                showError(error, undefined, {
+                    notifier: bottomSheetNotifier.current ?? undefined,
+                })
                 navigation.goBack()
             })
 

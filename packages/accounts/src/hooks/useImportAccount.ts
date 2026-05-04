@@ -27,21 +27,15 @@ export const useImportAccount = () => {
         type: ImportAccountType
     }) => {
         if (type === 'hdWallet') {
-            const { keyPair, entropyKeyId } = await createHDWalletKey({
-                mnemonic,
-            })
+            const { keyPair } = await createHDWalletKey({ mnemonic })
             return await createHdWalletAccount({
                 walletId: keyPair.id,
-                entropyKeyId,
                 account: 0,
                 keyIndex: 0,
             })
         } else {
-            const { keyPair, seedKeyId } = await createAlgo25Key({ mnemonic })
-            return await createAlgo25WalletAccount({
-                id: keyPair.id,
-                seedKeyId,
-            })
+            const { keyPair } = await createAlgo25Key({ mnemonic })
+            return await createAlgo25WalletAccount({ id: keyPair.id })
         }
     }
 }

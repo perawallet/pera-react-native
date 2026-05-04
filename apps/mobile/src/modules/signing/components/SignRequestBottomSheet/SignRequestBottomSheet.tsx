@@ -36,7 +36,11 @@ export function SignRequestBottomSheet() {
 
     return (
         <PWBottomSheet
-            isVisible={isVisible}
+            // Gate on `nextRequest` to defend against a deferred
+            // setIsVisible(true) firing after the request has been pulled
+            // from the queue (e.g. WC error path that auto-dismisses) —
+            // without this guard the sheet sticks around with empty content.
+            isVisible={isVisible && !!nextRequest}
             size='lg'
             autoCreateContainer={false}
             enablePanDownToClose={false}

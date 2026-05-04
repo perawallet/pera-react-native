@@ -80,6 +80,15 @@ export const SignRequestView = ({ request }: SignRequestViewProps) => {
         lastFailedRequest?.request.id === request.id ? lastFailedRequest : null
 
     if (failureForThisRequest) {
+        // WalletConnect requests surface failures through the WC error
+        // bottom sheet (driven by the request's `error` callback), and the
+        // callback also dismisses the sign request. Don't double-show the
+        // full-screen failed view here — render nothing while the queue
+        // settles.
+        if (request.sourceType === 'walletconnect') {
+            return null
+        }
+
         const body =
             config.debugEnabled && failureForThisRequest.error.message
                 ? failureForThisRequest.error.message

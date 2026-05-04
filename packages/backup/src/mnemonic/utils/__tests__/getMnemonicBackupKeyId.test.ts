@@ -10,33 +10,15 @@
  limitations under the License
  */
 
-import { describe, test, expect, vi } from 'vitest'
+import { describe, test, expect } from 'vitest'
 import {
     AccountTypes,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
-import { logger } from '@perawallet/wallet-core-shared'
 import { getMnemonicBackupKeyId } from '../getMnemonicBackupKeyId'
 
 describe('getMnemonicBackupKeyId', () => {
-    test('returns entropyKeyId for HDWallet accounts', () => {
-        const account: WalletAccount = {
-            type: AccountTypes.hdWallet,
-            address: 'ADDR_HD',
-            keyPairId: 'kp-1',
-            entropyKeyId: 'entropy-abc',
-            hdWalletDetails: {
-                account: 0,
-                change: 0,
-                keyIndex: 0,
-                derivationType: 9,
-            },
-        }
-        expect(getMnemonicBackupKeyId(account)).toBe('entropy-abc')
-    })
-
-    test('falls back to keyPairId and warns for HDWallet when entropyKeyId missing', () => {
-        const warnSpy = vi.spyOn(logger, 'warn').mockImplementation(() => {})
+    test('returns keyPairId for HDWallet accounts (siblings share one backup state)', () => {
         const account: WalletAccount = {
             type: AccountTypes.hdWallet,
             address: 'ADDR_HD',
@@ -49,21 +31,9 @@ describe('getMnemonicBackupKeyId', () => {
             },
         }
         expect(getMnemonicBackupKeyId(account)).toBe('kp-1')
-        expect(warnSpy).toHaveBeenCalledOnce()
-        warnSpy.mockRestore()
     })
 
-    test('returns seedKeyId for Algo25 accounts', () => {
-        const account: WalletAccount = {
-            type: AccountTypes.algo25,
-            address: 'ADDR_25',
-            keyPairId: 'kp-2',
-            seedKeyId: 'seed-xyz',
-        }
-        expect(getMnemonicBackupKeyId(account)).toBe('seed-xyz')
-    })
-
-    test('falls back to keyPairId for Algo25 when seedKeyId missing', () => {
+    test('returns keyPairId for Algo25 accounts', () => {
         const account: WalletAccount = {
             type: AccountTypes.algo25,
             address: 'ADDR_25',

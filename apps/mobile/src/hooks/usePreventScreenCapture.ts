@@ -18,12 +18,17 @@ import {
 import { logger } from '@perawallet/wallet-core-shared'
 
 // Blocks screenshots and screen recordings while the mounting component is
-// alive, re-enabling capture on unmount. Fails open (permission denied) rather
-// than bricking the caller — errors are logged so we notice them in crash
-// reports. The `tag` is required so overlapping callers (e.g. mnemonic screen
-// plus a deep-linked verification sheet) don't clobber each other's lock.
-export const usePreventScreenCapture = (tag: string): void => {
+// alive (or while `enabled` is true), re-enabling capture on unmount or when
+// `enabled` flips back to false. Fails open (permission denied) rather than
+// bricking the caller — errors are logged so we notice them in crash reports.
+// The `tag` is required so overlapping callers (e.g. mnemonic screen plus a
+// deep-linked verification sheet) don't clobber each other's lock.
+export const usePreventScreenCapture = (
+    tag: string,
+    enabled: boolean = true,
+): void => {
     useEffect(() => {
+        if (!enabled) return
         void preventScreenCaptureAsync(tag).catch(err => {
             logger.error(
                 'usePreventScreenCapture: failed to prevent screen capture',
@@ -44,5 +49,5 @@ export const usePreventScreenCapture = (tag: string): void => {
                 )
             })
         }
-    }, [tag])
+    }, [tag, enabled])
 }

@@ -13,8 +13,6 @@
 import { useCallback, useRef } from 'react'
 import {
     AccountTypes,
-    type Algo25Account,
-    type HDWalletAccount,
     type WalletAccount,
 } from '@perawallet/wallet-core-accounts'
 import {
@@ -60,31 +58,18 @@ export const useMnemonicForAddress = (
                 throw new Error('Account not found')
             }
 
-            if (currentAccount.type === AccountTypes.hdWallet) {
-                const hdAccount = currentAccount as HDWalletAccount
-                if (!hdAccount.entropyKeyId) {
-                    throw new Error('Account does not support backup')
-                }
-                return kmsRef.current.executeWithMnemonic(
-                    hdAccount.keyPairId,
-                    DOMAIN,
-                    hdAccount.entropyKeyId,
-                    handler,
-                )
+            if (
+                currentAccount.type !== AccountTypes.hdWallet &&
+                currentAccount.type !== AccountTypes.algo25
+            ) {
+                throw new Error('Account type does not support backup')
             }
-            if (currentAccount.type === AccountTypes.algo25) {
-                const algoAccount = currentAccount as Algo25Account
-                if (!algoAccount.seedKeyId) {
-                    throw new Error('Account does not support backup')
-                }
-                return kmsRef.current.executeWithMnemonic(
-                    algoAccount.keyPairId,
-                    DOMAIN,
-                    algoAccount.seedKeyId,
-                    handler,
-                )
-            }
-            throw new Error('Account type does not support backup')
+
+            return kmsRef.current.executeWithMnemonic(
+                currentAccount.keyPairId,
+                DOMAIN,
+                handler,
+            )
         },
         [],
     )

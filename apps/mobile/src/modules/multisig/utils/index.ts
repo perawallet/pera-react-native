@@ -10,4 +10,4 @@
  limitations under the License
  */
 
-export { AddAssetScreen } from './AddAssetScreen'
+export { getNextSharedAccountName } from './getNextSharedAccountName'

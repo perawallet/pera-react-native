@@ -54,7 +54,10 @@ export const MenuScreen = () => {
                     {t('menu.title')}
                 </PWText>
                 <PWView style={styles.iconBarColumn}>
-                    <PWTouchableOpacity onPress={scanner.open}>
+                    <PWTouchableOpacity
+                        onPress={scanner.open}
+                        testID='menu_button'
+                    >
                         <PWIcon
                             name='camera'
                             variant='primary'
@@ -80,6 +83,7 @@ export const MenuScreen = () => {
                     leftIcon='dot-stack'
                     rightIcon='chevron-right'
                     onPress={goToStaking}
+                    testID='menu_staking_button'
                 />
                 <PanelButton
                     title={t('menu.buy_gift_card')}

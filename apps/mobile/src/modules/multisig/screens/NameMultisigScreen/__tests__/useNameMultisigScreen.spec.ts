@@ -141,11 +141,40 @@ describe('useNameMultisigScreen', () => {
         store.setThreshold(2)
     })
 
-    it('initializes with default name from i18n', () => {
+    it('initializes with auto-numbered default name (#1) when no shared accounts exist', () => {
         const { result } = renderHook(() => useNameMultisigScreen())
 
-        expect(result.current.accountName).toBe('Shared Account')
+        expect(result.current.accountName).toBe('Shared Account #1')
         expect(result.current.isCreating).toBe(false)
+    })
+
+    it('increments default name based on existing multisig account count', () => {
+        mockUseAllAccounts.mockReturnValue([
+            {
+                address: 'M1',
+                name: 'Coffee fund',
+                type: 'multisig',
+                multisigDetails: { threshold: 2, addresses: ['A', 'B'] },
+            } as WalletAccount,
+        ])
+
+        const { result } = renderHook(() => useNameMultisigScreen())
+
+        expect(result.current.accountName).toBe('Shared Account #2')
+    })
+
+    it('skips taken "#N" slots regardless of account type', () => {
+        mockUseAllAccounts.mockReturnValue([
+            {
+                address: 'W1',
+                name: 'Shared Account #1',
+                type: 'watch',
+            } as WalletAccount,
+        ])
+
+        const { result } = renderHook(() => useNameMultisigScreen())
+
+        expect(result.current.accountName).toBe('Shared Account #2')
     })
 
     it('handleNameChange updates the name', () => {
@@ -158,12 +187,16 @@ describe('useNameMultisigScreen', () => {
         expect(result.current.accountName).toBe('My Wallet')
     })
 
-    it('derives isNameTaken when an existing account matches (case-insensitive, trimmed)', () => {
+    it('derives isNameTaken when the user types a name matching an existing account (case-insensitive, trimmed)', () => {
         mockUseAllAccounts.mockReturnValue([
-            { address: 'A', name: 'shared account' } as WalletAccount,
+            { address: 'A', name: 'my account' } as WalletAccount,
         ])
 
         const { result } = renderHook(() => useNameMultisigScreen())
+
+        act(() => {
+            result.current.handleNameChange('  MY ACCOUNT  ')
+        })
 
         expect(result.current.isNameTaken).toBe(true)
         expect(result.current.nameError).toBe('multisig.name.error_name_taken')
@@ -217,7 +250,7 @@ describe('useNameMultisigScreen', () => {
             expect.objectContaining({
                 type: 'multisig',
                 address: 'MULTISIG_ADDR',
-                name: 'Shared Account',
+                name: 'Shared Account #1',
                 multisigDetails: {
                     threshold: 2,
                     addresses: ['ADDR1', 'ADDR2'],

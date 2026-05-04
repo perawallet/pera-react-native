@@ -11,8 +11,7 @@
  */
 
 import { useCallback, useMemo } from 'react'
-import { useToast } from '@hooks/useToast'
-import { config } from '@perawallet/wallet-core-config'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useLanguage } from '@hooks/useLanguage'
 import {
     type SigningPipelineEvent,
@@ -34,7 +33,7 @@ const preferenceKeyMap: Record<GuardedWarningType, string> = {
 }
 
 export const useSigningActionButtons = () => {
-    const { showToast } = useToast()
+    const { showError } = useErrorToast()
     const { t } = useLanguage()
 
     const securityGuardModal = useModalState()
@@ -47,25 +46,16 @@ export const useSigningActionButtons = () => {
             if (event.type !== 'signing_failed') return
             const req = pipeline.currentRequest
             if (req?.transport === 'algod') {
-                showToast(
-                    {
-                        type: 'error',
-                        title: t(
-                            'signing.transaction_view.transaction_failed_title',
-                        ),
-                        body: config.debugEnabled
-                            ? event.error.message
-                            : t(
-                                  'signing.transaction_view.transaction_failed_body',
-                              ),
-                    },
+                showError(
+                    event.error,
+                    t('signing.transaction_view.transaction_failed_title'),
                     {
                         notifier: bottomSheetNotifier.current ?? undefined,
                     },
                 )
             }
         },
-        [showToast, t],
+        [showError, t],
     )
 
     const pipeline = useSigningPipeline({ onEvent: handleEvent })

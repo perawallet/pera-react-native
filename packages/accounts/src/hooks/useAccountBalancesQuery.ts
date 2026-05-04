@@ -131,17 +131,16 @@ export const useAccountBalancesQuery = (
         })),
     })
 
-    // Always include ALGO in the prices query — holdings never contain ALGO,
-    // but we need its USD price to express per-asset and portfolio totals in
-    // ALGO-denominated terms.
-    const assetIDs = results.flatMap(
-        r => r.data?.holdings?.map(h => h.assetId) ?? [],
-    )
-    const { data: assets } = useAssetsQuery(assetIDs)
-    const { data: assetPrices } = useAssetPricesQuery([
+    // Always include ALGO in the asset and prices queries — holdings never
+    // contain ALGO, but every account implicitly holds it. The asset query
+    // gives us its DB-backed peraMetadata (so toggles like isFavorited reach
+    // the row); the prices query gives us its USD price for portfolio totals.
+    const assetIDs = [
         ALGO_ASSET_ID,
-        ...assetIDs,
-    ])
+        ...results.flatMap(r => r.data?.holdings?.map(h => h.assetId) ?? []),
+    ]
+    const { data: assets } = useAssetsQuery(assetIDs)
+    const { data: assetPrices } = useAssetPricesQuery(assetIDs)
     const usdAlgoPrice = useMemo(
         () => assetPrices?.get(ALGO_ASSET_ID)?.usdPrice ?? new Decimal(0),
         [assetPrices],
@@ -210,7 +209,7 @@ export const useAccountBalancesQuery = (
 
             assetBalances.push({
                 assetId: ALGO_ASSET_ID,
-                asset: ALGO_ASSET,
+                asset: assets.get(ALGO_ASSET_ID) ?? ALGO_ASSET,
                 amount: algoAmount,
                 algoValue: algoAmount,
             })

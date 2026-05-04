@@ -42,6 +42,6 @@ export const useStyles = makeStyles(theme => ({
         marginBottom: theme.spacing.sm,
     },
     addButton: {
-        marginTop: theme.spacing.sm,
+        marginTop: theme.spacing.lg,
     },
 }))

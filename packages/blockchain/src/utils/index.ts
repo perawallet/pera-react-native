@@ -13,8 +13,10 @@
 import { Decimal } from 'decimal.js'
 import {
     TransactionType,
+    Transaction,
     encodeTransaction,
     encodeTransactionRaw,
+    groupTransactions,
 } from '@algorandfoundation/algokit-utils/transact'
 
 export * from './algorandClient'
@@ -22,6 +24,7 @@ export * from './addresses'
 export * from './transactions'
 export * from './json'
 export * from './multisig'
+export * from './arc0001'
 
 /**
  * Converts an amount from base units (smallest indivisible unit) to display units.
@@ -104,4 +107,10 @@ export const algosToMicroAlgos = (
     return displayUnitsToBaseUnits(algos, 6)
 }
 
-export { TransactionType, encodeTransaction, encodeTransactionRaw }
+export {
+    TransactionType,
+    Transaction,
+    encodeTransaction,
+    encodeTransactionRaw,
+    groupTransactions,
+}

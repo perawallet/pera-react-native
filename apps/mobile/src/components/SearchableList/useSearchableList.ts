@@ -27,16 +27,26 @@ import {
 import type { PWFlatListRef } from '@components/core'
 import { Nullable } from '@perawallet/wallet-core-shared'
 
-const SEARCH_SENTINEL = Symbol('SearchableList.search')
 const SEARCH_KEY = '__searchable_list_search__'
 const DEFAULT_ITEM_HEIGHT_ESTIMATE = 56
 
-export type SearchSentinel = typeof SEARCH_SENTINEL
+export type SearchSentinel = {
+    readonly __searchableListSearch: true
+    readonly key: typeof SEARCH_KEY
+}
+
+const SEARCH_SENTINEL: SearchSentinel = {
+    __searchableListSearch: true,
+    key: SEARCH_KEY,
+}
 
 export type AugmentedItem<T> = T | SearchSentinel
 
 export const isSearchSentinel = (item: unknown): item is SearchSentinel =>
-    item === SEARCH_SENTINEL
+    typeof item === 'object' &&
+    item != null &&
+    '__searchableListSearch' in item &&
+    item.__searchableListSearch === true
 
 type UseSearchableListParams<T> = {
     forwardedRef: React.ForwardedRef<PWFlatListRef>
@@ -112,7 +122,7 @@ export const useSearchableList = <T>({
         if (listLayoutHeight <= 0) {
             return 0
         }
-        // Use the natural size is fwe can or estimate it
+        // Use the natural size if we can or estimate it.
         let natural =
             naturalContentSize > 0
                 ? naturalContentSize
@@ -228,7 +238,7 @@ export const useSearchableList = <T>({
 
     const augmentedKeyExtractor = useCallback(
         (item: AugmentedItem<T>, index: number): string => {
-            if (item === SEARCH_SENTINEL) {
+            if (isSearchSentinel(item)) {
                 return SEARCH_KEY
             }
             return keyExtractor?.(item as T, index - 1) ?? String(index - 1)

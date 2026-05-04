@@ -13,11 +13,10 @@
 import { useCallback, useMemo } from 'react'
 
 import { shareText } from '@utils/shareText'
-import { useToast } from '@hooks/useToast'
+import { useErrorToast } from '@hooks/useErrorToast'
 import { useClipboard } from '@hooks/useClipboard'
 import { useDeepLink } from '@hooks/useDeepLink'
 import { useLanguage } from '@hooks/useLanguage'
-import { config } from '@perawallet/wallet-core-config'
 import { bottomSheetNotifier } from '@components/core'
 import {
     getAccountDisplayName,
@@ -41,7 +40,7 @@ export const useQRViewScreen = (
 ): UseQRViewScreenResult => {
     const { selectedAccount, canSelectAccount } = useReceiveFunds()
     const { t } = useLanguage()
-    const { showToast } = useToast()
+    const { showError } = useErrorToast()
     const { copyToClipboard } = useClipboard()
     const { buildAccountDeeplink } = useDeepLink()
     const navigation =
@@ -76,20 +75,11 @@ export const useQRViewScreen = (
                 message: selectedAccount.address,
             })
         } catch (error) {
-            showToast(
-                {
-                    title: t('errors.general.title'),
-                    body: config.debugEnabled
-                        ? `${error}`
-                        : t('errors.general.body'),
-                    type: 'error',
-                },
-                {
-                    notifier: bottomSheetNotifier.current ?? undefined,
-                },
-            )
+            showError(error, t('errors.general.title'), {
+                notifier: bottomSheetNotifier.current ?? undefined,
+            })
         }
-    }, [selectedAccount, showToast, t])
+    }, [selectedAccount, showError, t])
 
     return {
         account: selectedAccount,

@@ -17,7 +17,11 @@ import type {
     WalletConnectSessionRequest,
     WalletConnectStore,
 } from '../models'
-import { registerStore, type WithPersist } from '@perawallet/wallet-core-shared'
+import {
+    registerStore,
+    type Nullable,
+    type WithPersist,
+} from '@perawallet/wallet-core-shared'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 
 const STORE_NAME = 'wallet-connect-store'
@@ -25,6 +29,7 @@ const STORE_NAME = 'wallet-connect-store'
 const initialState = {
     walletConnectConnections: [] as WalletConnectConnection[],
     sessionRequests: [] as WalletConnectSessionRequest[],
+    connectionError: null as Nullable<Error>,
 }
 
 export const useWalletConnectStore: UseBoundStore<
@@ -39,6 +44,8 @@ export const useWalletConnectStore: UseBoundStore<
             setSessionRequests: (
                 sessionRequests: WalletConnectSessionRequest[],
             ) => set({ sessionRequests }),
+            setConnectionError: (connectionError: Nullable<Error>) =>
+                set({ connectionError }),
             resetState: () => set(initialState),
         }),
         {

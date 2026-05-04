@@ -45,6 +45,7 @@ export const RatingsBottomSheet = (props: RatingsBottomSheetProps) => {
                 throw new Error('Failed to open store for review')
             }
         } catch {
+            // guardrails-ignore-next-line no-error-toast-in-catch reason: localized common.error copy preserved; no exception detail surfaced
             showToast({
                 title: t('common.error.title'),
                 body: t('common.error.body'),

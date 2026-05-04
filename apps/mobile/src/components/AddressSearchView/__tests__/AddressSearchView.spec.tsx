@@ -63,6 +63,12 @@ vi.mock('@modules/accounts/components/AccountDisplay', () => ({
         account?.name || null,
 }))
 
+vi.mock('../AccountResultRow', () => ({
+    __esModule: true,
+    AccountResultRow: ({ account }: { account: { name: string } }) =>
+        account?.name || null,
+}))
+
 describe('AddressSearchView', () => {
     const mockOnSelected = vi.fn()
     const mockFindContacts = vi.fn()
@@ -157,6 +163,37 @@ describe('AddressSearchView', () => {
         fireEvent.change(input, { target: { value: validAddress } })
 
         expect(screen.getByText('address_entry.address')).toBeTruthy()
+    })
+
+    it('renders + add icon for foreign address rows when showAddIcon is true', () => {
+        vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
+
+        render(
+            <AddressSearchView
+                onSelected={mockOnSelected}
+                showAddIcon
+            />,
+        )
+
+        const input = screen.getByPlaceholderText(
+            'address_entry.search_placeholder',
+        )
+        fireEvent.change(input, { target: { value: 'VALID_ADDRESS' } })
+
+        expect(screen.getByTestId('address-search-add-icon')).toBeTruthy()
+    })
+
+    it('does not render + add icon when showAddIcon is false', () => {
+        vi.mocked(isValidAlgorandAddress).mockReturnValue(true)
+
+        render(<AddressSearchView onSelected={mockOnSelected} />)
+
+        const input = screen.getByPlaceholderText(
+            'address_entry.search_placeholder',
+        )
+        fireEvent.change(input, { target: { value: 'VALID_ADDRESS' } })
+
+        expect(screen.queryByTestId('address-search-add-icon')).toBeNull()
     })
 
     it('hides accounts and contacts when address is valid', () => {

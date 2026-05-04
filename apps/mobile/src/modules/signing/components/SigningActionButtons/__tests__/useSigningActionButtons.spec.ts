@@ -32,12 +32,8 @@ vi.mock('@react-navigation/native', () => ({
     useNavigation: vi.fn(),
 }))
 
-vi.mock('@hooks/useToast', () => ({
-    useToast: vi.fn(() => ({ showToast: vi.fn() })),
-}))
-
-vi.mock('@perawallet/wallet-core-config', () => ({
-    config: { debugEnabled: false },
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: vi.fn(() => ({ showError: vi.fn() })),
 }))
 
 vi.mock('@components/core', () => ({

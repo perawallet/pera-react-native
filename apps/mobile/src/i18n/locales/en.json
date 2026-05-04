@@ -104,7 +104,7 @@
         "scan_qr": "Scan QR Code",
         "address": "Address",
         "contacts": "Contacts",
-        "my_accounts": "My Accounts",
+        "my_accounts": "Accounts",
         "no_accounts_found": "No Accounts Found",
         "no_accounts_body": "There are no matching accounts",
         "search_placeholder": "Account address, NFD name, or short name",
@@ -274,11 +274,14 @@
     "account_options": {
         "copy_address": "Copy Address",
         "show_address": "Show Address",
-        "view_passphrase": "View root wallet passphrase",
+        "view_passphrase_hd": "View root wallet passphrase",
+        "view_passphrase_algo25": "View wallet passphrase",
         "auth_address": "Auth Account Address",
         "undo_rekey": "Undo Rekey",
         "rekey_to_ledger": "Rekey to Ledger Account",
         "rekey_to_standard": "Rekey to Standard Account",
+        "rekey_to_shared": "Rekey to Shared Account",
+        "export_share_account": "Export/Share Account",
         "rename_account": "Rename Account",
         "mute_notifications": "Mute Notifications",
         "unmute_notifications": "Unmute Notifications",
@@ -313,7 +316,7 @@
         "type_algo25": "Algo25 Account",
         "type_watch": "Watch Account",
         "type_ledger": "Ledger Account",
-        "type_multisig": "Multisig Account",
+        "type_multisig": "Shared Account ({{count}})",
         "type_unknown": "Unknown Account"
     },
     "account_type_info": {
@@ -343,6 +346,24 @@
         "title": "Minimum Balance",
         "description": "Minimum balance is the minimum amount of Algo you have to keep in an account. It increases every time the account is opted in to a smart contract, ASA or NFT.",
         "close": "Close"
+    },
+    "view_passphrase": {
+        "acknowledge": {
+            "title": "Keep it secret. Keep it safe.",
+            "description": "Confirm and acknowledge the following:",
+            "row_screen": "Nobody can see my screen.",
+            "row_share": "I risk losing all my funds if I share my Recovery Phrase with anyone.",
+            "row_lose": "My funds are permanently lost if I lose my Recovery Phrase and lose access to my wallet.",
+            "row_pera": "Pera employees will NEVER ask for my Recovery Phrase.",
+            "cta_reveal": "Reveal Passphrase",
+            "cta_cancel": "Cancel"
+        },
+        "screen": {
+            "title": "Passphrase",
+            "body": "Make sure to record these words in the correct order, using the corresponding numbers.",
+            "error_title": "Could not retrieve passphrase",
+            "error_body": "Something went wrong. Please try again."
+        }
     },
     "backup": {
         "banner": {
@@ -699,6 +720,13 @@
             "accounts_subtitle": "You need add at least two accounts",
             "add_account": "Add Account"
         },
+        "introduction": {
+            "title": "Shared Account",
+            "bullet_1": "Enhanced security by requiring multiple approvals. Great for shared or high-value accounts.",
+            "bullet_2": "Assign signers and required approvals per transaction.",
+            "bullet_3": "Monitor activity and signer actions securely.",
+            "continue": "Continue"
+        },
         "add_participant": {
             "title": "Add Account",
             "cannot_add_multisig_error": "Cannot add shared account",
@@ -735,6 +763,18 @@
             "address_label": "Account Address",
             "remove": "Remove Address",
             "done": "Done"
+        },
+        "detail": {
+            "title": "Shared account details",
+            "number_of_accounts": "Number of accounts",
+            "threshold": "Threshold",
+            "accounts_title": "Accounts ({{count}})"
+        },
+        "export": {
+            "title": "Export/Share Account",
+            "url_label": "Account Export URL",
+            "copy_url": "Copy URL",
+            "share_url": "Share URL"
         },
         "invitation": {
             "sheet_title": "Shared Account",

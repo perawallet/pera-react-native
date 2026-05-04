@@ -42,6 +42,11 @@ export const useAddAccountScreen = () => {
         open: openCreatingAccount,
         close: closeCreatingAccount,
     } = useModalState()
+    const {
+        isOpen: isMultisigIntroductionVisible,
+        open: openMultisigIntroduction,
+        close: closeMultisigIntroduction,
+    } = useModalState()
 
     const resetMultisigCreation = useMultisigCreationStore(
         state => state.resetState,
@@ -64,6 +69,7 @@ export const useAddAccountScreen = () => {
                     navigation.push('NameAccount', { account: newAccount })
                 }
             } catch (error) {
+                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
                 showToast({
                     title: t('onboarding.create_account.error_title'),
                     body: t('onboarding.create_account.error_message', {
@@ -104,10 +110,11 @@ export const useAddAccountScreen = () => {
             pushWebView({ url: config.privacyPolicyUrl, id: 'privacy-policy' }),
         [pushWebView],
     )
-    const handleCreateMultisig = useCallback(() => {
+    const handleContinueMultisigIntroduction = useCallback(() => {
+        closeMultisigIntroduction()
         resetMultisigCreation()
         navigation.navigate('Multisig', { screen: 'CreateMultisig' })
-    }, [navigation, resetMultisigCreation])
+    }, [closeMultisigIntroduction, navigation, resetMultisigCreation])
 
     const handleWatchAddress = useCallback(
         () => navigation.push('WatchInfo'),
@@ -124,6 +131,7 @@ export const useAddAccountScreen = () => {
                 })
                 navigation.push('NameAccount', { account: newAccount })
             } catch (error) {
+                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
                 showToast({
                     title: t('onboarding.create_account.error_title'),
                     body: t('onboarding.create_account.error_message', {
@@ -151,6 +159,7 @@ export const useAddAccountScreen = () => {
                 const newAccount = await createAlgo25WalletAccount({})
                 navigation.push('NameAccount', { account: newAccount })
             } catch (error) {
+                // guardrails-ignore-next-line no-error-toast-in-catch reason: localized create_account.error_message wraps the raw error; preserved verbatim
                 showToast({
                     title: t('onboarding.create_account.error_title'),
                     body: t('onboarding.create_account.error_message', {
@@ -200,7 +209,7 @@ export const useAddAccountScreen = () => {
                     descriptionKey:
                         'onboarding.add_account.create_multisig_option_description',
                     leftIcon: 'people' as IconName,
-                    onPress: handleCreateMultisig,
+                    onPress: openMultisigIntroduction,
                 },
                 {
                     testID: 'add_account_import_button',
@@ -217,7 +226,7 @@ export const useAddAccountScreen = () => {
             handleAddAccount,
             handleCreateUniversalWallet,
             isCreatingAccount,
-            handleCreateMultisig,
+            openMultisigIntroduction,
             handleOpenImportAccountOptions,
         ],
     )
@@ -271,6 +280,9 @@ export const useAddAccountScreen = () => {
         handleClose: navigation.goBack,
         handleTermsPress,
         handlePrivacyPress,
+        isMultisigIntroductionVisible,
+        handleCloseMultisigIntroduction: closeMultisigIntroduction,
+        handleContinueMultisigIntroduction,
         isOtherOptionsVisible,
         handleToggleOtherOptions: () => setIsOtherOptionsVisible(prev => !prev),
     }

@@ -18,11 +18,17 @@ import type {
     AnalysisWarning,
     TransactionSummary,
 } from '../types'
-import { AnalysisError, TransactionRoundTripError } from '../errors'
+import {
+    AnalysisError,
+    InvalidSignableDataError,
+    TransactionRoundTripError,
+} from '../errors'
 import {
     type PeraTransaction,
+    Transaction,
     encodeAlgorandAddress,
     classifyPeraTransaction,
+    groupTransactions,
 } from '@perawallet/wallet-core-blockchain'
 import { validateTransactionRoundTrip } from '../../utils/validateTransactionRoundTrip'
 
@@ -53,6 +59,8 @@ export const createStandardAnalyzer = (): DataAnalyzer => {
                         rawTransactionsBase64,
                     )
                 }
+
+                validateTransactionGroupIntegrity(transactions)
 
                 const accountAddresses = new Set(
                     context.accounts.map(a => a.address),
@@ -90,12 +98,83 @@ export const createStandardAnalyzer = (): DataAnalyzer => {
                 }
             } catch (error) {
                 if (error instanceof TransactionRoundTripError) throw error
+                if (error instanceof InvalidSignableDataError) throw error
                 throw new AnalysisError(
                     error instanceof Error ? error.message : String(error),
                     error instanceof Error ? error : undefined,
                 )
             }
         },
+    }
+}
+
+const bytesEqual = (
+    a: Uint8Array | undefined,
+    b: Uint8Array | undefined,
+): boolean => {
+    if (!a && !b) return true
+    if (!a || !b) return false
+    if (a.length !== b.length) return false
+    for (let i = 0; i < a.length; i++) {
+        if (a[i] !== b[i]) return false
+    }
+    return true
+}
+
+/**
+ * Verifies that any transactions claiming to be part of an atomic group
+ * actually form a valid group. Catches cases where a dApp sends transactions
+ * with a stale group ID — e.g. a 5-tx group with one tx removed before send,
+ * which would otherwise reach the signer and only fail on submission to algod.
+ *
+ * Rules:
+ * - If no transaction has a group, nothing to validate.
+ * - All transactions in the request must share the group (no mixed groups,
+ *   and no partial groupings).
+ * - The recomputed group ID over the present transactions must equal the
+ *   claimed group ID.
+ *
+ * Throws `InvalidSignableDataError` (non-retryable) on any violation.
+ */
+const validateTransactionGroupIntegrity = (
+    transactions: PeraTransaction[],
+): void => {
+    const groupedTxns = transactions.filter(tx => tx.group)
+    if (groupedTxns.length === 0) return
+
+    const claimedGroup = groupedTxns[0].group!
+    for (const tx of groupedTxns) {
+        if (!bytesEqual(tx.group, claimedGroup)) {
+            throw new InvalidSignableDataError(
+                'transactions reference different group IDs',
+            )
+        }
+    }
+
+    if (groupedTxns.length !== transactions.length) {
+        throw new InvalidSignableDataError(
+            'some transactions are not part of the declared group',
+        )
+    }
+
+    let computedGroup: Uint8Array | undefined
+    try {
+        const ungrouped = transactions.map(
+            tx => new Transaction({ ...tx, group: undefined }),
+        )
+        computedGroup = groupTransactions(ungrouped)[0].group
+    } catch (e) {
+        throw new InvalidSignableDataError(
+            `failed to recompute transaction group ID: ${
+                e instanceof Error ? e.message : String(e)
+            }`,
+        )
+    }
+
+    if (!bytesEqual(computedGroup, claimedGroup)) {
+        throw new InvalidSignableDataError(
+            'group ID does not match the transactions provided',
+        )
     }
 }
 

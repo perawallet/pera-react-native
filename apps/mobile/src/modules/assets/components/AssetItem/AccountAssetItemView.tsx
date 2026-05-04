@@ -60,7 +60,7 @@ export const AccountAssetItemView = ({
 
     const asset = useMemo(() => {
         return (
-            accountBalance.asset ?? fetchedAssets?.get(accountBalance.assetId)
+            fetchedAssets?.get(accountBalance.assetId) ?? accountBalance.asset
         )
     }, [accountBalance.asset, fetchedAssets, accountBalance.assetId])
 

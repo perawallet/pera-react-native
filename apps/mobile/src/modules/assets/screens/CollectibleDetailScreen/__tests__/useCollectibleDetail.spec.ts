@@ -19,6 +19,7 @@ import { UserRejectedSigningError } from '@perawallet/wallet-core-signing'
 
 const mockCopyToClipboard = vi.fn()
 const mockShowToast = vi.fn()
+const mockShowError = vi.fn()
 const mockOpenURL = vi.fn()
 const mockOptOut = vi.fn()
 const mockGoBack = vi.fn()
@@ -46,6 +47,10 @@ vi.mock('@hooks/useClipboard', () => ({
 
 vi.mock('@hooks/useToast', () => ({
     useToast: () => ({ showToast: mockShowToast }),
+}))
+
+vi.mock('@hooks/useErrorToast', () => ({
+    useErrorToast: () => ({ showError: mockShowError }),
 }))
 
 vi.mock('@hooks/useLanguage', () => ({
@@ -269,17 +274,16 @@ describe('useCollectibleDetail', () => {
         mockUseAccountAssetBalanceQuery.mockReturnValue({
             data: { amount: new Decimal(0), algoValue: new Decimal(0) },
         })
-        mockOptOut.mockRejectedValueOnce(new Error('signing rejected'))
+        const optOutError = new Error('signing rejected')
+        mockOptOut.mockRejectedValueOnce(optOutError)
 
         const { result } = renderHook(() => useCollectibleDetail('12345'))
 
         await result.current.handleConfirmOptOut()
 
-        expect(mockShowToast).toHaveBeenCalledWith(
-            expect.objectContaining({
-                type: 'error',
-                body: expect.stringContaining('errors.algod'),
-            }),
+        expect(mockShowError).toHaveBeenCalledWith(
+            optOutError,
+            'asset_opt_out.error',
         )
         expect(mockGoBack).not.toHaveBeenCalled()
     })
@@ -294,9 +298,7 @@ describe('useCollectibleDetail', () => {
 
         await result.current.handleConfirmOptOut()
 
-        expect(mockShowToast).not.toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'error' }),
-        )
+        expect(mockShowError).not.toHaveBeenCalled()
         expect(mockGoBack).not.toHaveBeenCalled()
     })
 

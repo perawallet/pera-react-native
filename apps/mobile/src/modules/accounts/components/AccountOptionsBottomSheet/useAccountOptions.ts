@@ -14,6 +14,7 @@ import { useCallback, useMemo } from 'react'
 import {
     WalletAccount,
     hasSigningKeys,
+    isMultisigAccount,
     isSigningLogicalType,
     useAccountLogicalType,
     useAllAccounts,
@@ -56,6 +57,10 @@ export type UseAccountOptionsResult = {
     isRemoveConfirmVisible: boolean
     handleCloseRemoveConfirm: () => void
     handleConfirmRemove: () => void
+    isPassphraseFlowVisible: boolean
+    handleClosePassphraseFlow: () => void
+    isExportShareVisible: boolean
+    handleCloseExportShare: () => void
 }
 
 export const useAccountOptions = ({
@@ -76,7 +81,9 @@ export const useAccountOptions = ({
     const showPassphrase = logicalType === 'Algo25' || logicalType === 'HdKey'
     const isRekeyed = logicalType === 'Rekeyed' || logicalType === 'RekeyedAuth'
     const showUndoRekey = logicalType === 'RekeyedAuth'
+    const isHdWallet = logicalType === 'HdKey'
     const canSign = isSigningLogicalType(logicalType)
+    const isSharedAccount = isMultisigAccount(account)
 
     const {
         isOpen: isRenameVisible,
@@ -94,6 +101,18 @@ export const useAccountOptions = ({
         isOpen: isRemoveConfirmVisible,
         open: openRemoveConfirm,
         close: handleCloseRemoveConfirm,
+    } = useModalState()
+
+    const {
+        isOpen: isPassphraseFlowVisible,
+        open: openPassphraseFlow,
+        close: handleClosePassphraseFlow,
+    } = useModalState()
+
+    const {
+        isOpen: isExportShareVisible,
+        open: openExportShare,
+        close: handleCloseExportShare,
     } = useModalState()
 
     const notImplemented = useCallback(() => {
@@ -116,8 +135,9 @@ export const useAccountOptions = ({
     }, [onClose, onShowAddress])
 
     const handleViewPassphrase = useCallback(() => {
-        notImplemented()
-    }, [notImplemented])
+        onClose()
+        openPassphraseFlow()
+    }, [onClose, openPassphraseFlow])
 
     const handleAuthAddress = useCallback(() => {
         if (account.rekeyAddress) {
@@ -137,6 +157,15 @@ export const useAccountOptions = ({
     const handleRekeyToStandard = useCallback(() => {
         notImplemented()
     }, [notImplemented])
+
+    const handleRekeyToShared = useCallback(() => {
+        notImplemented()
+    }, [notImplemented])
+
+    const handleExportShareAccount = useCallback(() => {
+        onClose()
+        openExportShare()
+    }, [onClose, openExportShare])
 
     const handleOpenRename = useCallback(() => {
         onClose()
@@ -252,7 +281,11 @@ export const useAccountOptions = ({
             items.push({
                 id: 'view-passphrase',
                 icon: 'key',
-                title: t('account_options.view_passphrase'),
+                title: t(
+                    isHdWallet
+                        ? 'account_options.view_passphrase_hd'
+                        : 'account_options.view_passphrase_algo25',
+                ),
                 onPress: handleViewPassphrase,
             })
         }
@@ -275,7 +308,7 @@ export const useAccountOptions = ({
             })
         }
 
-        if (canSign) {
+        if (canSign && !isSharedAccount) {
             items.push({
                 id: 'rekey-to-ledger',
                 icon: 'rekey',
@@ -288,6 +321,22 @@ export const useAccountOptions = ({
                 icon: 'rekey',
                 title: t('account_options.rekey_to_standard'),
                 onPress: handleRekeyToStandard,
+            })
+        }
+
+        if (isSharedAccount) {
+            items.push({
+                id: 'rekey-to-shared',
+                icon: 'rekey',
+                title: t('account_options.rekey_to_shared'),
+                onPress: handleRekeyToShared,
+            })
+
+            items.push({
+                id: 'export-share-account',
+                icon: 'share',
+                title: t('account_options.export_share_account'),
+                onPress: handleExportShareAccount,
             })
         }
 
@@ -323,6 +372,7 @@ export const useAccountOptions = ({
         isRekeyed,
         showUndoRekey,
         canSign,
+        isSharedAccount,
         notificationsEnabled,
         handleCopyAddress,
         handleShowAddress,
@@ -331,6 +381,8 @@ export const useAccountOptions = ({
         handleUndoRekey,
         handleRekeyToLedger,
         handleRekeyToStandard,
+        handleRekeyToShared,
+        handleExportShareAccount,
         handleOpenRename,
         handleToggleNotifications,
         handleOpenRemoveConfirm,
@@ -347,5 +399,9 @@ export const useAccountOptions = ({
         isRemoveConfirmVisible,
         handleCloseRemoveConfirm,
         handleConfirmRemove,
+        isPassphraseFlowVisible,
+        handleClosePassphraseFlow,
+        isExportShareVisible,
+        handleCloseExportShare,
     }
 }

@@ -12,17 +12,23 @@
 
 import { renderHook, act, waitFor } from '@testing-library/react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import type { Contact } from '@perawallet/wallet-core-contacts'
 import { useEditParticipantScreen } from '../useEditParticipantScreen'
 import { useMultisigCreationStore } from '../../../hooks/useMultisigCreation'
+
+const ADDR1 = 'A'.repeat(58)
+const ADDR2 = 'B'.repeat(58)
+const PICKED_IMAGE_URI = 'file:///mock/avatar.jpg'
 
 const mockGoBack = vi.fn()
 const mockAddContact = vi.fn()
 const mockEditContact = vi.fn()
-const mockFindContacts = vi.fn(
-    (): Array<{ address: string; name: string }> => [],
+const mockFindContacts = vi.fn((): Contact[] => [])
+const mockPickFromGallery = vi.fn<() => Promise<string | null>>(() =>
+    Promise.resolve(null),
 )
 
-const mockRouteParams = { address: 'ADDR1' }
+const mockRouteParams = { address: ADDR1 }
 
 vi.mock('@react-navigation/native', async () => {
     const actual = await vi.importActual<object>('@react-navigation/native')
@@ -38,43 +44,85 @@ vi.mock('@hooks/useAppNavigation', () => ({
     }),
 }))
 
-vi.mock('@perawallet/wallet-core-contacts', () => ({
-    useContacts: () => ({
-        findContacts: mockFindContacts,
-        addContact: mockAddContact,
-        editContact: mockEditContact,
+vi.mock('@hooks/useImagePicker', () => ({
+    useImagePicker: () => ({
+        pickFromGallery: mockPickFromGallery,
+        permissionDenied: {
+            isVisible: false,
+            close: vi.fn(),
+            openSettings: vi.fn(),
+        },
     }),
 }))
+
+vi.mock('@hooks/useNfdResolve', () => ({
+    useNfdResolve: () => ({
+        resolvedAddress: '',
+        isNfdResolved: false,
+        isNfdResolving: false,
+        nfdName: undefined,
+    }),
+}))
+
+vi.mock('@perawallet/wallet-core-contacts', async () => {
+    const actual = await vi.importActual<
+        typeof import('@perawallet/wallet-core-contacts')
+    >('@perawallet/wallet-core-contacts')
+    return {
+        ...actual,
+        useContacts: () => ({
+            findContacts: mockFindContacts,
+            addContact: mockAddContact,
+            editContact: mockEditContact,
+            deleteContact: vi.fn(),
+            contacts: [],
+            selectedContact: null,
+            setSelectedContact: vi.fn(),
+        }),
+    }
+})
 
 describe('useEditParticipantScreen', () => {
     beforeEach(() => {
         vi.clearAllMocks()
         mockFindContacts.mockReturnValue([])
+        mockPickFromGallery.mockResolvedValue(null)
 
         const store = useMultisigCreationStore.getState()
         store.resetState()
-        store.addParticipant({ address: 'ADDR1' })
-        store.addParticipant({ address: 'ADDR2' })
+        store.addParticipant({ address: ADDR1 })
+        store.addParticipant({ address: ADDR2 })
     })
 
     it('exposes the address from route params', () => {
         const { result } = renderHook(() => useEditParticipantScreen())
 
-        expect(result.current.address).toBe('ADDR1')
+        expect(result.current.address).toBe(ADDR1)
     })
 
     it('initializes with empty name when no contact exists', () => {
         const { result } = renderHook(() => useEditParticipantScreen())
 
         expect(result.current.control._defaultValues.name).toBe('')
+        expect(result.current.control._defaultValues.address).toBe(ADDR1)
     })
 
-    it('initializes with existing contact name as default', () => {
-        mockFindContacts.mockReturnValue([{ address: 'ADDR1', name: 'Alice' }])
+    it('initializes with existing contact values as defaults', () => {
+        mockFindContacts.mockReturnValue([
+            {
+                address: ADDR1,
+                name: 'Alice',
+                image: 'file:///existing.jpg',
+            },
+        ])
 
         const { result } = renderHook(() => useEditParticipantScreen())
 
         expect(result.current.control._defaultValues.name).toBe('Alice')
+        expect(result.current.control._defaultValues.image).toBe(
+            'file:///existing.jpg',
+        )
+        expect(result.current.imageUri).toBe('file:///existing.jpg')
     })
 
     it('isDoneDisabled is true when form is invalid (empty name)', () => {
@@ -83,8 +131,8 @@ describe('useEditParticipantScreen', () => {
         expect(result.current.isDoneDisabled).toBe(true)
     })
 
-    it('isDoneDisabled is false once a valid name is entered', async () => {
-        mockFindContacts.mockReturnValue([{ address: 'ADDR1', name: 'Alice' }])
+    it('isDoneDisabled is false once a valid contact is loaded', async () => {
+        mockFindContacts.mockReturnValue([{ address: ADDR1, name: 'Alice' }])
 
         const { result } = renderHook(() => useEditParticipantScreen())
 
@@ -94,7 +142,7 @@ describe('useEditParticipantScreen', () => {
     })
 
     it('handleDone edits the existing contact, updates participant, and navigates back', async () => {
-        mockFindContacts.mockReturnValue([{ address: 'ADDR1', name: 'Alice' }])
+        mockFindContacts.mockReturnValue([{ address: ADDR1, name: 'Alice' }])
 
         const { result } = renderHook(() => useEditParticipantScreen())
 
@@ -106,17 +154,49 @@ describe('useEditParticipantScreen', () => {
             await result.current.handleDone()
         })
 
-        expect(mockEditContact).toHaveBeenCalledWith('ADDR1', {
-            name: 'Alice',
-            address: 'ADDR1',
-        })
+        expect(mockEditContact).toHaveBeenCalledWith(
+            ADDR1,
+            expect.objectContaining({ name: 'Alice', address: ADDR1 }),
+        )
         expect(mockAddContact).not.toHaveBeenCalled()
         expect(
             useMultisigCreationStore
                 .getState()
-                .participants.find(p => p.address === 'ADDR1')?.name,
+                .participants.find(p => p.address === ADDR1)?.name,
         ).toBe('Alice')
         expect(mockGoBack).toHaveBeenCalled()
+    })
+
+    it('persists a picked avatar image when saving', async () => {
+        mockFindContacts.mockReturnValue([{ address: ADDR1, name: 'Alice' }])
+        mockPickFromGallery.mockResolvedValue(PICKED_IMAGE_URI)
+
+        const { result } = renderHook(() => useEditParticipantScreen())
+
+        await waitFor(() => {
+            expect(result.current.isDoneDisabled).toBe(false)
+        })
+
+        await act(async () => {
+            await result.current.onPickImage()
+        })
+
+        await waitFor(() => {
+            expect(result.current.imageUri).toBe(PICKED_IMAGE_URI)
+        })
+
+        await act(async () => {
+            await result.current.handleDone()
+        })
+
+        expect(mockEditContact).toHaveBeenCalledWith(
+            ADDR1,
+            expect.objectContaining({
+                name: 'Alice',
+                address: ADDR1,
+                image: PICKED_IMAGE_URI,
+            }),
+        )
     })
 
     it('handleRemove removes participant from store and navigates back', () => {
@@ -127,7 +207,7 @@ describe('useEditParticipantScreen', () => {
         })
 
         const participants = useMultisigCreationStore.getState().participants
-        expect(participants.find(p => p.address === 'ADDR1')).toBeUndefined()
+        expect(participants.find(p => p.address === ADDR1)).toBeUndefined()
         expect(participants).toHaveLength(1)
         expect(mockGoBack).toHaveBeenCalled()
     })
