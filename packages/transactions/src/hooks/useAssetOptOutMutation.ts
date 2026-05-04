@@ -21,7 +21,7 @@ import {
     deleteAssetHoldings,
     useAccountBalancesInvalidator,
 } from '@perawallet/wallet-core-accounts'
-import { NonZeroBalanceError, CreatorCannotOptOutError } from '../errors'
+import { CreatorCannotOptOutError, NonZeroBalanceError } from '../errors'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type AssetOptOutParams = {
@@ -76,20 +76,26 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
         [network],
     )
 
-    const validateOptOut = (
+    // Returns true when a close-out txn must be built. Returns false when
+    // the asset is no longer held on-chain (a prior opt-out already settled
+    // and the local UI is stale) — submitting again would be rejected as
+    // `duplicate_txn`, so we skip the txn but still reconcile local state.
+    const needsOptOutTxn = (
         params: ResolvedOptOutParams,
         assets: Array<{ assetId: bigint; amount: bigint }>,
-    ) => {
-        // Creator cannot opt out of their own asset
+    ): boolean => {
         if (params.sender === params.creator) {
             throw new CreatorCannotOptOutError()
         }
 
-        // Asset balance must be zero
         const holding = assets.find(a => a.assetId === params.assetId)
-        if (holding && holding.amount !== 0n) {
+        if (!holding) {
+            return false
+        }
+        if (holding.amount !== 0n) {
             throw new NonZeroBalanceError()
         }
+        return true
     }
 
     const optOut = useCallback(
@@ -116,29 +122,32 @@ export const useAssetOptOutMutation = (): UseAssetOptOutMutationResult => {
                     await algokit.client.algod.accountInformation(sender)
                 const assets = accountInfo.assets ?? []
 
-                for (const p of paramsList) {
-                    validateOptOut(p, assets)
-                }
+                const toSubmit = paramsList.filter(p =>
+                    needsOptOutTxn(p, assets),
+                )
 
-                const composer = algokit.newGroup()
-                for (const p of paramsList) {
-                    composer.addAssetTransfer({
-                        sender: p.sender,
-                        receiver: p.sender,
-                        assetId: p.assetId,
-                        amount: 0n,
-                        closeAssetTo: p.creator,
+                let txIds: string[] = []
+                if (toSubmit.length > 0) {
+                    const composer = algokit.newGroup()
+                    for (const p of toSubmit) {
+                        composer.addAssetTransfer({
+                            sender: p.sender,
+                            receiver: p.sender,
+                            assetId: p.assetId,
+                            amount: 0n,
+                            closeAssetTo: p.creator,
+                        })
+                    }
+                    const { transactions } = await composer.build()
+                    const unsignedTxs = transactions.map(t => t.txn)
+
+                    const result = await submit({
+                        unsignedTxs,
+                        source: SOURCE,
                     })
+                    txIds = result.txIds
                 }
-                const { transactions } = await composer.build()
-                const unsignedTxs = transactions.map(t => t.txn)
 
-                const { txIds } = await submit({
-                    unsignedTxs,
-                    source: SOURCE,
-                })
-
-                // Remove opted-out assets from local DB and refresh UI
                 await deleteAssetHoldings({
                     accountAddress: sender,
                     assetIds: paramsList.map(p => String(p.assetId)),

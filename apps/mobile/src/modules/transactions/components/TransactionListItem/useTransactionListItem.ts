@@ -112,6 +112,9 @@ const getTitle = (tx: TransactionHistoryItem, userAddress: string): string => {
         case 'pay':
             return isOutgoing ? 'Send' : 'Receive'
         case 'axfer':
+            if (tx.closeTo) {
+                return 'Opt-out'
+            }
             if (
                 tx.sender === tx.receiver &&
                 tx.amount !== null &&
