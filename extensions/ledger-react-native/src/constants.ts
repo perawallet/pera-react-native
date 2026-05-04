@@ -96,7 +96,7 @@ export const LEDGER_STATUS_CODES = {
  * hooks/pipeline call sites are small enough to rewire.
  */
 
-/** Maximum time to scan for BLE devices before showing a timeout message. */
+/** Maximum time to scan for Ledger devices (BLE or USB) before showing a timeout message. */
 export const LEDGER_SCAN_TIMEOUT_MS = 30_000
 
 /** Maximum time to wait for user confirmation on the Ledger device. */

@@ -120,17 +120,19 @@ describe('useLedgerConnection', () => {
             (d: HardwareWalletDevice) => void,
             (err: Error) => void,
         ]
-        act(() => {
-            onDevice({
-                id: 'd1',
-                name: 'Nano X',
-                transportType: 'ble',
-            } as HardwareWalletDevice)
-        })
+        const device: HardwareWalletDevice = {
+            id: 'd1',
+            name: 'Nano X',
+            manufacturer: 'ledger',
+            transportType: 'ble',
+            model: 'nanoX',
+            rssi: null,
+        }
+        act(() => onDevice(device))
 
         let returned: HardwareWalletTransport | undefined
         await act(async () => {
-            returned = await result.current.connect('d1')
+            returned = await result.current.connect(device)
         })
 
         expect(returned).toBe(transport)
@@ -148,18 +150,20 @@ describe('useLedgerConnection', () => {
             (d: HardwareWalletDevice) => void,
             (err: Error) => void,
         ]
-        act(() => {
-            onDevice({
-                id: 'd1',
-                name: 'Nano X',
-                transportType: 'ble',
-            } as HardwareWalletDevice)
-        })
+        const device: HardwareWalletDevice = {
+            id: 'd1',
+            name: 'Nano X',
+            manufacturer: 'ledger',
+            transportType: 'ble',
+            model: 'nanoX',
+            rssi: null,
+        }
+        act(() => onDevice(device))
 
         let caught: Nullable<Error> = null
         await act(async () => {
             try {
-                await result.current.connect('d1')
+                await result.current.connect(device)
             } catch (err) {
                 caught = err as Error
             }
@@ -182,16 +186,18 @@ describe('useLedgerConnection', () => {
             (d: HardwareWalletDevice) => void,
             (err: Error) => void,
         ]
-        act(() => {
-            onDevice({
-                id: 'd1',
-                name: 'Nano X',
-                transportType: 'ble',
-            } as HardwareWalletDevice)
-        })
+        const device: HardwareWalletDevice = {
+            id: 'd1',
+            name: 'Nano X',
+            manufacturer: 'ledger',
+            transportType: 'ble',
+            model: 'nanoX',
+            rssi: null,
+        }
+        act(() => onDevice(device))
 
         await act(async () => {
-            await result.current.connect('d1')
+            await result.current.connect(device)
         })
 
         await act(async () => {
@@ -287,19 +293,18 @@ describe('useLedgerConnection', () => {
             useLedgerConnection([bleProvider, usbProvider]),
         )
         act(() => result.current.startScan())
-        act(() => {
-            bleOnDevice({
-                id: 'b1',
-                name: 'Nano X',
-                manufacturer: 'ledger',
-                transportType: 'ble',
-                model: 'nanoX',
-                rssi: -50,
-            })
-        })
+        const bleDevice: HardwareWalletDevice = {
+            id: 'b1',
+            name: 'Nano X',
+            manufacturer: 'ledger',
+            transportType: 'ble',
+            model: 'nanoX',
+            rssi: -50,
+        }
+        act(() => bleOnDevice(bleDevice))
 
         await act(async () => {
-            await result.current.connect('b1')
+            await result.current.connect(bleDevice)
         })
 
         expect(bleProvider.connect).toHaveBeenCalledWith('b1')
@@ -316,8 +321,76 @@ describe('useLedgerConnection', () => {
         }
         const { result } = renderHook(() => useLedgerConnection([provider]))
 
-        await expect(result.current.connect('unknown')).rejects.toThrow(
-            /No provider tracked/,
+        await expect(
+            result.current.connect({
+                id: 'unknown',
+                name: 'Nano X',
+                manufacturer: 'ledger',
+                transportType: 'ble',
+                model: 'nanoX',
+                rssi: null,
+            }),
+        ).rejects.toThrow(/No provider tracked/)
+    })
+
+    test('connect routes to the correct transport when devices share an id across providers', async () => {
+        let bleOnDevice: (d: unknown) => void = () => {}
+        let usbOnDevice: (d: unknown) => void = () => {}
+        const bleTransport = makeTransport()
+        const usbTransport = makeTransport()
+        const bleProvider = {
+            manufacturer: 'ledger' as const,
+            transportType: 'ble' as const,
+            scan: vi.fn(onDevice => {
+                bleOnDevice = onDevice as (d: unknown) => void
+                return () => {}
+            }),
+            connect: vi.fn().mockResolvedValue(bleTransport),
+            isSupported: async () => true,
+        }
+        const usbProvider = {
+            manufacturer: 'ledger' as const,
+            transportType: 'usb' as const,
+            scan: vi.fn(onDevice => {
+                usbOnDevice = onDevice as (d: unknown) => void
+                return () => {}
+            }),
+            connect: vi.fn().mockResolvedValue(usbTransport),
+            isSupported: async () => true,
+        }
+
+        const { result } = renderHook(() =>
+            useLedgerConnection([bleProvider, usbProvider]),
         )
+        act(() => result.current.startScan())
+
+        const bleDevice: HardwareWalletDevice = {
+            id: 'shared',
+            name: 'Nano BLE',
+            manufacturer: 'ledger',
+            transportType: 'ble',
+            model: 'nanoX',
+            rssi: -50,
+        }
+        const usbDevice: HardwareWalletDevice = {
+            id: 'shared',
+            name: 'Nano USB',
+            manufacturer: 'ledger',
+            transportType: 'usb',
+            model: 'nanoX',
+            rssi: null,
+        }
+
+        act(() => {
+            bleOnDevice(bleDevice)
+            usbOnDevice(usbDevice)
+        })
+
+        await act(async () => {
+            await result.current.connect(bleDevice)
+        })
+
+        expect(bleProvider.connect).toHaveBeenCalledWith('shared')
+        expect(usbProvider.connect).not.toHaveBeenCalled()
     })
 })

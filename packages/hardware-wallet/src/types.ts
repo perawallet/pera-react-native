@@ -119,7 +119,11 @@ export type HardwareWalletTransportProvider = {
 
     /**
      * Connect to a specific device and open the transport.
-     * @param deviceId - The device identifier from a previous scan
+     * @param deviceId - The device identifier from a previous scan.
+     *   Note: on transports where IDs are not stable handles (e.g.
+     *   Android USB host, where descriptors are reassigned on replug
+     *   and lost on app restart), implementations may treat this as
+     *   advisory and connect to the currently attached device.
      */
     connect: (deviceId: string) => Promise<HardwareWalletTransport>
 

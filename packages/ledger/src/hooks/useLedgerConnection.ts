@@ -20,16 +20,19 @@ import type {
 import { LEDGER_SCAN_TIMEOUT_MS } from '@perawallet/wallet-extension-ledger-react-native/protocol'
 import type { Nullable } from '@perawallet/wallet-core-shared'
 
-type UseLedgerConnectionResult = {
+export type UseLedgerConnectionResult = {
     devices: HardwareWalletDevice[]
     isScanning: boolean
     connectionStatus: HardwareWalletConnectionStatus
     startScan: () => void
     stopScan: () => void
-    connect: (deviceId: string) => Promise<HardwareWalletTransport>
+    connect: (device: HardwareWalletDevice) => Promise<HardwareWalletTransport>
     disconnect: () => Promise<void>
     error: Nullable<Error>
 }
+
+const buildDeviceKey = (device: HardwareWalletDevice): string =>
+    `${device.transportType}:${device.id}`
 
 /**
  * Hook that manages scanning and connection to Ledger devices across
@@ -77,10 +80,10 @@ export const useLedgerConnection = (
         stopScansRef.current = providers.map(provider =>
             provider.scan(
                 (device: HardwareWalletDevice) => {
-                    const key = `${device.transportType}:${device.id}`
+                    const key = buildDeviceKey(device)
                     if (seen.has(key)) return
                     seen.add(key)
-                    deviceProviderRef.current.set(device.id, provider)
+                    deviceProviderRef.current.set(key, provider)
                     setDevices(prev => [...prev, device])
                 },
                 (err: Error) => {
@@ -96,23 +99,24 @@ export const useLedgerConnection = (
     }, [stopScan, providers])
 
     const connect = useCallback(
-        async (deviceId: string): Promise<HardwareWalletTransport> => {
+        async (
+            device: HardwareWalletDevice,
+        ): Promise<HardwareWalletTransport> => {
             stopScan()
             setConnectionStatus('connecting')
             setError(null)
 
-            const provider = deviceProviderRef.current.get(deviceId)
+            const key = buildDeviceKey(device)
+            const provider = deviceProviderRef.current.get(key)
             if (!provider) {
-                const e = new Error(
-                    `No provider tracked for device id "${deviceId}"`,
-                )
+                const e = new Error(`No provider tracked for device "${key}"`)
                 setError(e)
                 setConnectionStatus('disconnected')
                 throw e
             }
 
             try {
-                const transport = await provider.connect(deviceId)
+                const transport = await provider.connect(device.id)
                 transportRef.current = transport
                 setConnectionStatus('connected')
                 return transport

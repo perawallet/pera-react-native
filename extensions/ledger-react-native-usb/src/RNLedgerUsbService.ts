@@ -133,8 +133,16 @@ export class RNLedgerUsbService implements HardwareWalletService {
                         const { deviceId, productId, deviceName } =
                             event.descriptor
                         const model = resolveModel(productId ?? null)
+                        // deviceId is the stable handle from the HID
+                        // descriptor; productId is the same across all
+                        // Ledger devices of the same model. If neither
+                        // is present we skip the descriptor rather than
+                        // emit a sentinel that would alias multiple
+                        // devices in the connection-routing map.
+                        const id = deviceId ?? productId
+                        if (id === undefined) return
                         onDevice({
-                            id: String(deviceId ?? productId ?? 'usb-ledger'),
+                            id: String(id),
                             name: deviceName || `Ledger ${model}`,
                             manufacturer: 'ledger',
                             transportType: 'usb',

@@ -10,10 +10,21 @@
  limitations under the License
  */
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { getProvider } from '@perawallet/wallet-extension-provider'
-import { useLedgerConnection as useLedgerConnectionCore } from '@perawallet/wallet-core-ledger'
+import {
+    useLedgerConnection as useLedgerConnectionCore,
+    type UseLedgerConnectionResult,
+} from '@perawallet/wallet-core-ledger'
 import type { HardwareWalletTransportProvider } from '@perawallet/wallet-core-hardware-wallet'
+
+type UseLedgerConnectionWrapperResult = UseLedgerConnectionResult & {
+    /** True once each provider's `isSupported()` has resolved. */
+    isReady: boolean
+}
+
+const ledgerSupportedProvidersQueryKey = ['ledger', 'supported-providers']
 
 /**
  * App-level wrapper around the core useLedgerConnection hook.
@@ -21,7 +32,7 @@ import type { HardwareWalletTransportProvider } from '@perawallet/wallet-core-ha
  * to the ones supported on this platform (BLE on iOS+Android, USB on
  * Android only), and passes them to the core hook.
  */
-export const useLedgerConnection = () => {
+export const useLedgerConnection = (): UseLedgerConnectionWrapperResult => {
     const allLedgerProviders = useMemo<HardwareWalletTransportProvider[]>(
         () =>
             getProvider().hardwareWalletRegistry.getProvidersByManufacturer(
@@ -30,27 +41,41 @@ export const useLedgerConnection = () => {
         [],
     )
 
-    const [supportedProviders, setSupportedProviders] = useState<
-        HardwareWalletTransportProvider[]
-    >([])
-
-    useEffect(() => {
-        let cancelled = false
-        Promise.all(
-            allLedgerProviders.map(async p => ({
-                provider: p,
-                supported: await p.isSupported(),
-            })),
-        ).then(results => {
-            if (cancelled) return
-            setSupportedProviders(
-                results.filter(r => r.supported).map(r => r.provider),
+    const { data: supportedProviders = [], isSuccess } = useQuery({
+        queryKey: ledgerSupportedProvidersQueryKey,
+        queryFn: async () => {
+            const results = await Promise.all(
+                allLedgerProviders.map(async provider => {
+                    try {
+                        return {
+                            provider,
+                            supported: await provider.isSupported(),
+                        }
+                    } catch {
+                        // A provider's native module may be absent on this
+                        // platform (e.g. Android-only USB on iOS) — treat
+                        // a thrown isSupported as unsupported rather than
+                        // letting it bubble up as an unhandled rejection.
+                        return { provider, supported: false }
+                    }
+                }),
             )
-        })
-        return () => {
-            cancelled = true
-        }
-    }, [allLedgerProviders])
+            return results.filter(r => r.supported).map(r => r.provider)
+        },
+        staleTime: Infinity,
+        gcTime: Infinity,
+        retry: false,
+    })
 
-    return useLedgerConnectionCore(supportedProviders)
+    const core = useLedgerConnectionCore(supportedProviders)
+
+    return {
+        ...core,
+        // Suppress scanning until the support query has resolved. Without
+        // this guard, the very first `startScan()` runs against an empty
+        // provider list, briefly transitioning the UI through 'scanning'
+        // → 'disconnected' → 'scanning' as the query resolves.
+        startScan: isSuccess ? core.startScan : () => {},
+        isReady: isSuccess,
+    }
 }

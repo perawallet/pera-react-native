@@ -12,8 +12,6 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
-import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useLanguage } from '@hooks/useLanguage'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import {
     useAccountsStore,
@@ -24,14 +22,15 @@ import {
 import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
 import { verifyLedgerAddress } from '@perawallet/wallet-core-ledger'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useLanguage } from '@hooks/useLanguage'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 import { useExitAccountFlow } from '@modules/onboarding/hooks'
 import {
     getLedgerErrorPreset,
     type LedgerErrorPreset,
 } from '@modules/ledger/utils'
-
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type LedgerVerifyRouteProp = RouteProp<AddAccountStackParamList, 'LedgerVerify'>
 

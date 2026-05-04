@@ -73,7 +73,12 @@ export const useLedgerFetchAccountsScreen =
                     getProvider().hardwareWalletRegistry.getProvider(
                         'ledger',
                         transportType,
-                    )!
+                    )
+                if (!provider) {
+                    throw new Error(
+                        `No Ledger provider registered for transport "${transportType}"`,
+                    )
+                }
 
                 setIsDiscovering(true)
                 const result = await connectAndDiscoverAccounts({

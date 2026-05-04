@@ -12,10 +12,10 @@
 
 import { useCallback } from 'react'
 import { useRoute, type RouteProp } from '@react-navigation/native'
+import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
 import { useAppNavigation } from '@hooks/useAppNavigation'
 import { useLanguage } from '@hooks/useLanguage'
 import { useToast } from '@hooks/useToast'
-import type { LedgerTransportType } from '@perawallet/wallet-core-hardware-wallet'
 
 import { useBlePermissions } from '../../hooks'
 

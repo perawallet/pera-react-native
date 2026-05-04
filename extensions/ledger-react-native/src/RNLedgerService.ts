@@ -85,7 +85,7 @@ const createTransportWrapper = (
 })
 
 /**
- * React Native implementation of LedgerService using BLE transport.
+ * React Native implementation of HardwareWalletService for Ledger BLE.
  * Uses @ledgerhq/react-native-hw-transport-ble for BLE communication
  * and @ledgerhq/hw-app-algorand for Algorand-specific APDU commands.
  */
@@ -161,7 +161,15 @@ export class RNLedgerService implements HardwareWalletService {
             },
 
             async isSupported(): Promise<boolean> {
-                return TransportBLE.isSupported()
+                try {
+                    return await TransportBLE.isSupported()
+                } catch {
+                    // The native BLE module may be missing or refuse to
+                    // initialize on environments where Bluetooth is
+                    // disabled at the OS level. Treat as unsupported
+                    // rather than letting the rejection bubble up.
+                    return false
+                }
             },
         }
     }

@@ -12,16 +12,16 @@
 
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { RouteProp, useRoute } from '@react-navigation/native'
-import { useAppNavigation } from '@hooks/useAppNavigation'
-import { useLanguage } from '@hooks/useLanguage'
-import { useToast } from '@hooks/useToast'
 import { getProvider } from '@perawallet/wallet-extension-provider'
 import { useAllAccounts } from '@perawallet/wallet-core-accounts'
 import type { LedgerAccount } from '@perawallet/wallet-core-ledger'
 import type { HardwareWalletTransport } from '@perawallet/wallet-core-hardware-wallet'
+import type { Nullable } from '@perawallet/wallet-core-shared'
+import { useAppNavigation } from '@hooks/useAppNavigation'
+import { useLanguage } from '@hooks/useLanguage'
+import { useToast } from '@hooks/useToast'
 import type { AddAccountStackParamList } from '@modules/onboarding/routes/types'
 import { getLedgerErrorPreset } from '@modules/ledger/utils'
-import type { Nullable } from '@perawallet/wallet-core-shared'
 
 type LedgerSelectAccountsRouteProp = RouteProp<
     AddAccountStackParamList,
